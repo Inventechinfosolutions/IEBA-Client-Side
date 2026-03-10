@@ -5,13 +5,9 @@
     { "path": "./tsconfig.node.json" }
   ],
   "compilerOptions": {
-    "target": "ES2022", // The target language version
-    "module": "ESNext", // The module code generation
-    "jsx": "react-jsx", // The JSX code generation
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"]
     }
   }
-  
 }

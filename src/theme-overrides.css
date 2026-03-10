@@ -1,0 +1,15 @@
+/**
+ * Purple theme overrides - loaded last to ensure they win over any preset
+ * Fixes blue from Nova/neutral shadcn preset
+ */
+:root {
+  --primary: oklch(0.488 0.243 264.376);
+  --primary-foreground: oklch(0.985 0 0);
+  --color-primary: oklch(0.488 0.243 264.376);
+  --color-primary-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.488 0.243 264.376);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --ring: oklch(0.488 0.243 264.376);
+}
