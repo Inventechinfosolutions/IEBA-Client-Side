@@ -45,3 +45,9 @@ features/<feature>/mutations
 9. Avoid creating unnecessary files.
 
 10. Follow clean and readable code practices.
+
+11. Never use any type in typescript, follow strict types.
+
+12. Follow SRP.
+
+13. Always use lazy loading.

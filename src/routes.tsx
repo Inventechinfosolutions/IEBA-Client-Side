@@ -1,14 +1,28 @@
 import { createBrowserRouter, Navigate } from "react-router-dom"
-import { AppLayout } from "@/layouts/AppLayout"
+import { GuestOnlyRoute } from "@/components/GuestOnlyRoute"
+import { ProtectedRoute } from "@/components/ProtectedRoute"
+import { DashboardLayout } from "@/layouts/DashboardLayout"
+import { LoginPage } from "@/features/auth/pages/LoginPage"
 import { UsersPage, UserPage } from "@/features/users"
-
 
 export const router = createBrowserRouter([
   {
+    path: "/login",
+    element: (
+      <GuestOnlyRoute>
+        <LoginPage />
+      </GuestOnlyRoute>
+    ),
+  },
+  {
     path: "/",
-    element: <AppLayout />,
+    element: (
+      <ProtectedRoute>
+        <DashboardLayout />
+      </ProtectedRoute>
+    ),
     children: [
-      { index: true, element: <UsersPage />  },
+      { index: true, element: <UsersPage /> },
       { path: "users", element: <UsersPage /> },
       { path: "users/:id", element: <UserPage /> },
     ],
