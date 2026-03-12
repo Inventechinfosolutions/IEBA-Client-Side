@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { useNavigate, useSearchParams, useLocation } from "react-router-dom"
 import { LayoutDashboard } from "lucide-react"
+import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -17,7 +18,7 @@ import { useAuth } from "@/contexts/AuthContext"
 export function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-  const { signIn, isLoading } = useAuth()
+  const { signIn, isLoading, error, clearError } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const [searchParams] = useSearchParams()
@@ -26,8 +27,14 @@ export function LoginPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    await signIn(email, password)
-    navigate(redirectTo, { replace: true })
+    clearError()
+    try {
+      await signIn(email, password)
+      toast.success("Signed in successfully")
+      navigate(redirectTo, { replace: true })
+    } catch {
+      toast.error("Invalid email or password")
+    }
   }
 
   return (
@@ -51,6 +58,11 @@ export function LoginPage() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
+              {error && (
+                <div className="rounded-md bg-destructive/10 text-sm text-destructive p-3">
+                  {error}
+                </div>
+              )}
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input

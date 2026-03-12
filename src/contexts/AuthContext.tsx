@@ -2,9 +2,18 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
 } from "react"
+
+import { clearToken, getToken } from "@/lib/api"
+import {
+  clearStoredUser,
+  getStoredUser,
+  setStoredUser,
+} from "@/lib/auth-storage"
+import { login as loginApi } from "@/features/auth/api/login"
 
 export type User = {
   id: string
@@ -19,43 +28,72 @@ type AuthContextValue = {
   isLoading: boolean
   signIn: (email: string, password: string) => Promise<void>
   signOut: () => void
+  error: string | null
+  clearError: () => void
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [authLoading, setAuthLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  const signIn = useCallback(async (email: string, _password: string) => {
-    setIsLoading(true)
+  const restoreSession = useCallback(() => {
+    const token = getToken()
+    const storedUser = getStoredUser()
+    if (token && storedUser) {
+      setUser(storedUser)
+    }
+    setIsLoading(false)
+  }, [])
+
+  useEffect(() => {
+    restoreSession()
+  }, [restoreSession])
+
+  const signIn = useCallback(async (email: string, password: string) => {
+    setError(null)
+    setAuthLoading(true)
     try {
-      // Demo: accept any email/password and create a fake user
-      const demoUser: User = {
-        id: "1",
-        name: email.split("@")[0] || "User",
-        email,
-        avatar: undefined,
+      const result = await loginApi({ email, password })
+      const authUser: User = {
+        id: result.id,
+        name: result.name,
+        email: result.email,
+        avatar: result.avatar,
       }
-      setUser(demoUser)
+      setUser(authUser)
+      setStoredUser(authUser)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Login failed"
+      setError(message)
+      throw err
     } finally {
-      setIsLoading(false)
+      setAuthLoading(false)
     }
   }, [])
 
   const signOut = useCallback(() => {
     setUser(null)
+    clearToken()
+    clearStoredUser()
   }, [])
+
+  const clearError = useCallback(() => setError(null), [])
 
   const value = useMemo<AuthContextValue>(
     () => ({
       user,
       isAuthenticated: !!user,
-      isLoading,
+      isLoading: isLoading || authLoading,
       signIn,
       signOut,
+      error,
+      clearError,
     }),
-    [user, isLoading, signIn, signOut]
+    [user, isLoading, authLoading, signIn, signOut, error, clearError]
   )
 
   return (

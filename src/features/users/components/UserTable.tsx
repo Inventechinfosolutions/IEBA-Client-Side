@@ -25,10 +25,10 @@ export function UserTable({ users, isLoading, onAddUser }: UserTableProps) {
           <Button onClick={onAddUser}>Add User</Button>
         </div>
       )}
-      <div className="rounded-lg border">
+      <div className="overflow-hidden rounded-lg border bg-card shadow-sm">
         <table className="w-full">
           <thead>
-            <tr className="border-b border-primary/10 bg-primary/5">
+            <tr className="bg-primary text-primary-foreground">
               <th className="px-4 py-3 text-left text-sm font-medium">ID</th>
               <th className="px-4 py-3 text-left text-sm font-medium">Name</th>
               <th className="px-4 py-3 text-left text-sm font-medium">Email</th>

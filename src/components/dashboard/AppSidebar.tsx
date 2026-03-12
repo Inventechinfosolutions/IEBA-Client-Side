@@ -54,7 +54,7 @@ export function AppSidebar() {
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-semibold">IEBA</span>
-                  <span className="truncate text-xs text-muted-foreground">
+                  <span className="truncate text-xs text-sidebar-foreground/80">
                     Dashboard
                   </span>
                 </div>
@@ -114,7 +114,7 @@ export function AppSidebar() {
                     <span className="truncate font-semibold">
                       {user?.name ?? "User"}
                     </span>
-                    <span className="truncate text-xs text-muted-foreground">
+                    <span className="truncate text-xs text-sidebar-foreground/80">
                       {user?.email ?? ""}
                     </span>
                   </div>
@@ -143,7 +143,7 @@ export function AppSidebar() {
                       <span className="truncate font-semibold">
                         {user?.name ?? "User"}
                       </span>
-                      <span className="truncate text-xs text-muted-foreground">
+                      <span className="truncate text-xs text-sidebar-foreground/80">
                         {user?.email ?? ""}
                       </span>
                     </div>
