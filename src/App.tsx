@@ -1,15 +1,17 @@
-
+import { useState } from "react"
 import { UserForm, UserTable, useUsers } from "@/features/users"
 
 function App() {
+  const [formOpen, setFormOpen] = useState(false)
   const {
     users,
     isLoading,
     createUser,
+    isCreating,
   } = useUsers()
 
   const handleCreateUser = (values: { name: string; email: string }) => {
-    createUser.mutate(values)
+    createUser(values)
   }
 
   return (
@@ -19,10 +21,13 @@ function App() {
         <UserTable
           users={users}
           isLoading={isLoading}
+          onAddUser={() => setFormOpen(true)}
         />
         <UserForm
+          open={formOpen}
+          onOpenChange={setFormOpen}
           onSubmit={handleCreateUser}
-          isLoading={createUser.isPending}
+          isSubmitting={isCreating}
         />
       </div>
     </div>

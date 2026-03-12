@@ -1,3 +1,4 @@
+import { useEffect } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
@@ -23,8 +24,11 @@ export type UserFormValues = z.infer<typeof userFormSchema>
 type UserFormProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onSubmit: (values: UserFormValues) => void
+  onSubmit: (values: UserFormValues & { id?: string }) => void
   isSubmitting?: boolean
+  defaultValues?: UserFormValues
+  userId?: string
+  mode?: "create" | "edit"
 }
 
 export function UserForm({
@@ -32,17 +36,26 @@ export function UserForm({
   onOpenChange,
   onSubmit,
   isSubmitting = false,
+  defaultValues,
+  userId,
+  mode = "create",
 }: UserFormProps) {
   const form = useForm<UserFormValues>({
     resolver: zodResolver(userFormSchema),
-    defaultValues: {
+    defaultValues: defaultValues ?? {
       name: "",
       email: "",
     },
   })
 
+  useEffect(() => {
+    if (open && defaultValues) {
+      form.reset(defaultValues)
+    }
+  }, [open, defaultValues])
+
   const handleSubmit = form.handleSubmit((values) => {
-    onSubmit(values)
+    onSubmit(mode === "edit" && userId ? { ...values, id: userId } : values)
     form.reset()
     onOpenChange(false)
   })
@@ -51,9 +64,11 @@ export function UserForm({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Create User</DialogTitle>
+          <DialogTitle>{mode === "edit" ? "Edit User" : "Create User"}</DialogTitle>
           <DialogDescription>
-            Add a new user to the system. Fill in the details below.
+            {mode === "edit"
+              ? "Update the user details below."
+              : "Add a new user to the system. Fill in the details below."}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -100,7 +115,13 @@ export function UserForm({
               Cancel
             </Button>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Creating..." : "Create User"}
+              {isSubmitting
+                ? mode === "edit"
+                  ? "Updating..."
+                  : "Creating..."
+                : mode === "edit"
+                  ? "Update User"
+                  : "Create User"}
             </Button>
           </DialogFooter>
         </form>

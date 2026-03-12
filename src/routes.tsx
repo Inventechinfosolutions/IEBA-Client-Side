@@ -1,8 +1,6 @@
 import { createBrowserRouter, Navigate } from "react-router-dom"
 import { AppLayout } from "@/layouts/AppLayout"
-import { Dashboard } from "@/pages/Dashboard"
-import { UsersPage } from "@/pages/UsersPage"
-import { PlaceholderPage } from "@/pages/PlaceholderPage"
+import { UsersPage, UserPage } from "@/features/users"
 
 const placeholderRoutes = [
   { path: "personal-time-study", title: "Personal Time Study" },
@@ -27,11 +25,12 @@ export const router = createBrowserRouter([
     path: "/",
     element: <AppLayout />,
     children: [
-      { index: true, element: <Dashboard /> },
+      { index: true, element: <UsersPage />  },
       { path: "users", element: <UsersPage /> },
+      { path: "users/:id", element: <UserPage /> },
       ...placeholderRoutes.map(({ path, title }) => ({
         path,
-        element: <PlaceholderPage title={title} />,
+        element: <div>{title}</div>,
       })),
     ],
   },

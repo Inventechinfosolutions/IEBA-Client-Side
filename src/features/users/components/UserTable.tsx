@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom"
+
 import { Button } from "@/components/ui/button"
 import type { User } from "../queries/getUsers"
 
@@ -45,8 +47,22 @@ export function UserTable({ users, isLoading, onAddUser }: UserTableProps) {
             ) : (
               users.map((user) => (
                 <tr key={user.id} className="border-b last:border-0">
-                  <td className="px-4 py-3 text-sm">{user.id}</td>
-                  <td className="px-4 py-3 text-sm font-medium">{user.name}</td>
+                  <td className="px-4 py-3 text-sm">
+                    <Link
+                      to={`/users/${user.id}`}
+                      className="text-primary hover:underline"
+                    >
+                      {user.id}
+                    </Link>
+                  </td>
+                  <td className="px-4 py-3 text-sm font-medium">
+                    <Link
+                      to={`/users/${user.id}`}
+                      className="text-primary hover:underline"
+                    >
+                      {user.name}
+                    </Link>
+                  </td>
                   <td className="px-4 py-3 text-sm text-muted-foreground">
                     {user.email}
                   </td>

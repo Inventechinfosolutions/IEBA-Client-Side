@@ -1,0 +1,47 @@
+You are working on the IEBA frontend project.
+
+Tech stack:
+- React
+- TypeScript
+- Vite
+- TanStack Query for data fetching
+- shadcn/ui for UI components
+- Tailwind CSS
+
+Project architecture rules:
+
+1. Follow feature-based folder structure.
+
+src/
+  features/
+    <feature-name>/
+      components/
+      hooks/
+      queries/
+      mutations/
+      pages/
+      keys.ts
+      index.ts
+
+2. Use TanStack Query for API calls.
+Do not use fetch directly inside components.
+
+3. UI components must use shadcn/ui components.
+
+4. Reusable UI components should go inside:
+src/components/ui
+
+5. Hooks should be placed inside:
+features/<feature>/hooks
+
+6. Queries must go inside:
+features/<feature>/queries
+
+7. Mutations must go inside:
+features/<feature>/mutations
+
+8. Use TypeScript types everywhere.
+
+9. Avoid creating unnecessary files.
+
+10. Follow clean and readable code practices.
