@@ -1,5 +1,7 @@
-import { useEffect, useRef, useState } from "react"
+import { useRef, useState } from "react"
+import { zodResolver } from "@hookform/resolvers/zod"
 import { Bold, ChevronDown, ChevronUp, Italic, List } from "lucide-react"
+import { Controller, useForm } from "react-hook-form"
 
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -10,34 +12,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
-
-export type MasterCodeFormMode = "add" | "edit"
-
-export type MasterCodeFormValues = {
-  code: string
-  name: string
-  ffpPercent: string
-  match: string
-  spmp: boolean
-  allocable: boolean
-  active: boolean
-  activityDescription: string
-}
-
-type ActiveTools = {
-  bold: boolean
-  italic: boolean
-  bullet: boolean
-}
-
-type MasterCodeFormModalProps = {
-  codeType: string
-  open: boolean
-  mode: MasterCodeFormMode
-  initialValues: MasterCodeFormValues
-  onOpenChange: (open: boolean) => void
-  onSave: (values: MasterCodeFormValues) => void
-}
+import { masterCodeFormSchema } from "@/features/master-code/schemas"
+import {
+  type ActiveTools,
+  type MasterCodeFormModalProps,
+  type MasterCodeFormValues,
+} from "@/features/master-code/types"
 
 export function MasterCodeFormModal({
   codeType,
@@ -47,7 +27,6 @@ export function MasterCodeFormModal({
   onOpenChange,
   onSave,
 }: MasterCodeFormModalProps) {
-  const [form, setForm] = useState<MasterCodeFormValues>(initialValues)
   const descriptionEditorRef = useRef<HTMLDivElement | null>(null)
   const showPercentAndMatch = codeType !== "CDSS" && codeType !== "INTERNAL"
   const [activeTools, setActiveTools] = useState<ActiveTools>({
@@ -55,28 +34,37 @@ export function MasterCodeFormModal({
     italic: false,
     bullet: false,
   })
+  const {
+    register,
+    control,
+    setValue,
+    getValues,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<MasterCodeFormValues>({
+    resolver: zodResolver(masterCodeFormSchema),
+    defaultValues: initialValues,
+  })
 
-  useEffect(() => {
-    if (open) {
-      setForm(initialValues)
-      setActiveTools({ bold: false, italic: false, bullet: false })
-      requestAnimationFrame(() => {
-        const editor = descriptionEditorRef.current
-        if (!editor) return
-        const raw = initialValues.activityDescription ?? ""
-        const hasHtml = /<\/?[a-z][\s\S]*>/i.test(raw)
-        const safeText = raw
-          .replaceAll("&", "&amp;")
-          .replaceAll("<", "&lt;")
-          .replaceAll(">", "&gt;")
-          .replaceAll("\n", "<br>")
-        editor.innerHTML = hasHtml ? raw : safeText
-      })
-      return
+  const toEditorHtml = (rawValue: string) => {
+    const raw = rawValue ?? ""
+    const hasHtml = /<\/?[a-z][\s\S]*>/i.test(raw)
+    if (hasHtml) {
+      return raw
     }
 
-    setActiveTools({ bold: false, italic: false, bullet: false })
-  }, [initialValues, open])
+    return raw
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll("\n", "<br>")
+  }
+
+  const setDescriptionEditorRef = (node: HTMLDivElement | null) => {
+    descriptionEditorRef.current = node
+    if (!node) return
+    node.innerHTML = toEditorHtml(getValues("activityDescription"))
+  }
 
   const refreshActiveTools = () => {
     setActiveTools({
@@ -91,14 +79,20 @@ export function MasterCodeFormModal({
     if (!editor) return
     editor.focus()
     document.execCommand(command, false)
-    setForm((prev) => ({ ...prev, activityDescription: editor.innerHTML }))
+    setValue("activityDescription", editor.innerHTML, {
+      shouldDirty: true,
+      shouldValidate: true,
+    })
     refreshActiveTools()
   }
 
   const syncEditorValue = () => {
     const editor = descriptionEditorRef.current
     if (!editor) return
-    setForm((prev) => ({ ...prev, activityDescription: editor.innerHTML }))
+    setValue("activityDescription", editor.innerHTML, {
+      shouldDirty: true,
+      shouldValidate: true,
+    })
     refreshActiveTools()
   }
 
@@ -107,20 +101,33 @@ export function MasterCodeFormModal({
     descriptionEditorRef.current?.scrollBy({ top: delta, behavior: "smooth" })
   }
 
-  const handleSave = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    const editor = descriptionEditorRef.current
-    const nextValues = editor
-      ? { ...form, activityDescription: editor.innerHTML }
-      : form
-    onSave(nextValues)
+  const closeModal = () => {
+    setActiveTools({ bold: false, italic: false, bullet: false })
     onOpenChange(false)
   }
+
+  const handleSave = handleSubmit((values) => {
+    const editor = descriptionEditorRef.current
+    const nextValues = editor
+      ? { ...values, activityDescription: editor.innerHTML }
+      : values
+    onSave(nextValues)
+    closeModal()
+  })
 
   const title = mode === "edit" ? `Edit ${codeType}` : `Add ${codeType}`
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={(nextOpen) => {
+        if (!nextOpen) {
+          closeModal()
+          return
+        }
+        onOpenChange(nextOpen)
+      }}
+    >
       <DialogContent
         showClose={false}
         overlayClassName="bg-black/40"
@@ -132,12 +139,16 @@ export function MasterCodeFormModal({
               {title}
             </DialogTitle>
             <label className="absolute right-4 top-[4px] inline-flex cursor-pointer items-center gap-1.5 text-[12px] font-medium text-[#20263a]">
-              <Checkbox
-                checked={form.active}
-                onCheckedChange={(checked) =>
-                  setForm((prev) => ({ ...prev, active: checked === true }))
-                }
-                className="size-3.5 rounded-[3px] border-[#b8bbcc] bg-white data-[state=checked]:border-[var(--primary)] data-[state=checked]:bg-[var(--primary)] [&_svg]:size-3"
+              <Controller
+                name="active"
+                control={control}
+                render={({ field }) => (
+                  <Checkbox
+                    checked={field.value}
+                    onCheckedChange={(checked) => field.onChange(checked === true)}
+                    className="size-3.5 rounded-[3px] border-[#b8bbcc] bg-white data-[state=checked]:border-[var(--primary)] data-[state=checked]:bg-[var(--primary)] [&_svg]:size-3"
+                  />
+                )}
               />
               *Active
             </label>
@@ -153,42 +164,41 @@ export function MasterCodeFormModal({
             <div className="space-y-1">
               <label className="block whitespace-nowrap text-[12px] text-[#111827]">{`*${codeType} Code`}</label>
               <Input
-                value={form.code}
-                onChange={(event) =>
-                  setForm((prev) => ({ ...prev, code: event.target.value }))
-                }
+                {...register("code")}
                 className="h-[40px] rounded-[9px] border border-[#c5cad5] bg-white px-2.5 text-[13px] text-[#111827] focus-visible:border-[var(--primary)] focus-visible:ring-1 focus-visible:ring-[#6554C033]"
               />
+              {errors.code ? (
+                <p className="text-[11px] text-[#b42318]">{errors.code.message}</p>
+              ) : null}
             </div>
             <div className="space-y-1">
               <label className="block text-[12px] text-[#111827]">{`*${codeType} Name`}</label>
               <Input
-                value={form.name}
-                onChange={(event) =>
-                  setForm((prev) => ({ ...prev, name: event.target.value }))
-                }
+                {...register("name")}
                 className="h-[40px] rounded-[9px] border border-[#c5cad5] bg-white px-2.5 text-[13px] text-[#111827] focus-visible:border-[var(--primary)] focus-visible:ring-1 focus-visible:ring-[#6554C033]"
               />
+              {errors.name ? (
+                <p className="text-[11px] text-[#b42318]">{errors.name.message}</p>
+              ) : null}
             </div>
             {showPercentAndMatch ? (
               <>
                 <div className="space-y-1">
                   <label className="block text-[12px] text-[#111827]">{`*${codeType} (%)`}</label>
                   <Input
-                    value={form.ffpPercent}
-                    onChange={(event) =>
-                      setForm((prev) => ({ ...prev, ffpPercent: event.target.value }))
-                    }
+                    {...register("ffpPercent")}
                     className="h-[40px] rounded-[9px] border border-[#c5cad5] bg-white px-2.5 text-[13px] text-[#111827] focus-visible:border-[var(--primary)] focus-visible:ring-1 focus-visible:ring-[#6554C033]"
                   />
+                  {errors.ffpPercent ? (
+                    <p className="text-[11px] text-[#b42318]">
+                      {errors.ffpPercent.message}
+                    </p>
+                  ) : null}
                 </div>
                 <div className="space-y-1">
                   <label className="block text-[12px] text-[#111827]">Match</label>
                   <Input
-                    value={form.match}
-                    onChange={(event) =>
-                      setForm((prev) => ({ ...prev, match: event.target.value }))
-                    }
+                    {...register("match")}
                     className="h-[40px] rounded-[9px] border border-[#c5cad5] bg-white px-2.5 text-[13px] text-[#111827] focus-visible:border-[var(--primary)] focus-visible:ring-1 focus-visible:ring-[#6554C033]"
                   />
                 </div>
@@ -198,22 +208,30 @@ export function MasterCodeFormModal({
 
           <div className="mt-3 flex flex-col items-start gap-1.5">
             <label className="flex items-center gap-2 text-[12px] leading-none text-[#111827]">
-              <Checkbox
-                checked={form.spmp}
-                onCheckedChange={(checked) =>
-                  setForm((prev) => ({ ...prev, spmp: checked === true }))
-                }
-                className="size-3.5 rounded-[3px] border-[#c2c6d1] bg-white data-[state=checked]:border-[var(--primary)] data-[state=checked]:bg-[var(--primary)] [&_svg]:size-3"
+              <Controller
+                name="spmp"
+                control={control}
+                render={({ field }) => (
+                  <Checkbox
+                    checked={field.value}
+                    onCheckedChange={(checked) => field.onChange(checked === true)}
+                    className="size-3.5 rounded-[3px] border-[#c2c6d1] bg-white data-[state=checked]:border-[var(--primary)] data-[state=checked]:bg-[var(--primary)] [&_svg]:size-3"
+                  />
+                )}
               />
               SPMP
             </label>
             <label className="flex items-center gap-2 text-[12px] leading-none text-[#111827]">
-              <Checkbox
-                checked={form.allocable}
-                onCheckedChange={(checked) =>
-                  setForm((prev) => ({ ...prev, allocable: checked === true }))
-                }
-                className="size-3.5 rounded-[3px] border-[#c2c6d1] bg-white data-[state=checked]:border-[var(--primary)] data-[state=checked]:bg-[var(--primary)] [&_svg]:size-3"
+              <Controller
+                name="allocable"
+                control={control}
+                render={({ field }) => (
+                  <Checkbox
+                    checked={field.value}
+                    onCheckedChange={(checked) => field.onChange(checked === true)}
+                    className="size-3.5 rounded-[3px] border-[#c2c6d1] bg-white data-[state=checked]:border-[var(--primary)] data-[state=checked]:bg-[var(--primary)] [&_svg]:size-3"
+                  />
+                )}
               />
               Allocable
             </label>
@@ -258,7 +276,7 @@ export function MasterCodeFormModal({
                 </button>
               </div>
               <div
-                ref={descriptionEditorRef}
+                ref={setDescriptionEditorRef}
                 contentEditable
                 suppressContentEditableWarning
                 onInput={syncEditorValue}
@@ -266,6 +284,11 @@ export function MasterCodeFormModal({
                 onKeyUp={refreshActiveTools}
                 className="max-h-[201px] min-h-[201px] overflow-y-scroll overflow-x-hidden whitespace-pre-wrap break-all [overflow-wrap:anywhere] bg-white px-3 py-2 pr-5 text-[13px] leading-6 text-[#111827] outline-none [&_ul]:list-disc [&_ul]:pl-5 [&_li]:my-0.5 [&::-webkit-scrollbar]:w-3.5 [&::-webkit-scrollbar-track]:bg-[#f1f2f6] [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#98a1b0]"
               />
+              {errors.activityDescription ? (
+                <p className="px-3 pb-2 text-[11px] text-[#b42318]">
+                  {errors.activityDescription.message}
+                </p>
+              ) : null}
               <button
                 type="button"
                 aria-label="Scroll up"
@@ -294,7 +317,7 @@ export function MasterCodeFormModal({
             </Button>
             <Button
               type="button"
-              onClick={() => onOpenChange(false)}
+              onClick={closeModal}
               className="h-[44px] min-w-[111px] cursor-pointer rounded-[10px] bg-[#d2d4d9] px-6 text-[13px] font-medium text-[#111827] hover:bg-[#d2d4d9]"
             >
               Exit

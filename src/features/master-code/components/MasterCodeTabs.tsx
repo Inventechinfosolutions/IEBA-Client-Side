@@ -1,6 +1,5 @@
 import { cn } from "@/lib/utils"
-
-export type MasterCodeTab = "FFP" | "MAA" | "TCM" | "INTERNAL" | "CDSS"
+import { type MasterCodeTab } from "@/features/master-code/types"
 
 type MasterCodeTabsProps = {
   tabs: MasterCodeTab[]

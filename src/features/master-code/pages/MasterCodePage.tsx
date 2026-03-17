@@ -1,19 +1,22 @@
-import { useEffect, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
+import { toast } from "sonner"
 
+import { MasterCodeFormModal } from "../components/MasterCodeFormModal.tsx"
+import { MasterCodePagination } from "../components/MasterCodePagination.tsx"
+import { MasterCodeTable } from "../components/MasterCodeTable.tsx"
+import { MasterCodeTabs } from "../components/MasterCodeTabs.tsx"
+import { MasterCodeToolbar } from "../components/MasterCodeToolbar.tsx"
+import { useMasterCodes } from "../hooks/useMasterCodes"
 import {
-  MasterCodeFormModal,
   type MasterCodeFormMode,
   type MasterCodeFormValues,
-} from "../components/MasterCodeFormModal.tsx"
-import { MasterCodePagination } from "../components/MasterCodePagination.tsx"
-import {
-  MasterCodeTable,
   type MasterCodeRow,
-} from "../components/MasterCodeTable.tsx"
-import { MasterCodeTabs, type MasterCodeTab } from "../components/MasterCodeTabs.tsx"
-import { MasterCodeToolbar } from "../components/MasterCodeToolbar.tsx"
+  type MasterCodeTab,
+} from "../types"
 
 const tabs: MasterCodeTab[] = ["FFP", "MAA", "TCM", "INTERNAL", "CDSS"]
+const pageSize = 10
+
 const emptyFormValues: MasterCodeFormValues = {
   code: "",
   name: "",
@@ -25,46 +28,25 @@ const emptyFormValues: MasterCodeFormValues = {
   activityDescription: "",
 }
 
-const allRows: MasterCodeRow[] = [
-  { id: "1", name: "Outreach", spmp: false, allocable: true, ffpPercent: "0.00", match: "N", status: true },
-  { id: "2", name: "SPMP Administrative Medical Case Management", spmp: true, allocable: true, ffpPercent: "0.00", match: "E", status: true },
-  { id: "3", name: "SPMP Intra/Interagency Coordination, Collaboration and Administration", spmp: true, allocable: true, ffpPercent: "0.00", match: "E", status: true },
-  { id: "4", name: "Non-SPMP Intra/Interagency Collaboration and Coordination", spmp: false, allocable: true, ffpPercent: "0.00", match: "N", status: true },
-  { id: "5", name: "Program Specific Administration", spmp: false, allocable: true, ffpPercent: "0.00", match: "N", status: true },
-  { id: "6", name: "SPMP Training", spmp: true, allocable: true, ffpPercent: "0.00", match: "E", status: true },
-  { id: "7", name: "Non-SPMP Training", spmp: false, allocable: true, ffpPercent: "0.00", match: "N", status: true },
-  { id: "8", name: "SPMP Program Planning and Policy Development", spmp: true, allocable: true, ffpPercent: "0.00", match: "E", status: true },
-  { id: "9", name: "Quality Management by Skilled Professional Medical Personnel", spmp: true, allocable: true, ffpPercent: "0.00", match: "E", status: true },
-  { id: "10", name: "Non-Program Specific General Administration", spmp: false, allocable: true, ffpPercent: "0.00", match: "N", status: true },
-]
-
 export function MasterCodePage() {
   const [activeTab, setActiveTab] = useState<MasterCodeTab>("FFP")
   const [allowMultiCodes, setAllowMultiCodes] = useState(true)
   const [inactiveOnly, setInactiveOnly] = useState(false)
-  const [isTableLoading, setIsTableLoading] = useState(true)
   const [page, setPage] = useState(1)
   const [modalOpen, setModalOpen] = useState(false)
   const [modalMode, setModalMode] = useState<MasterCodeFormMode>("add")
   const [selectedRow, setSelectedRow] = useState<MasterCodeRow | null>(null)
+  const [modalSessionId, setModalSessionId] = useState(0)
 
-  useEffect(() => {
-    setIsTableLoading(true)
-    const timer = window.setTimeout(() => {
-      setIsTableLoading(false)
-    }, 800)
-
-    return () => {
-      window.clearTimeout(timer)
-    }
-  }, [activeTab])
-
-  const rows = useMemo(() => {
-    if (inactiveOnly) {
-      return allRows.filter((row) => !row.status)
-    }
-    return allRows
-  }, [inactiveOnly])
+  const masterCodes = useMasterCodes({
+    codeType: activeTab,
+    page,
+    pageSize,
+    inactiveOnly,
+  })
+  const rows = masterCodes.rows
+  const isTableLoading =
+    masterCodes.isLoading || masterCodes.isCreating || masterCodes.isUpdating
 
   const modalInitialValues = useMemo<MasterCodeFormValues>(() => {
     if (modalMode === "edit" && selectedRow) {
@@ -86,17 +68,41 @@ export function MasterCodePage() {
   const handleAddFfp = () => {
     setModalMode("add")
     setSelectedRow(null)
+    setModalSessionId((prev) => prev + 1)
     setModalOpen(true)
+  }
+
+  const handleTabChange = (nextTab: MasterCodeTab) => {
+    setActiveTab(nextTab)
+    setPage(1)
   }
 
   const handleEditRow = (row: MasterCodeRow) => {
     setModalMode("edit")
     setSelectedRow(row)
+    setModalSessionId((prev) => prev + 1)
     setModalOpen(true)
   }
 
-  const handleSaveForm = (_values: MasterCodeFormValues) => {
-    // UI-only modal for pixel-parity workflow. Save wiring can be added when API is ready.
+  const handleSaveForm = (values: MasterCodeFormValues) => {
+    if (modalMode === "edit" && selectedRow) {
+      masterCodes.updateMasterCode(
+        { id: selectedRow.id, codeType: activeTab, values },
+        {
+          onSuccess: () => toast.success(`${activeTab} updated successfully`),
+          onError: (error) => toast.error(error.message),
+        }
+      )
+      return
+    }
+
+    masterCodes.createMasterCode(
+      { codeType: activeTab, values },
+      {
+        onSuccess: () => toast.success(`${activeTab} created successfully`),
+        onError: (error) => toast.error(error.message),
+      }
+    )
   }
 
   return (
@@ -110,7 +116,7 @@ export function MasterCodePage() {
       <MasterCodeTabs
         tabs={tabs}
         activeTab={activeTab}
-        onChange={setActiveTab}
+        onChange={handleTabChange}
       />
       <div className="mt-5">
         <MasterCodeToolbar
@@ -130,13 +136,14 @@ export function MasterCodePage() {
           />
         </div>
         <MasterCodePagination
-          totalItems={rows.length}
+          totalItems={masterCodes.totalItems}
           currentPage={page}
-          pageSize={10}
+          pageSize={pageSize}
           onPageChange={setPage}
         />
       </div>
       <MasterCodeFormModal
+        key={modalSessionId}
         codeType={activeTab}
         open={modalOpen}
         mode={modalMode}

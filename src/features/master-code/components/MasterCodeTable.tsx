@@ -17,16 +17,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Skeleton } from "@/components/ui/skeleton"
-
-export type MasterCodeRow = {
-  id: string
-  name: string
-  spmp: boolean
-  allocable: boolean
-  ffpPercent: string
-  match: "E" | "N"
-  status: boolean
-}
+import { type MasterCodeRow } from "@/features/master-code/types"
 
 type MasterCodeTableProps = {
   codeType: string
