@@ -1,39 +1,44 @@
 import { useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
-import { Mail, Lock, Eye, EyeOff, RefreshCw } from "lucide-react"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { Eye, EyeOff } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useAuth } from "@/contexts/AuthContext"
 
+import { type LoginFormValues } from "./types"
+import { loginSchema } from "./schemas"
 import loginLogo from "@/assets/login-logo.png"
 import loginRightBg from "@/assets/login-right-bg.png"
+import mailIcon from "@/assets/login-mail-icon.png"
+import passwordIcon from "@/assets/login-password-icon.png"
+import submitIcon from "@/assets/login-submit-icon.png"
 
 export function LoginPage() {
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
-  const [touched, setTouched] = useState({ email: false, password: false })
-  const [isSubmitting, setIsSubmitting] = useState(false)
   const { error, clearError } = useAuth()
   const navigate = useNavigate()
 
-  const emailError = touched.email && !email.trim()
-  const passwordError = touched.password && !password.trim()
+  const form = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: { email: "", password: "" },
+  })
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setTouched({ email: true, password: true })
+  const {
+    register,
+    handleSubmit: formHandleSubmit,
+    formState: { errors, isSubmitting },
+  } = form
+
+  function onSubmit(values: LoginFormValues) {
     clearError()
-    if (!email.trim() || !password.trim()) return
-    setIsSubmitting(true)
-    navigate("/otp", { state: { email: email.trim(), password }, replace: true })
-    setIsSubmitting(false)
+    navigate("/otp", { state: { email: values.email.trim(), password: values.password }, replace: true })
   }
 
   return (
     <div className="flex min-h-svh w-full flex-nowrap overflow-hidden bg-white">
-      {/* Left section: 40% width, 3rd image (login-logo.png) as bg – ref 2nd picture */}
       <div
         className="relative flex min-h-svh shrink-0 flex-col items-center justify-center overflow-hidden border-0 bg-white bg-cover p-6 pt-[6vh] md:w-[40%] md:p-10 md:pt-[8vh]"
         style={{
@@ -42,11 +47,14 @@ export function LoginPage() {
         }}
       >
         <div className="relative z-10 flex w-full max-w-md flex-col items-center pt-[18vh]">
-          {/* Login card – height capped so it doesn’t feel too tall */}
           <div className="w-full min-h-[430px] max-h-[50vh] overflow-y-auto rounded-[5px] bg-white p-8 shadow-login-card">
-            <h1 className="text-2xl font-bold tracking-tight text-gray-900">Login</h1>
-            <p className="mt-1 text-sm text-gray-500">Access to our dashboard</p>
-            <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+            <div className="text-center">
+              <h1 className="mb-2 font-bold tracking-tight text-[#212529] font-[Roboto,sans-serif] text-[34.465px] leading-tight">
+                Login
+              </h1>
+              <p className="text-sm text-gray-500">Access to our dashboard</p>
+            </div>
+            <form onSubmit={formHandleSubmit(onSubmit)} className="mt-6 space-y-4">
               {error && (
                 <div className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-600">
                   {error}
@@ -54,40 +62,38 @@ export function LoginPage() {
               )}
               <div className="space-y-1">
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-gray-400" />
+                  <img
+                    src={mailIcon}
+                    alt=""
+                    className="absolute left-3 top-1/2 h-[22px] w-[22px] -translate-y-1/2 object-contain opacity-70"
+                  />
                   <Input
                     type="email"
                     placeholder="Email Id"
-                    value={email}
-                    onChange={(e) => {
-                      setEmail(e.target.value)
-                      setTouched((t) => ({ ...t, email: true }))
-                    }}
-                    onBlur={() => setTouched((t) => ({ ...t, email: true }))}
-                    className={`h-11 pl-10 pr-4 ${emailError ? "border-red-500 focus-visible:ring-red-500/20" : ""}`}
+                    {...register("email")}
+                    className={`h-11 pl-10 pr-4 ${errors.email ? "border-red-500 focus-visible:ring-red-500/20" : ""}`}
                     autoComplete="email"
-                    aria-invalid={emailError}
+                    aria-invalid={!!errors.email}
                   />
                 </div>
-                {emailError && (
-                  <p className="text-xs text-red-500">Please input your Email Id!</p>
+                {errors.email && (
+                  <p className="text-xs text-red-500">{errors.email.message}</p>
                 )}
               </div>
               <div className="space-y-1">
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-gray-400" />
+                  <img
+                    src={passwordIcon}
+                    alt=""
+                    className="absolute left-3 top-1/2 h-[22px] w-[22px] -translate-y-1/2 object-contain opacity-70"
+                  />
                   <Input
                     type={showPassword ? "text" : "password"}
                     placeholder="Password"
-                    value={password}
-                    onChange={(e) => {
-                      setPassword(e.target.value)
-                      setTouched((t) => ({ ...t, password: true }))
-                    }}
-                    onBlur={() => setTouched((t) => ({ ...t, password: true }))}
-                    className={`h-11 pl-10 pr-10 ${passwordError ? "border-red-500 focus-visible:ring-red-500/20" : ""}`}
+                    {...register("password")}
+                    className={`h-11 pl-10 pr-10 ${errors.password ? "border-red-500 focus-visible:ring-red-500/20" : ""}`}
                     autoComplete="current-password"
-                    aria-invalid={passwordError}
+                    aria-invalid={!!errors.password}
                   />
                   <button
                     type="button"
@@ -98,11 +104,11 @@ export function LoginPage() {
                     {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                   </button>
                 </div>
-                {passwordError && (
-                  <p className="text-xs text-red-500">Please input your Password!</p>
+                {errors.password && (
+                  <p className="text-xs text-red-500">{errors.password.message}</p>
                 )}
               </div>
-              <div className="flex justify-end">
+              <div className="flex justify-start pt-[2vh] pb-[2vh]">
                 <Link
                   to="/forgot-password"
                   className="text-sm font-medium text-gray-500 hover:text-gray-700"
@@ -113,17 +119,18 @@ export function LoginPage() {
               <Button
                 type="submit"
                 disabled={isSubmitting}
-                className="h-11 w-full bg-gradient-to-r from-sky-400 to-[#8E58F3] text-white hover:opacity-90"
+                className="h-11 w-full rounded-lg border-0 text-[18px] font-medium text-white hover:opacity-90"
+                style={{ background: "linear-gradient(90deg,#00c5fb,#6c5dd3)" }}
               >
                 {isSubmitting ? (
                   <span className="flex items-center justify-center gap-2">
-                    <RefreshCw className="size-4 animate-spin" />
+                    <img src={submitIcon} alt="" className="h-[28px] w-auto animate-spin object-contain [filter:brightness(0)_invert(1)]" />
                     Signing in…
                   </span>
                 ) : (
                   <span className="flex items-center justify-center gap-2">
                     Login
-                    <RefreshCw className="size-4" />
+                    <img src={submitIcon} alt="" className="h-[28px] w-auto object-contain [filter:brightness(0)_invert(1)]" />
                   </span>
                 )}
               </Button>
@@ -131,7 +138,6 @@ export function LoginPage() {
           </div>
         </div>
       </div>
-      {/* Right section: 60% width (2nd picture), 4th image – clipboard/clock illustration + IEBA */}
       <div
         className="relative hidden min-h-svh min-w-0 flex-1 border-0 bg-[#2563eb] bg-cover bg-center bg-no-repeat md:-ml-px md:block"
         style={{ backgroundImage: `url(${loginRightBg})` }}

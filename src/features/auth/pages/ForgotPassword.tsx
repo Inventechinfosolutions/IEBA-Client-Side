@@ -1,72 +1,95 @@
-import { useState } from "react"
 import { Link } from "react-router-dom"
-import { Mail, RefreshCw } from "lucide-react"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 
+import { type ForgotPasswordFormValues } from "./types"
+import { forgotPasswordSchema } from "./schemas"
 import iebaLogo from "@/assets/ieba-logo.png"
 import forgotPasswordBg from "@/assets/forgot-password-bg.png"
+import mailIcon from "@/assets/login-mail-icon.png"
+import submitIcon from "@/assets/login-submit-icon.png"
 
 export function ForgotPassword() {
-  const [email, setEmail] = useState("")
+  const form = useForm<ForgotPasswordFormValues>({
+    resolver: zodResolver(forgotPasswordSchema),
+    defaultValues: { email: "" },
+  })
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
+  const {
+    register,
+    handleSubmit: formHandleSubmit,
+    formState: { errors },
+  } = form
+
+  function onSubmit(_values: ForgotPasswordFormValues) {
     // TODO: wire to forgot-password API
   }
 
   return (
     <div className="relative flex min-h-svh w-full flex-col items-center justify-center overflow-hidden bg-white p-6">
-      {/* White-theme background: image inverted so dark asset displays as light, 30% intensity */}
       <div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-30 pointer-events-none [filter:invert(1)]"
         style={{ backgroundImage: `url(${forgotPasswordBg})` }}
       />
-      {/* Logo top-left – ieba-logo.png */}
       <Link
         to="/login"
-        className="absolute left-6 top-6 z-10 flex items-center gap-2"
+        className="IEBA--login absolute left-0 top-0 z-10 flex items-center gap-2 pt-[24.9297px] pr-[24.9297px] pb-0 pl-[24.9297px] font-[Roboto,sans-serif] text-[26px] text-[#212529]"
         aria-label="IEBA Home"
       >
         <img
           src={iebaLogo}
-          alt="IEBA"
-          className="h-9 w-auto object-contain"
+          alt="logo"
+          className="h-[42px] w-[42px] object-contain"
         />
-        <span className="text-lg font-semibold text-gray-900">I E B A</span>
+        <span className="font">I E B A</span>
       </Link>
 
-      {/* Centered Forgot Password card – ref 1st picture: center text, Roboto */}
       <div className="relative z-10 flex w-full justify-center">
-        <div className="font-roboto h-[420px] w-[28%] min-w-[320px] rounded-[5px] bg-white opacity-100 py-[2.5%] px-[2%] shadow-login-card">
-          <h1 className="text-center text-[30px] font-bold tracking-tight text-gray-900">
-            Forgot Password
-          </h1>
-          <p className="font-roboto mt-1 text-center text-sm text-[#c4bebe] text-[17px]">
-            Access to our dashboard
-          </p>
-          <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-            <div className="space-y-1" style={{ paddingTop: "3vh" , paddingBottom: "1vh" }}>
+        <div className="flex h-[420px] min-w-[320px] w-[28%] flex-col rounded-[6px] bg-white py-5 px-4 shadow-login-card font-[Roboto,sans-serif]">
+          <div className="text-center" style={{ paddingTop: "2.3vh" }}>
+            <h1 className="mb-2 tracking-tight text-[#212529] text-[39.465px] leading-tight">
+              Forgot Password
+            </h1>
+            <p className="mb-4 text-[20px] text-[#C4BEBE]" style={{ fontFamily: "Roboto, sans-serif" }}>
+              Access to our dashboard
+            </p>
+          </div>
+          <form onSubmit={formHandleSubmit(onSubmit)} className="mt-6 flex flex-1 flex-col space-y-4">
+            <div className="space-y-1 pt-[3vh] pb-[1vh]">
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-gray-400" />
+                <img
+                  src={mailIcon}
+                  alt=""
+                  className="absolute left-3 top-1/2 h-[22px] w-[22px] -translate-y-1/2 object-contain opacity-70"
+                />
                 <Input
                   type="email"
                   placeholder="Email Id"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="h-11 pl-10 pr-4"
+                  {...register("email")}
+                  className={`h-11 rounded-[6px] pl-10 pr-4 ${errors.email ? "border-red-500 focus-visible:ring-red-500/20" : "border-gray-300"}`}
                   autoComplete="email"
+                  aria-invalid={!!errors.email}
                 />
               </div>
-            </div >
-            <Button 
+              {errors.email && (
+                <p className="text-xs text-red-500">{errors.email.message}</p>
+              )}
+            </div>
+            <Button
               type="submit"
-              className="h-11 w-full bg-gradient-to-r from-blue-500 to-[#8E58F3] text-white hover:opacity-90"
+              className="mt-auto h-11 w-full rounded-[6px] border-0 text-[18px] font-medium text-white hover:opacity-90 mb-[11vh]"
+              style={{ background: "linear-gradient(90deg,#00c5fb,#6c5dd3)" }}
             >
-              <span className="flex items-center justify-center gap-2" >
+              <span className="flex items-center justify-center gap-2">
                 Submit
-                <RefreshCw className="size-4" />
+                <img
+                  src={submitIcon}
+                  alt=""
+                  className="h-[28px] w-auto object-contain [filter:brightness(0)_invert(1)]"
+                />
               </span>
             </Button>
           </form>

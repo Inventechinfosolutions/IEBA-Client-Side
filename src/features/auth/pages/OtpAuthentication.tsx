@@ -1,6 +1,5 @@
-import { useState, useEffect } from "react"
-import { useNavigate, useLocation } from "react-router-dom"
-import { Mail, RefreshCw } from "lucide-react"
+import { useState } from "react"
+import { useNavigate, useLocation, Navigate } from "react-router-dom"
 import { toast } from "sonner"
 import { Modal, Select } from "antd"
 
@@ -15,10 +14,11 @@ import {
 import { Input } from "@/components/ui/input"
 import { useAuth } from "@/contexts/AuthContext"
 
+import { type OtpLocationState } from "./types"
 import iebaLogo from "@/assets/ieba-logo.png"
 import forgotPasswordBg from "@/assets/forgot-password-bg.png"
-
-type OtpLocationState = { email: string; password: string }
+import mailIcon from "@/assets/login-mail-icon.png"
+import submitIcon from "@/assets/login-submit-icon.png"
 
 const COUNTY_OPTIONS = [
   { value: "los-angeles", label: "Los Angeles County" },
@@ -30,61 +30,49 @@ const COUNTY_OPTIONS = [
 
 export function OtpAuthentication() {
   const [otp, setOtp] = useState("")
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [otpError, setOtpError] = useState(false)
   const [countyModalOpen, setCountyModalOpen] = useState(false)
   const [selectedCounty, setSelectedCounty] = useState<string | null>(null)
-  const { signIn } = useAuth()
+  const [countyError, setCountyError] = useState(false)
+  const { completeOtpSignIn } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const state = location.state as OtpLocationState | null
   const email = state?.email ?? ""
-  const password = state?.password ?? ""
   const hasCredentials = Boolean(state?.email && state?.password)
 
-  useEffect(() => {
-    if (!hasCredentials) {
-      navigate("/login", { replace: true })
-    }
-  }, [hasCredentials, navigate])
-
   if (!hasCredentials) {
-    return (
-      <div className="flex min-h-svh items-center justify-center">
-        <div className="text-muted-foreground">Redirecting to login…</div>
-      </div>
-    )
+    return <Navigate to="/login" replace />
   }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!otp.trim()) {
-      toast.error("Please enter the OTP")
+    const trimmed = otp.trim()
+    if (!trimmed) {
+      setOtpError(true)
+      toast.error("Please Enter OTP")
       return
     }
+    setOtpError(false)
     setCountyModalOpen(true)
   }
 
-  async function handleCountyOk() {
+  function handleCountyOk() {
     if (!selectedCounty) {
-      toast.error("Please pick a county to proceed")
+      setCountyError(true)
       return
     }
+    setCountyError(false)
     setCountyModalOpen(false)
-    setIsSubmitting(true)
-    try {
-      await signIn(email, password)
-      toast.success("Signed in successfully")
-      navigate("/", { replace: true })
-    } catch {
-      toast.error("Invalid OTP or session expired")
-    } finally {
-      setIsSubmitting(false)
-    }
+    completeOtpSignIn(email)
+    toast.success("Signed in successfully")
+    navigate("/", { replace: true })
   }
 
   function handleCountyCancel() {
     setCountyModalOpen(false)
     setSelectedCounty(null)
+    setCountyError(false)
   }
 
   function handleCancel() {
@@ -102,33 +90,35 @@ export function OtpAuthentication() {
         className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-30 pointer-events-none [filter:invert(1)]"
         style={{ backgroundImage: `url(${forgotPasswordBg})` }}
       />
-      {/* Top-left: IEBA logo + text – ref 1st pic: gap 8–12px, text-2xl bold */}
-      <div className="absolute left-6 top-8 z-10 md:left-12">
-        <a href="/" className="flex items-center gap-2.5" aria-label="IEBA Home">
+      {/* Top-left: IEBA logo 42×42, IEBA--login container styles */}
+      <div className="IEBA--login absolute left-0 top-0 z-10 pt-[24.9297px] pr-[24.9297px] pb-0 pl-[24.9297px] md:left-0">
+        <a
+          href="/"
+          className="flex items-center gap-2.5 font-[Roboto,sans-serif] text-[26px] text-[#212529]"
+          aria-label="IEBA Home"
+        >
           <img
             src={iebaLogo}
-            alt=""
-            className="h-8 w-auto object-contain md:h-9"
+            alt="logo"
+            className="h-[42px] w-[42px] object-contain"
           />
-          <span className="text-2xl font-bold text-gray-900">
-            I E B A
-          </span>
+          <span className="font">I E B A</span>
         </a>
       </div>
 
-      {/* OTP card – Tailwind: .otp--content--center equivalent */}
-      <Card className="relative z-10 h-[420px] w-[28%] min-w-[320px] rounded-[5px] border-gray-100 bg-white opacity-100 py-[2.5%] px-[2%] shadow-login-card">
-        <CardHeader className="space-y-1 text-center px-0 pt-0">
-          <CardTitle className="text-xl font-bold tracking-tight text-gray-900 md:text-2xl">
-            OTP Authentication.
+      {/* OTP card – border-radius 6px, ref screenshots */}
+      <Card className="relative z-10 h-[400px] w-[28.5%] min-w-[340px] rounded-[6px] border-gray-100 bg-white py-5 px-4 shadow-login-card font-[Roboto,sans-serif]">
+        <CardHeader className="space-y-0 text-center px-0 pt-4">
+          <CardTitle className="mb-2 font-normal tracking-tight text-[#212529] text-[39.465px] leading-tight font-['Roboto',sans-serif]">
+            OTP Authentication
           </CardTitle>
-          <CardDescription className="text-sm font-normal text-gray-500 mt-1">
-            Access to our dashboard.
+          <CardDescription className="mb-4 text-[20px] text-[#C4BEBE]">
+            Access to our dashboard
           </CardDescription>
         </CardHeader>
         <CardContent className="px-0">
-        <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-          <div className="space-y-1.5">
+        <form onSubmit={handleSubmit} className="mt-3 space-y-4">
+          <div className="space-y-1.5" >
             <label
               htmlFor="otp"
               className="text-sm font-normal text-gray-700"
@@ -136,17 +126,33 @@ export function OtpAuthentication() {
               OTP
             </label>
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-gray-400" />
+              <img
+                src={mailIcon}
+                alt=""
+                className="absolute left-3 top-1/2 h-[22px] w-[22px] -translate-y-1/2 object-contain opacity-70"
+              />
               <Input
                 id="otp"
                 type="text"
                 inputMode="numeric"
-                
+               
                 value={otp}
-                onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                className="h-11 rounded-lg border-gray-300 pl-10 pr-3 text-base font-normal text-gray-900"
+                onChange={(e) => {
+                  setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))
+                  setOtpError(false)
+                }}
+                onBlur={() => otp.trim() === "" && otpError && setOtpError(true)}
+                className={`h-11 rounded-[6px] pl-10 pr-3 text-base font-normal text-gray-900 ${otpError ? "border-red-500 focus-visible:ring-red-500/20" : "border-gray-300"}`}
                 autoComplete="one-time-code"
+                aria-invalid={otpError}
               />
+            </div>
+            <div className="min-h-5">
+              {otpError && (
+                <p className="text-xs text-red-500" role="alert">
+                  Please Enter OTP
+                </p>
+              )}
             </div>
           </div>
 
@@ -154,7 +160,7 @@ export function OtpAuthentication() {
             <button
               type="button"
               onClick={handleResendOtp}
-              className="text-sm font-normal text-gray-900 underline underline-offset-2 hover:text-gray-700"
+              className="text-sm font-normal text-[#000000] underline underline-offset-2 hover:text-gray-700"
             >
               Resend OTP
             </button>
@@ -162,7 +168,7 @@ export function OtpAuthentication() {
               type="button"
               variant="secondary"
               onClick={handleCancel}
-              className="h-9 rounded-lg border border-gray-300 bg-gray-200 px-4 text-base font-semibold text-gray-700 hover:bg-gray-300"
+              className="h-6 rounded-[6px] border-0 bg-[#DADADA] px-[15px] text-base font-normal text-gray-800 hover:bg-[#d0d0d0]"
             >
               Cancel
             </Button>
@@ -170,44 +176,43 @@ export function OtpAuthentication() {
 
           <Button
             type="submit"
-            disabled={isSubmitting}
-            className="h-11 w-full rounded-lg text-base font-semibold !bg-gradient-to-r !from-[#38BDF8] !via-[#6366F1] !to-[#7C3AED] text-white shadow-auth-card hover:!opacity-95 mt-4"
+            onClick={() => {
+              if (!otp.trim()) setOtpError(true)
+            }}
+            className="mt-4 h-11 w-full rounded-[6px] border-0 text-[18px] font-medium text-white hover:opacity-90"
+            style={{ background: "linear-gradient(90deg, #00c5fb, #6c5dd3)" }}
           >
-            {isSubmitting ? (
-              "Submitting…"
-            ) : (
-              <>
-                Submit
-                <RefreshCw className="ml-2 size-4" />
-              </>
-            )}
+            <span className="flex items-center justify-center gap-2">
+              Submit
+              <img src={submitIcon} alt="" className="h-[28px] w-auto object-contain [filter:brightness(0)_invert(1)]" />
+            </span>
           </Button>
         </form>
         </CardContent>
       </Card>
 
-      {/* County picker modal - styled via index.css .county-modal */}
+      {/* County picker modal – props from screenshots, Tailwind */}
       <Modal
         open={countyModalOpen}
         onCancel={handleCountyCancel}
         title={
-          <div className="flex items-center gap-4">
+          <div className="mb-6 flex h-12 w-full items-center justify-center gap-4 pt-4">
             <img
               src={iebaLogo}
-              alt=""
-              className="h-12 w-auto object-contain"
+              alt="logo"
+              className="h-[42px] w-[42px] object-contain"
             />
-            <span className="text-xl font-bold text-gray-900">
+            <h3 className="font-normal text-[#000000E0] text-[25.786px] leading-tight">
               SuperAdmin IEBA
-            </span>
+            </h3>
           </div>
         }
         footer={
-          <div className="flex justify-end gap-3">
+          <div className="flex h-8 w-full justify-center gap-3 items-center">
             <Button
               type="button"
               onClick={handleCountyOk}
-              className="rounded-xl bg-primary px-6 py-3 text-base font-semibold text-primary-foreground hover:bg-primary/90"
+              className="h-8 rounded-[6px] border-0 bg-[#6C5DD3] px-[15px] font-normal text-white hover:opacity-90"
             >
               OK
             </Button>
@@ -215,29 +220,39 @@ export function OtpAuthentication() {
               type="button"
               variant="outline"
               onClick={handleCountyCancel}
-              className="rounded-xl border-gray-300 px-6 py-3 text-base font-medium"
+              className="h-8 rounded-[6px] border border-gray-300 px-[15px] text-sm font-normal text-[#000000E0] hover:bg-gray-50"
             >
               Cancel
             </Button>
           </div>
         }
-        width={560}
+        width={520}
         closable
         className="county-modal"
       >
-        <div>
-          <label className="mb-3 block text-base font-medium text-gray-800">
+        <div className="py-4 px-6">
+          <h6 className="mb-2 block text-[16px] font-normal text-[#000000E0]">
             Pick a county to proceed
-          </label>
-          <Select
-            placeholder="Select county"
-            value={selectedCounty}
-            onChange={setSelectedCounty}
-            options={COUNTY_OPTIONS}
-            className="w-full [&_.ant-select-selector]:min-h-12 [&_.ant-select-selector]:py-2"
-            size="large"
-            allowClear
-          />
+          </h6>
+          <div className={countyError ? "rounded-[6px] ring-1 ring-red-500" : ""}>
+            <Select
+              placeholder="Select county"
+              value={selectedCounty}
+              onChange={(val) => {
+                setSelectedCounty(val)
+                setCountyError(false)
+              }}
+              options={COUNTY_OPTIONS}
+              className="w-full [&_.ant-select-selector]:min-h-12 [&_.ant-select-selector]:py-2"
+              size="large"
+              allowClear
+            />
+          </div>
+          {countyError && (
+            <p className="mt-1.5 text-xs text-red-500" role="alert">
+              Please select the county
+            </p>
+          )}
         </div>
       </Modal>
     </div>
