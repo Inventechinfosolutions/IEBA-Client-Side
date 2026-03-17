@@ -16,6 +16,8 @@ import {
 
 const tabs: MasterCodeTab[] = ["FFP", "MAA", "TCM", "INTERNAL", "CDSS"]
 const pageSize = 10
+const defaultActivityDescription =
+  "This function code is to be used by all staff (SPMP and Non-SPMP) when performing activities that inform Medi-Cal eligible or potentially eligible individuals, as well as other clients, about health services covered by Medi-Cal and how to access the health programs."
 
 const emptyFormValues: MasterCodeFormValues = {
   code: "",
@@ -51,7 +53,7 @@ export function MasterCodePage() {
   const modalInitialValues = useMemo<MasterCodeFormValues>(() => {
     if (modalMode === "edit" && selectedRow) {
       return {
-        code: selectedRow.id,
+        code: selectedRow.code ?? "",
         name: selectedRow.name,
         ffpPercent: selectedRow.ffpPercent,
         match: selectedRow.match,
@@ -59,7 +61,7 @@ export function MasterCodePage() {
         allocable: selectedRow.allocable,
         active: selectedRow.status,
         activityDescription:
-          "This function code is to be used by all staff (SPMP and Non-SPMP) when performing activities that inform Medi-Cal eligible or potentially eligible individuals, as well as other clients, about health services covered by Medi-Cal and how to access the health programs.",
+          selectedRow.activityDescription ?? defaultActivityDescription,
       }
     }
     return emptyFormValues

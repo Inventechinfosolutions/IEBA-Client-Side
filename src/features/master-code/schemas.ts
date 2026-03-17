@@ -9,9 +9,12 @@ export const masterCodeFormSchema = z.object({
     .regex(/^\d+(\.\d{1,2})?$/, "Use a valid percent format")
     .optional()
     .or(z.literal("")),
-  match: z.string().trim().optional(),
+  match: z.enum(["E", "N"]).optional().or(z.literal("")),
   spmp: z.boolean(),
   allocable: z.boolean(),
   active: z.boolean(),
-  activityDescription: z.string().trim().min(1, "Activity description is required"),
+  activityDescription: z.string().refine(
+    (value) => value.replace(/<[^>]*>/g, "").trim().length > 0,
+    { message: "Activity description is required" }
+  ),
 })

@@ -1,4 +1,4 @@
-import { useRef, useState } from "react"
+import { useCallback, useRef, useState } from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Bold, ChevronDown, ChevronUp, Italic, List } from "lucide-react"
 import { Controller, useForm } from "react-hook-form"
@@ -60,11 +60,14 @@ export function MasterCodeFormModal({
       .replaceAll("\n", "<br>")
   }
 
-  const setDescriptionEditorRef = (node: HTMLDivElement | null) => {
-    descriptionEditorRef.current = node
-    if (!node) return
-    node.innerHTML = toEditorHtml(getValues("activityDescription"))
-  }
+  const setDescriptionEditorRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      descriptionEditorRef.current = node
+      if (!node) return
+      node.innerHTML = toEditorHtml(getValues("activityDescription"))
+    },
+    [getValues]
+  )
 
   const refreshActiveTools = () => {
     setActiveTools({

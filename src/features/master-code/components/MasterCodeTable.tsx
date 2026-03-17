@@ -33,8 +33,11 @@ type SortState = {
   direction: SortDirection
 }
 
-const getRowCodeNumber = (id: string) => {
-  const parsed = Number.parseInt(id, 10)
+const defaultActivityDescription =
+  "This function code is to be used by all staff (SPMP and Non-SPMP) when performing activities that inform Medi-Cal eligible or potentially eligible individuals, as well as other clients, about health services covered by Medi-Cal and how to access the health programs."
+
+const getRowCodeNumber = (code: string | undefined) => {
+  const parsed = Number.parseInt(code ?? "", 10)
   return Number.isNaN(parsed) ? null : parsed
 }
 
@@ -62,11 +65,14 @@ export function MasterCodeTable({
   const sortedRows = useMemo(() => {
     const sorted = [...rows]
     sorted.sort((a, b) => {
-      const aNum = getRowCodeNumber(a.id)
-      const bNum = getRowCodeNumber(b.id)
+      const aNum = getRowCodeNumber(a.code)
+      const bNum = getRowCodeNumber(b.code)
       const compareByCode =
         aNum === null || bNum === null
-          ? a.id.localeCompare(b.id, undefined, { numeric: true, sensitivity: "base" })
+          ? (a.code ?? "").localeCompare(b.code ?? "", undefined, {
+              numeric: true,
+              sensitivity: "base",
+            })
           : aNum - bNum
 
       return sortState.direction === "asc" ? compareByCode : -compareByCode
@@ -222,7 +228,7 @@ export function MasterCodeTable({
                               <ChevronRight className="size-3.5" />
                             )}
                           </button>
-                          <span>{row.id}</span>
+                          <span>{row.code ?? ""}</span>
                         </div>
                       </TableCell>
                       <TableCell className="border-r border-[#eff0f5] px-3 py-2 text-[12px] whitespace-normal text-[#262a35]">
@@ -272,11 +278,7 @@ export function MasterCodeTable({
                             Activity Description
                           </p>
                           <p className="mt-1.5 pl-20 max-w-[1110px] whitespace-normal break-words text-[12px] leading-5 text-[#4b5563]">
-                            This function code is to be used by all staff (SPMP and
-                            Non-SPMP) when performing activities that inform Medi-Cal
-                            eligible or potentially eligible individuals, as well as other
-                            clients, about health services covered by Medi-Cal and how to
-                            access the health programs.
+                            {row.activityDescription ?? defaultActivityDescription}
                           </p>
                         </TableCell>
                       </TableRow>

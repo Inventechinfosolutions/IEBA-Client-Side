@@ -8,12 +8,14 @@ export type MasterCodeFormValues = z.infer<typeof masterCodeFormSchema>
 
 export type MasterCodeRow = {
   id: string
+  code?: string
   name: string
   spmp: boolean
   allocable: boolean
   ffpPercent: string
   match: "E" | "N"
   status: boolean
+  activityDescription?: string
 }
 
 export type MasterCodeTab = "FFP" | "MAA" | "TCM" | "INTERNAL" | "CDSS"
