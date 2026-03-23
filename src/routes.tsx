@@ -6,6 +6,7 @@ import { LoginPage } from "@/features/auth/pages/LoginPage"
 import { ForgotPassword } from "@/features/auth/pages/ForgotPassword"
 import { OtpAuthentication } from "@/features/auth/pages/OtpAuthentication"
 import { UsersPage, UserPage } from "@/features/users"
+import { DepartmentRolePage } from "@/features/DepartmentRole/pages/DepartmentRolePage"
 
 export const router = createBrowserRouter([
   {
@@ -43,6 +44,7 @@ export const router = createBrowserRouter([
       { index: true, element: <UsersPage /> },
       { path: "users", element: <UsersPage /> },
       { path: "users/:id", element: <UserPage /> },
+      { path: "department-role", element: <DepartmentRolePage /> },
     ],
   },
   { path: "*", element: <Navigate to="/" replace /> },
