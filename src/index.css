@@ -188,4 +188,67 @@
   width: 0;
   height: 0;
   display: none;
+.text-primary { color: oklch(0.58 0.25 280) !important; }
+.bg-primary { background-color: oklch(0.58 0.25 280) !important; }
+.border-primary { border-color: oklch(0.58 0.25 280) !important; }
+
+/* Auth pages: background patterns (Tailwind-friendly, no inline styles) */
+.bg-pattern-grid {
+  background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0h20v20H0V0zm20 20h20v20H20V20z' fill='none' stroke='white' stroke-width='0.5'/%3E%3C/svg%3E");
+}
+.bg-pattern-hex {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='98' viewBox='0 0 56 98'%3E%3Cpath d='M28 0l28 14v28l-28 14-28-14V14L28 0z' fill='none' stroke='%23E2E8F0' stroke-width='0.4'/%3E%3Cpath d='M0 42l28 14 28-14' fill='none' stroke='%23E2E8F0' stroke-width='0.4'/%3E%3Cpath d='M28 56l28-14V14' fill='none' stroke='%23E2E8F0' stroke-width='0.4'/%3E%3C/svg%3E");
+}
+/* Login left: very subtle grey geometric pattern */
+.bg-pattern-login-left {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='98' viewBox='0 0 56 98'%3E%3Cpath d='M28 0l28 14v28l-28 14-28-14V14L28 0z' fill='none' stroke='%231F2937' stroke-width='0.5'/%3E%3Cpath d='M0 42l28 14 28-14' fill='none' stroke='%231F2937' stroke-width='0.5'/%3E%3Cpath d='M28 56l28-14V14' fill='none' stroke='%231F2937' stroke-width='0.5'/%3E%3C/svg%3E");
+  background-size: 56px 98px;
+  background-position: left bottom;
+  opacity: 0.04;
+}
+
+/* Login card box shadow */
+.shadow-login-card {
+  box-shadow: 0 0 20px 0 #0003 !important;
+}
+
+/* Auth card: Roboto font (ref design) */
+.font-roboto {
+  font-family: Roboto, sans-serif !important;
+}
+
+/* Auth card: soft diffused box shadow – lifted, visible */
+.shadow-auth-card {
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06),
+    0 10px 25px -5px rgba(0, 0, 0, 0.08),
+    0 4px 10px -4px rgba(0, 0, 0, 0.06);
+}
+
+/* County modal (antd) - positioned at top, Tailwind/shadcn-only styling via classes */
+.county-modal .ant-modal-wrap {
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 1.5rem;
+}
+.county-modal .ant-modal-content {
+  top: 1.5rem;
+  border-radius: 1rem;
+  border-width: 1px;
+  border-color: #BFDBFE;
+  box-shadow: 0 12px 48px rgba(0,0,0,0.12);
+}
+.county-modal .ant-modal-header {
+  border-bottom: none;
+  padding: 0.75rem 1.5rem 0.75rem;
+}
+.county-modal .ant-modal-body {
+  padding: 0.75rem 1.5rem 1rem;
+}
+.county-modal .ant-modal-footer {
+  border-top: none;
+  padding: 0 1.5rem 1rem;
+  display: flex;
+  justify-content: center;
 }

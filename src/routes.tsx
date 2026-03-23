@@ -7,7 +7,10 @@ import { DashboardPage } from "@/features/dashboard/pages/DashboardPage"
 import { MasterCodePage } from "@/features/master-code/pages/MasterCodePage"
 import { TodoPage } from "@/features/todo"
 import { UserModulePage } from "@/features/user"
+import { ForgotPassword } from "@/features/auth/pages/ForgotPassword"
+import { OtpAuthentication } from "@/features/auth/pages/OtpAuthentication"
 import { UsersPage, UserPage } from "@/features/users"
+import { DepartmentRolePage } from "@/features/DepartmentRole/pages/DepartmentRolePage"
 
 export const router = createBrowserRouter([
   {
@@ -15,6 +18,22 @@ export const router = createBrowserRouter([
     element: (
       <GuestOnlyRoute>
         <LoginPage />
+      </GuestOnlyRoute>
+    ),
+  },
+  {
+    path: "/forgot-password",
+    element: (
+      <GuestOnlyRoute>
+        <ForgotPassword />
+      </GuestOnlyRoute>
+    ),
+  },
+  {
+    path: "/otp",
+    element: (
+      <GuestOnlyRoute>
+        <OtpAuthentication />
       </GuestOnlyRoute>
     ),
   },
@@ -32,6 +51,7 @@ export const router = createBrowserRouter([
       { path: "user", element: <UserModulePage /> },
       { path: "users", element: <UsersPage /> },
       { path: "users/:id", element: <UserPage /> },
+      { path: "department-role", element: <DepartmentRolePage /> },
     ],
   },
   { path: "*", element: <Navigate to="/" replace /> },
