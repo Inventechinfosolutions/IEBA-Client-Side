@@ -6,19 +6,19 @@ import {
   PaginationLink,
 } from "@/components/ui/pagination"
 
-type MasterCodePaginationProps = {
+type UserPaginationProps = {
   totalItems: number
   currentPage: number
   pageSize: number
   onPageChange: (page: number) => void
 }
 
-export function MasterCodePagination({
+export function UserPagination({
   totalItems,
   currentPage,
   pageSize,
   onPageChange,
-}: MasterCodePaginationProps) {
+}: UserPaginationProps) {
   const totalPages = Math.max(1, Math.ceil(totalItems / pageSize))
   const pages = Array.from({ length: totalPages }, (_, index) => index + 1)
 

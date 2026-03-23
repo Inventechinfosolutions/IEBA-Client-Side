@@ -1,7 +1,8 @@
 import { useCallback, useRef, useState } from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { Bold, ChevronDown, ChevronUp, Italic, List } from "lucide-react"
-import { Controller, useForm } from "react-hook-form"
+import { Bold, ChevronDown, ChevronUp, Italic, List, X } from "lucide-react"
+import { Controller, useForm, type FieldErrors, type FieldValues } from "react-hook-form"
+import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -40,7 +41,6 @@ export function MasterCodeFormModal({
     setValue,
     getValues,
     handleSubmit,
-    formState: { errors },
   } = useForm<MasterCodeFormValues>({
     resolver: zodResolver(masterCodeFormSchema),
     defaultValues: initialValues,
@@ -103,20 +103,77 @@ export function MasterCodeFormModal({
     const delta = direction === "up" ? -36 : 36
     descriptionEditorRef.current?.scrollBy({ top: delta, behavior: "smooth" })
   }
+  const handlePercentStep = (direction: "up" | "down") => {
+    const current = Number.parseFloat(String(getValues("ffpPercent") ?? "0"))
+    const safeCurrent = Number.isFinite(current) ? current : 0
+    const next = direction === "up" ? safeCurrent + 0.5 : safeCurrent - 0.5
+    const clamped = Math.max(0, Math.min(100, next))
+    setValue("ffpPercent", clamped.toFixed(2), {
+      shouldDirty: true,
+      shouldValidate: true,
+    })
+  }
+  const fieldOrder: (keyof MasterCodeFormValues)[] = [
+    "code",
+    "name",
+    "ffpPercent",
+    "activityDescription",
+  ]
+  const getErrorMessage = (value: unknown): string | null => {
+    if (!value || typeof value !== "object") return null
+    if ("message" in value && typeof value.message === "string" && value.message) {
+      return value.message
+    }
+    const nestedValues = Object.values(value as FieldErrors<FieldValues>)
+    for (const nestedValue of nestedValues) {
+      const nested = getErrorMessage(nestedValue)
+      if (nested) return nested
+    }
+    return null
+  }
+  const getToastMessage = (
+    field: keyof MasterCodeFormValues,
+    fallbackMessage: string
+  ): string => {
+    if (field === "code") return `Please enter ${codeType} code`
+    if (field === "name") return `Please enter ${codeType} name`
+    if (field === "activityDescription") return `Please enter ${codeType} description`
+    return fallbackMessage
+  }
 
   const closeModal = () => {
     setActiveTools({ bold: false, italic: false, bullet: false })
     onOpenChange(false)
   }
 
-  const handleSave = handleSubmit((values) => {
-    const editor = descriptionEditorRef.current
-    const nextValues = editor
-      ? { ...values, activityDescription: editor.innerHTML }
-      : values
-    onSave(nextValues)
-    closeModal()
-  })
+  const handleSave = handleSubmit(
+    (values) => {
+      const editor = descriptionEditorRef.current
+      const nextValues = editor
+        ? { ...values, activityDescription: editor.innerHTML }
+        : values
+      onSave(nextValues)
+      closeModal()
+    },
+    (formErrors) => {
+      const firstInvalidField = fieldOrder.find((field) => Boolean(formErrors[field]))
+      if (!firstInvalidField) return
+      const firstMessage = getErrorMessage(formErrors[firstInvalidField])
+      if (firstMessage) {
+        const toastMessage = getToastMessage(firstInvalidField, firstMessage)
+        toast.error(toastMessage, {
+          position: "top-center",
+          icon: (
+            <span className="inline-flex size-4 items-center justify-center rounded-full bg-[#ef4444] text-white">
+              <X className="size-3 stroke-[2.5]" />
+            </span>
+          ),
+          className:
+            "!w-fit !max-w-[340px] !min-h-[35px] !rounded-[8px] !border-0 !px-3 !py-2 !text-[11px] !shadow-[0_8px_22px_rgba(17,24,39,0.18)]",
+        })
+      }
+    }
+  )
 
   const title = mode === "edit" ? `Edit ${codeType}` : `Add ${codeType}`
 
@@ -136,7 +193,7 @@ export function MasterCodeFormModal({
         overlayClassName="bg-black/40"
         className="left-1/2 top-[8%] w-[749px] max-w-[calc(100vw-40px)] -translate-x-1/2 translate-y-0 gap-0 overflow-hidden rounded-[4px] border border-[#f4f6fb] bg-white p-0 text-[#0f172a] subpixel-antialiased shadow-[0_6px_18px_rgba(22,29,45,0.12)]"
       >
-        <form onSubmit={handleSave} className="bg-white px-7 pb-8 pt-7">
+        <form onSubmit={handleSave} className="select-none bg-white px-7 pb-8 pt-7">
           <DialogHeader className="relative items-center pb-5">
             <DialogTitle className="text-[18px] font-semibold text-[#111827]">
               {title}
@@ -168,41 +225,52 @@ export function MasterCodeFormModal({
               <label className="block whitespace-nowrap text-[12px] text-[#111827]">{`*${codeType} Code`}</label>
               <Input
                 {...register("code")}
-                className="h-[40px] rounded-[9px] border border-[#c5cad5] bg-white px-2.5 text-[13px] text-[#111827] focus-visible:border-[var(--primary)] focus-visible:ring-1 focus-visible:ring-[#6554C033]"
+                className="h-[40px] select-text rounded-[9px] border border-[#c5cad5] bg-white px-2.5 text-[13px] text-[#111827] focus-visible:border-[#8f86f0] focus-visible:ring-1 focus-visible:ring-[#8f86f033]"
               />
-              {errors.code ? (
-                <p className="text-[11px] text-[#b42318]">{errors.code.message}</p>
-              ) : null}
             </div>
             <div className="space-y-1">
               <label className="block text-[12px] text-[#111827]">{`*${codeType} Name`}</label>
               <Input
                 {...register("name")}
-                className="h-[40px] rounded-[9px] border border-[#c5cad5] bg-white px-2.5 text-[13px] text-[#111827] focus-visible:border-[var(--primary)] focus-visible:ring-1 focus-visible:ring-[#6554C033]"
+                className="h-[40px] select-text rounded-[9px] border border-[#c5cad5] bg-white px-2.5 text-[13px] text-[#111827] focus-visible:border-[#8f86f0] focus-visible:ring-1 focus-visible:ring-[#8f86f033]"
               />
-              {errors.name ? (
-                <p className="text-[11px] text-[#b42318]">{errors.name.message}</p>
-              ) : null}
             </div>
             {showPercentAndMatch ? (
               <>
                 <div className="space-y-1">
                   <label className="block text-[12px] text-[#111827]">{`*${codeType} (%)`}</label>
-                  <Input
-                    {...register("ffpPercent")}
-                    className="h-[40px] rounded-[9px] border border-[#c5cad5] bg-white px-2.5 text-[13px] text-[#111827] focus-visible:border-[var(--primary)] focus-visible:ring-1 focus-visible:ring-[#6554C033]"
-                  />
-                  {errors.ffpPercent ? (
-                    <p className="text-[11px] text-[#b42318]">
-                      {errors.ffpPercent.message}
-                    </p>
-                  ) : null}
+                  <div className="group/percent relative rounded-[9px]">
+                    <Input
+                      {...register("ffpPercent")}
+                      type="number"
+                      step="0.50"
+                      min="0"
+                      max="100"
+                      className="h-[40px] select-text rounded-[9px] border border-[#c5cad5] bg-white px-2.5 pr-6 text-[13px] text-[#111827] [appearance:textfield] focus-visible:border-[#8f86f0] focus-visible:ring-1 focus-visible:ring-[#8f86f033] group-focus-within/percent:border-[#8f86f0] group-focus-within/percent:ring-1 group-focus-within/percent:ring-[#8f86f033] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                    />
+                    <button
+                      type="button"
+                      aria-label="Increase percent"
+                      onClick={() => handlePercentStep("up")}
+                      className="absolute right-0 top-0 z-10 inline-flex h-1/2 w-[18px] cursor-pointer items-center justify-center rounded-tr-[9px] border-l border-b border-[#c9ced8] bg-[#eef0f4] text-[#7f8796] opacity-0 transition-opacity group-hover/percent:opacity-100 group-focus-within/percent:opacity-100"
+                    >
+                      <ChevronUp className="size-[11px]" />
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="Decrease percent"
+                      onClick={() => handlePercentStep("down")}
+                      className="absolute bottom-0 right-0 z-10 inline-flex h-1/2 w-[18px] cursor-pointer items-center justify-center rounded-br-[9px] border-l border-t border-[#c9ced8] bg-[#eef0f4] text-[#7f8796] opacity-0 transition-opacity group-hover/percent:opacity-100 group-focus-within/percent:opacity-100"
+                    >
+                      <ChevronDown className="size-[11px]" />
+                    </button>
+                  </div>
                 </div>
                 <div className="space-y-1">
                   <label className="block text-[12px] text-[#111827]">Match</label>
                   <Input
                     {...register("match")}
-                    className="h-[40px] rounded-[9px] border border-[#c5cad5] bg-white px-2.5 text-[13px] text-[#111827] focus-visible:border-[var(--primary)] focus-visible:ring-1 focus-visible:ring-[#6554C033]"
+                    className="h-[40px] select-text rounded-[9px] border border-[#c5cad5] bg-white px-2.5 text-[13px] text-[#111827] focus-visible:border-[#8f86f0] focus-visible:ring-1 focus-visible:ring-[#8f86f033]"
                   />
                 </div>
               </>
@@ -285,13 +353,8 @@ export function MasterCodeFormModal({
                 onInput={syncEditorValue}
                 onClick={refreshActiveTools}
                 onKeyUp={refreshActiveTools}
-                className="max-h-[201px] min-h-[201px] overflow-y-scroll overflow-x-hidden whitespace-pre-wrap break-all [overflow-wrap:anywhere] bg-white px-3 py-2 pr-5 text-[13px] leading-6 text-[#111827] outline-none [&_ul]:list-disc [&_ul]:pl-5 [&_li]:my-0.5 [&::-webkit-scrollbar]:w-3.5 [&::-webkit-scrollbar-track]:bg-[#f1f2f6] [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#98a1b0]"
+                className="max-h-[201px] min-h-[201px] select-text overflow-y-scroll overflow-x-hidden whitespace-pre-wrap break-all [overflow-wrap:anywhere] bg-white px-3 py-2 pr-5 text-[13px] leading-6 text-[#111827] outline-none [&_ul]:list-disc [&_ul]:pl-5 [&_li]:my-0.5 [&::-webkit-scrollbar]:w-3.5 [&::-webkit-scrollbar-track]:bg-[#f1f2f6] [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#98a1b0]"
               />
-              {errors.activityDescription ? (
-                <p className="px-3 pb-2 text-[11px] text-[#b42318]">
-                  {errors.activityDescription.message}
-                </p>
-              ) : null}
               <button
                 type="button"
                 aria-label="Scroll up"

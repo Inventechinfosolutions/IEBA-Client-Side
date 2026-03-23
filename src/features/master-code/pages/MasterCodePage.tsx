@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react"
 import { toast } from "sonner"
+import { Check } from "lucide-react"
 
 import { MasterCodeFormModal } from "../components/MasterCodeFormModal.tsx"
 import { MasterCodePagination } from "../components/MasterCodePagination.tsx"
@@ -31,6 +32,17 @@ const emptyFormValues: MasterCodeFormValues = {
 }
 
 export function MasterCodePage() {
+  const successToastOptions = {
+    position: "top-center" as const,
+    icon: (
+      <span className="inline-flex size-4 items-center justify-center rounded-full bg-[#22c55e] text-white">
+        <Check className="size-3 stroke-[3]" />
+      </span>
+    ),
+    className:
+      "!w-fit !max-w-none !min-h-[35px] !rounded-[8px] !border-0 !px-3 !py-2 !text-[11px] !whitespace-nowrap !shadow-[0_8px_22px_rgba(17,24,39,0.18)]",
+  }
+
   const [activeTab, setActiveTab] = useState<MasterCodeTab>("FFP")
   const [allowMultiCodes, setAllowMultiCodes] = useState(true)
   const [inactiveOnly, setInactiveOnly] = useState(false)
@@ -91,7 +103,8 @@ export function MasterCodePage() {
       masterCodes.updateMasterCode(
         { id: selectedRow.id, codeType: activeTab, values },
         {
-          onSuccess: () => toast.success(`${activeTab} updated successfully`),
+          onSuccess: () =>
+            toast.success(`${activeTab} updated successfully`, successToastOptions),
           onError: (error) => toast.error(error.message),
         }
       )
@@ -101,7 +114,8 @@ export function MasterCodePage() {
     masterCodes.createMasterCode(
       { codeType: activeTab, values },
       {
-        onSuccess: () => toast.success(`${activeTab} created successfully`),
+        onSuccess: () =>
+          toast.success(`${activeTab} created successfully`, successToastOptions),
         onError: (error) => toast.error(error.message),
       }
     )
@@ -109,10 +123,10 @@ export function MasterCodePage() {
 
   return (
     <section
-      className="w-full rounded-[10px] border border-[#e6e7ef] bg-white p-5 md:p-6 shadow-[0_2px_10px_rgba(0,0,0,0.03)]"
+      className="ieba-roboto w-full rounded-[10px] border border-[#e6e7ef] bg-white p-5 md:p-6 shadow-[0_2px_10px_rgba(0,0,0,0.03)]"
       style={{
         zoom: 1.2,
-        "--primary": "#6554C0",
+        "--primary": "#6C5DD3",
       } as React.CSSProperties}
     >
       <MasterCodeTabs

@@ -37,6 +37,7 @@ import { useAuth } from "@/contexts/AuthContext"
 const mainNav = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Master Code", url: "/master-code", icon: ScrollText },
+  { title: "User", url: "/user", icon: Users },
   { title: "Users", url: "/users", icon: Users },
 ] as const
 
@@ -163,6 +164,12 @@ export function AppSidebar() {
                     <Link to="/master-code">
                       <ScrollText className="mr-2 size-4" />
                       Master Code
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/user">
+                      <Users className="mr-2 size-4" />
+                      User
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>

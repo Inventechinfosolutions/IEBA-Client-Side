@@ -18,25 +18,25 @@
   --card-foreground: oklch(0.25 0.02 280);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.25 0.02 280);
-  --primary: oklch(0.58 0.25 280); /* #8E58F3 - vibrant purple */
+  --primary: #6C5DD3; /* project purple */
   --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.95 0.02 280);
-  --secondary-foreground: oklch(0.58 0.25 280);
+  --secondary-foreground: #6C5DD3;
   --muted: oklch(0.96 0.01 250);
   --muted-foreground: oklch(0.55 0.02 280); /* #6B7280 */
   --accent: oklch(0.95 0.08 280);
-  --accent-foreground: oklch(0.58 0.25 280);
+  --accent-foreground: #6C5DD3;
   --destructive: oklch(0.58 0.22 25); /* #EF4444 */
   --destructive-foreground: oklch(0.985 0 0);
   --border: oklch(0.9 0.02 280);
   --input: oklch(0.88 0.02 280);
-  --ring: oklch(0.58 0.25 280);
+  --ring: #6C5DD3;
 }
 
 /* Sidebar active item - subtle highlight (Bits of Time style) */
 [data-sidebar="menu-button"][data-active="true"] {
   background-color: oklch(0.22 0.02 260);
-  border-left: 3px solid oklch(0.58 0.25 280);
+  border-left: 3px solid #6C5DD3;
   padding-left: calc(0.5rem - 3px);
 }
 
@@ -62,19 +62,19 @@
   --card-foreground: oklch(0.25 0.02 280);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.25 0.02 280);
-  --primary: oklch(0.58 0.25 280);
+  --primary: #6C5DD3;
   --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.95 0.02 280);
-  --secondary-foreground: oklch(0.58 0.25 280);
+  --secondary-foreground: #6C5DD3;
   --muted: oklch(0.96 0.01 250);
   --muted-foreground: oklch(0.55 0.02 280);
   --accent: oklch(0.95 0.08 280);
-  --accent-foreground: oklch(0.58 0.25 280);
+  --accent-foreground: #6C5DD3;
   --destructive: oklch(0.58 0.22 25);
   --border: oklch(0.88 0.02 280);
   --input: oklch(0.88 0.02 280);
-  --ring: oklch(0.58 0.25 280);
-  --chart-1: oklch(0.58 0.25 280);
+  --ring: #6C5DD3;
+  --chart-1: #6C5DD3;
   --chart-2: oklch(0.55 0.18 155);
   --chart-3: oklch(0.72 0.18 65);
   --chart-4: oklch(0.58 0.22 25);
@@ -83,12 +83,12 @@
   /* Dark sidebar - Bits of Time style (very dark grey/black) */
   --sidebar: oklch(0.14 0.01 260);
   --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.58 0.25 280);
+  --sidebar-primary: #6C5DD3;
   --sidebar-primary-foreground: oklch(0.985 0 0);
   --sidebar-accent: oklch(0.22 0.02 260);
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(0.25 0.01 260);
-  --sidebar-ring: oklch(0.58 0.25 280);
+  --sidebar-ring: #6C5DD3;
 }
 
 .dark {
@@ -151,7 +151,7 @@
   --color-secondary-foreground: var(--secondary-foreground);
   --color-secondary: var(--secondary);
   --color-primary-foreground: oklch(0.985 0 0);
-  --color-primary: oklch(0.58 0.25 280);
+  --color-primary: #6C5DD3;
   --color-popover-foreground: var(--popover-foreground);
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
@@ -168,6 +168,24 @@
 }
 
 /* Fallback overrides - Bits of Time purple */
-.text-primary { color: oklch(0.58 0.25 280) !important; }
-.bg-primary { background-color: oklch(0.58 0.25 280) !important; }
-.border-primary { border-color: oklch(0.58 0.25 280) !important; }
+.text-primary { color: #6C5DD3 !important; }
+.bg-primary { background-color: #6C5DD3 !important; }
+.border-primary { border-color: #6C5DD3 !important; }
+
+/* Force Roboto for specific feature screens */
+.ieba-roboto,
+.ieba-roboto * {
+  font-family: Roboto, sans-serif !important;
+}
+
+/* Hide scrollbar UI while preserving scroll behavior */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}

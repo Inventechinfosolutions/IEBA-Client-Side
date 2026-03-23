@@ -18,6 +18,29 @@ export type MasterCodeRow = {
   activityDescription?: string
 }
 
+export type GetMasterCodesParams = {
+  codeType: string
+  page: number
+  pageSize: number
+  inactiveOnly: boolean
+}
+
+export type MasterCodeListResponse = {
+  items: MasterCodeRow[]
+  totalItems: number
+}
+
+export type CreateMasterCodeInput = {
+  codeType: string
+  values: MasterCodeFormValues
+}
+
+export type UpdateMasterCodeInput = {
+  id: string
+  codeType: string
+  values: MasterCodeFormValues
+}
+
 export type MasterCodeTab = "FFP" | "MAA" | "TCM" | "INTERNAL" | "CDSS"
 
 export type ActiveTools = {

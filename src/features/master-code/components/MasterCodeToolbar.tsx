@@ -23,7 +23,7 @@ export function MasterCodeToolbar({
     <div className="mb-2 flex items-center justify-end gap-2">
       <Button
         type="button"
-        className="h-9 cursor-pointer gap-2 rounded-[12px] bg-[#6554C0] px-3 text-[12px] font-semibold text-white shadow-[0_1px_0_rgba(0,0,0,0.05)] hover:bg-[#6554C0]"
+        className="h-9 cursor-pointer gap-2 rounded-[12px] bg-[#6C5DD3] px-3 text-[12px] font-semibold text-white shadow-[0_1px_0_rgba(0,0,0,0.05)] hover:bg-[#6C5DD3]"
         onClick={onToggleAllowMultiCodes}
       >
         {allowMultiCodes ? (
@@ -35,7 +35,7 @@ export function MasterCodeToolbar({
       </Button>
       <Button
         type="button"
-        className="h-9 cursor-pointer gap-2 rounded-[12px] bg-[#6554C0] px-3 text-[12px] font-semibold text-white shadow-[0_1px_0_rgba(0,0,0,0.05)] hover:bg-[#6554C0]"
+        className="h-9 cursor-pointer gap-2 rounded-[12px] bg-[#6C5DD3] px-3 text-[12px] font-semibold text-white shadow-[0_1px_0_rgba(0,0,0,0.05)] hover:bg-[#6C5DD3]"
         onClick={onToggleInactiveOnly}
       >
         {inactiveOnly ? (
@@ -47,7 +47,7 @@ export function MasterCodeToolbar({
       </Button>
       <Button
         type="button"
-        className="h-9 cursor-pointer gap-1 rounded-[12px] bg-[#6554C0] px-3 text-[12px] font-semibold text-white shadow-[0_1px_0_rgba(0,0,0,0.05)] hover:bg-[#6554C0]"
+        className="h-9 cursor-pointer gap-1 rounded-[12px] bg-[#6C5DD3] px-3 text-[12px] font-semibold text-white shadow-[0_1px_0_rgba(0,0,0,0.05)] hover:bg-[#6C5DD3]"
         onClick={onAddFfp}
       >
         <Plus className="size-3.5" />

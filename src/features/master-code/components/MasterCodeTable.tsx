@@ -1,13 +1,14 @@
 import { Fragment, useMemo, useState } from "react"
+import DOMPurify from "dompurify"
 import {
-  Check,
   ChevronDown,
   ChevronRight,
-  Pencil,
   Triangle,
-  X,
 } from "lucide-react"
 
+import tableCheckIcon from "@/assets/icons/table-check.png"
+import tableCloseIcon from "@/assets/icons/table-close.png"
+import tableEditIcon from "@/assets/icons/table-edit.png"
 import {
   Table,
   TableBody,
@@ -209,6 +210,22 @@ export function MasterCodeTable({
               ))
             : sortedRows.map((row) => {
                 const isExpanded = expandedRowId === row.id
+                const sanitizedActivityDescription = DOMPurify.sanitize(
+                  row.activityDescription ?? defaultActivityDescription,
+                  {
+                    ALLOWED_TAGS: [
+                      "ul",
+                      "ol",
+                      "li",
+                      "b",
+                      "strong",
+                      "i",
+                      "em",
+                      "br",
+                      "p",
+                    ],
+                  }
+                )
 
                 return (
                   <Fragment key={row.id}>
@@ -236,16 +253,36 @@ export function MasterCodeTable({
                       </TableCell>
                       <TableCell className="border-r border-[#eff0f5] px-3 py-2 text-center">
                         {row.spmp ? (
-                          <Check className="mx-auto size-4 stroke-[2.6] text-[var(--primary)]" />
+                          <img
+                            src={tableCheckIcon}
+                            alt=""
+                            aria-hidden="true"
+                            className="mx-auto size-[12px] object-contain"
+                          />
                         ) : (
-                          <X className="mx-auto size-4 stroke-[2.6] text-[#cfcfd6]" />
+                          <img
+                            src={tableCloseIcon}
+                            alt=""
+                            aria-hidden="true"
+                            className="mx-auto size-[12px] object-contain"
+                          />
                         )}
                       </TableCell>
                       <TableCell className="border-r border-[#eff0f5] px-3 py-2 text-center">
                         {row.allocable ? (
-                          <Check className="mx-auto size-4 stroke-[2.6] text-[var(--primary)]" />
+                          <img
+                            src={tableCheckIcon}
+                            alt=""
+                            aria-hidden="true"
+                            className="mx-auto size-[12px] object-contain"
+                          />
                         ) : (
-                          <X className="mx-auto size-4 stroke-[2.6] text-[#cfcfd6]" />
+                          <img
+                            src={tableCloseIcon}
+                            alt=""
+                            aria-hidden="true"
+                            className="mx-auto size-[12px] object-contain"
+                          />
                         )}
                       </TableCell>
                       <TableCell className="border-r border-[#eff0f5] px-3 py-2 text-center text-[12px] text-[#262a35]">
@@ -256,18 +293,33 @@ export function MasterCodeTable({
                       </TableCell>
                       <TableCell className="border-r border-[#eff0f5] px-3 py-2 text-center">
                         {row.status ? (
-                          <Check className="mx-auto size-4 stroke-[2.6] text-[var(--primary)]" />
+                          <img
+                            src={tableCheckIcon}
+                            alt=""
+                            aria-hidden="true"
+                            className="mx-auto size-[12px] object-contain"
+                          />
                         ) : (
-                          <X className="mx-auto size-4 stroke-[2.6] text-[#cfcfd6]" />
+                          <img
+                            src={tableCloseIcon}
+                            alt=""
+                            aria-hidden="true"
+                            className="mx-auto size-[12px] object-contain"
+                          />
                         )}
                       </TableCell>
                       <TableCell className="px-3 py-2 text-center">
                         <button
                           type="button"
                           onClick={() => onEditRow(row)}
-                          className="inline-flex cursor-pointer items-center text-[var(--primary)]/70 drop-shadow-[0_1px_0_rgba(101,84,192,0.35)] transition-colors hover:text-[var(--primary)]"
+                          className="inline-flex cursor-pointer items-center opacity-80 drop-shadow-[0_1px_0_rgba(108,93,211,0.35)] transition-opacity hover:opacity-100"
                         >
-                          <Pencil className="size-[12px] stroke-[2.2]" />
+                          <img
+                            src={tableEditIcon}
+                            alt=""
+                            aria-hidden="true"
+                            className="size-[11px] object-contain"
+                          />
                         </button>
                       </TableCell>
                     </TableRow>
@@ -277,9 +329,12 @@ export function MasterCodeTable({
                           <p className="text-[12px] font-medium text-[var(--primary)]">
                             Activity Description
                           </p>
-                          <p className="mt-1.5 pl-20 max-w-[1110px] whitespace-normal break-words text-[12px] leading-5 text-[#4b5563]">
-                            {row.activityDescription ?? defaultActivityDescription}
-                          </p>
+                          <div
+                            className="mt-1.5 pl-20 max-w-[1110px] whitespace-normal break-words text-[12px] leading-5 text-[#4b5563] [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:my-0.5"
+                            dangerouslySetInnerHTML={{
+                              __html: sanitizedActivityDescription,
+                            }}
+                          />
                         </TableCell>
                       </TableRow>
                     ) : null}

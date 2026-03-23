@@ -1,7 +1,7 @@
 import { useCreateMasterCode } from "../mutations/createMasterCode"
 import { useUpdateMasterCode } from "../mutations/updateMasterCode"
 import { useGetMasterCodes } from "../queries/getMasterCodes"
-import type { GetMasterCodesParams } from "../api"
+import type { GetMasterCodesParams } from "../types"
 
 export function useMasterCodes(params: GetMasterCodesParams) {
   const listQuery = useGetMasterCodes(params)

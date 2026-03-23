@@ -14,6 +14,8 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useAuth } from "@/contexts/AuthContext"
+import { setToken } from "@/lib/api"
+import { setStoredUser } from "@/lib/auth-storage"
 
 export function LoginPage() {
   const [email, setEmail] = useState("")
@@ -35,6 +37,17 @@ export function LoginPage() {
     } catch {
       toast.error("Invalid email or password")
     }
+  }
+
+  function handleDevBypass() {
+    setToken("dev-token")
+    setStoredUser({
+      id: "1",
+      name: "ieba admin",
+      email: "admin@ieba.local",
+    })
+    toast.success("Dev login enabled")
+    window.location.assign("/master-code")
   }
 
   return (
@@ -89,6 +102,16 @@ export function LoginPage() {
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? "Signing in…" : "Sign in"}
               </Button>
+              {import.meta.env.DEV && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  onClick={handleDevBypass}
+                >
+                  Auto Login (UI Only)
+                </Button>
+              )}
             </form>
           </CardContent>
         </Card>
