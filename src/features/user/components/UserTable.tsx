@@ -18,6 +18,12 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Skeleton } from "@/components/ui/skeleton"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { type UserModuleRow } from "@/features/user/types"
 
 type UserTableProps = {
@@ -26,12 +32,12 @@ type UserTableProps = {
   onEditRow: (row: UserModuleRow) => void
 }
 
-type SortDirection = "asc" | "desc"
+type SortState = "none" | "asc" | "desc"
 
 export function UserTable({ rows, isLoading, onEditRow }: UserTableProps) {
   const [expandedRowIds, setExpandedRowIds] = useState<Record<string, boolean>>({})
-  const [employeeSortDirection, setEmployeeSortDirection] =
-    useState<SortDirection>("asc")
+  const [employeeSortState, setEmployeeSortState] = useState<SortState>("none")
+  const [isEmployeeTooltipOpen, setIsEmployeeTooltipOpen] = useState(false)
   const headers = [
     "Employee",
     "Department",
@@ -53,11 +59,13 @@ export function UserTable({ rows, isLoading, onEditRow }: UserTableProps) {
     (_, index) => `skeleton-row-${index}`
   )
   const sortedRows = useMemo(() => {
+    if (employeeSortState === "none") return rows
+
     const sorted = [...rows].sort((a, b) =>
       a.employee.localeCompare(b.employee, undefined, { sensitivity: "base" })
     )
-    return employeeSortDirection === "asc" ? sorted : sorted.reverse()
-  }, [rows, employeeSortDirection])
+    return employeeSortState === "asc" ? sorted : sorted.reverse()
+  }, [rows, employeeSortState])
 
   return (
     <div className="overflow-hidden rounded-[4px] border border-[#e6e7ef]">
@@ -72,33 +80,50 @@ export function UserTable({ rows, isLoading, onEditRow }: UserTableProps) {
                 }`}
               >
                 {idx === 0 ? (
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setEmployeeSortDirection((prev) =>
-                        prev === "asc" ? "desc" : "asc"
-                      )
-                    }
-                    className="inline-flex w-full cursor-pointer items-center justify-between gap-1.5"
-                  >
-                    <span>{header}</span>
-                    <span className="ml-1 inline-flex flex-col items-center leading-none">
-                      <ChevronUp
-                        className={`size-[10px] ${
-                          employeeSortDirection === "asc"
-                            ? "text-white"
-                            : "text-white/50"
-                        }`}
-                      />
-                      <ChevronDown
-                        className={`-mt-1 size-[10px] ${
-                          employeeSortDirection === "desc"
-                            ? "text-white"
-                            : "text-white/50"
-                        }`}
-                      />
-                    </span>
-                  </button>
+                  <TooltipProvider>
+                    <Tooltip open={isEmployeeTooltipOpen}>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setEmployeeSortState((prev) =>
+                              prev === "none" ? "asc" : prev === "asc" ? "desc" : "none"
+                            )
+                          }
+                          onMouseEnter={() => setIsEmployeeTooltipOpen(true)}
+                          onMouseLeave={() => setIsEmployeeTooltipOpen(false)}
+                          onFocus={() => setIsEmployeeTooltipOpen(true)}
+                          onBlur={() => setIsEmployeeTooltipOpen(false)}
+                          className="inline-flex w-full cursor-pointer items-center justify-between gap-1.5"
+                        >
+                          <span>{header}</span>
+                          <span className="ml-1 inline-flex flex-col items-center leading-none">
+                            <ChevronUp
+                              className={`size-[10px] ${
+                                employeeSortState === "asc"
+                                  ? "text-white"
+                                  : "text-white/50"
+                              }`}
+                            />
+                            <ChevronDown
+                              className={`-mt-1 size-[10px] ${
+                                employeeSortState === "desc"
+                                  ? "text-white"
+                                  : "text-white/50"
+                              }`}
+                            />
+                          </span>
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" sideOffset={6}>
+                        {employeeSortState === "none"
+                          ? "Click to sort ascending"
+                          : employeeSortState === "asc"
+                            ? "Click to sort descending"
+                            : "Click to cancel sorting"}
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 ) : (
                   <span
                     className={`inline-flex items-center gap-1 ${
