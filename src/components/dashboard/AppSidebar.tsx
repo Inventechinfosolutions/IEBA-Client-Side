@@ -4,6 +4,7 @@ import {
   LogOut,
   Settings,
   Users,
+  Building2,
 } from "lucide-react"
 
 import {
@@ -36,6 +37,7 @@ import { useAuth } from "@/contexts/AuthContext"
 const mainNav = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Users", url: "/users", icon: Users },
+  { title: "Department Role", url: "/department-role", icon: Building2 },
 ] as const
 
 export function AppSidebar() {
@@ -161,6 +163,12 @@ export function AppSidebar() {
                     <Link to="/users">
                       <Users className="mr-2 size-4" />
                       Users
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/department-role">
+                      <Building2 className="mr-2 size-4" />
+                      Department Role
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem disabled>
