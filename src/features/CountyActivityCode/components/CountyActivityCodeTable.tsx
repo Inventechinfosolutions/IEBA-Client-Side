@@ -159,7 +159,7 @@ export function CountyActivityCodeTable({
 
   return (
     <div className="space-y-4 rounded-[12px] border border-[#E5E7EB] bg-white p-4">
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-[10px] bg-[#F3F4F6] p-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-[10px] p-3">
         <div className="w-full max-w-[300px]">
           <form
             onSubmit={(event) => event.preventDefault()}
