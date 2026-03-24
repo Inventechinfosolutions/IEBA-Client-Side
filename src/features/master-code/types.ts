@@ -1,5 +1,5 @@
 import { z } from "zod"
-import type { FieldErrors, FieldValues } from "react-hook-form"
+import type { FieldErrors } from "react-hook-form"
 
 import { masterCodeFormSchema } from "./schemas"
 
@@ -95,4 +95,4 @@ export type MasterCodeTabsProps = {
   onChange: (tab: MasterCodeTab) => void
 }
 
-export type MasterCodeFormFieldErrors = FieldErrors<FieldValues>
+export type MasterCodeFormFieldErrors = FieldErrors<MasterCodeFormValues>

@@ -18,15 +18,12 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Skeleton } from "@/components/ui/skeleton"
+import { DEFAULT_ACTIVITY_DESCRIPTION } from "@/features/master-code/mock"
 import type {
-  MasterCodeRow,
   MasterCodeSortKey,
   MasterCodeSortState,
   MasterCodeTableProps,
 } from "@/features/master-code/types"
-
-const defaultActivityDescription =
-  "This function code is to be used by all staff (SPMP and Non-SPMP) when performing activities that inform Medi-Cal eligible or potentially eligible individuals, as well as other clients, about health services covered by Medi-Cal and how to access the health programs."
 
 const getRowCodeNumber = (code: string | undefined) => {
   const parsed = Number.parseInt(code ?? "", 10)
@@ -202,7 +199,7 @@ export function MasterCodeTable({
             : sortedRows.map((row) => {
                 const isExpanded = expandedRowId === row.id
                 const sanitizedActivityDescription = DOMPurify.sanitize(
-                  row.activityDescription ?? defaultActivityDescription,
+                  row.activityDescription ?? DEFAULT_ACTIVITY_DESCRIPTION,
                   {
                     ALLOWED_TAGS: [
                       "ul",

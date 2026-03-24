@@ -114,7 +114,6 @@ export function TimeStudyProgramForm({
   budgetProgramNameOptions,
   budgetProgramLookup,
 }: TimeStudyProgramFormProps) {
-  const [costAllocation, setCostAllocation] = useState(false)
   const [openSelectKey, setOpenSelectKey] = useState<string | null>(null)
   const isEditMode = formMode === "edit"
 
@@ -173,8 +172,13 @@ export function TimeStudyProgramForm({
         </div>
         <label className="mt-2 inline-flex items-center gap-2 text-[14px] text-[#111827]">
           <Checkbox
-            checked={costAllocation}
-            onCheckedChange={(checked) => setCostAllocation(checked === true)}
+            checked={form.watch("costAllocation")}
+            onCheckedChange={(checked) =>
+              form.setValue("costAllocation", checked === true, {
+                shouldDirty: true,
+                shouldValidate: true,
+              })
+            }
             className="size-4 rounded-[3px] border-[#c7ccd7]"
           />
           Cost Allocation
@@ -252,8 +256,13 @@ export function TimeStudyProgramForm({
         </div>
         <label className="mt-2 inline-flex items-center gap-2 text-[14px] text-[#111827]">
           <Checkbox
-            checked={costAllocation}
-            onCheckedChange={(checked) => setCostAllocation(checked === true)}
+            checked={form.watch("costAllocation")}
+            onCheckedChange={(checked) =>
+              form.setValue("costAllocation", checked === true, {
+                shouldDirty: true,
+                shouldValidate: true,
+              })
+            }
             className="size-4 rounded-[3px] border-[#c7ccd7]"
           />
           Cost Allocation
@@ -334,8 +343,13 @@ export function TimeStudyProgramForm({
       </div>
       <label className="mt-2 inline-flex items-center gap-2 text-[14px] text-[#111827]">
         <Checkbox
-          checked={costAllocation}
-          onCheckedChange={(checked) => setCostAllocation(checked === true)}
+          checked={form.watch("costAllocation")}
+          onCheckedChange={(checked) =>
+            form.setValue("costAllocation", checked === true, {
+              shouldDirty: true,
+              shouldValidate: true,
+            })
+          }
           className="size-4 rounded-[3px] border-[#c7ccd7]"
         />
         Cost Allocation

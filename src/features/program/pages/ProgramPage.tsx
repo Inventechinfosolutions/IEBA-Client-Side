@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from "react"
 import { Check } from "lucide-react"
 import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
 import { toast } from "sonner"
 
 import { MasterCodePagination } from "@/features/master-code/components/MasterCodePagination"
@@ -17,7 +18,9 @@ import {
   getMockProgramBudgetUnitLookup,
   getMockTimeStudyProgramByName,
 } from "../mock"
+import { programFormSchema } from "../schemas"
 import type {
+  ProgramFormModalHandle,
   ProgramFormMode,
   ProgramFormSection,
   ProgramFormValues,
@@ -36,6 +39,7 @@ const pageSize = 10
 const emptyFormValues: ProgramFormValues = {
   formSection: "Budget Unit",
   active: true,
+  costAllocation: false,
   budgetUnitDepartment: "",
   budgetUnitCode: "",
   budgetUnitName: "",
@@ -122,7 +126,7 @@ export function ProgramPage() {
     null
   )
   const [modalSessionId, setModalSessionId] = useState(0)
-  const modalResetRef = useRef<((values: ProgramFormValues) => void) | null>(null)
+  const modalResetRef = useRef<ProgramFormModalHandle | null>(null)
 
   const programModule = useProgramModule({
     tab: activeTab,
@@ -133,6 +137,7 @@ export function ProgramPage() {
   })
 
   const programActivityRelationFilterForm = useForm<ProgramFormValues>({
+    resolver: zodResolver(programFormSchema),
     defaultValues: emptyFormValues,
   })
   const isTableLoading =
@@ -301,7 +306,7 @@ export function ProgramPage() {
         ...emptyFormValues,
         formSection: values.formSection,
       }
-      modalResetRef.current?.(nextEmptyValues)
+      modalResetRef.current?.reset(nextEmptyValues)
       const shouldCloseModal =
         modalMode === "edit" || Boolean(selectedProgramForSubAdd)
       if (shouldCloseModal) {
@@ -397,7 +402,7 @@ export function ProgramPage() {
         isSubmitting={programModule.isCreating || programModule.isUpdating}
         onOpenChange={setModalOpen}
         onSave={handleSaveForm}
-        resetRef={modalResetRef}
+        ref={modalResetRef}
       />
     </section>
   )

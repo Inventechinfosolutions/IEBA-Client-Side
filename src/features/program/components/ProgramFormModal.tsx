@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { X } from "lucide-react"
-import { useRef, useState } from "react"
+import { forwardRef, useImperativeHandle, useRef, useState } from "react"
 import { useForm, type FieldErrors, type FieldValues } from "react-hook-form"
 import { toast } from "sonner"
 
@@ -23,12 +23,13 @@ import {
 } from "../mock"
 import { programFormSchema, timeStudyProgramFormSchema } from "../schemas"
 import type {
+  ProgramFormModalHandle,
   ProgramFormModalProps,
   ProgramFormSection,
   ProgramFormValues,
 } from "../types"
 
-export function ProgramFormModal({
+export const ProgramFormModal = forwardRef<ProgramFormModalHandle, ProgramFormModalProps>(function ProgramFormModal({
   open,
   mode,
   initialValues,
@@ -38,8 +39,7 @@ export function ProgramFormModal({
   isSubmitting = false,
   onOpenChange,
   onSave,
-  resetRef,
-}: ProgramFormModalProps) {
+}: ProgramFormModalProps, ref) {
   const isTimeStudyContext = contextTab === "Time Study programs"
   const sections: ProgramFormSection[] = isTimeStudyContext
     ? ["BU Program", "BU Sub-Program", "Budget Unit"]
@@ -69,12 +69,12 @@ export function ProgramFormModal({
   const [pendingSection, setPendingSection] = useState<ProgramFormSection | null>(null)
   const activeSection = form.watch("formSection") as ProgramFormSection
 
-  if (resetRef) {
-    resetRef.current = (values: ProgramFormValues) => {
+  useImperativeHandle(ref, () => ({
+    reset(values: ProgramFormValues) {
       form.reset(values)
       setPendingSection(null)
-    }
-  }
+    },
+  }), [form])
 
   const applySectionChange = (nextSection: ProgramFormSection) => {
     form.setValue("formSection", nextSection, { shouldDirty: true })
@@ -359,4 +359,4 @@ export function ProgramFormModal({
       </DialogContent>
     </Dialog>
   )
-}
+})

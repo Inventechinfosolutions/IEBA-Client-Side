@@ -64,7 +64,10 @@ export type ProgramFormModalProps = {
   isSubmitting?: boolean
   onOpenChange: (open: boolean) => void
   onSave: (values: ProgramFormValues) => void
-  resetRef?: React.MutableRefObject<((values: ProgramFormValues) => void) | null>
+}
+
+export type ProgramFormModalHandle = {
+  reset: (values: ProgramFormValues) => void
 }
 
 export type ProgramTabsProps = {

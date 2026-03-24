@@ -156,7 +156,7 @@ export function MasterCodeFormModal({
       onSave(nextValues)
       closeModal()
     },
-    (formErrors) => {
+    (formErrors: MasterCodeFormFieldErrors) => {
       const firstInvalidField = fieldOrder.find((field) => Boolean(formErrors[field]))
       if (!firstInvalidField) return
       const firstMessage = getErrorMessage(formErrors[firstInvalidField])

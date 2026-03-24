@@ -3,6 +3,7 @@ import { z } from "zod"
 const programFormBaseSchema = z.object({
   formSection: z.enum(["Budget Unit", "BU Program", "BU Sub-Program"]),
   active: z.boolean(),
+  costAllocation: z.boolean(),
   budgetUnitDepartment: z.string().trim(),
   budgetUnitCode: z.string().trim(),
   budgetUnitName: z.string().trim(),
