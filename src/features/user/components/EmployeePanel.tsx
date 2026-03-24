@@ -16,6 +16,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { userModuleFormSchema } from "@/features/user/schemas"
 import {
+  type EmployeeDetailsContentProps,
   type UserFormPanelProps,
   type UserFormTab,
   type UserModuleFormValues,
@@ -42,10 +43,6 @@ const tabFields: Record<UserFormTab, (keyof UserModuleFormValues)[]> = {
   security: ["roleAssignments"],
   supervisor: ["supervisorPrimary", "supervisorSecondary"],
   timeStudy: ["tsMinDay", "programs", "activities", "supervisorApportioning"],
-}
-
-type EmployeeDetailsContentProps = {
-  isEditMode: boolean
 }
 
 function EmployeeDetailsContent({ isEditMode }: EmployeeDetailsContentProps) {
@@ -343,7 +340,7 @@ export function EmployeePanel({ mode, initialValues, onCancel, onSave }: UserFor
         </span>
       ),
       className:
-        "!w-fit !max-w-[340px] !min-h-[35px] !rounded-[8px] !border-0 !px-3 !py-2 !text-[11px] !shadow-[0_8px_22px_rgba(17,24,39,0.18)]",
+        "!w-fit !max-w-[340px] !min-h-[35px] !rounded-[8px] !border-0 !px-3 !py-2 !text-[12px] !shadow-[0_8px_22px_rgba(17,24,39,0.18)]",
     })
   }
 
@@ -399,7 +396,7 @@ export function EmployeePanel({ mode, initialValues, onCancel, onSave }: UserFor
           </span>
         ),
         className:
-          "!w-fit !max-w-none !min-h-[35px] !rounded-[8px] !border-0 !px-3 !py-2 !text-[11px] !whitespace-nowrap !shadow-[0_8px_22px_rgba(17,24,39,0.18)]",
+          "!w-fit !max-w-none !min-h-[35px] !rounded-[8px] !border-0 !px-3 !py-2 !text-[12px] !whitespace-nowrap !shadow-[0_8px_22px_rgba(17,24,39,0.18)]",
       }
     )
   }

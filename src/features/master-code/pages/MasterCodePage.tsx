@@ -40,7 +40,7 @@ export function MasterCodePage() {
       </span>
     ),
     className:
-      "!w-fit !max-w-none !min-h-[35px] !rounded-[8px] !border-0 !px-3 !py-2 !text-[11px] !whitespace-nowrap !shadow-[0_8px_22px_rgba(17,24,39,0.18)]",
+      "!w-fit !max-w-none !min-h-[35px] !rounded-[8px] !border-0 !px-3 !py-2 !text-[12px] !whitespace-nowrap !shadow-[0_8px_22px_rgba(17,24,39,0.18)]",
   }
 
   const [activeTab, setActiveTab] = useState<MasterCodeTab>("FFP")
@@ -129,11 +129,13 @@ export function MasterCodePage() {
         "--primary": "#6C5DD3",
       } as React.CSSProperties}
     >
-      <MasterCodeTabs
-        tabs={tabs}
-        activeTab={activeTab}
-        onChange={handleTabChange}
-      />
+      <div className="-mx-5 -mt-5 md:-mx-6 md:-mt-6">
+        <MasterCodeTabs
+          tabs={tabs}
+          activeTab={activeTab}
+          onChange={handleTabChange}
+        />
+      </div>
       <div className="mt-5">
         <MasterCodeToolbar
           codeType={activeTab}

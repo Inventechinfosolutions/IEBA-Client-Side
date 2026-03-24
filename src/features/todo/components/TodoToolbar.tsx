@@ -1,10 +1,7 @@
 import { Plus } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-
-type TodoToolbarProps = {
-  onAddTodo: () => void
-}
+import type { TodoToolbarProps } from "../types"
 
 export function TodoToolbar({ onAddTodo }: TodoToolbarProps) {
   return (

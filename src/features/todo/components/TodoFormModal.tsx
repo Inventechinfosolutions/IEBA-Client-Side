@@ -11,16 +11,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { todoFormSchema } from "../schemas"
-import type { TodoFormMode, TodoFormValues } from "../types"
-
-type TodoFormModalProps = {
-  open: boolean
-  mode: TodoFormMode
-  initialValues: TodoFormValues
-  isSubmitting?: boolean
-  onOpenChange: (open: boolean) => void
-  onSave: (values: TodoFormValues) => void
-}
+import type { TodoFormValues, TodoFormModalProps } from "../types"
 
 export function TodoFormModal({
   open,

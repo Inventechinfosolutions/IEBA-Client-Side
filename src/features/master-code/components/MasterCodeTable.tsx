@@ -18,21 +18,12 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Skeleton } from "@/components/ui/skeleton"
-import { type MasterCodeRow } from "@/features/master-code/types"
-
-type MasterCodeTableProps = {
-  codeType: string
-  rows: MasterCodeRow[]
-  isLoading: boolean
-  onEditRow: (row: MasterCodeRow) => void
-}
-
-type SortKey = "code" | "name"
-type SortDirection = "asc" | "desc"
-type SortState = {
-  key: SortKey
-  direction: SortDirection
-}
+import type {
+  MasterCodeRow,
+  MasterCodeSortKey,
+  MasterCodeSortState,
+  MasterCodeTableProps,
+} from "@/features/master-code/types"
 
 const defaultActivityDescription =
   "This function code is to be used by all staff (SPMP and Non-SPMP) when performing activities that inform Medi-Cal eligible or potentially eligible individuals, as well as other clients, about health services covered by Medi-Cal and how to access the health programs."
@@ -49,7 +40,7 @@ export function MasterCodeTable({
   onEditRow,
 }: MasterCodeTableProps) {
   const [expandedRowId, setExpandedRowId] = useState<string | null>(null)
-  const [sortState, setSortState] = useState<SortState>({
+  const [sortState, setSortState] = useState<MasterCodeSortState>({
     key: "code",
     direction: "asc",
   })
@@ -81,7 +72,7 @@ export function MasterCodeTable({
     return sorted
   }, [rows, sortState])
 
-  const handleSort = (key: SortKey) => {
+  const handleSort = (key: MasterCodeSortKey) => {
     setSortState((prev) => {
       if (prev.key === key) {
         return {
@@ -131,7 +122,7 @@ export function MasterCodeTable({
               >
                 {idx < 2 ? (
                   (() => {
-                    const key: SortKey = idx === 0 ? "code" : "name"
+                    const key: MasterCodeSortKey = idx === 0 ? "code" : "name"
                     const isActive = sortState.key === key
                     return (
                   <button
@@ -229,8 +220,8 @@ export function MasterCodeTable({
 
                 return (
                   <Fragment key={row.id}>
-                    <TableRow className="h-10 border-b border-[#eff0f5] hover:bg-transparent">
-                      <TableCell className="border-r border-[#eff0f5] px-3 py-2 text-center text-[12px] text-[#232735]">
+                    <TableRow className="min-h-[40px] border-b border-[#eff0f5] hover:bg-transparent">
+                      <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-center text-[12px] text-[#232735] whitespace-normal break-words">
                         <div className="flex items-center justify-center gap-3">
                           <button
                             type="button"
@@ -248,7 +239,7 @@ export function MasterCodeTable({
                           <span>{row.code ?? ""}</span>
                         </div>
                       </TableCell>
-                      <TableCell className="border-r border-[#eff0f5] px-3 py-2 text-[12px] whitespace-normal text-[#262a35]">
+                      <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-[12px] whitespace-normal break-words text-[#262a35]">
                         {row.name}
                       </TableCell>
                       <TableCell className="border-r border-[#eff0f5] px-3 py-2 text-center">

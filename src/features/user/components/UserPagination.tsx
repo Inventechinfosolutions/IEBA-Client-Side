@@ -5,13 +5,7 @@ import {
   PaginationItem,
   PaginationLink,
 } from "@/components/ui/pagination"
-
-type UserPaginationProps = {
-  totalItems: number
-  currentPage: number
-  pageSize: number
-  onPageChange: (page: number) => void
-}
+import type { UserPaginationProps } from "@/features/user/types"
 
 export function UserPagination({
   totalItems,

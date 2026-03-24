@@ -24,19 +24,11 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { type UserModuleRow } from "@/features/user/types"
-
-type UserTableProps = {
-  rows: UserModuleRow[]
-  isLoading: boolean
-  onEditRow: (row: UserModuleRow) => void
-}
-
-type SortState = "none" | "asc" | "desc"
+import type { UserTableProps, UserTableSortState } from "@/features/user/types"
 
 export function UserTable({ rows, isLoading, onEditRow }: UserTableProps) {
   const [expandedRowIds, setExpandedRowIds] = useState<Record<string, boolean>>({})
-  const [employeeSortState, setEmployeeSortState] = useState<SortState>("none")
+  const [employeeSortState, setEmployeeSortState] = useState<UserTableSortState>("none")
   const [isEmployeeTooltipOpen, setIsEmployeeTooltipOpen] = useState(false)
   const headers = [
     "Employee",
@@ -69,13 +61,27 @@ export function UserTable({ rows, isLoading, onEditRow }: UserTableProps) {
 
   return (
     <div className="overflow-hidden rounded-[4px] border border-[#e6e7ef]">
-      <Table>
+      <Table className="table-fixed">
+        <colgroup>
+          <col style={{ width: "150px" }} />
+          <col style={{ width: "130px" }} />
+          <col style={{ width: "110px" }} />
+          <col style={{ width: "45px" }} />
+          <col style={{ width: "65px" }} />
+          <col style={{ width: "65px" }} />
+          <col style={{ width: "65px" }} />
+          <col style={{ width: "95px" }} />
+          <col style={{ width: "95px" }} />
+          <col style={{ width: "75px" }} />
+          <col style={{ width: "55px" }} />
+          <col style={{ width: "70px" }} />
+        </colgroup>
         <TableHeader className="[&_tr]:border-b-0">
           <TableRow className="hover:bg-transparent">
             {headers.map((header, idx) => (
               <TableHead
                 key={header}
-                className={`h-10 ${dividerClass} bg-[var(--primary)] p-[12px] text-[11px] font-medium text-white last:border-r-0 ${
+                className={`h-10 ${dividerClass} bg-[var(--primary)] p-[8px] text-[11px] leading-[1.15] font-medium text-white whitespace-normal break-words last:border-r-0 ${
                   idx >= 3 ? "text-center" : ""
                 }`}
               >
@@ -159,10 +165,10 @@ export function UserTable({ rows, isLoading, onEditRow }: UserTableProps) {
                   key={row.id}
                   className="border-b border-[#eff0f5] hover:bg-transparent"
                 >
-                  <TableCell className="border-r border-[#eff0f5] px-[14px] py-[5px] text-[12px] text-[#232735]">
+                  <TableCell className="align-top border-r border-[#eff0f5] px-[14px] py-[5px] text-[12px] text-[#232735] whitespace-normal break-words">
                     {row.employee}
                   </TableCell>
-                  <TableCell className="border-r border-[#eff0f5] px-[14px] py-[5px] text-[12px] text-[#232735]">
+                  <TableCell className="align-top border-r border-[#eff0f5] px-[14px] py-[5px] text-[12px] text-[#232735] whitespace-normal break-words">
                     <button
                       type="button"
                       className="inline-flex cursor-pointer items-center gap-1"
@@ -193,7 +199,7 @@ export function UserTable({ rows, isLoading, onEditRow }: UserTableProps) {
                       </div>
                     ) : null}
                   </TableCell>
-                  <TableCell className="border-r border-[#eff0f5] px-[14px] py-[5px] text-[11px] leading-[1.1rem] text-[#232735]">
+                  <TableCell className="align-top border-r border-[#eff0f5] px-[14px] py-[5px] text-[11px] leading-[1.1rem] text-[#232735] whitespace-normal break-words">
                     <div>{row.supervisorPrimary}</div>
                     <div>{row.supervisorSecondary ?? ""}</div>
                   </TableCell>
@@ -285,7 +291,7 @@ export function UserTable({ rows, isLoading, onEditRow }: UserTableProps) {
                       />
                     )}
                   </TableCell>
-                  <TableCell className="border-r border-[#eff0f5] px-[14px] py-[5px] text-center text-[12px] text-[#232735]">
+                  <TableCell className="align-top border-r border-[#eff0f5] px-[14px] py-[5px] text-center text-[12px] text-[#232735] whitespace-normal break-words">
                     {row.assignedMultiCodes}
                   </TableCell>
                   <TableCell className="border-r border-[#eff0f5] px-[14px] py-[5px] text-center">

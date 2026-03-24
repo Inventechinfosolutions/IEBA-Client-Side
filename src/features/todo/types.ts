@@ -36,3 +36,31 @@ export type UpdateTodoInput = {
   id: string
   values: TodoFormValues
 }
+
+export type TodoFormModalProps = {
+  open: boolean
+  mode: TodoFormMode
+  initialValues: TodoFormValues
+  isSubmitting?: boolean
+  onOpenChange: (open: boolean) => void
+  onSave: (values: TodoFormValues) => void
+}
+
+export type TodoTableProps = {
+  rows: TodoRow[]
+  isLoading: boolean
+  titleSortState: "none" | "asc" | "desc"
+  onToggleTitleSort: () => void
+  onEditRow: (row: TodoRow) => void
+}
+
+export type TodoToolbarProps = {
+  onAddTodo: () => void
+}
+
+export type TodoPaginationProps = {
+  totalItems: number
+  currentPage: number
+  pageSize: number
+  onPageChange: (page: number) => void
+}

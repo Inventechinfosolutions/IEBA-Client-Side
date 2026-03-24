@@ -64,3 +64,45 @@ export type UserFormPanelProps = {
   onCancel: () => void
   onSave: (values: UserModuleFormValues) => void
 }
+
+export type UserTableProps = {
+  rows: UserModuleRow[]
+  isLoading: boolean
+  onEditRow: (row: UserModuleRow) => void
+}
+
+export type UserTableSortState = "none" | "asc" | "desc"
+
+export type EmployeeDetailsContentProps = {
+  isEditMode: boolean
+}
+
+export type UserFormTabsProps = {
+  activeTab: UserFormTab
+  onTabChange: (tab: UserFormTab) => void
+  disabledTabs?: UserFormTab[]
+}
+
+export type UserToolbarProps = {
+  inactiveOnly: boolean
+  searchTerm: string
+  suggestions: string[]
+  onToggleInactiveOnly: () => void
+  onSearchChange: (value: string) => void
+  onSelectSuggestion: (value: string) => void
+  onAddEmployee: () => void
+}
+
+export type SupervisorDropdownFieldProps = {
+  name: "supervisorPrimary" | "supervisorSecondary"
+  label: string
+}
+
+export type UserPaginationProps = {
+  totalItems: number
+  currentPage: number
+  pageSize: number
+  onPageChange: (page: number) => void
+}
+
+export type UserFormPageProps = UserFormPanelProps

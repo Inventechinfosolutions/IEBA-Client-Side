@@ -1,4 +1,4 @@
-import { type UserFormTab } from "@/features/user/types"
+import type { UserFormTab, UserFormTabsProps } from "@/features/user/types"
 
 const tabs: { id: UserFormTab; label: string }[] = [
   { id: "employee", label: "Employee/Login Details" },
@@ -6,12 +6,6 @@ const tabs: { id: UserFormTab; label: string }[] = [
   { id: "supervisor", label: "Supervisor Assignments" },
   { id: "timeStudy", label: "Time Study Assignments" },
 ]
-
-type UserFormTabsProps = {
-  activeTab: UserFormTab
-  onTabChange: (tab: UserFormTab) => void
-  disabledTabs?: UserFormTab[]
-}
 
 export function UserFormTabs({ activeTab, onTabChange, disabledTabs = [] }: UserFormTabsProps) {
   return (

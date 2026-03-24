@@ -3,16 +3,7 @@ import { Check, Plus, Search } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-
-type UserToolbarProps = {
-  inactiveOnly: boolean
-  searchTerm: string
-  suggestions: string[]
-  onToggleInactiveOnly: () => void
-  onSearchChange: (value: string) => void
-  onSelectSuggestion: (value: string) => void
-  onAddEmployee: () => void
-}
+import type { UserToolbarProps } from "@/features/user/types"
 
 export function UserToolbar({
   inactiveOnly,

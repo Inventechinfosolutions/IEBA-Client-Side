@@ -1,7 +1,7 @@
 import { useCallback, useRef, useState } from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Bold, ChevronDown, ChevronUp, Italic, List, X } from "lucide-react"
-import { Controller, useForm, type FieldErrors, type FieldValues } from "react-hook-form"
+import { Controller, useForm } from "react-hook-form"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input"
 import { masterCodeFormSchema } from "@/features/master-code/schemas"
 import {
   type ActiveTools,
+  type MasterCodeFormFieldErrors,
   type MasterCodeFormModalProps,
   type MasterCodeFormValues,
 } from "@/features/master-code/types"
@@ -124,7 +125,7 @@ export function MasterCodeFormModal({
     if ("message" in value && typeof value.message === "string" && value.message) {
       return value.message
     }
-    const nestedValues = Object.values(value as FieldErrors<FieldValues>)
+    const nestedValues = Object.values(value as MasterCodeFormFieldErrors)
     for (const nestedValue of nestedValues) {
       const nested = getErrorMessage(nestedValue)
       if (nested) return nested
@@ -169,7 +170,7 @@ export function MasterCodeFormModal({
             </span>
           ),
           className:
-            "!w-fit !max-w-[340px] !min-h-[35px] !rounded-[8px] !border-0 !px-3 !py-2 !text-[11px] !shadow-[0_8px_22px_rgba(17,24,39,0.18)]",
+            "!w-fit !max-w-[340px] !min-h-[35px] !rounded-[8px] !border-0 !px-3 !py-2 !text-[12px] !shadow-[0_8px_22px_rgba(17,24,39,0.18)]",
         })
       }
     }
