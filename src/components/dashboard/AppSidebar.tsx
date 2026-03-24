@@ -6,6 +6,7 @@ import {
   Settings,
   Users,
   Building2,
+  Table2,
 } from "lucide-react"
 
 import {
@@ -42,6 +43,7 @@ const mainNav = [
   { title: "User", url: "/user", icon: Users },
   { title: "Users", url: "/users", icon: Users },
   { title: "Department Role", url: "/department-role", icon: Building2 },
+  { title: "County Activity Code", url: "/county-activity-code", icon: Table2 },
 ] as const
 
 export function AppSidebar() {
@@ -191,6 +193,12 @@ export function AppSidebar() {
                     <Link to="/department-role">
                       <Building2 className="mr-2 size-4" />
                       Department Role
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/county-activity-code">
+                      <Table2 className="mr-2 size-4" />
+                      County Activity Code
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem disabled>
