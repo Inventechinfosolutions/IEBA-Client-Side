@@ -28,6 +28,18 @@ let mockSettings: SettingsModel = {
       },
     ],
   },
+  general: {
+    screenInactivityTimeMinutes: 120,
+  },
+  reports: {
+    reportKey: "DSSRPT1",
+    exclusionMode: "exclude",
+    selectedActivityCodes: [],
+  },
+  login: {
+    twoFactorAuthentication: true,
+    otpValidationTimerSeconds: 120,
+  },
 }
 
 export function getMockSettings(): SettingsModel {

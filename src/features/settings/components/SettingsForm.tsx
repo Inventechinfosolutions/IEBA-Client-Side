@@ -36,6 +36,18 @@ function SettingsFormInner({
         supervisorApportioning: settings.county.supervisorApportioning,
         addresses,
       },
+      general: {
+        screenInactivityTimeMinutes: settings.general?.screenInactivityTimeMinutes ?? 120,
+      },
+      reports: {
+        reportKey: settings.reports?.reportKey ?? "DSSRPT1",
+        exclusionMode: settings.reports?.exclusionMode ?? "exclude",
+        selectedActivityCodes: settings.reports?.selectedActivityCodes ?? [],
+      },
+      login: {
+        twoFactorAuthentication: settings.login?.twoFactorAuthentication ?? false,
+        otpValidationTimerSeconds: settings.login?.otpValidationTimerSeconds ?? 120,
+      },
     }
   }, [settings])
 
@@ -55,6 +67,9 @@ function SettingsFormInner({
         errors.county?.startTime1?.message ||
         errors.county?.startTime2?.message ||
         errors.county?.endTime?.message ||
+        errors.general?.screenInactivityTimeMinutes?.message ||
+        errors.reports?.reportKey?.message ||
+        errors.login?.otpValidationTimerSeconds?.message ||
         (Array.isArray(errors.county?.addresses) ? errors.county?.addresses[0] : undefined)
       const message =
         typeof first === "string"

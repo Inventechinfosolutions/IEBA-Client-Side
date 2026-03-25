@@ -1,5 +1,9 @@
 import { z } from "zod"
 
+import { loginSettingsSchema } from "@/features/settings/components/Login/schema"
+import { generalSettingsSchema } from "@/features/settings/components/General/schema"
+import { reportsSettingsSchema } from "@/features/settings/components/Reports/schema"
+
 const timeString = z
   .string()
   .regex(/^\d{2}:\d{2}$/, "Time must be in HH:MM format")
@@ -49,5 +53,8 @@ export const settingsFormSchema = z.object({
     supervisorApportioning: z.boolean(),
     addresses: z.array(countyAddressRowSchema).default([]),
   }),
+  general: generalSettingsSchema,
+  reports: reportsSettingsSchema,
+  login: loginSettingsSchema,
 })
 

@@ -24,6 +24,24 @@ async function updateSettings(input: UpdateSettingsInput): Promise<SettingsModel
       welcomeMessage: input.values.county.welcomeMessage ?? "",
       addresses: normalizedAddresses,
     },
+    general: {
+      ...current.general,
+      ...input.values.general,
+      screenInactivityTimeMinutes: Number(input.values.general.screenInactivityTimeMinutes),
+    },
+    reports: {
+      ...current.reports,
+      ...input.values.reports,
+      reportKey: String(input.values.reports.reportKey ?? ""),
+      selectedActivityCodes: Array.isArray(input.values.reports.selectedActivityCodes)
+        ? input.values.reports.selectedActivityCodes.map(String)
+        : [],
+    },
+    login: {
+      ...current.login,
+      ...input.values.login,
+      otpValidationTimerSeconds: Number(input.values.login.otpValidationTimerSeconds),
+    },
   }
 
   setMockSettings(next)
