@@ -1,13 +1,16 @@
+import { useState } from "react"
 import { Link, useLocation } from "react-router-dom"
 import {
   LayoutDashboard,
   LogOut,
+  IdCard,
   ScrollText,
   Settings,
   Users,
   Building2,
   Table2,
   CalendarClock,
+  LockKeyhole,
 } from "lucide-react"
 
 import {
@@ -36,6 +39,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import { useAuth } from "@/contexts/AuthContext"
+import { ChangePasswordFormModal } from "@/features/change-password"
 
 const mainNav = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
@@ -51,6 +55,7 @@ const mainNav = [
 export function AppSidebar() {
   const { user, signOut } = useAuth()
   const location = useLocation()
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false)
 
   return (
     <Sidebar>
@@ -209,6 +214,21 @@ export function AppSidebar() {
                       Schedule Time Study
                     </Link>
                   </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/profile">
+                      <IdCard className="mr-2 size-4" />
+                      Profile
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onSelect={(e) => {
+                      e.preventDefault()
+                      setChangePasswordOpen(true)
+                    }}
+                  >
+                    <LockKeyhole className="mr-2 size-4" />
+                    Change Password
+                  </DropdownMenuItem>
                   <DropdownMenuItem disabled>
                     <Settings className="mr-2 size-4" />
                     Settings
@@ -224,6 +244,10 @@ export function AppSidebar() {
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
+      <ChangePasswordFormModal
+        open={changePasswordOpen}
+        onOpenChange={setChangePasswordOpen}
+      />
     </Sidebar>
   )
 }

@@ -13,6 +13,7 @@ import { UsersPage, UserPage } from "@/features/users"
 import { DepartmentRolePage } from "@/features/DepartmentRole/pages/DepartmentRolePage"
 import { CountyActivityCodePage } from "@/features/CountyActivityCode/pages/CountyActivityCodePage"
 import { ScheduleTimeStudyPage } from "@/features/schedule-time-study"
+import { ProfilePage } from "@/features/Profile"
 
 export const router = createBrowserRouter([
   {
@@ -62,6 +63,7 @@ export const router = createBrowserRouter([
         path: "schedule-time-study",
         element: <ScheduleTimeStudyPage />,
       },
+      { path: "profile", element: <ProfilePage /> },
     ],
   },
   { path: "*", element: <Navigate to="/" replace /> },
