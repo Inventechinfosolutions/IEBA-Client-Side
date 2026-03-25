@@ -1,11 +1,17 @@
 import { Link } from "react-router-dom"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
+import { useMutation } from "@tanstack/react-query"
+import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 
-import { type ForgotPasswordFormValues } from "./types"
+import {
+  type ForgotPasswordFormValues,
+  type ForgotPasswordPayload,
+  type ForgotPasswordResponse,
+} from "./types"
 import { forgotPasswordSchema } from "./schemas"
 import iebaLogo from "@/assets/ieba-logo.png"
 import forgotPasswordBg from "@/assets/forgot-password-bg.png"
@@ -21,11 +27,29 @@ export function ForgotPassword() {
   const {
     register,
     handleSubmit: formHandleSubmit,
-    formState: { errors },
+    formState: { errors, isSubmitting },
+    reset,
   } = form
 
-  function onSubmit(_values: ForgotPasswordFormValues) {
-    // TODO: wire to forgot-password API
+  const forgotMutation = useMutation<
+    ForgotPasswordResponse,
+    Error,
+    ForgotPasswordPayload
+  >({
+    mutationFn: async (payload) => ({
+      message: `Reset link sent to ${payload.email.trim()}`,
+    }),
+    onSuccess: (data) => {
+      toast.success(data.message)
+      reset()
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to send reset link")
+    },
+  })
+
+  function onSubmit(values: ForgotPasswordFormValues) {
+    forgotMutation.mutate({ email: values.email })
   }
 
   return (
@@ -80,6 +104,7 @@ export function ForgotPassword() {
             </div>
             <Button
               type="submit"
+              disabled={isSubmitting || forgotMutation.isPending}
               className="mt-auto h-11 w-full rounded-[6px] border-0 text-[18px] font-medium text-white hover:opacity-90 mb-[11vh]"
               style={{ background: "linear-gradient(90deg,#00c5fb,#6c5dd3)" }}
             >

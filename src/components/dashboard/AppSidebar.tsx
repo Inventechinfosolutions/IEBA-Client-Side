@@ -7,6 +7,7 @@ import {
   Users,
   Building2,
   Table2,
+  CalendarClock,
 } from "lucide-react"
 
 import {
@@ -44,6 +45,7 @@ const mainNav = [
   { title: "Users", url: "/users", icon: Users },
   { title: "Department Role", url: "/department-role", icon: Building2 },
   { title: "County Activity Code", url: "/county-activity-code", icon: Table2 },
+  { title: "Schedule Time Study", url: "/schedule-time-study", icon: CalendarClock },
 ] as const
 
 export function AppSidebar() {
@@ -199,6 +201,12 @@ export function AppSidebar() {
                     <Link to="/county-activity-code">
                       <Table2 className="mr-2 size-4" />
                       County Activity Code
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/schedule-time-study">
+                      <CalendarClock className="mr-2 size-4" />
+                      Schedule Time Study
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem disabled>

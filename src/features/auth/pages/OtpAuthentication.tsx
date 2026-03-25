@@ -1,7 +1,10 @@
 import { useState } from "react"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { useMutation } from "@tanstack/react-query"
 import { useNavigate, useLocation, Navigate } from "react-router-dom"
 import { toast } from "sonner"
-import { Modal, Select } from "antd"
+import { ChevronDown, Search } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -11,10 +14,26 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { useAuth } from "@/contexts/AuthContext"
 
-import { type OtpLocationState } from "./types"
+import { otpSchema } from "./schemas"
+import {
+  type CompleteSignInPayload,
+  type CompleteSignInResponse,
+  type OtpFormValues,
+  type OtpLocationState,
+  type OtpPayload,
+  type OtpResponse,
+  type ResendOtpPayload,
+  type ResendOtpResponse,
+} from "./types"
 import iebaLogo from "@/assets/ieba-logo.png"
 import forgotPasswordBg from "@/assets/forgot-password-bg.png"
 import mailIcon from "@/assets/login-mail-icon.png"
@@ -29,32 +48,74 @@ const COUNTY_OPTIONS = [
 ]
 
 export function OtpAuthentication() {
-  const [otp, setOtp] = useState("")
-  const [otpError, setOtpError] = useState(false)
   const [countyModalOpen, setCountyModalOpen] = useState(false)
-  const [selectedCounty, setSelectedCounty] = useState<string | null>(null)
+  const [selectedCounty, setSelectedCounty] = useState<string | undefined>(undefined)
   const [countyError, setCountyError] = useState(false)
+  const [countyDropdownOpen, setCountyDropdownOpen] = useState(false)
+  const [countySearch, setCountySearch] = useState("")
   const { completeOtpSignIn } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const state = location.state as OtpLocationState | null
   const email = state?.email ?? ""
   const hasCredentials = Boolean(state?.email && state?.password)
+  const form = useForm<OtpFormValues>({
+    resolver: zodResolver(otpSchema),
+    defaultValues: { otp: "" },
+  })
+  const {
+    register,
+    handleSubmit: formHandleSubmit,
+    setValue,
+    watch,
+    formState: { errors },
+  } = form
+  const otpValue = watch("otp")
 
   if (!hasCredentials) {
     return <Navigate to="/login" replace />
   }
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    const trimmed = otp.trim()
-    if (!trimmed) {
-      setOtpError(true)
-      toast.error("Please Enter OTP")
-      return
-    }
-    setOtpError(false)
-    setCountyModalOpen(true)
+  const verifyOtpMutation = useMutation<OtpResponse, Error, OtpPayload>({
+    mutationFn: async (payload) => ({
+      verified: payload.otp.trim().length > 0,
+    }),
+    onSuccess: () => {
+      setCountyModalOpen(true)
+    },
+    onError: (error) => {
+      toast.error(error.message || "Invalid OTP")
+    },
+  })
+
+  const resendOtpMutation = useMutation<ResendOtpResponse, Error, ResendOtpPayload>({
+    mutationFn: async () => ({
+      message: "OTP resent to your email",
+    }),
+    onSuccess: (data) => toast.info(data.message),
+    onError: (error) => toast.error(error.message || "Failed to resend OTP"),
+  })
+
+  const completeSignInMutation = useMutation<
+    CompleteSignInResponse,
+    Error,
+    CompleteSignInPayload
+  >({
+    mutationFn: async (payload) => {
+      completeOtpSignIn(payload.email)
+      return { success: true }
+    },
+    onSuccess: () => {
+      toast.success("Signed in successfully")
+      navigate("/", { replace: true })
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to sign in")
+    },
+  })
+
+  function handleSubmit(values: OtpFormValues) {
+    verifyOtpMutation.mutate({ otp: values.otp })
   }
 
   function handleCountyOk() {
@@ -64,15 +125,15 @@ export function OtpAuthentication() {
     }
     setCountyError(false)
     setCountyModalOpen(false)
-    completeOtpSignIn(email)
-    toast.success("Signed in successfully")
-    navigate("/", { replace: true })
+    completeSignInMutation.mutate({ email, county: selectedCounty })
   }
 
   function handleCountyCancel() {
     setCountyModalOpen(false)
-    setSelectedCounty(null)
+    setSelectedCounty(undefined)
     setCountyError(false)
+    setCountyDropdownOpen(false)
+    setCountySearch("")
   }
 
   function handleCancel() {
@@ -80,8 +141,16 @@ export function OtpAuthentication() {
   }
 
   function handleResendOtp() {
-    toast.info("OTP resent to your email")
+    resendOtpMutation.mutate({ email })
   }
+
+  const selectedCountyLabel = COUNTY_OPTIONS.find(
+    (county) => county.value === selectedCounty
+  )?.label
+
+  const filteredCountyOptions = COUNTY_OPTIONS.filter((county) =>
+    county.label.toLowerCase().includes(countySearch.toLowerCase())
+  )
 
   return (
     <div className="relative flex min-h-svh w-full flex-col items-center justify-center overflow-hidden bg-white px-6 py-12">
@@ -117,7 +186,7 @@ export function OtpAuthentication() {
           </CardDescription>
         </CardHeader>
         <CardContent className="px-0">
-        <form onSubmit={handleSubmit} className="mt-3 space-y-4">
+        <form onSubmit={formHandleSubmit(handleSubmit)} className="mt-3 space-y-4">
           <div className="space-y-1.5" >
             <label
               htmlFor="otp"
@@ -135,22 +204,22 @@ export function OtpAuthentication() {
                 id="otp"
                 type="text"
                 inputMode="numeric"
-               
-                value={otp}
+                {...register("otp")}
+                value={otpValue}
                 onChange={(e) => {
-                  setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))
-                  setOtpError(false)
+                  setValue("otp", e.target.value.replace(/\D/g, "").slice(0, 6), {
+                    shouldValidate: true,
+                  })
                 }}
-                onBlur={() => otp.trim() === "" && otpError && setOtpError(true)}
-                className={`h-11 rounded-[6px] pl-10 pr-3 text-base font-normal text-gray-900 ${otpError ? "border-red-500 focus-visible:ring-red-500/20" : "border-gray-300"}`}
+                className={`h-11 rounded-[6px] pl-10 pr-3 text-base font-normal text-gray-900 ${errors.otp ? "border-red-500 focus-visible:ring-red-500/20" : "border-gray-300"}`}
                 autoComplete="one-time-code"
-                aria-invalid={otpError}
+                aria-invalid={!!errors.otp}
               />
             </div>
             <div className="min-h-5">
-              {otpError && (
+              {errors.otp && (
                 <p className="text-xs text-red-500" role="alert">
-                  Please Enter OTP
+                  {errors.otp.message}
                 </p>
               )}
             </div>
@@ -160,6 +229,7 @@ export function OtpAuthentication() {
             <button
               type="button"
               onClick={handleResendOtp}
+              disabled={resendOtpMutation.isPending}
               className="text-sm font-normal text-[#000000] underline underline-offset-2 hover:text-gray-700"
             >
               Resend OTP
@@ -176,9 +246,7 @@ export function OtpAuthentication() {
 
           <Button
             type="submit"
-            onClick={() => {
-              if (!otp.trim()) setOtpError(true)
-            }}
+            disabled={verifyOtpMutation.isPending}
             className="mt-4 h-11 w-full rounded-[6px] border-0 text-[18px] font-medium text-white hover:opacity-90"
             style={{ background: "linear-gradient(90deg, #00c5fb, #6c5dd3)" }}
           >
@@ -192,69 +260,123 @@ export function OtpAuthentication() {
       </Card>
 
       {/* County picker modal – props from screenshots, Tailwind */}
-      <Modal
-        open={countyModalOpen}
-        onCancel={handleCountyCancel}
-        title={
-          <div className="mb-6 flex h-12 w-full items-center justify-center gap-4 pt-4">
-            <img
-              src={iebaLogo}
-              alt="logo"
-              className="h-[42px] w-[42px] object-contain"
-            />
-            <h3 className="font-normal text-[#000000E0] text-[25.786px] leading-tight">
-              SuperAdmin IEBA
-            </h3>
+      <Dialog open={countyModalOpen} onOpenChange={(open) => !open && handleCountyCancel()}>
+        <DialogContent
+          overlayClassName="bg-black/40"
+          className="top-[31%] z-[60] w-[min(520px,92vw)] max-w-[92vw] border-0 bg-white p-0 shadow-lg sm:rounded-[6px] [&>button]:hidden"
+        >
+          <DialogHeader className="px-8 pt-10 sm:px-9">
+            <DialogTitle>
+              <div className="mb-3 flex w-full items-center justify-center gap-4">
+                <img
+                  src={iebaLogo}
+                  alt="logo"
+                  className="h-[42px] w-[42px] object-contain"
+                />
+                <h3 className="text-[25px] font-normal leading-[1.05] text-[#000000E0]">
+                  SuperAdmin IEBA
+                </h3>
+              </div>
+            </DialogTitle>
+          </DialogHeader>
+        <div className="px-8 pb-10 pt-1 sm:px-9">
+          <div className="mb-3 w-full">
+            <h6 className="block text-left text-[16px] font-normal leading-tight text-[#000000E0]">
+              Pick a county to proceed
+            </h6>
           </div>
-        }
-        footer={
-          <div className="flex h-8 w-full justify-center gap-3 items-center">
-            <Button
-              type="button"
-              onClick={handleCountyOk}
-              className="h-8 rounded-[6px] border-0 bg-[#6C5DD3] px-[15px] font-normal text-white hover:opacity-90"
-            >
-              OK
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleCountyCancel}
-              className="h-8 rounded-[6px] border border-gray-300 px-[15px] text-sm font-normal text-[#000000E0] hover:bg-gray-50"
-            >
-              Cancel
-            </Button>
-          </div>
-        }
-        width={520}
-        closable
-        className="county-modal"
-      >
-        <div className="py-4 px-6">
-          <h6 className="mb-2 block text-[16px] font-normal text-[#000000E0]">
-            Pick a county to proceed
-          </h6>
-          <div className={countyError ? "rounded-[6px] ring-1 ring-red-500" : ""}>
-            <Select
-              placeholder="Select county"
-              value={selectedCounty}
-              onChange={(val) => {
-                setSelectedCounty(val)
-                setCountyError(false)
-              }}
-              options={COUNTY_OPTIONS}
-              className="w-full [&_.ant-select-selector]:min-h-12 [&_.ant-select-selector]:py-2"
-              size="large"
-              allowClear
-            />
+          <div className="flex w-full justify-center">
+            <div className="relative w-full">
+              {countyDropdownOpen ? (
+                <div
+                  className={`relative flex h-[54px] w-full items-center rounded-[14px] border bg-white ${
+                    countyError ? "border-red-500 ring-1 ring-red-500" : "border-[#6C5DD3] ring-1 ring-[#6C5DD3]"
+                  }`}
+                >
+                  <Input
+                    value={countySearch}
+                    onChange={(e) => setCountySearch(e.target.value)}
+                    placeholder="Search county"
+                    autoFocus
+                    className="h-full border-0 bg-transparent pl-4 pr-11 text-[16px] shadow-none focus-visible:ring-0"
+                  />
+                  <Search className="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#00000040]" />
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCountyDropdownOpen(true)
+                    setCountySearch("")
+                  }}
+                  className={`flex h-[54px] w-full items-center justify-between rounded-[14px] border bg-white px-4 text-left ${
+                    countyError ? "border-red-500 ring-1 ring-red-500" : "border-[#d9d9d9]"
+                  }`}
+                >
+                  <span className={`text-[16px] ${selectedCounty ? "text-[#000000D9]" : "text-[#00000073]"}`}>
+                    {selectedCountyLabel ?? "Select county"}
+                  </span>
+                  <ChevronDown className="h-5 w-5 text-[#00000073]" />
+                </button>
+              )}
+
+              {countyDropdownOpen && (
+                <div className="absolute left-0 top-[66px] z-50 w-full overflow-hidden rounded-[14px] border border-[#d9d9d9] bg-white shadow-md">
+                  <div className="max-h-[220px] overflow-y-auto py-1">
+                    {filteredCountyOptions.map((county) => (
+                      <button
+                        key={county.value}
+                        type="button"
+                        onClick={() => {
+                          setSelectedCounty(county.value)
+                          setCountyError(false)
+                          setCountyDropdownOpen(false)
+                          setCountySearch("")
+                        }}
+                        className={`block w-full px-5 py-1.5 text-left text-[16px] ${
+                          selectedCounty === county.value
+                            ? "bg-[#e6f4ff] font-semibold text-[#000000D9]"
+                            : "text-[#000000D9] hover:bg-[#f5f5f5]"
+                        }`}
+                      >
+                        {county.label}
+                      </button>
+                    ))}
+                    {filteredCountyOptions.length === 0 && (
+                      <div className="px-5 py-2 text-[15px] text-[#00000073]">
+                        No county found
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
           {countyError && (
-            <p className="mt-1.5 text-xs text-red-500" role="alert">
+            <p className="mt-1.5 text-center text-xs text-red-500" role="alert">
               Please select the county
             </p>
           )}
         </div>
-      </Modal>
+        <div className="flex w-full items-center justify-center gap-3 px-8 pb-10 sm:px-9">
+          <Button
+            type="button"
+            onClick={handleCountyOk}
+            className="h-[35px] min-w-[62px] rounded-[6px] border-0 bg-[#6C5DD3] px-4 text-[15px] font-normal text-white hover:bg-[#5f52bd]"
+          >
+            OK
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleCountyCancel}
+            className="h-[35px] min-w-[86px] rounded-[6px] border border-[#d9d9d9] bg-white px-4 text-[15px] font-normal text-[#000000E0] hover:bg-gray-50"
+          >
+            Cancel
+          </Button>
+        </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
