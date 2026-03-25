@@ -208,9 +208,11 @@ export function AppSidebar() {
                       County Activity Code
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem disabled>
-                    <Settings className="mr-2 size-4" />
-                    Settings
+                  <DropdownMenuItem asChild>
+                    <Link to="/settings">
+                      <Settings className="mr-2 size-4" />
+                      Settings
+                    </Link>
                   </DropdownMenuItem>
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />

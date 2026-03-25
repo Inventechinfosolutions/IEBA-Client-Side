@@ -13,6 +13,7 @@ import { OtpAuthentication } from "@/features/auth/pages/OtpAuthentication"
 import { UsersPage, UserPage } from "@/features/users"
 import { DepartmentRolePage } from "@/features/DepartmentRole/pages/DepartmentRolePage"
 import { CountyActivityCodePage } from "@/features/CountyActivityCode/pages/CountyActivityCodePage"
+import { SettingsPage } from "@/features/settings"
 
 export const router = createBrowserRouter([
   {
@@ -59,6 +60,7 @@ export const router = createBrowserRouter([
         path: "county-activity-code",
         element: <CountyActivityCodePage />,
       },
+      { path: "settings", element: <SettingsPage /> },
     ],
   },
   { path: "*", element: <Navigate to="/" replace /> },
