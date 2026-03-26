@@ -1,7 +1,5 @@
 import { EmployeePanel } from "@/features/user/components/EmployeePanel"
-import { type UserFormPanelProps } from "@/features/user/types"
-
-type UserFormPageProps = UserFormPanelProps
+import type { UserFormPageProps } from "@/features/user/types"
 
 export function UserFormPage({ mode, initialValues, onCancel, onSave }: UserFormPageProps) {
   return (

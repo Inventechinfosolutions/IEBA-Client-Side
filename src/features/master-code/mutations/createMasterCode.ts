@@ -7,7 +7,12 @@ import type { CreateMasterCodeInput, MasterCodeRow } from "../types"
 async function createMasterCode(input: CreateMasterCodeInput): Promise<MasterCodeRow> {
   await delay(MOCK_NETWORK_DELAY_MS)
 
-  const nextId = String(mockMasterCodeRows.length + 1)
+  const maxId = mockMasterCodeRows.reduce((max, row) => {
+    const parsed = Number.parseInt(row.id, 10)
+    if (Number.isNaN(parsed)) return max
+    return Math.max(max, parsed)
+  }, 0)
+  const nextId = String(maxId + 1)
   const activityDescription = input.values.activityDescription.trim()
   const nextRow: MasterCodeRow = {
     id: nextId,

@@ -3,16 +3,7 @@ import { Check, Plus, Search } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-
-type UserToolbarProps = {
-  inactiveOnly: boolean
-  searchTerm: string
-  suggestions: string[]
-  onToggleInactiveOnly: () => void
-  onSearchChange: (value: string) => void
-  onSelectSuggestion: (value: string) => void
-  onAddEmployee: () => void
-}
+import type { UserToolbarProps } from "@/features/user/types"
 
 export function UserToolbar({
   inactiveOnly,
@@ -40,7 +31,7 @@ export function UserToolbar({
           value={searchTerm}
           onChange={(event) => onSearchChange(event.target.value)}
           placeholder="Search here"
-          className={`h-9 rounded-[8px] bg-white pl-9 text-[12px] text-[#232735] shadow-[0_1px_3px_rgba(35,39,53,0.08)] placeholder:text-[#b7bccb] focus-visible:ring-0 ${
+          className={`h-9 rounded-[8px] bg-white pl-9 !text-[11px] md:!text-[11px] text-[#232735] shadow-[0_1px_3px_rgba(35,39,53,0.08)] placeholder:text-[11px] placeholder:text-[#b7bccb] focus-visible:ring-0 ${
             isSearchFocused || searchTerm.trim()
               ? "border-[#8f86f0]"
               : "border-[#e1e4ec]"

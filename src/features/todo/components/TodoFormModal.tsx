@@ -1,5 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
+import { X } from "lucide-react"
+import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -11,16 +13,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { todoFormSchema } from "../schemas"
-import type { TodoFormMode, TodoFormValues } from "../types"
-
-type TodoFormModalProps = {
-  open: boolean
-  mode: TodoFormMode
-  initialValues: TodoFormValues
-  isSubmitting?: boolean
-  onOpenChange: (open: boolean) => void
-  onSave: (values: TodoFormValues) => void
-}
+import type { TodoFormValues, TodoFormModalProps } from "../types"
 
 export function TodoFormModal({
   open,
@@ -43,6 +36,22 @@ export function TodoFormModal({
 
   const handleSubmit = form.handleSubmit((values) => {
     onSave(values)
+  }, () => {
+    const titleError = form.formState.errors.title?.message
+    const descriptionError = form.formState.errors.description?.message
+    const statusError = form.formState.errors.status?.message
+    const message = titleError || descriptionError || statusError || "Please fix validation errors"
+
+    toast.error(message, {
+      position: "top-center",
+      icon: (
+        <span className="inline-flex size-4 items-center justify-center rounded-full bg-[#ef4444] text-white">
+          <X className="size-3 stroke-[3]" />
+        </span>
+      ),
+      className:
+        "!w-fit !max-w-none !min-h-[35px] !rounded-[8px] !px-3 !py-2 !text-[12px] !whitespace-nowrap !text-[#111827] !shadow-[0_8px_22px_rgba(17,24,39,0.18)]",
+    })
   })
 
   return (
@@ -72,11 +81,6 @@ export function TodoFormModal({
                     placeholder="Enter To Do Title"
                     className="h-[46px] w-[300px] rounded-[8px] border-[#dfe3ee] text-[12px] placeholder:text-[12px] placeholder:text-gray-400 disabled:pointer-events-auto disabled:cursor-not-allowed disabled:!border-[0.8px] disabled:!border-[#cfd4dd] disabled:!bg-[#d2d4d9]/20 disabled:!text-black disabled:opacity-100 focus-visible:border-[#8f86f0] focus-visible:ring-1 focus-visible:ring-[#8f86f033]"
                   />
-                  {form.formState.errors.title ? (
-                    <p className="mt-1 text-[11px] text-[#ef4444]">
-                      {form.formState.errors.title.message}
-                    </p>
-                  ) : null}
                 </div>
                 <div>
                   <label className="mb-2 block text-[12px] text-[#111827]">*Status</label>
@@ -132,11 +136,6 @@ export function TodoFormModal({
                   placeholder="Enter To Do Title"
                   className="h-[46px] w-[282px] rounded-[8px] border-[#dfe3ee] text-[12px] placeholder:text-[12px] placeholder:text-gray-400 focus-visible:border-[#8f86f0] focus-visible:ring-1 focus-visible:ring-[#8f86f033]"
                 />
-                {form.formState.errors.title ? (
-                  <p className="mt-1 text-[11px] text-[#ef4444]">
-                    {form.formState.errors.title.message}
-                  </p>
-                ) : null}
               </div>
             )}
             <div>
@@ -147,7 +146,7 @@ export function TodoFormModal({
                 {...form.register("description")}
                 disabled={isDescriptionDisabled}
                 placeholder="Enter To Do Description"
-                className="min-h-[86px] rounded-[8px] border-[#dfe3ee] text-[12px] placeholder:text-[12px] placeholder:text-gray-400 disabled:pointer-events-auto disabled:cursor-not-allowed disabled:!border-[0.8px] disabled:!border-[#cfd4dd] disabled:!bg-[#d2d4d9]/20 disabled:!text-black disabled:opacity-100 focus-visible:border-[#8f86f0] focus-visible:ring-1 focus-visible:ring-[#8f86f033]"
+                className="min-h-[86px] whitespace-pre-wrap break-all rounded-[8px] border-[#dfe3ee] text-[12px] placeholder:text-[12px] placeholder:text-gray-400 disabled:pointer-events-auto disabled:cursor-not-allowed disabled:!border-[0.8px] disabled:!border-[#cfd4dd] disabled:!bg-[#d2d4d9]/20 disabled:!text-black disabled:opacity-100 focus-visible:border-[#8f86f0] focus-visible:ring-1 focus-visible:ring-[#8f86f033]"
               />
             </div>
           </div>

@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useMemo, useRef, useState } from "react"
 import { ChevronDown, ChevronUp } from "lucide-react"
 import { useFormContext } from "react-hook-form"
 
+import tableEmptyIcon from "@/assets/icons/table-empty.png"
 import { Input } from "@/components/ui/input"
 import { type UserModuleFormValues } from "@/features/user/types"
 import { cn } from "@/lib/utils"
@@ -20,24 +21,20 @@ export function TimeStudyAssignmentsPanel() {
   const inputClassName =
     `h-[46px] rounded-[7px] border border-[#c6cedd] bg-white px-3 pr-8 ${matchedTextClass} text-[#111827] shadow-none placeholder:!text-[11px] placeholder:!leading-[16px] placeholder:font-normal placeholder:text-[#c2c7d3] focus-visible:border-[#cfc6ff] focus-visible:ring-0`
 
-  useEffect(() => {
-    if (!isDepartmentOpen) return
-
-    const handlePointerDown = (event: MouseEvent) => {
-      const target = event.target as Node
-      if (!departmentDropdownRef.current?.contains(target)) {
-        setIsDepartmentOpen(false)
-      }
-    }
-
-    document.addEventListener("mousedown", handlePointerDown)
-    return () => {
-      document.removeEventListener("mousedown", handlePointerDown)
-    }
-  }, [isDepartmentOpen])
-
   return (
-    <div className="pt-2">
+    <div
+      className="pt-2"
+      onMouseDownCapture={(event) => {
+        const target = event.target as Node
+        if (
+          isDepartmentOpen &&
+          departmentDropdownRef.current &&
+          !departmentDropdownRef.current.contains(target)
+        ) {
+          setIsDepartmentOpen(false)
+        }
+      }}
+    >
       <p className="mb-4 select-none text-[12px] font-semibold uppercase text-[#111827]">{employeeName}</p>
       <div className="flex items-end justify-between gap-6">
         <div className="w-full max-w-[306px]">
@@ -73,23 +70,33 @@ export function TimeStudyAssignmentsPanel() {
             </button>
             {isDepartmentOpen ? (
               <div className="absolute z-10 mt-1 max-h-[180px] w-full overflow-auto rounded-[7px] border border-[#d9deea] bg-white p-1 shadow-[0_8px_18px_rgba(17,24,39,0.12)]">
-                {options.map((option) => (
-                  <button
-                    key={option}
-                    type="button"
-                    onMouseDown={(event) => event.preventDefault()}
-                    onClick={() => {
-                      setValue("claimingUnit", option)
-                      setIsDepartmentOpen(false)
-                    }}
-                    className={cn(
-                      `block w-full cursor-pointer rounded-[5px] px-2.5 py-1.5 text-left ${matchedTextClass} text-[#111827] hover:bg-[#edf5ff]`,
-                      department === option ? "bg-[#dbeafe] font-normal" : ""
-                    )}
-                  >
-                    {option}
-                  </button>
-                ))}
+                {options.length > 0 ? (
+                  options.map((option) => (
+                    <button
+                      key={option}
+                      type="button"
+                      onMouseDown={(event) => event.preventDefault()}
+                      onClick={() => {
+                        setValue("claimingUnit", option)
+                        setIsDepartmentOpen(false)
+                      }}
+                      className={cn(
+                        `block w-full cursor-pointer rounded-[5px] px-2.5 py-1.5 text-left ${matchedTextClass} text-[#111827] hover:bg-[#edf5ff]`,
+                        department === option ? "bg-[#dbeafe] font-normal" : ""
+                      )}
+                    >
+                      {option}
+                    </button>
+                  ))
+                ) : (
+                  <div className="flex flex-col items-center justify-center rounded-[6px] border border-[#eceff5] bg-white px-3 py-4">
+                    <img
+                      src={tableEmptyIcon}
+                      alt=""
+                      className="h-[73px] w-[82px] object-contain"
+                    />
+                  </div>
+                )}
               </div>
             ) : null}
           </div>

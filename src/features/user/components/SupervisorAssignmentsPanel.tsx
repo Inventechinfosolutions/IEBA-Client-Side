@@ -2,8 +2,12 @@ import { useMemo, useState } from "react"
 import { Controller, useFormContext } from "react-hook-form"
 import { ChevronDown, ChevronUp } from "lucide-react"
 
+import tableEmptyIcon from "@/assets/icons/table-empty.png"
 import { Input } from "@/components/ui/input"
-import { type UserModuleFormValues } from "@/features/user/types"
+import type {
+  SupervisorDropdownFieldProps,
+  UserModuleFormValues,
+} from "@/features/user/types"
 import { cn } from "@/lib/utils"
 
 const supervisorOptions = [
@@ -13,12 +17,7 @@ const supervisorOptions = [
   "Smith Shonda",
 ]
 
-type DropdownFieldProps = {
-  name: "supervisorPrimary" | "supervisorSecondary"
-  label: string
-}
-
-function DropdownField({ name, label }: DropdownFieldProps) {
+function DropdownField({ name, label }: SupervisorDropdownFieldProps) {
   const [isOpen, setIsOpen] = useState(false)
   const { control } = useFormContext<UserModuleFormValues>()
   const inputTextClass = "!text-[11px] !leading-[14px] font-normal"
@@ -27,8 +26,7 @@ function DropdownField({ name, label }: DropdownFieldProps) {
     `h-[46px] rounded-[7px] border border-[#c6cedd] bg-white px-3 pr-8 ${inputTextClass} text-[#111827] shadow-none placeholder:!text-[9.5px] placeholder:!leading-[14px] placeholder:font-normal placeholder:text-[#c2c7d3] focus-visible:border-[#cfc6ff] focus-visible:ring-0`
 
   const options = useMemo(() => supervisorOptions, [])
-  const selectedOptionClass =
-    name === "supervisorSecondary" ? "bg-[#eef0f4] font-normal" : "bg-[#dbeafe] font-normal"
+  const selectedOptionClass = "bg-[#dbeafe] font-normal"
 
   return (
     <Controller
@@ -72,23 +70,33 @@ function DropdownField({ name, label }: DropdownFieldProps) {
             </button>
             {isOpen ? (
               <div className="absolute z-10 mt-1 max-h-[180px] w-full overflow-auto rounded-[7px] border border-[#d9deea] bg-white p-1 shadow-[0_8px_18px_rgba(17,24,39,0.12)]">
-                {options.map((option) => (
-                  <button
-                    key={option}
-                    type="button"
-                    onMouseDown={(event) => event.preventDefault()}
-                    onClick={() => {
-                      field.onChange(option)
-                      setIsOpen(false)
-                    }}
-                    className={cn(
-                      `block w-full cursor-pointer rounded-[4px] px-2.5 py-1.5 text-left ${optionTextClass} text-[#111827] hover:bg-[#edf5ff]`,
-                      field.value === option ? selectedOptionClass : ""
-                    )}
-                  >
-                    {option}
-                  </button>
-                ))}
+                {options.length > 0 ? (
+                  options.map((option) => (
+                    <button
+                      key={option}
+                      type="button"
+                      onMouseDown={(event) => event.preventDefault()}
+                      onClick={() => {
+                        field.onChange(option)
+                        setIsOpen(false)
+                      }}
+                      className={cn(
+                        `block w-full cursor-pointer rounded-[4px] px-2.5 py-1.5 text-left ${optionTextClass} text-[#111827] hover:bg-[#e5e7eb]`,
+                        field.value === option ? selectedOptionClass : ""
+                      )}
+                    >
+                      {option}
+                    </button>
+                  ))
+                ) : (
+                  <div className="flex flex-col items-center justify-center rounded-[6px] border border-[#eceff5] bg-white px-3 py-4">
+                    <img
+                      src={tableEmptyIcon}
+                      alt=""
+                      className="h-[73px] w-[82px] object-contain"
+                    />
+                  </div>
+                )}
               </div>
             ) : null}
           </div>

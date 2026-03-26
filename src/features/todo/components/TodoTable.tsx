@@ -18,15 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import type { TodoRow } from "../types"
-
-type TodoTableProps = {
-  rows: TodoRow[]
-  isLoading: boolean
-  titleSortState: "none" | "asc" | "desc"
-  onToggleTitleSort: () => void
-  onEditRow: (row: TodoRow) => void
-}
+import type { TodoRow, TodoTableProps } from "../types"
 
 const headers: { label: string; className?: string }[] = [
   { label: "Title", className: "w-[160px]" },
@@ -177,11 +169,11 @@ export function TodoTable({
           ) : (
             <>
               {rows.map((row) => (
-                <TableRow key={row.id} className="h-11 border-[#e9ecf3] hover:bg-transparent">
-                  <TableCell className="w-[160px] border-r border-[#eff0f5] px-3 text-[12px] text-[#111827]">
+                <TableRow key={row.id} className="min-h-[44px] border-[#e9ecf3] hover:bg-transparent">
+                  <TableCell className="w-[160px] align-top border-r border-[#eff0f5] px-3 text-[12px] text-[#111827] whitespace-normal break-words">
                     {row.title}
                   </TableCell>
-                  <TableCell className="w-[360px] border-r border-[#eff0f5] max-w-[360px] truncate px-3 text-[12px] text-[#111827]">
+                  <TableCell className="w-[360px] max-w-[360px] align-top border-r border-[#eff0f5] px-3 text-[12px] text-[#111827] whitespace-normal break-words">
                     {row.description || "-"}
                   </TableCell>
                   <TableCell className="w-[160px] border-r border-[#eff0f5] px-3 text-center text-[12px] text-[#111827]">

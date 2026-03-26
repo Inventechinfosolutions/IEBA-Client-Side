@@ -6,13 +6,7 @@ import {
   PaginationItem,
   PaginationLink,
 } from "@/components/ui/pagination"
-
-type TodoPaginationProps = {
-  totalItems: number
-  currentPage: number
-  pageSize: number
-  onPageChange: (page: number) => void
-}
+import type { TodoPaginationProps } from "../types"
 
 export function TodoPagination({
   totalItems,

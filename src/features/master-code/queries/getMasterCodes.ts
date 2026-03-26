@@ -36,5 +36,7 @@ export function useGetMasterCodes(params: GetMasterCodesParams) {
   return useQuery({
     queryKey: masterCodeKeys.list(params),
     queryFn: () => fetchMasterCodes(params),
+    staleTime: 60_000,
+    gcTime: 5 * 60_000,
   })
 }

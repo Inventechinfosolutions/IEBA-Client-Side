@@ -44,7 +44,9 @@ import { ChangePasswordFormModal } from "@/features/change-password"
 const mainNav = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Master Code", url: "/master-code", icon: ScrollText },
+  { title: "Program", url: "/program", icon: ScrollText },
   { title: "To Do", url: "/to-do", icon: ScrollText },
+  { title: "Leave Approval", url: "/leave-approval", icon: ScrollText },
   { title: "User", url: "/user", icon: Users },
   { title: "Users", url: "/users", icon: Users },
   { title: "Department Role", url: "/department-role", icon: Building2 },
@@ -180,9 +182,21 @@ export function AppSidebar() {
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
+                    <Link to="/program">
+                      <ScrollText className="mr-2 size-4" />
+                      Program
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
                     <Link to="/to-do">
                       <ScrollText className="mr-2 size-4" />
                       To Do
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/leave-approval">
+                      <ScrollText className="mr-2 size-4" />
+                      Leave Approval
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
@@ -210,6 +224,10 @@ export function AppSidebar() {
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
+                    <Link to="/settings">
+                      <Settings className="mr-2 size-4" />
+                      Settings
+                    </Link>
                     <Link to="/schedule-time-study">
                       <CalendarClock className="mr-2 size-4" />
                       Schedule Time Study

@@ -9,8 +9,6 @@ import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useAuth } from "@/contexts/AuthContext"
-import { setToken } from "@/lib/api"
-import { setStoredUser } from "@/lib/auth-storage"
 
 import { type LoginFormValues, type LoginPayload, type LoginResponse } from "./types"
 import { loginSchema } from "./schemas"
@@ -51,17 +49,6 @@ export function LoginPage() {
 
   function onSubmit(values: LoginFormValues) {
     loginMutation.mutate({ email: values.email, password: values.password })
-  }
-
-  function handleDevBypass() {
-    setToken("dev-token")
-    setStoredUser({
-      id: "1",
-      name: "ieba admin",
-      email: "admin@ieba.local",
-    })
-    toast.success("Dev login enabled")
-    window.location.assign("/master-code")
   }
 
   return (
@@ -161,16 +148,6 @@ export function LoginPage() {
                   </span>
                 )}
               </Button>
-              {import.meta.env.DEV && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full"
-                  onClick={handleDevBypass}
-                >
-                  Auto Login (UI Only)
-                </Button>
-              )}
             </form>
           </div>
         </div>

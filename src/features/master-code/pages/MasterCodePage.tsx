@@ -8,6 +8,7 @@ import { MasterCodeTable } from "../components/MasterCodeTable.tsx"
 import { MasterCodeTabs } from "../components/MasterCodeTabs.tsx"
 import { MasterCodeToolbar } from "../components/MasterCodeToolbar.tsx"
 import { useMasterCodes } from "../hooks/useMasterCodes"
+import { DEFAULT_ACTIVITY_DESCRIPTION } from "../mock"
 import {
   type MasterCodeFormMode,
   type MasterCodeFormValues,
@@ -17,9 +18,6 @@ import {
 
 const tabs: MasterCodeTab[] = ["FFP", "MAA", "TCM", "INTERNAL", "CDSS"]
 const pageSize = 10
-const defaultActivityDescription =
-  "This function code is to be used by all staff (SPMP and Non-SPMP) when performing activities that inform Medi-Cal eligible or potentially eligible individuals, as well as other clients, about health services covered by Medi-Cal and how to access the health programs."
-
 const emptyFormValues: MasterCodeFormValues = {
   code: "",
   name: "",
@@ -40,7 +38,7 @@ export function MasterCodePage() {
       </span>
     ),
     className:
-      "!w-fit !max-w-none !min-h-[35px] !rounded-[8px] !border-0 !px-3 !py-2 !text-[11px] !whitespace-nowrap !shadow-[0_8px_22px_rgba(17,24,39,0.18)]",
+      "!w-fit !max-w-none !min-h-[35px] !rounded-[8px] !border-0 !px-3 !py-2 !text-[12px] !whitespace-nowrap !shadow-[0_8px_22px_rgba(17,24,39,0.18)]",
   }
 
   const [activeTab, setActiveTab] = useState<MasterCodeTab>("FFP")
@@ -73,7 +71,7 @@ export function MasterCodePage() {
         allocable: selectedRow.allocable,
         active: selectedRow.status,
         activityDescription:
-          selectedRow.activityDescription ?? defaultActivityDescription,
+          selectedRow.activityDescription ?? DEFAULT_ACTIVITY_DESCRIPTION,
       }
     }
     return emptyFormValues
@@ -129,11 +127,13 @@ export function MasterCodePage() {
         "--primary": "#6C5DD3",
       } as React.CSSProperties}
     >
-      <MasterCodeTabs
-        tabs={tabs}
-        activeTab={activeTab}
-        onChange={handleTabChange}
-      />
+      <div className="-mx-5 -mt-5 md:-mx-6 md:-mt-6">
+        <MasterCodeTabs
+          tabs={tabs}
+          activeTab={activeTab}
+          onChange={handleTabChange}
+        />
+      </div>
       <div className="mt-5">
         <MasterCodeToolbar
           codeType={activeTab}

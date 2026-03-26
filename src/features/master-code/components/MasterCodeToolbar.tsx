@@ -1,15 +1,7 @@
 import { Check, Plus } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-
-type MasterCodeToolbarProps = {
-  codeType: string
-  allowMultiCodes: boolean
-  inactiveOnly: boolean
-  onToggleAllowMultiCodes: () => void
-  onToggleInactiveOnly: () => void
-  onAddFfp: () => void
-}
+import type { MasterCodeToolbarProps } from "@/features/master-code/types"
 
 export function MasterCodeToolbar({
   codeType,
