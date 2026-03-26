@@ -13,8 +13,10 @@ export const countyActivityAddFormSchema = z.object({
   countyActivityCode: z.string().min(1, "County activity code is required"),
   countyActivityName: z.string().min(1, "County activity name is required"),
   description: z.string().min(1, "Description is required"),
-  department: z.string().min(1, "Department is required"),
-  masterCodeType: z.string().min(1, "Master code type is required"),
+  // NOTE: Sub-county rows intentionally keep these blank in the table.
+  // Primary-tab validation is enforced in the form UI logic.
+  department: z.string(),
+  masterCodeType: z.string(),
   masterCode: z.number().int().nonnegative("Master code must be 0 or more"),
   match: z.enum(["N", "E", "N/M", "E/N"]),
   percentage: z

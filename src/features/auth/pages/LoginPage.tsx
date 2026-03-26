@@ -2,7 +2,9 @@ import { useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
+import { useMutation } from "@tanstack/react-query"
 import { Eye, EyeOff } from "lucide-react"
+import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -10,7 +12,7 @@ import { useAuth } from "@/contexts/AuthContext"
 import { setToken } from "@/lib/api"
 import { setStoredUser } from "@/lib/auth-storage"
 
-import { type LoginFormValues } from "./types"
+import { type LoginFormValues, type LoginPayload, type LoginResponse } from "./types"
 import { loginSchema } from "./schemas"
 import loginLogo from "@/assets/login-logo.png"
 import loginRightBg from "@/assets/login-right-bg.png"
@@ -31,12 +33,24 @@ export function LoginPage() {
   const {
     register,
     handleSubmit: formHandleSubmit,
-    formState: { errors, isSubmitting },
+    formState: { errors },
   } = form
 
+  const loginMutation = useMutation<LoginResponse, Error, LoginPayload>({
+    mutationFn: async (payload) => {
+      return { email: payload.email.trim() }
+    },
+    onSuccess: (data, variables) => {
+      clearError()
+      navigate("/otp", {
+        state: { email: data.email, password: variables.password },
+        replace: true,
+      })
+    },
+  })
+
   function onSubmit(values: LoginFormValues) {
-    clearError()
-    navigate("/otp", { state: { email: values.email.trim(), password: values.password }, replace: true })
+    loginMutation.mutate({ email: values.email, password: values.password })
   }
 
   function handleDevBypass() {
@@ -59,13 +73,13 @@ export function LoginPage() {
           backgroundPosition: "center top",
         }}
       >
-        <div className="relative z-10 flex w-full max-w-md flex-col items-center pt-[18vh]">
+        <div className="relative z-10 flex w-full max-w-md flex-col items-center pt-[23vh]">
           <div className="w-full min-h-[430px] max-h-[50vh] overflow-y-auto rounded-[5px] bg-white p-8 shadow-login-card">
             <div className="text-center">
-              <h1 className="mb-2 font-bold tracking-tight text-[#212529] font-[Roboto,sans-serif] text-[34.465px] leading-tight">
+              <h1 className="mb-2 tracking-tight text-[#212529] font-[Roboto,sans-serif] text-[38.465px] leading-tight">
                 Login
               </h1>
-              <p className="text-sm text-gray-500">Access to our dashboard</p>
+              <p className="text-[19px] text-gray-500">Access to our dashboard</p>
             </div>
             <form onSubmit={formHandleSubmit(onSubmit)} className="mt-6 space-y-4">
               {error && (
@@ -131,11 +145,11 @@ export function LoginPage() {
               </div>
               <Button
                 type="submit"
-                disabled={isSubmitting}
+                disabled={loginMutation.isPending}
                 className="h-11 w-full rounded-lg border-0 text-[18px] font-medium text-white hover:opacity-90"
                 style={{ background: "linear-gradient(90deg,#00c5fb,#6c5dd3)" }}
               >
-                {isSubmitting ? (
+                {loginMutation.isPending ? (
                   <span className="flex items-center justify-center gap-2">
                     <img src={submitIcon} alt="" className="h-[28px] w-auto animate-spin object-contain [filter:brightness(0)_invert(1)]" />
                     Signing in…

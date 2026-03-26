@@ -16,6 +16,8 @@ export type CountyActivityCodeRow = {
   active: boolean
   leaveCode: boolean
   multipleJobPools: boolean
+  rowType: "primary" | "sub"
+  parentId?: string | null
 }
 
 export type CountyActivityFilterFormValues = {
@@ -45,13 +47,21 @@ export type CountyActivityPagination = {
 
 export type CountyActivityCodeAddPageProps = {
   form: UseFormReturn<CountyActivityAddFormValues>
-  onSubmit: () => void
+  onSubmit: (tab: "primary" | "sub") => void
   onClose: () => void
   mode?: "add" | "edit"
+  tab?: "primary" | "sub"
+  onTabChange?: (tab: "primary" | "sub") => void
+  primaryActivityCodeOptions?: ReadonlyArray<{ label: string; value: string }>
+  selectedPrimaryId?: string | null
+  onSelectedPrimaryIdChange?: (id: string) => void
+  disabledTabs?: Partial<Record<"primary" | "sub", boolean>>
 }
 
 export type CountyActivityCodeTableProps = {
   rows: CountyActivityCodeRow[]
+  primaryRows: CountyActivityCodeRow[]
+  subRowsByParentId: Record<string, CountyActivityCodeRow[]>
   pagination: CountyActivityPagination
   totalItems: number
   isLoading?: boolean

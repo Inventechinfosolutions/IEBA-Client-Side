@@ -12,6 +12,9 @@ import { OtpAuthentication } from "@/features/auth/pages/OtpAuthentication"
 import { UsersPage, UserPage } from "@/features/users"
 import { DepartmentRolePage } from "@/features/DepartmentRole/pages/DepartmentRolePage"
 import { CountyActivityCodePage } from "@/features/CountyActivityCode/pages/CountyActivityCodePage"
+import { ScheduleTimeStudyPage } from "@/features/schedule-time-study"
+import { ProfilePage } from "@/features/Profile"
+import { CostPoolPage } from "@/features/cost-pool"
 
 export const router = createBrowserRouter([
   {
@@ -57,6 +60,12 @@ export const router = createBrowserRouter([
         path: "county-activity-code",
         element: <CountyActivityCodePage />,
       },
+      {
+        path: "schedule-time-study",
+        element: <ScheduleTimeStudyPage />,
+      },
+      { path: "costpool", element: <CostPoolPage /> },
+      { path: "profile", element: <ProfilePage /> },
     ],
   },
   { path: "*", element: <Navigate to="/" replace /> },

@@ -63,7 +63,7 @@ export function DepartmentRolePage() {
     [data]
   )
 
-  const handleAddRoleSubmit = useCallback((values: AddRoleFormValues) => {
+  const handleAddRoleSubmit = useCallback((_values: AddRoleFormValues) => {
     // TODO: wire to API when available; values: department, roleName, active, assignedPermissions
     setAddOpen(false)
   }, [])
