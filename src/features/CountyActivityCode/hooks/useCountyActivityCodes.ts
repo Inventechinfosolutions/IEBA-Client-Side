@@ -57,12 +57,27 @@ export function useCountyActivityCodes(filters: CountyActivityFilterFormValues) 
     )
   }, [query.data, filters.search, filters.inactive])
 
-  const totalItems = filteredRows.length
+  const { primaryRows, subRowsByParentId } = useMemo(() => {
+    const primary: CountyActivityCodeRow[] = []
+    const byParent: Record<string, CountyActivityCodeRow[]> = {}
+
+    for (const row of filteredRows) {
+      if (row.rowType === "sub" && row.parentId) {
+        byParent[row.parentId] = [...(byParent[row.parentId] ?? []), row]
+      } else {
+        primary.push(row)
+      }
+    }
+
+    return { primaryRows: primary, subRowsByParentId: byParent }
+  }, [filteredRows])
+
+  const totalItems = primaryRows.length
   const totalPages = Math.max(1, Math.ceil(totalItems / pagination.pageSize))
   const safePage = Math.min(pagination.page, totalPages)
   const start = (safePage - 1) * pagination.pageSize
   const end = start + pagination.pageSize
-  const paginatedRows = filteredRows.slice(start, end)
+  const paginatedRows = primaryRows.slice(start, end)
 
   const onPageChange = useCallback((page: number) => {
     triggerPageLoading()
@@ -76,6 +91,8 @@ export function useCountyActivityCodes(filters: CountyActivityFilterFormValues) 
 
   return {
     rows: paginatedRows,
+    primaryRows,
+    subRowsByParentId,
     totalItems,
     isLoading: query.isLoading || isPageLoading,
     pagination: {

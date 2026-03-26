@@ -1,7 +1,8 @@
 import { zodResolver } from "@hookform/resolvers/zod"
-import { PlusIcon, SearchIcon } from "lucide-react"
+import { ChevronDown, ChevronRight, PlusIcon, SearchIcon } from "lucide-react"
 import { useForm } from "react-hook-form"
 import { useMemo, useState } from "react"
+import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -59,11 +60,32 @@ import statusCheckImg from "@/assets/status-check.png"
 import statusCrossImg from "@/assets/status-cross.png"
 import editIconImg from "@/assets/edit-icon.png"
 import { useUpdateCountyActivityCode } from "../mutations/updateCountyActivityCode"
+import { useCreateCountyActivityCode } from "../mutations/createCountyActivityCode"
+import { COUNTY_ACTIVITY_DUMMY_DEPARTMENTS } from "../queries/getCountyActivityCodes"
 
 const PAGE_SIZES = [10, 20, 30, 50] as const
 
+function getFallbackDepartment(row: CountyActivityCodeRow): string {
+  const dept = row.department?.trim()
+  if (dept) return dept
+
+  const key = `${row.id}|${row.countyActivityCode}|${row.countyActivityName}`
+  let hash = 0
+  for (let i = 0; i < key.length; i += 1) {
+    hash = (hash + key.charCodeAt(i)) % 2147483647
+  }
+
+  return (
+    COUNTY_ACTIVITY_DUMMY_DEPARTMENTS[
+      hash % COUNTY_ACTIVITY_DUMMY_DEPARTMENTS.length
+    ] ?? "Social Services"
+  )
+}
+
 export function CountyActivityCodeTable({
   rows,
+  primaryRows,
+  subRowsByParentId,
   pagination,
   totalItems,
   isLoading = false,
@@ -96,25 +118,93 @@ export function CountyActivityCodeTable({
   const totalPages = Math.max(1, Math.ceil(totalItems / pagination.pageSize))
   const pageNumbers = Array.from({ length: totalPages }, (_, index) => index + 1)
 
-  const handleAddSubmit = addForm.handleSubmit(() => {
-    addForm.reset()
-    setAddOpen(false)
-  })
-
   const [addOpen, setAddOpen] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
   const [rowToEdit, setRowToEdit] = useState<CountyActivityCodeRow | null>(null)
+  const [addTab, setAddTab] = useState<"primary" | "sub">("primary")
+  const [currentPrimaryId, setCurrentPrimaryId] = useState<string | null>(null)
+  const [currentPrimaryDefaults, setCurrentPrimaryDefaults] = useState<{
+    masterCodeType: string
+    masterCode: number
+    department: string
+  } | null>(null)
   const [sortBy, setSortBy] = useState<CountyActivityCodeSortableColumn | null>(
     null
   )
   const [sortDirection, setSortDirection] =
     useState<CountyActivityCodeSortDirection>(null)
+  const [isSortTooltipOpen, setIsSortTooltipOpen] = useState(false)
+  const [sortTooltipColumn, setSortTooltipColumn] =
+    useState<CountyActivityCodeSortableColumn | null>(null)
 
   const updateCountyActivityCode = useUpdateCountyActivityCode()
+  const createCountyActivityCode = useCreateCountyActivityCode()
+
+  const primaryActivityLabel = (row: CountyActivityCodeRow): string => {
+    const full = `${row.countyActivityCode} - ${row.countyActivityName}`
+    return full.length > 42 ? row.countyActivityCode : full
+  }
+
+  const primaryActivityOptions = useMemo(
+    () =>
+      primaryRows.map((row) => ({
+        label: primaryActivityLabel(row),
+        value: row.id,
+      })),
+    [primaryRows]
+  )
+
+  const handleAddSubmit = (tab: "primary" | "sub") =>
+    addForm.handleSubmit((values) => {
+      createCountyActivityCode.mutate(
+        { values, tab, parentId: tab === "sub" ? currentPrimaryId : null },
+        {
+        onSuccess: (newRow) => {
+          toast.success(
+            tab === "primary" ? "Primary county detail saved" : "Sub county detail saved"
+          )
+
+          if (tab === "primary") {
+            // Keep modal open; stay on Primary tab. Remember this primary for Sub creation.
+            setCurrentPrimaryId(newRow.id)
+            setCurrentPrimaryDefaults({
+              masterCodeType: newRow.masterCodeType,
+              masterCode: newRow.masterCode,
+              department: newRow.department,
+            })
+            addForm.reset({
+              ...countyActivityAddDefaultValues,
+              // Clear primary form after save
+            })
+            return
+          }
+
+          // After saving a secondary row, keep the modal open so user can add more secondaries.
+          if (currentPrimaryId) {
+            setExpandedRowIds((prev) => ({ ...prev, [currentPrimaryId]: true }))
+          }
+          addForm.reset({
+            ...countyActivityAddDefaultValues,
+            department: values.department,
+            masterCodeType: values.masterCodeType,
+            masterCode: values.masterCode,
+            active: true,
+          })
+        },
+      }
+      )
+    })()
 
   const handleEditSubmit = editForm.handleSubmit((values) => {
     if (!rowToEdit) return
-    updateCountyActivityCode.mutate({ id: rowToEdit.id, values })
+    updateCountyActivityCode.mutate(
+      { id: rowToEdit.id, values },
+      {
+        onSuccess: () => {
+          toast.success("County activity updated")
+        },
+      }
+    )
     editForm.reset()
     setEditOpen(false)
     setRowToEdit(null)
@@ -128,6 +218,8 @@ export function CountyActivityCodeTable({
       direction
     )
   }, [rows, sortBy, sortDirection])
+
+  const [expandedRowIds, setExpandedRowIds] = useState<Record<string, boolean>>({})
 
   const getSortTooltip = (column: CountyActivityCodeSortableColumn): string => {
     if (sortBy !== column) return "Click to sort ascending"
@@ -182,7 +274,7 @@ export function CountyActivityCodeTable({
         <div className="flex items-center gap-3">
           <button
             type="button"
-            className="flex h-12 items-center gap-2 rounded-[20px] bg-[#6C5DD3] px-4 text-white"
+            className="flex h-12 items-center gap-2 rounded-[10px] bg-[#6C5DD3] px-4 text-white"
             onClick={() => {
               const nextValue = !showInactive
               filterForm.setValue("inactive", nextValue)
@@ -192,14 +284,20 @@ export function CountyActivityCodeTable({
           >
             <Checkbox
               checked={showInactive}
-              className="size-5 rounded-[6px] border-white bg-white/20 data-[state=checked]:border-white data-[state=checked]:bg-white data-[state=checked]:text-[#6C5DD3]"
+              className="size-5 rounded-[6px] border-white bg-white data-[state=checked]:border-white data-[state=checked]:bg-[#6C5DD3] data-[state=checked]:text-white"
             />
             <span className="text-[14px] font-normal">Inactive</span>
           </button>
           <Button
             type="button"
-            onClick={() => setAddOpen(true)}
-            className="h-12 rounded-[20px] bg-[#6C5DD3] px-6 text-[14px] font-normal text-white hover:bg-[#5B4DC5]"
+            onClick={() => {
+              setAddTab("primary")
+              setCurrentPrimaryId(null)
+              setCurrentPrimaryDefaults(null)
+              addForm.reset(countyActivityAddDefaultValues)
+              setAddOpen(true)
+            }}
+            className="h-12 rounded-[10px] bg-[#6C5DD3] px-6 text-[14px] font-normal text-white hover:bg-[#5B4DC5]"
           >
             <PlusIcon className="mr-2 size-4" />
             Add County Activity
@@ -249,17 +347,37 @@ export function CountyActivityCodeTable({
                 >
                   {index < 2 ? (
                     <TooltipProvider>
-                      <Tooltip>
+                      <Tooltip
+                        open={
+                          isSortTooltipOpen &&
+                          sortTooltipColumn ===
+                            (index === 0 ? "countyActivityCode" : "countyActivityName")
+                        }
+                      >
                         <TooltipTrigger asChild>
                           <button
                             type="button"
-                            onClick={() =>
-                              handleSortToggle(
-                                index === 0
-                                  ? "countyActivityCode"
-                                  : "countyActivityName"
-                              )
-                            }
+                            onClick={() => {
+                              const column =
+                                index === 0 ? "countyActivityCode" : "countyActivityName"
+                              setSortTooltipColumn(column)
+                              setIsSortTooltipOpen(true)
+                              handleSortToggle(column)
+                            }}
+                            onMouseEnter={() => {
+                              const column =
+                                index === 0 ? "countyActivityCode" : "countyActivityName"
+                              setSortTooltipColumn(column)
+                              setIsSortTooltipOpen(true)
+                            }}
+                            onMouseLeave={() => setIsSortTooltipOpen(false)}
+                            onFocus={() => {
+                              const column =
+                                index === 0 ? "countyActivityCode" : "countyActivityName"
+                              setSortTooltipColumn(column)
+                              setIsSortTooltipOpen(true)
+                            }}
+                            onBlur={() => setIsSortTooltipOpen(false)}
                             className="flex h-full max-w-full cursor-pointer items-center gap-2 text-left font-[400]"
                           >
                             <span className="max-w-full whitespace-normal break-normal font-[400]">
@@ -370,11 +488,38 @@ export function CountyActivityCodeTable({
                 </TableCell>
               </TableRow>
             ) : (
-              sortedRows.map((row) => (
-                <TableRow key={row.id} className="border-b border-[#E5E7EB]">
-                  <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
-                    {row.countyActivityCode}
-                  </TableCell>
+              sortedRows.flatMap((row) => {
+                const children = subRowsByParentId[row.id] ?? []
+                const isExpanded = Boolean(expandedRowIds[row.id])
+                const hasChildren = children.length > 0
+
+                const primaryRow = (
+                  <TableRow key={row.id} className="border-b border-[#E5E7EB]">
+                    <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
+                      <button
+                        type="button"
+                        className={`mr-2 inline-flex size-5 items-center justify-center rounded-[6px] ${
+                          hasChildren ? "text-[#6C5DD3] hover:bg-[#6C5DD3]/10" : "opacity-0"
+                        }`}
+                        aria-label={isExpanded ? "Collapse" : "Expand"}
+                        onClick={() => {
+                          if (!hasChildren) return
+                          setExpandedRowIds((prev) => ({
+                            ...prev,
+                            [row.id]: !prev[row.id],
+                          }))
+                        }}
+                      >
+                        {hasChildren ? (
+                          isExpanded ? (
+                            <ChevronDown className="size-4" />
+                          ) : (
+                            <ChevronRight className="size-4" />
+                          )
+                        ) : null}
+                      </button>
+                      <span className="align-middle">{row.countyActivityCode}</span>
+                    </TableCell>
                   <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] leading-[1.4] whitespace-normal break-words font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
                     {row.countyActivityName}
                   </TableCell>
@@ -397,8 +542,8 @@ export function CountyActivityCodeTable({
                       </Tooltip>
                     </TooltipProvider>
                   </TableCell>
-                  <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
-                    {row.department ?? ""}
+                  <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] leading-[1.4] whitespace-normal break-words font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
+                    {getFallbackDepartment(row)}
                   </TableCell>
                   <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
                     {row.masterCodeType}
@@ -499,8 +644,136 @@ export function CountyActivityCodeTable({
                       />
                     </Button>
                   </TableCell>
-                </TableRow>
-              ))
+                  </TableRow>
+                )
+
+                const secondaryRows = isExpanded
+                  ? children.map((child) => (
+                      <TableRow
+                        key={child.id}
+                        className="border-b border-[#E5E7EB] bg-[#F6F5FF]"
+                      >
+                        <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
+                          <span className="ml-7">{child.countyActivityCode}</span>
+                        </TableCell>
+                        <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] leading-[1.4] whitespace-normal break-words font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
+                          {child.countyActivityName}
+                        </TableCell>
+                        <TableCell className="max-w-0 border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] leading-[1.4] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
+                          {child.description}
+                        </TableCell>
+                        <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] leading-[1.4] whitespace-normal break-words font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
+                          {child.rowType === "sub" ? "" : getFallbackDepartment(child)}
+                        </TableCell>
+                        <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
+                          {child.rowType === "sub" ? "" : child.masterCodeType}
+                        </TableCell>
+                        <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
+                          {child.rowType === "sub" ? "" : child.masterCode}
+                        </TableCell>
+                        <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-center text-[13px] text-[#C4C4C4]">
+                          {child.spmp ? (
+                            <img
+                              src={statusCheckImg}
+                              alt="Yes"
+                              className="mx-auto h-4 w-4 object-contain"
+                            />
+                          ) : (
+                            <img
+                              src={statusCrossImg}
+                              alt="No"
+                              className="mx-auto h-4 w-4 object-contain"
+                            />
+                          )}
+                        </TableCell>
+                        <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-center text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
+                          {child.match}
+                        </TableCell>
+                        <TableCell className="border-r border-[#E5E7EB] px-[8px] py-[5px] align-top text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
+                          <span className="block w-full text-center">
+                            {child.percentage.toFixed(2)}
+                          </span>
+                        </TableCell>
+                        <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-center">
+                          {child.active && (
+                            <img
+                              src={statusCheckImg}
+                              alt="active"
+                              className="mx-auto h-4 w-4 object-contain"
+                            />
+                          )}
+                        </TableCell>
+                        <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-center text-[#C4C4C4]">
+                          {child.leaveCode ? (
+                            <img
+                              src={statusCheckImg}
+                              alt="leave code"
+                              className="mx-auto h-4 w-4 object-contain"
+                            />
+                          ) : (
+                            <img
+                              src={statusCrossImg}
+                              alt="No"
+                              className="mx-auto h-4 w-4 object-contain"
+                            />
+                          )}
+                        </TableCell>
+                        <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-center text-[#C4C4C4]">
+                          {child.multipleJobPools ? (
+                            <img
+                              src={statusCheckImg}
+                              alt="multiple job pools"
+                              className="mx-auto h-4 w-4 object-contain"
+                            />
+                          ) : (
+                            <img
+                              src={statusCrossImg}
+                              alt="No"
+                              className="mx-auto h-4 w-4 object-contain"
+                            />
+                          )}
+                        </TableCell>
+                        <TableCell className="px-[14px] py-[5px] align-top text-center">
+                          <Button
+                            type="button"
+                            size="icon"
+                            variant="ghost"
+                            className="text-[#6C5DD3] hover:bg-[#6C5DD3]/10"
+                            onClick={() => {
+                              const parent =
+                                child.parentId
+                                  ? primaryRows.find((row) => row.id === child.parentId) ?? null
+                                  : null
+                              setRowToEdit(child)
+                              editForm.reset({
+                                countyActivityCode: child.countyActivityCode,
+                                countyActivityName: child.countyActivityName,
+                                description: child.description,
+                                department: child.department,
+                                masterCodeType: child.masterCodeType,
+                                masterCode: parent?.masterCode ?? 0,
+                                match: child.match,
+                                percentage: child.percentage,
+                                active: child.active,
+                                leaveCode: child.leaveCode,
+                                multipleJobPools: child.multipleJobPools,
+                              })
+                              setEditOpen(true)
+                            }}
+                          >
+                            <img
+                              src={editIconImg}
+                              alt="Edit"
+                              className="h-4 w-4 object-contain"
+                            />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  : []
+
+                return [primaryRow, ...secondaryRows]
+              })
             )}
           </TableBody>
         </Table>
@@ -570,12 +843,46 @@ export function CountyActivityCodeTable({
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
         <DialogContent
           showClose={false}
-          className="max-h-[85vh] w-[982px] max-w-[calc(100vw-2rem)] overflow-y-auto border-0 bg-transparent p-0 shadow-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+          className="max-h-[85vh] w-[1120px] max-w-[calc(100vw-2rem)] overflow-y-auto border-0 bg-transparent p-0 shadow-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
           overlayClassName="bg-black/50"
         >
           <CountyActivityCodeAddPage
             form={addForm}
             onSubmit={handleAddSubmit}
+            tab={addTab}
+            onTabChange={(nextTab) => {
+              setAddTab(nextTab)
+              if (nextTab === "sub" && currentPrimaryDefaults) {
+                addForm.setValue("masterCodeType", currentPrimaryDefaults.masterCodeType, {
+                  shouldValidate: true,
+                })
+                addForm.setValue("masterCode", currentPrimaryDefaults.masterCode, {
+                  shouldValidate: true,
+                })
+                addForm.setValue("department", currentPrimaryDefaults.department, {
+                  shouldValidate: true,
+                })
+                if (!currentPrimaryId) {
+                  const match = primaryRows.find(
+                    (r) =>
+                      r.masterCode === currentPrimaryDefaults.masterCode &&
+                      r.masterCodeType === currentPrimaryDefaults.masterCodeType
+                  )
+                  if (match) setCurrentPrimaryId(match.id)
+                }
+              }
+            }}
+            primaryActivityCodeOptions={primaryActivityOptions}
+            selectedPrimaryId={currentPrimaryId}
+            onSelectedPrimaryIdChange={(id) => {
+              setCurrentPrimaryId(id)
+              const selected = primaryRows.find((r) => r.id === id)
+              if (!selected) return
+              // Keep form values consistent for save/linking
+              addForm.setValue("masterCodeType", selected.masterCodeType, { shouldValidate: true })
+              addForm.setValue("masterCode", selected.masterCode, { shouldValidate: true })
+              addForm.setValue("department", selected.department, { shouldValidate: true })
+            }}
             onClose={() => setAddOpen(false)}
           />
         </DialogContent>
@@ -584,7 +891,7 @@ export function CountyActivityCodeTable({
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
         <DialogContent
           showClose={false}
-          className="max-h-[85vh] w-[982px] max-w-[calc(100vw-2rem)] overflow-y-auto border-0 bg-transparent p-0 shadow-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+          className="max-h-[85vh] w-[1120px] max-w-[calc(100vw-2rem)] overflow-y-auto border-0 bg-transparent p-0 shadow-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
           overlayClassName="bg-black/50"
         >
           {rowToEdit ? (
@@ -592,7 +899,24 @@ export function CountyActivityCodeTable({
               key={rowToEdit.id}
               mode="edit"
               form={editForm}
-              onSubmit={handleEditSubmit}
+              tab={rowToEdit.rowType === "sub" ? "sub" : "primary"}
+              onTabChange={() => {}}
+              disabledTabs={{
+                primary: rowToEdit.rowType === "sub",
+                sub: rowToEdit.rowType !== "sub",
+              }}
+              primaryActivityCodeOptions={primaryActivityOptions}
+              selectedPrimaryId={rowToEdit.rowType === "sub" ? (rowToEdit.parentId ?? null) : null}
+              onSelectedPrimaryIdChange={(id) => {
+                // For edit-sub: allow re-parenting if needed
+                setRowToEdit((prev) => (prev ? { ...prev, parentId: id } : prev))
+                const selected = primaryRows.find((r) => r.id === id)
+                if (!selected) return
+                editForm.setValue("masterCodeType", selected.masterCodeType)
+                editForm.setValue("masterCode", selected.masterCode)
+                editForm.setValue("department", selected.department)
+              }}
+              onSubmit={() => handleEditSubmit()}
               onClose={() => {
                 setEditOpen(false)
                 setRowToEdit(null)

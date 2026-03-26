@@ -178,6 +178,11 @@
   font-family: Roboto, sans-serif !important;
 }
 
+/* Replaces per-page `zoom` usage (avoid layout shifts) */
+.ieba-scale-120 {
+  font-size: 120%;
+}
+
 /* Hide scrollbar UI while preserving scroll behavior */
 .no-scrollbar {
   -ms-overflow-style: none;
