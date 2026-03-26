@@ -39,6 +39,7 @@ import type { SettingsFormValues } from "@/features/settings/types"
 import {
   type ColumnNameSortState,
   type PayrollColumnSettingModel,
+  type SortablePayrollRowProps as SortablePayrollRowPropsModel,
   PAYROLL_BY_OPTIONS,
   PAYROLL_TABLE_SCROLL_MAX_HEIGHT_PX,
 } from "./types"
@@ -88,13 +89,7 @@ function orderPayrollRowsForDisplay(
   return sorted
 }
 
-type SortablePayrollRowProps = {
-  row: PayrollColumnSettingModel
-  storageIndex: number
-  updateRow: (index: number, patch: Partial<PayrollColumnSettingModel>) => void
-}
-
-function SortablePayrollRow({ row, storageIndex, updateRow }: SortablePayrollRowProps) {
+function SortablePayrollRow({ row, storageIndex, updateRow }: SortablePayrollRowPropsModel) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: row.key,
   })

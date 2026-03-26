@@ -8,6 +8,7 @@ import type { SettingsFormValues } from "@/features/settings/types"
 import { CountyAddressRow } from "@/features/settings/components/Country/CountyAddressRow"
 import { TimeSelectionUI } from "@/features/settings/components/TimeSelectionUI/TimeSelectionUI"
 import defaultCountyAvatar from "@/assets/county-avatar.png"
+import type { CountyFormProps, RequiredLabelProps } from "./types"
 
 const labelClassName = "mb-1 block select-none text-[12px] font-normal text-[#2a2f3a]"
 const sectionHeadingClassName = "mb-2 text-[14px] font-black text-[var(--primary)]"
@@ -17,7 +18,7 @@ const timeInputDisabledClassName =
   `${inputClassName} h-[49px] w-full pl-3 pr-9 text-center tabular-nums bg-[#f2f2f2] cursor-not-allowed disabled:cursor-not-allowed disabled:opacity-100 disabled:text-[#111827] ` +
   `[&::-webkit-calendar-picker-indicator]:opacity-0`
 
-function RequiredLabel({ children }: { children: string }) {
+function RequiredLabel({ children }: RequiredLabelProps) {
   return (
     <span className="text-[12px] font-normal text-[var(--primary)]">
       <span className="text-[#ef4444]">*</span>
@@ -35,7 +36,7 @@ async function readFileAsDataUrl(file: File): Promise<string> {
   })
 }
 
-export function CountyForm({ isSaving }: { isSaving: boolean }) {
+export function CountyForm({ isSaving }: CountyFormProps) {
   const { control, register, watch, setValue } = useFormContext<SettingsFormValues>()
   const logoDataUrl = watch("county.logoDataUrl")
   const isTimeRangeEnabled = watch("county.isTimeRangeEnabled")

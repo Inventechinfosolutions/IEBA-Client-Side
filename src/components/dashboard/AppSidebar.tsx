@@ -41,6 +41,7 @@ const mainNav = [
   { title: "Master Code", url: "/master-code", icon: ScrollText },
   { title: "Program", url: "/program", icon: ScrollText },
   { title: "To Do", url: "/to-do", icon: ScrollText },
+  { title: "Leave Approval", url: "/leave-approval", icon: ScrollText },
   { title: "User", url: "/user", icon: Users },
   { title: "Users", url: "/users", icon: Users },
   { title: "Department Role", url: "/department-role", icon: Building2 },
@@ -182,6 +183,12 @@ export function AppSidebar() {
                     <Link to="/to-do">
                       <ScrollText className="mr-2 size-4" />
                       To Do
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/leave-approval">
+                      <ScrollText className="mr-2 size-4" />
+                      Leave Approval
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>

@@ -45,3 +45,14 @@ export type MonthYearPickerProps = {
   useMonthEnd: boolean
 }
 
+export type HolidayDraft = {
+  date: string
+  holiday: string
+  optional: boolean
+}
+
+export type HolidayDatePickerProps = {
+  value: string
+  onChange: (next: string) => void
+}
+

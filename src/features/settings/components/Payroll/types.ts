@@ -14,6 +14,12 @@ export type PayrollSettingsModel = {
 
 export type ColumnNameSortState = "none" | "asc" | "desc"
 
+export type SortablePayrollRowProps = {
+  row: PayrollColumnSettingModel
+  storageIndex: number
+  updateRow: (index: number, patch: Partial<PayrollColumnSettingModel>) => void
+}
+
 export const PAYROLL_COLUMN_DEFS = [
   { key: "payPeriodBegin", label: "Pay Period Begin" },
   { key: "department", label: "Department" },

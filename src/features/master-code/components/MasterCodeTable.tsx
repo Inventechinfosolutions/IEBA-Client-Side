@@ -89,7 +89,7 @@ export function MasterCodeTable({
 
   return (
     <div className="overflow-hidden rounded-[4px] border border-[#e6e7ef]">
-      <Table>
+      <Table className="table-fixed">
         <colgroup>
           <col style={{ width: "120px" }} />
           <col style={{ width: "470px" }} />
@@ -236,7 +236,7 @@ export function MasterCodeTable({
                           <span>{row.code ?? ""}</span>
                         </div>
                       </TableCell>
-                      <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-[12px] whitespace-normal break-words text-[#262a35]">
+                      <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-[12px] whitespace-normal break-all text-[#262a35]">
                         {row.name}
                       </TableCell>
                       <TableCell className="border-r border-[#eff0f5] px-3 py-2 text-center">
@@ -273,10 +273,10 @@ export function MasterCodeTable({
                           />
                         )}
                       </TableCell>
-                      <TableCell className="border-r border-[#eff0f5] px-3 py-2 text-center text-[12px] text-[#262a35]">
+                      <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-center text-[12px] text-[#262a35] whitespace-normal break-words">
                         {row.ffpPercent}
                       </TableCell>
-                      <TableCell className="border-r border-[#eff0f5] px-3 py-2 text-center text-[12px] text-[#262a35]">
+                      <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-center text-[12px] text-[#262a35] whitespace-normal break-words">
                         {row.match}
                       </TableCell>
                       <TableCell className="border-r border-[#eff0f5] px-3 py-2 text-center">

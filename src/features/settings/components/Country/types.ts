@@ -26,3 +26,11 @@ export type CountyAddressRowProps = {
   canRemove: boolean
 }
 
+export type CountyFormProps = {
+  isSaving: boolean
+}
+
+export type RequiredLabelProps = {
+  children: string
+}
+

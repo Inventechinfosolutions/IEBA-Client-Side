@@ -8,6 +8,7 @@ import { MasterCodePage } from "@/features/master-code/pages/MasterCodePage"
 import { ProgramPage } from "@/features/program"
 import { TodoPage } from "@/features/todo"
 import { UserModulePage } from "@/features/user"
+import { LeaveApprovalPage } from "@/features/leave-approval"
 import { ForgotPassword } from "@/features/auth/pages/ForgotPassword"
 import { OtpAuthentication } from "@/features/auth/pages/OtpAuthentication"
 import { UsersPage, UserPage } from "@/features/users"
@@ -53,6 +54,7 @@ export const router = createBrowserRouter([
       { path: "program", element: <ProgramPage /> },
       { path: "to-do", element: <TodoPage /> },
       { path: "user", element: <UserModulePage /> },
+      { path: "leave-approval", element: <LeaveApprovalPage /> },
       { path: "users", element: <UsersPage /> },
       { path: "users/:id", element: <UserPage /> },
       { path: "department-role", element: <DepartmentRolePage /> },

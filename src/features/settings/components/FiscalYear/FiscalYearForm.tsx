@@ -18,7 +18,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import type { SettingsFormValues } from "@/features/settings/types"
 import { FiscalYearTable } from "./FiscalYearTable"
-import type { MonthYearPickerProps } from "./types"
+import type { HolidayDatePickerProps, HolidayDraft, MonthYearPickerProps } from "./types"
 import { monthLabels } from "./types"
 import { fiscalYearHolidaySchema } from "./schema"
 import { cn } from "@/lib/utils"
@@ -66,10 +66,7 @@ function toDisplayDate(value: string): string {
 function HolidayDatePicker({
   value,
   onChange,
-}: {
-  value: string
-  onChange: (next: string) => void
-}) {
+}: HolidayDatePickerProps) {
   const [open, setOpen] = useState(false)
   const selected = parseIsoDate(value)
   const hasValue = Boolean(value)
@@ -278,11 +275,7 @@ export function FiscalYearForm() {
 
   const [isHolidayDialogOpen, setIsHolidayDialogOpen] = useState(false)
   const [editingHolidayIndex, setEditingHolidayIndex] = useState<number | null>(null)
-  const [holidayDraft, setHolidayDraft] = useState<{
-    date: string
-    holiday: string
-    optional: boolean
-  }>({
+  const [holidayDraft, setHolidayDraft] = useState<HolidayDraft>({
     date: "",
     holiday: "",
     optional: false,
