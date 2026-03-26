@@ -22,6 +22,7 @@ async function updateSettings(input: UpdateSettingsInput): Promise<SettingsModel
       ...input.values.county,
       logoDataUrl: input.values.county.logoDataUrl ?? null,
       welcomeMessage: input.values.county.welcomeMessage ?? "",
+      isTimeRangeEnabled: Boolean(input.values.county.isTimeRangeEnabled),
       addresses: normalizedAddresses,
     },
     general: {
@@ -41,6 +42,36 @@ async function updateSettings(input: UpdateSettingsInput): Promise<SettingsModel
       ...current.login,
       ...input.values.login,
       otpValidationTimerSeconds: Number(input.values.login.otpValidationTimerSeconds),
+    },
+    fiscalYear: {
+      ...current.fiscalYear,
+      ...input.values.fiscalYear,
+      fiscalYearStartMonth: String(input.values.fiscalYear.fiscalYearStartMonth ?? ""),
+      fiscalYearEndMonth: String(input.values.fiscalYear.fiscalYearEndMonth ?? ""),
+      year: String(input.values.fiscalYear.year ?? ""),
+      appliedYearRanges: Array.isArray(input.values.fiscalYear.appliedYearRanges)
+        ? input.values.fiscalYear.appliedYearRanges.map(String)
+        : [],
+      holidays: Array.isArray(input.values.fiscalYear.holidays)
+        ? input.values.fiscalYear.holidays.map((row) => ({
+            date: String(row.date ?? ""),
+            holiday: String(row.holiday ?? ""),
+            optional: Boolean(row.optional),
+          }))
+        : [],
+    },
+    payroll: {
+      ...current.payroll,
+      ...input.values.payroll,
+      payrollBy: String(input.values.payroll?.payrollBy ?? "Weekly") as any,
+      columns: Array.isArray(input.values.payroll?.columns)
+        ? input.values.payroll.columns.map((row) => ({
+            key: String((row as any).key ?? ""),
+            label: String((row as any).label ?? ""),
+            enabled: Boolean((row as any).enabled),
+            editable: Boolean((row as any).editable),
+          }))
+        : [],
     },
   }
 

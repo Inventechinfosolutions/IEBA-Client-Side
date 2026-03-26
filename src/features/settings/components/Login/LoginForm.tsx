@@ -15,9 +15,9 @@ const otpInputClassName =
 const otpStepperClassName =
   "absolute right-0 top-0 flex h-full w-[16px] flex-col divide-y divide-[#d6d7dc] border-l border-[#d6d7dc] bg-white opacity-0 pointer-events-none transition-opacity group-hover:opacity-100 group-hover:pointer-events-auto"
 const otpStepButtonClassName =
-  "flex h-1/2 w-full items-center justify-center text-[#6b7280] hover:bg-[#f3f4f8] focus-visible:outline-none"
+  "flex h-1/2 w-full cursor-pointer items-center justify-center text-[#6b7280] hover:bg-[#f3f4f8] focus-visible:outline-none"
 const otpAddonClassName =
-  "flex w-[80px] items-center justify-center border-l border-[#d6d7dc] bg-[#f3f4f8] text-[12px] font-normal text-[#111827]"
+  "flex w-[80px] items-center justify-center border-l border-[#d6d7dc] bg-white text-[12px] font-normal text-[#111827]"
 
 export function LoginForm() {
   const { control, register, getValues, setValue } = useFormContext<SettingsFormValues>()
@@ -35,11 +35,11 @@ export function LoginForm() {
   }
 
   return (
-    <div className="bg-transparent px-2 py-3">
+    <div className="bg-transparent px-6 py-3">
       <div className="space-y-4">
         <div className="space-y-3">
-          <div className="flex items-center gap-6">
-            <div className="w-[230px] pl-6">
+          <div className="flex items-center gap-20">
+            <div className="w-[230px] pl-0">
               <label className={labelClassName}>Two-Factor Authentication</label>
             </div>
             <Controller
@@ -56,7 +56,7 @@ export function LoginForm() {
             />
           </div>
 
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-20">
             <div className="w-[230px] pl-6">
               <label className={labelClassName}>OTP Validation Timer</label>
             </div>
@@ -78,7 +78,7 @@ export function LoginForm() {
                     onClick={() => stepOtpTimer(1)}
                     aria-label="Increase OTP validation timer"
                   >
-                    <ChevronUp className="size-4" />
+                    <ChevronUp className="size-2" />
                   </button>
                   <button
                     type="button"
@@ -87,7 +87,7 @@ export function LoginForm() {
                     onClick={() => stepOtpTimer(-1)}
                     aria-label="Decrease OTP validation timer"
                   >
-                    <ChevronDown className="size-4" />
+                    <ChevronDown className="size-2" />
                   </button>
                 </div>
               </div>
@@ -99,7 +99,8 @@ export function LoginForm() {
         <div className="flex justify-end">
           <Button
             type="submit"
-            className="h-[44px] w-[88px] rounded-[10px] bg-[var(--primary)] px-0 py-2 text-[14px] font-medium text-white hover:bg-[var(--primary)]"
+            data-settings-section="login"
+            className="h-[44px] w-[88px] cursor-pointer rounded-[10px] bg-[var(--primary)] px-0 py-2 text-[14px] font-medium text-white hover:bg-[var(--primary)]"
           >
             Save
           </Button>

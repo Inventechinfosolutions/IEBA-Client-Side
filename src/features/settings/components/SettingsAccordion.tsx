@@ -2,7 +2,7 @@ import { ChevronDown, ChevronLeft } from "lucide-react"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { cn } from "@/lib/utils"
 
-import type { SettingsSection } from "@/features/settings/types"
+import { SETTINGS_ACCORDION_SECTIONS } from "@/features/settings/types"
 import { CountyForm } from "@/features/settings/components/Country/CountyForm"
 import { AutoGenerateCodeForm } from "@/features/settings/components/AutoGenerateCode/AutoGenerateCodeForm"
 import { PayrollForm } from "@/features/settings/components/Payroll/PayrollForm"
@@ -11,16 +11,6 @@ import { ReportsForm } from "@/features/settings/components/Reports/ReportsForm"
 import { GeneralForm } from "@/features/settings/components/General/GeneralForm"
 import { LoginForm } from "@/features/settings/components/Login/LoginForm"
 
-const sections: SettingsSection[] = [
-  "County",
-  "Auto Generate Code",
-  "Payroll",
-  "Fiscal Year",
-  "Reports",
-  "General",
-  "Login",
-]
-
 export function SettingsAccordion({ isSaving }: { isSaving: boolean }) {
   return (
     <div className="rounded-[8px] bg-white">
@@ -28,36 +18,36 @@ export function SettingsAccordion({ isSaving }: { isSaving: boolean }) {
         type="single"
         collapsible
       >
-        {sections.map((section) => (
+        {SETTINGS_ACCORDION_SECTIONS.map((section) => (
           <AccordionItem
             key={section}
             value={section}
-            className="border-b-0 not-last:border-b-0"
+            className="border-0"
           >
             <AccordionTrigger
               className={cn(
-                "rounded-none px-4 py-4 hover:no-underline",
+                "cursor-pointer rounded-none border-0 px-0.5 py-4 hover:no-underline",
                 "**:data-[slot=accordion-trigger-icon]:hidden"
               )}
             >
               <div className="flex w-full items-center gap-3">
-                <span className="min-w-[160px] text-left text-[14px] font-bold text-[var(--primary)]">
+                <span className="min-w-[160px] text-left text-[12px] font-bold text-[var(--primary)]">
                   {section}
                 </span>
-                <span className="h-[2.5px] flex-1 bg-[#d8d9dc]" />
-                <span className="inline-flex size-7 items-center justify-center rounded-full border-2 border-[var(--primary)] bg-white text-[var(--primary)]">
+                <span className="h-0 flex-1 border-t-2 border-[#d8d9dc]" />
+                <span className="inline-flex size-6 items-center justify-center rounded-full border-2 border-[var(--primary)] bg-white text-[var(--primary)]">
                   <ChevronLeft
                     strokeWidth={3}
-                    className="size-5 group-aria-expanded/accordion-trigger:hidden"
+                    className="size-4 group-aria-expanded/accordion-trigger:hidden"
                   />
                   <ChevronDown
                     strokeWidth={3}
-                    className="size-5 hidden group-aria-expanded/accordion-trigger:block"
+                    className="size-4 hidden group-aria-expanded/accordion-trigger:block"
                   />
                 </span>
               </div>
             </AccordionTrigger>
-            <AccordionContent className="px-4 pb-2 pt-2">
+            <AccordionContent className="px-0.5pb-2 pt-2">
               {section === "County" ? (
                 <CountyForm isSaving={isSaving} />
               ) : section === "Auto Generate Code" ? (

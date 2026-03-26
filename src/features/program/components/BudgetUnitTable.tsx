@@ -41,7 +41,7 @@ export function BudgetUnitTable({
 }: BudgetUnitTableProps) {
   const [sortState, setSortState] = useState<ProgramTableSortState>({
     key: "code",
-    direction: "asc",
+    direction: "none",
   })
   const [tooltipOpenKey, setTooltipOpenKey] = useState<ProgramSortKey | null>(null)
   const [expandedBudgetUnits, setExpandedBudgetUnits] = useState<Record<string, boolean>>({})
@@ -59,9 +59,11 @@ export function BudgetUnitTable({
       return sortState.direction === "asc" ? compare : -compare
     }
 
-    const budgetUnits = rows
-      .filter((row) => row.hierarchyLevel === 0)
-      .sort(sortByKey)
+    const budgetUnitSource = rows.filter((row) => row.hierarchyLevel === 0)
+    const budgetUnits =
+      sortState.direction === "none"
+        ? budgetUnitSource
+        : [...budgetUnitSource].sort(sortByKey)
     const programs = rows.filter((row) => row.hierarchyLevel === 1)
     const subPrograms = rows.filter((row) => row.hierarchyLevel === 2)
 
@@ -78,17 +80,23 @@ export function BudgetUnitTable({
       })
       if (!expandedProgramGroups[budgetUnit.id]) continue
 
-      const linkedPrograms = programs
-        .filter((program) => program.parentId === budgetUnit.id)
-        .sort(sortByKey)
+      const linkedProgramSource = programs.filter((program) => program.parentId === budgetUnit.id)
+      const linkedPrograms =
+        sortState.direction === "none"
+          ? linkedProgramSource
+          : [...linkedProgramSource].sort(sortByKey)
 
       for (const program of linkedPrograms) {
         flattened.push({ kind: "data", row: { ...program, hierarchyLevel: 2 } })
         if (!expandedPrograms[program.id]) continue
 
-        const linkedSubPrograms = subPrograms
-          .filter((subProgram) => subProgram.parentId === program.id)
-          .sort(sortByKey)
+        const linkedSubProgramSource = subPrograms.filter(
+          (subProgram) => subProgram.parentId === program.id,
+        )
+        const linkedSubPrograms =
+          sortState.direction === "none"
+            ? linkedSubProgramSource
+            : [...linkedSubProgramSource].sort(sortByKey)
         for (const subProgram of linkedSubPrograms) {
           flattened.push({
             kind: "data",
@@ -114,7 +122,9 @@ export function BudgetUnitTable({
   const handleSort = (key: ProgramSortKey) => {
     setSortState((prev) => {
       if (prev.key !== key) return { key, direction: "asc" }
-      return { key, direction: prev.direction === "asc" ? "desc" : "asc" }
+      if (prev.direction === "asc") return { key, direction: "desc" }
+      if (prev.direction === "desc") return { key, direction: "none" }
+      return { key, direction: "asc" }
     })
   }
 
@@ -141,8 +151,9 @@ export function BudgetUnitTable({
 
   const getTooltipText = (key: ProgramSortKey) => {
     const isActive = sortState.key === key
-    if (!isActive || sortState.direction === "desc") return "Click to sort ascending"
-    return "Click to sort descending"
+    if (!isActive || sortState.direction === "none") return "Click to sort ascending"
+    if (sortState.direction === "asc") return "Click to sort descending"
+    return "Click to cancel sorting"
   }
 
   const skeletonRows = Array.from({ length: 8 }, (_, index) => `program-skeleton-${index}`)

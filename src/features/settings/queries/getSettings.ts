@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query"
+import { keepPreviousData } from "@tanstack/react-query"
 
 import { settingsKeys } from "@/features/settings/keys"
 import { delay, getMockSettings, MOCK_NETWORK_DELAY_MS } from "@/features/settings/mock"
@@ -15,6 +16,7 @@ export function useGetSettings() {
     queryFn: () => fetchSettings(),
     staleTime: 60_000,
     gcTime: 5 * 60_000,
+    placeholderData: keepPreviousData,
   })
 }
 

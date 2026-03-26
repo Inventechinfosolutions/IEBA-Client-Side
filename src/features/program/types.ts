@@ -153,7 +153,7 @@ export type BudgetUnitTableProps = {
 
 export type ProgramTableSortState = {
   key: ProgramSortKey
-  direction: SortDirection
+  direction: SortDirection | "none"
 }
 
 export type DisplayHierarchyRow =

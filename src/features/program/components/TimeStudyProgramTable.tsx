@@ -35,14 +35,15 @@ import type {
 export function TimeStudyProgramTable({ rows, isLoading, onEditRow }: TimeStudyProgramTableProps) {
   const [sortState, setSortState] = useState<ProgramTableSortState>({
     key: "code",
-    direction: "asc",
+    direction: "none",
   })
   const [tooltipOpenKey, setTooltipOpenKey] = useState<ProgramSortKey | null>(null)
   const [expandedPrograms, setExpandedPrograms] = useState<Record<string, boolean>>({})
 
   const sortedPrograms = useMemo(() => {
     const result = rows.filter((row) => row.hierarchyLevel === 0)
-    result.sort((a, b) => {
+    if (sortState.direction === "none") return result
+    return [...result].sort((a, b) => {
       const left = sortState.key === "code" ? a.code : a.name
       const right = sortState.key === "code" ? b.code : b.name
       const compare = left.localeCompare(right, undefined, {
@@ -51,7 +52,6 @@ export function TimeStudyProgramTable({ rows, isLoading, onEditRow }: TimeStudyP
       })
       return sortState.direction === "asc" ? compare : -compare
     })
-    return result
   }, [rows, sortState])
 
   const subProgramsByParentId = useMemo(() => {
@@ -84,17 +84,17 @@ export function TimeStudyProgramTable({ rows, isLoading, onEditRow }: TimeStudyP
   const handleSort = (key: ProgramSortKey) => {
     setSortState((prev) => {
       if (prev.key !== key) return { key, direction: "asc" }
-      return {
-        key,
-        direction: prev.direction === "asc" ? "desc" : "asc",
-      }
+      if (prev.direction === "asc") return { key, direction: "desc" }
+      if (prev.direction === "desc") return { key, direction: "none" }
+      return { key, direction: "asc" }
     })
   }
 
   const getTooltipText = (key: ProgramSortKey) => {
     const isActive = sortState.key === key
-    if (!isActive || sortState.direction === "desc") return "Click to sort ascending"
-    return "Click to sort descending"
+    if (!isActive || sortState.direction === "none") return "Click to sort ascending"
+    if (sortState.direction === "asc") return "Click to sort descending"
+    return "Click to cancel sorting"
   }
 
   const skeletonRows = Array.from({ length: 8 }, (_, index) => `ts-program-skeleton-${index}`)

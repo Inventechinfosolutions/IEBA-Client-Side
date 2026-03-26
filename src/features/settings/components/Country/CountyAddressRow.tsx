@@ -4,6 +4,7 @@ import { useFormContext } from "react-hook-form"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import type { SettingsFormValues } from "@/features/settings/types"
+import type { CountyAddressRowProps } from "./types"
 
 const labelClassName =
   "mb-1 block select-none text-[14px] font-medium text-[var(--primary)]"
@@ -14,17 +15,13 @@ export function CountyAddressRow({
   index,
   onRemove,
   canRemove,
-}: {
-  index: number
-  onRemove: () => void
-  canRemove: boolean
-}) {
+}: CountyAddressRowProps) {
   const {
     register,
     formState: { errors },
   } = useFormContext<SettingsFormValues>()
 
-  const rowErrors = errors.county?.addresses?.[index]
+  void errors.county?.addresses?.[index]
 
   return (
     <div className="grid max-w-[calc(100%-160px)] grid-cols-[0.5fr_0.9fr_0.55fr_0.35fr_0.5fr_auto] items-end gap-4">
@@ -36,7 +33,6 @@ export function CountyAddressRow({
           {...register(`county.addresses.${index}.location` as const)}
           className={inputClassName}
           placeholder="Location"
-          aria-invalid={Boolean(rowErrors?.location)}
         />
       </div>
       <div>
@@ -47,7 +43,6 @@ export function CountyAddressRow({
           {...register(`county.addresses.${index}.street` as const)}
           className={inputClassName}
           placeholder="Street"
-          aria-invalid={Boolean(rowErrors?.street)}
         />
       </div>
       <div>
@@ -58,7 +53,6 @@ export function CountyAddressRow({
           {...register(`county.addresses.${index}.city` as const)}
           className={inputClassName}
           placeholder="City"
-          aria-invalid={Boolean(rowErrors?.city)}
         />
       </div>
       <div>
@@ -69,7 +63,6 @@ export function CountyAddressRow({
           {...register(`county.addresses.${index}.state` as const)}
           className={inputClassName}
           placeholder="State"
-          aria-invalid={Boolean(rowErrors?.state)}
         />
       </div>
       <div>
@@ -80,7 +73,6 @@ export function CountyAddressRow({
           {...register(`county.addresses.${index}.zip` as const)}
           className={inputClassName}
           placeholder="Zip"
-          aria-invalid={Boolean(rowErrors?.zip)}
         />
       </div>
       <div className="pb-[2px]">

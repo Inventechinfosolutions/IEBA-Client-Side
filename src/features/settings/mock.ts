@@ -1,5 +1,8 @@
 import type { SettingsModel } from "@/features/settings/types"
 
+export type ReportOption = { key: string; label: string }
+export type ActivityOption = { code: string; label: string }
+
 export const MOCK_NETWORK_DELAY_MS = 450
 
 export async function delay(ms: number): Promise<void> {
@@ -12,8 +15,9 @@ let mockSettings: SettingsModel = {
     logoDataUrl: null,
     countyName: "Amador",
     welcomeMessage: "Welcome to Amador",
+    isTimeRangeEnabled: false,
     startTime1: "00:00",
-    startTime2: "00:00",
+    startTime2: "01:00",
     endTime: "00:00",
     includedWeekends: false,
     autoApproval: false,
@@ -32,13 +36,48 @@ let mockSettings: SettingsModel = {
     screenInactivityTimeMinutes: 120,
   },
   reports: {
-    reportKey: "DSSRPT1",
+    reportKey: "",
     exclusionMode: "exclude",
     selectedActivityCodes: [],
   },
   login: {
     twoFactorAuthentication: true,
     otpValidationTimerSeconds: 120,
+  },
+  fiscalYear: {
+    fiscalYearStartMonth: "2025-07-01",
+    fiscalYearEndMonth: "2026-06-30",
+    year: "2025-2026",
+    appliedYearRanges: ["2025-2026"],
+    holidays: [
+      { date: "2025-07-04", holiday: "Fourth of July", optional: false },
+      { date: "2025-09-01", holiday: "Labor Day", optional: true },
+      { date: "2025-10-13", holiday: "Indigenous Peoples' Day", optional: false },
+      { date: "2025-11-11", holiday: "Veterans Day", optional: false },
+      { date: "2025-11-27", holiday: "Thanksgiving", optional: true },
+      { date: "2025-12-25", holiday: "Christmas Day", optional: false },
+      { date: "2026-01-01", holiday: "New Year's Day", optional: false },
+      { date: "2026-01-19", holiday: "Martin Luther King Jr. Day", optional: true },
+      { date: "2026-05-25", holiday: "Memorial Day", optional: false },
+      { date: "2026-06-19", holiday: "Juneteenth", optional: false },
+    ],
+  },
+  payroll: {
+    payrollBy: "Weekly",
+    columns: [
+      { key: "payPeriodBegin", label: "Pay Period Begin", enabled: true, editable: false },
+      { key: "department", label: "Department", enabled: true, editable: false },
+      { key: "employeeMiddleName", label: "Employee Middle Name", enabled: true, editable: false },
+      { key: "employeeLastName", label: "Employee Last Name", enabled: true, editable: false },
+      { key: "bargainingUnit", label: "Bargaining Unit", enabled: true, editable: false },
+      { key: "type", label: "Type", enabled: true, editable: false },
+      { key: "position", label: "Position", enabled: true, editable: false },
+      { key: "suffix", label: "Suffix", enabled: true, editable: false },
+      { key: "payPeriodEnd", label: "Pay Period End", enabled: true, editable: false },
+      { key: "checkDate", label: "Check Date", enabled: true, editable: false },
+      { key: "fica", label: "FICA", enabled: true, editable: false },
+      { key: "pers", label: "PERS", enabled: true, editable: false },
+    ],
   },
 }
 
@@ -49,4 +88,27 @@ export function getMockSettings(): SettingsModel {
 export function setMockSettings(next: SettingsModel): void {
   mockSettings = next
 }
+
+export const mockReportOptions: ReportOption[] = Array.from({ length: 20 }, (_, i) => {
+  const n = i + 1
+  const key = `DSSRPT${n}`
+  const label =
+    n === 1
+      ? "DSSRPT1 Employee Individual Time Study Summary"
+      : n === 2
+        ? "DSSRPT2 Time Study Hours by Employee"
+        : n === 3
+          ? "DSSRPT3 Time Study Summary"
+          : n === 4
+            ? "DSSRPT4 Time Study Summary by Program"
+            : n === 5
+              ? "DSSRPT5 Salary & Benefits by Employee"
+              : `${key} Report ${n}`
+  return { key, label }
+})
+
+export const mockActivityOptions: ActivityOption[] = Array.from({ length: 20 }, (_, i) => {
+  const code = String(1000 + i).padStart(5, "0")
+  return { code, label: `Activity ${i + 1}` }
+})
 

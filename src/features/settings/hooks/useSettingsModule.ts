@@ -7,7 +7,10 @@ export function useSettingsModule() {
 
   return {
     settings: detailQuery.data,
-    isLoading: detailQuery.isLoading || detailQuery.isFetching,
+    // Only treat the initial load as "loading" so the UI doesn't flash
+    // when we refetch after saving.
+    isLoading: detailQuery.isLoading,
+    isFetching: detailQuery.isFetching,
     isError: detailQuery.isError,
     error: detailQuery.error,
     refetch: detailQuery.refetch,
