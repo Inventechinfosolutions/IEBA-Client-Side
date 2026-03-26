@@ -50,6 +50,7 @@ const mainNav = [
   { title: "Department Role", url: "/department-role", icon: Building2 },
   { title: "County Activity Code", url: "/county-activity-code", icon: Table2 },
   { title: "Schedule Time Study", url: "/schedule-time-study", icon: CalendarClock },
+  { title: "Cost Pool", url: "/costpool", icon: Table2 },
 ] as const
 
 export function AppSidebar() {
@@ -212,6 +213,12 @@ export function AppSidebar() {
                     <Link to="/schedule-time-study">
                       <CalendarClock className="mr-2 size-4" />
                       Schedule Time Study
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/costpool">
+                      <Table2 className="mr-2 size-4" />
+                      Cost Pool
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
