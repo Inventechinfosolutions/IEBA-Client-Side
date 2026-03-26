@@ -11,13 +11,23 @@ export function CountyActivityCodePage() {
   const [filters, setFilters] = useState<CountyActivityFilterFormValues>(
     DEFAULT_FILTERS
   )
-  const { rows, totalItems, pagination, onPageChange, onPageSizeChange, isLoading } =
-    useCountyActivityCodes(filters)
+  const {
+    rows,
+    primaryRows,
+    subRowsByParentId,
+    totalItems,
+    pagination,
+    onPageChange,
+    onPageSizeChange,
+    isLoading,
+  } = useCountyActivityCodes(filters)
 
   return (
     <div className="space-y-4">
       <CountyActivityCodeTable
         rows={rows}
+        primaryRows={primaryRows}
+        subRowsByParentId={subRowsByParentId}
         totalItems={totalItems}
         pagination={pagination}
         isLoading={isLoading}

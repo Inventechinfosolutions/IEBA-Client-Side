@@ -12,12 +12,10 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import type { CountyActivityCodeAddPageProps } from "../types"
-
-const CODE_TYPE_OPTIONS = ["FFP", "NFFP"] as const
-const CODE_OPTIONS = [
-  { label: "6 * SPMP Training", value: 6 },
-  { label: "8 * SPMP Program Planning", value: 8 },
-] as const
+import {
+  COUNTY_ACTIVITY_CODE_TYPE_OPTIONS,
+  COUNTY_ACTIVITY_MASTER_CODE_OPTIONS,
+} from "../queries/getCountyActivityCodes"
 const DEPARTMENTS = ["Social Services", "Public Health", "Human Services"] as const
 
 export function CountyActivityCodeAddPage({
@@ -25,8 +23,19 @@ export function CountyActivityCodeAddPage({
   onSubmit,
   onClose,
   mode = "add",
+  tab: controlledTab,
+  onTabChange,
+  primaryActivityCodeOptions,
+  selectedPrimaryId,
+  onSelectedPrimaryIdChange,
+  disabledTabs,
 }: CountyActivityCodeAddPageProps) {
-  const [tab, setTab] = useState<"primary" | "sub">("primary")
+  const [uncontrolledTab, setUncontrolledTab] = useState<"primary" | "sub">("primary")
+  const tab = controlledTab ?? uncontrolledTab
+  const setTab = (next: "primary" | "sub") => {
+    onTabChange?.(next)
+    if (controlledTab === undefined) setUncontrolledTab(next)
+  }
   const [leftSearch, setLeftSearch] = useState("")
   const [rightSearch, setRightSearch] = useState("")
   const [selectedLeft, setSelectedLeft] = useState<string[]>([])
@@ -81,26 +90,32 @@ export function CountyActivityCodeAddPage({
       form.setError("department", { message: "Department is required", type: "manual" })
       return
     }
-    onSubmit()
+    onSubmit(tab)
   }
 
   return (
-    <div className="rounded-[18px] border border-[#EBEDF0] bg-white">
+    <div className="overflow-hidden rounded-[10px] border border-[#EBEDF0] bg-white">
       <div className="grid grid-cols-2 border-b border-[#E9EAEC]">
         <button
           type="button"
+          disabled={disabledTabs?.primary === true}
           onClick={() => setTab("primary")}
           className={`h-[62px] text-[18px] font-normal ${
             tab === "primary" ? "bg-[#6C5DD3] text-white" : "bg-white text-[#6C5DD3]"
+          } rounded-tl-[10px] ${
+            disabledTabs?.primary === true ? "cursor-not-allowed opacity-60" : ""
           }`}
         >
           Primary County Activity Code
         </button>
         <button
           type="button"
+          disabled={disabledTabs?.sub === true}
           onClick={() => setTab("sub")}
           className={`h-[62px] text-[18px] font-normal ${
             tab === "sub" ? "bg-[#6C5DD3] text-white" : "bg-white text-[#6C5DD3]"
+          } rounded-tr-[18px] ${
+            disabledTabs?.sub === true ? "cursor-not-allowed opacity-60" : ""
           }`}
         >
           Sub County Activity Code
@@ -139,7 +154,7 @@ export function CountyActivityCodeAddPage({
         </div>
 
         {tab === "primary" ? (
-          <div className="mt-[35px] grid grid-cols-4 gap-3">
+          <div className="mt-[35px] grid grid-cols-[0.85fr_1.15fr_1fr_1fr] gap-3">
             <div className="space-y-1">
               <label className="text-[14px] font-normal text-[#1F2937]">
                 Code Type
@@ -153,8 +168,14 @@ export function CountyActivityCodeAddPage({
                 >
                   <SelectValue placeholder="Select type" />
                 </SelectTrigger>
-                <SelectContent>
-                  {CODE_TYPE_OPTIONS.map((item) => (
+                <SelectContent
+                  position="popper"
+                  side="bottom"
+                  align="start"
+                  sideOffset={1}
+                  avoidCollisions={false}
+                >
+                  {COUNTY_ACTIVITY_CODE_TYPE_OPTIONS.map((item) => (
                     <SelectItem key={item} value={item}>
                       {item}
                     </SelectItem>
@@ -175,10 +196,19 @@ export function CountyActivityCodeAddPage({
                 >
                   <SelectValue placeholder="Select code" />
                 </SelectTrigger>
-                <SelectContent>
-                  {CODE_OPTIONS.map((item) => (
+                <SelectContent
+                  position="popper"
+                  side="bottom"
+                  align="start"
+                  sideOffset={1}
+                  avoidCollisions={false}
+                  className="w-(--radix-select-trigger-width) max-h-[280px] [&_[data-slot=select-scroll-up-button]]:hidden [&_[data-slot=select-scroll-down-button]]:hidden"
+                >
+                  {COUNTY_ACTIVITY_MASTER_CODE_OPTIONS.map((item) => (
                     <SelectItem key={item.value} value={String(item.value)}>
-                      {item.label}
+                      <span className="block w-full whitespace-normal break-words">
+                        {item.label}
+                      </span>
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -212,18 +242,27 @@ export function CountyActivityCodeAddPage({
                 Primary Activity Code
               </label>
               <Select
-                value={String(form.watch("masterCode"))}
-                onValueChange={(value) => form.setValue("masterCode", Number(value))}
+                value={selectedPrimaryId ?? ""}
+                onValueChange={(value) => onSelectedPrimaryIdChange?.(value)}
               >
                 <SelectTrigger
                   className="data-[size=default]:h-[48px] data-[size=sm]:h-[48px] w-full rounded-[10px] border-[#D9D9D9]"
                 >
                   <SelectValue placeholder="Select primary activity code" />
                 </SelectTrigger>
-                <SelectContent>
-                  {CODE_OPTIONS.map((item) => (
-                    <SelectItem key={item.value} value={String(item.value)}>
-                      {item.label}
+                <SelectContent
+                  position="popper"
+                  side="bottom"
+                  align="start"
+                  sideOffset={1}
+                  avoidCollisions={false}
+                  className="w-(--radix-select-trigger-width) max-h-[280px] [&_[data-slot=select-scroll-up-button]]:hidden [&_[data-slot=select-scroll-down-button]]:hidden"
+                >
+                  {(primaryActivityCodeOptions ?? []).map((item) => (
+                    <SelectItem key={item.value} value={item.value}>
+                      <span className="block w-full whitespace-normal break-words">
+                        {item.label}
+                      </span>
                     </SelectItem>
                   ))}
                 </SelectContent>
