@@ -1,0 +1,102 @@
+import type { Dispatch, SetStateAction } from "react"
+import { useState, useMemo } from "react"
+import type { UseFormReturn } from "react-hook-form"
+import { ChevronRight, ChevronLeft } from "lucide-react"
+import { TransferPanel } from "./TransferPanel"
+import type { JobPoolFormValues, TransferItem } from "../../types"
+import { useGetUserModuleRows } from "../../../user/queries/getUsers"
+
+interface EmployeeSectionProps {
+  form: UseFormReturn<JobPoolFormValues, any, any>
+}
+
+export function EmployeeSection({ form }: EmployeeSectionProps) {
+  const selectedDept = form.watch("department")
+  const { data: usersData } = useGetUserModuleRows({ page: 1, pageSize: 1000, inactiveOnly: false })
+  
+  const allUsers = useMemo(() => {
+    if (!selectedDept) return []
+    return usersData?.items.map(u => ({ id: u.id, name: u.employee })) ?? []
+  }, [usersData, selectedDept])
+
+  const [searchU, setSearchU] = useState("")
+  const [searchA, setSearchA] = useState("")
+  const [toggledU, setToggledU] = useState<string[]>([])
+  const [toggledA, setToggledA] = useState<string[]>([])
+
+  const assignedIds = form.watch("assignedEmployeeIds")
+
+  const getFiltered = (items: TransferItem[], assignedIds: string[], search: string, isAssigned: boolean) => {
+    const list = isAssigned 
+      ? items.filter(i => assignedIds.includes(i.id))
+      : items.filter(i => !assignedIds.includes(i.id))
+    
+    if (!search.trim()) return list
+    return list.filter(i => i.name.toLowerCase().includes(search.toLowerCase()))
+  }
+
+  const filteredU = getFiltered(allUsers, assignedIds, searchU, false)
+  const filteredA = getFiltered(allUsers, assignedIds, searchA, true)
+
+  const handleTransfer = (idsToTransfer: string[], isMovingToAssigned: boolean) => {
+    const current = form.getValues("assignedEmployeeIds")
+    if (isMovingToAssigned) {
+      form.setValue("assignedEmployeeIds", [...new Set([...current, ...idsToTransfer])])
+      setToggledU([])
+    } else {
+      form.setValue("assignedEmployeeIds", current.filter(id => !idsToTransfer.includes(id)))
+      setToggledA([])
+    }
+  }
+
+  const handleToggle = (id: string, setState: Dispatch<SetStateAction<string[]>>) => {
+    setState(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
+  }
+
+  return (
+    <div className="grid grid-cols-[1fr_60px_1fr] items-center gap-4">
+      <TransferPanel
+        title="Unassigned Employee"
+        items={filteredU}
+        selectedIds={toggledU}
+        onToggleItem={(id) => handleToggle(id, setToggledU)}
+        onToggleAll={() => {}}
+        searchValue={searchU}
+        onSearchChange={setSearchU}
+        count={filteredU.length}
+        isSearchDisabled={true}
+        isListDisabled={true}
+      />
+      <div className="flex flex-col gap-3 pt-12">
+        <button
+          type="button"
+          onClick={() => handleTransfer(toggledU, true)}
+          disabled={toggledU.length === 0}
+          className="flex size-11 cursor-pointer items-center justify-center rounded-[10px] bg-[#6C5DD3] text-white shadow-lg shadow-[#6C5DD3]/20 hover:brightness-110 active:scale-95 transition-all disabled:cursor-not-allowed"
+        >
+          <ChevronRight className="size-5 stroke-[2.5]" />
+        </button>
+        <button
+          type="button"
+          onClick={() => handleTransfer(toggledA, false)}
+          disabled={toggledA.length === 0}
+          className="flex size-11 cursor-pointer items-center justify-center rounded-[10px] bg-[#6C5DD3] text-white shadow-lg shadow-[#6C5DD3]/20 hover:brightness-110 active:scale-95 transition-all disabled:cursor-not-allowed"
+        >
+          <ChevronLeft className="size-5 stroke-[2.5]" />
+        </button>
+      </div>
+      <TransferPanel
+        title="Assigned Employee"
+        items={filteredA}
+        selectedIds={toggledA}
+        onToggleItem={(id) => handleToggle(id, setToggledA)}
+        onToggleAll={() => {}}
+        searchValue={searchA}
+        onSearchChange={setSearchA}
+        count={filteredA.length}
+        isSearchDisabled={true}
+        isListDisabled={true}
+      />
+    </div>
+  )
+}

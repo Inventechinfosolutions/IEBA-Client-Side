@@ -58,7 +58,7 @@ function formatPhone(value: string): string {
 }
 
 const inputClassName =
-  "h-[58px] rounded-[7px] border border-[#e4e7ef] bg-white px-3 py-0 text-[12px] leading-[12px] text-[#1f2937] shadow-none placeholder:text-[12px] placeholder:font-normal placeholder:text-[#c2c7d3] hover:border-[#8f86f0] focus-visible:border-[#8f86f0] focus-visible:ring-1 focus-visible:ring-[#8f86f033]"
+  "h-[58px] rounded-[7px] border border-[#e4e7ef] bg-white px-3 py-0 text-[12px] leading-[12px] text-[#1f2937] shadow-none placeholder:text-[12px] placeholder:font-normal placeholder:text-[#c2c7d3] hover:border-[#6C5DD3] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
 
 const labelClassName = "mb-1 block text-[14px] font-normal text-[#2a2f3a]"
 
@@ -478,7 +478,7 @@ function ProfileDetailForm({
           <Button
             type="submit"
             disabled={isSaving}
-            className="h-13 min-w-[78px] cursor-pointer rounded-[8px] bg-[#6b5bd6] px-5 text-[15px] text-white hover:bg-[#6b5bd6] disabled:opacity-60"
+            className="h-13 min-w-[78px] cursor-pointer rounded-[8px] bg-[#6C5DD3] px-5 text-[15px] text-white hover:bg-[#6C5DD3] disabled:opacity-60"
           >
             Submit
           </Button>
@@ -553,4 +553,5 @@ export function ProfileDetail() {
     />
   )
 }
+
 

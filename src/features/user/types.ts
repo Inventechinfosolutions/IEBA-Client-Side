@@ -103,6 +103,7 @@ export type UserPaginationProps = {
   currentPage: number
   pageSize: number
   onPageChange: (page: number) => void
+  onPageSizeChange: (pageSize: number) => void
 }
 
 export type UserFormPageProps = UserFormPanelProps

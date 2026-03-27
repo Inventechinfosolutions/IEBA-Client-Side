@@ -11,6 +11,7 @@ import {
   Table2,
   CalendarClock,
   LockKeyhole,
+  Layers,
 } from "lucide-react"
 
 import {
@@ -53,6 +54,8 @@ const mainNav = [
   { title: "County Activity Code", url: "/county-activity-code", icon: Table2 },
   { title: "Schedule Time Study", url: "/schedule-time-study", icon: CalendarClock },
   { title: "Cost Pool", url: "/costpool", icon: Table2 },
+  { title: "Job Classification", url: "/job-classification", icon: Layers },
+  { title: "Job Pool", url: "/job-pool", icon: Layers },
 ] as const
 
 export function AppSidebar() {
@@ -239,6 +242,18 @@ export function AppSidebar() {
                     <Link to="/costpool">
                       <Table2 className="mr-2 size-4" />
                       Cost Pool
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/job-classification">
+                      <Layers className="mr-2 size-4" />
+                      Job Classification
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/job-pool">
+                      <Layers className="mr-2 size-4" />
+                      Job Pool
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>

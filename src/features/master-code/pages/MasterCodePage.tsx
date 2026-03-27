@@ -17,7 +17,7 @@ import {
 } from "../types"
 
 const tabs: MasterCodeTab[] = ["FFP", "MAA", "TCM", "INTERNAL", "CDSS"]
-const pageSize = 10
+
 const emptyFormValues: MasterCodeFormValues = {
   code: "",
   name: "",
@@ -45,6 +45,7 @@ export function MasterCodePage() {
   const [allowMultiCodes, setAllowMultiCodes] = useState(true)
   const [inactiveOnly, setInactiveOnly] = useState(false)
   const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
   const [modalOpen, setModalOpen] = useState(false)
   const [modalMode, setModalMode] = useState<MasterCodeFormMode>("add")
   const [selectedRow, setSelectedRow] = useState<MasterCodeRow | null>(null)
@@ -156,6 +157,10 @@ export function MasterCodePage() {
           currentPage={page}
           pageSize={pageSize}
           onPageChange={setPage}
+          onPageSizeChange={(newSize) => {
+            setPageSize(newSize)
+            setPage(1)
+          }}
         />
       </div>
       <MasterCodeFormModal

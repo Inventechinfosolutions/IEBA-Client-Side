@@ -223,6 +223,28 @@
   height: 0;
 }
 
+/* Custom Table Scrollbar (Program / Job Classification tables) */
+.program-table-scroll {
+  scrollbar-width: 18px;
+  scrollbar-color: #929292 #F6F7FB;
+}
+.program-table-scroll::-webkit-scrollbar {
+  width: 18px;
+}
+.program-table-scroll::-webkit-scrollbar-track {
+  background: #929292;
+  border-left: 1px solid #e6e7ef;
+}
+.program-table-scroll::-webkit-scrollbar-thumb {
+  background: #929292;
+  border-radius: 9999px;
+  border: 4px solid #F6F7FB;
+  background-clip: content-box;
+}
+.program-table-scroll::-webkit-scrollbar-thumb:hover {
+  background: #9e9e9e;
+}
+
 /* Textarea scrollbar (hide arrow buttons) */
 .text-primary { color: oklch(0.58 0.25 280) !important; }
 .bg-primary { background-color: oklch(0.58 0.25 280) !important; }

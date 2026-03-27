@@ -60,7 +60,7 @@ function EmployeeDetailsContent({ isEditMode }: EmployeeDetailsContentProps) {
   const labelClassName = "mb-1 block select-none text-[11px] font-medium text-[#2a2f3a]"
   const passwordErrorClassName = "mt-1 text-[11px] text-[#ff0000]"
   const inputClassName =
-    "h-[43px] rounded-[7px] border border-[#e4e7ef] bg-white px-3 text-[12px] text-[#1f2937] shadow-none placeholder:text-[11px] placeholder:font-normal placeholder:text-[#c2c7d3] focus-visible:border-[#cfc6ff] focus-visible:ring-0"
+    "h-[43px] rounded-[7px] border border-[#e4e7ef] bg-white px-3 text-[12px] text-[#1f2937] shadow-none placeholder:text-[11px] placeholder:font-normal placeholder:text-[#c2c7d3] focus-visible:border-[#6C5DD3] focus-visible:ring-0"
   const blockedInputClassName =
     "h-[43px] rounded-[7px] border border-[#e4e7ef] bg-[#f3f4f8] px-3 pr-9 text-[12px] text-[#6b7280] shadow-none placeholder:text-[11px] placeholder:font-normal placeholder:text-[#9aa1b2] focus-visible:border-[#e4e7ef] focus-visible:ring-0"
   const employeeNoInputClassName = `${inputClassName} cursor-not-allowed bg-[#f3f4f8] text-[#6b7280]`
@@ -426,7 +426,7 @@ export function EmployeePanel({ mode, initialValues, onCancel, onSave }: UserFor
           <div className="mt-5 flex items-center justify-end gap-3">
             <Button
               type="submit"
-              className="h-9 min-w-[72px] cursor-pointer rounded-[8px] bg-[#6b5bd6] px-5 text-[12px] text-white hover:bg-[#6b5bd6]"
+              className="h-9 min-w-[72px] cursor-pointer rounded-[8px] bg-[#6C5DD3] px-5 text-[12px] text-white hover:bg-[#6C5DD3]"
             >
               Save
             </Button>
@@ -434,7 +434,7 @@ export function EmployeePanel({ mode, initialValues, onCancel, onSave }: UserFor
               <Button
                 type="button"
                 onClick={handleNext}
-                className="h-9 min-w-[72px] cursor-pointer rounded-[8px] bg-[#6b5bd6] px-5 text-[12px] text-white hover:bg-[#6b5bd6]"
+                className="h-9 min-w-[72px] cursor-pointer rounded-[8px] bg-[#6C5DD3] px-5 text-[12px] text-white hover:bg-[#6C5DD3]"
               >
                 Next
               </Button>
@@ -443,7 +443,7 @@ export function EmployeePanel({ mode, initialValues, onCancel, onSave }: UserFor
               <Button
                 type="button"
                 onClick={handlePasswordReset}
-                className="h-9 min-w-[120px] cursor-pointer rounded-[8px] bg-[#6b5bd6] px-5 text-[12px] text-white hover:bg-[#6b5bd6]"
+                className="h-9 min-w-[120px] cursor-pointer rounded-[8px] bg-[#6C5DD3] px-5 text-[12px] text-white hover:bg-[#6C5DD3]"
               >
                 Password Reset
               </Button>
@@ -461,3 +461,4 @@ export function EmployeePanel({ mode, initialValues, onCancel, onSave }: UserFor
     </FormProvider>
   )
 }
+

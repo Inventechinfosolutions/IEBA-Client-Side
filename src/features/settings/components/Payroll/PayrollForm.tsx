@@ -297,7 +297,7 @@ export function PayrollForm() {
                 <DropdownMenuTrigger asChild>
                   <button
                     type="button"
-                    className="flex h-[46px] w-[160px] shrink-0 cursor-pointer items-center justify-between gap-1 rounded-[6px] border border-[#d6d7dc] bg-white pl-3 pr-2 text-left text-[14px] font-normal text-[#111827] shadow-none outline-none hover:bg-[#f2f2f2] hover:text-[#111827] focus-visible:border-[#cfc6ff] focus-visible:ring-0 focus-visible:text-[#111827] data-[state=open]:border-[#cfc6ff] data-[state=open]:text-[#111827]"
+                    className="flex h-[46px] w-[160px] shrink-0 cursor-pointer items-center justify-between gap-1 rounded-[6px] border border-[#d6d7dc] bg-white pl-3 pr-2 text-left text-[14px] font-normal text-[#111827] shadow-none outline-none hover:bg-[#f2f2f2] hover:text-[#111827] focus-visible:border-[#6C5DD3] focus-visible:ring-0 focus-visible:text-[#111827] data-[state=open]:border-[#6C5DD3] data-[state=open]:text-[#111827]"
                   >
                     <span className="min-w-0 flex-1 truncate font-normal text-[#111827]">{field.value}</span>
                     <ChevronDownIcon className="size-4 shrink-0 text-muted-foreground" aria-hidden />
@@ -344,3 +344,4 @@ export function PayrollForm() {
     </div>
   )
 }
+

@@ -371,7 +371,7 @@ export function ImageCropUploadDialog({
                 type="button"
                 onClick={handleConfirm}
                 disabled={!imageSrc}
-                className="h-12 min-w-[92px] rounded-[10px] bg-[#6b5bd6] px-6 text-[12px] text-white hover:bg-[#6b5bd6] disabled:opacity-60"
+                className="h-12 min-w-[92px] rounded-[10px] bg-[#6C5DD3] px-6 text-[12px] text-white hover:bg-[#6C5DD3] disabled:opacity-60"
               >
                 OK
               </Button>
@@ -382,3 +382,4 @@ export function ImageCropUploadDialog({
     </>
   )
 }
+

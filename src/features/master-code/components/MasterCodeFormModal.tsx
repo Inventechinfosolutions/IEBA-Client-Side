@@ -100,10 +100,7 @@ export function MasterCodeFormModal({
     refreshActiveTools()
   }
 
-  const handleScrollStep = (direction: "up" | "down") => {
-    const delta = direction === "up" ? -36 : 36
-    descriptionEditorRef.current?.scrollBy({ top: delta, behavior: "smooth" })
-  }
+
   const handlePercentStep = (direction: "up" | "down") => {
     const current = Number.parseFloat(String(getValues("ffpPercent") ?? "0"))
     const safeCurrent = Number.isFinite(current) ? current : 0
@@ -226,14 +223,14 @@ export function MasterCodeFormModal({
               <label className="block whitespace-nowrap text-[12px] text-[#111827]">{`*${codeType} Code`}</label>
               <Input
                 {...register("code")}
-                className="h-[40px] select-text rounded-[9px] border border-[#c5cad5] bg-white px-2.5 text-[13px] text-[#111827] focus-visible:border-[#8f86f0] focus-visible:ring-1 focus-visible:ring-[#8f86f033]"
+                className="h-[40px] select-text rounded-[9px] border border-[#c5cad5] bg-white px-2.5 text-[13px] text-[#111827] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
               />
             </div>
             <div className="space-y-1">
               <label className="block text-[12px] text-[#111827]">{`*${codeType} Name`}</label>
               <Input
                 {...register("name")}
-                className="h-[40px] select-text rounded-[9px] border border-[#c5cad5] bg-white px-2.5 text-[13px] text-[#111827] focus-visible:border-[#8f86f0] focus-visible:ring-1 focus-visible:ring-[#8f86f033]"
+                className="h-[40px] select-text rounded-[9px] border border-[#c5cad5] bg-white px-2.5 text-[13px] text-[#111827] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
               />
             </div>
             {showPercentAndMatch ? (
@@ -247,7 +244,7 @@ export function MasterCodeFormModal({
                       step="0.50"
                       min="0"
                       max="100"
-                      className="h-[40px] select-text rounded-[9px] border border-[#c5cad5] bg-white px-2.5 pr-6 text-[13px] text-[#111827] [appearance:textfield] focus-visible:border-[#8f86f0] focus-visible:ring-1 focus-visible:ring-[#8f86f033] group-focus-within/percent:border-[#8f86f0] group-focus-within/percent:ring-1 group-focus-within/percent:ring-[#8f86f033] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                      className="h-[40px] select-text rounded-[9px] border border-[#c5cad5] bg-white px-2.5 pr-6 text-[13px] text-[#111827] [appearance:textfield] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333] group-focus-within/percent:border-[#6C5DD3] group-focus-within/percent:ring-1 group-focus-within/percent:ring-[#6C5DD333] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                     />
                     <button
                       type="button"
@@ -271,7 +268,7 @@ export function MasterCodeFormModal({
                   <label className="block text-[12px] text-[#111827]">Match</label>
                   <Input
                     {...register("match")}
-                    className="h-[40px] select-text rounded-[9px] border border-[#c5cad5] bg-white px-2.5 text-[13px] text-[#111827] focus-visible:border-[#8f86f0] focus-visible:ring-1 focus-visible:ring-[#8f86f033]"
+                    className="h-[40px] select-text rounded-[9px] border border-[#c5cad5] bg-white px-2.5 text-[13px] text-[#111827] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
                   />
                 </div>
               </>
@@ -354,31 +351,16 @@ export function MasterCodeFormModal({
                 onInput={syncEditorValue}
                 onClick={refreshActiveTools}
                 onKeyUp={refreshActiveTools}
-                className="max-h-[201px] min-h-[201px] select-text overflow-y-scroll overflow-x-hidden whitespace-pre-wrap break-all [overflow-wrap:anywhere] bg-white px-3 py-2 pr-5 text-[13px] leading-6 text-[#111827] outline-none [&_ul]:list-disc [&_ul]:pl-5 [&_li]:my-0.5 [&::-webkit-scrollbar]:w-3.5 [&::-webkit-scrollbar-track]:bg-[#f1f2f6] [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#98a1b0]"
+                className="program-table-scroll max-h-[201px] min-h-[201px] select-text overflow-y-scroll overflow-x-hidden whitespace-pre-wrap break-all [overflow-wrap:anywhere] bg-white px-3 py-2 pr-5 text-[13px] leading-6 text-[#111827] outline-none [&_ul]:list-disc [&_ul]:pl-5 [&_li]:my-0.5"
               />
-              <button
-                type="button"
-                aria-label="Scroll up"
-                onClick={() => handleScrollStep("up")}
-                className="absolute right-0 top-8 z-10 inline-flex h-4 w-3.5 cursor-pointer items-center justify-center border-l border-b border-[#c9ced8] bg-[#eef0f4] text-[#7f8796]"
-              >
-                <ChevronUp className="size-3" />
-              </button>
-              <button
-                type="button"
-                aria-label="Scroll down"
-                onClick={() => handleScrollStep("down")}
-                className="absolute bottom-0 right-0 z-10 inline-flex h-4 w-3.5 cursor-pointer items-center justify-center border-l border-t border-[#c9ced8] bg-[#eef0f4] text-[#7f8796]"
-              >
-                <ChevronDown className="size-3" />
-              </button>
+
             </div>
           </div>
 
           <div className="mt-5 flex items-center justify-end gap-3">
             <Button
               type="submit"
-              className="h-[44px] min-w-[117px] cursor-pointer rounded-[10px] bg-[#6b5bd6] px-6 text-[13px] font-medium text-white hover:bg-[#6b5bd6]"
+              className="h-[44px] min-w-[117px] cursor-pointer rounded-[10px] bg-[#6C5DD3] px-6 text-[13px] font-medium text-white hover:bg-[#6C5DD3]"
             >
               Save
             </Button>
@@ -395,3 +377,4 @@ export function MasterCodeFormModal({
     </Dialog>
   )
 }
+

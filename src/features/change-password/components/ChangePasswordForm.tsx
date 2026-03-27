@@ -25,7 +25,7 @@ import type {
 
 const labelClassName = "mb-1 block text-[14px] leading-[22px] font-normal text-[#000000e0]"
 const inputClassName =
-  "h-[50px] w-[420px] rounded-[7px] border border-[#e4e7ef] bg-white px-[11px] py-[4px] pr-10 text-[14px] leading-[22px] text-[#1f2937] shadow-none placeholder:text-[14px] placeholder:leading-[22px] placeholder:font-normal placeholder:text-[#c2c7d3] hover:border-[#8f86f0] focus-visible:border-[#8f86f0] focus-visible:ring-1 focus-visible:ring-[#8f86f033] max-w-[calc(100vw-80px)]"
+  "h-[50px] w-[420px] rounded-[7px] border border-[#e4e7ef] bg-white px-[11px] py-[4px] pr-10 text-[14px] leading-[22px] text-[#1f2937] shadow-none placeholder:text-[14px] placeholder:leading-[22px] placeholder:font-normal placeholder:text-[#c2c7d3] hover:border-[#6C5DD3] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333] max-w-[calc(100vw-80px)]"
 
 const PasswordField = ({
   name,
@@ -213,3 +213,4 @@ export function ChangePasswordFormModal({ open, onOpenChange }: ChangePasswordFo
     </Dialog>
   )
 }
+

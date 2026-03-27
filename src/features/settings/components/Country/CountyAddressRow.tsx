@@ -9,7 +9,7 @@ import type { CountyAddressRowProps } from "./types"
 const labelClassName =
   "mb-1 block select-none text-[14px] font-medium text-[var(--primary)]"
 const inputClassName =
-  "h-[49px] rounded-[7px] border border-[#e4e7ef] bg-white px-3 text-[14px] text-[#1f2937] shadow-none placeholder:text-[14px] placeholder:font-normal placeholder:text-[#c2c7d3] focus-visible:border-[#cfc6ff] focus-visible:ring-0"
+  "h-[49px] rounded-[7px] border border-[#e4e7ef] bg-white px-3 text-[14px] text-[#1f2937] shadow-none placeholder:text-[14px] placeholder:font-normal placeholder:text-[#c2c7d3] focus-visible:border-[#6C5DD3] focus-visible:ring-0"
 
 export function CountyAddressRow({
   index,
@@ -94,4 +94,5 @@ export function CountyAddressRow({
     </div>
   )
 }
+
 

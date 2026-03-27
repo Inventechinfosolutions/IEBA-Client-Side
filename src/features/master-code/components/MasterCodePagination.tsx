@@ -5,6 +5,12 @@ import {
   PaginationItem,
   PaginationLink,
 } from "@/components/ui/pagination"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import type { MasterCodePaginationProps } from "@/features/master-code/types"
 
 export function MasterCodePagination({
@@ -12,6 +18,7 @@ export function MasterCodePagination({
   currentPage,
   pageSize,
   onPageChange,
+  onPageSizeChange,
 }: MasterCodePaginationProps) {
   const totalPages = Math.max(1, Math.ceil(totalItems / pageSize))
   const pages: Array<number | "ellipsis-left" | "ellipsis-right"> = (() => {
@@ -105,10 +112,27 @@ export function MasterCodePagination({
           </PaginationContent>
         </Pagination>
         <div className="flex items-center gap-2 text-xs">
-          <div className="ml-3 inline-flex cursor-pointer items-center gap-1 rounded-md border border-[#d8dae3] bg-white px-2 py-1 text-xs text-[#1f2937] shadow-[0_1px_1px_rgba(16,24,40,0.03)]">
-            {pageSize} / page
-            <ChevronDown className="size-3 text-[#8f93a1]" />
-          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <div className="ml-3 inline-flex cursor-pointer items-center gap-1 rounded-md border border-[#d8dae3] bg-white px-2 py-1 text-xs text-[#1f2937] shadow-[0_1px_1px_rgba(16,24,40,0.03)] outline-none hover:bg-[#fafafa]">
+                {pageSize} / page
+                <ChevronDown className="size-3 text-[#8f93a1]" />
+              </div>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-[100px] min-w-[100px] rounded-lg border-[#d8dae3] bg-white p-1.5 shadow-[0_10px_38px_rgba(0,0,0,0.1),0_10px_20px_rgba(0,0,0,0.06)]">
+              {[10, 20, 50].map((size) => (
+                <DropdownMenuItem
+                  key={size}
+                  className={`cursor-pointer rounded-md px-2 py-1.5 text-xs text-[#1f2937] outline-none ${
+                    size === pageSize ? "bg-[#f0f7ff] font-medium" : "hover:bg-[#f8f9fa]"
+                  }`}
+                  onClick={() => onPageSizeChange(size)}
+                >
+                  {size} / page
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </div>

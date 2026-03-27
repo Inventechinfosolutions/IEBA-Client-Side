@@ -20,7 +20,7 @@ import tableEmptyIcon from "@/assets/icons/table-empty.png"
 
 const labelClassName = "mb-2 block text-[12px] font-normal text-[#2a2f3a]"
 const selectTriggerClassName =
-  "!h-[38px] !w-[260px] !rounded-[8px] border border-[#d6d7dc] bg-white px-[11px] !text-[12px] text-[#111827] shadow-none placeholder:!text-[12px] focus-visible:border-[#cfc6ff] focus-visible:ring-0"
+  "!h-[38px] !w-[260px] !rounded-[8px] border border-[#d6d7dc] bg-white px-[11px] !text-[12px] text-[#111827] shadow-none placeholder:!text-[12px] focus-visible:border-[#6C5DD3] focus-visible:ring-0"
 const chipInputClassName =
   "relative flex !h-[38px] !w-[600px] items-center gap-2 !rounded-[8px] border border-[#d6d7dc] bg-white px-[11px] text-[12px] text-[#111827] shadow-none"
 
@@ -293,7 +293,7 @@ export function ReportsForm() {
                     value={tableSearchDraft}
                     onChange={(e) => setTableSearchDraft(e.target.value)}
                     placeholder="Search value"
-                    className="h-[40px] rounded-[10px] border border-[#d6d7dc] bg-white px-3 text-[12px] shadow-none focus-visible:border-[#cfc6ff] focus-visible:ring-0"
+                    className="h-[40px] rounded-[10px] border border-[#d6d7dc] bg-white px-3 text-[12px] shadow-none focus-visible:border-[#6C5DD3] focus-visible:ring-0"
                   />
                   <div className="mt-2 flex items-center gap-2">
                     <Button
@@ -403,4 +403,5 @@ export function ReportsForm() {
     </div>
   )
 }
+
 

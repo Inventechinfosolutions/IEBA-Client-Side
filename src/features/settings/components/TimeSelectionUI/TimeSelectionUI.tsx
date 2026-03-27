@@ -30,7 +30,7 @@ function parseTime(value: string | undefined) {
 }
 
 const baseInputClassName =
-  "h-[49px] rounded-[7px] border border-[#e4e7ef] bg-white px-3 text-[12px] text-[#1f2937] shadow-none placeholder:text-[12px] placeholder:font-normal placeholder:text-[#c2c7d3] focus-visible:border-[#cfc6ff] focus-visible:ring-0"
+  "h-[49px] rounded-[7px] border border-[#e4e7ef] bg-white px-3 text-[12px] text-[#1f2937] shadow-none placeholder:text-[12px] placeholder:font-normal placeholder:text-[#c2c7d3] focus-visible:border-[#6C5DD3] focus-visible:ring-0"
 
 const timeInputClassName =
   `${baseInputClassName} h-[49px] w-full pl-3 pr-9 text-center tabular-nums cursor-text ` +
@@ -197,4 +197,5 @@ export function TimeSelectionUI({
     </DropdownMenu>
   )
 }
+
 

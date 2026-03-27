@@ -38,7 +38,7 @@ export function LeaveApprovalToolbar({
                   field.onChange(value)
                 }}
               >
-                <SelectTrigger className="!h-[45px] !w-[140px] rounded-[8px] border border-[#d6d7dc] bg-white text-[12px] shadow-none focus-visible:border-[#cfc6ff] focus-visible:ring-0">
+                <SelectTrigger className="!h-[45px] !w-[140px] rounded-[8px] border border-[#d6d7dc] bg-white text-[12px] shadow-none focus-visible:border-[#6C5DD3] focus-visible:ring-0">
                   <SelectValue placeholder="All" />
                 </SelectTrigger>
                 <SelectContent
@@ -75,7 +75,7 @@ export function LeaveApprovalToolbar({
                   field.onChange(v)
                 }}
               >
-                <SelectTrigger className="!h-[45px] !w-[140px] rounded-[6px] border border-[#d6d7dc] bg-white text-[12px] shadow-none focus-visible:border-[#cfc6ff] focus-visible:ring-0">
+                <SelectTrigger className="!h-[45px] !w-[140px] rounded-[6px] border border-[#d6d7dc] bg-white text-[12px] shadow-none focus-visible:border-[#6C5DD3] focus-visible:ring-0">
                   <SelectValue placeholder="All" />
                 </SelectTrigger>
                 <SelectContent
@@ -103,7 +103,7 @@ export function LeaveApprovalToolbar({
         <Button
           type="submit"
           disabled={isSubmitting}
-          className="h-[40px] min-w-[110px] cursor-pointer rounded-[10px] bg-[#6b5bd6] px-8 text-[12px] font-medium text-white hover:bg-[#6b5bd6] disabled:cursor-not-allowed disabled:opacity-70"
+          className="h-[40px] min-w-[110px] cursor-pointer rounded-[10px] bg-[#6C5DD3] px-8 text-[12px] font-medium text-white hover:bg-[#6C5DD3] disabled:cursor-not-allowed disabled:opacity-70"
         >
           Search
         </Button>
@@ -111,4 +111,5 @@ export function LeaveApprovalToolbar({
     </form>
   )
 }
+
 

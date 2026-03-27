@@ -72,7 +72,7 @@ export function LeaveApprovalTable({
             {headers.map((h) => {
               const isSortable = Boolean(h.sortKey)
               const key = h.sortKey
-              const dividerClass = "border-r border-[1px] border-[#8f86f0]"
+              const dividerClass = "border-r border-[1px] border-[#6C5DD3]"
               return (
                 <TableHead
                   key={h.label + (h.className ?? "")}
@@ -288,4 +288,5 @@ export function LeaveApprovalTable({
     </div>
   )
 }
+
 

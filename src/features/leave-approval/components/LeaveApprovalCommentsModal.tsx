@@ -48,7 +48,7 @@ export function LeaveApprovalCommentsModal({
           <Textarea
             {...form.register("commentText")}
             placeholder=""
-            className="ieba-textarea-scroll h-[120px] max-h-[120px] resize-none overflow-y-auto whitespace-pre-wrap break-all rounded-[6px] border border-[#d6d7dc] bg-white px-3 py-2 text-[12px] text-[#111827] shadow-none focus-visible:border-[#cfc6ff] focus-visible:ring-0"
+            className="ieba-textarea-scroll h-[120px] max-h-[120px] resize-none overflow-y-auto whitespace-pre-wrap break-all rounded-[6px] border border-[#d6d7dc] bg-white px-3 py-2 text-[12px] text-[#111827] shadow-none focus-visible:border-[#6C5DD3] focus-visible:ring-0"
           />
 
           <DialogFooter className="mt-5 flex justify-end gap-3 sm:justify-end">
@@ -71,4 +71,5 @@ export function LeaveApprovalCommentsModal({
     </Dialog>
   )
 }
+
 

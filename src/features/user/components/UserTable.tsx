@@ -44,7 +44,7 @@ export function UserTable({ rows, isLoading, onEditRow }: UserTableProps) {
     "Action",
     "Switch User",
   ]
-  const dividerClass = "border-r border-[1px] border-[#8f86f0]"
+  const dividerClass = "border-r border-[1px] border-[#6C5DD3]"
 
   const skeletonRows = Array.from(
     { length: 10 },
@@ -328,3 +328,4 @@ export function UserTable({ rows, isLoading, onEditRow }: UserTableProps) {
     </div>
   )
 }
+

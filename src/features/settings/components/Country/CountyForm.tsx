@@ -14,7 +14,7 @@ import type { CountyFormProps, RequiredLabelProps } from "./types"
 const labelClassName = "mb-1 block select-none text-[12px] font-normal text-[#2a2f3a]"
 const sectionHeadingClassName = "mb-2 text-[14px] font-black text-[var(--primary)]"
 const inputClassName =
-  "h-[49px] rounded-[7px] border border-[#e4e7ef] bg-white px-3 text-[12px] text-[#1f2937] shadow-none placeholder:text-[12px] placeholder:font-normal placeholder:text-[#c2c7d3] focus-visible:border-[#cfc6ff] focus-visible:ring-0"
+  "h-[49px] rounded-[7px] border border-[#e4e7ef] bg-white px-3 text-[12px] text-[#1f2937] shadow-none placeholder:text-[12px] placeholder:font-normal placeholder:text-[#c2c7d3] focus-visible:border-[#6C5DD3] focus-visible:ring-0"
 const timeInputDisabledClassName =
   `${inputClassName} h-[49px] w-full pl-3 pr-9 text-center tabular-nums bg-[#f2f2f2] cursor-not-allowed disabled:cursor-not-allowed disabled:opacity-100 disabled:text-[#111827] ` +
   `[&::-webkit-calendar-picker-indicator]:opacity-0`
@@ -257,4 +257,5 @@ export function CountyForm({ isSaving }: CountyFormProps) {
     </div>
   )
 }
+
 

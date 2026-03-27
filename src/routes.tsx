@@ -18,6 +18,8 @@ import { SettingsPage } from "@/features/settings"
 import { ScheduleTimeStudyPage } from "@/features/schedule-time-study"
 import { ProfilePage } from "@/features/Profile"
 import { CostPoolPage } from "@/features/cost-pool"
+import { JobClassificationPage } from "@/features/job-classification"
+import { JobPoolPage } from "@/features/job-pool"
 
 export const router = createBrowserRouter([
   {
@@ -72,6 +74,8 @@ export const router = createBrowserRouter([
       },
       { path: "costpool", element: <CostPoolPage /> },
       { path: "profile", element: <ProfilePage /> },
+      { path: "job-classification", element: <JobClassificationPage /> },
+      { path: "job-pool", element: <JobPoolPage /> },
     ],
   },
   { path: "*", element: <Navigate to="/" replace /> },

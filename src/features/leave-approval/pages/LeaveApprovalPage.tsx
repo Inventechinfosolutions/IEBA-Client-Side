@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react"
 
-import { LeaveApprovalPagination } from "../components/LeaveApprovalPagination"
+import { MasterCodePagination } from "@/features/master-code/components/MasterCodePagination"
 import { LeaveApprovalTable } from "../components/LeaveApprovalTable"
 import { LeaveApprovalCommentsModal } from "../components/LeaveApprovalCommentsModal"
 import { LeaveApprovalToolbar } from "../components/LeaveApprovalToolbar"
@@ -89,12 +89,12 @@ export function LeaveApprovalPage() {
             setCommentsModalOpen(true)
           }}
         />
-        <LeaveApprovalPagination
+        <MasterCodePagination
           totalItems={leaveModule.totalItems}
           currentPage={page}
           pageSize={pageSize}
-          onPageChange={(p) => setPage(p)}
-          onPageSizeChange={(next) => {
+          onPageChange={(p: number) => setPage(p)}
+          onPageSizeChange={(next: number) => {
             setPage(1)
             setPageSize(next)
           }}
