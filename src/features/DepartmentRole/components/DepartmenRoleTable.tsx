@@ -4,6 +4,7 @@ import {
   ChevronRightIcon,
   EyeIcon,
   MoreVerticalIcon,
+  PencilIcon,
   PlusIcon,
   Trash2Icon,
 } from "lucide-react"
@@ -43,6 +44,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import type { DepartmenRoleTableProps } from "../types"
 import { cn } from "@/lib/utils"
 import statusCheckImg from "@/assets/status-check.png"
+import statusCrossImg from "@/assets/status-cross.png"
 
 const PAGE_SIZES = [5, 10, 25, 50] as const
 
@@ -52,6 +54,8 @@ export function DepartmenRoleTable({
   onPageChange,
   onPageSizeChange,
   onView,
+  onEdit,
+  onToggleChildStatus,
   onOptionAction,
   isLoading = false,
 }: DepartmenRoleTableProps) {
@@ -237,37 +241,60 @@ export function DepartmenRoleTable({
                               >
                                 <div className="flex w-[15%] min-w-0 items-center gap-2 pl-[1%] pr-2">
                                   <Checkbox
-                                    checked
-                                    disabled
-                                    className="border-[#6C5DD3] data-[state=checked]:border-[#6C5DD3] data-[state=checked]:bg-[#6C5DD3]"
+                                    checked={child.status === "active"}
+                                    disabled={!child.isCustom}
+                                    onCheckedChange={(checked) => {
+                                      if (!child.isCustom) return
+                                      onToggleChildStatus?.(child.id, checked === true)
+                                    }}
+                                    className={cn(
+                                      "border-[#6C5DD3] data-[state=checked]:border-[#6C5DD3] data-[state=checked]:bg-[#6C5DD3]",
+                                      !child.isCustom && "cursor-not-allowed opacity-60"
+                                    )}
                                   />
                                   <span>{child.roleName}</span>
                                 </div>
                                 <div className="w-[65%] shrink-0" />
                                 <div className="flex w-[10%] shrink-0 justify-center px-2">
-                                  {child.status === "active" ? (
-                                    <img
-                                      src={statusCheckImg}
-                                      alt="Active"
-                                      className="h-[18px] w-[18px] shrink-0 cursor-pointer object-contain"
-                                      aria-label="Active"
-                                    />
-                                  ) : (
-                                    <span className="text-muted-foreground">
-                                      —
-                                    </span>
-                                  )}
+                                  <img
+                                    src={
+                                      child.status === "active"
+                                        ? statusCheckImg
+                                        : statusCrossImg
+                                    }
+                                    alt={child.status === "active" ? "Active" : "Inactive"}
+                                    className="h-[18px] w-[18px] shrink-0 object-contain"
+                                    aria-label={
+                                      child.status === "active" ? "Active" : "Inactive"
+                                    }
+                                  />
                                 </div>
                                 <div className="flex w-[10%] shrink-0 justify-center px-2">
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="size-8 text-[#6C5DD3] hover:bg-[#6C5DD3]/10"
-                                    aria-label="View"
-                                    onClick={() => onView?.(child.id)}
-                                  >
-                                    <EyeIcon className="size-4" />
-                                  </Button>
+                                  {child.status === "active" ? (
+                                    child.isCustom ? (
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="size-8 text-[#6C5DD3] hover:bg-[#6C5DD3]/10"
+                                        aria-label="Edit"
+                                        onClick={() => onEdit?.(child.id)}
+                                      >
+                                        <PencilIcon className="size-4" />
+                                      </Button>
+                                    ) : (
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="size-8 text-[#6C5DD3] hover:bg-[#6C5DD3]/10"
+                                        aria-label="View"
+                                        onClick={() => onView?.(child.id)}
+                                      >
+                                        <EyeIcon className="size-4" />
+                                      </Button>
+                                    )
+                                  ) : (
+                                    <div className="size-8" aria-hidden />
+                                  )}
                                 </div>
                               </div>
                             ))}

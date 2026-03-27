@@ -25,12 +25,15 @@ import type { AddRoleFormSchema } from "../schemas"
 import type { DepartmentRoleAddProps } from "../types"
 import { cn } from "@/lib/utils"
 
-const DEPARTMENTS = ["Social Services"] as const
 const ALL_PERMISSIONS_LIST = ["General Admin", "Time Study", "Personal"] as const
 
 export function DepartmentRoleAdd({
   open,
   onOpenChange,
+  departments,
+  initialDepartment,
+  mode = "create",
+  editInitialValues = null,
   onSubmit,
   isSubmitting = false,
 }: DepartmentRoleAddProps) {
@@ -44,9 +47,12 @@ export function DepartmentRoleAdd({
   const form = useForm<AddRoleFormSchema>({
     resolver: zodResolver(addRoleFormSchema),
     defaultValues: {
-      department: DEPARTMENTS[0] ?? "",
-      roleName: "",
-      active: true,
+      department:
+        mode === "edit"
+          ? editInitialValues?.departmentName ?? departments[0] ?? ""
+          : initialDepartment ?? departments[0] ?? "",
+      roleName: mode === "edit" ? editInitialValues?.roleName ?? "" : "",
+      active: mode === "edit" ? editInitialValues?.active ?? true : true,
       assignedPermissions: [],
     },
   })
@@ -100,27 +106,28 @@ export function DepartmentRoleAdd({
   }
 
   const handleSubmit = form.handleSubmit((values) => {
+    if (mode === "edit") {
+      if (!editInitialValues) return
+      onSubmit({
+        childId: editInitialValues.childId,
+        roleName: values.roleName,
+        active: values.active,
+      })
+      return
+    }
+
     onSubmit({
       department: values.department,
       roleName: values.roleName,
       active: values.active,
       assignedPermissions: values.assignedPermissions,
     })
-    form.reset({
-      department: DEPARTMENTS[0] ?? "",
-      roleName: "",
-      active: true,
-      assignedPermissions: [],
-    })
-    setSelectedAvailable(new Set())
-    setSelectedAssigned(new Set())
-    onOpenChange(false)
   })
 
   const handleOpenChange = (next: boolean) => {
     if (!next) {
       form.reset({
-        department: DEPARTMENTS[0] ?? "",
+        department: departments[0] ?? "",
         roleName: "",
         active: true,
         assignedPermissions: [],
@@ -137,15 +144,14 @@ export function DepartmentRoleAdd({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent
-        className="flex max-h-[90vh] w-[1000px] max-w-[95vw] min-h-0 flex-col overflow-y-auto overflow-x-hidden p-[2%_5%] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden data-[state=open]:slide-in-from-right-1/2 data-[state=closed]:slide-out-to-right-1/2 data-[state=open]:slide-in-from-top-[48%] data-[state=closed]:slide-out-to-top-[48%]"
+        className="flex max-h-[90vh] w-[1000px] max-w-[95vw] min-h-0 flex-col overflow-hidden bg-white p-[2%_5%] data-[state=open]:slide-in-from-right-1/2 data-[state=closed]:slide-out-to-right-1/2 data-[state=open]:slide-in-from-top-[48%] data-[state=closed]:slide-out-to-top-[48%]"
         overlayClassName="bg-black/40"
       >
-        <DialogHeader className="relative flex shrink-0 flex-row items-center gap-4">
-          <div className="flex-1" aria-hidden />
-          <DialogTitle className="absolute left-1/2 -translate-x-1/2 text-xl text-black">
-            Add Role
+        <DialogHeader className="flex shrink-0 flex-col gap-3">
+          <DialogTitle className="text-center text-xl text-black">
+            {mode === "edit" ? "Edit Role" : "Add Role"}
           </DialogTitle>
-          <div className="flex flex-1 items-center justify-end gap-2">
+          <div className="flex items-center justify-end gap-2">
             <Checkbox
               id="active"
               checked={form.watch("active")}
@@ -163,8 +169,8 @@ export function DepartmentRoleAdd({
           </div>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="flex flex-col">
-          <div className="space-y-4 py-2">
+        <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto pt-10 pb-2 pr-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <div className="grid grid-cols-[1fr_auto_1fr] gap-2">
             <div className="min-w-0 space-y-2">
               <Label htmlFor="department" className="text-black">
@@ -173,18 +179,20 @@ export function DepartmentRoleAdd({
               <Select
                 value={form.watch("department")}
                 onValueChange={(v) => form.setValue("department", v)}
+                disabled
               >
                 <SelectTrigger
                   id="department"
                   className={cn(
-                    "h-[60px] w-full rounded-md border border-[#e5e5e5] bg-black/[0.04] px-[18px] text-black",
-                    form.formState.errors.department && "border-destructive"
+                    "!h-[50px] w-full rounded-md border border-[#e5e5e5] bg-black/[0.04] px-[18px] text-black",
+                    form.formState.errors.department && "border-destructive",
+                    "cursor-not-allowed opacity-60"
                   )}
                 >
                   <SelectValue placeholder="Select department" />
                 </SelectTrigger>
                 <SelectContent>
-                  {DEPARTMENTS.map((d) => (
+                  {departments.map((d) => (
                     <SelectItem key={d} value={d}>
                       {d}
                     </SelectItem>
@@ -337,9 +345,7 @@ export function DepartmentRoleAdd({
                 </div>
             </div>
           </div>
-          </div>
-
-          <div className="flex shrink-0 justify-end gap-2 pt-4">
+          <div className="flex justify-end gap-2 pt-4">
             <Button
               type="button"
               variant="outline"
@@ -355,6 +361,7 @@ export function DepartmentRoleAdd({
             >
               {isSubmitting ? "Saving..." : "Save"}
             </Button>
+          </div>
           </div>
         </form>
       </DialogContent>
