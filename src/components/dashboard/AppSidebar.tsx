@@ -228,6 +228,8 @@ export function AppSidebar() {
                       <Settings className="mr-2 size-4" />
                       Settings
                     </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
                     <Link to="/schedule-time-study">
                       <CalendarClock className="mr-2 size-4" />
                       Schedule Time Study
@@ -253,10 +255,6 @@ export function AppSidebar() {
                   >
                     <LockKeyhole className="mr-2 size-4" />
                     Change Password
-                  </DropdownMenuItem>
-                  <DropdownMenuItem disabled>
-                    <Settings className="mr-2 size-4" />
-                    Settings
                   </DropdownMenuItem>
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />

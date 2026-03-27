@@ -8,6 +8,7 @@ import type { SettingsFormValues } from "@/features/settings/types"
 import { CountyAddressRow } from "@/features/settings/components/Country/CountyAddressRow"
 import { TimeSelectionUI } from "@/features/settings/components/TimeSelectionUI/TimeSelectionUI"
 import defaultCountyAvatar from "@/assets/county-avatar.png"
+import { ImageCropUploadDialog } from "@/features/Profile/components/ImageCropUploadDialog"
 import type { CountyFormProps, RequiredLabelProps } from "./types"
 
 const labelClassName = "mb-1 block select-none text-[12px] font-normal text-[#2a2f3a]"
@@ -25,15 +26,6 @@ function RequiredLabel({ children }: RequiredLabelProps) {
       {children}
     </span>
   )
-}
-
-async function readFileAsDataUrl(file: File): Promise<string> {
-  const reader = new FileReader()
-  return await new Promise((resolve, reject) => {
-    reader.onload = () => resolve(String(reader.result ?? ""))
-    reader.onerror = () => reject(new Error("Failed to read file"))
-    reader.readAsDataURL(file)
-  })
 }
 
 export function CountyForm({ isSaving }: CountyFormProps) {
@@ -61,29 +53,31 @@ export function CountyForm({ isSaving }: CountyFormProps) {
           <label className="mb-1 block select-none text-[12px] font-normal text-[#111827]">
             <span className="text-[#ef4444]">*</span>County Logo
           </label>
-          <div className="mt-2">
-            <div className="relative w-fit">
-              <div className="size-[160px] overflow-hidden rounded-full bg-white shadow-[0_8px_30px_rgba(17,24,39,0.08)]">
-                <img
-                  src={logoDataUrl ?? defaultCountyAvatar}
-                  alt="County logo"
-                  className="h-full w-full object-cover"
-                />
+          <ImageCropUploadDialog
+            title="County Logo Update"
+            onImageCropped={(cropped) => {
+              setValue("county.logoDataUrl", cropped, { shouldDirty: true })
+            }}
+            renderTrigger={({ openDialog }) => (
+              <div className="mt-2">
+                <div className="relative w-fit">
+                  <div className="size-[160px] overflow-hidden rounded-full bg-white shadow-[0_8px_30px_rgba(17,24,39,0.08)]">
+                    <img
+                      src={logoDataUrl ?? defaultCountyAvatar}
+                      alt="County logo"
+                      className="h-full w-full cursor-pointer object-cover"
+                      role="button"
+                      tabIndex={0}
+                      onClick={openDialog}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") openDialog()
+                      }}
+                    />
+                  </div>
+                </div>
               </div>
-              <input
-                type="file"
-                accept="image/*"
-                className="absolute inset-0 cursor-pointer opacity-0"
-                aria-label="Upload county logo"
-                onChange={async (e) => {
-                  const file = e.target.files?.[0]
-                  if (!file) return
-                  const dataUrl = await readFileAsDataUrl(file)
-                  setValue("county.logoDataUrl", dataUrl, { shouldDirty: true })
-                }}
-              />
-            </div>
-          </div>
+            )}
+          />
         </div>
 
         {/* Right: all fields */}

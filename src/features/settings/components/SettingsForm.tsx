@@ -113,8 +113,6 @@ function SettingsFormInner({
 
   const form = useForm<SettingsFormValues>({
     resolver: zodResolver(settingsFormSchema),
-    // Use `values` so the form re-hydrates from saved settings
-    // when navigating away/back (no useEffect needed).
     values,
     mode: "onSubmit",
   })
