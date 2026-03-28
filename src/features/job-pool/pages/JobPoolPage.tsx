@@ -87,8 +87,9 @@ export function JobPoolPage() {
       }
       setModalOpen(false)
       setPage(1)
-    } catch (error: any) {
-      toast.error(error.message || "Operation failed")
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Operation failed"
+      toast.error(message)
     }
   }
 

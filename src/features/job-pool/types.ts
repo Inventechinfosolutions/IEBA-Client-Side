@@ -94,15 +94,9 @@ export type TransferPanelProps = {
   isListDisabled?: boolean
 }
 
-export type JobClassificationSectionProps = {
-  form: UseFormReturn<JobPoolFormValues, any, any>
-}
+/** Shared alias — avoids repeating the full UseFormReturn generic on every section props type. */
+export type JobPoolFormReturn = UseFormReturn<JobPoolFormValues>
 
-export type ActivitySectionProps = {
-  form: UseFormReturn<JobPoolFormValues, any, any>
-}
-
-export type EmployeeSectionProps = {
-  form: UseFormReturn<JobPoolFormValues, any, any>
-}
-
+export type JobClassificationSectionProps = { form: JobPoolFormReturn }
+export type ActivitySectionProps          = { form: JobPoolFormReturn }
+export type EmployeeSectionProps          = { form: JobPoolFormReturn }

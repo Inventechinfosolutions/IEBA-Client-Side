@@ -107,8 +107,8 @@ export function JobPoolFormModal({
                       placeholder="Select Department"
                       className={
                         mode === "edit"
-                          ? "h-[60px] rounded-[8px] border border-[#cfd4dd] bg-[#d2d4d9]/20 px-3 pr-8 text-[12px]! font-normal! text-[#111827] shadow-none pointer-events-auto cursor-not-allowed! opacity-100"
-                          : "h-[60px] rounded-[8px] border border-[#c6cedd] bg-white px-3 pr-8 text-[12px]! font-normal! text-[#111827] shadow-none placeholder:text-[12px]! placeholder:text-[#b0b8c8] focus-visible:border-[#1595ff] focus-visible:ring-2 focus-visible:ring-[#1595ff33]"
+                          ? "h-[57px] rounded-[8px] border border-[#cfd4dd] bg-[#d2d4d9]/20 px-3 pr-8 text-[12px]! font-normal! text-[#111827] shadow-none pointer-events-auto cursor-not-allowed! opacity-100"
+                          : "h-[57px] rounded-[8px] border border-[#c6cedd] bg-white px-3 pr-8 text-[12px]! font-normal! text-[#111827] shadow-none placeholder:text-[12px]! placeholder:text-[#b0b8c8] focus-visible:border-[#1595ff] focus-visible:ring-2 focus-visible:ring-[#1595ff33]"
                       }
                     />
                     <button
