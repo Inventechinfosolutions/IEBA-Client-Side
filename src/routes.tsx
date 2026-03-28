@@ -18,6 +18,8 @@ import { SettingsPage } from "@/features/settings"
 import { ScheduleTimeStudyPage } from "@/features/schedule-time-study"
 import { ProfilePage } from "@/features/Profile"
 import { CostPoolPage } from "@/features/cost-pool"
+import { FteAllocationPage } from "@/features/fte-allocation"
+import { DepartmentPage } from "@/features/department"
 
 export const router = createBrowserRouter([
   {
@@ -71,6 +73,8 @@ export const router = createBrowserRouter([
         element: <ScheduleTimeStudyPage />,
       },
       { path: "costpool", element: <CostPoolPage /> },
+      { path: "fte-allocation", element: <FteAllocationPage /> },
+      { path: "department", element: <DepartmentPage /> },
       { path: "profile", element: <ProfilePage /> },
     ],
   },
