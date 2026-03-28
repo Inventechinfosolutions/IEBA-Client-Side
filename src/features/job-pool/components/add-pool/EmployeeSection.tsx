@@ -1,14 +1,10 @@
 import type { Dispatch, SetStateAction } from "react"
 import { useState, useMemo } from "react"
-import type { UseFormReturn } from "react-hook-form"
 import { ChevronRight, ChevronLeft } from "lucide-react"
 import { TransferPanel } from "./TransferPanel"
-import type { JobPoolFormValues, TransferItem } from "../../types"
-import { useGetUserModuleRows } from "../../../user/queries/getUsers"
+import type { TransferItem, EmployeeSectionProps } from "../../types"
 
-interface EmployeeSectionProps {
-  form: UseFormReturn<JobPoolFormValues, any, any>
-}
+import { useGetUserModuleRows } from "../../../user/queries/getUsers"
 
 export function EmployeeSection({ form }: EmployeeSectionProps) {
   const selectedDept = form.watch("department")
@@ -60,7 +56,6 @@ export function EmployeeSection({ form }: EmployeeSectionProps) {
         items={filteredU}
         selectedIds={toggledU}
         onToggleItem={(id) => handleToggle(id, setToggledU)}
-        onToggleAll={() => {}}
         searchValue={searchU}
         onSearchChange={setSearchU}
         count={filteredU.length}
@@ -90,7 +85,6 @@ export function EmployeeSection({ form }: EmployeeSectionProps) {
         items={filteredA}
         selectedIds={toggledA}
         onToggleItem={(id) => handleToggle(id, setToggledA)}
-        onToggleAll={() => {}}
         searchValue={searchA}
         onSearchChange={setSearchA}
         count={filteredA.length}

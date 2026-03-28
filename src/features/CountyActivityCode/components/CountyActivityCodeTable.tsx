@@ -341,7 +341,7 @@ export function CountyActivityCodeTable({
               ].map((column, index) => (
                 <TableHead
                   key={column}
-                  className={`h-[91px] align-middle border-r border-[#FFFFFF66] bg-[#6C5DD3] p-[12px] text-[14px] font-[400] leading-[1.4] whitespace-normal break-normal text-white font-['Roboto',sans-serif] last:border-r-0 ${
+                  className={`h-[91px] align-middle border-r border-[#FFFFFF66] bg-[#6C5DD3] p-[12px] text-[12px] font-[400] leading-[1.4] whitespace-normal break-normal text-white font-['Roboto',sans-serif] last:border-r-0 ${
                     ["Match", "%", "Active"].includes(column) ? "text-center" : "text-left"
                   }`}
                 >

@@ -26,7 +26,7 @@ export function JobPoolToolbar({
           onClick={onToggleInactiveOnly}
         >
           {inactiveOnly ? (
-            <Check className="size-[11px] stroke-[3] text-white" />
+            <Check className="size-[11px] stroke-3 text-white" />
           ) : (
             <span className="size-[11px] rounded-[2px] bg-white" />
           )}

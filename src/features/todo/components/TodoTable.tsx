@@ -53,7 +53,7 @@ export function TodoTable({
                 return (
                   <TableHead
                     key={header.label}
-                    className={`h-10 bg-[#6c5dd3] p-[12px] text-left text-[11px] font-medium text-white ${
+                    className={`h-10 bg-[#6c5dd3] p-[12px] text-left text-[12px] font-medium text-white ${
                       "border-r border-[#6C5DD3]"
                     } ${header.className ?? ""}`}
                   >
@@ -104,7 +104,7 @@ export function TodoTable({
               return (
                 <TableHead
                   key={header.label}
-                  className={`h-10 bg-[#6c5dd3] p-[12px] text-center text-[11px] font-medium text-white ${
+                  className={`h-10 bg-[#6c5dd3] p-[12px] text-center text-[12px] font-medium text-white ${
                     "border-r border-[#6C5DD3]"
                   } ${header.className ?? ""}`}
                 >
@@ -120,7 +120,7 @@ export function TodoTable({
                 </TableHead>
               )
             })}
-            <TableHead className="h-10 w-[120px] bg-[#6c5dd3] p-[12px] text-center text-[11px] font-medium text-white">
+            <TableHead className="h-10 w-[120px] bg-[#6c5dd3] p-[12px] text-center text-[12px] font-medium text-white">
               <div className="flex h-full w-full items-center justify-center text-center">
                 Action
               </div>

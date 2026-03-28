@@ -21,10 +21,9 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import type {
-  JobClassificationRow,
   JobClassificationSortKey,
   JobClassificationTableProps,
-  SortDirection,
+  JobClassificationTableSortState,
 } from "../types"
 
 const SKELETON_ROWS = 8
@@ -34,10 +33,7 @@ export function JobClassificationTable({
   isLoading,
   onEditRow,
 }: JobClassificationTableProps) {
-  const [sortState, setSortState] = useState<{
-    key: JobClassificationSortKey
-    direction: SortDirection
-  }>({
+  const [sortState, setSortState] = useState<JobClassificationTableSortState>({
     key: "code",
     direction: "none",
   })
@@ -87,7 +83,7 @@ export function JobClassificationTable({
             </colgroup>
             <TableHeader className="[&_tr]:border-b-0">
               <TableRow className="hover:bg-transparent">
-                <TableHead className="h-[44px] border-r border-[#6C5DD3] bg-[var(--primary)] px-3 text-[15px] font-medium text-white">
+                <TableHead className="h-[44px] border-r border-[#6C5DD3] bg-[var(--primary)] px-3 text-[12px] font-medium text-white">
                   <TooltipProvider>
                     <Tooltip open={tooltipOpenKey === "code"}>
                       <TooltipTrigger asChild>
@@ -125,7 +121,7 @@ export function JobClassificationTable({
                     </Tooltip>
                   </TooltipProvider>
                 </TableHead>
-                <TableHead className="h-[44px] border-r border-[#6C5DD3] bg-[var(--primary)] px-3 text-[15px] font-medium text-white">
+                <TableHead className="h-[44px] border-r border-[#6C5DD3] bg-[var(--primary)] px-3 text-[12px] font-medium text-white">
                   <TooltipProvider>
                     <Tooltip open={tooltipOpenKey === "name"}>
                       <TooltipTrigger asChild>
@@ -163,10 +159,10 @@ export function JobClassificationTable({
                     </Tooltip>
                   </TooltipProvider>
                 </TableHead>
-                <TableHead className="h-[44px] border-r border-[#6C5DD3] bg-[var(--primary)] px-3 text-center text-[15px] font-medium text-white">
+                <TableHead className="h-[44px] border-r border-[#6C5DD3] bg-[var(--primary)] px-3 text-center text-[12px] font-medium text-white">
                   Active
                 </TableHead>
-                <TableHead className="h-[44px] bg-[var(--primary)] px-3 text-center text-[15px] font-medium text-white">
+                <TableHead className="h-[44px] bg-[var(--primary)] px-3 text-center text-[12px] font-medium text-white">
                   Action
                 </TableHead>
               </TableRow>

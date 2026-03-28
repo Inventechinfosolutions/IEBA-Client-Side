@@ -2,9 +2,9 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 import { jobClassificationKeys } from "../keys"
 import { createMockJobClassification } from "../mock"
-import type { CreateJobClassificationInput } from "../types"
+import type { CreateJobClassificationInput, JobClassificationRow } from "../types"
 
-async function createJobClassification(input: CreateJobClassificationInput) {
+async function createJobClassification(input: CreateJobClassificationInput): Promise<JobClassificationRow> {
   return createMockJobClassification(input)
 }
 

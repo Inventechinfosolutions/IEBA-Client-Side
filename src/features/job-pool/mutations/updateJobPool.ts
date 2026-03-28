@@ -2,9 +2,9 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 import { jobPoolKeys } from "../keys"
 import { updateMockJobPool } from "../mock"
-import type { UpdateJobPoolInput } from "../types"
+import type { UpdateJobPoolInput, JobPoolRow } from "../types"
 
-async function updateJobPool(input: UpdateJobPoolInput) {
+async function updateJobPool(input: UpdateJobPoolInput): Promise<JobPoolRow> {
   return updateMockJobPool(input)
 }
 

@@ -1,6 +1,7 @@
 import { Search, Check } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import tableEmptyIcon from "@/assets/icons/table-empty.png"
 import type { TransferPanelProps } from "../../types"
 
 export function TransferPanel({
@@ -28,9 +29,9 @@ export function TransferPanel({
           <button
             type="button"
             onClick={onToggleAll}
-            disabled={isListDisabled}
+            disabled={isListDisabled || !onToggleAll}
             className={`flex items-center gap-2 transition-opacity ${
-              isListDisabled ? "!cursor-not-allowed opacity-60" : "cursor-pointer hover:opacity-80"
+              isListDisabled ? "cursor-not-allowed! opacity-60" : "cursor-pointer hover:opacity-80"
             }`}
           >
             <span className="text-white/90 text-[11px]">All</span>
@@ -52,7 +53,7 @@ export function TransferPanel({
 
       {/* Search/Input Area */}
       <div className="p-3 border-b border-[#E5E7EB]">
-        <div className={`relative ${isSearchDisabled ? "!cursor-not-allowed" : ""}`}>
+        <div className={`relative ${isSearchDisabled ? "cursor-not-allowed!" : ""}`}>
           {!isActivity && (
             <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#9CA3AF]" />
           )}
@@ -63,7 +64,7 @@ export function TransferPanel({
             disabled={isSearchDisabled}
             className={`h-11 rounded-[8px] border-[#E5E7EB] text-[13px] placeholder:text-[#9CA3AF] focus-visible:ring-1 focus-visible:ring-[#6C5DD3] transition-all ${
               !isActivity ? "pl-9" : "px-3"
-            } ${isSearchDisabled ? "bg-[#F3F4F6] !cursor-not-allowed opacity-100 placeholder:opacity-50" : "bg-white"}`}
+            } ${isSearchDisabled ? "bg-[#F3F4F6] cursor-not-allowed! opacity-100 placeholder:opacity-50" : "bg-white"}`}
           />
         </div>
       </div>
@@ -80,7 +81,8 @@ export function TransferPanel({
                   <button
                     type="button"
                     onClick={onToggleAll}
-                    className={`flex size-5 items-center justify-center rounded-[6px] border shadow-sm transition-all cursor-pointer ${
+                    disabled={!onToggleAll}
+                    className={`flex size-5 items-center justify-center rounded-[6px] border shadow-sm transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 ${
                       allSelected
                         ? "bg-white border-[#6C5DD3] text-[#6C5DD3]"
                         : "bg-white border-[#E5E7EB] text-transparent hover:border-[#D1D5DB]"
@@ -110,14 +112,14 @@ export function TransferPanel({
                     disabled={isListDisabled}
                     className={`group relative flex items-center justify-between px-4 py-3 text-left transition-colors border-b border-[#F3F4F6] last:border-0 ${
                       isSelected ? "bg-[#F3F0FF]" : "hover:bg-[#F9FAFB]"
-                    } ${isListDisabled ? "!cursor-not-allowed" : "cursor-pointer"}`}
+                    } ${isListDisabled ? "cursor-not-allowed!" : "cursor-pointer"}`}
                   >
                     <div className="flex items-center flex-1 min-w-0">
                       {isActivity && (
                         <div className="absolute left-0 h-full w-8 flex items-center justify-center">
                           {/* Tree Lines */}
-                          <div className="absolute left-4 top-0 w-[1px] h-full bg-[#E5E7EB]" />
-                          <div className="absolute left-4 top-1/2 w-3 h-[1px] bg-[#E5E7EB]" />
+                          <div className="absolute left-4 top-0 w-px h-full bg-[#E5E7EB]" />
+                          <div className="absolute left-4 top-1/2 w-3 h-px bg-[#E5E7EB]" />
                         </div>
                       )}
                       
@@ -150,7 +152,7 @@ export function TransferPanel({
         ) : (
           <div className="flex flex-col items-center justify-center h-[280px] bg-white">
             <img 
-              src="/src/assets/icons/table-empty.png" 
+              src={tableEmptyIcon} 
               alt="Empty" 
               className="size-24 object-contain opacity-80"
             />

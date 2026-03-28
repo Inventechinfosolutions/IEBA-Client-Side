@@ -52,7 +52,7 @@ export function LeaveApprovalPage() {
 
   return (
     <section
-      className="ieba-roboto w-full"
+      className="font-roboto *:font-roboto w-full"
       style={
         {
           zoom: 1.2,

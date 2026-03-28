@@ -28,7 +28,7 @@ const successToastOptions = {
   position: "top-center" as const,
   icon: (
     <span className="inline-flex size-4 items-center justify-center rounded-full bg-[#22c55e] text-white">
-      <Check className="size-3 stroke-[3]" />
+      <Check className="size-3 stroke-3" />
     </span>
   ),
   className:
@@ -99,15 +99,15 @@ export function JobPoolPage() {
           department: selectedRow.department,
           active: selectedRow.active,
           assignedJobClassificationIds: selectedRow.jobClassifications.map(c => c.id),
-          assignedActivityIds: [], 
-          assignedEmployeeIds: [], 
+          assignedActivityIds: selectedRow.assignedActivityIds || [], 
+          assignedEmployeeIds: selectedRow.assignedEmployeeIds || [], 
         }
       : emptyFormValues
 
 
   return (
     <section
-      className="ieba-roboto w-full rounded-[10px] border border-[#e6e7ef] bg-white p-5 md:p-6 shadow-[0_2px_10px_rgba(0,0,0,0.03)]"
+      className="font-roboto *:font-roboto w-full rounded-[10px] border border-[#e6e7ef] bg-white p-5 md:p-6 shadow-[0_2px_10px_rgba(0,0,0,0.03)]"
       style={{ zoom: 1.2, "--primary": "#6C5DD3" } as React.CSSProperties}
     >
       <div className="mt-1">
@@ -138,6 +138,7 @@ export function JobPoolPage() {
       </div>
 
       <JobPoolFormModal
+        key={`${modalMode}-${selectedRow?.id ?? "new"}`}
         open={modalOpen}
         mode={modalMode}
         initialValues={initialValues}

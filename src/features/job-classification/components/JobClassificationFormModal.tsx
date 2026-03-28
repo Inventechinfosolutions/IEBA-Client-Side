@@ -14,13 +14,9 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { jobClassificationFormSchema } from "../schemas"
-import type { JobClassificationFormModalProps, JobClassificationFormValues } from "../types"
+import type { JobClassificationFormModalProps, JobClassificationFormValues, ActiveTools } from "../types"
 
-type ActiveTools = {
-  bold: boolean
-  italic: boolean
-  bullet: boolean
-}
+
 
 export function JobClassificationFormModal({
   open,

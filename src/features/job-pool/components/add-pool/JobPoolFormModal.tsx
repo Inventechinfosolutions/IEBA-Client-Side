@@ -1,9 +1,10 @@
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { Check, ChevronDown, ChevronUp } from "lucide-react"
 import { useRef, useState } from "react"
+import { useForm, Controller } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { ChevronDown, ChevronUp } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import {
   Dialog,
   DialogContent,
@@ -33,10 +34,7 @@ export function JobPoolFormModal({
   })
 
   const [isDepartmentOpen, setIsDepartmentOpen] = useState(false)
-  const departmentDropdownRef = useRef<HTMLDivElement>(null)
-
-  // --- Form Watching ---
-  const watchActive = form.watch("active")
+  const departmentDropdownRef = useRef<HTMLDivElement | null>(null)
 
   const handleClose = () => {
     form.reset()
@@ -53,11 +51,6 @@ export function JobPoolFormModal({
         <form 
           onSubmit={form.handleSubmit(onSave)} 
           className="h-full flex flex-col"
-          onMouseDownCapture={(event) => {
-            if (isDepartmentOpen && departmentDropdownRef.current && !departmentDropdownRef.current.contains(event.target as Node)) {
-              setIsDepartmentOpen(false)
-            }
-          }}
         >
           {/* Header Section */}
           <div className="flex flex-col border-b border-[#F3F4F6]">
@@ -65,19 +58,20 @@ export function JobPoolFormModal({
               <h2 className="text-[24px] font-semibold text-[#111827]">
                 {mode === "add" ? "Add Job Pool" : "Edit Job Pool"}
               </h2>
-              <label 
-                className="flex items-center gap-2.5 cursor-pointer select-none"
-                onClick={() => form.setValue("active", !watchActive)}
-              >
-                <div
-                  className={`flex size-5 items-center justify-center rounded-[4px] border shadow-sm transition-all ${
-                    watchActive ? "bg-[#6C5DD3] border-[#6C5DD3] text-white" : "bg-white border-[#E5E7EB] text-transparent hover:border-[#D1D5DB]"
-                  }`}
-                >
-                  <Check className="size-3.2 stroke-3" />
-                </div>
-                <span className="text-[15px] font-medium text-[#374151]">Active</span>
-              </label>
+              <Controller
+                control={form.control}
+                name="active"
+                render={({ field }) => (
+                  <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                      className="size-5 rounded-[4px] border-[#E5E7EB] data-[state=checked]:border-[#6C5DD3] data-[state=checked]:bg-[#6C5DD3] data-[state=checked]:text-white shadow-sm"
+                    />
+                    <span className="text-[15px] font-medium text-[#374151]">Active</span>
+                  </label>
+                )}
+              />
             </div>
           </div>
 
@@ -85,32 +79,54 @@ export function JobPoolFormModal({
           <div className="flex-1 overflow-y-auto program-table-scroll">
             <div className="p-8">
               {/* Top Row: Department and Job Pool Name */}
-              <div className="grid grid-cols-[1fr_60px_1fr] gap-4">
-                <div className="space-y-2">
-                  <label className="text-[13px] font-semibold text-[#374151]">Department</label>
-                  <div className="relative w-[230px]" ref={departmentDropdownRef}>
+              <div
+                className="grid grid-cols-[1fr_60px_1fr] gap-4"
+                onMouseDownCapture={(event) => {
+                  const targetNode = event.target as Node
+                  if (
+                    isDepartmentOpen &&
+                    departmentDropdownRef.current &&
+                    !departmentDropdownRef.current.contains(targetNode)
+                  ) {
+                    setIsDepartmentOpen(false)
+                  }
+                }}
+              >
+                <div className="w-[300px] space-y-2">
+                  <label className="text-[14px] font-semibold text-[#374151]" htmlFor="jp-department-trigger">Department</label>
+                  <input type="hidden" {...form.register("department")} />
+                  <div className="relative" ref={departmentDropdownRef}>
                     <Input
+                      id="jp-department-trigger"
                       value={form.watch("department") || ""}
                       readOnly
                       onMouseDown={(event) => event.preventDefault()}
-                      onClick={() => setIsDepartmentOpen((prev) => !prev)}
+                      onClick={() => mode !== "edit" && setIsDepartmentOpen((prev) => !prev)}
+                      onBlur={() => window.setTimeout(() => setIsDepartmentOpen(false), 120)}
+                      onFocus={() => mode !== "edit" && setIsDepartmentOpen(true)}
                       placeholder="Select Department"
-                      className="h-[60px]! w-full rounded-[8px] border border-[#E5E7EB] bg-white px-5 pr-10 text-[15px] font-normal text-[#111827] shadow-none placeholder:text-[#9CA3AF] focus-visible:border-[#6C5DD3] focus-visible:ring-0"
+                      className={
+                        mode === "edit"
+                          ? "h-[60px] rounded-[8px] border border-[#cfd4dd] bg-[#d2d4d9]/20 px-3 pr-8 text-[12px]! font-normal! text-[#111827] shadow-none pointer-events-auto cursor-not-allowed! opacity-100"
+                          : "h-[60px] rounded-[8px] border border-[#c6cedd] bg-white px-3 pr-8 text-[12px]! font-normal! text-[#111827] shadow-none placeholder:text-[12px]! placeholder:text-[#b0b8c8] focus-visible:border-[#1595ff] focus-visible:ring-2 focus-visible:ring-[#1595ff33]"
+                      }
                     />
                     <button
                       type="button"
+                      disabled={mode === "edit"}
                       onMouseDown={(event) => event.preventDefault()}
-                      onClick={() => setIsDepartmentOpen((prev) => !prev)}
-                      className="absolute right-0 top-0 inline-flex h-full w-[40px] cursor-pointer items-center justify-center text-[#6b7280]"
+                      onClick={() => mode !== "edit" && setIsDepartmentOpen((prev) => !prev)}
+                      className={`absolute right-0 top-0 inline-flex h-full w-[24px] items-center justify-center text-[#6b7280] ${mode === "edit" ? "cursor-not-allowed opacity-40" : "cursor-pointer"}`}
+                      aria-label="Toggle department options"
                     >
                       {isDepartmentOpen ? (
-                        <ChevronUp className="size-5" />
+                        <ChevronUp className="size-4" />
                       ) : (
-                        <ChevronDown className="size-5" />
+                        <ChevronDown className="size-4" />
                       )}
                     </button>
-                    {isDepartmentOpen && (
-                      <div className="absolute z-100 mt-1 max-h-[220px] w-full overflow-auto rounded-[8px] border border-[#EEF0F5] bg-white p-1 shadow-xl">
+                    {isDepartmentOpen && mode !== "edit" ? (
+                      <div className="absolute z-10 mt-1 max-h-[180px] w-full overflow-auto rounded-[7px] border border-[#d9deea] bg-white p-1.5 shadow-[0_8px_18px_rgba(17,24,39,0.12)]">
                         {DEPARTMENTS.map((dept) => (
                           <button
                             key={dept}
@@ -124,18 +140,20 @@ export function JobPoolFormModal({
                               })
                               setIsDepartmentOpen(false)
                             }}
-                            className={`block w-full cursor-pointer rounded-[4px] px-4 py-2 text-left text-[14px] font-normal text-[#374151] hover:bg-[#F3F4F6] ${
-                              form.watch("department") === dept ? "bg-[#F3F0FF] text-[#6C5DD3]" : ""
+                            className={`block w-full cursor-pointer rounded-[6px] border border-transparent px-3 py-2 text-left text-[10px]! font-normal! text-[#111827] hover:bg-[#f3f4f6] ${
+                              form.watch("department") === dept
+                                ? "border-[#d8ecff] bg-[#eef8ff]"
+                                : ""
                             }`}
                           >
                             {dept}
                           </button>
                         ))}
                       </div>
-                    )}
+                    ) : null}
                   </div>
                 </div>
-                
+
                 {/* Spacer matching the arrows column */}
                 <div />
 
@@ -145,7 +163,7 @@ export function JobPoolFormModal({
                     {...form.register("name")}
                     placeholder="Job Pool Name"
                     disabled={!form.watch("department")}
-                    className="h-[60px]! rounded-[10px] border-[#E5E7EB] bg-white px-5 text-[15px] disabled:cursor-not-allowed! disabled:bg-[#F3F4F6] disabled:opacity-75"
+                    className="h-[60px]! rounded-[10px] border-[#E5E7EB] bg-white px-5 text-[12px] disabled:pointer-events-auto disabled:cursor-not-allowed! disabled:bg-[#F3F4F6] disabled:opacity-75"
                   />
                 </div>
               </div>

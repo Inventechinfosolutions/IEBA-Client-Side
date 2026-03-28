@@ -5,6 +5,12 @@ export type JobClassificationFormMode = "add" | "edit"
 export type JobClassificationSortKey = "code" | "name"
 export type SortDirection = "asc" | "desc" | "none"
 
+export type ActiveTools = {
+  bold: boolean
+  italic: boolean
+  bullet: boolean
+}
+
 export type JobClassificationFormValues = z.infer<typeof jobClassificationFormSchema>
 
 export type JobClassificationRow = {

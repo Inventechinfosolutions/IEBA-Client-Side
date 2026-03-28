@@ -127,6 +127,7 @@
 
 @theme inline {
   --font-sans: 'Geist Variable', sans-serif;
+  --font-roboto: Roboto, sans-serif;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -167,33 +168,7 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-/* Fallback overrides - Bits of Time purple */
-.text-primary { color: #6C5DD3 !important; }
-.bg-primary { background-color: #6C5DD3 !important; }
-.border-primary { border-color: #6C5DD3 !important; }
 
-/* Force Roboto for specific feature screens */
-.ieba-roboto,
-.ieba-roboto * {
-  font-family: Roboto, sans-serif !important;
-}
-
-/* Replaces per-page `zoom` usage (avoid layout shifts) */
-.ieba-scale-120 {
-  font-size: 120%;
-}
-
-/* Hide scrollbar UI while preserving scroll behavior */
-.no-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-
-.no-scrollbar::-webkit-scrollbar {
-  width: 0;
-  height: 0;
-  display: none;
-}
 
 /* Select dropdown scrollbar (thin thumb, no arrow buttons) */
 .ieba-select-scroll [data-slot="select-viewport"] {

@@ -1,14 +1,10 @@
 import type { Dispatch, SetStateAction } from "react"
 import { useState, useMemo } from "react"
-import type { UseFormReturn } from "react-hook-form"
 import { ChevronRight, ChevronLeft } from "lucide-react"
 import { TransferPanel } from "./TransferPanel"
-import type { JobPoolFormValues, TransferItem } from "../../types"
-import { useGetCountyActivityCodes } from "../../../CountyActivityCode/queries/getCountyActivityCodes"
+import type { TransferItem, ActivitySectionProps } from "../../types"
 
-interface ActivitySectionProps {
-  form: UseFormReturn<JobPoolFormValues, any, any>
-}
+import { useGetCountyActivityCodes } from "../../../CountyActivityCode/queries/getCountyActivityCodes"
 
 export function ActivitySection({ form }: ActivitySectionProps) {
   const selectedDept = form.watch("department")

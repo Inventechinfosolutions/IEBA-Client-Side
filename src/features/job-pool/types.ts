@@ -1,8 +1,9 @@
 import { z } from "zod"
+import type { UseFormReturn } from "react-hook-form"
 import { jobPoolFormSchema } from "./schemas"
 
 export type JobPoolFormMode = "add" | "edit"
-export type JobPoolSortKey = "name"
+export type JobPoolSortKey = "name" | "jobClassifications"
 export type SortDirection = "asc" | "desc" | "none"
 
 export type JobPoolFormValues = z.infer<typeof jobPoolFormSchema>
@@ -25,6 +26,8 @@ export type JobPoolRow = {
   jobClassifications: JobClassificationTag[]
   department: string
   active: boolean
+  assignedActivityIds?: string[]
+  assignedEmployeeIds?: string[]
 }
 
 export type GetJobPoolsParams = {
@@ -81,7 +84,7 @@ export type TransferPanelProps = {
   items: TransferItem[]
   selectedIds: string[]
   onToggleItem: (id: string) => void
-  onToggleAll: () => void
+  onToggleAll?: () => void
   searchValue: string
   onSearchChange: (value: string) => void
   isActivity?: boolean
@@ -89,5 +92,17 @@ export type TransferPanelProps = {
   selectedDept?: string
   isSearchDisabled?: boolean
   isListDisabled?: boolean
+}
+
+export type JobClassificationSectionProps = {
+  form: UseFormReturn<JobPoolFormValues, any, any>
+}
+
+export type ActivitySectionProps = {
+  form: UseFormReturn<JobPoolFormValues, any, any>
+}
+
+export type EmployeeSectionProps = {
+  form: UseFormReturn<JobPoolFormValues, any, any>
 }
 

@@ -21,10 +21,9 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import type {
-  JobPoolRow,
   JobPoolSortKey,
   JobPoolTableProps,
-  SortDirection,
+  JobPoolTableSortState,
 } from "../types"
 
 const SKELETON_ROWS = 8
@@ -34,10 +33,7 @@ export function JobPoolTable({
   isLoading,
   onEditRow,
 }: JobPoolTableProps) {
-  const [sortState, setSortState] = useState<{
-    key: JobPoolSortKey | "jobClassifications" // Add pseudo sort key if needed
-    direction: SortDirection
-  }>({
+  const [sortState, setSortState] = useState<JobPoolTableSortState>({
     key: "name",
     direction: "none",
   })
@@ -62,7 +58,7 @@ export function JobPoolTable({
     })
   }, [rows, sortState])
 
-  const handleSort = (key: JobPoolSortKey | "jobClassifications") => {
+  const handleSort = (key: JobPoolSortKey) => {
     setSortState((prev) => {
       if (prev.key !== key) return { key, direction: "asc" }
       if (prev.direction === "asc") return { key, direction: "desc" }
@@ -134,7 +130,7 @@ export function JobPoolTable({
                     </Tooltip>
                   </TooltipProvider>
                 </TableHead>
-                <TableHead className="h-[44px] border-r border-white/20 bg-[var(--primary)] px-3 text-[12px] font-medium text-white">
+                <TableHead className="h-[44px] border-r border-white/20 bg-(--primary) px-3 text-[12px] font-medium text-white">
                   <TooltipProvider>
                     <Tooltip open={tooltipOpenKey === "jobClassifications"}>
                       <TooltipTrigger asChild>
@@ -172,20 +168,20 @@ export function JobPoolTable({
                     </Tooltip>
                   </TooltipProvider>
                 </TableHead>
-                <TableHead className="h-[44px] border-r border-white/20 bg-[var(--primary)] px-3 text-center text-[12px] font-medium text-white">
+                <TableHead className="h-[44px] border-r border-white/20 bg-(--primary) px-3 text-center text-[12px] font-medium text-white">
                   Department
                 </TableHead>
-                <TableHead className="h-[44px] border-r border-white/20 bg-[var(--primary)] px-3 text-center text-[12px] font-medium text-white">
+                <TableHead className="h-[44px] border-r border-white/20 bg-(--primary) px-3 text-center text-[12px] font-medium text-white">
                   Active
                 </TableHead>
-                <TableHead className="h-[44px] bg-[var(--primary)] px-3 text-center text-[12px] font-medium text-white">
+                <TableHead className="h-[44px] bg-(--primary) px-3 text-center text-[12px] font-medium text-white">
                   Action
                 </TableHead>
               </TableRow>
             </TableHeader>
           </Table>
         </div>
-        <div className="h-[44px] w-[12px] border-l border-white/20 bg-[var(--primary)]" />
+        <div className="h-[44px] w-[12px] border-l border-white/20 bg-(--primary)" />
       </div>
       <div
         className="program-table-scroll overflow-y-auto [scrollbar-gutter:stable]"

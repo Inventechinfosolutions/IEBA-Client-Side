@@ -336,7 +336,7 @@ export function PayrollForm() {
         <Button
           type="submit"
           data-settings-section="payroll"
-          className="h-[44px] min-w-[120px] rounded-[8px] bg-[var(--primary)] px-8 text-[12px] font-medium text-white hover:bg-[var(--primary)] disabled:cursor-not-allowed disabled:opacity-70"
+          className="h-[44px] min-w-[120px] rounded-[8px] bg-[var(--primary)] px-8 text-[12px] font-medium text-white hover:bg-[var(--primary)]  cursor-pointer disabled:cursor-not-allowed disabled:opacity-70"
         >
           Save
         </Button>

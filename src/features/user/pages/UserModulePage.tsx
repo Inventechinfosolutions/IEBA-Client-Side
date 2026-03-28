@@ -175,7 +175,7 @@ export function UserModulePage() {
 
   return (
     <section
-      className="ieba-roboto w-full"
+      className="font-roboto *:font-roboto w-full"
       style={{
         zoom: 1.2,
         "--primary": "#6C5DD3",

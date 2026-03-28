@@ -48,6 +48,8 @@ let mockData: JobPoolRow[] = Array.from({ length: 30 }).map((_, i) => {
     department: dept,
     active: i % 5 !== 0, // Roughly 80% active
     jobClassifications,
+    assignedActivityIds: [],
+    assignedEmployeeIds: [],
   }
 })
 
@@ -98,6 +100,8 @@ export async function createMockJobPool(
     jobClassifications: input.values.assignedJobClassificationIds.map(id => ({ id, name: id.replace("jc-", "Class ") })),
     department: input.values.department.trim(),
     active: input.values.active,
+    assignedActivityIds: input.values.assignedActivityIds,
+    assignedEmployeeIds: input.values.assignedEmployeeIds,
   }
   mockData = [newRow, ...mockData]
   return newRow
@@ -116,6 +120,8 @@ export async function updateMockJobPool(
           department: input.values.department.trim(),
           active: input.values.active,
           jobClassifications: input.values.assignedJobClassificationIds.map(id => ({ id, name: id.replace("jc-", "Class ") })),
+          assignedActivityIds: input.values.assignedActivityIds,
+          assignedEmployeeIds: input.values.assignedEmployeeIds,
         }
       : row,
   )

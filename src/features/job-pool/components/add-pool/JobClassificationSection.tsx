@@ -1,14 +1,10 @@
 import type { Dispatch, SetStateAction } from "react"
 import { useState, useMemo } from "react"
-import type { UseFormReturn } from "react-hook-form"
 import { ChevronRight, ChevronLeft } from "lucide-react"
 import { TransferPanel } from "./TransferPanel"
-import type { JobPoolFormValues, TransferItem } from "../../types"
-import { useGetJobClassifications } from "../../../job-classification/queries/getJobClassifications"
+import type { TransferItem, JobClassificationSectionProps } from "../../types"
 
-interface JobClassificationSectionProps {
-  form: UseFormReturn<JobPoolFormValues, any, any>
-}
+import { useGetJobClassifications } from "../../../job-classification/queries/getJobClassifications"
 
 export function JobClassificationSection({ form }: JobClassificationSectionProps) {
   const selectedDept = form.watch("department")

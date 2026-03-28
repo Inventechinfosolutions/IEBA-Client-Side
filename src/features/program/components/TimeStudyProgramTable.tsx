@@ -124,7 +124,7 @@ export function TimeStudyProgramTable({ rows, isLoading, onEditRow }: TimeStudyP
             </colgroup>
             <TableHeader className="[&_tr]:border-b-0">
               <TableRow className="hover:bg-transparent">
-                <TableHead className="h-10 border-r border-[#6C5DD3] bg-[var(--primary)] px-3 text-[11px] font-medium text-white">
+                <TableHead className="h-10 border-r border-[#6C5DD3] bg-[var(--primary)] px-3 text-[12px] font-medium text-white">
                   <TooltipProvider>
                     <Tooltip open={tooltipOpenKey === "code"}>
                       <TooltipTrigger asChild>
@@ -162,7 +162,7 @@ export function TimeStudyProgramTable({ rows, isLoading, onEditRow }: TimeStudyP
                     </Tooltip>
                   </TooltipProvider>
                 </TableHead>
-                <TableHead className="h-10 border-r border-[#6C5DD3] bg-[var(--primary)] px-3 text-[11px] font-medium text-white">
+                <TableHead className="h-10 border-r border-[#6C5DD3] bg-[var(--primary)] px-3 text-[12px] font-medium text-white">
                   <TooltipProvider>
                     <Tooltip open={tooltipOpenKey === "name"}>
                       <TooltipTrigger asChild>
@@ -200,19 +200,19 @@ export function TimeStudyProgramTable({ rows, isLoading, onEditRow }: TimeStudyP
                     </Tooltip>
                   </TooltipProvider>
                 </TableHead>
-                <TableHead className="h-10 border-r border-[#6C5DD3] bg-[var(--primary)] px-3 text-[11px] font-medium text-white">
+                <TableHead className="h-10 border-r border-[#6C5DD3] bg-[var(--primary)] px-3 text-[12px] font-medium text-white">
                   BU Program
                 </TableHead>
-                <TableHead className="h-10 border-r border-[#6C5DD3] bg-[var(--primary)] px-3 text-[11px] font-medium text-white">
+                <TableHead className="h-10 border-r border-[#6C5DD3] bg-[var(--primary)] px-3 text-[12px] font-medium text-white">
                   Department
                 </TableHead>
-                <TableHead className="h-10 border-r border-[#6C5DD3] bg-[var(--primary)] px-3 text-[11px] font-medium text-white">
+                <TableHead className="h-10 border-r border-[#6C5DD3] bg-[var(--primary)] px-3 text-[12px] font-medium text-white">
                   MultiCodes
                 </TableHead>
-                <TableHead className="h-10 border-r border-[#6C5DD3] bg-[var(--primary)] px-3 text-center text-[11px] font-medium text-white">
+                <TableHead className="h-10 border-r border-[#6C5DD3] bg-[var(--primary)] px-3 text-center text-[12px] font-medium text-white">
                   Active
                 </TableHead>
-                <TableHead className="h-10 border-r border-[#6C5DD3] bg-[var(--primary)] px-3 text-center text-[11px] font-medium text-white">
+                <TableHead className="h-10 border-r border-[#6C5DD3] bg-[var(--primary)] px-3 text-center text-[12px] font-medium text-white">
                   Action
                 </TableHead>
               </TableRow>
