@@ -1,11 +1,26 @@
 import { z } from "zod"
 
+import { TodoStatusEnum } from "./enums/todo-status.enum"
 import { todoFormSchema } from "./schemas"
 
 export type TodoFormMode = "add" | "edit"
 export type TodoSortKey = "title" | "description" | "createdDate" | "completedDate" | "status"
 export type SortDirection = "asc" | "desc"
-export type TodoStatus = "New" | "In progress" | "Completed"
+
+/** Same values as backend `TodoStatusEnum`; alias kept for readable prop types. */
+export type TodoStatus = TodoStatusEnum
+
+export const TODO_STATUS_LABEL: Record<TodoStatusEnum, string> = {
+  [TodoStatusEnum.NEW]: "New",
+  [TodoStatusEnum.INPROGRESS]: "In progress",
+  [TodoStatusEnum.COMPLETED]: "Completed",
+}
+
+export const TODO_STATUS_OPTIONS: TodoStatusEnum[] = [
+  TodoStatusEnum.NEW,
+  TodoStatusEnum.INPROGRESS,
+  TodoStatusEnum.COMPLETED,
+]
 
 export type TodoFormValues = z.infer<typeof todoFormSchema>
 
@@ -15,7 +30,7 @@ export type TodoRow = {
   description: string
   createdDate: string
   completedDate: string
-  status: TodoStatus
+  status: TodoStatusEnum
 }
 
 export type GetTodosParams = {

@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from "react"
+import { useRef, useState } from "react"
 import { X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -97,7 +97,7 @@ export function ImageCropUploadDialog({
   const containerRef = useRef<HTMLDivElement | null>(null)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
 
-  // Drag state kept in refs to avoid stale-closure in the global listener
+  // Drag state in refs (pointer capture delivers move/up without useEffect)
   const dragMode  = useRef<DragMode>("none")
   const dragStart = useRef<{
     clientX: number; clientY: number
@@ -105,16 +105,18 @@ export function ImageCropUploadDialog({
     ox: number; oy: number
     cs: number
   } | null>(null)
+  const activePointerId = useRef<number | null>(null)
 
-  // ── Centre circle once the container actually mounts ─────────────────────
-  useEffect(() => {
-    if (!imageSrc) return
-    const el = containerRef.current
-    if (!el) return
-    const rect = el.getBoundingClientRect()
-    setCirX(rect.width  / 2)
-    setCirY(rect.height / 2)
-  }, [imageSrc])
+  const centerCircleInContainer = () => {
+    requestAnimationFrame(() => {
+      const el = containerRef.current
+      if (!el) return
+      const rect = el.getBoundingClientRect()
+      if (rect.width === 0 || rect.height === 0) return
+      setCirX(rect.width / 2)
+      setCirY(rect.height / 2)
+    })
+  }
 
   // ── Reset all state ───────────────────────────────────────────────────────
   const resetAll = () => {
@@ -124,6 +126,9 @@ export function ImageCropUploadDialog({
     setImgScale(1)
     setCropSize(240)
     setCirX(234); setCirY(230)
+    activePointerId.current = null
+    dragMode.current = "none"
+    dragStart.current = null
     if (fileInputRef.current) fileInputRef.current.value = ""
   }
 
@@ -152,8 +157,7 @@ export function ImageCropUploadDialog({
     return "pan-image"
   }
 
-  // ── Pointer down on SVG ───────────────────────────────────────────────────
-  const handlePointerDown = (clientX: number, clientY: number) => {
+  const beginDragFromHit = (clientX: number, clientY: number) => {
     dragMode.current  = classifyHit(clientX, clientY)
     dragStart.current = {
       clientX, clientY,
@@ -163,49 +167,64 @@ export function ImageCropUploadDialog({
     }
   }
 
-  // ── Global mouse/touch move & up ──────────────────────────────────────────
-  useEffect(() => {
-    const onMove = (clientX: number, clientY: number) => {
-      const mode = dragMode.current
-      const ds   = dragStart.current
-      if (mode === "none" || !ds) return
-      const rect = containerRef.current?.getBoundingClientRect()
-      if (!rect) return
+  const applyDragMove = (clientX: number, clientY: number) => {
+    const mode = dragMode.current
+    const ds   = dragStart.current
+    if (mode === "none" || !ds) return
+    const rect = containerRef.current?.getBoundingClientRect()
+    if (!rect) return
 
-      const dx = clientX - ds.clientX
-      const dy = clientY - ds.clientY
+    const dx = clientX - ds.clientX
+    const dy = clientY - ds.clientY
 
-      if (mode === "move-circle") {
-        const r = ds.cs / 2
-        setCirX(Math.max(r, Math.min(rect.width  - r, ds.cx + dx)))
-        setCirY(Math.max(r, Math.min(rect.height - r, ds.cy + dy)))
-      } else if (mode === "resize-circle") {
-        // distance from stored circle centre to current pointer
-        const screenCx = rect.left + ds.cx
-        const screenCy = rect.top  + ds.cy
-        const dist = Math.sqrt((clientX - screenCx) ** 2 + (clientY - screenCy) ** 2)
-        setCropSize(Math.round(Math.min(MAX_SIZE, Math.max(MIN_SIZE, dist * 2))))
-      } else {
-        // pan image
-        setImgOffset({ x: ds.ox + dx, y: ds.oy + dy })
+    if (mode === "move-circle") {
+      const r = ds.cs / 2
+      setCirX(Math.max(r, Math.min(rect.width  - r, ds.cx + dx)))
+      setCirY(Math.max(r, Math.min(rect.height - r, ds.cy + dy)))
+    } else if (mode === "resize-circle") {
+      const screenCx = rect.left + ds.cx
+      const screenCy = rect.top  + ds.cy
+      const dist = Math.sqrt((clientX - screenCx) ** 2 + (clientY - screenCy) ** 2)
+      setCropSize(Math.round(Math.min(MAX_SIZE, Math.max(MIN_SIZE, dist * 2))))
+    } else {
+      setImgOffset({ x: ds.ox + dx, y: ds.oy + dy })
+    }
+  }
+
+  const updateHoverCursor = (clientX: number, clientY: number) => {
+    const dist = getDist(clientX, clientY)
+    const rr   = cropSize / 2
+    if (Math.abs(dist - rr) <= RING_WIDTH) setCursor("nwse-resize")
+    else if (dist < rr - RING_WIDTH)       setCursor("grab")
+    else                                    setCursor("default")
+  }
+
+  const handleSvgPointerDown = (e: React.PointerEvent<SVGSVGElement>) => {
+    if (e.pointerType === "mouse" && e.button !== 0) return
+    e.preventDefault()
+    beginDragFromHit(e.clientX, e.clientY)
+    activePointerId.current = e.pointerId
+    e.currentTarget.setPointerCapture(e.pointerId)
+  }
+
+  const handleSvgPointerMove = (e: React.PointerEvent<SVGSVGElement>) => {
+    applyDragMove(e.clientX, e.clientY)
+    if (dragMode.current === "none") updateHoverCursor(e.clientX, e.clientY)
+  }
+
+  const endActivePointer = (e: React.PointerEvent<SVGSVGElement>) => {
+    if (activePointerId.current !== e.pointerId) return
+    activePointerId.current = null
+    try {
+      if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+        e.currentTarget.releasePointerCapture(e.pointerId)
       }
+    } catch {
+      /* already released */
     }
-
-    const onMouseMove = (e: MouseEvent) => onMove(e.clientX, e.clientY)
-    const onTouchMove = (e: TouchEvent) => { const t = e.touches[0]; onMove(t.clientX, t.clientY) }
-    const onUp = () => { dragMode.current = "none"; dragStart.current = null }
-
-    window.addEventListener("mousemove",  onMouseMove)
-    window.addEventListener("mouseup",    onUp)
-    window.addEventListener("touchmove",  onTouchMove, { passive: true })
-    window.addEventListener("touchend",   onUp)
-    return () => {
-      window.removeEventListener("mousemove",  onMouseMove)
-      window.removeEventListener("mouseup",    onUp)
-      window.removeEventListener("touchmove",  onTouchMove)
-      window.removeEventListener("touchend",   onUp)
-    }
-  }, [])
+    dragMode.current = "none"
+    dragStart.current = null
+  }
 
   // ── Scroll to zoom ────────────────────────────────────────────────────────
   const handleWheel = (e: React.WheelEvent) => {
@@ -289,6 +308,7 @@ export function ImageCropUploadDialog({
                     src={imageSrc}
                     alt=""
                     draggable={false}
+                    onLoad={centerCircleInContainer}
                     style={{
                       position: "absolute",
                       width: "100%",
@@ -303,18 +323,13 @@ export function ImageCropUploadDialog({
 
                   {/* ── SVG overlay: dark mask + dashed circle + interaction ── */}
                   <svg
-                    className="absolute inset-0 z-10 h-full w-full"
+                    className="absolute inset-0 z-10 h-full w-full touch-none"
                     style={{ cursor }}
-                    onMouseMove={(e) => {
-                      const dist = getDist(e.clientX, e.clientY)
-                      const rr   = cropSize / 2
-                      if (Math.abs(dist - rr) <= RING_WIDTH) setCursor("nwse-resize")
-                      else if (dist < rr - RING_WIDTH)       setCursor("grab")
-                      else                                    setCursor("default")
-                    }}
-                    onMouseLeave={() => setCursor("default")}
-                    onMouseDown={(e) => { e.preventDefault(); handlePointerDown(e.clientX, e.clientY) }}
-                    onTouchStart={(e) => { const t = e.touches[0]; handlePointerDown(t.clientX, t.clientY) }}
+                    onPointerMove={handleSvgPointerMove}
+                    onPointerLeave={() => setCursor("default")}
+                    onPointerDown={handleSvgPointerDown}
+                    onPointerUp={endActivePointer}
+                    onPointerCancel={endActivePointer}
                   >
                     <defs>
                       {/* Mask: white everywhere, black hole where the circle is */}

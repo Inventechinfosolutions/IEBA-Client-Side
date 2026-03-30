@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronUp } from "lucide-react"
+import { Triangle } from "lucide-react"
 import { useState } from "react"
 
 import { Button } from "@/components/ui/button"
@@ -18,6 +18,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { TodoStatusEnum } from "../enums/todo-status.enum"
+import { TODO_STATUS_LABEL } from "../types"
 import type { TodoRow, TodoTableProps } from "../types"
 
 const headers: { label: string; className?: string }[] = [
@@ -29,8 +31,8 @@ const headers: { label: string; className?: string }[] = [
 ]
 
 function getStatusPillClasses(status: TodoRow["status"]) {
-  if (status === "New") return "border-[#3b82f6] text-black"
-  if (status === "In progress") return "border-[#f59e0b] text-black"
+  if (status === TodoStatusEnum.NEW) return "border-[#d1d5db] text-black"
+  if (status === TodoStatusEnum.INPROGRESS) return "border-[#f59e0b] text-black"
   return "border-[#16a34a] text-black"
 }
 
@@ -54,7 +56,7 @@ export function TodoTable({
                   <TableHead
                     key={header.label}
                     className={`h-10 bg-[#6c5dd3] p-[12px] text-left text-[12px] font-medium text-white ${
-                      "border-r border-[#6C5DD3]"
+                      "border-r border-white/50"
                     } ${header.className ?? ""}`}
                   >
                     <TooltipProvider>
@@ -70,19 +72,15 @@ export function TodoTable({
                             className="relative flex h-full w-full cursor-pointer items-center justify-start pr-4 text-white"
                           >
                             <span>Title</span>
-                            <span className="pointer-events-none absolute right-[12px] inline-flex flex-col items-center leading-none">
-                              <ChevronUp
-                                className={`size-[10px] ${
-                                  titleSortState === "asc"
-                                    ? "text-white"
-                                    : "text-white/50"
+                            <span className="pointer-events-none absolute right-[8px] inline-flex flex-col items-center gap-[1px] leading-none">
+                              <Triangle
+                                className={`size-[6px] fill-white stroke-white ${
+                                  titleSortState === "asc" ? "opacity-100" : "opacity-50"
                                 }`}
                               />
-                              <ChevronDown
-                                className={`-mt-1 size-[10px] ${
-                                  titleSortState === "desc"
-                                    ? "text-white"
-                                    : "text-white/50"
+                              <Triangle
+                                className={`size-[6px] rotate-180 fill-white stroke-white ${
+                                  titleSortState === "desc" ? "opacity-100" : "opacity-50"
                                 }`}
                               />
                             </span>
@@ -105,7 +103,7 @@ export function TodoTable({
                 <TableHead
                   key={header.label}
                   className={`h-10 bg-[#6c5dd3] p-[12px] text-center text-[12px] font-medium text-white ${
-                    "border-r border-[#6C5DD3]"
+                    "border-r border-white/50"
                   } ${header.className ?? ""}`}
                 >
                   <div
@@ -120,7 +118,7 @@ export function TodoTable({
                 </TableHead>
               )
             })}
-            <TableHead className="h-10 w-[120px] bg-[#6c5dd3] p-[12px] text-center text-[12px] font-medium text-white">
+            <TableHead className="h-10 w-[120px] bg-[#6c5dd3] p-[12px] text-center text-[12px] font-medium text-white border-white/50 border-r-0">
               <div className="flex h-full w-full items-center justify-center text-center">
                 Action
               </div>
@@ -130,23 +128,23 @@ export function TodoTable({
         <TableBody>
           {isLoading ? (
             Array.from({ length: 6 }).map((_, idx) => (
-              <TableRow key={`todo-loading-${idx}`} className="h-11 border-[#e9ecf3] hover:bg-transparent">
-                <TableCell className="w-[160px] border-r border-[#eff0f5] px-3">
+              <TableRow key={`todo-loading-${idx}`} className="h-[35px] border-[#e9ecf3] hover:bg-transparent">
+                <TableCell className="h-[35px] w-[160px] border-r border-[#eff0f5] bg-[#FAFAFA] px-3 py-1 align-middle">
                   <div className="h-4 w-full animate-pulse rounded bg-[#f0f2f8]" />
                 </TableCell>
-                <TableCell className="w-[360px] border-r border-[#eff0f5] px-3">
+                <TableCell className="h-[35px] w-[360px] border-r border-[#eff0f5] px-3 py-1 align-middle">
                   <div className="h-4 w-full animate-pulse rounded bg-[#f0f2f8]" />
                 </TableCell>
-                <TableCell className="w-[160px] border-r border-[#eff0f5] px-3">
+                <TableCell className="h-[35px] w-[160px] border-r border-[#eff0f5] px-3 py-1 align-middle">
                   <div className="h-4 w-full animate-pulse rounded bg-[#f0f2f8]" />
                 </TableCell>
-                <TableCell className="w-[160px] border-r border-[#eff0f5] px-3">
+                <TableCell className="h-[35px] w-[160px] border-r border-[#eff0f5] px-3 py-1 align-middle">
                   <div className="h-4 w-full animate-pulse rounded bg-[#f0f2f8]" />
                 </TableCell>
-                <TableCell className="w-[120px] border-r border-[#eff0f5] px-3">
+                <TableCell className="h-[35px] w-[120px] border-r border-[#eff0f5] px-3 py-1 align-middle">
                   <div className="h-4 w-full animate-pulse rounded bg-[#f0f2f8]" />
                 </TableCell>
-                <TableCell className="w-[120px] px-2">
+                <TableCell className="h-[35px] w-[120px] px-2 py-1 align-middle">
                   <div className="h-4 w-full animate-pulse rounded bg-[#f0f2f8]" />
                 </TableCell>
               </TableRow>
@@ -169,29 +167,29 @@ export function TodoTable({
           ) : (
             <>
               {rows.map((row) => (
-                <TableRow key={row.id} className="min-h-[44px] border-[#e9ecf3] hover:bg-transparent">
-                  <TableCell className="w-[160px] align-top border-r border-[#eff0f5] px-3 text-[12px] text-[#111827] whitespace-normal break-words">
+                <TableRow key={row.id} className="h-[35px] border-[#e9ecf3] hover:bg-[#FAFAFA]">
+                  <TableCell className="h-[35px] w-[160px] border-r border-[#eff0f5] bg-[#FAFAFA] px-3 py-1 align-middle text-[12px] leading-[14px] text-[#111827] whitespace-normal break-words">
                     {row.title}
                   </TableCell>
-                  <TableCell className="w-[360px] max-w-[360px] align-top border-r border-[#eff0f5] px-3 text-[12px] text-[#111827] whitespace-normal break-words">
+                  <TableCell className="h-[35px] w-[360px] max-w-[360px] border-r border-[#eff0f5] px-3 py-1 align-middle text-[12px] leading-[14px] text-[#111827] whitespace-normal break-words">
                     {row.description || "-"}
                   </TableCell>
-                  <TableCell className="w-[160px] border-r border-[#eff0f5] px-3 text-center text-[12px] text-[#111827]">
+                  <TableCell className="h-[35px] w-[160px] border-r border-[#eff0f5] px-3 py-1 align-middle text-center text-[12px] leading-[14px] text-[#111827]">
                     {row.createdDate || "-"}
                   </TableCell>
-                  <TableCell className="w-[160px] border-r border-[#eff0f5] px-3 text-center text-[12px] text-[#111827]">
+                  <TableCell className="h-[35px] w-[160px] border-r border-[#eff0f5] px-3 py-1 align-middle text-center text-[12px] leading-[14px] text-[#111827]">
                     {row.completedDate || "-"}
                   </TableCell>
-                  <TableCell className="w-[120px] border-r border-[#eff0f5] px-3 text-center">
+                  <TableCell className="h-[35px] w-[120px] border-r border-[#eff0f5] px-3 py-1 align-middle text-center">
                     <span
-                      className={`inline-flex min-w-[80px] justify-center rounded-[10px] border px-2 py-0.5 text-center text-[12px] ${getStatusPillClasses(
+                      className={`inline-flex h-[20px] min-w-[53px] items-center justify-center rounded-[8px] border px-1.5 text-center text-[11px] ${getStatusPillClasses(
                         row.status
                       )}`}
                     >
-                      {row.status}
+                      {TODO_STATUS_LABEL[row.status]}
                     </span>
                   </TableCell>
-                  <TableCell className="w-[120px] px-2 text-center">
+                  <TableCell className="h-[35px] w-[120px] px-2 py-1 align-middle text-center">
                     <Button
                       type="button"
                       variant="ghost"

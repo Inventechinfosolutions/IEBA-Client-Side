@@ -12,7 +12,9 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
+import { TodoStatusEnum } from "../enums/todo-status.enum"
 import { todoFormSchema } from "../schemas"
+import { TODO_STATUS_LABEL, TODO_STATUS_OPTIONS } from "../types"
 import type { TodoFormValues, TodoFormModalProps } from "../types"
 
 export function TodoFormModal({
@@ -24,7 +26,7 @@ export function TodoFormModal({
   onSave,
 }: TodoFormModalProps) {
   const isEditMode = mode === "edit"
-  const isNewStatusDisabled = isEditMode && initialValues.status !== "New"
+  const isNewStatusDisabled = isEditMode && initialValues.status !== TodoStatusEnum.NEW
 
   const form = useForm<TodoFormValues>({
     resolver: zodResolver(todoFormSchema),
@@ -32,7 +34,7 @@ export function TodoFormModal({
   })
 
   const selectedStatus = form.watch("status")
-  const isDescriptionDisabled = isEditMode && selectedStatus === "Completed"
+  const isDescriptionDisabled = isEditMode && selectedStatus === TodoStatusEnum.COMPLETED
 
   const handleSubmit = form.handleSubmit((values) => {
     onSave(values)
@@ -85,9 +87,9 @@ export function TodoFormModal({
                 <div>
                   <label className="mb-2 block text-[12px] text-[#111827]">*Status</label>
                   <div className="flex h-[46px] items-center gap-4">
-                    {(["New", "In progress", "Completed"] as const).map((statusOption) => {
+                    {TODO_STATUS_OPTIONS.map((statusOption) => {
                       const isDisabledOption =
-                        statusOption === "New" && isNewStatusDisabled
+                        statusOption === "new" && isNewStatusDisabled
 
                       return (
                       <label
@@ -119,7 +121,7 @@ export function TodoFormModal({
                           }`}
                           aria-hidden="true"
                         />
-                        <span>{statusOption}</span>
+                        <span>{TODO_STATUS_LABEL[statusOption]}</span>
                       </label>
                       )
                     })}
