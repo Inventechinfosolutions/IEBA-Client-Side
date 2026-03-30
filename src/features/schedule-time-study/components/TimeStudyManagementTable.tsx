@@ -134,7 +134,7 @@ export function ScheduleTimeStudyTable() {
     )
 
   return (
-    <section className="ieba-roboto min-h-[743px] space-y-5 rounded-[10px] border border-[#E5E7EB] bg-white p-6">
+    <section className="font-roboto *:font-roboto min-h-[743px] space-y-5 rounded-[10px] border border-[#E5E7EB] bg-white p-6">
       <div className="space-y-2">
         <Label className="text-[14px] font-normal text-[#1F2937]">Select Department</Label>
         <Select
@@ -293,7 +293,7 @@ export function ScheduleTimeStudyTable() {
                   ].map((header) => (
                     <TableHead
                       key={header}
-                      className="h-[60px] border-r border-[#FFFFFF66] bg-[#6C5DD3] px-[12px] text-left text-[14px] font-normal text-white last:border-r-0"
+                      className="h-[60px] border-r border-[#FFFFFF66] bg-[#6C5DD3] px-[12px] text-left text-[12px] font-normal text-white last:border-r-0"
                     >
                       {header}
                     </TableHead>

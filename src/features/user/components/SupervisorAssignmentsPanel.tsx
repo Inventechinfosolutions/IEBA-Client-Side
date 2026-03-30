@@ -23,7 +23,7 @@ function DropdownField({ name, label }: SupervisorDropdownFieldProps) {
   const inputTextClass = "!text-[11px] !leading-[14px] font-normal"
   const optionTextClass = "text-[11px] leading-[16px] font-normal"
   const inputClassName =
-    `h-[46px] rounded-[7px] border border-[#c6cedd] bg-white px-3 pr-8 ${inputTextClass} text-[#111827] shadow-none placeholder:!text-[9.5px] placeholder:!leading-[14px] placeholder:font-normal placeholder:text-[#c2c7d3] focus-visible:border-[#cfc6ff] focus-visible:ring-0`
+    `h-[46px] rounded-[7px] border border-[#c6cedd] bg-white px-3 pr-8 ${inputTextClass} text-[#111827] shadow-none placeholder:!text-[9.5px] placeholder:!leading-[14px] placeholder:font-normal placeholder:text-[#c2c7d3] focus-visible:border-[#6C5DD3] focus-visible:ring-0`
 
   const options = useMemo(() => supervisorOptions, [])
   const selectedOptionClass = "bg-[#dbeafe] font-normal"
@@ -120,3 +120,4 @@ export function SupervisorAssignmentsPanel() {
     </div>
   )
 }
+

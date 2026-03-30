@@ -26,7 +26,7 @@ function InputShell({
       onChange={(event) => onChange?.(event.target.value)}
       placeholder={placeholder}
       disabled={disabled}
-      className="h-[44px] rounded-[10px] border border-[#d4d8e2] bg-white px-3 text-[14px] text-[#111827] placeholder:text-[14px] placeholder:text-[#b0b8c8] focus-visible:border-[#8f86f0] focus-visible:ring-0 disabled:pointer-events-auto disabled:cursor-not-allowed disabled:!border-[0.8px] disabled:!border-[#cfd4dd] disabled:!bg-[#d2d4d9]/20 disabled:!text-black disabled:opacity-100"
+      className="h-[44px] rounded-[10px] border border-[#d4d8e2] bg-white px-3 text-[14px] text-[#111827] placeholder:text-[14px] placeholder:text-[#b0b8c8] focus-visible:border-[#6C5DD3] focus-visible:ring-0 disabled:pointer-events-auto disabled:cursor-not-allowed disabled:!border-[0.8px] disabled:!border-[#cfd4dd] disabled:!bg-[#d2d4d9]/20 disabled:!text-black disabled:opacity-100"
     />
   )
 }
@@ -59,7 +59,7 @@ function SelectShell({
         placeholder={placeholder}
         disabled={disabled}
         className={cn(
-          "h-[44px] rounded-[7px] border border-[#c6cedd] bg-white px-3 pr-8 text-[14px] text-[#111827] shadow-none placeholder:text-[12px] placeholder:text-[#b0b8c8] focus-visible:border-[#cfc6ff] focus-visible:ring-0",
+          "h-[44px] rounded-[7px] border border-[#c6cedd] bg-white px-3 pr-8 text-[14px] text-[#111827] shadow-none placeholder:text-[12px] placeholder:text-[#b0b8c8] focus-visible:border-[#6C5DD3] focus-visible:ring-0",
           "cursor-pointer select-none caret-transparent disabled:pointer-events-auto disabled:cursor-not-allowed disabled:!border-[0.8px] disabled:!border-[#cfd4dd] disabled:!bg-[#d2d4d9]/20 disabled:!text-black disabled:opacity-100",
           isOpen ? "border-[#3b82f6] ring-1 ring-[#3b82f640]" : ""
         )}
@@ -357,3 +357,4 @@ export function TimeStudyProgramForm({
     </div>
   )
 }
+

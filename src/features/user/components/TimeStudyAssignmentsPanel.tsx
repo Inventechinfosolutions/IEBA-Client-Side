@@ -19,7 +19,7 @@ export function TimeStudyAssignmentsPanel() {
   const matchedTextClass = "!text-[11px] !leading-[16px] font-normal"
   const labelClassName = "mb-1 block select-none text-[11px] font-medium text-[#2a2f3a]"
   const inputClassName =
-    `h-[46px] rounded-[7px] border border-[#c6cedd] bg-white px-3 pr-8 ${matchedTextClass} text-[#111827] shadow-none placeholder:!text-[11px] placeholder:!leading-[16px] placeholder:font-normal placeholder:text-[#c2c7d3] focus-visible:border-[#cfc6ff] focus-visible:ring-0`
+    `h-[46px] rounded-[7px] border border-[#c6cedd] bg-white px-3 pr-8 ${matchedTextClass} text-[#111827] shadow-none placeholder:!text-[11px] placeholder:!leading-[16px] placeholder:font-normal placeholder:text-[#c2c7d3] focus-visible:border-[#6C5DD3] focus-visible:ring-0`
 
   return (
     <div
@@ -117,3 +117,4 @@ export function TimeStudyAssignmentsPanel() {
     </div>
   )
 }
+

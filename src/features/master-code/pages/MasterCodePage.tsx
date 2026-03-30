@@ -17,7 +17,7 @@ import {
 } from "../types"
 
 const tabs: MasterCodeTab[] = ["FFP", "MAA", "TCM", "INTERNAL", "CDSS"]
-const pageSize = 10
+
 const emptyFormValues: MasterCodeFormValues = {
   code: "",
   name: "",
@@ -45,6 +45,7 @@ export function MasterCodePage() {
   const [allowMultiCodes, setAllowMultiCodes] = useState(true)
   const [inactiveOnly, setInactiveOnly] = useState(false)
   const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
   const [modalOpen, setModalOpen] = useState(false)
   const [modalMode, setModalMode] = useState<MasterCodeFormMode>("add")
   const [selectedRow, setSelectedRow] = useState<MasterCodeRow | null>(null)
@@ -121,7 +122,7 @@ export function MasterCodePage() {
 
   return (
     <section
-      className="ieba-roboto w-full rounded-[10px] border border-[#e6e7ef] bg-white p-5 md:p-6 shadow-[0_2px_10px_rgba(0,0,0,0.03)]"
+      className="font-roboto *:font-roboto w-full rounded-[10px] border border-[#e6e7ef] bg-white p-5 md:p-6 shadow-[0_2px_10px_rgba(0,0,0,0.03)]"
       style={{
         zoom: 1.2,
         "--primary": "#6C5DD3",
@@ -156,6 +157,10 @@ export function MasterCodePage() {
           currentPage={page}
           pageSize={pageSize}
           onPageChange={setPage}
+          onPageSizeChange={(newSize) => {
+            setPageSize(newSize)
+            setPage(1)
+          }}
         />
       </div>
       <MasterCodeFormModal

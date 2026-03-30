@@ -11,6 +11,7 @@ import {
   Table2,
   CalendarClock,
   LockKeyhole,
+  Layers,
   BarChart2,
 } from "lucide-react"
 
@@ -55,6 +56,8 @@ const mainNav = [
   { title: "Schedule Time Study", url: "/schedule-time-study", icon: CalendarClock },
   { title: "Department", url: "/department", icon: Building2 },
   { title: "Cost Pool", url: "/costpool", icon: Table2 },
+  { title: "Job Classification", url: "/job-classification", icon: Layers },
+  { title: "Job Pool", url: "/job-pool", icon: Layers },
   { title: "FTE Allocation", url: "/fte-allocation", icon: BarChart2 },
 ] as const
 
@@ -231,6 +234,8 @@ export function AppSidebar() {
                       <Settings className="mr-2 size-4" />
                       Settings
                     </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
                     <Link to="/schedule-time-study">
                       <CalendarClock className="mr-2 size-4" />
                       Schedule Time Study
@@ -249,6 +254,15 @@ export function AppSidebar() {
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
+                    <Link to="/job-classification">
+                      <Layers className="mr-2 size-4" />
+                      Job Classification
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/job-pool">
+                      <Layers className="mr-2 size-4" />
+                      Job Pool
                     <Link to="/fte-allocation">
                       <BarChart2 className="mr-2 size-4" />
                       FTE Allocation
@@ -268,10 +282,6 @@ export function AppSidebar() {
                   >
                     <LockKeyhole className="mr-2 size-4" />
                     Change Password
-                  </DropdownMenuItem>
-                  <DropdownMenuItem disabled>
-                    <Settings className="mr-2 size-4" />
-                    Settings
                   </DropdownMenuItem>
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />

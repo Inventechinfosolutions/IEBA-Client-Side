@@ -33,7 +33,7 @@ export function UserToolbar({
           placeholder="Search here"
           className={`h-9 rounded-[8px] bg-white pl-9 !text-[11px] md:!text-[11px] text-[#232735] shadow-[0_1px_3px_rgba(35,39,53,0.08)] placeholder:text-[11px] placeholder:text-[#b7bccb] focus-visible:ring-0 ${
             isSearchFocused || searchTerm.trim()
-              ? "border-[#8f86f0]"
+              ? "border-[#6C5DD3]"
               : "border-[#e1e4ec]"
           }`}
         />
@@ -85,3 +85,4 @@ export function UserToolbar({
     </div>
   )
 }
+

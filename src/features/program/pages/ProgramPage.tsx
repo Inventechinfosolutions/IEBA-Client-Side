@@ -34,7 +34,7 @@ const tabs: ProgramTab[] = [
   "Program Activity Relation",
 ]
 
-const pageSize = 10
+
 
 const emptyFormValues: ProgramFormValues = {
   formSection: "Budget Unit",
@@ -119,6 +119,7 @@ export function ProgramPage() {
   const [inactiveOnly, setInactiveOnly] = useState(false)
   const [search, setSearch] = useState("")
   const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
   const [modalOpen, setModalOpen] = useState(false)
   const [modalMode, setModalMode] = useState<ProgramFormMode>("add")
   const [selectedRow, setSelectedRow] = useState<ProgramRow | null>(null)
@@ -339,7 +340,7 @@ export function ProgramPage() {
 
   return (
     <section
-      className="ieba-roboto w-full rounded-[10px] border border-[#e6e7ef] bg-white p-5 md:p-6 shadow-[0_2px_10px_rgba(0,0,0,0.03)]"
+      className="font-roboto *:font-roboto w-full rounded-[10px] border border-[#e6e7ef] bg-white p-5 md:p-6 shadow-[0_2px_10px_rgba(0,0,0,0.03)]"
       style={{
         zoom: 1.2,
         "--primary": "#6C5DD3",
@@ -387,6 +388,10 @@ export function ProgramPage() {
               currentPage={page}
               pageSize={pageSize}
               onPageChange={setPage}
+              onPageSizeChange={(newSize) => {
+                setPageSize(newSize)
+                setPage(1)
+              }}
             />
           </>
         ) : null}

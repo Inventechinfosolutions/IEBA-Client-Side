@@ -1,9 +1,8 @@
 import { zodResolver } from "@hookform/resolvers/zod"
-import { FileText, UserRound, X } from "lucide-react"
+import { FileText, UserRound } from "lucide-react"
 import { toast } from "sonner"
 import { Controller, useForm, type FieldErrors } from "react-hook-form"
-import { useMemo, useRef, useState } from "react"
-import Cropper, { type Area } from "react-easy-crop"
+import { useMemo, useState } from "react"
 
 import profileAvatar from "@/assets/profile-avatar.png"
 import { Button } from "@/components/ui/button"
@@ -21,8 +20,8 @@ import {
   AvatarImage,
   AvatarFallback,
 } from "@/components/ui/avatar"
-import { getCroppedImg } from "@/lib/cropImage"
 import { profileDetailDefaultValues, profileDetailFormSchema } from "@/features/Profile/schemas"
+import { ImageCropUploadDialog } from "@/features/Profile/components/ImageCropUploadDialog"
 import type {
   ProfileDetailFormValues,
   Relationship,
@@ -59,7 +58,7 @@ function formatPhone(value: string): string {
 }
 
 const inputClassName =
-  "h-[58px] rounded-[7px] border border-[#e4e7ef] bg-white px-3 py-0 text-[12px] leading-[12px] text-[#1f2937] shadow-none placeholder:text-[12px] placeholder:font-normal placeholder:text-[#c2c7d3] hover:border-[#8f86f0] focus-visible:border-[#8f86f0] focus-visible:ring-1 focus-visible:ring-[#8f86f033]"
+  "h-[58px] rounded-[7px] border border-[#e4e7ef] bg-white px-3 py-0 text-[12px] leading-[12px] text-[#1f2937] shadow-none placeholder:text-[12px] placeholder:font-normal placeholder:text-[#c2c7d3] hover:border-[#6C5DD3] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
 
 const labelClassName = "mb-1 block text-[14px] font-normal text-[#2a2f3a]"
 
@@ -130,13 +129,7 @@ function ProfileDetailForm({
   isSaving: boolean
 }) {
   const [jobDutyViewOpen, setJobDutyViewOpen] = useState(false)
-  const [dialogOpen, setDialogOpen] = useState(false)
-  const [imageSrc, setImageSrc] = useState<string | null>(null)
-  const [crop, setCrop] = useState<{ x: number; y: number }>({ x: 0, y: 0 })
-  const [zoom, setZoom] = useState(1)
-  const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null)
   const [avatarSrc, setAvatarSrc] = useState<string>(profileAvatar)
-  const profileImageInputRef = useRef<HTMLInputElement | null>(null)
 
   const methods = useForm<ProfileDetailFormValues>({
     resolver: zodResolver(profileDetailFormSchema),
@@ -174,67 +167,41 @@ function ProfileDetailForm({
 
   const jobDutyStatement = watch("onRecords.jobDutyStatement")
 
-  const resetCropperState = () => {
-    if (imageSrc) URL.revokeObjectURL(imageSrc)
-    setImageSrc(null)
-    setCrop({ x: 0, y: 0 })
-    setZoom(1)
-    setCroppedAreaPixels(null)
-    if (profileImageInputRef.current) profileImageInputRef.current.value = ""
-  }
-
-  const handleProfileImagePick = (file: File | null) => {
-    if (!file) return
-    if (imageSrc) URL.revokeObjectURL(imageSrc)
-    const nextSrc = URL.createObjectURL(file)
-    setImageSrc(nextSrc)
-    setCrop({ x: 0, y: 0 })
-    setZoom(1)
-    setCroppedAreaPixels(null)
-  }
-
-  const handleProfileImageCancel = () => {
-    resetCropperState()
-    setDialogOpen(false)
-  }
-
-  const handleProfileImageOk = async () => {
-    if (!imageSrc || !croppedAreaPixels) {
-      toast.error("Please choose a file.", { position: "top-center" })
-      return
-    }
-
-    try {
-      const cropped = await getCroppedImg(imageSrc, croppedAreaPixels)
-      setAvatarSrc(cropped)
-      resetCropperState()
-      setDialogOpen(false)
-      toast.success("Profile image updated.", { position: "top-center" })
-    } catch {
-      toast.error("Unable to crop image. Please try another file.", { position: "top-center" })
-    }
-  }
-
   return (
     <>
       <form onSubmit={handleSave} className="space-y-6">
         <div className="flex items-start gap-8">
-          <div className="mt-2 flex h-[200px] w-[200px] items-center justify-center rounded-full bg-white">
-            <Avatar
-              className={profilePicClassName}
-              role="button"
-              tabIndex={0}
-              onClick={() => setDialogOpen(true)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") setDialogOpen(true)
-              }}
-            >
-              <AvatarImage src={avatarSrc} alt="Profile picture" className={profilePicClassName} />
-              <AvatarFallback>
-                <UserRound className="size-10 text-[#6C5DD3]" />
-              </AvatarFallback>
-            </Avatar>
-          </div>
+          <ImageCropUploadDialog
+            title="Profile Update"
+            onConfirmWithoutImage={() => {
+              toast.error("Please choose a file.", { position: "top-center" })
+            }}
+            onCropError={() => {
+              toast.error("Unable to crop image. Please try another file.", { position: "top-center" })
+            }}
+            onImageCropped={(cropped) => {
+              setAvatarSrc(cropped)
+              toast.success("Profile image updated.", { position: "top-center" })
+            }}
+            renderTrigger={({ openDialog }) => (
+              <div className="mt-2 flex h-[200px] w-[200px] items-center justify-center rounded-full bg-white">
+                <Avatar
+                  className={profilePicClassName}
+                  role="button"
+                  tabIndex={0}
+                  onClick={openDialog}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") openDialog()
+                  }}
+                >
+                  <AvatarImage src={avatarSrc} alt="Profile picture" className={profilePicClassName} />
+                  <AvatarFallback>
+                    <UserRound className="size-10 text-[#6C5DD3]" />
+                  </AvatarFallback>
+                </Avatar>
+              </div>
+            )}
+          />
 
           <div className="flex-1 space-y-4">
             <div className="grid grid-cols-3 gap-6">
@@ -511,7 +478,7 @@ function ProfileDetailForm({
           <Button
             type="submit"
             disabled={isSaving}
-            className="h-13 min-w-[78px] cursor-pointer rounded-[8px] bg-[#6b5bd6] px-5 text-[15px] text-white hover:bg-[#6b5bd6] disabled:opacity-60"
+            className="h-13 min-w-[78px] cursor-pointer rounded-[8px] bg-[#6C5DD3] px-5 text-[15px] text-white hover:bg-[#6C5DD3] disabled:opacity-60"
           >
             Submit
           </Button>
@@ -524,101 +491,6 @@ function ProfileDetailForm({
           </Button>
         </div>
       </form>
-
-      <Dialog
-        open={dialogOpen}
-        onOpenChange={(open) => {
-          setDialogOpen(open)
-          if (!open) resetCropperState()
-        }}
-      >
-        <DialogContent
-          showClose={false}
-          className="flex h-[529px] w-[520px] max-w-none flex-col gap-0 rounded-[8px] border-0 bg-white p-0"
-        >
-          <DialogHeader className="px-6 pt-5">
-            <DialogTitle className="text-[16px] font-semibold text-[#111827]">Profile Update</DialogTitle>
-          </DialogHeader>
-
-          <div className="flex min-h-0 flex-1 flex-col px-6 pb-5 pt-3">
-            <input
-              ref={profileImageInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(e) => handleProfileImagePick(e.target.files?.[0] ?? null)}
-            />
-
-            {!imageSrc ? (
-              <button
-                type="button"
-                onClick={() => profileImageInputRef.current?.click()}
-                className="flex min-h-0 flex-1 w-full items-center justify-center rounded-[6px] border border-dashed border-[#c9ccd6] bg-white text-[16px] font-semibold text-[#111827]"
-              >
-                Choose a file
-              </button>
-            ) : (
-              <div className="flex min-h-0 flex-1 flex-col w-full">
-                <div className="relative h-[380px] w-full overflow-hidden rounded-[6px] bg-[#6b6b6b]">
-                  <button
-                    type="button"
-                    onClick={handleProfileImageCancel}
-                    className="absolute left-3 top-3 z-20 inline-flex size-9 items-center justify-center rounded-full bg-[#2f2f2f]/70 text-white hover:bg-[#2f2f2f]/80"
-                    aria-label="Close"
-                  >
-                    <X className="size-5" />
-                  </button>
-
-                  <Cropper
-                    image={imageSrc}
-                    crop={crop}
-                    zoom={zoom}
-                    aspect={1}
-                    cropShape="round"
-                    objectFit="contain"
-                    showGrid={false}
-                    cropSize={{ width: 240, height: 240 }}
-                    zoomWithScroll
-                    classes={{
-                      cropAreaClassName: "!border-2 !border-dashed !border-white/80",
-                    }}
-                    onCropChange={setCrop}
-                    onZoomChange={setZoom}
-                    onCropComplete={(_, areaPixels) => setCroppedAreaPixels(areaPixels)}
-                  />
-                </div>
-
-                <div className="mt-2 flex items-center justify-end">
-                  <button
-                    type="button"
-                    onClick={() => profileImageInputRef.current?.click()}
-                    className="text-[12px] font-medium text-[#6C5DD3]"
-                  >
-                    Choose another file
-                  </button>
-                </div>
-              </div>
-            )}
-
-            <div className="mt-5 flex items-center justify-end gap-3">
-              <Button
-                type="button"
-                onClick={handleProfileImageCancel}
-                className="h-11 min-w-[92px] rounded-[10px] bg-[#d2d4d9] px-6 text-[12px] text-[#111827] hover:bg-[#d2d4d9]"
-              >
-                Cancel
-              </Button>
-              <Button
-                type="button"
-                onClick={handleProfileImageOk}
-                className="h-11 min-w-[92px] rounded-[10px] bg-[#6b5bd6] px-6 text-[12px] text-white hover:bg-[#6b5bd6]"
-              >
-                OK
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
 
       <Dialog open={jobDutyViewOpen} onOpenChange={setJobDutyViewOpen}>
         <DialogContent className="w-[700px] max-w-[95vw] rounded-lg border border-[#e6e7ef] bg-white">
@@ -681,4 +553,5 @@ export function ProfileDetail() {
     />
   )
 }
+
 

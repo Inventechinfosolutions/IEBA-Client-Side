@@ -97,7 +97,7 @@ export function ScheduledTimeStudyTable({
                 (header) => (
                   <TableHead
                     key={header}
-                    className="h-[60px] border-r border-[#FFFFFF66] bg-[#6C5DD3] px-[12px] text-center text-[14px] font-normal text-white first:text-left last:border-r-0"
+                    className="h-[60px] border-r border-[#FFFFFF66] bg-[#6C5DD3] px-[12px] text-center text-[12px] font-normal text-white first:text-left last:border-r-0"
                   >
                     {header}
                   </TableHead>

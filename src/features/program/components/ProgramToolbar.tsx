@@ -30,7 +30,7 @@ export function ProgramToolbar({
         value={searchValue}
         onChange={(event) => onSearchChange(event.target.value)}
         placeholder={getSearchPlaceholder(activeTabLabel)}
-        className="h-[41px] w-[270px] rounded-[10px] border border-[#d0d5df] bg-white px-3.5 text-[11px] text-[#111827] shadow-[0_4px_10px_rgba(15,23,42,0.08)] placeholder:text-[10px] placeholder:text-[#a7afbf] focus-visible:border-[#8f86f0] focus-visible:ring-1 focus-visible:ring-[#8f86f033]"
+        className="h-[41px] w-[270px] rounded-[10px] border border-[#d0d5df] bg-white px-3.5 text-[11px] text-[#111827] shadow-[0_4px_10px_rgba(15,23,42,0.08)] placeholder:text-[10px] placeholder:text-[#a7afbf] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
       />
       <div className="flex items-center gap-2">
         <Button
@@ -57,3 +57,4 @@ export function ProgramToolbar({
     </div>
   )
 }
+

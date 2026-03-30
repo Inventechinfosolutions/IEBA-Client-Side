@@ -2,7 +2,7 @@ import { useMemo, useState } from "react"
 import { Check } from "lucide-react"
 import { toast } from "sonner"
 
-import { UserPagination } from "../components/UserPagination"
+import { MasterCodePagination } from "@/features/master-code/components/MasterCodePagination"
 import { UserTable } from "../components/UserTable"
 import { UserToolbar } from "../components/UserToolbar"
 import { useUserModule } from "../hooks/useUserModule"
@@ -13,7 +13,7 @@ import {
   type UserModuleRow,
 } from "../types"
 
-const pageSize = 10
+
 
 const emptyFormValues: UserModuleFormValues = {
   employeeNo: "",
@@ -59,6 +59,7 @@ export function UserModulePage() {
   const [inactiveOnly, setInactiveOnly] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
   const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
   const [showForm, setShowForm] = useState(false)
   const [formMode, setFormMode] = useState<UserModuleFormMode>("add")
   const [selectedRow, setSelectedRow] = useState<UserModuleRow | null>(null)
@@ -174,7 +175,7 @@ export function UserModulePage() {
 
   return (
     <section
-      className="ieba-roboto w-full"
+      className="font-roboto *:font-roboto w-full"
       style={{
         zoom: 1.2,
         "--primary": "#6C5DD3",
@@ -213,11 +214,15 @@ export function UserModulePage() {
                 onEditRow={handleEditRow}
               />
             </div>
-            <UserPagination
+            <MasterCodePagination
               totalItems={searchTerm.trim() ? filteredRows.length : userModule.totalItems}
               currentPage={page}
               pageSize={pageSize}
-              onPageChange={setPage}
+              onPageChange={(p: number) => setPage(p)}
+              onPageSizeChange={(newSize: number) => {
+                setPageSize(newSize)
+                setPage(1)
+              }}
             />
           </div>
         </div>

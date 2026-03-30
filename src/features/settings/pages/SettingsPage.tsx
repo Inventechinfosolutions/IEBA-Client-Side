@@ -3,7 +3,7 @@ import { SettingsForm } from "@/features/settings/components/SettingsForm"
 export function SettingsPage() {
   return (
     <section
-      className="ieba-roboto w-full"
+      className="font-roboto *:font-roboto w-full"
       style={{
         zoom: 1.2,
         "--primary": "#6C5DD3",

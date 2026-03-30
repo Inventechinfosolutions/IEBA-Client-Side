@@ -514,7 +514,7 @@ export function FiscalYearForm() {
                   void trigger("fiscalYear")
                 }}
               >
-                <SelectTrigger className="!h-[46px] w-fit min-w-[112px] max-w-[112px] shrink-0 rounded-[6px] border border-[#d6d7dc] bg-white pl-2.5 pr-1 text-center text-[14px] text-[#111827] shadow-none focus-visible:border-[#cfc6ff] focus-visible:ring-0 data-[size=default]:h-[46px] [&_[data-slot=select-value]]:mx-auto">
+                <SelectTrigger className="!h-[46px] w-fit min-w-[112px] max-w-[112px] shrink-0 rounded-[6px] border border-[#d6d7dc] bg-white pl-2.5 pr-1 text-center text-[14px] text-[#111827] shadow-none focus-visible:border-[#6C5DD3] focus-visible:ring-0 data-[size=default]:h-[46px] [&_[data-slot=select-value]]:mx-auto">
                   <SelectValue placeholder="Select year" />
                 </SelectTrigger>
                 <SelectContent
@@ -575,7 +575,7 @@ export function FiscalYearForm() {
                 value={holidayDraft.holiday}
                 onChange={(e) => setHolidayDraft((p) => ({ ...p, holiday: e.target.value }))}
                 placeholder="Enter Holiday"
-                className="h-[40px] rounded-[6px] border border-[#d6d7dc] bg-white px-3 !text-[14px] text-[#111827] shadow-none placeholder:text-[14px] placeholder:text-[#b5bcc9] focus-visible:border-[#cfc6ff] focus-visible:ring-0"
+                className="h-[40px] rounded-[6px] border border-[#d6d7dc] bg-white px-3 !text-[14px] text-[#111827] shadow-none placeholder:text-[14px] placeholder:text-[#b5bcc9] focus-visible:border-[#6C5DD3] focus-visible:ring-0"
               />
             </div>
           </div>
@@ -628,4 +628,5 @@ export function FiscalYearForm() {
     </div>
   )
 }
+
 

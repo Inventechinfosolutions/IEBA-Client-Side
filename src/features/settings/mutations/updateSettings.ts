@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { settingsKeys } from "@/features/settings/keys"
 import { delay, getMockSettings, MOCK_NETWORK_DELAY_MS, setMockSettings } from "@/features/settings/mock"
 import type { SettingsModel, UpdateSettingsInput } from "@/features/settings/types"
+import type { PayrollBy, PayrollColumnSettingModel } from "@/features/settings/components/Payroll/types"
 
 async function updateSettings(input: UpdateSettingsInput): Promise<SettingsModel> {
   await delay(MOCK_NETWORK_DELAY_MS)
@@ -63,14 +64,17 @@ async function updateSettings(input: UpdateSettingsInput): Promise<SettingsModel
     payroll: {
       ...current.payroll,
       ...input.values.payroll,
-      payrollBy: String(input.values.payroll?.payrollBy ?? "Weekly") as any,
+      payrollBy: String(input.values.payroll?.payrollBy ?? "Weekly") as PayrollBy,
       columns: Array.isArray(input.values.payroll?.columns)
-        ? input.values.payroll.columns.map((row) => ({
-            key: String((row as any).key ?? ""),
-            label: String((row as any).label ?? ""),
-            enabled: Boolean((row as any).enabled),
-            editable: Boolean((row as any).editable),
-          }))
+        ? input.values.payroll.columns.map((row) => {
+            const col = row as PayrollColumnSettingModel
+            return {
+              key: String(col.key ?? ""),
+              label: String(col.label ?? ""),
+              enabled: Boolean(col.enabled),
+              editable: Boolean(col.editable),
+            }
+          })
         : [],
     },
   }

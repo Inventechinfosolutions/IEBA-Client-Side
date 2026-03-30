@@ -79,7 +79,7 @@ export function TodoFormModal({
                     {...form.register("title")}
                     disabled={isEditMode}
                     placeholder="Enter To Do Title"
-                    className="h-[46px] w-[300px] rounded-[8px] border-[#dfe3ee] text-[12px] placeholder:text-[12px] placeholder:text-gray-400 disabled:pointer-events-auto disabled:cursor-not-allowed disabled:!border-[0.8px] disabled:!border-[#cfd4dd] disabled:!bg-[#d2d4d9]/20 disabled:!text-black disabled:opacity-100 focus-visible:border-[#8f86f0] focus-visible:ring-1 focus-visible:ring-[#8f86f033]"
+                    className="h-[46px] w-[300px] rounded-[8px] border-[#dfe3ee] text-[12px] placeholder:text-[12px] placeholder:text-gray-400 disabled:pointer-events-auto disabled:cursor-not-allowed disabled:!border-[0.8px] disabled:!border-[#cfd4dd] disabled:!bg-[#d2d4d9]/20 disabled:!text-black disabled:opacity-100 focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
                   />
                 </div>
                 <div>
@@ -134,7 +134,7 @@ export function TodoFormModal({
                 <Input
                   {...form.register("title")}
                   placeholder="Enter To Do Title"
-                  className="h-[46px] w-[282px] rounded-[8px] border-[#dfe3ee] text-[12px] placeholder:text-[12px] placeholder:text-gray-400 focus-visible:border-[#8f86f0] focus-visible:ring-1 focus-visible:ring-[#8f86f033]"
+                  className="h-[46px] w-[282px] rounded-[8px] border-[#dfe3ee] text-[12px] placeholder:text-[12px] placeholder:text-gray-400 focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
                 />
               </div>
             )}
@@ -146,7 +146,7 @@ export function TodoFormModal({
                 {...form.register("description")}
                 disabled={isDescriptionDisabled}
                 placeholder="Enter To Do Description"
-                className="min-h-[86px] whitespace-pre-wrap break-all rounded-[8px] border-[#dfe3ee] text-[12px] placeholder:text-[12px] placeholder:text-gray-400 disabled:pointer-events-auto disabled:cursor-not-allowed disabled:!border-[0.8px] disabled:!border-[#cfd4dd] disabled:!bg-[#d2d4d9]/20 disabled:!text-black disabled:opacity-100 focus-visible:border-[#8f86f0] focus-visible:ring-1 focus-visible:ring-[#8f86f033]"
+                className="min-h-[86px] whitespace-pre-wrap break-all rounded-[8px] border-[#dfe3ee] text-[12px] placeholder:text-[12px] placeholder:text-gray-400 disabled:pointer-events-auto disabled:cursor-not-allowed disabled:!border-[0.8px] disabled:!border-[#cfd4dd] disabled:!bg-[#d2d4d9]/20 disabled:!text-black disabled:opacity-100 focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
               />
             </div>
           </div>
@@ -154,7 +154,7 @@ export function TodoFormModal({
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="h-[52px] min-w-[98px] cursor-pointer rounded-[10px] bg-[#6b5bd6] px-7 text-[14px] text-white hover:bg-[#6b5bd6]"
+              className="h-[52px] min-w-[98px] cursor-pointer rounded-[10px] bg-[#6C5DD3] px-7 text-[14px] text-white hover:bg-[#6C5DD3]"
             >
               {isSubmitting ? "Saving..." : "Save"}
             </Button>
@@ -171,3 +171,4 @@ export function TodoFormModal({
     </Dialog>
   )
 }
+

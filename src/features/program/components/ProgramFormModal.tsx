@@ -315,7 +315,7 @@ export const ProgramFormModal = forwardRef<ProgramFormModalHandle, ProgramFormMo
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="h-[44px] min-w-[117px] cursor-pointer rounded-[10px] bg-[#6b5bd6] px-6 text-[15px] font-medium text-white hover:bg-[#6b5bd6]"
+              className="h-[44px] min-w-[117px] cursor-pointer rounded-[10px] bg-[#6C5DD3] px-6 text-[15px] font-medium text-white hover:bg-[#6C5DD3]"
             >
               {isSubmitting ? "Saving..." : "Save"}
             </Button>
@@ -360,3 +360,4 @@ export const ProgramFormModal = forwardRef<ProgramFormModalHandle, ProgramFormMo
     </Dialog>
   )
 })
+

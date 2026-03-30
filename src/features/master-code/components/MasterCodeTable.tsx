@@ -105,7 +105,7 @@ export function MasterCodeTable({
             {headers.map((header, idx) => (
               <TableHead
                 key={header}
-                className={`h-10 border-r border-[#8f86f0] bg-[var(--primary)] px-3 text-[11px] font-medium text-white last:border-r-0 ${
+                className={`h-10 border-r border-[#6C5DD3] bg-[var(--primary)] px-3 text-[12px] font-medium text-white last:border-r-0 ${
                   idx === 0 ||
                   idx === 2 ||
                   idx === 3 ||
@@ -334,3 +334,4 @@ export function MasterCodeTable({
     </div>
   )
 }
+

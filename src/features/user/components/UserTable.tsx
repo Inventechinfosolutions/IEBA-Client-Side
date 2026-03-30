@@ -44,7 +44,7 @@ export function UserTable({ rows, isLoading, onEditRow }: UserTableProps) {
     "Action",
     "Switch User",
   ]
-  const dividerClass = "border-r border-[1px] border-[#8f86f0]"
+  const dividerClass = "border-r border-[1px] border-[#6C5DD3]"
 
   const skeletonRows = Array.from(
     { length: 10 },
@@ -81,7 +81,7 @@ export function UserTable({ rows, isLoading, onEditRow }: UserTableProps) {
             {headers.map((header, idx) => (
               <TableHead
                 key={header}
-                className={`h-10 ${dividerClass} bg-[var(--primary)] p-[8px] text-[11px] leading-[1.15] font-medium text-white whitespace-normal break-words last:border-r-0 ${
+                className={`h-10 ${dividerClass} bg-[var(--primary)] p-[8px] text-[12px] leading-[1.15] font-medium text-white whitespace-normal break-words last:border-r-0 ${
                   idx >= 3 ? "text-center" : ""
                 }`}
               >
@@ -328,3 +328,4 @@ export function UserTable({ rows, isLoading, onEditRow }: UserTableProps) {
     </div>
   )
 }
+

@@ -9,7 +9,7 @@ export function TodoToolbar({ onAddTodo }: TodoToolbarProps) {
       <Button
         type="button"
         onClick={onAddTodo}
-        className="h-9 cursor-pointer rounded-[8px] bg-[#6b5bd6] px-4 text-[12px] font-medium text-white hover:bg-[#6b5bd6]"
+        className="h-9 cursor-pointer rounded-[8px] bg-[#6C5DD3] px-4 text-[12px] font-medium text-white hover:bg-[#6C5DD3]"
       >
         <Plus className="mr-1 size-3.5" />
         Add To Do
@@ -17,3 +17,4 @@ export function TodoToolbar({ onAddTodo }: TodoToolbarProps) {
     </div>
   )
 }
+

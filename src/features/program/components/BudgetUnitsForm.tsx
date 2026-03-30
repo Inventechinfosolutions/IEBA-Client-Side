@@ -88,7 +88,7 @@ export function BudgetUnitsForm({
               event.preventDefault()
             }
           }}
-          className={`${inputHeightClass} rounded-[9px] border border-[#c5cad5] bg-white px-2.5 pr-8 text-[13px] text-[#111827] focus-visible:border-[#8f86f0] focus-visible:ring-1 focus-visible:ring-[#8f86f033]`}
+          className={`${inputHeightClass} rounded-[9px] border border-[#c5cad5] bg-white px-2.5 pr-8 text-[13px] text-[#111827] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]`}
         />
         <div className="pointer-events-none absolute inset-y-0 right-0 flex w-[24px] flex-col border-l border-[#d5daea] opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100">
           <button
@@ -146,7 +146,7 @@ export function BudgetUnitsForm({
                   onBlur={() => window.setTimeout(() => setIsDepartmentOpen(false), 120)}
                   onFocus={() => setIsDepartmentOpen(true)}
                   placeholder="Select Department"
-                  className="h-[44px] rounded-[7px] border border-[#c6cedd] bg-white px-3 pr-8 text-[14px] font-normal text-[#111827] shadow-none placeholder:text-[12px] placeholder:text-[#b0b8c8] focus-visible:border-[#cfc6ff] focus-visible:ring-0"
+                  className="h-[44px] rounded-[7px] border border-[#c6cedd] bg-white px-3 pr-8 text-[14px] font-normal text-[#111827] shadow-none placeholder:text-[12px] placeholder:text-[#b0b8c8] focus-visible:border-[#6C5DD3] focus-visible:ring-0"
                 />
                 <button
                   type="button"
@@ -193,7 +193,7 @@ export function BudgetUnitsForm({
             <Input
               {...form.register("budgetUnitCode")}
               placeholder="Enter budget unit code"
-              className="h-[40px] rounded-[9px] border border-[#c5cad5] bg-white px-2.5 text-[13px] text-[#111827] placeholder:text-[#a7afbf] focus-visible:border-[#8f86f0] focus-visible:ring-1 focus-visible:ring-[#8f86f033]"
+              className="h-[40px] rounded-[9px] border border-[#c5cad5] bg-white px-2.5 text-[13px] text-[#111827] placeholder:text-[#a7afbf] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
             />
           </div>
           <div className="space-y-1">
@@ -201,7 +201,7 @@ export function BudgetUnitsForm({
             <Input
               {...form.register("budgetUnitName")}
               placeholder="Enter budget unit name"
-              className="h-[40px] rounded-[9px] border border-[#c5cad5] bg-white px-2.5 text-[13px] text-[#111827] placeholder:text-[#a7afbf] focus-visible:border-[#8f86f0] focus-visible:ring-1 focus-visible:ring-[#8f86f033]"
+              className="h-[40px] rounded-[9px] border border-[#c5cad5] bg-white px-2.5 text-[13px] text-[#111827] placeholder:text-[#a7afbf] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
             />
           </div>
           <div className="space-y-1">
@@ -209,7 +209,7 @@ export function BudgetUnitsForm({
             <Textarea
               {...form.register("budgetUnitDescription")}
               placeholder="Enter Description"
-              className="!h-[70px] resize-none rounded-[9px] border border-[#c5cad5] bg-white px-2.5 py-2 text-[13px] text-[#111827] placeholder:text-[#a7afbf] focus-visible:border-[#8f86f0] focus-visible:ring-1 focus-visible:ring-[#8f86f033]"
+              className="!h-[70px] resize-none rounded-[9px] border border-[#c5cad5] bg-white px-2.5 py-2 text-[13px] text-[#111827] placeholder:text-[#a7afbf] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
             />
           </div>
           <div className="space-y-1">
@@ -240,7 +240,7 @@ export function BudgetUnitsForm({
                   onBlur={() => window.setTimeout(() => setIsBuNameOpen(false), 120)}
                   onFocus={() => setIsBuNameOpen(true)}
                   placeholder="Select Budget Unit"
-                  className="h-[44px] rounded-[7px] border border-[#c6cedd] bg-white px-3 pr-8 text-[14px] font-normal text-[#111827] shadow-none placeholder:text-[12px] placeholder:text-[#b0b8c8] focus-visible:border-[#cfc6ff] focus-visible:ring-0"
+                  className="h-[44px] rounded-[7px] border border-[#c6cedd] bg-white px-3 pr-8 text-[14px] font-normal text-[#111827] shadow-none placeholder:text-[12px] placeholder:text-[#b0b8c8] focus-visible:border-[#6C5DD3] focus-visible:ring-0"
                 />
                 <button
                   type="button"
@@ -302,7 +302,7 @@ export function BudgetUnitsForm({
               {...form.register("buProgramCode")}
               disabled
               placeholder="Enter BU Code"
-              className="h-[40px] rounded-[9px] border border-[#c5cad5] bg-white px-2.5 text-[13px] text-[#111827] placeholder:text-[#a7afbf] focus-visible:border-[#8f86f0] focus-visible:ring-1 focus-visible:ring-[#8f86f033] disabled:pointer-events-auto disabled:cursor-not-allowed disabled:!border-[0.8px] disabled:!border-[#cfd4dd] disabled:!bg-[#d2d4d9]/20 disabled:!text-black disabled:opacity-100"
+              className="h-[40px] rounded-[9px] border border-[#c5cad5] bg-white px-2.5 text-[13px] text-[#111827] placeholder:text-[#a7afbf] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333] disabled:pointer-events-auto disabled:cursor-not-allowed disabled:!border-[0.8px] disabled:!border-[#cfd4dd] disabled:!bg-[#d2d4d9]/20 disabled:!text-black disabled:opacity-100"
             />
           </div>
           <div className="space-y-1">
@@ -311,7 +311,7 @@ export function BudgetUnitsForm({
               {...form.register("buProgramDepartment")}
               disabled
               placeholder="Select Department"
-              className="h-[40px] rounded-[9px] border border-[#c5cad5] bg-white px-2.5 text-[13px] text-[#111827] placeholder:text-[#a7afbf] focus-visible:border-[#8f86f0] focus-visible:ring-1 focus-visible:ring-[#8f86f033] disabled:pointer-events-auto disabled:cursor-not-allowed disabled:!border-[0.8px] disabled:!border-[#cfd4dd] disabled:!bg-[#d2d4d9]/20 disabled:!text-black disabled:opacity-100"
+              className="h-[40px] rounded-[9px] border border-[#c5cad5] bg-white px-2.5 text-[13px] text-[#111827] placeholder:text-[#a7afbf] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333] disabled:pointer-events-auto disabled:cursor-not-allowed disabled:!border-[0.8px] disabled:!border-[#cfd4dd] disabled:!bg-[#d2d4d9]/20 disabled:!text-black disabled:opacity-100"
             />
           </div>
           <div className="grid grid-cols-2 gap-4">
@@ -320,7 +320,7 @@ export function BudgetUnitsForm({
               <Input
                 {...form.register("buProgramProgramCode")}
                 placeholder="Enter Program Code"
-                className="h-[40px] rounded-[9px] border border-[#c5cad5] bg-white px-2.5 text-[13px] text-[#111827] placeholder:text-[#a7afbf] focus-visible:border-[#8f86f0] focus-visible:ring-1 focus-visible:ring-[#8f86f033]"
+                className="h-[40px] rounded-[9px] border border-[#c5cad5] bg-white px-2.5 text-[13px] text-[#111827] placeholder:text-[#a7afbf] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
               />
             </div>
             <div className="space-y-1">
@@ -328,7 +328,7 @@ export function BudgetUnitsForm({
               <Input
                 {...form.register("buProgramProgramName")}
                 placeholder="Enter Program Name"
-                className="h-[40px] rounded-[9px] border border-[#c5cad5] bg-white px-2.5 text-[13px] text-[#111827] placeholder:text-[#a7afbf] focus-visible:border-[#8f86f0] focus-visible:ring-1 focus-visible:ring-[#8f86f033]"
+                className="h-[40px] rounded-[9px] border border-[#c5cad5] bg-white px-2.5 text-[13px] text-[#111827] placeholder:text-[#a7afbf] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
               />
             </div>
           </div>
@@ -337,7 +337,7 @@ export function BudgetUnitsForm({
             <Textarea
               {...form.register("buProgramDescription")}
               placeholder="Enter Program Description"
-              className="!h-[70px] resize-none rounded-[9px] border border-[#c5cad5] bg-white px-2.5 py-2 text-[13px] text-[#111827] placeholder:text-[#a7afbf] focus-visible:border-[#8f86f0] focus-visible:ring-1 focus-visible:ring-[#8f86f033]"
+              className="!h-[70px] resize-none rounded-[9px] border border-[#c5cad5] bg-white px-2.5 py-2 text-[13px] text-[#111827] placeholder:text-[#a7afbf] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
             />
           </div>
           <div className="space-y-1">
@@ -371,7 +371,7 @@ export function BudgetUnitsForm({
               <Input
                 {...form.register("buSubProgramName")}
                 placeholder="Enter Name"
-                className="h-[44px] rounded-[9px] border border-[#c5cad5] bg-white px-2.5 text-[13px] text-[#111827] placeholder:text-[#a7afbf] focus-visible:border-[#8f86f0] focus-visible:ring-1 focus-visible:ring-[#8f86f033]"
+                className="h-[44px] rounded-[9px] border border-[#c5cad5] bg-white px-2.5 text-[13px] text-[#111827] placeholder:text-[#a7afbf] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
               />
             </div>
             <div className="space-y-1">
@@ -379,7 +379,7 @@ export function BudgetUnitsForm({
               <Input
                 {...form.register("buSubProgramCode")}
                 placeholder="Enter Code"
-                className="h-[44px] rounded-[9px] border border-[#c5cad5] bg-white px-2.5 text-[13px] text-[#111827] placeholder:text-[#a7afbf] focus-visible:border-[#8f86f0] focus-visible:ring-1 focus-visible:ring-[#8f86f033]"
+                className="h-[44px] rounded-[9px] border border-[#c5cad5] bg-white px-2.5 text-[13px] text-[#111827] placeholder:text-[#a7afbf] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
               />
             </div>
           </div>
@@ -388,7 +388,7 @@ export function BudgetUnitsForm({
             <Textarea
               {...form.register("buSubProgramDescription")}
               placeholder="Enter Description"
-              className="!h-[70px] resize-none rounded-[9px] border border-[#c5cad5] bg-white px-2.5 py-2 text-[13px] text-[#111827] placeholder:text-[#a7afbf] focus-visible:border-[#8f86f0] focus-visible:ring-1 focus-visible:ring-[#8f86f033]"
+              className="!h-[70px] resize-none rounded-[9px] border border-[#c5cad5] bg-white px-2.5 py-2 text-[13px] text-[#111827] placeholder:text-[#a7afbf] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
             />
           </div>
           <div className="space-y-1">
@@ -409,7 +409,7 @@ export function BudgetUnitsForm({
                 onBlur={() => window.setTimeout(() => setIsBudgetProgramOpen(false), 120)}
                 onFocus={() => setIsBudgetProgramOpen(true)}
                 placeholder="Select Budget Program"
-                className="h-[44px] rounded-[7px] border border-[#c6cedd] bg-white px-3 pr-8 text-[14px] font-normal text-[#111827] shadow-none placeholder:text-[12px] placeholder:text-[#b0b8c8] focus-visible:border-[#cfc6ff] focus-visible:ring-0"
+                className="h-[44px] rounded-[7px] border border-[#c6cedd] bg-white px-3 pr-8 text-[14px] font-normal text-[#111827] shadow-none placeholder:text-[12px] placeholder:text-[#b0b8c8] focus-visible:border-[#6C5DD3] focus-visible:ring-0"
               />
               <button
                 type="button"
@@ -476,7 +476,7 @@ export function BudgetUnitsForm({
               {...form.register("buSubProgramBudgetCode")}
               disabled
               placeholder="Enter Budget Code"
-              className="h-[40px] rounded-[9px] border border-[#c5cad5] bg-white px-2.5 text-[13px] text-[#111827] placeholder:text-[#a7afbf] focus-visible:border-[#8f86f0] focus-visible:ring-1 focus-visible:ring-[#8f86f033] disabled:pointer-events-auto disabled:cursor-not-allowed disabled:!border-[0.8px] disabled:!border-[#cfd4dd] disabled:!bg-[#d2d4d9]/20 disabled:!text-black disabled:opacity-100"
+              className="h-[40px] rounded-[9px] border border-[#c5cad5] bg-white px-2.5 text-[13px] text-[#111827] placeholder:text-[#a7afbf] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333] disabled:pointer-events-auto disabled:cursor-not-allowed disabled:!border-[0.8px] disabled:!border-[#cfd4dd] disabled:!bg-[#d2d4d9]/20 disabled:!text-black disabled:opacity-100"
             />
           </div>
           <div className="space-y-1">
@@ -485,7 +485,7 @@ export function BudgetUnitsForm({
               {...form.register("buSubProgramDepartment")}
               disabled
               placeholder="Select Department"
-              className="h-[40px] rounded-[9px] border border-[#c5cad5] bg-white px-2.5 text-[13px] text-[#111827] placeholder:text-[#a7afbf] focus-visible:border-[#8f86f0] focus-visible:ring-1 focus-visible:ring-[#8f86f033] disabled:pointer-events-auto disabled:cursor-not-allowed disabled:!border-[0.8px] disabled:!border-[#cfd4dd] disabled:!bg-[#d2d4d9]/20 disabled:!text-black disabled:opacity-100"
+              className="h-[40px] rounded-[9px] border border-[#c5cad5] bg-white px-2.5 text-[13px] text-[#111827] placeholder:text-[#a7afbf] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333] disabled:pointer-events-auto disabled:cursor-not-allowed disabled:!border-[0.8px] disabled:!border-[#cfd4dd] disabled:!bg-[#d2d4d9]/20 disabled:!text-black disabled:opacity-100"
             />
           </div>
           <div className="grid grid-cols-2 gap-4">
@@ -494,7 +494,7 @@ export function BudgetUnitsForm({
               <Input
                 {...form.register("buSubProgramCode")}
                 placeholder="Enter Code"
-                className="h-[40px] rounded-[9px] border border-[#c5cad5] bg-white px-2.5 text-[13px] text-[#111827] placeholder:text-[#a7afbf] focus-visible:border-[#8f86f0] focus-visible:ring-1 focus-visible:ring-[#8f86f033]"
+                className="h-[40px] rounded-[9px] border border-[#c5cad5] bg-white px-2.5 text-[13px] text-[#111827] placeholder:text-[#a7afbf] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
               />
             </div>
             <div className="space-y-1">
@@ -502,7 +502,7 @@ export function BudgetUnitsForm({
               <Input
                 {...form.register("buSubProgramName")}
                 placeholder="Enter Name"
-                className="h-[40px] rounded-[9px] border border-[#c5cad5] bg-white px-2.5 text-[13px] text-[#111827] placeholder:text-[#a7afbf] focus-visible:border-[#8f86f0] focus-visible:ring-1 focus-visible:ring-[#8f86f033]"
+                className="h-[40px] rounded-[9px] border border-[#c5cad5] bg-white px-2.5 text-[13px] text-[#111827] placeholder:text-[#a7afbf] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
               />
             </div>
           </div>
@@ -511,7 +511,7 @@ export function BudgetUnitsForm({
             <Textarea
               {...form.register("buSubProgramDescription")}
               placeholder="Enter Description"
-              className="!h-[70px] resize-none rounded-[9px] border border-[#c5cad5] bg-white px-2.5 py-2 text-[13px] text-[#111827] placeholder:text-[#a7afbf] focus-visible:border-[#8f86f0] focus-visible:ring-1 focus-visible:ring-[#8f86f033]"
+              className="!h-[70px] resize-none rounded-[9px] border border-[#c5cad5] bg-white px-2.5 py-2 text-[13px] text-[#111827] placeholder:text-[#a7afbf] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
             />
           </div>
           <div className="space-y-1">
@@ -523,3 +523,4 @@ export function BudgetUnitsForm({
     </div>
   )
 }
+

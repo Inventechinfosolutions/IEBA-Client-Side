@@ -72,11 +72,11 @@ export function LeaveApprovalTable({
             {headers.map((h) => {
               const isSortable = Boolean(h.sortKey)
               const key = h.sortKey
-              const dividerClass = "border-r border-[1px] border-[#8f86f0]"
+              const dividerClass = "border-r border-[1px] border-[#6C5DD3]"
               return (
                 <TableHead
                   key={h.label + (h.className ?? "")}
-                  className={`h-10 bg-[var(--primary)] p-[10px] text-center text-[11px] font-medium text-white ${dividerClass} ${h.className ?? ""}`}
+                  className={`h-10 bg-[var(--primary)] p-[10px] text-center text-[12px] font-medium text-white ${dividerClass} ${h.className ?? ""}`}
                 >
                   {isSortable && key ? (
                     <TooltipProvider>
@@ -288,4 +288,5 @@ export function LeaveApprovalTable({
     </div>
   )
 }
+
 
