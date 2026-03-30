@@ -2,15 +2,14 @@ import { useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useMutation } from "@tanstack/react-query"
 import { Eye, EyeOff } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useAuth } from "@/contexts/AuthContext"
-
-import { type LoginFormValues, type LoginPayload, type LoginResponse } from "./types"
-import { loginSchema } from "./schemas"
+import { useLogin } from "@/features/auth/mutations/login"
+import { type LoginFormValues } from "@/features/auth/types"
+import { loginSchema } from "@/features/auth/schemas"
 import loginLogo from "@/assets/login-logo.png"
 import loginRightBg from "@/assets/login-right-bg.png"
 import mailIcon from "@/assets/login-mail-icon.png"
@@ -19,8 +18,9 @@ import submitIcon from "@/assets/login-submit-icon.png"
 
 export function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
-  const { error, clearError } = useAuth()
+  const { error, clearError, establishDashboardSession } = useAuth()
   const navigate = useNavigate()
+  const loginMutation = useLogin()
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -33,22 +33,34 @@ export function LoginPage() {
     formState: { errors },
   } = form
 
-  const loginMutation = useMutation<LoginResponse, Error, LoginPayload>({
-    mutationFn: async (payload) => {
-      return { email: payload.email.trim() }
-    },
-    onSuccess: (data, variables) => {
-      clearError()
-      navigate("/otp", {
-        state: { email: data.email, password: variables.password },
-        replace: true,
-      })
-    },
-  })
-
   function onSubmit(values: LoginFormValues) {
-    loginMutation.mutate({ email: values.email, password: values.password })
+    loginMutation.mutate(
+      { email: values.email, password: values.password },
+      {
+        onSuccess: (data, variables) => {
+          clearError()
+          if (data.nextPage === "otp") {
+            navigate("/otp", {
+              state: { email: data.loginId, password: variables.password },
+              replace: true,
+            })
+            return
+          }
+          establishDashboardSession({
+            id: data.userId,
+            name: data.loginId.includes("@")
+              ? (data.loginId.split("@")[0] ?? "User")
+              : data.loginId,
+            email: data.loginId,
+          })
+          navigate("/", { replace: true })
+        },
+      }
+    )
   }
+
+  const loginErrorMessage =
+    loginMutation.error instanceof Error ? loginMutation.error.message : null
 
   return (
     <div className="flex min-h-svh w-full flex-nowrap overflow-hidden bg-white">
@@ -68,9 +80,9 @@ export function LoginPage() {
               <p className="text-[19px] text-gray-500">Access to our dashboard</p>
             </div>
             <form onSubmit={formHandleSubmit(onSubmit)} className="mt-6 space-y-4">
-              {error && (
+              {(loginErrorMessage || error) && (
                 <div className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-600">
-                  {error}
+                  {loginErrorMessage ?? error}
                 </div>
               )}
               <div className="space-y-1">

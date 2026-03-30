@@ -47,10 +47,12 @@ async function apiRequest<T>(
 
   if (!response.ok) {
     const errorBody = await response.json().catch(() => ({}))
-    const message =
-      (errorBody as { message?: string }).message ??
-      (errorBody as { error?: string }).error ??
-      response.statusText
+    const rawMessage =
+      (errorBody as { message?: string | string[] }).message ??
+      (errorBody as { error?: string }).error
+    const message = Array.isArray(rawMessage)
+      ? rawMessage.join(", ")
+      : (rawMessage ?? response.statusText)
     throw new Error(message)
   }
 

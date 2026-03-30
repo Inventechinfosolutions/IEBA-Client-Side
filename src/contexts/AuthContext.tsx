@@ -13,7 +13,7 @@ import {
   getStoredUser,
   setStoredUser,
 } from "@/lib/auth-storage"
-import { login as loginApi } from "@/features/auth/api/login"
+import { login as loginRequest } from "@/features/auth/api/login"
 
 export type User = {
   id: string
@@ -27,6 +27,8 @@ type AuthContextValue = {
   isAuthenticated: boolean
   isLoading: boolean
   signIn: (email: string, password: string) => Promise<void>
+  /** After login when `nextPage` is `dashboard`; token is already in storage from `loginRequest`. */
+  establishDashboardSession: (user: User) => void
   /** Completes OTP flow: sets user + token without API, so user can reach dashboard after county selection. */
   completeOtpSignIn: (email: string) => void
   signOut: () => void
@@ -55,16 +57,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     restoreSession()
   }, [restoreSession])
 
+  const establishDashboardSession = useCallback((authUser: User) => {
+    setError(null)
+    setUser(authUser)
+    setStoredUser(authUser)
+  }, [])
+
   const signIn = useCallback(async (email: string, password: string) => {
     setError(null)
     setAuthLoading(true)
     try {
-      const result = await loginApi({ email, password })
+      const result = await loginRequest({ email, password })
+      if (result.nextPage === "otp") {
+        throw new Error("OTP verification required. Use the login screen to continue.")
+      }
       const authUser: User = {
-        id: result.id,
-        name: result.name,
-        email: result.email,
-        avatar: result.avatar,
+        id: result.userId,
+        name: result.loginId.includes("@")
+          ? (result.loginId.split("@")[0] ?? "User")
+          : result.loginId,
+        email: result.loginId,
       }
       setUser(authUser)
       setStoredUser(authUser)
@@ -104,12 +116,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isAuthenticated: !!user,
       isLoading: isLoading || authLoading,
       signIn,
+      establishDashboardSession,
       completeOtpSignIn,
       signOut,
       error,
       clearError,
     }),
-    [user, isLoading, authLoading, signIn, completeOtpSignIn, signOut, error, clearError]
+    [
+      user,
+      isLoading,
+      authLoading,
+      signIn,
+      establishDashboardSession,
+      completeOtpSignIn,
+      signOut,
+      error,
+      clearError,
+    ]
   )
 
   return (
