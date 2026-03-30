@@ -2,6 +2,7 @@ import { useForm, useFieldArray } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 
 import { Button } from "@/components/ui/button"
+import { EmptyState } from "@/components/ui/empty-state"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   Table,
@@ -14,36 +15,6 @@ import {
 
 import { programsUpdateFormSchema } from "../schemas"
 import type { ProgramTableProps, ProgramsUpdateFormValues } from "../types"
-
-const EmptyState = () => (
-  <div className="flex flex-col items-center justify-center gap-2 py-[58px]">
-    <svg
-      width="56"
-      height="56"
-      viewBox="0 0 56 56"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <rect
-        x="6"
-        y="12"
-        width="44"
-        height="32"
-        rx="4"
-        stroke="#D1D5DB"
-        strokeWidth="2"
-        fill="white"
-      />
-      <path
-        d="M6 30h10l4 6h16l4-6h10"
-        stroke="#D1D5DB"
-        strokeWidth="1.5"
-        strokeLinejoin="round"
-      />
-    </svg>
-    <span className="text-[14px] font-[400] text-[#9CA3AF]">No data</span>
-  </div>
-)
 
 export function ProgramTable({
   programs,
