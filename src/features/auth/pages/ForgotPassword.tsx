@@ -11,8 +11,8 @@ import {
   type ForgotPasswordFormValues,
   type ForgotPasswordPayload,
   type ForgotPasswordResponse,
-} from "./types"
-import { forgotPasswordSchema } from "./schemas"
+} from "@/features/auth/types"
+import { forgotPasswordSchema } from "@/features/auth/schemas"
 import iebaLogo from "@/assets/ieba-logo.png"
 import forgotPasswordBg from "@/assets/forgot-password-bg.png"
 import mailIcon from "@/assets/login-mail-icon.png"

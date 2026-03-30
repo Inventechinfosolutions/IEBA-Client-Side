@@ -23,7 +23,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { useAuth } from "@/contexts/AuthContext"
 
-import { otpSchema } from "./schemas"
+import { otpSchema } from "@/features/auth/schemas"
 import {
   type CompleteSignInPayload,
   type CompleteSignInResponse,
@@ -33,7 +33,7 @@ import {
   type OtpResponse,
   type ResendOtpPayload,
   type ResendOtpResponse,
-} from "./types"
+} from "@/features/auth/types"
 import iebaLogo from "@/assets/ieba-logo.png"
 import forgotPasswordBg from "@/assets/forgot-password-bg.png"
 import mailIcon from "@/assets/login-mail-icon.png"
