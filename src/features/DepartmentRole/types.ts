@@ -17,6 +17,7 @@ export type DepartmentRoleWithChildren = {
     id: string
     roleName: string
     status: RoleStatus
+    isCustom?: boolean
   }>
 }
 
@@ -45,6 +46,8 @@ export type DepartmenRoleTableProps = {
   onPageChange: (page: number) => void
   onPageSizeChange: (pageSize: number) => void
   onView?: (id: string) => void
+  onEdit?: (id: string) => void
+  onToggleChildStatus?: (childId: string, active: boolean) => void
   onOptionAction?: (id: string, action: string) => void
   isLoading?: boolean
 }
@@ -52,7 +55,13 @@ export type DepartmenRoleTableProps = {
 export type DepartmentRoleAddProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onSubmit: (values: AddRoleFormValues) => void
+  departments: readonly string[]
+  initialDepartment?: string
+  mode?: "create" | "edit"
+  editInitialValues?: DepartmentRoleEditInitialValues | null
+  onSubmit: (values:
+    | AddRoleFormValues
+    | { childId: string; roleName: string; active: boolean }) => void
   isSubmitting?: boolean
 }
 
@@ -66,4 +75,11 @@ export type DepartmentRoleViewProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
   role?: DepartmentRoleViewData | null
+}
+
+export type DepartmentRoleEditInitialValues = {
+  childId: string
+  departmentName: string
+  roleName: string
+  active: boolean
 }
