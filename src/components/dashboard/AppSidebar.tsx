@@ -263,6 +263,9 @@ export function AppSidebar() {
                     <Link to="/job-pool">
                       <Layers className="mr-2 size-4" />
                       Job Pool
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
                     <Link to="/fte-allocation">
                       <BarChart2 className="mr-2 size-4" />
                       FTE Allocation

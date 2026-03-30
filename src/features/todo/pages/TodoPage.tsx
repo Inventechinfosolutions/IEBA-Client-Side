@@ -6,6 +6,7 @@ import { TodoFormModal } from "../components/TodoFormModal"
 import { TodoTable } from "../components/TodoTable"
 import { TodoToolbar } from "../components/TodoToolbar"
 import { useTodoModule } from "../hooks/useTodoModule"
+import { TodoStatusEnum } from "../enums/todo-status.enum"
 import type { TodoFormMode, TodoFormValues, TodoRow } from "../types"
 
 const page = 1
@@ -14,7 +15,7 @@ const pageSize = 1000
 const emptyFormValues: TodoFormValues = {
   title: "",
   description: "",
-  status: "New",
+  status: TodoStatusEnum.NEW,
 }
 
 export function TodoPage() {
