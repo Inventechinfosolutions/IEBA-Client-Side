@@ -12,6 +12,7 @@ import {
   CalendarClock,
   LockKeyhole,
   Layers,
+  BarChart2,
 } from "lucide-react"
 
 import {
@@ -53,9 +54,11 @@ const mainNav = [
   { title: "Department Role", url: "/department-role", icon: Building2 },
   { title: "County Activity Code", url: "/county-activity-code", icon: Table2 },
   { title: "Schedule Time Study", url: "/schedule-time-study", icon: CalendarClock },
+  { title: "Department", url: "/department", icon: Building2 },
   { title: "Cost Pool", url: "/costpool", icon: Table2 },
   { title: "Job Classification", url: "/job-classification", icon: Layers },
   { title: "Job Pool", url: "/job-pool", icon: Layers },
+  { title: "FTE Allocation", url: "/fte-allocation", icon: BarChart2 },
 ] as const
 
 export function AppSidebar() {
@@ -239,6 +242,12 @@ export function AppSidebar() {
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
+                    <Link to="/department">
+                      <Building2 className="mr-2 size-4" />
+                      Department
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
                     <Link to="/costpool">
                       <Table2 className="mr-2 size-4" />
                       Cost Pool
@@ -254,6 +263,9 @@ export function AppSidebar() {
                     <Link to="/job-pool">
                       <Layers className="mr-2 size-4" />
                       Job Pool
+                    <Link to="/fte-allocation">
+                      <BarChart2 className="mr-2 size-4" />
+                      FTE Allocation
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
