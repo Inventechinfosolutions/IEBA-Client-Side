@@ -41,7 +41,11 @@ export function LoginPage() {
           clearError()
           if (data.nextPage === "otp") {
             navigate("/otp", {
-              state: { email: data.loginId, password: variables.password },
+              state: {
+                email: data.loginId,
+                password: variables.password,
+                otp: data.otp,
+              },
               replace: true,
             })
             return

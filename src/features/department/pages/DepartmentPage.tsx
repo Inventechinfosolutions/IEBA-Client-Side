@@ -1,7 +1,10 @@
 import { useState } from "react"
+import { useQueryClient } from "@tanstack/react-query"
 import { DepartmentTable } from "../components/DepartmentTable"
 import { DepartmentAddPage } from "../components/DepartmentAddPage"
 import { useDepartments } from "../hooks/useDepartments"
+import { departmentKeys } from "../keys"
+import { loadDepartmentDetailForModal } from "../queries/getDepartmentById"
 import type { DepartmentFilter } from "../types"
 
 const DEFAULT_FILTERS: DepartmentFilter = {
@@ -10,6 +13,7 @@ const DEFAULT_FILTERS: DepartmentFilter = {
 }
 
 export function DepartmentPage() {
+  const queryClient = useQueryClient()
   const [filters, setFilters] = useState<DepartmentFilter>(DEFAULT_FILTERS)
   const {
     departments,
@@ -24,6 +28,10 @@ export function DepartmentPage() {
   const [editingId, setEditingId] = useState<string | null>(null)
 
   const handleEdit = (id: string) => {
+    void queryClient.prefetchQuery({
+      queryKey: departmentKeys.detail(id),
+      queryFn: () => loadDepartmentDetailForModal(queryClient, id),
+    })
     setEditingId(id)
     setIsAddModalOpen(true)
   }

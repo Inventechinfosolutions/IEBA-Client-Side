@@ -1,4 +1,5 @@
-import { useState, useMemo } from "react"
+import { useMemo, useState } from "react"
+import { useQueryClient } from "@tanstack/react-query"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { departmentUpsertSchema } from "../schemas"
@@ -19,9 +20,12 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { toast } from "sonner"
 import { useAddDepartment } from "../mutations/addDepartment"
 import { useUpdateDepartment } from "../mutations/updateDepartment"
-import { MOCK_DEPARTMENTS, MOCK_CONTACTS, DEFAULT_VALUES, MOCK_MULTI_CODE_OPTIONS } from "../queries/getDepartments"
+import { MOCK_CONTACTS, DEFAULT_VALUES } from "../queries/getDepartments"
+import { useGetDepartmentById } from "../queries/getDepartmentById"
+import { useGetMasterCodeOptions } from "../queries/getMasterCodeOptions"
+import { departmentKeys } from "../keys"
 import { 
-    type Department, 
+    type Department,
     type DepartmentAddPageProps, 
     type DepartmentUpsertValues,
     type ActiveTab,
@@ -34,10 +38,12 @@ import {
 } from "../types"
 
 export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
+    const queryClient = useQueryClient()
     const [activeTab, setActiveTab] = useState<ActiveTab>("details")
-    const [detailsTab, setDetailsTab] = useState<DetailsTab>("address")
+    const [detailsTab, setDetailsTab] = useState<DetailsTab>(() => (id ? "primary" : "address"))
     const [showSummaryErrors, setShowSummaryErrors] = useState(false)
     const [isDepartmentSaved, setIsDepartmentSaved] = useState(!!id)
+    const [departmentId, setDepartmentId] = useState<string | null>(id)
     const [showCreateConfirm, setShowCreateConfirm] = useState(false)
     const [showSaveContactConfirm, setShowSaveContactConfirm] = useState(false)
     const [pendingTabChange, setPendingTabChange] = useState<PendingTabChange | null>(null)
@@ -48,25 +54,28 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
     const [isMultiCodesOpen, setIsMultiCodesOpen] = useState(false)
     const [multiCodesSearch, setMultiCodesSearch] = useState("")
 
+    const departmentQuery = useGetDepartmentById(departmentId)
+    const existingDept = departmentQuery.data
+    const isLoadingDept = departmentQuery.isLoading
 
+    const masterCodesQuery = useGetMasterCodeOptions()
+    const masterCodeOptions = masterCodesQuery.data ?? []
+    const isLoadingMasterCodes = masterCodesQuery.isLoading || masterCodesQuery.isFetching
+    const masterCodesErrorMessage =
+        masterCodesQuery.error instanceof Error
+            ? masterCodesQuery.error.message
+            : masterCodesQuery.isError
+              ? "Failed to load master codes"
+              : null
 
-    const [createdId] = useState<string>(() => id || `dept-${Date.now()}`)
+    const valuesFromDepartmentQuery = useMemo((): DepartmentUpsertValues | undefined => {
+        if (!departmentId || !existingDept) return undefined
+        const { id: _deptId, ...rest } = existingDept
+        return rest
+    }, [departmentId, existingDept])
 
-
-
-    const existingDept = useMemo(() => {
-        if (id) {
-            const found = MOCK_DEPARTMENTS.find(d => d.id === id)
-            if (found) {
-                const { id: _id, ...rest } = found
-                return rest
-            }
-        }
-        return null
-    }, [id])
-
-    const { mutate: addDept } = useAddDepartment()
-    const { mutate: updateDept } = useUpdateDepartment()
+    const addDeptMutation = useAddDepartment()
+    const updateDeptMutation = useUpdateDepartment()
 
     const {
         register,
@@ -75,10 +84,12 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
         watch,
         getValues,
         trigger,
+        setError,
         formState: { errors },
     } = useForm<DepartmentUpsertValues>({
         resolver: zodResolver(departmentUpsertSchema),
-        defaultValues: existingDept || DEFAULT_VALUES,
+        defaultValues: DEFAULT_VALUES,
+        values: valuesFromDepartmentQuery,
     })
 
     // Watch values for controlled components like Checkbox
@@ -87,34 +98,75 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
     const currentCode = watch("code")
     const currentName = watch("name")
 
-    const handleSave = () => {
-        const values = getValues()
-        const departmentData = {
-            id: createdId,
-            ...values,
-            active: !!values.active
-        } as Department;
+    const handleSave = async (opts?: { toastMode?: "none" | "createOrUpdate" }): Promise<boolean> => {
+        if (addDeptMutation.isPending || updateDeptMutation.isPending) return false
+        const toastMode = opts?.toastMode ?? "createOrUpdate"
 
-        if (id || isDepartmentSaved) {
-            updateDept(departmentData)
-        } else {
-            addDept(departmentData)
+        const values = getValues()
+        if (departmentId) {
+            try {
+                await updateDeptMutation.mutateAsync({ id: departmentId, values })
+                if (toastMode === "createOrUpdate") {
+                    toast(
+                        <div className="flex items-center gap-2 text-[14px]">
+                            <CheckCircle2 className="w-4 h-4 text-green-500" />
+                            Department Updated Successfully
+                        </div>
+                    )
+                }
+            } catch (err) {
+                toast.error(err instanceof Error ? err.message : "Failed to update department")
+            }
+            return true
+        }
+        try {
+            const created = await addDeptMutation.mutateAsync(values)
+            if (toastMode === "createOrUpdate") {
+                toast(
+                    <div className="flex items-center gap-2 text-[14px]">
+                        <CheckCircle2 className="w-4 h-4 text-green-500" />
+                        Department Created Successfully
+                    </div>
+                )
+            }
+            const nextId = String(created.id)
+            const optimisticDept: Department = {
+                id: nextId,
+                code: values.code.trim(),
+                name: values.name.trim(),
+                active: values.active,
+                address: values.address,
+                primaryContact: values.primaryContact,
+                secondaryContact: values.secondaryContact,
+                billingContact: values.billingContact,
+                settings: values.settings,
+            }
+            queryClient.setQueryData(departmentKeys.detail(nextId), optimisticDept)
+            setDepartmentId(nextId)
+            setIsDepartmentSaved(true)
+            return true
+        } catch (err) {
+            const message =
+                err instanceof Error ? err.message : "Failed to create department"
+            toast.error(message)
+            if (message.toLowerCase().includes("code already exists")) {
+                setError("code", { type: "manual", message })
+            }
+            return false
         }
     }
 
-    const handleActualSave = () => {
-        // Mock save implementation
-        console.log("Saving Department:", getValues())
-        setIsDepartmentSaved(true)
+    const handleActualSave = async () => {
         setShowCreateConfirm(false)
+        const ok = await handleSave()
+        if (!ok) return
         setActiveTab("details")
         setDetailsTab("primary")
-        handleSave()
     }
 
     const handleExit = () => {
         if (isDepartmentSaved) {
-            handleSave()
+            void handleSave()
         }
         onClose()
     }
@@ -156,7 +208,10 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
         if (detailsTab === "primary") setDetailsTab("secondary")
         else if (detailsTab === "secondary") setDetailsTab("billing")
 
-        handleSave()
+        // Only persist to backend after the department exists (created) or in edit mode.
+        if (departmentId) {
+            void handleSave({ toastMode: "none" })
+        }
     }
 
     const onAddressSave = async () => {
@@ -171,13 +226,11 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
         setModifiedContacts((prev: ModifiedContacts) => ({ ...prev, address: false }))
         setIsDepartmentSaved(true)
 
-        if (id) {
-            setDetailsTab("primary")
-        } else {
-            setActiveTab("settings")
-        }
-
-        handleSave()
+        // IMPORTANT: Do not call the backend on "Next".
+        // We only create/update the department when the user clicks Save on the Settings tab.
+        // This prevents premature creates and ensures the payload is sent once (with settings + address).
+        setDetailsTab("primary")
+        if (!id) setActiveTab("settings")
     }
 
     const handleConfirmContactSave = () => {
@@ -212,6 +265,9 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
         if (value === "settings") {
             const isValid = await validateDetailsTab()
             if (!isValid) return
+        }
+        if (value === "details" && (departmentId != null || isDepartmentSaved)) {
+            setDetailsTab("primary")
         }
         setActiveTab(value as ActiveTab)
     }
@@ -250,7 +306,7 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                                 </TabsTrigger>
                                 <TabsTrigger
                                     value="settings"
-                                    disabled={!!id}
+                                    disabled={!!id || isLoadingDept}
                                     className="h-full rounded-[8px] border-0 data-[state=active]:bg-[#6C5DD3] data-[state=active]:text-white data-[state=inactive]:text-[#9CA3AF] font-[500] text-[17px] transition-all shadow-none disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     Department Settings
@@ -577,7 +633,22 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                                                                     </div>
                                                                 </div>
                                                                 <div className="max-h-[200px] overflow-auto space-y-1">
-                                                                    {MOCK_MULTI_CODE_OPTIONS
+                                                                    {masterCodesQuery.isError && masterCodesErrorMessage && (
+                                                                        <div className="px-3 py-2 text-[13px] text-red-600">
+                                                                            {masterCodesErrorMessage}
+                                                                        </div>
+                                                                    )}
+                                                                    {isLoadingMasterCodes && (
+                                                                        <div className="px-3 py-2 text-[13px] text-[#6B7280]">
+                                                                            Loading...
+                                                                        </div>
+                                                                    )}
+                                                                    {!isLoadingMasterCodes && !masterCodesQuery.isError && masterCodeOptions.length === 0 && (
+                                                                        <div className="px-3 py-2 text-[13px] text-[#6B7280]">
+                                                                            No master codes found
+                                                                        </div>
+                                                                    )}
+                                                                    {(isLoadingMasterCodes ? [] : masterCodeOptions)
                                                                         .filter(opt => opt.toLowerCase().includes(multiCodesSearch.toLowerCase()))
                                                                         .map((opt) => {
                                                                             const isSelected = (settings.multiCodes || "").split(",").includes(opt)

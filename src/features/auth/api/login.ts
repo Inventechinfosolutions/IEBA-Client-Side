@@ -9,6 +9,7 @@ export type LoginCredentials = {
 type LoginApiData = {
   userId: string
   loginId: string
+  otp?: string | number
   accessToken?: string
   access_token?: string
   token?: string
@@ -28,6 +29,7 @@ export type LoginResult = {
   loginId: string
  /** Normalized for routing, e.g. `dashboard` | `otp` */
   nextPage: string
+  otp?: string
 }
 
 function parseLoginPayload(json: unknown): LoginApiData {
@@ -46,10 +48,12 @@ function parseLoginPayload(json: unknown): LoginApiData {
   const accessToken =
     (raw.accessToken ?? raw.access_token ?? raw.token) as string | undefined
   const nextPage = (raw.nextPage ?? raw.next_page ?? "dashboard") as string
+  const otp = raw.otp as string | number | undefined
 
   return {
     userId: String(userId),
     loginId: String(loginId),
+    otp,
     accessToken,
     nextPage,
   }
@@ -60,8 +64,9 @@ function extractAccessToken(data: LoginApiData): string {
 }
 
 /**
- * POST `/auth/login` (public). Persists Bearer token when the API returns one
- * (needed for both full dashboard sessions and the OTP step).
+ * POST `/auth/login` (public).
+ * When `nextPage` is `otp`, persists the interim `data.accessToken` via `setToken`
+ * so `POST /auth/validate-otp` can send `Authorization: Bearer <that token>`.
  */
 export async function login(credentials: LoginCredentials): Promise<LoginResult> {
   const body = await api.post<ApiEnvelope<LoginApiData> | LoginApiData>(
@@ -72,6 +77,21 @@ export async function login(credentials: LoginCredentials): Promise<LoginResult>
     },
     { skipAuth: true }
   )
+
+  if (body && typeof body === "object") {
+    const env = body as ApiEnvelope<LoginApiData> & {
+      statusCode?: number | string
+    }
+    if (env.success === false) {
+      throw new Error(env.message ?? "Login failed")
+    }
+    if (env.statusCode !== undefined && env.statusCode !== null) {
+      const code = Number(env.statusCode)
+      if (Number.isFinite(code) && code !== 0) {
+        throw new Error(env.message ?? "Login failed")
+      }
+    }
+  }
 
   const payload = parseLoginPayload(body)
   const token = extractAccessToken(payload)
@@ -86,5 +106,9 @@ export async function login(credentials: LoginCredentials): Promise<LoginResult>
     userId: payload.userId,
     loginId: payload.loginId,
     nextPage,
+    otp:
+      payload.otp == null
+        ? undefined
+        : String(payload.otp).replace(/\D/g, "").slice(0, 6),
   }
 }
