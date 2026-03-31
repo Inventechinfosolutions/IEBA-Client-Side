@@ -296,12 +296,21 @@ function toCreateUpdateDto(values: DepartmentUpsertValues): CreateDepartmentReqD
 export async function getDepartments(params?: {
   page?: number
   limit?: number
+  status?: "active" | "inactive"
 }): Promise<{ items: Department[]; total: number }> {
   const page = params?.page ?? 1
   const limit = params?.limit ?? 100
+  const status = params?.status
+
+  const search = new URLSearchParams()
+  search.set("page", String(page))
+  search.set("limit", String(limit))
+  if (status) {
+    search.set("status", status)
+  }
 
   const res = await api.get<ApiEnvelope<DepartmentListResponseDto>>(
-    `/departments?page=${encodeURIComponent(String(page))}&limit=${encodeURIComponent(String(limit))}`
+    `/departments?${search.toString()}`
   )
 
   const payload = (res?.data ?? res) as DepartmentListResponseDto

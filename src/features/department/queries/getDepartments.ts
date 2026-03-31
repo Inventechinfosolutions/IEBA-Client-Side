@@ -52,15 +52,15 @@ export const MOCK_CONTACTS = [
     { name: 'Nicole Stewart', phone: '+1 987-654-3210', email: 'nstewart@amadorgov.org', location: 'Office 2' }
 ]
 
-async function fetchDepartments(): Promise<Department[]> {
-  const { items } = await getDepartments({ page: 1, limit: 100 })
+async function fetchDepartments(status: "active" | "inactive"): Promise<Department[]> {
+  const { items } = await getDepartments({ page: 1, limit: 100, status })
   return items
 }
 
-export function useGetDepartments() {
+export function useGetDepartments(status: "active" | "inactive") {
   return useQuery({
-    queryKey: departmentKeys.lists(),
-    queryFn: fetchDepartments,
+    queryKey: [...departmentKeys.lists(), status],
+    queryFn: () => fetchDepartments(status),
     // Server is source of truth — never show stale list after DB changes.
     staleTime: 0,
     gcTime: 0,
