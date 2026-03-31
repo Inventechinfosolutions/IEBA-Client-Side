@@ -114,15 +114,22 @@ export function OtpAuthentication() {
         onSuccess: (result) => {
           setToken(result.accessToken)
           const loginId = email.trim()
+          const countyName = selectedCountyLabel ?? ""
           establishDashboardSession({
             id: result.userId,
             name: loginId.includes("@")
               ? (loginId.split("@")[0] ?? "User")
               : loginId,
             email: loginId,
+            namespace: selectedNameSpace,
+            countyName,
           })
           setCountyModalOpen(false)
-          toast.success("Signed in successfully")
+          toast.success("Signed in successfully", {
+            icon: (
+              <CircleCheckIcon className="size-4 shrink-0 text-green-600 dark:text-green-400" />
+            ),
+          })
           navigate("/", { replace: true })
         },
         onError: (error) => {

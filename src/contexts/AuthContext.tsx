@@ -7,6 +7,8 @@ import {
   useState,
 } from "react"
 import { useQueryClient } from "@tanstack/react-query"
+import { toast } from "sonner"
+import { CircleCheckIcon } from "lucide-react"
 
 import { clearToken, getToken } from "@/lib/api"
 import {
@@ -21,6 +23,10 @@ export type User = {
   id: string
   name: string
   email: string
+  /** Selected tenant/namespace key from OTP step. */
+  namespace?: string
+  /** Human-friendly county name for header display, e.g. 'Lassen County'. */
+  countyName?: string
   avatar?: string
 }
 
@@ -91,10 +97,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const signOut = useCallback(() => {
-    void logoutRequest().catch(() => {
-      // Ignore API errors; still clear client-side session.
-      return
-    })
+    void logoutRequest()
+      .then(() => {
+        toast.success("Logged out successfully", {
+          icon: (
+            <CircleCheckIcon className="size-4 shrink-0 text-green-600 dark:text-green-400" />
+          ),
+        })
+      })
+      .catch(() => {
+        // Ignore API errors; still clear client-side session.
+        toast.success("Logged out successfully", {
+          icon: (
+            <CircleCheckIcon className="size-4 shrink-0 text-green-600 dark:text-green-400" />
+          ),
+        })
+      })
     setUser(null)
     queryClient.clear()
     clearToken()
