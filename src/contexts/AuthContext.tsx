@@ -6,6 +6,7 @@ import {
   useMemo,
   useState,
 } from "react"
+import { useQueryClient } from "@tanstack/react-query"
 
 import { clearToken, getToken } from "@/lib/api"
 import {
@@ -14,6 +15,7 @@ import {
   setStoredUser,
 } from "@/lib/auth-storage"
 import { login as loginRequest } from "@/features/auth/api/login"
+import { logout as logoutRequest } from "@/features/auth/api/logout"
 
 export type User = {
   id: string
@@ -41,6 +43,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
   const [authLoading, setAuthLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const queryClient = useQueryClient()
 
   const restoreSession = useCallback(() => {
     const token = getToken()
@@ -88,10 +91,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const signOut = useCallback(() => {
+    void logoutRequest().catch(() => {
+      // Ignore API errors; still clear client-side session.
+      return
+    })
     setUser(null)
+    queryClient.clear()
     clearToken()
     clearStoredUser()
-  }, [])
+  }, [queryClient])
 
   const clearError = useCallback(() => setError(null), [])
 

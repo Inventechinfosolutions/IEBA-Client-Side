@@ -22,14 +22,6 @@ export type OtpResponse = {
   verified: boolean
 }
 
-export type ResendOtpPayload = {
-  email: string
-}
-
-export type ResendOtpResponse = {
-  message: string
-}
-
 /** Tenant key from global namespace API (`nameSpace`); sent when completing OTP county step. */
 export type GlobalNamespaceItem = {
   nameSpace: string

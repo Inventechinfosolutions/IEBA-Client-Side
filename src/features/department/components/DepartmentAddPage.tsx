@@ -563,7 +563,17 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                                                 <Checkbox
                                                     id={setting.key}
                                                     checked={!!settings[setting.key as keyof typeof settings]}
+                                                    disabled={
+                                                        setting.key === "removeAutoFillEndTime" &&
+                                                        settings.removeStartEndTime
+                                                    }
                                                     onCheckedChange={(val) => {
+                                                        if (
+                                                            setting.key === "removeAutoFillEndTime" &&
+                                                            settings.removeStartEndTime
+                                                        ) {
+                                                            return
+                                                        }
                                                         const isChecked = !!val
                                                         const fieldPath = `settings.${setting.key}` as const
                                                         setValue(fieldPath as any, isChecked)
@@ -571,9 +581,17 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                                                             setValue("settings.autoApportioning", true)
                                                         }
                                                     }}
-                                                    className="h-[22px] w-[22px] data-[state=checked]:bg-[#6C5DD3] data-[state=checked]:border-[#6C5DD3]"
+                                                    className="h-[22px] w-[22px] data-[state=checked]:bg-[#6C5DD3] data-[state=checked]:border-[#6C5DD3] disabled:cursor-not-allowed disabled:opacity-50"
                                                 />
-                                                <Label htmlFor={setting.key} className="text-[16px] font-[400] text-[#374151]">
+                                                <Label
+                                                    htmlFor={setting.key}
+                                                    className={`text-[16px] font-[400] text-[#374151] ${
+                                                        setting.key === "removeAutoFillEndTime" &&
+                                                        settings.removeStartEndTime
+                                                            ? "cursor-not-allowed opacity-60"
+                                                            : ""
+                                                    }`}
+                                                >
                                                     {setting.label}
                                                 </Label>
                                             </div>
