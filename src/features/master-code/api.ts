@@ -1,4 +1,4 @@
-import { API_BASE_URL } from "@/lib/config"
+import { api } from "@/lib/api"
 
 import { ActivityStatusEnum } from "@/features/master-code/enums/activity-status.enum"
 import type {
@@ -22,35 +22,6 @@ type ApiActivityCode = {
   status: string
   createdAt?: string
   updatedAt?: string
-}
-
-async function fetchJson<T>(input: RequestInfo | URL, init?: RequestInit): Promise<T> {
-  const res = await fetch(input, {
-    ...init,
-    headers: {
-      "Content-Type": "application/json",
-      ...(init?.headers ?? {}),
-    },
-  })
-
-  if (!res.ok) {
-    let message = `Request failed (${res.status})`
-    try {
-      const data = (await res.json()) as { message?: string; error?: string }
-      message = data?.message || data?.error || message
-    } catch {
-      /* ignore */
-    }
-    throw new Error(message)
-  }
-
-  if (res.status === 204) return undefined as T
-  return (await res.json()) as T
-}
-
-function htmlToPlainDescription(html: string): string {
-  const text = html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim()
-  return text.length > 0 ? text : " "
 }
 
 function formatPercent(value: number): string {
@@ -105,18 +76,16 @@ export async function apiGetActivityCodesPage(params: {
   inactiveOnly: boolean
 }): Promise<MasterCodeListResponse> {
   const limit = Math.min(100, Math.max(1, params.pageSize))
-  const url = new URL(`${API_BASE_URL}/activity-codes`, window.location.origin)
-  url.searchParams.set("page", String(params.page))
-  url.searchParams.set("limit", String(limit))
-  url.searchParams.set("sort", "ASC")
-  url.searchParams.set("sortField", "code")
-  url.searchParams.set("type", params.codeType)
-  url.searchParams.set(
-    "status",
-    params.inactiveOnly ? ActivityStatusEnum.INACTIVE : ActivityStatusEnum.ACTIVE
-  )
+  const search = new URLSearchParams({
+    page: String(params.page),
+    limit: String(limit),
+    sort: "ASC",
+    sortField: "code",
+    type: params.codeType,
+    status: params.inactiveOnly ? ActivityStatusEnum.INACTIVE : ActivityStatusEnum.ACTIVE,
+  })
 
-  const raw = await fetchJson<unknown>(url)
+  const raw = await api.get<unknown>(`/activity-codes?${search.toString()}`)
   const { data, meta } = unwrapActivityListPayload(raw)
   return {
     items: data.map(normalizeActivityCodeRow),
@@ -130,7 +99,8 @@ function buildCreateBody(codeType: MasterCodeTab, values: MasterCodeFormValues) 
     code: values.code.trim(),
     type: codeType,
     name: values.name.trim(),
-    description: htmlToPlainDescription(values.activityDescription ?? ""),
+    // keep rich text (HTML) so bold/italic etc. are stored in DB
+    description: (values.activityDescription ?? "").trim(),
     percent: Number.isNaN(percent) ? 0 : percent,
     spmp: values.spmp,
     allocable: values.allocable,
@@ -147,7 +117,8 @@ function buildUpdateBody(codeType: MasterCodeTab, values: MasterCodeFormValues) 
     code: values.code.trim(),
     type: codeType,
     name: values.name.trim(),
-    description: htmlToPlainDescription(values.activityDescription ?? ""),
+    // keep rich text (HTML) so bold/italic etc. are stored in DB
+    description: (values.activityDescription ?? "").trim(),
     percent: Number.isNaN(percent) ? 0 : percent,
     spmp: values.spmp,
     allocable: values.allocable,
@@ -162,16 +133,16 @@ export async function apiCreateActivityCode(input: {
   codeType: MasterCodeTab
   values: MasterCodeFormValues
 }): Promise<MasterCodeRow> {
-  const raw = await fetchJson<{ data?: { id: number } }>(`${API_BASE_URL}/activity-codes`, {
-    method: "POST",
-    body: JSON.stringify(buildCreateBody(input.codeType, input.values)),
-  })
+  const raw = await api.post<{ data?: { id: number } }>(
+    "/activity-codes",
+    buildCreateBody(input.codeType, input.values)
+  )
   const createdId = (raw as { data?: { id: number } })?.data?.id
   if (createdId == null) {
     throw new Error("Create response missing id")
   }
-  const detail = await fetchJson<{ data?: ApiActivityCode }>(
-    `${API_BASE_URL}/activity-codes/${encodeURIComponent(String(createdId))}`
+  const detail = await api.get<{ data?: ApiActivityCode }>(
+    `/activity-codes/${encodeURIComponent(String(createdId))}`
   )
   const entity = (detail as { data?: ApiActivityCode })?.data
   if (!entity) throw new Error("Failed to load created activity code")
@@ -183,19 +154,16 @@ export async function apiUpdateActivityCode(input: {
   codeType: MasterCodeTab
   values: MasterCodeFormValues
 }): Promise<MasterCodeRow> {
-  const raw = await fetchJson<{ data?: ApiActivityCode }>(
-    `${API_BASE_URL}/activity-codes/${encodeURIComponent(input.id)}`,
-    {
-      method: "PUT",
-      body: JSON.stringify(buildUpdateBody(input.codeType, input.values)),
-    }
+  const raw = await api.put<{ data?: ApiActivityCode }>(
+    `/activity-codes/${encodeURIComponent(input.id)}`,
+    buildUpdateBody(input.codeType, input.values)
   )
   const entity = (raw as { data?: ApiActivityCode })?.data
   if (!entity) throw new Error("Update response missing data")
   return normalizeActivityCodeRow(entity)
 }
 
-// ─── Tenant master-codes: `/master-codes` (tabs + allowMulticode) ─────────────
+// ─── Tenant master-codes: by-name + PUT ───────────────────────────────────────
 
 type ApiTenantMasterCode = {
   id: number
@@ -216,52 +184,35 @@ function normalizeTenantMasterCode(raw: ApiTenantMasterCode): TenantMasterCodeRo
   }
 }
 
-function unwrapMasterCodeListPayload(raw: unknown): {
-  data: ApiTenantMasterCode[]
-  meta: { totalItems: number; hasNextPage: boolean }
-} {
-  const root = raw as {
-    data?: { data?: ApiTenantMasterCode[]; meta?: { totalItems?: number; hasNextPage?: boolean } }
+function unwrapTenantMasterDetail(raw: unknown): ApiTenantMasterCode | null {
+  if (raw == null || typeof raw !== "object") return null
+  const o = raw as Record<string, unknown>
+  const inner = o.data
+  if (inner && typeof inner === "object" && "id" in (inner as object)) {
+    return inner as ApiTenantMasterCode
   }
-  const inner = root?.data
-  return {
-    data: Array.isArray(inner?.data) ? inner.data : [],
-    meta: {
-      totalItems: Number(inner?.meta?.totalItems ?? 0),
-      hasNextPage: Boolean(inner?.meta?.hasNextPage),
-    },
+  if ("id" in o && typeof (o as { id?: unknown }).id === "number") {
+    return o as unknown as ApiTenantMasterCode
   }
+  return null
 }
 
-export async function apiListTenantMasterCodes(params: {
-  page: number
-  limit: number
-}): Promise<{ items: TenantMasterCodeRow[]; totalItems: number }> {
-  const url = new URL(`${API_BASE_URL}/master-codes`, window.location.origin)
-  url.searchParams.set("page", String(params.page))
-  url.searchParams.set("limit", String(Math.min(100, params.limit)))
-  const raw = await fetchJson<unknown>(url)
-  const { data, meta } = unwrapMasterCodeListPayload(raw)
-  return {
-    items: data.map(normalizeTenantMasterCode),
-    totalItems: meta.totalItems,
+/**
+ * `GET /master-codes/by-name?name=` — exact name (e.g. FFP). Returns null if not found (404).
+ */
+export async function apiGetTenantMasterCodeByName(
+  name: MasterCodeTab
+): Promise<TenantMasterCodeRow | null> {
+  const search = new URLSearchParams({ name })
+  try {
+    const raw = await api.get<unknown>(`/master-codes/by-name?${search.toString()}`)
+    const entity = unwrapTenantMasterDetail(raw)
+    if (!entity) return null
+    return normalizeTenantMasterCode(entity)
+  } catch (e) {
+    if (e instanceof Error && /not found|404/i.test(e.message)) return null
+    throw e
   }
-}
-
-/** Fetch all master-code rows (tabs) — backend list is paginated. */
-export async function apiListAllTenantMasterCodes(): Promise<TenantMasterCodeRow[]> {
-  const out: TenantMasterCodeRow[] = []
-  let page = 1
-  const limit = 100
-  let guard = 0
-  while (guard < 500) {
-    guard++
-    const { items, totalItems } = await apiListTenantMasterCodes({ page, limit })
-    out.push(...items)
-    if (items.length < limit || out.length >= totalItems) break
-    page++
-  }
-  return out
 }
 
 export async function apiUpdateTenantMasterCode(input: {
@@ -272,12 +223,9 @@ export async function apiUpdateTenantMasterCode(input: {
     status: (typeof ActivityStatusEnum)[keyof typeof ActivityStatusEnum]
   }>
 }): Promise<TenantMasterCodeRow> {
-  const raw = await fetchJson<{ data?: ApiTenantMasterCode }>(
-    `${API_BASE_URL}/master-codes/${encodeURIComponent(String(input.id))}`,
-    {
-      method: "PUT",
-      body: JSON.stringify(input.body),
-    }
+  const raw = await api.put<{ data?: ApiTenantMasterCode }>(
+    `/master-codes/${encodeURIComponent(String(input.id))}`,
+    input.body
   )
   const entity = (raw as { data?: ApiTenantMasterCode })?.data
   if (!entity) throw new Error("Master code update response missing data")

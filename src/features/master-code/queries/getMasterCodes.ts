@@ -7,13 +7,16 @@ import type { GetMasterCodesParams } from "../types"
 export function useGetMasterCodes(params: GetMasterCodesParams) {
   return useQuery({
     queryKey: masterCodeKeys.list(params),
-    queryFn: () =>
-      apiGetActivityCodesPage({
-        codeType: params.codeType!,
-        page: params.page,
-        pageSize: params.pageSize,
-        inactiveOnly: params.inactiveOnly,
-      }),
+    queryFn: () => {
+      const { codeType, page, pageSize, inactiveOnly } = params
+      if (!codeType) throw new Error("codeType is required")
+      return apiGetActivityCodesPage({
+        codeType,
+        page,
+        pageSize,
+        inactiveOnly,
+      })
+    },
     enabled: Boolean(params.codeType),
     staleTime: 30_000,
     gcTime: 5 * 60_000,

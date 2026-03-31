@@ -9,7 +9,7 @@ export function useUpdateTenantMasterCode() {
   return useMutation({
     mutationFn: apiUpdateTenantMasterCode,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: masterCodeKeys.tenantMasterCodes() })
+      queryClient.invalidateQueries({ queryKey: [...masterCodeKeys.all, "tenant-by-name"] })
     },
   })
 }

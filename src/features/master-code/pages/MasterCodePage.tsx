@@ -7,11 +7,9 @@ import { MasterCodePagination } from "../components/MasterCodePagination.tsx"
 import { MasterCodeTable } from "../components/MasterCodeTable.tsx"
 import { MasterCodeTabs } from "../components/MasterCodeTabs.tsx"
 import { MasterCodeToolbar } from "../components/MasterCodeToolbar.tsx"
-import { ActivityStatusEnum } from "../enums/activity-status.enum"
-import { isMasterCodeType } from "../enums/master-code-type.enum"
 import { useMasterCodes } from "../hooks/useMasterCodes"
 import { useUpdateTenantMasterCode } from "../mutations/updateTenantMasterCode"
-import { useTenantMasterCodesAll } from "../queries/getTenantMasterCodes"
+import { useTenantMasterCodeByName } from "../queries/getTenantMasterCodes"
 import {
   MASTER_CODE_TYPE_TAB_ORDER,
   type MasterCodeFormMode,
@@ -53,25 +51,17 @@ export function MasterCodePage() {
   const [selectedRow, setSelectedRow] = useState<MasterCodeRow | null>(null)
   const [modalSessionId, setModalSessionId] = useState(0)
 
-  const tenantMasterQuery = useTenantMasterCodesAll()
   const updateTenantMaster = useUpdateTenantMasterCode()
 
-  const tabs = useMemo<MasterCodeTab[]>(() => {
-    const items = tenantMasterQuery.data ?? []
-    const activeFromDb = new Set(
-      items
-        .filter((m) => m.status === ActivityStatusEnum.ACTIVE)
-        .map((m) => m.name)
-        .filter(isMasterCodeType)
-    )
-    return MASTER_CODE_TYPE_TAB_ORDER.filter((t) => activeFromDb.has(t))
-  }, [tenantMasterQuery.data])
+  const tabs = MASTER_CODE_TYPE_TAB_ORDER
 
   const activeTab: MasterCodeTab | "" = useMemo(() => {
     if (tabs.length === 0) return ""
     if (selectedTab && tabs.includes(selectedTab)) return selectedTab
     return tabs[0]!
   }, [selectedTab, tabs])
+
+  const tenantMasterQuery = useTenantMasterCodeByName(activeTab)
 
   const page = pageByTab[activeTab] ?? 1
 
@@ -83,7 +73,7 @@ export function MasterCodePage() {
   })
   const rows = masterCodes.rows
 
-  const selectedTenantMaster = (tenantMasterQuery.data ?? []).find((m) => m.name === activeTab)
+  const selectedTenantMaster = tenantMasterQuery.data ?? undefined
   const allowMultiCodes =
     selectedTenantMaster != null ? selectedTenantMaster.allowMulticode : allowMultiCodesLocal
 

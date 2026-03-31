@@ -1,4 +1,4 @@
-import { API_BASE_URL } from "@/lib/config"
+import { api } from "@/lib/api"
 
 import { TodoStatusEnum } from "./enums/todo-status.enum"
 import type { TodoListResponse, TodoRow } from "./types"
@@ -23,30 +23,6 @@ function formatDateLabel(value: unknown): string {
     day: "numeric",
     year: "numeric",
   }).format(date)
-}
-
-async function fetchJson<T>(input: RequestInfo | URL, init?: RequestInit): Promise<T> {
-  const res = await fetch(input, {
-    ...init,
-    headers: {
-      "Content-Type": "application/json",
-      ...(init?.headers ?? {}),
-    },
-  })
-
-  if (!res.ok) {
-    let message = `Request failed (${res.status})`
-    try {
-      const data = (await res.json()) as any
-      message = data?.message || data?.error || message
-    } catch {
-      // ignore
-    }
-    throw new Error(message)
-  }
-
-  if (res.status === 204) return undefined as T
-  return (await res.json()) as T
 }
 
 function normalizeTodoRow(raw: any): TodoRow {
@@ -90,10 +66,10 @@ function normalizeTodoListResponse(raw: any): TodoListResponse {
 }
 
 export async function apiGetTodos(params: { page?: number; pageSize?: number }) {
-  const url = new URL(`${API_BASE_URL}/todos`, window.location.origin)
-  if (params.page) url.searchParams.set("page", String(params.page))
-  if (params.pageSize) url.searchParams.set("limit", String(Math.min(100, params.pageSize)))
-  const raw = await fetchJson<any>(url)
+  const search = new URLSearchParams()
+  if (params.page) search.set("page", String(params.page))
+  if (params.pageSize) search.set("limit", String(Math.min(100, params.pageSize)))
+  const raw = await api.get<any>(`/todos?${search.toString()}`)
   // Backend wraps in ApiResponseDto { data, message, ... }
   return normalizeTodoListResponse(raw?.data ?? raw)
 }
@@ -104,14 +80,11 @@ export async function apiCreateTodo(input: {
   userId?: string
   status: TodoStatusEnum
 }) {
-  const raw = await fetchJson<any>(`${API_BASE_URL}/todos`, {
-    method: "POST",
-    body: JSON.stringify({
-      title: input.title,
-      description: input.description,
-      userId: input.userId,
-      status: input.status,
-    }),
+  const raw = await api.post<any>("/todos", {
+    title: input.title,
+    description: input.description,
+    userId: input.userId,
+    status: input.status,
   })
   return normalizeTodoRow(raw)
 }
@@ -123,14 +96,11 @@ export async function apiUpdateTodo(input: {
   userId?: string
   status: TodoStatusEnum
 }) {
-  const raw = await fetchJson<any>(`${API_BASE_URL}/todos/${encodeURIComponent(input.id)}`, {
-    method: "PUT",
-    body: JSON.stringify({
-      title: input.title,
-      description: input.description,
-      userId: input.userId,
-      status: input.status,
-    }),
+  const raw = await api.put<any>(`/todos/${encodeURIComponent(input.id)}`, {
+    title: input.title,
+    description: input.description,
+    userId: input.userId,
+    status: input.status,
   })
   return normalizeTodoRow(raw)
 }

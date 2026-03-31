@@ -8,7 +8,7 @@ import { masterCodeFormSchema } from "./schemas"
 
 export type MasterCodeTab = (typeof MasterCodeTypeEnum)[keyof typeof MasterCodeTypeEnum]
 
-/** Tab strip order (UI); which tabs appear comes from `GET /master-codes` (active rows). */
+/** Tab strip order (UI); tab labels match `MasterCodeTypeEnum` / activity `type` — not loaded from DB. */
 export const MASTER_CODE_TYPE_TAB_ORDER: MasterCodeTab[] = [
   MasterCodeTypeEnum.FFP,
   MasterCodeTypeEnum.MAA,
@@ -46,7 +46,7 @@ export type MasterCodeListResponse = {
   totalItems: number
 }
 
-/** Row from `GET /api/v1/master-codes` */
+/** Row from `GET /api/v1/master-codes/by-name` or list/detail responses */
 export type TenantMasterCodeRow = {
   id: number
   name: string
