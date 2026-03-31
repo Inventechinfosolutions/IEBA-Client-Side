@@ -8,7 +8,7 @@ export function useDepartments(filters: DepartmentFilter) {
     pageSize: 10,
   })
 
-  const { data: allDepartments = [], isLoading } = useGetDepartments()
+  const { data: allDepartments = [], isLoading, isFetching } = useGetDepartments()
 
   const filteredDepartments = useMemo(() => {
     return allDepartments.filter((dept) => {
@@ -38,7 +38,7 @@ export function useDepartments(filters: DepartmentFilter) {
   return {
     departments: paginatedDepartments,
     totalItems: filteredDepartments.length,
-    isLoading,
+    isLoading: isLoading || isFetching,
     pagination: {
       ...pagination,
       totalItems: filteredDepartments.length,

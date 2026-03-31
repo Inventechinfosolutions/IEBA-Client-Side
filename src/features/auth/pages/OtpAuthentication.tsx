@@ -22,11 +22,12 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { useAuth } from "@/contexts/AuthContext"
+import { setToken } from "@/lib/api"
 
 import { otpSchema } from "@/features/auth/schemas"
+import { useGlobalNamespaces } from "@/features/auth/queries/getGlobalNamespaces"
+import { useValidateLoginOtp } from "@/features/auth/mutations/useValidateLoginOtp"
 import {
-  type CompleteSignInPayload,
-  type CompleteSignInResponse,
   type OtpFormValues,
   type OtpLocationState,
   type OtpPayload,
@@ -39,29 +40,23 @@ import forgotPasswordBg from "@/assets/forgot-password-bg.png"
 import mailIcon from "@/assets/login-mail-icon.png"
 import submitIcon from "@/assets/login-submit-icon.png"
 
-const COUNTY_OPTIONS = [
-  { value: "los-angeles", label: "Los Angeles County" },
-  { value: "orange", label: "Orange County" },
-  { value: "san-diego", label: "San Diego County" },
-  { value: "riverside", label: "Riverside County" },
-  { value: "san-bernardino", label: "San Bernardino County" },
-]
-
 export function OtpAuthentication() {
   const [countyModalOpen, setCountyModalOpen] = useState(false)
-  const [selectedCounty, setSelectedCounty] = useState<string | undefined>(undefined)
+  /** Selected tenant `nameSpace` from global API (display uses `countyName`). */
+  const [selectedNameSpace, setSelectedNameSpace] = useState<string | undefined>(undefined)
   const [countyError, setCountyError] = useState(false)
   const [countyDropdownOpen, setCountyDropdownOpen] = useState(false)
   const [countySearch, setCountySearch] = useState("")
-  const { completeOtpSignIn } = useAuth()
+  const { establishDashboardSession } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const state = location.state as OtpLocationState | null
   const email = state?.email ?? ""
   const hasCredentials = Boolean(state?.email && state?.password)
+  const initialOtp = (state?.otp ?? "").replace(/\D/g, "").slice(0, 6)
   const form = useForm<OtpFormValues>({
     resolver: zodResolver(otpSchema),
-    defaultValues: { otp: "" },
+    defaultValues: { otp: initialOtp },
   })
   const {
     register,
@@ -72,9 +67,7 @@ export function OtpAuthentication() {
   } = form
   const otpValue = watch("otp")
 
-  if (!hasCredentials) {
-    return <Navigate to="/login" replace />
-  }
+  const globalNamespacesQuery = useGlobalNamespaces(countyModalOpen && hasCredentials)
 
   const verifyOtpMutation = useMutation<OtpResponse, Error, OtpPayload>({
     mutationFn: async (payload) => ({
@@ -96,41 +89,59 @@ export function OtpAuthentication() {
     onError: (error) => toast.error(error.message || "Failed to resend OTP"),
   })
 
-  const completeSignInMutation = useMutation<
-    CompleteSignInResponse,
-    Error,
-    CompleteSignInPayload
-  >({
-    mutationFn: async (payload) => {
-      completeOtpSignIn(payload.email)
-      return { success: true }
-    },
-    onSuccess: () => {
-      toast.success("Signed in successfully")
-      navigate("/", { replace: true })
-    },
-    onError: (error) => {
-      toast.error(error.message || "Failed to sign in")
-    },
-  })
+  const validateLoginOtpMutation = useValidateLoginOtp()
+
+  if (!hasCredentials) {
+    return <Navigate to="/login" replace />
+  }
 
   function handleSubmit(values: OtpFormValues) {
     verifyOtpMutation.mutate({ otp: values.otp })
   }
 
   function handleCountyOk() {
-    if (!selectedCounty) {
+    if (!selectedNameSpace) {
       setCountyError(true)
       return
     }
+    const otp = otpValue.replace(/\D/g, "").slice(0, 6)
+    if (otp.length < 6) {
+      toast.error("Enter a valid 6-digit OTP on the previous step")
+      return
+    }
     setCountyError(false)
-    setCountyModalOpen(false)
-    completeSignInMutation.mutate({ email, county: selectedCounty })
+    validateLoginOtpMutation.mutate(
+      {
+        loginId: email.trim(),
+        otp,
+        journey: "dashboard",
+        nameSpace: selectedNameSpace,
+      },
+      {
+        onSuccess: (result) => {
+          setToken(result.accessToken)
+          const loginId = email.trim()
+          establishDashboardSession({
+            id: result.userId,
+            name: loginId.includes("@")
+              ? (loginId.split("@")[0] ?? "User")
+              : loginId,
+            email: loginId,
+          })
+          setCountyModalOpen(false)
+          toast.success("Signed in successfully")
+          navigate("/", { replace: true })
+        },
+        onError: (error) => {
+          toast.error(error.message || "OTP verification failed")
+        },
+      }
+    )
   }
 
   function handleCountyCancel() {
     setCountyModalOpen(false)
-    setSelectedCounty(undefined)
+    setSelectedNameSpace(undefined)
     setCountyError(false)
     setCountyDropdownOpen(false)
     setCountySearch("")
@@ -144,12 +155,13 @@ export function OtpAuthentication() {
     resendOtpMutation.mutate({ email })
   }
 
-  const selectedCountyLabel = COUNTY_OPTIONS.find(
-    (county) => county.value === selectedCounty
-  )?.label
+  const namespaceRows = globalNamespacesQuery.data ?? []
+  const selectedCountyLabel = namespaceRows.find(
+    (row) => row.nameSpace === selectedNameSpace
+  )?.countyName
 
-  const filteredCountyOptions = COUNTY_OPTIONS.filter((county) =>
-    county.label.toLowerCase().includes(countySearch.toLowerCase())
+  const filteredCountyOptions = namespaceRows.filter((row) =>
+    row.countyName.toLowerCase().includes(countySearch.toLowerCase())
   )
 
   return (
@@ -282,7 +294,7 @@ export function OtpAuthentication() {
         <div className="px-8 pb-10 pt-1 sm:px-9">
           <div className="mb-3 w-full">
             <h6 className="block text-left text-[16px] font-normal leading-tight text-[#000000E0]">
-              Pick a county to proceed
+              Pick a namespace to proceed
             </h6>
           </div>
           <div className="flex w-full justify-center">
@@ -296,7 +308,7 @@ export function OtpAuthentication() {
                   <Input
                     value={countySearch}
                     onChange={(e) => setCountySearch(e.target.value)}
-                    placeholder="Search county"
+                    placeholder="Search namespace"
                     autoFocus
                     className="h-full border-0 bg-transparent pl-4 pr-11 text-[16px] shadow-none focus-visible:ring-0"
                   />
@@ -313,8 +325,8 @@ export function OtpAuthentication() {
                     countyError ? "border-red-500 ring-1 ring-red-500" : "border-[#d9d9d9]"
                   }`}
                 >
-                  <span className={`text-[16px] ${selectedCounty ? "text-[#000000D9]" : "text-[#00000073]"}`}>
-                    {selectedCountyLabel ?? "Select county"}
+                  <span className={`text-[16px] ${selectedNameSpace ? "text-[#000000D9]" : "text-[#00000073]"}`}>
+                    {selectedCountyLabel ?? "Select namespace"}
                   </span>
                   <ChevronDown className="h-5 w-5 text-[#00000073]" />
                 </button>
@@ -323,28 +335,50 @@ export function OtpAuthentication() {
               {countyDropdownOpen && (
                 <div className="absolute left-0 top-[66px] z-50 w-full overflow-hidden rounded-[14px] border border-[#d9d9d9] bg-white shadow-md">
                   <div className="max-h-[220px] overflow-y-auto py-1">
-                    {filteredCountyOptions.map((county) => (
-                      <button
-                        key={county.value}
-                        type="button"
-                        onClick={() => {
-                          setSelectedCounty(county.value)
-                          setCountyError(false)
-                          setCountyDropdownOpen(false)
-                          setCountySearch("")
-                        }}
-                        className={`block w-full px-5 py-1.5 text-left text-[16px] ${
-                          selectedCounty === county.value
-                            ? "bg-[#e6f4ff] font-semibold text-[#000000D9]"
-                            : "text-[#000000D9] hover:bg-[#f5f5f5]"
-                        }`}
-                      >
-                        {county.label}
-                      </button>
-                    ))}
-                    {filteredCountyOptions.length === 0 && (
+                    {globalNamespacesQuery.isLoading && (
                       <div className="px-5 py-2 text-[15px] text-[#00000073]">
-                        No county found
+                        Loading namespaces…
+                      </div>
+                    )}
+                    {globalNamespacesQuery.isError && (
+                      <div className="space-y-2 px-5 py-2">
+                        <p className="text-[15px] text-red-500" role="alert">
+                          {globalNamespacesQuery.error instanceof Error
+                            ? globalNamespacesQuery.error.message
+                            : "Failed to load namespaces"}
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => void globalNamespacesQuery.refetch()}
+                          className="text-sm text-[#6C5DD3] underline underline-offset-2"
+                        >
+                          Retry
+                        </button>
+                      </div>
+                    )}
+                    {globalNamespacesQuery.isSuccess &&
+                      filteredCountyOptions.map((row) => (
+                        <button
+                          key={row.nameSpace}
+                          type="button"
+                          onClick={() => {
+                            setSelectedNameSpace(row.nameSpace)
+                            setCountyError(false)
+                            setCountyDropdownOpen(false)
+                            setCountySearch("")
+                          }}
+                          className={`block w-full px-5 py-1.5 text-left text-[16px] ${
+                            selectedNameSpace === row.nameSpace
+                              ? "bg-[#e6f4ff] font-semibold text-[#000000D9]"
+                              : "text-[#000000D9] hover:bg-[#f5f5f5]"
+                          }`}
+                        >
+                          {row.countyName}
+                        </button>
+                      ))}
+                    {globalNamespacesQuery.isSuccess && filteredCountyOptions.length === 0 && (
+                      <div className="px-5 py-2 text-[15px] text-[#00000073]">
+                        No namespace found
                       </div>
                     )}
                   </div>
@@ -354,7 +388,7 @@ export function OtpAuthentication() {
           </div>
           {countyError && (
             <p className="mt-1.5 text-center text-xs text-red-500" role="alert">
-              Please select the county
+              Please select a namespace
             </p>
           )}
         </div>
@@ -362,9 +396,10 @@ export function OtpAuthentication() {
           <Button
             type="button"
             onClick={handleCountyOk}
-            className="h-[35px] min-w-[62px] rounded-[6px] border-0 bg-[#6C5DD3] px-4 text-[15px] font-normal text-white hover:bg-[#5f52bd]"
+            disabled={validateLoginOtpMutation.isPending}
+            className="h-[35px] min-w-[62px] rounded-[6px] border-0 bg-[#6C5DD3] px-4 text-[15px] font-normal text-white hover:bg-[#5f52bd] disabled:opacity-60"
           >
-            OK
+            {validateLoginOtpMutation.isPending ? "Verifying…" : "OK"}
           </Button>
           <Button
             type="button"

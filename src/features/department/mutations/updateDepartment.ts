@@ -1,24 +1,18 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { departmentKeys } from "../keys"
-import { MOCK_DEPARTMENTS } from "../queries/getDepartments"
-import type { Department } from "../types"
-
-async function updateDepartment(updatedDept: Department): Promise<Department> {
-  await new Promise((resolve) => setTimeout(resolve, 500))
-  const index = MOCK_DEPARTMENTS.findIndex((d) => d.id === updatedDept.id)
-  if (index !== -1) {
-    MOCK_DEPARTMENTS[index] = updatedDept
-  }
-  return updatedDept
-}
+import type { DepartmentUpsertValues } from "../types"
+import { updateDepartment as updateDepartmentApi } from "../api/departments"
 
 export function useUpdateDepartment() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: updateDepartment,
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: departmentKeys.lists() })
-      queryClient.invalidateQueries({ queryKey: departmentKeys.detail(data.id) })
+    mutationFn: (payload: { id: string; values: DepartmentUpsertValues }) =>
+      updateDepartmentApi(payload.id, payload.values),
+    onSuccess: async (_data, payload) => {
+      await queryClient.invalidateQueries({ queryKey: departmentKeys.all })
+      await queryClient.invalidateQueries({
+        queryKey: departmentKeys.detail(payload.id),
+      })
     },
   })
 }

@@ -162,7 +162,7 @@ export function DepartmentTable({
 
   return (
     <div className="flex flex-1 flex-col gap-[24px]">
-      {/* ── Header Actions ──────────────────────────────────────────────── */}
+  
       <div className="flex items-center justify-between">
         <div className="w-[300px]">
           <Input

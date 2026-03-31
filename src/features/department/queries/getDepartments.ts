@@ -1,172 +1,47 @@
 import { useQuery } from "@tanstack/react-query"
 import { departmentKeys } from "../keys"
 import type { Department, DepartmentUpsertValues } from "../types"
-
-export const MOCK_DEPARTMENTS: Department[] = [
-  {
-    id: "1",
-    code: "BH-401300",
-    name: "Behavioral Health",
-    active: true,
-    address: {
-      street: "20075 Cedar Rd N",
-      city: "Sonora",
-      state: "California",
-      zip: "95370",
-    },
-    primaryContact: {
-      name: "Kyle Teuton",
-      phone: "",
-      email: "kteuton@co.tuolumne.ca.us",
-      location: "",
-    },
-    secondaryContact: {
-      name: "Not Assigned",
-      phone: "",
-      email: "",
-      location: "",
-    },
-    billingContact: {
-      name: "Kyle Teuton",
-      phone: "",
-      email: "kteuton@co.tuolumne.ca.us",
-      location: "",
-    },
-    settings: {
-      apportioning: false,
-      costAllocation: false,
-      autoApportioning: false,
-      allowUserCostpoolDirect: false,
-      allowMultiCodes: true,
-      multiCodes: "MAA",
-      removeStartEndTime: false,
-      removeSupportingDocument: false,
-      removeAutoFillEndTime: false,
-    },
-  },
-  {
-    id: "2",
-    code: "PH-401100",
-    name: "Public Health",
-    active: true,
-    address: {
-      street: "20111 Cedar Road",
-      city: "Sonora",
-      state: "CA",
-      zip: "95370",
-    },
-    primaryContact: {
-      name: "Kyle Teuton",
-      phone: "",
-      email: "kteuton@co.tuolumne.ca.us",
-      location: "",
-    },
-    secondaryContact: {
-      name: "Paula Hardojo",
-      phone: "",
-      email: "phardojo@co.tuolumne.ca.us",
-      location: "",
-    },
-    billingContact: {
-      name: "Kyle Teuton",
-      phone: "",
-      email: "kteuton@co.tuolumne.ca.us",
-      location: "",
-    },
-    settings: {
-      apportioning: false,
-      costAllocation: false,
-      autoApportioning: false,
-      allowUserCostpoolDirect: false,
-      allowMultiCodes: true,
-      multiCodes: "MAA",
-      removeStartEndTime: false,
-      removeSupportingDocument: false,
-      removeAutoFillEndTime: false,
-    },
-  },
-  {
-    id: "3",
-    code: "SS-501100",
-    name: "Social Services",
-    active: true,
-    address: {
-      street: "20075 Cedar Road N",
-      city: "Sonora",
-      state: "CA",
-      zip: "95370",
-    },
-    primaryContact: {
-      name: "Kyle Teuton",
-      phone: "",
-      email: "kteuton@co.tuolumne.ca.us",
-      location: "",
-    },
-    secondaryContact: {
-      name: "Paula Hardojo",
-      phone: "",
-      email: "phardojo@co.tuolumne.ca.us",
-      location: "",
-    },
-    billingContact: {
-      name: "Kyle Teuton",
-      phone: "",
-      email: "kteuton@co.tuolumne.ca.us",
-      location: "",
-    },
-    settings: {
-      apportioning: false,
-      costAllocation: false,
-      autoApportioning: false,
-      allowUserCostpoolDirect: false,
-      allowMultiCodes: true,
-      multiCodes: "MAA",
-      removeStartEndTime: false,
-      removeSupportingDocument: false,
-      removeAutoFillEndTime: false,
-    },
-  },
-]
+import { getDepartments } from "../api/departments"
 
 export const DEFAULT_VALUES: DepartmentUpsertValues = {
-    code: "",
+  code: "",
+  name: "",
+  active: true,
+  address: {
+    street: "",
+    city: "",
+    state: "",
+    zip: "",
+  },
+  primaryContact: {
     name: "",
-    active: true,
-    address: {
-        street: "",
-        city: "",
-        state: "",
-        zip: "",
-    },
-    primaryContact: {
-        name: "",
-        phone: "",
-        email: "",
-        location: "",
-    },
-    secondaryContact: {
-        name: "",
-        phone: "",
-        email: "",
-        location: "",
-    },
-    billingContact: {
-        name: "",
-        phone: "",
-        email: "",
-        location: "",
-    },
-    settings: {
-        apportioning: false,
-        costAllocation: false,
-        autoApportioning: false,
-        allowUserCostpoolDirect: false,
-        allowMultiCodes: false,
-        multiCodes: "",
-        removeStartEndTime: false,
-        removeSupportingDocument: false,
-        removeAutoFillEndTime: false,
-    },
+    phone: "",
+    email: "",
+    location: "",
+  },
+  secondaryContact: {
+    name: "",
+    phone: "",
+    email: "",
+    location: "",
+  },
+  billingContact: {
+    name: "",
+    phone: "",
+    email: "",
+    location: "",
+  },
+  settings: {
+    apportioning: false,
+    costAllocation: false,
+    autoApportioning: false,
+    allowUserCostpoolDirect: false,
+    allowMultiCodes: false,
+    multiCodes: "",
+    removeStartEndTime: false,
+    removeSupportingDocument: false,
+    removeAutoFillEndTime: false,
+  },
 }
 
 export const MOCK_MULTI_CODE_OPTIONS = ["CDSS", "MAA", "TCM"]
@@ -178,13 +53,19 @@ export const MOCK_CONTACTS = [
 ]
 
 async function fetchDepartments(): Promise<Department[]> {
-  await new Promise((resolve) => setTimeout(resolve, 500))
-  return [...MOCK_DEPARTMENTS]
+  const { items } = await getDepartments({ page: 1, limit: 100 })
+  return items
 }
 
 export function useGetDepartments() {
   return useQuery({
     queryKey: departmentKeys.lists(),
     queryFn: fetchDepartments,
+    // Server is source of truth — never show stale list after DB changes.
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: "always",
+    refetchOnReconnect: true,
   })
 }

@@ -7,7 +7,7 @@ import {
   useState,
 } from "react"
 
-import { clearToken, getToken, setToken } from "@/lib/api"
+import { clearToken, getToken } from "@/lib/api"
 import {
   clearStoredUser,
   getStoredUser,
@@ -29,8 +29,6 @@ type AuthContextValue = {
   signIn: (email: string, password: string) => Promise<void>
   /** After login when `nextPage` is `dashboard`; token is already in storage from `loginRequest`. */
   establishDashboardSession: (user: User) => void
-  /** Completes OTP flow: sets user + token without API, so user can reach dashboard after county selection. */
-  completeOtpSignIn: (email: string) => void
   signOut: () => void
   error: string | null
   clearError: () => void
@@ -89,19 +87,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
-  /** Sets user and token so dashboard is accessible after OTP + county selection. No API call. */
-  const completeOtpSignIn = useCallback((email: string) => {
-    setError(null)
-    const authUser: User = {
-      id: "otp-user",
-      name: email.split("@")[0] || "User",
-      email: email.trim(),
-    }
-    setToken("otp-session-token")
-    setUser(authUser)
-    setStoredUser(authUser)
-  }, [])
-
   const signOut = useCallback(() => {
     setUser(null)
     clearToken()
@@ -117,7 +102,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isLoading: isLoading || authLoading,
       signIn,
       establishDashboardSession,
-      completeOtpSignIn,
       signOut,
       error,
       clearError,
@@ -128,7 +112,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       authLoading,
       signIn,
       establishDashboardSession,
-      completeOtpSignIn,
       signOut,
       error,
       clearError,

@@ -45,5 +45,3 @@ export const departmentFilterSchema = z.object({
   search: z.string().trim().optional(),
   inactive: z.boolean().default(false),
 })
-
-export type DepartmentUpsertValues = z.infer<typeof departmentUpsertSchema>
