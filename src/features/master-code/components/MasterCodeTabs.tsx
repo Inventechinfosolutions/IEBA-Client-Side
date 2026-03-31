@@ -6,6 +6,8 @@ export function MasterCodeTabs({
   activeTab,
   onChange,
 }: MasterCodeTabsProps) {
+  if (tabs.length === 0) return null
+
   return (
     <div className="border-b border-[#eef0f5]">
       <div

@@ -13,6 +13,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
+import { MasterCodeTypeEnum } from "@/features/master-code/enums/master-code-type.enum"
 import { masterCodeFormSchema } from "@/features/master-code/schemas"
 import {
   type ActiveTools,
@@ -30,7 +31,8 @@ export function MasterCodeFormModal({
   onSave,
 }: MasterCodeFormModalProps) {
   const descriptionEditorRef = useRef<HTMLDivElement | null>(null)
-  const showPercentAndMatch = codeType !== "CDSS" && codeType !== "INTERNAL"
+  const showPercentAndMatch =
+    codeType !== MasterCodeTypeEnum.CDSS && codeType !== MasterCodeTypeEnum.INTERNAL
   const [activeTools, setActiveTools] = useState<ActiveTools>({
     bold: false,
     italic: false,

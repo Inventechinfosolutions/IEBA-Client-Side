@@ -1,12 +1,27 @@
 import { z } from "zod"
 import type { FieldErrors } from "react-hook-form"
 
+import { MasterCodeTypeEnum } from "@/features/master-code/enums/master-code-type.enum"
+import type { ActivityStatusEnum as ActivityStatus } from "@/features/master-code/enums/activity-status.enum"
+
 import { masterCodeFormSchema } from "./schemas"
+
+export type MasterCodeTab = (typeof MasterCodeTypeEnum)[keyof typeof MasterCodeTypeEnum]
+
+/** Tab strip order (UI); which tabs appear comes from `GET /master-codes` (active rows). */
+export const MASTER_CODE_TYPE_TAB_ORDER: MasterCodeTab[] = [
+  MasterCodeTypeEnum.FFP,
+  MasterCodeTypeEnum.MAA,
+  MasterCodeTypeEnum.TCM,
+  MasterCodeTypeEnum.INTERNAL,
+  MasterCodeTypeEnum.CDSS,
+]
 
 export type MasterCodeFormMode = "add" | "edit"
 
 export type MasterCodeFormValues = z.infer<typeof masterCodeFormSchema>
 
+/** Activity-code `type` / master tab — same strings as `master-codes.name` and API `type` filter. */
 export type MasterCodeRow = {
   id: string
   code?: string
@@ -14,13 +29,13 @@ export type MasterCodeRow = {
   spmp: boolean
   allocable: boolean
   ffpPercent: string
-  match: "E" | "N"
+  match: string
   status: boolean
   activityDescription?: string
 }
 
 export type GetMasterCodesParams = {
-  codeType: string
+  codeType: MasterCodeTab | ""
   page: number
   pageSize: number
   inactiveOnly: boolean
@@ -31,18 +46,24 @@ export type MasterCodeListResponse = {
   totalItems: number
 }
 
+/** Row from `GET /api/v1/master-codes` */
+export type TenantMasterCodeRow = {
+  id: number
+  name: string
+  allowMulticode: boolean
+  status: ActivityStatus
+}
+
 export type CreateMasterCodeInput = {
-  codeType: string
+  codeType: MasterCodeTab
   values: MasterCodeFormValues
 }
 
 export type UpdateMasterCodeInput = {
   id: string
-  codeType: string
+  codeType: MasterCodeTab
   values: MasterCodeFormValues
 }
-
-export type MasterCodeTab = "FFP" | "MAA" | "TCM" | "INTERNAL" | "CDSS"
 
 export type ActiveTools = {
   bold: boolean
@@ -92,7 +113,7 @@ export type MasterCodePaginationProps = {
 
 export type MasterCodeTabsProps = {
   tabs: MasterCodeTab[]
-  activeTab: MasterCodeTab
+  activeTab: MasterCodeTab | ""
   onChange: (tab: MasterCodeTab) => void
 }
 

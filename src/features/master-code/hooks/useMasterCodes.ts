@@ -4,7 +4,12 @@ import { useGetMasterCodes } from "../queries/getMasterCodes"
 import type { GetMasterCodesParams } from "../types"
 
 export function useMasterCodes(params: GetMasterCodesParams) {
-  const listQuery = useGetMasterCodes(params)
+  const listQuery = useGetMasterCodes({
+    codeType: params.codeType,
+    inactiveOnly: params.inactiveOnly,
+    page: params.page,
+    pageSize: params.pageSize,
+  })
   const createMutation = useCreateMasterCode()
   const updateMutation = useUpdateMasterCode()
 
