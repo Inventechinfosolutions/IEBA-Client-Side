@@ -4,7 +4,7 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { toast } from "sonner"
 
-import { MasterCodePagination } from "@/features/master-code/components/MasterCodePagination"
+import { MasterCodePagination } from "@/features/master-code/components/mastercode-pagination"
 import { BudgetUnitTable } from "../components/BudgetUnitTable"
 import { ProgramActivityRelationForm } from "../components/ProgramActivityRelationForm"
 import { ProgramFormModal } from "../components/ProgramFormModal"
@@ -108,7 +108,7 @@ export function ProgramPage() {
     position: "top-center" as const,
     icon: (
       <span className="inline-flex size-4 items-center justify-center rounded-full bg-[#22c55e] text-white">
-        <Check className="size-3 stroke-[3]" />
+        <Check className="size-3 stroke-3" />
       </span>
     ),
     className:

@@ -2,7 +2,7 @@ import { useMemo, useState } from "react"
 import { Check } from "lucide-react"
 import { toast } from "sonner"
 
-import { MasterCodePagination } from "@/features/master-code/components/MasterCodePagination"
+import { MasterCodePagination } from "@/features/master-code/components/mastercode-pagination"
 import { UserTable } from "../components/UserTable"
 import { UserToolbar } from "../components/UserToolbar"
 import { useUserModule } from "../hooks/useUserModule"

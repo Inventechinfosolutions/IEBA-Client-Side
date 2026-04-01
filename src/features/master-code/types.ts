@@ -1,12 +1,39 @@
 import { z } from "zod"
 import type { FieldErrors } from "react-hook-form"
-
-import { MasterCodeTypeEnum } from "@/features/master-code/enums/master-code-type.enum"
-import type { ActivityStatusEnum as ActivityStatus } from "@/features/master-code/enums/activity-status.enum"
-
 import { masterCodeFormSchema } from "./schemas"
 
-export type MasterCodeTab = (typeof MasterCodeTypeEnum)[keyof typeof MasterCodeTypeEnum]
+import { ActivityStatusEnum } from "./enums/activity-status.enum"
+import { MasterCodeTypeEnum, isMasterCodeType } from "./enums/mastercode-type.enum"
+
+export { ActivityStatusEnum }
+export type { ActivityStatusEnum as ActivityStatusType } from "./enums/activity-status.enum"
+
+export { MasterCodeTypeEnum, isMasterCodeType }
+export type { MasterCodeTypeEnum as MasterCodeType } from "./enums/mastercode-type.enum"
+
+export type MasterCodeTab = MasterCodeTypeEnum
+
+export type ApiActivityCode = {
+  id: number
+  code: string
+  type: string
+  name: string
+  description: string
+  percent: number
+  spmp?: boolean
+  allocable?: boolean
+  match?: string
+  status: string
+  createdAt?: string
+  updatedAt?: string
+}
+
+export type ApiTenantMasterCode = {
+  id: number
+  name: string
+  allowMulticode: boolean
+  status: string
+}
 
 /** Tab strip order (UI); tab labels match `MasterCodeTypeEnum` / activity `type` — not loaded from DB. */
 export const MASTER_CODE_TYPE_TAB_ORDER: MasterCodeTab[] = [
@@ -51,7 +78,7 @@ export type TenantMasterCodeRow = {
   id: number
   name: string
   allowMulticode: boolean
-  status: ActivityStatus
+  status: ActivityStatusEnum
 }
 
 export type CreateMasterCodeInput = {
@@ -76,6 +103,7 @@ export type MasterCodeFormModalProps = {
   open: boolean
   mode: MasterCodeFormMode
   initialValues: MasterCodeFormValues
+  selectedRowId?: string
   onOpenChange: (open: boolean) => void
   onSave: (values: MasterCodeFormValues) => void
 }

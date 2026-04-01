@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react"
 
-import { MasterCodePagination } from "@/features/master-code/components/MasterCodePagination"
+import { MasterCodePagination } from "@/features/master-code/components/mastercode-pagination"
 import { LeaveApprovalTable } from "../components/LeaveApprovalTable"
 import { LeaveApprovalCommentsModal } from "../components/LeaveApprovalCommentsModal"
 import { LeaveApprovalToolbar } from "../components/LeaveApprovalToolbar"

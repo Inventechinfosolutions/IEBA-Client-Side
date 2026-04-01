@@ -7,10 +7,10 @@ import type { GetMasterCodesParams } from "../types"
 export function useGetMasterCodes(params: GetMasterCodesParams) {
   return useQuery({
     queryKey: masterCodeKeys.list(params),
-    queryFn: () => {
+    queryFn: async () => {
       const { codeType, page, pageSize, inactiveOnly } = params
       if (!codeType) throw new Error("codeType is required")
-      return apiGetActivityCodesPage({
+      return await apiGetActivityCodesPage({
         codeType,
         page,
         pageSize,

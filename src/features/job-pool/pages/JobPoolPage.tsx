@@ -2,7 +2,7 @@ import { useState } from "react"
 import { Check } from "lucide-react"
 import { toast } from "sonner"
 
-import { MasterCodePagination } from "@/features/master-code/components/MasterCodePagination"
+import { MasterCodePagination } from "@/features/master-code/components/mastercode-pagination"
 import { JobPoolFormModal } from "../components/add-pool/JobPoolFormModal"
 import { JobPoolTable } from "../components/JobPoolTable"
 import { JobPoolToolbar } from "../components/JobPoolToolbar"
