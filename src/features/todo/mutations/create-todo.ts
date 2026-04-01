@@ -1,4 +1,5 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { useMutation } from "@tanstack/react-query"
+import { queryClient } from "@/main"
 
 import { useAuth } from "@/contexts/AuthContext"
 import { todoKeys } from "../keys"
@@ -6,7 +7,7 @@ import { apiCreateTodo } from "../api"
 import type { CreateTodoInput } from "../types"
 
 async function createTodo(input: CreateTodoInput, userId: string) {
-  return apiCreateTodo({
+  return await apiCreateTodo({
     title: input.values.title,
     description: input.values.description,
     userId,
@@ -16,10 +17,9 @@ async function createTodo(input: CreateTodoInput, userId: string) {
 
 export function useCreateTodo() {
   const { user } = useAuth()
-  const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (input: CreateTodoInput) => createTodo(input, user?.id ?? ""),
+    mutationFn: async (input: CreateTodoInput) => await createTodo(input, user?.id ?? ""),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: todoKeys.lists() })
     },

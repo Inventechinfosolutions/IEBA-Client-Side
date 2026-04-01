@@ -15,7 +15,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { masterCodeFormSchema } from "@/features/master-code/schemas"
 import { MasterCodeTypeEnum } from "../enums/mastercode-type.enum"
-import { useGetMasterCodeById } from "../queries/get-mastercode-by-id"
+import { useGetMasterCodeById } from "../queries/queries"
 import {
   type ActiveTools,
   type MasterCodeFormFieldErrors,

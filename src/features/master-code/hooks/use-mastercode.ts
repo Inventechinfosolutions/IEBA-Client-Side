@@ -1,8 +1,7 @@
 import { useCreateMasterCode } from "../mutations/create-mastercode"
 import { useUpdateMasterCode } from "../mutations/update-mastercode"
 import { useUpdateTenantMasterCode } from "../mutations/update-tenant-mastercode"
-import { useGetMasterCodes } from "../queries/get-mastercodes"
-import { useTenantMasterCodeByName } from "../queries/get-tenant-mastercodes"
+import { useGetMasterCodes, useTenantMasterCodeByName } from "../queries/queries"
 import type { GetMasterCodesParams } from "../types"
 
 export function useMasterCodes(params: GetMasterCodesParams) {

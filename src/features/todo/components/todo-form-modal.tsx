@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
-import { X } from "lucide-react"
+import { Check, Loader2 } from "lucide-react"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -14,23 +14,30 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { TodoStatusEnum } from "../enums/todo-status.enum"
 import { todoFormSchema } from "../schemas"
+import { useGetTodoById } from "../queries/queries"
 import { TODO_STATUS_LABEL, TODO_STATUS_OPTIONS } from "../types"
 import type { TodoFormValues, TodoFormModalProps } from "../types"
 
 export function TodoFormModal({
   open,
   mode,
+  todoId,
   initialValues,
   isSubmitting = false,
   onOpenChange,
   onSave,
 }: TodoFormModalProps) {
   const isEditMode = mode === "edit"
+  
+  const { data: serverData, isLoading: isFetching } = useGetTodoById(
+    isEditMode ? todoId : undefined
+  )
+
   const isNewStatusDisabled = isEditMode && initialValues.status !== TodoStatusEnum.NEW
 
   const form = useForm<TodoFormValues>({
     resolver: zodResolver(todoFormSchema),
-    defaultValues: initialValues,
+    values: serverData || initialValues,
   })
 
   const selectedStatus = form.watch("status")
@@ -48,7 +55,7 @@ export function TodoFormModal({
       position: "top-center",
       icon: (
         <span className="inline-flex size-4 items-center justify-center rounded-full bg-[#ef4444] text-white">
-          <X className="size-3 stroke-[3]" />
+          <Check className="size-3 stroke-3" />
         </span>
       ),
       className:
@@ -71,7 +78,11 @@ export function TodoFormModal({
         <form onSubmit={handleSubmit} className="px-12 pb-12 pt-1">
           <input type="hidden" {...form.register("status")} />
           <div className="space-y-8">
-            {isEditMode ? (
+            {isEditMode && isFetching ? (
+              <div className="flex h-[150px] items-center justify-center">
+                <Loader2 className="size-8 animate-spin text-[#6C5DD3]" />
+              </div>
+            ) : isEditMode ? (
               <div className="grid grid-cols-[minmax(0,1fr)_270px] items-start gap-10">
                 <div>
                   <label className="mb-1 block text-[12px] text-[#111827]">
@@ -81,7 +92,7 @@ export function TodoFormModal({
                     {...form.register("title")}
                     disabled={isEditMode}
                     placeholder="Enter To Do Title"
-                    className="h-[46px] w-[300px] rounded-[8px] border-[#dfe3ee] text-[12px] placeholder:text-[12px] placeholder:text-gray-400 disabled:pointer-events-auto disabled:cursor-not-allowed disabled:!border-[0.8px] disabled:!border-[#cfd4dd] disabled:!bg-[#d2d4d9]/20 disabled:!text-black disabled:opacity-100 focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
+                    className="h-[46px] w-[300px] rounded-[8px] border-[#dfe3ee] text-[12px] placeholder:text-[12px] placeholder:text-gray-400 disabled:pointer-events-auto disabled:cursor-not-allowed disabled:border-[0.8px]! disabled:border-[#cfd4dd]! disabled:bg-[#d2d4d9]/20! disabled:text-black! disabled:opacity-100 focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
                   />
                 </div>
                 <div>
@@ -114,10 +125,10 @@ export function TodoFormModal({
                         <span
                           className={`inline-flex size-[16px] items-center justify-center rounded-full ${
                             isDisabledOption
-                              ? "border-[8px] border-[#d7dbe4]"
+                              ? "border-8 border-[#d7dbe4]"
                               : selectedStatus === statusOption
                                 ? "border-[5px] border-[#6c5dd3]"
-                                : "border-[2px] border-[#c9ced9]"
+                                : "border-2 border-[#c9ced9]"
                           }`}
                           aria-hidden="true"
                         />
@@ -140,22 +151,24 @@ export function TodoFormModal({
                 />
               </div>
             )}
-            <div>
-              <label className="mb-1 block text-[12px] text-[#111827]">
-                *Description
-              </label>
-              <Textarea
-                {...form.register("description")}
-                disabled={isDescriptionDisabled}
-                placeholder="Enter To Do Description"
-                className="min-h-[86px] whitespace-pre-wrap break-all rounded-[8px] border-[#dfe3ee] text-[12px] placeholder:text-[12px] placeholder:text-gray-400 disabled:pointer-events-auto disabled:cursor-not-allowed disabled:!border-[0.8px] disabled:!border-[#cfd4dd] disabled:!bg-[#d2d4d9]/20 disabled:!text-black disabled:opacity-100 focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
-              />
-            </div>
+            {!(isEditMode && isFetching) && (
+              <div>
+                <label className="mb-1 block text-[12px] text-[#111827]">
+                  *Description
+                </label>
+                <Textarea
+                  {...form.register("description")}
+                  disabled={isDescriptionDisabled}
+                  placeholder="Enter To Do Description"
+                  className="min-h-[86px] whitespace-pre-wrap break-all rounded-[8px] border-[#dfe3ee] text-[12px] placeholder:text-[12px] placeholder:text-gray-400 disabled:pointer-events-auto disabled:cursor-not-allowed disabled:border-[0.8px]! disabled:border-[#cfd4dd]! disabled:bg-[#d2d4d9]/20! disabled:text-black! disabled:opacity-100 focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
+                />
+              </div>
+            )}
           </div>
           <div className="mt-8 flex items-center justify-end gap-5">
             <Button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || (isEditMode && isFetching)}
               className="h-[52px] min-w-[98px] cursor-pointer rounded-[10px] bg-[#6C5DD3] px-7 text-[14px] text-white hover:bg-[#6C5DD3]"
             >
               {isSubmitting ? "Saving..." : "Save"}
