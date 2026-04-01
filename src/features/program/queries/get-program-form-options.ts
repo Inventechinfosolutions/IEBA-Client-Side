@@ -2,35 +2,13 @@
 
 import { api } from "@/lib/api"
 
-/** Nest-style envelope from `ApiResponseDto.success(result, …)`. */
-type ApiEnvelope<T> = {
-  success?: boolean
-  data?: T
-  message?: string
-}
-
-type PaginationMeta = {
-  totalItems?: number
-  totalPages?: number
-  currentPage?: number
-  itemsPerPage?: number
-  hasNextPage?: boolean
-  itemCount?: number
-}
-
-type DepartmentResDto = {
-  id?: number
-  name?: string
-  status?: unknown
-}
-
-type BudgetUnitResDto = {
-  id?: number
-  code?: string
-  name?: string
-  status?: unknown
-  department?: DepartmentResDto | null
-}
+import {
+  type QueryApiEnvelope as ApiEnvelope,
+  type QueryPaginationMeta as PaginationMeta,
+  type DepartmentResDto,
+  type ProgramFormSection,
+  type QueryBudgetUnitResDto as BudgetUnitResDto,
+} from "../types"
 
 function isActiveStatus(status: unknown): boolean {
   if (typeof status === "boolean") return status
@@ -38,9 +16,11 @@ function isActiveStatus(status: unknown): boolean {
   return true
 }
 
+type PagedEnvelope<T> = { data?: T; meta?: PaginationMeta }
+
 async function fetchAllPages<TItem>(
   path: string,
-  pick: (payload: any) => { items: TItem[]; meta?: PaginationMeta }
+  pick: (payload: PagedEnvelope<unknown>) => { items: TItem[]; meta?: PaginationMeta }
 ): Promise<TItem[]> {
   const all: TItem[] = []
   let page = 1
@@ -61,8 +41,8 @@ async function fetchAllPages<TItem>(
       }
     }
 
-    const raw = await api.get<ApiEnvelope<any>>(`${basePath}?${search.toString()}`)
-    const payload = raw?.data ?? raw
+    const raw = await api.get<PagedEnvelope<unknown>>(`${basePath}?${search.toString()}`)
+    const payload: PagedEnvelope<unknown> = (raw?.data ?? raw) as PagedEnvelope<unknown>
     const { items, meta } = pick(payload)
     all.push(...items)
 
@@ -80,7 +60,7 @@ async function fetchAllPages<TItem>(
   return all
 }
 
-async function fetchProgramFormOptions(contextTab?: string) {
+async function fetchProgramFormOptions(contextTab?: string, activeSection?: ProgramFormSection) {
   const departments = await fetchAllPages<DepartmentResDto>(
     "/departments?sort=ASC&status=active",
     (payload) => ({
@@ -111,8 +91,10 @@ async function fetchProgramFormOptions(contextTab?: string) {
   const budgetUnitIdByName: Record<string, number> = {}
   let budgetUnitNameOptions: string[] = []
 
-  // Skip loading Budget Units if we are in Time Study context because it's not needed
-  if (contextTab !== "Time Study programs") {
+  const shouldLoadBudgetUnits =
+    contextTab !== "Time Study programs" && activeSection === "BU Program"
+
+  if (shouldLoadBudgetUnits) {
     const budgetUnits = await fetchAllPages<BudgetUnitResDto>(
       "/budgetunits?sort=ASC&status=active",
       (payload) => ({
@@ -144,12 +126,28 @@ async function fetchProgramFormOptions(contextTab?: string) {
     }
   }
 
-  // Load active Budget Programs (type=program) for BU Sub-Program parent selection
-  const {
-    budgetProgramNameOptions,
-    budgetProgramLookup,
-    budgetProgramIdByName,
-  } = await fetchActiveBudgetProgramsForBuSubProgram()
+  // Load active Budget Programs (type=program) only when needed:
+  // - Budget Units tab, BU Sub-Program section (for BU Sub-Program parent selection)
+  // - Time Study tab, BU Program section (for TS Primary Program "Budget (BU) Program" dropdown)
+  // - Other callers that don't pass an activeSection (e.g. Program Activity Relation filters)
+  let budgetProgramNameOptions: string[] = []
+  let budgetProgramLookup: Record<string, { code: string; department: string }> = {}
+  let budgetProgramIdByName: Record<string, number> = {}
+
+  const shouldLoadBudgetPrograms =
+    // Budget Units → BU Sub-Program
+    (contextTab === "Budget Units" && activeSection === "BU Sub-Program") ||
+    // Time Study → BU Program (TS Primary) needs BU Programs list
+    (contextTab === "Time Study programs" && activeSection === "BU Program") ||
+    // Fallback callers (no explicit section)
+    (!contextTab && activeSection == null)
+
+  if (shouldLoadBudgetPrograms) {
+    const result = await fetchActiveBudgetProgramsForBuSubProgram()
+    budgetProgramNameOptions = result.budgetProgramNameOptions
+    budgetProgramLookup = result.budgetProgramLookup
+    budgetProgramIdByName = result.budgetProgramIdByName
+  }
 
   return {
     departmentOptions,
@@ -163,13 +161,22 @@ async function fetchProgramFormOptions(contextTab?: string) {
   }
 }
 
-export function useGetProgramFormOptions(enabled = true, contextTab?: string) {
+export function useGetProgramFormOptions(
+  enabled = true,
+  contextTab?: string,
+  activeSection?: ProgramFormSection
+) {
   return useQuery({
-    queryKey: ["program", "form-options", contextTab],
-    queryFn: () => fetchProgramFormOptions(contextTab),
+    queryKey: ["program", "form-options", contextTab, activeSection],
+    queryFn: () => fetchProgramFormOptions(contextTab, activeSection),
     staleTime: 5 * 60_000,
     gcTime: 30 * 60_000,
     enabled,
+    // We only want this to run when the modal opens or the section changes,
+    // not again after save due to window focus or remounts.
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    refetchOnMount: false,
   })
 }
 
@@ -222,7 +229,7 @@ async function fetchActiveBudgetProgramsForBuSubProgram() {
   }
 }
 
-export function useGetActiveBudgetProgramsForBuSubProgram(enabled: boolean) {
+export function useActiveBuProgramsForSubProgram(enabled: boolean) {
   return useQuery({
     queryKey: ["program", "form-options", "budgetprograms", "type-program"],
     queryFn: () => fetchActiveBudgetProgramsForBuSubProgram(),

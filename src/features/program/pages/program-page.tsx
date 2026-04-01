@@ -5,15 +5,15 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { toast } from "sonner"
 
 import { MasterCodePagination } from "@/features/master-code/components/MasterCodePagination"
-import { BudgetUnitTable } from "../components/BudgetUnitTable"
-import { ProgramActivityRelationForm } from "../components/Program-activity-relation/ProgramActivityRelationForm"
-import { ProgramFormModal } from "../components/ProgramFormModal"
-import { ProgramTabs } from "../components/ProgramTabs"
-import { TimeStudyProgramTable } from "../components/TimeStudyProgramTable"
-import { ProgramToolbar } from "../components/ProgramToolbar"
-import { useProgramModule } from "../hooks/useProgramModule"
+import { BudgetUnitTable } from "../components/budget-unit-table"
+import { ProgramActivityRelationForm } from "../components/program-activity-relation/program-activity-relation-form"
+import { ProgramFormModal } from "../components/program-form-modal"
+import { ProgramTabs } from "../components/program-tabs"
+import { TimeStudyProgramTable } from "../components/time-study-program-table"
+import { ProgramToolbar } from "../components/program-toolbar"
+import { useProgramModule } from "../hooks/use-program-module"
 import { apiGetProgramRowById } from "../api"
-import { useGetProgramFormOptions } from "../queries/getProgramFormOptions"
+import { useGetProgramFormOptions } from "../queries/get-program-form-options"
 import { programFormSchema } from "../schemas"
 import type {
   ProgramFormModalHandle,
@@ -125,13 +125,26 @@ export function ProgramPage() {
   const [lastUpdatedBudgetRow, setLastUpdatedBudgetRow] = useState<ProgramRow | null>(null)
   const [lastUpdatedTimeStudyRow, setLastUpdatedTimeStudyRow] = useState<ProgramRow | null>(null)
 
+  const isSubProgramQuickAdd = modalMode === "add" && Boolean(selectedProgramForSubAdd)
+
   // Shared lookups (departments, budget units, budget programs) used by all
   // create/update flows, including Time Study tab. We pass activeTab so that
   // the inner fetch can selectively ignore heavy lookups (like budgetunits)
-  // if they are not needed for that tab context.
+  // if they are not needed for that tab context. We also pass the initial
+  // section for the current add-mode so that when opening "Add Budget Unit"
+  // we only load departments, and defer Budget Units / Budget Programs until
+  // the user switches to the corresponding sections.
+  const addSectionForLookups: ProgramFormSection | undefined =
+    modalMode === "add"
+      ? isSubProgramQuickAdd
+        ? "BU Sub-Program"
+        : mapProgramTabToSection(activeTab)
+      : undefined
+
   const formOptionsQuery = useGetProgramFormOptions(
     modalOpen && modalMode === "add",
-    activeTab
+    activeTab,
+    addSectionForLookups
   )
 
   const programModule = useProgramModule({
@@ -148,7 +161,6 @@ export function ProgramPage() {
   })
   const isTableLoading =
     programModule.isLoading || programModule.isCreating || programModule.isUpdating || isEditDetailLoading
-  const isSubProgramQuickAdd = modalMode === "add" && Boolean(selectedProgramForSubAdd)
 
   const modalInitialValues = useMemo<ProgramFormValues>(() => {
     if (modalMode === "edit" && selectedRow) {

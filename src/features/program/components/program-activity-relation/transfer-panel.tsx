@@ -3,24 +3,7 @@ import tableEmptyIcon from "@/assets/icons/table-empty.png"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 
-export type TransferItem = {
-  id: string
-  name: string
-  code?: string
-}
-
-export type TransferPanelProps = {
-  title: string
-  items: TransferItem[]
-  selectedIds: string[]
-  onToggleItem: (id: string) => void
-  onToggleAll?: () => void
-  searchValue: string
-  onSearchChange: (value: string) => void
-  count: number
-  isActivity?: boolean
-  selectedDept?: string
-}
+import { type TransferItem, type TransferPanelProps } from "../../types"
 
 export function TransferPanel({
   title,

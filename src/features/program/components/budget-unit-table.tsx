@@ -474,7 +474,7 @@ export function BudgetUnitTable({
                       }
                     }}
                   >
-                    <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-[12px] text-[#232735] break-words whitespace-normal">
+                    <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-[12px] text-[#232735] whitespace-pre-wrap break-all [overflow-wrap:anywhere] max-w-[140px]">
                       {displayRow.kind === "group" ? (
                         <div className="flex items-center gap-1" style={{ paddingLeft: `${displayRow.hierarchyLevel * 14}px` }}>
                           <button
@@ -525,16 +525,16 @@ export function BudgetUnitTable({
                         </div>
                       )}
                     </TableCell>
-                    <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-[12px] text-[#232735] break-words whitespace-normal">
+                    <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-[12px] text-[#232735] whitespace-pre-wrap break-all [overflow-wrap:anywhere] max-w-[210px]">
                       {displayRow.kind === "group" ? "" : displayRow.row.name}
                     </TableCell>
-                    <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-center text-[12px] text-[#232735] break-words whitespace-normal">
+                    <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-center text-[12px] text-[#232735] whitespace-pre-wrap break-all [overflow-wrap:anywhere] max-w-[150px]">
                       {displayRow.kind === "group" ? "" : displayRow.row.medicalPct}
                     </TableCell>
-                    <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-[12px] text-[#232735] break-words whitespace-normal">
+                    <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-[12px] text-[#232735] whitespace-pre-wrap break-all [overflow-wrap:anywhere] max-w-[170px]">
                       {displayRow.kind === "group" ? "" : displayRow.row.description}
                     </TableCell>
-                    <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-[12px] text-[#232735] break-words whitespace-normal">
+                    <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-[12px] text-[#232735] whitespace-pre-wrap break-all [overflow-wrap:anywhere] max-w-[190px]">
                       {displayRow.kind === "group" ? "" : displayRow.row.department}
                     </TableCell>
                     <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-center whitespace-normal">

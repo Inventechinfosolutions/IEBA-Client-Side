@@ -362,7 +362,7 @@ export function TimeStudyProgramTable({
               : displayRows.map((row) => (
                   <>
                   <TableRow key={row.id} className="min-h-[40px] border-b border-[#eff0f5] hover:bg-transparent">
-                    <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-[12px] text-[#232735] break-words whitespace-normal">
+                    <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-[12px] text-[#232735] whitespace-pre-wrap break-all [overflow-wrap:anywhere] max-w-[140px]">
                       <div
                         className="flex items-center gap-1"
                         style={{
@@ -396,11 +396,15 @@ export function TimeStudyProgramTable({
                         {row.code}
                       </div>
                     </TableCell>
-                    <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-[12px] text-[#232735] break-words whitespace-normal">{row.name}</TableCell>
-                    <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-[12px] text-[#232735] break-words whitespace-normal">
+                    <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-[12px] text-[#232735] whitespace-pre-wrap break-all [overflow-wrap:anywhere] max-w-[220px]">
+                      {row.name}
+                    </TableCell>
+                    <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-[12px] text-[#232735] whitespace-pre-wrap break-all [overflow-wrap:anywhere] max-w-[170px]">
                       {row.parentBudgetUnitName ?? ""}
                     </TableCell>
-                    <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-[12px] text-[#232735] break-words whitespace-normal">{row.department}</TableCell>
+                    <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-[12px] text-[#232735] whitespace-pre-wrap break-all [overflow-wrap:anywhere] max-w-[170px]">
+                      {row.department}
+                    </TableCell>
                     <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-center whitespace-normal">
                       <img src={row.isMultiCode ? tableCheckIcon : tableCloseIcon} alt="" aria-hidden="true" className="mx-auto size-[12px] object-contain" />
                     </TableCell>

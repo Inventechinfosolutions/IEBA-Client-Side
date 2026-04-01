@@ -151,6 +151,21 @@ export type TimeStudyProgramListResponseDto = {
   meta?: PaginationMeta
 }
 
+export type ProgramCreateLookups = {
+  departmentIdByName?: Record<string, number>
+  budgetUnitIdByName?: Record<string, number>
+  budgetProgramIdByName?: Record<string, number>
+}
+
+export type CreatedIdResponse = {
+  id: number
+}
+
+export type CreatedIdWithCodeResponse = {
+  id: number
+  code?: string
+}
+
 export type CreateProgramInput = {
   tab: ProgramTab
   values: ProgramFormValues
@@ -284,3 +299,61 @@ export type ProgramTableSortState = {
 export type DisplayHierarchyRow =
   | { kind: "data"; row: ProgramRow }
   | { kind: "group"; budgetUnitId: string; label: string; hierarchyLevel: number }
+
+export type TransferItem = {
+  id: string
+  name: string
+  code?: string
+}
+
+export type TransferPanelProps = {
+  title: string
+  items: TransferItem[]
+  selectedIds: string[]
+  onToggleItem: (id: string) => void
+  onToggleAll?: () => void
+  searchValue: string
+  onSearchChange: (value: string) => void
+  count: number
+  isActivity?: boolean
+  selectedDept?: string
+}
+
+/** Nest-style envelope from `ApiResponseDto.success(result, …)`. */
+export type QueryApiEnvelope<T> = {
+  success?: boolean
+  data?: T
+  message?: string
+}
+
+export type QueryPaginationMeta = {
+  totalItems?: number
+  totalPages?: number
+  currentPage?: number
+  itemsPerPage?: number
+  hasNextPage?: boolean
+  itemCount?: number
+}
+
+export type DepartmentResDto = {
+  id?: number
+  name?: string
+  status?: unknown
+}
+
+export type QueryBudgetUnitResDto = {
+  id?: number
+  code?: string
+  name?: string
+  status?: unknown
+  department?: DepartmentResDto | null
+}
+
+export type TimeStudyProgramOption = {
+  id?: number
+  code?: string
+  name?: string
+  status?: unknown
+  type?: string
+  department?: { id?: number; name?: string } | null
+}

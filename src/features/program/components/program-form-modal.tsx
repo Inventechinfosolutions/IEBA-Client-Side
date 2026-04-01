@@ -12,12 +12,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { BudgetUnitsForm } from "./BudgetUnitsForm"
-import { TimeStudyProgramForm } from "./TimeStudyProgramForm"
+import { BudgetUnitsForm } from "./budget-units-form"
+import { TimeStudyProgramForm } from "./time-study-program-form"
 import {
   useGetProgramFormOptions,
   useGetActivePrimaryTimeStudyPrograms,
-} from "../queries/getProgramFormOptions"
+} from "../queries/get-program-form-options"
 import { programFormSchema, timeStudyProgramFormSchema } from "../schemas"
 import type {
   ProgramFormModalHandle,
@@ -55,7 +55,11 @@ export const ProgramFormModal = forwardRef<ProgramFormModalHandle, ProgramFormMo
   const [pendingSection, setPendingSection] = useState<ProgramFormSection | null>(null)
   const activeSection = form.watch("formSection") as ProgramFormSection
 
-  const formOptionsQuery = useGetProgramFormOptions(open && mode === "add", contextTab)
+  const formOptionsQuery = useGetProgramFormOptions(
+    open && mode === "add",
+    contextTab,
+    activeSection
+  )
   const departmentOptions = formOptionsQuery.data?.departmentOptions ?? []
   const budgetUnitNameOptions = formOptionsQuery.data?.budgetUnitNameOptions ?? []
   const budgetUnitLookup = formOptionsQuery.data?.budgetUnitLookup ?? {}

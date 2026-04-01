@@ -1,4 +1,5 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { useMutation } from "@tanstack/react-query"
+import { queryClient } from "@/main"
 
 import { programKeys } from "../keys"
 import { apiUpdateProgram } from "../api"
@@ -9,7 +10,6 @@ async function updateProgram(input: UpdateProgramInput) {
 }
 
 export function useUpdateProgram() {
-  const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: (input: UpdateProgramInput) => updateProgram(input),
