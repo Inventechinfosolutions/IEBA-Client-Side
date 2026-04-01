@@ -105,3 +105,8 @@ export async function apiUpdateTodo(input: {
   return normalizeTodoRow(raw)
 }
 
+export async function apiGetTodoById(id: string): Promise<TodoRow> {
+  const raw = await api.get<any>(`/todos/${encodeURIComponent(id)}`)
+  return normalizeTodoRow(raw?.data ?? raw)
+}
+

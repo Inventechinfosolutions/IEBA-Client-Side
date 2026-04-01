@@ -2,27 +2,14 @@ import { api } from "@/lib/api"
 
 import { ActivityStatusEnum } from "@/features/master-code/enums/activity-status.enum"
 import type {
+  ApiActivityCode,
+  ApiTenantMasterCode,
   MasterCodeFormValues,
   MasterCodeListResponse,
   MasterCodeRow,
   MasterCodeTab,
   TenantMasterCodeRow,
 } from "./types"
-
-type ApiActivityCode = {
-  id: number
-  code: string
-  type: string
-  name: string
-  description: string
-  percent: number
-  spmp?: boolean
-  allocable?: boolean
-  match?: string
-  status: string
-  createdAt?: string
-  updatedAt?: string
-}
 
 function formatPercent(value: number): string {
   if (Number.isNaN(value)) return "0.00"
@@ -163,15 +150,16 @@ export async function apiUpdateActivityCode(input: {
   return normalizeActivityCodeRow(entity)
 }
 
-// ─── Tenant master-codes: by-name + PUT ───────────────────────────────────────
-
-type ApiTenantMasterCode = {
-  id: number
-  name: string
-  allowMulticode: boolean
-  status: string
+export async function apiGetActivityCodeById(id: string): Promise<MasterCodeRow> {
+  const detail = await api.get<{ data?: ApiActivityCode }>(
+    `/activity-codes/${encodeURIComponent(String(id))}`
+  )
+  const entity = (detail as { data?: ApiActivityCode })?.data
+  if (!entity) throw new Error("Failed to load activity code")
+  return normalizeActivityCodeRow(entity)
 }
 
+// ─── Tenant master-codes: by-name + PUT ───────────────────────────────────────
 function normalizeTenantMasterCode(raw: ApiTenantMasterCode): TenantMasterCodeRow {
   return {
     id: raw.id,

@@ -8,6 +8,7 @@ import { MasterCodeTable } from "../components/MasterCodeTable.tsx"
 import { MasterCodeTabs } from "../components/MasterCodeTabs.tsx"
 import { MasterCodeToolbar } from "../components/MasterCodeToolbar.tsx"
 import { useMasterCodes } from "../hooks/useMasterCodes"
+import { apiGetActivityCodeById } from "../api"
 import { useUpdateTenantMasterCode } from "../mutations/updateTenantMasterCode"
 import { useTenantMasterCodeByName } from "../queries/getTenantMasterCodes"
 import {
@@ -50,6 +51,7 @@ export function MasterCodePage() {
   const [modalMode, setModalMode] = useState<MasterCodeFormMode>("add")
   const [selectedRow, setSelectedRow] = useState<MasterCodeRow | null>(null)
   const [modalSessionId, setModalSessionId] = useState(0)
+  const [isEditDetailLoading, setIsEditDetailLoading] = useState(false)
 
   const updateTenantMaster = useUpdateTenantMasterCode()
 
@@ -82,7 +84,8 @@ export function MasterCodePage() {
     masterCodes.isCreating ||
     masterCodes.isUpdating ||
     tenantMasterQuery.isLoading ||
-    updateTenantMaster.isPending
+    updateTenantMaster.isPending ||
+    isEditDetailLoading
 
   const modalInitialValues = useMemo<MasterCodeFormValues>(() => {
     if (modalMode === "edit" && selectedRow) {
@@ -111,11 +114,19 @@ export function MasterCodePage() {
     setSelectedTab(nextTab)
   }
 
-  const handleEditRow = (row: MasterCodeRow) => {
-    setModalMode("edit")
-    setSelectedRow(row)
-    setModalSessionId((prev) => prev + 1)
-    setModalOpen(true)
+  const handleEditRow = async (row: MasterCodeRow) => {
+    try {
+      setIsEditDetailLoading(true)
+      const fresh = await apiGetActivityCodeById(row.id)
+      setModalMode("edit")
+      setSelectedRow(fresh)
+      setModalSessionId((prev) => prev + 1)
+      setModalOpen(true)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to load activity code")
+    } finally {
+      setIsEditDetailLoading(false)
+    }
   }
 
   const handleSaveForm = (values: MasterCodeFormValues) => {

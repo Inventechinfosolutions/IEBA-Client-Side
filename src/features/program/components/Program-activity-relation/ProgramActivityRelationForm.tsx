@@ -1,28 +1,60 @@
-import { ChevronDown, ChevronUp } from "lucide-react"
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp } from "lucide-react"
+import type { Dispatch, SetStateAction } from "react"
 import { useMemo, useRef, useState } from "react"
-
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import tableEmptyIcon from "@/assets/icons/table-empty.png"
 import { Input } from "@/components/ui/input"
-import {
-  getMockProgramActivityRelationSortOptions,
-  getMockProgramDepartments,
-  getMockTimeStudyProgramNamesForDepartment,
-} from "../mock"
-import type { ProgramActivityRelationFormProps } from "../types"
+import { api } from "@/lib/api"
+import { useGetProgramFormOptions } from "../../queries/getProgramFormOptions"
+import type { ProgramActivityRelationFormProps } from "../../types"
+import { TransferPanel, type TransferItem } from "./TransferPanel"
 
 export function ProgramActivityRelationForm({ form }: ProgramActivityRelationFormProps) {
-  const departmentOptions = useMemo(() => {
-    return [...getMockProgramDepartments()].sort((a, b) =>
-      a.localeCompare(b, undefined, { sensitivity: "base" })
-    )
-  }, [])
+  const formOptionsQuery = useGetProgramFormOptions(true)
+  const departmentOptions = formOptionsQuery.data?.departmentOptions ?? []
+  const departmentIdByName = formOptionsQuery.data?.departmentIdByName ?? {}
 
   const selectedDepartment = form.watch("programActivityRelationDepartment") || ""
-  const programOptions = useMemo(
-    () => getMockTimeStudyProgramNamesForDepartment(selectedDepartment),
-    [selectedDepartment]
+  const selectedDepartmentId = departmentIdByName[selectedDepartment.trim()]
+  const selectedProgramName = form.watch("programActivityRelationProgram") || ""
+
+  const { data: timeStudyPrograms = [] } = useQuery({
+    queryKey: ["program", "par", "timestudyprograms", selectedDepartmentId],
+    enabled: typeof selectedDepartmentId === "number",
+    queryFn: async () => {
+      const search = new URLSearchParams()
+      search.set("page", "1")
+      search.set("limit", "100")
+      search.set("sort", "ASC")
+      search.set("status", "active")
+      search.set("departmentId", String(selectedDepartmentId))
+      const res = await api.get<any>(`/timestudyprograms?${search.toString()}`)
+      const payload = res?.data ?? res
+      const list = Array.isArray(payload?.data) ? payload.data : []
+      return list as any[]
+    },
+    staleTime: 60_000,
+  })
+
+  const programOptions = useMemo(() => {
+    const names = timeStudyPrograms
+      .map((p) => String(p?.name ?? "").trim())
+      .filter(Boolean)
+    return Array.from(new Set(names)).sort((a, b) =>
+      a.localeCompare(b, undefined, { sensitivity: "base" })
+    )
+  }, [timeStudyPrograms])
+
+  const selectedProgram = useMemo(
+    () =>
+      timeStudyPrograms.find(
+        (p: any) => String(p?.name ?? "").trim() === selectedProgramName.trim()
+      ),
+    [selectedProgramName, timeStudyPrograms]
   )
-  const sortOptions = useMemo(() => getMockProgramActivityRelationSortOptions(), [])
+  const selectedProgramId = selectedProgram?.id as number | undefined
+
+  const sortOptions = useMemo(() => [], [])
 
   const [isDepartmentOpen, setIsDepartmentOpen] = useState(false)
   const [isProgramOpen, setIsProgramOpen] = useState(false)
@@ -33,6 +65,146 @@ export function ProgramActivityRelationForm({ form }: ProgramActivityRelationFor
 
   const programDisabled = !selectedDepartment.trim()
   const isProgramEmpty = !programDisabled && programOptions.length === 0
+
+  const queryClient = useQueryClient()
+
+  const activitiesQueryKey = [
+    "program",
+    "par",
+    "activities",
+    selectedDepartmentId,
+    selectedProgramId,
+  ] as const
+
+  const { data: activitiesPayload } = useQuery({
+    queryKey: activitiesQueryKey,
+    enabled: typeof selectedDepartmentId === "number" && typeof selectedProgramId === "number",
+    queryFn: async () => {
+      const search = new URLSearchParams()
+      search.set("departmentId", String(selectedDepartmentId))
+      search.set("programId", String(selectedProgramId))
+      search.set("method", "activitiesAssignedToProgram")
+      search.set("structured", "true")
+
+      // Backend route: GET /timestudyprograms/new/activities
+      const res = await api.get<any>(`/timestudyprograms/new/activities?${search.toString()}`)
+      const payload = res?.data ?? res
+      return payload
+    },
+    staleTime: 60_000,
+  })
+
+  const [assignedIds, setAssignedIds] = useState<string[]>([])
+
+  const allActivities = useMemo<TransferItem[]>(() => {
+    const root = activitiesPayload?.data ?? activitiesPayload
+    if (!root) return []
+
+    const unassignedRoots = Array.isArray(root.unassignedActivities)
+      ? root.unassignedActivities
+      : []
+    const firstTree = unassignedRoots[0]
+    const activityNode = firstTree?.activity?.[0]
+    const children = Array.isArray(activityNode?.children) ? activityNode.children : []
+
+    // Initialize assignedIds once when payload changes
+    const assignedRoots = Array.isArray(root.assignedActivities)
+      ? root.assignedActivities
+      : []
+    const assignedTree = assignedRoots[0]
+    const assignedActivityNode = assignedTree?.activity?.[0]
+    const assignedChildren = Array.isArray(assignedActivityNode?.children)
+      ? assignedActivityNode.children
+      : []
+    const initialAssignedIds = assignedChildren.map((node: any) =>
+      String(String(node.key).split("-").at(-1) ?? "")
+    )
+    if (initialAssignedIds.length && assignedIds.length === 0) {
+      setAssignedIds(initialAssignedIds)
+    }
+
+    return children.map((node: any) => {
+      const rawKey = String(node.key)
+      const numericId = String(rawKey.split("-").at(-1) ?? "")
+      return {
+        id: numericId,
+        name: String(node.title ?? ""),
+        code: node.code ? String(node.code) : undefined,
+      }
+    })
+  }, [activitiesPayload, assignedIds.length])
+
+  const [searchU, setSearchU] = useState("")
+  const [searchA, setSearchA] = useState("")
+  const [toggledU, setToggledU] = useState<string[]>([])
+  const [toggledA, setToggledA] = useState<string[]>([])
+
+  const assignMutation = useMutation({
+    mutationFn: async (ids: string[]) => {
+      if (!selectedDepartmentId || !selectedProgramId || ids.length === 0) return
+      const body = {
+        departmentId: selectedDepartmentId,
+        programId: selectedProgramId,
+        activityIds: ids.map((id) => Number(id)),
+      }
+      // Backend route: POST /timestudyprograms/assign-activities-to-program
+      await api.post(`/timestudyprograms/assign-activities-to-program`, body)
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: activitiesQueryKey })
+    },
+  })
+
+  const unassignMutation = useMutation({
+    mutationFn: async (ids: string[]) => {
+      if (!selectedDepartmentId || !selectedProgramId || ids.length === 0) return
+      const body = {
+        departmentId: selectedDepartmentId,
+        programId: selectedProgramId,
+        activityIds: ids.map((id) => Number(id)),
+      }
+      // Backend route: POST /timestudyprograms/unassign-activities-to-programs
+      await api.post(`/timestudyprograms/unassign-activities-to-programs`, body)
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: activitiesQueryKey })
+    },
+  })
+
+  const getFiltered = (items: TransferItem[], search: string, isAssigned: boolean) => {
+    const list = isAssigned ? items.filter((i) => assignedIds.includes(i.id)) : items.filter((i) => !assignedIds.includes(i.id))
+    if (!search.trim()) return list
+    const q = search.toLowerCase()
+    return list.filter((i) => i.name.toLowerCase().includes(q) || (i.code ?? "").toLowerCase().includes(q))
+  }
+
+  const filteredU = useMemo(() => getFiltered(allActivities, searchU, false), [allActivities, assignedIds, searchU])
+  const filteredA = useMemo(() => getFiltered(allActivities, searchA, true), [allActivities, assignedIds, searchA])
+
+  const handleTransfer = (idsToTransfer: string[], isMovingToAssigned: boolean) => {
+    if (idsToTransfer.length === 0) return
+    if (isMovingToAssigned) {
+      setAssignedIds((prev) => Array.from(new Set([...prev, ...idsToTransfer])))
+      assignMutation.mutate(idsToTransfer)
+      setToggledU([])
+      return
+    }
+    setAssignedIds((prev) => prev.filter((id) => !idsToTransfer.includes(id)))
+    unassignMutation.mutate(idsToTransfer)
+    setToggledA([])
+  }
+
+  const handleToggle = (id: string, setState: Dispatch<SetStateAction<string[]>>) => {
+    setState((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
+  }
+
+  const toggleAllUnassigned = () => {
+    setToggledU((prev) => (prev.length === filteredU.length ? [] : filteredU.map((a) => a.id)))
+  }
+
+  const toggleAllAssigned = () => {
+    setToggledA((prev) => (prev.length === filteredA.length ? [] : filteredA.map((a) => a.id)))
+  }
 
   const departmentInputClass =
     "h-[40px] rounded-[7px] border border-[#c6cedd] bg-white px-3 pr-8 !text-[10px] !font-normal text-[#111827] shadow-none placeholder:!text-[10px] placeholder:text-[#b0b8c8] focus-visible:border-[#1595ff] focus-visible:ring-2 focus-visible:ring-[#1595ff33]"
@@ -277,6 +449,55 @@ export function ProgramActivityRelationForm({ form }: ProgramActivityRelationFor
             ) : null}
           </div>
         </div>
+      </div>
+
+      <div className="mt-6 grid grid-cols-[1fr_60px_1fr] items-center gap-4">
+        <TransferPanel
+          title="Select Activities(Unassigned)"
+          items={filteredU}
+          selectedIds={toggledU}
+          onToggleItem={(id) => handleToggle(id, setToggledU)}
+          onToggleAll={toggleAllUnassigned}
+          searchValue={searchU}
+          onSearchChange={setSearchU}
+          count={filteredU.length}
+          isActivity
+          selectedDept={selectedDepartment}
+        />
+
+        <div className="flex flex-col gap-3 pt-12">
+          <button
+            type="button"
+            onClick={() => handleTransfer(toggledU, true)}
+            disabled={toggledU.length === 0}
+            className="flex size-11 cursor-pointer items-center justify-center rounded-[10px] bg-[#6C5DD3] text-white shadow-lg shadow-[#6C5DD3]/20 transition-all hover:brightness-110 active:scale-95 disabled:cursor-not-allowed"
+            aria-label="Move selected to assigned"
+          >
+            <ChevronRight className="size-5 stroke-[2.5]" />
+          </button>
+          <button
+            type="button"
+            onClick={() => handleTransfer(toggledA, false)}
+            disabled={toggledA.length === 0}
+            className="flex size-11 cursor-pointer items-center justify-center rounded-[10px] bg-[#6C5DD3] text-white shadow-lg shadow-[#6C5DD3]/20 transition-all hover:brightness-110 active:scale-95 disabled:cursor-not-allowed"
+            aria-label="Move selected to unassigned"
+          >
+            <ChevronLeft className="size-5 stroke-[2.5]" />
+          </button>
+        </div>
+
+        <TransferPanel
+          title="Select Activities(Assigned)"
+          items={filteredA}
+          selectedIds={toggledA}
+          onToggleItem={(id) => handleToggle(id, setToggledA)}
+          onToggleAll={toggleAllAssigned}
+          searchValue={searchA}
+          onSearchChange={setSearchA}
+          count={filteredA.length}
+          isActivity
+          selectedDept={selectedDepartment}
+        />
       </div>
     </div>
   )

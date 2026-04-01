@@ -15,12 +15,9 @@ import {
 import { BudgetUnitsForm } from "./BudgetUnitsForm"
 import { TimeStudyProgramForm } from "./TimeStudyProgramForm"
 import {
-  getMockProgramBudgetProgramLookup,
-  getMockProgramBudgetProgramNames,
-  getMockProgramBudgetUnitLookup,
-  getMockProgramBudgetUnitNames,
-  getMockProgramDepartments,
-} from "../mock"
+  useGetProgramFormOptions,
+  useGetActivePrimaryTimeStudyPrograms,
+} from "../queries/getProgramFormOptions"
 import { programFormSchema, timeStudyProgramFormSchema } from "../schemas"
 import type {
   ProgramFormModalHandle,
@@ -49,17 +46,6 @@ export const ProgramFormModal = forwardRef<ProgramFormModalHandle, ProgramFormMo
     "BU Program": isTimeStudyContext ? "TS Primary Program" : "BU Program",
     "BU Sub-Program": isTimeStudyContext ? "TS Sub-Program One" : "BU Sub-Program",
   }
-  const departmentOptions = getMockProgramDepartments()
-  const budgetUnitNameOptions = getMockProgramBudgetUnitNames()
-  const budgetProgramNameOptions = getMockProgramBudgetProgramNames()
-  const budgetProgramLookup = getMockProgramBudgetProgramLookup()
-  const budgetUnitLookup = getMockProgramBudgetUnitLookup()
-  const [isDepartmentOpen, setIsDepartmentOpen] = useState(false)
-  const departmentDropdownRef = useRef<HTMLDivElement | null>(null)
-  const [isBuNameOpen, setIsBuNameOpen] = useState(false)
-  const buNameDropdownRef = useRef<HTMLDivElement | null>(null)
-  const [isBudgetProgramOpen, setIsBudgetProgramOpen] = useState(false)
-  const budgetProgramDropdownRef = useRef<HTMLDivElement | null>(null)
 
   const form = useForm<ProgramFormValues>({
     resolver: zodResolver(isTimeStudyContext ? timeStudyProgramFormSchema : programFormSchema),
@@ -68,6 +54,34 @@ export const ProgramFormModal = forwardRef<ProgramFormModalHandle, ProgramFormMo
 
   const [pendingSection, setPendingSection] = useState<ProgramFormSection | null>(null)
   const activeSection = form.watch("formSection") as ProgramFormSection
+
+  const formOptionsQuery = useGetProgramFormOptions(open && mode === "add", contextTab)
+  const departmentOptions = formOptionsQuery.data?.departmentOptions ?? []
+  const budgetUnitNameOptions = formOptionsQuery.data?.budgetUnitNameOptions ?? []
+  const budgetUnitLookup = formOptionsQuery.data?.budgetUnitLookup ?? {}
+  const isTsSecondaryOrTertiary = isTimeStudyContext && (activeSection === "BU Sub-Program" || activeSection === "Budget Unit")
+
+  // Budget Program options:
+  // - Budget Units context: use Budget Programs (type=program) from form options
+  // - Time Study context, TS Sub-Program One & Two: use Time Study Primary Programs
+  const tsPrimaryProgramsQuery = useGetActivePrimaryTimeStudyPrograms(
+    open && mode === "add" && isTsSecondaryOrTertiary
+  )
+
+  const budgetProgramNameOptions = isTsSecondaryOrTertiary
+    ? tsPrimaryProgramsQuery.data?.budgetProgramNameOptions ?? []
+    : formOptionsQuery.data?.budgetProgramNameOptions ?? []
+
+  const budgetProgramLookup = isTsSecondaryOrTertiary
+    ? tsPrimaryProgramsQuery.data?.budgetProgramLookup ?? {}
+    : formOptionsQuery.data?.budgetProgramLookup ?? {}
+
+  const [isDepartmentOpen, setIsDepartmentOpen] = useState(false)
+  const departmentDropdownRef = useRef<HTMLDivElement | null>(null)
+  const [isBuNameOpen, setIsBuNameOpen] = useState(false)
+  const buNameDropdownRef = useRef<HTMLDivElement | null>(null)
+  const [isBudgetProgramOpen, setIsBudgetProgramOpen] = useState(false)
+  const budgetProgramDropdownRef = useRef<HTMLDivElement | null>(null)
 
   useImperativeHandle(ref, () => ({
     reset(values: ProgramFormValues) {
@@ -285,7 +299,6 @@ export const ProgramFormModal = forwardRef<ProgramFormModalHandle, ProgramFormMo
               formMode={mode}
               activeSection={activeSection}
               departmentOptions={departmentOptions}
-              budgetUnitNameOptions={budgetUnitNameOptions}
               budgetProgramNameOptions={budgetProgramNameOptions}
               budgetProgramLookup={budgetProgramLookup}
             />
