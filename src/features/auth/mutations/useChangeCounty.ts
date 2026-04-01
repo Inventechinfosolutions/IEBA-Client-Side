@@ -1,10 +1,7 @@
 import { useMutation } from "@tanstack/react-query"
 
-import {
-  changeCounty,
-  type ChangeCountyBody,
-  type ChangeCountyResult,
-} from "../api/changeCounty"
+import { changeCounty } from "../api/changeCounty"
+import type { ChangeCountyBody, ChangeCountyResult } from "../types"
 import { authKeys } from "../keys"
 
 export function useChangeCounty() {

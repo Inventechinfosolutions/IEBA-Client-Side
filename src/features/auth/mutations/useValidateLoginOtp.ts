@@ -1,10 +1,7 @@
 import { useMutation } from "@tanstack/react-query"
 
-import {
-  validateLoginOtp,
-  type ValidateLoginOtpBody,
-  type ValidateLoginOtpResult,
-} from "../api/validateLoginOtp"
+import { validateLoginOtp } from "../api/validateLoginOtp"
+import type { ValidateLoginOtpBody, ValidateLoginOtpResult } from "../types"
 import { authKeys } from "../keys"
 
 export function useValidateLoginOtp() {

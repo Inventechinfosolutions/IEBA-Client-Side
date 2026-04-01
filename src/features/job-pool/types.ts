@@ -28,6 +28,10 @@ export type JobPoolRow = {
   active: boolean
   assignedActivityIds?: string[]
   assignedEmployeeIds?: string[]
+  /** Optional derived fields for simpler API-style representation */
+  departmentName?: string
+  jobClassificationName?: { name: string; status: string }[]
+  userprofiles?: { id: string; name?: string; firstName?: string; lastName?: string }[]
 }
 
 export type GetJobPoolsParams = {

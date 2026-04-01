@@ -1,11 +1,5 @@
 import { api } from "@/lib/api"
-
-type LogoutApiEnvelope = {
-  statusCode?: number | string
-  message?: string
-  success?: boolean
-  data?: unknown
-}
+import type { LogoutApiEnvelope } from "../types"
 
 /**
  * POST `/auth/logout`.

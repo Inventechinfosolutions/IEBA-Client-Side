@@ -1,10 +1,10 @@
 import { useState } from "react"
-import { useQueryClient } from "@tanstack/react-query"
 import { DepartmentTable } from "../components/DepartmentTable"
-import { DepartmentAddPage } from "../components/DepartmentAddPage"
+import { DepartmentAddPage } from "../components/DepartmentAddModal"
 import { useDepartments } from "../hooks/useDepartments"
 import { departmentKeys } from "../keys"
 import { loadDepartmentDetailForModal } from "../queries/getDepartmentById"
+import { queryClient } from "@/main"
 import type { DepartmentFilter } from "../types"
 
 const DEFAULT_FILTERS: DepartmentFilter = {
@@ -13,7 +13,6 @@ const DEFAULT_FILTERS: DepartmentFilter = {
 }
 
 export function DepartmentPage() {
-  const queryClient = useQueryClient()
   const [filters, setFilters] = useState<DepartmentFilter>(DEFAULT_FILTERS)
   const {
     departments,

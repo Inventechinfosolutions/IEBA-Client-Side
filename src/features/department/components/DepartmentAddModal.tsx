@@ -1,5 +1,4 @@
 import { useMemo, useState } from "react"
-import { useQueryClient } from "@tanstack/react-query"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { departmentUpsertSchema } from "../schemas"
@@ -24,6 +23,7 @@ import { MOCK_CONTACTS, DEFAULT_VALUES } from "../queries/getDepartments"
 import { useGetDepartmentById } from "../queries/getDepartmentById"
 import { useGetMasterCodeOptions } from "../queries/getMasterCodeOptions"
 import { departmentKeys } from "../keys"
+import { queryClient } from "@/main"
 import { 
     type Department,
     type DepartmentAddPageProps, 
@@ -38,7 +38,6 @@ import {
 } from "../types"
 
 export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
-    const queryClient = useQueryClient()
     const [activeTab, setActiveTab] = useState<ActiveTab>("details")
     const [detailsTab, setDetailsTab] = useState<DetailsTab>(() => (id ? "primary" : "address"))
     const [showSummaryErrors, setShowSummaryErrors] = useState(false)
@@ -226,9 +225,6 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
         setModifiedContacts((prev: ModifiedContacts) => ({ ...prev, address: false }))
         setIsDepartmentSaved(true)
 
-        // IMPORTANT: Do not call the backend on "Next".
-        // We only create/update the department when the user clicks Save on the Settings tab.
-        // This prevents premature creates and ensures the payload is sent once (with settings + address).
         setDetailsTab("primary")
         if (!id) setActiveTab("settings")
     }

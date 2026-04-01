@@ -1,30 +1,14 @@
 import { api, getToken } from "@/lib/api"
+import type {
+  ValidateLoginOtpEnvelope,
+  ValidateLoginOtpBody,
+  ValidateLoginOtpResult,
+} from "../types"
 
-export type ValidateLoginOtpBody = {
-  loginId: string
-  otp: string
-  journey: "dashboard" | "resetpassword" | "login"
-  nameSpace?: string
-}
-
-export type ValidateLoginOtpResult = {
-  accessToken: string
-  userId: string
-}
-
-type ApiEnvelope = {
-  statusCode?: number | string
-  success?: boolean
-  message?: string
-  data?: {
-    accessToken?: string
-    access_token?: string
-    userId?: string
-    user_id?: string
-  }
-}
-
-function throwIfEnvelopeFailed(res: ApiEnvelope, fallbackMessage: string): void {
+function throwIfEnvelopeFailed(
+  res: ValidateLoginOtpEnvelope,
+  fallbackMessage: string
+): void {
   if (res.success === false) {
     throw new Error(res.message ?? fallbackMessage)
   }
@@ -51,7 +35,7 @@ export async function validateLoginOtp(
     )
   }
 
-  const res = await api.post<ApiEnvelope>("/auth/validate-otp", body)
+  const res = await api.post<ValidateLoginOtpEnvelope>("/auth/validate-otp", body)
 
   throwIfEnvelopeFailed(res, "OTP validation failed")
 

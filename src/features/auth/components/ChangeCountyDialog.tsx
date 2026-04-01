@@ -18,11 +18,7 @@ import { setToken } from "@/lib/api"
 import iebaLogo from "@/assets/ieba-logo.png"
 import { useGlobalNamespaces } from "../queries/getGlobalNamespaces"
 import { useChangeCounty } from "../mutations/useChangeCounty"
-
-type ChangeCountyDialogProps = {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-}
+import type { ChangeCountyDialogProps } from "../types"
 
 export function ChangeCountyDialog({
   open,
@@ -57,11 +53,11 @@ export function ChangeCountyDialog({
     [rows, countySearch]
   )
 
-  function handleCancel() {
+  function closeDialog() {
     onOpenChange(false)
   }
 
-  function handleOk() {
+  function submitCountyChange() {
     if (changeCountyMutation.isPending) return
     if (!user) {
       toast.error("You must be signed in to change county.")
@@ -252,7 +248,7 @@ export function ChangeCountyDialog({
         <div className="flex w-full items-center justify-center gap-3 px-8 pb-10 sm:px-9">
           <Button
             type="button"
-            onClick={handleOk}
+            onClick={submitCountyChange}
             disabled={changeCountyMutation.isPending}
             className="h-[35px] min-w-[62px] rounded-[6px] border-0 bg-[#6C5DD3] px-4 text-[15px] font-normal text-white hover:bg-[#5f52bd] disabled:opacity-60"
           >
@@ -261,7 +257,7 @@ export function ChangeCountyDialog({
           <Button
             type="button"
             variant="outline"
-            onClick={handleCancel}
+            onClick={closeDialog}
             className="h-[35px] min-w-[86px] rounded-[6px] border border-[#d9d9d9] bg-white px-4 text-[15px] font-normal text-[#000000E0] hover:bg-gray-50"
           >
             Cancel

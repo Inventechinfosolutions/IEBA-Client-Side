@@ -1,19 +1,17 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { useMutation } from "@tanstack/react-query"
+import { queryClient } from "@/main"
 
 import { jobClassificationKeys } from "../keys"
-import { updateMockJobClassification } from "../mock"
+import { updateJobClassification } from "../api/jobclassification"
 import type { UpdateJobClassificationInput, JobClassificationRow } from "../types"
 
-async function updateJobClassification(input: UpdateJobClassificationInput): Promise<JobClassificationRow> {
-  return updateMockJobClassification(input)
+async function updateJobClassificationMutation(input: UpdateJobClassificationInput): Promise<JobClassificationRow> {
+  return updateJobClassification(input.id, input.values)
 }
 
 export function useUpdateJobClassification() {
-  const queryClient = useQueryClient()
-
   return useMutation({
-    mutationFn: (input: UpdateJobClassificationInput) =>
-      updateJobClassification(input),
+    mutationFn: (input: UpdateJobClassificationInput) => updateJobClassificationMutation(input),
     onSuccess: async (_, variables) => {
       await queryClient.invalidateQueries({
         queryKey: jobClassificationKeys.lists(),

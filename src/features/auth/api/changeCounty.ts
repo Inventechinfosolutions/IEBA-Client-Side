@@ -1,24 +1,9 @@
 import { api } from "@/lib/api"
-
-export type ChangeCountyBody = {
-  loginId: string
-  nameSpace: string
-}
-
-export type ChangeCountyResult = {
-  accessToken: string
-  /** Normalized namespace returned by the API (falls back to requested `nameSpace`). */
-  namespace?: string
-  /** Human‑readable county label if backend provides it. */
-  countyName?: string
-}
-
-type ApiEnvelope = {
-  statusCode?: number | string
-  success?: boolean
-  message?: string
-  data?: Record<string, unknown>
-}
+import type {
+  ApiEnvelope,
+  ChangeCountyBody,
+  ChangeCountyResult,
+} from "../types"
 
 function throwIfEnvelopeFailed(res: ApiEnvelope, fallbackMessage: string): void {
   if (res.success === false) {

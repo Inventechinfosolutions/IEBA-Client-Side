@@ -2,11 +2,10 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
   useState,
 } from "react"
-import { useQueryClient } from "@tanstack/react-query"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import { CircleCheckIcon } from "lucide-react"
 
@@ -18,83 +17,68 @@ import {
 } from "@/lib/auth-storage"
 import { login as loginRequest } from "@/features/auth/api/login"
 import { logout as logoutRequest } from "@/features/auth/api/logout"
-
-export type User = {
-  id: string
-  name: string
-  email: string
-  /** Selected tenant/namespace key from OTP step. */
-  namespace?: string
-  /** Human-friendly county name for header display, e.g. 'Lassen County'. */
-  countyName?: string
-  avatar?: string
-}
-
-type AuthContextValue = {
-  user: User | null
-  isAuthenticated: boolean
-  isLoading: boolean
-  signIn: (email: string, password: string) => Promise<void>
-  /** After login when `nextPage` is `dashboard`; token is already in storage from `loginRequest`. */
-  establishDashboardSession: (user: User) => void
-  signOut: () => void
-  error: string | null
-  clearError: () => void
-}
+import type { AuthContextValue, User } from "./types"
 
 const AuthContext = createContext<AuthContextValue | null>(null)
+const AUTH_SESSION_QUERY_KEY = ["auth", "session"] as const
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
   const [authLoading, setAuthLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const queryClient = useQueryClient()
 
-  const restoreSession = useCallback(() => {
-    const token = getToken()
-    const storedUser = getStoredUser()
-    if (token && storedUser) {
-      setUser(storedUser)
-    }
-    setIsLoading(false)
-  }, [])
-
-  useEffect(() => {
-    restoreSession()
-  }, [restoreSession])
-
-  const establishDashboardSession = useCallback((authUser: User) => {
-    setError(null)
-    setUser(authUser)
-    setStoredUser(authUser)
-  }, [])
-
-  const signIn = useCallback(async (email: string, password: string) => {
-    setError(null)
-    setAuthLoading(true)
-    try {
-      const result = await loginRequest({ email, password })
-      if (result.nextPage === "otp") {
-        throw new Error("OTP verification required. Use the login screen to continue.")
+  const { data: queryUser, isLoading: sessionLoading } = useQuery<User | null>({
+    queryKey: AUTH_SESSION_QUERY_KEY,
+    queryFn: async () => {
+      const token = getToken()
+      const storedUser = getStoredUser()
+      if (token && storedUser) {
+        return storedUser
       }
-      const authUser: User = {
-        id: result.userId,
-        name: result.loginId.includes("@")
-          ? (result.loginId.split("@")[0] ?? "User")
-          : result.loginId,
-        email: result.loginId,
-      }
-      setUser(authUser)
+      return null
+    },
+  })
+  const user: User | null = queryUser ?? null
+
+  const establishDashboardSession = useCallback(
+    (authUser: User) => {
+      setError(null)
       setStoredUser(authUser)
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Login failed"
-      setError(message)
-      throw err
-    } finally {
-      setAuthLoading(false)
-    }
-  }, [])
+      queryClient.setQueryData<User | null>(AUTH_SESSION_QUERY_KEY, authUser)
+    },
+    [queryClient]
+  )
+
+  const signIn = useCallback(
+    async (email: string, password: string) => {
+      setError(null)
+      setAuthLoading(true)
+      try {
+        const result = await loginRequest({ email, password })
+        if (result.nextPage === "otp") {
+          throw new Error(
+            "OTP verification required. Use the login screen to continue."
+          )
+        }
+        const authUser: User = {
+          id: result.userId,
+          name: result.loginId.includes("@")
+            ? (result.loginId.split("@")[0] ?? "User")
+            : result.loginId,
+          email: result.loginId,
+        }
+        setStoredUser(authUser)
+        queryClient.setQueryData<User | null>(AUTH_SESSION_QUERY_KEY, authUser)
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Login failed"
+        setError(message)
+        throw err
+      } finally {
+        setAuthLoading(false)
+      }
+    },
+    [queryClient]
+  )
 
   const signOut = useCallback(() => {
     void logoutRequest()
@@ -113,7 +97,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           ),
         })
       })
-    setUser(null)
+    queryClient.setQueryData<User | null>(AUTH_SESSION_QUERY_KEY, null)
     queryClient.clear()
     clearToken()
     clearStoredUser()
@@ -125,7 +109,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     () => ({
       user,
       isAuthenticated: !!user,
-      isLoading: isLoading || authLoading,
+      isLoading: sessionLoading || authLoading,
       signIn,
       establishDashboardSession,
       signOut,
@@ -134,7 +118,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }),
     [
       user,
-      isLoading,
+      sessionLoading,
       authLoading,
       signIn,
       establishDashboardSession,
