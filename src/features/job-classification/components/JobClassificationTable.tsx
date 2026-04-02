@@ -83,7 +83,7 @@ export function JobClassificationTable({
             </colgroup>
             <TableHeader className="[&_tr]:border-b-0">
               <TableRow className="hover:bg-transparent">
-                <TableHead className="h-[44px] border-r border-[#6C5DD3] bg-[var(--primary)] px-3 text-[12px] font-medium text-white">
+                <TableHead className="h-[44px] border-r border-[#FFFFFF66] bg-[var(--primary)] px-3 text-[12px] font-medium text-white">
                   <TooltipProvider>
                     <Tooltip open={tooltipOpenKey === "code"}>
                       <TooltipTrigger asChild>
@@ -98,18 +98,18 @@ export function JobClassificationTable({
                         >
                           <span>Code</span>
                           <span className="pointer-events-none absolute right-[0px] inline-flex flex-col items-center leading-none">
-                            <ChevronUp
-                              className={`size-[10px] ${
+                            <span
+                              className={`h-0 w-0 border-b-[5px] border-l-[4px] border-r-[4px] border-l-transparent border-r-transparent ${
                                 sortState.key === "code" && sortState.direction === "asc"
-                                  ? "text-white"
-                                  : "text-white/50"
+                                  ? "border-b-[#1E8BFF]"
+                                  : "border-b-white/60"
                               }`}
                             />
-                            <ChevronDown
-                              className={`-mt-1 size-[10px] ${
+                            <span
+                              className={`mt-0.5 h-0 w-0 border-l-[4px] border-r-[4px] border-t-[5px] border-l-transparent border-r-transparent ${
                                 sortState.key === "code" && sortState.direction === "desc"
-                                  ? "text-white"
-                                  : "text-white/50"
+                                  ? "border-t-[#201547]"
+                                  : "border-t-white"
                               }`}
                             />
                           </span>
@@ -121,7 +121,7 @@ export function JobClassificationTable({
                     </Tooltip>
                   </TooltipProvider>
                 </TableHead>
-                <TableHead className="h-[44px] border-r border-[#6C5DD3] bg-[var(--primary)] px-3 text-[12px] font-medium text-white">
+                <TableHead className="h-[44px] border-r border-[#FFFFFF66] bg-[var(--primary)] px-3 text-[12px] font-medium text-white">
                   <TooltipProvider>
                     <Tooltip open={tooltipOpenKey === "name"}>
                       <TooltipTrigger asChild>
@@ -136,18 +136,18 @@ export function JobClassificationTable({
                         >
                           <span>Name</span>
                           <span className="pointer-events-none absolute right-[0px] inline-flex flex-col items-center leading-none">
-                            <ChevronUp
-                              className={`size-[10px] ${
+                            <span
+                              className={`h-0 w-0 border-b-[5px] border-l-[4px] border-r-[4px] border-l-transparent border-r-transparent ${
                                 sortState.key === "name" && sortState.direction === "asc"
-                                  ? "text-white"
-                                  : "text-white/50"
+                                  ? "border-b-[#1E8BFF]"
+                                  : "border-b-white/60"
                               }`}
                             />
-                            <ChevronDown
-                              className={`-mt-1 size-[10px] ${
+                            <span
+                              className={`mt-0.5 h-0 w-0 border-l-[4px] border-r-[4px] border-t-[5px] border-l-transparent border-r-transparent ${
                                 sortState.key === "name" && sortState.direction === "desc"
-                                  ? "text-white"
-                                  : "text-white/50"
+                                  ? "border-t-[#201547]"
+                                  : "border-t-white"
                               }`}
                             />
                           </span>
@@ -159,7 +159,7 @@ export function JobClassificationTable({
                     </Tooltip>
                   </TooltipProvider>
                 </TableHead>
-                <TableHead className="h-[44px] border-r border-[#6C5DD3] bg-[var(--primary)] px-3 text-center text-[12px] font-medium text-white">
+                <TableHead className="h-[44px] border-r border-[#FFFFFF66] bg-[var(--primary)] px-3 text-center text-[12px] font-medium text-white">
                   Active
                 </TableHead>
                 <TableHead className="h-[44px] bg-[var(--primary)] px-3 text-center text-[12px] font-medium text-white">
@@ -169,7 +169,6 @@ export function JobClassificationTable({
             </TableHeader>
           </Table>
         </div>
-        <div className="h-[44px] w-[12px] border-l border-[#6C5DD3] bg-[var(--primary)]" />
       </div>
       <div
         className="program-table-scroll overflow-y-auto [scrollbar-gutter:stable]"

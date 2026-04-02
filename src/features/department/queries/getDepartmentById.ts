@@ -1,12 +1,9 @@
-import {
-  useQuery,
-  useQueryClient,
-  type QueryClient,
-} from "@tanstack/react-query"
+import { useQuery, type QueryClient } from "@tanstack/react-query"
 import { departmentKeys } from "../keys"
 import { getDepartmentById } from "../api/departments"
 import type { Department } from "../types"
 import { mergeDepartmentDetail } from "../lib/mergeDepartmentDetail"
+import { queryClient } from "@/main"
 
 function getDepartmentFromListCache(
   queryClient: QueryClient,
@@ -29,7 +26,6 @@ export async function loadDepartmentDetailForModal(
 }
 
 export function useGetDepartmentById(id: string | null) {
-  const queryClient = useQueryClient()
   return useQuery({
     queryKey: id ? departmentKeys.detail(id) : departmentKeys.details(),
     queryFn: async () => {

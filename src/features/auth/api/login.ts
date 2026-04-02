@@ -1,36 +1,10 @@
 import { api, setToken } from "@/lib/api"
-
-/** Form uses “email”; backend expects `loginId` (often the same value). */
-export type LoginCredentials = {
-  email: string
-  password: string
-}
-
-type LoginApiData = {
-  userId: string
-  loginId: string
-  otp?: string | number
-  accessToken?: string
-  access_token?: string
-  token?: string
-  nextPage?: string
-  next_page?: string
-}
-
-/** Nest-style envelope from `ApiResponseDto.success(result, …)`. */
-type ApiEnvelope<T> = {
-  success?: boolean
-  data?: T
-  message?: string
-}
-
-export type LoginResult = {
-  userId: string
-  loginId: string
- /** Normalized for routing, e.g. `dashboard` | `otp` */
-  nextPage: string
-  otp?: string
-}
+import type {
+  ApiEnvelope,
+  LoginApiData,
+  LoginCredentials,
+  LoginResult,
+} from "../types"
 
 function parseLoginPayload(json: unknown): LoginApiData {
   if (!json || typeof json !== "object") {
@@ -69,7 +43,7 @@ function extractAccessToken(data: LoginApiData): string {
  * so `POST /auth/validate-otp` can send `Authorization: Bearer <that token>`.
  */
 export async function login(credentials: LoginCredentials): Promise<LoginResult> {
-  const body = await api.post<ApiEnvelope<LoginApiData> | LoginApiData>(
+  const body = await api.post<ApiEnvelope | LoginApiData>(
     "/auth/login",
     {
       loginId: credentials.email.trim(),
@@ -79,9 +53,7 @@ export async function login(credentials: LoginCredentials): Promise<LoginResult>
   )
 
   if (body && typeof body === "object") {
-    const env = body as ApiEnvelope<LoginApiData> & {
-      statusCode?: number | string
-    }
+    const env = body as ApiEnvelope
     if (env.success === false) {
       throw new Error(env.message ?? "Login failed")
     }

@@ -1,6 +1,6 @@
-import { useCreateProgram } from "../mutations/createProgram"
-import { useUpdateProgram } from "../mutations/updateProgram"
-import { useGetPrograms } from "../queries/getPrograms"
+import { useCreateProgram } from "../mutations/create-program"
+import { useUpdateProgram } from "../mutations/update-program"
+import { useGetPrograms } from "../queries/get-programs"
 import type { GetProgramsParams } from "../types"
 
 export function useProgramModule(params: GetProgramsParams) {

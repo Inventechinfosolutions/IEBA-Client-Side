@@ -11,7 +11,6 @@ import type {
   TenantMasterCodeRow,
 } from "./types"
 
-
 function formatPercent(value: number): string {
   if (Number.isNaN(value)) return "0.00"
   return value.toFixed(2)
@@ -159,9 +158,6 @@ export async function apiGetMasterCodeById(id: string): Promise<MasterCodeRow> {
   if (!entity) throw new Error("Activity code not found")
   return normalizeActivityCodeRow(entity)
 }
-
-// ─── Tenant master-codes: by-name + PUT ───────────────────────────────────────
-
 
 function normalizeTenantMasterCode(raw: ApiTenantMasterCode): TenantMasterCodeRow {
   return {
