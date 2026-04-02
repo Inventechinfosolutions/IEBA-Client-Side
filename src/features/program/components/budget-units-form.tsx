@@ -400,75 +400,86 @@ export function BudgetUnitsForm({
         <>
           <div className="space-y-1">
             <label className="block text-[14px] text-[#111827]">*Budget Unit Program Name</label>
-            <div className="relative" ref={budgetProgramDropdownRef}>
+            {formMode === "edit" ? (
               <Input
                 value={form.watch("buSubProgramBudgetUnitProgramName") || ""}
+                disabled
                 readOnly
-                onMouseDown={(event) => event.preventDefault()}
-                onClick={() => setIsBudgetProgramOpen((prev) => !prev)}
-                onBlur={() => window.setTimeout(() => setIsBudgetProgramOpen(false), 120)}
-                onFocus={() => setIsBudgetProgramOpen(true)}
+                tabIndex={-1}
                 placeholder="Select Budget Program"
-                className="h-[44px] rounded-[7px] border border-[#c6cedd] bg-white px-3 pr-8 text-[14px] font-normal text-[#111827] shadow-none placeholder:text-[12px] placeholder:text-[#b0b8c8] focus-visible:border-[#6C5DD3] focus-visible:ring-0"
+                className="h-[44px] rounded-[7px] border border-[#c6cedd] px-3 text-[14px] font-normal text-[#111827] shadow-none placeholder:text-[12px] placeholder:text-[#b0b8c8] disabled:pointer-events-auto disabled:cursor-not-allowed disabled:!border-[0.8px] disabled:!border-[#cfd4dd] disabled:!bg-[#d2d4d9]/20 disabled:!text-black disabled:opacity-100"
               />
-              <button
-                type="button"
-                onMouseDown={(event) => event.preventDefault()}
-                onClick={() => setIsBudgetProgramOpen((prev) => !prev)}
-                className="absolute right-0 top-0 inline-flex h-full w-[24px] cursor-pointer items-center justify-center text-[#6b7280]"
-                aria-label="Toggle budget program options"
-              >
+            ) : (
+              <div className="relative" ref={budgetProgramDropdownRef}>
+                <Input
+                  value={form.watch("buSubProgramBudgetUnitProgramName") || ""}
+                  readOnly
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => setIsBudgetProgramOpen((prev) => !prev)}
+                  onBlur={() => window.setTimeout(() => setIsBudgetProgramOpen(false), 120)}
+                  onFocus={() => setIsBudgetProgramOpen(true)}
+                  placeholder="Select Budget Program"
+                  className="h-[44px] rounded-[7px] border border-[#c6cedd] bg-white px-3 pr-8 text-[14px] font-normal text-[#111827] shadow-none placeholder:text-[12px] placeholder:text-[#b0b8c8] focus-visible:border-[#6C5DD3] focus-visible:ring-0"
+                />
+                <button
+                  type="button"
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => setIsBudgetProgramOpen((prev) => !prev)}
+                  className="absolute right-0 top-0 inline-flex h-full w-[24px] cursor-pointer items-center justify-center text-[#6b7280]"
+                  aria-label="Toggle budget program options"
+                >
+                  {isBudgetProgramOpen ? (
+                    <ChevronUp className="size-4" />
+                  ) : (
+                    <ChevronDown className="size-4" />
+                  )}
+                </button>
                 {isBudgetProgramOpen ? (
-                  <ChevronUp className="size-4" />
-                ) : (
-                  <ChevronDown className="size-4" />
-                )}
-              </button>
-              {isBudgetProgramOpen ? (
-                <div className="absolute z-10 mt-1 max-h-[180px] w-full overflow-auto rounded-[7px] border border-[#d9deea] bg-white p-1 shadow-[0_8px_18px_rgba(17,24,39,0.12)]">
-                  {budgetProgramNameOptions.map((name) => (
-                    <button
-                      key={name}
-                      type="button"
-                      onMouseDown={(event) => event.preventDefault()}
-                      onClick={() => {
-                        form.setValue("buSubProgramBudgetUnitProgramName", name, {
-                          shouldDirty: true,
-                          shouldTouch: true,
-                          shouldValidate: true,
-                        })
-                        form.setValue(
-                          "buSubProgramBudgetCode",
-                          budgetProgramLookup[name]?.code ?? "",
-                          {
+                  <div className="absolute z-10 mt-1 max-h-[180px] w-full overflow-auto rounded-[7px] border border-[#d9deea] bg-white p-1 shadow-[0_8px_18px_rgba(17,24,39,0.12)]">
+                    {budgetProgramNameOptions.map((name) => (
+                      <button
+                        key={name}
+                        type="button"
+                        onMouseDown={(event) => event.preventDefault()}
+                        onClick={() => {
+                          form.setValue("buSubProgramBudgetUnitProgramName", name, {
                             shouldDirty: true,
                             shouldTouch: true,
                             shouldValidate: true,
-                          }
-                        )
-                        form.setValue(
-                          "buSubProgramDepartment",
-                          budgetProgramLookup[name]?.department ?? "",
-                          {
-                            shouldDirty: true,
-                            shouldTouch: true,
-                            shouldValidate: true,
-                          }
-                        )
-                        setIsBudgetProgramOpen(false)
-                      }}
-                      className={`block w-full cursor-pointer rounded-[4px] px-2.5 py-1.5 text-left text-[14px] font-normal text-[#111827] hover:bg-[#e5e7eb] ${
-                        form.watch("buSubProgramBudgetUnitProgramName") === name
-                          ? "bg-[#dbeafe]"
-                          : ""
-                      }`}
-                    >
-                      {name}
-                    </button>
-                  ))}
-                </div>
-              ) : null}
-            </div>
+                          })
+                          form.setValue(
+                            "buSubProgramBudgetCode",
+                            budgetProgramLookup[name]?.code ?? "",
+                            {
+                              shouldDirty: true,
+                              shouldTouch: true,
+                              shouldValidate: true,
+                            }
+                          )
+                          form.setValue(
+                            "buSubProgramDepartment",
+                            budgetProgramLookup[name]?.department ?? "",
+                            {
+                              shouldDirty: true,
+                              shouldTouch: true,
+                              shouldValidate: true,
+                            }
+                          )
+                          setIsBudgetProgramOpen(false)
+                        }}
+                        className={`block w-full cursor-pointer rounded-[4px] px-2.5 py-1.5 text-left text-[14px] font-normal text-[#111827] hover:bg-[#e5e7eb] ${
+                          form.watch("buSubProgramBudgetUnitProgramName") === name
+                            ? "bg-[#dbeafe]"
+                            : ""
+                        }`}
+                      >
+                        {name}
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            )}
           </div>
           <div className="space-y-1">
             <label className="block text-[14px] text-[#111827]">*Budget Code</label>

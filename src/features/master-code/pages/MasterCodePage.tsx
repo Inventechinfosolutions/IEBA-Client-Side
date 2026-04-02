@@ -8,15 +8,16 @@ import { MasterCodeTable } from "../components/MasterCodeTable.tsx"
 import { MasterCodeTabs } from "../components/MasterCodeTabs.tsx"
 import { MasterCodeToolbar } from "../components/MasterCodeToolbar.tsx"
 import { useMasterCodes } from "../hooks/useMasterCodes"
-import { DEFAULT_ACTIVITY_DESCRIPTION } from "../mock"
+import { apiGetActivityCodeById } from "../api"
+import { useUpdateTenantMasterCode } from "../mutations/updateTenantMasterCode"
+import { useTenantMasterCodeByName } from "../queries/getTenantMasterCodes"
 import {
+  MASTER_CODE_TYPE_TAB_ORDER,
   type MasterCodeFormMode,
   type MasterCodeFormValues,
   type MasterCodeRow,
   type MasterCodeTab,
 } from "../types"
-
-const tabs: MasterCodeTab[] = ["FFP", "MAA", "TCM", "INTERNAL", "CDSS"]
 
 const emptyFormValues: MasterCodeFormValues = {
   code: "",
@@ -41,15 +42,30 @@ export function MasterCodePage() {
       "!w-fit !max-w-none !min-h-[35px] !rounded-[8px] !border-0 !px-3 !py-2 !text-[12px] !whitespace-nowrap !shadow-[0_8px_22px_rgba(17,24,39,0.18)]",
   }
 
-  const [activeTab, setActiveTab] = useState<MasterCodeTab>("FFP")
-  const [allowMultiCodes, setAllowMultiCodes] = useState(true)
+  const [selectedTab, setSelectedTab] = useState<MasterCodeTab | null>(null)
+  const [allowMultiCodesLocal, setAllowMultiCodesLocal] = useState(true)
   const [inactiveOnly, setInactiveOnly] = useState(false)
-  const [page, setPage] = useState(1)
+  const [pageByTab, setPageByTab] = useState<Record<string, number>>({})
   const [pageSize, setPageSize] = useState(10)
   const [modalOpen, setModalOpen] = useState(false)
   const [modalMode, setModalMode] = useState<MasterCodeFormMode>("add")
   const [selectedRow, setSelectedRow] = useState<MasterCodeRow | null>(null)
   const [modalSessionId, setModalSessionId] = useState(0)
+  const [isEditDetailLoading, setIsEditDetailLoading] = useState(false)
+
+  const updateTenantMaster = useUpdateTenantMasterCode()
+
+  const tabs = MASTER_CODE_TYPE_TAB_ORDER
+
+  const activeTab: MasterCodeTab | "" = useMemo(() => {
+    if (tabs.length === 0) return ""
+    if (selectedTab && tabs.includes(selectedTab)) return selectedTab
+    return tabs[0]!
+  }, [selectedTab, tabs])
+
+  const tenantMasterQuery = useTenantMasterCodeByName(activeTab)
+
+  const page = pageByTab[activeTab] ?? 1
 
   const masterCodes = useMasterCodes({
     codeType: activeTab,
@@ -58,8 +74,18 @@ export function MasterCodePage() {
     inactiveOnly,
   })
   const rows = masterCodes.rows
+
+  const selectedTenantMaster = tenantMasterQuery.data ?? undefined
+  const allowMultiCodes =
+    selectedTenantMaster != null ? selectedTenantMaster.allowMulticode : allowMultiCodesLocal
+
   const isTableLoading =
-    masterCodes.isLoading || masterCodes.isCreating || masterCodes.isUpdating
+    masterCodes.isLoading ||
+    masterCodes.isCreating ||
+    masterCodes.isUpdating ||
+    tenantMasterQuery.isLoading ||
+    updateTenantMaster.isPending ||
+    isEditDetailLoading
 
   const modalInitialValues = useMemo<MasterCodeFormValues>(() => {
     if (modalMode === "edit" && selectedRow) {
@@ -71,8 +97,7 @@ export function MasterCodePage() {
         spmp: selectedRow.spmp,
         allocable: selectedRow.allocable,
         active: selectedRow.status,
-        activityDescription:
-          selectedRow.activityDescription ?? DEFAULT_ACTIVITY_DESCRIPTION,
+        activityDescription: selectedRow.activityDescription ?? "",
       }
     }
     return emptyFormValues
@@ -86,18 +111,26 @@ export function MasterCodePage() {
   }
 
   const handleTabChange = (nextTab: MasterCodeTab) => {
-    setActiveTab(nextTab)
-    setPage(1)
+    setSelectedTab(nextTab)
   }
 
-  const handleEditRow = (row: MasterCodeRow) => {
-    setModalMode("edit")
-    setSelectedRow(row)
-    setModalSessionId((prev) => prev + 1)
-    setModalOpen(true)
+  const handleEditRow = async (row: MasterCodeRow) => {
+    try {
+      setIsEditDetailLoading(true)
+      const fresh = await apiGetActivityCodeById(row.id)
+      setModalMode("edit")
+      setSelectedRow(fresh)
+      setModalSessionId((prev) => prev + 1)
+      setModalOpen(true)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to load activity code")
+    } finally {
+      setIsEditDetailLoading(false)
+    }
   }
 
   const handleSaveForm = (values: MasterCodeFormValues) => {
+    if (!activeTab) return
     if (modalMode === "edit" && selectedRow) {
       masterCodes.updateMasterCode(
         { id: selectedRow.id, codeType: activeTab, values },
@@ -140,7 +173,22 @@ export function MasterCodePage() {
           codeType={activeTab}
           allowMultiCodes={allowMultiCodes}
           inactiveOnly={inactiveOnly}
-          onToggleAllowMultiCodes={() => setAllowMultiCodes((prev) => !prev)}
+          onToggleAllowMultiCodes={() => {
+            if (selectedTenantMaster != null) {
+              updateTenantMaster.mutate(
+                {
+                  id: selectedTenantMaster.id,
+                  body: { allowMulticode: !selectedTenantMaster.allowMulticode },
+                },
+                {
+                  onError: (error) =>
+                    toast.error(error instanceof Error ? error.message : "Update failed"),
+                }
+              )
+            } else {
+              setAllowMultiCodesLocal((prev) => !prev)
+            }
+          }}
           onToggleInactiveOnly={() => setInactiveOnly((prev) => !prev)}
           onAddFfp={handleAddFfp}
         />
@@ -156,10 +204,12 @@ export function MasterCodePage() {
           totalItems={masterCodes.totalItems}
           currentPage={page}
           pageSize={pageSize}
-          onPageChange={setPage}
+          onPageChange={(nextPage) =>
+            setPageByTab((prev) => (activeTab ? { ...prev, [activeTab]: nextPage } : prev))
+          }
           onPageSizeChange={(newSize) => {
             setPageSize(newSize)
-            setPage(1)
+            setPageByTab((prev) => (activeTab ? { ...prev, [activeTab]: 1 } : prev))
           }}
         />
       </div>

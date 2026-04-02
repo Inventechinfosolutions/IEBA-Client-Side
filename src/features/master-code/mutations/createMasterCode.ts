@@ -1,40 +1,14 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 
+import { apiCreateActivityCode } from "../api"
 import { masterCodeKeys } from "../keys"
-import { MOCK_NETWORK_DELAY_MS, delay, mockMasterCodeRows } from "../mock"
-import type { CreateMasterCodeInput, MasterCodeRow } from "../types"
-
-async function createMasterCode(input: CreateMasterCodeInput): Promise<MasterCodeRow> {
-  await delay(MOCK_NETWORK_DELAY_MS)
-
-  const maxId = mockMasterCodeRows.reduce((max, row) => {
-    const parsed = Number.parseInt(row.id, 10)
-    if (Number.isNaN(parsed)) return max
-    return Math.max(max, parsed)
-  }, 0)
-  const nextId = String(maxId + 1)
-  const activityDescription = input.values.activityDescription.trim()
-  const nextRow: MasterCodeRow = {
-    id: nextId,
-    code: input.values.code.trim(),
-    name: input.values.name.trim(),
-    spmp: input.values.spmp,
-    allocable: input.values.allocable,
-    ffpPercent: input.values.ffpPercent?.trim() || "0.00",
-    match: input.values.match === "E" || input.values.match === "N" ? input.values.match : "N",
-    status: input.values.active,
-    activityDescription: activityDescription.length > 0 ? activityDescription : undefined,
-  }
-
-  mockMasterCodeRows.unshift(nextRow)
-  return nextRow
-}
+import type { CreateMasterCodeInput } from "../types"
 
 export function useCreateMasterCode() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (input: CreateMasterCodeInput) => createMasterCode(input),
+    mutationFn: (input: CreateMasterCodeInput) => apiCreateActivityCode(input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: masterCodeKeys.lists() })
     },

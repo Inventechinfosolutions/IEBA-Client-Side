@@ -1,15 +1,15 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { useMutation } from "@tanstack/react-query"
+import { queryClient } from "@/main"
 
 import { programKeys } from "../keys"
-import { createMockProgram } from "../mock"
+import { apiCreateProgram } from "../api"
 import type { CreateProgramInput } from "../types"
 
 async function createProgram(input: CreateProgramInput) {
-  return createMockProgram(input)
+  return apiCreateProgram(input)
 }
 
 export function useCreateProgram() {
-  const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: (input: CreateProgramInput) => createProgram(input),
