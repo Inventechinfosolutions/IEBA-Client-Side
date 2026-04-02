@@ -75,15 +75,15 @@ export function LoginPage() {
           backgroundPosition: "center top",
         }}
       >
-        <div className="relative z-10 flex w-full max-w-md flex-col items-center pt-[23vh]">
-          <div className="w-full min-h-[430px] max-h-[50vh] overflow-y-auto rounded-[5px] bg-white p-8 shadow-login-card">
+        <div className="relative z-10 flex w-full max-w-[450px] flex-col items-center pt-[23vh]">
+          <div className="w-full min-h-[480px] max-h-[60vh] overflow-y-auto rounded-[5px] bg-white p-8 shadow-login-card">
             <div className="text-center">
               <h1 className="mb-2 tracking-tight text-[#212529] font-[Roboto,sans-serif] text-[38.465px] leading-tight">
                 Login
               </h1>
               <p className="text-[19px] text-gray-500">Access to our dashboard</p>
             </div>
-            <form onSubmit={formHandleSubmit(onSubmit)} className="mt-6 space-y-4">
+            <form onSubmit={formHandleSubmit(onSubmit)} className="mt-10 space-y-5">
               {(loginErrorMessage || error) && (
                 <div className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-600">
                   {loginErrorMessage ?? error}
@@ -100,7 +100,7 @@ export function LoginPage() {
                     type="email"
                     placeholder="Email Id"
                     {...register("email")}
-                    className={`h-11 pl-10 pr-4 ${errors.email ? "border-red-500 focus-visible:ring-red-500/20" : ""}`}
+                    className={`h-11 rounded-[10px] pl-10 pr-4 ${errors.email ? "border-red-500 focus-visible:ring-red-500/20" : ""}`}
                     autoComplete="email"
                     aria-invalid={!!errors.email}
                   />
@@ -120,7 +120,7 @@ export function LoginPage() {
                     type={showPassword ? "text" : "password"}
                     placeholder="Password"
                     {...register("password")}
-                    className={`h-11 pl-10 pr-10 ${errors.password ? "border-red-500 focus-visible:ring-red-500/20" : ""}`}
+                    className={`h-11 rounded-[10px] pl-10 pr-10 ${errors.password ? "border-red-500 focus-visible:ring-red-500/20" : ""}`}
                     autoComplete="current-password"
                     aria-invalid={!!errors.password}
                   />
@@ -148,7 +148,7 @@ export function LoginPage() {
               <Button
                 type="submit"
                 disabled={loginMutation.isPending}
-                className="h-11 w-full rounded-lg border-0 text-[18px] font-medium text-white hover:opacity-90"
+                className="h-11 w-full rounded-[6px] border-0 text-[18px] font-medium text-white hover:opacity-90"
                 style={{ background: "linear-gradient(90deg,#00c5fb,#6c5dd3)" }}
               >
                 {loginMutation.isPending ? (
@@ -168,7 +168,7 @@ export function LoginPage() {
         </div>
       </div>
       <div
-        className="relative hidden min-h-svh min-w-0 flex-1 border-0 bg-[#2563eb] bg-cover bg-center bg-no-repeat md:-ml-px md:block"
+        className="relative hidden min-h-svh min-w-0 flex-1 border-0 bg-[#2563eb] bg-cover bg-center bg-no-repeat md:-ml-px md:block md:shadow-[-14px_0_28px_rgba(0,0,0,0.22)]"
         style={{ backgroundImage: `url(${loginRightBg})` }}
       >
         <div className="relative z-10 flex flex-col items-center justify-center p-12">

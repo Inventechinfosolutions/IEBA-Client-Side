@@ -4,7 +4,7 @@ const USER_KEY = "ieba_user"
 
 export function getStoredUser(): User | null {
   try {
-    const raw = localStorage.getItem(USER_KEY)
+    const raw = sessionStorage.getItem(USER_KEY)
     if (!raw) return null
     return JSON.parse(raw) as User
   } catch {
@@ -13,9 +13,9 @@ export function getStoredUser(): User | null {
 }
 
 export function setStoredUser(user: User): void {
-  localStorage.setItem(USER_KEY, JSON.stringify(user))
+  sessionStorage.setItem(USER_KEY, JSON.stringify(user))
 }
 
 export function clearStoredUser(): void {
-  localStorage.removeItem(USER_KEY)
+  sessionStorage.removeItem(USER_KEY)
 }

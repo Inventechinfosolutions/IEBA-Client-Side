@@ -8,7 +8,8 @@ export function useDepartments(filters: DepartmentFilter) {
     pageSize: 10,
   })
 
-  const { data: allDepartments = [], isLoading, isFetching } = useGetDepartments()
+  const status: "active" | "inactive" = filters.inactive ? "inactive" : "active"
+  const { data: allDepartments = [], isLoading, isFetching } = useGetDepartments(status)
 
   const filteredDepartments = useMemo(() => {
     return allDepartments.filter((dept) => {

@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useMutation } from "@tanstack/react-query"
 import { useNavigate, useLocation, Navigate } from "react-router-dom"
 import { toast } from "sonner"
-import { ChevronDown, Search } from "lucide-react"
+import { ChevronDown, CircleCheckIcon, Search } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -32,9 +32,8 @@ import {
   type OtpLocationState,
   type OtpPayload,
   type OtpResponse,
-  type ResendOtpPayload,
-  type ResendOtpResponse,
 } from "@/features/auth/types"
+import { useLogin } from "@/features/auth/mutations/login"
 import iebaLogo from "@/assets/ieba-logo.png"
 import forgotPasswordBg from "@/assets/forgot-password-bg.png"
 import mailIcon from "@/assets/login-mail-icon.png"
@@ -81,13 +80,7 @@ export function OtpAuthentication() {
     },
   })
 
-  const resendOtpMutation = useMutation<ResendOtpResponse, Error, ResendOtpPayload>({
-    mutationFn: async () => ({
-      message: "OTP resent to your email",
-    }),
-    onSuccess: (data) => toast.info(data.message),
-    onError: (error) => toast.error(error.message || "Failed to resend OTP"),
-  })
+  const resendLoginMutation = useLogin()
 
   const validateLoginOtpMutation = useValidateLoginOtp()
 
@@ -121,15 +114,22 @@ export function OtpAuthentication() {
         onSuccess: (result) => {
           setToken(result.accessToken)
           const loginId = email.trim()
+          const countyName = selectedCountyLabel ?? ""
           establishDashboardSession({
             id: result.userId,
             name: loginId.includes("@")
               ? (loginId.split("@")[0] ?? "User")
               : loginId,
             email: loginId,
+            namespace: selectedNameSpace,
+            countyName,
           })
           setCountyModalOpen(false)
-          toast.success("Signed in successfully")
+          toast.success("Signed in successfully", {
+            icon: (
+              <CircleCheckIcon className="size-4 shrink-0 text-green-600 dark:text-green-400" />
+            ),
+          })
           navigate("/", { replace: true })
         },
         onError: (error) => {
@@ -152,7 +152,37 @@ export function OtpAuthentication() {
   }
 
   function handleResendOtp() {
-    resendOtpMutation.mutate({ email })
+    const password = state?.password
+    if (!password) return
+    resendLoginMutation.mutate(
+      { email, password },
+      {
+        onSuccess: (data) => {
+          if (data.nextPage !== "otp") {
+            toast.error("Could not resend OTP. Please sign in again from the login page.")
+            return
+          }
+          const nextOtp = data.otp ?? ""
+          setValue("otp", nextOtp, { shouldValidate: true })
+          navigate(location.pathname, {
+            replace: true,
+            state: {
+              email: data.loginId,
+              password,
+              otp: data.otp,
+            } satisfies OtpLocationState,
+          })
+          toast.success("OTP sent successfully", {
+            icon: (
+              <CircleCheckIcon className="size-4 shrink-0 text-green-600 dark:text-green-400" />
+            ),
+          })
+        },
+        onError: (error) => {
+          toast.error(error.message || "Failed to resend OTP")
+        },
+      }
+    )
   }
 
   const namespaceRows = globalNamespacesQuery.data ?? []
@@ -165,7 +195,7 @@ export function OtpAuthentication() {
   )
 
   return (
-    <div className="relative flex min-h-svh w-full flex-col items-center justify-center overflow-hidden bg-white px-6 py-12">
+    <div className="relative flex min-h-svh w-full flex-col items-center justify-center overflow-x-hidden bg-white px-4 py-8 sm:px-6 sm:py-12">
       {/* Same bg as Forgot Password: inverted forgot-password-bg.png, 30% intensity */}
       <div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-30 pointer-events-none [filter:invert(1)]"
@@ -187,8 +217,9 @@ export function OtpAuthentication() {
         </a>
       </div>
 
-      {/* OTP card – border-radius 6px, ref screenshots */}
-      <Card className="relative z-10 h-[400px] w-[28.5%] min-w-[340px] rounded-[6px] border-gray-100 bg-white py-5 px-4 shadow-login-card font-[Roboto,sans-serif]">
+      {/* OTP card: narrower width, taller min height; max-width keeps centering stable */}
+      <div className="relative z-10 flex w-full max-w-[420px] min-w-0 shrink-0 justify-center">
+        <Card className="flex min-h-[430px] w-full min-w-0 flex-col rounded-[6px] border-gray-100 bg-white py-7 px-5 shadow-login-card font-[Roboto,sans-serif]">
         <CardHeader className="space-y-0 text-center px-0 pt-4">
           <CardTitle className="mb-2 font-normal tracking-tight text-[#212529] text-[39.465px] leading-tight font-['Roboto',sans-serif]">
             OTP Authentication
@@ -198,8 +229,11 @@ export function OtpAuthentication() {
           </CardDescription>
         </CardHeader>
         <CardContent className="px-0">
-        <form onSubmit={formHandleSubmit(handleSubmit)} className="mt-3 space-y-4">
-          <div className="space-y-1.5" >
+        <form
+          onSubmit={formHandleSubmit(handleSubmit)}
+          className="mt-3 flex flex-col gap-4"
+        >
+          <div className="space-y-1.5">
             <label
               htmlFor="otp"
               className="text-sm font-normal text-gray-700"
@@ -241,7 +275,7 @@ export function OtpAuthentication() {
             <button
               type="button"
               onClick={handleResendOtp}
-              disabled={resendOtpMutation.isPending}
+              disabled={resendLoginMutation.isPending}
               className="text-sm font-normal text-[#000000] underline underline-offset-2 hover:text-gray-700"
             >
               Resend OTP
@@ -259,7 +293,7 @@ export function OtpAuthentication() {
           <Button
             type="submit"
             disabled={verifyOtpMutation.isPending}
-            className="mt-4 h-11 w-full rounded-[6px] border-0 text-[18px] font-medium text-white hover:opacity-90"
+            className="mt-2 h-11 w-full rounded-[6px] border-0 text-[18px] font-medium text-white hover:opacity-90"
             style={{ background: "linear-gradient(90deg, #00c5fb, #6c5dd3)" }}
           >
             <span className="flex items-center justify-center gap-2">
@@ -270,6 +304,7 @@ export function OtpAuthentication() {
         </form>
         </CardContent>
       </Card>
+      </div>
 
       {/* County picker modal – props from screenshots, Tailwind */}
       <Dialog open={countyModalOpen} onOpenChange={(open) => !open && handleCountyCancel()}>
@@ -294,7 +329,7 @@ export function OtpAuthentication() {
         <div className="px-8 pb-10 pt-1 sm:px-9">
           <div className="mb-3 w-full">
             <h6 className="block text-left text-[16px] font-normal leading-tight text-[#000000E0]">
-              Pick a namespace to proceed
+              Pick a county to proceed
             </h6>
           </div>
           <div className="flex w-full justify-center">
@@ -308,7 +343,7 @@ export function OtpAuthentication() {
                   <Input
                     value={countySearch}
                     onChange={(e) => setCountySearch(e.target.value)}
-                    placeholder="Search namespace"
+                    placeholder="Search county"
                     autoFocus
                     className="h-full border-0 bg-transparent pl-4 pr-11 text-[16px] shadow-none focus-visible:ring-0"
                   />
@@ -326,7 +361,7 @@ export function OtpAuthentication() {
                   }`}
                 >
                   <span className={`text-[16px] ${selectedNameSpace ? "text-[#000000D9]" : "text-[#00000073]"}`}>
-                    {selectedCountyLabel ?? "Select namespace"}
+                    {selectedCountyLabel ?? "Select county"}
                   </span>
                   <ChevronDown className="h-5 w-5 text-[#00000073]" />
                 </button>
@@ -337,7 +372,7 @@ export function OtpAuthentication() {
                   <div className="max-h-[220px] overflow-y-auto py-1">
                     {globalNamespacesQuery.isLoading && (
                       <div className="px-5 py-2 text-[15px] text-[#00000073]">
-                        Loading namespaces…
+                        Loading counties…
                       </div>
                     )}
                     {globalNamespacesQuery.isError && (
@@ -345,7 +380,7 @@ export function OtpAuthentication() {
                         <p className="text-[15px] text-red-500" role="alert">
                           {globalNamespacesQuery.error instanceof Error
                             ? globalNamespacesQuery.error.message
-                            : "Failed to load namespaces"}
+                            : "Failed to load counties"}
                         </p>
                         <button
                           type="button"
@@ -378,7 +413,7 @@ export function OtpAuthentication() {
                       ))}
                     {globalNamespacesQuery.isSuccess && filteredCountyOptions.length === 0 && (
                       <div className="px-5 py-2 text-[15px] text-[#00000073]">
-                        No namespace found
+                        No county found
                       </div>
                     )}
                   </div>
@@ -388,7 +423,7 @@ export function OtpAuthentication() {
           </div>
           {countyError && (
             <p className="mt-1.5 text-center text-xs text-red-500" role="alert">
-              Please select a namespace
+              Please select a county
             </p>
           )}
         </div>

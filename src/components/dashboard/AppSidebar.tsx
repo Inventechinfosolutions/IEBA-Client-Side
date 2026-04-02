@@ -1,38 +1,19 @@
-import { useState } from "react"
 import { Link, useLocation } from "react-router-dom"
 import {
   LayoutDashboard,
-  LogOut,
-  IdCard,
   ScrollText,
-  Settings,
   Users,
   Building2,
   Table2,
   CalendarClock,
-  LockKeyhole,
   Layers,
   BarChart2,
 } from "lucide-react"
 
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@/components/ui/avatar"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+import iebaLogo from "@/assets/ieba-logo.png"
 import {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarHeader,
@@ -40,8 +21,6 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
-import { useAuth } from "@/contexts/AuthContext"
-import { ChangePasswordFormModal } from "@/features/change-password"
 
 const mainNav = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
@@ -62,25 +41,29 @@ const mainNav = [
 ] as const
 
 export function AppSidebar() {
-  const { user, signOut } = useAuth()
   const location = useLocation()
-  const [changePasswordOpen, setChangePasswordOpen] = useState(false)
 
   return (
     <Sidebar>
-      <SidebarHeader className="border-b border-sidebar-border">
+      <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
               <Link to="/">
-                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                  <LayoutDashboard className="size-4" />
-                </div>
-                <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold">IEBA</span>
-                  <span className="truncate text-xs text-sidebar-foreground/80">
-                    Dashboard
-                  </span>
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#6C5DD3]/10">
+                    <img
+                      src={iebaLogo}
+                      alt="IEBA logo"
+                      className="h-12 w-12 object-contain"
+                    />
+                  </div>
+                  <div className="grid flex-1 text-left leading-tight">
+                    <span className="truncate text-[27px]  text-[#111827]">
+                      I E B A
+                    </span>
+                    
+                  </div>
                 </div>
               </Link>
             </SidebarMenuButton>
@@ -95,7 +78,7 @@ export function AppSidebar() {
                 const isActive =
                   item.url === "/"
                     ? location.pathname === "/"
-                    : location.pathname.startsWith(item.url)
+                    : location.pathname === item.url
                 return (
                   <SidebarMenuItem key={item.url}>
                     <SidebarMenuButton asChild isActive={isActive}>

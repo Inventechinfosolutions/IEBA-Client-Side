@@ -9,7 +9,7 @@ import "./index.css"
 import "./theme-overrides.css"
 import { router } from "./routes"
 
-const queryClient = new QueryClient({
+export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 1000 * 60,

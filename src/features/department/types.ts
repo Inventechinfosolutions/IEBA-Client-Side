@@ -1,9 +1,9 @@
 import type { z } from "zod"
-import { 
-  departmentSchema, 
-  departmentFilterSchema, 
+import {
+  departmentSchema,
+  departmentFilterSchema,
   departmentUpsertSchema,
-  departmentContactSchema 
+  departmentContactSchema,
 } from "./schemas"
 
 export type DepartmentUpsertValues = z.infer<typeof departmentUpsertSchema>
@@ -42,9 +42,9 @@ export interface DepartmentAddPageProps {
 export type ActiveTab = "details" | "settings"
 export type DetailsTab = "address" | "primary" | "secondary" | "billing"
 
-export type PendingTabChange = 
-  | { type: 'active'; value: ActiveTab }
-  | { type: 'details'; value: DetailsTab }
+export type PendingTabChange =
+  | { type: "active"; value: ActiveTab }
+  | { type: "details"; value: DetailsTab }
 
 export type ModifiedContacts = Record<DetailsTab, boolean>
 
@@ -63,3 +63,84 @@ export const DETAIL_TABS: readonly DetailTabConfig[] = [
   { id: "secondary", label: "Secondary Contact", width: "214px" },
   { id: "billing", label: "Billing Contact", width: "214px" },
 ] as const
+
+// API-layer DTO and envelope types
+
+export type DepartmentApiEnvelope<T> = {
+  success?: boolean
+  data?: T
+  message?: string
+}
+
+export type DepartmentPaginationMeta = {
+  total?: number
+  totalItems?: number
+  page?: number
+  limit?: number
+  itemsPerPage?: number
+  currentPage?: number
+  itemCount?: number
+  totalPages?: number
+}
+
+export type DepartmentListResponseDto = {
+  data: unknown[]
+  meta?: DepartmentPaginationMeta
+}
+
+export type DepartmentResDto = Record<string, unknown> & {
+  id?: number
+  code?: string
+  name?: string
+  status?: unknown
+  addresses?: unknown
+  address?: unknown
+  primaryContact?: unknown
+  secondaryContact?: unknown
+  billingContact?: unknown
+  allowMultiCodes?: boolean
+  multiCodes?: unknown
+  allowUserOrCostpoolDirect?: boolean
+  costallocation?: boolean
+  apportioning?: boolean
+  autoApportioning?: boolean
+  removeAutoFillEndTime?: boolean
+  startorEndTime?: boolean
+  supportingDoc?: boolean
+}
+
+export type DepartmentAddressCreateDto = {
+  addressLine1: string
+  city: string
+  state: string
+  zipCode: string
+}
+
+export type CreateDepartmentReqDto = {
+  code: string
+  name: string
+  status: "active" | "inactive"
+  address?: DepartmentAddressCreateDto
+  apportioning?: boolean
+  costallocation?: boolean
+  autoApportioning?: boolean
+  allowUserOrCostpoolDirect?: boolean
+  allowMultiCodes?: boolean
+  multiCodes?: string[]
+  removeAutoFillEndTime?: boolean
+  startorEndTime?: boolean
+  supportingDoc?: boolean
+}
+
+export type UpdateDepartmentReqDto = Partial<CreateDepartmentReqDto>
+
+export type CreateDepartmentResponseDto = {
+  id: number
+  code: string
+  name: string
+}
+
+export type ToDepartmentUIOptions = {
+  /** List rows need `address` for the table; GET-by-id / PUT responses often omit it — map only when true. */
+  includeAddress?: boolean
+}

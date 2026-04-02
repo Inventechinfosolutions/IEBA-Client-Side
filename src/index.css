@@ -33,11 +33,39 @@
   --ring: #6C5DD3;
 }
 
-/* Sidebar active item - subtle highlight (Bits of Time style) */
+/* Sidebar nav styling to match reference UI */
+[data-sidebar="menu"] {
+  padding-top: 0.5rem;
+}
+
+[data-sidebar="menu"] [data-sidebar="menu-item"] + [data-sidebar="menu-item"] {
+  margin-top: 10px; /* a bit more vertical gap between items */
+}
+
+[data-sidebar="menu-button"] {
+  background-color: transparent;
+  color: #9CA3AF;              /* light gray text by default */
+  border-radius: 9999px;       /* pill shape */
+  padding-left: 1.4rem;        /* push content right */
+  padding-right: 1.4rem;
+  gap: 0.9rem;                 /* more space between icon and text */
+  font-size: 14px;             /* slightly larger font */
+}
+
+[data-sidebar="menu-button"]:hover {
+  background-color: #F3F4F6;   /* light gray background on hover */
+  color: #111827;              /* darker text on hover */
+}
+
 [data-sidebar="menu-button"][data-active="true"] {
-  background-color: oklch(0.22 0.02 260);
-  border-left: 3px solid #6C5DD3;
-  padding-left: calc(0.5rem - 3px);
+  background-color: transparent; /* no purple background when active */
+  color: #6C5DD3;                /* purple text when active */
+}
+
+/* Sidebar container: remove hard dividing line, add soft right shadow like card */
+[data-slot="sidebar-container"][data-side="left"] {
+  border-right: none !important;
+  box-shadow: 4px 0 18px rgba(0, 0, 0, 0.06) !important;
 }
 
 @layer base {
@@ -80,14 +108,14 @@
   --chart-4: oklch(0.58 0.22 25);
   --chart-5: oklch(0.424 0.199 265.638);
   --radius: 0.625rem;
-  /* Dark sidebar - Bits of Time style (very dark grey/black) */
-  --sidebar: oklch(0.14 0.01 260);
-  --sidebar-foreground: oklch(0.985 0 0);
+  /* Light sidebar - white card style like reference UI */
+  --sidebar: oklch(0.99 0 0); /* white */
+  --sidebar-foreground: oklch(0.25 0.02 280); /* dark text */
   --sidebar-primary: #6C5DD3;
   --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.22 0.02 260);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(0.25 0.01 260);
+  --sidebar-accent: oklch(0.96 0.01 250); /* subtle hover gray */
+  --sidebar-accent-foreground: oklch(0.25 0.02 280);
+  --sidebar-border: oklch(0.9 0.02 280);
   --sidebar-ring: #6C5DD3;
 }
 
