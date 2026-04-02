@@ -1,94 +1,22 @@
 import { api } from "@/lib/api"
-import type { Department, DepartmentUpsertValues } from "../types"
+import type {
+  CreateDepartmentReqDto,
+  CreateDepartmentResponseDto,
+  Department,
+  DepartmentAddressCreateDto,
+  DepartmentApiEnvelope,
+  DepartmentListResponseDto,
+  DepartmentResDto,
+  DepartmentUpsertValues,
+  ToDepartmentUIOptions,
+  UpdateDepartmentReqDto,
+} from "../types"
 
-/** Opt out with `VITE_DEPARTMENT_SEND_ADDRESS=false` if Nest DTO still rejects nested `address`. */
+
 const SEND_DEPARTMENT_ADDRESS_IN_BODY =
   import.meta.env.VITE_DEPARTMENT_SEND_ADDRESS !== "false"
 
-/** Nest-style envelope from `ApiResponseDto.success(result, …)`. */
-type ApiEnvelope<T> = {
-  success?: boolean
-  data?: T
-  message?: string
-}
 
-type PaginationMeta = {
-  total?: number
-  totalItems?: number
-  page?: number
-  limit?: number
-  itemsPerPage?: number
-  currentPage?: number
-  itemCount?: number
-  totalPages?: number
-}
-
-type DepartmentListResponseDto = {
-  data: unknown[]
-  meta?: PaginationMeta
-}
-
-type DepartmentResDto = Record<string, unknown> & {
-  id?: number
-  code?: string
-  name?: string
-  // backend often uses `status` rather than `active`
-  status?: unknown
-  // new API may include computed address + contact profiles
-  addresses?: unknown
-  address?: unknown
-  primaryContact?: unknown
-  secondaryContact?: unknown
-  billingContact?: unknown
-  allowMultiCodes?: boolean
-  multiCodes?: unknown
-  allowUserOrCostpoolDirect?: boolean
-  costallocation?: boolean
-  apportioning?: boolean
-  autoApportioning?: boolean
-  removeAutoFillEndTime?: boolean
-  startorEndTime?: boolean
-  supportingDoc?: boolean
-}
-
-/**
- * POST/PUT nested `address` — must match Nest nested DTO + `Address` entity fields.
- * Use `addressLine1` (not `area`); `area`/`type` on `address` trigger forbidNonWhitelisted if not on the DTO.
- */
-type DepartmentAddressCreateDto = {
-  addressLine1: string
-  city: string
-  state: string
-  zipCode: string
-}
-
-/**
- * POST/PUT body — `address` matches Nest whitelist; GET still maps `addresses[]` / nested `address` for display.
- */
-type CreateDepartmentReqDto = {
-  code: string
-  name: string
-  status: "active" | "inactive"
-  address?: DepartmentAddressCreateDto
-  apportioning?: boolean
-  costallocation?: boolean
-  autoApportioning?: boolean
-  allowUserOrCostpoolDirect?: boolean
-  allowMultiCodes?: boolean
-  multiCodes?: string[]
-  removeAutoFillEndTime?: boolean
-  startorEndTime?: boolean
-  supportingDoc?: boolean
-}
-
-type UpdateDepartmentReqDto = Partial<CreateDepartmentReqDto>
-
-type CreateDepartmentResponseDto = {
-  id: number
-  code: string
-}
-
-/** Map one Address row / nested object → UI shape (GET by id, PUT response, list item). */
 function pickAddressFromObject(o: Record<string, unknown>): Department["address"] | null {
   const line1 =
     o.street ??
@@ -128,10 +56,7 @@ function addressHasContent(a: Department["address"]): boolean {
   return !!(a.street.trim() || a.city.trim() || a.state.trim() || a.zip.trim())
 }
 
-/**
- * Reads `addresses[]`, nested `address`, or flat department fields after GET/PUT.
- * If `addresses` is `[]`, nothing is mapped (same as before).
- */
+
 function addressFromDtoShape(dto: DepartmentResDto): Department["address"] | null {
   const raw = dto as Record<string, unknown>
 
@@ -190,11 +115,6 @@ const EMPTY_DEPARTMENT_UI: Omit<Department, "id" | "code" | "name"> = {
   },
 }
 
-type ToDepartmentUIOptions = {
-  /** List rows need `address` for the table; GET-by-id / PUT responses often omit it — map only when true. */
-  includeAddress?: boolean
-}
-
 function toDepartmentUI(dto: DepartmentResDto, options?: ToDepartmentUIOptions): Department {
   const includeAddress = options?.includeAddress !== false
 
@@ -202,7 +122,7 @@ function toDepartmentUI(dto: DepartmentResDto, options?: ToDepartmentUIOptions):
   const codeRaw = dto.code
   const nameRaw = dto.name
 
-  // status can be boolean or string; treat unknown as "active"
+  
   const active =
     typeof (dto as { active?: unknown }).active === "boolean"
       ? ((dto as { active: boolean }).active as boolean)
@@ -296,12 +216,21 @@ function toCreateUpdateDto(values: DepartmentUpsertValues): CreateDepartmentReqD
 export async function getDepartments(params?: {
   page?: number
   limit?: number
+  status?: "active" | "inactive"
 }): Promise<{ items: Department[]; total: number }> {
   const page = params?.page ?? 1
   const limit = params?.limit ?? 100
+  const status = params?.status
 
-  const res = await api.get<ApiEnvelope<DepartmentListResponseDto>>(
-    `/departments?page=${encodeURIComponent(String(page))}&limit=${encodeURIComponent(String(limit))}`
+  const search = new URLSearchParams()
+  search.set("page", String(page))
+  search.set("limit", String(limit))
+  if (status) {
+    search.set("status", status)
+  }
+
+  const res = await api.get<DepartmentApiEnvelope<DepartmentListResponseDto>>(
+    `/departments?${search.toString()}`
   )
 
   const payload = (res?.data ?? res) as DepartmentListResponseDto
@@ -322,7 +251,7 @@ export async function getDepartments(params?: {
 }
 
 export async function getDepartmentById(id: string): Promise<Department> {
-  const res = await api.get<ApiEnvelope<DepartmentResDto>>(`/departments/${id}`)
+  const res = await api.get<DepartmentApiEnvelope<DepartmentResDto>>(`/departments/${id}`)
   const payload = (res?.data ?? res) as DepartmentResDto
   return toDepartmentUI(payload, { includeAddress: false })
 }
@@ -331,7 +260,7 @@ export async function createDepartment(
   values: DepartmentUpsertValues
 ): Promise<CreateDepartmentResponseDto> {
   const body = toCreateUpdateDto(values)
-  const res = await api.post<ApiEnvelope<CreateDepartmentResponseDto>>(
+  const res = await api.post<DepartmentApiEnvelope<CreateDepartmentResponseDto>>(
     "/departments",
     body
   )
@@ -347,7 +276,7 @@ export async function updateDepartment(
   values: DepartmentUpsertValues
 ): Promise<Department> {
   const body: UpdateDepartmentReqDto = toCreateUpdateDto(values)
-  const res = await api.put<ApiEnvelope<DepartmentResDto>>(
+  const res = await api.put<DepartmentApiEnvelope<DepartmentResDto>>(
     `/departments/${id}`,
     body
   )

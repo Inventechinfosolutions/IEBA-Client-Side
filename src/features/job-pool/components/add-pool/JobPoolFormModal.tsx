@@ -13,7 +13,6 @@ import { Input } from "@/components/ui/input"
 
 import { jobPoolFormSchema } from "../../schemas"
 import type { JobPoolFormModalProps, JobPoolFormValues } from "../../types"
-import { DEPARTMENTS } from "../../mock"
 
 // Refactored Sections
 import { JobClassificationSection } from "./JobClassificationSection"
@@ -127,28 +126,9 @@ export function JobPoolFormModal({
                     </button>
                     {isDepartmentOpen && mode !== "edit" ? (
                       <div className="absolute z-10 mt-1 max-h-[180px] w-full overflow-auto rounded-[7px] border border-[#d9deea] bg-white p-1.5 shadow-[0_8px_18px_rgba(17,24,39,0.12)]">
-                        {DEPARTMENTS.map((dept) => (
-                          <button
-                            key={dept}
-                            type="button"
-                            onMouseDown={(event) => event.preventDefault()}
-                            onClick={() => {
-                              form.setValue("department", dept, {
-                                shouldDirty: true,
-                                shouldTouch: true,
-                                shouldValidate: true,
-                              })
-                              setIsDepartmentOpen(false)
-                            }}
-                            className={`block w-full cursor-pointer rounded-[6px] border border-transparent px-3 py-2 text-left text-[10px]! font-normal! text-[#111827] hover:bg-[#f3f4f6] ${
-                              form.watch("department") === dept
-                                ? "border-[#d8ecff] bg-[#eef8ff]"
-                                : ""
-                            }`}
-                          >
-                            {dept}
-                          </button>
-                        ))}
+                        <div className="px-3 py-2 text-[11px] text-[#6b7280]">
+                          No departments loaded. Please select a department from the main Department module first.
+                        </div>
                       </div>
                     ) : null}
                   </div>

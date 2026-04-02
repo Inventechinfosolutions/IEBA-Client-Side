@@ -16,6 +16,7 @@ import type {
 const DEFAULT_FORM_VALUES: JobClassificationFormValues = {
   code: "",
   name: "",
+  activityDescription: "",
   active: true,
 }
 
@@ -64,7 +65,12 @@ export function JobClassificationPage() {
 
   const initialValues: JobClassificationFormValues =
     modalMode === "edit" && selectedRow
-      ? { code: selectedRow.code, name: selectedRow.name, active: selectedRow.active }
+      ? {
+          code: selectedRow.code,
+          name: selectedRow.name,
+          active: selectedRow.active,
+          activityDescription: selectedRow.activityDescription ?? "",
+        }
       : DEFAULT_FORM_VALUES
 
   return (
