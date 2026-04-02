@@ -7,6 +7,9 @@ export const masterCodeKeys = {
     pageSize: number
     inactiveOnly: boolean
   }) => [...masterCodeKeys.lists(), params] as const,
+  /** `GET /master-codes/by-name?name=` — current tab row (id, allowMulticode, …) */
+  tenantByName: (name: string) =>
+    [...masterCodeKeys.all, "tenant-by-name", name] as const,
   details: () => [...masterCodeKeys.all, "detail"] as const,
   detail: (id: string) => [...masterCodeKeys.details(), id] as const,
 }

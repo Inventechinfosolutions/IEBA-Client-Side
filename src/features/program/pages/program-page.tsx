@@ -5,19 +5,15 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { toast } from "sonner"
 
 import { MasterCodePagination } from "@/features/master-code/components/MasterCodePagination"
-import { BudgetUnitTable } from "../components/BudgetUnitTable"
-import { ProgramActivityRelationForm } from "../components/ProgramActivityRelationForm"
-import { ProgramFormModal } from "../components/ProgramFormModal"
-import { ProgramTabs } from "../components/ProgramTabs"
-import { TimeStudyProgramTable } from "../components/TimeStudyProgramTable"
-import { ProgramToolbar } from "../components/ProgramToolbar"
-import { useProgramModule } from "../hooks/useProgramModule"
-import {
-  getMockParentBudgetUnitNameForProgram,
-  getMockProgramBudgetProgramLookup,
-  getMockProgramBudgetUnitLookup,
-  getMockTimeStudyProgramByName,
-} from "../mock"
+import { BudgetUnitTable } from "../components/budget-unit-table"
+import { ProgramActivityRelationForm } from "../components/program-activity-relation/program-activity-relation-form"
+import { ProgramFormModal } from "../components/program-form-modal"
+import { ProgramTabs } from "../components/program-tabs"
+import { TimeStudyProgramTable } from "../components/time-study-program-table"
+import { ProgramToolbar } from "../components/program-toolbar"
+import { useProgramModule } from "../hooks/use-program-module"
+import { apiGetProgramRowById } from "../api"
+import { useGetProgramFormOptions } from "../queries/get-program-form-options"
 import { programFormSchema } from "../schemas"
 import type {
   ProgramFormModalHandle,
@@ -70,12 +66,6 @@ function mapProgramTabToSection(tab: ProgramTab): ProgramFormSection {
   return "BU Sub-Program"
 }
 
-function mapSectionToProgramTab(section: ProgramFormSection): ProgramTab {
-  if (section === "Budget Unit") return "Budget Units"
-  if (section === "BU Program") return "Time Study programs"
-  return "Program Activity Relation"
-}
-
 function getSaveSuccessMessage(
   formSection: ProgramFormSection,
   isEdit: boolean,
@@ -126,8 +116,36 @@ export function ProgramPage() {
   const [selectedProgramForSubAdd, setSelectedProgramForSubAdd] = useState<ProgramRow | null>(
     null
   )
+  const [isEditDetailLoading, setIsEditDetailLoading] = useState(false)
   const [modalSessionId, setModalSessionId] = useState(0)
   const modalResetRef = useRef<ProgramFormModalHandle | null>(null)
+  const [expandedBudgetUnits, setExpandedBudgetUnits] = useState<Record<string, boolean>>({})
+  const [expandedProgramGroups, setExpandedProgramGroups] = useState<Record<string, boolean>>({})
+  const [expandedPrograms, setExpandedPrograms] = useState<Record<string, boolean>>({})
+  const [lastUpdatedBudgetRow, setLastUpdatedBudgetRow] = useState<ProgramRow | null>(null)
+  const [lastUpdatedTimeStudyRow, setLastUpdatedTimeStudyRow] = useState<ProgramRow | null>(null)
+
+  const isSubProgramQuickAdd = modalMode === "add" && Boolean(selectedProgramForSubAdd)
+
+  // Shared lookups (departments, budget units, budget programs) used by all
+  // create/update flows, including Time Study tab. We pass activeTab so that
+  // the inner fetch can selectively ignore heavy lookups (like budgetunits)
+  // if they are not needed for that tab context. We also pass the initial
+  // section for the current add-mode so that when opening "Add Budget Unit"
+  // we only load departments, and defer Budget Units / Budget Programs until
+  // the user switches to the corresponding sections.
+  const addSectionForLookups: ProgramFormSection | undefined =
+    modalMode === "add"
+      ? isSubProgramQuickAdd
+        ? "BU Sub-Program"
+        : mapProgramTabToSection(activeTab)
+      : undefined
+
+  const formOptionsQuery = useGetProgramFormOptions(
+    modalOpen && modalMode === "add",
+    activeTab,
+    addSectionForLookups
+  )
 
   const programModule = useProgramModule({
     tab: activeTab,
@@ -142,99 +160,108 @@ export function ProgramPage() {
     defaultValues: emptyFormValues,
   })
   const isTableLoading =
-    programModule.isLoading || programModule.isCreating || programModule.isUpdating
-  const isSubProgramQuickAdd = modalMode === "add" && Boolean(selectedProgramForSubAdd)
+    programModule.isLoading || programModule.isCreating || programModule.isUpdating || isEditDetailLoading
 
   const modalInitialValues = useMemo<ProgramFormValues>(() => {
     if (modalMode === "edit" && selectedRow) {
-      const isTimeStudyChildRow = selectedRow.hierarchyLevel === 1
-      const isSubProgramTwoRow =
-        selectedRow.name.toLowerCase().includes("sub program two") ||
-        selectedRow.code.toLowerCase().includes("901")
-      const section =
-        isTimeStudyChildRow
-          ? isSubProgramTwoRow
-            ? "Budget Unit"
-            : "BU Sub-Program"
-          : mapProgramTabToSection(selectedRow.tab)
-      const budgetUnitLookup = getMockProgramBudgetUnitLookup()
+
+      let section: ProgramFormSection
+      if (selectedRow.tab === "Budget Units") {
+        // In Budget Units tab:
+        // Use type if available, fallback to hierarchyLevel logic otherwise
+        const specialSubProgramCodes = ["208", "211"] // Fallbacks for backend DB parentId=null issues
+        const isBackendSubprogram = typeof selectedRow.type === "string" && selectedRow.type.toLowerCase() === "subprogram"
+        const isForcedSubprogram = specialSubProgramCodes.includes(selectedRow.code.trim())
+
+        if (selectedRow.hierarchyLevel === 0 || selectedRow.type === "bu") {
+          section = "Budget Unit"
+        } else if (isBackendSubprogram || isForcedSubprogram || selectedRow.hierarchyLevel === 3) {
+          section = "BU Sub-Program"
+        } else {
+          section = "BU Program"
+        }
+      } else {
+        // Time Study tab — use row.type exclusively, never hierarchyLevel:
+        // type="primary"    → BU Program (TS Primary Program)
+        // type="secondary"  → BU Sub-Program (TS Sub-Program One)
+        // type="subprogram" → Budget Unit (TS Sub-Program Two)
+        const tsType = (selectedRow.type ?? "").toLowerCase().trim()
+        if (tsType === "secondary") {
+          section = "BU Sub-Program"
+        } else if (tsType === "subprogram") {
+          section = "Budget Unit"
+        } else {
+          // primary (or unknown) → TS Primary Program
+          section = "BU Program"
+        }
+      }
       const buNameForProgramTab =
         selectedRow.tab === "Budget Units"
           ? selectedRow.name
           : selectedRow.tab === "Program Activity Relation"
-            ? getMockParentBudgetUnitNameForProgram(selectedRow.parentProgramName ?? "") ||
-              selectedRow.parentBudgetUnitName?.trim() ||
-              ""
+            ? selectedRow.parentBudgetUnitName?.trim() || ""
             : selectedRow.parentBudgetUnitName?.trim() ?? ""
+      const parentBU = programModule.rows.find(
+        r => r.name.trim().toLowerCase() === selectedRow.parentBudgetUnitName?.trim().toLowerCase()
+      )
+      
+      const effectiveParentName = 
+          selectedRow.parentProgramName?.trim() || 
+          selectedRow.parentBudgetUnitName?.trim() || ""
+          
+      const effectiveParentCode = 
+          selectedRow.parentProgramCode?.trim() || 
+          parentBU?.code || ""
 
-      const linkedBu =
-        buNameForProgramTab && budgetUnitLookup[buNameForProgramTab]
-          ? budgetUnitLookup[buNameForProgramTab]
-          : null
+      const isTsSecondary = selectedRow.tab === "Time Study programs" && section === "BU Sub-Program"
 
-      const buProgramCodeLinked =
-        linkedBu && selectedRow.tab !== "Budget Units" ? linkedBu.code : selectedRow.code
-      const buProgramDepartmentLinked =
-        linkedBu && selectedRow.tab !== "Budget Units"
-          ? linkedBu.department
-          : selectedRow.department
+      // For TS secondary rows: parentBudgetUnitName = the linked BU Program name (e.g. "Adult Program")
+      // buSubProgramBudgetUnitProgramName → TS Program dropdown (primary TS program name)
+      // buSubProgramBudgetCode            → BU Program display field
+      const buSubProgramInitial = {
+        buSubProgramBudgetUnitProgramName: isTsSecondary
+          ? selectedRow.parentBudgetUnitName?.trim() ?? ""  // primary TS program name
+          : effectiveParentName,
+        buSubProgramBudgetCode: isTsSecondary
+          ? selectedRow.parentBudgetUnitName?.trim() ?? ""  // BU Program display value
+          : effectiveParentCode,
+        buSubProgramDepartment: selectedRow.department,
+        buSubProgramCode: selectedRow.code,
+        buSubProgramName: selectedRow.name,
+        buSubProgramDescription: selectedRow.description,
+        buSubProgramMedicalPct: selectedRow.medicalPct,
+      }
 
-      const budgetProgramLookup = getMockProgramBudgetProgramLookup()
-      const subProgramParentName = selectedRow.parentProgramName?.trim() ?? ""
-      const parentTimeStudyProgram =
-        selectedRow.tab === "Program Activity Relation"
-          ? getMockTimeStudyProgramByName(subProgramParentName)
-          : undefined
-      const linkedProgram =
-        subProgramParentName && budgetProgramLookup[subProgramParentName]
-          ? budgetProgramLookup[subProgramParentName]
-          : null
-      const isProgramActivityRelationEdit = selectedRow.tab === "Program Activity Relation"
-      const tsProgramNameForSubProgramTwo = subProgramParentName || parentTimeStudyProgram?.name || ""
-
-      const buSubProgramInitial =
-        isProgramActivityRelationEdit
-          ? {
-              buSubProgramBudgetUnitProgramName: subProgramParentName,
-              buSubProgramBudgetCode: linkedProgram?.code ?? "",
-              buSubProgramDepartment: linkedProgram?.department ?? selectedRow.department,
-              buSubProgramCode: selectedRow.code,
-              buSubProgramName: selectedRow.name,
-              buSubProgramDescription: selectedRow.description,
-              buSubProgramMedicalPct: selectedRow.medicalPct,
-            }
-          : {}
+      // For TS Sub-Program Two edit, we need special field mapping:
+      // budgetUnitName        → primary TS program name (shown in "TS Program" dropdown)
+      // budgetUnitDescription → BU Program name (auto-populated display field)
+      // buProgramProgramName  → subprogram's own name
+      // buProgramProgramCode  → subprogram's own code
+      const isTsSubProgramTwo = selectedRow.tab === "Time Study programs" && section === "Budget Unit"
 
       return {
         ...emptyFormValues,
         formSection: section,
         active: selectedRow.active,
-        budgetUnitDepartment: isProgramActivityRelationEdit
-          ? linkedProgram?.department ?? selectedRow.department
-          : selectedRow.department,
-        budgetUnitCode: isProgramActivityRelationEdit
-          ? tsProgramNameForSubProgramTwo
+        costAllocation: selectedRow.costAllocation ?? false,
+        budgetUnitDepartment: selectedRow.department,
+        budgetUnitCode: isTsSubProgramTwo
+          ? selectedRow.parentBudgetUnitName?.trim() ?? ""  // primary program name (used as code key in lookup)
           : selectedRow.code,
-        budgetUnitName: isProgramActivityRelationEdit ? tsProgramNameForSubProgramTwo : selectedRow.name,
-        budgetUnitDescription: isProgramActivityRelationEdit
-          ? linkedProgram?.code ?? ""
+        budgetUnitName: isTsSubProgramTwo
+          ? selectedRow.parentBudgetUnitName?.trim() ?? ""  // primary TS program name → fills the TS Program dropdown
+          : selectedRow.name,
+        budgetUnitDescription: isTsSubProgramTwo
+          ? selectedRow.parentBudgetUnitName?.trim() ?? ""  // BU Program name (display-only locked field)
           : selectedRow.description,
         budgetUnitMedicalPct: selectedRow.medicalPct,
         buProgramBudgetUnitName: buNameForProgramTab,
-        buProgramDepartment: buProgramDepartmentLinked,
-        buProgramCode: buProgramCodeLinked,
-        buProgramProgramCode: isProgramActivityRelationEdit
-          ? selectedRow.code
-          : parentTimeStudyProgram?.code ?? selectedRow.code,
-        buProgramProgramName: isProgramActivityRelationEdit
-          ? selectedRow.name
-          : parentTimeStudyProgram?.name ?? selectedRow.name,
-        buProgramDescription: isProgramActivityRelationEdit
-          ? selectedRow.description
-          : parentTimeStudyProgram?.description ?? selectedRow.description,
-        buProgramMedicalPct: isProgramActivityRelationEdit
-          ? selectedRow.medicalPct
-          : parentTimeStudyProgram?.medicalPct ?? selectedRow.medicalPct,
+        buProgramDepartment: selectedRow.department,
+        buProgramCode: selectedRow.code,
+        buProgramProgramCode: isTsSubProgramTwo ? selectedRow.code : selectedRow.code,
+        buProgramProgramName: isTsSubProgramTwo ? selectedRow.name : selectedRow.name,
+        buProgramDescription: selectedRow.description,
+        buProgramMedicalPct: selectedRow.medicalPct,
         ...buSubProgramInitial,
       }
     }
@@ -253,10 +280,8 @@ export function ProgramPage() {
       ...emptyFormValues,
       formSection: mapProgramTabToSection(activeTab),
     }
-  }, [activeTab, modalMode, selectedProgramForSubAdd, selectedRow])
-  const shouldLockModalSectionTabs =
-    activeTab === "Time Study programs" &&
-    modalMode === "edit"
+  }, [activeTab, modalMode, selectedProgramForSubAdd, selectedRow, formOptionsQuery.data])
+  const shouldLockModalSectionTabs = modalMode === "edit"
 
   const handleTabChange = (nextTab: ProgramTab) => {
     setActiveTab(nextTab)
@@ -278,12 +303,20 @@ export function ProgramPage() {
     setModalOpen(true)
   }
 
-  const handleEditRow = (row: ProgramRow) => {
-    setModalMode("edit")
-    setSelectedRow(row)
-    setSelectedProgramForSubAdd(null)
-    setModalSessionId((prev) => prev + 1)
-    setModalOpen(true)
+  const handleEditRow = async (row: ProgramRow) => {
+    try {
+      setIsEditDetailLoading(true)
+      const freshRow = await apiGetProgramRowById({ activeTab, row })
+      setModalMode("edit")
+      setSelectedRow(freshRow)
+      setSelectedProgramForSubAdd(null)
+      setModalSessionId((prev) => prev + 1)
+      setModalOpen(true)
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to load row")
+    } finally {
+      setIsEditDetailLoading(false)
+    }
   }
 
   const handleAddSubProgramFromProgram = (row: ProgramRow) => {
@@ -295,13 +328,16 @@ export function ProgramPage() {
   }
 
   const handleSaveForm = (values: ProgramFormValues) => {
-    const targetTab = mapSectionToProgramTab(values.formSection)
+    // Use the currently active main tab to decide which backend flow to use.
+    // This ensures that when we're in the "Budget Units" tab and on the "BU Program"
+    // section, we hit the Budget Program create/update paths (not Time Study).
+    const targetTab = activeTab
     const successMessage = getSaveSuccessMessage(
       values.formSection,
       Boolean(modalMode === "edit" && selectedRow),
       activeTab
     )
-    const handleSaveSuccess = () => {
+    const handleSaveSuccess = (updatedRow?: ProgramRow) => {
       toast.success(successMessage, successToastOptions)
       const nextEmptyValues: ProgramFormValues = {
         ...emptyFormValues,
@@ -316,13 +352,30 @@ export function ProgramPage() {
       setModalMode("add")
       setSelectedRow(null)
       setSelectedProgramForSubAdd(null)
+
+      if (updatedRow) {
+        if (activeTab === "Budget Units") {
+          setLastUpdatedBudgetRow(updatedRow)
+        } else if (activeTab === "Time Study programs") {
+          setLastUpdatedTimeStudyRow(updatedRow)
+        }
+      }
     }
 
     if (modalMode === "edit" && selectedRow) {
       programModule.updateProgram(
-        { id: selectedRow.id, tab: targetTab, values },
         {
-          onSuccess: handleSaveSuccess,
+          id: selectedRow.id,
+          tab: targetTab,
+          values,
+          lookups: {
+            departmentIdByName: formOptionsQuery.data?.departmentIdByName,
+            budgetUnitIdByName: formOptionsQuery.data?.budgetUnitIdByName,
+            budgetProgramIdByName: formOptionsQuery.data?.budgetProgramIdByName,
+          },
+        },
+        {
+          onSuccess: (updatedRow) => handleSaveSuccess(updatedRow),
           onError: (error) => toast.error(error.message),
         }
       )
@@ -330,7 +383,15 @@ export function ProgramPage() {
     }
 
     programModule.createProgram(
-      { tab: targetTab, values },
+      {
+        tab: targetTab,
+        values,
+        lookups: {
+          departmentIdByName: formOptionsQuery.data?.departmentIdByName,
+          budgetUnitIdByName: formOptionsQuery.data?.budgetUnitIdByName,
+          budgetProgramIdByName: formOptionsQuery.data?.budgetProgramIdByName,
+        },
+      },
       {
         onSuccess: handleSaveSuccess,
         onError: (error) => toast.error(error.message),
@@ -374,12 +435,20 @@ export function ProgramPage() {
                   isLoading={isTableLoading}
                   onEditRow={handleEditRow}
                   onAddSubProgramFromProgram={handleAddSubProgramFromProgram}
+                  lastUpdatedRow={lastUpdatedBudgetRow}
+                  expandedBudgetUnits={expandedBudgetUnits}
+                  setExpandedBudgetUnits={setExpandedBudgetUnits}
+                  expandedProgramGroups={expandedProgramGroups}
+                  setExpandedProgramGroups={setExpandedProgramGroups}
+                  expandedPrograms={expandedPrograms}
+                  setExpandedPrograms={setExpandedPrograms}
                 />
               ) : (
                 <TimeStudyProgramTable
                   rows={programModule.rows}
                   isLoading={isTableLoading}
                   onEditRow={handleEditRow}
+                  lastUpdatedRow={lastUpdatedTimeStudyRow}
                 />
               )}
             </div>

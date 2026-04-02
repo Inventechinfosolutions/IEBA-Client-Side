@@ -110,7 +110,6 @@ export function TimeStudyProgramForm({
   formMode,
   activeSection,
   departmentOptions,
-  budgetUnitNameOptions,
   budgetProgramNameOptions,
   budgetProgramLookup,
 }: TimeStudyProgramFormProps) {
@@ -142,11 +141,11 @@ export function TimeStudyProgramForm({
             onChange={(value) =>
               form.setValue("buProgramBudgetUnitName", value, { shouldDirty: true, shouldValidate: true })
             }
-            options={budgetUnitNameOptions}
+            options={budgetProgramNameOptions}
             placeholder="Select Budget (BU) Program"
             isOpen={openSelectKey === "buProgramBudgetUnitName"}
             setIsOpen={(value) => setOpenSelectKey(value ? "buProgramBudgetUnitName" : null)}
-            ariaLabel="Toggle budget unit options"
+            ariaLabel="Toggle budget program options"
             disabled={isEditMode}
           />
         </div>
@@ -183,6 +182,7 @@ export function TimeStudyProgramForm({
           />
           Cost Allocation
         </label>
+
       </div>
     )
   }
@@ -267,6 +267,7 @@ export function TimeStudyProgramForm({
           />
           Cost Allocation
         </label>
+
       </div>
     )
   }

@@ -6,6 +6,7 @@ import { TodoFormModal } from "../components/TodoFormModal"
 import { TodoTable } from "../components/TodoTable"
 import { TodoToolbar } from "../components/TodoToolbar"
 import { useTodoModule } from "../hooks/useTodoModule"
+import { apiGetTodoById } from "../api"
 import { TodoStatusEnum } from "../enums/todo-status.enum"
 import type { TodoFormMode, TodoFormValues, TodoRow } from "../types"
 
@@ -40,12 +41,14 @@ export function TodoPage() {
   const [modalMode, setModalMode] = useState<TodoFormMode>("add")
   const [selectedRow, setSelectedRow] = useState<TodoRow | null>(null)
   const [modalSessionId, setModalSessionId] = useState(0)
+  const [isEditDetailLoading, setIsEditDetailLoading] = useState(false)
   const [titleSortState, setTitleSortState] = useState<"none" | "asc" | "desc">(
     "none"
   )
 
   const todoModule = useTodoModule({ page, pageSize })
-  const isTableLoading = todoModule.isLoading || todoModule.isCreating || todoModule.isUpdating
+  const isTableLoading =
+    todoModule.isLoading || todoModule.isCreating || todoModule.isUpdating || isEditDetailLoading
   const rows = useMemo(() => {
     if (titleSortState === "none") return todoModule.rows
 
@@ -73,11 +76,19 @@ export function TodoPage() {
     setModalOpen(true)
   }
 
-  const handleEditRow = (row: TodoRow) => {
-    setModalMode("edit")
-    setSelectedRow(row)
-    setModalSessionId((prev) => prev + 1)
-    setModalOpen(true)
+  const handleEditRow = async (row: TodoRow) => {
+    try {
+      setIsEditDetailLoading(true)
+      const fresh = await apiGetTodoById(row.id)
+      setModalMode("edit")
+      setSelectedRow(fresh)
+      setModalSessionId((prev) => prev + 1)
+      setModalOpen(true)
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to load To Do")
+    } finally {
+      setIsEditDetailLoading(false)
+    }
   }
 
   const handleSaveForm = (values: TodoFormValues) => {

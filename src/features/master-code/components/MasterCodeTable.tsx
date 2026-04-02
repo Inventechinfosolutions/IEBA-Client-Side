@@ -18,7 +18,6 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Skeleton } from "@/components/ui/skeleton"
-import { DEFAULT_ACTIVITY_DESCRIPTION } from "@/features/master-code/mock"
 import type {
   MasterCodeSortKey,
   MasterCodeSortState,
@@ -199,7 +198,7 @@ export function MasterCodeTable({
             : sortedRows.map((row) => {
                 const isExpanded = expandedRowId === row.id
                 const sanitizedActivityDescription = DOMPurify.sanitize(
-                  row.activityDescription ?? DEFAULT_ACTIVITY_DESCRIPTION,
+                  row.activityDescription ?? "",
                   {
                     ALLOWED_TAGS: [
                       "ul",

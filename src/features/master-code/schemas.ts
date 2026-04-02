@@ -9,7 +9,14 @@ export const masterCodeFormSchema = z.object({
     .regex(/^\d+(\.\d{1,2})?$/, "Use a valid percent format")
     .optional()
     .or(z.literal("")),
-  match: z.enum(["E", "N"]).optional().or(z.literal("")),
+  match: z
+    .string()
+    .trim()
+    .max(5, "Match must be at most 5 characters")
+    .transform((val) => {
+      if (!val) return ""
+      return /^[a-z]+$/i.test(val) ? val.toUpperCase() : val
+    }),
   spmp: z.boolean(),
   allocable: z.boolean(),
   active: z.boolean(),
