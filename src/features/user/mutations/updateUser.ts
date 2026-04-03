@@ -1,71 +1,54 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { useMutation } from "@tanstack/react-query"
 
-import { userModuleKeys } from "../keys"
-import { MOCK_NETWORK_DELAY_MS, delay, mockUserRows } from "../mock"
-import type { UpdateUserModuleInput, UserModuleRow } from "../types"
+import { apiUpdateUser } from "../api"
+import type { CreateUserResponseDto, UpdateUserModuleInput, UpdateUserRequestDto } from "../types"
 
-async function updateUserModuleRow(
-  input: UpdateUserModuleInput,
-): Promise<UserModuleRow> {
-  await delay(MOCK_NETWORK_DELAY_MS)
+function toAssignedMultiCodes(value: string | undefined): string[] | undefined {
+  const raw = (value ?? "").trim()
+  if (!raw) return undefined
+  const parts = raw
+    .split(/[,;\n]+/g)
+    .map((p) => p.trim())
+    .filter(Boolean)
+  return parts.length ? parts : undefined
+}
 
-  const existing = mockUserRows.find((row) => row.id === input.id)
-  if (!existing) {
-    throw new Error("Employee record not found")
-  }
+function toTsMinPerDay(value: string | undefined): number | undefined {
+  const n = Number.parseInt(String(value ?? "").trim(), 10)
+  if (!Number.isFinite(n)) return undefined
+  return n
+}
 
-  const updated: UserModuleRow = {
-    ...existing,
-    loginId: input.values.loginId.trim(),
-    password: input.values.password.trim(),
-    emailAddress: input.values.emailAddress?.trim() || input.values.loginId.trim(),
-    employeeNo: input.values.employeeNo.trim(),
-    positionNo: input.values.positionNo?.trim(),
-    location: input.values.location?.trim() || "Susanville",
+function clampPositionName(raw: string): string {
+  const t = raw.trim()
+  if (t.length <= 255) return t
+  return t.slice(0, 255)
+}
+
+function mapUpdateInput(input: UpdateUserModuleInput): UpdateUserRequestDto {
+  return {
     firstName: input.values.firstName.trim(),
     lastName: input.values.lastName.trim(),
-    phone: input.values.phone?.trim(),
-    jobClassification: input.values.jobClassification?.trim(),
-    claimingUnit: input.values.claimingUnit?.trim(),
+    roles: input.values.roleAssignments,
+    password: input.values.password.trim(),
+    employeeId: input.values.employeeNo.trim(),
+    positionName: clampPositionName(input.values.jobClassification),
+    active: input.values.active,
+    pki: input.values.pkiUser,
+    spmp: input.values.spmp,
     multilingual: input.values.multilingual,
     allowMultiCodes: input.values.allowMultiCodes,
-    pkiUser: input.values.pkiUser,
-    employee: `${input.values.firstName.trim()} ${input.values.lastName.trim()}`.trim(),
-    department: input.values.claimingUnit?.trim() || existing.department,
-    roleAssignments: input.values.roleAssignments.length
-      ? input.values.roleAssignments
-      : existing.roleAssignments ?? ["User"],
-    supervisorPrimary: input.values.supervisorPrimary?.trim() || existing.supervisorPrimary,
-    supervisorSecondary:
-      input.values.supervisorSecondary?.trim() || existing.supervisorSecondary,
-    spmp: input.values.spmp,
-    tsMinDay: input.values.tsMinDay?.trim() || existing.tsMinDay,
-    programs: input.values.programs,
-    activities: input.values.activities,
-    supervisorApportioning: input.values.supervisorApportioning,
-    multicodesEnabled: input.values.allowMultiCodes,
-    assignedMultiCodes: input.values.assignedMultiCodes?.trim() || "",
-    active: input.values.active,
+    tsMinPerDay: toTsMinPerDay(input.values.tsMinDay),
+    claimingUnit: input.values.claimingUnit.trim(),
+    assignedMultiCodes: toAssignedMultiCodes(input.values.assignedMultiCodes),
   }
-
-  const rowIndex = mockUserRows.findIndex((row) => row.id === input.id)
-  if (rowIndex >= 0) {
-    mockUserRows[rowIndex] = updated
-  }
-
-  return updated
 }
 
 export function useUpdateUserModuleRow() {
-  const queryClient = useQueryClient()
-
   return useMutation({
-    mutationFn: (input: UpdateUserModuleInput) => updateUserModuleRow(input),
-    onSuccess: (updatedRow) => {
-      queryClient.invalidateQueries({ queryKey: userModuleKeys.lists() })
-      queryClient.invalidateQueries({
-        queryKey: userModuleKeys.detail(updatedRow.id),
-      })
+    mutationFn: async (input: UpdateUserModuleInput): Promise<CreateUserResponseDto> => {
+      const dto = mapUpdateInput(input)
+      return await apiUpdateUser(input.id, dto)
     },
   })
 }

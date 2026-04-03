@@ -1,13 +1,10 @@
-import { ChevronDown } from "lucide-react"
-import { useState } from "react"
 import { Checkbox } from "@/components/ui/checkbox"
+import { SingleSelectDropdown } from "@/components/ui/dropdown"
 import { Input } from "@/components/ui/input"
-import { cn } from "@/lib/utils"
 import type {
   TimeStudyFieldLabelProps,
   TimeStudyInputShellProps,
   TimeStudyProgramFormProps,
-  TimeStudySelectShellProps,
 } from "../types"
 
 function FieldLabel({ text }: TimeStudyFieldLabelProps) {
@@ -31,80 +28,6 @@ function InputShell({
   )
 }
 
-function SelectShell({
-  value,
-  onChange,
-  options,
-  placeholder,
-  isOpen,
-  setIsOpen,
-  ariaLabel,
-  disabled = false,
-}: TimeStudySelectShellProps) {
-  return (
-    <div className="group/selector relative" data-ts-select-shell="true">
-      <Input
-        value={value ?? ""}
-        readOnly
-        onMouseDown={(event) => event.preventDefault()}
-        onClick={() => {
-          if (disabled) return
-          setIsOpen(!isOpen)
-        }}
-        onFocus={() => {
-          if (disabled) return
-          setIsOpen(true)
-        }}
-        onBlur={() => window.setTimeout(() => setIsOpen(false), 120)}
-        placeholder={placeholder}
-        disabled={disabled}
-        className={cn(
-          "h-[44px] rounded-[7px] border border-[#c6cedd] bg-white px-3 pr-8 text-[14px] text-[#111827] shadow-none placeholder:text-[12px] placeholder:text-[#b0b8c8] focus-visible:border-[#6C5DD3] focus-visible:ring-0",
-          "cursor-pointer select-none caret-transparent disabled:pointer-events-auto disabled:cursor-not-allowed disabled:!border-[0.8px] disabled:!border-[#cfd4dd] disabled:!bg-[#d2d4d9]/20 disabled:!text-black disabled:opacity-100",
-          isOpen ? "border-[#3b82f6] ring-1 ring-[#3b82f640]" : ""
-        )}
-      />
-      <button
-        type="button"
-        onMouseDown={(event) => event.preventDefault()}
-        onClick={() => {
-          if (disabled) return
-          setIsOpen(!isOpen)
-        }}
-        className={cn(
-          "absolute right-0 top-0 inline-flex h-full w-[20px] items-center justify-center text-[#6b7280]",
-          disabled ? "cursor-not-allowed" : "cursor-pointer"
-        )}
-        aria-label={ariaLabel}
-        disabled={disabled}
-      >
-        <ChevronDown className={`size-4 transition-transform ${isOpen ? "rotate-180" : ""}`} />
-      </button>
-      {isOpen && !disabled ? (
-        <div className="absolute z-10 mt-1 max-h-[180px] w-full overflow-auto rounded-[7px] border border-[#d9deea] bg-white p-1 shadow-[0_8px_18px_rgba(17,24,39,0.12)]">
-          {options.map((option) => (
-            <button
-              key={option}
-              type="button"
-              onMouseDown={(event) => event.preventDefault()}
-              onClick={() => {
-                onChange(option)
-                setIsOpen(false)
-              }}
-              className={cn(
-                "block w-full cursor-pointer rounded-[4px] px-2.5 py-1.5 text-left text-[14px] font-normal text-[#111827] hover:bg-[#e5e7eb]",
-                value === option ? "bg-[#dbeafe]" : ""
-              )}
-            >
-              {option}
-            </button>
-          ))}
-        </div>
-      ) : null}
-    </div>
-  )
-}
-
 export function TimeStudyProgramForm({
   form,
   formMode,
@@ -113,7 +36,6 @@ export function TimeStudyProgramForm({
   budgetProgramNameOptions,
   budgetProgramLookup,
 }: TimeStudyProgramFormProps) {
-  const [openSelectKey, setOpenSelectKey] = useState<string | null>(null)
   const isEditMode = formMode === "edit"
 
   if (activeSection === "BU Program") {
@@ -121,32 +43,34 @@ export function TimeStudyProgramForm({
       <div className="mx-auto grid w-[500px] grid-cols-1 gap-4">
         <div className="space-y-1">
           <FieldLabel text="*Department" />
-          <SelectShell
-            value={form.watch("buProgramDepartment")}
+          <SingleSelectDropdown
+            value={form.watch("buProgramDepartment") ?? ""}
             onChange={(value) =>
               form.setValue("buProgramDepartment", value, { shouldDirty: true, shouldValidate: true })
             }
-            options={departmentOptions}
+            onBlur={() => {}}
+            options={departmentOptions.map((o) => ({ value: o, label: o }))}
             placeholder="Select Department"
-            isOpen={openSelectKey === "buProgramDepartment"}
-            setIsOpen={(value) => setOpenSelectKey(value ? "buProgramDepartment" : null)}
-            ariaLabel="Toggle department options"
             disabled={isEditMode}
+            className="!min-h-[44px] h-[44px] !rounded-[7px] !border-[#c6cedd] !px-3 !pr-9 !text-[14px] !font-normal"
+            itemButtonClassName="rounded-[4px] px-2.5 py-1.5"
+            itemLabelClassName="!text-[14px]"
           />
         </div>
         <div className="space-y-1">
           <FieldLabel text="*Budget (BU) Program" />
-          <SelectShell
-            value={form.watch("buProgramBudgetUnitName")}
+          <SingleSelectDropdown
+            value={form.watch("buProgramBudgetUnitName") ?? ""}
             onChange={(value) =>
               form.setValue("buProgramBudgetUnitName", value, { shouldDirty: true, shouldValidate: true })
             }
-            options={budgetProgramNameOptions}
+            onBlur={() => {}}
+            options={budgetProgramNameOptions.map((o) => ({ value: o, label: o }))}
             placeholder="Select Budget (BU) Program"
-            isOpen={openSelectKey === "buProgramBudgetUnitName"}
-            setIsOpen={(value) => setOpenSelectKey(value ? "buProgramBudgetUnitName" : null)}
-            ariaLabel="Toggle budget program options"
             disabled={isEditMode}
+            className="!min-h-[44px] h-[44px] !rounded-[7px] !border-[#c6cedd] !px-3 !pr-9 !text-[14px] !font-normal"
+            itemButtonClassName="rounded-[4px] px-2.5 py-1.5"
+            itemLabelClassName="!text-[14px]"
           />
         </div>
         <div className="space-y-1">
@@ -192,8 +116,8 @@ export function TimeStudyProgramForm({
       <div className="mx-auto grid w-[500px] grid-cols-1 gap-4">
         <div className="space-y-1">
           <FieldLabel text="*TS Program" />
-          <SelectShell
-            value={form.watch("buSubProgramBudgetUnitProgramName")}
+          <SingleSelectDropdown
+            value={form.watch("buSubProgramBudgetUnitProgramName") ?? ""}
             onChange={(value) => {
               form.setValue("buSubProgramBudgetUnitProgramName", value, {
                 shouldDirty: true,
@@ -208,14 +132,13 @@ export function TimeStudyProgramForm({
                 shouldValidate: true,
               })
             }}
-            options={budgetProgramNameOptions}
+            onBlur={() => {}}
+            options={budgetProgramNameOptions.map((o) => ({ value: o, label: o }))}
             placeholder="Select TS Program"
-            isOpen={openSelectKey === "buSubProgramBudgetUnitProgramName"}
-            setIsOpen={(value) =>
-              setOpenSelectKey(value ? "buSubProgramBudgetUnitProgramName" : null)
-            }
-            ariaLabel="Toggle TS program options"
             disabled={isEditMode}
+            className="!min-h-[44px] h-[44px] !rounded-[7px] !border-[#c6cedd] !px-3 !pr-9 !text-[14px] !font-normal"
+            itemButtonClassName="rounded-[4px] px-2.5 py-1.5"
+            itemLabelClassName="!text-[14px]"
           />
         </div>
         <div className="space-y-1">
@@ -276,8 +199,8 @@ export function TimeStudyProgramForm({
     <div className="mx-auto grid w-[500px] grid-cols-1 gap-4">
       <div className="space-y-1">
         <FieldLabel text="*TS Program" />
-        <SelectShell
-          value={form.watch("budgetUnitName")}
+        <SingleSelectDropdown
+          value={form.watch("budgetUnitName") ?? ""}
           onChange={(value) => {
             form.setValue("budgetUnitName", value, { shouldDirty: true, shouldValidate: true })
             form.setValue("budgetUnitCode", value, { shouldDirty: true, shouldValidate: true })
@@ -290,12 +213,13 @@ export function TimeStudyProgramForm({
               shouldValidate: true,
             })
           }}
-          options={budgetProgramNameOptions}
+          onBlur={() => {}}
+          options={budgetProgramNameOptions.map((o) => ({ value: o, label: o }))}
           placeholder="Select TS Program"
-          isOpen={openSelectKey === "budgetUnitName"}
-          setIsOpen={(value) => setOpenSelectKey(value ? "budgetUnitName" : null)}
-          ariaLabel="Toggle TS program options"
           disabled={isEditMode}
+          className="!min-h-[44px] h-[44px] !rounded-[7px] !border-[#c6cedd] !px-3 !pr-9 !text-[14px] !font-normal"
+          itemButtonClassName="rounded-[4px] px-2.5 py-1.5"
+          itemLabelClassName="!text-[14px]"
         />
       </div>
       <div className="space-y-1">

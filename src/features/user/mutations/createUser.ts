@@ -1,62 +1,55 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { useMutation } from "@tanstack/react-query"
 
-import { userModuleKeys } from "../keys"
-import { MOCK_NETWORK_DELAY_MS, delay, mockUserRows } from "../mock"
-import type { CreateUserModuleInput, UserModuleRow } from "../types"
+import { apiCreateUser } from "../api"
+import type { CreateUserModuleInput, CreateUserRequestDto, CreateUserResponseDto } from "../types"
 
-async function createUserModuleRow(
-  input: CreateUserModuleInput,
-): Promise<UserModuleRow> {
-  await delay(MOCK_NETWORK_DELAY_MS)
+function toAssignedMultiCodes(value: string | undefined): string[] | undefined {
+  const raw = (value ?? "").trim()
+  if (!raw) return undefined
+  const parts = raw
+    .split(/[,;\n]+/g)
+    .map((p) => p.trim())
+    .filter(Boolean)
+  return parts.length ? parts : undefined
+}
 
-  const nextId = String(
-    mockUserRows.reduce((max, row) => Math.max(max, Number.parseInt(row.id, 10) || 0), 0) + 1,
-  )
-  const nextRow: UserModuleRow = {
-    // Use explicit normalized values from form input for mock persistence.
-    // Email is optional in the form, so fallback to loginId when empty.
-    // This avoids optional undefined trim errors and keeps edit data stable.
+function toTsMinPerDay(value: string | undefined): number | undefined {
+  const n = Number.parseInt(String(value ?? "").trim(), 10)
+  if (!Number.isFinite(n)) return undefined
+  return n
+}
+
+/** Backend MaxLength(255) on positionName; multi job classifications are comma-joined in the form. */
+function clampPositionName(raw: string): string {
+  const t = raw.trim()
+  if (t.length <= 255) return t
+  return t.slice(0, 255)
+}
+
+function mapCreateInput(input: CreateUserModuleInput): CreateUserRequestDto {
+  return {
     loginId: input.values.loginId.trim(),
     password: input.values.password.trim(),
-    emailAddress: input.values.emailAddress?.trim() || input.values.loginId.trim(),
-    id: nextId,
-    employeeNo: input.values.employeeNo.trim(),
-    positionNo: input.values.positionNo?.trim(),
-    location: input.values.location?.trim() || "Susanville",
     firstName: input.values.firstName.trim(),
     lastName: input.values.lastName.trim(),
-    phone: input.values.phone?.trim(),
-    jobClassification: input.values.jobClassification?.trim(),
-    claimingUnit: input.values.claimingUnit?.trim(),
+    employeeId: input.values.employeeNo.trim(),
+    positionName: clampPositionName(input.values.jobClassification),
+    active: input.values.active,
+    pki: input.values.pkiUser,
+    spmp: input.values.spmp,
     multilingual: input.values.multilingual,
     allowMultiCodes: input.values.allowMultiCodes,
-    pkiUser: input.values.pkiUser,
-    employee: `${input.values.firstName.trim()} ${input.values.lastName.trim()}`.trim(),
-    department: input.values.claimingUnit?.trim() || "Public Health",
-    roleAssignments: input.values.roleAssignments.length ? input.values.roleAssignments : ["User"],
-    supervisorPrimary: input.values.supervisorPrimary?.trim() || "Rugeger Natalie",
-    supervisorSecondary: input.values.supervisorSecondary?.trim() || "Rubens Patrick",
-    spmp: input.values.spmp,
-    tsMinDay: input.values.tsMinDay?.trim() || "480",
-    programs: input.values.programs,
-    activities: input.values.activities,
-    supervisorApportioning: input.values.supervisorApportioning,
-    multicodesEnabled: input.values.allowMultiCodes,
-    assignedMultiCodes: input.values.assignedMultiCodes?.trim() || "",
-    active: input.values.active,
+    tsMinPerDay: toTsMinPerDay(input.values.tsMinDay) ?? 480,
+    claimingUnit: input.values.claimingUnit.trim(),
+    assignedMultiCodes: toAssignedMultiCodes(input.values.assignedMultiCodes),
   }
-  mockUserRows.unshift(nextRow)
-
-  return nextRow
 }
 
 export function useCreateUserModuleRow() {
-  const queryClient = useQueryClient()
-
   return useMutation({
-    mutationFn: (input: CreateUserModuleInput) => createUserModuleRow(input),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: userModuleKeys.lists() })
+    mutationFn: async (input: CreateUserModuleInput): Promise<CreateUserResponseDto> => {
+      const dto = mapCreateInput(input)
+      return await apiCreateUser(dto)
     },
   })
 }

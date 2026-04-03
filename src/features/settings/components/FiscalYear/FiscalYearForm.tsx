@@ -15,7 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { SingleSelectDropdown } from "@/components/ui/dropdown"
 import type { SettingsFormValues } from "@/features/settings/types"
 import { FiscalYearTable } from "./FiscalYearTable"
 import type { HolidayDatePickerProps, HolidayDraft, MonthYearPickerProps } from "./types"
@@ -479,9 +479,9 @@ export function FiscalYearForm() {
             name="fiscalYear.year"
             control={control}
             render={({ field }) => (
-              <Select
-                value={field.value}
-                onValueChange={(value) => {
+              <SingleSelectDropdown
+                value={field.value ?? ""}
+                onChange={(value) => {
                   field.onChange(value)
                   const years = parseYearRangeLabel(value)
                   if (!years) return
@@ -499,8 +499,6 @@ export function FiscalYearForm() {
                     shouldValidate: true,
                   })
 
-                  // Holidays are per selected year range. Remove any rows outside the new range
-                  // so the user isn't blocked by older-year mock rows.
                   const current = getValues("fiscalYear.holidays") ?? []
                   const filtered = current.filter((row) =>
                     isIsoDateInRange(String(row?.date ?? ""), startIso, endIso),
@@ -513,28 +511,13 @@ export function FiscalYearForm() {
 
                   void trigger("fiscalYear")
                 }}
-              >
-                <SelectTrigger className="!h-[46px] w-fit min-w-[112px] max-w-[112px] shrink-0 rounded-[6px] border border-[#d6d7dc] bg-white pl-2.5 pr-1 text-center text-[14px] text-[#111827] shadow-none focus-visible:border-[#6C5DD3] focus-visible:ring-0 data-[size=default]:h-[46px] [&_[data-slot=select-value]]:mx-auto">
-                  <SelectValue placeholder="Select year" />
-                </SelectTrigger>
-                <SelectContent
-                  position="popper"
-                  side="bottom"
-                  sideOffset={6}
-                  align="start"
-                  className="z-[90] w-[var(--radix-select-trigger-width)] min-w-[var(--radix-select-trigger-width)] rounded-[8px] border border-[#d9deea] bg-white p-1 shadow-[0_8px_18px_rgba(17,24,39,0.12)] [&_[data-slot=select-scroll-up-button]]:hidden [&_[data-slot=select-scroll-down-button]]:hidden"
-                >
-                  {yearOptions.map((option) => (
-                    <SelectItem
-                      key={option}
-                      value={option}
-                      className="cursor-pointer justify-center rounded-[6px] px-3 py-2 pr-3 text-center text-[14px] text-[#111827] focus:bg-[#eef8ff] [&_[data-slot=select-item-indicator]]:hidden"
-                    >
-                      {option}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                onBlur={field.onBlur}
+                options={yearOptions.map((option) => ({ value: option, label: option }))}
+                placeholder="Select year"
+                className="!h-[46px] !min-h-[46px] w-fit min-w-[112px] max-w-[112px] shrink-0 !rounded-[6px] !border-[#d6d7dc] !pl-2.5 !pr-9 !text-center !text-[14px] focus-visible:!border-[#6C5DD3] focus-visible:!ring-0"
+                itemButtonClassName="rounded-[6px] px-3 py-2 text-center"
+                itemLabelClassName="!text-[14px] text-center"
+              />
             )}
           />
         </div>

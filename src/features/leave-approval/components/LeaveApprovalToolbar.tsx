@@ -2,7 +2,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { Controller, useForm } from "react-hook-form"
 
 import { Button } from "@/components/ui/button"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { SingleSelectDropdown } from "@/components/ui/dropdown"
 import { leaveApprovalFiltersSchema } from "../schemas"
 import type { LeaveApprovalFilters, LeaveApprovalToolbarProps } from "../types"
 
@@ -32,33 +32,20 @@ export function LeaveApprovalToolbar({
             name="type"
             control={form.control}
             render={({ field }) => (
-              <Select
+              <SingleSelectDropdown
                 value={field.value}
-                onValueChange={(value) => {
-                  field.onChange(value)
-                }}
-              >
-                <SelectTrigger className="!h-[45px] !w-[140px] rounded-[8px] border border-[#d6d7dc] bg-white text-[12px] shadow-none focus-visible:border-[#6C5DD3] focus-visible:ring-0">
-                  <SelectValue placeholder="All" />
-                </SelectTrigger>
-                <SelectContent
-                  position="popper"
-                  side="bottom"
-                  sideOffset={6}
-                  align="start"
-                  className="ieba-select-scroll z-[90] w-[--radix-select-trigger-width] min-w-[--radix-select-trigger-width] rounded-[8px] border-0 bg-white p-1 shadow-[0_8px_18px_rgba(17,24,39,0.12)] [&_[data-slot=select-item-indicator]]:hidden [&_[data-slot=select-scroll-up-button]]:hidden [&_[data-slot=select-scroll-down-button]]:hidden [&_[data-slot=select-viewport]]:h-auto [&_[data-slot=select-viewport]]:max-h-[224px] [&_[data-slot=select-viewport]]:overflow-y-auto"
-                >
-                  {(["All", "Approved", "Rejected", "Withdraw"] as const).map((opt) => (
-                    <SelectItem
-                      key={opt}
-                      value={opt}
-                      className="cursor-pointer rounded-[6px] px-3 py-2 text-[12px] text-[#111827] hover:bg-[#FAFAFA] focus:bg-[#FAFAFA] data-[state=checked]:bg-[#eef8ff]"
-                    >
-                      {opt}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                onChange={field.onChange}
+                onBlur={field.onBlur}
+                options={(["All", "Approved", "Rejected", "Withdraw"] as const).map((opt) => ({
+                  value: opt,
+                  label: opt,
+                }))}
+                placeholder="All"
+                className="!h-[45px] !min-h-[45px] !w-[140px] !rounded-[8px] !border-[#d6d7dc] !text-[12px] focus-visible:!border-[#6C5DD3] focus-visible:!ring-0"
+                contentClassName="max-h-[224px]"
+                itemButtonClassName="rounded-[6px] px-3 py-2"
+                itemLabelClassName="!text-[12px]"
+              />
             )}
           />
         </div>
@@ -69,33 +56,24 @@ export function LeaveApprovalToolbar({
             name="userId"
             control={form.control}
             render={({ field }) => (
-              <Select
+              <SingleSelectDropdown
                 value={field.value ?? "all"}
-                onValueChange={(v) => {
-                  field.onChange(v)
-                }}
-              >
-                <SelectTrigger className="!h-[45px] !w-[140px] rounded-[6px] border border-[#d6d7dc] bg-white text-[12px] shadow-none focus-visible:border-[#6C5DD3] focus-visible:ring-0">
-                  <SelectValue placeholder="All" />
-                </SelectTrigger>
-                <SelectContent
-                  position="popper"
-                  side="bottom"
-                  sideOffset={6}
-                  align="start"
-                  className="ieba-select-scroll z-[90] w-[--radix-select-trigger-width] min-w-[--radix-select-trigger-width] rounded-[8px] border-0 bg-white p-1 shadow-[0_8px_18px_rgba(17,24,39,0.12)] [&_[data-slot=select-item-indicator]]:hidden [&_[data-slot=select-scroll-up-button]]:hidden [&_[data-slot=select-scroll-down-button]]:hidden [&_[data-slot=select-viewport]]:h-auto [&_[data-slot=select-viewport]]:max-h-[224px] [&_[data-slot=select-viewport]]:overflow-y-auto"
-                >
-                  {userOptions.map((opt) => (
-                    <SelectItem
-                      key={opt.id}
-                      value={opt.id}
-                      className="cursor-pointer rounded-[6px] px-3 py-2 text-[12px] text-[#111827] hover:bg-[#FAFAFA] focus:bg-[#FAFAFA] data-[state=checked]:bg-[#eef8ff]"
-                    >
-                      {opt.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                onChange={field.onChange}
+                onBlur={field.onBlur}
+                options={[
+                  { value: "all", label: "All", key: "all" },
+                  ...userOptions.map((opt) => ({
+                    value: opt.id,
+                    label: opt.label,
+                    key: opt.id,
+                  })),
+                ]}
+                placeholder="All"
+                className="!h-[45px] !min-h-[45px] !w-[140px] !rounded-[6px] !border-[#d6d7dc] !text-[12px] focus-visible:!border-[#6C5DD3] focus-visible:!ring-0"
+                contentClassName="max-h-[224px]"
+                itemButtonClassName="rounded-[6px] px-3 py-2"
+                itemLabelClassName="!text-[12px]"
+              />
             )}
           />
         </div>

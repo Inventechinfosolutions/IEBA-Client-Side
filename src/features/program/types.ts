@@ -215,19 +215,10 @@ export type BudgetUnitsFormProps = {
   formMode: ProgramFormMode
   quickAddSubProgramMode?: boolean
   departmentOptions: string[]
-  isDepartmentOpen: boolean
-  setIsDepartmentOpen: React.Dispatch<React.SetStateAction<boolean>>
-  departmentDropdownRef: React.RefObject<HTMLDivElement | null>
   budgetUnitNameOptions: string[]
   budgetProgramNameOptions: string[]
   budgetProgramLookup: Record<string, { code: string; department: string }>
   budgetUnitLookup: Record<string, { code: string; department: string }>
-  isBuNameOpen: boolean
-  setIsBuNameOpen: React.Dispatch<React.SetStateAction<boolean>>
-  buNameDropdownRef: React.RefObject<HTMLDivElement | null>
-  isBudgetProgramOpen: boolean
-  setIsBudgetProgramOpen: React.Dispatch<React.SetStateAction<boolean>>
-  budgetProgramDropdownRef: React.RefObject<HTMLDivElement | null>
 }
 
 export type ProgramToolbarProps = {
@@ -255,17 +246,6 @@ export type TimeStudyInputShellProps = {
   placeholder: string
   disabled?: boolean
 }
-export type TimeStudySelectShellProps = {
-  value?: string
-  onChange: (value: string) => void
-  options: string[]
-  placeholder: string
-  isOpen: boolean
-  setIsOpen: (value: boolean) => void
-  ariaLabel: string
-  disabled?: boolean
-}
-
 export type ProgramActivityRelationFormProps = {
   form: UseFormReturn<ProgramFormValues>
 }

@@ -4,20 +4,13 @@ import { ChevronDown, ChevronUp } from "lucide-react"
 
 import tableEmptyIcon from "@/assets/icons/table-empty.png"
 import { Input } from "@/components/ui/input"
-import type {
-  SupervisorDropdownFieldProps,
-  UserModuleFormValues,
-} from "@/features/user/types"
 import { cn } from "@/lib/utils"
 
-const supervisorOptions = [
-  "Rugeger Natalie",
-  "Rubens Patrick",
-  "MacKay Jessica",
-  "Smith Shonda",
-]
+import type { UserModuleFormValues, SupervisorDropdownFieldProps } from "../types"
 
-function DropdownField({ name, label }: SupervisorDropdownFieldProps) {
+import { useGetEmployees } from "../queries/get-add-employee"
+
+function SupervisorDropdownField({ name, label, options }: SupervisorDropdownFieldProps) {
   const [isOpen, setIsOpen] = useState(false)
   const { control } = useFormContext<UserModuleFormValues>()
   const inputTextClass = "!text-[11px] !leading-[14px] font-normal"
@@ -25,7 +18,6 @@ function DropdownField({ name, label }: SupervisorDropdownFieldProps) {
   const inputClassName =
     `h-[46px] rounded-[7px] border border-[#c6cedd] bg-white px-3 pr-8 ${inputTextClass} text-[#111827] shadow-none placeholder:!text-[9.5px] placeholder:!leading-[14px] placeholder:font-normal placeholder:text-[#c2c7d3] focus-visible:border-[#6C5DD3] focus-visible:ring-0`
 
-  const options = useMemo(() => supervisorOptions, [])
   const selectedOptionClass = "bg-[#dbeafe] font-normal"
 
   return (
@@ -56,7 +48,7 @@ function DropdownField({ name, label }: SupervisorDropdownFieldProps) {
                 inputClassName,
                 "cursor-pointer select-none caret-transparent",
                 field.value ? "text-[#111827]" : "",
-                isOpen ? "border-[#3b82f6] ring-1 ring-[#3b82f640]" : ""
+                isOpen ? "border-[#3b82f6] ring-1 ring-[#3b82f640]" : "",
               )}
             />
             <button
@@ -82,7 +74,7 @@ function DropdownField({ name, label }: SupervisorDropdownFieldProps) {
                       }}
                       className={cn(
                         `block w-full cursor-pointer rounded-[4px] px-2.5 py-1.5 text-left ${optionTextClass} text-[#111827] hover:bg-[#e5e7eb]`,
-                        field.value === option ? selectedOptionClass : ""
+                        field.value === option ? selectedOptionClass : "",
                       )}
                     >
                       {option}
@@ -106,18 +98,35 @@ function DropdownField({ name, label }: SupervisorDropdownFieldProps) {
   )
 }
 
+/** UI tab: Supervisor Assignments */
 export function SupervisorAssignmentsPanel() {
+  const employeesQuery = useGetEmployees({ page: 1, pageSize: 100, inactiveOnly: false })
   const { watch } = useFormContext<UserModuleFormValues>()
   const employeeName = `${watch("firstName") ?? ""} ${watch("lastName") ?? ""}`.trim()
+
+  const supervisorOptions = useMemo(() => {
+    const rows = employeesQuery.data?.items ?? []
+    const names = rows
+      .map((r) => r.employee.trim())
+      .filter((n) => n.length > 0)
+    return Array.from(new Set(names)).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }))
+  }, [employeesQuery.data?.items])
 
   return (
     <div className="pt-1">
       <p className="mb-5 select-none text-[12px] font-semibold uppercase text-[#111827]">{employeeName}</p>
       <div className="grid max-w-[620px] grid-cols-2 gap-2 pt-2">
-        <DropdownField name="supervisorPrimary" label="Primary Supervisor" />
-        <DropdownField name="supervisorSecondary" label="Backup Supervisor" />
+        <SupervisorDropdownField
+          name="supervisorPrimary"
+          label="Primary Supervisor"
+          options={supervisorOptions}
+        />
+        <SupervisorDropdownField
+          name="supervisorSecondary"
+          label="Backup Supervisor"
+          options={supervisorOptions}
+        />
       </div>
     </div>
   )
 }
-

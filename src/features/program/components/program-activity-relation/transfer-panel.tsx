@@ -36,7 +36,7 @@ export function TransferPanel({
         </div>
       </div>
 
-      <ScrollArea className="h-[280px]">
+      <ScrollArea className="h-[280px] py-2 px-2 ">
         {items.length > 0 ? (
           <div className="flex flex-col">
             {isActivity && selectedDept ? (
