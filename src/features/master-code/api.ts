@@ -1,6 +1,6 @@
 import { api } from "@/lib/api"
 
-import { ActivityStatusEnum } from "./enums/activity-status.enum"
+import { ActivityStatusEnum } from "./enums/activityStatus"
 import type {
   ApiActivityCode,
   ApiTenantMasterCode,

@@ -1,6 +1,6 @@
-import { useCreateTodo } from "../mutations/create-todo"
-import { useUpdateTodo } from "../mutations/update-todo"
-import { useGetTodos } from "../queries/queries"
+import { useCreateTodo } from "../mutations/createTodo"
+import { useUpdateTodo } from "../mutations/updateTodo"
+import { useGetTodos } from "../queries/getTodos"
 import type { GetTodosParams } from "../types"
 
 export function useTodoModule(params: GetTodosParams) {

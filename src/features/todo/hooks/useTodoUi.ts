@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from "react"
-import { TodoStatusEnum } from "../enums/todo-status.enum"
+import { TodoStatusEnum } from "../enums/todoStatus"
 import type { TodoFormMode, TodoFormValues, TodoRow } from "../types"
 
 const emptyFormValues: TodoFormValues = {

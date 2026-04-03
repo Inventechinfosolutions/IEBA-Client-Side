@@ -1,11 +1,15 @@
-export { MasterCodePage } from "./pages/mastercode-page"
-export { useMasterCodeUI } from "./hooks/use-mastercode-ui"
-export { useMasterCodes } from "./hooks/use-mastercode"
-export { useGetMasterCodes, useGetMasterCodeById, useTenantMasterCodeByName } from "./queries/queries"
-export { useCreateMasterCode } from "./mutations/create-mastercode"
-export { useUpdateMasterCode } from "./mutations/update-mastercode"
-export { useUpdateTenantMasterCode } from "./mutations/update-tenant-mastercode"
+export { MasterCodePage } from "./pages/MasterCodePage"
+export { useMasterCodeUI } from "./hooks/useMasterCodeUi"
+export { useMasterCodes } from "./hooks/useMasterCode"
+export {
+  useGetMasterCodes,
+  useGetMasterCodeById,
+  useTenantMasterCodeByName,
+} from "./queries/getMasterCodes"
+export { useCreateMasterCode } from "./mutations/createMasterCode"
+export { useUpdateMasterCode } from "./mutations/updateMasterCode"
+export { useUpdateTenantMasterCode } from "./mutations/updateTenantMasterCode"
 export { masterCodeKeys } from "./keys"
-export { ActivityStatusEnum } from "./enums/activity-status.enum"
-export { MasterCodeTypeEnum } from "./enums/mastercode-type.enum"
+export { ActivityStatusEnum } from "./enums/activityStatus"
+export { MasterCodeTypeEnum } from "./enums/masterCodeType"
 export * from "./types"

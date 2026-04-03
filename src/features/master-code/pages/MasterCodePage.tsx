@@ -1,14 +1,14 @@
 import { Check } from "lucide-react"
 import { toast } from "sonner"
 
-import { MasterCodeFormModal } from "../components/mastercode-form-modal.tsx"
-import { MasterCodePagination } from "../components/mastercode-pagination.tsx"
-import { MasterCodeTable } from "../components/mastercode-table.tsx"
-import { MasterCodeTabs } from "../components/mastercode-tabs.tsx"
-import { MasterCodeToolbar } from "../components/mastercode-toolbar.tsx"
-import { useMasterCodeUI } from "../hooks/use-mastercode-ui.ts"
-import { useMasterCodes } from "../hooks/use-mastercode.ts"
-import type { MasterCodeFormValues } from "../types.ts"
+import { MasterCodeFormModal } from "../components/MasterCodeFormModal"
+import { MasterCodePagination } from "../components/MasterCodePagination"
+import { MasterCodeTable } from "../components/MasterCodeTable"
+import { MasterCodeTabs } from "../components/MasterCodeTabs"
+import { MasterCodeToolbar } from "../components/MasterCodeToolbar"
+import { useMasterCodeUI } from "../hooks/useMasterCodeUi"
+import { useMasterCodes } from "../hooks/useMasterCode"
+import type { MasterCodeFormValues } from "../types"
 
 export function MasterCodePage() {
   const successToastOptions = {

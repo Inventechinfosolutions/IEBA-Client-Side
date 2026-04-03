@@ -18,7 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { TodoStatusEnum } from "../enums/todo-status.enum"
+import { TodoStatusEnum } from "../enums/todoStatus"
 import { TODO_STATUS_LABEL } from "../types"
 import type { TodoRow, TodoTableProps } from "../types"
 

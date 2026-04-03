@@ -2,14 +2,14 @@ import { z } from "zod"
 import type { FieldErrors } from "react-hook-form"
 import { masterCodeFormSchema } from "./schemas"
 
-import { ActivityStatusEnum } from "./enums/activity-status.enum"
-import { MasterCodeTypeEnum, isMasterCodeType } from "./enums/mastercode-type.enum"
+import { ActivityStatusEnum } from "./enums/activityStatus"
+import { MasterCodeTypeEnum, isMasterCodeType } from "./enums/masterCodeType"
 
 export { ActivityStatusEnum }
-export type { ActivityStatusEnum as ActivityStatusType } from "./enums/activity-status.enum"
+export type { ActivityStatusEnum as ActivityStatusType } from "./enums/activityStatus"
 
 export { MasterCodeTypeEnum, isMasterCodeType }
-export type { MasterCodeTypeEnum as MasterCodeType } from "./enums/mastercode-type.enum"
+export type { MasterCodeTypeEnum as MasterCodeType } from "./enums/masterCodeType"
 
 export type MasterCodeTab = MasterCodeTypeEnum
 

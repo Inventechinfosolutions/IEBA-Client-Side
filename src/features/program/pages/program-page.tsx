@@ -4,7 +4,7 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { toast } from "sonner"
 
-import { MasterCodePagination } from "@/features/master-code/components/mastercode-pagination"
+import { MasterCodePagination } from "@/features/master-code/components/MasterCodePagination"
 import { BudgetUnitTable } from "../components/budget-unit-table"
 import { ProgramActivityRelationForm } from "../components/program-activity-relation/program-activity-relation-form"
 import { ProgramFormModal } from "../components/program-form-modal"

@@ -12,9 +12,9 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { TodoStatusEnum } from "../enums/todo-status.enum"
+import { TodoStatusEnum } from "../enums/todoStatus"
 import { todoFormSchema } from "../schemas"
-import { useGetTodoById } from "../queries/queries"
+import { useGetTodoById } from "../queries/getTodos"
 import { TODO_STATUS_LABEL, TODO_STATUS_OPTIONS } from "../types"
 import type { TodoFormValues, TodoFormModalProps } from "../types"
 

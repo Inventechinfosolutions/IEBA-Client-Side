@@ -1,6 +1,6 @@
 import { api } from "@/lib/api"
 
-import { TodoStatusEnum } from "./enums/todo-status.enum"
+import { TodoStatusEnum } from "./enums/todoStatus"
 import type { TodoListResponse, TodoRow } from "./types"
 
 function normalizeStatus(status: unknown): TodoStatusEnum {

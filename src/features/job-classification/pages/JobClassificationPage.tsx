@@ -1,6 +1,6 @@
 import { useState } from "react"
 
-import { MasterCodePagination } from "@/features/master-code/components/mastercode-pagination"
+import { MasterCodePagination } from "@/features/master-code/components/MasterCodePagination"
 import { JobClassificationFormModal } from "../components/JobClassificationFormModal"
 import { JobClassificationTable } from "../components/JobClassificationTable"
 import { JobClassificationToolbar } from "../components/JobClassificationToolbar"
