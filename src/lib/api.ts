@@ -58,7 +58,22 @@ async function apiRequest<T>(
 
   const contentType = response.headers.get("content-type")
   if (contentType?.includes("application/json")) {
-    return response.json() as Promise<T>
+    const body = (await response.json()) as unknown
+    if (
+      body &&
+      typeof body === "object" &&
+      "success" in body &&
+      (body as { success?: unknown }).success === false
+    ) {
+      const raw = (body as { message?: string | string[] }).message
+      const msg = Array.isArray(raw)
+        ? raw.join(", ")
+        : typeof raw === "string" && raw.trim() !== ""
+          ? raw
+          : "Request failed"
+      throw new Error(msg)
+    }
+    return body as T
   }
 
   return undefined as T

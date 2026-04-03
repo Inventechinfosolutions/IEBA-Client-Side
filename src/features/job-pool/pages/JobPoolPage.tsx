@@ -97,7 +97,9 @@ export function JobPoolPage() {
     modalMode === "edit" && selectedRow
       ? {
           name: selectedRow.name,
-          department: selectedRow.department,
+          // Prefer raw department id when available so dependent lookups (job classifications)
+          // can correctly call APIs that expect `departmentId`.
+          department: selectedRow.departmentId ?? selectedRow.department,
           active: selectedRow.active,
           assignedJobClassificationIds: selectedRow.jobClassifications.map(c => c.id),
           assignedActivityIds: selectedRow.assignedActivityIds || [], 

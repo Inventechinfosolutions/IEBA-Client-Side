@@ -8,11 +8,18 @@ import { useGetJobClassifications } from "../../../job-classification/queries/ge
 
 export function JobClassificationSection({ form }: JobClassificationSectionProps) {
   const selectedDept = form.watch("department")
-  const { data: jobClassesData } = useGetJobClassifications({ page: 1, pageSize: 1000, search: "", inactiveOnly: false })
+
+  const { data: jobClassesData } = useGetJobClassifications({
+    page: 1,
+    pageSize: 100,
+    search: "",
+    inactiveOnly: false,
+    departmentId: selectedDept || undefined,
+  })
   
   const allJobClasses = useMemo(() => {
     if (!selectedDept) return []
-    return jobClassesData?.items.map(jc => ({ id: jc.id, name: jc.name })) ?? []
+    return jobClassesData?.items.map((jc) => ({ id: jc.id, name: jc.name })) ?? []
   }, [jobClassesData, selectedDept])
 
   const [searchU, setSearchU] = useState("")

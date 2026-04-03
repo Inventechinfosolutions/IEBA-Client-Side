@@ -26,6 +26,8 @@ export type GetJobClassificationsParams = {
   pageSize: number
   search: string
   inactiveOnly: boolean
+  /** Optional department filter – when set, API receives `departmentId` and only that department's active classifications are returned. */
+  departmentId?: string
 }
 
 export type JobClassificationListResponse = {
@@ -92,6 +94,15 @@ export type JobClassificationPaginationMeta = {
 export type JobClassificationListResponseDto = {
   data?: unknown[]
   meta?: JobClassificationPaginationMeta
+}
+
+export type JobClassificationUserResDto = {
+  id?: string
+  name?: string
+}
+
+export type JobClassificationUsersResponseDto = {
+  data?: JobClassificationUserResDto[]
 }
 
 export type JobClassificationResDto = Record<string, unknown> & {

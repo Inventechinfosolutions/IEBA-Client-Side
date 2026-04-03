@@ -12,12 +12,9 @@ async function updateJobClassificationMutation(input: UpdateJobClassificationInp
 export function useUpdateJobClassification() {
   return useMutation({
     mutationFn: (input: UpdateJobClassificationInput) => updateJobClassificationMutation(input),
-    onSuccess: async (_, variables) => {
+    onSuccess: async () => {
       await queryClient.invalidateQueries({
         queryKey: jobClassificationKeys.lists(),
-      })
-      await queryClient.invalidateQueries({
-        queryKey: jobClassificationKeys.detail(variables.id),
       })
     },
   })
