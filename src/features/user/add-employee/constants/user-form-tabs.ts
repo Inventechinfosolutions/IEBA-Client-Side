@@ -8,6 +8,7 @@ export const addEmployeeTabFieldKeys: Record<
     "employeeNo",
     "firstName",
     "lastName",
+    "phone",
     "loginId",
     "password",
     "confirmPassword",
@@ -15,7 +16,12 @@ export const addEmployeeTabFieldKeys: Record<
     "claimingUnit",
   ],
   security: ["roleAssignments", "supervisorApportioning", "clientAdmin"],
-  supervisor: ["supervisorPrimary", "supervisorSecondary"],
+  supervisor: [
+    "supervisorPrimary",
+    "supervisorSecondary",
+    "supervisorPrimaryId",
+    "supervisorSecondaryId",
+  ],
   timeStudy: ["tsMinDay", "programs", "activities"],
 }
 

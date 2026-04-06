@@ -2,6 +2,8 @@ import { useMutation } from "@tanstack/react-query"
 
 import { apiUpdateUser } from "../api"
 import type { CreateUserResponseDto, UpdateUserModuleInput, UpdateUserRequestDto } from "../types"
+import { normalizeLocationId } from "../utility/normalizeLocationId"
+import { contactsPayloadForUpdate } from "../utility/phoneToContactsPayload"
 
 function toAssignedMultiCodes(value: string | undefined): string[] | undefined {
   const raw = (value ?? "").trim()
@@ -26,11 +28,12 @@ function clampPositionName(raw: string): string {
 }
 
 function mapUpdateInput(input: UpdateUserModuleInput): UpdateUserRequestDto {
+  const passwordTrimmed = input.values.password.trim()
+  const locationId = normalizeLocationId(input.values.locationId)
   return {
     firstName: input.values.firstName.trim(),
     lastName: input.values.lastName.trim(),
-    roles: input.values.roleAssignments,
-    password: input.values.password.trim(),
+    ...(passwordTrimmed !== "" ? { password: passwordTrimmed } : {}),
     employeeId: input.values.employeeNo.trim(),
     positionName: clampPositionName(input.values.jobClassification),
     active: input.values.active,
@@ -41,6 +44,10 @@ function mapUpdateInput(input: UpdateUserModuleInput): UpdateUserRequestDto {
     tsMinPerDay: toTsMinPerDay(input.values.tsMinDay),
     claimingUnit: input.values.claimingUnit.trim(),
     assignedMultiCodes: toAssignedMultiCodes(input.values.assignedMultiCodes),
+    ...(locationId != null ? { locationId } : {}),
+    contacts: contactsPayloadForUpdate(input.values.phone),
+    primarySupervisorId: (input.values.supervisorPrimaryId ?? "").trim(),
+    backupSupervisorId: (input.values.supervisorSecondaryId ?? "").trim(),
   }
 }
 

@@ -2,6 +2,8 @@ import { useMutation } from "@tanstack/react-query"
 
 import { apiCreateUser } from "../api"
 import type { CreateUserModuleInput, CreateUserRequestDto, CreateUserResponseDto } from "../types"
+import { normalizeLocationId } from "../utility/normalizeLocationId"
+import { contactsPayloadForCreate } from "../utility/phoneToContactsPayload"
 
 function toAssignedMultiCodes(value: string | undefined): string[] | undefined {
   const raw = (value ?? "").trim()
@@ -27,6 +29,8 @@ function clampPositionName(raw: string): string {
 }
 
 function mapCreateInput(input: CreateUserModuleInput): CreateUserRequestDto {
+  const locationId = normalizeLocationId(input.values.locationId)
+  const contacts = contactsPayloadForCreate(input.values.phone)
   return {
     loginId: input.values.loginId.trim(),
     password: input.values.password.trim(),
@@ -42,6 +46,8 @@ function mapCreateInput(input: CreateUserModuleInput): CreateUserRequestDto {
     tsMinPerDay: toTsMinPerDay(input.values.tsMinDay) ?? 480,
     claimingUnit: input.values.claimingUnit.trim(),
     assignedMultiCodes: toAssignedMultiCodes(input.values.assignedMultiCodes),
+    ...(locationId != null ? { locationId } : {}),
+    ...(contacts ? { contacts } : {}),
   }
 }
 

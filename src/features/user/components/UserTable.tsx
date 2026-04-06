@@ -8,6 +8,7 @@ import {
 import tableCheckIcon from "@/assets/icons/table-check.png"
 import tableCloseIcon from "@/assets/icons/table-close.png"
 import tableEditIcon from "@/assets/icons/table-edit.png"
+import tableEmptyIcon from "@/assets/icons/table-empty.png"
 import tableSwitchUserIcon from "@/assets/icons/table-switch-user.png"
 import {
   Table,
@@ -44,7 +45,6 @@ export function UserTable({ rows, isLoading, onEditRow }: UserTableProps) {
     "Action",
     "Switch User",
   ]
-  const dividerClass = "border-r border-[1px] border-[#6C5DD3]"
 
   const skeletonRows = Array.from(
     { length: 10 },
@@ -81,9 +81,9 @@ export function UserTable({ rows, isLoading, onEditRow }: UserTableProps) {
             {headers.map((header, idx) => (
               <TableHead
                 key={header}
-                className={`h-10 ${dividerClass} bg-[var(--primary)] p-[8px] text-[12px] leading-[1.15] font-medium text-white whitespace-normal break-words last:border-r-0 ${
-                  idx >= 3 ? "text-center" : ""
-                }`}
+                className={`h-10 bg-[var(--primary)] p-[8px] text-[12px] leading-[1.15] font-medium text-white whitespace-normal break-words ${
+                  idx === headers.length - 1 ? "border-r-0" : "border-r border-white/50"
+                } ${idx >= 3 ? "text-center" : ""}`}
               >
                 {idx === 0 ? (
                   <TooltipProvider>
@@ -188,7 +188,7 @@ export function UserTable({ rows, isLoading, onEditRow }: UserTableProps) {
                     </button>
                     {expandedRowIds[row.id] ? (
                       <div className="mt-1 flex flex-wrap gap-1">
-                        {(row.roleAssignments ?? ["User"]).map((role) => (
+                        {(row.roleAssignments ?? []).map((role) => (
                           <span
                             key={`${row.id}-${role}`}
                             className="rounded-[6px] border border-[#d7dbe7] bg-white px-2 py-0.5 text-[10px] text-[#555f76]"
@@ -308,7 +308,7 @@ export function UserTable({ rows, isLoading, onEditRow }: UserTableProps) {
                       />
                     </button>
                   </TableCell>
-                  <TableCell className="px-[14px] py-[5px] text-center">
+                  <TableCell className="border-r border-[#eff0f5] px-[14px] py-[5px] text-center">
                     <button
                       type="button"
                       className="inline-flex cursor-pointer items-center drop-shadow-[0_1px_0_rgba(108,93,211,0.35)] transition-opacity hover:opacity-100"
@@ -323,6 +323,18 @@ export function UserTable({ rows, isLoading, onEditRow }: UserTableProps) {
                   </TableCell>
                 </TableRow>
               ))}
+          {!isLoading && sortedRows.length === 0 ? (
+            <TableRow className="h-[210px] hover:bg-transparent">
+              <TableCell colSpan={headers.length} className="text-center">
+                <img
+                  src={tableEmptyIcon}
+                  alt=""
+                  aria-hidden="true"
+                  className="mx-auto h-[73px] w-[82px] object-contain opacity-80"
+                />
+              </TableCell>
+            </TableRow>
+          ) : null}
         </TableBody>
       </Table>
     </div>

@@ -1,3 +1,4 @@
+import { useState } from "react"
 import { Controller, useFormContext } from "react-hook-form"
 import { Eye, EyeOff } from "lucide-react"
 
@@ -7,17 +8,29 @@ import {
   MultiSelectDropdown,
   parseMultiSelectStoredValues,
 } from "@/components/ui/multi-select-dropdown"
+import { SingleSelectDropdown, type SingleSelectOption } from "@/components/ui/dropdown"
 
 import type { UserModuleFormValues, EmployeeLoginDetailsSectionProps } from "../types"
 
 import {
   useGetAddEmployeeJobClassifications,
+  useGetAddEmployeeLocations,
   useGetMulticodeMasterCodes,
 } from "../queries/get-add-employee"
 import { useEmployeeLoginDetailsUi } from "../hooks/use-add-employee-form"
+import { formatPhoneUs10Input } from "../schemas"
 
 export function EmployeeLoginDetailsSection({ isEditMode }: EmployeeLoginDetailsSectionProps) {
-  const jobClassificationsQuery = useGetAddEmployeeJobClassifications()
+  /** Edit mode: defer GET /jobclassification until the user opens the picker. */
+  const [jobClassificationMenuOpened, setJobClassificationMenuOpened] = useState(false)
+  /** Edit mode: defer GET /location until the user opens the picker. */
+  const [locationMenuOpened, setLocationMenuOpened] = useState(false)
+
+  const jobClassificationsEnabled = !isEditMode || jobClassificationMenuOpened
+  const locationsEnabled = !isEditMode || locationMenuOpened
+
+  const jobClassificationsQuery = useGetAddEmployeeJobClassifications(jobClassificationsEnabled)
+  const locationsQuery = useGetAddEmployeeLocations(locationsEnabled)
 
   const {
     selectedJobDutyFile,
@@ -37,6 +50,7 @@ export function EmployeeLoginDetailsSection({ isEditMode }: EmployeeLoginDetails
   } = useFormContext<UserModuleFormValues>()
   const employeeName = `${watch("firstName") ?? ""} ${watch("lastName") ?? ""}`.trim()
   const allowMultiCodesEnabled = watch("allowMultiCodes") === true
+  /** Checkbox only (not multicode dropdown open). Add mode unchanged. */
   const multicodeMasterCodesQuery = useGetMulticodeMasterCodes(allowMultiCodesEnabled)
 
   const labelClassName = "mb-1 block select-none text-[11px] font-medium text-[#2a2f3a]"
@@ -106,7 +120,74 @@ export function EmployeeLoginDetailsSection({ isEditMode }: EmployeeLoginDetails
         </div>
         <div>
           <label className={labelClassName}>Location</label>
-          <Input {...register("location")} className={inputClassName} />
+          <Controller
+            name="locationId"
+            control={control}
+            render={({ field }) => {
+              const rows = locationsQuery.data ?? []
+              const rowById = new Map(rows.map((r) => [r.id, r]))
+              const selectedId = field.value
+              const locationLabel = (watch("location") ?? "").trim()
+              const hasOrphanSelection =
+                selectedId != null &&
+                !rowById.has(selectedId) &&
+                locationLabel.length > 0
+
+              const options: SingleSelectOption[] = []
+              if (hasOrphanSelection && selectedId != null) {
+                options.push({
+                  value: String(selectedId),
+                  label: locationLabel,
+                  key: `location-orphan-${selectedId}`,
+                })
+              }
+              for (const r of rows) {
+                options.push({
+                  value: String(r.id),
+                  label: r.name,
+                  key: `location-${r.id}`,
+                })
+              }
+
+              const dropdownValue =
+                selectedId != null && (rowById.has(selectedId) || hasOrphanSelection)
+                  ? String(selectedId)
+                  : ""
+
+              return (
+                <SingleSelectDropdown
+                  value={dropdownValue}
+                  onChange={(v) => {
+                    const id = Number.parseInt(v, 10)
+                    if (!Number.isFinite(id)) return
+                    field.onChange(id)
+                    const row = rowById.get(id)
+                    setValue("location", row?.name ?? locationLabel, {
+                      shouldDirty: true,
+                      shouldValidate: true,
+                    })
+                  }}
+                  onBlur={field.onBlur}
+                  onOpenChange={(open) => {
+                    if (open) setLocationMenuOpened(true)
+                  }}
+                  options={options}
+                  placeholder="Select location"
+                  isLoading={locationsEnabled && locationsQuery.isFetching}
+                  loadingLabel="Loading locations…"
+                  className={inputClassName}
+                  contentClassName="max-h-[280px]"
+                />
+              )
+            }}
+          />
+          {locationsQuery.isError ? (
+            <p className="mt-1 text-[11px] text-red-500" role="alert">
+              {locationsQuery.error instanceof Error
+                ? locationsQuery.error.message
+                : "Failed to load locations"}
+            </p>
+          ) : null}
         </div>
 
         <div>
@@ -119,7 +200,26 @@ export function EmployeeLoginDetailsSection({ isEditMode }: EmployeeLoginDetails
         </div>
         <div>
           <label className={labelClassName}>Phone</label>
-          <Input {...register("phone")} className={inputClassName} placeholder="___-___-____" />
+          <Controller
+            name="phone"
+            control={control}
+            render={({ field }) => (
+              <Input
+                {...field}
+                className={inputClassName}
+                placeholder="___-___-____"
+                inputMode="numeric"
+                autoComplete="tel"
+                maxLength={12}
+                onChange={(e) => field.onChange(formatPhoneUs10Input(e.target.value))}
+              />
+            )}
+          />
+          {errors.phone?.message ? (
+            <p className={passwordErrorClassName} role="alert">
+              {String(errors.phone.message)}
+            </p>
+          ) : null}
         </div>
 
         <div>
@@ -247,7 +347,12 @@ export function EmployeeLoginDetailsSection({ isEditMode }: EmployeeLoginDetails
                     onBlur={field.onBlur}
                     placeholder="Select job classification"
                     options={options}
-                    isLoading={jobClassificationsQuery.isPending}
+                    isLoading={
+                      jobClassificationsEnabled && jobClassificationsQuery.isFetching
+                    }
+                    onOpenChange={(open) => {
+                      if (open) setJobClassificationMenuOpened(true)
+                    }}
                   />
                 )
               }}
