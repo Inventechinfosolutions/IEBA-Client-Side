@@ -21,6 +21,8 @@ export function CountyActivityCodePage() {
   const {
     rows,
     primaryRows,
+    activePrimaryCountyRows,
+    subCountyParentPickerRows,
     subRowsByParentId,
     totalItems,
     pagination,
@@ -34,6 +36,8 @@ export function CountyActivityCodePage() {
       <CountyActivityCodeTable
         rows={rows}
         primaryRows={primaryRows}
+        activePrimaryCountyRows={activePrimaryCountyRows}
+        subCountyParentPickerRows={subCountyParentPickerRows}
         subRowsByParentId={subRowsByParentId}
         totalItems={totalItems}
         pagination={pagination}

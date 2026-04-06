@@ -1,10 +1,6 @@
 import { z } from "zod"
 
 import { CountyActivityCatalogMatchDefault } from "./enums/CountyActivity.enum"
-import type {
-  CountyActivityAddFormValues,
-  CountyActivityFilterFormValues,
-} from "./types"
 
 export const countyActivityFilterFormSchema = z.object({
   search: z.string().trim(),
@@ -39,7 +35,7 @@ export const countyActivityAddFormSchema = z.object({
   multipleJobPools: z.boolean(),
 })
 
-export const countyActivityAddDefaultValues: CountyActivityAddFormValues = {
+export const countyActivityAddDefaultValues = {
   copyCode: false,
   countyActivityCode: "",
   countyActivityName: "",
@@ -53,9 +49,9 @@ export const countyActivityAddDefaultValues: CountyActivityAddFormValues = {
   leaveCode: false,
   docRequired: false,
   multipleJobPools: true,
-}
+} satisfies z.infer<typeof countyActivityAddFormSchema>
 
-export const countyActivityFilterDefaultValues: CountyActivityFilterFormValues = {
+export const countyActivityFilterDefaultValues = {
   search: "",
   inactive: false,
-}
+} satisfies z.infer<typeof countyActivityFilterFormSchema>

@@ -2,7 +2,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 import { apiPutCountyActivity } from "../api/countyActivityApi"
 import type { UpdateCountyActivityApiInput } from "../types"
-import { countyActivityCodeKeys } from "../keys"
+
+import { applyCountyActivityQueryCacheAfterUpdate } from "./countyActivityQueryCache"
 
 export function useUpdateCountyActivityCode() {
   const queryClient = useQueryClient()
@@ -10,10 +11,7 @@ export function useUpdateCountyActivityCode() {
   return useMutation({
     mutationFn: (input: UpdateCountyActivityApiInput) => apiPutCountyActivity(input),
     onSuccess: (_data, input) => {
-      void queryClient.invalidateQueries({ queryKey: countyActivityCodeKeys.lists() })
-      void queryClient.invalidateQueries({
-        queryKey: countyActivityCodeKeys.activityDetail(input.id),
-      })
+      applyCountyActivityQueryCacheAfterUpdate(queryClient, input)
     },
   })
 }

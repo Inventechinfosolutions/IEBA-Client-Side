@@ -1,7 +1,8 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { ChevronDown, ChevronRight, PlusIcon, SearchIcon } from "lucide-react"
+import { useQueryClient } from "@tanstack/react-query"
 import { useForm } from "react-hook-form"
-import { useMemo, useState } from "react"
+import { useMemo, useRef, useState } from "react"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -71,21 +72,27 @@ import { useUpdateCountyActivityCode } from "../mutations/updateCountyActivityCo
 import { useCreateCountyActivityCode } from "../mutations/createCountyActivityCode"
 import { ActivityStatusEnum } from "@/features/master-code/enums/activityStatus"
 
-import { useCountyActivityForEdit } from "../queries/getCountyActivityForEdit"
-import { useCountyActivityMasterCodes } from "../queries/getCountyActivityMasterCodes"
+import { useGetMasterCodeOptions } from "@/features/department/queries/getMasterCodeOptions"
 
-function toastApiError(err: unknown, fallback: string): void {
+import { COUNTY_ACTIVITY_SEARCH_DEBOUNCE_MS } from "../constants"
+import { countyActivityCodeKeys } from "../keys"
+import {
+  useGetCountyActivityForEdit,
+  useGetCountyActivityMasterCodes,
+} from "../queries/getCountyActivityCodes"
+
+function toastCountyActivityCodeApiError(err: unknown, fallback: string): void {
   const msg = err instanceof Error ? err.message.trim() : ""
   toast.error(msg.length > 0 ? msg : fallback)
 }
 
-function getFallbackDepartment(row: CountyActivityCodeRow): string {
+function getCountyActivityCodeRowDepartmentLabel(row: CountyActivityCodeRow): string {
   const dept = row.department?.trim() ?? ""
   return dept.length > 0 ? dept : "—"
 }
 
 /** Renders comma-separated department labels one per line (UAT-style). */
-function DepartmentStack({ label }: CountyActivityDepartmentStackProps) {
+function CountyActivityDepartmentStackCell({ label }: CountyActivityDepartmentStackProps) {
   const raw = label.trim()
   if (raw === "") return null
   if (raw === "—") return <span>—</span>
@@ -109,7 +116,9 @@ function DepartmentStack({ label }: CountyActivityDepartmentStackProps) {
 }
 
 /** Single-line ellipsis in the grid; full text in a square tooltip (scroll if long). */
-function DescriptionTableCell({ description }: CountyActivityDescriptionTableCellProps) {
+function CountyActivityDescriptionTableCell({
+  description,
+}: CountyActivityDescriptionTableCellProps) {
   const text = description ?? ""
   return (
     <TableCell className="min-w-0 max-w-0 border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
@@ -139,6 +148,8 @@ function DescriptionTableCell({ description }: CountyActivityDescriptionTableCel
 export function CountyActivityCodeTable({
   rows,
   primaryRows,
+  activePrimaryCountyRows,
+  subCountyParentPickerRows,
   subRowsByParentId,
   pagination,
   totalItems,
@@ -150,6 +161,10 @@ export function CountyActivityCodeTable({
   onPageChange,
   onPageSizeChange,
 }: CountyActivityCodeTableProps) {
+  const queryClient = useQueryClient()
+
+  const searchDebounceTimerRef = useRef<number | null>(null)
+
   const filterForm = useForm<CountyActivityFilterFormValues>({
     resolver: zodResolver(countyActivityFilterFormSchema),
     defaultValues: {
@@ -165,7 +180,7 @@ export function CountyActivityCodeTable({
 
   const showInactive = filterForm.watch("inactive")
   const searchValue = filterForm.watch("search")
-  const totalPages = Math.max(1, Math.ceil(totalItems / pagination.pageSize))
+  const totalPages = Math.max(1, pagination.totalPages)
   const pageNumbers = Array.from({ length: totalPages }, (_, index) => index + 1)
 
   const [addOpen, setAddOpen] = useState(false)
@@ -179,6 +194,14 @@ export function CountyActivityCodeTable({
   const [currentPrimaryId, setCurrentPrimaryId] = useState<string | null>(null)
   const [currentPrimaryDefaults, setCurrentPrimaryDefaults] =
     useState<CountyActivitySubFlowPrimaryDefaults | null>(null)
+
+  const addSubParentDetailQuery = useGetCountyActivityForEdit(
+    currentPrimaryId,
+    addOpen &&
+      addTab === CountyActivityGridRowType.SUB &&
+      Boolean(currentPrimaryId?.trim()),
+  )
+
   const [sortBy, setSortBy] = useState<CountyActivityCodeSortableColumn | null>(
     null
   )
@@ -193,8 +216,12 @@ export function CountyActivityCodeTable({
 
   const addMasterCodeType = addForm.watch("masterCodeType")
 
+  const tenantMasterCodeTypeNamesQuery = useGetMasterCodeOptions(
+    addOpen || editOpen,
+  )
+
   const editActivityId = editOpen && rowToEdit ? rowToEdit.id : null
-  const editDetailQuery = useCountyActivityForEdit(editActivityId, editOpen)
+  const editDetailQuery = useGetCountyActivityForEdit(editActivityId, editOpen)
 
   const editSyncedMasterCodeType = useMemo(() => {
     if (!editOpen || !rowToEdit || !editDetailQuery.isSuccess || !editDetailQuery.data) {
@@ -212,9 +239,10 @@ export function CountyActivityCodeTable({
     return (parent?.masterCodeType ?? rowToEdit.masterCodeType).trim()
   }, [editOpen, rowToEdit, editDetailQuery.isSuccess, editDetailQuery.data, primaryRows])
 
-  const editHydrationCodesQuery = useCountyActivityMasterCodes(
+  const editHydrationCodesQuery = useGetCountyActivityMasterCodes(
     editSyncedMasterCodeType,
     editOpen &&
+      rowToEdit?.rowType === CountyActivityGridRowType.PRIMARY &&
       editDetailQuery.isSuccess &&
       editSyncedMasterCodeType.length > 0,
   )
@@ -299,14 +327,19 @@ export function CountyActivityCodeTable({
   })
 
   const editMasterCodeTypeWatched = editForm.watch("masterCodeType")
-  const editMasterCodesQuery = useCountyActivityMasterCodes(
+  const editMasterCodesQuery = useGetCountyActivityMasterCodes(
     editMasterCodeTypeWatched.trim() !== ""
       ? editMasterCodeTypeWatched
       : editSyncedMasterCodeType,
-    editOpen,
+    editOpen &&
+      rowToEdit != null &&
+      rowToEdit.rowType !== CountyActivityGridRowType.SUB,
   )
 
-  const addMasterCodesQuery = useCountyActivityMasterCodes(addMasterCodeType, addOpen)
+  const addMasterCodesQuery = useGetCountyActivityMasterCodes(
+    addMasterCodeType,
+    addOpen && addTab === CountyActivityGridRowType.PRIMARY,
+  )
 
   const addMasterCodeOptions = useMemo(
     () =>
@@ -345,119 +378,145 @@ export function CountyActivityCodeTable({
     return map
   }, [departments])
 
-  const primaryActivityLabel = (row: CountyActivityCodeRow): string => {
+  const formatCountyActivityPrimaryPickerOptionLabel = (row: CountyActivityCodeRow): string => {
     const full = `${row.countyActivityCode} - ${row.countyActivityName}`
     return full.length > 42 ? row.countyActivityCode : full
   }
 
-  const primaryActivityOptions = useMemo(
+  const addModalPrimaryActivityOptions = useMemo(
     () =>
-      primaryRows.map((row) => ({
-        label: primaryActivityLabel(row),
+      subCountyParentPickerRows.map((row) => ({
+        label: formatCountyActivityPrimaryPickerOptionLabel(row),
         value: row.id,
       })),
-    [primaryRows]
+    [subCountyParentPickerRows],
   )
 
-  const handleAddSubmit = (tab: CountyActivityGridRowType) =>
-    addForm.handleSubmit((values) => {
-      const assignedNames = values.department
-        .split(",")
-        .map((s) => s.trim())
-        .filter(Boolean)
-      const departmentLinks = assignedNames
-        .map((name) => departmentIdByName[name])
-        .filter((id): id is number => typeof id === "number" && !Number.isNaN(id))
-        .map((id) => ({ id }))
-
-      if (tab === CountyActivityGridRowType.PRIMARY) {
-        if (values.masterCode <= 0) {
-          toast.error("Select a master code")
-          return
-        }
-        const catalog = addMasterCodeOptions.find((o) => o.value === values.masterCode)
-        if (!catalog?.code) {
-          toast.error("Select a valid master code")
-          return
+  const editModalPrimaryActivityOptions = useMemo(() => {
+    const base = [...addModalPrimaryActivityOptions]
+    if (rowToEdit?.rowType === CountyActivityGridRowType.SUB && rowToEdit.parentId) {
+      const pid = rowToEdit.parentId
+      if (!base.some((o) => o.value === pid)) {
+        const parent = primaryRows.find((r) => r.id === pid)
+        if (parent) {
+          return [
+            { label: formatCountyActivityPrimaryPickerOptionLabel(parent), value: parent.id },
+            ...base,
+          ]
         }
       }
+    }
+    return base
+  }, [addModalPrimaryActivityOptions, rowToEdit, primaryRows])
 
-      const masterCatalog =
-        tab === CountyActivityGridRowType.PRIMARY
-          ? {
-              code: addMasterCodeOptions.find((o) => o.value === values.masterCode)?.code ?? "",
-              type: values.masterCodeType,
-            }
-          : undefined
+  const findCountyActivityRowForSubParentPickerById = (
+    id: string,
+  ): CountyActivityCodeRow | undefined =>
+    subCountyParentPickerRows.find((r) => r.id === id) ??
+    activePrimaryCountyRows.find((r) => r.id === id) ??
+    primaryRows.find((r) => r.id === id)
 
-      if (
-        tab === CountyActivityGridRowType.PRIMARY &&
-        (!masterCatalog?.code || !masterCatalog.type)
-      ) {
+  const submitCreateCountyActivityFromAddModal = (
+    tab: CountyActivityGridRowType,
+    values: CountyActivityAddFormValues,
+  ) => {
+    const assignedNames = values.department
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean)
+    const departmentLinks = assignedNames
+      .map((name) => departmentIdByName[name])
+      .filter((id): id is number => typeof id === "number" && !Number.isNaN(id))
+      .map((id) => ({ id }))
+
+    if (tab === CountyActivityGridRowType.PRIMARY) {
+      if (values.masterCode <= 0) {
+        toast.error("Select a master code")
+        return
+      }
+      const catalog = addMasterCodeOptions.find((o) => o.value === values.masterCode)
+      if (!catalog?.code) {
         toast.error("Select a valid master code")
         return
       }
+    }
 
-      createCountyActivityCode.mutate(
-        {
-          values,
-          tab,
-          parentId: tab === CountyActivityGridRowType.SUB ? currentPrimaryId : null,
-          masterCatalog:
-            tab === CountyActivityGridRowType.PRIMARY && masterCatalog?.code
-              ? { code: masterCatalog.code, type: masterCatalog.type }
-              : undefined,
-          departmentLinks:
-            tab === CountyActivityGridRowType.PRIMARY ? departmentLinks : [],
-        },
-        {
-          onSuccess: (res) => {
-            toast.success(
-              tab === CountyActivityGridRowType.PRIMARY
-                ? "Primary county activity created successfully."
-                : "Secondary county activity created successfully.",
+    const masterCatalog =
+      tab === CountyActivityGridRowType.PRIMARY
+        ? {
+            code: addMasterCodeOptions.find((o) => o.value === values.masterCode)?.code ?? "",
+            type: values.masterCodeType,
+          }
+        : undefined
+
+    if (
+      tab === CountyActivityGridRowType.PRIMARY &&
+      (!masterCatalog?.code || !masterCatalog.type)
+    ) {
+      toast.error("Select a valid master code")
+      return
+    }
+
+    createCountyActivityCode.mutate(
+      {
+        values,
+        tab,
+        parentId: tab === CountyActivityGridRowType.SUB ? currentPrimaryId : null,
+        masterCatalog:
+          tab === CountyActivityGridRowType.PRIMARY && masterCatalog?.code
+            ? { code: masterCatalog.code, type: masterCatalog.type }
+            : undefined,
+        departmentLinks:
+          tab === CountyActivityGridRowType.PRIMARY ? departmentLinks : [],
+      },
+      {
+        onSuccess: () => {
+          toast.success(
+            tab === CountyActivityGridRowType.PRIMARY
+              ? "Primary county activity created successfully."
+              : "Secondary county activity created successfully.",
+          )
+
+          if (tab === CountyActivityGridRowType.PRIMARY) {
+            setAddTab(CountyActivityGridRowType.PRIMARY)
+            addForm.reset(
+              { ...countyActivityAddDefaultValues },
+              { keepDirty: false, keepTouched: false, keepErrors: false },
             )
-
-            if (tab === CountyActivityGridRowType.PRIMARY) {
-              setAddTab(CountyActivityGridRowType.PRIMARY)
-              addForm.reset(
-                { ...countyActivityAddDefaultValues },
-                { keepDirty: false, keepTouched: false, keepErrors: false },
-              )
-              setAddFormMountKey((k) => k + 1)
-              setCurrentPrimaryId(String(res.id))
-              setCurrentPrimaryDefaults({
-                masterCodeType: values.masterCodeType,
-                masterCode: values.masterCode,
-                department: values.department,
-              })
-              return
-            }
-
-            if (currentPrimaryId) {
-              setExpandedRowIds((prev) => ({ ...prev, [currentPrimaryId]: true }))
-            }
-            addForm.reset({
-              ...countyActivityAddDefaultValues,
-              department: values.department,
+            setAddFormMountKey((k) => k + 1)
+            setCurrentPrimaryId(null)
+            setCurrentPrimaryDefaults({
               masterCodeType: values.masterCodeType,
               masterCode: values.masterCode,
-              active: true,
+              department: values.department,
             })
-          },
-          onError: (err) => {
-            toastApiError(
-              err,
-              tab === CountyActivityGridRowType.PRIMARY
-                ? "Could not create primary county activity."
-                : "Could not create secondary county activity.",
-            )
-          },
-        },
-      )
-    })()
+            return
+          }
 
-  const handleEditSubmit = editForm.handleSubmit((values) => {
+          if (currentPrimaryId) {
+            setExpandedRowIds((prev) => ({ ...prev, [currentPrimaryId]: true }))
+          }
+          addForm.reset({
+            ...countyActivityAddDefaultValues,
+            department: values.department,
+            masterCodeType: values.masterCodeType,
+            masterCode: values.masterCode,
+            active: true,
+          })
+        },
+        onError: (err) => {
+          toastCountyActivityCodeApiError(
+            err,
+            tab === CountyActivityGridRowType.PRIMARY
+              ? "Could not create primary county activity."
+              : "Could not create secondary county activity.",
+          )
+        },
+      },
+    )
+  }
+
+  const submitCountyActivityEditFromEditModal = editForm.handleSubmit((values) => {
     if (!rowToEdit) return
 
     let masterCatalog: { code: string; type: string } | undefined
@@ -508,7 +567,7 @@ export function CountyActivityCodeTable({
           setRowToEdit(null)
         },
         onError: (err) => {
-          toastApiError(
+          toastCountyActivityCodeApiError(
             err,
             editingRow.rowType === CountyActivityGridRowType.PRIMARY
               ? "Could not update primary county activity."
@@ -530,14 +589,16 @@ export function CountyActivityCodeTable({
 
   const [expandedRowIds, setExpandedRowIds] = useState<Record<string, boolean>>({})
 
-  const getSortTooltip = (column: CountyActivityCodeSortableColumn): string => {
+  const getCountyActivityTableSortColumnTooltip = (
+    column: CountyActivityCodeSortableColumn,
+  ): string => {
     if (sortBy !== column) return "Click to sort ascending"
     if (sortDirection === "asc") return "Click to sort descending"
     if (sortDirection === "desc") return "Click to cancel sorting"
     return "Click to sort ascending"
   }
 
-  const handleSortToggle = (column: CountyActivityCodeSortableColumn) => {
+  const toggleCountyActivityTableSortColumn = (column: CountyActivityCodeSortableColumn) => {
     if (sortBy !== column) {
       setSortBy(column)
       setSortDirection("asc")
@@ -573,9 +634,16 @@ export function CountyActivityCodeTable({
               {...filterForm.register("search")}
               value={searchValue}
               onChange={(event) => {
-                filterForm.setValue("search", event.target.value)
-                onSearchChange(event.target.value)
-                onPageChange(1)
+                const next = event.target.value
+                filterForm.setValue("search", next)
+                if (searchDebounceTimerRef.current !== null) {
+                  window.clearTimeout(searchDebounceTimerRef.current)
+                }
+                searchDebounceTimerRef.current = window.setTimeout(() => {
+                  searchDebounceTimerRef.current = null
+                  onSearchChange(next)
+                  onPageChange(1)
+                }, COUNTY_ACTIVITY_SEARCH_DEBOUNCE_MS)
               }}
             />
           </form>
@@ -675,7 +743,7 @@ export function CountyActivityCodeTable({
                                 index === 0 ? "countyActivityCode" : "countyActivityName"
                               setSortTooltipColumn(column)
                               setIsSortTooltipOpen(true)
-                              handleSortToggle(column)
+                              toggleCountyActivityTableSortColumn(column)
                             }}
                             onMouseEnter={() => {
                               const column =
@@ -726,7 +794,7 @@ export function CountyActivityCodeTable({
                           side="top"
                           className="rounded-[10px] bg-black px-3.5 py-2.5 text-[13px] font-medium text-white"
                         >
-                          {getSortTooltip(
+                          {getCountyActivityTableSortColumnTooltip(
                             index === 0
                               ? "countyActivityCode"
                               : "countyActivityName"
@@ -806,7 +874,7 @@ export function CountyActivityCodeTable({
                 const isExpanded = Boolean(expandedRowIds[row.id])
                 const hasChildren = children.length > 0
 
-                const primaryRow = (
+                const countyActivityPrimaryTableRow = (
                   <TableRow key={row.id} className="border-b border-[#E5E7EB]">
                     <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
                       <button
@@ -836,9 +904,9 @@ export function CountyActivityCodeTable({
                   <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] leading-[1.4] whitespace-normal break-words font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
                     {row.countyActivityName}
                   </TableCell>
-                  <DescriptionTableCell description={row.description} />
+                  <CountyActivityDescriptionTableCell description={row.description} />
                   <TableCell className="min-w-0 border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] leading-[1.4] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
-                    <DepartmentStack label={getFallbackDepartment(row)} />
+                    <CountyActivityDepartmentStackCell label={getCountyActivityCodeRowDepartmentLabel(row)} />
                   </TableCell>
                   <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
                     {row.masterCodeType}
@@ -930,7 +998,7 @@ export function CountyActivityCodeTable({
                   </TableRow>
                 )
 
-                const secondaryRows = isExpanded
+                const countyActivitySubTableRows = isExpanded
                   ? children.map((child) => (
                       <TableRow
                         key={child.id}
@@ -942,13 +1010,13 @@ export function CountyActivityCodeTable({
                         <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] leading-[1.4] whitespace-normal break-words font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
                           {child.countyActivityName}
                         </TableCell>
-                        <DescriptionTableCell description={child.description} />
+                        <CountyActivityDescriptionTableCell description={child.description} />
                         <TableCell className="min-w-0 border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] leading-[1.4] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
-                          <DepartmentStack
+                          <CountyActivityDepartmentStackCell
                             label={
                               child.rowType === CountyActivityGridRowType.SUB
                                 ? ""
-                                : getFallbackDepartment(child)
+                                : getCountyActivityCodeRowDepartmentLabel(child)
                             }
                           />
                         </TableCell>
@@ -1047,7 +1115,7 @@ export function CountyActivityCodeTable({
                     ))
                   : []
 
-                return [primaryRow, ...secondaryRows]
+                return [countyActivityPrimaryTableRow, ...countyActivitySubTableRows]
               })
             )}
           </TableBody>
@@ -1124,13 +1192,22 @@ export function CountyActivityCodeTable({
           <CountyActivityCodeAddPage
             key={addFormMountKey}
             form={addForm}
-            onSubmit={handleAddSubmit}
+            onAddSave={submitCreateCountyActivityFromAddModal}
+            subParentActivityDetail={addSubParentDetailQuery.data ?? null}
             tab={addTab}
+            masterCodeTypeOptions={tenantMasterCodeTypeNamesQuery.data ?? []}
+            isMasterCodeTypeOptionsLoading={tenantMasterCodeTypeNamesQuery.isLoading}
             masterCodeOptions={addMasterCodeOptions}
             isMasterCodeOptionsLoading={addMasterCodesQuery.isLoading}
             departmentNames={departmentNames}
             onTabChange={(nextTab) => {
               setAddTab(nextTab)
+              if (nextTab === CountyActivityGridRowType.SUB) {
+                setCurrentPrimaryId(null)
+                void queryClient.invalidateQueries({
+                  queryKey: countyActivityCodeKeys.activePrimarySubPicker(),
+                })
+              }
               if (nextTab === CountyActivityGridRowType.SUB && currentPrimaryDefaults) {
                 addForm.setValue("masterCodeType", currentPrimaryDefaults.masterCodeType, {
                   shouldValidate: true,
@@ -1141,26 +1218,12 @@ export function CountyActivityCodeTable({
                 addForm.setValue("department", currentPrimaryDefaults.department, {
                   shouldValidate: true,
                 })
-                if (!currentPrimaryId) {
-                  const match = primaryRows.find(
-                    (r) =>
-                      r.masterCode === currentPrimaryDefaults.masterCode &&
-                      r.masterCodeType === currentPrimaryDefaults.masterCodeType
-                  )
-                  if (match) setCurrentPrimaryId(match.id)
-                }
               }
             }}
-            primaryActivityCodeOptions={primaryActivityOptions}
+            primaryActivityCodeOptions={addModalPrimaryActivityOptions}
             selectedPrimaryId={currentPrimaryId}
             onSelectedPrimaryIdChange={(id) => {
               setCurrentPrimaryId(id)
-              const selected = primaryRows.find((r) => r.id === id)
-              if (!selected) return
-              // Keep form values consistent for save/linking
-              addForm.setValue("masterCodeType", selected.masterCodeType, { shouldValidate: true })
-              addForm.setValue("masterCode", selected.masterCode, { shouldValidate: true })
-              addForm.setValue("department", selected.department, { shouldValidate: true })
             }}
             onClose={() => setAddOpen(false)}
           />
@@ -1198,7 +1261,7 @@ export function CountyActivityCodeTable({
                 primary: rowToEdit.rowType === CountyActivityGridRowType.SUB,
                 sub: rowToEdit.rowType !== CountyActivityGridRowType.SUB,
               }}
-              primaryActivityCodeOptions={primaryActivityOptions}
+              primaryActivityCodeOptions={editModalPrimaryActivityOptions}
               selectedPrimaryId={
                 rowToEdit.rowType === CountyActivityGridRowType.SUB
                   ? (rowToEdit.parentId ?? null)
@@ -1207,18 +1270,22 @@ export function CountyActivityCodeTable({
               readOnlyPrimaryPicker={
                 rowToEdit.rowType === CountyActivityGridRowType.SUB
               }
+              masterCodeTypeOptions={tenantMasterCodeTypeNamesQuery.data ?? []}
+              isMasterCodeTypeOptionsLoading={tenantMasterCodeTypeNamesQuery.isLoading}
               masterCodeOptions={editMasterCodeOptions}
               isMasterCodeOptionsLoading={editMasterCodesQuery.isLoading}
               isEditSourceLoading={editDetailQuery.isPending}
               departmentNames={departmentNames}
               onSelectedPrimaryIdChange={(id) => {
-                const selected = primaryRows.find((r) => r.id === id)
+                const selected = findCountyActivityRowForSubParentPickerById(id)
                 if (!selected) return
                 editForm.setValue("masterCodeType", selected.masterCodeType)
                 editForm.setValue("masterCode", selected.masterCode)
                 editForm.setValue("department", selected.department)
               }}
-              onSubmit={() => handleEditSubmit()}
+              onEditSave={() => {
+                void submitCountyActivityEditFromEditModal()
+              }}
               onClose={() => {
                 setEditOpen(false)
                 setRowToEdit(null)
