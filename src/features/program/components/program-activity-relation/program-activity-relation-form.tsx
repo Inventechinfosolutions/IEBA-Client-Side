@@ -1,28 +1,32 @@
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import type { Dispatch, SetStateAction } from "react"
 import { useMemo, useState } from "react"
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import tableEmptyIcon from "@/assets/icons/table-empty.png"
 import { SingleSelectDropdown } from "@/components/ui/dropdown"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
-import { api } from "@/lib/api"
+import { programActivityRelationKeys } from "../../keys"
 import { useGetProgramFormOptions } from "../../queries/get-program-form-options"
+import {
+  assignedIdsFromProgramActivityRelationPayload,
+  filterProgramActivityRelationItems,
+  mergeProgramActivityRelationTransferItems,
+  useProgramActivityRelationActivitiesQuery,
+  useProgramActivityRelationMutations,
+  useProgramActivityRelationTimeStudyProgramsQuery,
+} from "../../queries/program-activity-relation"
 import type {
   ProgramActivityRelationFormProps,
-  TransferItem,
   TimeStudyProgramOption,
+  TransferItem,
 } from "../../types"
 import { TransferPanel } from "./transfer-panel"
 
 export function ProgramActivityRelationForm({ form }: ProgramActivityRelationFormProps) {
-  // For Program Activity Relation we only need Department lookups.
-  // Pass a contextTab and a non-null section so the shared hook
-  // skips loading Budget Units and Budget Programs.
   const formOptionsQuery = useGetProgramFormOptions(
     true,
     "Program Activity Relation",
-    "Budget Unit"
+    "Budget Unit",
   )
   const departmentOptions = formOptionsQuery.data?.departmentOptions ?? []
   const departmentIdByName = formOptionsQuery.data?.departmentIdByName ?? {}
@@ -31,68 +35,27 @@ export function ProgramActivityRelationForm({ form }: ProgramActivityRelationFor
   const selectedDepartmentId = departmentIdByName[selectedDepartment.trim()]
   const selectedProgramName = form.watch("programActivityRelationProgram") || ""
 
-  type TimeStudyProgramsEnvelope = { data?: TimeStudyProgramOption[] }
+  const { data: timeStudyProgramsEnvelope } =
+    useProgramActivityRelationTimeStudyProgramsQuery(selectedDepartmentId)
 
-  const { data: timeStudyProgramsEnvelope } = useQuery<TimeStudyProgramsEnvelope>({
-    queryKey: ["program", "par", "timestudyprograms", selectedDepartmentId],
-    enabled: typeof selectedDepartmentId === "number",
-    queryFn: async () => {
-      const search = new URLSearchParams()
-      search.set("page", "1")
-      search.set("limit", "100")
-      search.set("sort", "ASC")
-      search.set("status", "active")
-      search.set("departmentId", String(selectedDepartmentId))
-
-      const res = await api.get<TimeStudyProgramsEnvelope | TimeStudyProgramOption[] | { data?: TimeStudyProgramOption[] }>(
-        `/timestudyprograms?${search.toString()}`
-      )
-
-      // Normalise possible response shapes into { data: TimeStudyProgramOption[] }
-      const firstUnwrap = (res as { data?: unknown }).data ?? res
-      const maybeArray =
-        Array.isArray(firstUnwrap)
-          ? firstUnwrap
-          : Array.isArray((firstUnwrap as { data?: unknown })?.data)
-          ? ((firstUnwrap as { data?: TimeStudyProgramOption[] }).data as TimeStudyProgramOption[])
-          : []
-
-      const envelope: TimeStudyProgramsEnvelope = { data: maybeArray }
-      return envelope
-    },
-    staleTime: 60_000,
-  })
-
-  const timeStudyPrograms: TimeStudyProgramOption[] = Array.isArray(
-    timeStudyProgramsEnvelope?.data,
-  )
-    ? (timeStudyProgramsEnvelope?.data as TimeStudyProgramOption[])
+  const timeStudyPrograms: TimeStudyProgramOption[] = Array.isArray(timeStudyProgramsEnvelope?.data)
+    ? (timeStudyProgramsEnvelope.data as TimeStudyProgramOption[])
     : []
 
-  const programOptions = useMemo<string[]>(() => {
-    const safePrograms: TimeStudyProgramOption[] = Array.isArray(timeStudyPrograms)
-      ? timeStudyPrograms
-      : []
-
-    const names: string[] = safePrograms
-      .map((p: TimeStudyProgramOption) => String(p?.name ?? "").trim())
+  const programOptions = useMemo(() => {
+    const names = timeStudyPrograms
+      .map((p) => String(p?.name ?? "").trim())
       .filter((name): name is string => Boolean(name))
-
     return Array.from(new Set(names)).sort((a, b) =>
       a.localeCompare(b, undefined, { sensitivity: "base" }),
     )
   }, [timeStudyPrograms])
 
   const selectedProgram = useMemo(
-    () => {
-      const safePrograms: TimeStudyProgramOption[] = Array.isArray(timeStudyPrograms)
-        ? timeStudyPrograms
-        : []
-
-      return safePrograms.find(
+    () =>
+      timeStudyPrograms.find(
         (p) => String(p?.name ?? "").trim() === selectedProgramName.trim(),
-      )
-    },
+      ),
     [selectedProgramName, timeStudyPrograms],
   )
   const selectedProgramId = selectedProgram?.id as number | undefined
@@ -102,159 +65,57 @@ export function ProgramActivityRelationForm({ form }: ProgramActivityRelationFor
   const programDisabled = !selectedDepartment.trim()
   const isProgramEmpty = !programDisabled && programOptions.length === 0
 
-  const queryClient = useQueryClient()
-
-  const activitiesQueryKey = [
-    "program",
-    "par",
-    "activities",
+  const activitiesQueryKey = programActivityRelationKeys.activitiesScope(
     selectedDepartmentId,
     selectedProgramId,
-  ] as const
+  )
 
-  type ActivitiesTreeNode = {
-    title?: string
-    key?: string | number
-    children?: ActivitiesTreeNode[]
-    assigned?: boolean
-    type?: string
-    code?: string
-    masterCodeType?: string | null
-  }
+  const { data: activitiesPayload } = useProgramActivityRelationActivitiesQuery(
+    selectedDepartmentId,
+    selectedProgramId,
+  )
 
-  type ActivitiesResponse = {
-    assignedActivities?: Array<{
-      key?: number
-      title?: string
-      activity?: { title?: string; key?: string; children?: ActivitiesTreeNode[] }[]
-    }>
-    unassignedActivities?: Array<{
-      key?: number
-      title?: string
-      activity?: { title?: string; key?: string; children?: ActivitiesTreeNode[] }[]
-    }>
-  }
+  const assignedIds = useMemo(
+    () =>
+      activitiesPayload ? assignedIdsFromProgramActivityRelationPayload(activitiesPayload) : [],
+    [activitiesPayload],
+  )
 
-  const { data: activitiesPayload } = useQuery<ActivitiesResponse>({
-    queryKey: activitiesQueryKey,
-    enabled: typeof selectedDepartmentId === "number" && typeof selectedProgramId === "number",
-    queryFn: async () => {
-      const search = new URLSearchParams()
-      search.set("departmentId", String(selectedDepartmentId))
-      search.set("programId", String(selectedProgramId))
-      search.set("method", "activitiesAssignedToProgram")
-      search.set("structured", "true")
-
-      const res = await api.get<{
-        success: boolean
-        message: string
-        data: ActivitiesResponse
-        errorCode: string | null
-      }>(`/timestudyprograms/new/activities?${search.toString()}`)
-
-      // api.get already returns the full envelope { success, message, data, errorCode }
-      // so res.data is exactly { assignedActivities, unassignedActivities }
-      return (res?.data ?? {}) as ActivitiesResponse
-    },
-    staleTime: 60_000,
-  })
-
-  const [assignedIds, setAssignedIds] = useState<string[]>([])
-
-  const allActivities = useMemo<TransferItem[]>(() => {
-    const root: ActivitiesResponse | undefined = activitiesPayload
-    if (!root) return []
-
-    const unassignedRoots = Array.isArray(root?.unassignedActivities)
-      ? root.unassignedActivities
-      : []
-    const firstTree = unassignedRoots[0]
-    const activityNode = firstTree?.activity?.[0]
-    const children = Array.isArray(activityNode?.children) ? activityNode.children : []
-
-    // Initialize assignedIds once when payload changes
-    const assignedRoots = Array.isArray(root?.assignedActivities)
-      ? root.assignedActivities
-      : []
-    const assignedTree = assignedRoots[0]
-    const assignedActivityNode = assignedTree?.activity?.[0]
-    const assignedChildren: ActivitiesTreeNode[] = Array.isArray(assignedActivityNode?.children)
-      ? assignedActivityNode.children
-      : []
-    const initialAssignedIds = assignedChildren.map((node: ActivitiesTreeNode) =>
-      String(String(node.key ?? "").split("-").at(-1) ?? "")
-    )
-    if (initialAssignedIds.length && assignedIds.length === 0) {
-      setAssignedIds(initialAssignedIds)
-    }
-
-    return children.map((node: ActivitiesTreeNode) => {
-      const rawKey = String(node.key ?? "")
-      const numericId = String(rawKey.split("-").at(-1) ?? "")
-      return {
-        id: numericId,
-        name: String(node.title ?? ""),
-        code: node.code ? String(node.code) : undefined,
-      }
-    })
-  }, [activitiesPayload, assignedIds.length])
+  const allActivities = useMemo<TransferItem[]>(
+    () =>
+      activitiesPayload ? mergeProgramActivityRelationTransferItems(activitiesPayload) : [],
+    [activitiesPayload],
+  )
 
   const [searchU, setSearchU] = useState("")
   const [searchA, setSearchA] = useState("")
   const [toggledU, setToggledU] = useState<string[]>([])
   const [toggledA, setToggledA] = useState<string[]>([])
 
-  const assignMutation = useMutation({
-    mutationFn: async (ids: string[]) => {
-      if (!selectedDepartmentId || !selectedProgramId || ids.length === 0) return
-      const body = {
-        departmentId: selectedDepartmentId,
-        programId: selectedProgramId,
-        activityIds: ids.map((id) => Number(id)),
-      }
-      // Backend route: POST /timestudyprograms/assign-activities-to-program
-      await api.post(`/timestudyprograms/assign-activities-to-program`, body)
-    },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: activitiesQueryKey })
-    },
-  })
+  const { assignMutation, unassignMutation, applyOptimisticTransfer } =
+    useProgramActivityRelationMutations({
+      departmentId: selectedDepartmentId,
+      programId: selectedProgramId,
+      activitiesQueryKey,
+    })
 
-  const unassignMutation = useMutation({
-    mutationFn: async (ids: string[]) => {
-      if (!selectedDepartmentId || !selectedProgramId || ids.length === 0) return
-      const body = {
-        departmentId: selectedDepartmentId,
-        programId: selectedProgramId,
-        activityIds: ids.map((id) => Number(id)),
-      }
-      // Backend route: POST /timestudyprograms/unassign-activities-to-programs
-      await api.post(`/timestudyprograms/unassign-activities-to-programs`, body)
-    },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: activitiesQueryKey })
-    },
-  })
-
-  const getFiltered = (items: TransferItem[], search: string, isAssigned: boolean) => {
-    const list = isAssigned ? items.filter((i) => assignedIds.includes(i.id)) : items.filter((i) => !assignedIds.includes(i.id))
-    if (!search.trim()) return list
-    const q = search.toLowerCase()
-    return list.filter((i) => i.name.toLowerCase().includes(q) || (i.code ?? "").toLowerCase().includes(q))
-  }
-
-  const filteredU = useMemo(() => getFiltered(allActivities, searchU, false), [allActivities, assignedIds, searchU])
-  const filteredA = useMemo(() => getFiltered(allActivities, searchA, true), [allActivities, assignedIds, searchA])
+  const filteredU = useMemo(
+    () => filterProgramActivityRelationItems(allActivities, assignedIds, searchU, false),
+    [allActivities, assignedIds, searchU],
+  )
+  const filteredA = useMemo(
+    () => filterProgramActivityRelationItems(allActivities, assignedIds, searchA, true),
+    [allActivities, assignedIds, searchA],
+  )
 
   const handleTransfer = (idsToTransfer: string[], isMovingToAssigned: boolean) => {
     if (idsToTransfer.length === 0) return
+    applyOptimisticTransfer(idsToTransfer, isMovingToAssigned)
     if (isMovingToAssigned) {
-      setAssignedIds((prev) => Array.from(new Set([...prev, ...idsToTransfer])))
       assignMutation.mutate(idsToTransfer)
       setToggledU([])
       return
     }
-    setAssignedIds((prev) => prev.filter((id) => !idsToTransfer.includes(id)))
     unassignMutation.mutate(idsToTransfer)
     setToggledA([])
   }

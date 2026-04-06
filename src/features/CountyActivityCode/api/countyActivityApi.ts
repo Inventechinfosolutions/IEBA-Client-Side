@@ -1,4 +1,4 @@
-import { ActivityStatusEnum } from "@/features/master-code/enums/activity-status.enum"
+import { ActivityStatusEnum } from "@/features/master-code/enums/activityStatus"
 import { apiGetActivityCodesAllForType, normalizeMatch } from "@/features/master-code/api"
 import { MASTER_CODE_TYPE_TAB_ORDER } from "@/features/master-code/types"
 import { api } from "@/lib/api"

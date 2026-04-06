@@ -97,7 +97,7 @@ export async function apiGetActivityCodesAllForType(params: {
   let totalItems = 0
 
   while (true) {
-    const res = await apiGetActivityCodesPage({
+    const res = await apiGetMasterCodesPage({
       codeType: params.codeType,
       page,
       pageSize: limit,

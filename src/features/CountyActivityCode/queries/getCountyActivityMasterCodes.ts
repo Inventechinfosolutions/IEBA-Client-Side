@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 
 import { apiGetActivityCodesAllForType } from "@/features/master-code/api"
-import { isMasterCodeType } from "@/features/master-code/enums/master-code-type.enum"
+import { isMasterCodeType } from "@/features/master-code/enums/masterCodeType"
 import type { MasterCodeTab } from "@/features/master-code/types"
 
 import { countyActivityCodeKeys } from "../keys"
