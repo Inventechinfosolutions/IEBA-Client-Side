@@ -1,35 +1,19 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 
+import { apiPutCountyActivity } from "../api/countyActivityApi"
+import type { UpdateCountyActivityApiInput } from "../types"
 import { countyActivityCodeKeys } from "../keys"
-import type { CountyActivityCodeRow } from "../types"
-import type { CountyActivityAddFormValues } from "../types"
-
-type UpdateCountyActivityCodeInput = {
-  id: string
-  values: CountyActivityAddFormValues
-}
 
 export function useUpdateCountyActivityCode() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async (input: UpdateCountyActivityCodeInput) => input,
-    onSuccess: ({ id, values }) => {
-      queryClient.setQueryData<CountyActivityCodeRow[]>(
-        countyActivityCodeKeys.lists(),
-        (prev) => {
-          if (!prev) return prev
-          return prev.map((row) =>
-            row.id === id
-              ? {
-                  ...row,
-                  ...values,
-                }
-              : row
-          )
-        }
-      )
+    mutationFn: (input: UpdateCountyActivityApiInput) => apiPutCountyActivity(input),
+    onSuccess: (_data, input) => {
+      void queryClient.invalidateQueries({ queryKey: countyActivityCodeKeys.lists() })
+      void queryClient.invalidateQueries({
+        queryKey: countyActivityCodeKeys.activityDetail(input.id),
+      })
     },
   })
 }
-

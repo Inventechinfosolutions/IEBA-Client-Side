@@ -1,5 +1,8 @@
 export const masterCodeKeys = {
   all: ["master-code"] as const,
+  /** All types (FFP, MAA, …) for county grid SPMP / Match / % — cached separately from hierarchy. */
+  activityCodesCatalogEnrichment: () =>
+    [...masterCodeKeys.all, "activity-codes-catalog-enrichment"] as const,
   lists: () => [...masterCodeKeys.all, "list"] as const,
   list: (params: {
     codeType: string
