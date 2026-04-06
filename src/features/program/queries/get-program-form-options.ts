@@ -1,4 +1,4 @@
-  import { useQuery } from "@tanstack/react-query"
+import { useQuery } from "@tanstack/react-query"
 
 import { api } from "@/lib/api"
 
@@ -169,14 +169,13 @@ export function useGetProgramFormOptions(
   return useQuery({
     queryKey: ["program", "form-options", contextTab, activeSection],
     queryFn: () => fetchProgramFormOptions(contextTab, activeSection),
-    staleTime: 5 * 60_000,
+    // Short stale window so switching Program tabs / modal sections picks up fresh lookups.
+    staleTime: 0,
     gcTime: 30 * 60_000,
     enabled,
-    // We only want this to run when the modal opens or the section changes,
-    // not again after save due to window focus or remounts.
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
-    refetchOnMount: false,
+    refetchOnMount: true,
   })
 }
 
@@ -234,8 +233,11 @@ export function useActiveBuProgramsForSubProgram(enabled: boolean) {
     queryKey: ["program", "form-options", "budgetprograms", "type-program"],
     queryFn: () => fetchActiveBudgetProgramsForBuSubProgram(),
     enabled,
-    staleTime: 5 * 60_000,
+    staleTime: 0,
     gcTime: 30 * 60_000,
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   })
 }
 
@@ -294,8 +296,11 @@ export function useGetActivePrimaryTimeStudyPrograms(enabled: boolean) {
     queryKey: ["program", "form-options", "timestudyprograms", "type-primary"],
     queryFn: () => fetchActivePrimaryTimeStudyPrograms(),
     enabled,
-    staleTime: 5 * 60_000,
+    staleTime: 0,
     gcTime: 30 * 60_000,
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   })
 }
 

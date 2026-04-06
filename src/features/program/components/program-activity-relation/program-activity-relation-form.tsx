@@ -41,18 +41,37 @@ export function ProgramActivityRelationForm({ form }: ProgramActivityRelationFor
       search.set("sort", "ASC")
       search.set("status", "active")
       search.set("departmentId", String(selectedDepartmentId))
-      const res = await api.get<TimeStudyProgramsEnvelope>(
+
+      const res = await api.get<TimeStudyProgramsEnvelope | TimeStudyProgramOption[] | { data?: TimeStudyProgramOption[] }>(
         `/timestudyprograms?${search.toString()}`
       )
-      return (res?.data ?? res) as TimeStudyProgramsEnvelope
+
+      // Normalise possible response shapes into { data: TimeStudyProgramOption[] }
+      const firstUnwrap = (res as { data?: unknown }).data ?? res
+      const maybeArray =
+        Array.isArray(firstUnwrap)
+          ? firstUnwrap
+          : Array.isArray((firstUnwrap as { data?: unknown })?.data)
+          ? ((firstUnwrap as { data?: TimeStudyProgramOption[] }).data as TimeStudyProgramOption[])
+          : []
+
+      const envelope: TimeStudyProgramsEnvelope = { data: maybeArray }
+      return envelope
     },
     staleTime: 60_000,
   })
 
-  const timeStudyPrograms: TimeStudyProgramOption[] = timeStudyProgramsEnvelope?.data ?? []
+  const timeStudyPrograms: TimeStudyProgramOption[] = Array.isArray(
+    timeStudyProgramsEnvelope?.data,
+  )
+    ? (timeStudyProgramsEnvelope?.data as TimeStudyProgramOption[])
+    : []
 
   const programOptions = useMemo<string[]>(() => {
-    const safePrograms: TimeStudyProgramOption[] = timeStudyPrograms ?? []
+    const safePrograms: TimeStudyProgramOption[] = Array.isArray(timeStudyPrograms)
+      ? timeStudyPrograms
+      : []
+
     const names: string[] = safePrograms
       .map((p: TimeStudyProgramOption) => String(p?.name ?? "").trim())
       .filter((name): name is string => Boolean(name))
@@ -63,11 +82,16 @@ export function ProgramActivityRelationForm({ form }: ProgramActivityRelationFor
   }, [timeStudyPrograms])
 
   const selectedProgram = useMemo(
-    () =>
-      timeStudyPrograms.find(
-        (p) => String(p?.name ?? "").trim() === selectedProgramName.trim()
-      ),
-    [selectedProgramName, timeStudyPrograms]
+    () => {
+      const safePrograms: TimeStudyProgramOption[] = Array.isArray(timeStudyPrograms)
+        ? timeStudyPrograms
+        : []
+
+      return safePrograms.find(
+        (p) => String(p?.name ?? "").trim() === selectedProgramName.trim(),
+      )
+    },
+    [selectedProgramName, timeStudyPrograms],
   )
   const selectedProgramId = selectedProgram?.id as number | undefined
 
@@ -116,9 +140,7 @@ export function ProgramActivityRelationForm({ form }: ProgramActivityRelationFor
     }>
   }
 
-  type ActivitiesEnvelope = { data?: ActivitiesResponse }
-
-  const { data: activitiesPayload } = useQuery<ActivitiesEnvelope>({
+  const { data: activitiesPayload } = useQuery<ActivitiesResponse>({
     queryKey: activitiesQueryKey,
     enabled: typeof selectedDepartmentId === "number" && typeof selectedProgramId === "number",
     queryFn: async () => {
@@ -128,12 +150,16 @@ export function ProgramActivityRelationForm({ form }: ProgramActivityRelationFor
       search.set("method", "activitiesAssignedToProgram")
       search.set("structured", "true")
 
-      // Backend route: GET /timestudyprograms/new/activities
-      const res = await api.get<ActivitiesEnvelope>(
-        `/timestudyprograms/new/activities?${search.toString()}`
-      )
-      const payload = res?.data ?? res
-      return payload as ActivitiesEnvelope
+      const res = await api.get<{
+        success: boolean
+        message: string
+        data: ActivitiesResponse
+        errorCode: string | null
+      }>(`/timestudyprograms/new/activities?${search.toString()}`)
+
+      // api.get already returns the full envelope { success, message, data, errorCode }
+      // so res.data is exactly { assignedActivities, unassignedActivities }
+      return (res?.data ?? {}) as ActivitiesResponse
     },
     staleTime: 60_000,
   })
@@ -141,7 +167,7 @@ export function ProgramActivityRelationForm({ form }: ProgramActivityRelationFor
   const [assignedIds, setAssignedIds] = useState<string[]>([])
 
   const allActivities = useMemo<TransferItem[]>(() => {
-    const root: ActivitiesResponse | undefined = activitiesPayload?.data
+    const root: ActivitiesResponse | undefined = activitiesPayload
     if (!root) return []
 
     const unassignedRoots = Array.isArray(root?.unassignedActivities)

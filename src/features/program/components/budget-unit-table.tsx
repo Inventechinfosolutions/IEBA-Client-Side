@@ -175,8 +175,8 @@ export function BudgetUnitTable({
     })
   }
 
+  /** Refetch BU programs whenever the "BU Program" group is expanded (not only the first time). */
   const ensureBudgetProgramsLoaded = async (budgetUnitId: string) => {
-    if (budgetProgramsByBudgetUnitId[budgetUnitId]?.length) return
     if (budgetProgramsInFlightRef.current.has(budgetUnitId)) return
 
     budgetProgramsInFlightRef.current.add(budgetUnitId)
@@ -210,6 +210,7 @@ export function BudgetUnitTable({
         parentBudgetUnitName: String(bp?.budgetUnit?.name ?? ""),
       }))
 
+      // Replace level-1 rows for this BU; drops cached sub-program rows so lists stay consistent after refetch.
       setBudgetProgramsByBudgetUnitId((prev) => ({ ...prev, [budgetUnitId]: mapped }))
     } finally {
       setBudgetProgramsLoading((prev) => ({ ...prev, [budgetUnitId]: false }))
@@ -217,13 +218,12 @@ export function BudgetUnitTable({
     }
   }
 
+  /** Refetch sub-programs for the BU whenever a BU Program row is expanded (not only the first time). */
   const ensureBudgetSubProgramsLoaded = async (budgetUnitId: string, programId: string) => {
-    // If we already have any hierarchyLevel 2 rows for this BU, skip.
-    const existing = budgetProgramsByBudgetUnitId[budgetUnitId]
-    if (existing && existing.some((row) => row.hierarchyLevel === 2)) return
-    if (budgetProgramsInFlightRef.current.has(budgetUnitId)) return
+    const inFlightKey = `${budgetUnitId}:subprograms`
+    if (budgetProgramsInFlightRef.current.has(inFlightKey)) return
 
-    budgetProgramsInFlightRef.current.add(budgetUnitId)
+    budgetProgramsInFlightRef.current.add(inFlightKey)
     setBudgetProgramsLoading((prev) => ({ ...prev, [budgetUnitId]: true }))
     setSubProgramLoadingProgramId(programId)
 
@@ -255,14 +255,18 @@ export function BudgetUnitTable({
         parentBudgetUnitName: String(bp?.budgetUnit?.name ?? ""),
       }))
 
-      setBudgetProgramsByBudgetUnitId((prev) => ({
-        ...prev,
-        [budgetUnitId]: [...(prev[budgetUnitId] ?? []), ...mapped],
-      }))
+      setBudgetProgramsByBudgetUnitId((prev) => {
+        const base = prev[budgetUnitId] ?? []
+        const withoutSub = base.filter((row) => row.hierarchyLevel !== 2)
+        return {
+          ...prev,
+          [budgetUnitId]: [...withoutSub, ...mapped],
+        }
+      })
     } finally {
       setBudgetProgramsLoading((prev) => ({ ...prev, [budgetUnitId]: false }))
       setSubProgramLoadingProgramId((prev) => (prev === programId ? null : prev))
-      budgetProgramsInFlightRef.current.delete(budgetUnitId)
+      budgetProgramsInFlightRef.current.delete(inFlightKey)
     }
   }
 
