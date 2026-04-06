@@ -44,7 +44,6 @@ export function JobClassificationFormModal({
     setValue,
     getValues,
     handleSubmit,
-    formState: { errors },
     reset,
   } = useForm<JobClassificationFormValues>({
     resolver: zodResolver(jobClassificationFormSchema),

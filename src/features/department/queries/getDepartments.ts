@@ -57,7 +57,12 @@ async function fetchDepartments(status: "active" | "inactive"): Promise<Departme
   return items
 }
 
-export function useGetDepartments(status: "active" | "inactive") {
+export function useGetDepartments(
+  status: "active" | "inactive",
+  options?: {
+    enabled?: boolean
+  },
+) {
   return useQuery({
     queryKey: [...departmentKeys.lists(), status],
     queryFn: () => fetchDepartments(status),
@@ -67,5 +72,6 @@ export function useGetDepartments(status: "active" | "inactive") {
     refetchOnMount: "always",
     refetchOnWindowFocus: "always",
     refetchOnReconnect: true,
+    enabled: options?.enabled ?? true,
   })
 }

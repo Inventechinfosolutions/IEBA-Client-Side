@@ -27,6 +27,7 @@ import { setToken } from "@/lib/api"
 import { otpSchema } from "@/features/auth/schemas"
 import { useGlobalNamespaces } from "@/features/auth/queries/getGlobalNamespaces"
 import { useValidateLoginOtp } from "@/features/auth/mutations/useValidateLoginOtp"
+import { getUserDetails } from "@/features/auth/api/getUserDetails"
 import {
   type OtpFormValues,
   type OtpLocationState,
@@ -111,18 +112,42 @@ export function OtpAuthentication() {
         nameSpace: selectedNameSpace,
       },
       {
-        onSuccess: (result) => {
+        onSuccess: async (result) => {
           setToken(result.accessToken)
+
+          // Fetch full user details (roles, departments, permissions, etc.)
+          let roles: string[] | undefined
+          let permissions: string[] | undefined
+          let displayName: string | undefined
+          try {
+            const details = await getUserDetails(result.userId)
+            roles = details.roles?.map((r) => r.name)
+            permissions = details.allpermissions
+            displayName =
+              details.name ??
+              [details.firstName, details.lastName]
+                .filter((part) => !!part && part.trim().length > 0)
+                .join(" ")
+          } catch (error) {
+            // If profile call fails, continue with basic session so user can still log in.
+          }
+
           const loginId = email.trim()
           const countyName = selectedCountyLabel ?? ""
+
           establishDashboardSession({
             id: result.userId,
-            name: loginId.includes("@")
-              ? (loginId.split("@")[0] ?? "User")
-              : loginId,
+            name:
+              displayName && displayName.trim().length > 0
+                ? displayName
+                : loginId.includes("@")
+                  ? (loginId.split("@")[0] ?? "User")
+                  : loginId,
             email: loginId,
             namespace: selectedNameSpace,
             countyName,
+            roles,
+            permissions,
           })
           setCountyModalOpen(false)
           toast.success("Signed in successfully", {

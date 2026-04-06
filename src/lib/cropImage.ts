@@ -1,13 +1,21 @@
-import type { Area } from "react-easy-crop"
+type CropArea = {
+  x: number
+  y: number
+  width: number
+  height: number
+}
 
-export async function getCroppedImg(imageSrc: string, pixelCrop: Area): Promise<string> {
+export async function getCroppedImg(imageSrc: string, pixelCrop: CropArea): Promise<string> {
   const response = await fetch(imageSrc)
   const blob = await response.blob()
   const image = await createImageBitmap(blob)
   const canvas = document.createElement("canvas")
   canvas.width = pixelCrop.width
   canvas.height = pixelCrop.height
-  const ctx = canvas.getContext("2d")!
+  const ctx = canvas.getContext("2d")
+  if (!ctx) {
+    throw new Error("Could not get 2D canvas context")
+  }
   ctx.drawImage(
     image,
     pixelCrop.x,
@@ -17,7 +25,7 @@ export async function getCroppedImg(imageSrc: string, pixelCrop: Area): Promise<
     0,
     0,
     pixelCrop.width,
-    pixelCrop.height
+    pixelCrop.height,
   )
   return canvas.toDataURL("image/jpeg")
 }

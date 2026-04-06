@@ -1,4 +1,6 @@
 import { useQuery } from "@tanstack/react-query"
+
+import { apiGetActivityCodeById, apiGetActivityCodesPage } from "../api"
 import { 
   apiGetMasterCodesPage, 
   apiGetMasterCodeById, 
@@ -27,6 +29,22 @@ export function useGetMasterCodes(params: GetMasterCodesParams) {
   })
 }
 
+export type UseGetActivityCodeByIdOptions = {
+  enabled?: boolean
+}
+
+/** Single activity-code row (`GET /activity-codes/:id`) — shared with county “Copy code” and detail cache. */
+export function useGetActivityCodeById(
+  id: string,
+  options?: UseGetActivityCodeByIdOptions,
+) {
+  const enabled = options?.enabled ?? true
+  const numericId = Number(id)
+  return useQuery({
+    queryKey: masterCodeKeys.detail(id),
+    queryFn: () => apiGetActivityCodeById(id),
+    enabled: enabled && id.length > 0 && !Number.isNaN(numericId) && numericId > 0,
+    staleTime: 60_000,
 /** Fetches a single master code by its system-wide ID for editing. */
 export function useGetMasterCodeById(id: string | null) {
   return useQuery({

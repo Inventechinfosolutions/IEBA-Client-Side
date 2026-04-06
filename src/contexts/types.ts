@@ -7,6 +7,10 @@ export type User = {
   /** Human-friendly county name for header display, e.g. 'Lassen County'. */
   countyName?: string
   avatar?: string
+  /** Optional array of role names, e.g. ['super admin']. */
+  roles?: string[]
+  /** Optional flat list of permission strings such as 'superadmin:all'. */
+  permissions?: string[]
 }
 
 export type AuthContextValue = {

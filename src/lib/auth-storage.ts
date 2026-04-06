@@ -1,4 +1,4 @@
-import type { User } from "@/contexts/AuthContext"
+import type { User } from "@/contexts/types"
 
 const USER_KEY = "ieba_user"
 
@@ -19,3 +19,4 @@ export function setStoredUser(user: User): void {
 export function clearStoredUser(): void {
   sessionStorage.removeItem(USER_KEY)
 }
+

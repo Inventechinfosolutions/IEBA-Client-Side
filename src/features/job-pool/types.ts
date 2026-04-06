@@ -24,11 +24,14 @@ export type JobPoolRow = {
   id: string
   name: string
   jobClassifications: JobClassificationTag[]
+  /** Human-readable department name for table display */
   department: string
   active: boolean
   assignedActivityIds?: string[]
   assignedEmployeeIds?: string[]
   /** Optional derived fields for simpler API-style representation */
+  /** Raw department id from API, used to drive dependent lookups (e.g. job classifications). */
+  departmentId?: string
   departmentName?: string
   jobClassificationName?: { name: string; status: string }[]
   userprofiles?: { id: string; name?: string; firstName?: string; lastName?: string }[]

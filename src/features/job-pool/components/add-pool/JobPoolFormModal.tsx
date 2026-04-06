@@ -10,6 +10,7 @@ import {
   DialogContent,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
+import { useGetDepartments } from "@/features/department/queries/getDepartments"
 
 import { jobPoolFormSchema } from "../../schemas"
 import type { JobPoolFormModalProps, JobPoolFormValues } from "../../types"
@@ -33,7 +34,13 @@ export function JobPoolFormModal({
   })
 
   const [isDepartmentOpen, setIsDepartmentOpen] = useState(false)
+  const [selectedDepartmentLabel, setSelectedDepartmentLabel] = useState<string>("")
   const departmentDropdownRef = useRef<HTMLDivElement | null>(null)
+
+  const {
+    data: activeDepartments = [],
+    isLoading: isDepartmentsLoading,
+  } = useGetDepartments("active", { enabled: open && mode === "add" })
 
   const handleClose = () => {
     form.reset()
@@ -45,7 +52,7 @@ export function JobPoolFormModal({
       <DialogContent 
         showClose={false}
         overlayClassName="bg-black/35"
-        className="max-w-[1400px] w-[95vw] h-[90vh] p-0 flex flex-col overflow-hidden rounded-[10px]!"
+        className="max-w-[1400px] w-[95vw] h-[90vh] p-0 flex flex-col overflow-hidden rounded-[10px]! bg-white"
       >
         <form 
           onSubmit={form.handleSubmit(onSave)} 
@@ -79,7 +86,7 @@ export function JobPoolFormModal({
             <div className="p-8">
               {/* Top Row: Department and Job Pool Name */}
               <div
-                className="grid grid-cols-[1fr_60px_1fr] gap-4"
+                className="grid grid-cols-[minmax(0,2fr)_60px_minmax(0,2fr)] gap-4"
                 onMouseDownCapture={(event) => {
                   const targetNode = event.target as Node
                   if (
@@ -91,13 +98,13 @@ export function JobPoolFormModal({
                   }
                 }}
               >
-                <div className="w-[300px] space-y-2">
+                <div className="space-y-2">
                   <label className="text-[14px] font-semibold text-[#374151]" htmlFor="jp-department-trigger">Department</label>
                   <input type="hidden" {...form.register("department")} />
                   <div className="relative" ref={departmentDropdownRef}>
                     <Input
                       id="jp-department-trigger"
-                      value={form.watch("department") || ""}
+                      value={selectedDepartmentLabel || form.watch("department") || ""}
                       readOnly
                       onMouseDown={(event) => event.preventDefault()}
                       onClick={() => mode !== "edit" && setIsDepartmentOpen((prev) => !prev)}
@@ -126,9 +133,44 @@ export function JobPoolFormModal({
                     </button>
                     {isDepartmentOpen && mode !== "edit" ? (
                       <div className="absolute z-10 mt-1 max-h-[180px] w-full overflow-auto rounded-[7px] border border-[#d9deea] bg-white p-1.5 shadow-[0_8px_18px_rgba(17,24,39,0.12)]">
-                        <div className="px-3 py-2 text-[11px] text-[#6b7280]">
-                          No departments loaded. Please select a department from the main Department module first.
-                        </div>
+                        {isDepartmentsLoading ? (
+                          <div className="px-3 py-2 text-[11px] text-[#6b7280]">
+                            Loading departments...
+                          </div>
+                        ) : activeDepartments.length === 0 ? (
+                          <div className="px-3 py-2 text-[11px] text-[#6b7280]">
+                            No active departments available.
+                          </div>
+                        ) : (
+                          <ul className="space-y-0.5">
+                            {activeDepartments.map((dept) => {
+                              const id = dept.id
+                              const label = dept.name ?? ""
+
+                              return (
+                                <li key={id}>
+                                  <button
+                                    type="button"
+                                    className="w-full rounded-[5px] px-3 py-1.5 text-left text-[12px] text-[#111827] hover:bg-[#f3f4ff]"
+                                    onClick={() => {
+                                      if (id) {
+                                        form.setValue("department", String(id), {
+                                          shouldDirty: true,
+                                          shouldTouch: true,
+                                          shouldValidate: true,
+                                        })
+                                        setSelectedDepartmentLabel(label)
+                                        setIsDepartmentOpen(false)
+                                      }
+                                    }}
+                                  >
+                                    {label}
+                                  </button>
+                                </li>
+                              )
+                            })}
+                          </ul>
+                        )}
                       </div>
                     ) : null}
                   </div>

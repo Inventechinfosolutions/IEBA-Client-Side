@@ -1,5 +1,8 @@
 import { useCallback, useMemo, useRef, useState } from "react"
 
+import type { Department } from "@/features/department/types"
+
+import { CountyActivityGridRowType } from "../enums/CountyActivity.enum"
 import { useGetCountyActivityCodes } from "../queries/getCountyActivityCodes"
 import type {
   CountyActivityCodeRow,
@@ -22,6 +25,7 @@ function includesSearch(row: CountyActivityCodeRow, searchValue: string): boolea
     row.description,
     row.masterCodeType,
     String(row.masterCode),
+    row.catalogActivityCode,
     row.match,
   ]
     .join(" ")
@@ -29,7 +33,10 @@ function includesSearch(row: CountyActivityCodeRow, searchValue: string): boolea
     .includes(value)
 }
 
-export function useCountyActivityCodes(filters: CountyActivityFilterFormValues) {
+export function useCountyActivityCodes(
+  filters: CountyActivityFilterFormValues,
+  departments: readonly Department[],
+) {
   const [pagination, setPagination] = useState<CountyActivityPagination>(
     DEFAULT_PAGINATION
   )
@@ -49,20 +56,39 @@ export function useCountyActivityCodes(filters: CountyActivityFilterFormValues) 
     }, 300)
   }, [])
 
+  const rowsWithDepartmentLabels = useMemo(() => {
+    const raw = query.data ?? []
+    const nameById = new Map<number, string>()
+    for (const d of departments) {
+      const id = Number(d.id)
+      const name = d.name.trim()
+      if (!Number.isNaN(id) && name) nameById.set(id, name)
+    }
+    return raw.map((row) => {
+      const ids = row.linkedDepartmentIds ?? []
+      const names = ids
+        .map((id) => nameById.get(id))
+        .filter((n): n is string => Boolean(n?.trim()))
+      names.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }))
+      const department = names.length > 0 ? names.join(", ") : row.department
+      return { ...row, department }
+    })
+  }, [query.data, departments])
+
   const filteredRows = useMemo(() => {
-    const rows = query.data ?? []
+    const rows = rowsWithDepartmentLabels
     return rows.filter(
       (row) =>
         includesSearch(row, filters.search) && (filters.inactive ? !row.active : true)
     )
-  }, [query.data, filters.search, filters.inactive])
+  }, [rowsWithDepartmentLabels, filters.search, filters.inactive])
 
   const { primaryRows, subRowsByParentId } = useMemo(() => {
     const primary: CountyActivityCodeRow[] = []
     const byParent: Record<string, CountyActivityCodeRow[]> = {}
 
     for (const row of filteredRows) {
-      if (row.rowType === "sub" && row.parentId) {
+      if (row.rowType === CountyActivityGridRowType.SUB && row.parentId) {
         byParent[row.parentId] = [...(byParent[row.parentId] ?? []), row]
       } else {
         primary.push(row)

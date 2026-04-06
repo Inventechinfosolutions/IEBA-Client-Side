@@ -1,3 +1,4 @@
+import { useState } from "react"
 import { Link, useLocation } from "react-router-dom"
 import {
   LayoutDashboard,
@@ -17,10 +18,29 @@ import {
   SidebarGroup,
   SidebarGroupContent,
   SidebarHeader,
+  SidebarFooter,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
+  IdCard,
+  LockKeyhole,
+  LogOut,
+  Settings,
+} from "lucide-react"
+import { useAuth } from "@/contexts/AuthContext"
+import { ChangePasswordFormModal } from "@/features/change-password"
 
 const mainNav = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
@@ -41,6 +61,8 @@ const mainNav = [
 ] as const
 
 export function AppSidebar() {
+  const { user, signOut } = useAuth()
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false)
   const location = useLocation()
 
   return (

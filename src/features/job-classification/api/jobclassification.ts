@@ -9,6 +9,7 @@ import type {
   JobClassificationListResponseDto,
   JobClassificationResDto,
   JobClassificationRow,
+  JobClassificationUsersResponseDto,
   UpdateJobClassificationReqDto,
 } from "../types"
 
@@ -58,7 +59,7 @@ function toCreateUpdateDto(values: JobClassificationFormValues): CreateJobClassi
 export async function getJobClassifications(
   params: GetJobClassificationsParams,
 ): Promise<JobClassificationListResponse> {
-  const { page, pageSize, search, inactiveOnly } = params
+  const { page, pageSize, search, inactiveOnly, departmentId } = params
 
   const searchParams = new URLSearchParams()
   searchParams.set("page", String(page))
@@ -72,6 +73,10 @@ export async function getJobClassifications(
 
   // Mirror Department behaviour: always send explicit status.
   searchParams.set("status", inactiveOnly ? "inactive" : "active")
+
+  if (departmentId && departmentId.trim()) {
+    searchParams.set("departmentId", departmentId.trim())
+  }
 
   const res = await api.get<
     JobClassificationApiEnvelope<JobClassificationListResponseDto> | JobClassificationListResponseDto
@@ -131,5 +136,50 @@ export async function updateJobClassification(
     {}
 
   return toJobClassificationRow(payload as JobClassificationResDto)
+}
+
+export async function getJobClassificationById(id: string): Promise<JobClassificationRow> {
+  const res = await api.get<JobClassificationApiEnvelope<JobClassificationResDto> | JobClassificationResDto>(
+    `/jobclassification/${id}`,
+  )
+
+  const payload =
+    (res as JobClassificationApiEnvelope<JobClassificationResDto>).data ??
+    (res as JobClassificationResDto | undefined) ??
+    {}
+
+  return toJobClassificationRow(payload as JobClassificationResDto)
+}
+
+export type GetJobClassificationUsersBody = {
+  jobClassificationIds: string[]
+  departmentId: number
+}
+
+export type JobClassificationUser = {
+  id: string
+  name: string
+}
+
+export async function getJobClassificationUsers(
+  body: GetJobClassificationUsersBody,
+): Promise<JobClassificationUser[]> {
+  const response = await api.post<JobClassificationApiEnvelope<JobClassificationUsersResponseDto>>(
+    "/jobclassification/users",
+    body,
+  )
+
+  const envelopeOrDto = (response as JobClassificationApiEnvelope<JobClassificationUsersResponseDto>)?.data
+    ? (response as JobClassificationApiEnvelope<JobClassificationUsersResponseDto>).data
+    : ((response as unknown) as JobClassificationUsersResponseDto | undefined)
+
+  const list = Array.isArray(envelopeOrDto?.data) ? envelopeOrDto.data : []
+
+  return list
+    .map((user: { id?: string; name?: string }) => ({
+      id: typeof user.id === "string" ? user.id : "",
+      name: typeof user.name === "string" ? user.name : "",
+    }))
+    .filter((u: JobClassificationUser) => u.id && u.name)
 }
 

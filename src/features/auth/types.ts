@@ -117,3 +117,72 @@ export type ChangeCountyDialogProps = {
   onOpenChange: (open: boolean) => void
 }
 
+// User details API response types (used by Auth/OTP flow)
+
+export type UserDetailsUser = {
+  loginId: string
+}
+
+export type UserDetailsDepartment = {
+  id: number
+  code?: string
+  name: string
+}
+
+export type UserDetailsRole = {
+  id: number
+  name: string
+}
+
+export type UserDetailsDepartmentsRole = {
+  id: number
+  departmentId: number
+  roleId: number
+  department: {
+    id: number
+    name: string
+  }
+  role: {
+    id: number
+    name: string
+  }
+  permissions: string[]
+}
+
+export type UserDetails = {
+  id: string
+  positionName?: string
+  employeeId?: string
+  firstName?: string
+  lastName?: string
+  name?: string
+  status?: string
+  tsmins?: number
+  user?: UserDetailsUser
+  emergencyContact?: {
+    id: number
+    firstName: string
+    lastName: string
+    phone: string
+    relationship: string
+  }
+  contacts: unknown[]
+  isPasswordChangeRequired?: Record<string, never>
+  documents: unknown[]
+  addresses: unknown[]
+  departments: UserDetailsDepartment[]
+  roles: UserDetailsRole[]
+  departmentsRoles: UserDetailsDepartmentsRole[]
+  allpermissions: string[]
+  allowMultiCodes: boolean
+  multiCodes: string[] | null
+}
+
+export type UserDetailsEnvelope = {
+  statusCode?: number | string
+  success?: boolean
+  message?: string
+  data?: UserDetails
+}
+
+

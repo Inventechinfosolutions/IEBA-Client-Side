@@ -16,7 +16,8 @@ function formatPercent(value: number): string {
   return value.toFixed(2)
 }
 
-function normalizeMatch(raw: string | undefined): string {
+/** Normalizes activity-code `match` from API/forms (letters uppercased; slashes preserved). */
+export function normalizeMatch(raw: string | undefined): string {
   const value = String(raw ?? "").trim()
   if (!value) return ""
   if (/^[a-z]+$/i.test(value)) return value.toUpperCase()
@@ -53,6 +54,9 @@ function unwrapActivityListPayload(raw: unknown): {
   }
 }
 
+/** Backend rejects `limit` above this value (`ActivityCodeListQueryDto`). */
+const ACTIVITY_CODES_API_MAX_LIMIT = 100
+
 /**
  * `GET /activity-codes` — matches `ActivityCodeListQueryDto` (page, limit, sort, sortField, type, status).
  */
@@ -62,7 +66,7 @@ export async function apiGetMasterCodesPage(params: {
   pageSize: number
   inactiveOnly: boolean
 }): Promise<MasterCodeListResponse> {
-  const limit = Math.min(100, Math.max(1, params.pageSize))
+  const limit = Math.min(ACTIVITY_CODES_API_MAX_LIMIT, Math.max(1, params.pageSize))
   const search = new URLSearchParams({
     page: String(params.page),
     limit: String(limit),
@@ -78,6 +82,37 @@ export async function apiGetMasterCodesPage(params: {
     items: data.map(normalizeActivityCodeRow),
     totalItems: meta.totalItems,
   }
+}
+
+/**
+ * Loads every activity code for a type by paging with {@link ACTIVITY_CODES_API_MAX_LIMIT} per request.
+ */
+export async function apiGetActivityCodesAllForType(params: {
+  codeType: MasterCodeTab
+  inactiveOnly: boolean
+}): Promise<MasterCodeListResponse> {
+  const limit = ACTIVITY_CODES_API_MAX_LIMIT
+  const items: MasterCodeRow[] = []
+  let page = 1
+  let totalItems = 0
+
+  while (true) {
+    const res = await apiGetActivityCodesPage({
+      codeType: params.codeType,
+      page,
+      pageSize: limit,
+      inactiveOnly: params.inactiveOnly,
+    })
+    totalItems = res.totalItems
+    items.push(...res.items)
+
+    if (res.items.length === 0) break
+    if (totalItems > 0 && items.length >= totalItems) break
+    if (res.items.length < limit) break
+    page += 1
+  }
+
+  return { items, totalItems }
 }
 
 function buildCreateBody(codeType: MasterCodeTab, values: MasterCodeFormValues) {
@@ -184,9 +219,7 @@ function unwrapTenantMasterDetail(raw: unknown): ApiTenantMasterCode | null {
   return null
 }
 
-/**
- * `GET /master-codes/by-name?name=` — exact name (e.g. FFP). Returns null if not found (404).
- */
+
 export async function apiGetTenantMasterCodeByName(
   name: MasterCodeTab
 ): Promise<TenantMasterCodeRow | null> {

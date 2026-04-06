@@ -1,6 +1,4 @@
 import { useMemo, useState } from "react"
-import { ChevronDown, ChevronUp } from "lucide-react"
-
 import tableCheckIcon from "@/assets/icons/table-check.png"
 import tableEditIcon from "@/assets/icons/table-edit.png"
 import tableEmptyIcon from "@/assets/icons/table-empty.png"

@@ -1,19 +1,30 @@
 import type { Dispatch, SetStateAction } from "react"
-import { useState, useMemo } from "react"
+import { useMemo, useState } from "react"
 import { ChevronRight, ChevronLeft } from "lucide-react"
 import { TransferPanel } from "./TransferPanel"
 import type { TransferItem, EmployeeSectionProps } from "../../types"
-
-import { useGetUserModuleRows } from "../../../user/queries/getUsers"
+import { useGetJobClassificationUsers } from "../../../job-classification/queries/getJobClassificationUsers"
 
 export function EmployeeSection({ form }: EmployeeSectionProps) {
   const selectedDept = form.watch("department")
-  const { data: usersData } = useGetUserModuleRows({ page: 1, pageSize: 1000, inactiveOnly: false })
-  
+  const assignedJobClassificationIds = form.watch("assignedJobClassificationIds")
+
+  const hasDeptAndClassifications =
+    !!selectedDept && Array.isArray(assignedJobClassificationIds) && assignedJobClassificationIds.length > 0
+
+  const { data: usersData = [] } = useGetJobClassificationUsers(
+    hasDeptAndClassifications
+      ? {
+          departmentId: Number(selectedDept),
+          jobClassificationIds: assignedJobClassificationIds,
+        }
+      : null,
+  )
+
   const allUsers = useMemo(() => {
-    if (!selectedDept) return []
-    return usersData?.items.map(u => ({ id: u.id, name: u.employee })) ?? []
-  }, [usersData, selectedDept])
+    if (!hasDeptAndClassifications) return []
+    return usersData.map((u) => ({ id: u.id, name: u.name }))
+  }, [usersData, hasDeptAndClassifications])
 
   const [searchU, setSearchU] = useState("")
   const [searchA, setSearchA] = useState("")

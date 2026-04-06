@@ -5,6 +5,7 @@ import { JobClassificationFormModal } from "../components/JobClassificationFormM
 import { JobClassificationTable } from "../components/JobClassificationTable"
 import { JobClassificationToolbar } from "../components/JobClassificationToolbar"
 import { useJobClassificationModule } from "../hooks/useJobClassificationModule"
+import { useGetJobClassificationById } from "../queries/getJobClassificationById"
 import type {
   JobClassificationFormMode,
   JobClassificationFormValues,
@@ -28,9 +29,14 @@ export function JobClassificationPage() {
   const [modalOpen, setModalOpen] = useState(false)
   const [modalMode, setModalMode] = useState<JobClassificationFormMode>("add")
   const [selectedRow, setSelectedRow] = useState<JobClassificationRow | null>(null)
+  const [editingId, setEditingId] = useState<string | null>(null)
 
   const { rows, totalItems, isLoading, isCreating, isUpdating, createJobClassificationAsync, updateJobClassificationAsync } =
     useJobClassificationModule({ page, pageSize, search, inactiveOnly })
+
+  const { data: editingRecord } = useGetJobClassificationById(
+    modalMode === "edit" && editingId ? editingId : null,
+  )
 
   function handleSearchChange(value: string) {
     setSearch(value)
@@ -44,6 +50,7 @@ export function JobClassificationPage() {
 
   function handleAdd() {
     setSelectedRow(null)
+    setEditingId(null)
     setModalMode("add")
     setModalOpen(true)
   }
@@ -51,6 +58,7 @@ export function JobClassificationPage() {
   function handleEditRow(row: JobClassificationRow) {
     setSelectedRow(row)
     setModalMode("edit")
+    setEditingId(row.id)
     setModalOpen(true)
   }
 
@@ -64,12 +72,12 @@ export function JobClassificationPage() {
   }
 
   const initialValues: JobClassificationFormValues =
-    modalMode === "edit" && selectedRow
+    modalMode === "edit" && (editingRecord ?? selectedRow)
       ? {
-          code: selectedRow.code,
-          name: selectedRow.name,
-          active: selectedRow.active,
-          activityDescription: selectedRow.activityDescription ?? "",
+          code: (editingRecord ?? selectedRow)!.code,
+          name: (editingRecord ?? selectedRow)!.name,
+          active: (editingRecord ?? selectedRow)!.active,
+          activityDescription: (editingRecord ?? selectedRow)!.activityDescription ?? "",
         }
       : DEFAULT_FORM_VALUES
 

@@ -146,6 +146,7 @@ function toJobPoolRow(dto: JobPoolResDto): JobPoolRow {
     jobClassifications,
     assignedActivityIds: activities.map((id) => String(id)),
     assignedEmployeeIds: users.map((id) => String(id)),
+    departmentId: dto.departmentId != null ? String(dto.departmentId) : undefined,
     departmentName,
     jobClassificationName,
     userprofiles,
