@@ -149,10 +149,10 @@ export function TimeStudyProgramTable({
     }
   }
 
+  /** Refetch secondary + sub-program rows whenever a primary TS Program row is expanded (not only the first time). */
   const ensureChildrenLoaded = async (primaryId: string) => {
     const primary = mergedRows.find((row) => row.id === primaryId)
     if (!primary?.timeStudyBudgetProgramId) return
-    if (childrenByParentId[primaryId]?.length) return
     if (childrenInFlightRef.current.has(primaryId)) return
 
     childrenInFlightRef.current.add(primaryId)

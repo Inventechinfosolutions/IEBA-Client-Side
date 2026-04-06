@@ -1,15 +1,16 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { useMutation } from "@tanstack/react-query"
+import { queryClient } from "@/main"
+
 
 import { apiUpdateTenantMasterCode } from "../api"
 import { masterCodeKeys } from "../keys"
 
 export function useUpdateTenantMasterCode() {
-  const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: apiUpdateTenantMasterCode,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [...masterCodeKeys.all, "tenant-by-name"] })
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: [...masterCodeKeys.all, "tenant-by-name"] })
     },
   })
 }

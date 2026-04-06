@@ -1,6 +1,6 @@
 import { z } from "zod"
 
-import { TodoStatusEnum } from "./enums/todo-status.enum"
+import { TodoStatusEnum } from "./enums/todoStatus"
 
 const todoStatusValues = Object.values(TodoStatusEnum) as [
   typeof TodoStatusEnum.NEW,

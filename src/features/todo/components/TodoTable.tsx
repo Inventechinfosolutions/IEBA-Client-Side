@@ -18,7 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { TodoStatusEnum } from "../enums/todo-status.enum"
+import { TodoStatusEnum } from "../enums/todoStatus"
 import { TODO_STATUS_LABEL } from "../types"
 import type { TodoRow, TodoTableProps } from "../types"
 
@@ -72,7 +72,7 @@ export function TodoTable({
                             className="relative flex h-full w-full cursor-pointer items-center justify-start pr-4 text-white"
                           >
                             <span>Title</span>
-                            <span className="pointer-events-none absolute right-[8px] inline-flex flex-col items-center gap-[1px] leading-none">
+                            <span className="pointer-events-none absolute right-[8px] inline-flex flex-col items-center gap-px leading-none">
                               <Triangle
                                 className={`size-[6px] fill-white stroke-white ${
                                   titleSortState === "asc" ? "opacity-100" : "opacity-50"
@@ -168,10 +168,10 @@ export function TodoTable({
             <>
               {rows.map((row) => (
                 <TableRow key={row.id} className="h-[35px] border-[#e9ecf3] hover:bg-[#FAFAFA]">
-                  <TableCell className="h-[35px] w-[160px] border-r border-[#eff0f5] bg-[#FAFAFA] px-3 py-1 align-middle text-[12px] leading-[14px] text-[#111827] whitespace-normal break-words">
+                  <TableCell className="h-[35px] w-[160px] border-r border-[#eff0f5] bg-[#FAFAFA] px-3 py-1 align-middle text-[12px] leading-[14px] text-[#111827] whitespace-normal wrap-break-word">
                     {row.title}
                   </TableCell>
-                  <TableCell className="h-[35px] w-[360px] max-w-[360px] border-r border-[#eff0f5] px-3 py-1 align-middle text-[12px] leading-[14px] text-[#111827] whitespace-normal break-words">
+                  <TableCell className="h-[35px] w-[360px] max-w-[360px] border-r border-[#eff0f5] px-3 py-1 align-middle text-[12px] leading-[14px] text-[#111827] whitespace-normal wrap-break-word">
                     {row.description || "-"}
                   </TableCell>
                   <TableCell className="h-[35px] w-[160px] border-r border-[#eff0f5] px-3 py-1 align-middle text-center text-[12px] leading-[14px] text-[#111827]">

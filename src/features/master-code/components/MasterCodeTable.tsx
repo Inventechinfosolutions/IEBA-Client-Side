@@ -9,6 +9,7 @@ import {
 import tableCheckIcon from "@/assets/icons/table-check.png"
 import tableCloseIcon from "@/assets/icons/table-close.png"
 import tableEditIcon from "@/assets/icons/table-edit.png"
+import tableEmptyIcon from "@/assets/icons/table-empty.png"
 import {
   Table,
   TableBody,
@@ -104,7 +105,9 @@ export function MasterCodeTable({
             {headers.map((header, idx) => (
               <TableHead
                 key={header}
-                className={`h-10 border-r border-[#6C5DD3] bg-[var(--primary)] px-3 text-[12px] font-medium text-white last:border-r-0 ${
+                className={`h-10 bg-[var(--primary)] px-3 text-[12px] font-medium text-white ${
+                  idx === headers.length - 1 ? "border-r-0" : "border-r border-white/50"
+                } ${
                   idx === 0 ||
                   idx === 2 ||
                   idx === 3 ||
@@ -190,7 +193,7 @@ export function MasterCodeTable({
                   <TableCell className="border-r border-[#eff0f5] px-3 py-2 text-center">
                     <Skeleton className="mx-auto h-4 w-4 rounded-sm" />
                   </TableCell>
-                  <TableCell className="px-3 py-2 text-center">
+                  <TableCell className="border-r border-[#eff0f5] px-3 py-2 text-center">
                     <Skeleton className="mx-auto h-3.5 w-3.5 rounded-sm" />
                   </TableCell>
                 </TableRow>
@@ -295,7 +298,7 @@ export function MasterCodeTable({
                           />
                         )}
                       </TableCell>
-                      <TableCell className="px-3 py-2 text-center">
+                      <TableCell className="border-r border-[#eff0f5] px-3 py-2 text-center">
                         <button
                           type="button"
                           onClick={() => onEditRow(row)}
@@ -328,6 +331,18 @@ export function MasterCodeTable({
                   </Fragment>
                 )
               })}
+          {!isLoading && sortedRows.length === 0 ? (
+            <TableRow className="h-[210px] hover:bg-transparent">
+              <TableCell colSpan={8} className="text-center">
+                <img
+                  src={tableEmptyIcon}
+                  alt=""
+                  aria-hidden="true"
+                  className="mx-auto h-[73px] w-[82px] object-contain opacity-80"
+                />
+              </TableCell>
+            </TableRow>
+          ) : null}
         </TableBody>
       </Table>
     </div>

@@ -3,11 +3,16 @@ import { Check } from "lucide-react"
 import { toast } from "sonner"
 
 import { MasterCodePagination } from "@/features/master-code/components/MasterCodePagination"
+import { queryClient } from "@/main"
 import { UserTable } from "../components/UserTable"
 import { UserToolbar } from "../components/UserToolbar"
+import { apiGetUserDetails } from "../api"
 import { useUserModule } from "../hooks/useUserModule"
-import { UserFormPage } from "./UserFormPage"
+import { userModuleKeys } from "../keys"
+import { mergeUserDetailsIntoFormValues } from "../utility/mapUserDetailsToForm"
+import { AddEmployeeFormPage } from "../add-employee"
 import {
+  type AddEmployeeSaveSync,
   type UserModuleFormMode,
   type UserModuleFormValues,
   type UserModuleRow,
@@ -18,7 +23,7 @@ import {
 const emptyFormValues: UserModuleFormValues = {
   employeeNo: "",
   positionNo: "",
-  location: "Susanville",
+  location: "",
   firstName: "",
   lastName: "",
   phone: "",
@@ -41,6 +46,7 @@ const emptyFormValues: UserModuleFormValues = {
   programs: true,
   activities: true,
   supervisorApportioning: false,
+  clientAdmin: false,
   assignedMultiCodes: "",
 }
 
@@ -64,6 +70,8 @@ export function UserModulePage() {
   const [formMode, setFormMode] = useState<UserModuleFormMode>("add")
   const [selectedRow, setSelectedRow] = useState<UserModuleRow | null>(null)
   const [formSessionId, setFormSessionId] = useState(0)
+  /** After first successful create in the add wizard, further saves use PUT /users/:id. */
+  const [draftUserId, setDraftUserId] = useState<string | null>(null)
 
   const userModule = useUserModule({
     page,
@@ -77,7 +85,7 @@ export function UserModulePage() {
       return {
         employeeNo: selectedRow.employeeNo ?? selectedRow.id,
         positionNo: selectedRow.positionNo ?? "",
-        location: selectedRow.location ?? "Susanville",
+        location: selectedRow.location ?? "",
         firstName: selectedRow.firstName ?? selectedRow.employee.split(" ")[0] ?? "",
         lastName:
           selectedRow.lastName ?? selectedRow.employee.split(" ").slice(1).join(" "),
@@ -85,7 +93,8 @@ export function UserModulePage() {
         loginId: selectedRow.loginId ?? "",
         password: selectedRow.password ?? "",
         confirmPassword: selectedRow.password ?? "",
-        emailAddress: selectedRow.emailAddress ?? "",
+        emailAddress:
+          (selectedRow.loginId ?? selectedRow.emailAddress ?? "").trim(),
         jobClassification: selectedRow.jobClassification ?? "",
         jobDutyStatement: "",
         claimingUnit: selectedRow.claimingUnit ?? selectedRow.department,
@@ -102,6 +111,7 @@ export function UserModulePage() {
         programs: selectedRow.programs ?? true,
         activities: selectedRow.activities ?? true,
         supervisorApportioning: selectedRow.supervisorApportioning ?? false,
+        clientAdmin: selectedRow.clientAdmin ?? false,
         assignedMultiCodes: selectedRow.assignedMultiCodes ?? "",
       }
     }
@@ -135,6 +145,7 @@ export function UserModulePage() {
   const handleAddEmployee = () => {
     setFormMode("add")
     setSelectedRow(null)
+    setDraftUserId(null)
     setFormSessionId((prev) => prev + 1)
     setShowForm(true)
   }
@@ -146,31 +157,52 @@ export function UserModulePage() {
     setShowForm(true)
   }
 
-  const handleSaveForm = (values: UserModuleFormValues) => {
-    if (formMode === "edit" && selectedRow) {
-      userModule.updateRow(
-        { id: selectedRow.id, values },
-        {
-          onSuccess: () => {
-            toast.success("User Saved Successfully", successToastOptions)
-            setShowForm(false)
-          },
-          onError: (error) => toast.error(error.message),
-        }
-      )
-      return
-    }
-
-    userModule.createRow(
-      { values },
-      {
-        onSuccess: () => {
-          toast.success("Employee created successfully", successToastOptions)
-          setShowForm(false)
-        },
-        onError: (error) => toast.error(error.message),
+  const handleSaveForm = async (
+    values: UserModuleFormValues
+  ): Promise<AddEmployeeSaveSync | void> => {
+    try {
+      if (formMode === "edit" && selectedRow) {
+        await userModule.updateRowAsync({ id: selectedRow.id, values })
+        toast.success("User Saved Successfully", successToastOptions)
+        await queryClient.invalidateQueries({ queryKey: userModuleKeys.lists() })
+        setShowForm(false)
+        return undefined
       }
-    )
+
+      if (draftUserId) {
+        await userModule.updateRowAsync({ id: draftUserId, values })
+        toast.success("Employee saved successfully", successToastOptions)
+        try {
+          const details = await apiGetUserDetails(draftUserId)
+          return { formValues: mergeUserDetailsIntoFormValues(details, values) }
+        } catch {
+          const login = (values.loginId ?? "").trim()
+          return {
+            formValues: { ...values, loginId: login, emailAddress: login },
+          }
+        }
+      }
+
+      const created = await userModule.createRowAsync({ values })
+      setDraftUserId(created.id)
+      toast.success(
+        "Employee details saved. You can go to the next tab without saving again.",
+        successToastOptions
+      )
+      try {
+        const details = await apiGetUserDetails(created.id)
+        return { formValues: mergeUserDetailsIntoFormValues(details, values) }
+      } catch {
+        const login = (created.loginId ?? values.loginId).trim()
+        return {
+          formValues: { ...values, loginId: login, emailAddress: login },
+        }
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Save failed"
+      toast.error(message)
+      throw error
+    }
   }
 
   return (
@@ -182,11 +214,15 @@ export function UserModulePage() {
       } as React.CSSProperties}
     >
       {showForm ? (
-        <UserFormPage
+        <AddEmployeeFormPage
           key={formSessionId}
           mode={formMode}
           initialValues={formInitialValues}
-          onCancel={() => setShowForm(false)}
+          onCancel={() => {
+            setDraftUserId(null)
+            setShowForm(false)
+            void queryClient.invalidateQueries({ queryKey: userModuleKeys.lists() })
+          }}
           onSave={handleSaveForm}
         />
       ) : (

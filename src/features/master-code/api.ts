@@ -1,6 +1,6 @@
 import { api } from "@/lib/api"
 
-import { ActivityStatusEnum } from "@/features/master-code/enums/activity-status.enum"
+import { ActivityStatusEnum } from "./enums/activityStatus"
 import type {
   ApiActivityCode,
   ApiTenantMasterCode,
@@ -60,7 +60,7 @@ const ACTIVITY_CODES_API_MAX_LIMIT = 100
 /**
  * `GET /activity-codes` — matches `ActivityCodeListQueryDto` (page, limit, sort, sortField, type, status).
  */
-export async function apiGetActivityCodesPage(params: {
+export async function apiGetMasterCodesPage(params: {
   codeType: MasterCodeTab
   page: number
   pageSize: number
@@ -151,7 +151,7 @@ function buildUpdateBody(codeType: MasterCodeTab, values: MasterCodeFormValues) 
   return body
 }
 
-export async function apiCreateActivityCode(input: {
+export async function apiCreateMasterCode(input: {
   codeType: MasterCodeTab
   values: MasterCodeFormValues
 }): Promise<MasterCodeRow> {
@@ -171,7 +171,7 @@ export async function apiCreateActivityCode(input: {
   return normalizeActivityCodeRow(entity)
 }
 
-export async function apiUpdateActivityCode(input: {
+export async function apiUpdateMasterCode(input: {
   id: string
   codeType: MasterCodeTab
   values: MasterCodeFormValues
@@ -185,16 +185,15 @@ export async function apiUpdateActivityCode(input: {
   return normalizeActivityCodeRow(entity)
 }
 
-export async function apiGetActivityCodeById(id: string): Promise<MasterCodeRow> {
-  const detail = await api.get<{ data?: ApiActivityCode }>(
-    `/activity-codes/${encodeURIComponent(String(id))}`
+export async function apiGetMasterCodeById(id: string): Promise<MasterCodeRow> {
+  const raw = await api.get<{ data?: ApiActivityCode }>(
+    `/activity-codes/${encodeURIComponent(id)}`
   )
-  const entity = (detail as { data?: ApiActivityCode })?.data
-  if (!entity) throw new Error("Failed to load activity code")
+  const entity = (raw as { data?: ApiActivityCode })?.data
+  if (!entity) throw new Error("Activity code not found")
   return normalizeActivityCodeRow(entity)
 }
 
-// ─── Tenant master-codes: by-name + PUT ───────────────────────────────────────
 function normalizeTenantMasterCode(raw: ApiTenantMasterCode): TenantMasterCodeRow {
   return {
     id: raw.id,
