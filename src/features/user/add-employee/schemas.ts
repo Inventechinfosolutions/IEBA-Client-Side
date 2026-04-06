@@ -141,7 +141,8 @@ export const userModuleFormSchema = userModuleFormFieldsSchema
       .string()
       .trim()
       .min(1, "Password can't be empty")
-      .min(11, "Password must be at least 11 characters long")
+      .min(10, "Password must be at least 10 characters long")
+      .max(16, "Password must be at most 16 characters long")
       .regex(/[A-Z]/, "Password must contain at least one capital letter")
       .regex(/[^A-Za-z0-9]/, "Password must contain at least one symbol"),
     confirmPassword: z.string().trim().min(1, "Confirm Password can't be empty"),
@@ -155,10 +156,16 @@ export const userModuleFormEditSchema = userModuleFormFieldsSchema
   .extend({
     password: z.string().trim().superRefine((val, ctx) => {
       if (val === "") return
-      if (val.length < 11) {
+      if (val.length < 10) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: "Password must be at least 11 characters long",
+          message: "Password must be at least 10 characters long",
+        })
+      }
+      if (val.length > 16) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Password must be at most 16 characters long",
         })
       }
       if (!/[A-Z]/.test(val)) {

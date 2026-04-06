@@ -46,7 +46,7 @@ export function EmployeeLoginDetailsSection({ isEditMode }: EmployeeLoginDetails
     control,
     watch,
     setValue,
-    formState: { errors, touchedFields },
+    formState: { errors, touchedFields, dirtyFields },
   } = useFormContext<UserModuleFormValues>()
   const employeeName = `${watch("firstName") ?? ""} ${watch("lastName") ?? ""}`.trim()
   const allowMultiCodesEnabled = watch("allowMultiCodes") === true
@@ -61,8 +61,17 @@ export function EmployeeLoginDetailsSection({ isEditMode }: EmployeeLoginDetails
     "h-[43px] rounded-[7px] border border-[#e4e7ef] bg-[#f3f4f8] px-3 pr-9 text-[12px] text-[#6b7280] shadow-none placeholder:text-[11px] placeholder:font-normal placeholder:text-[#9aa1b2] focus-visible:border-[#e4e7ef] focus-visible:ring-0"
   const employeeNoInputClassName = `${inputClassName} cursor-not-allowed bg-[#f3f4f8] text-[#6b7280]`
   const passwordErrorMessage = errors.password?.message ? String(errors.password.message) : null
+  const confirmPasswordErrorMessage = errors.confirmPassword?.message
+    ? String(errors.confirmPassword.message)
+    : null
+  const passwordFieldTouchedOrDirty = Boolean(touchedFields.password || dirtyFields.password)
+  const confirmPasswordFieldTouchedOrDirty = Boolean(
+    touchedFields.confirmPassword || dirtyFields.confirmPassword,
+  )
   const showPasswordInlineError =
-    !isEditMode && Boolean(passwordErrorMessage) && Boolean(touchedFields.password)
+    !isEditMode && Boolean(passwordErrorMessage) && passwordFieldTouchedOrDirty
+  const showConfirmPasswordInlineError =
+    !isEditMode && Boolean(confirmPasswordErrorMessage) && confirmPasswordFieldTouchedOrDirty
 
   const loginIdField = register("loginId")
 
@@ -247,7 +256,7 @@ export function EmployeeLoginDetailsSection({ isEditMode }: EmployeeLoginDetails
                   type={isPasswordVisible ? "text" : "password"}
                   {...register("password")}
                   className={`${inputClassName} rounded-r-none border-r-0`}
-                  placeholder="Password (min 11 chars, 1 capital letter, 1 symbol)"
+                  placeholder="10–16 chars, 1 capital, 1 symbol"
                 />
                 <button
                   type="button"
@@ -263,7 +272,9 @@ export function EmployeeLoginDetailsSection({ isEditMode }: EmployeeLoginDetails
                 </button>
               </div>
               {showPasswordInlineError ? (
-                <p className={passwordErrorClassName}>{passwordErrorMessage}</p>
+                <p className={passwordErrorClassName} role="alert">
+                  {passwordErrorMessage}
+                </p>
               ) : null}
             </div>
             <div>
@@ -288,6 +299,11 @@ export function EmployeeLoginDetailsSection({ isEditMode }: EmployeeLoginDetails
                   )}
                 </button>
               </div>
+              {showConfirmPasswordInlineError ? (
+                <p className={passwordErrorClassName} role="alert">
+                  {confirmPasswordErrorMessage}
+                </p>
+              ) : null}
             </div>
           </>
         ) : (

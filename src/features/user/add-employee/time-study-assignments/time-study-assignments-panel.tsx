@@ -794,7 +794,6 @@ export function TimeStudyAssignmentsPanel({
             <Input
               {...register("tsMinDay")}
               className="h-auto w-[70px] border-0 bg-transparent p-0 text-[12px] text-[#111827] shadow-none focus-visible:ring-0"
-              placeholder="480"
             />
             <span className="ml-6 select-none text-[11px] text-[#2a2f3a]">Min/Day</span>
           </div>

@@ -67,6 +67,9 @@ export function useAddEmployeeForm({ mode, initialValues, onSave }: UseAddEmploy
     resolver: zodResolver(isEditMode ? userModuleFormEditSchema : userModuleFormSchema),
     defaultValues: initialValues,
     shouldUnregister: false,
+    /** After a field is touched once, validation re-runs on change so password length errors clear when corrected. */
+    mode: "onTouched",
+    reValidateMode: "onChange",
   })
 
   const {
