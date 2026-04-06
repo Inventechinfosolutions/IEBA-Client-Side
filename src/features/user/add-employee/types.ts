@@ -197,6 +197,11 @@ export type UserModuleFormValues = z.infer<typeof userModuleFormSchema>
 
 export type AddEmployeeFormTab = "employee" | "security" | "supervisor" | "timeStudy"
 
+export type AddEmployeeTabDefinition = {
+  id: AddEmployeeFormTab
+  label: string
+}
+
 /** @deprecated Use AddEmployeeFormTab; kept as alias for existing call sites re-exported from user/types */
 export type UserFormTab = AddEmployeeFormTab
 
@@ -209,6 +214,14 @@ export type AddEmployeeSaveSync = {
 export type AddEmployeeSavePayload = {
   values: UserModuleFormValues
   sourceTab: AddEmployeeFormTab
+}
+
+export type SaveGatedTab = "employee" | "security" | "supervisor"
+
+export type UseAddEmployeeFormParams = {
+  mode: UserModuleFormMode
+  initialValues: UserModuleFormValues
+  onSave: (payload: AddEmployeeSavePayload) => void | Promise<AddEmployeeSaveSync | void>
 }
 
 export type AddEmployeeFormPanelProps = {
@@ -274,3 +287,22 @@ export type AddEmployeeTimeStudyTransferPanelProps = {
   selectedDept: string
 }
 
+export type TimeStudyPlacementOverride = "assigned" | "unassigned"
+
+export type TimeStudyPlacementOverrideMap = Record<string, TimeStudyPlacementOverride>
+
+export type TimeStudyAssignmentsPanelProps = {
+  mode: UserModuleFormMode
+  /** Profile user id — same as Security tab; required for edit-mode user-scoped programs/activities. */
+  timeStudyContextUserId?: string | null
+}
+
+export type SecurityAssignmentsPanelProps = {
+  mode: UserModuleFormMode
+  /** User id for `userId` query param (edit = always set; add = draft id when known). */
+  securityContextUserId?: string | null
+  /** Add mode: allow GET without `userId` before first save. Edit mode should be false. */
+  allowUnassignedQueryWithoutUserId: boolean
+}
+
+export type SupervisorMenuOpen = "primary" | "secondary" | null

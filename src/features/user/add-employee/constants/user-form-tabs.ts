@@ -1,4 +1,4 @@
-import type { UserModuleFormValues, AddEmployeeFormTab } from "../types"
+import type { AddEmployeeFormTab, AddEmployeeTabDefinition, UserModuleFormValues } from "../types"
 
 export const addEmployeeTabFieldKeys: Record<
   AddEmployeeFormTab,
@@ -23,11 +23,6 @@ export const addEmployeeTabFieldKeys: Record<
     "supervisorSecondaryId",
   ],
   timeStudy: ["tsMinDay", "programs", "activities"],
-}
-
-export type AddEmployeeTabDefinition = {
-  id: AddEmployeeFormTab
-  label: string
 }
 
 export const addEmployeeTabs: AddEmployeeTabDefinition[] = [

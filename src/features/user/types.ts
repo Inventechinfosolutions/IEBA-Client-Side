@@ -4,9 +4,12 @@ export type {
   UserModuleFormMode,
   UserModuleFormValues,
   AddEmployeeFormTab,
+  AddEmployeeTabDefinition,
   UserFormTab,
   AddEmployeeSavePayload,
   AddEmployeeSaveSync,
+  SaveGatedTab,
+  UseAddEmployeeFormParams,
   AddEmployeeFormPanelProps,
   UserFormPanelProps,
   AddEmployeeFormPageProps,
@@ -16,6 +19,11 @@ export type {
   AddEmployeeFormTabsProps,
   UserFormTabsProps,
   SupervisorPickerOption,
+  TimeStudyPlacementOverride,
+  TimeStudyPlacementOverrideMap,
+  TimeStudyAssignmentsPanelProps,
+  SecurityAssignmentsPanelProps,
+  SupervisorMenuOpen,
 } from "./add-employee/types"
 
 export type UserModuleRow = {
@@ -80,6 +88,9 @@ export type ApiResponseDto<T> = {
   data: T | null
   errorCode?: string | null
 }
+
+/** Matches backend `CreateUserContactItemDto` / update `contacts`. */
+export type UserContactItemPayload = { phone?: string; countryCode?: string }
 
 /**
  * GET /users `data[]` wire shape (table list). Extra keys may exist; we map only what the grid needs into `UserModuleRow`.
@@ -162,7 +173,7 @@ export type UpdateUserRequestDto = {
   assignedMultiCodes?: string[]
   primarySupervisorId?: string
   backupSupervisorId?: string
-  contacts?: Array<{ phone?: string; countryCode?: string }>
+  contacts?: UserContactItemPayload[]
 }
 
 export type CreateUserResponseDto = {

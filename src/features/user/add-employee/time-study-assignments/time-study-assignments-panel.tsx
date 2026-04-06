@@ -13,7 +13,9 @@ import type {
   AddEmployeeDepartmentOption,
   AddEmployeeTimeStudyTransferItem,
   AddEmployeeTimeStudyTransferPanelProps,
-  UserModuleFormMode,
+  TimeStudyAssignmentsPanelProps,
+  TimeStudyPlacementOverride,
+  TimeStudyPlacementOverrideMap,
   UserModuleFormValues,
   UserProgramsActivitiesDepartmentBundle,
 } from "../types"
@@ -201,9 +203,6 @@ function buildCatalogItemsFromUserProgramsActivitiesResponse(
   }
 }
 
-type TimeStudyPlacementOverride = "assigned" | "unassigned"
-type TimeStudyPlacementOverrideMap = Record<string, TimeStudyPlacementOverride>
-
 function timeStudyPlacementOverrideKey(departmentName: string, rowId: string): string {
   return `${departmentName.trim()}::${rowId}`
 }
@@ -289,10 +288,16 @@ function buildUnassignedItemsForEditMode(
   return sortTransferItems(globalRowsForDepartment.filter((row) => !isAssigned(row.id)))
 }
 
-export type TimeStudyAssignmentsPanelProps = {
-  mode: UserModuleFormMode
-  /** Profile user id — same as Security tab; required for edit-mode user-scoped programs/activities. */
-  timeStudyContextUserId?: string | null
+/** Edit-mode default department: first bundle in API order that actually has TS rows (not A→Z — CCS must not win over Public Health). */
+function firstBundleDepartmentNameWithAssignments(
+  bundles: UserProgramsActivitiesDepartmentBundle[],
+): string {
+  for (const b of bundles) {
+    const name = b.departmentName.trim()
+    if (!name) continue
+    if (b.programs.length > 0 || b.activities.length > 0) return name
+  }
+  return ""
 }
 
 /** UI tab: Time Study Assignments */
@@ -334,6 +339,13 @@ export function TimeStudyAssignmentsPanel({
     const names = bundles.map((b) => b.departmentName.trim()).filter((n) => n.length > 0)
     return [...new Set(names)].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }))
   }, [userProgramsActivitiesQuery.data])
+
+  const defaultEditModeTimeStudyDepartment = useMemo(() => {
+    const bundles = userProgramsActivitiesQuery.data ?? []
+    const withAssignments = firstBundleDepartmentNameWithAssignments(bundles)
+    if (withAssignments) return withAssignments
+    return bundleDepartmentNames[0] ?? ""
+  }, [userProgramsActivitiesQuery.data, bundleDepartmentNames])
 
   /** GET /departments — full catalog for add + edit Time Study department dropdowns. */
   const masterDepartmentNames = useMemo(
@@ -395,7 +407,7 @@ export function TimeStudyAssignmentsPanel({
 
   const selectedDept = isAddMode
     ? timeStudyDeptAddMode.trim()
-    : timeStudyDeptEditMode.trim() || (bundleDepartmentNames[0] ?? "")
+    : timeStudyDeptEditMode.trim() || defaultEditModeTimeStudyDepartment
 
   const globalActivityCatalog = useMemo<AddEmployeeTimeStudyTransferItem[]>(() => {
     const rows = activitiesQuery.data ?? []

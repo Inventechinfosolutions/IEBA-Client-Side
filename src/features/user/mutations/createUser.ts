@@ -2,8 +2,7 @@ import { useMutation } from "@tanstack/react-query"
 
 import { apiCreateUser } from "../api"
 import type { CreateUserModuleInput, CreateUserRequestDto, CreateUserResponseDto } from "../types"
-import { normalizeLocationId } from "../utility/normalizeLocationId"
-import { contactsPayloadForCreate } from "../utility/phoneToContactsPayload"
+import { contactsPayloadForCreate, normalizeLocationId } from "../utility/mapUserDetailsToForm"
 
 function toAssignedMultiCodes(value: string | undefined): string[] | undefined {
   const raw = (value ?? "").trim()

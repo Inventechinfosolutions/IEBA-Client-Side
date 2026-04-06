@@ -5,9 +5,9 @@ import { AlertTriangle, Check, X } from "lucide-react"
 import { toast } from "sonner"
 
 import type {
-  AddEmployeeSavePayload,
-  AddEmployeeSaveSync,
   AddEmployeeFormTab,
+  SaveGatedTab,
+  UseAddEmployeeFormParams,
   UserModuleFormValues,
 } from "../types"
 import {
@@ -18,9 +18,6 @@ import {
   userModuleFormSchema,
 } from "../schemas"
 import { addEmployeeTabFieldKeys, orderedAddEmployeeTabs } from "../constants/user-form-tabs"
-import type { UserModuleFormMode } from "../types"
-
-type SaveGatedTab = "employee" | "security" | "supervisor"
 
 const initialTabSaved: Record<SaveGatedTab, boolean> = {
   employee: false,
@@ -35,12 +32,6 @@ const warningToastInnerClassNames = {
   content: "!flex !flex-nowrap !items-center !gap-3",
   title: "!whitespace-nowrap",
 } as const
-
-type UseAddEmployeeFormParams = {
-  mode: UserModuleFormMode
-  initialValues: UserModuleFormValues
-  onSave: (payload: AddEmployeeSavePayload) => void | Promise<AddEmployeeSaveSync | void>
-}
 
 function getErrorMessage(value: unknown): string | null {
   if (!value || typeof value !== "object") return null

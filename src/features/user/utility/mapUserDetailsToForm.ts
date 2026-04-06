@@ -1,5 +1,31 @@
-import type { UserDetailsDto, UserModuleFormValues } from "../types"
+import type { UserContactItemPayload, UserDetailsDto, UserModuleFormValues } from "../types"
 import { normalizePhoneForFormDisplay, phoneDigitsOnly } from "../add-employee/schemas"
+
+/** Coerces form/API values into a positive integer `locationId` for create/update DTOs. */
+export function normalizeLocationId(raw: unknown): number | undefined {
+  if (raw == null) return undefined
+  const n = typeof raw === "number" ? raw : Number.parseInt(String(raw), 10)
+  if (!Number.isFinite(n) || !Number.isInteger(n) || n < 1) return undefined
+  return n
+}
+
+const US_CC = "+1"
+
+/** Create: send `contacts` only when form has 10-digit US phone (else primary contact stays email = loginId). */
+export function contactsPayloadForCreate(phoneRaw: string | undefined): UserContactItemPayload[] | undefined {
+  const digits = phoneDigitsOnly((phoneRaw ?? "").trim())
+  if (digits.length === 10) return [{ phone: digits, countryCode: US_CC }]
+  return undefined
+}
+
+/**
+ * Update: always send `contacts` — 10 digits → PHONE row; `[]` → backend uses email + loginId.
+ */
+export function contactsPayloadForUpdate(phoneRaw: string | undefined): UserContactItemPayload[] {
+  const digits = phoneDigitsOnly((phoneRaw ?? "").trim())
+  if (digits.length === 10) return [{ phone: digits, countryCode: US_CC }]
+  return []
+}
 
 /** Matches GET /departments/user/roles-unassigned item ids (`deptId-roleId`). */
 function securitySnapshotsFromDepartmentRoles(

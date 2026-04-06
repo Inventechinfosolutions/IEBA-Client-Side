@@ -13,7 +13,7 @@ import type {
   AddEmployeeSecurityRoleCatalogItem,
   AddEmployeeSecurityRoleItem,
   AddEmployeeSecurityRolePanelProps,
-  UserModuleFormMode,
+  SecurityAssignmentsPanelProps,
   UserModuleFormValues,
 } from "../types"
 
@@ -25,14 +25,6 @@ import {
   departmentIdFromSecurityCatalogItemId,
   roleRefIdFromSecurityCatalogItemId,
 } from "../utility/buildUserDepartmentRoleDepartmentsPayload"
-
-export type SecurityAssignmentsPanelProps = {
-  mode: UserModuleFormMode
-  /** User id for `userId` query param (edit = always set; add = draft id when known). */
-  securityContextUserId?: string | null
-  /** Add mode: allow GET without `userId` before first save. Edit mode should be false. */
-  allowUnassignedQueryWithoutUserId: boolean
-}
 
 function normalizeDeptRolePart(s: string): string {
   return s.trim().toLowerCase().replace(/\s+/g, " ")

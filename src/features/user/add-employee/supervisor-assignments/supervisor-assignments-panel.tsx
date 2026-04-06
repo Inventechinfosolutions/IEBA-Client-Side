@@ -7,6 +7,7 @@ import { SingleSelectDropdown } from "@/components/ui/dropdown"
 import { supervisorPickerDisplayName } from "../api"
 import type {
   AddEmployeeDepartmentSupervisorRow,
+  SupervisorMenuOpen,
   SupervisorPickerOption,
   UserModuleFormValues,
 } from "../types"
@@ -54,8 +55,6 @@ function mergeSupervisorCatalog(
     .map(([id, label]) => ({ id, label }))
     .sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: "base" }))
 }
-
-type SupervisorMenuOpen = "primary" | "secondary" | null
 
 const supervisorEmptyListSlot = (
   <div className="flex flex-col items-center justify-center rounded-[6px] border border-[#eceff5] bg-white px-3 py-4">
