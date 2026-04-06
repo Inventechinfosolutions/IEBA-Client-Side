@@ -16,16 +16,11 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
-import { ChevronDown, ChevronDownIcon, ChevronUp } from "lucide-react"
+import { ChevronDown, ChevronUp } from "lucide-react"
 import { Controller, useFieldArray, useFormContext } from "react-hook-form"
 
 import { Button } from "@/components/ui/button"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+import { SingleSelectDropdown } from "@/components/ui/dropdown"
 import { TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import {
   Tooltip,
@@ -293,40 +288,16 @@ export function PayrollForm() {
             name="payroll.payrollBy"
             control={control}
             render={({ field }) => (
-              <DropdownMenu modal={false}>
-                <DropdownMenuTrigger asChild>
-                  <button
-                    type="button"
-                    className="flex h-[46px] w-[160px] shrink-0 cursor-pointer items-center justify-between gap-1 rounded-[6px] border border-[#d6d7dc] bg-white pl-3 pr-2 text-left text-[14px] font-normal text-[#111827] shadow-none outline-none hover:bg-[#f2f2f2] hover:text-[#111827] focus-visible:border-[#6C5DD3] focus-visible:ring-0 focus-visible:text-[#111827] data-[state=open]:border-[#6C5DD3] data-[state=open]:text-[#111827]"
-                  >
-                    <span className="min-w-0 flex-1 truncate font-normal text-[#111827]">{field.value}</span>
-                    <ChevronDownIcon className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent
-                  side="bottom"
-                  sideOffset={6}
-                  align="start"
-                  className="z-[90] rounded-[8px] border border-[#d9deea] bg-white p-0 px-1 py-1.5 shadow-[0_8px_18px_rgba(17,24,39,0.12)]"
-                >
-                  {PAYROLL_BY_OPTIONS.map((opt) => (
-                    <DropdownMenuItem
-                      key={opt}
-                      onSelect={() => field.onChange(opt)}
-                      className={cn(
-                        "cursor-pointer justify-start rounded-[6px] px-1.5 py-2 text-left text-[14px] font-normal !text-[#111827]",
-                        "hover:!text-[#111827] focus:!text-[#111827] data-[highlighted]:!text-[#111827]",
-                        "not-data-[variant=destructive]:focus:**:!text-[#111827]",
-                        field.value === opt
-                          ? "bg-[#eef8ff] hover:bg-[#eef8ff] data-[highlighted]:bg-[#eef8ff]"
-                          : "bg-transparent hover:bg-[#f2f2f2] data-[highlighted]:bg-[#f2f2f2]",
-                      )}
-                    >
-                      {opt}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <SingleSelectDropdown
+                value={field.value}
+                onChange={field.onChange}
+                onBlur={field.onBlur}
+                options={PAYROLL_BY_OPTIONS.map((opt) => ({ value: opt, label: opt }))}
+                placeholder="Payroll by"
+                className="!h-[46px] !min-h-[46px] w-[160px] shrink-0 !rounded-[6px] !border-[#d6d7dc] !pl-3 !pr-9 !text-[14px] !font-normal hover:bg-[#f2f2f2]"
+                itemButtonClassName="rounded-[6px] px-1.5 py-2"
+                itemLabelClassName="!text-[14px] !font-normal"
+              />
             )}
           />
         </div>

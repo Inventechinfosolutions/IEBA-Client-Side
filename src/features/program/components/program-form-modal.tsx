@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { X } from "lucide-react"
-import { forwardRef, useImperativeHandle, useRef, useState } from "react"
+import { forwardRef, useImperativeHandle, useState } from "react"
 import { useForm, type FieldErrors, type FieldValues } from "react-hook-form"
 import { toast } from "sonner"
 
@@ -79,13 +79,6 @@ export const ProgramFormModal = forwardRef<ProgramFormModalHandle, ProgramFormMo
   const budgetProgramLookup = isTsSecondaryOrTertiary
     ? tsPrimaryProgramsQuery.data?.budgetProgramLookup ?? {}
     : formOptionsQuery.data?.budgetProgramLookup ?? {}
-
-  const [isDepartmentOpen, setIsDepartmentOpen] = useState(false)
-  const departmentDropdownRef = useRef<HTMLDivElement | null>(null)
-  const [isBuNameOpen, setIsBuNameOpen] = useState(false)
-  const buNameDropdownRef = useRef<HTMLDivElement | null>(null)
-  const [isBudgetProgramOpen, setIsBudgetProgramOpen] = useState(false)
-  const budgetProgramDropdownRef = useRef<HTMLDivElement | null>(null)
 
   useImperativeHandle(ref, () => ({
     reset(values: ProgramFormValues) {
@@ -313,19 +306,10 @@ export const ProgramFormModal = forwardRef<ProgramFormModalHandle, ProgramFormMo
               formMode={mode}
               quickAddSubProgramMode={hideSectionTabs && activeSection === "BU Sub-Program"}
               departmentOptions={departmentOptions}
-              isDepartmentOpen={isDepartmentOpen}
-              setIsDepartmentOpen={setIsDepartmentOpen}
-              departmentDropdownRef={departmentDropdownRef}
               budgetUnitNameOptions={budgetUnitNameOptions}
               budgetProgramNameOptions={budgetProgramNameOptions}
               budgetProgramLookup={budgetProgramLookup}
               budgetUnitLookup={budgetUnitLookup}
-              isBuNameOpen={isBuNameOpen}
-              setIsBuNameOpen={setIsBuNameOpen}
-              buNameDropdownRef={buNameDropdownRef}
-              isBudgetProgramOpen={isBudgetProgramOpen}
-              setIsBudgetProgramOpen={setIsBudgetProgramOpen}
-              budgetProgramDropdownRef={budgetProgramDropdownRef}
             />
           )}
           <div className="mx-auto mt-6 flex w-[500px] items-center justify-end gap-4">
