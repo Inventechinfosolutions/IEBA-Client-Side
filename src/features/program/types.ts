@@ -337,3 +337,29 @@ export type TimeStudyProgramOption = {
   type?: string
   department?: { id?: number; name?: string } | null
 }
+
+/** Program Activity Relation — activity tree node from structured activities API. */
+export type ProgramActivityRelationActivityNode = {
+  title?: string
+  key?: string | number
+  children?: ProgramActivityRelationActivityNode[]
+  assigned?: boolean
+  type?: string
+  code?: string
+  masterCodeType?: string | null
+}
+
+export type ProgramActivityRelationActivityRoots = Array<{
+  key?: number
+  title?: string
+  activity?: { title?: string; key?: string; children?: ProgramActivityRelationActivityNode[] }[]
+}>
+
+export type ProgramActivityRelationActivitiesPayload = {
+  assignedActivities?: ProgramActivityRelationActivityRoots
+  unassignedActivities?: ProgramActivityRelationActivityRoots
+}
+
+export type ProgramActivityRelationTimeStudyEnvelope = {
+  data?: TimeStudyProgramOption[]
+}

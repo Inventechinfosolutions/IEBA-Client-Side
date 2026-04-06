@@ -1,10 +1,9 @@
 import { useQuery } from "@tanstack/react-query"
 
-import { apiGetActivityCodeById, apiGetActivityCodesPage } from "../api"
-import { 
-  apiGetMasterCodesPage, 
-  apiGetMasterCodeById, 
-  apiGetTenantMasterCodeByName 
+import {
+  apiGetMasterCodesPage,
+  apiGetMasterCodeById,
+  apiGetTenantMasterCodeByName,
 } from "../api"
 import { masterCodeKeys } from "../keys"
 import type { GetMasterCodesParams, MasterCodeTab } from "../types"
@@ -42,9 +41,12 @@ export function useGetActivityCodeById(
   const numericId = Number(id)
   return useQuery({
     queryKey: masterCodeKeys.detail(id),
-    queryFn: () => apiGetActivityCodeById(id),
+    queryFn: () => apiGetMasterCodeById(id),
     enabled: enabled && id.length > 0 && !Number.isNaN(numericId) && numericId > 0,
     staleTime: 60_000,
+  })
+}
+
 /** Fetches a single master code by its system-wide ID for editing. */
 export function useGetMasterCodeById(id: string | null) {
   return useQuery({

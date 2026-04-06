@@ -1,5 +1,5 @@
 import { api } from "@/lib/api"
-import type {ApiEnvelope,BudgetProgramResDto,BudgetUnitListResponseDto,BudgetUnitResDto,CreatedIdResponse,CreatedIdWithCodeResponse,CreateProgramInput,GetProgramsParams,PaginationMeta,ProgramCreateLookups,ProgramListResponse,ProgramRow,ProgramTab,TimeStudyProgramListResponseDto,TimeStudyProgramResDto,UpdateProgramInput} from "./types"
+import type {ApiEnvelope,BudgetProgramResDto,BudgetUnitListResponseDto,BudgetUnitResDto,CreatedIdResponse,CreatedIdWithCodeResponse,CreateProgramInput,GetProgramsParams,PaginationMeta,ProgramActivityRelationActivitiesPayload,ProgramCreateLookups,ProgramListResponse,ProgramRow,ProgramTab,ProgramActivityRelationTimeStudyEnvelope,TimeStudyProgramListResponseDto,TimeStudyProgramOption,TimeStudyProgramResDto,UpdateProgramInput} from "./types"
 import {BudgetProgramTypeEnum,TimeStudyProgramMultiCodeTypeEnum,TimeStudyProgramStatusEnum,TimeStudyProgramTypeEnum} from "./enums/enums"
 
 function isActiveStatus(status: unknown): boolean {
@@ -652,5 +652,49 @@ export async function apiGetProgramRowById(input: {
   }
  // Program Activity Relation not yet wired to backend.
   return row
+}
+
+export async function apiGetProgramActivityRelationTimeStudyPrograms(
+  departmentId: number,
+): Promise<ProgramActivityRelationTimeStudyEnvelope> {
+  const search = new URLSearchParams()
+  search.set("page", "1")
+  search.set("limit", "100")
+  search.set("sort", "ASC")
+  search.set("status", "active")
+  search.set("departmentId", String(departmentId))
+
+  const res = await api.get<
+    ProgramActivityRelationTimeStudyEnvelope | TimeStudyProgramOption[] | { data?: TimeStudyProgramOption[] }
+  >(`/timestudyprograms?${search.toString()}`)
+
+  const firstUnwrap = (res as { data?: unknown }).data ?? res
+  const maybeArray = Array.isArray(firstUnwrap)
+    ? firstUnwrap
+    : Array.isArray((firstUnwrap as { data?: unknown })?.data)
+      ? ((firstUnwrap as { data?: TimeStudyProgramOption[] }).data as TimeStudyProgramOption[])
+      : []
+
+  return { data: maybeArray }
+}
+
+export async function apiGetProgramActivityRelationActivities(
+  departmentId: number,
+  programId: number,
+): Promise<ProgramActivityRelationActivitiesPayload> {
+  const search = new URLSearchParams()
+  search.set("departmentId", String(departmentId))
+  search.set("programId", String(programId))
+  search.set("method", "activitiesAssignedToProgram")
+  search.set("structured", "true")
+
+  const res = await api.get<{
+    success: boolean
+    message: string
+    data: ProgramActivityRelationActivitiesPayload
+    errorCode: string | null
+  }>(`/timestudyprograms/new/activities?${search.toString()}`)
+
+  return (res?.data ?? {}) as ProgramActivityRelationActivitiesPayload
 }
 

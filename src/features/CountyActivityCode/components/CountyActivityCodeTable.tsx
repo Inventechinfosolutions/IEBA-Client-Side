@@ -69,7 +69,7 @@ import statusCrossImg from "@/assets/status-cross.png"
 import editIconImg from "@/assets/edit-icon.png"
 import { useUpdateCountyActivityCode } from "../mutations/updateCountyActivityCode"
 import { useCreateCountyActivityCode } from "../mutations/createCountyActivityCode"
-import { ActivityStatusEnum } from "@/features/master-code/enums/activity-status.enum"
+import { ActivityStatusEnum } from "@/features/master-code/enums/activityStatus"
 
 import { useCountyActivityForEdit } from "../queries/getCountyActivityForEdit"
 import { useCountyActivityMasterCodes } from "../queries/getCountyActivityMasterCodes"
