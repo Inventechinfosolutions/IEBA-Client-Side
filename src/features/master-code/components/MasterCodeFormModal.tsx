@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react"
+import { useCallback, useMemo, useRef, useState } from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Bold, ChevronDown, ChevronUp, Italic, List, X } from "lucide-react"
 import { Controller, useForm } from "react-hook-form"
@@ -13,20 +13,22 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
-import { MasterCodeTypeEnum } from "@/features/master-code/enums/master-code-type.enum"
 import { masterCodeFormSchema } from "@/features/master-code/schemas"
+import { MasterCodeTypeEnum } from "../enums/masterCodeType"
+import { useGetMasterCodeById } from "../queries/getMasterCodes"
 import {
   type ActiveTools,
   type MasterCodeFormFieldErrors,
   type MasterCodeFormModalProps,
   type MasterCodeFormValues,
-} from "@/features/master-code/types"
+} from "../types"
 
 export function MasterCodeFormModal({
   codeType,
   open,
   mode,
   initialValues,
+  selectedRowId,
   onOpenChange,
   onSave,
 }: MasterCodeFormModalProps) {
@@ -38,17 +40,6 @@ export function MasterCodeFormModal({
     italic: false,
     bullet: false,
   })
-  const {
-    register,
-    control,
-    setValue,
-    getValues,
-    handleSubmit,
-  } = useForm<MasterCodeFormValues>({
-    resolver: zodResolver(masterCodeFormSchema),
-    defaultValues: initialValues,
-  })
-
   const toEditorHtml = (rawValue: string) => {
     const raw = rawValue ?? ""
     const hasHtml = /<\/?[a-z][\s\S]*>/i.test(raw)
@@ -62,6 +53,40 @@ export function MasterCodeFormModal({
       .replaceAll(">", "&gt;")
       .replaceAll("\n", "<br>")
   }
+
+  const { data: detail, isLoading: isDetailLoading } = useGetMasterCodeById(
+    mode === "edit" && open ? selectedRowId || null : null
+  )
+
+  const formValues = useMemo<MasterCodeFormValues>(() => {
+    if (mode === "edit" && detail) {
+      return {
+        code: detail.code ?? "",
+        name: detail.name,
+        ffpPercent: detail.ffpPercent,
+        match: detail.match,
+        spmp: detail.spmp,
+        allocable: detail.allocable,
+        active: detail.status,
+        activityDescription: detail.activityDescription ?? "",
+      }
+    }
+    return initialValues
+  }, [detail, initialValues, mode])
+
+  const {
+    register,
+    control,
+    setValue,
+    getValues,
+    handleSubmit,
+  } = useForm<MasterCodeFormValues>({
+    resolver: zodResolver(masterCodeFormSchema),
+    values: formValues,
+    resetOptions: {
+      keepDirtyValues: true,
+    },
+  })
 
   const setDescriptionEditorRef = useCallback(
     (node: HTMLDivElement | null) => {
@@ -148,11 +173,7 @@ export function MasterCodeFormModal({
 
   const handleSave = handleSubmit(
     (values) => {
-      const editor = descriptionEditorRef.current
-      const nextValues = editor
-        ? { ...values, activityDescription: editor.innerHTML }
-        : values
-      onSave(nextValues)
+      onSave(values)
       closeModal()
     },
     (formErrors: MasterCodeFormFieldErrors) => {
@@ -193,7 +214,12 @@ export function MasterCodeFormModal({
         overlayClassName="bg-black/40"
         className="left-1/2 top-[8%] w-[749px] max-w-[calc(100vw-40px)] -translate-x-1/2 translate-y-0 gap-0 overflow-hidden rounded-[4px] border border-[#f4f6fb] bg-white p-0 text-[#0f172a] subpixel-antialiased shadow-[0_6px_18px_rgba(22,29,45,0.12)]"
       >
-        <form onSubmit={handleSave} className="select-none bg-white px-7 pb-8 pt-7">
+        <form onSubmit={handleSave} className="relative select-none bg-white px-7 pb-8 pt-7">
+          {isDetailLoading && (
+            <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/60 backdrop-blur-[1px]">
+              <div className="size-8 animate-spin rounded-full border-4 border-[#6C5DD3] border-t-transparent" />
+            </div>
+          )}
           <DialogHeader className="relative items-center pb-5">
             <DialogTitle className="text-[18px] font-semibold text-[#111827]">
               {title}
@@ -206,7 +232,7 @@ export function MasterCodeFormModal({
                   <Checkbox
                     checked={field.value}
                     onCheckedChange={(checked) => field.onChange(checked === true)}
-                    className="size-3.5 rounded-[3px] border-[#b8bbcc] bg-white data-[state=checked]:border-[var(--primary)] data-[state=checked]:bg-[var(--primary)] [&_svg]:size-3"
+                    className="size-3.5 rounded-[3px] border-[#b8bbcc] bg-white data-[state=checked]:border-(--primary) data-[state=checked]:bg-(--primary) [&_svg]:size-3"
                   />
                 )}
               />
@@ -286,7 +312,7 @@ export function MasterCodeFormModal({
                   <Checkbox
                     checked={field.value}
                     onCheckedChange={(checked) => field.onChange(checked === true)}
-                    className="size-3.5 rounded-[3px] border-[#c2c6d1] bg-white data-[state=checked]:border-[var(--primary)] data-[state=checked]:bg-[var(--primary)] [&_svg]:size-3"
+                    className="size-3.5 rounded-[3px] border-[#c2c6d1] bg-white data-[state=checked]:border-(--primary) data-[state=checked]:bg-(--primary) [&_svg]:size-3"
                   />
                 )}
               />
@@ -300,7 +326,7 @@ export function MasterCodeFormModal({
                   <Checkbox
                     checked={field.value}
                     onCheckedChange={(checked) => field.onChange(checked === true)}
-                    className="size-3.5 rounded-[3px] border-[#c2c6d1] bg-white data-[state=checked]:border-[var(--primary)] data-[state=checked]:bg-[var(--primary)] [&_svg]:size-3"
+                    className="size-3.5 rounded-[3px] border-[#c2c6d1] bg-white data-[state=checked]:border-(--primary) data-[state=checked]:bg-(--primary) [&_svg]:size-3"
                   />
                 )}
               />
@@ -310,14 +336,17 @@ export function MasterCodeFormModal({
 
           <div className="mt-2">
             <label className="block text-[12px] text-[#111827]">*Activity Description</label>
-            <div className="relative mt-1.5 overflow-hidden rounded-[10px] border border-[#c5cad5] bg-white">
+            <div
+              key={detail?.id || "new"}
+              className="relative mt-1.5 overflow-hidden rounded-[10px] border border-[#c5cad5] bg-white"
+            >
               <div className="flex h-8 items-center gap-4 border-b border-[#d3d8e2] px-3 text-[#4b5563]">
                 <button
                   type="button"
                   onClick={() => applyCommand("bold")}
                   className={`inline-flex cursor-pointer items-center text-[13px] transition-colors ${
                     activeTools.bold
-                      ? "scale-110 font-extrabold text-[var(--primary)]"
+                      ? "scale-110 font-extrabold text-(--primary)"
                       : "text-[#374151]"
                   }`}
                 >
@@ -328,7 +357,7 @@ export function MasterCodeFormModal({
                   onClick={() => applyCommand("insertUnorderedList")}
                   className={`inline-flex cursor-pointer items-center text-[13px] transition-colors ${
                     activeTools.bullet
-                      ? "scale-110 font-extrabold text-[var(--primary)]"
+                      ? "scale-110 font-extrabold text-(--primary)"
                       : "text-[#374151]"
                   }`}
                 >
@@ -339,7 +368,7 @@ export function MasterCodeFormModal({
                   onClick={() => applyCommand("italic")}
                   className={`inline-flex cursor-pointer items-center text-[13px] transition-colors ${
                     activeTools.italic
-                      ? "scale-110 font-extrabold text-[var(--primary)]"
+                      ? "scale-110 font-extrabold text-(--primary)"
                       : "text-[#374151]"
                   }`}
                 >
@@ -353,7 +382,7 @@ export function MasterCodeFormModal({
                 onInput={syncEditorValue}
                 onClick={refreshActiveTools}
                 onKeyUp={refreshActiveTools}
-                className="program-table-scroll max-h-[201px] min-h-[201px] select-text overflow-y-scroll overflow-x-hidden whitespace-pre-wrap break-all [overflow-wrap:anywhere] bg-white px-3 py-2 pr-5 text-[13px] leading-6 text-[#111827] outline-none [&_ul]:list-disc [&_ul]:pl-5 [&_li]:my-0.5"
+                className="program-table-scroll max-h-[201px] min-h-[201px] select-text overflow-y-scroll overflow-x-hidden whitespace-pre-wrap break-all wrap-anywhere bg-white px-3 py-2 pr-5 text-[13px] leading-6 text-[#111827] outline-none [&_ul]:list-disc [&_ul]:pl-5 [&_li]:my-0.5"
               />
 
             </div>

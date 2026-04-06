@@ -1,7 +1,6 @@
 /**
  * Master-code tab / activity-code `type` values (tenant `master-codes.name`).
  * Backend Nest may still call this `ActivityCodeTypeEnum`; on the frontend this is master-code domain.
- * Erasable const object — safe with `erasableSyntaxOnly`.
  */
 export const MasterCodeTypeEnum = {
   FFP: "FFP",

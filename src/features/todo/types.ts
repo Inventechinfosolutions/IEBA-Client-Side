@@ -1,6 +1,6 @@
 import { z } from "zod"
 
-import { TodoStatusEnum } from "./enums/todo-status.enum"
+import { TodoStatusEnum } from "./enums/todoStatus"
 import { todoFormSchema } from "./schemas"
 
 export type TodoFormMode = "add" | "edit"
@@ -55,6 +55,7 @@ export type UpdateTodoInput = {
 export type TodoFormModalProps = {
   open: boolean
   mode: TodoFormMode
+  todoId?: string
   initialValues: TodoFormValues
   isSubmitting?: boolean
   onOpenChange: (open: boolean) => void

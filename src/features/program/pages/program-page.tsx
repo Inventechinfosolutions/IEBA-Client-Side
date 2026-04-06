@@ -98,7 +98,7 @@ export function ProgramPage() {
     position: "top-center" as const,
     icon: (
       <span className="inline-flex size-4 items-center justify-center rounded-full bg-[#22c55e] text-white">
-        <Check className="size-3 stroke-[3]" />
+        <Check className="size-3 stroke-3" />
       </span>
     ),
     className:

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useMemo } from "react"
 import { Check } from "lucide-react"
 import { toast } from "sonner"
 
@@ -6,18 +6,11 @@ import { TodoFormModal } from "../components/TodoFormModal"
 import { TodoTable } from "../components/TodoTable"
 import { TodoToolbar } from "../components/TodoToolbar"
 import { useTodoModule } from "../hooks/useTodoModule"
-import { apiGetTodoById } from "../api"
-import { TodoStatusEnum } from "../enums/todo-status.enum"
-import type { TodoFormMode, TodoFormValues, TodoRow } from "../types"
+import { useTodoUI } from "../hooks/useTodoUi"
+import type { TodoFormValues } from "../types"
 
 const page = 1
 const pageSize = 1000
-
-const emptyFormValues: TodoFormValues = {
-  title: "",
-  description: "",
-  status: TodoStatusEnum.NEW,
-}
 
 export function TodoPage() {
   const getToastOptions = () => {
@@ -29,7 +22,7 @@ export function TodoPage() {
           className="inline-flex size-4 items-center justify-center rounded-full text-white"
           style={{ backgroundColor: bg }}
         >
-          <Check className="size-3 stroke-[3]" />
+          <Check className="size-3 stroke-3" />
         </span>
       ),
       className:
@@ -37,68 +30,27 @@ export function TodoPage() {
     }
   }
 
-  const [modalOpen, setModalOpen] = useState(false)
-  const [modalMode, setModalMode] = useState<TodoFormMode>("add")
-  const [selectedRow, setSelectedRow] = useState<TodoRow | null>(null)
-  const [modalSessionId, setModalSessionId] = useState(0)
-  const [isEditDetailLoading, setIsEditDetailLoading] = useState(false)
-  const [titleSortState, setTitleSortState] = useState<"none" | "asc" | "desc">(
-    "none"
-  )
-
+  const ui = useTodoUI()
   const todoModule = useTodoModule({ page, pageSize })
-  const isTableLoading =
-    todoModule.isLoading || todoModule.isCreating || todoModule.isUpdating || isEditDetailLoading
+
+  const isTableLoading = todoModule.isLoading || todoModule.isCreating || todoModule.isUpdating
   const rows = useMemo(() => {
-    if (titleSortState === "none") return todoModule.rows
+    if (ui.titleSortState === "none") return todoModule.rows
 
     return [...todoModule.rows].sort((a, b) => {
       const compare = a.title.localeCompare(b.title)
-      return titleSortState === "asc" ? compare : -compare
+      return ui.titleSortState === "asc" ? compare : -compare
     })
-  }, [titleSortState, todoModule.rows])
-
-  const modalInitialValues = useMemo<TodoFormValues>(() => {
-    if (modalMode === "edit" && selectedRow) {
-      return {
-        title: selectedRow.title,
-        description: selectedRow.description,
-        status: selectedRow.status,
-      }
-    }
-    return emptyFormValues
-  }, [modalMode, selectedRow])
-
-  const handleAddTodo = () => {
-    setModalMode("add")
-    setSelectedRow(null)
-    setModalSessionId((prev) => prev + 1)
-    setModalOpen(true)
-  }
-
-  const handleEditRow = async (row: TodoRow) => {
-    try {
-      setIsEditDetailLoading(true)
-      const fresh = await apiGetTodoById(row.id)
-      setModalMode("edit")
-      setSelectedRow(fresh)
-      setModalSessionId((prev) => prev + 1)
-      setModalOpen(true)
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed to load To Do")
-    } finally {
-      setIsEditDetailLoading(false)
-    }
-  }
+  }, [ui.titleSortState, todoModule.rows])
 
   const handleSaveForm = (values: TodoFormValues) => {
-    if (modalMode === "edit" && selectedRow) {
+    if (ui.modalMode === "edit" && ui.selectedRow) {
       todoModule.updateTodo(
-        { id: selectedRow.id, values },
+        { id: ui.selectedRow.id, values },
         {
           onSuccess: () => {
             toast.success("To Do updated successfully", getToastOptions())
-            setModalOpen(false)
+            ui.setModalOpen(false)
           },
           onError: (error) => toast.error(error.message),
         }
@@ -111,7 +63,7 @@ export function TodoPage() {
       {
         onSuccess: () => {
           toast.success("To Do created successfully", getToastOptions())
-          setModalOpen(false)
+          ui.setModalOpen(false)
         },
         onError: (error) => toast.error(error.message),
       }
@@ -126,25 +78,22 @@ export function TodoPage() {
         "--primary": "#6C5DD3",
       } as React.CSSProperties}
     >
-      <TodoToolbar onAddTodo={handleAddTodo} />
+      <TodoToolbar onAddTodo={ui.openAddModal} />
       <TodoTable
         rows={rows}
         isLoading={isTableLoading}
-        titleSortState={titleSortState}
-        onToggleTitleSort={() => {
-          setTitleSortState((prev) =>
-            prev === "none" ? "asc" : prev === "asc" ? "desc" : "none"
-          )
-        }}
-        onEditRow={handleEditRow}
+        titleSortState={ui.titleSortState}
+        onToggleTitleSort={ui.toggleTitleSort}
+        onEditRow={ui.openEditModal}
       />
       <TodoFormModal
-        key={modalSessionId}
-        open={modalOpen}
-        mode={modalMode}
-        initialValues={modalInitialValues}
+        key={ui.modalSessionId}
+        open={ui.modalOpen}
+        mode={ui.modalMode}
+        todoId={ui.selectedRow?.id}
+        initialValues={ui.modalInitialValues}
         isSubmitting={todoModule.isCreating || todoModule.isUpdating}
-        onOpenChange={setModalOpen}
+        onOpenChange={ui.setModalOpen}
         onSave={handleSaveForm}
       />
     </section>

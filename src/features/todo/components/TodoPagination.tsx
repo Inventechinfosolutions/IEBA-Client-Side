@@ -28,7 +28,7 @@ export function TodoPagination({
                 href="#"
                 size="icon"
                 aria-disabled={currentPage === 1}
-                className="inline-flex size-6 items-center justify-center rounded border border-transparent text-[#8f93a1] no-underline hover:bg-[#f5f5f8] data-[active=true]:border-transparent data-[active=true]:bg-transparent data-[active=true]:text-[#8f93a1] data-[active=true]:font-normal [&[aria-disabled=true]]:pointer-events-none [&[aria-disabled=true]]:opacity-40"
+                className="inline-flex size-6 items-center justify-center rounded border border-transparent text-[#8f93a1] no-underline hover:bg-[#f5f5f8] data-[active=true]:border-transparent data-[active=true]:bg-transparent data-[active=true]:text-[#8f93a1] data-[active=true]:font-normal aria-disabled:pointer-events-none aria-disabled:opacity-40"
                 onClick={(event) => {
                   event.preventDefault()
                   if (currentPage === 1) return
@@ -63,7 +63,7 @@ export function TodoPagination({
                 href="#"
                 size="icon"
                 aria-disabled={currentPage === totalPages}
-                className="inline-flex size-6 items-center justify-center rounded border border-transparent text-[#8f93a1] no-underline hover:bg-[#f5f5f8] data-[active=true]:border-transparent data-[active=true]:bg-transparent data-[active=true]:text-[#8f93a1] data-[active=true]:font-normal [&[aria-disabled=true]]:pointer-events-none [&[aria-disabled=true]]:opacity-40"
+                className="inline-flex size-6 items-center justify-center rounded border border-transparent text-[#8f93a1] no-underline hover:bg-[#f5f5f8] data-[active=true]:border-transparent data-[active=true]:bg-transparent data-[active=true]:text-[#8f93a1] data-[active=true]:font-normal aria-disabled:pointer-events-none aria-disabled:opacity-40"
                 onClick={(event) => {
                   event.preventDefault()
                   if (currentPage === totalPages) return
