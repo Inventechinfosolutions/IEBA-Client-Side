@@ -1,5 +1,20 @@
+import { parseMultiSelectStoredValues } from "@/components/ui/multi-select-dropdown"
+
 import type { UserContactItemPayload, UserDetailsDto, UserModuleFormValues } from "../types"
 import { normalizePhoneForFormDisplay, phoneDigitsOnly } from "../add-employee/schemas"
+
+/** Bridge `number[]` form state ↔ `MultiSelectDropdown` comma-separated numeric tokens. */
+export function jobClassificationIdsToMultiSelectString(ids: readonly number[] | undefined): string {
+  const unique = [...new Set((ids ?? []).filter((n) => Number.isInteger(n) && n >= 1))].sort((a, b) => a - b)
+  return unique.join(", ")
+}
+
+export function multiSelectStringToJobClassificationIds(raw: string): number[] {
+  const parsed = parseMultiSelectStoredValues(raw)
+    .map((s) => Number.parseInt(s, 10))
+    .filter((n) => Number.isInteger(n) && n >= 1)
+  return [...new Set(parsed)].sort((a, b) => a - b)
+}
 
 /** Coerces form/API values into a positive integer `locationId` for create/update DTOs. */
 export function normalizeLocationId(raw: unknown): number | undefined {
@@ -131,7 +146,13 @@ export function mergeUserDetailsIntoFormValues(
       phoneFromUserContacts(details) ?? phoneFromEmergency(details) ?? previous.phone,
     loginId: login,
     emailAddress: login,
-    jobClassification: details.positionName?.trim() ?? previous.jobClassification,
+    positionNo: details.positionName?.trim() ?? previous.positionNo,
+    jobClassificationIds:
+      details.jobClassificationIds !== undefined
+        ? [...new Set(details.jobClassificationIds.filter((n) => Number.isInteger(n) && n >= 1))].sort(
+            (a, b) => a - b,
+          )
+        : previous.jobClassificationIds,
     claimingUnit: claiming,
     tsMinDay: details.tsmins != null ? String(details.tsmins) : previous.tsMinDay,
     spmp: typeof details.spmp === "boolean" ? details.spmp : previous.spmp,

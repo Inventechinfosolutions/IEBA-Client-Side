@@ -35,7 +35,7 @@ const emptyFormValues: UserModuleFormValues = {
   password: "",
   confirmPassword: "",
   emailAddress: "",
-  jobClassification: "",
+  jobClassificationIds: [],
   jobDutyStatement: "",
   claimingUnit: "",
   spmp: false,
@@ -116,7 +116,7 @@ export function UserModulePage() {
       confirmPassword: "",
       emailAddress:
         (selectedRow.loginId ?? selectedRow.emailAddress ?? "").trim(),
-      jobClassification: selectedRow.jobClassification ?? "",
+      jobClassificationIds: [],
       jobDutyStatement: "",
       claimingUnit: selectedRow.claimingUnit ?? selectedRow.department,
       spmp: selectedRow.spmp,

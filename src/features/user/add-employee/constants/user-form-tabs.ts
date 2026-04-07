@@ -12,7 +12,7 @@ export const addEmployeeTabFieldKeys: Record<
     "loginId",
     "password",
     "confirmPassword",
-    "jobClassification",
+    "jobClassificationIds",
     "claimingUnit",
   ],
   security: ["roleAssignments", "supervisorApportioning", "clientAdmin"],

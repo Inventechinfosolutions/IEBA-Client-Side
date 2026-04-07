@@ -79,7 +79,10 @@ const userModuleFormFieldsSchema = z.object({
     }),
   loginId: z.string().trim().min(1, "Login Id can't be empty"),
   emailAddress: z.string().trim().optional().or(z.literal("")),
-  jobClassification: z.string().trim().min(1, "Job Classification can't be empty"),
+  /** Stored in `userjob` as one row per id; synced on create/update. */
+  jobClassificationIds: z
+    .array(z.number().int().positive())
+    .min(1, "Job Classification can't be empty"),
   jobDutyStatement: z.string().trim().optional(),
   claimingUnit: z.string().trim().min(1, "Claiming Unit can't be empty"),
   spmp: z.boolean(),

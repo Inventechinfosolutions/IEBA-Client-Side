@@ -84,7 +84,7 @@ export function useAddEmployeeForm({ mode, initialValues, onSave }: UseAddEmploy
         "lastName",
         "phone",
         "loginId",
-        "jobClassification",
+        "jobClassificationIds",
         "claimingUnit",
       ]
     }

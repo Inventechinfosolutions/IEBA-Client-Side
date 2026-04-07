@@ -38,7 +38,6 @@ export type UserModuleRow = {
   loginId?: string
   password?: string
   emailAddress?: string
-  jobClassification?: string
   claimingUnit?: string
   multilingual?: boolean
   allowMultiCodes?: boolean
@@ -142,6 +141,7 @@ export type CreateUserRequestDto = {
   lastName: string
   employeeId: string
   positionName?: string
+  jobClassificationIds?: number[]
   locationId?: number
   active?: boolean
   pki?: boolean
@@ -174,6 +174,7 @@ export type UpdateUserRequestDto = {
   primarySupervisorId?: string
   backupSupervisorId?: string
   contacts?: UserContactItemPayload[]
+  jobClassificationIds?: number[]
 }
 
 export type CreateUserResponseDto = {
@@ -196,6 +197,7 @@ export type UserDetailsDepartmentRoleDto = {
 export type UserDetailsDto = {
   id: string
   positionName?: string | null
+  jobClassificationIds?: number[]
   employeeId?: string | null
   firstName: string
   lastName: string

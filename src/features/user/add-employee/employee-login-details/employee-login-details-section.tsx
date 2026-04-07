@@ -11,6 +11,10 @@ import {
 import { SingleSelectDropdown, type SingleSelectOption } from "@/components/ui/dropdown"
 
 import type { UserModuleFormValues, EmployeeLoginDetailsSectionProps } from "../types"
+import {
+  jobClassificationIdsToMultiSelectString,
+  multiSelectStringToJobClassificationIds,
+} from "../../utility/mapUserDetailsToForm"
 
 import {
   useGetAddEmployeeJobClassifications,
@@ -338,28 +342,44 @@ export function EmployeeLoginDetailsSection({ isEditMode }: EmployeeLoginDetails
         <div>
           <label className={labelClassName}>*Job Classification</label>
           {jobClassificationsQuery.isError ? (
-            <Input
-              {...register("jobClassification")}
-              className={inputClassName}
-              placeholder="Job classification (manual entry)"
+            <Controller
+              name="jobClassificationIds"
+              control={control}
+              render={({ field }) => (
+                <Input
+                  className={inputClassName}
+                  placeholder="Job classification ids (comma-separated, e.g. 1, 2)"
+                  value={jobClassificationIdsToMultiSelectString(field.value)}
+                  onChange={(e) =>
+                    field.onChange(multiSelectStringToJobClassificationIds(e.target.value))
+                  }
+                  onBlur={field.onBlur}
+                />
+              )}
             />
           ) : (
             <Controller
-              name="jobClassification"
+              name="jobClassificationIds"
               control={control}
               render={({ field }) => {
                 const rows = jobClassificationsQuery.data ?? []
-                const tokens = parseMultiSelectStoredValues(field.value ?? "")
-                const rowNames = new Set(rows.map((r) => r.name))
-                const orphanTokens = [...new Set(tokens.filter((t) => !rowNames.has(t)))]
+                const selectedIds = new Set(field.value ?? [])
+                const rowById = new Map(rows.map((r) => [r.id, r]))
+                const orphanIds = [...selectedIds].filter((id) => !rowById.has(id))
                 const options = [
-                  ...rows.map((j) => ({ value: j.name, label: j.name })),
-                  ...orphanTokens.map((t) => ({ value: t, label: t })),
+                  ...rows.map((j) => ({
+                    value: String(j.id),
+                    label: j.name,
+                  })),
+                  ...orphanIds.map((id) => ({
+                    value: String(id),
+                    label: `Id ${id}`,
+                  })),
                 ]
                 return (
                   <MultiSelectDropdown
-                    value={field.value ?? ""}
-                    onChange={field.onChange}
+                    value={jobClassificationIdsToMultiSelectString(field.value)}
+                    onChange={(s) => field.onChange(multiSelectStringToJobClassificationIds(s))}
                     onBlur={field.onBlur}
                     placeholder="Select job classification"
                     options={options}
@@ -374,6 +394,11 @@ export function EmployeeLoginDetailsSection({ isEditMode }: EmployeeLoginDetails
               }}
             />
           )}
+          {errors.jobClassificationIds?.message ? (
+            <p className="mt-1 text-[11px] text-red-600" role="alert">
+              {String(errors.jobClassificationIds.message)}
+            </p>
+          ) : null}
         </div>
         <div>
           <label className={labelClassName}>Job Duty Statement</label>
