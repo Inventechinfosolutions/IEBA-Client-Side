@@ -24,6 +24,7 @@ import { DepartmentPage } from "@/features/department"
 import { masterCodeKeys } from "@/features/master-code/keys"
 import { programKeys, programActivityRelationKeys } from "@/features/program/keys"
 import { todoKeys } from "@/features/todo/keys"
+import { leaveApprovalKeys } from "@/features/leave-approval/keys"
 import { userModuleKeys } from "@/features/user/keys"
 
 /** Inject `queryClient` from `main.tsx`: importing `@/main` here would be circular, but the rest of the app still uses the same instance via `import { queryClient } from "@/main"`. */
@@ -101,7 +102,14 @@ export function createAppRouter(queryClient: QueryClient) {
             return null
           },
         },
-        { path: "leave-approval", element: <LeaveApprovalPage /> },
+        {
+          path: "leave-approval",
+          element: <LeaveApprovalPage />,
+          loader: async () => {
+            await queryClient.invalidateQueries({ queryKey: leaveApprovalKeys.lists() })
+            return null
+          },
+        },
         { path: "users", element: <UsersPage /> },
         { path: "users/:id", element: <UserPage /> },
         { path: "department-role", element: <DepartmentRolePage /> },

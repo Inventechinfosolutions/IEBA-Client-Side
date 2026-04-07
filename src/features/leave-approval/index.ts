@@ -1,2 +1,10 @@
 export { LeaveApprovalPage } from "./pages/LeaveApprovalPage"
+export { LeaveApprovalTable } from "./components/LeaveApprovalTable"
+export { LeaveApprovalToolbar } from "./components/LeaveApprovalToolbar"
+export { LeaveApprovalCommentsModal } from "./components/LeaveApprovalCommentsModal"
+export { useLeaveApprovals } from "./hooks/useLeaveApprovals"
+export { useGetLeaveApprovals } from "./queries/getLeaveApprovals"
+export { useUpdateLeaveApproval } from "./mutations/updateLeaveApproval"
+export { leaveApprovalKeys } from "./keys"
+export type { LeaveApprovalRow } from "./types"
 
