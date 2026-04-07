@@ -14,18 +14,16 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 
-import { DEPARTMENTS, MOCK_ACTIVITIES_BY_DEPARTMENT } from "../queries/getCostPools"
-import type { CostPoolUpsertDialogProps, Department } from "../types"
+import { CostPoolUpsertMode } from "../enums/cost-pool.enum"
+import type { CostPoolUpsertDialogProps, CostPoolVisualCheckboxProps } from "../types"
 
 function renderActivityName(value: string) {
-  const end = value.indexOf(")")
-  if (value.startsWith("(") && end > 0) {
-    const code = value.slice(0, end + 1)
-    const rest = value.slice(end + 1)
+  const match = value.match(/^\(([^)]*)\)(.*)$/)
+  if (match) {
     return (
       <span className="whitespace-pre-wrap break-words">
-        <span className="font-semibold text-[#6C5DD3]">{code}</span>
-        <span className="font-semibold text-[#111827]">{rest}</span>
+        <span className="font-semibold text-[#6C5DD3]">({match[1]})</span>
+        <span className="font-semibold text-[#111827]">{match[2]}</span>
       </span>
     )
   }
@@ -33,7 +31,7 @@ function renderActivityName(value: string) {
   return <span className="font-semibold text-[#111827]">{value}</span>
 }
 
-function VisualCheckbox({ checked }: { checked: boolean }) {
+function VisualCheckbox({ checked }: CostPoolVisualCheckboxProps) {
   return (
     <span
       aria-hidden="true"
@@ -53,29 +51,33 @@ export function CostPoolAddPage({
   onSubmit,
   onClose,
   mode,
+  departmentOptions,
+  departmentsLoading = false,
+  activityRows,
+  activitiesLoading = false,
 }: CostPoolUpsertDialogProps) {
   const [unassignedSearch, setUnassignedSearch] = useState("")
   const [assignedSearch, setAssignedSearch] = useState("")
-  const [selectedUnassignedIds, setSelectedUnassignedIds] = useState<string[]>([])
-  const [selectedAssignedIds, setSelectedAssignedIds] = useState<string[]>([])
+  const [selectedUnassignedIds, setSelectedUnassignedIds] = useState<number[]>([])
+  const [selectedAssignedIds, setSelectedAssignedIds] = useState<number[]>([])
 
-  const assignedIds = form.watch("assignedActivityIds")
-  const department = form.watch("department") as Department | ""
-  const hasDepartment = Boolean(department)
+  const assignedIds = form.watch("assignedActivityDepartmentIds")
+  const departmentId = form.watch("departmentId")
+  const hasDepartment = departmentId > 0
   const departmentCount = hasDepartment ? 1 : 0
 
-  const availableActivities = useMemo(() => {
-    if (!department) return []
-    return MOCK_ACTIVITIES_BY_DEPARTMENT[department] ?? []
-  }, [department])
+  const departmentLabel = useMemo(() => {
+    if (!hasDepartment) return ""
+    return departmentOptions.find((d) => Number(d.id) === departmentId)?.name ?? ""
+  }, [departmentOptions, departmentId, hasDepartment])
 
   const assigned = useMemo(
-    () => availableActivities.filter((a) => assignedIds.includes(a.id)),
-    [availableActivities, assignedIds]
+    () => activityRows.filter((a) => assignedIds.includes(a.activityDepartmentId)),
+    [activityRows, assignedIds],
   )
   const unassigned = useMemo(
-    () => availableActivities.filter((a) => !assignedIds.includes(a.id)),
-    [availableActivities, assignedIds]
+    () => activityRows.filter((a) => !assignedIds.includes(a.activityDepartmentId)),
+    [activityRows, assignedIds],
   )
 
   const showUnassignedBody = hasDepartment && unassigned.length > 0
@@ -83,29 +85,29 @@ export function CostPoolAddPage({
   const filteredUnassigned = useMemo(() => {
     const q = unassignedSearch.trim().toLowerCase()
     if (!q) return unassigned
-    return unassigned.filter((a) => a.name.toLowerCase().includes(q))
+    return unassigned.filter((a) => a.displayName.toLowerCase().includes(q))
   }, [unassigned, unassignedSearch])
 
   const filteredAssigned = useMemo(() => {
     const q = assignedSearch.trim().toLowerCase()
     if (!q) return assigned
-    return assigned.filter((a) => a.name.toLowerCase().includes(q))
+    return assigned.filter((a) => a.displayName.toLowerCase().includes(q))
   }, [assigned, assignedSearch])
 
   const allUnassignedSelected =
     filteredUnassigned.length > 0 &&
-    filteredUnassigned.every((a) => selectedUnassignedIds.includes(a.id))
+    filteredUnassigned.every((a) => selectedUnassignedIds.includes(a.activityDepartmentId))
   const allAssignedSelected =
     filteredAssigned.length > 0 &&
-    filteredAssigned.every((a) => selectedAssignedIds.includes(a.id))
+    filteredAssigned.every((a) => selectedAssignedIds.includes(a.activityDepartmentId))
 
   const moveToAssigned = () => {
     if (selectedUnassignedIds.length === 0) return
-    const allowed = new Set(availableActivities.map((a) => a.id))
+    const allowed = new Set(activityRows.map((a) => a.activityDepartmentId))
     const nextToAdd = selectedUnassignedIds.filter((id) => allowed.has(id))
     form.setValue(
-      "assignedActivityIds",
-      Array.from(new Set([...assignedIds, ...nextToAdd]))
+      "assignedActivityDepartmentIds",
+      Array.from(new Set([...assignedIds, ...nextToAdd])),
     )
     setSelectedUnassignedIds([])
   }
@@ -113,8 +115,8 @@ export function CostPoolAddPage({
   const moveToUnassigned = () => {
     if (selectedAssignedIds.length === 0) return
     form.setValue(
-      "assignedActivityIds",
-      assignedIds.filter((id) => !selectedAssignedIds.includes(id))
+      "assignedActivityDepartmentIds",
+      assignedIds.filter((id) => !selectedAssignedIds.includes(id)),
     )
     setSelectedAssignedIds([])
   }
@@ -123,7 +125,7 @@ export function CostPoolAddPage({
     <div className="w-[1150px] max-w-[calc(100vw-2rem)] rounded-[10px] bg-white px-11 py-7 shadow-[0_0_20px_0_#0000001a]">
       <div className="space-y-3">
         <h2 className="text-center text-[25px] text-[#111827]">
-          {mode === "edit" ? "Edit Cost Pool" : "Add Cost Pool"}
+          {mode === CostPoolUpsertMode.EDIT ? "Edit Cost Pool" : "Add Cost Pool"}
         </h2>
 
         <div className="flex items-center justify-end gap-2">
@@ -149,16 +151,17 @@ export function CostPoolAddPage({
           <div className="col-span-5 space-y-2">
             <Label className="text-[13px] text-[#111827]">Department</Label>
             <Select
-              value={form.watch("department") || undefined}
+              disabled={departmentsLoading}
+              value={departmentId > 0 ? String(departmentId) : ""}
               onValueChange={(value) => {
-                form.setValue("department", value)
-                form.setValue("assignedActivityIds", [])
+                form.setValue("departmentId", Number(value), { shouldValidate: true })
+                form.setValue("assignedActivityDepartmentIds", [])
                 setSelectedUnassignedIds([])
                 setSelectedAssignedIds([])
               }}
             >
               <SelectTrigger className="!h-14 w-full rounded-[8px] border-[#E5E7EB] bg-white">
-                <SelectValue placeholder="Select department" />
+                <SelectValue placeholder={departmentsLoading ? "Loading…" : "Select department"} />
               </SelectTrigger>
               <SelectContent
                 position="popper"
@@ -167,20 +170,20 @@ export function CostPoolAddPage({
                 align="start"
                 className="w-[--radix-select-trigger-width] rounded-[12px] border border-[#EEF0F5] p-2 shadow-[0_10px_30px_rgba(17,24,39,0.12)]"
               >
-                {DEPARTMENTS.map((d) => (
+                {departmentOptions.map((d) => (
                   <SelectItem
-                    key={d}
-                    value={d}
+                    key={d.id}
+                    value={String(d.id)}
                     className="rounded-[10px] px-3 py-2.5 text-[14px]  text-[#111827] focus:bg-[#E6F4FF] focus:text-[#111827] data-[state=checked]:bg-[#E6F4FF] data-[state=checked]:font-semibold [&>span:first-child]:hidden"
                   >
-                    {d}
+                    {d.name}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            {form.formState.errors.department?.message ? (
+            {form.formState.errors.departmentId?.message ? (
               <p className="text-sm text-destructive">
-                {String(form.formState.errors.department.message)}
+                {String(form.formState.errors.departmentId.message)}
               </p>
             ) : null}
           </div>
@@ -224,7 +227,7 @@ export function CostPoolAddPage({
                     className="inline-flex items-center gap-2"
                     onClick={() =>
                       setSelectedUnassignedIds(
-                        allUnassignedSelected ? [] : filteredUnassigned.map((a) => a.id)
+                        allUnassignedSelected ? [] : filteredUnassigned.map((a) => a.activityDepartmentId),
                       )
                     }
                   >
@@ -245,16 +248,20 @@ export function CostPoolAddPage({
                   className="h-12 rounded-[8px] border-[#E5E7EB]"
                 />
 
-                {showUnassignedBody ? (
+                {activitiesLoading && hasDepartment ? (
+                  <div className="mt-3 flex h-[339px] items-center justify-center text-sm text-muted-foreground">
+                    Loading activities…
+                  </div>
+                ) : showUnassignedBody ? (
                   <div className="mt-3">
                     <div className="flex h-9 items-center justify-between rounded-[8px] border border-[#E5E7EB] bg-[#F3F4F6] px-3 text-[12px] font-semibold text-[#111827]">
-                      <span>{department}</span>
+                      <span>{departmentLabel}</span>
                       <button
                         type="button"
                         className="inline-flex cursor-pointer"
                         onClick={() =>
                           setSelectedUnassignedIds(
-                            allUnassignedSelected ? [] : filteredUnassigned.map((a) => a.id)
+                            allUnassignedSelected ? [] : filteredUnassigned.map((a) => a.activityDepartmentId),
                           )
                         }
                       >
@@ -270,7 +277,7 @@ export function CostPoolAddPage({
                         className="inline-flex cursor-pointer"
                         onClick={() =>
                           setSelectedUnassignedIds(
-                            allUnassignedSelected ? [] : filteredUnassigned.map((a) => a.id)
+                            allUnassignedSelected ? [] : filteredUnassigned.map((a) => a.activityDepartmentId),
                           )
                         }
                       >
@@ -288,44 +295,44 @@ export function CostPoolAddPage({
                           className="pointer-events-none absolute left-[18px] top-[-12px] bottom-0 w-px bg-[#9CA3AF]"
                         />
                         <div>
-                        {filteredUnassigned.map((a) => {
-                          const checked = selectedUnassignedIds.includes(a.id)
-                          return (
-                          <div
-                            key={a.id}
-                            role="button"
-                            tabIndex={0}
-                            className="flex w-full cursor-pointer items-center justify-between gap-3 px-3 py-3 text-left text-[12px] leading-4"
-                            onClick={() =>
-                              setSelectedUnassignedIds((prev) =>
-                                prev.includes(a.id)
-                                  ? prev.filter((x) => x !== a.id)
-                                  : [...prev, a.id]
-                              )
-                            }
-                            onKeyDown={(e) => {
-                              if (e.key !== "Enter" && e.key !== " ") return
-                              e.preventDefault()
-                              setSelectedUnassignedIds((prev) =>
-                                prev.includes(a.id)
-                                  ? prev.filter((x) => x !== a.id)
-                                  : [...prev, a.id]
-                              )
-                            }}
-                          >
-                            <div className="min-w-0 flex-1 pr-2">
-                              <div className="relative pl-7">
-                                <span
-                                  aria-hidden="true"
-                                  className="pointer-events-none absolute left-[18px] top-1/2 w-3 -translate-y-1/2 border-t border-[#9CA3AF]"
-                                />
-                                {renderActivityName(a.name)}
+                          {filteredUnassigned.map((a) => {
+                            const checked = selectedUnassignedIds.includes(a.activityDepartmentId)
+                            return (
+                              <div
+                                key={a.activityDepartmentId}
+                                role="button"
+                                tabIndex={0}
+                                className="flex w-full cursor-pointer items-center justify-between gap-3 px-3 py-3 text-left text-[12px] leading-4"
+                                onClick={() =>
+                                  setSelectedUnassignedIds((prev) =>
+                                    prev.includes(a.activityDepartmentId)
+                                      ? prev.filter((x) => x !== a.activityDepartmentId)
+                                      : [...prev, a.activityDepartmentId],
+                                  )
+                                }
+                                onKeyDown={(e) => {
+                                  if (e.key !== "Enter" && e.key !== " ") return
+                                  e.preventDefault()
+                                  setSelectedUnassignedIds((prev) =>
+                                    prev.includes(a.activityDepartmentId)
+                                      ? prev.filter((x) => x !== a.activityDepartmentId)
+                                      : [...prev, a.activityDepartmentId],
+                                  )
+                                }}
+                              >
+                                <div className="min-w-0 flex-1 pr-2">
+                                  <div className="relative pl-7">
+                                    <span
+                                      aria-hidden="true"
+                                      className="pointer-events-none absolute left-[18px] top-1/2 w-3 -translate-y-1/2 border-t border-[#9CA3AF]"
+                                    />
+                                    {renderActivityName(a.displayName)}
+                                  </div>
+                                </div>
+                                <VisualCheckbox checked={checked} />
                               </div>
-                            </div>
-                            <VisualCheckbox checked={checked} />
-                          </div>
-                          )
-                        })}
+                            )
+                          })}
                         </div>
                       </div>
                     </ScrollArea>
@@ -366,7 +373,7 @@ export function CostPoolAddPage({
                     className="inline-flex items-center gap-2"
                     onClick={() =>
                       setSelectedAssignedIds(
-                        allAssignedSelected ? [] : filteredAssigned.map((a) => a.id)
+                        allAssignedSelected ? [] : filteredAssigned.map((a) => a.activityDepartmentId),
                       )
                     }
                   >
@@ -387,16 +394,20 @@ export function CostPoolAddPage({
                   className="h-12 rounded-[8px] border-[#E5E7EB]"
                 />
 
-                {hasDepartment && assigned.length > 0 ? (
+                {activitiesLoading && hasDepartment ? (
+                  <div className="mt-3 flex h-[339px] items-center justify-center text-sm text-muted-foreground">
+                    Loading activities…
+                  </div>
+                ) : hasDepartment && assigned.length > 0 ? (
                   <div className="mt-3">
                     <div className="flex h-9 items-center justify-between rounded-[8px] border border-[#E5E7EB] bg-[#F3F4F6] px-3 text-[12px] font-semibold text-[#111827]">
-                      <span>{department}</span>
+                      <span>{departmentLabel}</span>
                       <button
                         type="button"
                         className="inline-flex cursor-pointer"
                         onClick={() =>
                           setSelectedAssignedIds(
-                            allAssignedSelected ? [] : filteredAssigned.map((a) => a.id)
+                            allAssignedSelected ? [] : filteredAssigned.map((a) => a.activityDepartmentId),
                           )
                         }
                       >
@@ -412,7 +423,7 @@ export function CostPoolAddPage({
                         className="inline-flex cursor-pointer"
                         onClick={() =>
                           setSelectedAssignedIds(
-                            allAssignedSelected ? [] : filteredAssigned.map((a) => a.id)
+                            allAssignedSelected ? [] : filteredAssigned.map((a) => a.activityDepartmentId),
                           )
                         }
                       >
@@ -430,44 +441,44 @@ export function CostPoolAddPage({
                           className="pointer-events-none absolute left-[18px] top-[-12px] bottom-0 w-px bg-[#9CA3AF]"
                         />
                         <div>
-                        {filteredAssigned.map((a) => {
-                          const checked = selectedAssignedIds.includes(a.id)
-                          return (
-                            <div
-                              key={a.id}
-                              role="button"
-                              tabIndex={0}
-                              className="flex w-full cursor-pointer items-center justify-between gap-3 px-3 py-3 text-left text-[12px] leading-4"
-                              onClick={() =>
-                                setSelectedAssignedIds((prev) =>
-                                  prev.includes(a.id)
-                                    ? prev.filter((x) => x !== a.id)
-                                    : [...prev, a.id]
-                                )
-                              }
-                              onKeyDown={(e) => {
-                                if (e.key !== "Enter" && e.key !== " ") return
-                                e.preventDefault()
-                                setSelectedAssignedIds((prev) =>
-                                  prev.includes(a.id)
-                                    ? prev.filter((x) => x !== a.id)
-                                    : [...prev, a.id]
-                                )
-                              }}
-                            >
-                              <div className="min-w-0 flex-1 pr-2">
-                                <div className="relative pl-7">
-                                  <span
-                                    aria-hidden="true"
-                                    className="pointer-events-none absolute left-[18px] top-1/2 w-3 -translate-y-1/2 border-t border-[#9CA3AF]"
-                                  />
-                                  {renderActivityName(a.name)}
+                          {filteredAssigned.map((a) => {
+                            const checked = selectedAssignedIds.includes(a.activityDepartmentId)
+                            return (
+                              <div
+                                key={a.activityDepartmentId}
+                                role="button"
+                                tabIndex={0}
+                                className="flex w-full cursor-pointer items-center justify-between gap-3 px-3 py-3 text-left text-[12px] leading-4"
+                                onClick={() =>
+                                  setSelectedAssignedIds((prev) =>
+                                    prev.includes(a.activityDepartmentId)
+                                      ? prev.filter((x) => x !== a.activityDepartmentId)
+                                      : [...prev, a.activityDepartmentId],
+                                  )
+                                }
+                                onKeyDown={(e) => {
+                                  if (e.key !== "Enter" && e.key !== " ") return
+                                  e.preventDefault()
+                                  setSelectedAssignedIds((prev) =>
+                                    prev.includes(a.activityDepartmentId)
+                                      ? prev.filter((x) => x !== a.activityDepartmentId)
+                                      : [...prev, a.activityDepartmentId],
+                                  )
+                                }}
+                              >
+                                <div className="min-w-0 flex-1 pr-2">
+                                  <div className="relative pl-7">
+                                    <span
+                                      aria-hidden="true"
+                                      className="pointer-events-none absolute left-[18px] top-1/2 w-3 -translate-y-1/2 border-t border-[#9CA3AF]"
+                                    />
+                                    {renderActivityName(a.displayName)}
+                                  </div>
                                 </div>
+                                <VisualCheckbox checked={checked} />
                               </div>
-                            <VisualCheckbox checked={checked} />
-                            </div>
-                          )
-                        })}
+                            )
+                          })}
                         </div>
                       </div>
                     </ScrollArea>
@@ -500,4 +511,3 @@ export function CostPoolAddPage({
     </div>
   )
 }
-

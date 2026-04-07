@@ -1,7 +1,8 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { PlusIcon, SearchIcon } from "lucide-react"
-import { useForm } from "react-hook-form"
 import { useMemo, useState } from "react"
+import { useForm } from "react-hook-form"
+import { useNavigate } from "react-router-dom"
 
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -37,18 +38,34 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { useGetDepartments } from "@/features/department/queries/getDepartments"
+import editIconImg from "@/assets/edit-icon.png"
+import statusCheckImg from "@/assets/status-check.png"
+
+import {
+  detailToUpsertFormValues,
+  mergeDetailActivitiesToPickRows,
+} from "../api/costPoolApi"
 import { CostPoolAddPage } from "./CostPoolAddPage"
+import { useCreateCostPool } from "../mutations/createCostPool"
+import { useUpdateCostPool } from "../mutations/updateCostPool"
+import { useCostPoolActivityPicklistQuery } from "../queries/getCostPoolActivityPicklist"
+import { useCostPoolDetailQuery } from "../queries/getCostPoolDetail"
 import {
   costPoolFilterDefaultValues,
   costPoolFilterFormSchema,
   costPoolUpsertDefaultValues,
   costPoolUpsertFormSchema,
 } from "../schemas"
+import { CostPoolUpsertMode } from "../enums/cost-pool.enum"
 import {
   COST_POOL_SORT_DIRECTION,
   COST_POOL_SORT_STATE,
 } from "../types"
 import type {
+  CostPoolActivityPickRow,
+  CostPoolDepartmentOption,
+  CostPoolDetailResDto,
   CostPoolRow,
   CostPoolFilterFormValues,
   CostPoolSortableColumn,
@@ -57,12 +74,181 @@ import type {
   CostPoolTableProps,
   CostPoolUpsertFormValues,
 } from "../types"
-import statusCheckImg from "@/assets/status-check.png"
-import editIconImg from "@/assets/edit-icon.png"
-import { useCreateCostPool } from "../mutations/createCostPool"
-import { useUpdateCostPool } from "../mutations/updateCostPool"
 
 const PAGE_SIZES = [10, 20, 30, 50] as const
+
+function CostPoolCreateDialogContent({
+  onClose,
+  onCreated,
+}: {
+  onClose: () => void
+  onCreated: () => void
+}) {
+  const departmentsQuery = useGetDepartments("active")
+  const departmentOptions = useMemo(
+    () =>
+      (departmentsQuery.data ?? []).map((d) => ({
+        id: d.id,
+        name: d.name,
+      })),
+    [departmentsQuery.data],
+  )
+
+  const form = useForm<CostPoolUpsertFormValues>({
+    resolver: zodResolver(costPoolUpsertFormSchema),
+    defaultValues: costPoolUpsertDefaultValues,
+    mode: "onChange",
+  })
+
+  const departmentId = form.watch("departmentId")
+  const picklist = useCostPoolActivityPicklistQuery(departmentId, {
+    enabled: departmentId > 0,
+  })
+
+  const activityRows = picklist.data ?? []
+  const createMutation = useCreateCostPool()
+
+  const submit = form.handleSubmit((values) => {
+    createMutation.mutate(
+      { values },
+      {
+        onSuccess: () => {
+          form.reset(costPoolUpsertDefaultValues)
+          onCreated()
+          onClose()
+        },
+      },
+    )
+  })
+
+  return (
+    <CostPoolAddPage
+      mode={CostPoolUpsertMode.ADD}
+      form={form}
+      onSubmit={() => void submit()}
+      onClose={onClose}
+      departmentOptions={departmentOptions}
+      departmentsLoading={departmentsQuery.isPending}
+      activityRows={activityRows}
+      activitiesLoading={picklist.isPending && departmentId > 0}
+    />
+  )
+}
+
+/**
+ * Mount only after GET /costpool/:id succeeds so `useForm` gets correct `defaultValues`.
+ * Using `useForm({ values })` above while toggling loading → form led to empty fields until remount.
+ */
+function CostPoolEditFormBody({
+  costPoolId,
+  detail,
+  activityRows,
+  activitiesLoading,
+  departmentOptions,
+  departmentsLoading,
+  onClose,
+  onUpdated,
+}: {
+  costPoolId: number
+  detail: CostPoolDetailResDto
+  activityRows: CostPoolActivityPickRow[]
+  activitiesLoading: boolean
+  departmentOptions: CostPoolDepartmentOption[]
+  departmentsLoading: boolean
+  onClose: () => void
+  onUpdated: () => void
+}) {
+  const form = useForm<CostPoolUpsertFormValues>({
+    resolver: zodResolver(costPoolUpsertFormSchema),
+    defaultValues: detailToUpsertFormValues(detail),
+  })
+
+  const updateMutation = useUpdateCostPool()
+
+  const submit = form.handleSubmit((values) => {
+    updateMutation.mutate(
+      { id: costPoolId, values },
+      {
+        onSuccess: () => {
+          onUpdated()
+          onClose()
+        },
+      },
+    )
+  })
+
+  return (
+    <CostPoolAddPage
+      mode={CostPoolUpsertMode.EDIT}
+      form={form}
+      onSubmit={() => void submit()}
+      onClose={onClose}
+      departmentOptions={departmentOptions}
+      departmentsLoading={departmentsLoading}
+      activityRows={activityRows}
+      activitiesLoading={activitiesLoading}
+    />
+  )
+}
+
+function CostPoolEditDialogContent({
+  costPoolId,
+  onClose,
+  onUpdated,
+}: {
+  costPoolId: number
+  onClose: () => void
+  onUpdated: () => void
+}) {
+  const detailQuery = useCostPoolDetailQuery(costPoolId, {
+    enabled: true,
+    refetchOnMountAlways: true,
+  })
+  const departmentsQuery = useGetDepartments("active")
+  const departmentOptions = useMemo(
+    () =>
+      (departmentsQuery.data ?? []).map((d) => ({
+        id: d.id,
+        name: d.name,
+      })),
+    [departmentsQuery.data],
+  )
+
+  const activityRows = useMemo(() => {
+    if (!detailQuery.data) return []
+    return mergeDetailActivitiesToPickRows(detailQuery.data)
+  }, [detailQuery.data])
+
+  if (detailQuery.isError) {
+    return (
+      <div className="flex min-h-[240px] w-full max-w-[1150px] items-center justify-center rounded-[10px] bg-white p-8 shadow-[0_0_20px_0_#0000001a]">
+        <span className="text-sm text-destructive">Could not load this cost pool.</span>
+      </div>
+    )
+  }
+
+  if (!detailQuery.data) {
+    return (
+      <div className="flex min-h-[240px] w-full max-w-[1150px] items-center justify-center rounded-[10px] bg-white p-8 shadow-[0_0_20px_0_#0000001a]">
+        <span className="text-sm text-muted-foreground">Loading cost pool…</span>
+      </div>
+    )
+  }
+
+  return (
+    <CostPoolEditFormBody
+      key={costPoolId}
+      costPoolId={costPoolId}
+      detail={detailQuery.data}
+      activityRows={activityRows}
+      activitiesLoading={detailQuery.isFetching}
+      departmentOptions={departmentOptions}
+      departmentsLoading={departmentsQuery.isPending}
+      onClose={onClose}
+      onUpdated={onUpdated}
+    />
+  )
+}
 
 export function CostPoolTable({
   rows,
@@ -75,22 +261,13 @@ export function CostPoolTable({
   onPageChange,
   onPageSizeChange,
 }: CostPoolTableProps) {
+  const navigate = useNavigate()
   const filterForm = useForm<CostPoolFilterFormValues>({
     resolver: zodResolver(costPoolFilterFormSchema),
     defaultValues: {
       ...costPoolFilterDefaultValues,
       ...filters,
     },
-  })
-
-  const addForm = useForm<CostPoolUpsertFormValues>({
-    resolver: zodResolver(costPoolUpsertFormSchema),
-    defaultValues: costPoolUpsertDefaultValues,
-  })
-
-  const editForm = useForm<CostPoolUpsertFormValues>({
-    resolver: zodResolver(costPoolUpsertFormSchema),
-    defaultValues: costPoolUpsertDefaultValues,
   })
 
   const showInactive = filterForm.watch("inactive")
@@ -107,24 +284,6 @@ export function CostPoolTable({
   const [openTooltipColumn, setOpenTooltipColumn] =
     useState<CostPoolSortableColumn | null>(null)
 
-  const createCostPool = useCreateCostPool()
-  const updateCostPool = useUpdateCostPool()
-
-  const handleAddSubmit = addForm.handleSubmit((values) => {
-    createCostPool.mutate({ values })
-    addForm.reset()
-    setAddOpen(false)
-    onPageChange(1)
-  })
-
-  const handleEditSubmit = editForm.handleSubmit((values) => {
-    if (!rowToEdit) return
-    updateCostPool.mutate({ id: rowToEdit.id, values })
-    editForm.reset()
-    setEditOpen(false)
-    setRowToEdit(null)
-  })
-
   const sortedRows = useMemo(() => {
     if (!sortBy || !sortDirection) return rows
     const direction = sortDirection === COST_POOL_SORT_DIRECTION.ASC ? 1 : -1
@@ -133,7 +292,7 @@ export function CostPoolTable({
         a[sortBy].localeCompare(b[sortBy], undefined, {
           sensitivity: "base",
           numeric: true,
-        }) * direction
+        }) * direction,
     )
   }, [rows, sortBy, sortDirection])
 
@@ -364,12 +523,6 @@ export function CostPoolTable({
                       className="text-[#6C5DD3] hover:bg-[#6C5DD3]/10"
                       onClick={() => {
                         setRowToEdit(row)
-                        editForm.reset({
-                          costPool: row.costPool,
-                          department: row.department,
-                          active: row.active,
-                          assignedActivityIds: row.assignedActivityIds,
-                        })
                         setEditOpen(true)
                       }}
                     >
@@ -458,20 +611,24 @@ export function CostPoolTable({
           className="max-h-[90vh] w-[1240px] max-w-[calc(100vw-2rem)] overflow-y-auto border-0 bg-transparent p-0 shadow-none outline-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden focus-visible:outline-none"
         >
           <div className="flex w-full justify-center">
-            <CostPoolAddPage
-              mode="add"
-              form={addForm}
-              onSubmit={handleAddSubmit}
-              onClose={() => {
-                addForm.reset()
-                setAddOpen(false)
+            <CostPoolCreateDialogContent
+              onClose={() => setAddOpen(false)}
+              onCreated={() => {
+                onPageChange(1)
+                navigate("/costpool", { replace: true })
               }}
             />
           </div>
         </DialogContent>
       </Dialog>
 
-      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+      <Dialog
+        open={editOpen}
+        onOpenChange={(open) => {
+          setEditOpen(open)
+          if (!open) setRowToEdit(null)
+        }}
+      >
         <DialogContent
           showClose={false}
           overlayClassName="bg-black/50"
@@ -479,15 +636,15 @@ export function CostPoolTable({
         >
           {rowToEdit ? (
             <div className="flex w-full justify-center">
-              <CostPoolAddPage
+              <CostPoolEditDialogContent
                 key={rowToEdit.id}
-                mode="edit"
-                form={editForm}
-                onSubmit={handleEditSubmit}
+                costPoolId={rowToEdit.id}
                 onClose={() => {
-                  editForm.reset()
                   setEditOpen(false)
                   setRowToEdit(null)
+                }}
+                onUpdated={() => {
+                  navigate("/costpool", { replace: true })
                 }}
               />
             </div>
