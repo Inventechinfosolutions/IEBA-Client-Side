@@ -195,7 +195,7 @@ export async function fetchAddEmployeeActivitiesCatalog(): Promise<AddEmployeeAc
     `/activities?${search.toString()}`
   )
   const payload = unwrapSuccess(res, "Failed to load activities")
-  return payload.data
+  return payload.data.filter(isActivityCatalogRow)
 }
 
 export async function fetchAddEmployeeDepartments(): Promise<AddEmployeeDepartmentOption[]> {

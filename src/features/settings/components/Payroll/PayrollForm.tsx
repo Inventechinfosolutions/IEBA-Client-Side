@@ -289,7 +289,7 @@ export function PayrollForm() {
             control={control}
             render={({ field }) => (
               <SingleSelectDropdown
-                value={field.value}
+                value={field.value ?? ""}
                 onChange={field.onChange}
                 onBlur={field.onBlur}
                 options={PAYROLL_BY_OPTIONS.map((opt) => ({ value: opt, label: opt }))}

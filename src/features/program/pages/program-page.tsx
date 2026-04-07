@@ -16,6 +16,7 @@ import { apiGetProgramRowById } from "../api"
 import { useGetProgramFormOptions } from "../queries/get-program-form-options"
 import { programFormSchema } from "../schemas"
 import type {
+  BudgetUnitTableHandle,
   ProgramFormModalHandle,
   ProgramFormMode,
   ProgramFormSection,
@@ -124,6 +125,7 @@ export function ProgramPage() {
   const [expandedPrograms, setExpandedPrograms] = useState<Record<string, boolean>>({})
   const [lastUpdatedBudgetRow, setLastUpdatedBudgetRow] = useState<ProgramRow | null>(null)
   const [lastUpdatedTimeStudyRow, setLastUpdatedTimeStudyRow] = useState<ProgramRow | null>(null)
+  const budgetUnitTableRef = useRef<BudgetUnitTableHandle | null>(null)
 
   const isSubProgramQuickAdd = modalMode === "add" && Boolean(selectedProgramForSubAdd)
 
@@ -356,6 +358,10 @@ export function ProgramPage() {
       if (updatedRow) {
         if (activeTab === "Budget Units") {
           setLastUpdatedBudgetRow(updatedRow)
+          const hl = updatedRow.hierarchyLevel
+          if (hl === 1 || hl === 2) {
+            budgetUnitTableRef.current?.patchBudgetProgramRow(updatedRow)
+          }
         } else if (activeTab === "Time Study programs") {
           setLastUpdatedTimeStudyRow(updatedRow)
         }
@@ -431,6 +437,7 @@ export function ProgramPage() {
             <div className="mb-5">
               {activeTab === "Budget Units" ? (
                 <BudgetUnitTable
+                  ref={budgetUnitTableRef}
                   rows={programModule.rows}
                   isLoading={isTableLoading}
                   onEditRow={handleEditRow}

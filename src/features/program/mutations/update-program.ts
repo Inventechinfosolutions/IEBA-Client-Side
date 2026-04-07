@@ -22,7 +22,9 @@ export function useUpdateProgram() {
           return {
             ...existing,
             items: existing.items.map((row) =>
-              row.id === updatedRow.id ? { ...row, ...updatedRow } : row
+              row.id === updatedRow.id && row.hierarchyLevel === updatedRow.hierarchyLevel
+                ? { ...row, ...updatedRow }
+                : row
             ),
           }
         }
