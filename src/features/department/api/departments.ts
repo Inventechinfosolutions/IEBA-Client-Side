@@ -1,5 +1,4 @@
 import { api } from "@/lib/api"
-import { DEPARTMENT_API_SEND_ADDRESS_IN_BODY } from "@/lib/config"
 import {
   type CreateDepartmentReqDto,
   type CreateDepartmentResponseDto,
@@ -17,6 +16,9 @@ import {
   type UpdateDepartmentReqDto,
 } from "../types"
 
+/** When false, address is omitted from create/update department request bodies. */
+const DEPARTMENT_API_SEND_ADDRESS_IN_BODY =
+  import.meta.env.VITE_DEPARTMENT_SEND_ADDRESS !== "false"
 
 function pickAddressFromObject(o: Record<string, unknown>): Department["address"] | null {
   const line1 =
