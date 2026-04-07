@@ -74,8 +74,8 @@ export function DepartmenRoleTable({
     1,
     Math.ceil(pagination.totalItems / pagination.pageSize)
   )
-  const start = (pagination.page - 1) * pagination.pageSize
-  const paginatedData = data.slice(start, start + pagination.pageSize)
+  /** Server returns one page per request; `data` is already the current page. */
+  const rows = data
 
   return (
     <div className="min-h-[360px] overflow-hidden rounded-[10px] border-[0.5px] border-[rgb(218,218,218)] bg-[rgb(255,255,255)]">
@@ -124,7 +124,7 @@ export function DepartmenRoleTable({
                 </TableCell>
               </TableRow>
             ))
-          ) : paginatedData.length === 0 ? (
+          ) : rows.length === 0 ? (
             <TableRow>
               <TableCell
                 colSpan={4}
@@ -134,7 +134,7 @@ export function DepartmenRoleTable({
               </TableCell>
             </TableRow>
           ) : (
-            paginatedData.map((row) => {
+            rows.map((row) => {
               const isExpanded = expandedIds.has(row.id)
               const hasChildren = row.children && row.children.length > 0
               return (
@@ -242,14 +242,14 @@ export function DepartmenRoleTable({
                                 <div className="flex w-[15%] min-w-0 items-center gap-2 pl-[1%] pr-2">
                                   <Checkbox
                                     checked={child.status === "active"}
-                                    disabled={!child.isCustom}
+                                    disabled={child.autoselected}
                                     onCheckedChange={(checked) => {
-                                      if (!child.isCustom) return
+                                      if (child.autoselected) return
                                       onToggleChildStatus?.(child.id, checked === true)
                                     }}
                                     className={cn(
                                       "border-[#6C5DD3] data-[state=checked]:border-[#6C5DD3] data-[state=checked]:bg-[#6C5DD3]",
-                                      !child.isCustom && "cursor-not-allowed opacity-60"
+                                      child.autoselected && "cursor-not-allowed opacity-60"
                                     )}
                                   />
                                   <span>{child.roleName}</span>
@@ -270,31 +270,27 @@ export function DepartmenRoleTable({
                                   />
                                 </div>
                                 <div className="flex w-[10%] shrink-0 justify-center px-2">
-                                  {child.status === "active" ? (
-                                    child.isCustom ? (
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="size-8 text-[#6C5DD3] hover:bg-[#6C5DD3]/10"
-                                        aria-label="Edit"
-                                        onClick={() => onEdit?.(child.id)}
-                                      >
-                                        <PencilIcon className="size-4" />
-                                      </Button>
-                                    ) : (
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="size-8 text-[#6C5DD3] hover:bg-[#6C5DD3]/10"
-                                        aria-label="View"
-                                        onClick={() => onView?.(child.id)}
-                                      >
-                                        <EyeIcon className="size-4" />
-                                      </Button>
-                                    )
-                                  ) : (
-                                    <div className="size-8" aria-hidden />
-                                  )}
+                                  {child.autoselected ? (
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="size-8 text-[#6C5DD3] hover:bg-[#6C5DD3]/10"
+                                      aria-label="View"
+                                      onClick={() => onView?.(child.id)}
+                                    >
+                                      <EyeIcon className="size-4" />
+                                    </Button>
+                                  ) : child.status === "active" ? (
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="size-8 text-[#6C5DD3] hover:bg-[#6C5DD3]/10"
+                                      aria-label="Edit"
+                                      onClick={() => onEdit?.(child.id)}
+                                    >
+                                      <PencilIcon className="size-4" />
+                                    </Button>
+                                  ) : null}
                                 </div>
                               </div>
                             ))}
