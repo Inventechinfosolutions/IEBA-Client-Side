@@ -3,7 +3,7 @@ import type { UseFormReturn } from "react-hook-form"
 import { jobPoolFormSchema } from "./schemas"
 
 export type JobPoolFormMode = "add" | "edit"
-export type JobPoolSortKey = "name" | "jobClassifications"
+export type JobPoolSortKey = "name" | "jobClassifications" | "users"
 export type SortDirection = "asc" | "desc" | "none"
 
 export type JobPoolFormValues = z.infer<typeof jobPoolFormSchema>

@@ -9,6 +9,16 @@ import {
   CalendarClock,
   Layers,
   BarChart2,
+  FileText,
+  Briefcase,
+  LayoutGrid,
+  SquareTerminal,
+  PencilLine,
+  Folder,
+  Home,
+  User,
+  Clock,
+  Gauge,
 } from "lucide-react"
 
 import iebaLogo from "@/assets/ieba-logo.png"
@@ -43,22 +53,23 @@ import { useAuth } from "@/contexts/AuthContext"
 import { ChangePasswordFormModal } from "@/features/change-password"
 
 const mainNav = [
-  { title: "Dashboard", url: "/", icon: LayoutDashboard },
-  { title: "Master Code", url: "/master-code", icon: ScrollText },
-  { title: "Program", url: "/program", icon: ScrollText },
-  { title: "To Do", url: "/to-do", icon: ScrollText },
-  { title: "Leave Approval", url: "/leave-approval", icon: ScrollText },
-  { title: "User", url: "/user", icon: Users },
-  { title: "Users", url: "/users", icon: Users },
-  { title: "Department Role", url: "/department-role", icon: Building2 },
-  { title: "County Activity Code", url: "/county-activity-code", icon: Table2 },
+  { title: "Dashboard", url: "/", icon: Gauge },
+  { title: "Personal Time Study", url: "/schedule-time-study", icon: Clock },
+  { title: "To Do", url: "/to-do", icon: FileText },
+  { title: "User", url: "/user", icon: User },
+  { title: "Department", url: "/department", icon: Home },
+  { title: "Program", url: "/program", icon: Folder },
+  { title: "County Activity Code", url: "/county-activity-code", icon: PencilLine },
+  { title: "Master Code", url: "/master-code", icon: SquareTerminal },
+  { title: "Department Role", url: "/department-role", icon: IdCard },
+  { title: "Job Classification", url: "/job-classification", icon: LayoutGrid },
+  { title: "Job Pool", url: "/job-pool", icon: Briefcase },
+  { title: "Leave Approval", url: "/leave-approval", icon: FileText },
+  { title: "FTE Allocation", url: "/fte-allocation", icon: FileText },
+  { title: "Cost Pool", url: "/costpool", icon: FileText },
   { title: "Schedule Time Study", url: "/schedule-time-study", icon: CalendarClock },
-  { title: "Department", url: "/department", icon: Building2 },
-  { title: "Cost Pool", url: "/costpool", icon: Table2 },
-  { title: "Job Classification", url: "/job-classification", icon: Layers },
-  { title: "Job Pool", url: "/job-pool", icon: Layers },
-  { title: "FTE Allocation", url: "/fte-allocation", icon: BarChart2 },
-] as const
+  { title: "Users", url: "/users", icon: Users },
+] as const  
 
 export function AppSidebar() {
   const { user, signOut } = useAuth()

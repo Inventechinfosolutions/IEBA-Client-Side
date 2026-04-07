@@ -4,12 +4,13 @@ import { toast } from "sonner"
 
 import { EmployeesTable } from "../components/EmployeesTable"
 import { ProgramTable } from "../components/ProgramTable"
+import { useUpdateUserProgramAssignments } from "../mutations/updateUserProgramAssignments"
 import { useGetFiscalYears } from "../queries/getFiscalYears"
 import { useGetEmployees } from "../queries/getEmployees"
 import { useGetPrograms } from "../queries/getPrograms"
 import { fteAllocationKeys } from "../keys"
 import { fteFilterDefaultValues } from "../schemas"
-import type { FteFilterFormValues } from "../types"
+import type { FteFilterFormValues, ProgramsUpdateFormValues } from "../types"
 
 import {
   Select,
@@ -33,15 +34,36 @@ export function FteAllocationPage() {
   const activeFiscalYearId = filters.fiscalYearId || fiscalYears[0]?.id || ""
 
   const { data: employees = [], isLoading: employeesLoading } =
-    useGetEmployees(activeFiscalYearId)
+    useGetEmployees(activeFiscalYearId, filters.inactive)
   const { data: programs = [], isLoading: programsLoading } = useGetPrograms(
     activeFiscalYearId,
     selectedEmployeeId
   )
   const queryClient = useQueryClient()
 
-  function handleUpdate() {
-    toast.success("FTE allocation updated successfully.")
+  const updateMutation = useUpdateUserProgramAssignments()
+
+  async function handleUpdate(values: ProgramsUpdateFormValues) {
+    if (!selectedEmployeeId || !activeFiscalYearId) return
+    try {
+      await updateMutation.mutateAsync({
+        fiscalYearId: activeFiscalYearId,
+        userId: selectedEmployeeId,
+        isUpdate: false,
+        values,
+      })
+
+      toast.success("FTE allocation updated successfully.")
+      await queryClient.invalidateQueries({
+        queryKey: fteAllocationKeys.programs(activeFiscalYearId, selectedEmployeeId),
+      })
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Failed to update FTE allocation"
+      toast.error(msg)
+      await queryClient.invalidateQueries({
+        queryKey: fteAllocationKeys.programs(activeFiscalYearId, selectedEmployeeId),
+      })
+    }
   }
 
   return (
@@ -60,7 +82,10 @@ export function FteAllocationPage() {
               setFilters((prev) => ({ ...prev, fiscalYearId: val }))
               setSelectedEmployeeId(null)
               queryClient.invalidateQueries({
-                queryKey: fteAllocationKeys.employees(val),
+                queryKey: fteAllocationKeys.employees({
+                  fiscalYearId: val,
+                  includeInactive: filters.inactive,
+                }),
               })
             }}
           >

@@ -56,8 +56,8 @@ export function ProgramTable({
     values: {
       programs: programs.map((p) => ({
         ...p,
-        budgetedFte: Number(p.budgetedFte).toFixed(1) as unknown as number,
-        allocatedFte: Number(p.allocatedFte).toFixed(1) as unknown as number,
+        budgetedFte: Number(p.budgetedFte),
+        allocatedFte: Number(p.allocatedFte),
       })),
     },
   })
@@ -207,7 +207,7 @@ export function ProgramTable({
       <div className="flex items-center justify-end rounded-[8px] border border-[#E5E7EB] bg-white px-4 py-[12px] shadow-[0_0_20px_0_#0000001a]">
         <Button
           type="button"
-          onClick={() => onUpdate()}
+          onClick={form.handleSubmit((values) => onUpdate(values))}
           disabled={!selectedEmployeeId}
           className="h-[44px] min-w-[120px] rounded-[10px] bg-[#6C5DD3] px-8 text-[14px] font-[400] text-white hover:bg-[#5B4DC5] disabled:opacity-50"
         >

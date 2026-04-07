@@ -3,45 +3,46 @@ import { useQuery } from "@tanstack/react-query"
 import { fteAllocationKeys } from "../keys"
 import type { Employee } from "../types"
 
-const MOCK_EMPLOYEES: Employee[] = [
-  { id: "emp-01", name: "Abernethy Sue", active: true },
-  { id: "emp-02", name: "Altheide Treasure", active: true },
-  { id: "emp-03", name: "Andrews Katie", active: true },
-  { id: "emp-04", name: "Ankrom Hannah", active: true },
-  { id: "emp-05", name: "Arellano Lorena", active: true },
-  { id: "emp-06", name: "Arndt Amy", active: true },
-  { id: "emp-07", name: "Best Nicole", active: true },
-  { id: "emp-08", name: "Boyea Annie", active: true },
-  { id: "emp-09", name: "Britt Laurie", active: true },
-  { id: "emp-10", name: "Brunner Amanda", active: true },
-  { id: "emp-11", name: "Budesilich Jessica", active: true },
-  { id: "emp-12", name: "C R Subsmitha", active: false },
-  { id: "emp-13", name: "Carter Michael", active: true },
-  { id: "emp-14", name: "Davis Rachel", active: true },
-  { id: "emp-15", name: "Evans Thomas", active: false },
-  { id: "emp-16", name: "Foster Linda", active: true },
-  { id: "emp-17", name: "Green Patricia", active: true },
-  { id: "emp-18", name: "Harris James", active: true },
-  { id: "emp-19", name: "Jackson Barbara", active: true },
-  { id: "emp-20", name: "King William", active: false },
-]
+import { apiGetUserModuleRows } from "@/features/user/api"
 
-// In-memory store so mutations persist between re-renders
-let employeeStore: Employee[] = [...MOCK_EMPLOYEES]
+async function fetchEmployees(includeInactive: boolean): Promise<Employee[]> {
+  const active = await apiGetUserModuleRows({
+    page: 1,
+    pageSize: 100,
+    inactiveOnly: false,
+    sort: "ASC",
+  })
+  const activeRows: Employee[] = active.items.map((u) => ({
+    id: u.id,
+    name: (u.employee ?? "").trim() || (u.loginId ?? "").trim() || u.id,
+    active: true,
+  }))
 
-export function getEmployeeStore() {
-  return employeeStore
+  if (!includeInactive) return activeRows
+
+  const inactive = await apiGetUserModuleRows({
+    page: 1,
+    pageSize: 100,
+    inactiveOnly: true,
+    sort: "ASC",
+  })
+  const inactiveRows: Employee[] = inactive.items.map((u) => ({
+    id: u.id,
+    name: (u.employee ?? "").trim() || (u.loginId ?? "").trim() || u.id,
+    active: false,
+  }))
+
+  const dedupe = new Map<string, Employee>()
+  for (const r of [...activeRows, ...inactiveRows]) dedupe.set(r.id, r)
+  return [...dedupe.values()].sort((a, b) =>
+    a.name.localeCompare(b.name, undefined, { sensitivity: "base" })
+  )
 }
 
-async function fetchEmployees(_fiscalYearId: string): Promise<Employee[]> {
-  await new Promise((resolve) => setTimeout(resolve, 400))
-  return employeeStore
-}
-
-export function useGetEmployees(fiscalYearId: string) {
+export function useGetEmployees(fiscalYearId: string, includeInactive: boolean) {
   return useQuery({
-    queryKey: fteAllocationKeys.employees(fiscalYearId),
-    queryFn: () => fetchEmployees(fiscalYearId),
+    queryKey: fteAllocationKeys.employees({ fiscalYearId, includeInactive }),
+    queryFn: () => fetchEmployees(includeInactive),
     enabled: !!fiscalYearId,
   })
 }
