@@ -7,4 +7,6 @@ export const departmentKeys = {
     [...departmentKeys.lists(), filter] as const,
   details: () => [...departmentKeys.all, "detail"] as const,
   detail: (id: string) => [...departmentKeys.details(), id] as const,
+  /** Active users for contact dropdowns (paginated API). */
+  contactUsers: () => [...departmentKeys.all, "contact-users"] as const,
 }

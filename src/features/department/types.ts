@@ -1,10 +1,17 @@
 import type { z } from "zod"
 import {
+  DEPARTMENT_FORM_DEFAULT_VALUES,
   departmentSchema,
   departmentFilterSchema,
   departmentUpsertSchema,
   departmentContactSchema,
 } from "./schemas"
+import {
+  DepartmentDetailsSubTab,
+  DepartmentMainTab,
+  type DepartmentApiListSortOrder,
+  type DepartmentApiRecordStatus,
+} from "./enums/department.enum"
 
 export type DepartmentUpsertValues = z.infer<typeof departmentUpsertSchema>
 
@@ -12,10 +19,22 @@ export type DepartmentContact = z.infer<typeof departmentContactSchema>
 export type Department = z.infer<typeof departmentSchema>
 export type DepartmentFilter = z.infer<typeof departmentFilterSchema>
 
+const {
+  code: _omitEmptyDepartmentCode,
+  name: _omitEmptyDepartmentName,
+  ...departmentUiEmptyBase
+} = DEPARTMENT_FORM_DEFAULT_VALUES
+
+/** Default non-identity slice of `Department` for API → UI mapping (aligned with form defaults). */
+export const EMPTY_DEPARTMENT_UI: Omit<Department, "id" | "code" | "name"> =
+  departmentUiEmptyBase
+
 export type SortColumn = "code" | "name" | null
 export type SortDirection = "asc" | "desc" | null
 
-export const PAGE_SIZES = [10, 20, 30, 50] as const
+export type ActiveTab = (typeof DepartmentMainTab)[keyof typeof DepartmentMainTab]
+export type DetailsTab =
+  (typeof DepartmentDetailsSubTab)[keyof typeof DepartmentDetailsSubTab]
 
 export interface DepartmentTableProps {
   departments: Department[]
@@ -39,9 +58,6 @@ export interface DepartmentAddPageProps {
   onClose: () => void
 }
 
-export type ActiveTab = "details" | "settings"
-export type DetailsTab = "address" | "primary" | "secondary" | "billing"
-
 export type PendingTabChange =
   | { type: "active"; value: ActiveTab }
   | { type: "details"; value: DetailsTab }
@@ -57,12 +73,64 @@ export interface DetailTabConfig {
   width: string
 }
 
+export const PAGE_SIZES = [10, 20, 30, 50] as const
+
 export const DETAIL_TABS: readonly DetailTabConfig[] = [
   { id: "address", label: "Address", width: "160px" },
   { id: "primary", label: "Primary Contact", width: "214px" },
   { id: "secondary", label: "Secondary Contact", width: "214px" },
   { id: "billing", label: "Billing Contact", width: "214px" },
 ] as const
+
+type ContactDetailsTab = Exclude<DetailsTab, "address">
+
+export const DEPARTMENT_CONTACT_FORM_PREFIX: Record<
+  ContactDetailsTab,
+  "primaryContact" | "secondaryContact" | "billingContact"
+> = {
+  primary: "primaryContact",
+  secondary: "secondaryContact",
+  billing: "billingContact",
+}
+
+export const DEPARTMENT_CONTACT_ID_FIELD: Record<
+  ContactDetailsTab,
+  "primaryContactId" | "secondaryContactId" | "billingContactId"
+> = {
+  primary: "primaryContactId",
+  secondary: "secondaryContactId",
+  billing: "billingContactId",
+}
+
+type DepartmentSettingsFormKey = keyof DepartmentUpsertValues["settings"]
+
+export const DEPARTMENT_SETTINGS_ROWS: readonly {
+  key: DepartmentSettingsFormKey
+  label: string
+}[] = [
+  { key: "apportioning", label: "Apportioning" },
+  { key: "costAllocation", label: "Cost Allocation" },
+  { key: "autoApportioning", label: "Auto Apportioning" },
+  { key: "allowUserCostpoolDirect", label: "Allow User/Costpool Direct" },
+  { key: "allowMultiCodes", label: "Allow MultiCodes" },
+  { key: "removeStartEndTime", label: "Remove Start and End Time" },
+  { key: "removeSupportingDocument", label: "Remove Supporting Document" },
+  { key: "removeAutoFillEndTime", label: "Remove Auto Fill End Time" },
+] as const
+
+/** Resolved contact row for the department table when the list API has richer data than the department DTO. */
+export type DepartmentContactResolved = {
+  name: string
+  email: string
+  phone: string
+  location: string
+}
+
+export type DepartmentContactCellProps = {
+  contactId?: string | null
+  contact?: Department["primaryContact"]
+  resolved?: DepartmentContactResolved | null
+}
 
 // API-layer DTO and envelope types
 
@@ -95,9 +163,9 @@ export type DepartmentResDto = Record<string, unknown> & {
   status?: unknown
   addresses?: unknown
   address?: unknown
-  primaryContact?: unknown
-  secondaryContact?: unknown
-  billingContact?: unknown
+  primaryContactId?: unknown
+  secondaryContactId?: unknown
+  billingContactId?: unknown
   allowMultiCodes?: boolean
   multiCodes?: unknown
   allowUserOrCostpoolDirect?: boolean
@@ -119,7 +187,7 @@ export type DepartmentAddressCreateDto = {
 export type CreateDepartmentReqDto = {
   code: string
   name: string
-  status: "active" | "inactive"
+  status: DepartmentApiRecordStatus
   address?: DepartmentAddressCreateDto
   apportioning?: boolean
   costallocation?: boolean
@@ -130,6 +198,9 @@ export type CreateDepartmentReqDto = {
   removeAutoFillEndTime?: boolean
   startorEndTime?: boolean
   supportingDoc?: boolean
+  primaryContactId?: string | null
+  secondaryContactId?: string | null
+  billingContactId?: string | null
 }
 
 export type UpdateDepartmentReqDto = Partial<CreateDepartmentReqDto>
@@ -144,3 +215,22 @@ export type ToDepartmentUIOptions = {
   /** List rows need `address` for the table; GET-by-id / PUT responses often omit it — map only when true. */
   includeAddress?: boolean
 }
+
+export type GetDepartmentsParams = {
+  page?: number
+  limit?: number
+  status?: DepartmentApiRecordStatus
+  sort?: DepartmentApiListSortOrder
+}
+
+export type GetAllDepartmentsParams = {
+  status?: DepartmentApiRecordStatus
+  sort?: DepartmentApiListSortOrder
+}
+
+export type GetDepartmentsListResult = {
+  items: Department[]
+  total: number
+}
+
+export type { DepartmentApiListSortOrder, DepartmentApiRecordStatus }

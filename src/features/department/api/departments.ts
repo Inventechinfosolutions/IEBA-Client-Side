@@ -1,20 +1,21 @@
 import { api } from "@/lib/api"
-import type {
-  CreateDepartmentReqDto,
-  CreateDepartmentResponseDto,
-  Department,
-  DepartmentAddressCreateDto,
-  DepartmentApiEnvelope,
-  DepartmentListResponseDto,
-  DepartmentResDto,
-  DepartmentUpsertValues,
-  ToDepartmentUIOptions,
-  UpdateDepartmentReqDto,
+import { DEPARTMENT_API_SEND_ADDRESS_IN_BODY } from "@/lib/config"
+import {
+  type CreateDepartmentReqDto,
+  type CreateDepartmentResponseDto,
+  type Department,
+  type DepartmentAddressCreateDto,
+  type DepartmentApiEnvelope,
+  type DepartmentListResponseDto,
+  type DepartmentResDto,
+  type DepartmentUpsertValues,
+  EMPTY_DEPARTMENT_UI,
+  type GetAllDepartmentsParams,
+  type GetDepartmentsListResult,
+  type GetDepartmentsParams,
+  type ToDepartmentUIOptions,
+  type UpdateDepartmentReqDto,
 } from "../types"
-
-
-const SEND_DEPARTMENT_ADDRESS_IN_BODY =
-  import.meta.env.VITE_DEPARTMENT_SEND_ADDRESS !== "false"
 
 
 function pickAddressFromObject(o: Record<string, unknown>): Department["address"] | null {
@@ -80,41 +81,6 @@ function addressFromDtoShape(dto: DepartmentResDto): Department["address"] | nul
   return null
 }
 
-function contactFromDtoShape(raw: unknown): Department["primaryContact"] | null {
-  if (!raw || typeof raw !== "object") return null
-  const o = raw as Record<string, unknown>
-  const name = o.name ?? o.fullName ?? o.displayName
-  const email = o.email ?? o.mail
-  const phone = o.phone ?? o.mobile ?? o.mobilePhone
-  const location = o.location ?? o.officeLocation ?? o.site
-  if (name == null && email == null && phone == null && location == null) return null
-  return {
-    name: name == null ? "" : String(name).trim(),
-    email: email == null ? "" : String(email).trim(),
-    phone: phone == null ? "" : String(phone).trim(),
-    location: location == null ? "" : String(location).trim(),
-  }
-}
-
-const EMPTY_DEPARTMENT_UI: Omit<Department, "id" | "code" | "name"> = {
-  active: true,
-  address: { street: "", city: "", state: "", zip: "" },
-  primaryContact: { name: "", phone: "", email: "", location: "" },
-  secondaryContact: { name: "", phone: "", email: "", location: "" },
-  billingContact: { name: "", phone: "", email: "", location: "" },
-  settings: {
-    apportioning: false,
-    costAllocation: false,
-    autoApportioning: false,
-    allowUserCostpoolDirect: false,
-    allowMultiCodes: false,
-    multiCodes: "",
-    removeStartEndTime: false,
-    removeSupportingDocument: false,
-    removeAutoFillEndTime: false,
-  },
-}
-
 function toDepartmentUI(dto: DepartmentResDto, options?: ToDepartmentUIOptions): Department {
   const includeAddress = options?.includeAddress !== false
 
@@ -148,9 +114,10 @@ function toDepartmentUI(dto: DepartmentResDto, options?: ToDepartmentUIOptions):
         : String(multiCodesRaw).trim()
 
   const mappedAddress = includeAddress ? addressFromDtoShape(dto) : null
-  const mappedPrimary = contactFromDtoShape(dto.primaryContact)
-  const mappedSecondary = contactFromDtoShape(dto.secondaryContact)
-  const mappedBilling = contactFromDtoShape(dto.billingContact)
+
+  const primaryContactId = dto.primaryContactId == null ? null : String(dto.primaryContactId)
+  const secondaryContactId = dto.secondaryContactId == null ? null : String(dto.secondaryContactId)
+  const billingContactId = dto.billingContactId == null ? null : String(dto.billingContactId)
 
   return {
     ...EMPTY_DEPARTMENT_UI,
@@ -158,10 +125,10 @@ function toDepartmentUI(dto: DepartmentResDto, options?: ToDepartmentUIOptions):
     code: typeof codeRaw === "string" ? codeRaw : "",
     name: typeof nameRaw === "string" ? nameRaw : "",
     active,
+    primaryContactId,
+    secondaryContactId,
+    billingContactId,
     ...(mappedAddress ? { address: mappedAddress } : {}),
-    ...(mappedPrimary ? { primaryContact: mappedPrimary } : {}),
-    ...(mappedSecondary ? { secondaryContact: mappedSecondary } : {}),
-    ...(mappedBilling ? { billingContact: mappedBilling } : {}),
     settings: {
       ...EMPTY_DEPARTMENT_UI.settings,
       apportioning: dto.apportioning ?? false,
@@ -200,7 +167,7 @@ function toCreateUpdateDto(values: DepartmentUpsertValues): CreateDepartmentReqD
     code: values.code.trim(),
     name: values.name.trim(),
     status: values.active ? "active" : "inactive",
-    ...(SEND_DEPARTMENT_ADDRESS_IN_BODY && address ? { address } : {}),
+    ...(DEPARTMENT_API_SEND_ADDRESS_IN_BODY && address ? { address } : {}),
     apportioning: values.settings.apportioning,
     costallocation: values.settings.costAllocation,
     autoApportioning: values.settings.autoApportioning,
@@ -210,21 +177,27 @@ function toCreateUpdateDto(values: DepartmentUpsertValues): CreateDepartmentReqD
     removeAutoFillEndTime: values.settings.removeAutoFillEndTime,
     startorEndTime: values.settings.removeStartEndTime,
     supportingDoc: values.settings.removeSupportingDocument,
+    primaryContactId: values.primaryContactId ?? null,
+    secondaryContactId: values.secondaryContactId ?? null,
+    billingContactId: values.billingContactId ?? null,
   }
 }
 
-export async function getDepartments(params?: {
-  page?: number
-  limit?: number
-  status?: "active" | "inactive"
-}): Promise<{ items: Department[]; total: number }> {
+export async function getDepartments(
+  params?: GetDepartmentsParams,
+): Promise<GetDepartmentsListResult> {
   const page = params?.page ?? 1
-  const limit = params?.limit ?? 100
+  const limitRaw = params?.limit ?? 100
+  const limit = Math.min(100, Math.max(1, limitRaw))
   const status = params?.status
+  const sort = params?.sort
 
   const search = new URLSearchParams()
   search.set("page", String(page))
   search.set("limit", String(limit))
+  if (sort) {
+    search.set("sort", sort)
+  }
   if (status) {
     search.set("status", status)
   }
@@ -250,10 +223,37 @@ export async function getDepartments(params?: {
   return { items, total }
 }
 
+export async function getAllDepartments(
+  params: GetAllDepartmentsParams,
+): Promise<GetDepartmentsListResult> {
+  const limit = 100
+  let page = 1
+  let total: number | null = null
+  const items: Department[] = []
+
+  while (total == null || items.length < total) {
+    const res = await getDepartments({
+      page,
+      limit,
+      status: params.status,
+      sort: params.sort,
+    })
+    if (total == null) total = res.total
+    if (res.items.length === 0) break
+    items.push(...res.items)
+    page += 1
+    // Safety to avoid infinite loops if backend meta is wrong.
+    if (page > 10_000) break
+  }
+
+  return { items, total: total ?? items.length }
+}
+
 export async function getDepartmentById(id: string): Promise<Department> {
   const res = await api.get<DepartmentApiEnvelope<DepartmentResDto>>(`/departments/${id}`)
   const payload = (res?.data ?? res) as DepartmentResDto
-  return toDepartmentUI(payload, { includeAddress: false })
+  // Parse address when the API includes it; list-cache merge still fills gaps when by-id omits address.
+  return toDepartmentUI(payload, { includeAddress: true })
 }
 
 export async function createDepartment(

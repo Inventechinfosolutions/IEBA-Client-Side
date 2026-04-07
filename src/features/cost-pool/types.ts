@@ -1,17 +1,114 @@
 import type { UseFormReturn } from "react-hook-form"
 
-export type Department =
-  | "Public Health"
-  | "Social Services"
-  | "Health Services"
-  | "Administration"
+import type { CostPoolStatus, CostPoolUpsertMode } from "./enums/cost-pool.enum"
+
+export type { CostPoolStatus, CostPoolUpsertMode }
+
+/** API: `PaginationMetaDto` */
+export type CostPoolPaginationMetaDto = {
+  totalItems: number
+  totalPages: number
+  currentPage: number
+  itemsPerPage: number
+  hasNextPage: boolean
+  hasPreviousPage: boolean
+  firstPage: number
+  lastPage: number
+  itemCount: number
+}
+
+export type CostPoolDepartmentResDto = {
+  id: number
+  code: string
+  name: string
+  status: string
+}
+
+export type CostPoolActivitySummaryResDto = {
+  id: number
+  activityDepartmentId: number
+  activityId: number
+  departmentId: number
+  code: string
+  name: string
+  status: string
+  type?: string
+}
+
+export type CostPoolResDto = {
+  id: number
+  name: string
+  description?: string | null
+  status: CostPoolStatus
+  departmentId: number
+  department?: CostPoolDepartmentResDto
+  createdAt?: string
+  updatedAt?: string
+}
+
+export type CostPoolDetailResDto = CostPoolResDto & {
+  assignedActivities?: CostPoolActivitySummaryResDto[]
+  unassignedActivities?: CostPoolActivitySummaryResDto[]
+}
+
+export type CostPoolListResponseDto = {
+  data: CostPoolResDto[]
+  meta: CostPoolPaginationMetaDto
+}
+
+export type CreateCostPoolResponseDto = {
+  id: number
+  name: string
+  departmentId: number
+}
+
+export type CreateCostPoolRequestDto = {
+  name: string
+  description?: string
+  status?: CostPoolStatus
+  departmentId: number
+  activityDepartmentIds?: number[]
+}
+
+export type UpdateCostPoolRequestDto = {
+  name?: string
+  description?: string
+  status?: CostPoolStatus
+  departmentId?: number
+  activityDepartmentIds?: number[]
+}
+
+export type CostPoolListQueryParams = {
+  page?: number
+  limit?: number
+  search?: string
+  departmentId?: number
+  costpoolStatus?: CostPoolStatus
+  method?: string
+  type?: string
+}
+
+export type ActivityDepartmentResDto = {
+  id: number
+  activityId: number
+  departmentId: number
+  code: string
+  name: string
+  status: string
+  type?: string
+}
+
+export type ActivityDepartmentListResponseDto = {
+  data: ActivityDepartmentResDto[]
+  meta: CostPoolPaginationMetaDto
+}
 
 export type CostPoolRow = {
-  id: string
+  id: number
   costPool: string
   department: string
+  departmentId: number
   active: boolean
-  assignedActivityIds: string[]
 }
 
 export type CostPoolFilterFormValues = {
@@ -21,9 +118,23 @@ export type CostPoolFilterFormValues = {
 
 export type CostPoolUpsertFormValues = {
   costPool: string
-  department: string
+  departmentId: number
   active: boolean
-  assignedActivityIds: string[]
+  assignedActivityDepartmentIds: number[]
+}
+
+export type CostPoolActivityPickRow = {
+  activityDepartmentId: number
+  displayName: string
+}
+
+export type CostPoolDepartmentOption = {
+  id: string
+  name: string
+}
+
+export type CostPoolVisualCheckboxProps = {
+  checked: boolean
 }
 
 export type CostPoolPagination = {
@@ -64,16 +175,14 @@ export type CostPoolTableProps = {
 }
 
 export type CostPoolUpsertDialogProps = {
-  mode: "add" | "edit"
+  mode: CostPoolUpsertMode
   form: UseFormReturn<CostPoolUpsertFormValues>
   onSubmit: () => void
   onClose: () => void
+  departmentOptions: CostPoolDepartmentOption[]
+  departmentsLoading?: boolean
+  activityRows: CostPoolActivityPickRow[]
+  activitiesLoading?: boolean
 }
-
-export type CostPoolActivity = {
-  id: string
-  name: string
-}
-
 
 export type CostPoolAddPageProps = CostPoolUpsertDialogProps

@@ -1,7 +1,10 @@
 import { useMemo, useState } from "react"
-import { useForm } from "react-hook-form"
+import { useForm, type Path } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { departmentUpsertSchema } from "../schemas"
+import {
+    DEPARTMENT_FORM_DEFAULT_VALUES,
+    departmentUpsertSchema,
+} from "../schemas"
 import {
     Dialog,
     DialogContent,
@@ -17,16 +20,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { HelpCircle, CheckCircle2, X, Search, ChevronDown, Check } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { toast } from "sonner"
-import { useAddDepartment } from "../mutations/addDepartment"
+import { useCreateDepartment } from "../mutations/createDepartment"
 import { useUpdateDepartment } from "../mutations/updateDepartment"
-import { MOCK_CONTACTS, DEFAULT_VALUES } from "../queries/getDepartments"
 import { useGetDepartmentById } from "../queries/getDepartmentById"
 import { useGetMasterCodeOptions } from "../queries/getMasterCodeOptions"
 import { departmentKeys } from "../keys"
 import { queryClient } from "@/main"
-import { 
+import { apiGetUserDetails } from "@/features/user/api"
+import type { UserDetailsDto } from "@/features/user/types"
+import type { DepartmentContactUser } from "../queries/getDepartmentUsers"
+import { useGetDepartmentUsers } from "../queries/getDepartmentUsers"
+import {
     type Department,
-    type DepartmentAddPageProps, 
+    type DepartmentAddPageProps,
+    type DepartmentContact,
     type DepartmentUpsertValues,
     type ActiveTab,
     type DetailsTab,
@@ -34,12 +41,94 @@ import {
     type ModifiedContacts,
     type HandleTabChange,
     type HandleDetailsTabChange,
-    DETAIL_TABS
+    DEPARTMENT_CONTACT_FORM_PREFIX,
+    DEPARTMENT_CONTACT_ID_FIELD,
+    DEPARTMENT_SETTINGS_ROWS,
+    DETAIL_TABS,
 } from "../types"
+
+function enrichContactFromUsers(
+    contactId: string | null | undefined,
+    contact: DepartmentContact,
+    users: DepartmentContactUser[],
+): DepartmentContact {
+    const uid = contactId?.trim()
+    if (!uid) return contact
+    if (typeof contact.name === "string" && contact.name.trim() !== "") return contact
+    const u = users.find((x) => x.id === uid)
+    if (!u) return contact
+    return {
+        ...contact,
+        name: u.name,
+        email: u.email,
+        phone: u.phone,
+        location: u.location,
+    }
+}
+
+function buildDepartmentUpsertFormValues(
+    dept: Department,
+    users: DepartmentContactUser[],
+): DepartmentUpsertValues {
+    const { id: _omitId, ...rest } = dept
+    return {
+        ...rest,
+        primaryContact: enrichContactFromUsers(
+            rest.primaryContactId,
+            rest.primaryContact,
+            users,
+        ),
+        secondaryContact: enrichContactFromUsers(
+            rest.secondaryContactId,
+            rest.secondaryContact,
+            users,
+        ),
+        billingContact: enrichContactFromUsers(
+            rest.billingContactId,
+            rest.billingContact,
+            users,
+        ),
+    }
+}
+
+function fetchUserDetailsFresh(userId: string): Promise<UserDetailsDto> {
+    return queryClient.fetchQuery({
+        queryKey: ["user-details", userId, Date.now()],
+        queryFn: () => apiGetUserDetails(userId),
+        staleTime: 0,
+        gcTime: 0,
+    })
+}
+
+function contactPhoneFromUserDetails(dto: UserDetailsDto): string {
+    const contacts = dto.contacts ?? []
+    for (const c of contacts) {
+        const t = String(c.type ?? "").toLowerCase()
+        if (t !== "mobile" && t !== "phone") continue
+        const value = typeof c.value === "string" ? c.value.trim() : ""
+        const cc = typeof c.countryCode === "string" ? c.countryCode.trim() : ""
+        if (value) return cc ? `${cc}${value}` : value
+        const phone = typeof c.phone === "string" ? c.phone.trim() : ""
+        if (phone) return phone
+    }
+    return ""
+}
+
+function contactEmailFromUserDetails(dto: UserDetailsDto): string {
+    const contacts = dto.contacts ?? []
+    for (const c of contacts) {
+        if (String(c.type ?? "").toLowerCase() !== "email") continue
+        const value = typeof c.value === "string" ? c.value.trim() : ""
+        if (value) return value
+    }
+    return dto.user?.loginId?.trim() ?? ""
+}
 
 export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
     const [activeTab, setActiveTab] = useState<ActiveTab>("details")
-    const [detailsTab, setDetailsTab] = useState<DetailsTab>(() => (id ? "primary" : "address"))
+    // In edit mode, start at Address first (then Primary → Secondary → Billing).
+    // Create flow already starts at Address, so this keeps create behavior unchanged.
+    const [detailsTab, setDetailsTab] = useState<DetailsTab>("address")
     const [showSummaryErrors, setShowSummaryErrors] = useState(false)
     const [isDepartmentSaved, setIsDepartmentSaved] = useState(!!id)
     const [departmentId, setDepartmentId] = useState<string | null>(id)
@@ -52,6 +141,9 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
 
     const [isMultiCodesOpen, setIsMultiCodesOpen] = useState(false)
     const [multiCodesSearch, setMultiCodesSearch] = useState("")
+
+    const usersQuery = useGetDepartmentUsers()
+    const userOptions = usersQuery.data ?? []
 
     const departmentQuery = useGetDepartmentById(departmentId)
     const existingDept = departmentQuery.data
@@ -69,11 +161,10 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
 
     const valuesFromDepartmentQuery = useMemo((): DepartmentUpsertValues | undefined => {
         if (!departmentId || !existingDept) return undefined
-        const { id: _deptId, ...rest } = existingDept
-        return rest
-    }, [departmentId, existingDept])
+        return buildDepartmentUpsertFormValues(existingDept, userOptions)
+    }, [departmentId, existingDept, userOptions])
 
-    const addDeptMutation = useAddDepartment()
+    const createDeptMutation = useCreateDepartment()
     const updateDeptMutation = useUpdateDepartment()
 
     const {
@@ -87,7 +178,7 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
         formState: { errors },
     } = useForm<DepartmentUpsertValues>({
         resolver: zodResolver(departmentUpsertSchema),
-        defaultValues: DEFAULT_VALUES,
+        defaultValues: DEPARTMENT_FORM_DEFAULT_VALUES,
         values: valuesFromDepartmentQuery,
     })
 
@@ -96,9 +187,12 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
     const settings = watch("settings")
     const currentCode = watch("code")
     const currentName = watch("name")
+    const primaryContactId = watch("primaryContactId")
+    const secondaryContactId = watch("secondaryContactId")
+    const billingContactId = watch("billingContactId")
 
     const handleSave = async (opts?: { toastMode?: "none" | "createOrUpdate" }): Promise<boolean> => {
-        if (addDeptMutation.isPending || updateDeptMutation.isPending) return false
+        if (createDeptMutation.isPending || updateDeptMutation.isPending) return false
         const toastMode = opts?.toastMode ?? "createOrUpdate"
 
         const values = getValues()
@@ -119,7 +213,7 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
             return true
         }
         try {
-            const created = await addDeptMutation.mutateAsync(values)
+            const created = await createDeptMutation.mutateAsync(values)
             if (toastMode === "createOrUpdate") {
                 toast(
                     <div className="flex items-center gap-2 text-[14px]">
@@ -134,6 +228,9 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                 code: values.code.trim(),
                 name: values.name.trim(),
                 active: values.active,
+                primaryContactId: values.primaryContactId ?? null,
+                secondaryContactId: values.secondaryContactId ?? null,
+                billingContactId: values.billingContactId ?? null,
                 address: values.address,
                 primaryContact: values.primaryContact,
                 secondaryContact: values.secondaryContact,
@@ -163,10 +260,8 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
         setDetailsTab("primary")
     }
 
+    /** Exit always discards without calling the API. Persist only via Save / OK on create confirm / contact Save when a row exists. */
     const handleExit = () => {
-        if (isDepartmentSaved) {
-            void handleSave()
-        }
         onClose()
     }
 
@@ -177,16 +272,10 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
         }
     }
 
-    const CONTACT_FIELD_MAP = {
-        primary: "primaryContact",
-        secondary: "secondaryContact",
-        billing: "billingContact"
-    } as const
-
     const onContactSave = async () => {
         if (detailsTab === "address") return
-        
-        const contactKey = CONTACT_FIELD_MAP[detailsTab]
+
+        const contactKey = DEPARTMENT_CONTACT_FORM_PREFIX[detailsTab]
         const isValid = await trigger([
             `${contactKey}.name` as const,
             `${contactKey}.email` as const,
@@ -196,10 +285,14 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
         if (!isValid) return
 
         const titleCaseTab = detailsTab.charAt(0).toUpperCase() + detailsTab.slice(1)
+        const contactToastMessage =
+            departmentId != null
+                ? `${titleCaseTab} contact ${id ? "updated" : "saved"} successfully`
+                : `${titleCaseTab} contact step completed (not saved until you create the department)`
         toast(
             <div className="flex items-center gap-2 text-[14px]">
                 <CheckCircle2 className="w-4 h-4 text-green-500" />
-                {titleCaseTab} Contact {id ? "Updated" : "Saved"} Successfully
+                {contactToastMessage}
             </div>
         )
         setModifiedContacts((prev: ModifiedContacts) => ({ ...prev, [detailsTab]: false }))
@@ -216,12 +309,19 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
     const onAddressSave = async () => {
         const isValid = await validateDetailsTab()
         if (!isValid) return
-        toast(
-            <div className="flex items-center gap-2 text-[14px]">
-                <CheckCircle2 className="w-4 h-4 text-green-500" />
-                Address {id ? "Updated" : "Saved"} Successfully
-            </div>
-        )
+
+        const hasExistingDepartment = id != null || departmentId != null
+        if (hasExistingDepartment) {
+            const ok = await handleSave({ toastMode: "none" })
+            if (!ok) return
+            toast(
+                <div className="flex items-center gap-2 text-[14px]">
+                    <CheckCircle2 className="w-4 h-4 text-green-500" />
+                    Address updated successfully
+                </div>
+            )
+        }
+
         setModifiedContacts((prev: ModifiedContacts) => ({ ...prev, address: false }))
         setIsDepartmentSaved(true)
 
@@ -263,7 +363,8 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
             if (!isValid) return
         }
         if (value === "details" && (departmentId != null || isDepartmentSaved)) {
-            setDetailsTab("primary")
+            // Edit mode should land on Address first; create mode can keep Primary as the default after save.
+            setDetailsTab(id ? "address" : "primary")
         }
         setActiveTab(value as ActiveTab)
     }
@@ -449,30 +550,67 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                                                         {detailsTab.charAt(0).toUpperCase() + detailsTab.slice(1)} Contact Name
                                                     </Label>
                                                     <Select
-                                                        value={watch(`${CONTACT_FIELD_MAP[detailsTab]}.name` as const) || undefined}
-                                                        onValueChange={(val) => {
-                                                            const contact = MOCK_CONTACTS.find(c => c.name === val)
-                                                            if (contact) {
-                                                                const key = CONTACT_FIELD_MAP[detailsTab]
-                                                                setValue(`${key}.name` as const, contact.name, { shouldValidate: true })
-                                                                setValue(`${key}.phone` as const, contact.phone)
-                                                                setValue(`${key}.email` as const, contact.email)
-                                                                setValue(`${key}.location` as const, contact.location)
-                                                                setModifiedContacts((prev: ModifiedContacts) => ({ ...prev, [detailsTab]: true }))
+                                                        value={
+                                                            detailsTab === "primary"
+                                                                ? (primaryContactId ?? undefined)
+                                                                : detailsTab === "secondary"
+                                                                  ? (secondaryContactId ?? undefined)
+                                                                  : (billingContactId ?? undefined)
+                                                        }
+                                                        onValueChange={(userId) => {
+                                                            const key = DEPARTMENT_CONTACT_FORM_PREFIX[detailsTab]
+                                                            const idKey = DEPARTMENT_CONTACT_ID_FIELD[detailsTab]
+                                                            setValue(idKey, userId)
+                                                            const selected = userOptions.find((u) => u.id === userId)
+                                                            if (selected) {
+                                                                setValue(`${key}.name` as const, selected.name, { shouldValidate: true })
+                                                                setValue(`${key}.email` as const, selected.email)
+                                                            } else {
+                                                                setValue(`${key}.name` as const, "", { shouldValidate: true })
+                                                                setValue(`${key}.email` as const, "")
                                                             }
+                                                            setValue(`${key}.phone` as const, "")
+                                                            setValue(`${key}.location` as const, "")
+                                                            setModifiedContacts((prev: ModifiedContacts) => ({ ...prev, [detailsTab]: true }))
+
+                                                            void (async () => {
+                                                                try {
+                                                                    const dto = await fetchUserDetailsFresh(userId)
+                                                                    setValue(`${key}.email` as const, contactEmailFromUserDetails(dto))
+                                                                    setValue(`${key}.phone` as const, contactPhoneFromUserDetails(dto))
+                                                                    setValue(`${key}.location` as const, dto.location?.name ?? "")
+                                                                } catch (err) {
+                                                                    toast.error(err instanceof Error ? err.message : "Failed to load user details")
+                                                                }
+                                                            })()
                                                         }}
                                                     >
                                                         <SelectTrigger style={{ height: '57px' }} className="w-full rounded-[8px] border-[#E5E7EB] text-[#111827] focus:ring-1 focus:ring-[#3B82F6] data-[state=open]:border-[#3B82F6]">
                                                             <SelectValue placeholder={`Select Contact Name`} />
                                                         </SelectTrigger>
                                                         <SelectContent position="popper" sideOffset={8} className="w-[var(--radix-select-trigger-width)] bg-white rounded-[8px] shadow-[0_4px_16px_#00000024] p-1 border-[#E5E7EB] z-50">
-                                                            {MOCK_CONTACTS.map(c => (
+                                                            {usersQuery.isLoading && (
+                                                                <div className="px-3 py-2 text-[13px] text-[#6B7280]">
+                                                                    Loading...
+                                                                </div>
+                                                            )}
+                                                            {usersQuery.isError && (
+                                                                <div className="px-3 py-2 text-[13px] text-red-600">
+                                                                    {usersQuery.error instanceof Error ? usersQuery.error.message : "Failed to load users"}
+                                                                </div>
+                                                            )}
+                                                            {!usersQuery.isLoading && !usersQuery.isError && userOptions.length === 0 && (
+                                                                <div className="px-3 py-2 text-[13px] text-[#6B7280]">
+                                                                    No users found
+                                                                </div>
+                                                            )}
+                                                            {userOptions.map((u) => (
                                                                 <SelectItem 
-                                                                    key={c.name} 
-                                                                    value={c.name}
+                                                                    key={u.id} 
+                                                                    value={u.id}
                                                                     className="h-[42px] px-3 font-[400] text-[14px] text-[#111827] focus:bg-[#EBF5FF] focus:text-[#111827] cursor-pointer rounded-[6px]"
                                                                 >
-                                                                    {c.name}
+                                                                    {u.name}
                                                                 </SelectItem>
                                                             ))}
                                                         </SelectContent>
@@ -483,7 +621,7 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                                                     <Input
                                                         readOnly
                                                         placeholder="Enter Mobile"
-                                                        {...register(`${CONTACT_FIELD_MAP[detailsTab]}.phone` as const)}
+                                                        {...register(`${DEPARTMENT_CONTACT_FORM_PREFIX[detailsTab]}.phone` as const)}
                                                         className="h-[57px] rounded-[8px] bg-[#F9FAFB] cursor-not-allowed border-[#E5E7EB] text-[#111827] focus-visible:ring-0 focus-visible:ring-offset-0"
                                                     />
                                                 </div>
@@ -492,7 +630,7 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                                                     <Input
                                                         readOnly
                                                         placeholder="Enter Email"
-                                                        {...register(`${CONTACT_FIELD_MAP[detailsTab]}.email` as const)}
+                                                        {...register(`${DEPARTMENT_CONTACT_FORM_PREFIX[detailsTab]}.email` as const)}
                                                         className="h-[57px] rounded-[8px] bg-[#F9FAFB] cursor-not-allowed border-[#E5E7EB] text-[#111827] focus-visible:ring-0 focus-visible:ring-offset-0"
                                                     />
                                                 </div>
@@ -501,7 +639,7 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                                                     <Input
                                                         readOnly
                                                         placeholder="Enter Location"
-                                                        {...register(`${CONTACT_FIELD_MAP[detailsTab]}.location` as const)}
+                                                        {...register(`${DEPARTMENT_CONTACT_FORM_PREFIX[detailsTab]}.location` as const)}
                                                         className="h-[57px] rounded-[8px] bg-[#F9FAFB] cursor-not-allowed border-[#E5E7EB] text-[#111827] focus-visible:ring-0 focus-visible:ring-offset-0"
                                                     />
                                                 </div>
@@ -544,16 +682,7 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                         <TabsContent value="settings" className="mt-0">
                             <div className="px-8 pb-8">
                                 <div className="grid grid-cols-1 gap-5 py-8 min-h-[300px]">
-                                    {[
-                                        { key: "apportioning", label: "Apportioning" },
-                                        { key: "costAllocation", label: "Cost Allocation" },
-                                        { key: "autoApportioning", label: "Auto Apportioning" },
-                                        { key: "allowUserCostpoolDirect", label: "Allow User/Costpool Direct" },
-                                        { key: "allowMultiCodes", label: "Allow MultiCodes" },
-                                        { key: "removeStartEndTime", label: "Remove Start and End Time" },
-                                        { key: "removeSupportingDocument", label: "Remove Supporting Document" },
-                                        { key: "removeAutoFillEndTime", label: "Remove Auto Fill End Time" },
-                                    ].map((setting) => (
+                                    {DEPARTMENT_SETTINGS_ROWS.map((setting) => (
                                         <div key={setting.key} className="space-y-2">
                                             <div className="flex items-center gap-4">
                                                 <Checkbox
@@ -571,8 +700,9 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                                                             return
                                                         }
                                                         const isChecked = !!val
-                                                        const fieldPath = `settings.${setting.key}` as const
-                                                        setValue(fieldPath as any, isChecked)
+                                                        const fieldPath =
+                                                            `settings.${setting.key}` as Path<DepartmentUpsertValues>
+                                                        setValue(fieldPath, isChecked)
                                                         if (setting.key === "apportioning" && isChecked) {
                                                             setValue("settings.autoApportioning", true)
                                                         }

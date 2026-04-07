@@ -31,11 +31,58 @@ export const departmentUpsertSchema = z.object({
   name: z.string().min(1, "Department name is required"),
   active: z.boolean(),
   address: departmentAddressSchema,
+  primaryContactId: z.string().optional().nullable(),
+  secondaryContactId: z.string().optional().nullable(),
+  billingContactId: z.string().optional().nullable(),
   primaryContact: departmentContactSchema,
   secondaryContact: departmentContactSchema,
   billingContact: departmentContactSchema,
   settings: departmentSettingsSchema,
 })
+
+export const DEPARTMENT_FORM_DEFAULT_VALUES: z.infer<typeof departmentUpsertSchema> = {
+  code: "",
+  name: "",
+  active: true,
+  address: {
+    street: "",
+    city: "",
+    state: "",
+    zip: "",
+  },
+  primaryContactId: null,
+  secondaryContactId: null,
+  billingContactId: null,
+  primaryContact: {
+    name: "",
+    phone: "",
+    email: "",
+    location: "",
+  },
+  secondaryContact: {
+    name: "",
+    phone: "",
+    email: "",
+    location: "",
+  },
+  billingContact: {
+    name: "",
+    phone: "",
+    email: "",
+    location: "",
+  },
+  settings: {
+    apportioning: false,
+    costAllocation: false,
+    autoApportioning: false,
+    allowUserCostpoolDirect: false,
+    allowMultiCodes: false,
+    multiCodes: "",
+    removeStartEndTime: false,
+    removeSupportingDocument: false,
+    removeAutoFillEndTime: false,
+  },
+}
 
 export const departmentSchema = departmentUpsertSchema.extend({
   id: z.string(),
