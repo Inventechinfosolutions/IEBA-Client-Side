@@ -146,27 +146,3 @@ export type MasterCodeTabsProps = {
 }
 
 export type MasterCodeFormFieldErrors = FieldErrors<MasterCodeFormValues>
-
-// API DTO types
-
-export type ApiActivityCode = {
-  id: number
-  code: string
-  type: string
-  name: string
-  description: string
-  percent: number
-  spmp?: boolean
-  allocable?: boolean
-  match?: string
-  status: string
-  createdAt?: string
-  updatedAt?: string
-}
-
-export type ApiTenantMasterCode = {
-  id: number
-  name: string
-  allowMulticode: boolean
-  status: string
-}

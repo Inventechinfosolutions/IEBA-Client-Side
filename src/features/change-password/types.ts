@@ -29,6 +29,7 @@ export type PasswordFieldProps = {
   control: Control<ChangePasswordFormValues>
   visible: boolean
   onToggleVisible: () => void
+  maxLength?: number
 }
 
 export type PasswordVisibilityState = {

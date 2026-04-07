@@ -4,22 +4,20 @@ import { useForm, type FieldErrors, type FieldValues } from "react-hook-form"
 import { AlertTriangle, Check, X } from "lucide-react"
 import { toast } from "sonner"
 
-import type { AddEmployeeSaveSync, UserModuleFormValues, AddEmployeeFormTab } from "../types"
+import type {
+  AddEmployeeFormTab,
+  SaveGatedTab,
+  UseAddEmployeeFormParams,
+  UserModuleFormValues,
+} from "../types"
 import {
   ADD_EMPLOYEE_MUST_SAVE_BEFORE_NEXT,
   ADD_EMPLOYEE_SAVE_TO_MOVE_NEXT_MESSAGE,
+  ADD_EMPLOYEE_SUPERVISOR_NEEDS_SECURITY_ASSIGNMENTS,
+  userModuleFormEditSchema,
   userModuleFormSchema,
 } from "../schemas"
 import { addEmployeeTabFieldKeys, orderedAddEmployeeTabs } from "../constants/user-form-tabs"
-import {
-  useGetAddEmployeeCountyActivities,
-  useGetAddEmployeeJobClassifications,
-  useGetAddEmployeeJobPools,
-} from "../queries/get-add-employee"
-
-import type { UserModuleFormMode } from "../types"
-
-type SaveGatedTab = "employee" | "security" | "supervisor"
 
 const initialTabSaved: Record<SaveGatedTab, boolean> = {
   employee: false,
@@ -34,12 +32,6 @@ const warningToastInnerClassNames = {
   content: "!flex !flex-nowrap !items-center !gap-3",
   title: "!whitespace-nowrap",
 } as const
-
-type UseAddEmployeeFormParams = {
-  mode: UserModuleFormMode
-  initialValues: UserModuleFormValues
-  onSave: (values: UserModuleFormValues) => void | Promise<AddEmployeeSaveSync | void>
-}
 
 function getErrorMessage(value: unknown): string | null {
   if (!value || typeof value !== "object") return null
@@ -63,14 +55,19 @@ export function useAddEmployeeForm({ mode, initialValues, onSave }: UseAddEmploy
   const [tabSaved, setTabSaved] = useState<Record<SaveGatedTab, boolean>>(initialTabSaved)
 
   const methods = useForm<UserModuleFormValues>({
-    resolver: zodResolver(userModuleFormSchema),
+    resolver: zodResolver(isEditMode ? userModuleFormEditSchema : userModuleFormSchema),
     defaultValues: initialValues,
+    shouldUnregister: false,
+    /** After a field is touched once, validation re-runs on change so password length errors clear when corrected. */
+    mode: "onTouched",
+    reValidateMode: "onChange",
   })
 
   const {
     register,
     handleSubmit,
     reset,
+    getValues,
     formState,
     formState: { touchedFields },
     trigger,
@@ -81,7 +78,15 @@ export function useAddEmployeeForm({ mode, initialValues, onSave }: UseAddEmploy
 
   const getValidationOrder = (): (keyof UserModuleFormValues)[] => {
     if (isEditMode) {
-      return ["employeeNo", "firstName", "lastName", "loginId", "jobClassification", "claimingUnit"]
+      return [
+        "employeeNo",
+        "firstName",
+        "lastName",
+        "phone",
+        "loginId",
+        "jobClassificationIds",
+        "claimingUnit",
+      ]
     }
     const unlockedTabs = orderedAddEmployeeTabs.slice(0, activeTabIndex + 1)
     return unlockedTabs.flatMap((tab) => addEmployeeTabFieldKeys[tab])
@@ -121,10 +126,16 @@ export function useAddEmployeeForm({ mode, initialValues, onSave }: UseAddEmploy
   }
 
   const handleSave = handleSubmit(
-    async (values) => {
+    async (data) => {
       const tabWhenSaving = activeTab
+      const snapshot = getValues()
+      const values: UserModuleFormValues = {
+        ...data,
+        locationId: data.locationId ?? snapshot.locationId,
+        location: data.location ?? snapshot.location ?? "",
+      }
       try {
-        const sync = await Promise.resolve(onSave(values))
+        const sync = await Promise.resolve(onSave({ values, sourceTab: tabWhenSaving }))
         if (
           !isEditMode &&
           (tabWhenSaving === "employee" ||
@@ -178,12 +189,45 @@ export function useAddEmployeeForm({ mode, initialValues, onSave }: UseAddEmploy
       return
     }
     if (!isLastTab) {
-      setActiveTab(orderedAddEmployeeTabs[activeTabIndex + 1])
+      const nextTab = orderedAddEmployeeTabs[activeTabIndex + 1]
+      if (nextTab === "supervisor") {
+        const snapshots = getValues("securityAssignedSnapshots") ?? []
+        if (snapshots.length === 0) {
+          toast.warning(ADD_EMPLOYEE_SUPERVISOR_NEEDS_SECURITY_ASSIGNMENTS, {
+            position: "top-center",
+            icon: (
+              <span className="inline-flex size-4 shrink-0 items-center justify-center rounded-full bg-[#eab308] text-white">
+                <AlertTriangle className="size-3 stroke-[2.5]" />
+              </span>
+            ),
+            className: warningToastClassName,
+            classNames: warningToastInnerClassNames,
+          })
+          return
+        }
+      }
+      setActiveTab(nextTab)
     }
   }
 
   const handleTabChange = (tab: AddEmployeeFormTab) => {
     if (isEditMode) {
+      if (tab === "supervisor") {
+        const snapshots = getValues("securityAssignedSnapshots") ?? []
+        if (snapshots.length === 0) {
+          toast.warning(ADD_EMPLOYEE_SUPERVISOR_NEEDS_SECURITY_ASSIGNMENTS, {
+            position: "top-center",
+            icon: (
+              <span className="inline-flex size-4 shrink-0 items-center justify-center rounded-full bg-[#eab308] text-white">
+                <AlertTriangle className="size-3 stroke-[2.5]" />
+              </span>
+            ),
+            className: warningToastClassName,
+            classNames: warningToastInnerClassNames,
+          })
+          return
+        }
+      }
       setActiveTab(tab)
       return
     }
@@ -222,23 +266,13 @@ export function useAddEmployeeForm({ mode, initialValues, onSave }: UseAddEmploy
     activeTab,
     disabledTabs,
     isLastTab,
+    tabSaved,
     register,
     handleSave,
     handleNext,
     handleTabChange,
     handlePasswordReset,
   }
-}
-
-/**
- * Subscribes only to lookups required on Add Employee open:
- * job classifications, job pools, active activity codes (county-activity catalog).
- * Security / time-study catalogs load when those tabs mount.
- */
-export function useAddEmployeeReferenceBootstrap(): void {
-  useGetAddEmployeeJobClassifications()
-  useGetAddEmployeeJobPools()
-  useGetAddEmployeeCountyActivities()
 }
 
 /**

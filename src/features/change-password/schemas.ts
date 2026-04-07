@@ -1,11 +1,12 @@
 import { z } from "zod"
 
 const passwordPolicyMessage =
-  "Password must be at least 11 characters long with at least one capital letter and one symbol!"
+  "Password must be 10–16 characters with at least one lowercase, one capital, one number, and one symbol."
 
 const passwordPolicy = z
   .string()
-  .min(11, passwordPolicyMessage)
+  .min(10, passwordPolicyMessage)
+  .max(16, passwordPolicyMessage)
   .regex(/[a-z]/, passwordPolicyMessage)
   .regex(/[A-Z]/, passwordPolicyMessage)
   .regex(/\d/, passwordPolicyMessage)

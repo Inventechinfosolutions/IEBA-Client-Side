@@ -4,8 +4,12 @@ export type {
   UserModuleFormMode,
   UserModuleFormValues,
   AddEmployeeFormTab,
+  AddEmployeeTabDefinition,
   UserFormTab,
+  AddEmployeeSavePayload,
   AddEmployeeSaveSync,
+  SaveGatedTab,
+  UseAddEmployeeFormParams,
   AddEmployeeFormPanelProps,
   UserFormPanelProps,
   AddEmployeeFormPageProps,
@@ -14,7 +18,12 @@ export type {
   EmployeeDetailsContentProps,
   AddEmployeeFormTabsProps,
   UserFormTabsProps,
-  SupervisorDropdownFieldProps,
+  SupervisorPickerOption,
+  TimeStudyPlacementOverride,
+  TimeStudyPlacementOverrideMap,
+  TimeStudyAssignmentsPanelProps,
+  SecurityAssignmentsPanelProps,
+  SupervisorMenuOpen,
 } from "./add-employee/types"
 
 export type UserModuleRow = {
@@ -29,7 +38,6 @@ export type UserModuleRow = {
   loginId?: string
   password?: string
   emailAddress?: string
-  jobClassification?: string
   claimingUnit?: string
   multilingual?: boolean
   allowMultiCodes?: boolean
@@ -38,6 +46,9 @@ export type UserModuleRow = {
   roleAssignments?: string[]
   supervisorPrimary: string
   supervisorSecondary?: string
+  /** From list/details for edit form → PUT supervisor ids. */
+  supervisorPrimaryId?: string
+  supervisorSecondaryId?: string
   spmp: boolean
   tsMinDay: string
   programs: boolean
@@ -53,6 +64,8 @@ export type GetUserModuleParams = {
   page: number
   pageSize: number
   inactiveOnly: boolean
+  /** Backend `UserListQueryDto.sort` — order by loginId. */
+  sort?: "ASC" | "DESC"
 }
 
 export type PaginationMetaDto = {
@@ -75,17 +88,49 @@ export type ApiResponseDto<T> = {
   errorCode?: string | null
 }
 
-export type UserListItemDto = {
-  id: string
-  loginId: string
-  employeeName: string
-  employeeId: string
-  spmp: boolean
-  tsMinPerDay?: number
+/** Matches backend `CreateUserContactItemDto` / update `contacts`. */
+export type UserContactItemPayload = { phone?: string; countryCode?: string }
+
+/**
+ * GET /users `data[]` wire shape (table list). Extra keys may exist; we map only what the grid needs into `UserModuleRow`.
+ */
+export type UserListDepartmentRoleItemDto = {
+  id: number
+  departmentId: number
+  roleId: number
+  department: { id: number; name: string }
+  role: { id: number; name: string }
+  apportioningRequired: boolean
+  apportioning?: number
 }
 
+export type UserListItemApiDto = {
+  id: string
+  user: { loginId: string }
+  name: string
+  firstName: string
+  lastName: string
+  status: string
+  employeeId?: string | null
+  positionName?: string | null
+  claimingUnit?: string | null
+  tsmins?: number | null
+  spmp?: boolean
+  primarySupervisor?: { id: string; name: string } | null
+  backupSupervisor?: { id: string; name: string } | null
+  location?: { id: number; name: string } | null
+  departments: Array<{ id: number; code: string; name: string }>
+  roles: Array<{ id: number; name: string }>
+  departmentsRoles: UserListDepartmentRoleItemDto[]
+  allowMultiCodes: boolean
+  multiCodes?: string[] | null
+}
+
+/** @deprecated Use `UserListItemApiDto` */
+export type UserListItemDto = UserListItemApiDto
+
 export type UserListResponseDto = {
-  data: UserListItemDto[]
+  data: UserListItemApiDto[]
   meta: PaginationMetaDto
 }
 
@@ -96,6 +141,7 @@ export type CreateUserRequestDto = {
   lastName: string
   employeeId: string
   positionName?: string
+  jobClassificationIds?: number[]
   locationId?: number
   active?: boolean
   pki?: boolean
@@ -105,6 +151,7 @@ export type CreateUserRequestDto = {
   tsMinPerDay?: number
   claimingUnit?: string
   assignedMultiCodes?: string[]
+  contacts?: Array<{ phone?: string; countryCode?: string }>
 }
 
 export type UpdateUserRequestDto = {
@@ -126,6 +173,8 @@ export type UpdateUserRequestDto = {
   assignedMultiCodes?: string[]
   primarySupervisorId?: string
   backupSupervisorId?: string
+  contacts?: UserContactItemPayload[]
+  jobClassificationIds?: number[]
 }
 
 export type CreateUserResponseDto = {
@@ -148,14 +197,28 @@ export type UserDetailsDepartmentRoleDto = {
 export type UserDetailsDto = {
   id: string
   positionName?: string | null
+  jobClassificationIds?: number[]
   employeeId?: string | null
   firstName: string
   lastName: string
   name: string
   status: string
   tsmins?: number | null
+  spmp?: boolean
+  multilingual?: boolean
   user: { loginId: string }
+  /** Serialized USER contacts (`type: phone` holds primary phone digits). */
+  contacts?: Array<{
+    id?: number
+    refType?: string
+    type?: string
+    phone?: string
+    countryCode?: string
+    value?: string
+  }>
   location?: { id: number; name: string } | null
+  primarySupervisor?: { id: string; name: string } | null
+  backupSupervisor?: { id: string; name: string } | null
   emergencyContact?: {
     id: number
     firstName: string
@@ -167,6 +230,8 @@ export type UserDetailsDto = {
   departments: UserDetailsDepartmentDto[]
   roles: UserDetailsRoleDto[]
   departmentsRoles: UserDetailsDepartmentRoleDto[]
+  /** Flattened permission strings from roles (see backend `UserDetailsResDto`). */
+  allpermissions?: string[]
   allowMultiCodes: boolean
   multiCodes?: string[] | null
 }

@@ -1,3 +1,4 @@
+import { useState } from "react"
 import { Controller, useFormContext } from "react-hook-form"
 import { Eye, EyeOff } from "lucide-react"
 
@@ -7,17 +8,33 @@ import {
   MultiSelectDropdown,
   parseMultiSelectStoredValues,
 } from "@/components/ui/multi-select-dropdown"
+import { SingleSelectDropdown, type SingleSelectOption } from "@/components/ui/dropdown"
 
 import type { UserModuleFormValues, EmployeeLoginDetailsSectionProps } from "../types"
+import {
+  jobClassificationIdsToMultiSelectString,
+  multiSelectStringToJobClassificationIds,
+} from "../../utility/mapUserDetailsToForm"
 
 import {
   useGetAddEmployeeJobClassifications,
+  useGetAddEmployeeLocations,
   useGetMulticodeMasterCodes,
 } from "../queries/get-add-employee"
 import { useEmployeeLoginDetailsUi } from "../hooks/use-add-employee-form"
+import { formatPhoneUs10Input } from "../schemas"
 
 export function EmployeeLoginDetailsSection({ isEditMode }: EmployeeLoginDetailsSectionProps) {
-  const jobClassificationsQuery = useGetAddEmployeeJobClassifications()
+  /** Edit mode: defer GET /jobclassification until the user opens the picker. */
+  const [jobClassificationMenuOpened, setJobClassificationMenuOpened] = useState(false)
+  /** Edit mode: defer GET /location until the user opens the picker. */
+  const [locationMenuOpened, setLocationMenuOpened] = useState(false)
+
+  const jobClassificationsEnabled = !isEditMode || jobClassificationMenuOpened
+  const locationsEnabled = !isEditMode || locationMenuOpened
+
+  const jobClassificationsQuery = useGetAddEmployeeJobClassifications(jobClassificationsEnabled)
+  const locationsQuery = useGetAddEmployeeLocations(locationsEnabled)
 
   const {
     selectedJobDutyFile,
@@ -33,10 +50,11 @@ export function EmployeeLoginDetailsSection({ isEditMode }: EmployeeLoginDetails
     control,
     watch,
     setValue,
-    formState: { errors, touchedFields },
+    formState: { errors, touchedFields, dirtyFields },
   } = useFormContext<UserModuleFormValues>()
   const employeeName = `${watch("firstName") ?? ""} ${watch("lastName") ?? ""}`.trim()
   const allowMultiCodesEnabled = watch("allowMultiCodes") === true
+  /** Checkbox only (not multicode dropdown open). Add mode unchanged. */
   const multicodeMasterCodesQuery = useGetMulticodeMasterCodes(allowMultiCodesEnabled)
 
   const labelClassName = "mb-1 block select-none text-[11px] font-medium text-[#2a2f3a]"
@@ -47,8 +65,17 @@ export function EmployeeLoginDetailsSection({ isEditMode }: EmployeeLoginDetails
     "h-[43px] rounded-[7px] border border-[#e4e7ef] bg-[#f3f4f8] px-3 pr-9 text-[12px] text-[#6b7280] shadow-none placeholder:text-[11px] placeholder:font-normal placeholder:text-[#9aa1b2] focus-visible:border-[#e4e7ef] focus-visible:ring-0"
   const employeeNoInputClassName = `${inputClassName} cursor-not-allowed bg-[#f3f4f8] text-[#6b7280]`
   const passwordErrorMessage = errors.password?.message ? String(errors.password.message) : null
+  const confirmPasswordErrorMessage = errors.confirmPassword?.message
+    ? String(errors.confirmPassword.message)
+    : null
+  const passwordFieldTouchedOrDirty = Boolean(touchedFields.password || dirtyFields.password)
+  const confirmPasswordFieldTouchedOrDirty = Boolean(
+    touchedFields.confirmPassword || dirtyFields.confirmPassword,
+  )
   const showPasswordInlineError =
-    !isEditMode && Boolean(passwordErrorMessage) && Boolean(touchedFields.password)
+    !isEditMode && Boolean(passwordErrorMessage) && passwordFieldTouchedOrDirty
+  const showConfirmPasswordInlineError =
+    !isEditMode && Boolean(confirmPasswordErrorMessage) && confirmPasswordFieldTouchedOrDirty
 
   const loginIdField = register("loginId")
 
@@ -106,7 +133,74 @@ export function EmployeeLoginDetailsSection({ isEditMode }: EmployeeLoginDetails
         </div>
         <div>
           <label className={labelClassName}>Location</label>
-          <Input {...register("location")} className={inputClassName} />
+          <Controller
+            name="locationId"
+            control={control}
+            render={({ field }) => {
+              const rows = locationsQuery.data ?? []
+              const rowById = new Map(rows.map((r) => [r.id, r]))
+              const selectedId = field.value
+              const locationLabel = (watch("location") ?? "").trim()
+              const hasOrphanSelection =
+                selectedId != null &&
+                !rowById.has(selectedId) &&
+                locationLabel.length > 0
+
+              const options: SingleSelectOption[] = []
+              if (hasOrphanSelection && selectedId != null) {
+                options.push({
+                  value: String(selectedId),
+                  label: locationLabel,
+                  key: `location-orphan-${selectedId}`,
+                })
+              }
+              for (const r of rows) {
+                options.push({
+                  value: String(r.id),
+                  label: r.name,
+                  key: `location-${r.id}`,
+                })
+              }
+
+              const dropdownValue =
+                selectedId != null && (rowById.has(selectedId) || hasOrphanSelection)
+                  ? String(selectedId)
+                  : ""
+
+              return (
+                <SingleSelectDropdown
+                  value={dropdownValue}
+                  onChange={(v) => {
+                    const id = Number.parseInt(v, 10)
+                    if (!Number.isFinite(id)) return
+                    field.onChange(id)
+                    const row = rowById.get(id)
+                    setValue("location", row?.name ?? locationLabel, {
+                      shouldDirty: true,
+                      shouldValidate: true,
+                    })
+                  }}
+                  onBlur={field.onBlur}
+                  onOpenChange={(open) => {
+                    if (open) setLocationMenuOpened(true)
+                  }}
+                  options={options}
+                  placeholder="Select location"
+                  isLoading={locationsEnabled && locationsQuery.isFetching}
+                  loadingLabel="Loading locations…"
+                  className={inputClassName}
+                  contentClassName="max-h-[280px]"
+                />
+              )
+            }}
+          />
+          {locationsQuery.isError ? (
+            <p className="mt-1 text-[11px] text-red-500" role="alert">
+              {locationsQuery.error instanceof Error
+                ? locationsQuery.error.message
+                : "Failed to load locations"}
+            </p>
+          ) : null}
         </div>
 
         <div>
@@ -119,7 +213,26 @@ export function EmployeeLoginDetailsSection({ isEditMode }: EmployeeLoginDetails
         </div>
         <div>
           <label className={labelClassName}>Phone</label>
-          <Input {...register("phone")} className={inputClassName} placeholder="___-___-____" />
+          <Controller
+            name="phone"
+            control={control}
+            render={({ field }) => (
+              <Input
+                {...field}
+                className={inputClassName}
+                placeholder="___-___-____"
+                inputMode="numeric"
+                autoComplete="tel"
+                maxLength={12}
+                onChange={(e) => field.onChange(formatPhoneUs10Input(e.target.value))}
+              />
+            )}
+          />
+          {errors.phone?.message ? (
+            <p className={passwordErrorClassName} role="alert">
+              {String(errors.phone.message)}
+            </p>
+          ) : null}
         </div>
 
         <div>
@@ -147,7 +260,7 @@ export function EmployeeLoginDetailsSection({ isEditMode }: EmployeeLoginDetails
                   type={isPasswordVisible ? "text" : "password"}
                   {...register("password")}
                   className={`${inputClassName} rounded-r-none border-r-0`}
-                  placeholder="Password (min 11 chars, 1 capital letter, 1 symbol)"
+                  placeholder="10–16 chars, 1 capital, 1 symbol"
                 />
                 <button
                   type="button"
@@ -163,7 +276,9 @@ export function EmployeeLoginDetailsSection({ isEditMode }: EmployeeLoginDetails
                 </button>
               </div>
               {showPasswordInlineError ? (
-                <p className={passwordErrorClassName}>{passwordErrorMessage}</p>
+                <p className={passwordErrorClassName} role="alert">
+                  {passwordErrorMessage}
+                </p>
               ) : null}
             </div>
             <div>
@@ -188,6 +303,11 @@ export function EmployeeLoginDetailsSection({ isEditMode }: EmployeeLoginDetails
                   )}
                 </button>
               </div>
+              {showConfirmPasswordInlineError ? (
+                <p className={passwordErrorClassName} role="alert">
+                  {confirmPasswordErrorMessage}
+                </p>
+              ) : null}
             </div>
           </>
         ) : (
@@ -222,37 +342,63 @@ export function EmployeeLoginDetailsSection({ isEditMode }: EmployeeLoginDetails
         <div>
           <label className={labelClassName}>*Job Classification</label>
           {jobClassificationsQuery.isError ? (
-            <Input
-              {...register("jobClassification")}
-              className={inputClassName}
-              placeholder="Job classification (manual entry)"
+            <Controller
+              name="jobClassificationIds"
+              control={control}
+              render={({ field }) => (
+                <Input
+                  className={inputClassName}
+                  placeholder="Job classification ids (comma-separated, e.g. 1, 2)"
+                  value={jobClassificationIdsToMultiSelectString(field.value)}
+                  onChange={(e) =>
+                    field.onChange(multiSelectStringToJobClassificationIds(e.target.value))
+                  }
+                  onBlur={field.onBlur}
+                />
+              )}
             />
           ) : (
             <Controller
-              name="jobClassification"
+              name="jobClassificationIds"
               control={control}
               render={({ field }) => {
                 const rows = jobClassificationsQuery.data ?? []
-                const tokens = parseMultiSelectStoredValues(field.value ?? "")
-                const rowNames = new Set(rows.map((r) => r.name))
-                const orphanTokens = [...new Set(tokens.filter((t) => !rowNames.has(t)))]
+                const selectedIds = new Set(field.value ?? [])
+                const rowById = new Map(rows.map((r) => [r.id, r]))
+                const orphanIds = [...selectedIds].filter((id) => !rowById.has(id))
                 const options = [
-                  ...rows.map((j) => ({ value: j.name, label: j.name })),
-                  ...orphanTokens.map((t) => ({ value: t, label: t })),
+                  ...rows.map((j) => ({
+                    value: String(j.id),
+                    label: j.name,
+                  })),
+                  ...orphanIds.map((id) => ({
+                    value: String(id),
+                    label: `Id ${id}`,
+                  })),
                 ]
                 return (
                   <MultiSelectDropdown
-                    value={field.value ?? ""}
-                    onChange={field.onChange}
+                    value={jobClassificationIdsToMultiSelectString(field.value)}
+                    onChange={(s) => field.onChange(multiSelectStringToJobClassificationIds(s))}
                     onBlur={field.onBlur}
                     placeholder="Select job classification"
                     options={options}
-                    isLoading={jobClassificationsQuery.isPending}
+                    isLoading={
+                      jobClassificationsEnabled && jobClassificationsQuery.isFetching
+                    }
+                    onOpenChange={(open) => {
+                      if (open) setJobClassificationMenuOpened(true)
+                    }}
                   />
                 )
               }}
             />
           )}
+          {errors.jobClassificationIds?.message ? (
+            <p className="mt-1 text-[11px] text-red-600" role="alert">
+              {String(errors.jobClassificationIds.message)}
+            </p>
+          ) : null}
         </div>
         <div>
           <label className={labelClassName}>Job Duty Statement</label>
