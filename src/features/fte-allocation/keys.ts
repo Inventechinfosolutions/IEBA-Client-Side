@@ -3,8 +3,13 @@ export const fteAllocationKeys = {
 
   fiscalYears: () => [...fteAllocationKeys.all, "fiscalYears"] as const,
 
-  employees: (fiscalYearId?: string) =>
-    [...fteAllocationKeys.all, "employees", fiscalYearId] as const,
+  employees: (params?: { fiscalYearId?: string; includeInactive?: boolean }) =>
+    [
+      ...fteAllocationKeys.all,
+      "employees",
+      params?.fiscalYearId,
+      params?.includeInactive ?? false,
+    ] as const,
 
   programs: (fiscalYearId?: string, employeeId?: string) =>
     [

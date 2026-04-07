@@ -28,6 +28,26 @@ import type {
 
 const SKELETON_ROWS = 8
 
+function formatUserName(user: {
+  name?: string
+  firstName?: string
+  lastName?: string
+}): string {
+  const full =
+    `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() ||
+    (user.name ?? "").trim()
+  return full
+}
+
+function usersSortValue(row: { userprofiles?: { name?: string; firstName?: string; lastName?: string }[] }): string {
+  const list = Array.isArray(row.userprofiles) ? row.userprofiles : []
+  return list
+    .map((u) => formatUserName(u))
+    .filter(Boolean)
+    .join(",")
+    .toLowerCase()
+}
+
 export function JobPoolTable({
   rows,
   isLoading,
@@ -50,6 +70,9 @@ export function JobPoolTable({
       } else if (sortState.key === "jobClassifications") {
         aVal = a.jobClassifications.map(c => c.name).join(",").toLowerCase()
         bVal = b.jobClassifications.map(c => c.name).join(",").toLowerCase()
+      } else if (sortState.key === "users") {
+        aVal = usersSortValue(a)
+        bVal = usersSortValue(b)
       }
       
       if (aVal < bVal) return sortState.direction === "asc" ? -1 : 1
@@ -85,7 +108,8 @@ export function JobPoolTable({
           <Table className="table-fixed">
             <colgroup>
               <col style={{ width: "12%" }} />
-              <col style={{ width: "61%" }} />
+              <col style={{ width: "42%" }} />
+              <col style={{ width: "19%" }} />
               <col style={{ width: "12%" }} />
               <col style={{ width: "7.5%" }} />
               <col style={{ width: "7.5%" }} />
@@ -168,6 +192,44 @@ export function JobPoolTable({
                     </Tooltip>
                   </TooltipProvider>
                 </TableHead>
+                <TableHead className="h-[44px] border-r border-white/20 bg-(--primary) px-3 text-[12px] font-medium text-white">
+                  <TooltipProvider>
+                    <Tooltip open={tooltipOpenKey === "users"}>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          onClick={() => handleSort("users")}
+                          onMouseEnter={() => setTooltipOpenKey("users")}
+                          onMouseLeave={() => setTooltipOpenKey(null)}
+                          onFocus={() => setTooltipOpenKey("users")}
+                          onBlur={() => setTooltipOpenKey(null)}
+                          className="relative flex h-full w-full cursor-pointer items-center justify-start pr-4 text-left text-white"
+                        >
+                          <span>Users</span>
+                          <span className="pointer-events-none absolute right-[0px] inline-flex flex-col items-center leading-none">
+                            <ChevronUp
+                              className={`size-[10px] ${
+                                sortState.key === "users" && sortState.direction === "asc"
+                                  ? "text-white"
+                                  : "text-white/50"
+                              }`}
+                            />
+                            <ChevronDown
+                              className={`-mt-1 size-[10px] ${
+                                sortState.key === "users" && sortState.direction === "desc"
+                                  ? "text-white"
+                                  : "text-white/50"
+                              }`}
+                            />
+                          </span>
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" sideOffset={6}>
+                        {getTooltipText("users")}
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </TableHead>
                 <TableHead className="h-[44px] border-r border-white/20 bg-(--primary) px-3 text-center text-[12px] font-medium text-white">
                   Department
                 </TableHead>
@@ -190,7 +252,8 @@ export function JobPoolTable({
         <Table className="table-fixed">
           <colgroup>
             <col style={{ width: "12%" }} />
-            <col style={{ width: "61%" }} />
+            <col style={{ width: "42%" }} />
+            <col style={{ width: "19%" }} />
             <col style={{ width: "12%" }} />
             <col style={{ width: "7.5%" }} />
             <col style={{ width: "7.5%" }} />
@@ -204,6 +267,9 @@ export function JobPoolTable({
                   >
                     <TableCell className="border-r border-[#eff0f5] px-3 py-2">
                       <Skeleton className="h-3.5 w-[70%]" />
+                    </TableCell>
+                    <TableCell className="border-r border-[#eff0f5] px-3 py-2">
+                      <Skeleton className="h-3.5 w-[80%]" />
                     </TableCell>
                     <TableCell className="border-r border-[#eff0f5] px-3 py-2">
                       <Skeleton className="h-3.5 w-[80%]" />
@@ -241,6 +307,30 @@ export function JobPoolTable({
                           </span>
                         ))}
                       </div>
+                    </TableCell>
+
+                    {/* Users */}
+                    <TableCell className="align-middle border-r border-[#eff0f5] px-3 py-2.5 text-[11px] text-[#232735] break-words whitespace-normal">
+                      {row.userprofiles && row.userprofiles.length > 0 ? (
+                        <div className="flex flex-wrap gap-2">
+                          {row.userprofiles
+                            .map((u) => ({
+                              id: u.id,
+                              label: formatUserName(u),
+                            }))
+                            .filter((u) => u.id && u.label)
+                            .map((u) => (
+                              <span
+                                key={u.id}
+                                className="inline-flex items-center rounded-[6px] border border-[#d8dae3] bg-[#f8f9fa] px-2 py-1 text-[10px] text-[#232735]"
+                              >
+                                {u.label}
+                              </span>
+                            ))}
+                        </div>
+                      ) : (
+                        <span className="text-[#9ca3af]">—</span>
+                      )}
                     </TableCell>
 
                     {/* Department */}
@@ -287,7 +377,7 @@ export function JobPoolTable({
 
             {!isLoading && sortedRows.length === 0 && (
               <TableRow className="h-[150px] bg-white hover:bg-white transition-none">
-                <TableCell colSpan={5} className="text-center align-middle">
+                <TableCell colSpan={6} className="text-center align-middle">
                   <img
                     src={tableEmptyIcon}
                     alt="No data"
