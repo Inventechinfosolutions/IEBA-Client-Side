@@ -5,15 +5,32 @@ import type { Department } from "../types"
 import { mergeDepartmentDetail } from "../lib/mergeDepartmentDetail"
 import { queryClient } from "@/main"
 
+/** List query may cache `Department[]` (legacy) or `{ items: Department[]; total: number }` (paginated API). */
+function rowsFromListQueryData(data: unknown): Department[] {
+  if (Array.isArray(data)) return data as Department[]
+  if (data !== null && typeof data === "object" && "items" in data) {
+    const items = (data as { items: unknown }).items
+    if (Array.isArray(items)) return items as Department[]
+  }
+  return []
+}
+
 function getDepartmentFromListCache(
   queryClient: QueryClient,
   id: string
 ): Department | undefined {
-  const rows = queryClient.getQueryData<Department[]>(departmentKeys.lists())
-  return rows?.find((d) => String(d.id) === String(id))
+  // Dept list query keys are not a single stable key (status/filters are appended),
+  // so scan all cached queries under `departmentKeys.lists()` and find the row.
+  const queries = queryClient.getQueryCache().findAll({ queryKey: departmentKeys.lists() })
+  for (const q of queries) {
+    const rows = rowsFromListQueryData(q.state.data)
+    const hit = rows.find((d) => String(d.id) === String(id))
+    if (hit) return hit
+  }
+  return undefined
 }
 
-/** GET-by-id omits `address` in mapping; merge list row so edit form still has address. */
+/** Merge list-cache row into GET-by-id: list includes address; by-id may omit it or return it depending on API. */
 export async function loadDepartmentDetailForModal(
   queryClient: QueryClient,
   id: string
@@ -33,10 +50,10 @@ export function useGetDepartmentById(id: string | null) {
       return loadDepartmentDetailForModal(queryClient, id)
     },
     enabled: !!id,
-    // When opening the Edit modal, always hit the backend
-    // so the form reflects the latest DB state.
-    staleTime: 0,
-    refetchOnMount: "always",
+    // Avoid duplicate GETs: same key was previously prefetched + forced refetch on every mount.
+    staleTime: 60_000,
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
   })
 }
 

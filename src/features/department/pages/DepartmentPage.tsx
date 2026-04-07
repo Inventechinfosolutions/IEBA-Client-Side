@@ -2,9 +2,6 @@ import { useState } from "react"
 import { DepartmentTable } from "../components/DepartmentTable"
 import { DepartmentAddPage } from "../components/DepartmentAddModal"
 import { useDepartments } from "../hooks/useDepartments"
-import { departmentKeys } from "../keys"
-import { loadDepartmentDetailForModal } from "../queries/getDepartmentById"
-import { queryClient } from "@/main"
 import type { DepartmentFilter } from "../types"
 
 const DEFAULT_FILTERS: DepartmentFilter = {
@@ -27,10 +24,7 @@ export function DepartmentPage() {
   const [editingId, setEditingId] = useState<string | null>(null)
 
   const handleEdit = (id: string) => {
-    void queryClient.prefetchQuery({
-      queryKey: departmentKeys.detail(id),
-      queryFn: () => loadDepartmentDetailForModal(queryClient, id),
-    })
+    // Detail is loaded once inside `useGetDepartmentById` — avoid a duplicate prefetch GET.
     setEditingId(id)
     setIsAddModalOpen(true)
   }

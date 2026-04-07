@@ -35,16 +35,33 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 
-import type { Department, DepartmentTableProps, SortColumn, SortDirection } from "../types"
-import { PAGE_SIZES } from "../types"
+import {
+  PAGE_SIZES,
+  type DepartmentContactCellProps,
+  type DepartmentTableProps,
+  type SortColumn,
+  type SortDirection,
+} from "../types"
+import { useGetDepartmentUsers } from "../queries/getDepartmentUsers"
 import statusCheckImg from "@/assets/status-check.png"
 import statusCrossImg from "@/assets/status-cross.png"
 import editIconImg from "@/assets/edit-icon.png"
 
 
 
-const ContactInfo = ({ contact }: { contact?: Department["primaryContact"] }) => {
-  if (!contact || contact.name === "Not Assigned" || contact.name === "") {
+const ContactInfo = ({
+  contactId,
+  contact,
+  resolved,
+}: DepartmentContactCellProps) => {
+  const hasId = !!contactId?.trim()
+  const effective = resolved ?? contact
+  const hasDisplay =
+    !!effective &&
+    effective.name.trim() !== "" &&
+    effective.name !== "Not Assigned"
+
+  if (!hasDisplay && !hasId) {
     return (
       <div className="flex flex-col w-full text-[13px] text-[#111827]">
         <div className="flex items-center gap-[6px] py-[6px]">
@@ -64,24 +81,44 @@ const ContactInfo = ({ contact }: { contact?: Department["primaryContact"] }) =>
     )
   }
 
+  if (hasId && !hasDisplay) {
+    return (
+      <div className="flex flex-col w-full text-[13px] text-[#111827]">
+        <div className="flex items-center gap-[6px] py-[6px]">
+          <User className="h-[14px] w-[14px] text-[#6C5DD3]" />
+          <span className="text-[#6B7280]">Contact assigned</span>
+        </div>
+        <div className="flex items-center gap-[6px] border-t border-[#E5E7EB] py-[6px]">
+          <Phone className="h-[14px] w-[14px] text-[#6C5DD3]" />
+        </div>
+        <div className="flex items-center gap-[6px] border-t border-[#E5E7EB] py-[6px]">
+          <Mail className="h-[14px] w-[14px] text-[#6C5DD3]" />
+        </div>
+        <div className="flex items-center gap-[6px] border-t border-[#E5E7EB] py-[6px]">
+          <MapPin className="h-[14px] w-[14px] text-[#6C5DD3]" />
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="flex flex-col w-full text-[13px] text-[#111827]">
       <div className="flex items-center gap-[6px] py-[6px]">
         <User className="h-[14px] w-[14px] text-[#6C5DD3]" />
-        <span>{contact.name}</span>
+        <span>{effective!.name}</span>
       </div>
       <div className="flex items-center gap-[6px] border-t border-[#E5E7EB] py-[6px]">
         <Phone className="h-[14px] w-[14px] text-[#6C5DD3]" />
-        <span className="text-[#6C5DD3]">{contact.phone || ""}</span>
+        <span className="text-[#6C5DD3]">{effective!.phone || ""}</span>
       </div>
       <div className="flex flex-wrap items-center gap-[6px] border-t border-[#E5E7EB] py-[6px]">
         <Mail className="h-[14px] w-[14px] text-[#6C5DD3] shrink-0" />
-        {contact.email ? (
+        {effective!.email ? (
           <TooltipProvider delayDuration={200}>
             <Tooltip>
               <TooltipTrigger asChild>
                 <span className="text-[#6C5DD3] break-words break-all text-[12px] cursor-pointer">
-                  {contact.email}
+                  {effective!.email}
                 </span>
               </TooltipTrigger>
               <TooltipContent
@@ -89,7 +126,7 @@ const ContactInfo = ({ contact }: { contact?: Department["primaryContact"] }) =>
                 className="rounded-[8px] bg-[#222222] px-3 py-2 text-[14px] font-[500] text-white shadow-lg border-0"
                 sideOffset={4}
               >
-                {contact.email}
+                {effective!.email}
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
@@ -99,7 +136,7 @@ const ContactInfo = ({ contact }: { contact?: Department["primaryContact"] }) =>
       </div>
       <div className="flex items-center gap-[6px] border-t border-[#E5E7EB] py-[6px]">
         <MapPin className="h-[14px] w-[14px] text-[#6C5DD3]" />
-        <span className="text-[#6C5DD3]">{contact.location || ""}</span>
+        <span className="text-[#6C5DD3]">{effective!.location || ""}</span>
       </div>
     </div>
   )
@@ -118,6 +155,15 @@ export function DepartmentTable({
   onAdd,
   onEdit,
 }: DepartmentTableProps) {
+
+  const usersQuery = useGetDepartmentUsers()
+  const usersById = useMemo(() => {
+    const map = new Map<string, { name: string; email: string; phone: string; location: string }>()
+    for (const u of usersQuery.data ?? []) {
+      map.set(u.id, { name: u.name, email: u.email, phone: u.phone, location: u.location })
+    }
+    return map
+  }, [usersQuery.data])
 
   const [sortBy, setSortBy] = useState<SortColumn>(null)
   const [sortDirection, setSortDirection] = useState<SortDirection>(null)
@@ -169,6 +215,7 @@ export function DepartmentTable({
             value={filters.search || ""}
             onChange={(e) => {
               onSearchChange(e.target.value)
+              onPageChange(1)
               setSortBy(null)
               setSortDirection(null)
             }}
@@ -379,13 +426,25 @@ export function DepartmentTable({
                     </div>
                   </TableCell>
                   <TableCell className="border-r border-[#E5E7EB] px-[8px] py-[10px] align-top">
-                    <ContactInfo contact={dept.primaryContact} />
+                    <ContactInfo
+                      contactId={dept.primaryContactId}
+                      contact={dept.primaryContact}
+                      resolved={dept.primaryContactId ? usersById.get(dept.primaryContactId) ?? null : null}
+                    />
                   </TableCell>
                   <TableCell className="border-r border-[#E5E7EB] px-[8px] py-[10px] align-top">
-                    <ContactInfo contact={dept.secondaryContact} />
+                    <ContactInfo
+                      contactId={dept.secondaryContactId}
+                      contact={dept.secondaryContact}
+                      resolved={dept.secondaryContactId ? usersById.get(dept.secondaryContactId) ?? null : null}
+                    />
                   </TableCell>
                   <TableCell className="border-r border-[#E5E7EB] px-[8px] py-[10px] align-top border-r-0 sm:border-r">
-                    <ContactInfo contact={dept.billingContact} />
+                    <ContactInfo
+                      contactId={dept.billingContactId}
+                      contact={dept.billingContact}
+                      resolved={dept.billingContactId ? usersById.get(dept.billingContactId) ?? null : null}
+                    />
                   </TableCell>
                   <TableCell className="border-r border-[#E5E7EB] px-[8px] py-[16px] text-center">
                     <div className="flex justify-center">
