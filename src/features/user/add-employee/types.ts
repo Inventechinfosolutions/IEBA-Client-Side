@@ -38,12 +38,22 @@ export type AddEmployeeJobPoolListPayload = {
   meta: AddEmployeeListMetaDto
 }
 
-/** Backend activities list row (subset). */
+/** Backend activities list row (subset). Master `Activity.id` — not valid for POST /users/new/assign/activity. */
 export type AddEmployeeActivityCatalogRow = {
   id: number
   code: string
   name: string
   activityCode: string
+  status: string
+}
+
+/** `GET /activity-departments?departmentId=` row — `id` is ActivityDepartment id (required for user activity assign). */
+export type AddEmployeeActivityDepartmentRow = {
+  id: number
+  activityId: number
+  departmentId: number
+  code: string
+  name: string
   status: string
 }
 

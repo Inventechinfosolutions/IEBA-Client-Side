@@ -161,6 +161,32 @@ function mapBudgetProgramToProgramRow(raw: BudgetProgramResDto): ProgramRow {
   }
 }
 
+/**
+ * Budget Units tab nests programs under a BU using `parentId === budgetUnitId`.
+ * API `parentId` is the tree parent (another program); top-level programs often return `null`.
+ */
+function mapBudgetProgramEntityToBudgetUnitsRow(
+  entity: BudgetProgramResDto,
+  hierarchyLevel: 1 | 2,
+): ProgramRow {
+  const base = mapBudgetProgramToProgramRow(entity)
+  const budgetUnitIdStr =
+    entity.budgetUnit && typeof entity.budgetUnit.id === "number"
+      ? String(entity.budgetUnit.id)
+      : undefined
+  return {
+    ...base,
+    tab: "Budget Units",
+    hierarchyLevel,
+    parentId:
+      hierarchyLevel === 1
+        ? budgetUnitIdStr
+        : base.parentId != null
+          ? base.parentId
+          : undefined,
+  }
+}
+
 async function fetchBudgetUnits(params: GetProgramsParams): Promise<ProgramListResponse> {
   const page = params.page ?? 1
   const limit = Math.min(100, params.pageSize ?? 20)
@@ -326,8 +352,7 @@ export async function apiCreateProgram(input: CreateProgramInput & {
     )
     const entity = detail?.data ?? (detail as ApiEnvelope<BudgetProgramResDto>).data
     if (!entity) throw new Error("Failed to load created budget program")
-    const mapped = mapBudgetProgramToProgramRow(entity as BudgetProgramResDto)
-    return { ...mapped, hierarchyLevel: 1 }
+    return mapBudgetProgramEntityToBudgetUnitsRow(entity as BudgetProgramResDto, 1)
   }
 
   // BU Sub-Program creation (from Budget Units tab "BU Sub-Program" section)
@@ -383,8 +408,7 @@ export async function apiCreateProgram(input: CreateProgramInput & {
     )
     const entity = detail?.data ?? (detail as ApiEnvelope<BudgetProgramResDto>).data
     if (!entity) throw new Error("Failed to load created budget sub program")
-    const mapped = mapBudgetProgramToProgramRow(entity as BudgetProgramResDto)
-    return { ...mapped, hierarchyLevel: 2 }
+    return mapBudgetProgramEntityToBudgetUnitsRow(entity as BudgetProgramResDto, 2)
   }
 
   if (tab === "Time Study programs") {
@@ -541,8 +565,7 @@ export async function apiUpdateProgram(input: UpdateProgramInput & {
     const entity = detail?.data ?? (detail as ApiEnvelope<BudgetProgramResDto>).data
     if (!entity) throw new Error("Failed to load updated budget program")
 
-    const mapped = mapBudgetProgramToProgramRow(entity as BudgetProgramResDto)
-    return { ...mapped, hierarchyLevel: 1 }
+    return mapBudgetProgramEntityToBudgetUnitsRow(entity as BudgetProgramResDto, 1)
   }
 
   // BU Sub-Program update (from Budget Units tab "BU Sub-Program" section)
@@ -565,8 +588,7 @@ export async function apiUpdateProgram(input: UpdateProgramInput & {
     const entity = raw?.data ?? (raw as ApiEnvelope<BudgetProgramResDto>).data
     if (!entity) throw new Error("Update response missing data")
 
-    const mapped = mapBudgetProgramToProgramRow(entity as BudgetProgramResDto)
-    return { ...mapped, hierarchyLevel: 2 }
+    return mapBudgetProgramEntityToBudgetUnitsRow(entity as BudgetProgramResDto, 2)
   }
 
   if (tab === "Time Study programs") {

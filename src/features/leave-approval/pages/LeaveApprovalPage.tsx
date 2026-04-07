@@ -4,7 +4,7 @@ import { MasterCodePagination } from "@/features/master-code/components/MasterCo
 import { LeaveApprovalTable } from "../components/LeaveApprovalTable"
 import { LeaveApprovalCommentsModal } from "../components/LeaveApprovalCommentsModal"
 import { LeaveApprovalToolbar } from "../components/LeaveApprovalToolbar"
-import { useLeaveApprovalModule } from "../hooks/useLeaveApprovalModule"
+import { useLeaveApprovals } from "../hooks/useLeaveApprovals"
 import { useUpdateLeaveApproval } from "../mutations/updateLeaveApproval"
 import { toast } from "sonner"
 import { Check } from "lucide-react"
@@ -32,10 +32,12 @@ export function LeaveApprovalPage() {
   const [filters, setFilters] = useState<LeaveApprovalFilters>(defaultFilters)
   const [sort, setSort] = useState<LeaveApprovalSortState>(null)
   const [commentsModalOpen, setCommentsModalOpen] = useState(false)
-  const [commentsModalRowId, setCommentsModalRowId] = useState<string | null>(null)
-  const [commentsModalMode, setCommentsModalMode] = useState<"comments" | "reject" | "approve">("comments")
+  const [commentsModalRowId, setCommentsModalRowId] = useState<number | null>(null)
+  const [commentsModalMode, setCommentsModalMode] = useState<"comments" | "reject" | "approve" | "requested">("comments")
+  /** Bumps on each open so the comments form remounts with empty defaults (no useEffect). */
+  const [commentsModalFormKey, setCommentsModalFormKey] = useState(0)
 
-  const leaveModule = useLeaveApprovalModule({
+  const leaveModule = useLeaveApprovals({
     page,
     pageSize,
     filters,
@@ -45,10 +47,7 @@ export function LeaveApprovalPage() {
 
   const isTableLoading = leaveModule.isLoading || leaveModule.isFetching
 
-  const safeUserOptions = useMemo(
-    () => leaveModule.userOptions ?? [{ id: "all", label: "All" }],
-    [leaveModule.userOptions],
-  )
+  const safeUserOptions = useMemo(() => leaveModule.userOptions ?? [], [leaveModule.userOptions])
 
   return (
     <section
@@ -86,6 +85,7 @@ export function LeaveApprovalPage() {
           onOpenComments={(rowId, mode) => {
             setCommentsModalRowId(rowId)
             setCommentsModalMode(mode)
+            setCommentsModalFormKey((k) => k + 1)
             setCommentsModalOpen(true)
           }}
         />
@@ -102,33 +102,34 @@ export function LeaveApprovalPage() {
       </div>
 
       <LeaveApprovalCommentsModal
+        key={commentsModalFormKey}
         open={commentsModalOpen}
         onOpenChange={setCommentsModalOpen}
+        mode={commentsModalMode}
         initialValues={{
-          commentText:
-            leaveModule.rows.find((r) => r.id === commentsModalRowId)?.commentText ?? "",
+          commentText: "",
         }}
-        onSave={(values) => {
+        onSave={(values, action) => {
           const id = commentsModalRowId
           if (!id) return
           const trimmed = (values.commentText ?? "").trim()
-          const currentStatus =
-            leaveModule.rows.find((r) => r.id === id)?.status ?? "Approved"
-          const nextStatus =
-            commentsModalMode === "reject"
-              ? "Rejected"
-              : commentsModalMode === "approve"
-                ? "Approved"
-                : currentStatus
+          const resolvedAction =
+            action === "approve" || action === "reject"
+              ? action
+              : commentsModalMode === "approve" || commentsModalMode === "reject"
+                ? commentsModalMode
+                : null
+
+          if (!resolvedAction) {
+            setCommentsModalOpen(false)
+            return
+          }
 
           updateMutation.mutate(
             {
               id,
-              patch: {
-                commentText: trimmed || undefined,
-                commentsCount: trimmed ? 1 : 0,
-                status: nextStatus,
-              },
+              action: resolvedAction === "approve" ? "approved" : "rejected",
+              supervisorcomment: trimmed || undefined,
             },
             {
               onSuccess: () => {

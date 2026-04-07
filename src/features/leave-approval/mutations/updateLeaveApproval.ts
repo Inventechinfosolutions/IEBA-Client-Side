@@ -1,24 +1,22 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { useMutation } from "@tanstack/react-query"
 
+import { queryClient } from "@/main"
 import { leaveApprovalKeys } from "../keys"
-import { updateMockLeaveApprovalRow } from "../mock"
-import type { GetLeaveApprovalsParams, LeaveApprovalRow } from "../types"
+import { apiReviewUserLeave } from "../api"
+import type { GetLeaveApprovalsParams } from "../types"
 
 export type UpdateLeaveApprovalInput = {
-  id: string
-  patch: Partial<Pick<LeaveApprovalRow, "status" | "commentText" | "commentsCount">>
+  id: number
+  action: "approved" | "rejected"
+  supervisorcomment?: string
 }
 
 export function useUpdateLeaveApproval(params: GetLeaveApprovalsParams) {
-  const qc = useQueryClient()
-
   return useMutation({
-    mutationFn: async ({ id, patch }: UpdateLeaveApprovalInput) => {
-      updateMockLeaveApprovalRow(id, patch)
-      return { id, patch }
-    },
+    mutationFn: ({ id, action, supervisorcomment }: UpdateLeaveApprovalInput) =>
+      apiReviewUserLeave(id, { status: action, supervisorcomment }),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: leaveApprovalKeys.list(params) })
+      queryClient.invalidateQueries({ queryKey: leaveApprovalKeys.list(params) })
     },
   })
 }

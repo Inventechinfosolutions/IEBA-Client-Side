@@ -128,7 +128,9 @@ export function mergeUserDetailsIntoFormValues(
 ): UserModuleFormValues {
   const login = details.user?.loginId?.trim() ?? previous.loginId
   const claiming =
-    details.departments?.find((d) => d.name?.trim())?.name?.trim() ?? previous.claimingUnit
+    (details.claimingUnit ?? "").trim() ||
+    details.departments?.find((d) => d.name?.trim())?.name?.trim() ||
+    previous.claimingUnit
   const multiJoined = (details.multiCodes ?? []).filter(Boolean).join(", ")
   const active =
     typeof details.status === "string" && details.status.trim() !== ""
@@ -158,6 +160,7 @@ export function mergeUserDetailsIntoFormValues(
     spmp: typeof details.spmp === "boolean" ? details.spmp : previous.spmp,
     multilingual:
       typeof details.multilingual === "boolean" ? details.multilingual : previous.multilingual,
+    pkiUser: typeof details.pki === "boolean" ? details.pki : previous.pkiUser,
     allowMultiCodes: details.allowMultiCodes,
     assignedMultiCodes: multiJoined || previous.assignedMultiCodes,
     roleAssignments: roleAssignmentsFromDetails(details),

@@ -20,6 +20,7 @@ const commentsSchema = z.object({
 export function LeaveApprovalCommentsModal({
   open,
   title = "Comments",
+  mode = "comments",
   initialValues,
   onOpenChange,
   onSave,
@@ -29,7 +30,9 @@ export function LeaveApprovalCommentsModal({
     defaultValues: initialValues,
   })
 
-  const handleSubmit = form.handleSubmit((values) => onSave(values))
+  const handleCommentSubmit = form.handleSubmit((values) => onSave(values, "comment"))
+  const handleApprove = form.handleSubmit((values) => onSave(values, "approve"))
+  const handleReject = form.handleSubmit((values) => onSave(values, "reject"))
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -44,7 +47,7 @@ export function LeaveApprovalCommentsModal({
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="mt-4">
+        <form onSubmit={handleCommentSubmit} className="mt-4">
           <Textarea
             {...form.register("commentText")}
             placeholder=""
@@ -59,12 +62,31 @@ export function LeaveApprovalCommentsModal({
             >
               Cancel
             </Button>
-            <Button
-              type="submit"
-              className="h-[44px] min-w-[84px] cursor-pointer rounded-[6px] bg-[var(--primary)] px-7 !text-[12px] font-medium text-white hover:bg-[var(--primary)]"
-            >
-              OK
-            </Button>
+            {mode === "requested" ? (
+              <>
+                <Button
+                  type="button"
+                  onClick={handleReject}
+                  className="h-[44px] min-w-[96px] cursor-pointer rounded-[6px] bg-[#ef4444] px-6 !text-[12px] font-medium text-white hover:bg-[#ef4444]"
+                >
+                  Reject
+                </Button>
+                <Button
+                  type="button"
+                  onClick={handleApprove}
+                  className="h-[44px] min-w-[96px] cursor-pointer rounded-[6px] bg-[#22c55e] px-6 !text-[12px] font-medium text-white hover:bg-[#22c55e]"
+                >
+                  Approve
+                </Button>
+              </>
+            ) : (
+              <Button
+                type="submit"
+                className="h-[44px] min-w-[84px] cursor-pointer rounded-[6px] bg-[var(--primary)] px-7 !text-[12px] font-medium text-white hover:bg-[var(--primary)]"
+              >
+                OK
+              </Button>
+            )}
           </DialogFooter>
         </form>
       </DialogContent>

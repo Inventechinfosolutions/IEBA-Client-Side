@@ -11,7 +11,6 @@ import type {
   ProgramActivityRelationActivitiesPayload,
   ProgramActivityRelationActivityNode,
   ProgramActivityRelationActivityRoots,
-  ProgramActivityRelationTimeStudyEnvelope,
   TransferItem,
 } from "../types"
 

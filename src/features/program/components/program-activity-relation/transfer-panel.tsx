@@ -3,7 +3,7 @@ import tableEmptyIcon from "@/assets/icons/table-empty.png"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 
-import { type TransferItem, type TransferPanelProps } from "../../types"
+import type { TransferPanelProps } from "../../types"
 
 export function TransferPanel({
   title,

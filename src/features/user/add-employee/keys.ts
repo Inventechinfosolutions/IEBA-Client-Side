@@ -16,6 +16,9 @@ export const addEmployeeLookupKeys = {
   multicodeMasterCodes: () => [...addEmployeeLookupKeys.all, "multicode-master-codes"] as const,
   /** GET /activity-codes (active activity codes; county-activity equivalent). */
   countyActivityList: () => [...addEmployeeLookupKeys.all, "county-activity-list"] as const,
+  /** GET /activity-departments?departmentId= — Time Study tab activity transfer (ActivityDepartment ids). */
+  activityDepartmentsByDepartment: (departmentIdKey: string) =>
+    [...addEmployeeLookupKeys.all, "activity-departments-by-department", departmentIdKey] as const,
   /**
    * GET /departments/user/roles-unassigned — Security tab (add + edit).
    * `userKey` is `__none__` when add flow omits userId, else trimmed user id.

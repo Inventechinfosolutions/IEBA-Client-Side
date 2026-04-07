@@ -227,27 +227,6 @@ export const ProgramFormModal = forwardRef<ProgramFormModalHandle, ProgramFormMo
         ) : null}
         <form
           onSubmit={handleSubmit}
-          onMouseDownCapture={(event) => {
-            const targetNode = event.target as Node
-
-            if (
-              isDepartmentOpen &&
-              !departmentDropdownRef.current?.contains(targetNode)
-            ) {
-              setIsDepartmentOpen(false)
-            }
-
-            if (isBuNameOpen && !buNameDropdownRef.current?.contains(targetNode)) {
-              setIsBuNameOpen(false)
-            }
-
-            if (
-              isBudgetProgramOpen &&
-              !budgetProgramDropdownRef.current?.contains(targetNode)
-            ) {
-              setIsBudgetProgramOpen(false)
-            }
-          }}
           className="select-none bg-white px-10 pb-8 pt-7 [&_input]:!text-[14px] [&_input::placeholder]:text-[12px] [&_input::placeholder]:text-[#b0b8c8]"
         >
           <input type="hidden" {...form.register("formSection")} />

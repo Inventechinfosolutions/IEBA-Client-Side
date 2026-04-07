@@ -149,6 +149,12 @@ export async function apiGetUserModuleRows(params: GetUserModuleParams): Promise
   search.set("sort", params.sort ?? "ASC")
   /** Backend `UserListQueryDto.status` — matches `UserStatus` enum strings. */
   search.set("status", params.inactiveOnly ? "inactive" : "active")
+  const firstName = (params.firstName ?? "").trim()
+  const lastName = (params.lastName ?? "").trim()
+  const employeeId = (params.employeeId ?? "").trim()
+  if (firstName) search.set("firstName", firstName)
+  if (lastName) search.set("lastName", lastName)
+  if (employeeId) search.set("employeeId", employeeId)
 
   const res = await api.get<ApiResponseDto<UserListResponseDto>>(`/users?${search.toString()}`)
   const dto = asUserListResponseDto(res)

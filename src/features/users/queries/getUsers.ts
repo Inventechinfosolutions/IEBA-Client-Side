@@ -25,5 +25,6 @@ export function useGetUsers() {
   return useQuery({
     queryKey: userKeys.lists(),
     queryFn: fetchUsers,
+    staleTime: 0,
   })
 }

@@ -27,7 +27,7 @@ import {
   useUnassignUserProgramsTs,
 } from "../mutations/time-study-program-activity-transfer"
 import {
-  useGetAddEmployeeActivitiesCatalog,
+  useGetActivityDepartmentsForDepartment,
   useGetAddEmployeeDepartments,
   useGetAddEmployeeTimeStudyPrograms,
   useGetUserProgramsAndActivities,
@@ -175,6 +175,10 @@ function parsePositiveIntIds(ids: string[]): number[] {
   return out
 }
 
+function isActiveActivityDepartmentStatus(status: string): boolean {
+  return status.trim().toLowerCase() === "active"
+}
+
 /** Maps GET /timestudyprograms/user/programs-activities bundles to flat transfer rows (deduped by id). */
 function buildCatalogItemsFromUserProgramsActivitiesResponse(
   bundles: UserProgramsActivitiesDepartmentBundle[],
@@ -288,18 +292,6 @@ function buildUnassignedItemsForEditMode(
   return sortTransferItems(globalRowsForDepartment.filter((row) => !isAssigned(row.id)))
 }
 
-/** Edit-mode default department: first bundle in API order that actually has TS rows (not A→Z — CCS must not win over Public Health). */
-function firstBundleDepartmentNameWithAssignments(
-  bundles: UserProgramsActivitiesDepartmentBundle[],
-): string {
-  for (const b of bundles) {
-    const name = b.departmentName.trim()
-    if (!name) continue
-    if (b.programs.length > 0 || b.activities.length > 0) return name
-  }
-  return ""
-}
-
 /** UI tab: Time Study Assignments */
 export function TimeStudyAssignmentsPanel({
   mode,
@@ -321,31 +313,11 @@ export function TimeStudyAssignmentsPanel({
 
   const departmentsQuery = useGetAddEmployeeDepartments(true)
   const programsQuery = useGetAddEmployeeTimeStudyPrograms(true)
-  const activitiesQuery = useGetAddEmployeeActivitiesCatalog(true)
   const userProgramsActivitiesQuery = useGetUserProgramsAndActivities(userIdForTs, isEditTimeStudyWithUserBundle)
-
-  /** Edit: after department change we refetch full program/activity catalogs — block transfers until settled. */
-  const tsCatalogRefetchBusy =
-    isEditTimeStudyWithUserBundle &&
-    (programsQuery.isFetching || activitiesQuery.isFetching)
 
   const { register, watch, setValue } = useFormContext<UserModuleFormValues>()
   const isAddMode = mode === "add"
   const employeeName = `${watch("firstName") ?? ""} ${watch("lastName") ?? ""}`.trim()
-
-  /** Departments on the user’s programs/activities bundles (for defaults + assigned/unassigned logic). */
-  const bundleDepartmentNames = useMemo(() => {
-    const bundles = userProgramsActivitiesQuery.data ?? []
-    const names = bundles.map((b) => b.departmentName.trim()).filter((n) => n.length > 0)
-    return [...new Set(names)].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }))
-  }, [userProgramsActivitiesQuery.data])
-
-  const defaultEditModeTimeStudyDepartment = useMemo(() => {
-    const bundles = userProgramsActivitiesQuery.data ?? []
-    const withAssignments = firstBundleDepartmentNameWithAssignments(bundles)
-    if (withAssignments) return withAssignments
-    return bundleDepartmentNames[0] ?? ""
-  }, [userProgramsActivitiesQuery.data, bundleDepartmentNames])
 
   /** GET /departments — full catalog for add + edit Time Study department dropdowns. */
   const masterDepartmentNames = useMemo(
@@ -372,13 +344,6 @@ export function TimeStudyAssignmentsPanel({
       name: p.name,
     }))
   }, [programsQuery.data])
-
-  const departmentDropdownLoading =
-    departmentsQuery.isPending ||
-    departmentsQuery.isFetching ||
-    programsQuery.isPending ||
-    activitiesQuery.isPending ||
-    (isEditTimeStudyWithUserBundle && userProgramsActivitiesQuery.isPending)
 
   const [searchProgramsU, setSearchProgramsU] = useState("")
   const [searchProgramsA, setSearchProgramsA] = useState("")
@@ -407,18 +372,42 @@ export function TimeStudyAssignmentsPanel({
 
   const selectedDept = isAddMode
     ? timeStudyDeptAddMode.trim()
-    : timeStudyDeptEditMode.trim() || defaultEditModeTimeStudyDepartment
+    : timeStudyDeptEditMode.trim()
 
+  const selectedDepartmentNumericId = useMemo(
+    () => departmentIdByClaimingUnitName(departmentsQuery.data, selectedDept),
+    [departmentsQuery.data, selectedDept],
+  )
+
+  const activityDepartmentsQuery = useGetActivityDepartmentsForDepartment(
+    selectedDepartmentNumericId,
+    Boolean(selectedDept) && selectedDepartmentNumericId != null,
+  )
+
+  /** Edit: after department change, block transfers until program list + department-scoped activities finish loading. */
+  const tsCatalogRefetchBusy =
+    isEditTimeStudyWithUserBundle &&
+    (programsQuery.isFetching || activityDepartmentsQuery.isFetching)
+
+  const departmentDropdownLoading =
+    departmentsQuery.isPending ||
+    departmentsQuery.isFetching ||
+    (isEditTimeStudyWithUserBundle && userProgramsActivitiesQuery.isPending)
+
+  /** ActivityDepartment link ids per selected department (not master GET /activities ids). */
   const globalActivityCatalog = useMemo<AddEmployeeTimeStudyTransferItem[]>(() => {
-    const rows = activitiesQuery.data ?? []
-    const deptLabel = selectedDept
-    return rows.map((a) => ({
-      id: String(a.id),
-      department: deptLabel,
-      code: a.activityCode,
-      name: a.name,
-    }))
-  }, [activitiesQuery.data, selectedDept])
+    const deptLabel = selectedDept.trim()
+    if (!deptLabel) return []
+    const rows = activityDepartmentsQuery.data ?? []
+    return rows
+      .filter((a) => isActiveActivityDepartmentStatus(a.status))
+      .map((a) => ({
+        id: String(a.id),
+        department: deptLabel,
+        code: a.code,
+        name: a.name,
+      }))
+  }, [activityDepartmentsQuery.data, selectedDept])
 
   const programCatalogForAddMode = globalProgramCatalog
   const activityCatalogForAddMode = globalActivityCatalog
@@ -783,7 +772,6 @@ export function TimeStudyAssignmentsPanel({
                   setSearchActivitiesU("")
                   setSearchActivitiesA("")
                   void programsQuery.refetch()
-                  void activitiesQuery.refetch()
                 }}
                 onBlur={() => {}}
                 options={departmentSelectOptionsFromMaster}

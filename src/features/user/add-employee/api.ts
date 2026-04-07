@@ -4,6 +4,7 @@ import type { ApiResponseDto } from "@/features/user/types"
 
 import type {
   AddEmployeeActivityCatalogRow,
+  AddEmployeeActivityDepartmentRow,
   AddEmployeeActivityListPayload,
   AddEmployeeCountyActivityRow,
   AddEmployeeDepartmentOption,
@@ -195,7 +196,59 @@ export async function fetchAddEmployeeActivitiesCatalog(): Promise<AddEmployeeAc
     `/activities?${search.toString()}`
   )
   const payload = unwrapSuccess(res, "Failed to load activities")
-  return payload.data
+  return payload.data.filter(isActivityCatalogRow)
+}
+
+function normalizeActivityDepartmentListRow(raw: unknown): AddEmployeeActivityDepartmentRow | null {
+  if (raw === null || typeof raw !== "object") return null
+  const r = raw as Record<string, unknown>
+  const id = r.id
+  const activityId = r.activityId
+  const departmentId = r.departmentId
+  if (typeof id !== "number" || typeof activityId !== "number" || typeof departmentId !== "number") {
+    return null
+  }
+  const code = typeof r.code === "string" ? r.code.trim() : ""
+  const name = typeof r.name === "string" ? r.name.trim() : ""
+  const status = typeof r.status === "string" ? r.status.trim() : ""
+  if (!code && !name) return null
+  return { id, activityId, departmentId, code, name, status }
+}
+
+/**
+ * Activity–department links for one department (paginated). Ids are ActivityDepartment rows — use for
+ * POST /users/new/assign/activity `countyActivity` (not master Activity.id from GET /activities).
+ */
+export async function fetchActivityDepartmentsForDepartment(
+  departmentId: number,
+): Promise<AddEmployeeActivityDepartmentRow[]> {
+  const all: AddEmployeeActivityDepartmentRow[] = []
+  let page = 1
+  const limit = 1000
+  const maxPages = 20
+  while (page <= maxPages) {
+    const search = new URLSearchParams()
+    search.set("page", String(page))
+    search.set("limit", String(limit))
+    search.set("departmentId", String(departmentId))
+    const res = await api.get<
+      ApiResponseDto<{
+        data: unknown[]
+        meta?: { totalItems?: number }
+      }>
+    >(`/activity-departments?${search.toString()}`)
+    const payload = unwrapSuccess(res, "Failed to load activity departments for department")
+    const list = Array.isArray(payload.data) ? payload.data : []
+    for (const raw of list) {
+      const row = normalizeActivityDepartmentListRow(raw)
+      if (row) all.push(row)
+    }
+    const totalItems = payload.meta?.totalItems ?? 0
+    if (list.length < limit) break
+    if (totalItems > 0 && all.length >= totalItems) break
+    page += 1
+  }
+  return all
 }
 
 export async function fetchAddEmployeeDepartments(): Promise<AddEmployeeDepartmentOption[]> {

@@ -66,6 +66,10 @@ export type GetUserModuleParams = {
   inactiveOnly: boolean
   /** Backend `UserListQueryDto.sort` — order by loginId. */
   sort?: "ASC" | "DESC"
+  /** Optional filters for GET /users (case-insensitive partial match, ANDed when multiple set). */
+  firstName?: string
+  lastName?: string
+  employeeId?: string
 }
 
 export type PaginationMetaDto = {
@@ -199,6 +203,7 @@ export type UserDetailsDto = {
   positionName?: string | null
   jobClassificationIds?: number[]
   employeeId?: string | null
+  claimingUnit?: string | null
   firstName: string
   lastName: string
   name: string
@@ -206,6 +211,7 @@ export type UserDetailsDto = {
   tsmins?: number | null
   spmp?: boolean
   multilingual?: boolean
+  pki?: boolean
   user: { loginId: string }
   /** Serialized USER contacts (`type: phone` holds primary phone digits). */
   contacts?: Array<{

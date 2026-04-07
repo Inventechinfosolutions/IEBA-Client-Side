@@ -10,6 +10,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import tableEmptyIcon from "@/assets/icons/table-empty.png"
+import { LeaveApprovalStatus, leaveApprovalStatusLabel } from "../enums/leaveApprovalStatus"
+import type { LeaveApprovalStatusValue } from "../enums/leaveApprovalStatus"
 import type { LeaveApprovalSortKey, LeaveApprovalTableProps } from "../types"
 
 const headers: { label: string; className?: string; sortKey?: LeaveApprovalSortKey }[] = [
@@ -35,27 +37,46 @@ export function LeaveApprovalTable({
   const [isEmployeeTooltipOpen, setIsEmployeeTooltipOpen] = useState(false)
   const [isStartDateTooltipOpen, setIsStartDateTooltipOpen] = useState(false)
 
-  const renderActionIcon = (status: "Approved" | "Rejected" | "Withdraw") => {
-    if (status === "Approved") {
+  const renderActionIcon = (status: LeaveApprovalStatusValue) => {
+    // Requested: dual approve/reject buttons below (this icon not used for that row).
+    if (status === LeaveApprovalStatus.REQUESTED) {
       return (
-        <span className="inline-flex size-4 items-center justify-center rounded-full bg-[#22c55e]">
-          <Check className="size-2.5 text-white" aria-hidden />
+        <span className="inline-flex size-6 items-center justify-center rounded-full bg-white">
+          <RotateCcw className="size-4 text-[#f59e0b]" aria-hidden />
         </span>
       )
     }
-    if (status === "Rejected") {
-      return (
-        <span className="inline-flex size-4 items-center justify-center rounded-full bg-[#ef4444]/80">
-          <X className="size-2.5 text-white" aria-hidden />
-        </span>
-      )
-    }
+
+    // Show the *action* available (swap approved/rejected icons).
+    if (status === LeaveApprovalStatus.APPROVED) return rejectIcon
+    if (status === LeaveApprovalStatus.REJECTED) return approveIcon
+
+    // Withdraw: no action.
     return (
       <span className="inline-flex size-6 items-center justify-center rounded-full bg-white">
         <RotateCcw className="size-4 text-[#f59e0b]" aria-hidden />
       </span>
     )
   }
+
+  const actionTooltip = (status: LeaveApprovalStatusValue) => {
+    if (status === LeaveApprovalStatus.APPROVED) return "Reject"
+    if (status === LeaveApprovalStatus.REJECTED) return "Approve"
+    if (status === LeaveApprovalStatus.REQUESTED) return "Approve / Reject"
+    return leaveApprovalStatusLabel[status]
+  }
+
+  const approveIcon = (
+    <span className="inline-flex size-4 items-center justify-center rounded-full bg-[#22c55e]">
+      <Check className="size-2.5 text-white" aria-hidden />
+    </span>
+  )
+
+  const rejectIcon = (
+    <span className="inline-flex size-4 items-center justify-center rounded-full bg-[#ef4444]/80">
+      <X className="size-2.5 text-white" aria-hidden />
+    </span>
+  )
 
   const sortHint = (key: LeaveApprovalSortKey) => {
     const state = sort?.key === key ? sort.direction : "none"
@@ -67,12 +88,13 @@ export function LeaveApprovalTable({
   return (
     <div className="overflow-hidden rounded-[4px] border border-[#e6e7ef]">
       <Table className="table-fixed">
-        <TableHeader>
+        <TableHeader className="[&_tr]:border-b-0">
           <TableRow className="hover:bg-transparent">
-            {headers.map((h) => {
+            {headers.map((h, index) => {
               const isSortable = Boolean(h.sortKey)
               const key = h.sortKey
-              const dividerClass = "border-r border-[1px] border-[#6C5DD3]"
+              const dividerClass =
+                index === headers.length - 1 ? "border-r-0" : "border-r border-white/50"
               return (
                 <TableHead
                   key={h.label + (h.className ?? "")}
@@ -176,41 +198,41 @@ export function LeaveApprovalTable({
             rows.map((row) => (
               <TableRow key={row.id} className="min-h-[44px] border-[#e9ecf3] hover:bg-[#FAFAFA]">
                 <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-center text-[12px] leading-[1.15rem] text-[#111827] whitespace-normal break-words">
-                  {row.employeeName}
+                  {`${row.user?.firstName ?? ""} ${row.user?.lastName ?? ""}`.trim() || row.userId}
                 </TableCell>
                 <TableCell className="border-r border-[#eff0f5] px-3 text-center text-[12px] text-[#111827]">
-                  {row.startDate}
+                  {row.startdt}
                 </TableCell>
                 <TableCell className="border-r border-[#eff0f5] px-3 text-center text-[12px] text-[#111827]">
-                  {row.startTime}
+                  {row.starttime}
                 </TableCell>
                 <TableCell className="border-r border-[#eff0f5] px-3 text-center text-[12px] text-[#111827]">
-                  {row.endTime}
+                  {row.endtime}
                 </TableCell>
                 <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-center text-[12px] leading-[1.15rem] text-[#111827] whitespace-normal break-words">
-                  {row.programCode}
+                  {`${row.programcode} ${row.programname}`.trim()}
                 </TableCell>
                 <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-center text-[12px] text-[#111827]">
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <div className="mx-auto max-w-full cursor-default overflow-hidden text-ellipsis whitespace-nowrap">
-                          {row.activityCode}
+                          {`${row.activitycode} ${row.activityname}`.trim()}
                         </div>
                       </TooltipTrigger>
                       <TooltipContent side="top" sideOffset={6} collisionPadding={12} className="px-3 py-2">
                         <div className="max-w-[320px] whitespace-normal break-words">
-                          {row.activityCode}
+                          {`${row.activitycode} ${row.activityname}`.trim()}
                         </div>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
                 </TableCell>
                 <TableCell className="border-r border-[#eff0f5] px-3 text-center text-[12px] text-[#111827]">
-                  {row.totalMinutes}
+                  {row.leaveTotalTime}
                 </TableCell>
                 <TableCell className="border-r border-[#eff0f5] px-3 text-center text-[12px] text-[#111827]">
-                  {row.status}
+                  {leaveApprovalStatusLabel[row.status]}
                 </TableCell>
                 <TableCell className="border-r border-[#eff0f5] px-3 text-center">
                   <TooltipProvider>
@@ -233,7 +255,9 @@ export function LeaveApprovalTable({
                       </TooltipTrigger>
                       <TooltipContent side="top" sideOffset={6} collisionPadding={12} className="px-3 py-2">
                         <div className="max-w-[320px] whitespace-normal break-words">
-                          {row.commentText ?? "No comments"}
+                          {row.requestcomment?.trim() ||
+                            row.supervisorcomment?.trim() ||
+                            "No comments"}
                         </div>
                       </TooltipContent>
                     </Tooltip>
@@ -243,7 +267,7 @@ export function LeaveApprovalTable({
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        {row.status === "Withdraw" ? (
+                        {row.status === LeaveApprovalStatus.WITHDRAW ? (
                           <span
                             className="inline-flex items-center justify-center"
                             aria-label="Withdraw"
@@ -251,6 +275,27 @@ export function LeaveApprovalTable({
                           >
                             {renderActionIcon(row.status)}
                           </span>
+                        ) : row.status === LeaveApprovalStatus.REQUESTED ? (
+                          <div className="inline-flex items-center justify-center gap-2">
+                            <button
+                              type="button"
+                              className="inline-flex cursor-pointer items-center justify-center hover:opacity-90"
+                              aria-label="Approve"
+                              data-leave-row-action="approve"
+                              onClick={() => onOpenComments(row.id, "approve")}
+                            >
+                              {approveIcon}
+                            </button>
+                            <button
+                              type="button"
+                              className="inline-flex cursor-pointer items-center justify-center hover:opacity-90"
+                              aria-label="Reject"
+                              data-leave-row-action="reject"
+                              onClick={() => onOpenComments(row.id, "reject")}
+                            >
+                              {rejectIcon}
+                            </button>
+                          </div>
                         ) : (
                           <button
                             type="button"
@@ -260,7 +305,7 @@ export function LeaveApprovalTable({
                             onClick={() => {
                               onOpenComments(
                                 row.id,
-                                row.status === "Approved" ? "reject" : "approve",
+                                row.status === LeaveApprovalStatus.APPROVED ? "reject" : "approve",
                               )
                             }}
                           >
@@ -270,11 +315,7 @@ export function LeaveApprovalTable({
                       </TooltipTrigger>
                       <TooltipContent side="top" sideOffset={6} collisionPadding={12} className="px-3 py-2">
                         <div className="max-w-[220px] whitespace-normal break-words">
-                          {row.status === "Approved"
-                            ? "Approved"
-                            : row.status === "Rejected"
-                              ? "Rejected"
-                              : "Withdraw"}
+                          {actionTooltip(row.status)}
                         </div>
                       </TooltipContent>
                     </Tooltip>

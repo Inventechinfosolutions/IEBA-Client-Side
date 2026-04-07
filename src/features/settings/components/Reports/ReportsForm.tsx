@@ -1,6 +1,6 @@
 import { Controller, useFormContext } from "react-hook-form"
 import { useState } from "react"
-import { ChevronDown, Search } from "lucide-react"
+import { Search } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { SingleSelectDropdown } from "@/components/ui/dropdown"

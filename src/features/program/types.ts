@@ -257,6 +257,13 @@ export type TimeStudyProgramTableProps = {
   lastUpdatedRow?: ProgramRow | null
 }
 
+export type BudgetUnitTableHandle = {
+  /** Merge `updatedRow` into lazy-loaded `budgetProgramsByBudgetUnitId` (survives collapse/re-expand). */
+  patchBudgetProgramRow: (updatedRow: ProgramRow) => void
+  /** Refetch programs for a BU from the API (bypasses the “already loaded” skip). */
+  refreshBudgetUnitPrograms: (budgetUnitId: string) => Promise<void>
+}
+
 export type BudgetUnitTableProps = {
   rows: ProgramRow[]
   isLoading: boolean
