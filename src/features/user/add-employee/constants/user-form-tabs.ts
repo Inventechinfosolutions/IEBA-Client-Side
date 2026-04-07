@@ -1,4 +1,4 @@
-import type { UserModuleFormValues, AddEmployeeFormTab } from "../types"
+import type { AddEmployeeFormTab, AddEmployeeTabDefinition, UserModuleFormValues } from "../types"
 
 export const addEmployeeTabFieldKeys: Record<
   AddEmployeeFormTab,
@@ -8,20 +8,21 @@ export const addEmployeeTabFieldKeys: Record<
     "employeeNo",
     "firstName",
     "lastName",
+    "phone",
     "loginId",
     "password",
     "confirmPassword",
-    "jobClassification",
+    "jobClassificationIds",
     "claimingUnit",
   ],
   security: ["roleAssignments", "supervisorApportioning", "clientAdmin"],
-  supervisor: ["supervisorPrimary", "supervisorSecondary"],
+  supervisor: [
+    "supervisorPrimary",
+    "supervisorSecondary",
+    "supervisorPrimaryId",
+    "supervisorSecondaryId",
+  ],
   timeStudy: ["tsMinDay", "programs", "activities"],
-}
-
-export type AddEmployeeTabDefinition = {
-  id: AddEmployeeFormTab
-  label: string
 }
 
 export const addEmployeeTabs: AddEmployeeTabDefinition[] = [

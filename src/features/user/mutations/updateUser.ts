@@ -2,6 +2,7 @@ import { useMutation } from "@tanstack/react-query"
 
 import { apiUpdateUser } from "../api"
 import type { CreateUserResponseDto, UpdateUserModuleInput, UpdateUserRequestDto } from "../types"
+import { contactsPayloadForUpdate, normalizeLocationId } from "../utility/mapUserDetailsToForm"
 
 function toAssignedMultiCodes(value: string | undefined): string[] | undefined {
   const raw = (value ?? "").trim()
@@ -19,6 +20,7 @@ function toTsMinPerDay(value: string | undefined): number | undefined {
   return n
 }
 
+/** Backend userprofile.positionName = Position # (not job classification label). */
 function clampPositionName(raw: string): string {
   const t = raw.trim()
   if (t.length <= 255) return t
@@ -26,13 +28,16 @@ function clampPositionName(raw: string): string {
 }
 
 function mapUpdateInput(input: UpdateUserModuleInput): UpdateUserRequestDto {
+  const passwordTrimmed = input.values.password.trim()
+  const locationId = normalizeLocationId(input.values.locationId)
+  const jcIds = input.values.jobClassificationIds ?? []
   return {
     firstName: input.values.firstName.trim(),
     lastName: input.values.lastName.trim(),
-    roles: input.values.roleAssignments,
-    password: input.values.password.trim(),
+    ...(passwordTrimmed !== "" ? { password: passwordTrimmed } : {}),
     employeeId: input.values.employeeNo.trim(),
-    positionName: clampPositionName(input.values.jobClassification),
+    positionName: clampPositionName(input.values.positionNo ?? ""),
+    jobClassificationIds: jcIds,
     active: input.values.active,
     pki: input.values.pkiUser,
     spmp: input.values.spmp,
@@ -41,6 +46,10 @@ function mapUpdateInput(input: UpdateUserModuleInput): UpdateUserRequestDto {
     tsMinPerDay: toTsMinPerDay(input.values.tsMinDay),
     claimingUnit: input.values.claimingUnit.trim(),
     assignedMultiCodes: toAssignedMultiCodes(input.values.assignedMultiCodes),
+    ...(locationId != null ? { locationId } : {}),
+    contacts: contactsPayloadForUpdate(input.values.phone),
+    primarySupervisorId: (input.values.supervisorPrimaryId ?? "").trim(),
+    backupSupervisorId: (input.values.supervisorSecondaryId ?? "").trim(),
   }
 }
 

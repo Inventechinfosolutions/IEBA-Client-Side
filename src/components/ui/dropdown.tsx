@@ -28,6 +28,8 @@ export type SingleSelectDropdownProps = {
   onBlur: () => void
   options: readonly SingleSelectOption[]
   placeholder: string
+  /** When set, menu open state is controlled by the parent (e.g. only one of several pickers open). */
+  open?: boolean
   disabled?: boolean
   isLoading?: boolean
   /** Trigger / loading text when `isLoading` (default: “Loading…”) */
@@ -43,6 +45,8 @@ export type SingleSelectDropdownProps = {
   emptyListMessage?: string
   /** Replaces default empty text when there are no options (e.g. illustration). */
   emptyListSlot?: ReactNode
+  /** Notified when the menu opens or closes (lazy-fetch on first open). */
+  onOpenChange?: (open: boolean) => void
 }
 
 /**
@@ -55,6 +59,7 @@ export function SingleSelectDropdown({
   onBlur,
   options,
   placeholder,
+  open: openControlled,
   disabled = false,
   isLoading = false,
   loadingLabel = "Loading…",
@@ -64,8 +69,11 @@ export function SingleSelectDropdown({
   itemLabelClassName,
   emptyListMessage = "No options available",
   emptyListSlot,
+  onOpenChange,
 }: SingleSelectDropdownProps) {
-  const [open, setOpen] = useState(false)
+  const [internalOpen, setInternalOpen] = useState(false)
+  const controlled = openControlled !== undefined
+  const open = controlled ? openControlled : internalOpen
   const valueTrimmed = value.trim()
 
   const selectedLabel = useMemo(() => {
@@ -75,8 +83,22 @@ export function SingleSelectDropdown({
 
   const disabledEffective = disabled || isLoading
 
+  const setOpenState = (next: boolean) => {
+    if (!controlled) setInternalOpen(next)
+    onOpenChange?.(next)
+  }
+
+  const closeMenu = () => {
+    if (!controlled) setInternalOpen(false)
+    onOpenChange?.(false)
+  }
+
   return (
-    <DropdownMenu modal={false} open={open} onOpenChange={setOpen}>
+    <DropdownMenu
+      modal
+      open={open}
+      onOpenChange={setOpenState}
+    >
       <DropdownMenuTrigger asChild disabled={disabledEffective}>
         <button
           type="button"
@@ -113,6 +135,8 @@ export function SingleSelectDropdown({
           contentClassName,
         )}
         onCloseAutoFocus={(e) => e.preventDefault()}
+        onPointerDownOutside={closeMenu}
+        onFocusOutside={closeMenu}
       >
         {options.length === 0 && !isLoading ? (
           emptyListSlot !== undefined ? (
@@ -131,7 +155,7 @@ export function SingleSelectDropdown({
                   key={rowKey}
                   onClick={() => {
                     onChange(opt.value)
-                    setOpen(false)
+                    closeMenu()
                   }}
                   className={cn(
                     "w-full cursor-pointer px-3 py-2 text-left hover:bg-[#f3f4f8]",

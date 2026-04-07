@@ -6,11 +6,7 @@ export { SecurityAssignmentsPanel } from "./security-assignments/security-assign
 export { SupervisorAssignmentsPanel } from "./supervisor-assignments/supervisor-assignments-panel"
 export { TimeStudyAssignmentsPanel } from "./time-study-assignments/time-study-assignments-panel"
 
-export {
-  useAddEmployeeForm,
-  useAddEmployeeReferenceBootstrap,
-  useEmployeeLoginDetailsUi,
-} from "./hooks/use-add-employee-form"
+export { useAddEmployeeForm, useEmployeeLoginDetailsUi } from "./hooks/use-add-employee-form"
 export { useEmployeeMutations } from "./hooks/use-employee-mutations"
 export { useCreateEmployee } from "./mutations/create-employee"
 export { useUpdateEmployee } from "./mutations/update-employee"
@@ -20,8 +16,11 @@ export {
   useGetAddEmployeeDepartments,
   useGetAddEmployeeJobClassifications,
   useGetAddEmployeeJobPools,
+  useGetAddEmployeeLocations,
   useGetAddEmployeeTimeStudyPrograms,
+  useGetUserProgramsAndActivities,
   useGetDepartmentRolesCatalog,
+  useGetDepartmentRolesUnassigned,
   useGetEmployees,
   useGetMulticodeMasterCodes,
 } from "./queries/get-add-employee"

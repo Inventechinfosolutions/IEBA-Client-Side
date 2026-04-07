@@ -12,10 +12,17 @@ import type {
   AddEmployeeJobClassificationRow,
   AddEmployeeJobPoolListPayload,
   AddEmployeeJobPoolRow,
+  AddEmployeeLocationListPayload,
+  AddEmployeeLocationRow,
   AddEmployeeMasterCodeListPayload,
   AddEmployeeMasterCodeRow,
+  AddEmployeeDepartmentSupervisorRow,
   AddEmployeeSecurityRoleCatalogItem,
   AddEmployeeTimeStudyProgramRow,
+  AssignUserActivitiesApiBody,
+  AssignUserProgramsApiBody,
+  UserDepartmentRoleDepartmentsBody,
+  UserProgramsActivitiesDepartmentBundle,
 } from "./types"
 
 function unwrapSuccess<T>(res: ApiResponseDto<T>, failureMessage: string): T {
@@ -41,6 +48,46 @@ function isActivityCatalogRow(row: unknown): row is AddEmployeeActivityCatalogRo
   if (row === null || typeof row !== "object") return false
   const r = row as Record<string, unknown>
   return typeof r.id === "number" && typeof r.code === "string" && typeof r.name === "string"
+}
+
+function isAddEmployeeLocationRow(row: unknown): row is AddEmployeeLocationRow {
+  if (row === null || typeof row !== "object") return false
+  const r = row as Record<string, unknown>
+  return typeof r.id === "number" && typeof r.name === "string"
+}
+
+/**
+ * Supports both `{ data: rows, meta }` and a bare `rows[]` envelope from GET /location.
+ */
+function normalizeLocationListRows(payload: unknown): AddEmployeeLocationRow[] {
+  if (Array.isArray(payload)) {
+    return payload.filter(isAddEmployeeLocationRow)
+  }
+  if (payload !== null && typeof payload === "object" && "data" in payload) {
+    const inner = (payload as { data: unknown }).data
+    if (Array.isArray(inner)) return inner.filter(isAddEmployeeLocationRow)
+  }
+  return []
+}
+
+/**
+ * GET /location — active locations for the Employee/Login Details picker.
+ * Paginated API: single page with max limit (backend max 100).
+ */
+export async function fetchAddEmployeeLocations(): Promise<AddEmployeeLocationRow[]> {
+  const search = new URLSearchParams()
+  search.set("page", "1")
+  search.set("limit", "100")
+  search.set("sort", "ASC")
+  search.set("status", "active")
+
+  const res = await api.get<ApiResponseDto<AddEmployeeLocationListPayload | AddEmployeeLocationRow[]>>(
+    `/location?${search.toString()}`
+  )
+  const payload = unwrapSuccess(res, "Failed to load locations")
+  return normalizeLocationListRows(payload).sort((a, b) =>
+    a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
+  )
 }
 
 export async function fetchAddEmployeeJobClassifications(): Promise<AddEmployeeJobClassificationRow[]> {
@@ -160,6 +207,67 @@ export async function fetchAddEmployeeDepartments(): Promise<AddEmployeeDepartme
   }))
 }
 
+function departmentRowsWithRolesFromListPayload(payload: unknown): unknown[] {
+  if (Array.isArray(payload)) return payload
+  if (payload !== null && typeof payload === "object") {
+    const p = payload as Record<string, unknown>
+    if (Array.isArray(p.data)) return p.data
+  }
+  return []
+}
+
+function flattenDepartmentsRolesToSecurityItems(
+  payload: unknown,
+): AddEmployeeSecurityRoleCatalogItem[] {
+  const rows = departmentRowsWithRolesFromListPayload(payload)
+  const out: AddEmployeeSecurityRoleCatalogItem[] = []
+  for (const raw of rows) {
+    if (raw === null || typeof raw !== "object") continue
+    const d = raw as Record<string, unknown>
+    const deptIdRaw = d.id
+    const deptId = typeof deptIdRaw === "number" ? deptIdRaw : Number(deptIdRaw)
+    const deptName = typeof d.name === "string" ? d.name.trim() : ""
+    if (!Number.isFinite(deptId) || !deptName) continue
+    const roles = d.roles
+    if (!Array.isArray(roles)) continue
+    for (const r of roles) {
+      if (r === null || typeof r !== "object") continue
+      const role = r as Record<string, unknown>
+      const roleIdRaw = role.id
+      const roleId = typeof roleIdRaw === "number" ? roleIdRaw : Number(roleIdRaw)
+      const roleName = typeof role.name === "string" ? role.name.trim() : ""
+      if (!Number.isFinite(roleId) || !roleName) continue
+      out.push({
+        id: `${deptId}-${roleId}`,
+        name: roleName,
+        department: deptName,
+      })
+    }
+  }
+  return out
+}
+
+/**
+ * GET /departments/user/roles-unassigned — departments with roles not yet assigned to the user.
+ * Omit `userId` for “all assignable roles” (new user before draft id exists).
+ */
+export async function fetchDepartmentRolesUnassigned(options?: {
+  userId?: string
+}): Promise<AddEmployeeSecurityRoleCatalogItem[]> {
+  const search = new URLSearchParams()
+  search.set("page", "1")
+  search.set("limit", "100")
+  search.set("sort", "ASC")
+  const uid = options?.userId?.trim()
+  if (uid) search.set("userId", uid)
+
+  const res = await api.get<ApiResponseDto<unknown>>(
+    `/departments/user/roles-unassigned?${search.toString()}`,
+  )
+  const payload = unwrapSuccess(res, "Failed to load unassigned department roles")
+  return flattenDepartmentsRolesToSecurityItems(payload)
+}
+
 export async function fetchDepartmentRolesCatalog(): Promise<AddEmployeeSecurityRoleCatalogItem[]> {
   const search = new URLSearchParams()
   search.set("page", "1")
@@ -187,6 +295,82 @@ export async function fetchDepartmentRolesCatalog(): Promise<AddEmployeeSecurity
     }
   }
 
+  return out
+}
+
+function parseUserProgramsActivitiesBundle(raw: unknown): UserProgramsActivitiesDepartmentBundle | null {
+  if (raw === null || typeof raw !== "object") return null
+  const b = raw as Record<string, unknown>
+  const departmentId = typeof b.departmentId === "number" ? b.departmentId : Number(b.departmentId)
+  const departmentCode = typeof b.departmentCode === "string" ? b.departmentCode : ""
+  const departmentName = typeof b.departmentName === "string" ? b.departmentName.trim() : ""
+  if (!Number.isFinite(departmentId) || !departmentName) return null
+
+  const programs: UserProgramsActivitiesDepartmentBundle["programs"] = []
+  const activities: UserProgramsActivitiesDepartmentBundle["activities"] = []
+
+  if (Array.isArray(b.programs)) {
+    for (const pr of b.programs) {
+      if (pr === null || typeof pr !== "object") continue
+      const p = pr as Record<string, unknown>
+      const id = typeof p.id === "number" ? p.id : Number(p.id)
+      const name = typeof p.name === "string" ? p.name.trim() : ""
+      if (!Number.isFinite(id) || !name) continue
+      const code = typeof p.code === "string" ? p.code : ""
+      const pid = typeof p.departmentId === "number" ? p.departmentId : Number(p.departmentId)
+      programs.push({
+        id,
+        code,
+        name,
+        departmentId: Number.isFinite(pid) ? pid : departmentId,
+      })
+    }
+  }
+
+  if (Array.isArray(b.activities)) {
+    for (const ar of b.activities) {
+      if (ar === null || typeof ar !== "object") continue
+      const a = ar as Record<string, unknown>
+      const id = typeof a.id === "number" ? a.id : Number(a.id)
+      const name = typeof a.name === "string" ? a.name.trim() : ""
+      if (!Number.isFinite(id) || !name) continue
+      const code = typeof a.code === "string" ? a.code : ""
+      const aid = typeof a.departmentId === "number" ? a.departmentId : Number(a.departmentId)
+      activities.push({
+        id,
+        code,
+        name,
+        departmentId: Number.isFinite(aid) ? aid : departmentId,
+      })
+    }
+  }
+
+  return { departmentId, departmentCode, departmentName, programs, activities }
+}
+
+/**
+ * GET /timestudyprograms/user/programs-activities?userId= — programs and activities per department
+ * from the user’s active department-role assignments (edit mode Time Study tab).
+ */
+export async function fetchUserProgramsAndActivities(
+  userId: string,
+): Promise<UserProgramsActivitiesDepartmentBundle[]> {
+  const uid = userId.trim()
+  if (!uid) {
+    throw new Error("userId is required")
+  }
+  const search = new URLSearchParams()
+  search.set("userId", uid)
+  const res = await api.get<ApiResponseDto<unknown>>(
+    `/timestudyprograms/user/programs-activities?${search.toString()}`,
+  )
+  const payload = unwrapSuccess(res, "Failed to load user programs and activities")
+  const list = Array.isArray(payload) ? payload : []
+  const out: UserProgramsActivitiesDepartmentBundle[] = []
+  for (const row of list) {
+    const bundle = parseUserProgramsActivitiesBundle(row)
+    if (bundle) out.push(bundle)
+  }
   return out
 }
 
@@ -269,4 +453,92 @@ export async function fetchMulticodeMasterCodes(): Promise<AddEmployeeMasterCode
   }
 
   return rows.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }))
+}
+
+function isDepartmentSupervisorRow(row: unknown): row is AddEmployeeDepartmentSupervisorRow {
+  if (row === null || typeof row !== "object") return false
+  const r = row as Record<string, unknown>
+  return (
+    typeof r.id === "string" &&
+    typeof r.loginId === "string" &&
+    typeof r.firstName === "string" &&
+    typeof r.lastName === "string" &&
+    typeof r.name === "string" &&
+    typeof r.employeeId === "string"
+  )
+}
+
+/** Display string for supervisor pickers (matches list row style). */
+export function supervisorPickerDisplayName(row: AddEmployeeDepartmentSupervisorRow): string {
+  const fromNames = `${row.firstName} ${row.lastName}`.trim()
+  return fromNames || row.name.trim() || row.loginId.trim()
+}
+
+/**
+ * GET /users/supervisors?departmentIds=1,2,3 — active users with supervisor role in those departments.
+ */
+export async function fetchSupervisorsByDepartmentIds(
+  departmentIds: number[],
+): Promise<AddEmployeeDepartmentSupervisorRow[]> {
+  const uniq = [...new Set(departmentIds.filter((n) => Number.isInteger(n) && n >= 1))].sort(
+    (a, b) => a - b,
+  )
+  if (uniq.length === 0) return []
+  /** Plain commas in the URL (URLSearchParams encodes them as %2C). */
+  const qs = `departmentIds=${uniq.join(",")}`
+  const res = await api.get<ApiResponseDto<unknown>>(`/users/supervisors?${qs}`)
+  const data = unwrapSuccess(res, "Failed to load supervisors")
+  if (!Array.isArray(data)) return []
+  return data.filter(isDepartmentSupervisorRow)
+}
+
+/**
+ * POST /userdepartmentrole/assign/roles — persist department–role rows for the user (transfer to assigned).
+ */
+export async function assignUserDepartmentRoles(body: UserDepartmentRoleDepartmentsBody): Promise<void> {
+  const res = await api.post<ApiResponseDto<null>>("/userdepartmentrole/assign/roles", body)
+  if (!res?.success) {
+    throw new Error(res?.message ?? "Failed to assign department roles")
+  }
+}
+
+/**
+ * POST /userdepartmentrole/unassign/roles — remove matching active userdepartmentrole rows.
+ */
+export async function unassignUserDepartmentRoles(body: UserDepartmentRoleDepartmentsBody): Promise<void> {
+  const res = await api.post<ApiResponseDto<{ message?: string } | null>>(
+    "/userdepartmentrole/unassign/roles",
+    body,
+  )
+  if (!res?.success) {
+    throw new Error(res?.message ?? "Failed to unassign department roles")
+  }
+}
+
+export async function assignUserProgramsTs(body: AssignUserProgramsApiBody): Promise<void> {
+  const res = await api.post<ApiResponseDto<unknown>>("/users/new/assign/program", body)
+  if (!res?.success) {
+    throw new Error(res?.message ?? "Failed to assign time study programs")
+  }
+}
+
+export async function unassignUserProgramsTs(body: AssignUserProgramsApiBody): Promise<void> {
+  const res = await api.post<ApiResponseDto<unknown>>("/users/new/unassign/program", body)
+  if (!res?.success) {
+    throw new Error(res?.message ?? "Failed to unassign time study programs")
+  }
+}
+
+export async function assignUserActivitiesTs(body: AssignUserActivitiesApiBody): Promise<void> {
+  const res = await api.post<ApiResponseDto<unknown>>("/users/new/assign/activity", body)
+  if (!res?.success) {
+    throw new Error(res?.message ?? "Failed to assign activities")
+  }
+}
+
+export async function unassignUserActivitiesTs(body: AssignUserActivitiesApiBody): Promise<void> {
+  const res = await api.post<ApiResponseDto<unknown>>("/users/new/unassign/activity", body)
+  if (!res?.success) {
+    throw new Error(res?.message ?? "Failed to unassign activities")
+  }
 }

@@ -1,9 +1,9 @@
-import { ChevronLeft, ChevronRight } from "lucide-react"
 import type { Dispatch, SetStateAction } from "react"
 import { useMemo, useState } from "react"
 import tableEmptyIcon from "@/assets/icons/table-empty.png"
 import { SingleSelectDropdown } from "@/components/ui/dropdown"
 import { Input } from "@/components/ui/input"
+import { TransferListMoveButton } from "@/components/ui/transfer-list-move-button"
 import { cn } from "@/lib/utils"
 import { programActivityRelationKeys } from "../../keys"
 import { useGetProgramFormOptions } from "../../queries/get-program-form-options"
@@ -262,25 +262,19 @@ export function ProgramActivityRelationForm({ form }: ProgramActivityRelationFor
           selectedDept={selectedDepartment}
         />
 
-        <div className="flex flex-col gap-3 pt-12">
-          <button
-            type="button"
-            onClick={() => handleTransfer(toggledU, true)}
+        <div className="flex flex-col gap-3 pt-10">
+          <TransferListMoveButton
+            direction="forward"
             disabled={toggledU.length === 0}
-            className="flex size-11 cursor-pointer items-center justify-center rounded-[10px] bg-[#6C5DD3] text-white shadow-lg shadow-[#6C5DD3]/20 transition-all hover:brightness-110 active:scale-95 disabled:cursor-not-allowed"
             aria-label="Move selected to assigned"
-          >
-            <ChevronRight className="size-5 stroke-[2.5]" />
-          </button>
-          <button
-            type="button"
-            onClick={() => handleTransfer(toggledA, false)}
+            onClick={() => handleTransfer(toggledU, true)}
+          />
+          <TransferListMoveButton
+            direction="back"
             disabled={toggledA.length === 0}
-            className="flex size-11 cursor-pointer items-center justify-center rounded-[10px] bg-[#6C5DD3] text-white shadow-lg shadow-[#6C5DD3]/20 transition-all hover:brightness-110 active:scale-95 disabled:cursor-not-allowed"
             aria-label="Move selected to unassigned"
-          >
-            <ChevronLeft className="size-5 stroke-[2.5]" />
-          </button>
+            onClick={() => handleTransfer(toggledA, false)}
+          />
         </div>
 
         <TransferPanel
