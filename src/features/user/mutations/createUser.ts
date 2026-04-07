@@ -1,6 +1,7 @@
-import { useMutation } from "@tanstack/react-query"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 import { apiCreateUser } from "../api"
+import { userModuleKeys } from "../keys"
 import type { CreateUserModuleInput, CreateUserRequestDto, CreateUserResponseDto } from "../types"
 import { contactsPayloadForCreate, normalizeLocationId } from "../utility/mapUserDetailsToForm"
 
@@ -54,10 +55,15 @@ function mapCreateInput(input: CreateUserModuleInput): CreateUserRequestDto {
 }
 
 export function useCreateUserModuleRow() {
+  const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async (input: CreateUserModuleInput): Promise<CreateUserResponseDto> => {
       const dto = mapCreateInput(input)
       return await apiCreateUser(dto)
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: userModuleKeys.lists() })
+      // Details are loaded explicitly by the add/edit form after save to avoid duplicate GET /details calls.
     },
   })
 }

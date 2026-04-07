@@ -1,6 +1,7 @@
-import { useMutation } from "@tanstack/react-query"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 import { apiUpdateUser } from "../api"
+import { userModuleKeys } from "../keys"
 import type { CreateUserResponseDto, UpdateUserModuleInput, UpdateUserRequestDto } from "../types"
 import { contactsPayloadForUpdate, normalizeLocationId } from "../utility/mapUserDetailsToForm"
 
@@ -54,10 +55,15 @@ function mapUpdateInput(input: UpdateUserModuleInput): UpdateUserRequestDto {
 }
 
 export function useUpdateUserModuleRow() {
+  const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async (input: UpdateUserModuleInput): Promise<CreateUserResponseDto> => {
       const dto = mapUpdateInput(input)
       return await apiUpdateUser(input.id, dto)
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: userModuleKeys.lists() })
+      // Detail is refetched explicitly by the edit form after save to avoid duplicate GET /details calls.
     },
   })
 }

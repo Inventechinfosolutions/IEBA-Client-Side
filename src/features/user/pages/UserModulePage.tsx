@@ -80,10 +80,28 @@ export function UserModulePage() {
   /** After first successful create in the add wizard, further saves use PUT /users/:id. */
   const [draftUserId, setDraftUserId] = useState<string | null>(null)
 
+  const searchFilters = useMemo(() => {
+    const raw = searchTerm.trim()
+    if (!raw) return { firstName: "", lastName: "", employeeId: "" }
+    const normalized = raw.replace(/\s+/g, " ")
+    /** Employee id is often numeric; if not, treat as name search. */
+    if (/^\d+$/.test(normalized)) {
+      return { firstName: "", lastName: "", employeeId: normalized }
+    }
+    const parts = normalized.split(" ").filter(Boolean)
+    if (parts.length >= 2) {
+      return { firstName: parts[0], lastName: parts.slice(1).join(" "), employeeId: "" }
+    }
+    return { firstName: normalized, lastName: "", employeeId: "" }
+  }, [searchTerm])
+
   const userModule = useUserModule({
     page,
     pageSize,
     inactiveOnly,
+    firstName: searchFilters.firstName || undefined,
+    lastName: searchFilters.lastName || undefined,
+    employeeId: searchFilters.employeeId || undefined,
   })
   const isTableLoading = userModule.isLoading
 
@@ -164,14 +182,6 @@ export function UserModulePage() {
       ? `${formSessionId}-edit-${selectedRow.id}`
       : `${formSessionId}-add`
 
-  const filteredRows = useMemo(() => {
-    const query = searchTerm.trim().toLowerCase()
-    if (!query) return userModule.rows
-
-    return userModule.rows.filter((row) =>
-      row.employee.toLowerCase().includes(query)
-    )
-  }, [searchTerm, userModule.rows])
   const employeeSuggestions = useMemo(() => {
     const query = searchTerm.trim().toLowerCase()
     if (!query) return []
@@ -211,33 +221,27 @@ export function UserModulePage() {
       if (formMode === "edit" && selectedRow) {
         await userModule.updateRowAsync({ id: selectedRow.id, values })
         toast.success("User Saved Successfully", successToastOptions)
-        try {
-          const details = await apiGetUserDetails(selectedRow.id)
-          queryClient.setQueryData(userModuleKeys.detail(selectedRow.id), details)
-          const merged = mergeUserDetailsIntoFormValues(details, values)
-          return { formValues: merged }
-        } catch {
-          void queryClient.invalidateQueries({ queryKey: userModuleKeys.detail(selectedRow.id) })
-          return { formValues: values }
-        }
+        void queryClient.invalidateQueries({ queryKey: userModuleKeys.detail(selectedRow.id) })
+        const details = await queryClient.fetchQuery({
+          queryKey: userModuleKeys.detail(selectedRow.id),
+          queryFn: () => apiGetUserDetails(selectedRow.id),
+          staleTime: 0,
+        })
+        const merged = mergeUserDetailsIntoFormValues(details, values)
+        return { formValues: merged }
       }
 
       if (draftUserId) {
         await userModule.updateRowAsync({ id: draftUserId, values })
         toast.success("Employee saved successfully", successToastOptions)
-        try {
-          const details = await apiGetUserDetails(draftUserId)
-          const merged = mergeUserDetailsIntoFormValues(details, values)
-          return { formValues: merged }
-        } catch {
-          const login = (values.loginId ?? "").trim()
-          const fallback: UserModuleFormValues = {
-            ...values,
-            loginId: login,
-            emailAddress: login,
-          }
-          return { formValues: fallback }
-        }
+        void queryClient.invalidateQueries({ queryKey: userModuleKeys.detail(draftUserId) })
+        const details = await queryClient.fetchQuery({
+          queryKey: userModuleKeys.detail(draftUserId),
+          queryFn: () => apiGetUserDetails(draftUserId),
+          staleTime: 0,
+        })
+        const merged = mergeUserDetailsIntoFormValues(details, values)
+        return { formValues: merged }
       }
 
       const created = await userModule.createRowAsync({ values })
@@ -246,20 +250,14 @@ export function UserModulePage() {
         "Employee details saved. You can go to the next tab without saving again.",
         successToastOptions
       )
-      try {
-        const details = await apiGetUserDetails(created.id)
-        const merged = mergeUserDetailsIntoFormValues(details, values)
-        return { formValues: merged }
-      } catch {
-        const login = (created.loginId ?? values.loginId).trim()
-        return {
-          formValues: {
-            ...values,
-            loginId: login,
-            emailAddress: login,
-          },
-        }
-      }
+      void queryClient.invalidateQueries({ queryKey: userModuleKeys.detail(created.id) })
+      const details = await queryClient.fetchQuery({
+        queryKey: userModuleKeys.detail(created.id),
+        queryFn: () => apiGetUserDetails(created.id),
+        staleTime: 0,
+      })
+      const merged = mergeUserDetailsIntoFormValues(details, values)
+      return { formValues: merged }
     } catch (error) {
       const message = error instanceof Error ? error.message : "Save failed"
       toast.error(message)
@@ -344,13 +342,13 @@ export function UserModulePage() {
           <div className="rounded-[8px] bg-white p-3">
             <div className="mb-5">
               <UserTable
-                rows={filteredRows}
+                rows={userModule.rows}
                 isLoading={isTableLoading}
                 onEditRow={handleEditRow}
               />
             </div>
             <MasterCodePagination
-              totalItems={searchTerm.trim() ? filteredRows.length : userModule.totalItems}
+              totalItems={userModule.totalItems}
               currentPage={page}
               pageSize={pageSize}
               onPageChange={(p: number) => setPage(p)}

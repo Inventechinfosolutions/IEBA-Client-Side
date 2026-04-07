@@ -11,6 +11,7 @@ export { useEmployeeMutations } from "./hooks/use-employee-mutations"
 export { useCreateEmployee } from "./mutations/create-employee"
 export { useUpdateEmployee } from "./mutations/update-employee"
 export {
+  useGetActivityDepartmentsForDepartment,
   useGetAddEmployeeActivitiesCatalog,
   useGetAddEmployeeCountyActivities,
   useGetAddEmployeeDepartments,

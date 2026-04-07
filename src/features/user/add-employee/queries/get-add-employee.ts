@@ -5,6 +5,7 @@ import { userModuleKeys } from "../../keys"
 import type { GetUserModuleParams, UserModuleListResponse } from "../../types"
 
 import {
+  fetchActivityDepartmentsForDepartment,
   fetchAddEmployeeActivitiesCatalog,
   fetchAddEmployeeDepartments,
   fetchAddEmployeeJobClassifications,
@@ -21,6 +22,7 @@ import {
 import { addEmployeeLookupKeys, departmentRolesUnassignedCacheUserKey } from "../keys"
 import type {
   AddEmployeeActivityCatalogRow,
+  AddEmployeeActivityDepartmentRow,
   AddEmployeeCountyActivityRow,
   AddEmployeeDepartmentOption,
   AddEmployeeJobClassificationRow,
@@ -101,6 +103,21 @@ export function useGetAddEmployeeActivitiesCatalog(enabled = true) {
     staleTime: Number.POSITIVE_INFINITY,
     refetchOnWindowFocus: false,
     refetchOnMount: false,
+  })
+}
+
+/** Time Study tab: activities for `departmentId` as ActivityDepartment link rows (ids for assign/unassign activity). */
+export function useGetActivityDepartmentsForDepartment(
+  departmentId: number | null,
+  enabled: boolean,
+) {
+  const id = departmentId != null && departmentId >= 1 ? departmentId : null
+  return useQuery({
+    queryKey: addEmployeeLookupKeys.activityDepartmentsByDepartment(id != null ? String(id) : "none"),
+    queryFn: async (): Promise<AddEmployeeActivityDepartmentRow[]> => {
+      return await fetchActivityDepartmentsForDepartment(id!)
+    },
+    enabled: Boolean(enabled && id != null),
   })
 }
 
