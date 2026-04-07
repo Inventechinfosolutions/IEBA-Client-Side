@@ -37,10 +37,11 @@ async function fetchMasterCodeOptions(): Promise<string[]> {
   return [...unique].sort((a, b) => a.localeCompare(b))
 }
 
-export function useGetMasterCodeOptions() {
+export function useGetMasterCodeOptions(enabled = true) {
   return useQuery({
     queryKey: ["master-codes", "options"],
     queryFn: fetchMasterCodeOptions,
+    enabled,
     // Always refetch on mount so different tenants (Trinity/Touloume)
     // don't reuse each other's cached master-code list.
     staleTime: 0,

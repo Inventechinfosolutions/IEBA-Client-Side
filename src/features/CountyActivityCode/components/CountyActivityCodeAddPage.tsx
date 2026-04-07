@@ -1,5 +1,6 @@
 import { ChevronLeft, ChevronRight, SearchIcon } from "lucide-react"
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useMemo, useState } from "react"
+import { flushSync } from "react-dom"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -12,27 +13,61 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { normalizeMatch } from "@/features/master-code/api"
 import { useGetActivityCodeById } from "@/features/master-code/queries/getMasterCodes"
 
 import {
+  normalizeCatalogMatchForCountyActivityGrid,
+  parseMasterCodeDisplay,
+} from "../api/countyActivityApi"
+import {
   CountyActivityAddPageMode,
-  CountyActivityCatalogMatchDefault,
   CountyActivityGridRowType,
-  CountyActivityMasterCodeTypeOptions,
 } from "../enums/CountyActivity.enum"
-import type { CountyActivityCodeAddPageProps, MatchStatus } from "../types"
+import type {
+  CountyActivityAddFormMergeContext,
+  CountyActivityAddFormValues,
+  CountyActivityCodeAddPageProps,
+} from "../types"
 
-function masterMatchToCountyFormMatch(raw: string): MatchStatus {
-  const t = normalizeMatch(raw)
-  if (!t) return CountyActivityCatalogMatchDefault.NONE
-  if (t.length > 5) return CountyActivityCatalogMatchDefault.NONE
-  return t
+function mergeCountyActivityAddFormForSubmit(
+  raw: CountyActivityAddFormValues,
+  ctx: CountyActivityAddFormMergeContext,
+): CountyActivityAddFormValues {
+  let v = { ...raw }
+  if (ctx.copyFromMasterEnabled && ctx.masterRow) {
+    const row = ctx.masterRow
+    const pct = Number.parseFloat(row.ffpPercent)
+    v = {
+      ...v,
+      countyActivityCode: (row.code ?? "").trim(),
+      countyActivityName: row.name.trim(),
+      description: (row.activityDescription ?? "").trim(),
+      match: normalizeCatalogMatchForCountyActivityGrid(row.match),
+      percentage: Number.isFinite(pct) ? pct : 0,
+    }
+  }
+  if (
+    ctx.tab === CountyActivityGridRowType.SUB &&
+    ctx.selectedPrimaryId?.trim() &&
+    ctx.subParentDetail &&
+    String(ctx.subParentDetail.activity.id) === ctx.selectedPrimaryId.trim()
+  ) {
+    const { activity, departmentNames } = ctx.subParentDetail
+    v = {
+      ...v,
+      masterCodeType: activity.activityCodeType.trim(),
+      masterCode: parseMasterCodeDisplay(activity.activityCode),
+      department:
+        departmentNames.length > 0 ? departmentNames.join(", ") : v.department,
+    }
+  }
+  return v
 }
 
 export function CountyActivityCodeAddPage({
   form,
-  onSubmit,
+  onAddSave,
+  onEditSave,
   onClose,
   mode = CountyActivityAddPageMode.ADD,
   tab: controlledTab,
@@ -41,11 +76,14 @@ export function CountyActivityCodeAddPage({
   selectedPrimaryId,
   onSelectedPrimaryIdChange,
   disabledTabs,
+  masterCodeTypeOptions = [],
+  isMasterCodeTypeOptionsLoading = false,
   masterCodeOptions = [],
   isMasterCodeOptionsLoading = false,
   departmentNames = [],
   readOnlyPrimaryPicker = false,
   isEditSourceLoading = false,
+  subParentActivityDetail = null,
 }: CountyActivityCodeAddPageProps) {
   const [uncontrolledTab, setUncontrolledTab] = useState<CountyActivityGridRowType>(
     CountyActivityGridRowType.PRIMARY,
@@ -64,6 +102,17 @@ export function CountyActivityCodeAddPage({
   const masterCodeType = form.watch("masterCodeType")
   const masterCode = form.watch("masterCode")
 
+  const codeTypeSelectItems = useMemo(() => {
+    const fromApi = [...masterCodeTypeOptions]
+    const current = masterCodeType.trim()
+    if (current.length > 0 && !fromApi.includes(current)) {
+      fromApi.push(current)
+    }
+    return fromApi.sort((a, b) =>
+      a.localeCompare(b, undefined, { sensitivity: "base" }),
+    )
+  }, [masterCodeTypeOptions, masterCodeType])
+
   const copyFromMasterEnabled =
     tab === CountyActivityGridRowType.PRIMARY && copyCode && masterCode > 0
   const masterActivityId = String(masterCode)
@@ -71,64 +120,27 @@ export function CountyActivityCodeAddPage({
     enabled: copyFromMasterEnabled,
   })
 
-  const lastCopiedMasterSyncKeyRef = useRef<string>("")
-  useEffect(() => {
-    if (!copyFromMasterEnabled) {
-      lastCopiedMasterSyncKeyRef.current = ""
-      return
-    }
-    if (!masterActivityQuery.isSuccess || masterActivityQuery.data == null) return
-    const syncKey = `${masterActivityQuery.data.id}:${masterActivityQuery.dataUpdatedAt}`
-    if (lastCopiedMasterSyncKeyRef.current === syncKey) return
-
-    lastCopiedMasterSyncKeyRef.current = syncKey
-    const row = masterActivityQuery.data
-    form.setValue("countyActivityCode", (row.code ?? "").trim(), { shouldValidate: true })
-    form.setValue("countyActivityName", row.name.trim(), { shouldValidate: true })
-    form.setValue("description", (row.activityDescription ?? "").trim(), {
-      shouldValidate: true,
-    })
-    form.setValue("match", masterMatchToCountyFormMatch(row.match), { shouldValidate: true })
-    const pct = Number.parseFloat(row.ffpPercent)
-    form.setValue("percentage", Number.isFinite(pct) ? pct : 0, { shouldValidate: true })
-  }, [
-    copyFromMasterEnabled,
-    form,
-    masterActivityQuery.data,
-    masterActivityQuery.dataUpdatedAt,
-    masterActivityQuery.isSuccess,
-  ])
-
-  const lastCopyLoadErrorToastKeyRef = useRef<string>("")
-  useEffect(() => {
-    if (
-      !copyFromMasterEnabled ||
-      !masterActivityQuery.isError ||
-      masterActivityQuery.error == null
-    ) {
-      lastCopyLoadErrorToastKeyRef.current = ""
-      return
-    }
-    const key = `${masterActivityId}:${
-      masterActivityQuery.error instanceof Error
-        ? masterActivityQuery.error.message
-        : "unknown"
-    }`
-    if (lastCopyLoadErrorToastKeyRef.current === key) return
-    lastCopyLoadErrorToastKeyRef.current = key
-    toast.error(
-      masterActivityQuery.error instanceof Error
-        ? masterActivityQuery.error.message
-        : "Failed to load activity code",
-    )
-  }, [
-    copyFromMasterEnabled,
-    masterActivityId,
-    masterActivityQuery.error,
-    masterActivityQuery.isError,
-  ])
+  const masterRowForCopy =
+    copyFromMasterEnabled && masterActivityQuery.isSuccess
+      ? masterActivityQuery.data
+      : undefined
 
   const primaryFieldsLocked = tab === CountyActivityGridRowType.PRIMARY && copyCode
+
+  const displayCountyActivityCode =
+    primaryFieldsLocked && masterRowForCopy
+      ? (masterRowForCopy.code ?? "").trim()
+      : form.watch("countyActivityCode")
+
+  const displayCountyActivityName =
+    primaryFieldsLocked && masterRowForCopy
+      ? masterRowForCopy.name.trim()
+      : form.watch("countyActivityName")
+
+  const displayDescription =
+    primaryFieldsLocked && masterRowForCopy
+      ? (masterRowForCopy.activityDescription ?? "").trim()
+      : form.watch("description")
 
   const departmentValue = form.watch("department")
   const assignedDepartments = useMemo(() => {
@@ -160,26 +172,81 @@ export function CountyActivityCodeAddPage({
     [assignedDepartments, rightSearch],
   )
 
-  const moveToAssigned = () => {
+  const assignCountyActivityDepartmentsFromPicker = () => {
     if (selectedLeft.length === 0) return
     const next = [...new Set([...assignedDepartments, ...selectedLeft])]
     form.setValue("department", next.join(", "), { shouldValidate: true })
     setSelectedLeft([])
   }
 
-  const moveToUnassigned = () => {
+  const removeCountyActivityDepartmentsFromPicker = () => {
     if (selectedRight.length === 0) return
     const next = assignedDepartments.filter((item) => !selectedRight.includes(item))
     form.setValue("department", next.join(", "), { shouldValidate: true })
     setSelectedRight([])
   }
 
-  const handleSave = () => {
+  const handleCountyActivityAddOrEditSave = () => {
+    if (mode === CountyActivityAddPageMode.EDIT) {
+      onEditSave?.()
+      return
+    }
     if (tab === CountyActivityGridRowType.PRIMARY && assignedDepartments.length === 0) {
       form.setError("department", { message: "Department is required", type: "manual" })
       return
     }
-    onSubmit(tab)
+
+    // Copy-from-master shows master values in the UI but RHF state can still be empty; Zod runs
+    // inside handleSubmit before our merge callback, so we sync master row into the form first.
+    if (
+      mode === CountyActivityAddPageMode.ADD &&
+      tab === CountyActivityGridRowType.PRIMARY &&
+      copyFromMasterEnabled
+    ) {
+      if (masterActivityQuery.isPending || masterActivityQuery.isFetching) {
+        toast.error("Wait for the activity code to finish loading.")
+        return
+      }
+      if (!masterRowForCopy) {
+        toast.error("Could not load activity code to copy. Try again.")
+        return
+      }
+      const row = masterRowForCopy
+      flushSync(() => {
+        form.setValue("countyActivityCode", (row.code ?? "").trim(), {
+          shouldValidate: false,
+          shouldDirty: true,
+        })
+        form.setValue("countyActivityName", row.name.trim(), {
+          shouldValidate: false,
+          shouldDirty: true,
+        })
+        form.setValue("description", (row.activityDescription ?? "").trim(), {
+          shouldValidate: false,
+          shouldDirty: true,
+        })
+        form.setValue("match", normalizeCatalogMatchForCountyActivityGrid(row.match), {
+          shouldValidate: false,
+          shouldDirty: true,
+        })
+        const pct = Number.parseFloat(row.ffpPercent)
+        form.setValue("percentage", Number.isFinite(pct) ? pct : 0, {
+          shouldValidate: false,
+          shouldDirty: true,
+        })
+      })
+    }
+
+    form.handleSubmit((raw) => {
+      const values = mergeCountyActivityAddFormForSubmit(raw, {
+        tab,
+        copyFromMasterEnabled,
+        masterRow: masterRowForCopy,
+        subParentDetail: subParentActivityDetail,
+        selectedPrimaryId,
+      })
+      onAddSave?.(tab, values)
+    })()
   }
 
   return (
@@ -218,7 +285,7 @@ export function CountyActivityCodeAddPage({
       <form
         onSubmit={(event) => {
           event.preventDefault()
-          handleSave()
+          handleCountyActivityAddOrEditSave()
         }}
         className="relative space-y-4 p-6"
       >
@@ -235,7 +302,7 @@ export function CountyActivityCodeAddPage({
           }
         >
           <div className="grid grid-cols-3 items-center gap-4">
-            <div className="flex items-center gap-2 text-[16px] text-[#1F2937]">
+            <div className="flex flex-col gap-1 text-[16px] text-[#1F2937]">
               {tab === CountyActivityGridRowType.PRIMARY && (
                 <label className="flex cursor-pointer items-center gap-2">
                   <Checkbox
@@ -245,6 +312,13 @@ export function CountyActivityCodeAddPage({
                   <span>Copy Code</span>
                 </label>
               )}
+              {copyFromMasterEnabled && masterActivityQuery.isError ? (
+                <p className="text-sm text-destructive" role="alert">
+                  {masterActivityQuery.error instanceof Error
+                    ? masterActivityQuery.error.message
+                    : "Failed to load activity code"}
+                </p>
+              ) : null}
             </div>
             <h3 className="whitespace-nowrap text-center text-[22px] max-[1024px]:text-[22px] max-[768px]:text-[18px] font-normal text-[#1F2937]">
               {mode === CountyActivityAddPageMode.EDIT ? "Edit" : "Add"}{" "}
@@ -276,9 +350,20 @@ export function CountyActivityCodeAddPage({
                       form.setValue("description", "")
                     }
                   }}
+                  disabled={
+                    isMasterCodeTypeOptionsLoading || codeTypeSelectItems.length === 0
+                  }
                 >
                   <SelectTrigger className="data-[size=default]:h-[48px] data-[size=sm]:h-[48px] h-[48px] w-full max-w-full min-w-0 rounded-[10px] border-[#D9D9D9]">
-                    <SelectValue placeholder="Select type" />
+                    <SelectValue
+                      placeholder={
+                        isMasterCodeTypeOptionsLoading
+                          ? "Loading types…"
+                          : codeTypeSelectItems.length === 0
+                            ? "No types available"
+                            : "Select type"
+                      }
+                    />
                   </SelectTrigger>
                   <SelectContent
                     position="popper"
@@ -288,7 +373,7 @@ export function CountyActivityCodeAddPage({
                     avoidCollisions={false}
                     className="w-(--radix-select-trigger-width) max-h-[280px] [&_[data-slot=select-scroll-up-button]]:hidden [&_[data-slot=select-scroll-down-button]]:hidden"
                   >
-                    {CountyActivityMasterCodeTypeOptions.map((item) => (
+                    {codeTypeSelectItems.map((item) => (
                       <SelectItem key={item} value={item}>
                         {item}
                       </SelectItem>
@@ -341,8 +426,12 @@ export function CountyActivityCodeAddPage({
                   className={`h-[48px] w-full rounded-[10px] border-[#D9D9D9] ${
                     primaryFieldsLocked ? "cursor-not-allowed bg-muted/50" : ""
                   }`}
-                  value={form.watch("countyActivityCode")}
-                  onChange={(event) => form.setValue("countyActivityCode", event.target.value)}
+                  value={displayCountyActivityCode}
+                  onChange={(event) =>
+                    primaryFieldsLocked
+                      ? undefined
+                      : form.setValue("countyActivityCode", event.target.value)
+                  }
                 />
               </div>
               <div className="min-w-0 space-y-1">
@@ -354,8 +443,12 @@ export function CountyActivityCodeAddPage({
                   className={`h-[48px] w-full rounded-[10px] border-[#D9D9D9] ${
                     primaryFieldsLocked ? "cursor-not-allowed bg-muted/50" : ""
                   }`}
-                  value={form.watch("countyActivityName")}
-                  onChange={(event) => form.setValue("countyActivityName", event.target.value)}
+                  value={displayCountyActivityName}
+                  onChange={(event) =>
+                    primaryFieldsLocked
+                      ? undefined
+                      : form.setValue("countyActivityName", event.target.value)
+                  }
                 />
               </div>
             </div>
@@ -419,8 +512,12 @@ export function CountyActivityCodeAddPage({
               className={`min-h-[100px] w-full rounded-[10px] border border-[#D9D9D9] px-4 py-3 text-[15px] outline-none ${
                 primaryFieldsLocked ? "cursor-not-allowed bg-muted/50" : ""
               }`}
-              value={form.watch("description")}
-              onChange={(event) => form.setValue("description", event.target.value)}
+              value={displayDescription}
+              onChange={(event) =>
+                primaryFieldsLocked
+                  ? undefined
+                  : form.setValue("description", event.target.value)
+              }
             />
           </div>
 
@@ -468,7 +565,7 @@ export function CountyActivityCodeAddPage({
                 <Button
                   type="button"
                   size="icon"
-                  onClick={moveToAssigned}
+                  onClick={assignCountyActivityDepartmentsFromPicker}
                   className="h-[38px] w-[62px] rounded-[12px] bg-[#6C5DD3] hover:bg-[#5B4DC5]"
                 >
                   <ChevronRight className="size-5" />
@@ -476,7 +573,7 @@ export function CountyActivityCodeAddPage({
                 <Button
                   type="button"
                   size="icon"
-                  onClick={moveToUnassigned}
+                  onClick={removeCountyActivityDepartmentsFromPicker}
                   className="h-[38px] w-[62px] rounded-[12px] bg-[#6C5DD3] hover:bg-[#5B4DC5]"
                 >
                   <ChevronLeft className="size-5" />

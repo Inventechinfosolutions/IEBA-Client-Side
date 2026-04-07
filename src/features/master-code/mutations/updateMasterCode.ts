@@ -17,6 +17,9 @@ export function useUpdateMasterCode() {
       await queryClient.invalidateQueries({
         queryKey: masterCodeKeys.activityCodesCatalogEnrichment(),
       })
+      await queryClient.invalidateQueries({
+        queryKey: masterCodeKeys.activityCodesCatalogAll(),
+      })
       await queryClient.invalidateQueries({ queryKey: countyActivityCodeKeys.lists() })
     },
   })
