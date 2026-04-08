@@ -4,6 +4,7 @@ import { Controller, useForm } from "react-hook-form"
 import { Button } from "@/components/ui/button"
 import { SingleSelectDropdown } from "@/components/ui/dropdown"
 import { leaveApprovalFiltersSchema } from "../schemas"
+import { leaveApprovalStatusLabel, leaveApprovalStatusValues } from "../enums/leaveApprovalStatus"
 import type { LeaveApprovalFilters, LeaveApprovalToolbarProps } from "../types"
 
 export function LeaveApprovalToolbar({
@@ -36,10 +37,15 @@ export function LeaveApprovalToolbar({
                 value={field.value}
                 onChange={field.onChange}
                 onBlur={field.onBlur}
-                options={(["All", "Approved", "Rejected", "Withdraw"] as const).map((opt) => ({
-                  value: opt,
-                  label: opt,
-                }))}
+                options={[
+                  { value: "All", label: "All" },
+                  ...leaveApprovalStatusValues
+                    .filter((s) => s !== "draft")
+                    .map((s) => ({
+                      value: leaveApprovalStatusLabel[s],
+                      label: leaveApprovalStatusLabel[s],
+                    })),
+                ]}
                 placeholder="All"
                 className="!h-[45px] !min-h-[45px] !w-[140px] !rounded-[8px] !border-[#d6d7dc] !text-[12px] focus-visible:!border-[#6C5DD3] focus-visible:!ring-0"
                 contentClassName="max-h-[224px]"

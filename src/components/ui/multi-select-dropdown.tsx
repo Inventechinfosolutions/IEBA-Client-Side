@@ -44,6 +44,8 @@ export type MultiSelectDropdownProps = {
   className?: string
   /** Shown when `options` is empty and not loading (default: “No options available”). */
   emptyListMessage?: string
+  /** Radix menu open state (e.g. lazy-fetch catalog on first open in edit mode). */
+  onOpenChange?: (open: boolean) => void
 }
 
 /**
@@ -61,6 +63,7 @@ export function MultiSelectDropdown({
   maxVisibleItems = 2,
   className,
   emptyListMessage = "No options available",
+  onOpenChange,
 }: MultiSelectDropdownProps) {
   const selectedValues = useMemo(() => parseMultiSelectStoredValues(value), [value])
 
@@ -85,7 +88,7 @@ export function MultiSelectDropdown({
   const disabledEffective = disabled || isLoading
 
   return (
-    <DropdownMenu modal={false}>
+    <DropdownMenu modal={false} onOpenChange={onOpenChange}>
       <DropdownMenuTrigger asChild disabled={disabledEffective}>
         <button
           type="button"

@@ -8,10 +8,17 @@ export const costPoolFilterFormSchema = z.object({
 })
 
 export const costPoolUpsertFormSchema = z.object({
-  costPool: z.string().min(1, "Cost pool is required"),
-  department: z.string().min(1, "Department is required"),
+  costPool: z
+    .string()
+    .trim()
+    .min(1, "Cost pool is required")
+    .max(100, "Cost pool name must be at most 100 characters"),
+  departmentId: z
+    .number({ message: "Department is required" })
+    .int()
+    .positive("Department is required"),
   active: z.boolean(),
-  assignedActivityIds: z.array(z.string()),
+  assignedActivityDepartmentIds: z.array(z.number().int().positive()),
 })
 
 export const costPoolFilterDefaultValues: CostPoolFilterFormValues = {
@@ -21,7 +28,7 @@ export const costPoolFilterDefaultValues: CostPoolFilterFormValues = {
 
 export const costPoolUpsertDefaultValues: CostPoolUpsertFormValues = {
   costPool: "",
-  department: "",
+  departmentId: 0,
   active: true,
-  assignedActivityIds: [],
+  assignedActivityDepartmentIds: [],
 }

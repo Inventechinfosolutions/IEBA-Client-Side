@@ -44,6 +44,7 @@ export function useGetActivityCodeById(
     queryFn: () => apiGetMasterCodeById(id),
     enabled: enabled && id.length > 0 && !Number.isNaN(numericId) && numericId > 0,
     staleTime: 60_000,
+    gcTime: 5 * 60_000,
   })
 }
 

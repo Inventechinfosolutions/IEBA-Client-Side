@@ -1,7 +1,9 @@
 import { useMemo, useState } from "react"
-import { Check } from "lucide-react"
+import { useQuery } from "@tanstack/react-query"
+import { Check, Loader2 } from "lucide-react"
 import { toast } from "sonner"
 
+import { Button } from "@/components/ui/button"
 import { MasterCodePagination } from "@/features/master-code/components/MasterCodePagination"
 import { queryClient } from "@/main"
 import { UserTable } from "../components/UserTable"
@@ -12,6 +14,7 @@ import { userModuleKeys } from "../keys"
 import { mergeUserDetailsIntoFormValues } from "../utility/mapUserDetailsToForm"
 import { AddEmployeeFormPage } from "../add-employee"
 import {
+  type AddEmployeeSavePayload,
   type AddEmployeeSaveSync,
   type UserModuleFormMode,
   type UserModuleFormValues,
@@ -23,6 +26,7 @@ import {
 const emptyFormValues: UserModuleFormValues = {
   employeeNo: "",
   positionNo: "",
+  locationId: undefined,
   location: "",
   firstName: "",
   lastName: "",
@@ -31,7 +35,7 @@ const emptyFormValues: UserModuleFormValues = {
   password: "",
   confirmPassword: "",
   emailAddress: "",
-  jobClassification: "",
+  jobClassificationIds: [],
   jobDutyStatement: "",
   claimingUnit: "",
   spmp: false,
@@ -39,9 +43,12 @@ const emptyFormValues: UserModuleFormValues = {
   allowMultiCodes: false,
   active: true,
   pkiUser: false,
-  roleAssignments: ["User"],
+  roleAssignments: [],
+  securityAssignedSnapshots: [],
   supervisorPrimary: "",
   supervisorSecondary: "",
+  supervisorPrimaryId: "",
+  supervisorSecondaryId: "",
   tsMinDay: "480",
   programs: true,
   activities: true,
@@ -73,59 +80,108 @@ export function UserModulePage() {
   /** After first successful create in the add wizard, further saves use PUT /users/:id. */
   const [draftUserId, setDraftUserId] = useState<string | null>(null)
 
+  const searchFilters = useMemo(() => {
+    const raw = searchTerm.trim()
+    if (!raw) return { firstName: "", lastName: "", employeeId: "" }
+    const normalized = raw.replace(/\s+/g, " ")
+    /** Employee id is often numeric; if not, treat as name search. */
+    if (/^\d+$/.test(normalized)) {
+      return { firstName: "", lastName: "", employeeId: normalized }
+    }
+    const parts = normalized.split(" ").filter(Boolean)
+    if (parts.length >= 2) {
+      return { firstName: parts[0], lastName: parts.slice(1).join(" "), employeeId: "" }
+    }
+    return { firstName: normalized, lastName: "", employeeId: "" }
+  }, [searchTerm])
+
   const userModule = useUserModule({
     page,
     pageSize,
     inactiveOnly,
+    firstName: searchFilters.firstName || undefined,
+    lastName: searchFilters.lastName || undefined,
+    employeeId: searchFilters.employeeId || undefined,
   })
   const isTableLoading = userModule.isLoading
 
-  const formInitialValues = useMemo<UserModuleFormValues>(() => {
-    if (formMode === "edit" && selectedRow) {
-      return {
-        employeeNo: selectedRow.employeeNo ?? selectedRow.id,
-        positionNo: selectedRow.positionNo ?? "",
-        location: selectedRow.location ?? "",
-        firstName: selectedRow.firstName ?? selectedRow.employee.split(" ")[0] ?? "",
-        lastName:
-          selectedRow.lastName ?? selectedRow.employee.split(" ").slice(1).join(" "),
-        phone: selectedRow.phone ?? "",
-        loginId: selectedRow.loginId ?? "",
-        password: selectedRow.password ?? "",
-        confirmPassword: selectedRow.password ?? "",
-        emailAddress:
-          (selectedRow.loginId ?? selectedRow.emailAddress ?? "").trim(),
-        jobClassification: selectedRow.jobClassification ?? "",
-        jobDutyStatement: "",
-        claimingUnit: selectedRow.claimingUnit ?? selectedRow.department,
-        spmp: selectedRow.spmp,
-        multilingual: selectedRow.multilingual ?? false,
-        allowMultiCodes:
-          selectedRow.allowMultiCodes ?? selectedRow.multicodesEnabled,
-        active: selectedRow.active,
-        pkiUser: selectedRow.pkiUser ?? false,
-        roleAssignments: selectedRow.roleAssignments ?? ["User"],
-        supervisorPrimary: selectedRow.supervisorPrimary ?? "",
-        supervisorSecondary: selectedRow.supervisorSecondary ?? "",
-        tsMinDay: selectedRow.tsMinDay ?? "480",
-        programs: selectedRow.programs ?? true,
-        activities: selectedRow.activities ?? true,
-        supervisorApportioning: selectedRow.supervisorApportioning ?? false,
-        clientAdmin: selectedRow.clientAdmin ?? false,
-        assignedMultiCodes: selectedRow.assignedMultiCodes ?? "",
-      }
+  const shouldFetchEditDetails =
+    showForm && formMode === "edit" && selectedRow != null
+
+  const editUserDetailsQuery = useQuery({
+    queryKey: userModuleKeys.detail(selectedRow?.id ?? ""),
+    queryFn: () => apiGetUserDetails(selectedRow!.id),
+    enabled: shouldFetchEditDetails,
+    retry: 1,
+  })
+
+  /** Baseline from the list row (sparse); merged with GET /users/:id/details when editing. */
+  const formValuesFromListRow = useMemo((): UserModuleFormValues | null => {
+    if (formMode !== "edit" || !selectedRow) return null
+    const nameParts = (selectedRow.employee ?? "").trim().split(/\s+/).filter(Boolean)
+    const fromEmployeeFirst = nameParts[0] ?? ""
+    const fromEmployeeRest = nameParts.slice(1).join(" ")
+    return {
+      employeeNo: selectedRow.employeeNo ?? selectedRow.id,
+      positionNo: selectedRow.positionNo ?? "",
+      locationId: undefined,
+      location: selectedRow.location ?? "",
+      firstName: selectedRow.firstName ?? fromEmployeeFirst,
+      lastName: selectedRow.lastName ?? fromEmployeeRest,
+      phone: selectedRow.phone ?? "",
+      loginId: selectedRow.loginId ?? "",
+      password: "",
+      confirmPassword: "",
+      emailAddress:
+        (selectedRow.loginId ?? selectedRow.emailAddress ?? "").trim(),
+      jobClassificationIds: [],
+      jobDutyStatement: "",
+      claimingUnit: selectedRow.claimingUnit ?? selectedRow.department,
+      spmp: selectedRow.spmp,
+      multilingual: selectedRow.multilingual ?? false,
+      allowMultiCodes:
+        selectedRow.allowMultiCodes ?? selectedRow.multicodesEnabled,
+      active: selectedRow.active,
+      pkiUser: selectedRow.pkiUser ?? false,
+      roleAssignments: selectedRow.roleAssignments ?? [],
+      securityAssignedSnapshots: [],
+      supervisorPrimary: selectedRow.supervisorPrimary ?? "",
+      supervisorSecondary: selectedRow.supervisorSecondary ?? "",
+      supervisorPrimaryId: selectedRow.supervisorPrimaryId ?? "",
+      supervisorSecondaryId: selectedRow.supervisorSecondaryId ?? "",
+      tsMinDay: selectedRow.tsMinDay ?? "480",
+      programs: selectedRow.programs ?? true,
+      activities: selectedRow.activities ?? true,
+      supervisorApportioning: selectedRow.supervisorApportioning ?? false,
+      clientAdmin: selectedRow.clientAdmin ?? false,
+      assignedMultiCodes: selectedRow.assignedMultiCodes ?? "",
     }
-    return emptyFormValues
   }, [formMode, selectedRow])
 
-  const filteredRows = useMemo(() => {
-    const query = searchTerm.trim().toLowerCase()
-    if (!query) return userModule.rows
+  const formInitialValues = useMemo<UserModuleFormValues>(() => {
+    if (formMode === "add") return emptyFormValues
+    if (!formValuesFromListRow) return emptyFormValues
+    if (editUserDetailsQuery.data) {
+      return mergeUserDetailsIntoFormValues(
+        editUserDetailsQuery.data,
+        formValuesFromListRow,
+      )
+    }
+    return formValuesFromListRow
+  }, [formMode, formValuesFromListRow, editUserDetailsQuery.data])
 
-    return userModule.rows.filter((row) =>
-      row.employee.toLowerCase().includes(query)
-    )
-  }, [searchTerm, userModule.rows])
+  const editFormReady =
+    formMode !== "edit" ||
+    !selectedRow ||
+    editUserDetailsQuery.isSuccess ||
+    editUserDetailsQuery.isError
+
+  /** Omit detail `dataUpdatedAt` so edit save + refetch does not remount the form (keeps active tab). */
+  const addEmployeeFormKey =
+    formMode === "edit" && selectedRow
+      ? `${formSessionId}-edit-${selectedRow.id}`
+      : `${formSessionId}-add`
+
   const employeeSuggestions = useMemo(() => {
     const query = searchTerm.trim().toLowerCase()
     if (!query) return []
@@ -157,30 +213,35 @@ export function UserModulePage() {
     setShowForm(true)
   }
 
-  const handleSaveForm = async (
-    values: UserModuleFormValues
-  ): Promise<AddEmployeeSaveSync | void> => {
+  const handleSaveForm = async ({
+    values,
+    sourceTab: _sourceTab,
+  }: AddEmployeeSavePayload): Promise<AddEmployeeSaveSync | void> => {
     try {
       if (formMode === "edit" && selectedRow) {
         await userModule.updateRowAsync({ id: selectedRow.id, values })
         toast.success("User Saved Successfully", successToastOptions)
-        await queryClient.invalidateQueries({ queryKey: userModuleKeys.lists() })
-        setShowForm(false)
-        return undefined
+        void queryClient.invalidateQueries({ queryKey: userModuleKeys.detail(selectedRow.id) })
+        const details = await queryClient.fetchQuery({
+          queryKey: userModuleKeys.detail(selectedRow.id),
+          queryFn: () => apiGetUserDetails(selectedRow.id),
+          staleTime: 0,
+        })
+        const merged = mergeUserDetailsIntoFormValues(details, values)
+        return { formValues: merged }
       }
 
       if (draftUserId) {
         await userModule.updateRowAsync({ id: draftUserId, values })
         toast.success("Employee saved successfully", successToastOptions)
-        try {
-          const details = await apiGetUserDetails(draftUserId)
-          return { formValues: mergeUserDetailsIntoFormValues(details, values) }
-        } catch {
-          const login = (values.loginId ?? "").trim()
-          return {
-            formValues: { ...values, loginId: login, emailAddress: login },
-          }
-        }
+        void queryClient.invalidateQueries({ queryKey: userModuleKeys.detail(draftUserId) })
+        const details = await queryClient.fetchQuery({
+          queryKey: userModuleKeys.detail(draftUserId),
+          queryFn: () => apiGetUserDetails(draftUserId),
+          staleTime: 0,
+        })
+        const merged = mergeUserDetailsIntoFormValues(details, values)
+        return { formValues: merged }
       }
 
       const created = await userModule.createRowAsync({ values })
@@ -189,15 +250,14 @@ export function UserModulePage() {
         "Employee details saved. You can go to the next tab without saving again.",
         successToastOptions
       )
-      try {
-        const details = await apiGetUserDetails(created.id)
-        return { formValues: mergeUserDetailsIntoFormValues(details, values) }
-      } catch {
-        const login = (created.loginId ?? values.loginId).trim()
-        return {
-          formValues: { ...values, loginId: login, emailAddress: login },
-        }
-      }
+      void queryClient.invalidateQueries({ queryKey: userModuleKeys.detail(created.id) })
+      const details = await queryClient.fetchQuery({
+        queryKey: userModuleKeys.detail(created.id),
+        queryFn: () => apiGetUserDetails(created.id),
+        staleTime: 0,
+      })
+      const merged = mergeUserDetailsIntoFormValues(details, values)
+      return { formValues: merged }
     } catch (error) {
       const message = error instanceof Error ? error.message : "Save failed"
       toast.error(message)
@@ -214,17 +274,54 @@ export function UserModulePage() {
       } as React.CSSProperties}
     >
       {showForm ? (
-        <AddEmployeeFormPage
-          key={formSessionId}
-          mode={formMode}
-          initialValues={formInitialValues}
-          onCancel={() => {
-            setDraftUserId(null)
-            setShowForm(false)
-            void queryClient.invalidateQueries({ queryKey: userModuleKeys.lists() })
-          }}
-          onSave={handleSaveForm}
-        />
+        shouldFetchEditDetails && editUserDetailsQuery.isPending ? (
+          <div className="flex min-h-[320px] flex-col items-center justify-center gap-4 rounded-[8px] border border-[#d8dce8] bg-white">
+            <Loader2 className="size-10 animate-spin text-[#6C5DD3]" aria-hidden />
+            <p className="text-[13px] text-[#374151]">Loading user details…</p>
+          </div>
+        ) : shouldFetchEditDetails && editUserDetailsQuery.isError ? (
+          <div className="flex min-h-[320px] flex-col items-center justify-center gap-4 rounded-[8px] border border-[#d8dce8] bg-white px-6 text-center">
+            <p className="max-w-md text-[13px] text-[#374151]">
+              Could not load this user&apos;s full profile. Job classification and other fields need this
+              data before you can save.
+            </p>
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              <Button
+                type="button"
+                className="h-9 rounded-[8px] bg-[#6C5DD3] px-4 text-[12px] text-white hover:bg-[#6C5DD3]"
+                onClick={() => void editUserDetailsQuery.refetch()}
+              >
+                Retry
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="h-9 rounded-[8px] px-4 text-[12px]"
+                onClick={() => {
+                  setShowForm(false)
+                  void queryClient.invalidateQueries({ queryKey: userModuleKeys.lists() })
+                }}
+              >
+                Back to list
+              </Button>
+            </div>
+          </div>
+        ) : editFormReady ? (
+          <AddEmployeeFormPage
+            key={addEmployeeFormKey}
+            mode={formMode}
+            initialValues={formInitialValues}
+            securityContextUserId={
+              formMode === "edit" && selectedRow ? selectedRow.id : draftUserId ?? null
+            }
+            onCancel={() => {
+              setDraftUserId(null)
+              setShowForm(false)
+              void queryClient.invalidateQueries({ queryKey: userModuleKeys.lists() })
+            }}
+            onSave={handleSaveForm}
+          />
+        ) : null
       ) : (
         <div className="rounded-[10px] border border-[#e6e7ef] bg-gray-100 p-4 shadow-[0_2px_10px_rgba(0,0,0,0.03)] md:p-5">
           <UserToolbar
@@ -245,13 +342,13 @@ export function UserModulePage() {
           <div className="rounded-[8px] bg-white p-3">
             <div className="mb-5">
               <UserTable
-                rows={filteredRows}
+                rows={userModule.rows}
                 isLoading={isTableLoading}
                 onEditRow={handleEditRow}
               />
             </div>
             <MasterCodePagination
-              totalItems={searchTerm.trim() ? filteredRows.length : userModule.totalItems}
+              totalItems={userModule.totalItems}
               currentPage={page}
               pageSize={pageSize}
               onPageChange={(p: number) => setPage(p)}

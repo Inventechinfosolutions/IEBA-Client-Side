@@ -54,8 +54,14 @@ function unwrapActivityListPayload(raw: unknown): {
   }
 }
 
-/** Backend rejects `limit` above this value (`ActivityCodeListQueryDto`). */
+/** Backend rejects `limit` above this value (`ActivityCodeListQueryDto`) for typed tab lists. */
 const ACTIVITY_CODES_API_MAX_LIMIT = 100
+
+/**
+ * Single-stream `GET /activity-codes` without `type` (county catalog / enrichment).
+ * Align with backend max if this DTO caps lower than 1000.
+ */
+export const ACTIVITY_CODES_CATALOG_ALL_LIMIT = 1000
 
 /**
  * `GET /activity-codes` — matches `ActivityCodeListQueryDto` (page, limit, sort, sortField, type, status).
@@ -113,6 +119,42 @@ export async function apiGetActivityCodesAllForType(params: {
   }
 
   return { items, totalItems }
+}
+
+const ACTIVITY_CODES_CATALOG_MAX_PAGES = 20
+
+/**
+ * All activity codes in one API shape: `GET /activity-codes` with **no** `type` filter.
+ * Pages with {@link ACTIVITY_CODES_CATALOG_ALL_LIMIT} until the API reports no more rows.
+ */
+export async function apiFetchActivityCodesCatalogAll(options?: {
+  inactiveOnly?: boolean
+}): Promise<ApiActivityCode[]> {
+  const inactiveOnly = options?.inactiveOnly ?? false
+  const limit = ACTIVITY_CODES_CATALOG_ALL_LIMIT
+  const all: ApiActivityCode[] = []
+  let page = 1
+
+  while (page <= ACTIVITY_CODES_CATALOG_MAX_PAGES) {
+    const search = new URLSearchParams({
+      page: String(page),
+      limit: String(limit),
+      sort: "ASC",
+      sortField: "code",
+      status: inactiveOnly ? ActivityStatusEnum.INACTIVE : ActivityStatusEnum.ACTIVE,
+    })
+
+    const raw = await api.get<unknown>(`/activity-codes?${search.toString()}`)
+    const { data, meta } = unwrapActivityListPayload(raw)
+    all.push(...data)
+
+    if (data.length === 0) break
+    if (meta.totalItems > 0 && all.length >= meta.totalItems) break
+    if (data.length < limit) break
+    page += 1
+  }
+
+  return all
 }
 
 function buildCreateBody(codeType: MasterCodeTab, values: MasterCodeFormValues) {

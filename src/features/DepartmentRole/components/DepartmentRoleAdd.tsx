@@ -1,7 +1,8 @@
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { ChevronRightIcon, ChevronLeftIcon } from "lucide-react"
+import { toast } from "sonner"
+import { ChevronRightIcon, ChevronLeftIcon, Loader2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -23,9 +24,18 @@ import { Label } from "@/components/ui/label"
 import { addRoleFormSchema } from "../schemas"
 import type { AddRoleFormSchema } from "../schemas"
 import type { DepartmentRoleAddProps } from "../types"
+import {
+  assignedModuleLabelsFromDetail,
+  SHUTTLE_MODULE_LABELS,
+} from "../api/departmentRoleCreatePermissions"
 import { cn } from "@/lib/utils"
 
-const ALL_PERMISSIONS_LIST = ["General Admin", "Time Study", "Personal"] as const
+function availableModuleLabelsForShuttle(
+  allModules: readonly string[],
+  assigned: readonly string[]
+): string[] {
+  return allModules.filter((p) => !assigned.includes(p))
+}
 
 export function DepartmentRoleAdd({
   open,
@@ -33,9 +43,15 @@ export function DepartmentRoleAdd({
   departments,
   initialDepartment,
   mode = "create",
-  editInitialValues = null,
+  editRoleId = null,
+  editDetail = null,
+  isEditDetailLoading = false,
+  editDetailError = null,
   onSubmit,
   isSubmitting = false,
+  onEditAssignPermissionLabels,
+  onEditUnassignPermissionLabels,
+  isEditPermissionTransferPending = false,
 }: DepartmentRoleAddProps) {
   const [selectedAvailable, setSelectedAvailable] = useState<Set<string>>(
     new Set()
@@ -44,22 +60,41 @@ export function DepartmentRoleAdd({
     new Set()
   )
 
+  const departmentOptions = useMemo(() => {
+    const base = [...departments]
+    const resolved = editDetail?.departmentName?.trim() ?? ""
+    if (mode === "edit" && resolved) {
+      const exists = base.some((x) => x.trim() === resolved)
+      if (!exists) base.push(resolved)
+    }
+    return base
+  }, [departments, editDetail?.departmentName, mode])
+
+  const editFormValues = useMemo((): AddRoleFormSchema | undefined => {
+    if (mode !== "edit" || !editDetail) return undefined
+    return {
+      department: editDetail.departmentName?.trim() ?? "",
+      roleName: editDetail.roleName,
+      active: editDetail.active,
+      assignedPermissions: assignedModuleLabelsFromDetail(editDetail),
+    }
+  }, [mode, editDetail])
+
   const form = useForm<AddRoleFormSchema>({
     resolver: zodResolver(addRoleFormSchema),
     defaultValues: {
-      department:
-        mode === "edit"
-          ? editInitialValues?.departmentName ?? departments[0] ?? ""
-          : initialDepartment ?? departments[0] ?? "",
-      roleName: mode === "edit" ? editInitialValues?.roleName ?? "" : "",
-      active: mode === "edit" ? editInitialValues?.active ?? true : true,
+      department: initialDepartment ?? departments[0] ?? "",
+      roleName: "",
+      active: true,
       assignedPermissions: [],
     },
+    ...(editFormValues ? { values: editFormValues } : {}),
   })
 
   const assignedPermissions = form.watch("assignedPermissions")
-  const availablePermissions = ALL_PERMISSIONS_LIST.filter(
-    (p) => !assignedPermissions.includes(p)
+  const availablePermissions = availableModuleLabelsForShuttle(
+    SHUTTLE_MODULE_LABELS,
+    assignedPermissions
   )
 
   const toggleAvailable = (id: string) => {
@@ -90,29 +125,50 @@ export function DepartmentRoleAdd({
     else setSelectedAssigned(new Set())
   }
 
-  const transferToAssigned = () => {
+  const transferToAssigned = async () => {
     const toAssign = Array.from(selectedAvailable)
+    if (toAssign.length === 0) return
+    const prev = [...assignedPermissions]
     form.setValue("assignedPermissions", [...assignedPermissions, ...toAssign])
     setSelectedAvailable(new Set())
+
+    if (mode === "edit" && onEditAssignPermissionLabels) {
+      try {
+        await onEditAssignPermissionLabels(toAssign)
+      } catch (e) {
+        form.setValue("assignedPermissions", prev)
+        toast.error(
+          e instanceof Error ? e.message : "Failed to assign permissions"
+        )
+      }
+    }
   }
 
-  const transferToAvailable = () => {
+  const transferToAvailable = async () => {
     const toRemove = Array.from(selectedAssigned)
+    if (toRemove.length === 0) return
+    const prev = [...assignedPermissions]
     form.setValue(
       "assignedPermissions",
       assignedPermissions.filter((p) => !toRemove.includes(p))
     )
     setSelectedAssigned(new Set())
+
+    if (mode === "edit" && onEditUnassignPermissionLabels) {
+      try {
+        await onEditUnassignPermissionLabels(toRemove)
+      } catch (e) {
+        form.setValue("assignedPermissions", prev)
+        toast.error(
+          e instanceof Error ? e.message : "Failed to unassign permissions"
+        )
+      }
+    }
   }
 
   const handleSubmit = form.handleSubmit((values) => {
     if (mode === "edit") {
-      if (!editInitialValues) return
-      onSubmit({
-        childId: editInitialValues.childId,
-        roleName: values.roleName,
-        active: values.active,
-      })
+      handleOpenChange(false)
       return
     }
 
@@ -141,6 +197,19 @@ export function DepartmentRoleAdd({
   const panelHeaderClass =
     "flex h-10 items-center justify-between rounded-t-lg bg-[rgb(108,93,211)] px-3 text-sm font-medium text-white"
 
+  const showEditError =
+    mode === "edit" && Boolean(editRoleId) && editDetailError != null
+  const showEditLoading =
+    mode === "edit" &&
+    Boolean(editRoleId) &&
+    !editDetailError &&
+    isEditDetailLoading
+  const editFormReady = mode === "create" || (mode === "edit" && Boolean(editDetail))
+  const transferDisabled =
+    isEditPermissionTransferPending ||
+    (mode === "edit" && !editFormReady)
+  const submitDisabled = isSubmitting || (mode === "edit" && !editFormReady)
+
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent
@@ -158,6 +227,7 @@ export function DepartmentRoleAdd({
               onCheckedChange={(checked) =>
                 form.setValue("active", checked === true)
               }
+              disabled={mode === "edit" && !editFormReady}
               className="border-[rgb(108,93,211)] data-[state=checked]:border-[rgb(108,93,211)] data-[state=checked]:bg-[rgb(108,93,211)]"
             />
             <Label
@@ -169,6 +239,28 @@ export function DepartmentRoleAdd({
           </div>
         </DialogHeader>
 
+        {showEditError ? (
+          <div className="flex min-h-[320px] flex-col items-center justify-center gap-4 px-4">
+            <p className="text-center text-sm text-destructive">
+              {editDetailError.message}
+            </p>
+            <Button
+              type="button"
+              variant="outline"
+              className="min-h-[50px] min-w-[98px] border-[#DADADA] bg-[#DADADA] px-5 py-2.5 text-black hover:bg-[#d1d1d1]"
+              onClick={() => handleOpenChange(false)}
+            >
+              Exit
+            </Button>
+          </div>
+        ) : showEditLoading ? (
+          <div className="flex min-h-[400px] flex-1 items-center justify-center">
+            <Loader2
+              className="size-10 animate-spin text-[rgb(108,93,211)]"
+              aria-label="Loading role"
+            />
+          </div>
+        ) : (
         <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
           <div className="min-h-0 flex-1 space-y-4 overflow-y-auto pt-10 pb-2 pr-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <div className="grid grid-cols-[1fr_auto_1fr] gap-2">
@@ -192,7 +284,7 @@ export function DepartmentRoleAdd({
                   <SelectValue placeholder="Select department" />
                 </SelectTrigger>
                 <SelectContent>
-                  {departments.map((d) => (
+                  {departmentOptions.map((d) => (
                     <SelectItem key={d} value={d}>
                       {d}
                     </SelectItem>
@@ -280,8 +372,8 @@ export function DepartmentRoleAdd({
                 type="button"
                 size="icon"
                 className="h-[62px] w-[62px] shrink-0 rounded-lg bg-[rgb(108,93,211)] hover:bg-[rgb(108,93,211)]/90"
-                onClick={transferToAssigned}
-                disabled={selectedAvailable.size === 0}
+                onClick={() => void transferToAssigned()}
+                disabled={selectedAvailable.size === 0 || transferDisabled}
                 aria-label="Assign selected"
               >
                 <ChevronRightIcon className="size-5" />
@@ -290,8 +382,8 @@ export function DepartmentRoleAdd({
                 type="button"
                 size="icon"
                 className="h-[62px] w-[62px] shrink-0 rounded-lg bg-[rgb(108,93,211)] hover:bg-[rgb(108,93,211)]/90"
-                onClick={transferToAvailable}
-                disabled={selectedAssigned.size === 0}
+                onClick={() => void transferToAvailable()}
+                disabled={selectedAssigned.size === 0 || transferDisabled}
                 aria-label="Unassign selected"
               >
                 <ChevronLeftIcon className="size-5" />
@@ -355,15 +447,23 @@ export function DepartmentRoleAdd({
               Exit
             </Button>
             <Button
-              type="submit"
-              disabled={isSubmitting}
+              type={mode === "edit" ? "button" : "submit"}
+              disabled={submitDisabled}
               className="min-h-[50px] min-w-[98px] bg-[rgb(108,93,211)] px-5 py-2.5 text-white hover:bg-[rgb(108,93,211)]/90"
+              onClick={
+                mode === "edit"
+                  ? () => {
+                      handleOpenChange(false)
+                    }
+                  : undefined
+              }
             >
               {isSubmitting ? "Saving..." : "Save"}
             </Button>
           </div>
           </div>
         </form>
+        )}
       </DialogContent>
     </Dialog>
   )

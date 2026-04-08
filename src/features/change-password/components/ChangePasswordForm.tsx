@@ -35,6 +35,7 @@ const PasswordField = ({
   control,
   visible,
   onToggleVisible,
+  maxLength,
 }: PasswordFieldProps) => (
   <div className="w-[420px] max-w-[calc(100vw-80px)]">
     <label className={labelClassName}>
@@ -63,6 +64,7 @@ const PasswordField = ({
             value={field.value ?? ""}
             type={visible ? "text" : "password"}
             placeholder={placeholder}
+            maxLength={maxLength}
             className={error ? `${inputClassName} border-[#ef4444] pl-9` : `${inputClassName} pl-9`}
           />
         )}
@@ -171,7 +173,7 @@ export function ChangePasswordFormModal({ open, onOpenChange }: ChangePasswordFo
             <PasswordField
               name="newPassword"
               label="*Enter New Password"
-              placeholder="Enter New Password (min 11 chars, 1 capital letter, 1 small letter, 1 number, 1 special char)"
+              placeholder="10–16 chars: lower, upper, number, symbol"
               error={errors.newPassword?.message}
               control={control}
               visible={visibility.newPassword}

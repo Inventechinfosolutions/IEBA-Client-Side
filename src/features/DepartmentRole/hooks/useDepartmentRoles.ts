@@ -1,39 +1,45 @@
-import { useState, useCallback } from "react"
+import { useCallback, useMemo, useState } from "react"
 
-import { useGetDepartmentRoles } from "../queries/getDepartmentRoles"
-import type { PaginationState } from "../types"
+import { useDepartmentRolesListQuery } from "../queries/getDepartmentRoles"
+import type { DepartmentRolesListFilters, PaginationState } from "../types"
 
-const DEFAULT_PAGINATION: PaginationState = {
-  page: 1,
-  pageSize: 5,
-  totalItems: 0,
-}
+const DEFAULT_PAGE_SIZE = 10
+const LIST_STATUS = "active" as const
 
 export function useDepartmentRoles() {
-  const query = useGetDepartmentRoles()
-  const [pagination, setPagination] = useState<PaginationState>({
-    ...DEFAULT_PAGINATION,
-    totalItems: query.data?.length ?? 0,
-  })
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
 
-  const data = query.data ?? []
-  const totalItems = data.length
+  const listFilters: DepartmentRolesListFilters = useMemo(
+    () => ({
+      page,
+      pageSize,
+      status: LIST_STATUS,
+    }),
+    [page, pageSize]
+  )
 
-  const paginationWithTotal: PaginationState = {
-    ...pagination,
-    totalItems,
-  }
+  const query = useDepartmentRolesListQuery(listFilters)
 
-  const handlePageChange = useCallback((page: number) => {
-    setPagination((prev) => ({ ...prev, page }))
+  const data = query.data?.items ?? []
+  const totalItems = query.data?.totalItems ?? 0
+
+  const pagination: PaginationState = useMemo(
+    () => ({
+      page,
+      pageSize,
+      totalItems,
+    }),
+    [page, pageSize, totalItems]
+  )
+
+  const handlePageChange = useCallback((nextPage: number) => {
+    setPage(nextPage)
   }, [])
 
-  const handlePageSizeChange = useCallback((pageSize: number) => {
-    setPagination((prev) => ({
-      ...prev,
-      pageSize,
-      page: 1,
-    }))
+  const handlePageSizeChange = useCallback((nextSize: number) => {
+    setPageSize(nextSize)
+    setPage(1)
   }, [])
 
   return {
@@ -42,7 +48,8 @@ export function useDepartmentRoles() {
     isError: query.isError,
     error: query.error,
     refetch: query.refetch,
-    pagination: paginationWithTotal,
+    pagination,
+    listFilters,
     onPageChange: handlePageChange,
     onPageSizeChange: handlePageSizeChange,
   }

@@ -1,14 +1,62 @@
-import { Check, ChevronLeft, ChevronRight } from "lucide-react"
+import { Check } from "lucide-react"
 import { useMemo, useState } from "react"
 import { Controller, useFormContext } from "react-hook-form"
+import { toast } from "sonner"
 
 import tableEmptyIcon from "@/assets/icons/table-empty.png"
+import { queryClient } from "@/main"
+import { TransferListMoveButton } from "@/components/ui/transfer-list-move-button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { ScrollArea } from "@/components/ui/scroll-area"
 
-import type { AddEmployeeSecurityRoleItem, AddEmployeeSecurityRolePanelProps, UserModuleFormValues } from "../types"
+import type {
+  AddEmployeeSecurityRoleCatalogItem,
+  AddEmployeeSecurityRoleItem,
+  AddEmployeeSecurityRolePanelProps,
+  SecurityAssignmentsPanelProps,
+  UserModuleFormValues,
+} from "../types"
 
-import { useGetDepartmentRolesCatalog } from "../queries/get-add-employee"
+import { useAssignUserDepartmentRoles, useUnassignUserDepartmentRoles } from "../mutations/user-department-role-transfer"
+import { addEmployeeLookupKeys, departmentRolesUnassignedCacheUserKey } from "../keys"
+import { useGetDepartmentRolesUnassigned } from "../queries/get-add-employee"
+import {
+  buildUserDepartmentRoleDepartmentsPayload,
+  departmentIdFromSecurityCatalogItemId,
+  roleRefIdFromSecurityCatalogItemId,
+} from "../utility/buildUserDepartmentRoleDepartmentsPayload"
+
+function normalizeDeptRolePart(s: string): string {
+  return s.trim().toLowerCase().replace(/\s+/g, " ")
+}
+
+/** Match assigned row from user details to catalog row (department + role name). */
+function departmentRolePairKey(department: string, roleName: string): string {
+  return `${normalizeDeptRolePart(department)}|${normalizeDeptRolePart(roleName)}`
+}
+
+/** Extend cached GET /roles-unassigned so unassigned rows reappear without refetching. */
+function mergeRowsIntoRolesUnassignedCache(
+  queryKey: ReturnType<typeof addEmployeeLookupKeys.departmentRolesUnassignedAdd>,
+  rows: Pick<AddEmployeeSecurityRoleCatalogItem, "id" | "name" | "department">[],
+) {
+  queryClient.setQueryData<AddEmployeeSecurityRoleCatalogItem[]>(queryKey, (prev) => {
+    const base = prev ?? []
+    const seen = new Set(base.map((r) => r.id))
+    const merged = [...base]
+    for (const item of rows) {
+      if (item.id.startsWith("assigned:")) continue
+      if (seen.has(item.id)) continue
+      seen.add(item.id)
+      merged.push({
+        id: item.id,
+        name: item.name,
+        department: item.department,
+      })
+    }
+    return merged
+  })
+}
 
 function RoleTransferPanel({
   title,
@@ -81,12 +129,12 @@ function RoleTransferPanel({
                 deptIds.length > 0 && deptIds.every((id) => selectedIds.includes(id))
               return (
                 <div key={group.department} className="border-b border-[#f1f3f7] last:border-b-0">
-                  <div className="flex h-7 items-center justify-between bg-[#F3F4F6] px-4 text-[10px] font-semibold text-[#374151]">
-                    <span>{group.department}</span>
+                  <div className="grid h-7 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 bg-[#F3F4F6] pl-4 pr-5 text-[10px] font-semibold text-[#374151]">
+                    <span className="min-w-0">{group.department}</span>
                     <button
                       type="button"
                       onClick={() => toggleDepartment(group.department)}
-                      className={`flex size-4.5  items-center justify-center rounded-[6px] border shadow-sm transition-all ${
+                      className={`flex size-4.5 shrink-0 items-center justify-center rounded-[6px] border shadow-sm transition-all ${
                         deptAllSelected
                           ? "border-[#6C5DD3] bg-white text-[#6C5DD3]"
                           : "border-[#E5E7EB] bg-white text-transparent hover:border-[#D1D5DB]"
@@ -111,11 +159,11 @@ function RoleTransferPanel({
                           key={item.id}
                           type="button"
                           onClick={() => onToggleItem(item.id)}
-                          className={`group relative flex cursor-pointer items-center justify-between px-9 py-1 text-left transition-colors ${
+                          className={`group relative grid w-full cursor-pointer grid-cols-[minmax(0,1fr)_auto] items-center gap-2 py-1 pl-9 pr-5 text-left transition-colors ${
                             isSelected ? "bg-[#F3F0FF]" : "hover:bg-[#F9FAFB]"
                           }`}
                         >
-                          <div className="min-w-0 flex-1 pr-2 ">
+                          <div className="min-w-0 pr-2">
                             {/* Tree connector lines like Program Activity Relation TransferPanel */}
                             <div className="absolute left-6 top-0.5 flex h-full w-8 items-center justify-center">
                               <div className="absolute left-4 top-0 h-full w-px bg-[#E5E7EB]" />
@@ -157,44 +205,98 @@ function normalizeRoleId(role: string): string {
 }
 
 /** UI tab: Security / Assignments */
-export function SecurityAssignmentsPanel() {
-  const departmentRolesQuery = useGetDepartmentRolesCatalog()
-  const { watch, control, setValue } = useFormContext<UserModuleFormValues>()
+export function SecurityAssignmentsPanel({
+  mode,
+  securityContextUserId = null,
+  allowUnassignedQueryWithoutUserId,
+}: SecurityAssignmentsPanelProps) {
+  const unassignedQuery = useGetDepartmentRolesUnassigned(
+    securityContextUserId,
+    allowUnassignedQueryWithoutUserId,
+  )
+
+  const rolesUnassignedQueryKey = addEmployeeLookupKeys.departmentRolesUnassignedAdd(
+    departmentRolesUnassignedCacheUserKey(securityContextUserId, allowUnassignedQueryWithoutUserId),
+  )
+
+  const securityUserId = securityContextUserId?.trim() ?? ""
+  const canPersistTransfers = securityUserId.length > 0
+  const assignMutation = useAssignUserDepartmentRoles()
+  const unassignMutation = useUnassignUserDepartmentRoles()
+  const transferBusy = assignMutation.isPending || unassignMutation.isPending
+
+  const isAddMode = mode === "add"
+  const isEditMode = mode === "edit"
+  const { watch, control, setValue, getValues } = useFormContext<UserModuleFormValues>()
   const employeeName = `${watch("firstName") ?? ""} ${watch("lastName") ?? ""}`.trim()
   const assignedRoles = watch("roleAssignments") ?? []
+  const securitySnapshots = watch("securityAssignedSnapshots") ?? []
 
-  const allRoleItems = useMemo<AddEmployeeSecurityRoleItem[]>(() => {
-    const catalog = departmentRolesQuery.data ?? []
-    const items: AddEmployeeSecurityRoleItem[] = catalog.map((row) => ({
-      id: row.id,
-      name: row.name,
-      department: row.department,
-    }))
+  /**
+   * Unassigned API (with `userId` in edit) returns server “still unassigned” rows; we also remove anything
+   * already shown as assigned from user details (`securityAssignedSnapshots`: dept + role + catalog id).
+   */
+  const unassignedItems = useMemo(() => {
+    if (!unassignedQuery.isSuccess || !unassignedQuery.data) return []
+    const data = unassignedQuery.data
+    const snapIds = new Set(securitySnapshots.map((s) => s.id))
+    const assignedPairKeys = new Set(
+      securitySnapshots.map((s) => departmentRolePairKey(s.department, s.name)),
+    )
 
-    const knownNames = new Set(items.map((i) => i.name))
-    for (const role of assignedRoles) {
-      if (!knownNames.has(role)) {
-        items.push({
-          id: `Other:${normalizeRoleId(role)}`,
-          name: role,
-          department: "Other",
-        })
+    const isAlreadyAssignedInDetails = (i: AddEmployeeSecurityRoleCatalogItem) => {
+      if (snapIds.has(i.id)) return true
+      if (
+        assignedPairKeys.size > 0 &&
+        assignedPairKeys.has(departmentRolePairKey(i.department, i.name))
+      ) {
+        return true
       }
+      return false
     }
 
-    return items
-  }, [assignedRoles, departmentRolesQuery.data])
+    if (isAddMode) {
+      return data.filter((i) => !isAlreadyAssignedInDetails(i))
+    }
+    if (isEditMode && securitySnapshots.length > 0) {
+      return data.filter((i) => !isAlreadyAssignedInDetails(i))
+    }
+    return data.filter((i) => !assignedRoles.includes(i.name))
+  }, [
+    unassignedQuery.data,
+    unassignedQuery.isSuccess,
+    assignedRoles,
+    isAddMode,
+    isEditMode,
+    securitySnapshots,
+  ])
 
-  const isAssignedName = (name: string) => assignedRoles.includes(name)
-
-  const unassignedItems = useMemo(
-    () => allRoleItems.filter((i) => !isAssignedName(i.name)),
-    [allRoleItems, assignedRoles],
-  )
-  const assignedItems = useMemo(
-    () => allRoleItems.filter((i) => isAssignedName(i.name)),
-    [allRoleItems, assignedRoles],
-  )
+  /**
+   * Assigned column: snapshots carry real department names (add wizard + edit after details merge).
+   * Fallback label "Assigned" only when we have role names but no dept–role pairs yet.
+   */
+  const assignedItems = useMemo((): AddEmployeeSecurityRoleItem[] => {
+    if (securitySnapshots.length > 0) {
+      return securitySnapshots.map((s) => ({
+        id: s.id,
+        name: s.name,
+        department: s.department,
+      }))
+    }
+    const out: AddEmployeeSecurityRoleItem[] = []
+    const seen = new Set<string>()
+    for (const name of assignedRoles) {
+      const n = name.trim()
+      if (!n || seen.has(n)) continue
+      seen.add(n)
+      out.push({
+        id: `assigned:${normalizeRoleId(n)}`,
+        name: n,
+        department: "Assigned",
+      })
+    }
+    return out
+  }, [securitySnapshots, assignedRoles])
 
   const [toggledU, setToggledU] = useState<string[]>([])
   const [toggledA, setToggledA] = useState<string[]>([])
@@ -219,19 +321,127 @@ export function SecurityAssignmentsPanel() {
     )
   }
 
-  const transferToAssigned = () => {
+  const transferToAssigned = async () => {
     if (toggledU.length === 0) return
-    const namesToAdd = unassignedItems.filter((i) => toggledU.includes(i.id)).map((i) => i.name)
-    const next = Array.from(new Set([...assignedRoles, ...namesToAdd]))
-    setValue("roleAssignments", next, { shouldDirty: true, shouldTouch: true, shouldValidate: true })
+    const catalog = unassignedQuery.data ?? []
+    const toAdd = catalog.filter((i) => toggledU.includes(i.id))
+    if (toAdd.length === 0) {
+      setToggledU([])
+      return
+    }
+
+    const departments = buildUserDepartmentRoleDepartmentsPayload(toAdd)
+    if (departments.length === 0) {
+      toast.error("Could not assign: invalid role selection.")
+      return
+    }
+
+    if (canPersistTransfers) {
+      try {
+        await assignMutation.mutateAsync({ userId: securityUserId, departments })
+        toast.success("Roles assigned.")
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : "Assign failed")
+        return
+      }
+    }
+
+    const prev = getValues("securityAssignedSnapshots") ?? []
+    const nextSnaps = [...prev]
+    for (const i of toAdd) {
+      if (nextSnaps.some((s) => s.id === i.id)) continue
+      const departmentId = departmentIdFromSecurityCatalogItemId(i.id)
+      if (departmentId == null) continue
+      nextSnaps.push({
+        id: i.id,
+        name: i.name,
+        departmentId,
+        department: i.department,
+      })
+    }
+    setValue("securityAssignedSnapshots", nextSnaps, {
+      shouldDirty: true,
+      shouldTouch: true,
+      shouldValidate: true,
+    })
+    setValue(
+      "roleAssignments",
+      [...new Set(nextSnaps.map((s) => s.name.trim()).filter(Boolean))],
+      { shouldDirty: true, shouldTouch: true, shouldValidate: true },
+    )
     setToggledU([])
   }
 
-  const transferToUnassigned = () => {
+  const transferToUnassigned = async () => {
     if (toggledA.length === 0) return
-    const namesToRemove = assignedItems.filter((i) => toggledA.includes(i.id)).map((i) => i.name)
-    const next = assignedRoles.filter((r) => !namesToRemove.includes(r))
-    setValue("roleAssignments", next, { shouldDirty: true, shouldTouch: true, shouldValidate: true })
+    const toRemoveItems = assignedItems.filter((i) => toggledA.includes(i.id))
+    if (toRemoveItems.length === 0) {
+      setToggledA([])
+      return
+    }
+
+    if (canPersistTransfers) {
+      const invalid = toRemoveItems.some(
+        (i) =>
+          i.id.startsWith("assigned:") ||
+          departmentIdFromSecurityCatalogItemId(i.id) == null ||
+          roleRefIdFromSecurityCatalogItemId(i.id) == null,
+      )
+      if (invalid) {
+        toast.error("Some assignments cannot be updated on the server. Reload this user and try again.")
+        return
+      }
+      const departments = buildUserDepartmentRoleDepartmentsPayload(toRemoveItems)
+      if (departments.length === 0) {
+        toast.error("Could not unassign: invalid role selection.")
+        return
+      }
+      try {
+        await unassignMutation.mutateAsync({ userId: securityUserId, departments })
+        mergeRowsIntoRolesUnassignedCache(rolesUnassignedQueryKey, toRemoveItems)
+        toast.success("Roles unassigned.")
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : "Unassign failed")
+        return
+      }
+    }
+
+    if (isAddMode) {
+      const removeIds = new Set(toRemoveItems.map((i) => i.id))
+      const prev = getValues("securityAssignedSnapshots") ?? []
+      const nextSnaps = prev.filter((s) => !removeIds.has(s.id))
+      setValue("securityAssignedSnapshots", nextSnaps, {
+        shouldDirty: true,
+        shouldTouch: true,
+        shouldValidate: true,
+      })
+      setValue(
+        "roleAssignments",
+        [...new Set(nextSnaps.map((s) => s.name.trim()).filter(Boolean))],
+        { shouldDirty: true, shouldTouch: true, shouldValidate: true },
+      )
+      setToggledA([])
+      return
+    }
+    const prevSnaps = getValues("securityAssignedSnapshots") ?? []
+    if (prevSnaps.length > 0) {
+      const removeIds = new Set(toRemoveItems.map((i) => i.id))
+      const nextSnaps = prevSnaps.filter((s) => !removeIds.has(s.id))
+      setValue("securityAssignedSnapshots", nextSnaps, {
+        shouldDirty: true,
+        shouldTouch: true,
+        shouldValidate: true,
+      })
+      setValue(
+        "roleAssignments",
+        [...new Set(nextSnaps.map((s) => s.name.trim()).filter(Boolean))],
+        { shouldDirty: true, shouldTouch: true, shouldValidate: true },
+      )
+    } else {
+      const namesToRemove = toRemoveItems.map((i) => i.name)
+      const next = assignedRoles.filter((r) => !namesToRemove.includes(r))
+      setValue("roleAssignments", next, { shouldDirty: true, shouldTouch: true, shouldValidate: true })
+    }
     setToggledA([])
   }
 
@@ -282,25 +492,19 @@ export function SecurityAssignmentsPanel() {
           onToggleAll={toggleAllUnassigned}
         />
 
-        <div className="flex flex-col gap-3 pt-12">
-          <button
-            type="button"
-            onClick={transferToAssigned}
-            disabled={toggledU.length === 0}
-            className="flex size-11 cursor-pointer items-center justify-center rounded-[10px] bg-[#6C5DD3] text-white shadow-lg shadow-[#6C5DD3]/20 transition-all hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
+        <div className="flex flex-col gap-3 pt-10">
+          <TransferListMoveButton
+            direction="forward"
+            onClick={() => void transferToAssigned()}
+            disabled={toggledU.length === 0 || transferBusy}
             aria-label="Move selected to assigned"
-          >
-            <ChevronRight className="size-5 stroke-[2.5]" />
-          </button>
-          <button
-            type="button"
-            onClick={transferToUnassigned}
-            disabled={toggledA.length === 0}
-            className="flex size-11 cursor-pointer items-center justify-center rounded-[10px] bg-[#6C5DD3] text-white shadow-lg shadow-[#6C5DD3]/20 transition-all hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
+          />
+          <TransferListMoveButton
+            direction="back"
+            onClick={() => void transferToUnassigned()}
+            disabled={toggledA.length === 0 || transferBusy}
             aria-label="Move selected to unassigned"
-          >
-            <ChevronLeft className="size-5 stroke-[2.5]" />
-          </button>
+          />
         </div>
 
         <RoleTransferPanel

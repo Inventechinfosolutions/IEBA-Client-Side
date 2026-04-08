@@ -9,24 +9,38 @@ export function useDepartments(filters: DepartmentFilter) {
   })
 
   const status: "active" | "inactive" = filters.inactive ? "inactive" : "active"
-  const { data: allDepartments = [], isLoading, isFetching } = useGetDepartments(status)
+  const searchText = (filters.search ?? "").trim()
+  const hasSearch = searchText.length > 0
+  const queryPage = hasSearch ? 1 : pagination.page
+  const queryLimit = hasSearch ? 100 : pagination.pageSize
 
-  const filteredDepartments = useMemo(() => {
-    return allDepartments.filter((dept) => {
-      const matchesSearch = filters.search
-        ? dept.name.toLowerCase().includes(filters.search.toLowerCase()) ||
-          dept.code.toLowerCase().includes(filters.search.toLowerCase())
-        : true
-      const matchesInactive = filters.inactive ? !dept.active : dept.active
-      return matchesSearch && matchesInactive
+  const { data, isLoading, isFetching } = useGetDepartments({
+    status,
+    page: queryPage,
+    limit: queryLimit,
+    search: searchText,
+    sort: "ASC",
+  })
+
+  const apiItems = data?.items ?? []
+  const apiTotal = data?.total ?? 0
+
+  const filteredAndPaginated = useMemo(() => {
+    if (!hasSearch) {
+      return { items: apiItems, totalItems: apiTotal }
+    }
+
+    const q = searchText.toLowerCase()
+    const filtered = apiItems.filter((dept) => {
+      const code = dept.code.toLowerCase()
+      const name = dept.name.toLowerCase()
+      return code.includes(q) || name.includes(q)
     })
-  }, [allDepartments, filters.search, filters.inactive])
 
-  const paginatedDepartments = useMemo(() => {
     const start = (pagination.page - 1) * pagination.pageSize
     const end = start + pagination.pageSize
-    return filteredDepartments.slice(start, end)
-  }, [filteredDepartments, pagination.page, pagination.pageSize])
+    return { items: filtered.slice(start, end), totalItems: filtered.length }
+  }, [apiItems, apiTotal, searchText, hasSearch, pagination.page, pagination.pageSize])
 
   const onPageChange = useCallback((page: number) => {
     setPagination((prev) => ({ ...prev, page }))
@@ -37,12 +51,12 @@ export function useDepartments(filters: DepartmentFilter) {
   }, [])
 
   return {
-    departments: paginatedDepartments,
-    totalItems: filteredDepartments.length,
+    departments: filteredAndPaginated.items,
+    totalItems: filteredAndPaginated.totalItems,
     isLoading: isLoading || isFetching,
     pagination: {
       ...pagination,
-      totalItems: filteredDepartments.length,
+      totalItems: filteredAndPaginated.totalItems,
     },
     onPageChange,
     onPageSizeChange,

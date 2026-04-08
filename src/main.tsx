@@ -7,8 +7,9 @@ import { AuthProvider } from "@/contexts/AuthContext"
 import { Toaster } from "@/components/ui/sonner"
 import "./index.css"
 import "./theme-overrides.css"
-import { router } from "./routes"
+import { createAppRouter } from "./routes"
 
+/** Shared client for mutations/pages (`@/main`). Passed into `createAppRouter` so `routes.tsx` never imports this file. */
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -16,6 +17,8 @@ export const queryClient = new QueryClient({
     },
   },
 })
+
+export const router = createAppRouter(queryClient)
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

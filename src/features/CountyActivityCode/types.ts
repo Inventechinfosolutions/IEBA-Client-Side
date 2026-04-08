@@ -1,14 +1,24 @@
 import type { UseFormReturn } from "react-hook-form"
+import { z } from "zod"
 
 import type { Department } from "@/features/department/types"
+import type { MasterCodeRow } from "@/features/master-code/types"
 
 import type {
   ApiActivityType,
   CountyActivityAddPageMode,
   CountyActivityGridRowType,
 } from "./enums/CountyActivity.enum"
+import {
+  countyActivityAddFormSchema,
+  countyActivityFilterFormSchema,
+} from "./schemas"
 
 export * from "./enums/CountyActivity.enum"
+
+export type CountyActivityFilterFormValues = z.infer<typeof countyActivityFilterFormSchema>
+
+export type CountyActivityAddFormValues = z.infer<typeof countyActivityAddFormSchema>
 
 /**
  * Echo of master activity-codes `match` (N, E, N/M, E/N, per-type codes such as MAA `F`, etc.).
@@ -22,7 +32,7 @@ export type CountyActivityCodeRow = {
   countyActivityName: string
   description: string
   department: string
-  /** IDs from activity–department links; names are resolved in `useCountyActivityCodes` from cached departments. */
+  /** IDs from activity–department links; names are resolved in the county activity grid hook from cached departments. */
   linkedDepartmentIds: number[]
   masterCodeType: string
   masterCode: number
@@ -37,28 +47,6 @@ export type CountyActivityCodeRow = {
   multipleJobPools: boolean
   rowType: CountyActivityGridRowType
   parentId?: string | null
-}
-
-export type CountyActivityFilterFormValues = {
-  search: string
-  inactive: boolean
-}
-
-export type CountyActivityAddFormValues = {
-  /** Add primary only: when true, Activity Code / Name / Description come from selected master code (read-only). */
-  copyCode: boolean
-  countyActivityCode: string
-  countyActivityName: string
-  description: string
-  department: string
-  masterCodeType: string
-  masterCode: number
-  match: MatchStatus
-  percentage: number
-  active: boolean
-  leaveCode: boolean
-  docRequired: boolean
-  multipleJobPools: boolean
 }
 
 /** Nested on `GET /activities/hierarchy` and `GET /activities/:id` (backend `ActivityNestedDepartmentResDto`). */
@@ -90,6 +78,52 @@ export type ApiActivityTreeResDto = ApiActivityResDto & {
   children?: ApiActivityTreeResDto[]
 }
 
+/** Wrapped `data` from `GET /activities` (paginated list). */
+export type CountyActivityListResponsePayload = {
+  data: ApiActivityResDto[]
+  meta: CountyActivityListMeta
+}
+
+export type CountyActivityListMeta = {
+  totalItems: number
+  totalPages: number
+  currentPage: number
+  itemsPerPage: number
+  itemCount: number
+}
+
+/** Cached paginated list value for county activity queries (`setQueryData` / cache readers). */
+export type PagedCountyActivityData = {
+  rows: CountyActivityCodeRow[]
+  meta: CountyActivityListMeta
+  raw: ApiActivityResDto[] | unknown[]
+}
+
+/** Params segment for {@link countyActivityCodeKeys.pagedList} (query key index after `paged` prefix). */
+export type PagedListParams = {
+  page: number
+  pageSize: number
+  search: string
+  status: string
+}
+
+export type CountyActivityListQueryParams = {
+  page: number
+  limit: number
+  search?: string
+  /** Backend `ActivityStatusEnum` string (`active` | `inactive`). */
+  status?: string
+  sort?: "ASC" | "DESC"
+}
+
+/** Params for paginated `GET /activities` (toolbar search is debounced before reaching the query). */
+export type CountyActivityPagedListParams = {
+  page: number
+  pageSize: number
+  search: string
+  showInactive: boolean
+}
+
 export type ApiActivityDepartmentResDto = {
   id: number
   activityId: number
@@ -106,6 +140,15 @@ export type ApiActivityDepartmentResDto = {
 export type CountyActivityEditPayload = {
   activity: ApiActivityResDto
   departmentNames: string[]
+}
+
+/** Context for merging copy-from-master and sub-primary defaults into the county activity add form before submit. */
+export type CountyActivityAddFormMergeContext = {
+  tab: CountyActivityGridRowType
+  copyFromMasterEnabled: boolean
+  masterRow: MasterCodeRow | undefined
+  subParentDetail: CountyActivityEditPayload | null | undefined
+  selectedPrimaryId: string | null | undefined
 }
 
 export type ActivityCatalogEnrichmentValue = {
@@ -181,6 +224,8 @@ export type CountyActivityPagination = {
   page: number
   pageSize: number
   totalItems: number
+  /** From API `meta.totalPages` when using paginated `GET /activities`. */
+  totalPages: number
 }
 
 export type CountyActivityMasterCodeOption = {
@@ -211,7 +256,10 @@ export type CountyActivityDescriptionTableCellProps = {
 
 export type CountyActivityCodeAddPageProps = {
   form: UseFormReturn<CountyActivityAddFormValues>
-  onSubmit: (tab: CountyActivityGridRowType) => void
+  /** Add flow: validated + merged values (copy-from-master, sub parent detail). */
+  onAddSave?: (tab: CountyActivityGridRowType, values: CountyActivityAddFormValues) => void
+  /** Edit flow: submit handler from `editForm.handleSubmit`. */
+  onEditSave?: () => void
   onClose: () => void
   mode?: CountyActivityAddPageMode
   tab?: CountyActivityGridRowType
@@ -220,6 +268,9 @@ export type CountyActivityCodeAddPageProps = {
   selectedPrimaryId?: string | null
   onSelectedPrimaryIdChange?: (id: string) => void
   disabledTabs?: Partial<Record<CountyActivityGridRowType, boolean>>
+  /** `GET /master-codes` active rows — each `name` is a Code Type option (primary tab). */
+  masterCodeTypeOptions?: readonly string[]
+  isMasterCodeTypeOptionsLoading?: boolean
   masterCodeOptions?: ReadonlyArray<CountyActivityMasterCodeOption>
   isMasterCodeOptionsLoading?: boolean
   departmentNames?: readonly string[]
@@ -227,11 +278,17 @@ export type CountyActivityCodeAddPageProps = {
   readOnlyPrimaryPicker?: boolean
   /** Edit modal: `GET /activities/:id` in flight */
   isEditSourceLoading?: boolean
+  /** Sub add flow: loaded primary activity (seeds master / department on save). */
+  subParentActivityDetail?: CountyActivityEditPayload | null
 }
 
 export type CountyActivityCodeTableProps = {
   rows: CountyActivityCodeRow[]
   primaryRows: CountyActivityCodeRow[]
+  /** From `GET /activities/top-level` — table context / inactive primary list. */
+  activePrimaryCountyRows: CountyActivityCodeRow[]
+  /** Sub county add/edit only — all active primaries from aggregated `GET /activities`. */
+  subCountyParentPickerRows: CountyActivityCodeRow[]
   subRowsByParentId: Record<string, CountyActivityCodeRow[]>
   pagination: CountyActivityPagination
   totalItems: number

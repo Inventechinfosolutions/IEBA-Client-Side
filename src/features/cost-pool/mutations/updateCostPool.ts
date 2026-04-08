@@ -1,42 +1,40 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { useMutation } from "@tanstack/react-query"
+import { queryClient } from "@/main"
 
+import {
+  assertAssignableActivityDepartmentIdsForUpdate,
+  updateCostPool,
+} from "../api/costPoolApi"
+import { CostPoolStatus } from "../enums/cost-pool.enum"
 import { costPoolKeys } from "../keys"
-import { costPoolStoreUpdate } from "../queries/getCostPools"
-import type { CostPoolRow, CostPoolUpsertFormValues } from "../types"
+import type { CostPoolUpsertFormValues } from "../types"
 
 type UpdateCostPoolInput = {
-  id: string
+  id: number
   values: CostPoolUpsertFormValues
 }
 
 export function useUpdateCostPool() {
-  const queryClient = useQueryClient()
-
   return useMutation({
-    mutationFn: async (input: UpdateCostPoolInput) => input,
-    onSuccess: ({ id, values }) => {
-      costPoolStoreUpdate(id, {
-        costPool: values.costPool,
-        department: values.department,
-        active: values.active,
-        assignedActivityIds: values.assignedActivityIds,
+    mutationFn: async ({ id, values }: UpdateCostPoolInput) => {
+      const activityDepartmentIds = await assertAssignableActivityDepartmentIdsForUpdate(
+        id,
+        values.departmentId,
+        values.assignedActivityDepartmentIds,
+      )
+      return updateCostPool(id, {
+        name: values.costPool.trim(),
+        status: values.active ? CostPoolStatus.ACTIVE : CostPoolStatus.INACTIVE,
+        departmentId: values.departmentId,
+        activityDepartmentIds,
       })
-
-      queryClient.setQueryData<CostPoolRow[]>(costPoolKeys.lists(), (prev) => {
-        if (!prev) return prev
-        return prev.map((row) =>
-          row.id === id
-            ? {
-                ...row,
-                costPool: values.costPool,
-                department: values.department,
-                active: values.active,
-                assignedActivityIds: values.assignedActivityIds,
-              }
-            : row
-        )
+    },
+    onSuccess: (_data, variables) => {
+      void queryClient.invalidateQueries({ queryKey: costPoolKeys.lists() })
+      void queryClient.invalidateQueries({ queryKey: costPoolKeys.detail(variables.id) })
+      void queryClient.invalidateQueries({
+        queryKey: costPoolKeys.activityPicklist(variables.values.departmentId),
       })
     },
   })
 }
-

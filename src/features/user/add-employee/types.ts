@@ -38,12 +38,22 @@ export type AddEmployeeJobPoolListPayload = {
   meta: AddEmployeeListMetaDto
 }
 
-/** Backend activities list row (subset). */
+/** Backend activities list row (subset). Master `Activity.id` — not valid for POST /users/new/assign/activity. */
 export type AddEmployeeActivityCatalogRow = {
   id: number
   code: string
   name: string
   activityCode: string
+  status: string
+}
+
+/** `GET /activity-departments?departmentId=` row — `id` is ActivityDepartment id (required for user activity assign). */
+export type AddEmployeeActivityDepartmentRow = {
+  id: number
+  activityId: number
+  departmentId: number
+  code: string
+  name: string
   status: string
 }
 
@@ -63,6 +73,19 @@ export type AddEmployeeSecurityRoleCatalogItem = {
   id: string
   name: string
   department: string
+}
+
+/** POST /userdepartmentrole/assign/roles and …/unassign/roles body (per department). */
+export type UserDepartmentRoleRefPayload = { id: string }
+
+export type UserDepartmentRoleDepartmentBlockPayload = {
+  id: number
+  roles: UserDepartmentRoleRefPayload[]
+}
+
+export type UserDepartmentRoleDepartmentsBody = {
+  userId: string
+  departments: UserDepartmentRoleDepartmentBlockPayload[]
 }
 
 export type AddEmployeeDepartmentRoleListItem = {
@@ -94,6 +117,47 @@ export type AddEmployeeTimeStudyProgramRow = {
   department: string
 }
 
+/** GET /timestudyprograms/user/programs-activities?userId= — program row per department bundle. */
+export type UserProgramsActivitiesProgramItem = {
+  id: number
+  code: string
+  name: string
+  departmentId: number
+}
+
+/** GET /timestudyprograms/user/programs-activities?userId= — activity row per department bundle. */
+export type UserProgramsActivitiesActivityItem = {
+  id: number
+  code: string
+  name: string
+  departmentId: number
+}
+
+/** One department’s programs + activities for the user-scoped time study endpoint. */
+export type UserProgramsActivitiesDepartmentBundle = {
+  departmentId: number
+  departmentCode: string
+  departmentName: string
+  programs: UserProgramsActivitiesProgramItem[]
+  activities: UserProgramsActivitiesActivityItem[]
+}
+
+/** POST /users/new/assign/program and …/unassign/program */
+export type AssignUserProgramsApiBody = {
+  userId: string
+  programs: number[]
+}
+
+/**
+ * POST /users/new/assign/activity and …/unassign/activity.
+ * `countyActivity` = ActivityDepartment ids for `departmentId` (see backend DTO).
+ */
+export type AssignUserActivitiesApiBody = {
+  userId: string
+  departmentId: number
+  countyActivity: number[]
+}
+
 /** Tenant master-code row from GET /master-codes (subset for multicode picker). */
 export type AddEmployeeMasterCodeRow = {
   id: number
@@ -107,6 +171,19 @@ export type AddEmployeeMasterCodeListPayload = {
   meta: AddEmployeeListMetaDto
 }
 
+/** Location row from GET /location (active list for Add Employee). */
+export type AddEmployeeLocationRow = {
+  id: number
+  name: string
+  clientId: number
+  status: string
+}
+
+export type AddEmployeeLocationListPayload = {
+  data: AddEmployeeLocationRow[]
+  meta: AddEmployeeListMetaDto
+}
+
 /** County activity row from GET /countyactivity?method=listcountyactivity (normalized). */
 export type AddEmployeeCountyActivityRow = {
   id: string
@@ -114,11 +191,26 @@ export type AddEmployeeCountyActivityRow = {
   countyActivityName?: string
 }
 
+/** GET /users/supervisors — time-study supervisor role holders in given departments. */
+export type AddEmployeeDepartmentSupervisorRow = {
+  id: string
+  loginId: string
+  firstName: string
+  lastName: string
+  name: string
+  employeeId: string
+}
+
 export type UserModuleFormMode = "add" | "edit"
 
 export type UserModuleFormValues = z.infer<typeof userModuleFormSchema>
 
 export type AddEmployeeFormTab = "employee" | "security" | "supervisor" | "timeStudy"
+
+export type AddEmployeeTabDefinition = {
+  id: AddEmployeeFormTab
+  label: string
+}
 
 /** @deprecated Use AddEmployeeFormTab; kept as alias for existing call sites re-exported from user/types */
 export type UserFormTab = AddEmployeeFormTab
@@ -128,11 +220,29 @@ export type AddEmployeeSaveSync = {
   formValues: UserModuleFormValues
 }
 
+/** Passed to `onSave` so the page can scope follow-up calls (e.g. GET roles-assigned only after Security save). */
+export type AddEmployeeSavePayload = {
+  values: UserModuleFormValues
+  sourceTab: AddEmployeeFormTab
+}
+
+export type SaveGatedTab = "employee" | "security" | "supervisor"
+
+export type UseAddEmployeeFormParams = {
+  mode: UserModuleFormMode
+  initialValues: UserModuleFormValues
+  onSave: (payload: AddEmployeeSavePayload) => void | Promise<AddEmployeeSaveSync | void>
+}
+
 export type AddEmployeeFormPanelProps = {
   mode: UserModuleFormMode
   initialValues: UserModuleFormValues
+  /**
+   * User id for Security APIs: add flow = draft id after first save (or null); edit = row id.
+   */
+  securityContextUserId?: string | null
   onCancel: () => void
-  onSave: (values: UserModuleFormValues) => void | Promise<AddEmployeeSaveSync | void>
+  onSave: (payload: AddEmployeeSavePayload) => void | Promise<AddEmployeeSaveSync | void>
 }
 
 export type UserFormPanelProps = AddEmployeeFormPanelProps
@@ -155,12 +265,8 @@ export type AddEmployeeFormTabsProps = {
 
 export type UserFormTabsProps = AddEmployeeFormTabsProps
 
-export type SupervisorDropdownFieldProps = {
-  name: "supervisorPrimary" | "supervisorSecondary"
-  label: string
-  /** Employee display names from GET /users */
-  options: string[]
-}
+/** Supervisor picker row: `id` is user profile UUID for PUT /users/:id. */
+export type SupervisorPickerOption = { id: string; label: string }
 
 /** Item row in security role transfer panels (available / assigned). Alias of AddEmployeeSecurityRoleCatalogItem. */
 export type AddEmployeeSecurityRoleItem = AddEmployeeSecurityRoleCatalogItem
@@ -191,3 +297,22 @@ export type AddEmployeeTimeStudyTransferPanelProps = {
   selectedDept: string
 }
 
+export type TimeStudyPlacementOverride = "assigned" | "unassigned"
+
+export type TimeStudyPlacementOverrideMap = Record<string, TimeStudyPlacementOverride>
+
+export type TimeStudyAssignmentsPanelProps = {
+  mode: UserModuleFormMode
+  /** Profile user id — same as Security tab; required for edit-mode user-scoped programs/activities. */
+  timeStudyContextUserId?: string | null
+}
+
+export type SecurityAssignmentsPanelProps = {
+  mode: UserModuleFormMode
+  /** User id for `userId` query param (edit = always set; add = draft id when known). */
+  securityContextUserId?: string | null
+  /** Add mode: allow GET without `userId` before first save. Edit mode should be false. */
+  allowUnassignedQueryWithoutUserId: boolean
+}
+
+export type SupervisorMenuOpen = "primary" | "secondary" | null

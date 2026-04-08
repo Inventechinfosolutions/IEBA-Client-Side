@@ -2,7 +2,7 @@ import { FormProvider } from "react-hook-form"
 
 import { Button } from "@/components/ui/button"
 
-import { useAddEmployeeForm, useAddEmployeeReferenceBootstrap } from "../hooks/use-add-employee-form"
+import { useAddEmployeeForm } from "../hooks/use-add-employee-form"
 import type { AddEmployeeFormPanelProps } from "../types"
 
 import { EmployeeLoginDetailsSection } from "../employee-login-details/employee-login-details-section"
@@ -11,9 +11,13 @@ import { SupervisorAssignmentsPanel } from "../supervisor-assignments/supervisor
 import { TimeStudyAssignmentsPanel } from "../time-study-assignments/time-study-assignments-panel"
 import { UserFormTabs } from "./user-form-tabs"
 
-export function EmployeePanel({ mode, initialValues, onCancel, onSave }: AddEmployeeFormPanelProps) {
-  useAddEmployeeReferenceBootstrap()
-
+export function EmployeePanel({
+  mode,
+  initialValues,
+  securityContextUserId,
+  onCancel,
+  onSave,
+}: AddEmployeeFormPanelProps) {
   const {
     isEditMode,
     methods,
@@ -45,9 +49,23 @@ export function EmployeePanel({ mode, initialValues, onCancel, onSave }: AddEmpl
 
         <div className="min-h-[200px] px-8 pb-8 pt-6">
           {activeTab === "employee" ? <EmployeeLoginDetailsSection isEditMode={isEditMode} /> : null}
-          {activeTab === "security" ? <SecurityAssignmentsPanel /> : null}
-          {activeTab === "supervisor" ? <SupervisorAssignmentsPanel /> : null}
-          {activeTab === "timeStudy" ? <TimeStudyAssignmentsPanel /> : null}
+          {activeTab === "security" ? (
+            <SecurityAssignmentsPanel
+              mode={mode}
+              securityContextUserId={securityContextUserId ?? null}
+              allowUnassignedQueryWithoutUserId={mode === "add"}
+            />
+          ) : null}
+          {activeTab === "supervisor" ? (
+            <SupervisorAssignmentsPanel />
+          ) : null}
+          {activeTab === "timeStudy" ? (
+            <TimeStudyAssignmentsPanel
+              key={`time-study-${mode}-${securityContextUserId ?? "new"}`}
+              mode={mode}
+              timeStudyContextUserId={securityContextUserId ?? null}
+            />
+          ) : null}
 
           <div className="mt-5 flex items-center justify-end gap-3">
             <Button
@@ -56,7 +74,7 @@ export function EmployeePanel({ mode, initialValues, onCancel, onSave }: AddEmpl
             >
               Save
             </Button>
-            {!isEditMode && !isLastTab ? (
+            {!isLastTab && !(isEditMode && activeTab === "employee") ? (
               <Button
                 type="button"
                 onClick={handleNext}
