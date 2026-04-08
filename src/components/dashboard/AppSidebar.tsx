@@ -53,6 +53,16 @@ import { useAuth } from "@/contexts/AuthContext"
 import { ChangePasswordFormModal } from "@/features/change-password"
 
 const mainNav = [
+  { title: "Dashboard", url: "/", icon: LayoutDashboard },
+  { title: "Personal Time Study", url: "/personal-time-study", icon: ScrollText },
+  { title: "Master Code", url: "/master-code", icon: ScrollText },
+  { title: "Program", url: "/program", icon: ScrollText },
+  { title: "To Do", url: "/to-do", icon: ScrollText },
+  { title: "Leave Approval", url: "/leave-approval", icon: ScrollText },
+  { title: "User", url: "/user", icon: Users },
+  { title: "Users", url: "/users", icon: Users },
+  { title: "Department Role", url: "/department-role", icon: Building2 },
+  { title: "County Activity Code", url: "/county-activity-code", icon: Table2 },
   { title: "Dashboard", url: "/", icon: Gauge },
   { title: "Personal Time Study", url: "/schedule-time-study", icon: Clock },
   { title: "To Do", url: "/to-do", icon: FileText },
