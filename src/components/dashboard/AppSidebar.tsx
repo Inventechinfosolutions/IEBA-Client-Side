@@ -10,6 +10,7 @@ import {
   Layers,
   BarChart2,
   FileText,
+  CircleDollarSign,
   Briefcase,
   LayoutGrid,
   SquareTerminal,
@@ -77,6 +78,7 @@ const mainNav = [
   { title: "Leave Approval", url: "/leave-approval", icon: FileText },
   { title: "FTE Allocation", url: "/fte-allocation", icon: FileText },
   { title: "Cost Pool", url: "/costpool", icon: FileText },
+  { title: "Payroll", url: "/payroll", icon: CircleDollarSign },
   { title: "Schedule Time Study", url: "/schedule-time-study", icon: CalendarClock },
   { title: "Users", url: "/users", icon: Users },
 ] as const  

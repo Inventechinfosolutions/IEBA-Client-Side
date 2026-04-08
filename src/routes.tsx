@@ -25,6 +25,8 @@ import { masterCodeKeys } from "@/features/master-code/keys"
 import { programKeys, programActivityRelationKeys } from "@/features/program/keys"
 import { todoKeys } from "@/features/todo/keys"
 import { leaveApprovalKeys } from "@/features/leave-approval/keys"
+import { payrollKeys } from "@/features/payroll/payrollKeys"
+import { PayrollPage } from "@/features/payroll/pages/PayrollPage"
 import { userModuleKeys } from "@/features/user/keys"
 
 /** Inject `queryClient` from `main.tsx`: importing `@/main` here would be circular, but the rest of the app still uses the same instance via `import { queryClient } from "@/main"`. */
@@ -128,6 +130,14 @@ export function createAppRouter(queryClient: QueryClient) {
         { path: "profile", element: <ProfilePage /> },
         { path: "job-classification", element: <JobClassificationPage /> },
         { path: "job-pool", element: <JobPoolPage /> },
+        {
+          path: "payroll",
+          element: <PayrollPage />,
+          loader: async () => {
+            await queryClient.invalidateQueries({ queryKey: payrollKeys.lists() })
+            return null
+          },
+        },
       ],
     },
     { path: "*", element: <Navigate to="/" replace /> },
