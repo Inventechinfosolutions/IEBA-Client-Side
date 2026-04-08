@@ -1,0 +1,269 @@
+/* Main container */
+.calendar-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background-color: #f3f4f6;
+  padding: 1rem;
+  font-family: 'Inter', sans-serif;
+}
+
+/* Calendar card wrapper — square corners so parent background does not show in corners; full width */
+.calendar-card {
+  background-color: var(--card, #ffffff);
+  border-radius: 0;
+  box-shadow: none;
+  padding: 1.5rem;
+  width: 100%;
+  max-width: none;
+}
+
+/* Timezone selector container */
+.timezone-container {
+  margin-bottom: 1rem;
+}
+
+.timezone-label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 0.25rem;
+}
+
+.timezone-select {
+  margin-top: 0.25rem;
+  display: block;
+  width: 100%;
+  padding-left: 0.75rem;
+  padding-right: 2.5rem;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  font-size: 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.timezone-select:focus {
+  outline: none;
+  ring: 2px;
+  ring-color: #3b82f6;
+  border-color: #3b82f6;
+}
+
+@media (min-width: 640px) {
+  .timezone-select {
+    font-size: 0.875rem;
+  }
+}
+
+/* Calendar header */
+.calendar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.calendar-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+/* Month/Year Select */
+.month-year-select {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: white;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  padding: 0.5rem;
+  z-index: 10;
+  width: 200px;
+  max-height: 300px;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+}
+
+.month-year-select button {
+  padding: 0.5rem;
+  border: none;
+  background: none;
+  cursor: pointer;
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+  color: #374151;
+}
+
+.month-year-select button:hover {
+  background-color: #f3f4f6;
+}
+
+.month-year-select button.selected {
+  background-color: #3b82f6;
+  color: white;
+}
+
+/* Navigation buttons */
+.nav-button {
+  padding: 0.5rem;
+  border-radius: 9999px;
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.nav-button:hover {
+  background-color: #2563eb;
+}
+
+.nav-button:focus {
+  outline: none;
+  ring: 2px;
+  ring-color: #3b82f6;
+  ring-opacity: 0.5;
+}
+
+.nav-button svg {
+  height: 1.25rem;
+  width: 1.25rem;
+}
+
+/* Days of week header + week summary columns: one grid with Sun–Sat + TOTAL + STATUS */
+.calendar-weeks-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr)) minmax(4.75rem, auto) minmax(3.25rem, auto);
+  gap: 0.5rem;
+  align-items: center;
+}
+
+/* Extra space below Sun–Sat + header labels (matches previous days-of-week margin) */
+.calendar-weeks-grid > *:nth-child(-n + 9) {
+  margin-bottom: 0.5rem;
+}
+
+.days-of-week-container {
+  display: contents;
+}
+
+.days-of-week-container > div {
+  text-align: center;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #4b5563;
+  padding-bottom: 0.25rem;
+}
+
+.week-summary-header {
+  text-align: center;
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: #6b7280;
+  text-transform: uppercase;
+  line-height: 1.2;
+  padding-bottom: 0.25rem;
+  align-self: end;
+}
+
+.week-summary-total {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #111827;
+  border-top: 1px solid #e5e7eb;
+}
+
+.week-summary-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.5rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.week-summary-status-dot {
+  width: 0.65rem;
+  height: 0.65rem;
+  border-radius: 9999px;
+  flex-shrink: 0;
+}
+
+/* Legacy: kept if referenced elsewhere */
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.5rem;
+}
+
+/* Calendar day cell */
+.day-cell {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: all 0.15s ease-in-out;
+  color: #111827;
+}
+
+.day-cell.not-current-month {
+  color: #9ca3af;
+}
+
+.day-cell.selected {
+  background-color: #3b82f6;
+  color: white;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  border: 3px solid #1d4ed8;
+}
+
+.day-cell.week-selected:not(.selected) {
+  background-color: #dbeafe;
+  border: 2px solid #3b82f6;
+  color: #1e40af;
+  font-weight: 500;
+}
+
+.day-cell:not(.selected):not(.week-selected):hover {
+  background-color: #e5e7eb;
+}
+
+.day-cell.today:not(.selected):not(.week-selected) {
+  border: 2px solid #3b82f6;
+  color: #1d4ed8;
+  font-weight: 600;
+}
+
+/* Selected date display */
+.selected-date-container {
+  margin-top: 1.5rem;
+  text-align: center;
+  font-size: 1.125rem;
+  font-weight: 500;
+  color: #374151;
+  padding: 0.75rem;
+  background-color: #eff6ff;
+  border-radius: 0.5rem;
+}
+
+.selected-date-text {
+  font-weight: 600;
+  color: #1d4ed8;
+}

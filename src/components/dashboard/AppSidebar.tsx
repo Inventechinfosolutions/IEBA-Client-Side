@@ -44,6 +44,7 @@ import { ChangePasswordFormModal } from "@/features/change-password"
 
 const mainNav = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
+  { title: "Personal Time Study", url: "/personal-time-study", icon: ScrollText },
   { title: "Master Code", url: "/master-code", icon: ScrollText },
   { title: "Program", url: "/program", icon: ScrollText },
   { title: "To Do", url: "/to-do", icon: ScrollText },
