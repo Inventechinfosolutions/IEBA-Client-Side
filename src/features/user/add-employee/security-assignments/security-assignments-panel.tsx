@@ -17,6 +17,7 @@ import type {
   UserModuleFormValues,
 } from "../types"
 
+import { addEmployeeTransferSuccessToastOptions } from "../schemas"
 import { useAssignUserDepartmentRoles, useUnassignUserDepartmentRoles } from "../mutations/user-department-role-transfer"
 import { addEmployeeLookupKeys, departmentRolesUnassignedCacheUserKey } from "../keys"
 import { useGetDepartmentRolesUnassigned } from "../queries/get-add-employee"
@@ -209,6 +210,7 @@ export function SecurityAssignmentsPanel({
   mode,
   securityContextUserId = null,
   allowUnassignedQueryWithoutUserId,
+  onAddModeTransferSucceeded,
 }: SecurityAssignmentsPanelProps) {
   const unassignedQuery = useGetDepartmentRolesUnassigned(
     securityContextUserId,
@@ -339,7 +341,7 @@ export function SecurityAssignmentsPanel({
     if (canPersistTransfers) {
       try {
         await assignMutation.mutateAsync({ userId: securityUserId, departments })
-        toast.success("Roles assigned.")
+        toast.success("Roles assigned.", addEmployeeTransferSuccessToastOptions)
       } catch (e) {
         toast.error(e instanceof Error ? e.message : "Assign failed")
         return
@@ -370,6 +372,9 @@ export function SecurityAssignmentsPanel({
       { shouldDirty: true, shouldTouch: true, shouldValidate: true },
     )
     setToggledU([])
+    if (isAddMode) {
+      onAddModeTransferSucceeded?.()
+    }
   }
 
   const transferToUnassigned = async () => {
@@ -399,7 +404,7 @@ export function SecurityAssignmentsPanel({
       try {
         await unassignMutation.mutateAsync({ userId: securityUserId, departments })
         mergeRowsIntoRolesUnassignedCache(rolesUnassignedQueryKey, toRemoveItems)
-        toast.success("Roles unassigned.")
+        toast.success("Roles unassigned.", addEmployeeTransferSuccessToastOptions)
       } catch (e) {
         toast.error(e instanceof Error ? e.message : "Unassign failed")
         return
@@ -421,6 +426,7 @@ export function SecurityAssignmentsPanel({
         { shouldDirty: true, shouldTouch: true, shouldValidate: true },
       )
       setToggledA([])
+      onAddModeTransferSucceeded?.()
       return
     }
     const prevSnaps = getValues("securityAssignedSnapshots") ?? []

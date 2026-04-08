@@ -65,7 +65,7 @@ const supervisorEmptyListSlot = (
 /** UI tab: Supervisor Assignments */
 export function SupervisorAssignmentsPanel() {
   const [menuOpen, setMenuOpen] = useState<SupervisorMenuOpen>(null)
-  const { control, setValue, watch, formState } = useFormContext<UserModuleFormValues>()
+  const { control, setValue, watch } = useFormContext<UserModuleFormValues>()
   const employeeName = `${watch("firstName") ?? ""} ${watch("lastName") ?? ""}`.trim()
 
   const snapshots = watch("securityAssignedSnapshots") ?? []
@@ -143,11 +143,6 @@ export function SupervisorAssignmentsPanel() {
     if (!ex?.size) return catalogOptions
     return catalogOptions.filter((o) => !ex.has(o.id))
   }, [catalogOptions, primarySupervisorId])
-
-  const secondaryError =
-    formState.errors.supervisorSecondary?.message != null
-      ? String(formState.errors.supervisorSecondary.message)
-      : null
 
   const openChange = (which: "primary" | "secondary", open: boolean) => {
     if (open) setMenuOpen(which)
@@ -233,11 +228,6 @@ export function SupervisorAssignmentsPanel() {
                 itemButtonClassName="rounded-[4px] px-2.5 py-1.5"
                 itemLabelClassName="text-[11px] leading-[16px]"
               />
-              {secondaryError ? (
-                <p className="mt-1 text-[11px] text-[#ff0000]" role="alert">
-                  {secondaryError}
-                </p>
-              ) : null}
             </div>
           )}
         />
