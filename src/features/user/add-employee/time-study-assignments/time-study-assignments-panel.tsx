@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { TransferListMoveButton } from "@/components/ui/transfer-list-move-button"
 
+import { addEmployeeTransferSuccessToastOptions } from "../schemas"
 import type {
   AddEmployeeDepartmentOption,
   AddEmployeeTimeStudyTransferItem,
@@ -634,7 +635,7 @@ export function TimeStudyAssignmentsPanel({
     if (canPersistTsTransfers) {
       try {
         await assignProgramsMutation.mutateAsync({ userId: userIdForTs, programs: programIds })
-        toast.success("Programs assigned.")
+        toast.success("Programs assigned.", addEmployeeTransferSuccessToastOptions)
       } catch (e) {
         toast.error(e instanceof Error ? e.message : "Failed to assign programs")
         return
@@ -668,7 +669,7 @@ export function TimeStudyAssignmentsPanel({
     if (canPersistTsTransfers) {
       try {
         await unassignProgramsMutation.mutateAsync({ userId: userIdForTs, programs: programIds })
-        toast.success("Programs unassigned.")
+        toast.success("Programs unassigned.", addEmployeeTransferSuccessToastOptions)
       } catch (e) {
         toast.error(e instanceof Error ? e.message : "Failed to unassign programs")
         return
@@ -710,7 +711,7 @@ export function TimeStudyAssignmentsPanel({
           departmentId: selectedDepartmentNumericId,
           countyActivity: activityIds,
         })
-        toast.success("Activities assigned.")
+        toast.success("Activities assigned.", addEmployeeTransferSuccessToastOptions)
       } catch (e) {
         toast.error(e instanceof Error ? e.message : "Failed to assign activities")
         return
@@ -752,7 +753,7 @@ export function TimeStudyAssignmentsPanel({
           departmentId: selectedDepartmentNumericId,
           countyActivity: activityIds,
         })
-        toast.success("Activities unassigned.")
+        toast.success("Activities unassigned.", addEmployeeTransferSuccessToastOptions)
       } catch (e) {
         toast.error(e instanceof Error ? e.message : "Failed to unassign activities")
         return

@@ -403,7 +403,7 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                                 </TabsTrigger>
                                 <TabsTrigger
                                     value="settings"
-                                    disabled={!!id || isLoadingDept}
+                                    disabled={isLoadingDept}
                                     className="h-full rounded-[8px] border-0 data-[state=active]:bg-[#6C5DD3] data-[state=active]:text-white data-[state=inactive]:text-[#9CA3AF] font-[500] text-[17px] transition-all shadow-none disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     Department Settings
@@ -681,6 +681,16 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
 
                         <TabsContent value="settings" className="mt-0">
                             <div className="px-8 pb-8">
+                                {id && (
+                                    <div className="pt-8 space-y-1">
+                                        <div className="text-[15px] font-[600] text-[#374151]">
+                                            Code: <span className="text-[#6C5DD3]">{currentCode}</span>
+                                        </div>
+                                        <div className="text-[15px] font-[600] text-[#374151]">
+                                            Department Name: <span className="text-[#6C5DD3]">{currentName}</span>
+                                        </div>
+                                    </div>
+                                )}
                                 <div className="grid grid-cols-1 gap-5 py-8 min-h-[300px]">
                                     {DEPARTMENT_SETTINGS_ROWS.map((setting) => (
                                         <div key={setting.key} className="space-y-2">
