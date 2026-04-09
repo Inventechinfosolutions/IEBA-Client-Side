@@ -2,6 +2,7 @@ import { Check, Plus } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { usePermissions } from "@/hooks/usePermissions"
 import type { JobPoolToolbarProps } from "../types"
 
 export function JobPoolToolbar({
@@ -11,6 +12,8 @@ export function JobPoolToolbar({
   onToggleInactiveOnly,
   onAdd,
 }: JobPoolToolbarProps) {
+  const { canAdd } = usePermissions()
+  const canAddJobPool = canAdd("jobpool")
   return (
     <div className="flex items-center justify-between gap-3">
       <Input
@@ -32,14 +35,16 @@ export function JobPoolToolbar({
           )}
           Inactive
         </Button>
-        <Button
-          type="button"
-          className="h-11 cursor-pointer gap-1 rounded-[10px] bg-[#6C5DD3] px-3 text-[12px] font-semibold text-white shadow-[0_1px_0_rgba(0,0,0,0.05)] hover:bg-[#6C5DD3]"
-          onClick={onAdd}
-        >
-          <Plus className="size-3.5" />
-          Add Job Pool
-        </Button>
+        {canAddJobPool && (
+          <Button
+            type="button"
+            className="h-11 cursor-pointer gap-1 rounded-[10px] bg-[#6C5DD3] px-3 text-[12px] font-semibold text-white shadow-[0_1px_0_rgba(0,0,0,0.05)] hover:bg-[#6C5DD3]"
+            onClick={onAdd}
+          >
+            <Plus className="size-3.5" />
+            Add Job Pool
+          </Button>
+        )}
       </div>
     </div>
   )

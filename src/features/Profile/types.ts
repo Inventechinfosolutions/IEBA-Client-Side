@@ -7,8 +7,8 @@ export type EmergencyContactValues = {
   lastName: string
   areaCode: string
   telephoneNumber: string
-  /** Empty string = none selected (matches API `null`). */
-  relationship: UserRelationship | ""
+  /** Backend relationship (falls back to FATHER if missing) */
+  relationship: UserRelationship
 }
 
 export type OnRecordsValues = {

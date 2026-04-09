@@ -26,8 +26,11 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import type { UserTableProps, UserTableSortState } from "@/features/user/types"
+import { usePermissions } from "@/hooks/usePermissions"
 
 export function UserTable({ rows, isLoading, onEditRow, onSwitchUser }: UserTableProps) {
+  const { canUpdate } = usePermissions()
+  const canUpdateUser = canUpdate("user")
   const [expandedRowIds, setExpandedRowIds] = useState<Record<string, boolean>>({})
   const [employeeSortState, setEmployeeSortState] = useState<UserTableSortState>("none")
   const [isEmployeeTooltipOpen, setIsEmployeeTooltipOpen] = useState(false)
@@ -296,18 +299,20 @@ export function UserTable({ rows, isLoading, onEditRow, onSwitchUser }: UserTabl
                     {row.assignedMultiCodes}
                   </TableCell>
                   <TableCell className="border-r border-[#eff0f5] px-[14px] py-[5px] text-center">
-                    <button
-                      type="button"
-                      onClick={() => onEditRow(row)}
-                      className="inline-flex cursor-pointer items-center opacity-80 drop-shadow-[0_1px_0_rgba(108,93,211,0.35)] transition-opacity hover:opacity-100"
-                    >
-                      <img
-                        src={tableEditIcon}
-                        alt=""
-                        aria-hidden="true"
-                        className="size-[12.1px] object-contain"
-                      />
-                    </button>
+                    {canUpdateUser && (
+                      <button
+                        type="button"
+                        onClick={() => onEditRow(row)}
+                        className="inline-flex cursor-pointer items-center opacity-80 drop-shadow-[0_1px_0_rgba(108,93,211,0.35)] transition-opacity hover:opacity-100"
+                      >
+                        <img
+                          src={tableEditIcon}
+                          alt=""
+                          aria-hidden="true"
+                          className="size-[12.1px] object-contain"
+                        />
+                      </button>
+                    )}
                   </TableCell>
                   {showSwitchUser ? (
                     <TableCell className="border-r border-[#eff0f5] px-[14px] py-[5px] text-center">

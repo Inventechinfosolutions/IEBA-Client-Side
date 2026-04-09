@@ -2,6 +2,7 @@ import { Check, Plus } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { usePermissions } from "@/hooks/usePermissions"
 import type { JobClassificationToolbarProps } from "../types"
 
 export function JobClassificationToolbar({
@@ -11,6 +12,8 @@ export function JobClassificationToolbar({
   onToggleInactiveOnly,
   onAdd,
 }: JobClassificationToolbarProps) {
+  const { canAdd } = usePermissions()
+  const canAddJobClassification = canAdd("jobclassification")
   return (
     <div className="flex items-center justify-between gap-3">
       <Input
@@ -32,14 +35,16 @@ export function JobClassificationToolbar({
           )}
           Inactive
         </Button>
-        <Button
-          type="button"
-          className="h-11 cursor-pointer gap-1 rounded-[10px] bg-[#6C5DD3] px-3 text-[12px] font-semibold text-white shadow-[0_1px_0_rgba(0,0,0,0.05)] hover:bg-[#6C5DD3]"
-          onClick={onAdd}
-        >
-          <Plus className="size-3.5" />
-          Add Job Classification
-        </Button>
+        {canAddJobClassification && (
+          <Button
+            type="button"
+            className="h-11 cursor-pointer gap-1 rounded-[10px] bg-[#6C5DD3] px-3 text-[12px] font-semibold text-white shadow-[0_1px_0_rgba(0,0,0,0.05)] hover:bg-[#6C5DD3]"
+            onClick={onAdd}
+          >
+            <Plus className="size-3.5" />
+            Add Job Classification
+          </Button>
+        )}
       </div>
     </div>
   )

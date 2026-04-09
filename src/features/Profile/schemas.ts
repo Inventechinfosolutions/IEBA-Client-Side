@@ -28,7 +28,9 @@ const optionalPhoneDigitsLen = (fieldLabel: string, len: number) =>
       `${fieldLabel} must be ${len} digits`
     )
 
-const relationshipField = z.union([z.literal(""), z.nativeEnum(UserRelationship)])
+const relationshipField = z.nativeEnum(UserRelationship, {
+  message: "Relationship is required",
+})
 
 /** Matches backend `combinedEmergencyPhoneDigits` — if any digits are present, they must total exactly 10. */
 function emergencyContactPhoneDigits(areaCode: string, telephoneNumber: string): string {
@@ -110,7 +112,7 @@ export const profileDetailDefaultValues: ProfileDetailFormValues = {
     lastName: "",
     areaCode: "",
     telephoneNumber: "",
-    relationship: "",
+    relationship: UserRelationship.FATHER,
   },
   onRecords: {
     employeeId: "",

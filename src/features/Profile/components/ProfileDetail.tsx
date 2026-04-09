@@ -362,11 +362,11 @@ function ProfileDetailForm({
                 control={control}
                 render={({ field }) => (
                   <Select
-                    value={field.value === "" ? undefined : field.value}
+                    value={field.value}
                     onValueChange={(next) => field.onChange(next as UserRelationship)}
                   >
                     <SelectTrigger className={selectTriggerClassName}>
-                      <SelectValue placeholder={profileDetailMessages.relationshipPlaceholder} />
+                      <SelectValue />
                     </SelectTrigger>
                     <SelectContent
                       position="popper"

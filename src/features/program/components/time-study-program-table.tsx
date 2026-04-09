@@ -29,6 +29,7 @@ import type {
   TimeStudyProgramTableProps,
   TimeStudyProgramResDto,
 } from "../types"
+import { usePermissions } from "@/hooks/usePermissions"
 
 export function TimeStudyProgramTable({
   rows,
@@ -36,6 +37,9 @@ export function TimeStudyProgramTable({
   onEditRow,
   lastUpdatedRow,
 }: TimeStudyProgramTableProps) {
+  const { canUpdate } = usePermissions()
+  const canUpdateTsProgram = canUpdate("timestudyprogram")
+
   const [sortState, setSortState] = useState<ProgramTableSortState>({
     key: "code",
     direction: "none",
@@ -412,18 +416,20 @@ export function TimeStudyProgramTable({
                       <img src={row.active ? tableCheckIcon : tableCloseIcon} alt="" aria-hidden="true" className="mx-auto size-[12px] object-contain" />
                     </TableCell>
                     <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-center whitespace-normal">
-                      <button
-                        type="button"
-                        onClick={() => onEditRow(row)}
-                        className="inline-flex cursor-pointer items-center opacity-80 drop-shadow-[0_1px_0_rgba(108,93,211,0.35)] transition-opacity hover:opacity-100"
-                      >
-                        <img
-                          src={tableEditIcon}
-                          alt=""
-                          aria-hidden="true"
-                          className="size-[11px] object-contain"
-                        />
-                      </button>
+                      {canUpdateTsProgram && (
+                        <button
+                          type="button"
+                          onClick={() => onEditRow(row)}
+                          className="inline-flex cursor-pointer items-center opacity-80 drop-shadow-[0_1px_0_rgba(108,93,211,0.35)] transition-opacity hover:opacity-100"
+                        >
+                          <img
+                            src={tableEditIcon}
+                            alt=""
+                            aria-hidden="true"
+                            className="size-[11px] object-contain"
+                          />
+                        </button>
+                      )}
                     </TableCell>
                   </TableRow>
                   {row.hierarchyLevel === 0 &&

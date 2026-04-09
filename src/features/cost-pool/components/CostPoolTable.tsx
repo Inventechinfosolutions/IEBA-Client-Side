@@ -41,6 +41,7 @@ import {
 import { useGetDepartments } from "@/features/department/queries/getDepartments"
 import editIconImg from "@/assets/edit-icon.png"
 import statusCheckImg from "@/assets/status-check.png"
+import { usePermissions } from "@/hooks/usePermissions"
 
 import {
   detailToUpsertFormValues,
@@ -84,10 +85,10 @@ function CostPoolCreateDialogContent({
   onClose: () => void
   onCreated: () => void
 }) {
-  const departmentsQuery = useGetDepartments("active")
+  const departmentsQuery = useGetDepartments({ status: "active", page: 1, limit: 100 })
   const departmentOptions = useMemo(
     () =>
-      (departmentsQuery.data ?? []).map((d) => ({
+      (departmentsQuery.data?.items ?? []).map((d) => ({
         id: d.id,
         name: d.name,
       })),
@@ -204,10 +205,10 @@ function CostPoolEditDialogContent({
     enabled: true,
     refetchOnMountAlways: true,
   })
-  const departmentsQuery = useGetDepartments("active")
+  const departmentsQuery = useGetDepartments({ status: "active", page: 1, limit: 100 })
   const departmentOptions = useMemo(
     () =>
-      (departmentsQuery.data ?? []).map((d) => ({
+      (departmentsQuery.data?.items ?? []).map((d) => ({
         id: d.id,
         name: d.name,
       })),
@@ -262,6 +263,9 @@ export function CostPoolTable({
   onPageSizeChange,
 }: CostPoolTableProps) {
   const navigate = useNavigate()
+  const { canAdd, canUpdate } = usePermissions()
+  const canAddCostPool = canAdd("costpool")
+  const canUpdateCostPool = canUpdate("costpool")
   const filterForm = useForm<CostPoolFilterFormValues>({
     resolver: zodResolver(costPoolFilterFormSchema),
     defaultValues: {
@@ -367,14 +371,16 @@ export function CostPoolTable({
             <span className="text-[14px] font-normal">Inactive</span>
           </button>
 
-          <Button
-            type="button"
-            onClick={() => setAddOpen(true)}
-            className="h-12 rounded-[12px] bg-[#6C5DD3] px-6 text-[14px] font-normal text-white hover:bg-[#5B4DC5]"
-          >
-            <PlusIcon className="mr-2 size-4" />
-            Add Cost Pool
-          </Button>
+          {canAddCostPool && (
+            <Button
+              type="button"
+              onClick={() => setAddOpen(true)}
+              className="h-12 rounded-[12px] bg-[#6C5DD3] px-6 text-[14px] font-normal text-white hover:bg-[#5B4DC5]"
+            >
+              <PlusIcon className="mr-2 size-4" />
+              Add Cost Pool
+            </Button>
+          )}
         </div>
       </div>
 
@@ -516,22 +522,24 @@ export function CostPoolTable({
                     ) : null}
                   </TableCell>
                   <TableCell className="px-[14px] py-[6px] align-middle text-center">
-                    <Button
-                      type="button"
-                      size="icon"
-                      variant="ghost"
-                      className="text-[#6C5DD3] hover:bg-[#6C5DD3]/10"
-                      onClick={() => {
-                        setRowToEdit(row)
-                        setEditOpen(true)
-                      }}
-                    >
-                      <img
-                        src={editIconImg}
-                        alt="Edit"
-                        className="h-4 w-4 object-contain"
-                      />
-                    </Button>
+                    {canUpdateCostPool && (
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        className="text-[#6C5DD3] hover:bg-[#6C5DD3]/10"
+                        onClick={() => {
+                          setRowToEdit(row)
+                          setEditOpen(true)
+                        }}
+                      >
+                        <img
+                          src={editIconImg}
+                          alt="Edit"
+                          className="h-4 w-4 object-contain"
+                        />
+                      </Button>
+                    )}
                   </TableCell>
                 </TableRow>
               ))

@@ -6,13 +6,13 @@ import { UserRelationship } from "../enums/userrelationship.enum"
 import { profileDetailDefaultValues } from "../schemas"
 import type { ProfileDetailData, ProfilePersistFields } from "../types"
 
-function normalizeRelationship(raw: string | null | undefined): UserRelationship | "" {
+function normalizeRelationship(raw: string | null | undefined): UserRelationship {
   const t = (raw ?? "").trim().toLowerCase()
-  if (!t) return ""
+  if (!t) return UserRelationship.FATHER
   if ((Object.values(UserRelationship) as string[]).includes(t)) {
     return t as UserRelationship
   }
-  return ""
+  return UserRelationship.FATHER
 }
 
 function splitUsPhone10(digits: string): { areaCode: string; telephoneNumber: string } {

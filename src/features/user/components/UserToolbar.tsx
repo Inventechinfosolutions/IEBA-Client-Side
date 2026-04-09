@@ -3,6 +3,7 @@ import { Check, Plus, Search } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { usePermissions } from "@/hooks/usePermissions"
 import type { UserToolbarProps } from "@/features/user/types"
 
 export function UserToolbar({
@@ -14,6 +15,8 @@ export function UserToolbar({
   onSelectSuggestion,
   onAddEmployee,
 }: UserToolbarProps) {
+  const { canAdd } = usePermissions()
+  const canAddUser = canAdd("user")
   const [isSearchFocused, setIsSearchFocused] = useState(false)
   const visibleSuggestions = suggestions.slice(0, 10)
   const shouldShowSuggestions =
@@ -73,14 +76,16 @@ export function UserToolbar({
           )}
           Inactive
         </Button>
-        <Button
-          type="button"
-          className="h-9 cursor-pointer gap-1 rounded-[12px] bg-[#6C5DD3] px-3 text-[12px] font-semibold text-white shadow-[0_1px_0_rgba(0,0,0,0.05)] hover:bg-[#6C5DD3]"
-          onClick={onAddEmployee}
-        >
-          <Plus className="size-3.5" />
-          Add Employee
-        </Button>
+        {canAddUser && (
+          <Button
+            type="button"
+            className="h-9 cursor-pointer gap-1 rounded-[12px] bg-[#6C5DD3] px-3 text-[12px] font-semibold text-white shadow-[0_1px_0_rgba(0,0,0,0.05)] hover:bg-[#6C5DD3]"
+            onClick={onAddEmployee}
+          >
+            <Plus className="size-3.5" />
+            Add Employee
+          </Button>
+        )}
       </div>
     </div>
   )
