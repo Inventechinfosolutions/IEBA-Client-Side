@@ -114,9 +114,18 @@ export function createAppRouter(queryClient: QueryClient) {
             return null
           },
         },
-        { path: "users", element: <UsersPage /> },
-        { path: "users/:id", element: <UserPage /> },
-        { path: "department-role", element: <DepartmentRolePage /> },
+        {
+          path: "users",
+          element: <UsersPage />,
+        },
+        {
+          path: "users/:id",
+          element: <UserPage />,
+        },
+        {
+          path: "department-role",
+          element: <DepartmentRolePage />,
+        },
         {
           path: "county-activity-code",
           element: <CountyActivityCodePage />,
@@ -126,9 +135,18 @@ export function createAppRouter(queryClient: QueryClient) {
           path: "schedule-time-study",
           element: <ScheduleTimeStudyPage />,
         },
-        { path: "costpool", element: <CostPoolPage /> },
-        { path: "fte-allocation", element: <FteAllocationPage /> },
-        { path: "department", element: <DepartmentPage /> },
+        {
+          path: "costpool",
+          element: <CostPoolPage />,
+        },
+        {
+          path: "fte-allocation",
+          element: <FteAllocationPage />,
+        },
+        {
+          path: "department",
+          element: <DepartmentPage />,
+        },
         {
           path: "profile",
           element: <ProfilePage />,
@@ -137,13 +155,20 @@ export function createAppRouter(queryClient: QueryClient) {
             return null
           },
         },
-        { path: "job-classification", element: <JobClassificationPage /> },
-        { path: "job-pool", element: <JobPoolPage /> },
+        {
+          path: "job-classification",
+          element: <JobClassificationPage />,
+        },
+        {
+          path: "job-pool",
+          element: <JobPoolPage />,
+        },
+        { path: "reports", element: <ReportsPage /> },
         {
           path: "payroll",
           element: <PayrollPage />,
           loader: async () => {
-            await queryClient.invalidateQueries({ queryKey: payrollKeys.lists() })
+            await queryClient.invalidateQueries({ queryKey: payrollKeys.all })
             return null
           },
         },

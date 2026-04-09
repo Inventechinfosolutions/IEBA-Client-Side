@@ -159,13 +159,13 @@ export type CreateUserRequestDto = {
   contacts?: Array<{ phone?: string; countryCode?: string }>
 }
 
-/** Matches backend `EmergencyContactUpsertReqDto` on PUT /users/:id */
+/** Matches backend `EmergencyContactUpsertReqDto` on PUT /users/:id (`""` = none, same as other empty strings). */
 export type EmergencyContactUpsertDto = {
   firstName: string
   lastName: string
   countryCode?: string
-  phone: string
-  relationship: UserRelationship
+  phone?: string
+  relationship?: UserRelationship | "" | null
 }
 
 export type UpdateUserRequestDto = {
@@ -236,14 +236,15 @@ export type UserDetailsDto = {
   location?: { id: number; name: string } | null
   primarySupervisor?: { id: string; name: string } | null
   backupSupervisor?: { id: string; name: string } | null
-  emergencyContact?: {
+  /** Always present from API; `id === 0` means no linked row. */
+  emergencyContact: {
     id: number
     firstName: string
     lastName: string
     countryCode: string
     phone: string
-    relationship: UserRelationship
-  } | null
+    relationship: UserRelationship | ""
+  }
   departments: UserDetailsDepartmentDto[]
   roles: UserDetailsRoleDto[]
   departmentsRoles: UserDetailsDepartmentRoleDto[]
@@ -271,6 +272,7 @@ export type UserTableProps = {
   rows: UserModuleRow[]
   isLoading: boolean
   onEditRow: (row: UserModuleRow) => void
+  onSwitchUser?: (row: UserModuleRow) => void
 }
 
 export type UserTableSortState = "none" | "asc" | "desc"

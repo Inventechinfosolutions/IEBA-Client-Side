@@ -70,6 +70,7 @@ const mainNav = [
   { title: "Reports", url: "/reports", icon: FileSpreadsheet },
   { title: "To Do", url: "/to-do", icon: FileText },
   { title: "User", url: "/user", icon: User },
+  { title: "Payroll", url: "/payroll", icon: CircleDollarSign },
   { title: "Department", url: "/department", icon: Home },
   { title: "Program", url: "/program", icon: Folder },
   { title: "County Activity Code", url: "/county-activity-code", icon: PencilLine },
@@ -89,6 +90,27 @@ export function AppSidebar() {
   const { user, signOut } = useAuth()
   const [changePasswordOpen, setChangePasswordOpen] = useState(false)
   const location = useLocation()
+  const permissions = user?.permissions ?? []
+  const isSuperAdmin = Array.isArray(permissions) && permissions.includes("superadmin:all")
+
+  const adminOnlyUrls = new Set([
+    "/users",
+    "/user",
+    "/master-code",
+    "/department-role",
+    "/job-classification",
+    "/job-pool",
+    "/costpool",
+    "/fte-allocation",
+    "/payroll",
+    "/department",
+  ])
+
+  const filteredNav = isSuperAdmin
+    ? mainNav
+    : mainNav.filter((item) => !adminOnlyUrls.has(item.url))
+
+  const showUrl = (url: string) => isSuperAdmin || !adminOnlyUrls.has(url)
 
   return (
     <Sidebar>
@@ -121,13 +143,13 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              {mainNav.map((item) => {
+              {filteredNav.map((item, index) => {
                 const isActive =
                   item.url === "/"
                     ? location.pathname === "/"
                     : location.pathname === item.url
                 return (
-                  <SidebarMenuItem key={item.url}>
+                  <SidebarMenuItem key={`${item.url}-${item.title}-${index}`}>
                     <SidebarMenuButton asChild isActive={isActive}>
                       <Link to={item.url}>
                         <item.icon className="size-4" />
@@ -211,12 +233,14 @@ export function AppSidebar() {
                       Dashboard
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link to="/master-code">
-                      <ScrollText className="mr-2 size-4" />
-                      Master Code
-                    </Link>
-                  </DropdownMenuItem>
+                  {showUrl("/master-code") ? (
+                    <DropdownMenuItem asChild>
+                      <Link to="/master-code">
+                        <ScrollText className="mr-2 size-4" />
+                        Master Code
+                      </Link>
+                    </DropdownMenuItem>
+                  ) : null}
                   <DropdownMenuItem asChild>
                     <Link to="/program">
                       <ScrollText className="mr-2 size-4" />
@@ -229,6 +253,14 @@ export function AppSidebar() {
                       Reports
                     </Link>
                   </DropdownMenuItem>
+                  {showUrl("/payroll") ? (
+                    <DropdownMenuItem asChild>
+                      <Link to="/payroll">
+                        <CircleDollarSign className="mr-2 size-4" />
+                        Payroll
+                      </Link>
+                    </DropdownMenuItem>
+                  ) : null}
                   <DropdownMenuItem asChild>
                     <Link to="/to-do">
                       <ScrollText className="mr-2 size-4" />
@@ -241,24 +273,30 @@ export function AppSidebar() {
                       Leave Approval
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link to="/user">
-                      <Users className="mr-2 size-4" />
-                      User
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link to="/users">
-                      <Users className="mr-2 size-4" />
-                      Users
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link to="/department-role">
-                      <Building2 className="mr-2 size-4" />
-                      Department Role
-                    </Link>
-                  </DropdownMenuItem>
+                  {showUrl("/user") ? (
+                    <DropdownMenuItem asChild>
+                      <Link to="/user">
+                        <Users className="mr-2 size-4" />
+                        User
+                      </Link>
+                    </DropdownMenuItem>
+                  ) : null}
+                  {showUrl("/users") ? (
+                    <DropdownMenuItem asChild>
+                      <Link to="/users">
+                        <Users className="mr-2 size-4" />
+                        Users
+                      </Link>
+                    </DropdownMenuItem>
+                  ) : null}
+                  {showUrl("/department-role") ? (
+                    <DropdownMenuItem asChild>
+                      <Link to="/department-role">
+                        <Building2 className="mr-2 size-4" />
+                        Department Role
+                      </Link>
+                    </DropdownMenuItem>
+                  ) : null}
                   <DropdownMenuItem asChild>
                     <Link to="/county-activity-code">
                       <Table2 className="mr-2 size-4" />
@@ -277,36 +315,46 @@ export function AppSidebar() {
                       Schedule Time Study
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link to="/department">
-                      <Building2 className="mr-2 size-4" />
-                      Department
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link to="/costpool">
-                      <Table2 className="mr-2 size-4" />
-                      Cost Pool
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link to="/job-classification">
-                      <Layers className="mr-2 size-4" />
-                      Job Classification
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link to="/job-pool">
-                      <Layers className="mr-2 size-4" />
-                      Job Pool
+                  {showUrl("/department") ? (
+                    <DropdownMenuItem asChild>
+                      <Link to="/department">
+                        <Building2 className="mr-2 size-4" />
+                        Department
                       </Link>
                     </DropdownMenuItem>
+                  ) : null}
+                  {showUrl("/costpool") ? (
                     <DropdownMenuItem asChild>
-                    <Link to="/fte-allocation">
-                      <BarChart2 className="mr-2 size-4" />
-                      FTE Allocation
-                    </Link>
-                  </DropdownMenuItem>
+                      <Link to="/costpool">
+                        <Table2 className="mr-2 size-4" />
+                        Cost Pool
+                      </Link>
+                    </DropdownMenuItem>
+                  ) : null}
+                  {showUrl("/job-classification") ? (
+                    <DropdownMenuItem asChild>
+                      <Link to="/job-classification">
+                        <Layers className="mr-2 size-4" />
+                        Job Classification
+                      </Link>
+                    </DropdownMenuItem>
+                  ) : null}
+                  {showUrl("/job-pool") ? (
+                    <DropdownMenuItem asChild>
+                      <Link to="/job-pool">
+                        <Layers className="mr-2 size-4" />
+                        Job Pool
+                      </Link>
+                    </DropdownMenuItem>
+                  ) : null}
+                  {showUrl("/fte-allocation") ? (
+                    <DropdownMenuItem asChild>
+                      <Link to="/fte-allocation">
+                        <BarChart2 className="mr-2 size-4" />
+                        FTE Allocation
+                      </Link>
+                    </DropdownMenuItem>
+                  ) : null}
                   <DropdownMenuItem asChild>
                     <Link to="/profile">
                       <IdCard className="mr-2 size-4" />

@@ -6,12 +6,13 @@ import { UserRelationship } from "../enums/userrelationship.enum"
 import { profileDetailDefaultValues } from "../schemas"
 import type { ProfileDetailData, ProfilePersistFields } from "../types"
 
-function normalizeRelationship(raw: string | undefined): UserRelationship {
+function normalizeRelationship(raw: string | null | undefined): UserRelationship | "" {
   const t = (raw ?? "").trim().toLowerCase()
+  if (!t) return ""
   if ((Object.values(UserRelationship) as string[]).includes(t)) {
     return t as UserRelationship
   }
-  return UserRelationship.OTHER
+  return ""
 }
 
 function splitUsPhone10(digits: string): { areaCode: string; telephoneNumber: string } {
@@ -59,8 +60,8 @@ function emergencyContactFromDetails(details: UserDetailsDto) {
         : digits
   const phone = splitUsPhone10(ten.length === 10 ? ten : "")
   return {
-    firstName: (ec.firstName ?? "").trim() || "-",
-    lastName: (ec.lastName ?? "").trim() || "-",
+    firstName: (ec.firstName ?? "").trim(),
+    lastName: (ec.lastName ?? "").trim(),
     areaCode: phone.areaCode,
     telephoneNumber: phone.telephoneNumber,
     relationship: normalizeRelationship(ec.relationship),

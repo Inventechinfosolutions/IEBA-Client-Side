@@ -42,6 +42,7 @@ export function TodoTable({
   titleSortState,
   onToggleTitleSort,
   onEditRow,
+  footer,
 }: TodoTableProps) {
   const [isTitleTooltipOpen, setIsTitleTooltipOpen] = useState(false)
 
@@ -207,11 +208,19 @@ export function TodoTable({
                   </TableCell>
                 </TableRow>
               ))}
-              <TableRow className="h-[120px] border-t border-[#e9ecf3] hover:bg-transparent">
-                <TableCell colSpan={6} className="p-0" />
-              </TableRow>
             </>
           )}
+          <TableRow className="h-[120px] border-t border-[#e9ecf3] hover:bg-transparent">
+            <TableCell colSpan={6} className="p-0">
+              {footer ? (
+                <div className="flex h-[120px] w-full items-end px-5 pb-4">
+                  <div className="w-full">{footer}</div>
+                </div>
+              ) : (
+                <div className="h-[120px]" />
+              )}
+            </TableCell>
+          </TableRow>
         </TableBody>
       </Table>
     </div>

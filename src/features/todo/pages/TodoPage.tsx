@@ -1,16 +1,14 @@
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 import { Check } from "lucide-react"
 import { toast } from "sonner"
 
+import { MasterCodePagination } from "@/features/master-code/components/MasterCodePagination"
 import { TodoFormModal } from "../components/TodoFormModal"
 import { TodoTable } from "../components/TodoTable"
 import { TodoToolbar } from "../components/TodoToolbar"
 import { useTodoModule } from "../hooks/useTodoModule"
 import { useTodoUI } from "../hooks/useTodoUi"
 import type { TodoFormValues } from "../types"
-
-const page = 1
-const pageSize = 1000
 
 export function TodoPage() {
   const getToastOptions = () => {
@@ -31,17 +29,21 @@ export function TodoPage() {
   }
 
   const ui = useTodoUI()
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
   const todoModule = useTodoModule({ page, pageSize })
 
   const isTableLoading = todoModule.isLoading || todoModule.isCreating || todoModule.isUpdating
   const rows = useMemo(() => {
-    if (ui.titleSortState === "none") return todoModule.rows
+    if (ui.titleSortState === "none") return todoModule.rows.slice(0, pageSize)
 
-    return [...todoModule.rows].sort((a, b) => {
+    return [...todoModule.rows]
+      .sort((a, b) => {
       const compare = a.title.localeCompare(b.title)
       return ui.titleSortState === "asc" ? compare : -compare
-    })
-  }, [ui.titleSortState, todoModule.rows])
+      })
+      .slice(0, pageSize)
+  }, [pageSize, ui.titleSortState, todoModule.rows])
 
   const handleSaveForm = (values: TodoFormValues) => {
     if (ui.modalMode === "edit" && ui.selectedRow) {
@@ -85,6 +87,18 @@ export function TodoPage() {
         titleSortState={ui.titleSortState}
         onToggleTitleSort={ui.toggleTitleSort}
         onEditRow={ui.openEditModal}
+        footer={
+          <MasterCodePagination
+            totalItems={todoModule.totalItems}
+            currentPage={page}
+            pageSize={pageSize}
+            onPageChange={(next) => setPage(next)}
+            onPageSizeChange={(nextSize) => {
+              setPage(1)
+              setPageSize(nextSize)
+            }}
+          />
+        }
       />
       <TodoFormModal
         key={ui.modalSessionId}

@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod"
-import { FileText, UserRound } from "lucide-react"
+import { FileText, UserRound, X } from "lucide-react"
 import { toast } from "sonner"
 import { Controller, useForm, type FieldErrors } from "react-hook-form"
 import { useMemo, useState } from "react"
@@ -22,7 +22,11 @@ import {
   AvatarFallback,
 } from "@/components/ui/avatar"
 import { useAuth } from "@/contexts/AuthContext"
-import { profileDetailDefaultValues, profileDetailFormSchema } from "@/features/Profile/schemas"
+import {
+  profileDetailDefaultValues,
+  profileDetailFormSchema,
+  profileDetailMessages,
+} from "@/features/Profile/schemas"
 import { ImageCropUploadDialog } from "@/features/Profile/components/ImageCropUploadDialog"
 import { RELATIONSHIP_OPTIONS, UserRelationship } from "@/features/Profile/enums/userrelationship.enum"
 import type { ProfileDetailFormValues } from "@/features/Profile/types"
@@ -56,6 +60,10 @@ function formatPhone(value: string): string {
   return formatted
 }
 
+function digitsOnlyAreaCode(value: string): string {
+  return value.replaceAll(/\D/g, "").slice(0, 3)
+}
+
 const inputClassName =
   "h-[58px] rounded-[7px] border border-[#e4e7ef] bg-white px-3 py-0 text-[12px] leading-[12px] text-[#1f2937] shadow-none placeholder:text-[12px] placeholder:font-normal placeholder:text-[#c2c7d3] hover:border-[#6C5DD3] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
 
@@ -66,6 +74,12 @@ const selectTriggerClassName =
 
 const profilePicClassName =
   "h-[180px] w-[180px] rounded-full shadow-[0_0_20px_0_#0000001a] cursor-pointer object-cover"
+
+const profileErrorToastIcon = (
+  <span className="inline-flex size-4 shrink-0 items-center justify-center rounded-full bg-[#ef4444] text-white">
+    <X className="size-3 stroke-[3]" aria-hidden />
+  </span>
+)
 
 function ProfileDetailSkeleton() {
   return (
@@ -146,9 +160,10 @@ function ProfileDetailForm({
   } = methods
 
   const handleInvalidSubmit = (formErrors: FieldErrors<ProfileDetailFormValues>) => {
-    const message = getFirstErrorMessage(formErrors) ?? "Please check the form fields."
+    const message = getFirstErrorMessage(formErrors) ?? profileDetailMessages.formCheckFields
     toast.error(message, {
       position: "top-center",
+      icon: profileErrorToastIcon,
       className:
         "!w-fit !max-w-[340px] !min-h-[35px] !rounded-[8px] !border-0 !px-3 !py-2 !text-[11px] !shadow-[0_8px_22px_rgba(17,24,39,0.18)]",
     })
@@ -173,14 +188,20 @@ function ProfileDetailForm({
           <ImageCropUploadDialog
             title="Profile Update"
             onConfirmWithoutImage={() => {
-              toast.error("Please choose a file.", { position: "top-center" })
+              toast.error(profileDetailMessages.imageChooseFile, {
+                position: "top-center",
+                icon: profileErrorToastIcon,
+              })
             }}
             onCropError={() => {
-              toast.error("Unable to crop image. Please try another file.", { position: "top-center" })
+              toast.error(profileDetailMessages.imageCropFailed, {
+                position: "top-center",
+                icon: profileErrorToastIcon,
+              })
             }}
             onImageCropped={(cropped) => {
               setAvatarSrc(cropped)
-              toast.success("Profile image updated.", { position: "top-center" })
+              toast.success(profileDetailMessages.imageUpdated, { position: "top-center" })
             }}
             renderTrigger={({ openDialog }) => (
               <div className="mt-2 flex h-[200px] w-[200px] items-center justify-center rounded-full bg-white">
@@ -271,7 +292,7 @@ function ProfileDetailForm({
 
           <div className="grid grid-cols-5 gap-4">
             <div>
-              <label className={labelClassName}>*First Name</label>
+              <label className={labelClassName}>First Name</label>
               <Input
                 {...register("emergencyContact.firstName")}
                 className={
@@ -294,14 +315,24 @@ function ProfileDetailForm({
             </div>
             <div>
               <label className={labelClassName}>Area Code</label>
-              <Input
-                {...register("emergencyContact.areaCode")}
-                className={
-                  errors.emergencyContact?.areaCode
-                    ? `${inputClassName} border-[#ef4444]`
-                    : inputClassName
-                }
-                placeholder="___"
+              <Controller
+                name="emergencyContact.areaCode"
+                control={control}
+                render={({ field }) => (
+                  <Input
+                    value={field.value ?? ""}
+                    onChange={(e) => field.onChange(digitsOnlyAreaCode(e.target.value))}
+                    className={
+                      errors.emergencyContact?.areaCode
+                        ? `${inputClassName} border-[#ef4444]`
+                        : inputClassName
+                    }
+                    placeholder="___"
+                    inputMode="numeric"
+                    autoComplete="tel-area-code"
+                    maxLength={3}
+                  />
+                )}
               />
             </div>
             <div>
@@ -331,11 +362,11 @@ function ProfileDetailForm({
                 control={control}
                 render={({ field }) => (
                   <Select
-                    value={field.value}
+                    value={field.value === "" ? undefined : field.value}
                     onValueChange={(next) => field.onChange(next as UserRelationship)}
                   >
                     <SelectTrigger className={selectTriggerClassName}>
-                      <SelectValue placeholder="Select relationship" />
+                      <SelectValue placeholder={profileDetailMessages.relationshipPlaceholder} />
                     </SelectTrigger>
                     <SelectContent
                       position="popper"
@@ -540,7 +571,7 @@ export function ProfileDetail() {
   if (!userId) {
     return (
       <p className="text-[13px] text-[#6b7280]">
-        Sign in to view your profile.
+        {profileDetailMessages.signInToView}
       </p>
     )
   }
@@ -551,7 +582,7 @@ export function ProfileDetail() {
     const message =
       profileQuery.error instanceof Error
         ? profileQuery.error.message
-        : "Unable to load profile."
+        : profileDetailMessages.loadProfileFailed
     return (
       <p className="text-[13px] text-[#b91c1c]" role="alert">
         {message}
@@ -564,7 +595,7 @@ export function ProfileDetail() {
       key={`${profileId}-${profileQuery.dataUpdatedAt}`}
       initialValues={initialValues}
       onCancel={() => {
-        toast.message("Changes discarded.", { position: "top-center" })
+        toast.message(profileDetailMessages.changesDiscarded, { position: "top-center" })
         navigate("/")
       }}
       isSaving={updateProfile.isPending}
@@ -575,12 +606,16 @@ export function ProfileDetail() {
             values,
             persist: profileQuery.data?.persist,
           })
-          toast.success("Profile saved successfully", {
+          toast.success(profileDetailMessages.saveSuccess, {
             position: "top-center",
           })
         } catch (error) {
-          const message = error instanceof Error ? error.message : "Failed to update profile."
-          toast.error(message, { position: "top-center" })
+          const message =
+            error instanceof Error ? error.message : profileDetailMessages.saveFailedGeneric
+          toast.error(message, {
+            position: "top-center",
+            icon: profileErrorToastIcon,
+          })
         }
       }}
     />
