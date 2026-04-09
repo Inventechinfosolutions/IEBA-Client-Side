@@ -1,8 +1,13 @@
 import { useMemo } from "react"
-import { useGetScheduleTimeStudyPeriods } from "../queries/getScheduleTimeStudyPeriods"
 
-export function useScheduleTimeStudyPeriods(department: string) {
-  const query = useGetScheduleTimeStudyPeriods(department)
+import { useGetRmtsPayPeriods } from "../queries/getRmtsPayPeriods"
+
+export function useScheduleTimeStudyPeriods(
+  departmentId: number | null,
+  fiscalyear: string,
+  enabled = true,
+) {
+  const query = useGetRmtsPayPeriods({ departmentId, fiscalyear, enabled })
 
   const rows = useMemo(() => query.data ?? [], [query.data])
 

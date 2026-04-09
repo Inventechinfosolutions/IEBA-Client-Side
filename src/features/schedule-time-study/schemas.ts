@@ -1,8 +1,12 @@
 import { z } from "zod"
+
+import {
+  SchedulePayPeriodGroupStatus,
+} from "./enums/schedule-time-study.enum"
 import type {
   ParticipantsListFormValues,
-  ScheduleTimeStudyModalFormValues,
   ScheduleTimeStudyFormValues,
+  ScheduleTimeStudyModalFormValues,
   TimeStudyPeriodsFormValues,
 } from "./types"
 
@@ -17,7 +21,7 @@ export const scheduleTimeStudyFormSchema = z.object({
 
 export const scheduleTimeStudyDefaultValues: ScheduleTimeStudyFormValues = {
   department: "",
-  studyYear: "2025-2026",
+  studyYear: "",
   file: null,
 }
 
@@ -35,7 +39,7 @@ export const timeStudyPeriodsFormSchema = z.object({
 
 export const timeStudyPeriodsDefaultValues: TimeStudyPeriodsFormValues = {
   fiscalYear: "",
-  department: "social-services",
+  department: "",
   timeStudyPeriod: "",
   startDate: "",
   endDate: "",
@@ -54,8 +58,8 @@ export const participantsListFormSchema = z.object({
 
 export const participantsListFormDefaultValues: ParticipantsListFormValues = {
   groupName: "",
-  department: "social-services",
-  studyYear: "2025-2026",
+  department: "",
+  studyYear: "",
   selectedUserBy: "job-pool",
 }
 
@@ -66,19 +70,23 @@ export const scheduleTimeStudyModalFormSchema = z.object({
     z.object({
       timeStudyPeriod: z.string(),
       groups: z.string(),
-      status: z.enum(["Draft", "Published"]),
+      status: z.enum([
+        SchedulePayPeriodGroupStatus.DRAFT,
+        SchedulePayPeriodGroupStatus.PUBLISHED,
+        SchedulePayPeriodGroupStatus.INACTIVE,
+      ]),
     })
   ),
 })
 
 export const scheduleTimeStudyModalDefaultValues: ScheduleTimeStudyModalFormValues = {
-  studyYear: "2025-2026",
-  department: "social-services",
+  studyYear: "",
+  department: "",
   entries: [
     {
       timeStudyPeriod: "",
       groups: "",
-      status: "Draft",
+      status: SchedulePayPeriodGroupStatus.DRAFT,
     },
   ],
 }

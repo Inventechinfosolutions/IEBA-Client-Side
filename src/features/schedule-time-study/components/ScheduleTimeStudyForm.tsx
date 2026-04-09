@@ -8,6 +8,9 @@ import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Checkbox } from "@/components/ui/checkbox"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Skeleton } from "@/components/ui/skeleton"
 import {
   Select,
   SelectContent,
@@ -15,20 +18,23 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { SchedulePayPeriodGroupStatus } from "../enums/schedule-time-study.enum"
+import { useCreateRmtsPpGroupListBatch } from "../mutations/createRmtsPpGroupListBatch"
+import { useDeleteRmtsPpGroupList } from "../mutations/deleteRmtsPpGroupList"
+import { useGetScheduleTimeStudyUsersByDepartment } from "../queries/getScheduleTimeStudyUsersByDepartment"
+import { useGetScheduleTimeStudyJobPoolsByDepartment } from "../queries/getScheduleTimeStudyJobPoolsByDepartment"
 import {
   scheduleTimeStudyModalDefaultValues,
   scheduleTimeStudyModalFormSchema,
 } from "../schemas"
 import {
   DEFAULT_SCHEDULE_PARTICIPANT_GROUP_OPTIONS,
-  DEPARTMENT_LABEL_MAP,
-  FISCAL_YEAR_OPTIONS,
   getFiscalYearLabelFromMmDdYyyy,
 } from "../types"
 import type {
+  RmtsGroupApiDto,
   ScheduleTimeStudyFormProps,
   ScheduleTimeStudyModalFormValues,
-  ScheduledTimeStudyRow,
 } from "../types"
 
 function getFirstNestedFormError(errors: unknown): string | null {
@@ -44,21 +50,54 @@ function getFirstNestedFormError(errors: unknown): string | null {
   return null
 }
 
+function mapGroupNamesToIds(namesCsv: string, all: RmtsGroupApiDto[]): string | null {
+  const names = namesCsv
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean)
+  if (names.length === 0) return null
+  const ids: number[] = []
+  for (const name of names) {
+    const match = all.find((g) => g.name.trim() === name)
+    if (!match) return null
+    ids.push(match.id)
+  }
+  return ids.join(",")
+}
+
 export function ScheduleTimeStudyForm({
   open,
   onOpenChange,
   selectedDepartment,
+  selectedDepartmentName,
   selectedStudyYear,
+  departmentId,
+  fiscalYearOptions,
   periodRows,
   participantGroupOptions,
-  onSave,
+  groupsDetailed,
+  editingRow,
 }: ScheduleTimeStudyFormProps) {
+  const createBatch = useCreateRmtsPpGroupListBatch()
+  const deleteScheduledRow = useDeleteRmtsPpGroupList()
+
   const form = useForm<ScheduleTimeStudyModalFormValues>({
     resolver: zodResolver(scheduleTimeStudyModalFormSchema),
     defaultValues: {
       ...scheduleTimeStudyModalDefaultValues,
       department: selectedDepartment,
       studyYear: selectedStudyYear,
+      ...(editingRow
+        ? {
+            entries: [
+              {
+                timeStudyPeriod: editingRow.timeStudyPeriod,
+                groups: editingRow.groups,
+                status: SchedulePayPeriodGroupStatus.DRAFT,
+              },
+            ],
+          }
+        : {}),
     },
   })
 
@@ -71,44 +110,92 @@ export function ScheduleTimeStudyForm({
   const entries = useWatch({ control: form.control, name: "entries" }) ?? []
 
   const [usersModalOpen, setUsersModalOpen] = useState(false)
+  const [viewEntryIndex, setViewEntryIndex] = useState<number | null>(null)
   const [openGroupsDropdownIndex, setOpenGroupsDropdownIndex] = useState<number | null>(null)
   const [groupsSearch, setGroupsSearch] = useState("")
 
-  const selectedDepartmentLabel = DEPARTMENT_LABEL_MAP[selectedDepartment] ?? "Social Services"
+  const selectedDepartmentLabel =
+    selectedDepartmentName.trim() || (selectedDepartment.trim() ? "—" : "")
 
-  const onSubmit = form.handleSubmit(
-    (values) => {
-      const rowsToSave: ScheduledTimeStudyRow[] = values.entries
-        .filter((entry) => entry.timeStudyPeriod.trim().length > 0)
-        .map((entry) => {
-          const matchedPeriod = periodRows.find(
-            (row) => row.timeStudyPeriod === entry.timeStudyPeriod
-          )
-          return {
-            id: `scheduled-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-            timeStudyPeriod: entry.timeStudyPeriod,
-            startDate: matchedPeriod?.startDate ?? "",
-            endDate: matchedPeriod?.endDate ?? "",
-            groups: entry.groups,
-            status: entry.status,
-          }
-        })
+  const departmentUsersQuery = useGetScheduleTimeStudyUsersByDepartment({
+    departmentId: usersModalOpen ? departmentId : null,
+  })
+  const jobPoolsQuery = useGetScheduleTimeStudyJobPoolsByDepartment({
+    departmentId: usersModalOpen ? departmentId : null,
+    enabled: usersModalOpen,
+  })
 
-      if (rowsToSave.length > 0) {
-        onSave(rowsToSave)
+  const handleSubmitWithStatus = (targetStatus: SchedulePayPeriodGroupStatus) =>
+    form.handleSubmit(
+      async (values) => {
+      if (departmentId == null || departmentId <= 0) {
+        toast.error("Department is not ready for saving. Try again in a moment.")
+        return
       }
 
-      onOpenChange(false)
-      form.reset({
-        ...scheduleTimeStudyModalDefaultValues,
-        department: selectedDepartment,
-        studyYear: selectedStudyYear,
-      })
-    },
-    (errors) => {
-      toast.error(getFirstNestedFormError(errors) ?? "Please fix the errors in the form")
-    }
-  )
+      const items: Array<{
+        ppId: number
+        departmentId: number
+        groupIds: string
+        status: SchedulePayPeriodGroupStatus
+        fiscalyear: string
+      }> = []
+
+      for (const entry of values.entries) {
+        if (!entry.timeStudyPeriod.trim()) continue
+        const matchedPeriod = periodRows.find(
+          (row) => row.timeStudyPeriod === entry.timeStudyPeriod,
+        )
+        if (!matchedPeriod) {
+          toast.error("Selected pay period was not found.")
+          return
+        }
+        const ppId = Number(matchedPeriod.id)
+        if (!Number.isFinite(ppId) || ppId <= 0) {
+          toast.error("Invalid pay period id.")
+          return
+        }
+        const groupIds = mapGroupNamesToIds(entry.groups, groupsDetailed)
+        if (groupIds == null) {
+          toast.error("Could not resolve one or more groups. Pick groups from the list.")
+          return
+        }
+        items.push({
+          ppId,
+          departmentId,
+          groupIds,
+          status: targetStatus,
+          fiscalyear: values.studyYear,
+        })
+      }
+
+      if (items.length === 0) {
+        toast.error("Add at least one scheduling row with a pay period and groups.")
+        return
+      }
+
+      try {
+        if (editingRow?.id) {
+          const id = Number(editingRow.id)
+          if (Number.isFinite(id) && id > 0) {
+            await deleteScheduledRow.mutateAsync(id)
+          }
+        }
+        await createBatch.mutateAsync({ items })
+        onOpenChange(false)
+        form.reset({
+          ...scheduleTimeStudyModalDefaultValues,
+          department: selectedDepartment,
+          studyYear: selectedStudyYear,
+        })
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Save failed")
+      }
+      },
+      (errors) => {
+        toast.error(getFirstNestedFormError(errors) ?? "Please fix the errors in the form")
+      },
+    )
 
   const getSelectedGroups = (value: string) =>
     value
@@ -142,7 +229,7 @@ export function ScheduleTimeStudyForm({
             Create Schedule Time Study
           </DialogTitle>
 
-          <form onSubmit={onSubmit} className="space-y-5">
+          <form onSubmit={(e) => e.preventDefault()} className="space-y-5">
             <div className="flex items-end justify-between">
               <div className="flex items-end gap-6">
                 <div className="space-y-1">
@@ -164,9 +251,9 @@ export function ScheduleTimeStudyForm({
                       align="start"
                       className="w-[150px] rounded-[10px] border border-[#E5E7EB] p-1"
                     >
-                      {FISCAL_YEAR_OPTIONS.map((year) => (
-                        <SelectItem key={year} value={year}>
-                          {year}
+                      {fiscalYearOptions.map((fy) => (
+                        <SelectItem key={fy.id} value={fy.id}>
+                          {fy.label}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -187,7 +274,11 @@ export function ScheduleTimeStudyForm({
                 type="button"
                 className="h-10 w-[92px] rounded-[10px] bg-[#6C5DD3] text-[14px] font-medium text-white hover:bg-[#5D4FC4]"
                 onClick={() =>
-                  append({ timeStudyPeriod: "", groups: "", status: "Draft" })
+                  append({
+                    timeStudyPeriod: "",
+                    groups: "",
+                    status: SchedulePayPeriodGroupStatus.DRAFT,
+                  })
                 }
               >
                 + Add New
@@ -333,7 +424,10 @@ export function ScheduleTimeStudyForm({
                         <div className="flex h-[40px] items-center px-2 text-[#6C5DD3]">
                           <button
                             type="button"
-                            onClick={() => setUsersModalOpen(true)}
+                            onClick={() => {
+                              setViewEntryIndex(index)
+                              setUsersModalOpen(true)
+                            }}
                             className="inline-flex items-center text-[#6C5DD3]"
                             aria-label="Open users list"
                           >
@@ -345,7 +439,9 @@ export function ScheduleTimeStudyForm({
                       <div className="space-y-1">
                         <Label className="text-[14px] font-normal text-black">Status</Label>
                         <div className="flex h-[40px] items-center text-[14px] text-[#111827]">
-                          {entry?.status ?? ""}
+                          {entry?.status
+                            ? `${entry.status.charAt(0).toUpperCase()}${entry.status.slice(1).toLowerCase()}`
+                            : ""}
                         </div>
                       </div>
 
@@ -371,14 +467,18 @@ export function ScheduleTimeStudyForm({
 
             <div className="flex justify-end gap-5 pr-8">
               <Button
-                type="submit"
+                type="button"
                 className="h-[42px] w-[88px] rounded-[10px] bg-[#6C5DD3] text-[16px] font-normal text-white hover:bg-[#5D4FC4]"
+                disabled={createBatch.isPending || deleteScheduledRow.isPending}
+                onClick={() => void handleSubmitWithStatus(SchedulePayPeriodGroupStatus.PUBLISHED)()}
               >
                 Submit
               </Button>
               <Button
-                type="submit"
+                type="button"
                 className="h-[42px] w-[88px] rounded-[10px] bg-[#6C5DD3] text-[16px] font-normal text-white hover:bg-[#5D4FC4]"
+                disabled={createBatch.isPending || deleteScheduledRow.isPending}
+                onClick={() => void handleSubmitWithStatus(SchedulePayPeriodGroupStatus.DRAFT)()}
               >
                 Save
               </Button>
@@ -395,10 +495,16 @@ export function ScheduleTimeStudyForm({
         </DialogContent>
       </Dialog>
 
-      <Dialog open={usersModalOpen} onOpenChange={setUsersModalOpen}>
+      <Dialog
+        open={usersModalOpen}
+        onOpenChange={(next) => {
+          setUsersModalOpen(next)
+          if (!next) setViewEntryIndex(null)
+        }}
+      >
         <DialogContent
           showClose={false}
-          className="w-[520px] max-w-[calc(100vw-2rem)] rounded-[8px] border border-[#E5E7EB] bg-white p-[14px_24px_16px]"
+          className="w-[720px] max-w-[calc(100vw-2rem)] rounded-[8px] border border-[#E5E7EB] bg-white p-[14px_24px_16px]"
           overlayClassName="bg-black/45"
         >
           <DialogTitle className="text-center text-[25px] font-normal text-[#6C5DD3]">
@@ -409,7 +515,167 @@ export function ScheduleTimeStudyForm({
             <div className="h-10 rounded-t-[8px] bg-[#6C5DD3] px-4 py-2 text-[16px] font-medium text-white">
               List of Users
             </div>
-            <div className="min-h-[360px] bg-white" />
+            <div className="min-h-[360px] bg-white">
+              {(() => {
+                const idx = viewEntryIndex
+                const entry = idx != null ? entries[idx] : null
+                const groupNames = entry?.groups
+                  ? entry.groups
+                      .split(",")
+                      .map((s) => s.trim())
+                      .filter(Boolean)
+                  : []
+
+                const groups = groupNames
+                  .map((name) => groupsDetailed.find((g) => g.name.trim() === name))
+                  .filter((g): g is RmtsGroupApiDto => g != null)
+
+                const departmentUsers = departmentUsersQuery.data ?? []
+                const jobPools = jobPoolsQuery.data ?? []
+
+                const resolveUserLabel = (id: string): string => {
+                  const u = departmentUsers.find((x) => x.id === id)
+                  return (
+                    (u?.name ?? "").trim() ||
+                    `${u?.firstName ?? ""} ${u?.lastName ?? ""}`.trim() ||
+                    (u?.user?.loginId ?? "").trim() ||
+                    id
+                  )
+                }
+
+                const resolveJobPoolUsers = (jobPoolId: string) => {
+                  const jp = jobPools.find((p) => String(p.id) === jobPoolId)
+                  const users = jp?.userprofiles ?? []
+                  return users.map((u) => {
+                    const label =
+                      (u.name ?? "").trim() ||
+                      `${u.firstName ?? ""} ${u.lastName ?? ""}`.trim() ||
+                      u.id
+                    return { id: u.id, label }
+                  })
+                }
+
+                const loading =
+                  departmentUsersQuery.isFetching ||
+                  jobPoolsQuery.isFetching ||
+                  (usersModalOpen && idx != null && (departmentId == null || departmentId <= 0))
+
+                if (loading) {
+                  return (
+                    <div className="space-y-3 p-4">
+                      {Array.from({ length: 10 }, (_, i) => (
+                        <div key={`sched-users-skel-${i}`} className="flex items-center gap-3">
+                          <Skeleton className="h-4 w-4 rounded-[4px]" />
+                          <Skeleton className="h-4 w-[75%]" />
+                        </div>
+                      ))}
+                    </div>
+                  )
+                }
+
+                if (groups.length === 0) {
+                  return (
+                    <div className="flex min-h-[360px] items-center justify-center px-6 text-[14px] text-[#6B7280]">
+                      Select a Time Study Period and at least one Group to view users.
+                    </div>
+                  )
+                }
+
+                return (
+                  <ScrollArea className="h-[360px]">
+                    <div className="p-4 space-y-4">
+                      {groups.map((g) => {
+                        const userIds = [...new Set((g.users ?? []).map((x) => x.trim()).filter(Boolean))]
+                        const jobPoolIds = [...new Set((g.jobPools ?? []).map((x) => x.trim()).filter(Boolean))]
+
+                        const jobPoolUserRows = jobPoolIds.flatMap(resolveJobPoolUsers)
+
+                        return (
+                          <div key={g.id} className="overflow-hidden rounded-[8px] border border-[#E5E7EB]">
+                            <div className="grid h-7 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 bg-[#F3F4F6] pl-4 pr-5 text-[10px] font-semibold text-[#374151]">
+                              <span className="min-w-0">{g.name || "—"}</span>
+                              <Checkbox
+                                checked={false}
+                                disabled
+                                className="size-4.5 shrink-0 rounded-[6px] border-[#E5E7EB] bg-white opacity-60"
+                              />
+                            </div>
+
+                            <div className="border-t border-[#E5E7EB] bg-white">
+                              <div className="px-6 py-0.5">
+                                <span className="inline-flex items-center justify-center rounded-[6px] border border-[#E5E7EB] bg-white px-3 py-1 text-[10px] font-bold text-[#374151] shadow-sm">
+                                  Users
+                                </span>
+                              </div>
+
+                              {userIds.length === 0 ? (
+                                <div className="px-6 py-2 text-[12px] text-[#6B7280]">No users assigned.</div>
+                              ) : (
+                                <div className="flex flex-col pb-2">
+                                  {userIds.map((id) => (
+                                    <div
+                                      key={`u-${g.id}-${id}`}
+                                      className="relative grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-2 py-1 pl-[60px] pr-5"
+                                    >
+                                      <div className="min-w-0 pr-2">
+                                        <div className="absolute left-6 top-0.5 flex h-full w-8 items-center justify-center">
+                                          <div className="absolute left-4 top-0 h-full w-px bg-[#E5E7EB]" />
+                                          <div className="absolute left-4 top-1/2 h-px w-3 bg-[#E5E7EB]" />
+                                        </div>
+                                        <div className="pl-6 text-[10px] font-medium text-[#111827] whitespace-normal break-words">
+                                          {resolveUserLabel(id)}
+                                        </div>
+                                      </div>
+                                      <div className="flex size-4.5 shrink-0 items-center justify-center rounded-[6px] border border-[#6C5DD3] bg-[#6C5DD3] text-white shadow-sm">
+                                        <Check className="size-3.5 stroke-[3]" />
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+
+                              <div className="px-6 py-0.5">
+                                <span className="inline-flex items-center justify-center rounded-[6px] border border-[#E5E7EB] bg-white px-3 py-1 text-[10px] font-bold text-[#374151] shadow-sm">
+                                  Jobpool
+                                </span>
+                              </div>
+
+                              {jobPoolUserRows.length === 0 ? (
+                                <div className="px-6 py-2 text-[12px] text-[#6B7280]">
+                                  No jobpool users assigned.
+                                </div>
+                              ) : (
+                                <div className="flex flex-col pb-2">
+                                  {jobPoolUserRows.map((u) => (
+                                    <div
+                                      key={`jp-${g.id}-${u.id}`}
+                                      className="relative grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-2 py-1 pl-[60px] pr-5"
+                                    >
+                                      <div className="min-w-0 pr-2">
+                                        <div className="absolute left-6 top-0.5 flex h-full w-8 items-center justify-center">
+                                          <div className="absolute left-4 top-0 h-full w-px bg-[#E5E7EB]" />
+                                          <div className="absolute left-4 top-1/2 h-px w-3 bg-[#E5E7EB]" />
+                                        </div>
+                                        <div className="pl-6 text-[10px] font-medium text-[#111827] whitespace-normal break-words">
+                                          {u.label}
+                                        </div>
+                                      </div>
+                                      <div className="flex size-4.5 shrink-0 items-center justify-center rounded-[6px] border border-[#6C5DD3] bg-[#6C5DD3] text-white shadow-sm">
+                                        <Check className="size-3.5 stroke-[3]" />
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </ScrollArea>
+                )
+              })()}
+            </div>
           </div>
 
           <div className="flex justify-end">
