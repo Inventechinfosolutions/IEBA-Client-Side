@@ -27,6 +27,7 @@ import { programKeys, programActivityRelationKeys } from "@/features/program/key
 import { todoKeys } from "@/features/todo/keys"
 import { leaveApprovalKeys } from "@/features/leave-approval/keys"
 import { userModuleKeys } from "@/features/user/keys"
+import { profileKeys } from "@/features/Profile/keys"
 
 /** Inject `queryClient` from `main.tsx`: importing `@/main` here would be circular, but the rest of the app still uses the same instance via `import { queryClient } from "@/main"`. */
 export function createAppRouter(queryClient: QueryClient) {
@@ -126,7 +127,14 @@ export function createAppRouter(queryClient: QueryClient) {
         { path: "costpool", element: <CostPoolPage /> },
         { path: "fte-allocation", element: <FteAllocationPage /> },
         { path: "department", element: <DepartmentPage /> },
-        { path: "profile", element: <ProfilePage /> },
+        {
+          path: "profile",
+          element: <ProfilePage />,
+          loader: async () => {
+            await queryClient.invalidateQueries({ queryKey: profileKeys.all })
+            return null
+          },
+        },
         { path: "job-classification", element: <JobClassificationPage /> },
         { path: "job-pool", element: <JobPoolPage /> },
         { path: "reports", element: <ReportsPage /> },

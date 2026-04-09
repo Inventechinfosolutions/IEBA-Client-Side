@@ -1,6 +1,6 @@
 import { z } from "zod"
 
-import { RELATIONSHIP_OPTIONS } from "./types"
+import { UserRelationship } from "./enums/userrelationship.enum"
 import type { ProfileDetailFormValues } from "./types"
 
 const requiredNonEmptyString = (fieldLabel: string) =>
@@ -28,7 +28,7 @@ const optionalPhoneDigitsLen = (fieldLabel: string, len: number) =>
       `${fieldLabel} must be ${len} digits`
     )
 
-const relationshipEnum = z.enum(RELATIONSHIP_OPTIONS)
+const relationshipEnum = z.nativeEnum(UserRelationship)
 
 export const profileDetailFormSchema = z.object({
   firstName: requiredNonEmptyString("First Name"),
@@ -69,7 +69,7 @@ export const profileDetailDefaultValues: ProfileDetailFormValues = {
     lastName: "",
     areaCode: "",
     telephoneNumber: "",
-    relationship: RELATIONSHIP_OPTIONS[0],
+    relationship: UserRelationship.BROTHER,
   },
   onRecords: {
     employeeId: "",

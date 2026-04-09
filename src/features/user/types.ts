@@ -1,3 +1,4 @@
+import type { UserRelationship } from "@/features/Profile/enums/userrelationship.enum"
 import type { UserModuleFormValues } from "./add-employee/types"
 
 export type {
@@ -158,6 +159,15 @@ export type CreateUserRequestDto = {
   contacts?: Array<{ phone?: string; countryCode?: string }>
 }
 
+/** Matches backend `EmergencyContactUpsertReqDto` on PUT /users/:id */
+export type EmergencyContactUpsertDto = {
+  firstName: string
+  lastName: string
+  countryCode?: string
+  phone: string
+  relationship: UserRelationship
+}
+
 export type UpdateUserRequestDto = {
   firstName?: string
   lastName?: string
@@ -179,6 +189,7 @@ export type UpdateUserRequestDto = {
   backupSupervisorId?: string
   contacts?: UserContactItemPayload[]
   jobClassificationIds?: number[]
+  emergencyContact?: EmergencyContactUpsertDto
 }
 
 export type CreateUserResponseDto = {
@@ -231,7 +242,7 @@ export type UserDetailsDto = {
     lastName: string
     countryCode: string
     phone: string
-    relationship: string
+    relationship: UserRelationship
   } | null
   departments: UserDetailsDepartmentDto[]
   roles: UserDetailsRoleDto[]

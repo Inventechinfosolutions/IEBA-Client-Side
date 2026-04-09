@@ -36,8 +36,8 @@ export function DashboardLayout() {
   return (
     <SidebarProvider>
       <AppSidebar />
-      <SidebarInset className="bg-[#F4F5FB]">
-        <header className="flex h-[72px] shrink-0 items-center justify-between gap-4 bg-white px-6 shadow-[0_2px_10px_rgba(0,0,0,0.06)]">
+      <SidebarInset className="bg-[#F4F5FB] h-svh overflow-hidden">
+        <header className="sticky top-0 z-50 flex h-[72px] shrink-0 items-center justify-between gap-4 bg-white px-6 shadow-[0_2px_10px_rgba(0,0,0,0.06)]">
           <div className="flex items-center gap-3">
             <SidebarTrigger className="-ml-2 rounded-full border border-[#E5E7EB] bg-white text-[#4B5563] hover:bg-[#F3F4F6]" />
             <span className="text-[17px] text-[#6C5DD3]">
@@ -139,7 +139,7 @@ export function DashboardLayout() {
             )}
           </div>
         </header>
-        <div className="flex flex-1 flex-col gap-4 p-4 md:gap-6 md:p-6">
+        <div className="flex flex-1 min-h-0 flex-col gap-4 overflow-auto p-4 md:gap-6 md:p-6">
           <Outlet />
         </div>
       </SidebarInset>
