@@ -1,20 +1,13 @@
-export const RELATIONSHIP_OPTIONS = [
-  "father",
-  "brother",
-  "mother",
-  "other",
-  "sister",
-  "spouse",
-] as const
+import type { UserRelationship } from "./enums/userrelationship.enum"
 
-export type Relationship = (typeof RELATIONSHIP_OPTIONS)[number]
+export { UserRelationship, RELATIONSHIP_OPTIONS } from "./enums/userrelationship.enum"
 
 export type EmergencyContactValues = {
   firstName: string
   lastName: string
   areaCode: string
   telephoneNumber: string
-  relationship: Relationship
+  relationship: UserRelationship
 }
 
 export type OnRecordsValues = {
@@ -38,11 +31,21 @@ export type ProfileDetailFormValues = {
   onRecords: OnRecordsValues
 }
 
+/** Server-backed fields used when saving; not part of the form schema. */
+export type ProfilePersistFields = {
+  primarySupervisorUserId?: string
+  backupSupervisorUserId?: string
+  locationId?: number
+  jobClassificationIds: number[]
+}
+
 export type ProfileDetailData = {
   id: string
+  persist?: ProfilePersistFields
 } & ProfileDetailFormValues
 
 export type UpdateProfileDetailInput = {
   id: string
   values: ProfileDetailFormValues
+  persist?: ProfilePersistFields
 }

@@ -3,6 +3,7 @@ import { FileText, UserRound } from "lucide-react"
 import { toast } from "sonner"
 import { Controller, useForm, type FieldErrors } from "react-hook-form"
 import { useMemo, useState } from "react"
+import { useNavigate } from "react-router-dom"
 
 import profileAvatar from "@/assets/profile-avatar.png"
 import { Button } from "@/components/ui/button"
@@ -20,13 +21,11 @@ import {
   AvatarImage,
   AvatarFallback,
 } from "@/components/ui/avatar"
+import { useAuth } from "@/contexts/AuthContext"
 import { profileDetailDefaultValues, profileDetailFormSchema } from "@/features/Profile/schemas"
 import { ImageCropUploadDialog } from "@/features/Profile/components/ImageCropUploadDialog"
-import type {
-  ProfileDetailFormValues,
-  Relationship,
-} from "@/features/Profile/types"
-import { RELATIONSHIP_OPTIONS } from "@/features/Profile/types"
+import { RELATIONSHIP_OPTIONS, UserRelationship } from "@/features/Profile/enums/userrelationship.enum"
+import type { ProfileDetailFormValues } from "@/features/Profile/types"
 import { useGetProfileDetail } from "@/features/Profile/queries/getProfileDetail"
 import { useUpdateProfileDetail } from "@/features/Profile/mutations/updateProfileDetail"
 
@@ -333,7 +332,7 @@ function ProfileDetailForm({
                 render={({ field }) => (
                   <Select
                     value={field.value}
-                    onValueChange={(next) => field.onChange(next as Relationship)}
+                    onValueChange={(next) => field.onChange(next as UserRelationship)}
                   >
                     <SelectTrigger className={selectTriggerClassName}>
                       <SelectValue placeholder="Select relationship" />
@@ -519,29 +518,63 @@ function ProfileDetailForm({
 }
 
 export function ProfileDetail() {
-  const profileQuery = useGetProfileDetail()
-  const profileId = profileQuery.data?.id ?? "me"
+  const navigate = useNavigate()
+  const { user, isLoading: authSessionLoading } = useAuth()
+  const userId = user?.id?.trim() ?? ""
+
+  const profileQuery = useGetProfileDetail(user?.id)
+  const profileId = profileQuery.data?.id ?? userId
 
   const updateProfile = useUpdateProfileDetail()
 
   const initialValues = useMemo<ProfileDetailFormValues>(() => {
     if (!profileQuery.data) return profileDetailDefaultValues
-    const { id, ...values } = profileQuery.data
-    void id // id is already used for the React key above
+    const { id, persist, ...values } = profileQuery.data
+    void id
+    void persist
     return values
   }, [profileQuery.data])
 
+  if (authSessionLoading) return <ProfileDetailSkeleton />
+
+  if (!userId) {
+    return (
+      <p className="text-[13px] text-[#6b7280]">
+        Sign in to view your profile.
+      </p>
+    )
+  }
+
   if (profileQuery.isLoading) return <ProfileDetailSkeleton />
+
+  if (profileQuery.isError) {
+    const message =
+      profileQuery.error instanceof Error
+        ? profileQuery.error.message
+        : "Unable to load profile."
+    return (
+      <p className="text-[13px] text-[#b91c1c]" role="alert">
+        {message}
+      </p>
+    )
+  }
 
   return (
     <ProfileDetailForm
-      key={profileId}
+      key={`${profileId}-${profileQuery.dataUpdatedAt}`}
       initialValues={initialValues}
-      onCancel={() => toast.message("Changes discarded.", { position: "top-center" })}
+      onCancel={() => {
+        toast.message("Changes discarded.", { position: "top-center" })
+        navigate("/")
+      }}
       isSaving={updateProfile.isPending}
       onSubmit={async (values) => {
         try {
-          await updateProfile.mutateAsync({ id: profileId, values })
+          await updateProfile.mutateAsync({
+            id: profileId,
+            values,
+            persist: profileQuery.data?.persist,
+          })
           toast.success("Profile saved successfully", {
             position: "top-center",
           })
