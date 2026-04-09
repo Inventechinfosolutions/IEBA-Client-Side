@@ -171,7 +171,7 @@ export function UserTable({ rows, isLoading, onEditRow }: UserTableProps) {
                   <TableCell className="align-top border-r border-[#eff0f5] px-[14px] py-[5px] text-[12px] text-[#232735] whitespace-normal break-words">
                     <button
                       type="button"
-                      className="inline-flex cursor-pointer items-center gap-1"
+                      className="inline-flex cursor-pointer items-start gap-1 text-left"
                       onClick={() =>
                         setExpandedRowIds((prev) => ({
                           ...prev,
@@ -180,9 +180,9 @@ export function UserTable({ rows, isLoading, onEditRow }: UserTableProps) {
                       }
                     >
                       {expandedRowIds[row.id] ? (
-                        <ChevronDown className="size-3 text-[var(--primary)]" />
+                        <ChevronDown className="mt-px size-3 shrink-0 text-[var(--primary)]" aria-hidden />
                       ) : (
-                        <ChevronRight className="size-3 text-[var(--primary)]" />
+                        <ChevronRight className="mt-px size-3 shrink-0 text-[var(--primary)]" aria-hidden />
                       )}
                       {row.department}
                     </button>

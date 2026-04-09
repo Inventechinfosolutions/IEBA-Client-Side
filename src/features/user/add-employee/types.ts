@@ -313,6 +313,8 @@ export type SecurityAssignmentsPanelProps = {
   securityContextUserId?: string | null
   /** Add mode: allow GET without `userId` before first save. Edit mode should be false. */
   allowUnassignedQueryWithoutUserId: boolean
+  /** Add mode: fired after a successful role transfer (API or local). */
+  onAddModeTransferSucceeded?: () => void
 }
 
 export type SupervisorMenuOpen = "primary" | "secondary" | null

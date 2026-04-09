@@ -29,6 +29,7 @@ export function EmployeePanel({
     handleNext,
     handleTabChange,
     handlePasswordReset,
+    onAddModeSecurityTransferSucceeded,
   } = useAddEmployeeForm({ mode, initialValues, onSave })
 
   return (
@@ -54,13 +55,20 @@ export function EmployeePanel({
               mode={mode}
               securityContextUserId={securityContextUserId ?? null}
               allowUnassignedQueryWithoutUserId={mode === "add"}
+              onAddModeTransferSucceeded={
+                mode === "add" ? onAddModeSecurityTransferSucceeded : undefined
+              }
             />
           ) : null}
           {activeTab === "supervisor" ? (
             <SupervisorAssignmentsPanel />
           ) : null}
           {activeTab === "timeStudy" ? (
-            <TimeStudyAssignmentsPanel mode={mode} timeStudyContextUserId={securityContextUserId ?? null} />
+            <TimeStudyAssignmentsPanel
+              key={`time-study-${mode}-${securityContextUserId ?? "new"}`}
+              mode={mode}
+              timeStudyContextUserId={securityContextUserId ?? null}
+            />
           ) : null}
 
           <div className="mt-5 flex items-center justify-end gap-3">

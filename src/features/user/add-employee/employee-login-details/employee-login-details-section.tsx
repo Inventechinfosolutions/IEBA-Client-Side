@@ -394,11 +394,6 @@ export function EmployeeLoginDetailsSection({ isEditMode }: EmployeeLoginDetails
               }}
             />
           )}
-          {errors.jobClassificationIds?.message ? (
-            <p className="mt-1 text-[11px] text-red-600" role="alert">
-              {String(errors.jobClassificationIds.message)}
-            </p>
-          ) : null}
         </div>
         <div>
           <label className={labelClassName}>Job Duty Statement</label>

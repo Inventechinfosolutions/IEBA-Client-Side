@@ -1,3 +1,5 @@
+import { createElement } from "react"
+import { Check } from "lucide-react"
 import { z } from "zod"
 
 /** US mobile: 10 digits, shown as ___-___-____ (3-3-4). */
@@ -48,6 +50,32 @@ export const ADD_EMPLOYEE_MUST_SAVE_BEFORE_NEXT: Record<
 /** Supervisor tab requires at least one Security assignment (department role) to load options and proceed. */
 export const ADD_EMPLOYEE_SUPERVISOR_NEEDS_SECURITY_ASSIGNMENTS =
   "Assign at least one department role on Security before opening Supervisor."
+
+export const ADD_EMPLOYEE_SECURITY_ASSIGNMENT_REQUIRED =
+  "Assign at least one department role before saving Security/Assignments."
+
+export const ADD_EMPLOYEE_PRIMARY_SUPERVISOR_REQUIRED = "Primary Supervisor can't be empty"
+
+export const ADD_EMPLOYEE_BACKUP_SUPERVISOR_REQUIRED = "Backup Supervisor can't be empty"
+
+/** Add mode: Next on Security requires at least one successful transfer (not Save). */
+export const ADD_EMPLOYEE_SECURITY_TRANSFER_REQUIRED =
+  "Complete at least one successful Security transfer before continuing."
+
+/** Success toasts for Security / Time Study transfer actions (matches UserModulePage save success styling). */
+export const addEmployeeTransferSuccessToastOptions = {
+  position: "top-center" as const,
+  icon: createElement(
+    "span",
+    {
+      className:
+        "inline-flex size-4 items-center justify-center rounded-full bg-[#22c55e] text-white",
+    },
+    createElement(Check, { className: "size-3 stroke-[3]" }),
+  ),
+  className:
+    "!w-fit !max-w-none !min-h-[35px] !rounded-[8px] !border-0 !px-3 !py-2 !text-[12px] !whitespace-nowrap !text-[#111827] !shadow-[0_8px_22px_rgba(17,24,39,0.18)]",
+}
 
 /** All fields except password pair (no refinements — safe to extend for create vs edit). */
 const userModuleFormFieldsSchema = z.object({
