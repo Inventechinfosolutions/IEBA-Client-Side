@@ -147,6 +147,7 @@ export function createAppRouter(queryClient: QueryClient) {
             return null
           },
         },
+        { path: "reports", element: <ReportsPage /> },
       ],
     },
     { path: "*", element: <Navigate to="/" replace /> },

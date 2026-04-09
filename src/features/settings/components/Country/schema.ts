@@ -2,8 +2,27 @@ import { z } from "zod"
 
 const timeString = z.string().regex(/^\d{2}:\d{2}$/, "Time must be in HH:MM format")
 
+/** US ZIP+4, or 3–10 digit postal codes, or short alphanumeric codes (matches backend max length 10). */
+function isValidPostalCode(zip: string): boolean {
+  const z = zip.trim()
+  if (z.length < 3 || z.length > 10) return false
+  if (/^\d{5}(-\d{4})?$/.test(z)) return true
+  if (/^\d{3,10}$/.test(z)) return true
+  if (/^[A-Za-z0-9][A-Za-z0-9\s-]{1,8}[A-Za-z0-9]$/.test(z)) return true
+  return false
+}
+
 export const countyAddressRowSchema = z
   .object({
+    locationId: z
+      .unknown()
+      .optional()
+      .transform((val): number | undefined => {
+        if (val === undefined || val === null || val === "") return undefined
+        const n = typeof val === "number" ? val : Number(String(val))
+        if (!Number.isFinite(n) || n <= 0) return undefined
+        return Math.trunc(n)
+      }),
     location: z.string().trim().default(""),
     street: z.string().trim().default(""),
     city: z.string().trim().default(""),
@@ -11,7 +30,7 @@ export const countyAddressRowSchema = z
     zip: z.string().trim().default(""),
   })
   .superRefine((row, ctx) => {
-    const fields: (keyof typeof row)[] = ["location", "street", "city", "state", "zip"]
+    const fields = ["location", "street", "city", "state", "zip"] as const
     const anyFilled = fields.some((key) => (row[key] ?? "").trim().length > 0)
     if (!anyFilled) return
 
@@ -29,8 +48,12 @@ export const countyAddressRowSchema = z
     }
     if (!row.zip?.trim()) {
       ctx.addIssue({ code: "custom", path: ["zip"], message: "Zip is required" })
-    } else if (!/^\d{5}(-\d{4})?$/.test(row.zip.trim())) {
-      ctx.addIssue({ code: "custom", path: ["zip"], message: "Invalid zip code" })
+    } else if (!isValidPostalCode(row.zip)) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["zip"],
+        message: "Use a valid postal/ZIP code (3–10 characters; US: 12345 or 12345-6789)",
+      })
     }
   })
 

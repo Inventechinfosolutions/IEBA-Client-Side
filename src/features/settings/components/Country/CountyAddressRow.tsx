@@ -1,5 +1,5 @@
 import { Trash2 } from "lucide-react"
-import { useFormContext } from "react-hook-form"
+import { Controller, useFormContext } from "react-hook-form"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -15,16 +15,28 @@ export function CountyAddressRow({
   index,
   onRemove,
   canRemove,
+  removeDisabled = false,
 }: CountyAddressRowProps) {
-  const {
-    register,
-    formState: { errors },
-  } = useFormContext<SettingsFormValues>()
-
-  void errors.county?.addresses?.[index]
+  const { control, register } = useFormContext<SettingsFormValues>()
 
   return (
-    <div className="grid max-w-[calc(100%-160px)] grid-cols-[0.5fr_0.9fr_0.55fr_0.35fr_0.5fr_auto] items-end gap-4">
+    <div className="grid w-full grid-cols-[minmax(0,0.85fr)_minmax(0,1.35fr)_minmax(0,0.75fr)_minmax(0,0.45fr)_minmax(0,0.55fr)_auto] items-end gap-x-4 gap-y-2">
+      <Controller
+        control={control}
+        name={`county.addresses.${index}.locationId`}
+        render={({ field }) => (
+          <input
+            type="hidden"
+            name={field.name}
+            ref={field.ref}
+            value={field.value === undefined || field.value === null ? "" : String(field.value)}
+            onChange={(e) => {
+              const raw = e.target.value
+              field.onChange(raw === "" ? undefined : Number(raw))
+            }}
+          />
+        )}
+      />
       <div>
         <label className={labelClassName}>
           <span className="text-[#ef4444]">*</span>Location
@@ -82,7 +94,8 @@ export function CountyAddressRow({
             variant="ghost"
             size="icon"
             onClick={onRemove}
-            className="size-8 cursor-pointer rounded-[4px] text-[#ff0000] hover:bg-transparent hover:text-[#ff0000]"
+            disabled={removeDisabled}
+            className="size-8 cursor-pointer rounded-[4px] text-[#ff0000] hover:bg-transparent hover:text-[#ff0000] disabled:opacity-50"
             aria-label="Remove address row"
           >
             <Trash2 className="size-4" />

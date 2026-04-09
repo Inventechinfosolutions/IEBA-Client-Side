@@ -38,6 +38,8 @@ export const settingsKeys = {
   fiscalYear: {
     all: () => [...settingsKeys.all, "fiscal-year"] as const,
     detail: () => [...settingsKeys.fiscalYear.all(), "detail"] as const,
+    list: () => [...settingsKeys.fiscalYear.all(), "list"] as const,
+    holidaysByRange: (startMonthMmDdYyyy: string, endMonthMmDdYyyy: string) =>
+      [...settingsKeys.fiscalYear.all(), "holidays", startMonthMmDdYyyy, endMonthMmDdYyyy] as const,
   },
 } as const
-

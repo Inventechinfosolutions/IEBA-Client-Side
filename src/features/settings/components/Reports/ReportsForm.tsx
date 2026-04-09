@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
 import { Table, TableBody, TableCell, TableHeader, TableRow } from "@/components/ui/table"
 import { cn } from "@/lib/utils"
+import { SettingsFormSaveSection } from "@/features/settings/enums/setting.enum"
 import type { SettingsFormValues } from "@/features/settings/types"
 import { useActivityOptions } from "@/features/settings/queries/getActivityOptions"
 import { useReportOptions } from "@/features/settings/queries/getReportOptions"
@@ -258,7 +259,7 @@ export function ReportsForm() {
       <div className="mt-8 flex justify-end">
         <Button
           type="submit"
-          data-settings-section="reports"
+          data-settings-section={SettingsFormSaveSection.Reports}
           className="h-[44px] w-[88px] cursor-pointer rounded-[10px] bg-[var(--primary)] px-0 py-2 text-[14px] font-medium text-white hover:bg-[var(--primary)]"
         >
           Save

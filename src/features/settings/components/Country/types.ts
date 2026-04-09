@@ -1,4 +1,6 @@
 export type CountyAddressRow = {
+  /** Backend `location.id` when loaded from API; omitted for newly added rows. */
+  locationId?: number
   location: string
   street: string
   city: string
@@ -24,6 +26,7 @@ export type CountyAddressRowProps = {
   index: number
   onRemove: () => void
   canRemove: boolean
+  removeDisabled?: boolean
 }
 
 export type CountyFormProps = {
