@@ -1,5 +1,6 @@
 import { Eye, Trash2 } from "lucide-react"
 import { useState } from "react"
+import { toast } from "sonner"
 
 import editIconImg from "@/assets/edit-icon.png"
 import statusCheckImg from "@/assets/status-check.png"
@@ -29,25 +30,50 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Skeleton } from "@/components/ui/skeleton"
-import { useGetParticipantsListRows } from "../queries/getScheduleTimeStudyPeriods"
-import { FISCAL_YEAR_OPTIONS } from "../types"
+
+import { useDeleteRmtsGroup } from "../mutations/deleteRmtsGroup"
+import { formatRmtsGroupMutationError } from "../utils/rmtsGroupMutationMessages"
+import { useGetRmtsGroups } from "../queries/getRmtsGroups"
+import { useGetScheduleTimeStudyUsersByDepartment } from "../queries/getScheduleTimeStudyUsersByDepartment"
+import { useGetRmtsGroupById } from "../queries/getRmtsGroupById"
 import type { ParticipantsListRow, ParticipantsListTableProps } from "../types"
 import { ParticipantsListForm, ParticipantUsersModal } from "./ParticipantsListForm"
 
 export function ParticipantsListTable({
   studyYear,
   selectedDepartment,
+  selectedDepartmentName,
+  departmentId,
+  fiscalYearOptions,
   onStudyYearChange,
 }: ParticipantsListTableProps) {
-  const participantsQuery = useGetParticipantsListRows()
-  const [hasRowsChanges, setHasRowsChanges] = useState(false)
-  const [rows, setRows] = useState<ParticipantsListRow[]>([])
-  const effectiveRows = hasRowsChanges ? rows : (participantsQuery.data ?? [])
+  const participantsQuery = useGetRmtsGroups({ departmentId, fiscalyear: studyYear })
+  const deleteGroup = useDeleteRmtsGroup()
+  const rows = participantsQuery.data?.rows ?? []
+
   const [createGroupOpen, setCreateGroupOpen] = useState(false)
   const [usersModalOpen, setUsersModalOpen] = useState(false)
+  const [viewGroupId, setViewGroupId] = useState<number | null>(null)
   const [editingParticipantRow, setEditingParticipantRow] = useState<ParticipantsListRow | null>(
-    null
+    null,
   )
+
+  const groupByIdQuery = useGetRmtsGroupById({ id: usersModalOpen ? viewGroupId : null })
+  const departmentUsersQuery = useGetScheduleTimeStudyUsersByDepartment({
+    departmentId: usersModalOpen ? departmentId : null,
+  })
+
+  const assignedUserIds = groupByIdQuery.data?.users ?? []
+  const departmentUsers = departmentUsersQuery.data ?? []
+  const assignedUsers = assignedUserIds.map((id) => {
+    const u = departmentUsers.find((x) => x.id === id)
+    const label =
+      (u?.name ?? "").trim() ||
+      `${u?.firstName ?? ""} ${u?.lastName ?? ""}`.trim() ||
+      (u?.user?.loginId ?? "").trim() ||
+      id
+    return { id, label }
+  })
 
   return (
     <div className="mt-8 space-y-4">
@@ -66,9 +92,9 @@ export function ParticipantsListTable({
             align="start"
             className="w-[150px] rounded-[10px] border border-[#E5E7EB] p-1"
           >
-            {FISCAL_YEAR_OPTIONS.map((year) => (
-              <SelectItem key={year} value={year}>
-                {year}
+            {fiscalYearOptions.map((fy) => (
+              <SelectItem key={fy.id} value={fy.id}>
+                {fy.label}
               </SelectItem>
             ))}
           </SelectContent>
@@ -120,103 +146,133 @@ export function ParticipantsListTable({
                     <TableCell className="border-r border-[#E5E7EB] px-4 py-2 text-center">
                       <Skeleton className="mx-auto h-4 w-4" />
                     </TableCell>
-                    <TableCell className="px-3 py-2">
-                      <div className="flex items-center justify-center gap-3">
+                    <TableCell className="px-3 py-2 text-center">
+                      <div className="flex items-center justify-center gap-2">
                         <Skeleton className="h-4 w-4" />
                         <Skeleton className="h-4 w-4" />
                       </div>
                     </TableCell>
                   </TableRow>
                 ))
-              : effectiveRows.map((row) => (
-              <TableRow key={row.id} className="h-[44px] border-[#EDEDED]">
-                <TableCell className="border-r border-[#E5E7EB] px-4 py-2 text-[13px] text-[#111827]">
-                  {row.groupName}
-                </TableCell>
-                <TableCell className="border-r border-[#E5E7EB] px-4 py-2 text-center">
-                  {row.jobPool ? (
-                    <img
-                      src={statusCheckImg}
-                      alt="Yes"
-                      className="mx-auto h-4 w-4 object-contain"
-                    />
-                  ) : (
-                    <img
-                      src={statusCrossImg}
-                      alt="No"
-                      className="mx-auto h-4 w-4 object-contain"
-                    />
-                  )}
-                </TableCell>
-                <TableCell className="border-r border-[#E5E7EB] px-4 py-2 text-center">
-                  {row.costPool ? (
-                    <img
-                      src={statusCheckImg}
-                      alt="Yes"
-                      className="mx-auto h-4 w-4 object-contain"
-                    />
-                  ) : (
-                    <img
-                      src={statusCrossImg}
-                      alt="No"
-                      className="mx-auto h-4 w-4 object-contain"
-                    />
-                  )}
-                </TableCell>
-                <TableCell className="border-r border-[#E5E7EB] px-4 py-2 text-center">
-                  {row.user ? (
-                    <img
-                      src={statusCheckImg}
-                      alt="Yes"
-                      className="mx-auto h-4 w-4 object-contain"
-                    />
-                  ) : (
-                    <img
-                      src={statusCrossImg}
-                      alt="No"
-                      className="mx-auto h-4 w-4 object-contain"
-                    />
-                  )}
-                </TableCell>
-                <TableCell className="px-3 py-2">
-                  <div className="flex items-center justify-center gap-3">
-                    {row.canView ? (
-                      <>
+              : rows.map((row) => (
+                  <TableRow key={row.id} className="h-[44px] border-[#EDEDED]">
+                    <TableCell className="border-r border-[#E5E7EB] px-4 py-2 text-[13px] text-[#111827]">
+                      {row.groupName}
+                    </TableCell>
+                    <TableCell className="border-r border-[#E5E7EB] px-4 py-2 text-center">
+                      {row.jobPool ? (
+                        <img
+                          src={statusCheckImg}
+                          alt="Yes"
+                          className="mx-auto h-4 w-4 object-contain"
+                        />
+                      ) : (
                         <img
                           src={statusCrossImg}
-                          alt="Cross"
-                          className="h-4 w-4 object-contain"
+                          alt="No"
+                          className="mx-auto h-4 w-4 object-contain"
                         />
-                        <button type="button" onClick={() => setUsersModalOpen(true)}>
-                          <Eye className="size-4 text-[#6C5DD3]" />
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setEditingParticipantRow(row)
-                            setCreateGroupOpen(true)
-                          }}
-                        >
-                          <img src={editIconImg} alt="Edit" className="h-4 w-4 object-contain" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setHasRowsChanges(true)
-                            setRows(effectiveRows.filter((tableRow) => tableRow.id !== row.id))
-                          }}
-                        >
-                          <Trash2 className="size-4 text-[#DC2626]" />
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
+                      )}
+                    </TableCell>
+                    <TableCell className="border-r border-[#E5E7EB] px-4 py-2 text-center">
+                      {row.costPool ? (
+                        <img
+                          src={statusCheckImg}
+                          alt="Yes"
+                          className="mx-auto h-4 w-4 object-contain"
+                        />
+                      ) : (
+                        <img
+                          src={statusCrossImg}
+                          alt="No"
+                          className="mx-auto h-4 w-4 object-contain"
+                        />
+                      )}
+                    </TableCell>
+                    <TableCell className="border-r border-[#E5E7EB] px-4 py-2 text-center">
+                      {row.user ? (
+                        <img
+                          src={statusCheckImg}
+                          alt="Yes"
+                          className="mx-auto h-4 w-4 object-contain"
+                        />
+                      ) : (
+                        <img
+                          src={statusCrossImg}
+                          alt="No"
+                          className="mx-auto h-4 w-4 object-contain"
+                        />
+                      )}
+                    </TableCell>
+                    <TableCell className="px-3 py-2 text-center">
+                      <div className="flex items-center justify-center gap-2">
+                        {row.isUsed === true ? (
+                          <>
+                            <span
+                              className="inline-flex shrink-0 cursor-not-allowed opacity-80"
+                              title="This participant group is already in use"
+                              role="img"
+                              aria-label="This participant group is already in use"
+                            >
+                              <img
+                                src={statusCrossImg}
+                                alt=""
+                                className="h-4 w-4 object-contain"
+                                aria-hidden
+                              />
+                            </span>
+                            <button
+                              type="button"
+                              className="inline-flex shrink-0 cursor-pointer rounded p-0.5 text-[#9CA3AF] transition-colors hover:text-[#6B7280] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#9CA3AF]"
+                              aria-label={`View users in ${row.groupName}`}
+                              onClick={() => {
+                                const id = Number(row.id)
+                                if (!Number.isFinite(id) || id <= 0) return
+                                setViewGroupId(id)
+                                setUsersModalOpen(true)
+                              }}
+                            >
+                              <Eye className="size-4" strokeWidth={2} />
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button
+                              type="button"
+                              className="inline-flex shrink-0 rounded p-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#6C5DD3]"
+                              aria-label={`Edit ${row.groupName}`}
+                              onClick={() => {
+                                setEditingParticipantRow(row)
+                                setCreateGroupOpen(true)
+                              }}
+                            >
+                              <img src={editIconImg} alt="" className="h-4 w-4 object-contain" />
+                            </button>
+                            <button
+                              type="button"
+                              className="inline-flex shrink-0 rounded p-0.5 text-[#DC2626] transition-colors hover:text-[#B91C1C] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#DC2626] disabled:cursor-not-allowed disabled:opacity-40"
+                              disabled={deleteGroup.isPending}
+                              aria-label={`Delete ${row.groupName}`}
+                              onClick={() => {
+                                const id = Number(row.id)
+                                if (!Number.isFinite(id) || id <= 0) return
+                                const ok = window.confirm(
+                                  `Delete participant group "${row.groupName}"? This cannot be undone.`,
+                                )
+                                if (!ok) return
+                                void deleteGroup.mutateAsync(id).catch((error: unknown) => {
+                                  toast.error(formatRmtsGroupMutationError(error))
+                                })
+                              }}
+                            >
+                              <Trash2 className="size-3.5" />
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
           </TableBody>
         </Table>
       </div>
@@ -264,23 +320,29 @@ export function ParticipantsListTable({
           }
         }}
         selectedDepartment={selectedDepartment}
+        selectedDepartmentName={selectedDepartmentName}
         selectedStudyYear={studyYear}
+        departmentId={departmentId}
+        fiscalYearOptions={fiscalYearOptions}
         editingRow={editingParticipantRow}
-        onSave={(row) => {
-          setHasRowsChanges(true)
-          setRows(
-            (() => {
-              const sourceRows = effectiveRows
-              const existingIndex = sourceRows.findIndex((item) => item.id === row.id)
-              if (existingIndex >= 0) {
-                return sourceRows.map((item) => (item.id === row.id ? row : item))
-              }
-              return [row, ...sourceRows]
-            })()
-          )
-        }}
       />
-      <ParticipantUsersModal open={usersModalOpen} onOpenChange={setUsersModalOpen} />
+      <ParticipantUsersModal
+        open={usersModalOpen}
+        onOpenChange={(next) => {
+          setUsersModalOpen(next)
+          if (!next) {
+            setViewGroupId(null)
+          }
+        }}
+        title={
+          groupByIdQuery.data?.name
+            ? `List of User in Group — ${groupByIdQuery.data.name}`
+            : "List of User in Group"
+        }
+        departmentLabel={selectedDepartmentName}
+        loading={groupByIdQuery.isFetching || departmentUsersQuery.isFetching}
+        users={assignedUsers}
+      />
     </div>
   )
 }

@@ -1,5 +1,7 @@
 import { useState } from "react"
 import statusCrossImg from "@/assets/status-cross.png"
+import editIconImg from "@/assets/edit-icon.png"
+import { Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   Pagination,
@@ -25,29 +27,40 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Skeleton } from "@/components/ui/skeleton"
+
+import { useGetRmtsGroups } from "../queries/getRmtsGroups"
+import { useGetRmtsPpGroupListEnriched } from "../queries/getRmtsPpGroupListEnriched"
+import { useDeleteRmtsPpGroupList } from "../mutations/deleteRmtsPpGroupList"
+import type { ScheduledTimeStudyRowEnriched, ScheduledTimeStudyTableProps } from "../types"
+import { DEFAULT_SCHEDULE_PARTICIPANT_GROUP_OPTIONS } from "../types"
+import { SchedulePayPeriodGroupStatus } from "../enums/schedule-time-study.enum"
 import { ScheduleTimeStudyForm } from "./ScheduleTimeStudyForm"
-import {
-  useGetParticipantsListRows,
-  useGetScheduledTimeStudyRows,
-} from "../queries/getScheduleTimeStudyPeriods"
-import { FISCAL_YEAR_OPTIONS } from "../types"
-import type { ScheduledTimeStudyRow, ScheduledTimeStudyTableProps } from "../types"
 
 export function ScheduledTimeStudyTable({
   selectedStudyYear,
   onStudyYearChange,
   selectedDepartment,
+  selectedDepartmentName,
+  departmentId,
+  fiscalYearOptions,
   periodRows,
 }: ScheduledTimeStudyTableProps) {
-  const participantsQuery = useGetParticipantsListRows()
-  const scheduledQuery = useGetScheduledTimeStudyRows()
-  const [hasScheduledRowsChanges, setHasScheduledRowsChanges] = useState(false)
-  const [scheduledRows, setScheduledRows] = useState<ScheduledTimeStudyRow[]>([])
-  const effectiveScheduledRows = hasScheduledRowsChanges
-    ? scheduledRows
-    : (scheduledQuery.data ?? [])
-  const participantGroupOptions = (participantsQuery.data ?? []).map((row) => row.groupName)
+  const groupsQuery = useGetRmtsGroups({ departmentId, fiscalyear: selectedStudyYear })
+  const scheduledQuery = useGetRmtsPpGroupListEnriched({
+    departmentId,
+    fiscalyear: selectedStudyYear,
+  })
+  const deleteRow = useDeleteRmtsPpGroupList()
+
+  const scheduledRows: ScheduledTimeStudyRowEnriched[] = scheduledQuery.data ?? []
+  const participantGroupOptions = (groupsQuery.data?.rows ?? []).map((row) => row.groupName)
+  const groupsDetailed = groupsQuery.data?.raw ?? []
+
   const [createScheduledOpen, setCreateScheduledOpen] = useState(false)
+  const [editingScheduledRow, setEditingScheduledRow] = useState<ScheduledTimeStudyRowEnriched | null>(
+    null,
+  )
+  const [formMountKey, setFormMountKey] = useState(0)
 
   return (
     <>
@@ -64,9 +77,9 @@ export function ScheduledTimeStudyTable({
             align="start"
             className="w-[180px] rounded-[10px] border border-[#E5E7EB] bg-white p-1 shadow-[0_4px_16px_#00000014]"
           >
-            {FISCAL_YEAR_OPTIONS.map((year) => (
-              <SelectItem key={year} value={year}>
-                {year}
+            {fiscalYearOptions.map((fy) => (
+              <SelectItem key={fy.id} value={fy.id}>
+                {fy.label}
               </SelectItem>
             ))}
           </SelectContent>
@@ -75,7 +88,11 @@ export function ScheduledTimeStudyTable({
         <Button
           type="button"
           className="h-10 w-[150px] rounded-[12px] bg-[#6C5DD3] px-[15px] text-[14px] font-normal text-white hover:bg-[#5D4FC4]"
-          onClick={() => setCreateScheduledOpen(true)}
+          onClick={() => {
+            setEditingScheduledRow(null)
+            setFormMountKey((k) => k + 1)
+            setCreateScheduledOpen(true)
+          }}
         >
           Add New Scheduling
         </Button>
@@ -101,7 +118,7 @@ export function ScheduledTimeStudyTable({
                   >
                     {header}
                   </TableHead>
-                )
+                ),
               )}
             </TableRow>
           </TableHeader>
@@ -131,7 +148,7 @@ export function ScheduledTimeStudyTable({
                     </TableCell>
                   </TableRow>
                 ))
-              : effectiveScheduledRows.map((row) => (
+              : scheduledRows.map((row) => (
                   <TableRow key={row.id} className="h-[44px] border-[#EDEDED]">
                     <TableCell className="border-r border-[#E5E7EB] px-4 py-2 text-[13px] text-[#111827]">
                       {row.timeStudyPeriod}
@@ -149,8 +166,43 @@ export function ScheduledTimeStudyTable({
                       {row.status}
                     </TableCell>
                     <TableCell className="px-3 py-2">
-                      <div className="flex items-center justify-center">
-                        <img src={statusCrossImg} alt="Cross" className="h-4 w-4 object-contain" />
+                      <div className="flex items-center justify-center gap-2">
+                        {row.statusRaw === SchedulePayPeriodGroupStatus.DRAFT ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingScheduledRow(row)
+                              setFormMountKey((k) => k + 1)
+                              setCreateScheduledOpen(true)
+                            }}
+                            aria-label="Edit scheduled row"
+                          >
+                            <img src={editIconImg} alt="Edit" className="h-4 w-4 object-contain" />
+                          </button>
+                        ) : null}
+                        <button
+                          type="button"
+                          disabled={deleteRow.isPending}
+                          onClick={async () => {
+                            const ok = window.confirm("Delete this scheduled time study row?")
+                            if (!ok) return
+                            const id = Number(row.id)
+                            if (!Number.isFinite(id) || id <= 0) return
+                            try {
+                              await deleteRow.mutateAsync(id)
+                            } catch {
+                              // Error toast handled at higher-level API wrapper patterns elsewhere; keep silent here.
+                            }
+                          }}
+                          className="disabled:cursor-not-allowed disabled:opacity-60"
+                          aria-label="Delete scheduled row"
+                        >
+                          {row.statusRaw === SchedulePayPeriodGroupStatus.DRAFT ? (
+                            <Trash2 className="h-4 w-4 text-[#DC2626]" />
+                          ) : (
+                            <img src={statusCrossImg} alt="Delete" className="h-4 w-4 object-contain" />
+                          )}
+                        </button>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -193,19 +245,25 @@ export function ScheduledTimeStudyTable({
       </div>
 
       <ScheduleTimeStudyForm
+        key={`sched-form-${formMountKey}-${editingScheduledRow?.id ?? "new"}`}
         open={createScheduledOpen}
-        onOpenChange={setCreateScheduledOpen}
-        selectedDepartment={selectedDepartment}
-        selectedStudyYear={selectedStudyYear}
-        periodRows={periodRows}
-        participantGroupOptions={participantGroupOptions}
-        onSave={(newRows) => {
-          setHasScheduledRowsChanges(true)
-          setScheduledRows((prev) => [
-            ...newRows,
-            ...(hasScheduledRowsChanges ? prev : effectiveScheduledRows),
-          ])
+        onOpenChange={(next) => {
+          setCreateScheduledOpen(next)
+          if (!next) setEditingScheduledRow(null)
         }}
+        selectedDepartment={selectedDepartment}
+        selectedDepartmentName={selectedDepartmentName}
+        selectedStudyYear={selectedStudyYear}
+        departmentId={departmentId}
+        fiscalYearOptions={fiscalYearOptions}
+        periodRows={periodRows}
+        participantGroupOptions={
+          participantGroupOptions.length > 0
+            ? participantGroupOptions
+            : [...DEFAULT_SCHEDULE_PARTICIPANT_GROUP_OPTIONS]
+        }
+        groupsDetailed={groupsDetailed}
+        editingRow={editingScheduledRow}
       />
     </>
   )

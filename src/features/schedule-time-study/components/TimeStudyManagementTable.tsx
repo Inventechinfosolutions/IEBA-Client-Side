@@ -1,8 +1,9 @@
 import { zodResolver } from "@hookform/resolvers/zod"
-import { Inbox } from "lucide-react"
-import { Trash2 } from "lucide-react"
-import { useState } from "react"
-import { useForm } from "react-hook-form"
+import { Check, Inbox, Trash2 } from "lucide-react"
+import type { FormEvent } from "react"
+import { useMemo, useState } from "react"
+import { useForm, useWatch } from "react-hook-form"
+import { toast } from "sonner"
 
 import editIconImg from "@/assets/edit-icon.png"
 import { Button } from "@/components/ui/button"
@@ -34,104 +35,136 @@ import {
 } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList } from "@/components/ui/tabs"
 import { cn } from "@/lib/utils"
-import { TimeStudyPeriodsForm } from "./ TimeStudyPeriodsForm"
+import { TimeStudyPeriodsForm } from "./TimeStudyPeriodsForm"
 import { ParticipantsListTable } from "./ParticipantsListTable"
 import { ScheduledTimeStudyTable } from "./ScheduleTimeStudyTable"
 import { TimeStudyTab } from "./TimeStudyTab"
 import { useScheduleTimeStudyPeriods } from "../hooks/useScheduleTimeStudyPeriods"
+import { useDeleteRmtsPayPeriod } from "../mutations/deleteRmtsPayPeriod"
+import { useGetScheduleTimeStudyDepartments } from "../queries/getScheduleTimeStudyDepartments"
+import { useGetScheduleTimeStudyFiscalYears } from "../queries/getScheduleTimeStudyFiscalYears"
 import {
-  scheduleTimeStudyDefaultValues,
   scheduleTimeStudyFormSchema,
 } from "../schemas"
-import { FISCAL_YEAR_OPTIONS } from "../types"
 import type {
+  ScheduleTimeStudyFiscalYearOption,
   ScheduleTimeStudyFormValues,
   ScheduleTimeStudyPeriodRow,
   ScheduleTimeStudyTab,
+  ScheduleTimeStudyTableLoadedProps,
 } from "../types"
 
-function parseTableDate(value: string) {
-  const mmDdYyyy = /^(\d{2})-(\d{2})-(\d{4})$/.exec(value)
-  if (mmDdYyyy) {
-    const [, monthText, dayText, yearText] = mmDdYyyy
-    const month = Number(monthText)
-    const day = Number(dayText)
-    const year = Number(yearText)
-    const parsed = new Date(year, month - 1, day)
-    if (
-      parsed.getFullYear() === year &&
-      parsed.getMonth() === month - 1 &&
-      parsed.getDate() === day
-    ) {
-      return parsed
-    }
-  }
-
-  const yyyyMmDd = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value)
-  if (yyyyMmDd) {
-    const [, yearText, monthText, dayText] = yyyyMmDd
-    const year = Number(yearText)
-    const month = Number(monthText)
-    const day = Number(dayText)
-    const parsed = new Date(year, month - 1, day)
-    if (
-      parsed.getFullYear() === year &&
-      parsed.getMonth() === month - 1 &&
-      parsed.getDate() === day
-    ) {
-      return parsed
-    }
-  }
-
-  return null
+const payPeriodDeleteSuccessToastOptions = {
+  position: "top-center" as const,
+  icon: (
+    <span className="inline-flex size-4 items-center justify-center rounded-full bg-[#22c55e] text-white">
+      <Check className="size-3 stroke-3" />
+    </span>
+  ),
+  className:
+    "!w-fit !max-w-[340px] !min-h-[35px] !rounded-[8px] !border-0 !px-3 !py-2 !text-[12px] !whitespace-nowrap !shadow-[0_8px_22px_rgba(17,24,39,0.18)]",
 }
 
-function canEditPeriodRow(endDateValue: string) {
-  const parsedEndDate = parseTableDate(endDateValue)
-  if (!parsedEndDate) return false
-
-  const today = new Date()
-  const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate())
-  const rowEndDateOnly = new Date(
-    parsedEndDate.getFullYear(),
-    parsedEndDate.getMonth(),
-    parsedEndDate.getDate()
-  )
-  return rowEndDateOnly >= todayOnly
+function buildScheduleTimeStudyFormDefaults(
+  fiscalYearOptions: readonly ScheduleTimeStudyFiscalYearOption[],
+): ScheduleTimeStudyFormValues {
+  const first = fiscalYearOptions[0]
+  return {
+    department: "",
+    studyYear: first?.id ?? "",
+    file: null,
+  }
 }
 
 export function ScheduleTimeStudyTable() {
+  const departmentsQuery = useGetScheduleTimeStudyDepartments()
+  const fiscalYearsQuery = useGetScheduleTimeStudyFiscalYears()
+
+  if (departmentsQuery.isPending || fiscalYearsQuery.isPending) {
+    return (
+      <section className="min-h-[743px] space-y-4 rounded-[10px] border border-[#E5E7EB] bg-white p-6">
+        <Skeleton className="h-12 w-[220px]" />
+        <Skeleton className="h-[62px] w-full" />
+        <Skeleton className="h-[320px] w-full" />
+      </section>
+    )
+  }
+
+  if (departmentsQuery.isError || fiscalYearsQuery.isError) {
+    return (
+      <section className="rounded-[10px] border border-[#E5E7EB] bg-white p-6">
+        <p className="text-[15px] text-destructive">
+          Could not load departments or fiscal years. Check your API connection and try again.
+        </p>
+      </section>
+    )
+  }
+
+  const departments = departmentsQuery.data?.items ?? []
+  const fiscalYearOptions = fiscalYearsQuery.data ?? []
+
+  if (departments.length === 0) {
+    return (
+      <section className="rounded-[10px] border border-[#E5E7EB] bg-white p-6">
+        <p className="text-[15px] text-muted-foreground">No departments are available.</p>
+      </section>
+    )
+  }
+
+  return (
+    <ScheduleTimeStudyTableLoaded
+      departments={departments}
+      fiscalYearOptions={fiscalYearOptions}
+    />
+  )
+}
+
+function ScheduleTimeStudyTableLoaded({
+  departments,
+  fiscalYearOptions,
+}: ScheduleTimeStudyTableLoadedProps) {
   const [activeTab, setActiveTab] = useState<ScheduleTimeStudyTab>(
     "time-study-period-management"
   )
   const form = useForm<ScheduleTimeStudyFormValues>({
     resolver: zodResolver(scheduleTimeStudyFormSchema),
-    defaultValues: scheduleTimeStudyDefaultValues,
+    defaultValues: buildScheduleTimeStudyFormDefaults(fiscalYearOptions),
     mode: "onSubmit",
   })
 
-  const onSubmit = form.handleSubmit(() => {
-    form.reset(scheduleTimeStudyDefaultValues)
-  })
-  const selectedDepartment = form.watch("department")
-  const { rows, isLoading } = useScheduleTimeStudyPeriods(selectedDepartment)
-  const selectedStudyYear = form.watch("studyYear")
-  const selectedFile = form.watch("file")
+  const selectedDepartment = useWatch({ control: form.control, name: "department" }) ?? ""
+  const selectedStudyYear = useWatch({ control: form.control, name: "studyYear" }) ?? ""
+  const selectedFile = useWatch({ control: form.control, name: "file" })
   const hasSelectedDepartment = Boolean(selectedDepartment.trim())
+
+  const departmentId = useMemo(() => {
+    const idStr = selectedDepartment.trim()
+    if (!idStr) return null
+    const n = Number(idStr)
+    return Number.isFinite(n) && n > 0 ? n : null
+  }, [selectedDepartment])
+
+  const selectedDepartmentName = useMemo(() => {
+    const idStr = selectedDepartment.trim()
+    if (!idStr) return ""
+    return departments.find((d) => String(d.id) === idStr)?.name ?? ""
+  }, [selectedDepartment, departments])
+
+  const shouldLoadPeriods =
+    hasSelectedDepartment &&
+    (activeTab === "time-study-period-management" || activeTab === "scheduled-time-study")
+  const { rows, isLoading } = useScheduleTimeStudyPeriods(
+    departmentId,
+    selectedStudyYear,
+    shouldLoadPeriods,
+  )
+  const deletePayPeriod = useDeleteRmtsPayPeriod()
+
   const [createPeriodsOpen, setCreatePeriodsOpen] = useState(false)
   /** Bumped on each modal open so TimeStudyPeriodsForm remounts with fresh defaults (no useEffect in child). */
   const [periodsFormMountKey, setPeriodsFormMountKey] = useState(0)
-  const [createdPeriodRows, setCreatedPeriodRows] = useState<ScheduleTimeStudyPeriodRow[]>([])
-  const [editedPeriodRows, setEditedPeriodRows] = useState<
-    Record<string, ScheduleTimeStudyPeriodRow>
-  >({})
   const [editingPeriodRow, setEditingPeriodRow] = useState<ScheduleTimeStudyPeriodRow | null>(null)
-  const [deletedPeriodRowIds, setDeletedPeriodRowIds] = useState<string[]>([])
-  const periodRows = [...createdPeriodRows, ...rows]
-    .map((row) => editedPeriodRows[row.id] ?? row)
-    .filter(
-    (row) => !deletedPeriodRowIds.includes(row.id)
-    )
+  const periodRows = rows
 
   return (
     <section className="font-roboto *:font-roboto min-h-[743px] space-y-5 rounded-[10px] border border-[#E5E7EB] bg-white p-6">
@@ -150,11 +183,13 @@ export function ScheduleTimeStudyTable() {
             avoidCollisions={false}
             sideOffset={8}
             align="start"
-            className="rounded-[14px] border-[#E5E7EB] p-1"
+            className="max-h-[280px] rounded-[14px] border-[#E5E7EB] p-1"
           >
-            <SelectItem value="behavioral-health">Behavioral Health</SelectItem>
-            <SelectItem value="public-health">Public Health</SelectItem>
-            <SelectItem value="social-services">Social Services</SelectItem>
+            {departments.map((dept) => (
+              <SelectItem key={dept.id} value={String(dept.id)}>
+                {dept.name}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
         {form.formState.errors.department ? (
@@ -177,7 +212,7 @@ export function ScheduleTimeStudyTable() {
         </TabsList>
 
         <TabsContent value="time-study-period-management" className="mt-3 space-y-4">
-          {!hasSelectedDepartment ? (
+          {activeTab !== "time-study-period-management" ? null : !hasSelectedDepartment ? (
             <p className="pt-1 pb-4 text-center text-[15px] font-normal text-red-600">
               Please select department to view payperiods
             </p>
@@ -206,18 +241,24 @@ export function ScheduleTimeStudyTable() {
                   align="start"
                   className="w-[180px] rounded-[10px] border border-[#E5E7EB] bg-white p-1 shadow-[0_4px_16px_#00000014]"
                 >
-                  {FISCAL_YEAR_OPTIONS.map((year) => (
-                    <SelectItem
-                      key={year}
-                      value={year}
-                      className={cn(
-                        "h-[42px] rounded-[8px] px-5 pr-5 text-[14px] font-normal text-[#111827] focus:bg-[#F3F4F6] [&>span:first-child]:hidden",
-                        selectedStudyYear === year && "bg-[#F3F4F6]"
-                      )}
-                    >
-                      {year}
-                    </SelectItem>
-                  ))}
+                  {fiscalYearOptions.length === 0 ? (
+                    <div className="px-4 py-3 text-[13px] text-muted-foreground">
+                      No fiscal years returned from settings.
+                    </div>
+                  ) : (
+                    fiscalYearOptions.map((fy) => (
+                      <SelectItem
+                        key={fy.id}
+                        value={fy.id}
+                        className={cn(
+                          "h-[42px] rounded-[8px] px-5 pr-5 text-[14px] font-normal text-[#111827] focus:bg-[#F3F4F6] [&>span:first-child]:hidden",
+                          selectedStudyYear === fy.id && "bg-[#F3F4F6]"
+                        )}
+                      >
+                        {fy.label}
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
               {form.formState.errors.studyYear ? (
@@ -225,7 +266,10 @@ export function ScheduleTimeStudyTable() {
               ) : null}
             </div>
 
-            <form onSubmit={onSubmit} className="flex flex-wrap items-start gap-3">
+            <form
+              onSubmit={(event: FormEvent<HTMLFormElement>) => event.preventDefault()}
+              className="flex flex-wrap items-start gap-3"
+            >
               <div className="w-full sm:w-[297px]">
                 <Input
                   id="schedule-time-study-file"
@@ -363,39 +407,60 @@ export function ScheduleTimeStudyTable() {
                       <TableCell className="border-r border-[#E5E7EB] px-4 py-2 text-center text-[13px] text-[#111827]">
                         {row.nonAllocable}
                       </TableCell>
-                      <TableCell className="px-3 py-2">
+                      <TableCell className="px-3 py-2 text-center">
                         <div className="flex items-center justify-center gap-2">
-                          {canEditPeriodRow(row.endDate) ? (
-                            <button
-                              type="button"
-                              className="text-[#6C5DD3]"
-                              onClick={() => {
-                                setEditingPeriodRow(row)
-                                setPeriodsFormMountKey((k) => k + 1)
-                                setCreatePeriodsOpen(true)
-                              }}
+                          {row.isUsed === true ? (
+                            <span
+                              className="inline-flex shrink-0 cursor-not-allowed text-[#D1D5DB]"
+                              title="Time Study Period is already in use"
+                              role="img"
+                              aria-label="Time Study Period is already in use"
                             >
-                              <img
-                                src={editIconImg}
-                                alt="Edit"
-                                className="h-4 w-4 object-contain"
-                              />
-                            </button>
-                          ) : null}
-                          <button
-                            type="button"
-                            className="text-[#DC2626]"
-                            onClick={() => {
-                              setCreatedPeriodRows((prev) =>
-                                prev.filter((createdRow) => createdRow.id !== row.id)
-                              )
-                              setDeletedPeriodRowIds((prev) =>
-                                prev.includes(row.id) ? prev : [...prev, row.id]
-                              )
-                            }}
-                          >
-                            <Trash2 className="size-3.5" />
-                          </button>
+                              <Trash2 className="size-3.5" strokeWidth={1.75} aria-hidden />
+                            </span>
+                          ) : (
+                            <>
+                              <button
+                                type="button"
+                                className="text-[#6C5DD3]"
+                                onClick={() => {
+                                  setEditingPeriodRow(row)
+                                  setPeriodsFormMountKey((k) => k + 1)
+                                  setCreatePeriodsOpen(true)
+                                }}
+                              >
+                                <img
+                                  src={editIconImg}
+                                  alt="Edit"
+                                  className="h-4 w-4 object-contain"
+                                />
+                              </button>
+                              <button
+                                type="button"
+                                className="text-[#DC2626] disabled:cursor-not-allowed disabled:opacity-40"
+                                disabled={deletePayPeriod.isPending}
+                                onClick={() => {
+                                  const id = Number(row.id)
+                                  if (!Number.isFinite(id) || id <= 0) return
+                                  void deletePayPeriod
+                                    .mutateAsync(id)
+                                    .then(() => {
+                                      toast.success(
+                                        "Deleted successfully",
+                                        payPeriodDeleteSuccessToastOptions,
+                                      )
+                                    })
+                                    .catch((error: unknown) => {
+                                      toast.error(
+                                        error instanceof Error ? error.message : "Delete failed",
+                                      )
+                                    })
+                                }}
+                              >
+                                <Trash2 className="size-3.5" />
+                              </button>
+                            </>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>
@@ -442,7 +507,7 @@ export function ScheduleTimeStudyTable() {
         </TabsContent>
 
         <TabsContent value="participants-list" className="mt-3">
-          {!hasSelectedDepartment ? (
+          {activeTab !== "participants-list" ? null : !hasSelectedDepartment ? (
             <p className="pt-1 pb-4 text-center text-[15px] font-normal text-red-600">
               Please select department to view participant groups
             </p>
@@ -450,6 +515,9 @@ export function ScheduleTimeStudyTable() {
             <ParticipantsListTable
               studyYear={selectedStudyYear}
               selectedDepartment={selectedDepartment}
+              selectedDepartmentName={selectedDepartmentName}
+              departmentId={departmentId}
+              fiscalYearOptions={fiscalYearOptions}
               onStudyYearChange={(value) =>
                 form.setValue("studyYear", value, { shouldValidate: true })
               }
@@ -458,7 +526,7 @@ export function ScheduleTimeStudyTable() {
         </TabsContent>
 
         <TabsContent value="scheduled-time-study" className="mt-3 space-y-4">
-          {!hasSelectedDepartment ? (
+          {activeTab !== "scheduled-time-study" ? null : !hasSelectedDepartment ? (
             <p className="pt-1 pb-4 text-center text-[15px] font-normal text-red-600">
               Please select department to view scheduled payperiods
             </p>
@@ -471,6 +539,9 @@ export function ScheduleTimeStudyTable() {
             selectedStudyYear={selectedStudyYear}
             onStudyYearChange={(value) => form.setValue("studyYear", value, { shouldValidate: true })}
             selectedDepartment={selectedDepartment}
+            selectedDepartmentName={selectedDepartmentName}
+            departmentId={departmentId}
+            fiscalYearOptions={fiscalYearOptions}
             periodRows={periodRows}
           />
             </>
@@ -488,17 +559,10 @@ export function ScheduleTimeStudyTable() {
           }
         }}
         selectedDepartment={selectedDepartment}
+        selectedDepartmentName={selectedDepartmentName}
+        departmentId={departmentId}
+        fiscalYearOptions={fiscalYearOptions}
         editingRow={editingPeriodRow}
-        onSave={(row) => {
-          setCreatedPeriodRows((prev) => {
-            const existingIndex = prev.findIndex((item) => item.id === row.id)
-            if (existingIndex >= 0) {
-              return prev.map((item) => (item.id === row.id ? row : item))
-            }
-            return [row, ...prev]
-          })
-          setEditedPeriodRows((prev) => ({ ...prev, [row.id]: row }))
-        }}
       />
     </section>
   )
