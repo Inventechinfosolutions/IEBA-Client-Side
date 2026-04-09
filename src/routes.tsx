@@ -7,6 +7,7 @@ import { LoginPage, ForgotPassword, OtpAuthentication } from "@/features/auth"
 import { DashboardPage } from "@/features/dashboard/pages/DashboardPage"
 import { MasterCodePage } from "@/features/master-code"
 import { ProgramPage } from "@/features/program"
+import { ReportsPage } from "@/features/reports"
 import { TodoPage } from "@/features/todo"
 import { UserModulePage } from "@/features/user"
 import { LeaveApprovalPage } from "@/features/leave-approval"
@@ -128,6 +129,7 @@ export function createAppRouter(queryClient: QueryClient) {
         { path: "profile", element: <ProfilePage /> },
         { path: "job-classification", element: <JobClassificationPage /> },
         { path: "job-pool", element: <JobPoolPage /> },
+        { path: "reports", element: <ReportsPage /> },
       ],
     },
     { path: "*", element: <Navigate to="/" replace /> },

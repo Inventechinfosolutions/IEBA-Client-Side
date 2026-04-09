@@ -19,6 +19,7 @@ import {
   User,
   Clock,
   Gauge,
+  FileSpreadsheet,
 } from "lucide-react"
 
 import iebaLogo from "@/assets/ieba-logo.png"
@@ -65,6 +66,7 @@ const mainNav = [
   { title: "County Activity Code", url: "/county-activity-code", icon: Table2 },
   { title: "Dashboard", url: "/", icon: Gauge },
   { title: "Personal Time Study", url: "/schedule-time-study", icon: Clock },
+  { title: "Reports", url: "/reports", icon: FileSpreadsheet },
   { title: "To Do", url: "/to-do", icon: FileText },
   { title: "User", url: "/user", icon: User },
   { title: "Department", url: "/department", icon: Home },
@@ -217,6 +219,12 @@ export function AppSidebar() {
                     <Link to="/program">
                       <ScrollText className="mr-2 size-4" />
                       Program
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/reports">
+                      <FileSpreadsheet className="mr-2 size-4" />
+                      Reports
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>

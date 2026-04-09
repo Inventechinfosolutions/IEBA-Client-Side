@@ -52,7 +52,7 @@ export function useGetDepartmentById(id: string | null) {
     enabled: !!id,
     // Avoid duplicate GETs: same key was previously prefetched + forced refetch on every mount.
     staleTime: 60_000,
-    refetchOnMount: true,
+    refetchOnMount: "always",
     refetchOnWindowFocus: false,
   })
 }
