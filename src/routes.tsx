@@ -26,6 +26,8 @@ import { masterCodeKeys } from "@/features/master-code/keys"
 import { programKeys, programActivityRelationKeys } from "@/features/program/keys"
 import { todoKeys } from "@/features/todo/keys"
 import { leaveApprovalKeys } from "@/features/leave-approval/keys"
+import { payrollKeys } from "@/features/payroll/payrollKeys"
+import { PayrollPage } from "@/features/payroll/pages/PayrollPage"
 import { userModuleKeys } from "@/features/user/keys"
 import { profileKeys } from "@/features/Profile/keys"
 
@@ -137,7 +139,14 @@ export function createAppRouter(queryClient: QueryClient) {
         },
         { path: "job-classification", element: <JobClassificationPage /> },
         { path: "job-pool", element: <JobPoolPage /> },
-        { path: "reports", element: <ReportsPage /> },
+        {
+          path: "payroll",
+          element: <PayrollPage />,
+          loader: async () => {
+            await queryClient.invalidateQueries({ queryKey: payrollKeys.lists() })
+            return null
+          },
+        },
       ],
     },
     { path: "*", element: <Navigate to="/" replace /> },
