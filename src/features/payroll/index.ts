@@ -1,5 +1,5 @@
 export { PayrollPage } from "./pages/PayrollPage"
-export { payrollKeys } from "./payrollKeys"
+export { payrollKeys } from "./key"
 export { usePayrollFilterOptions } from "./hooks/usePayrollFilterOptions"
 export { usePayrollRows } from "./hooks/usePayrollRows"
 export { useGetPayrollFilterOptions } from "./queries/getPayrollFilterOptions"

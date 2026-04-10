@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 
-import { payrollKeys } from "../payrollKeys"
-import { fetchPayrollRowsMock } from "../mock"
+import { payrollKeys } from "../key"
+import { fetchPayrollRows } from "../api/payrollApi"
 import type { GetPayrollRowsParams } from "../types"
 
 export function useGetPayrollRows(activeParams: GetPayrollRowsParams | null) {
@@ -11,10 +11,8 @@ export function useGetPayrollRows(activeParams: GetPayrollRowsParams | null) {
         ? payrollKeys.rowsIdle()
         : payrollKeys.rows(activeParams),
     queryFn: () => {
-      if (activeParams === null) {
-        return Promise.resolve([])
-      }
-      return fetchPayrollRowsMock(activeParams)
+      if (activeParams === null) throw new Error("No params")
+      return fetchPayrollRows(activeParams)
     },
     enabled: activeParams !== null,
   })

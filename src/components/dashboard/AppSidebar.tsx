@@ -64,6 +64,7 @@ type NavItem = {
    * null          → always show
    * "superadmin"   → only when user has superadmin:all
    * "moduleKey"    → show when user has moduleKey:view
+   * "moduleKey:action" → show when user has exact permission
    * ["a", "b"]     → show when user has ANY of the listed module :view permissions (OR)
    */
   permission: string | string[] | null
@@ -85,7 +86,7 @@ const mainNav: NavItem[] = [
 
   // ── People & Leave ────────────────────────────────────────────────────────
   { title: "User",                  url: "/user",                  icon: User,             permission: "user" },
-  { title: "Leave Approval",        url: "/leave-approval",        icon: FileText,         permission: "userleave" },
+  { title: "Leave Approval",        url: "/leave-approval",        icon: FileText,         permission: "userleave:review" },
 
   // ── Finance ───────────────────────────────────────────────────────────────
   { title: "Payroll",               url: "/payroll",               icon: CircleDollarSign, permission: "payroll" },
@@ -112,7 +113,7 @@ const mainNav: NavItem[] = [
 // ---------------------------------------------------------------------------
 export function AppSidebar() {
   const { user, signOut } = useAuth()
-  const { isSuperAdmin, canView } = usePermissions()
+  const { isSuperAdmin, canView, has } = usePermissions()
   const [changePasswordOpen, setChangePasswordOpen] = useState(false)
   const location = useLocation()
 
@@ -123,9 +124,9 @@ export function AppSidebar() {
     if (isSuperAdmin) return true                               // superadmin sees everything
     // Array → OR logic: visible if user has :view for ANY listed module
     if (Array.isArray(item.permission)) {
-      return item.permission.some((mod) => canView(mod))
+      return item.permission.some((mod) => mod.includes(":") ? has(mod) : canView(mod))
     }
-    return canView(item.permission)                             // single module :view check
+    return item.permission.includes(":") ? has(item.permission) : canView(item.permission) // single module :view check or specific permission
   }
 
   const filteredNav = mainNav.filter(isVisible)

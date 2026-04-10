@@ -1,7 +1,7 @@
 import type { SingleSelectOption } from "@/components/ui/dropdown"
 
-/** Payroll frequency for filters and upload type. */
-export type PayrollFrequencyType = "monthly" | "bi_weekly" | "semi_monthly" | "weekly"
+export * from "./enums/payrollFrequency"
+import { type PayrollFrequencyType } from "./enums/payrollFrequency"
 
 /** Period granularity for payroll details filters. */
 export type PayrollPeriodType = "month" | "quarterly"
@@ -34,16 +34,12 @@ export type PayrollManagementRow = {
   cashOut: string
   payout: string
   salary: string
+  year: string
+  month: string
+  payrollType: string
 }
 
-/** Internal mock row including filter dimensions (not shown as table columns). */
-export type PayrollManagementStoredRow = PayrollManagementRow & {
-  filterFiscalYearId: string
-  filterMonthOrQuarterId: string
-  filterDepartmentId: string
-  filterPayrollType: PayrollFrequencyType
-  filterEmployeeId: string
-}
+
 
 export type PayrollFilterOption = SingleSelectOption
 
@@ -60,9 +56,11 @@ export type PayrollFilterOptionsResponse = {
 export type GetPayrollRowsParams = {
   payrollType: PayrollFrequencyType
   fiscalYearId: string
+  fiscalYearLabel: string
   periodType: PayrollPeriodType
   monthOrQuarterId: string
   departmentId: string
+  departmentCode: string
   employeeIds: readonly string[]
 }
 

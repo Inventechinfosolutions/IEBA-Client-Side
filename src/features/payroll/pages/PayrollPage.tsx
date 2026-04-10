@@ -6,10 +6,9 @@ import { useUploadPayrollFile } from "../mutations/uploadPayrollFile"
 import { PayrollDataTable } from "../components/PayrollDataTable"
 import { PayrollDetailsSection } from "../components/PayrollDetailsSection"
 import { PayrollUploadSection } from "../components/PayrollUploadSection"
-import { PAYROLL_TABLE_TEMPLATE_HEADERS } from "../mock"
+import { PAYROLL_TABLE_TEMPLATE_HEADERS } from "../utils/payrollTable"
 import type { GetPayrollRowsParams, PayrollUploadFormValues } from "../types"
 import { buildPayrollRowsCsvContent, triggerBrowserDownloadTextFile } from "../utils/payrollCsv"
-import { PAYROLL_CARD_SHADOW_CLASS } from "../constants"
 import { usePayrollFilterOptions } from "../hooks/usePayrollFilterOptions"
 import { usePayrollRows } from "../hooks/usePayrollRows"
 import { cn } from "@/lib/utils"
@@ -27,7 +26,7 @@ export function PayrollPage() {
         { uploadType: values.uploadType, file },
         {
           onSuccess: () => {
-            toast.success("Payroll file uploaded (mock).")
+            toast.success("Payroll file uploaded successfully.")
           },
           onError: (err: unknown) => {
             const message = err instanceof Error ? err.message : "Upload failed."
@@ -48,7 +47,7 @@ export function PayrollPage() {
     (params: GetPayrollRowsParams) => {
       deleteMutation.mutate(params, {
         onSuccess: () => {
-          toast.success("Payroll rows removed for the current filter (mock).")
+          toast.success("Payroll rows removed for the current filter.")
         },
       })
     },
@@ -67,7 +66,7 @@ export function PayrollPage() {
         <div
           className={cn(
             "box-border mx-auto min-w-0 w-full max-w-full overflow-x-hidden rounded-[8px] border border-[#e7e9f2] bg-white",
-            PAYROLL_CARD_SHADOW_CLASS,
+            "shadow-[0_0_14px_0_rgb(0_0_0/0.04),0_0_1px_0_rgb(0_0_0/0.06)]",
           )}
         >
           <div className="flex min-w-0 w-full max-w-full flex-col gap-6 p-4 md:p-5">

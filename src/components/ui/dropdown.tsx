@@ -16,6 +16,8 @@ export type SingleSelectOption = {
   label: string
   /** Stable React `key` when `value` may repeat across options */
   key?: string
+  /** Arbitrary metadata associated with this option */
+  metadata?: Record<string, any>
 }
 
 /** Same panel + scroll behavior as Settings → Reports → Reports dropdown (native scrollbar). */
@@ -130,7 +132,7 @@ export function SingleSelectDropdown({
         avoidCollisions={false}
         sideOffset={6}
         className={cn(
-          "z-[90] w-[var(--radix-dropdown-menu-trigger-width)] p-0",
+          "z-90 min-w-[8rem] w-(--radix-dropdown-menu-trigger-width) overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md animate-in fade-in-80 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
           reportsDropdownContentClassName,
           contentClassName,
         )}

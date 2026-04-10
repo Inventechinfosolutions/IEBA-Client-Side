@@ -4,6 +4,7 @@ export const payrollKeys = {
   all: ["payroll"] as const,
   lists: () => [...payrollKeys.all, "list"] as const,
   filterOptions: () => [...payrollKeys.lists(), "filter-options"] as const,
+  departmentUsers: (deptId: string) => [...payrollKeys.lists(), "department-users", deptId] as const,
   rowsIdle: () => [...payrollKeys.lists(), "rows", "idle"] as const,
   rows: (params: GetPayrollRowsParams) => [...payrollKeys.lists(), "rows", params] as const,
 }
