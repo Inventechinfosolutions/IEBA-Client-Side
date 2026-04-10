@@ -22,14 +22,17 @@ import {
   IdCard,
   Settings,
   MapPin,
+  User as UserIcon,
 } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
+import { usePermissions } from "@/hooks/usePermissions"
 import { ChangePasswordFormModal } from "@/features/change-password"
 import { ChangeCountyDialog } from "@/features/auth/components/ChangeCountyDialog"
 import { MimicBanner, useMimicSession } from "@/features/user/user-mimic"
 
 export function DashboardLayout() {
   const { user, signOut } = useAuth()
+  const { isSuperAdmin } = usePermissions()
   const { data: mimic } = useMimicSession()
   const countyName = user?.countyName?.trim() || ""
   const [changePasswordOpen, setChangePasswordOpen] = useState(false)
@@ -67,12 +70,7 @@ export function DashboardLayout() {
                       <Avatar className="h-9 w-9">
                         <AvatarImage src={user.avatar} alt={user.name} />
                         <AvatarFallback>
-                          {user.name
-                            .split(" ")
-                            .map((n) => n[0])
-                            .join("")
-                            .toUpperCase()
-                            .slice(0, 2)}
+                          <UserIcon className="h-5 w-5 text-gray-400" />
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex flex-col items-start leading-tight">
@@ -80,7 +78,11 @@ export function DashboardLayout() {
                           {user.name}
                         </span>
                         <span className="text-[12px] font-normal text-[#6B7280]">
-                          Super Admin
+                          {isSuperAdmin
+                            ? "Super Admin"
+                            : user.roles && user.roles.length > 0
+                              ? user.roles[0]
+                              : "User"}
                         </span>
                       </div>
                       <ChevronDown className="ml-1 h-4 w-4 text-[#9CA3AF]" />
@@ -108,21 +110,25 @@ export function DashboardLayout() {
                         <LockKeyhole className="mr-2 size-4" />
                         Change Password
                       </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onSelect={(e) => {
-                          e.preventDefault()
-                          setChangeCountyOpen(true)
-                        }}
-                      >
-                          <MapPin className="mr-2 size-4" />
-                          Change County
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link to="/settings">
-                          <Settings className="mr-2 size-4" />
-                          Settings
-                        </Link>
-                      </DropdownMenuItem>
+                      {isSuperAdmin && (
+                        <DropdownMenuItem
+                          onSelect={(e) => {
+                            e.preventDefault()
+                            setChangeCountyOpen(true)
+                          }}
+                        >
+                            <MapPin className="mr-2 size-4" />
+                            Change County
+                        </DropdownMenuItem>
+                      )}
+                      {isSuperAdmin && (
+                        <DropdownMenuItem asChild>
+                          <Link to="/settings">
+                            <Settings className="mr-2 size-4" />
+                            Settings
+                          </Link>
+                        </DropdownMenuItem>
+                      )}
                     </DropdownMenuGroup>
                     <DropdownMenuItem
                       onClick={() => {

@@ -20,6 +20,7 @@ import {
   User,
   FileSpreadsheet,
   ListTodo,
+  User as UserIcon,
   type LucideIcon,
 } from "lucide-react"
 
@@ -196,12 +197,7 @@ export function AppSidebar() {
                   <Avatar className="h-8 w-8 rounded-lg">
                     <AvatarImage src={user?.avatar} alt={user?.name} />
                     <AvatarFallback className="rounded-lg">
-                      {user?.name
-                        ?.split(" ")
-                        .map((n) => n[0])
-                        .join("")
-                        .toUpperCase()
-                        .slice(0, 2) ?? "U"}
+                      <UserIcon className="size-4 text-muted-foreground" />
                     </AvatarFallback>
                   </Avatar>
                   <div className="grid flex-1 text-left text-sm leading-tight">
@@ -225,12 +221,7 @@ export function AppSidebar() {
                     <Avatar className="h-8 w-8 rounded-lg">
                       <AvatarImage src={user?.avatar} alt={user?.name} />
                       <AvatarFallback className="rounded-lg">
-                        {user?.name
-                          ?.split(" ")
-                          .map((n) => n[0])
-                          .join("")
-                          .toUpperCase()
-                          .slice(0, 2) ?? "U"}
+                        <UserIcon className="size-4 text-muted-foreground" />
                       </AvatarFallback>
                     </Avatar>
                     <div className="grid flex-1 text-left text-sm leading-tight">
