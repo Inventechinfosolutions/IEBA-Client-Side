@@ -14,7 +14,7 @@ export function buildPayrollDetailsDefaultValues(
     payrollType: PayrollFrequency.BI_WEEKLY,
     fiscalYearId: "",
     periodType: "month",
-    monthOrQuarterId: "",
+    monthOrQuarterId: "m-all",
     departmentId: "",
     employeeIdsSerialized: "",
   }
@@ -27,8 +27,9 @@ export function mapPayrollDetailsFormToQueryParams(
   const employeeIds = [...parseMultiSelectStoredValues(values.employeeIdsSerialized)].sort()
 
   const fiscalYearLabel = options.fiscalYears.find((f) => f.value === values.fiscalYearId)?.label ?? ""
-  const departmentCode = (options.departments.find((d) => d.value === values.departmentId)?.metadata?.code as string) ?? ""
-
+  const selectedDept = options.departments.find((d) => String(d.value) === String(values.departmentId))
+  const departmentCode = (selectedDept?.metadata?.code as string) ?? ""
+  
   return {
     payrollType: values.payrollType,
     fiscalYearId: values.fiscalYearId,
@@ -36,7 +37,7 @@ export function mapPayrollDetailsFormToQueryParams(
     periodType: values.periodType,
     monthOrQuarterId: values.monthOrQuarterId,
     departmentId: values.departmentId,
-    departmentCode,
+    departmentCode: departmentCode || "all",
     employeeIds,
   }
 }

@@ -8,7 +8,7 @@ import { PayrollDetailsSection } from "../components/PayrollDetailsSection"
 import { PayrollUploadSection } from "../components/PayrollUploadSection"
 import { PAYROLL_TABLE_TEMPLATE_HEADERS } from "../utils/payrollTable"
 import type { GetPayrollRowsParams, PayrollUploadFormValues } from "../types"
-import { buildPayrollRowsCsvContent, triggerBrowserDownloadTextFile } from "../utils/payrollCsv"
+import { buildPayrollRowsXlsxBlob, triggerBrowserDownloadBlob } from "../utils/payrollCsv"
 import { usePayrollFilterOptions } from "../hooks/usePayrollFilterOptions"
 import { usePayrollRows } from "../hooks/usePayrollRows"
 import { cn } from "@/lib/utils"
@@ -38,9 +38,9 @@ export function PayrollPage() {
     [uploadMutation],
   )
 
-  const handleDownloadCurrentRows = useCallback(() => {
-    const csv = buildPayrollRowsCsvContent(PAYROLL_TABLE_TEMPLATE_HEADERS, rowsModule.rows)
-    triggerBrowserDownloadTextFile("payroll-details-export.csv", csv, "text/csv;charset=utf-8")
+  const handleDownloadCurrentRows = useCallback(async () => {
+    const blob = await buildPayrollRowsXlsxBlob(PAYROLL_TABLE_TEMPLATE_HEADERS, rowsModule.rows)
+    triggerBrowserDownloadBlob("payroll-details-export.xlsx", blob)
   }, [rowsModule.rows])
 
   const handleDelete = useCallback(
@@ -53,6 +53,14 @@ export function PayrollPage() {
     },
     [deleteMutation],
   )
+
+  const handleGetRows = useCallback((params: GetPayrollRowsParams) => {
+    setActiveQueryParams(params)
+    // Always force a refetch when clicking 'Get'
+    setTimeout(() => {
+      rowsModule.refetch()
+    }, 0)
+  }, [rowsModule])
 
   const isTableLoading = rowsModule.isLoading || rowsModule.isFetching
   const filterData = filterModule.data
@@ -82,7 +90,7 @@ export function PayrollPage() {
                   filterOptions={filterData}
                   isOptionsLoading={filterModule.isLoading || filterModule.isFetching}
                   isRowsLoading={isTableLoading}
-                  onGetRows={setActiveQueryParams}
+                  onGetRows={handleGetRows}
                   onDownloadCurrentRows={handleDownloadCurrentRows}
                   onDelete={handleDelete}
                   activeQueryParams={activeQueryParams}

@@ -1,7 +1,12 @@
 import { getToken } from "@/lib/api"
 import { API_BASE_URL } from "@/lib/config"
 import { api } from "@/lib/api"
-import type { GetPayrollRowsParams, PayrollFilterOptionsResponse } from "../types"
+import type { 
+  DepartmentUser, 
+  GetPayrollRowsParams, 
+  PayrollFilterOptionsResponse, 
+  PayrollManagementRow 
+} from "../types"
 import { getAllDepartments } from "@/features/department/api/departments"
 import { fetchListFiscalYears } from "@/features/settings/queries/listFiscalYears"
 
@@ -78,6 +83,7 @@ export async function fetchPayrollFilterOptions(): Promise<PayrollFilterOptionsR
   }))
 
   const monthOptions = [
+    { value: "m-all", label: "All Months" },
     { value: "m-01", label: "January" },
     { value: "m-02", label: "February" },
     { value: "m-03", label: "March" },
@@ -109,45 +115,109 @@ export async function fetchPayrollFilterOptions(): Promise<PayrollFilterOptionsR
 
 /**
  * Fetches users (employees) for a specific department.
- * GET /api/v1/department?method=users&departmentId=<id>
+ * GET /api/v1/departments?method=users&departmentId=<id>
  */
-export async function fetchDepartmentUsers(departmentId: string): Promise<any[]> {
-  if (!departmentId || departmentId === "all") return []
+export async function fetchDepartmentUsers(departmentId: string): Promise<DepartmentUser[]> {
+  if (!departmentId || departmentId === "all" || departmentId === "") return []
 
-  const res = await api.get<any>(`/department?method=users&departmentId=${departmentId}`)
-  // The API likely returns { success: true, data: [...] } or just [...]
-  // Based on other patterns, it might be in res.data
-  return res?.data || res || []
+  const url = `/departments?method=users&departmentId=${departmentId}`
+  const res = await api.get<{ data: { userDetails?: DepartmentUser[] } }>(url)
+
+  // Extract the userDetails from the data wrapper
+  const userList = res?.data?.userDetails || []
+  
+  return userList
 }
 
 /**
- * Fetches payroll management rows based on active filters.
- * GET /api/v1/payrollmanagement?payrollType=<type>&fiscalYear=<label>&limit=1000&month=<val>&departmentcode=<code>&empIds=<ids>
+ * Fetches payroll management rows based on active filters using the new paginated API.
+ * GET /api/v1/payrollmanagement?payrollType=<type>&fiscalYear=<fy>&month=<m>&departmentCode=<code>&empIds=<ids>&page=1&limit=1000
  */
-export async function fetchPayrollRows(params: GetPayrollRowsParams): Promise<any[]> {
+export async function fetchPayrollRows(params: GetPayrollRowsParams): Promise<PayrollManagementRow[]> {
   const search = new URLSearchParams()
-  search.set("payrollType", params.payrollType.toLowerCase())
+  
+  // Use 'payrolltype' (lowercase) which is confirmed working in the new API
+  search.set("payrolltype", params.payrollType.toLowerCase())
   search.set("fiscalYear", params.fiscalYearLabel)
+  search.set("page", "1")
   search.set("limit", "1000")
 
-  // Map "m-01" -> 1, "m-12" -> 12
-  if (params.monthOrQuarterId.startsWith("m-")) {
+  // If "All Months" is selected, send the explicit list of all month numbers to be safe
+  const ALL_MONTHS_LIST = "1,2,3,4,5,6,7,8,9,10,11,12"
+
+  if (params.monthOrQuarterId === "m-all") {
+    search.set("month", ALL_MONTHS_LIST)
+  } else if (params.monthOrQuarterId.startsWith("m-")) {
     const m = parseInt(params.monthOrQuarterId.replace("m-", ""), 10)
-    if (!isNaN(m)) search.set("month", String(m))
+    if (!isNaN(m)) {
+      search.set("month", String(m))
+    }
   } else if (params.monthOrQuarterId.startsWith("q-")) {
-    search.set("quarter", params.monthOrQuarterId.replace("q-", ""))
+    const qNum = params.monthOrQuarterId.replace("q-", "")
+    // Fiscal Year starts in July:
+    // Q1 -> 7,8,9 | Q2 -> 10,11,12 | Q3 -> 1,2,3 | Q4 -> 4,5,6
+    const mapping: Record<string, string> = {
+      "1": "7,8,9",
+      "2": "10,11,12",
+      "3": "1,2,3",
+      "4": "4,5,6",
+    }
+    search.set("month", mapping[qNum] || ALL_MONTHS_LIST)
+  } else {
+    search.set("month", ALL_MONTHS_LIST)
   }
 
   if (params.departmentCode && params.departmentCode !== "all") {
+    // Send both variants to be super safe
     search.set("departmentcode", params.departmentCode)
+    search.set("departmentCode", params.departmentCode)
   }
 
   if (params.employeeIds.length > 0) {
     search.set("empIds", params.employeeIds.join(","))
   }
 
-  const res = await api.get<any>(`/payrollmanagement?${search.toString()}`)
-  // Assuming standard { success: true, data: [...] } or direct array
-  const data = res?.data || res || []
-  return Array.isArray(data) ? data : data.data || []
+  // Double check payrollType variants
+  search.set("payrolltype", params.payrollType.toLowerCase())
+  search.set("payrollType", params.payrollType.toLowerCase())
+
+  // Note: We manually build the query string to keep commas unencoded as requested (e.g. 1,2,3)
+  const queryString = Array.from(search.entries())
+    .map(([key, value]) => `${key}=${value}`)
+    .join("&")
+
+  const res = await api.get<{ data: { items: any[] } }>(`/payrollmanagement?${queryString}`)
+  
+  // The backend response body has a 'data' property which contains 'items'
+  const items = res?.data?.items || []
+
+  return items.map((row: any): PayrollManagementRow => ({
+    ...row,
+    employeeId: row.employeeid,
+    employeeFirstName: row.employeefirstname,
+    employeeLastName: row.employeelastname,
+    employeeMiddleName: row.employeemiddlename,
+    suffix: row.suffix,
+    department: row.department,
+    bargainingUnit: row.bargainingunit,
+    type: row.type,
+    position: row.position,
+    payPeriodBegin: row.payperiodbegin,
+    payPeriodEnd: row.payperiodend,
+    checkDate: row.checkdate,
+    fica: row.fica,
+    pers: row.pers,
+    defComp: row.defcomp,
+    cafeteria: row.cafeteria,
+    lifeInsurance: row.lifeinsurance,
+    standby: row.standby,
+    spa: row.spa,
+    cellStipend: row.cellstipend,
+    std: row.std,
+    ot: row.ot,
+    recruitingIncentive: row.recruitingincentive,
+    cashOut: row.cashout,
+    payout: row.payout,
+    salary: row.salary,
+  }))
 }

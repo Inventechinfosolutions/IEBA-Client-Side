@@ -93,6 +93,14 @@ export type PayrollDetailsSectionProps = {
   activeQueryParams: GetPayrollRowsParams | null
 }
 
+export type DepartmentUser = {
+  id: string
+  firstName: string
+  lastName: string
+  employeeId: string
+  name?: string
+}
+
 export type PayrollDataTableProps = {
   rows: readonly PayrollManagementRow[]
   isLoading: boolean

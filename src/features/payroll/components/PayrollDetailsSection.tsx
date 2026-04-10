@@ -1,7 +1,6 @@
 import type { ReactNode } from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Controller, useForm, useWatch } from "react-hook-form"
-import { useEffect } from "react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -13,7 +12,7 @@ import { cn } from "@/lib/utils"
 
 import { payrollDetailsFormSchema } from "../schemas"
 import { PAYROLL_FREQUENCY_OPTIONS } from "../enums/payrollFrequency"
-import type { PayrollDetailsFormValues, PayrollDetailsSectionProps, PayrollPeriodType } from "../types"
+import type { DepartmentUser, PayrollDetailsFormValues, PayrollDetailsSectionProps, PayrollPeriodType } from "../types"
 import { buildPayrollDetailsDefaultValues, mapPayrollDetailsFormToQueryParams } from "../utils/payrollForm"
 import { useGetDepartmentUsers } from "../queries/getDepartmentUsers"
 
@@ -83,21 +82,18 @@ export function PayrollDetailsSection({
 
   const periodType = useWatch({ control: form.control, name: "periodType" })
   const departmentId = useWatch({ control: form.control, name: "departmentId" })
+  const fiscalYearId = useWatch({ control: form.control, name: "fiscalYearId" })
 
-  const { data: departmentUsers = [], isLoading: isUsersLoading } = useGetDepartmentUsers(departmentId)
-
-  useEffect(() => {
-    form.setValue("employeeIdsSerialized", "")
-  }, [departmentId, form])
+  const { data: departmentUsers = [], isLoading: isUsersLoading } = useGetDepartmentUsers(departmentId, fiscalYearId)
 
   const periodValueOptions: readonly SingleSelectOption[] =
     periodType === "month" ? filterOptions.monthOptions : filterOptions.quarterOptions
 
   const fiscalYearOptions: SingleSelectOption[] = [...filterOptions.fiscalYears]
   const departmentOptions: SingleSelectOption[] = [...filterOptions.departments]
-  const employeeOptions: SingleSelectOption[] = departmentUsers.map((u: any) => ({
-    value: String(u.id),
-    label: u.name || `${u.firstName || ""} ${u.lastName || ""}`.trim() || String(u.id),
+  const employeeOptions: SingleSelectOption[] = (departmentUsers as DepartmentUser[]).map((u) => ({
+    value: String(u.employeeId || u.id),
+    label: u.name || `${u.firstName || ""} ${u.lastName || ""}`.trim() || String(u.employeeId || u.id),
   }))
 
   const handleGetSubmit = form.handleSubmit((values) => {
@@ -152,7 +148,10 @@ export function PayrollDetailsSection({
               render={({ field }) => (
                 <SingleSelectDropdown
                   value={field.value}
-                  onChange={field.onChange}
+                  onChange={(val) => {
+                    field.onChange(val)
+                    form.setValue("employeeIdsSerialized", "")
+                  }}
                   onBlur={field.onBlur}
                   options={fiscalYearOptions}
                   placeholder="Fiscal year"
@@ -241,7 +240,10 @@ export function PayrollDetailsSection({
               render={({ field }) => (
                 <SingleSelectDropdown
                   value={field.value}
-                  onChange={field.onChange}
+                  onChange={(val) => {
+                    field.onChange(val)
+                    form.setValue("employeeIdsSerialized", "")
+                  }}
                   onBlur={field.onBlur}
                   options={departmentOptions}
                   placeholder="Department"

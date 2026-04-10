@@ -2,11 +2,11 @@ import { useQuery } from "@tanstack/react-query"
 import { payrollKeys } from "../key"
 import { fetchDepartmentUsers } from "../api/payrollApi"
 
-export function useGetDepartmentUsers(departmentId: string) {
+export function useGetDepartmentUsers(departmentId: string, fiscalYearId: string) {
   return useQuery({
-    queryKey: payrollKeys.departmentUsers(departmentId),
+    queryKey: payrollKeys.departmentUsers(departmentId, fiscalYearId),
     queryFn: () => fetchDepartmentUsers(departmentId),
     enabled: !!departmentId && departmentId !== "all",
-    staleTime: 5 * 60 * 1000,
+    staleTime: 0, // Ensure we check again when filters change
   })
 }
