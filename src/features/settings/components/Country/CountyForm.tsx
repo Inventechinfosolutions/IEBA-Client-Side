@@ -1,18 +1,27 @@
 import { Controller, useFieldArray, useFormContext } from "react-hook-form"
 import { Clock, Plus } from "lucide-react"
+import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
+import { SettingsFormSaveSection } from "@/features/settings/enums/setting.enum"
 import type { SettingsFormValues } from "@/features/settings/types"
 import { CountyAddressRow } from "@/features/settings/components/Country/CountyAddressRow"
 import { TimeSelectionUI } from "@/features/settings/components/TimeSelectionUI/TimeSelectionUI"
 import defaultCountyAvatar from "@/assets/county-avatar.png"
 import { ImageCropUploadDialog } from "@/features/Profile/components/ImageCropUploadDialog"
 import type { CountyFormProps, RequiredLabelProps } from "./types"
+import { parseLocationId } from "@/features/settings/components/Country/locationUtils"
+import { useDeleteCountyLocation } from "@/features/settings/mutations/deleteCountyLocation"
 
-const labelClassName = "mb-1 block select-none text-[12px] font-normal text-[#2a2f3a]"
+const labelClassName =
+  "mb-1 block select-none text-[12px] font-normal text-[#2a2f3a] lg:min-h-[2.75rem]"
 const sectionHeadingClassName = "mb-2 text-[14px] font-black text-[var(--primary)]"
+/** Matches reference layout: name, wide welcome, time toggle, start, end, two toggles — one row; weekends under col 1. */
+const countyFieldsGridClassName =
+  "grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,2.1fr)_minmax(0,5.5rem)_minmax(0,6.25rem)_minmax(0,6.25rem)_minmax(0,1fr)_minmax(0,1.15fr)] lg:items-start lg:gap-x-4 lg:gap-y-4"
+const controlRowClassName = "flex h-[49px] items-center"
 const inputClassName =
   "h-[49px] rounded-[7px] border border-[#e4e7ef] bg-white px-3 text-[12px] text-[#1f2937] shadow-none placeholder:text-[12px] placeholder:font-normal placeholder:text-[#c2c7d3] focus-visible:border-[#6C5DD3] focus-visible:ring-0"
 const timeInputDisabledClassName =
@@ -29,27 +38,53 @@ function RequiredLabel({ children }: RequiredLabelProps) {
 }
 
 export function CountyForm({ isSaving }: CountyFormProps) {
-  const { control, register, watch, setValue } = useFormContext<SettingsFormValues>()
+  const { control, register, watch, setValue, getValues } = useFormContext<SettingsFormValues>()
   const logoDataUrl = watch("county.logoDataUrl")
   const isTimeRangeEnabled = watch("county.isTimeRangeEnabled")
   const endTimeValue = watch("county.endTime")
   const startTime2Value = watch("county.startTime2")
+
+  const deleteLocationMutation = useDeleteCountyLocation()
 
   const addresses = useFieldArray({
     control,
     name: "county.addresses",
   })
 
-  const handleAddAddressRow = () => {
+  const handleAppendAddressRow = () => {
     if (addresses.fields.length >= 4) return
-    addresses.append({ location: "", street: "", city: "", state: "", zip: "" })
+    addresses.append({
+      locationId: undefined,
+      location: "",
+      street: "",
+      city: "",
+      state: "",
+      zip: "",
+    })
+  }
+
+  const handleRemoveAddressRowByIndex = (index: number) => {
+    const id = parseLocationId(getValues(`county.addresses.${index}.locationId`))
+    if (id !== undefined) {
+      deleteLocationMutation.mutate(id, {
+        onSuccess: () => {
+          toast.success("Deleted successfully")
+          addresses.remove(index)
+        },
+        onError: (err) => {
+          toast.error(err instanceof Error ? err.message : "Delete failed")
+        },
+      })
+      return
+    }
+    addresses.remove(index)
   }
 
   return (
-    <div className="bg-transparent px-6 py-3">
-      <div className="grid grid-cols-[200px_1fr] items-start gap-1">
-        {/* Left: profile/logo */}
-        <div>
+    <div className="bg-transparent px-3 py-3 sm:px-6">
+      <div className="flex flex-col gap-6">
+        {/* Logo first; all fields and address below */}
+        <div className="w-full">
           <label className="mb-1 block select-none text-[12px] font-normal text-[#111827]">
             <span className="text-[#ef4444]">*</span>County Logo
           </label>
@@ -80,147 +115,145 @@ export function CountyForm({ isSaving }: CountyFormProps) {
           />
         </div>
 
-        {/* Right: all fields */}
-        <div className="space-y-3">
-          {/* Row 2: all fields/toggles in one line */}
-          <div className="grid grid-cols-[110px_180px_auto_auto_auto_auto_auto] items-start gap-3">
-        <div>
-          <label className={labelClassName}>
-            <span className="text-[12px] font-normal text-[#111827]">
-              <span className="text-[#ef4444]">*</span>
-              County Name
-            </span>
-          </label>
-          <Input {...register("county.countyName")} className={inputClassName} />
-        </div>
-        <div>
-          <label className={labelClassName}>Welcome Message</label>
-          <Input
-            {...register("county.welcomeMessage")}
-            className={inputClassName}
-            placeholder="Welcome message"
-          />
-        </div>
+        <div className="min-w-0 w-full space-y-4">
+          <div className={countyFieldsGridClassName}>
+            <div className="min-w-0 sm:col-span-1">
+              <label className={labelClassName}>
+                <span className="text-[12px] font-normal text-[#111827]">
+                  <span className="text-[#ef4444]">*</span>
+                  County Name
+                </span>
+              </label>
+              <Input {...register("county.countyName")} className={inputClassName} />
+            </div>
 
-        <div>
-          <label className={labelClassName}>
-            <RequiredLabel>Start Time</RequiredLabel>
-          </label>
-          {/* Keep startTime1 in the form model for validation/payload, but UI uses a toggle */}
-          <input type="hidden" {...register("county.startTime1")} />
-          <div className="flex justify-center pt-2">
-            <Controller
-              name="county.isTimeRangeEnabled"
-              control={control}
-              render={({ field }) => (
-                <Switch
-                  checked={field.value}
-                  onCheckedChange={(checked) => field.onChange(checked)}
-                  className="cursor-pointer data-checked:bg-[var(--primary)]"
+            <div className="min-w-0 sm:col-span-1 lg:col-span-1">
+              <label className={labelClassName}>Welcome Message</label>
+              <Input
+                {...register("county.welcomeMessage")}
+                className={inputClassName}
+                placeholder="Welcome message"
+              />
+            </div>
+
+            <div className="min-w-0">
+              <label className={labelClassName}>
+                <RequiredLabel>Start Time</RequiredLabel>
+              </label>
+              <input type="hidden" {...register("county.startTime1")} />
+              <div className={controlRowClassName}>
+                <Controller
+                  name="county.isTimeRangeEnabled"
+                  control={control}
+                  render={({ field }) => (
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={(checked) => field.onChange(checked)}
+                      className="cursor-pointer data-checked:bg-[var(--primary)]"
+                    />
+                  )}
                 />
-              )}
-            />
-          </div>
-        </div>
-        <div>
-          <label className={labelClassName}>
-            <RequiredLabel>Start Time</RequiredLabel>
-          </label>
-          <TimeSelectionUI
-            disabled={!isTimeRangeEnabled}
-            value={startTime2Value ?? ""}
-            onValueChange={(next) => setValue("county.startTime2", next, { shouldDirty: true })}
-            inputWidthClassName="w-[100px]"
-            dropdownWidthClassName="w-[155px]"
-          />
-        </div>
-        <div>
-          <label className={labelClassName}>
-            <RequiredLabel>End Time</RequiredLabel>
-          </label>
-          <div className="relative w-[100px] cursor-not-allowed">
-            <Input
-              type="text"
-              disabled
-              value={endTimeValue ?? "00:00"}
-              className={timeInputDisabledClassName}
-              readOnly
-            />
-            <Clock className="pointer-events-none absolute right-2 top-1/2 size-4 -translate-y-1/2 text-[#9ca3af]" />
-          </div>
-        </div>
+              </div>
+            </div>
 
-        <div className="col-span-2 flex items-start gap-4">
-          <div>
-            <label className={`${labelClassName} mb-4 text-center`}>
-              <RequiredLabel>Auto Approval</RequiredLabel>
-            </label>
-            <Controller
-              name="county.autoApproval"
-              control={control}
-              render={({ field }) => (
-                <div className="flex justify-center">
-                  <Switch
-                    checked={field.value}
-                    onCheckedChange={(checked) => field.onChange(checked)}
-                    className="cursor-pointer data-checked:bg-[var(--primary)]"
-                  />
-                </div>
-              )}
-            />
-          </div>
+            <div className="min-w-0">
+              <label className={labelClassName}>
+                <RequiredLabel>Start Time</RequiredLabel>
+              </label>
+              <TimeSelectionUI
+                disabled={!isTimeRangeEnabled}
+                value={startTime2Value ?? ""}
+                onValueChange={(next) => setValue("county.startTime2", next, { shouldDirty: true })}
+                inputWidthClassName="w-[100px]"
+                dropdownWidthClassName="w-[155px]"
+              />
+            </div>
 
-          <div>
-            <label className={`${labelClassName} mb-4 text-center`}>
-              <RequiredLabel>Supervisor Apportioning</RequiredLabel>
-            </label>
-            <Controller
-              name="county.supervisorApportioning"
-              control={control}
-              render={({ field }) => (
-                <div className="flex justify-center">
-                  <Switch
-                    checked={field.value}
-                    onCheckedChange={(checked) => field.onChange(checked)}
-                    className="cursor-pointer data-checked:bg-[var(--primary)]"
-                  />
-                </div>
-              )}
-            />
-          </div>
-        </div>
-          </div>
+            <div className="min-w-0">
+              <label className={labelClassName}>
+                <RequiredLabel>End Time</RequiredLabel>
+              </label>
+              <div className="relative w-[100px] cursor-not-allowed">
+                <Input
+                  type="text"
+                  disabled
+                  value={endTimeValue ?? "00:00"}
+                  className={timeInputDisabledClassName}
+                  readOnly
+                />
+                <Clock className="pointer-events-none absolute right-2 top-1/2 size-4 -translate-y-1/2 text-[#9ca3af]" />
+              </div>
+            </div>
 
-          {/* Row 3: Include Weekends */}
-          <div className="w-fit">
-            <div className="inline-flex flex-col items-center gap-4">
+            <div className="min-w-0">
+              <label className={labelClassName}>
+                <RequiredLabel>Auto Approval</RequiredLabel>
+              </label>
+              <div className={controlRowClassName}>
+                <Controller
+                  name="county.autoApproval"
+                  control={control}
+                  render={({ field }) => (
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={(checked) => field.onChange(checked)}
+                      className="cursor-pointer data-checked:bg-[var(--primary)]"
+                    />
+                  )}
+                />
+              </div>
+            </div>
+
+            <div className="min-w-0">
+              <label className={labelClassName}>
+                <RequiredLabel>Supervisor Apportioning</RequiredLabel>
+              </label>
+              <div className={controlRowClassName}>
+                <Controller
+                  name="county.supervisorApportioning"
+                  control={control}
+                  render={({ field }) => (
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={(checked) => field.onChange(checked)}
+                      className="cursor-pointer data-checked:bg-[var(--primary)]"
+                    />
+                  )}
+                />
+              </div>
+            </div>
+
+            {/* Row 2: under County Name only */}
+            <div className="min-w-0 lg:col-span-1">
               <label className={labelClassName}>
                 <RequiredLabel>Include Weekends</RequiredLabel>
               </label>
-              <Controller
-                name="county.includedWeekends"
-                control={control}
-                render={({ field }) => (
-                  <Switch
-                    checked={field.value}
-                    onCheckedChange={(checked) => field.onChange(checked)}
-                    className="cursor-pointer data-checked:bg-[var(--primary)]"
-                  />
-                )}
-              />
+              <div className={controlRowClassName}>
+                <Controller
+                  name="county.includedWeekends"
+                  control={control}
+                  render={({ field }) => (
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={(checked) => field.onChange(checked)}
+                      className="cursor-pointer data-checked:bg-[var(--primary)]"
+                    />
+                  )}
+                />
+              </div>
             </div>
           </div>
 
-          <div className="relative mt-9">
+          <div className="relative mt-6">
             <div className="mb-3">
-              <div className="flex items-center justify-between max-w-[calc(100%-160px)]">
+              <div className="flex items-center justify-between">
                 <div className={sectionHeadingClassName}>County Address</div>
                 {addresses.fields.length < 4 ? (
                   <Button
                     type="button"
                     variant="outline"
                     size="icon"
-                    onClick={handleAddAddressRow}
+                    onClick={handleAppendAddressRow}
                     className="size-8 cursor-pointer rounded-[4px] border-2 border-[var(--primary)] bg-white text-[var(--primary)] hover:bg-white hover:border-[var(--primary)] hover:text-[var(--primary)]"
                     aria-label="Add address row"
                   >
@@ -236,7 +269,8 @@ export function CountyForm({ isSaving }: CountyFormProps) {
                   key={field.id}
                   index={index}
                   canRemove={index > 0}
-                  onRemove={() => addresses.remove(index)}
+                  onRemove={() => handleRemoveAddressRowByIndex(index)}
+                  removeDisabled={deleteLocationMutation.isPending}
                 />
               ))}
             </div>
@@ -244,7 +278,7 @@ export function CountyForm({ isSaving }: CountyFormProps) {
             <div className="mt-8 flex justify-end">
               <Button
                 type="submit"
-                data-settings-section="county"
+                data-settings-section={SettingsFormSaveSection.County}
                 disabled={isSaving}
                 className="h-[44px] w-[88px] cursor-pointer rounded-[10px] bg-[var(--primary)] px-0 py-2 text-[14px] font-medium text-white hover:bg-[var(--primary)] disabled:cursor-not-allowed"
               >

@@ -1,6 +1,9 @@
 import { z } from "zod"
 
+import { SettingsFormSaveSection, isSettingsFormSaveSection } from "@/features/settings/enums/setting.enum"
 import { settingsFormSchema } from "@/features/settings/schemas"
+
+export { SettingsFormSaveSection, isSettingsFormSaveSection }
 import type { CountySettingsModel } from "@/features/settings/components/Country/types"
 import type { LoginSettingsModel } from "@/features/settings/components/Login/types"
 import type { GeneralSettingsModel } from "@/features/settings/components/General/types"
@@ -43,19 +46,23 @@ export type SettingsResponse = SettingsModel
 
 export type UpdateSettingsInput = {
   values: SettingsFormValues
+  submitterSection?: SettingsFormSaveSection
 }
 
-export type SettingsFormSaveSection =
-  | "county"
-  | "reports"
-  | "login"
-  | "general"
-  | "payroll"
-  | "fiscalYear"
+export type SettingsFormDerivedFiscalYear = {
+  fiscalYearStartMonth: string
+  fiscalYearEndMonth: string
+  year: string
+  appliedYearRanges: string[]
+  holidays: SettingsFormValues["fiscalYear"]["holidays"]
+}
 
 export type SettingsFormInnerProps = {
   settings: SettingsModel
   isSaving: boolean
-  onSave: (values: SettingsFormValues, meta?: { submitterSection?: SettingsFormSaveSection }) => void
+  onSubmitSettings: (
+    values: SettingsFormValues,
+    meta?: { submitterSection?: SettingsFormSaveSection },
+  ) => void
 }
 

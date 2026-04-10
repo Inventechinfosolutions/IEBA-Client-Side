@@ -3,6 +3,7 @@ import { ChevronDown, ChevronUp } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { SettingsFormSaveSection } from "@/features/settings/enums/setting.enum"
 import type { SettingsFormValues } from "@/features/settings/types"
 
 const labelClassName = "text-[12px] font-normal text-[#2a2f3a]"
@@ -79,7 +80,7 @@ export function GeneralForm() {
         <div className="flex justify-end pt-2">
           <Button
             type="submit"
-            data-settings-section="general"
+            data-settings-section={SettingsFormSaveSection.General}
             className="h-[44px] w-[88px] cursor-pointer rounded-[10px] bg-[var(--primary)] px-0 py-2 text-[14px] font-medium text-white hover:bg-[var(--primary)]"
           >
             Save

@@ -29,6 +29,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
+import { SettingsFormSaveSection } from "@/features/settings/enums/setting.enum"
 import type { SettingsFormValues } from "@/features/settings/types"
 
 import {
@@ -306,7 +307,7 @@ export function PayrollForm() {
       <div className="mt-6 flex justify-end">
         <Button
           type="submit"
-          data-settings-section="payroll"
+          data-settings-section={SettingsFormSaveSection.Payroll}
           className="h-[44px] min-w-[120px] rounded-[8px] bg-[var(--primary)] px-8 text-[12px] font-medium text-white hover:bg-[var(--primary)]  cursor-pointer disabled:cursor-not-allowed disabled:opacity-70"
         >
           Save

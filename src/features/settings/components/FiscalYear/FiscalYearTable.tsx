@@ -1,137 +1,103 @@
 import type { CSSProperties } from "react"
-import type { Control, FieldArrayWithId } from "react-hook-form"
-import { Controller, useWatch } from "react-hook-form"
 import { Trash2 } from "lucide-react"
 
-import { Input } from "@/components/ui/input"
 import { TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import type { SettingsFormValues } from "@/features/settings/types"
+import { cn } from "@/lib/utils"
 import tableCheckIcon from "@/assets/icons/table-check.png"
 import tableCloseIcon from "@/assets/icons/table-close.png"
 import tableEditIcon from "@/assets/icons/table-edit.png"
 
-import {
-  HOLIDAY_TABLE_SCROLLBAR_PAD_PX,
-  holidayTableBodyScrollMaxHeight,
-} from "./types"
+import { isoYmdToDisplayDdMmYyyy, isHolidayIsoDateTodayOrFuture } from "./fiscalYearDateUtils"
+import type { FiscalYearTableProps } from "./types"
+import { holidayTableBodyScrollMaxHeight } from "./types"
 
-const holidayTableHeadClassName = "h-[37.4px]"
-const holidayTableBodyRowClassName = "h-[39.6px]"
+const holidayTableHeadClassName = "h-10"
+const holidayTableBodyRowClassName = "min-h-[40px]"
+/** Must match header row height for `maxHeight` on the scroll container. */
+const HOLIDAY_TABLE_HEADER_ROW_PX = 40
 
-const tableRowInputClassName =
-  "h-[12px] w-full rounded-none border-0 bg-transparent px-3 text-center !text-[12px] text-[#111827] shadow-none placeholder:text-[12px] placeholder:text-[#9ca3af] focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:outline-none"
+const cellBorder = "border-r border-[#eceff5] last:border-r-0"
+const headCellBorder = "border-r border-white/25 last:border-r-0"
 
-const tableRowDateInputClassName =
-  tableRowInputClassName +
-  " px-0 [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none [&::-webkit-calendar-picker-indicator]:w-0 [&::-webkit-calendar-picker-indicator]:p-0 [&::-webkit-datetime-edit]:w-full [&::-webkit-datetime-edit]:text-[12px] [&::-webkit-datetime-edit]:text-center [&::-webkit-datetime-edit-fields-wrapper]:w-full [&::-webkit-datetime-edit-fields-wrapper]:justify-center [&::-webkit-date-and-time-value]:text-[12px] [&::-webkit-date-and-time-value]:text-center [&::-moz-calendar-picker-indicator]:hidden [color-scheme:light]"
-
-function parseIsoDate(value: string): Date | null {
-  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value)
-  if (!m) return null
-  const year = Number(m[1])
-  const monthIndex = Number(m[2]) - 1
-  const day = Number(m[3])
-  const date = new Date(year, monthIndex, day)
-  return Number.isNaN(date.getTime()) ? null : date
-}
-
-function isHolidayDateInFuture(isoYmd: string): boolean {
-  const d = parseIsoDate(isoYmd.trim())
-  if (!d) return false
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  const holidayDay = new Date(d.getFullYear(), d.getMonth(), d.getDate())
-  return holidayDay.getTime() > today.getTime()
-}
-
-export type FiscalYearTableProps = {
-  control: Control<SettingsFormValues>
-  fields: FieldArrayWithId<SettingsFormValues, "fiscalYear.holidays", "id">[]
-  onEditRow: (index: number) => void
-  onRemoveRow: (index: number) => void
-}
-
-function HolidayTableColGroup({ withScrollbarPad }: { withScrollbarPad: boolean }) {
+function HolidayTableColGroup() {
   return (
     <colgroup>
-      <col style={{ width: 230 }} />
-      <col />
-      <col style={{ width: 100 }} />
-      <col style={{ width: 120 }} />
-      {withScrollbarPad ? <col style={{ width: HOLIDAY_TABLE_SCROLLBAR_PAD_PX }} /> : null}
+      <col style={{ width: "22%" }} />
+      <col style={{ width: "46%" }} />
+      <col style={{ width: "16%" }} />
+      <col style={{ width: "16%" }} />
     </colgroup>
   )
 }
 
-export function FiscalYearTable({ control, fields, onEditRow, onRemoveRow }: FiscalYearTableProps) {
-  const holidayRows = useWatch({ control, name: "fiscalYear.holidays" })
-
-  const bodyScrollStyle: CSSProperties = {
-    maxHeight: holidayTableBodyScrollMaxHeight,
-    ...(fields.length === 0 ? { minHeight: holidayTableBodyScrollMaxHeight } : {}),
+export function FiscalYearTable({
+  holidays,
+  isLoading,
+  onEditRow,
+  onRemoveRow,
+}: FiscalYearTableProps) {
+  const scrollWrapStyle: CSSProperties = {
+    maxHeight: `calc(${HOLIDAY_TABLE_HEADER_ROW_PX}px + ${holidayTableBodyScrollMaxHeight})`,
+    scrollbarGutter: "stable",
   }
 
   const bodyRows = (
     <>
-      {fields.length === 0 ? (
+      {isLoading ? (
         <TableRow className={`${holidayTableBodyRowClassName} border-b border-[#e9ecf3] hover:bg-white`}>
-          <TableCell colSpan={4} className="text-center text-[12px] text-[#6b7280]">
+          <TableCell colSpan={4} className="border-0 px-3 py-3 text-center text-[12px] text-[#6b7280]">
+            Loading holidays…
+          </TableCell>
+        </TableRow>
+      ) : holidays.length === 0 ? (
+        <TableRow className={`${holidayTableBodyRowClassName} border-b border-[#e9ecf3] hover:bg-white`}>
+          <TableCell colSpan={4} className="border-0 px-3 py-3 text-center text-[12px] text-[#6b7280]">
             No holidays added
           </TableCell>
         </TableRow>
       ) : (
-        fields.map((field, index) => {
-          const rowDate = String(holidayRows?.[index]?.date ?? "")
-          const showHolidayActions = isHolidayDateInFuture(rowDate)
+        holidays.map((row) => {
+          const showHolidayActions = isHolidayIsoDateTodayOrFuture(row.dateIso)
           return (
             <TableRow
-              key={field.id}
+              key={row.id}
               className={`${holidayTableBodyRowClassName} border-b border-[#e9ecf3] hover:bg-white`}
             >
-              <TableCell className="border-r border-[#eceff5] py-1 text-center align-middle">
-                <Controller
-                  name={`fiscalYear.holidays.${index}.date`}
-                  control={control}
-                  render={({ field: f }) => <Input {...f} type="date" className={tableRowDateInputClassName} />}
-                />
+              <TableCell
+                className={cn(
+                  cellBorder,
+                  "px-3 py-2 text-center align-middle text-[12px] text-[#111827]",
+                )}
+              >
+                {isoYmdToDisplayDdMmYyyy(row.dateIso)}
               </TableCell>
-              <TableCell className="border-r border-[#eceff5] py-1 text-center align-middle">
-                <Controller
-                  name={`fiscalYear.holidays.${index}.holiday`}
-                  control={control}
-                  render={({ field: f }) => (
-                    <Input {...f} placeholder="Holiday name" className={tableRowInputClassName} />
-                  )}
-                />
+              <TableCell
+                className={cn(
+                  cellBorder,
+                  "min-w-0 px-3 py-2 text-center align-middle text-[12px] text-[#111827] break-words whitespace-normal",
+                )}
+              >
+                {row.description}
               </TableCell>
-              <TableCell className="border-r border-[#eceff5] py-1 text-center align-middle">
-                <Controller
-                  name={`fiscalYear.holidays.${index}.optional`}
-                  control={control}
-                  render={({ field: f }) => {
-                    const isOptional = Boolean(f.value)
-                    return (
-                      <span
-                        className="inline-flex size-7 items-center justify-center"
-                        aria-label={isOptional ? "Optional" : "Not optional"}
-                      >
-                        <img
-                          src={isOptional ? tableCheckIcon : tableCloseIcon}
-                          alt=""
-                          className="size-3.5 object-contain"
-                          aria-hidden
-                        />
-                      </span>
-                    )
-                  }}
-                />
+              <TableCell className={cn(cellBorder, "px-2 py-2 text-center align-middle")}>
+                <span
+                  className="inline-flex size-7 items-center justify-center"
+                  aria-label={row.optional ? "Optional" : "Not optional"}
+                >
+                  <img
+                    src={row.optional ? tableCheckIcon : tableCloseIcon}
+                    alt=""
+                    className="size-3.5 object-contain"
+                    aria-hidden
+                  />
+                </span>
               </TableCell>
-              <TableCell className="py-1 text-center align-middle">
+              <TableCell className="px-2 py-2 text-center align-middle">
                 {showHolidayActions ? (
                   <div className="flex items-center justify-center gap-0">
                     <button
                       type="button"
-                      onClick={() => onEditRow(index)}
+                      onClick={() => onEditRow(row)}
                       className="inline-flex h-7 cursor-pointer items-center justify-center rounded-[6px] p-0"
                       aria-label="Edit holiday row"
                     >
@@ -139,7 +105,7 @@ export function FiscalYearTable({ control, fields, onEditRow, onRemoveRow }: Fis
                     </button>
                     <button
                       type="button"
-                      onClick={() => onRemoveRow(index)}
+                      onClick={() => onRemoveRow(row.id)}
                       className="inline-flex h-7 cursor-pointer items-center justify-center rounded-[6px] p-0 text-red-600"
                       aria-label="Delete holiday row"
                     >
@@ -157,49 +123,50 @@ export function FiscalYearTable({ control, fields, onEditRow, onRemoveRow }: Fis
 
   return (
     <div className="mt-3 overflow-hidden rounded-[6px] border border-[#e7e9f2] bg-white">
-      <div className="overflow-x-auto">
-        <table className="w-full border-collapse text-[12px] table-fixed">
-          <HolidayTableColGroup withScrollbarPad />
-          <TableHeader className="bg-[var(--primary)] [&_tr]:border-b">
+      <div className="overflow-x-auto overflow-y-auto" style={scrollWrapStyle}>
+        <table className="w-full min-w-[600px] border-collapse text-[12px] table-fixed">
+          <HolidayTableColGroup />
+          <TableHeader className="sticky top-0 z-10 bg-[var(--primary)] [&_tr]:border-b">
             <TableRow className="border-0 hover:bg-[var(--primary)]">
               <TableHead
-                className={`${holidayTableHeadClassName} rounded-tl-[6px] border-r border-white/25 text-center text-[12px] font-medium text-white`}
+                className={cn(
+                  holidayTableHeadClassName,
+                  headCellBorder,
+                  "rounded-tl-[6px] px-3 py-2 text-center text-[12px] font-medium text-white",
+                )}
               >
                 Date
               </TableHead>
               <TableHead
-                className={`${holidayTableHeadClassName} border-r border-white/25 text-center text-[12px] font-medium text-white`}
+                className={cn(
+                  holidayTableHeadClassName,
+                  headCellBorder,
+                  "px-3 py-2 text-center text-[12px] font-medium text-white",
+                )}
               >
                 Holiday
               </TableHead>
               <TableHead
-                className={`${holidayTableHeadClassName} border-r border-white/25 text-center text-[12px] font-medium text-white`}
+                className={cn(
+                  holidayTableHeadClassName,
+                  headCellBorder,
+                  "px-3 py-2 text-center text-[12px] font-medium text-white",
+                )}
               >
                 Optional
               </TableHead>
               <TableHead
-                className={`${holidayTableHeadClassName} border-r border-white/25 text-center text-[12px] font-medium text-white`}
+                className={cn(
+                  holidayTableHeadClassName,
+                  "rounded-tr-[6px] px-3 py-2 text-center text-[12px] font-medium text-white",
+                )}
               >
                 Action
               </TableHead>
-              <TableHead
-                className={`${holidayTableHeadClassName} border-0 p-0 !bg-[var(--primary)] rounded-tr-[6px]`}
-                style={{ width: HOLIDAY_TABLE_SCROLLBAR_PAD_PX, minWidth: HOLIDAY_TABLE_SCROLLBAR_PAD_PX, maxWidth: HOLIDAY_TABLE_SCROLLBAR_PAD_PX }}
-                aria-hidden
-              />
             </TableRow>
           </TableHeader>
+          <TableBody className="bg-white">{bodyRows}</TableBody>
         </table>
-
-        <div
-          className="min-h-0 overflow-y-scroll border-t border-[#e7e9f2]"
-          style={bodyScrollStyle}
-        >
-          <table className="w-full border-collapse text-[12px] table-fixed">
-            <HolidayTableColGroup withScrollbarPad={false} />
-            <TableBody className="bg-white">{bodyRows}</TableBody>
-          </table>
-        </div>
       </div>
     </div>
   )
