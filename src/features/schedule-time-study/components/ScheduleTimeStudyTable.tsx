@@ -3,6 +3,7 @@ import statusCrossImg from "@/assets/status-cross.png"
 import editIconImg from "@/assets/edit-icon.png"
 import { Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { usePermissions } from "@/hooks/usePermissions"
 import {
   Pagination,
   PaginationContent,
@@ -46,6 +47,9 @@ export function ScheduledTimeStudyTable({
   periodRows,
 }: ScheduledTimeStudyTableProps) {
   const groupsQuery = useGetRmtsGroups({ departmentId, fiscalyear: selectedStudyYear })
+  const { canAdd, canUpdate } = usePermissions()
+  const canAddSchedule = canAdd("scheduletimestudy")
+  const canUpdateSchedule = canUpdate("scheduletimestudy")
   const scheduledQuery = useGetRmtsPpGroupListEnriched({
     departmentId,
     fiscalyear: selectedStudyYear,
@@ -85,17 +89,19 @@ export function ScheduledTimeStudyTable({
           </SelectContent>
         </Select>
 
-        <Button
-          type="button"
-          className="h-10 w-[150px] rounded-[12px] bg-[#6C5DD3] px-[15px] text-[14px] font-normal text-white hover:bg-[#5D4FC4]"
-          onClick={() => {
-            setEditingScheduledRow(null)
-            setFormMountKey((k) => k + 1)
-            setCreateScheduledOpen(true)
-          }}
-        >
-          Add New Scheduling
-        </Button>
+        {canAddSchedule && (
+          <Button
+            type="button"
+            className="h-10 w-[150px] rounded-[12px] bg-[#6C5DD3] px-[15px] text-[14px] font-normal text-white hover:bg-[#5D4FC4]"
+            onClick={() => {
+              setEditingScheduledRow(null)
+              setFormMountKey((k) => k + 1)
+              setCreateScheduledOpen(true)
+            }}
+          >
+            Add New Scheduling
+          </Button>
+        )}
       </div>
 
       <div className="overflow-hidden rounded-[10px] border border-[#E5E7EB]">
@@ -167,7 +173,7 @@ export function ScheduledTimeStudyTable({
                     </TableCell>
                     <TableCell className="px-3 py-2">
                       <div className="flex items-center justify-center gap-2">
-                        {row.statusRaw === SchedulePayPeriodGroupStatus.DRAFT ? (
+                        {row.statusRaw === SchedulePayPeriodGroupStatus.DRAFT && canUpdateSchedule ? (
                           <button
                             type="button"
                             onClick={() => {

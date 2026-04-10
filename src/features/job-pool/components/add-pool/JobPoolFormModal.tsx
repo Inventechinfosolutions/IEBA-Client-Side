@@ -38,9 +38,10 @@ export function JobPoolFormModal({
   const departmentDropdownRef = useRef<HTMLDivElement | null>(null)
 
   const {
-    data: activeDepartments = [],
+    data: activeDepartmentsData,
     isLoading: isDepartmentsLoading,
-  } = useGetDepartments("active", { enabled: open && mode === "add" })
+  } = useGetDepartments({ status: "active", page: 1, limit: 100 }, { enabled: open && mode === "add" })
+  const activeDepartments = activeDepartmentsData?.items ?? []
 
   const handleClose = () => {
     form.reset()

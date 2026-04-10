@@ -15,6 +15,7 @@ import {
   getStoredUser,
   setStoredUser,
 } from "@/lib/auth-storage"
+import { clearStoredMimicSession } from "@/features/user/user-mimic/storage"
 import { login as loginRequest } from "@/features/auth/api/login"
 import { logout as logoutRequest } from "@/features/auth/api/logout"
 import type { AuthContextValue, User } from "./types"
@@ -101,6 +102,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     queryClient.clear()
     clearToken()
     clearStoredUser()
+    clearStoredMimicSession()
   }, [queryClient])
 
   const clearError = useCallback(() => setError(null), [])

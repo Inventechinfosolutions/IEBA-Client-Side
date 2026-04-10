@@ -6,7 +6,11 @@ export { getProfileDetail, saveProfileDetail } from "./api"
 export { RELATIONSHIP_OPTIONS, UserRelationship } from "./enums/userrelationship.enum"
 
 export { profileKeys } from "./keys"
-export { profileDetailDefaultValues, profileDetailFormSchema } from "./schemas"
+export {
+  profileDetailDefaultValues,
+  profileDetailFormSchema,
+  profileDetailMessages,
+} from "./schemas"
 
 export type {
   EmergencyContactValues,

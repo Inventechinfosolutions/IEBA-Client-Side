@@ -25,6 +25,7 @@ import type {
   JobPoolTableProps,
   JobPoolTableSortState,
 } from "../types"
+import { usePermissions } from "@/hooks/usePermissions"
 
 const SKELETON_ROWS = 8
 
@@ -53,6 +54,8 @@ export function JobPoolTable({
   isLoading,
   onEditRow,
 }: JobPoolTableProps) {
+  const { canUpdate } = usePermissions()
+  const canUpdateJobPool = canUpdate("jobpool")
   const [sortState, setSortState] = useState<JobPoolTableSortState>({
     key: "name",
     direction: "none",
@@ -359,18 +362,20 @@ export function JobPoolTable({
 
                     {/* Action */}
                     <TableCell className="align-middle px-4 py-2.5 text-center whitespace-normal">
-                      <button
-                        type="button"
-                        onClick={() => onEditRow(row)}
-                        className="inline-flex cursor-pointer items-center justify-center opacity-80 drop-shadow-[0_1px_0_rgba(108,93,211,0.35)] transition-opacity hover:opacity-100 p-1"
-                      >
-                        <img
-                          src={tableEditIcon}
-                          alt="Edit"
-                          aria-hidden="true"
-                          className="size-[16px] object-contain"
-                        />
-                      </button>
+                      {canUpdateJobPool && (
+                        <button
+                          type="button"
+                          onClick={() => onEditRow(row)}
+                          className="inline-flex cursor-pointer items-center justify-center opacity-80 drop-shadow-[0_1px_0_rgba(108,93,211,0.35)] transition-opacity hover:opacity-100 p-1"
+                        >
+                          <img
+                            src={tableEditIcon}
+                            alt="Edit"
+                            aria-hidden="true"
+                            className="size-[16px] object-contain"
+                          />
+                        </button>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}

@@ -80,6 +80,7 @@ import {
   useGetCountyActivityForEdit,
   useGetCountyActivityMasterCodes,
 } from "../queries/getCountyActivityCodes"
+import { usePermissions } from "@/hooks/usePermissions"
 
 function toastCountyActivityCodeApiError(err: unknown, fallback: string): void {
   const msg = err instanceof Error ? err.message.trim() : ""
@@ -162,6 +163,9 @@ export function CountyActivityCodeTable({
   onPageSizeChange,
 }: CountyActivityCodeTableProps) {
   const queryClient = useQueryClient()
+  const { canAdd, canUpdate } = usePermissions()
+  const canAddCountyActivity = canAdd("countyactivity")
+  const canUpdateCountyActivity = canUpdate("countyactivity")
 
   const searchDebounceTimerRef = useRef<number | null>(null)
 
@@ -665,24 +669,26 @@ export function CountyActivityCodeTable({
             />
             <span className="text-[14px] font-normal">Inactive</span>
           </button>
-          <Button
-            type="button"
-            onClick={() => {
-              setAddTab(CountyActivityGridRowType.PRIMARY)
-              setCurrentPrimaryId(null)
-              setCurrentPrimaryDefaults(null)
-              addForm.reset(
-                { ...countyActivityAddDefaultValues },
-                { keepDirty: false, keepTouched: false, keepErrors: false },
-              )
-              setAddFormMountKey((k) => k + 1)
-              setAddOpen(true)
-            }}
-            className="h-12 rounded-[10px] bg-[#6C5DD3] px-6 text-[14px] font-normal text-white hover:bg-[#5B4DC5]"
-          >
-            <PlusIcon className="mr-2 size-4" />
-            Add County Activity
-          </Button>
+          {canAddCountyActivity && (
+            <Button
+              type="button"
+              onClick={() => {
+                setAddTab(CountyActivityGridRowType.PRIMARY)
+                setCurrentPrimaryId(null)
+                setCurrentPrimaryDefaults(null)
+                addForm.reset(
+                  { ...countyActivityAddDefaultValues },
+                  { keepDirty: false, keepTouched: false, keepErrors: false },
+                )
+                setAddFormMountKey((k) => k + 1)
+                setAddOpen(true)
+              }}
+              className="h-12 rounded-[10px] bg-[#6C5DD3] px-6 text-[14px] font-normal text-white hover:bg-[#5B4DC5]"
+            >
+              <PlusIcon className="mr-2 size-4" />
+              Add County Activity
+            </Button>
+          )}
         </div>
       </div>
 
@@ -977,23 +983,25 @@ export function CountyActivityCodeTable({
                     )}
                   </TableCell>
                   <TableCell className="px-[14px] py-[5px] align-top text-center">
-                    <Button
-                      type="button"
-                      size="icon"
-                      variant="ghost"
-                      className="text-[#6C5DD3] hover:bg-[#6C5DD3]/10"
-                      onClick={() => {
-                        setRowToEdit(row)
-                        editForm.reset({ ...countyActivityAddDefaultValues, copyCode: false })
-                        setEditOpen(true)
-                      }}
-                    >
-                      <img
-                        src={editIconImg}
-                        alt="Edit"
-                        className="h-4 w-4 object-contain"
-                      />
-                    </Button>
+                    {canUpdateCountyActivity && (
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        className="text-[#6C5DD3] hover:bg-[#6C5DD3]/10"
+                        onClick={() => {
+                          setRowToEdit(row)
+                          editForm.reset({ ...countyActivityAddDefaultValues, copyCode: false })
+                          setEditOpen(true)
+                        }}
+                      >
+                        <img
+                          src={editIconImg}
+                          alt="Edit"
+                          className="h-4 w-4 object-contain"
+                        />
+                      </Button>
+                    )}
                   </TableCell>
                   </TableRow>
                 )
@@ -1093,23 +1101,25 @@ export function CountyActivityCodeTable({
                           )}
                         </TableCell>
                         <TableCell className="px-[14px] py-[5px] align-top text-center">
-                          <Button
-                            type="button"
-                            size="icon"
-                            variant="ghost"
-                            className="text-[#6C5DD3] hover:bg-[#6C5DD3]/10"
-                            onClick={() => {
-                              setRowToEdit(child)
-                              editForm.reset({ ...countyActivityAddDefaultValues, copyCode: false })
-                              setEditOpen(true)
-                            }}
-                          >
-                            <img
-                              src={editIconImg}
-                              alt="Edit"
-                              className="h-4 w-4 object-contain"
-                            />
-                          </Button>
+                          {canUpdateCountyActivity && (
+                            <Button
+                              type="button"
+                              size="icon"
+                              variant="ghost"
+                              className="text-[#6C5DD3] hover:bg-[#6C5DD3]/10"
+                              onClick={() => {
+                                setRowToEdit(child)
+                                editForm.reset({ ...countyActivityAddDefaultValues, copyCode: false })
+                                setEditOpen(true)
+                              }}
+                            >
+                              <img
+                                src={editIconImg}
+                                alt="Edit"
+                                className="h-4 w-4 object-contain"
+                              />
+                            </Button>
+                          )}
                         </TableCell>
                       </TableRow>
                     ))

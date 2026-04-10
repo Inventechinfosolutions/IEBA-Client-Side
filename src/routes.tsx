@@ -2,6 +2,7 @@ import type { QueryClient } from "@tanstack/react-query"
 import { createBrowserRouter, Navigate } from "react-router-dom"
 import { GuestOnlyRoute } from "@/components/GuestOnlyRoute"
 import { ProtectedRoute } from "@/components/ProtectedRoute"
+import { PermissionRoute } from "@/components/PermissionRoute"
 import { DashboardLayout } from "@/layouts/DashboardLayout"
 import { LoginPage, ForgotPassword, OtpAuthentication } from "@/features/auth"
 import { DashboardPage } from "@/features/dashboard/pages/DashboardPage"
@@ -16,6 +17,7 @@ import { DepartmentRolePage } from "@/features/DepartmentRole/pages/DepartmentRo
 import { CountyActivityCodePage } from "@/features/CountyActivityCode/pages/CountyActivityCodePage"
 import { SettingsPage } from "@/features/settings"
 import { ScheduleTimeStudyPage } from "@/features/schedule-time-study"
+import { PersonalTimeStudyPage } from "@/features/PersonalTimeStudy/pages/PersonalTimeStudyPage"
 import { ProfilePage } from "@/features/Profile"
 import { CostPoolPage } from "@/features/cost-pool"
 import { JobClassificationPage } from "@/features/job-classification"
@@ -69,7 +71,7 @@ export function createAppRouter(queryClient: QueryClient) {
         { index: true, element: <DashboardPage /> },
         {
           path: "master-code",
-          element: <MasterCodePage />,
+          element: <PermissionRoute permission="superadmin"><MasterCodePage /></PermissionRoute>,
           loader: async () => {
             await queryClient.invalidateQueries({ queryKey: masterCodeKeys.lists() })
             await queryClient.invalidateQueries({ queryKey: masterCodeKeys.details() })
@@ -80,7 +82,7 @@ export function createAppRouter(queryClient: QueryClient) {
         },
         {
           path: "program",
-          element: <ProgramPage />,
+          element: <PermissionRoute permission={["budgetprogram", "timestudyprogram", "timestudyactivity"]}><ProgramPage /></PermissionRoute>,
           loader: async () => {
             await queryClient.invalidateQueries({ queryKey: programKeys.lists() })
             await queryClient.invalidateQueries({ queryKey: programKeys.details() })
@@ -90,7 +92,7 @@ export function createAppRouter(queryClient: QueryClient) {
         },
         {
           path: "to-do",
-          element: <TodoPage />,
+          element: <PermissionRoute permission="todo"><TodoPage /></PermissionRoute>,
           loader: async () => {
             await queryClient.invalidateQueries({ queryKey: todoKeys.lists() })
             await queryClient.invalidateQueries({ queryKey: todoKeys.details() })
@@ -99,7 +101,7 @@ export function createAppRouter(queryClient: QueryClient) {
         },
         {
           path: "user",
-          element: <UserModulePage />,
+          element: <PermissionRoute permission="user"><UserModulePage /></PermissionRoute>,
           loader: async () => {
             await queryClient.invalidateQueries({ queryKey: userModuleKeys.lists() })
             await queryClient.invalidateQueries({ queryKey: userModuleKeys.details() })
@@ -108,27 +110,49 @@ export function createAppRouter(queryClient: QueryClient) {
         },
         {
           path: "leave-approval",
-          element: <LeaveApprovalPage />,
+          element: <PermissionRoute permission="userleave"><LeaveApprovalPage /></PermissionRoute>,
           loader: async () => {
             await queryClient.invalidateQueries({ queryKey: leaveApprovalKeys.lists() })
             return null
           },
         },
-        { path: "users", element: <UsersPage /> },
-        { path: "users/:id", element: <UserPage /> },
-        { path: "department-role", element: <DepartmentRolePage /> },
+        {
+          path: "users",
+          element: <PermissionRoute permission="superadmin"><UsersPage /></PermissionRoute>,
+        },
+        {
+          path: "users/:id",
+          element: <PermissionRoute permission="superadmin"><UserPage /></PermissionRoute>,
+        },
+        {
+          path: "department-role",
+          element: <PermissionRoute permission="superadmin"><DepartmentRolePage /></PermissionRoute>,
+        },
         {
           path: "county-activity-code",
-          element: <CountyActivityCodePage />,
+          element: <PermissionRoute permission="countyactivity"><CountyActivityCodePage /></PermissionRoute>,
         },
         { path: "settings", element: <SettingsPage /> },
         {
           path: "schedule-time-study",
-          element: <ScheduleTimeStudyPage />,
+          element: <PermissionRoute permission="scheduletimestudy"><ScheduleTimeStudyPage /></PermissionRoute>,
         },
-        { path: "costpool", element: <CostPoolPage /> },
-        { path: "fte-allocation", element: <FteAllocationPage /> },
-        { path: "department", element: <DepartmentPage /> },
+        {
+          path: "personal-time-study",
+          element: <PermissionRoute permission="timestudypersonal"><PersonalTimeStudyPage /></PermissionRoute>,
+        },
+        {
+          path: "costpool",
+          element: <PermissionRoute permission="costpool"><CostPoolPage /></PermissionRoute>,
+        },
+        {
+          path: "fte-allocation",
+          element: <PermissionRoute permission="costallocation"><FteAllocationPage /></PermissionRoute>,
+        },
+        {
+          path: "department",
+          element: <PermissionRoute permission="department"><DepartmentPage /></PermissionRoute>,
+        },
         {
           path: "profile",
           element: <ProfilePage />,
@@ -137,13 +161,20 @@ export function createAppRouter(queryClient: QueryClient) {
             return null
           },
         },
-        { path: "job-classification", element: <JobClassificationPage /> },
-        { path: "job-pool", element: <JobPoolPage /> },
+        {
+          path: "job-classification",
+          element: <PermissionRoute permission="jobclassification"><JobClassificationPage /></PermissionRoute>,
+        },
+        {
+          path: "job-pool",
+          element: <PermissionRoute permission="jobpool"><JobPoolPage /></PermissionRoute>,
+        },
+        { path: "reports", element: <PermissionRoute permission="report"><ReportsPage /></PermissionRoute> },
         {
           path: "payroll",
-          element: <PayrollPage />,
+          element: <PermissionRoute permission="payroll"><PayrollPage /></PermissionRoute>,
           loader: async () => {
-            await queryClient.invalidateQueries({ queryKey: payrollKeys.lists() })
+            await queryClient.invalidateQueries({ queryKey: payrollKeys.all })
             return null
           },
         },

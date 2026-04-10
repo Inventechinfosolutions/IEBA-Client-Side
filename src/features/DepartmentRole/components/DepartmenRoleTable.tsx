@@ -45,6 +45,7 @@ import type { DepartmenRoleTableProps } from "../types"
 import { cn } from "@/lib/utils"
 import statusCheckImg from "@/assets/status-check.png"
 import statusCrossImg from "@/assets/status-cross.png"
+import { usePermissions } from "@/hooks/usePermissions"
 
 const PAGE_SIZES = [5, 10, 25, 50] as const
 
@@ -59,6 +60,9 @@ export function DepartmenRoleTable({
   onOptionAction,
   isLoading = false,
 }: DepartmenRoleTableProps) {
+  const { canAdd, canUpdate } = usePermissions()
+  const canAddRole = canAdd("role")
+  const canUpdateRole = canUpdate("role")
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
 
   const toggleExpanded = (id: string) => {
@@ -207,13 +211,15 @@ export function DepartmenRoleTable({
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="min-w-[120px]">
-                            <DropdownMenuItem
-                              onClick={() => onOptionAction?.(row.id, "add")}
-                              className="cursor-pointer text-black focus:text-black"
-                            >
-                              <PlusIcon className="mr-2 size-4 text-[rgb(108,93,211)]" />
-                              Add
-                            </DropdownMenuItem>
+                            {canAddRole && (
+                              <DropdownMenuItem
+                                onClick={() => onOptionAction?.(row.id, "add")}
+                                className="cursor-pointer text-black focus:text-black"
+                              >
+                                <PlusIcon className="mr-2 size-4 text-[rgb(108,93,211)]" />
+                                Add
+                              </DropdownMenuItem>
+                            )}
                             <DropdownMenuItem
                               onClick={() => onOptionAction?.(row.id, "delete")}
                               className="cursor-pointer text-black focus:text-black"
@@ -280,7 +286,7 @@ export function DepartmenRoleTable({
                                     >
                                       <EyeIcon className="size-4" />
                                     </Button>
-                                  ) : child.status === "active" ? (
+                                  ) : child.status === "active" && canUpdateRole ? (
                                     <Button
                                       variant="ghost"
                                       size="icon"

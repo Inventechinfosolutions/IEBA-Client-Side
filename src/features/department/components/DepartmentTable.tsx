@@ -46,6 +46,7 @@ import { useGetDepartmentUsers } from "../queries/getDepartmentUsers"
 import statusCheckImg from "@/assets/status-check.png"
 import statusCrossImg from "@/assets/status-cross.png"
 import editIconImg from "@/assets/edit-icon.png"
+import { usePermissions } from "@/hooks/usePermissions"
 
 
 
@@ -155,6 +156,9 @@ export function DepartmentTable({
   onAdd,
   onEdit,
 }: DepartmentTableProps) {
+  const { canAdd, canUpdate } = usePermissions()
+  const canAddDepartment = canAdd("department")
+  const canUpdateDepartment = canUpdate("department")
 
   const usersQuery = useGetDepartmentUsers()
   const usersById = useMemo(() => {
@@ -242,12 +246,14 @@ export function DepartmentTable({
             <span className="text-[14px] font-[500] text-white select-none whitespace-nowrap">Inactive</span>
           </button>
 
-          <Button
-            onClick={onAdd}
-            className="h-[48px] rounded-[8px] bg-[#6C5DD3] px-[20px] text-[14px] font-[500] hover:bg-[#5B4DC5]"
-          >
-            <span className="mr-2 text-[18px]">+</span> Add Department
-          </Button>
+          {canAddDepartment && (
+            <Button
+              onClick={onAdd}
+              className="h-[48px] rounded-[8px] bg-[#6C5DD3] px-[20px] text-[14px] font-[500] hover:bg-[#5B4DC5]"
+            >
+              <span className="mr-2 text-[18px]">+</span> Add Department
+            </Button>
+          )}
         </div>
       </div>
 
@@ -478,12 +484,14 @@ export function DepartmentTable({
                     </div>
                   </TableCell>
                   <TableCell className="px-[4px] py-[16px] text-center">
-                    <button
-                      onClick={() => onEdit?.(dept.id)}
-                      className="inline-flex h-[28px] w-[28px] items-center justify-center transition-opacity hover:opacity-80"
-                    >
-                      <img src={editIconImg} alt="Edit" className="h-[18px] w-[18px]" />
-                    </button>
+                    {canUpdateDepartment && (
+                      <button
+                        onClick={() => onEdit?.(dept.id)}
+                        className="inline-flex h-[28px] w-[28px] items-center justify-center transition-opacity hover:opacity-80"
+                      >
+                        <img src={editIconImg} alt="Edit" className="h-[18px] w-[18px]" />
+                      </button>
+                    )}
                   </TableCell>
                 </TableRow>
               ))

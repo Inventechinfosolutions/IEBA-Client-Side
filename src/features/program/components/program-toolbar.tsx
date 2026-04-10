@@ -2,6 +2,7 @@ import { Check, Plus } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { usePermissions } from "@/hooks/usePermissions"
 import type { ProgramToolbarProps } from "../types"
 
 function getAddLabel(activeTabLabel: string) {
@@ -24,6 +25,16 @@ export function ProgramToolbar({
   onToggleInactiveOnly,
   onAddProgram,
 }: ProgramToolbarProps) {
+  const { canAdd } = usePermissions()
+
+  const getModuleKey = (tab: string) => {
+    if (tab === "Budget Units") return "budgetprogram"
+    if (tab === "Time Study programs") return "timestudyprogram"
+    return "timestudyactivity"
+  }
+
+  const showAdd = canAdd(getModuleKey(activeTabLabel))
+
   return (
     <div className="mb-2 flex items-center justify-between gap-3">
       <Input
@@ -45,14 +56,16 @@ export function ProgramToolbar({
           )}
           Inactive
         </Button>
-        <Button
-          type="button"
-          className="h-9 cursor-pointer gap-1 rounded-[12px] bg-[#6C5DD3] px-3 text-[12px] font-semibold text-white shadow-[0_1px_0_rgba(0,0,0,0.05)] hover:bg-[#6C5DD3]"
-          onClick={onAddProgram}
-        >
-          <Plus className="size-3.5" />
-          {getAddLabel(activeTabLabel)}
-        </Button>
+        {showAdd && (
+          <Button
+            type="button"
+            className="h-9 cursor-pointer gap-1 rounded-[12px] bg-[#6C5DD3] px-3 text-[12px] font-semibold text-white shadow-[0_1px_0_rgba(0,0,0,0.05)] hover:bg-[#6C5DD3]"
+            onClick={onAddProgram}
+          >
+            <Plus className="size-3.5" />
+            {getAddLabel(activeTabLabel)}
+          </Button>
+        )}
       </div>
     </div>
   )

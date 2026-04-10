@@ -26,11 +26,15 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import type { UserTableProps, UserTableSortState } from "@/features/user/types"
+import { usePermissions } from "@/hooks/usePermissions"
 
-export function UserTable({ rows, isLoading, onEditRow }: UserTableProps) {
+export function UserTable({ rows, isLoading, onEditRow, onSwitchUser }: UserTableProps) {
+  const { canUpdate } = usePermissions()
+  const canUpdateUser = canUpdate("user")
   const [expandedRowIds, setExpandedRowIds] = useState<Record<string, boolean>>({})
   const [employeeSortState, setEmployeeSortState] = useState<UserTableSortState>("none")
   const [isEmployeeTooltipOpen, setIsEmployeeTooltipOpen] = useState(false)
+  const showSwitchUser = typeof onSwitchUser === "function"
   const headers = [
     "Employee",
     "Department",
@@ -43,7 +47,7 @@ export function UserTable({ rows, isLoading, onEditRow }: UserTableProps) {
     "Multicodes enabled?",
     "Assigned Multi Codes",
     "Action",
-    "Switch User",
+    ...(showSwitchUser ? (["Switch User"] as const) : []),
   ]
 
   const skeletonRows = Array.from(
@@ -73,8 +77,8 @@ export function UserTable({ rows, isLoading, onEditRow }: UserTableProps) {
           <col style={{ width: "95px" }} />
           <col style={{ width: "95px" }} />
           <col style={{ width: "75px" }} />
-          <col style={{ width: "55px" }} />
           <col style={{ width: "70px" }} />
+          {showSwitchUser ? <col style={{ width: "70px" }} /> : null}
         </colgroup>
         <TableHeader className="[&_tr]:border-b-0">
           <TableRow className="hover:bg-transparent">
@@ -295,32 +299,37 @@ export function UserTable({ rows, isLoading, onEditRow }: UserTableProps) {
                     {row.assignedMultiCodes}
                   </TableCell>
                   <TableCell className="border-r border-[#eff0f5] px-[14px] py-[5px] text-center">
-                    <button
-                      type="button"
-                      onClick={() => onEditRow(row)}
-                      className="inline-flex cursor-pointer items-center opacity-80 drop-shadow-[0_1px_0_rgba(108,93,211,0.35)] transition-opacity hover:opacity-100"
-                    >
-                      <img
-                        src={tableEditIcon}
-                        alt=""
-                        aria-hidden="true"
-                        className="size-[12.1px] object-contain"
-                      />
-                    </button>
+                    {canUpdateUser && (
+                      <button
+                        type="button"
+                        onClick={() => onEditRow(row)}
+                        className="inline-flex cursor-pointer items-center opacity-80 drop-shadow-[0_1px_0_rgba(108,93,211,0.35)] transition-opacity hover:opacity-100"
+                      >
+                        <img
+                          src={tableEditIcon}
+                          alt=""
+                          aria-hidden="true"
+                          className="size-[12.1px] object-contain"
+                        />
+                      </button>
+                    )}
                   </TableCell>
-                  <TableCell className="border-r border-[#eff0f5] px-[14px] py-[5px] text-center">
-                    <button
-                      type="button"
-                      className="inline-flex cursor-pointer items-center drop-shadow-[0_1px_0_rgba(108,93,211,0.35)] transition-opacity hover:opacity-100"
-                    >
-                      <img
-                        src={tableSwitchUserIcon}
-                        alt=""
-                        aria-hidden="true"
-                        className="h-[18px] w-[18px] object-contain"
-                      />
-                    </button>
-                  </TableCell>
+                  {showSwitchUser ? (
+                    <TableCell className="border-r border-[#eff0f5] px-[14px] py-[5px] text-center">
+                      <button
+                        type="button"
+                        onClick={() => onSwitchUser(row)}
+                        className="inline-flex cursor-pointer items-center drop-shadow-[0_1px_0_rgba(108,93,211,0.35)] transition-opacity hover:opacity-100"
+                      >
+                        <img
+                          src={tableSwitchUserIcon}
+                          alt=""
+                          aria-hidden="true"
+                          className="h-[18px] w-[18px] object-contain"
+                        />
+                      </button>
+                    </TableCell>
+                  ) : null}
                 </TableRow>
               ))}
           {!isLoading && sortedRows.length === 0 ? (

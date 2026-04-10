@@ -63,7 +63,7 @@ export function DepartmentRolePage() {
   })
 
   /** Load while on this page so edit dialog has names before first open (avoids empty department Select). */
-  const activeDepartmentsQuery = useGetDepartments("active", { enabled: true })
+  const activeDepartmentsQuery = useGetDepartments({ status: "active", page: 1, limit: 100 }, { enabled: true })
 
   const viewRole: DepartmentRoleViewData | null = useMemo(() => {
     if (!viewDetailQuery.data) return null
@@ -134,7 +134,7 @@ export function DepartmentRolePage() {
     )
     const fromTable = row?.departmentName?.trim() ?? ""
     if (fromTable) return { ...d, departmentName: fromTable }
-    const fromCatalog = activeDepartmentsQuery.data?.find(
+    const fromCatalog = activeDepartmentsQuery.data?.items?.find(
       (x) =>
         Number(x.id) === d.departmentId ||
         String(x.id) === String(d.departmentId)
@@ -148,7 +148,7 @@ export function DepartmentRolePage() {
     const fromTable = data
       .map((r) => r.departmentName)
       .filter((n): n is string => Boolean(n?.trim()))
-    const fromApi = (activeDepartmentsQuery.data ?? [])
+    const fromApi = (activeDepartmentsQuery.data?.items ?? [])
       .map((x) => x.name)
       .filter((n): n is string => Boolean(n?.trim()))
     return [...new Set([...fromTable, ...fromApi])].sort((a, b) =>
@@ -220,7 +220,7 @@ export function DepartmentRolePage() {
         const id = row.departmentId ?? Number(row.id)
         if (Number.isFinite(id)) return id
       }
-      const fromCatalog = activeDepartmentsQuery.data?.find(
+      const fromCatalog = activeDepartmentsQuery.data?.items?.find(
         (d) =>
           d.name === departmentName ||
           d.name.trim().toLowerCase() === departmentName.trim().toLowerCase()

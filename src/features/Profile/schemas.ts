@@ -28,7 +28,18 @@ const optionalPhoneDigitsLen = (fieldLabel: string, len: number) =>
       `${fieldLabel} must be ${len} digits`
     )
 
-const relationshipEnum = z.nativeEnum(UserRelationship)
+const relationshipField = z.nativeEnum(UserRelationship, {
+  message: "Relationship is required",
+})
+
+/** Matches backend `combinedEmergencyPhoneDigits` — if any digits are present, they must total exactly 10. */
+function emergencyContactPhoneDigits(areaCode: string, telephoneNumber: string): string {
+  const a = areaCode.replaceAll(/\D/g, "")
+  const t = telephoneNumber.replaceAll(/\D/g, "")
+  if (a.length === 3 && t.length === 7) return `${a}${t}`
+  if (t.length === 10) return t
+  return `${a}${t}`
+}
 
 export const profileDetailFormSchema = z.object({
   firstName: requiredNonEmptyString("First Name"),
@@ -36,13 +47,31 @@ export const profileDetailFormSchema = z.object({
   lastName: requiredNonEmptyString("Last Name"),
   areaCode: optionalDigitsWithLen("Area Code", 3),
   telephoneNumber: optionalPhoneDigitsLen("Telephone Number", 10),
-  emergencyContact: z.object({
-    firstName: requiredNonEmptyString("Emergency Contact First Name"),
-    lastName: requiredNonEmptyString("Emergency Contact Last Name"),
-    areaCode: optionalDigitsWithLen("Emergency Contact Area Code", 3),
-    telephoneNumber: optionalPhoneDigitsLen("Emergency Contact Telephone Number", 10),
-    relationship: relationshipEnum,
-  }),
+  emergencyContact: z
+    .object({
+      firstName: z
+        .string()
+        .trim()
+        .max(100, "Emergency Contact First Name must be at most 100 characters"),
+      lastName: z
+        .string()
+        .trim()
+        .max(100, "Emergency Contact Last Name must be at most 100 characters"),
+      areaCode: optionalDigitsWithLen("Emergency Contact Area Code", 3),
+      telephoneNumber: optionalPhoneDigitsLen("Emergency Contact Telephone Number", 10),
+      relationship: relationshipField,
+    })
+    .superRefine((ec, ctx) => {
+      const digits = emergencyContactPhoneDigits(ec.areaCode, ec.telephoneNumber)
+      if (digits.length > 0 && digits.length !== 10) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message:
+            "Emergency contact phone must be 10 digits (3-digit area code + 7-digit number, or 10 digits in Telephone only)",
+          path: ["telephoneNumber"],
+        })
+      }
+    }),
   onRecords: z.object({
     employeeId: requiredNonEmptyString("Employee ID").refine(
       (value) => /^\d+$/.test(value),
@@ -58,6 +87,20 @@ export const profileDetailFormSchema = z.object({
   }),
 })
 
+/** User-facing copy for Profile UI (toasts, alerts). Validation field messages stay on the Zod schema above. */
+export const profileDetailMessages = {
+  formCheckFields: "Please check the form fields.",
+  imageChooseFile: "Please choose a file.",
+  imageCropFailed: "Unable to crop image. Please try another file.",
+  imageUpdated: "Profile image updated.",
+  signInToView: "Sign in to view your profile.",
+  loadProfileFailed: "Unable to load profile.",
+  changesDiscarded: "Changes discarded.",
+  saveSuccess: "Profile saved successfully.",
+  saveFailedGeneric: "Failed to update profile.",
+  relationshipPlaceholder: "Select relationship",
+} as const
+
 export const profileDetailDefaultValues: ProfileDetailFormValues = {
   firstName: "",
   mi: "",
@@ -69,7 +112,7 @@ export const profileDetailDefaultValues: ProfileDetailFormValues = {
     lastName: "",
     areaCode: "",
     telephoneNumber: "",
-    relationship: UserRelationship.BROTHER,
+    relationship: UserRelationship.FATHER,
   },
   onRecords: {
     employeeId: "",

@@ -36,6 +36,7 @@ import type {
   ProgramTableSortState,
 } from "../types"
 import { BudgetProgramStatusEnum, BudgetProgramTypeEnum } from "../enums/enums"
+import { usePermissions } from "@/hooks/usePermissions"
 
 export const BudgetUnitTable = forwardRef<BudgetUnitTableHandle, BudgetUnitTableProps>(
   function BudgetUnitTable(
@@ -54,6 +55,10 @@ export const BudgetUnitTable = forwardRef<BudgetUnitTableHandle, BudgetUnitTable
     },
     ref,
   ) {
+  const { canAdd, canUpdate } = usePermissions()
+  const canAddBudgetProgram = canAdd("budgetprogram")
+  const canUpdateBudgetProgram = canUpdate("budgetprogram")
+
   const [sortState, setSortState] = useState<ProgramTableSortState>({
     key: "code",
     direction: "none",
@@ -640,7 +645,7 @@ export const BudgetUnitTable = forwardRef<BudgetUnitTableHandle, BudgetUnitTable
                         ? null
                         : displayRow.row.hierarchyLevel === 2
                           ? // BU Program row: show dropdown (Add + Edit)
-                            (
+                            (canAddBudgetProgram || canUpdateBudgetProgram) && (
                               <div className="flex justify-center">
                                 <DropdownMenu>
                                   <DropdownMenuTrigger asChild>
@@ -659,26 +664,30 @@ export const BudgetUnitTable = forwardRef<BudgetUnitTableHandle, BudgetUnitTable
                                     sideOffset={6}
                                     className="!w-[92px] !min-w-[92px] rounded-[6px] border border-[#edf0f6] p-1 shadow-[0_8px_20px_rgba(17,24,39,0.14)]"
                                   >
-                                    <DropdownMenuItem
-                                      onClick={() => onAddSubProgramFromProgram?.(displayRow.row)}
-                                      className="cursor-pointer gap-1.5 rounded-[8px] px-1.5 py-1 text-[12px] text-[#111827]"
-                                    >
-                                      <Plus className="size-[13px] text-[var(--primary)]" />
-                                      Add
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                      onClick={() => onEditRow(displayRow.row)}
-                                      className="cursor-pointer gap-1.5 rounded-[8px] px-1.5 py-1 text-[12px] text-[#111827]"
-                                    >
-                                      <Pencil className="size-[13px] text-[var(--primary)]" />
-                                      Edit
-                                    </DropdownMenuItem>
+                                    {canAddBudgetProgram && (
+                                      <DropdownMenuItem
+                                        onClick={() => onAddSubProgramFromProgram?.(displayRow.row)}
+                                        className="cursor-pointer gap-1.5 rounded-[8px] px-1.5 py-1 text-[12px] text-[#111827]"
+                                      >
+                                        <Plus className="size-[13px] text-[var(--primary)]" />
+                                        Add
+                                      </DropdownMenuItem>
+                                    )}
+                                    {canUpdateBudgetProgram && (
+                                      <DropdownMenuItem
+                                        onClick={() => onEditRow(displayRow.row)}
+                                        className="cursor-pointer gap-1.5 rounded-[8px] px-1.5 py-1 text-[12px] text-[#111827]"
+                                      >
+                                        <Pencil className="size-[13px] text-[var(--primary)]" />
+                                        Edit
+                                      </DropdownMenuItem>
+                                    )}
                                   </DropdownMenuContent>
                                 </DropdownMenu>
                               </div>
                             )
                           : // Sub-program and BU rows: simple Edit button only
-                            (
+                            canUpdateBudgetProgram && (
                               <button
                                 type="button"
                                 onClick={(event) => {

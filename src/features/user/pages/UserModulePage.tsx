@@ -1,11 +1,14 @@
 import { useMemo, useState } from "react"
+import { useNavigate } from "react-router-dom"
 import { useQuery } from "@tanstack/react-query"
-import { Check, Loader2 } from "lucide-react"
+import { Check, Loader2, X } from "lucide-react"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
 import { MasterCodePagination } from "@/features/master-code/components/MasterCodePagination"
 import { queryClient } from "@/main"
+import { useAuth } from "@/contexts/AuthContext"
+import { getToken, setToken } from "@/lib/api"
 import { UserTable } from "../components/UserTable"
 import { UserToolbar } from "../components/UserToolbar"
 import { apiGetUserDetails } from "../api"
@@ -13,6 +16,13 @@ import { useUserModule } from "../hooks/useUserModule"
 import { userModuleKeys } from "../keys"
 import { mergeUserDetailsIntoFormValues } from "../utility/mapUserDetailsToForm"
 import { AddEmployeeFormPage } from "../add-employee"
+import {
+  isGlobalAdminLogin,
+  useMimicSession,
+  useMimicUser,
+} from "../user-mimic"
+import { mimicKeys } from "../user-mimic/keys"
+import { setStoredMimicSession } from "../user-mimic/storage"
 import {
   type AddEmployeeSavePayload,
   type AddEmployeeSaveSync,
@@ -58,11 +68,28 @@ const emptyFormValues: UserModuleFormValues = {
 }
 
 export function UserModulePage() {
+  const navigate = useNavigate()
+  const { user, establishDashboardSession } = useAuth()
+  const isGlobalAdmin = isGlobalAdminLogin(user)
+  const { data: mimicSession } = useMimicSession()
+  const mimicMutation = useMimicUser()
+
   const successToastOptions = {
     position: "top-center" as const,
     icon: (
       <span className="inline-flex size-4 items-center justify-center rounded-full bg-[#22c55e] text-white">
         <Check className="size-3 stroke-[3]" />
+      </span>
+    ),
+    className:
+      "!w-fit !max-w-none !min-h-[35px] !rounded-[8px] !border-0 !px-3 !py-2 !text-[12px] !whitespace-nowrap !text-[#111827] !shadow-[0_8px_22px_rgba(17,24,39,0.18)]",
+  }
+
+  const mimicErrorToastOptions = {
+    position: "top-center" as const,
+    icon: (
+      <span className="inline-flex size-4 items-center justify-center rounded-full bg-[#ef4444] text-white">
+        <X className="size-3 stroke-[3]" />
       </span>
     ),
     className:
@@ -213,6 +240,59 @@ export function UserModulePage() {
     setShowForm(true)
   }
 
+  const handleSwitchUser = async (row: UserModuleRow) => {
+    if (!isGlobalAdmin) return
+    if (!user) return
+    if (mimicSession) return
+    const originalToken = (getToken() ?? "").trim()
+    if (!originalToken) return
+    try {
+      const result = await mimicMutation.mutateAsync({ targetUserId: row.id })
+      setToken(result.accessToken)
+      const details = await apiGetUserDetails(result.userId)
+      const nextRoles = details.roles?.map((r) => r.name) ?? []
+      const nextPerms = details.allpermissions ?? []
+      const displayName =
+        (details.name ?? "").trim() ||
+        `${details.firstName ?? ""} ${details.lastName ?? ""}`.trim() ||
+        row.employee?.trim() ||
+        row.loginId ||
+        result.userId
+      establishDashboardSession({
+        id: result.userId,
+        name: displayName,
+        email: details.user?.loginId?.trim() || row.loginId || row.emailAddress || "",
+        namespace: user.namespace,
+        countyName: user.countyName,
+        avatar: user.avatar,
+        roles: nextRoles,
+        permissions: nextPerms,
+      })
+      setStoredMimicSession({
+        originalToken,
+        originalUser: user,
+        targetUserId: row.id,
+        targetDisplayName: displayName,
+        targetLoginId: details.user?.loginId?.trim() || row.loginId || undefined,
+      })
+      queryClient.setQueryData(mimicKeys.all, {
+        originalToken,
+        originalUser: user,
+        targetUserId: row.id,
+        targetDisplayName: displayName,
+        targetLoginId: details.user?.loginId?.trim() || row.loginId || undefined,
+      })
+      queryClient.clear()
+      navigate("/", { replace: true })
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Unable to mimic user. Please try again."
+      toast.error(message, mimicErrorToastOptions)
+    }
+  }
+
   const handleSaveForm = async ({
     values,
     sourceTab: _sourceTab,
@@ -345,6 +425,7 @@ export function UserModulePage() {
                 rows={userModule.rows}
                 isLoading={isTableLoading}
                 onEditRow={handleEditRow}
+                onSwitchUser={isGlobalAdmin && !mimicSession ? handleSwitchUser : undefined}
               />
             </div>
             <MasterCodePagination

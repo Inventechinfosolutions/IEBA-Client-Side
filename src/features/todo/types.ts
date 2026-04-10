@@ -1,3 +1,4 @@
+import type React from "react"
 import { z } from "zod"
 
 import { TodoStatusEnum } from "./enums/todoStatus"
@@ -68,6 +69,7 @@ export type TodoTableProps = {
   titleSortState: "none" | "asc" | "desc"
   onToggleTitleSort: () => void
   onEditRow: (row: TodoRow) => void
+  footer?: React.ReactNode
 }
 
 export type TodoToolbarProps = {

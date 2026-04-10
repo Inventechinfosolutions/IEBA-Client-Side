@@ -16,8 +16,8 @@ export function CountyActivityCodePage() {
   const [filters, setFilters] = useState<CountyActivityFilterFormValues>(
     DEFAULT_FILTERS
   )
-  const departmentsQuery = useGetDepartments("active")
-  const departments = departmentsQuery.data ?? NO_DEPARTMENTS
+  const departmentsQuery = useGetDepartments({ status: "active", page: 1, limit: 100 })
+  const departments = departmentsQuery.data?.items ?? NO_DEPARTMENTS
   const {
     rows,
     primaryRows,

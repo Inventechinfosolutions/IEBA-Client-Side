@@ -7,6 +7,7 @@ export type EmergencyContactValues = {
   lastName: string
   areaCode: string
   telephoneNumber: string
+  /** Backend relationship (falls back to FATHER if missing) */
   relationship: UserRelationship
 }
 

@@ -26,6 +26,7 @@ import {
 import { useAuth } from "@/contexts/AuthContext"
 import { ChangePasswordFormModal } from "@/features/change-password"
 import { ChangeCountyDialog } from "@/features/auth/components/ChangeCountyDialog"
+import { MimicBanner } from "@/features/user/user-mimic"
 
 export function DashboardLayout() {
   const { user, signOut } = useAuth()
@@ -45,6 +46,9 @@ export function DashboardLayout() {
                 ? `Bits of Time Welcome To ${countyName}`
                 : "Bits of Time"}
             </span>
+          </div>
+          <div className="flex flex-1 justify-center -translate-60 -translate-y-3">
+            <MimicBanner inline />
           </div>
           <div className="flex items-center gap-4">
             {user && (
