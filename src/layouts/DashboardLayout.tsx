@@ -23,12 +23,15 @@ import {
   Settings,
   MapPin,
   User as UserIcon,
+  Bell,
 } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
 import { usePermissions } from "@/hooks/usePermissions"
 import { ChangePasswordFormModal } from "@/features/change-password"
 import { ChangeCountyDialog } from "@/features/auth/components/ChangeCountyDialog"
 import { MimicBanner, useMimicSession } from "@/features/user/user-mimic"
+
+import { NotificationSheet } from "@/features/notification/components/NotificationSheet"
 
 export function DashboardLayout() {
   const { user, signOut } = useAuth()
@@ -37,6 +40,7 @@ export function DashboardLayout() {
   const countyName = user?.countyName?.trim() || ""
   const [changePasswordOpen, setChangePasswordOpen] = useState(false)
   const [changeCountyOpen, setChangeCountyOpen] = useState(false)
+  const [notificationsOpen, setNotificationsOpen] = useState(false)
 
   return (
     <>
@@ -61,6 +65,13 @@ export function DashboardLayout() {
           <div className="flex items-center gap-4">
             {user && (
               <>
+                <button
+                  type="button"
+                  onClick={() => setNotificationsOpen(true)}
+                  className="flex items-center justify-center p-2 text-[#6B7280] transition-colors hover:text-[#111827]"
+                >
+                  <Bell className="size-[22px]" />
+                </button>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button
@@ -144,6 +155,10 @@ export function DashboardLayout() {
                   open={changePasswordOpen}
                   onOpenChange={setChangePasswordOpen}
                 />
+                <NotificationSheet
+                  open={notificationsOpen}
+                  onOpenChange={setNotificationsOpen}
+                />
                 {changeCountyOpen && (
                   <ChangeCountyDialog
                     open={changeCountyOpen}
@@ -162,3 +177,4 @@ export function DashboardLayout() {
     </>
   )
 }
+
