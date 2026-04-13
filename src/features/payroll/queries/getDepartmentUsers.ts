@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query"
 import { payrollKeys } from "../key"
-import { fetchDepartmentUsers } from "../api/payrollApi"
+import { fetchDepartmentUsers } from "../api/department-users/departmentUserApi"
 
 export function useGetDepartmentUsers(departmentId: string, fiscalYearId: string) {
   return useQuery({
