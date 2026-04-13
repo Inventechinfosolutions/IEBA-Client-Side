@@ -122,7 +122,18 @@ export function OtpAuthentication() {
           try {
             const details = await getUserDetails(result.userId)
             roles = details.roles?.map((r) => r.name)
+            
+            // Get flattened permissions from top-level or from roles
             permissions = details.allpermissions
+            if (!permissions || permissions.length === 0) {
+              // Fallback to concatenating from departmentRoles
+              const all = new Set<string>()
+              details.departmentsRoles?.forEach(dr => {
+                dr.permissions?.forEach(p => all.add(p))
+              })
+              permissions = Array.from(all)
+            }
+
             displayName =
               details.name ??
               [details.firstName, details.lastName]

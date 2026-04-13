@@ -11,9 +11,9 @@ const payrollTableCardClass =
 
 const PAYROLL_TABLE_COLUMNS: { key: keyof PayrollManagementRow; label: string }[] = [
   { key: "employeeId", label: "Employee ID" },
-  { key: "employeeLastName", label: "Employee Last Name" },
-  { key: "employeeFirstName", label: "Employee First Name" },
-  { key: "employeeMiddleName", label: "Employee Middle Name" },
+  { key: "employeeFirstName", label: "First Name" },
+  { key: "employeeMiddleName", label: "Middle Name" },
+  { key: "employeeLastName", label: "Last Name" },
   { key: "suffix", label: "Suffix" },
   { key: "department", label: "Department" },
   { key: "bargainingUnit", label: "Bargaining Unit" },

@@ -76,6 +76,7 @@ export type LoginResult = {
   loginId: string
   /** Normalized for routing, e.g. `dashboard` | `otp` */
   nextPage: string
+  accessToken: string
   otp?: string
 }
 

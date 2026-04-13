@@ -1,5 +1,6 @@
 import { parseMultiSelectStoredValues } from "@/components/ui/multi-select-dropdown"
 
+import { PayrollFrequency } from "../types"
 import type {
   GetPayrollRowsParams,
   PayrollDetailsFormValues,
@@ -7,27 +8,36 @@ import type {
 } from "../types"
 
 export function buildPayrollDetailsDefaultValues(
-  options: PayrollFilterOptionsResponse,
+  _options: PayrollFilterOptionsResponse,
 ): PayrollDetailsFormValues {
-  const march = options.monthOptions.find((m) => m.value === "m-03")
   return {
-    payrollType: "bi_weekly",
-    fiscalYearId: options.fiscalYears[0]?.value ?? "",
+    payrollType: PayrollFrequency.BI_WEEKLY,
+    fiscalYearId: "",
     periodType: "month",
-    monthOrQuarterId: march?.value ?? options.monthOptions[0]?.value ?? "",
-    departmentId: "all",
+    monthOrQuarterId: "m-all",
+    departmentId: "",
     employeeIdsSerialized: "",
   }
 }
 
-export function mapPayrollDetailsFormToQueryParams(values: PayrollDetailsFormValues): GetPayrollRowsParams {
+export function mapPayrollDetailsFormToQueryParams(
+  values: PayrollDetailsFormValues,
+  options: PayrollFilterOptionsResponse,
+): GetPayrollRowsParams {
   const employeeIds = [...parseMultiSelectStoredValues(values.employeeIdsSerialized)].sort()
+
+  const fiscalYearLabel = options.fiscalYears.find((f) => f.value === values.fiscalYearId)?.label ?? ""
+  const selectedDept = options.departments.find((d) => String(d.value) === String(values.departmentId))
+  const departmentCode = (selectedDept?.metadata?.code as string) ?? ""
+  
   return {
     payrollType: values.payrollType,
     fiscalYearId: values.fiscalYearId,
+    fiscalYearLabel,
     periodType: values.periodType,
     monthOrQuarterId: values.monthOrQuarterId,
     departmentId: values.departmentId,
+    departmentCode: departmentCode || "all",
     employeeIds,
   }
 }

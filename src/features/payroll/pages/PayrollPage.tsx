@@ -6,10 +6,9 @@ import { useUploadPayrollFile } from "../mutations/uploadPayrollFile"
 import { PayrollDataTable } from "../components/PayrollDataTable"
 import { PayrollDetailsSection } from "../components/PayrollDetailsSection"
 import { PayrollUploadSection } from "../components/PayrollUploadSection"
-import { PAYROLL_TABLE_TEMPLATE_HEADERS } from "../mock"
+import { PAYROLL_TABLE_TEMPLATE_HEADERS } from "../utils/payrollTable"
 import type { GetPayrollRowsParams, PayrollUploadFormValues } from "../types"
-import { buildPayrollRowsCsvContent, triggerBrowserDownloadTextFile } from "../utils/payrollCsv"
-import { PAYROLL_CARD_SHADOW_CLASS } from "../constants"
+import { buildPayrollRowsXlsxBlob, triggerBrowserDownloadBlob } from "../utils/payrollCsv"
 import { usePayrollFilterOptions } from "../hooks/usePayrollFilterOptions"
 import { usePayrollRows } from "../hooks/usePayrollRows"
 import { cn } from "@/lib/utils"
@@ -27,7 +26,7 @@ export function PayrollPage() {
         { uploadType: values.uploadType, file },
         {
           onSuccess: () => {
-            toast.success("Payroll file uploaded (mock).")
+            toast.success("Payroll file uploaded successfully.")
           },
           onError: (err: unknown) => {
             const message = err instanceof Error ? err.message : "Upload failed."
@@ -39,21 +38,29 @@ export function PayrollPage() {
     [uploadMutation],
   )
 
-  const handleDownloadCurrentRows = useCallback(() => {
-    const csv = buildPayrollRowsCsvContent(PAYROLL_TABLE_TEMPLATE_HEADERS, rowsModule.rows)
-    triggerBrowserDownloadTextFile("payroll-details-export.csv", csv, "text/csv;charset=utf-8")
+  const handleDownloadCurrentRows = useCallback(async () => {
+    const blob = await buildPayrollRowsXlsxBlob(PAYROLL_TABLE_TEMPLATE_HEADERS, rowsModule.rows)
+    triggerBrowserDownloadBlob("payroll-details-export.xlsx", blob)
   }, [rowsModule.rows])
 
   const handleDelete = useCallback(
     (params: GetPayrollRowsParams) => {
       deleteMutation.mutate(params, {
         onSuccess: () => {
-          toast.success("Payroll rows removed for the current filter (mock).")
+          toast.success("Payroll rows removed for the current filter.")
         },
       })
     },
     [deleteMutation],
   )
+
+  const handleGetRows = useCallback((params: GetPayrollRowsParams) => {
+    setActiveQueryParams(params)
+    // Always force a refetch when clicking 'Get'
+    setTimeout(() => {
+      rowsModule.refetch()
+    }, 0)
+  }, [rowsModule])
 
   const isTableLoading = rowsModule.isLoading || rowsModule.isFetching
   const filterData = filterModule.data
@@ -67,7 +74,7 @@ export function PayrollPage() {
         <div
           className={cn(
             "box-border mx-auto min-w-0 w-full max-w-full overflow-x-hidden rounded-[8px] border border-[#e7e9f2] bg-white",
-            PAYROLL_CARD_SHADOW_CLASS,
+            "shadow-[0_0_14px_0_rgb(0_0_0/0.04),0_0_1px_0_rgb(0_0_0/0.06)]",
           )}
         >
           <div className="flex min-w-0 w-full max-w-full flex-col gap-6 p-4 md:p-5">
@@ -83,7 +90,7 @@ export function PayrollPage() {
                   filterOptions={filterData}
                   isOptionsLoading={filterModule.isLoading || filterModule.isFetching}
                   isRowsLoading={isTableLoading}
-                  onGetRows={setActiveQueryParams}
+                  onGetRows={handleGetRows}
                   onDownloadCurrentRows={handleDownloadCurrentRows}
                   onDelete={handleDelete}
                   activeQueryParams={activeQueryParams}

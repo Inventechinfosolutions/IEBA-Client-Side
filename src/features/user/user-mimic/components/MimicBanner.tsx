@@ -20,7 +20,7 @@ export function MimicBanner({ inline = false }: { inline?: boolean }) {
       <span>{`Mimicing ${mimic.targetDisplayName}`}</span>
       <button
         type="button"
-        className="rounded-[2px] bg-white px-2 py-0.5 text-[12px] font-medium text-[#111827] shadow-[0_1px_0_rgba(0,0,0,0.05)] hover:bg-[#f9fafb]"
+        className="cursor-pointer rounded-[2px] bg-white px-2 py-0.5 text-[12px] font-medium text-[#111827] shadow-[0_1px_0_rgba(0,0,0,0.05)] hover:bg-[#f9fafb]"
         onClick={() => {
           setToken(mimic.originalToken)
           establishDashboardSession(mimic.originalUser)

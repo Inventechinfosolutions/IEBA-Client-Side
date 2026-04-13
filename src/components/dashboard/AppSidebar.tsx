@@ -20,6 +20,7 @@ import {
   User,
   FileSpreadsheet,
   ListTodo,
+  User as UserIcon,
   type LucideIcon,
 } from "lucide-react"
 
@@ -64,6 +65,7 @@ type NavItem = {
    * null          → always show
    * "superadmin"   → only when user has superadmin:all
    * "moduleKey"    → show when user has moduleKey:view
+   * "moduleKey:action" → show when user has exact permission
    * ["a", "b"]     → show when user has ANY of the listed module :view permissions (OR)
    */
   permission: string | string[] | null
@@ -85,7 +87,7 @@ const mainNav: NavItem[] = [
 
   // ── People & Leave ────────────────────────────────────────────────────────
   { title: "User",                  url: "/user",                  icon: User,             permission: "user" },
-  { title: "Leave Approval",        url: "/leave-approval",        icon: FileText,         permission: "userleave" },
+  { title: "Leave Approval",        url: "/leave-approval",        icon: FileText,         permission: "userleave:review" },
 
   // ── Finance ───────────────────────────────────────────────────────────────
   { title: "Payroll",               url: "/payroll",               icon: CircleDollarSign, permission: "payroll" },
@@ -112,7 +114,7 @@ const mainNav: NavItem[] = [
 // ---------------------------------------------------------------------------
 export function AppSidebar() {
   const { user, signOut } = useAuth()
-  const { isSuperAdmin, canView } = usePermissions()
+  const { isSuperAdmin, canView, has } = usePermissions()
   const [changePasswordOpen, setChangePasswordOpen] = useState(false)
   const location = useLocation()
 
@@ -123,9 +125,9 @@ export function AppSidebar() {
     if (isSuperAdmin) return true                               // superadmin sees everything
     // Array → OR logic: visible if user has :view for ANY listed module
     if (Array.isArray(item.permission)) {
-      return item.permission.some((mod) => canView(mod))
+      return item.permission.some((mod) => mod.includes(":") ? has(mod) : canView(mod))
     }
-    return canView(item.permission)                             // single module :view check
+    return item.permission.includes(":") ? has(item.permission) : canView(item.permission) // single module :view check or specific permission
   }
 
   const filteredNav = mainNav.filter(isVisible)
@@ -195,12 +197,7 @@ export function AppSidebar() {
                   <Avatar className="h-8 w-8 rounded-lg">
                     <AvatarImage src={user?.avatar} alt={user?.name} />
                     <AvatarFallback className="rounded-lg">
-                      {user?.name
-                        ?.split(" ")
-                        .map((n) => n[0])
-                        .join("")
-                        .toUpperCase()
-                        .slice(0, 2) ?? "U"}
+                      <UserIcon className="size-4 text-muted-foreground" />
                     </AvatarFallback>
                   </Avatar>
                   <div className="grid flex-1 text-left text-sm leading-tight">
@@ -224,12 +221,7 @@ export function AppSidebar() {
                     <Avatar className="h-8 w-8 rounded-lg">
                       <AvatarImage src={user?.avatar} alt={user?.name} />
                       <AvatarFallback className="rounded-lg">
-                        {user?.name
-                          ?.split(" ")
-                          .map((n) => n[0])
-                          .join("")
-                          .toUpperCase()
-                          .slice(0, 2) ?? "U"}
+                        <UserIcon className="size-4 text-muted-foreground" />
                       </AvatarFallback>
                     </Avatar>
                     <div className="grid flex-1 text-left text-sm leading-tight">

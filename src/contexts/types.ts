@@ -1,3 +1,5 @@
+import type { LoginResult } from "@/features/auth/types"
+
 export type User = {
   id: string
   name: string
@@ -17,7 +19,7 @@ export type AuthContextValue = {
   user: User | null
   isAuthenticated: boolean
   isLoading: boolean
-  signIn: (email: string, password: string) => Promise<void>
+  signIn: (email: string, password: string) => Promise<LoginResult | void>
   /** After login when `nextPage` is `dashboard`; token is already in storage from `loginRequest`. */
   establishDashboardSession: (user: User) => void
   signOut: () => void

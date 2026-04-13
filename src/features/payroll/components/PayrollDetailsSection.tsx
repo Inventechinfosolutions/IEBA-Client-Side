@@ -11,17 +11,14 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { cn } from "@/lib/utils"
 
 import { payrollDetailsFormSchema } from "../schemas"
-import type { PayrollDetailsFormValues, PayrollDetailsSectionProps, PayrollPeriodType } from "../types"
+import { PAYROLL_FREQUENCY_OPTIONS } from "../enums/payrollFrequency"
+import type { DepartmentUser, PayrollDetailsFormValues, PayrollDetailsSectionProps, PayrollPeriodType } from "../types"
 import { buildPayrollDetailsDefaultValues, mapPayrollDetailsFormToQueryParams } from "../utils/payrollForm"
+import { useGetDepartmentUsers } from "../queries/getDepartmentUsers"
 
 const sectionCardShadowClass = "shadow-[0_4px_16px_rgba(16,24,40,0.12)]"
 
-const PAYROLL_TYPE_OPTIONS: { value: PayrollDetailsFormValues["payrollType"]; label: string }[] = [
-  { value: "monthly", label: "Monthly" },
-  { value: "bi_weekly", label: "Bi Weekly" },
-  { value: "semi_monthly", label: "Semi Monthly" },
-  { value: "weekly", label: "Weekly" },
-]
+const PAYROLL_TYPE_OPTIONS = PAYROLL_FREQUENCY_OPTIONS as { value: PayrollDetailsFormValues["payrollType"]; label: string }[]
 
 function RadioChoice({
   value,
@@ -60,7 +57,7 @@ function PurpleFieldLabel({
   return (
     <Label
       htmlFor={htmlFor}
-      className="mb-2 block text-[12px] font-medium text-[var(--primary)]"
+      className="mb-2 block text-[12px] font-medium text-(--primary)"
     >
       {isRequired ? <span aria-hidden>*</span> : null}
       {children}
@@ -84,15 +81,23 @@ export function PayrollDetailsSection({
   })
 
   const periodType = useWatch({ control: form.control, name: "periodType" })
+  const departmentId = useWatch({ control: form.control, name: "departmentId" })
+  const fiscalYearId = useWatch({ control: form.control, name: "fiscalYearId" })
+
+  const { data: departmentUsers = [], isLoading: isUsersLoading } = useGetDepartmentUsers(departmentId, fiscalYearId)
 
   const periodValueOptions: readonly SingleSelectOption[] =
     periodType === "month" ? filterOptions.monthOptions : filterOptions.quarterOptions
 
   const fiscalYearOptions: SingleSelectOption[] = [...filterOptions.fiscalYears]
   const departmentOptions: SingleSelectOption[] = [...filterOptions.departments]
+  const employeeOptions: SingleSelectOption[] = (departmentUsers as DepartmentUser[]).map((u) => ({
+    value: String(u.employeeId || u.id),
+    label: u.name || `${u.firstName || ""} ${u.lastName || ""}`.trim() || String(u.employeeId || u.id),
+  }))
 
   const handleGetSubmit = form.handleSubmit((values) => {
-    onGetRows(mapPayrollDetailsFormToQueryParams(values))
+    onGetRows(mapPayrollDetailsFormToQueryParams(values, filterOptions))
   })
 
   const handleDeleteClick = () => {
@@ -143,13 +148,16 @@ export function PayrollDetailsSection({
               render={({ field }) => (
                 <SingleSelectDropdown
                   value={field.value}
-                  onChange={field.onChange}
+                  onChange={(val) => {
+                    field.onChange(val)
+                    form.setValue("employeeIdsSerialized", "")
+                  }}
                   onBlur={field.onBlur}
                   options={fiscalYearOptions}
                   placeholder="Fiscal year"
                   disabled={isOptionsLoading}
                   isLoading={isOptionsLoading}
-                  className="!h-[46px] !min-h-[46px] w-full !rounded-[6px] !border-[#d6d7dc] !text-[14px]"
+                  className="h-[46px]! min-h-[46px]! w-full rounded-[6px]! border-[#d6d7dc]! text-[14px]!"
                   itemButtonClassName="rounded-[6px] px-3 py-2"
                   itemLabelClassName="!text-[14px]"
                 />
@@ -211,7 +219,7 @@ export function PayrollDetailsSection({
                   placeholder={periodType === "month" ? "Month" : "Quarter"}
                   disabled={isOptionsLoading}
                   isLoading={isOptionsLoading}
-                  className="!h-[46px] !min-h-[46px] w-full !rounded-[6px] !border-[#d6d7dc] !text-[14px]"
+                  className="h-[46px]! min-h-[46px]! w-full rounded-[6px]! border-[#d6d7dc]! text-[14px]!"
                   itemButtonClassName="rounded-[6px] px-3 py-2"
                   itemLabelClassName="!text-[14px]"
                 />
@@ -232,13 +240,16 @@ export function PayrollDetailsSection({
               render={({ field }) => (
                 <SingleSelectDropdown
                   value={field.value}
-                  onChange={field.onChange}
+                  onChange={(val) => {
+                    field.onChange(val)
+                    form.setValue("employeeIdsSerialized", "")
+                  }}
                   onBlur={field.onBlur}
                   options={departmentOptions}
                   placeholder="Department"
                   disabled={isOptionsLoading}
                   isLoading={isOptionsLoading}
-                  className="!h-[46px] !min-h-[46px] w-full !rounded-[6px] !border-[#d6d7dc] !text-[14px]"
+                  className="h-[46px]! min-h-[46px]! w-full rounded-[6px]! border-[#d6d7dc]! text-[14px]!"
                   itemButtonClassName="rounded-[6px] px-3 py-2"
                   itemLabelClassName="!text-[14px]"
                 />
@@ -261,10 +272,10 @@ export function PayrollDetailsSection({
                   value={field.value}
                   onChange={field.onChange}
                   onBlur={field.onBlur}
-                  options={[...filterOptions.employees]}
+                  options={employeeOptions}
                   placeholder="Employee"
-                  disabled={isOptionsLoading}
-                  isLoading={isOptionsLoading}
+                  disabled={isOptionsLoading || isUsersLoading}
+                  isLoading={isOptionsLoading || isUsersLoading}
                   maxVisibleItems={2}
                   className="min-h-[46px] w-full rounded-[6px] border-[#d6d7dc] text-[14px]"
                 />
@@ -278,14 +289,14 @@ export function PayrollDetailsSection({
             type="button"
             disabled={isRowsLoading}
             onClick={handleGetSubmit}
-            className="h-[44px] min-w-[100px] rounded-[8px] border-0 bg-[var(--primary)] px-8 text-[12px] font-medium text-white hover:bg-[var(--primary)] disabled:opacity-70"
+            className="h-[44px] min-w-[100px] rounded-[8px] border-0 bg-(--primary) px-8 text-[12px] font-medium text-white hover:bg-(--primary) disabled:opacity-70"
           >
             Get
           </Button>
           <Button
             type="button"
             onClick={onDownloadCurrentRows}
-            className="h-[44px] min-w-[120px] rounded-[8px] border-0 bg-[var(--primary)] px-6 text-[12px] font-medium text-white hover:bg-[var(--primary)]/90"
+            className="h-[44px] min-w-[120px] rounded-[8px] border-0 bg-(--primary) px-6 text-[12px] font-medium text-white hover:bg-(--primary)/90"
           >
             Download
           </Button>
