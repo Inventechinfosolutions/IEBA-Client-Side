@@ -24,6 +24,7 @@ import {
   MapPin,
 } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
+import { AppLogout } from "@/features/settings/components/General/AppLogout"
 import { ChangePasswordFormModal } from "@/features/change-password"
 import { ChangeCountyDialog } from "@/features/auth/components/ChangeCountyDialog"
 import { MimicBanner } from "@/features/user/user-mimic"
@@ -36,6 +37,7 @@ export function DashboardLayout() {
 
   return (
     <SidebarProvider>
+      <AppLogout />
       <AppSidebar />
       <SidebarInset className="bg-[#F4F5FB] h-svh overflow-hidden">
         <header className="sticky top-0 z-50 flex h-[72px] shrink-0 items-center justify-between gap-4 bg-white px-6 shadow-[0_2px_10px_rgba(0,0,0,0.06)]">
@@ -109,8 +111,8 @@ export function DashboardLayout() {
                           setChangeCountyOpen(true)
                         }}
                       >
-                          <MapPin className="mr-2 size-4" />
-                          Change County
+                        <MapPin className="mr-2 size-4" />
+                        Change County
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>
                         <Link to="/settings">

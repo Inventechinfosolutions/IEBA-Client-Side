@@ -10,9 +10,9 @@ import { useSettingsFormData } from "@/features/settings/hooks/useSettingsFormDa
 import { useSettingsFormFiscalState } from "@/features/settings/hooks/useSettingsFormFiscalState"
 import { SETTINGS_FORM_SECTION_SUCCESS_MESSAGES } from "@/features/settings/settingsForm.constants"
 import {
-  buildSettingsFormValues,
-  resolveFirstSettingsFormErrorMessage,
-  resolveSettingsFormSectionErrorMessage,
+  getSettingsFormFirstErrorMessage,
+  getSettingsFormSectionErrorMessage,
+  mapToSettingsFormValues,
 } from "@/features/settings/settingsForm.utils"
 import { settingsFormSchema } from "@/features/settings/schemas"
 import type { SettingsFormInnerProps, SettingsFormValues } from "@/features/settings/types"
@@ -46,7 +46,7 @@ function showSettingsFormSuccessToast(message: string) {
   })
 }
 
-function resolveSettingsSaveSuccessMessage(submitterSection?: SettingsFormSaveSection) {
+function getSettingsSaveSuccessMessage(submitterSection?: SettingsFormSaveSection) {
   return (
     (submitterSection && SETTINGS_FORM_SECTION_SUCCESS_MESSAGES[submitterSection]) ||
     SETTINGS_FORM_SECTION_SUCCESS_MESSAGES[SettingsFormSaveSection.County]
@@ -58,7 +58,7 @@ function SettingsFormInner({ settings, isSaving, onSubmitSettings }: SettingsFor
   const countyClientQuery = useGetCountyClient(true)
 
   const formValues = useMemo((): SettingsFormValues => {
-    const base = buildSettingsFormValues(settings, derivedFiscalYear)
+    const base = mapToSettingsFormValues(settings, derivedFiscalYear)
     if (!countyClientQuery.data) return base
     return {
       ...base,
@@ -86,7 +86,7 @@ function SettingsFormInner({ settings, isSaving, onSubmitSettings }: SettingsFor
       const isValid = await form.trigger(rawSection)
       if (!isValid) {
         showSettingsFormErrorToast(
-          resolveSettingsFormSectionErrorMessage(form.formState.errors, rawSection),
+          getSettingsFormSectionErrorMessage(form.formState.errors, rawSection),
         )
         return
       }
@@ -103,7 +103,7 @@ function SettingsFormInner({ settings, isSaving, onSubmitSettings }: SettingsFor
         onSubmitSettings(submittedValues, { submitterSection })
       },
       (errors) => {
-        showSettingsFormErrorToast(resolveFirstSettingsFormErrorMessage(errors))
+        showSettingsFormErrorToast(getSettingsFormFirstErrorMessage(errors))
       },
     )(e)
   }
@@ -139,7 +139,7 @@ export function SettingsForm() {
           { values, submitterSection: meta?.submitterSection },
           {
             onSuccess: () => {
-              showSettingsFormSuccessToast(resolveSettingsSaveSuccessMessage(meta?.submitterSection))
+              showSettingsFormSuccessToast(getSettingsSaveSuccessMessage(meta?.submitterSection))
             },
             onError: (error) => {
               showSettingsFormErrorToast(error.message)
