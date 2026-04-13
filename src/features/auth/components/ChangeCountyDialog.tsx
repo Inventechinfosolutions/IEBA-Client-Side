@@ -18,6 +18,7 @@ import { setToken } from "@/lib/api"
 import iebaLogo from "@/assets/ieba-logo.png"
 import { useGlobalNamespaces } from "../queries/getGlobalNamespaces"
 import { useChangeCounty } from "../mutations/useChangeCounty"
+import { getUserDetails } from "../api/getUserDetails"
 import type { ChangeCountyDialogProps } from "../types"
 
 export function ChangeCountyDialog({
@@ -76,7 +77,7 @@ export function ChangeCountyDialog({
         nameSpace: selectedNameSpace,
       },
       {
-        onSuccess: (result) => {
+        onSuccess: async (result) => {
           setToken(result.accessToken)
           const countyName =
             selectedCountyLabel ??
@@ -84,10 +85,37 @@ export function ChangeCountyDialog({
             user.countyName ??
             ""
 
+          // Re-fetch details for the new namespace context
+          let roles: string[] | undefined
+          let permissions: string[] | undefined
+          let displayName: string | undefined
+
+          try {
+            const details = await getUserDetails(user.id)
+            roles = details.roles?.map((r) => r.name)
+            permissions = details.allpermissions
+            if (!permissions || permissions.length === 0) {
+              const all = new Set<string>()
+              details.departmentsRoles?.forEach(dr => {
+                dr.permissions?.forEach(p => all.add(p))
+              })
+              permissions = Array.from(all)
+            }
+            displayName = details.name ??
+              [details.firstName, details.lastName]
+                .filter(Boolean)
+                .join(" ")
+          } catch (err) {
+            // Fallback
+          }
+
           establishDashboardSession({
             ...user,
+            name: displayName || user.name,
             namespace: result.namespace ?? selectedNameSpace,
             countyName,
+            roles,
+            permissions,
           })
 
           onOpenChange(false)

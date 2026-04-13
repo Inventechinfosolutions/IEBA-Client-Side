@@ -1,6 +1,6 @@
 import { useMutation } from "@tanstack/react-query"
 
-import { delayMockRequest, MOCK_NETWORK_DELAY_MS } from "../mock"
+import { uploadPayrollForm } from "../api/payrollApi"
 import type { PayrollFrequencyType } from "../types"
 
 type UploadPayrollVariables = {
@@ -8,16 +8,15 @@ type UploadPayrollVariables = {
   file: File | null
 }
 
-async function mockUploadPayrollPayload(input: UploadPayrollVariables): Promise<{ ok: true }> {
-  if (import.meta.env.DEV) await delayMockRequest(MOCK_NETWORK_DELAY_MS)
-  if (!input.file) {
+async function uploadPayrollFile({ uploadType, file }: UploadPayrollVariables) {
+  if (!file) {
     throw new Error("Choose a file before uploading.")
   }
-  return { ok: true }
+  return await uploadPayrollForm(file, uploadType)
 }
 
 export function useUploadPayrollFile() {
   return useMutation({
-    mutationFn: mockUploadPayrollPayload,
+    mutationFn: uploadPayrollFile,
   })
 }

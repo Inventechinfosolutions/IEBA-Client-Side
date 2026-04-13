@@ -1,6 +1,12 @@
 import { z } from "zod"
 
-const payrollFrequencySchema = z.enum(["monthly", "bi_weekly", "semi_monthly", "weekly"])
+import { PayrollFrequency } from "./types"
+
+const PAYROLL_FREQUENCY_VALUES = Object.values(PayrollFrequency) as [
+  (typeof PayrollFrequency)[keyof typeof PayrollFrequency],
+  ...(typeof PayrollFrequency)[keyof typeof PayrollFrequency][],
+]
+const payrollFrequencySchema = z.enum(PAYROLL_FREQUENCY_VALUES)
 const payrollPeriodSchema = z.enum(["month", "quarterly"])
 
 export const payrollUploadFormSchema = z.object({

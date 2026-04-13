@@ -9,7 +9,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import { CircleCheckIcon } from "lucide-react"
 
-import { clearToken, getToken } from "@/lib/api"
+import { clearToken, getToken, setToken } from "@/lib/api"
 import {
   clearStoredUser,
   getStoredUser,
@@ -18,6 +18,7 @@ import {
 import { clearStoredMimicSession } from "@/features/user/user-mimic/storage"
 import { login as loginRequest } from "@/features/auth/api/login"
 import { logout as logoutRequest } from "@/features/auth/api/logout"
+import { getUserDetails } from "@/features/auth/api/getUserDetails"
 import type { AuthContextValue, User } from "./types"
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -56,17 +57,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setAuthLoading(true)
       try {
         const result = await loginRequest({ email, password })
+        // If OTP is required, return result so LoginPage can redirect
         if (result.nextPage === "otp") {
-          throw new Error(
-            "OTP verification required. Use the login screen to continue."
-          )
+          return result
         }
+        // If dashboard, fetch full details to get permissions/roles
+        let roles: string[] | undefined
+        let permissions: string[] | undefined
+        let displayName: string | undefined
+        
+        try {
+          // IMPORTANT: Set token first so getUserDetails call is authorized
+          setToken(result.accessToken)
+          const details = await getUserDetails(result.userId)
+          roles = details.roles?.map((r) => r.name)
+          permissions = details.allpermissions
+          if (!permissions || permissions.length === 0) {
+            const all = new Set<string>()
+            details.departmentsRoles?.forEach(dr => {
+              dr.permissions?.forEach(p => all.add(p))
+            })
+            permissions = Array.from(all)
+          }
+          displayName = details.name ?? 
+            [details.firstName, details.lastName]
+              .filter(Boolean)
+              .join(" ")
+        } catch (err) {
+          // Fallback if details call fails
+        }
+
         const authUser: User = {
           id: result.userId,
-          name: result.loginId.includes("@")
-            ? (result.loginId.split("@")[0] ?? "User")
-            : result.loginId,
+          name: displayName && displayName.trim().length > 0 
+            ? displayName 
+            : result.loginId.split("@")[0] || result.loginId,
           email: result.loginId,
+          roles,
+          permissions,
         }
         setStoredUser(authUser)
         queryClient.setQueryData<User | null>(AUTH_SESSION_QUERY_KEY, authUser)

@@ -8,5 +8,6 @@ export function usePayrollRows(activeParams: GetPayrollRowsParams | null) {
     isLoading: query.isLoading,
     isFetching: query.isFetching,
     error: query.error,
+    refetch: query.refetch,
   }
 }

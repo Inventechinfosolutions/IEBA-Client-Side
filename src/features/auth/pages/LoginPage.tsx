@@ -18,7 +18,7 @@ import submitIcon from "@/assets/login-submit-icon.png"
 
 export function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
-  const { error, clearError, establishDashboardSession } = useAuth()
+  const { error, clearError, signIn } = useAuth()
   const navigate = useNavigate()
   const loginMutation = useLogin()
 
@@ -33,34 +33,30 @@ export function LoginPage() {
     formState: { errors },
   } = form
 
-  function onSubmit(values: LoginFormValues) {
-    loginMutation.mutate(
-      { email: values.email, password: values.password },
-      {
-        onSuccess: (data, variables) => {
-          clearError()
-          if (data.nextPage === "otp") {
-            navigate("/otp", {
-              state: {
-                email: data.loginId,
-                password: variables.password,
-                otp: data.otp,
-              },
-              replace: true,
-            })
-            return
-          }
-          establishDashboardSession({
-            id: data.userId,
-            name: data.loginId.includes("@")
-              ? (data.loginId.split("@")[0] ?? "User")
-              : data.loginId,
-            email: data.loginId,
-          })
-          navigate("/", { replace: true })
-        },
+  async function onSubmit(values: LoginFormValues) {
+    clearError()
+    try {
+      // Use the centralized signIn logic which now handles permission fetching
+      const result = await signIn(values.email, values.password)
+      
+      // If result is returned, it means OTP is required (see AuthContext.signIn)
+      if (result && "nextPage" in result && result.nextPage === "otp") {
+        navigate("/otp", {
+          state: {
+            email: result.loginId,
+            password: values.password,
+            otp: result.otp,
+          },
+          replace: true,
+        })
+        return
       }
-    )
+      
+      // If we reach here, it was a 'dashboard' flow
+      navigate("/", { replace: true })
+    } catch (err: any) {
+      // Handle login error
+    }
   }
 
   const loginErrorMessage =

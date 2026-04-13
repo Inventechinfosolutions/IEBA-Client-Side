@@ -78,6 +78,7 @@ export async function login(credentials: LoginCredentials): Promise<LoginResult>
     userId: payload.userId,
     loginId: payload.loginId,
     nextPage,
+    accessToken: token,
     otp:
       payload.otp == null
         ? undefined

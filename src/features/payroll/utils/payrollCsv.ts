@@ -9,33 +9,36 @@ function escapeCsvCell(value: string): string {
 
 function rowToCsvCells(row: PayrollManagementRow): string[] {
   return [
-    row.employeeId,
-    row.employeeLastName,
-    row.employeeFirstName,
-    row.employeeMiddleName,
-    row.suffix,
-    row.department,
-    row.bargainingUnit,
-    row.type,
-    row.position,
-    row.payPeriodBegin,
-    row.payPeriodEnd,
-    row.checkDate,
-    row.fica,
-    row.pers,
-    row.defComp,
-    row.cafeteria,
-    row.lifeInsurance,
-    row.standby,
-    row.spa,
-    row.cellStipend,
-    row.std,
-    row.ot,
-    row.recruitingIncentive,
-    row.cashOut,
-    row.payout,
-    row.salary,
-  ].map(escapeCsvCell)
+    row.employeeId || "",
+    row.employeeFirstName || "",
+    row.employeeMiddleName || "",
+    row.employeeLastName || "",
+    row.suffix || "",
+    row.department || "",
+    row.bargainingUnit || "",
+    row.type || "",
+    row.position || "",
+    row.payPeriodBegin || "",
+    row.payPeriodEnd || "",
+    row.checkDate || "",
+    row.fica || "",
+    row.pers || "",
+    row.defComp || "",
+    row.cafeteria || "",
+    row.lifeInsurance || "",
+    row.standby || "",
+    row.spa || "",
+    row.cellStipend || "",
+    row.std || "",
+    row.ot || "",
+    row.recruitingIncentive || "",
+    row.cashOut || "",
+    row.payout || "",
+    row.salary || "",
+    row.year || "",
+    row.month || "",
+    row.payrollType || "",
+  ].map((val) => escapeCsvCell(String(val ?? "")))
 }
 
 export function buildPayrollRowsCsvContent(
@@ -71,23 +74,39 @@ function computeHeaderColumnWidths(headers: readonly string[]): number[] {
   return headers.map((h) => clamp(h.length + 2, 10, 34))
 }
 
-export async function buildPayrollTemplateXlsxBlob(headers: readonly string[]): Promise<Blob> {
-  // Use SheetJS for browser-friendly .xlsx generation.
-  // Lazy-load so Excel generation doesn’t affect initial bundle.
+export async function buildPayrollRowsXlsxBlob(
+  headers: readonly string[],
+  rows: readonly PayrollManagementRow[],
+): Promise<Blob> {
   const mod = await import("xlsx")
   const XLSX = mod.default ?? mod
 
-  const widths = computeHeaderColumnWidths(headers)
+  // 1. Prepare data (AOA format: Header row + Data rows)
+  const data = [
+    Array.from(headers),
+    ...rows.map((r) => rowToCsvCells(r))
+  ]
 
-  const ws = XLSX.utils.aoa_to_sheet([Array.from(headers)])
-  ;(ws as unknown as { ["!cols"]?: Array<{ wch: number }> })["!cols"] = widths.map((wch) => ({ wch }))
+  // 2. Create worksheet
+  const ws = XLSX.utils.aoa_to_sheet(data)
 
-  // Freeze header row (row 1). SheetJS supports this via workbook view (not sheet metadata).
+  // 3. Compute auto-fit column widths
+  // Start with header lengths, then check max length in each data column
+  const colWidths = headers.map((h, i) => {
+    let maxLen = h.length
+    for (const row of rows) {
+      const cellVal = String(rowToCsvCells(row)[i] || "")
+      if (cellVal.length > maxLen) maxLen = cellVal.length
+    }
+    // Clamp between 12 and 40 characters
+    return { wch: Math.max(12, Math.min(40, maxLen + 2)) }
+  })
+
+  ws["!cols"] = colWidths
+
+  // 4. Create workbook and package as blob
   const wb = XLSX.utils.book_new()
-  XLSX.utils.book_append_sheet(wb, ws, "Payroll Template")
-  ;(wb as unknown as { Workbook?: { Views?: Array<Record<string, unknown>> } }).Workbook = {
-    Views: [{ RTL: false, activeTab: 0 }],
-  }
+  XLSX.utils.book_append_sheet(wb, ws, "Payroll Data")
 
   const out = XLSX.write(wb, { bookType: "xlsx", type: "array" }) as ArrayBuffer
   return new Blob([out], { type: XLSX_MIME })

@@ -9,21 +9,17 @@ import { SingleSelectDropdown, type SingleSelectOption } from "@/components/ui/d
 import { Label } from "@/components/ui/label"
 
 import { payrollUploadFormSchema } from "../schemas"
+import { PayrollFrequency, PAYROLL_FREQUENCY_OPTIONS } from "../enums/payrollFrequency"
 import type { PayrollUploadFormValues, PayrollUploadSectionProps } from "../types"
-import { PAYROLL_TABLE_TEMPLATE_HEADERS } from "../mock"
-import { buildPayrollTemplateXlsxBlob, triggerBrowserDownloadBlob } from "../utils/payrollCsv"
+import { downloadPayrollTemplate } from "../api/payrollApi"
+import { triggerBrowserDownloadBlob } from "../utils/payrollCsv"
 
 const sectionCardShadowClass = "shadow-[0_4px_16px_rgba(16,24,40,0.12)]"
 
-const UPLOAD_TYPE_OPTIONS: SingleSelectOption[] = [
-  { value: "bi_weekly", label: "Bi Weekly" },
-  { value: "semi_monthly", label: "Semi Monthly" },
-  { value: "monthly", label: "Monthly" },
-  { value: "weekly", label: "Weekly" },
-]
+const UPLOAD_TYPE_OPTIONS: SingleSelectOption[] = PAYROLL_FREQUENCY_OPTIONS
 
 const defaultUploadValues: PayrollUploadFormValues = {
-  uploadType: "bi_weekly",
+  uploadType: PayrollFrequency.BI_WEEKLY,
 }
 
 const primaryActionButtonClass =
@@ -49,7 +45,7 @@ export function PayrollUploadSection({ isUploading, onSubmitUpload }: PayrollUpl
   }
 
   const handleDownloadTemplateClick = async () => {
-    const blob = await buildPayrollTemplateXlsxBlob(PAYROLL_TABLE_TEMPLATE_HEADERS)
+    const blob = await downloadPayrollTemplate()
     triggerBrowserDownloadBlob("payroll-upload-template.xlsx", blob)
   }
 
@@ -65,7 +61,7 @@ export function PayrollUploadSection({ isUploading, onSubmitUpload }: PayrollUpl
         <CardContent className="min-w-0 max-w-full px-5 py-5">
           <div className="flex min-w-0 max-w-full flex-wrap items-end gap-6">
             <div className="w-[min(100%,200px)] shrink-0 sm:w-[200px]">
-              <Label className="mb-2 block text-[12px] font-medium text-[var(--primary)]">Type:</Label>
+              <Label className="mb-2 block text-[12px] font-medium text-(--primary)">Type:</Label>
               <Controller
                 name="uploadType"
                 control={form.control}
@@ -76,7 +72,7 @@ export function PayrollUploadSection({ isUploading, onSubmitUpload }: PayrollUpl
                     onBlur={field.onBlur}
                     options={UPLOAD_TYPE_OPTIONS}
                     placeholder="Select type"
-                    className="!h-[46px] !min-h-[46px] w-full !rounded-[6px] !border-[#d6d7dc] !bg-[#f3f4f6] !text-[14px] !text-[#111827]"
+                    className="h-[46px]! min-h-[46px]! w-full rounded-[6px]! border-[#d6d7dc]! bg-[#f3f4f6]! text-[14px]! text-[#111827]!"
                     itemButtonClassName="rounded-[6px] px-3 py-2"
                     itemLabelClassName="!text-[14px]"
                   />
@@ -86,7 +82,7 @@ export function PayrollUploadSection({ isUploading, onSubmitUpload }: PayrollUpl
 
             <div className="flex min-w-0 flex-1 flex-wrap items-end gap-2 sm:gap-3">
               <div className="min-w-0 w-full max-w-[300px] shrink-0">
-                <Label className="mb-2 block text-[12px] font-medium text-[var(--primary)]">Attachment:</Label>
+                <Label className="mb-2 block text-[12px] font-medium text-(--primary)">Attachment:</Label>
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -112,7 +108,7 @@ export function PayrollUploadSection({ isUploading, onSubmitUpload }: PayrollUpl
                   >
                     {selectedFile ? selectedFile.name : "No file chosen"}
                   </span>
-                  <CloudUpload className="size-5 shrink-0 text-[var(--primary)]" aria-hidden />
+                  <CloudUpload className="size-5 shrink-0 text-(--primary)" aria-hidden />
                 </div>
               </div>
 
