@@ -1,5 +1,5 @@
 import { api } from "@/lib/api"
-import type { DepartmentUser } from "../../types"
+import type { DepartmentUser } from "@/features/payroll/types"
 
 /**
  * Fetches users (employees) for a specific department.
