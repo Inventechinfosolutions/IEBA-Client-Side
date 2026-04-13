@@ -77,41 +77,37 @@ function SettingsFormInner({ settings, isSaving, onSubmitSettings }: SettingsFor
 
   const handleSettingsFormSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
+    if (isSaving) return
 
-    const submitter = (e.nativeEvent as SubmitEvent).submitter as HTMLElement | null
-    const rawSection = submitter?.getAttribute("data-settings-section")
+    const native = e.nativeEvent as SubmitEvent
+    // Robust submitter discovery
+    const submitter = (native.submitter || document.activeElement) as HTMLElement | null
+    const attr = submitter?.getAttribute("data-settings-section")
+    const submitterSection = isSettingsFormSaveSection(attr) ? attr : undefined
 
-    if (isSettingsFormSaveSection(rawSection)) {
-      form.clearErrors()
-      const isValid = await form.trigger(rawSection)
-      if (!isValid) {
-        showSettingsFormErrorToast(
-          getSettingsFormSectionErrorMessage(form.formState.errors, rawSection),
-        )
-        return
-      }
+    // Clear previous errors so validation state is fresh for the current section
+    form.clearErrors()
 
-      onSubmitSettings(form.getValues(), { submitterSection: rawSection })
+    // Trigger validation for the section OR the whole form
+    const isValid = submitterSection 
+      ? await form.trigger(submitterSection) 
+      : await form.trigger()
+
+    if (!isValid) {
+      const message = submitterSection 
+        ? getSettingsFormSectionErrorMessage(form.formState.errors, submitterSection)
+        : getSettingsFormFirstErrorMessage(form.formState.errors)
+      showSettingsFormErrorToast(message)
       return
     }
 
-    void form.handleSubmit(
-      (submittedValues, event) => {
-        const native = event?.nativeEvent as SubmitEvent | undefined
-        const attr = native?.submitter?.getAttribute("data-settings-section")
-        const submitterSection = isSettingsFormSaveSection(attr) ? attr : undefined
-        onSubmitSettings(submittedValues, { submitterSection })
-      },
-      (errors) => {
-        showSettingsFormErrorToast(getSettingsFormFirstErrorMessage(errors))
-      },
-    )(e)
+    onSubmitSettings(form.getValues(), { submitterSection })
   }
 
   return (
     <SettingsFiscalYearUiProvider value={fiscalYearUi}>
       <FormProvider {...form}>
-        <form onSubmit={(e) => void handleSettingsFormSubmit(e)}>
+        <form onSubmit={handleSettingsFormSubmit}>
           <SettingsAccordion isSaving={isSaving} />
         </form>
       </FormProvider>

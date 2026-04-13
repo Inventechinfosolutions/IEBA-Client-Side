@@ -1,12 +1,11 @@
 import { useQuery } from "@tanstack/react-query"
 
 import { settingsKeys } from "@/features/settings/keys"
-import { delay, mockActivityOptions, MOCK_NETWORK_DELAY_MS } from "@/features/settings/mock"
-import type { ActivityOption } from "@/features/settings/mock"
+import { ACTIVITY_OPTIONS } from "@/features/settings/constants"
+import type { ActivityOption } from "@/features/settings/types"
 
 async function fetchActivityOptions(): Promise<ActivityOption[]> {
-  await delay(MOCK_NETWORK_DELAY_MS)
-  return mockActivityOptions
+  return ACTIVITY_OPTIONS
 }
 
 export function useActivityOptions() {

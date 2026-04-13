@@ -1,12 +1,11 @@
 import { useQuery } from "@tanstack/react-query"
 
 import { settingsKeys } from "@/features/settings/keys"
-import { delay, mockReportOptions, MOCK_NETWORK_DELAY_MS } from "@/features/settings/mock"
-import type { ReportOption } from "@/features/settings/mock"
+import { REPORT_OPTIONS } from "@/features/settings/constants"
+import type { ReportOption } from "@/features/settings/types"
 
 async function fetchReportOptions(): Promise<ReportOption[]> {
-  await delay(MOCK_NETWORK_DELAY_MS)
-  return mockReportOptions
+  return REPORT_OPTIONS
 }
 
 export function useReportOptions() {

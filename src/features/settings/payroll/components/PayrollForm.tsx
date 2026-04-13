@@ -3,10 +3,12 @@ import {
   DndContext,
   KeyboardSensor,
   PointerSensor,
-  closestCenter,
+  closestCorners,
   useSensor,
   useSensors,
+  DragOverlay,
   type DragEndEvent,
+  type DragStartEvent,
 } from "@dnd-kit/core"
 import {
   SortableContext,
@@ -15,6 +17,7 @@ import {
   useSortable,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable"
+import { restrictToVerticalAxis } from "@dnd-kit/modifiers"
 import { CSS } from "@dnd-kit/utilities"
 import { ChevronDown, ChevronUp } from "lucide-react"
 import { Controller, useFieldArray, useFormContext } from "react-hook-form"
@@ -38,7 +41,7 @@ import {
   type SortablePayrollRowProps as SortablePayrollRowPropsModel,
   PAYROLL_BY_OPTIONS,
   PAYROLL_TABLE_SCROLL_MAX_HEIGHT_PX,
-} from "./types"
+} from "../types"
 
 const SIX_DOTS_UNIT_PX = 2.5
 
@@ -85,9 +88,10 @@ function orderPayrollRowsForDisplay(
   return sorted
 }
 
-function SortablePayrollRow({ row, storageIndex, updateRow }: SortablePayrollRowPropsModel) {
+function SortablePayrollRow({ row, storageIndex, updateRow, isSortingActive }: SortablePayrollRowPropsModel & { isSortingActive: boolean }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: row.key,
+    disabled: isSortingActive,
   })
   const style: CSSProperties = {
     transform: CSS.Transform.toString(transform),
@@ -99,18 +103,25 @@ function SortablePayrollRow({ row, storageIndex, updateRow }: SortablePayrollRow
       ref={setNodeRef}
       style={style}
       className={cn(
-        "h-[39.6px] cursor-grab touch-none border-b border-[#eef0f5] transition-colors last:border-b-0 hover:bg-[#FAFAFA] active:cursor-grabbing",
-        isDragging && "relative z-[5] cursor-grabbing opacity-90",
+        "h-[40px] border-b border-[#eef0f5] transition-colors last:border-b-0 hover:bg-[#FAFAFA] cursor-grab active:cursor-grabbing",
+        isDragging && "opacity-30 grayscale",
+        isSortingActive && "opacity-80 cursor-default"
       )}
-      {...listeners}
-      {...attributes}
+      {...(!isSortingActive ? listeners : {})}
+      {...(!isSortingActive ? attributes : {})}
     >
       <TableCell className="w-1/3 border-r border-[#eef0f5] bg-[#FAFAFA] py-1 text-left text-[12px] text-[#111827]">
         <div className="flex items-center gap-2 px-2">
-          <span aria-hidden className="pointer-events-none">
-            <SixDotsIcon />
-          </span>
-          <span className="pointer-events-none select-none">{row.label}</span>
+          {!isSortingActive ? (
+            <span 
+              className="flex items-center justify-center min-w-[20px]"
+            >
+              <SixDotsIcon />
+            </span>
+          ) : (
+             <span className="w-[20px]" />
+          )}
+          <span className="select-none pointer-events-none">{row.label}</span>
         </div>
       </TableCell>
       <TableCell className="w-1/3 border-r border-[#eef0f5] py-1 text-center">
@@ -145,6 +156,9 @@ export function PayrollForm() {
 
   const [columnNameSortState, setColumnNameSortState] = useState<ColumnNameSortState>("none")
   const [columnNameSortTooltipOpen, setColumnNameSortTooltipOpen] = useState(false)
+  const [activeId, setActiveId] = useState<string | null>(null)
+
+  const isSortingActive = columnNameSortState !== "none"
 
   const displayRows = useMemo(
     () => orderPayrollRowsForDisplay(columns, columnNameSortState),
@@ -171,24 +185,26 @@ export function PayrollForm() {
         : "Click to cancel sorting"
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   )
 
+  const onDragStart = (event: DragStartEvent) => {
+    setActiveId(event.active.id as string)
+  }
+
   const onDragEnd = (event: DragEndEvent) => {
+    setActiveId(null)
     const { active, over } = event
     if (!over || active.id === over.id) return
     const base = getValues("payroll.columns") as PayrollColumnSettingModel[]
-    const visible = orderPayrollRowsForDisplay(base, columnNameSortState)
-    const oldIndex = visible.findIndex((r) => r.key === active.id)
-    const newIndex = visible.findIndex((r) => r.key === over.id)
+    const oldIndex = base.findIndex((r) => r.key === active.id)
+    const newIndex = base.findIndex((r) => r.key === over.id)
     if (oldIndex === -1 || newIndex === -1) return
-    replace(arrayMove(visible, oldIndex, newIndex))
+    replace(arrayMove(base, oldIndex, newIndex))
   }
 
-  // Save is handled by the parent `SettingsForm` via submit + data-settings-section.
-  // Keep trigger here only for immediate UI affordances if needed later.
-  void trigger
+  const activeRow = activeId ? columns.find(c => c.key === activeId) : null
 
   return (
     <div className="bg-transparent px-6 py-3">
@@ -256,7 +272,13 @@ export function PayrollForm() {
               className="min-h-0 overflow-y-scroll overflow-x-hidden bg-white [scrollbar-gutter:stable]"
               style={{ maxHeight: `${PAYROLL_TABLE_SCROLL_MAX_HEIGHT_PX}px` }}
             >
-              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+              <DndContext 
+                sensors={sensors} 
+                collisionDetection={closestCorners} 
+                onDragStart={onDragStart}
+                onDragEnd={onDragEnd}
+                modifiers={[restrictToVerticalAxis]}
+              >
                 <table className="w-full border-collapse table-fixed text-[12px]">
                   <SortableContext
                     items={displayRows.map((r) => r.key)}
@@ -272,12 +294,33 @@ export function PayrollForm() {
                             row={row}
                             storageIndex={storageIndex}
                             updateRow={updateRow}
+                            isSortingActive={isSortingActive}
                           />
                         )
                       })}
                     </TableBody>
                   </SortableContext>
                 </table>
+                <DragOverlay dropAnimation={null}>
+                  {activeId && activeRow && (
+                    <table className="w-full border-collapse table-fixed text-[12px] bg-white shadow-xl opacity-90 border border-[var(--primary)]/20 rounded-md overflow-hidden">
+                      <tbody>
+                        <tr className="h-[40px] flex items-center">
+                          <td className="w-1/3 border-r border-[#eef0f5] bg-[#FAFAFA] py-1 text-left px-2 flex items-center gap-2">
+                            <SixDotsIcon />
+                            <span className="font-medium">{activeRow.label}</span>
+                          </td>
+                          <td className="w-1/3 border-r border-[#eef0f5] py-1 text-center">
+                             <input type="checkbox" checked={activeRow.enabled} readOnly className="size-4" />
+                          </td>
+                          <td className="w-1/3 py-1 text-center">
+                             <input type="checkbox" checked={activeRow.editable} readOnly className="size-4" />
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  )}
+                </DragOverlay>
               </DndContext>
             </div>
           </div>
@@ -291,7 +334,9 @@ export function PayrollForm() {
             render={({ field }) => (
               <SingleSelectDropdown
                 value={field.value ?? ""}
-                onChange={field.onChange}
+                onChange={(val) => {
+                  field.onChange(val)
+                }}
                 onBlur={field.onBlur}
                 options={PAYROLL_BY_OPTIONS.map((opt) => ({ value: opt, label: opt }))}
                 placeholder="Payroll by"
@@ -308,7 +353,7 @@ export function PayrollForm() {
         <Button
           type="submit"
           data-settings-section={SettingsFormSaveSection.Payroll}
-          className="h-[44px] min-w-[120px] rounded-[8px] bg-[var(--primary)] px-8 text-[12px] font-medium text-white hover:bg-[var(--primary)]  cursor-pointer disabled:cursor-not-allowed disabled:opacity-70"
+          className="h-[44px] min-w-[120px] rounded-[8px] bg-[var(--primary)] px-8 text-[12px] font-medium text-white hover:bg-[var(--primary)] cursor-pointer disabled:cursor-not-allowed disabled:opacity-70"
         >
           Save
         </Button>
@@ -316,4 +361,3 @@ export function PayrollForm() {
     </div>
   )
 }
-

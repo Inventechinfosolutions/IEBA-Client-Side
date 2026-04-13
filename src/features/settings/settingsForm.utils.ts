@@ -1,6 +1,6 @@
 import type { FieldErrors } from "react-hook-form"
 
-import { PAYROLL_COLUMN_DEFS } from "@/features/settings/components/Payroll/types"
+import { PAYROLL_COLUMN_DEFS } from "@/features/settings/payroll"
 import type { SettingsFormSaveSection } from "@/features/settings/enums/setting.enum"
 import { SETTINGS_FORM_SAVE_SECTION_ORDER } from "@/features/settings/settingsForm.constants"
 import type {

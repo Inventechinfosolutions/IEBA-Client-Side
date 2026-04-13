@@ -5,7 +5,7 @@ import { generalSettingsSchema } from "@/features/settings/components/General/sc
 import { reportsSettingsSchema } from "@/features/settings/components/Reports/schema"
 import { countySettingsSchema } from "@/features/settings/components/Country/schema"
 import { fiscalYearSettingsSchema } from "@/features/settings/components/FiscalYear/schema"
-import { payrollSettingsSchema } from "@/features/settings/components/Payroll/schema"
+import { payrollSettingsSchema } from "@/features/settings/payroll/components/schema"
 
 export const settingsFormSchema = z.object({
   county: countySettingsSchema,

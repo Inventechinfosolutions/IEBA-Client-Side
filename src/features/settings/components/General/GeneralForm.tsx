@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { SettingsFormSaveSection } from "@/features/settings/enums/setting.enum"
 import type { SettingsFormValues } from "@/features/settings/types"
-import { useUpdateInactivityTime } from "./queries"
 import { AppLogout } from "./AppLogout"
 
 const labelClassName = "text-[12px] font-normal text-[#2a2f3a]"
@@ -30,7 +29,6 @@ const minutesAddonClassName =
  */
 export function GeneralForm() {
   const { register, getValues, setValue } = useFormContext<SettingsFormValues>()
-  const { mutate: updateInactivityTime } = useUpdateInactivityTime()
 
   const stepMinutesAction = (delta: 1 | -1) => {
     const currentRaw = getValues("general.screenInactivityTimeMinutes")
@@ -44,10 +42,6 @@ export function GeneralForm() {
     })
   }
 
-  const handleSaveAction = () => {
-    const value = getValues("general.screenInactivityTimeMinutes")
-    updateInactivityTime(Number(value))
-  }
 
   return (
     <div className="bg-transparent px-6 py-3">
@@ -99,7 +93,6 @@ export function GeneralForm() {
           <Button
             type="submit"
             data-settings-section={SettingsFormSaveSection.General}
-            onClick={handleSaveAction}
             className="h-[44px] w-[88px] cursor-pointer rounded-[10px] bg-[var(--primary)] px-0 py-2 text-[14px] font-medium text-white hover:bg-[var(--primary)]"
           >
             Save
