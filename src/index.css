@@ -313,3 +313,21 @@
   display: flex;
   justify-content: center;
 }
+/* Custom IEBA Scrollbar */
+.ieba-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #e5e7eb transparent;
+}
+.ieba-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+.ieba-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.ieba-scrollbar::-webkit-scrollbar-thumb {
+  background: #e5e7eb;
+  border-radius: 9999px;
+}
+.ieba-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #d1d5db;
+}
