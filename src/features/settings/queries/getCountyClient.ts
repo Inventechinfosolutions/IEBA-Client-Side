@@ -55,10 +55,6 @@ export type CountyClientDetailModel = {
   locations?: ClientLocation[] | null
 }
 
-type ClientListResponse = {
-  data: Array<{ id: number; name: string }>
-  meta?: unknown
-}
 
 function normalizeBase64ToDataUrl(content: string, mimeType?: string): string {
   const trimmed = content.trim()
@@ -67,39 +63,10 @@ function normalizeBase64ToDataUrl(content: string, mimeType?: string): string {
   return `data:${mt};base64,${trimmed}`
 }
 
-async function fetchClientForCurrentCounty(countyName?: string): Promise<CountyClientDetailModel> {
-  const wanted = (countyName ?? "").trim().toLowerCase()
-  const LIMIT = 100
-
-  let page = 1
-  let firstRow: { id: number; name: string } | undefined
-  let match: { id: number; name: string } | undefined
-
-
-  for (;;) {
-    const listRes = await api.get<ApiResponseDto<ClientListResponse>>(
-      `/client?page=${page}&limit=${LIMIT}&sort=ASC`,
-    )
-    const rows = listRes.data?.data ?? []
-    if (!firstRow) firstRow = rows[0]
-
-    if (wanted) {
-      match = rows.find((c) => c.name.trim().toLowerCase() === wanted)
-      if (match) break
-    }
-
-    if (rows.length < LIMIT) break
-    page += 1
-    if (page > 100) break
-  }
-
-  const resolved = match ?? firstRow
-
-  if (!resolved) {
-    throw new Error("No client found for this county/tenant")
-  }
-
-  return fetchCountyClientById(resolved.id)
+async function fetchClientForCurrentCounty(_countyName?: string): Promise<CountyClientDetailModel> {
+  // Directly fetch client ID 1, as agreed that the list call is redundant
+  // and we primarily deal with the main county client in settings.
+  return fetchCountyClientById(1)
 }
 
 /** Single client detail (includes `locations`). Use before save/delete diffing so the list matches the DB. */

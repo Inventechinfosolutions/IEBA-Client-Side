@@ -85,7 +85,7 @@ export function TransferPanel({
                     className={`flex size-5 items-center justify-center rounded-[6px] border shadow-sm transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 ${
                       allSelected
                         ? "bg-white border-[#6C5DD3] text-[#6C5DD3]"
-                        : "bg-white border-[#E5E7EB] text-transparent hover:border-[#D1D5DB]"
+                        : "bg-white border-[#D1D5DB] text-transparent hover:border-[#6C5DD3]/30"
                     }`}
                   >
                     <Check className="size-3.2 stroke-3" />
@@ -110,20 +110,20 @@ export function TransferPanel({
                     type="button"
                     onClick={() => onToggleItem(item.id)}
                     disabled={isListDisabled}
-                    className={`group relative flex items-center justify-between px-4 py-3 text-left transition-colors border-b border-[#F3F4F6] last:border-0 ${
+                    className={`group relative flex items-start justify-between px-4 py-3 text-left transition-colors border-b border-[#F3F4F6] last:border-0 ${
                       isSelected ? "bg-[#F3F0FF]" : "hover:bg-[#F9FAFB]"
                     } ${isListDisabled ? "cursor-not-allowed!" : "cursor-pointer"}`}
                   >
-                    <div className="flex items-center flex-1 min-w-0">
+                    <div className="flex items-start flex-1 min-w-0 pt-0.5">
                       {isActivity && (
-                        <div className="absolute left-0 h-full w-8 flex items-center justify-center">
+                        <div className="absolute left-0 top-0 h-full w-8 flex items-center justify-center">
                           {/* Tree Lines */}
                           <div className="absolute left-4 top-0 w-px h-full bg-[#E5E7EB]" />
-                          <div className="absolute left-4 top-1/2 w-3 h-px bg-[#E5E7EB]" />
+                          <div className="absolute left-4 top-[22px] w-3 h-px bg-[#E5E7EB]" />
                         </div>
                       )}
                       
-                      <span className={`text-[13px] font-medium truncate pr-2 ${isActivity ? "pl-6" : ""}`}>
+                      <span className={`text-[13px] font-medium whitespace-normal break-words pr-2 ${isActivity ? "pl-6" : ""}`}>
                         {item.code ? (
                           <>
                             <span className="text-[#6C5DD3] font-bold">({item.code})</span>
@@ -136,10 +136,10 @@ export function TransferPanel({
                     </div>
 
                     <div
-                      className={`flex size-5 shrink-0 items-center justify-center rounded-[6px] border shadow-sm transition-all ${
+                      className={`flex size-5 shrink-0 items-center justify-center rounded-[6px] border shadow-sm transition-all mt-0.5 ${
                         isSelected
                           ? "bg-[#6C5DD3] border-[#6C5DD3] text-white"
-                          : `bg-white border-[#E5E7EB] text-transparent ${isListDisabled ? "bg-[#F3F4F6]" : "hover:border-[#D1D5DB]"}`
+                          : `bg-white border-[#D1D5DB] text-transparent ${isListDisabled ? "bg-[#F3F4F6]" : "hover:border-[#6C5DD3]/30"}`
                       }`}
                     >
                       <Check className="size-3.2 stroke-3" />

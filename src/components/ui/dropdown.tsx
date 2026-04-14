@@ -76,7 +76,7 @@ export function SingleSelectDropdown({
   const [internalOpen, setInternalOpen] = useState(false)
   const controlled = openControlled !== undefined
   const open = controlled ? openControlled : internalOpen
-  const valueTrimmed = value.trim()
+  const valueTrimmed = String(value ?? "").trim()
 
   const selectedLabel = useMemo(() => {
     if (!valueTrimmed) return ""
