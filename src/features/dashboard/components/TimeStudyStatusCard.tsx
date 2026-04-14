@@ -3,15 +3,9 @@ import { Clock } from "lucide-react"
 import iconApproved from "@/Assets/icon-approved.png"
 import iconPending from "@/Assets/icon-pending.png"
 import iconNotSubmitted from "@/Assets/icon-not-submitted.png"
+import type { TimeStudyStatusCardProps, StatusRowProps } from "../types"
 
-interface Props {
-  approved: number
-  pendingApproval: number
-  notSubmitted: number
-  isLoading?: boolean
-}
-
-export function TimeStudyStatusCard({ approved, pendingApproval, notSubmitted, isLoading }: Props) {
+export function TimeStudyStatusCard({ approved, pendingApproval, notSubmitted, isLoading }: TimeStudyStatusCardProps) {
   const navigate = useNavigate()
 
   const handleAction = () => {
@@ -50,14 +44,7 @@ function StatusRow({
   actionLabel,
   onAction,
   loading,
-}: {
-  icon: string
-  label: string
-  count: number
-  actionLabel: string
-  onAction: () => void
-  loading?: boolean
-}) {
+}: StatusRowProps) {
   return (
     <div
       className="grid items-center gap-2"

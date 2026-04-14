@@ -1,13 +1,8 @@
 import { Link, useNavigate } from "react-router-dom"
 import { ChevronDown, ChevronRight } from "lucide-react"
-import type { ReportItem } from "../types"
+import type { ReportItem, ReportsCardProps } from "../types"
 
-interface Props {
-  reports: ReportItem[]
-  isLoading?: boolean
-}
-
-export function ReportsCard({ reports, isLoading }: Props) {
+export function ReportsCard({ reports, isLoading }: ReportsCardProps) {
   const navigate = useNavigate()
 
   const handleClick = (item: ReportItem) => {
@@ -24,7 +19,7 @@ export function ReportsCard({ reports, isLoading }: Props) {
   }
 
   return (
-    <div className="flex h-full flex-col rounded-[10px] border border-[#E8EAF6] bg-white shadow-[0_0_20px_0_#0000001a]">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-[10px] border border-[#E8EAF6] bg-white shadow-[0_0_20px_0_#0000001a]">
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-3 border-b border-[#F0F0F0]">
         <div className="flex items-center gap-2">
@@ -40,9 +35,9 @@ export function ReportsCard({ reports, isLoading }: Props) {
       </div>
 
       {/* Left accent bar + list */}
-      <div className="flex flex-1 min-h-0 overflow-hidden">
+      <div className="flex flex-1 min-h-0 overflow-hidden pr-5">
         <div className="w-[4px] bg-[#6C5DD3] rounded-full my-2 ml-4 shrink-0" />
-        <div className="flex-1 overflow-y-auto divide-y divide-[#F5F5F7] min-h-0 ieba-scrollbar">
+        <div className="flex-1 min-h-0 max-h-full overflow-y-auto divide-y divide-[#F5F5F7] ieba-scrollbar pr-2">
           {isLoading &&
             Array.from({ length: 5 }).map((_, i) => (
               <div key={i} className="flex items-center gap-3 px-4 py-2.5 animate-pulse">

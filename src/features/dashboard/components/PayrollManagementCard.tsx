@@ -2,13 +2,9 @@ import { useNavigate } from "react-router-dom"
 import { Bar, BarChart, XAxis } from "recharts"
 
 import { ChartContainer, type ChartConfig } from "@/components/ui/chart"
+import type { PayrollManagementCardProps, PayrollChartData } from "../types"
 
-interface Props {
-  canViewPayroll?: boolean
-  onDownloadTemplate?: () => void
-}
-
-const chartData = [
+const chartData: PayrollChartData[] = [
   { month: "Jan", progress: 90 },
   { month: "Feb", progress: 30 },
   { month: "Mar", progress: 50 },
@@ -23,7 +19,7 @@ const chartConfig = {
   },
 } satisfies ChartConfig
 
-export function PayrollManagementCard({ canViewPayroll, onDownloadTemplate }: Props) {
+export function PayrollManagementCard({ canViewPayroll, onDownloadTemplate }: PayrollManagementCardProps) {
   const navigate = useNavigate()
 
   if (!canViewPayroll) return null

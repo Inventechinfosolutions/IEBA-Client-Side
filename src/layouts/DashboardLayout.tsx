@@ -23,6 +23,8 @@ import {
   Settings,
   MapPin,
   User as UserIcon,
+  Plus,
+  Bell,
 } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
 import { usePermissions } from "@/hooks/usePermissions"
@@ -58,7 +60,8 @@ export function DashboardLayout() {
           <div className="flex flex-1 justify-center -translate-60 -translate-y-3">
             <MimicBanner inline />
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-6">
+            {!isSuperAdmin && <div className="flex items-center gap-4" />}
             {user && (
               <>
                 <DropdownMenu>

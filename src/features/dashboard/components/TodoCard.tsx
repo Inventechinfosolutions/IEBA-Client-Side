@@ -1,11 +1,6 @@
 import { Link } from "react-router-dom"
 import { ListTodo, ChevronRight, CheckCircle2, Clock } from "lucide-react"
-import type { TodoItem } from "../types"
-
-interface Props {
-  items: TodoItem[]
-  isLoading?: boolean
-}
+import type { TodoCardProps } from "../types"
 
 const STATUS_COLORS: Record<string, string> = {
   completed: "text-[#3DBE8A]",
@@ -19,7 +14,7 @@ function getStatusColor(status: string) {
   return STATUS_COLORS[status?.toLowerCase()] ?? STATUS_COLORS.default
 }
 
-export function TodoCard({ items, isLoading }: Props) {
+export function TodoCard({ items, isLoading }: TodoCardProps) {
   return (
     <div className="flex h-full flex-col rounded-[10px] border border-[#E8EAF6] bg-white shadow-[0_0_20px_0_#0000001a]">
       {/* Header */}
@@ -37,7 +32,7 @@ export function TodoCard({ items, isLoading }: Props) {
       </div>
 
       {/* List */}
-      <div className="flex-1 overflow-y-auto divide-y divide-[#F3F4F6] px-1">
+      <div className="flex-1 overflow-y-auto divide-y divide-[#F3F4F6] pr-5">
         {isLoading &&
           Array.from({ length: 4 }).map((_, i) => (
             <div key={i} className="flex items-center gap-3 px-4 py-3 animate-pulse">
