@@ -1,17 +1,6 @@
 import { Link } from "react-router-dom"
 import PersonalLeaveIcon from "@/assets/icon-personal-leave.png"
-
-interface Props {
-  open: number
-  approved: number
-  rejected: number
-  deptCount: number
-  programCount: number
-  activitiesCount?: number
-  jobPools?: number
-  costPools?: number
-  isLoading?: boolean
-}
+import type { StaffStatsCardProps, StatRowProps, NavRowProps } from "../types"
 
 export function StaffStatsCard({
   open,
@@ -23,7 +12,7 @@ export function StaffStatsCard({
   jobPools,
   costPools,
   isLoading,
-}: Props) {
+}: StaffStatsCardProps) {
   return (
     <div className="flex flex-col gap-4 h-full">
       {/* Staff Leave Requests */}
@@ -48,9 +37,9 @@ export function StaffStatsCard({
         <div className="flex flex-col justify-between h-full">
           <NavRow to="/department" label="Departments" value={deptCount} loading={isLoading} />
           <NavRow to="/program" label="Programs" value={programCount} loading={isLoading} />
-          <NavRow label="Activities" value={activitiesCount} loading={isLoading} />
-          <NavRow label="Job Pools" value={jobPools} loading={isLoading} />
-          <NavRow label="Cost Pools" value={costPools} loading={isLoading} />
+          <NavRow to="/county-activity-code" label="Activities" value={activitiesCount} loading={isLoading} />
+          <NavRow to="/job-pool" label="Job Pools" value={jobPools} loading={isLoading} />
+          <NavRow to="/costpool" label="Cost Pools" value={costPools} loading={isLoading} />
         </div>
       </div>
     </div>
@@ -61,11 +50,7 @@ function StatRow({
   label,
   value,
   loading,
-}: {
-  label: string
-  value: number
-  loading?: boolean
-}) {
+}: StatRowProps) {
   return (
     <div className="flex items-center justify-between">
       <span className="text-[14px] font-medium text-[#4B5563]">{label}</span>
@@ -83,12 +68,7 @@ function NavRow({
   label,
   value,
   loading,
-}: {
-  to?: string
-  label: string
-  value?: number
-  loading?: boolean
-}) {
+}: NavRowProps) {
   const content = (
     <div className="flex items-center justify-between group">
       <span className="text-[14px] font-semibold text-[#1a1a2e] group-hover:text-[#6C5DD3] transition-colors cursor-pointer">

@@ -2,16 +2,18 @@ import { api } from "@/lib/api"
 import type {
   ApiEnvelope,
   ActiveUserResult,
+  DashboardOverview,
   Holiday,
   JpCpTotals,
   LeaveAggregateResult,
   ReportItem,
   TimeStudyAggregateResult,
   TimeStudySuperAggregateResult,
+  TodoItem,
   TodoListResult,
   UserCountResult,
 } from "../types"
-import { HolidayType, PayrollPeriod } from "../enums/dashboard.enum"
+import { PayrollPeriod, TimeStudyStatus, DashboardQueryType } from "../enums/dashboard.enum"
 
 
 
@@ -86,21 +88,25 @@ export function getPayrollDateRange(
 
 
 
-/** GET /api/v1/timestudyrecord/filter — personal TS aggregate */
+
 export async function getPersonalTimeStudy(params: {
   startDate: string
   endDate: string
   userId: string | number
+  departmentId?: number
+  roleId?: number
 }): Promise<TimeStudyAggregateResult> {
   const body = {
     startDate: params.startDate,
     endDate: params.endDate,
     userId: params.userId,
-    type: "monthly",
-    status: "submitted",
+    type: DashboardQueryType.Monthly,
+    status: TimeStudyStatus.Submitted,
+    departmentId: params.departmentId,
+    roleId: params.roleId,
   }
   const res = await api.post<ApiEnvelope<{ statusCounts: TimeStudyAggregateResult["statusCounts"] }[]>>(
-    "/timestudyrecord/filter",
+    "/timestudyrecords/user/timeentry/record",
     body,
   )
   const payload = (res?.data ?? res) as { statusCounts: TimeStudyAggregateResult["statusCounts"] }[]
@@ -108,22 +114,25 @@ export async function getPersonalTimeStudy(params: {
   return { statusCounts: first?.statusCounts ?? [] }
 }
 
-/** GET /api/v1/timestudyrecord/filter — admin aggregate (approval requests) */
+
 export async function getTimeRecordRequests(params: {
   startDate: string
   endDate: string
   userId: string | number
+  departmentId?: number
+  roleId?: number
 }): Promise<TimeStudySuperAggregateResult> {
   const body = {
     startDate: params.startDate,
     endDate: params.endDate,
     userId: params.userId,
-    type: "super",
-    status: "submitted",
-    usertype: "notuser",
+    type: DashboardQueryType.Super,
+    status: TimeStudyStatus.Submitted,
+    departmentId: params.departmentId,
+    roleId: params.roleId,
   }
   const res = await api.post<ApiEnvelope<{ statusCounts: TimeStudySuperAggregateResult["statusCounts"] }[]>>(
-    "/timestudyrecord/filter",
+    "/timestudyrecords/user/timeentry/record",
     body,
   )
   const payload = (res?.data ?? res) as { statusCounts: TimeStudySuperAggregateResult["statusCounts"] }[]
@@ -131,43 +140,43 @@ export async function getTimeRecordRequests(params: {
   return { statusCounts: first?.statusCounts ?? [] }
 }
 
-/** GET /api/v1/leave — leave details for a user */
+
 export async function getLeaveDetails(userId: string | number): Promise<LeaveAggregateResult> {
   const res = await api.get<ApiEnvelope<{ statusCounts: LeaveAggregateResult["statusCounts"] }>>(
-    `/leave?action=leaveDetails&userId=${userId}`,
+    `/usersleave?action=leaveDetails&userId=${userId}`,
   )
   const payload = (res?.data ?? res) as { statusCounts: LeaveAggregateResult["statusCounts"] }
   return { statusCounts: payload?.statusCounts ?? [] }
 }
 
-/** GET /api/v1/leave — all staff leave */
+
 export async function getStaffLeave(): Promise<LeaveAggregateResult> {
   const res = await api.get<ApiEnvelope<{ statusCounts: LeaveAggregateResult["statusCounts"] }>>(
-    "/leave?action=leaveDetails",
+    "/usersleave?action=leaveDetails",
   )
   const payload = (res?.data ?? res) as { statusCounts: LeaveAggregateResult["statusCounts"] }
   return { statusCounts: payload?.statusCounts ?? [] }
 }
 
-/** GET /api/v1/todo — todo items */
+
 export async function getTodos(): Promise<TodoListResult> {
-  const res = await api.get<ApiEnvelope<{ items: TodoListResult["items"] }>>(
-    "/todo?action=leaveDetails",
+  const res = await api.get<ApiEnvelope<{ data: TodoItem[] }>>(
+    "/todos",
   )
-  const payload = (res?.data ?? res) as { items: TodoListResult["items"] }
-  return { items: payload?.items ?? [] }
+  const payload = (res?.data ?? res) as { data: TodoItem[] }
+  return { items: payload?.data ?? [] }
 }
 
-/** GET /api/v1/settings/holidays — holiday list */
+
 export async function getHolidays(year: number): Promise<Holiday[]> {
   const res = await api.get<ApiEnvelope<Holiday[]>>(
-    `/settings/holidays?type=${HolidayType.Yearly}&year=${year}`,
+    `/setting/holiday/list?year=${year}`,
   )
   const payload = (res?.data ?? res) as Holiday[]
   return Array.isArray(payload) ? payload : []
 }
 
-/** GET /api/v1/user?screen=dashboard — user count */
+
 export async function getUserCount(): Promise<number> {
   const res = await api.get<ApiEnvelope<UserCountResult | number>>(
     "/user?screen=dashboard",
@@ -177,7 +186,7 @@ export async function getUserCount(): Promise<number> {
   return (payload as UserCountResult)?.count ?? 0
 }
 
-/** GET /api/v1/user/active-users — active users */
+
 export async function getActiveUsers(): Promise<number> {
   const res = await api.get<ApiEnvelope<ActiveUserResult>>(
     "/user/active-users",
@@ -186,7 +195,7 @@ export async function getActiveUsers(): Promise<number> {
   return payload?.userCount ?? 0
 }
 
-/** GET /api/v1/department?screen=dashboard — department count */
+
 export async function getDepartmentCount(): Promise<number> {
   const res = await api.get<ApiEnvelope<number>>(
     "/department?screen=dashboard",
@@ -195,7 +204,7 @@ export async function getDepartmentCount(): Promise<number> {
   return typeof payload === "number" ? payload : 0
 }
 
-/** GET /api/v1/timestudyprogram/count — TSP count */
+
 export async function getProgramCount(): Promise<number> {
   const res = await api.get<ApiEnvelope<number>>(
     "/timestudyprogram?method=count",
@@ -204,7 +213,8 @@ export async function getProgramCount(): Promise<number> {
   return typeof payload === "number" ? payload : 0
 }
 
-/** GET /api/v1/costpool/jp-cp-totals — job pool + cost pool totals */
+
+
 export async function getJpCpTotals(): Promise<JpCpTotals | null> {
   try {
     const res = await api.get<ApiEnvelope<JpCpTotals>>("/costpool/jp-cp-totals")
@@ -215,14 +225,22 @@ export async function getJpCpTotals(): Promise<JpCpTotals | null> {
   }
 }
 
-/** GET /api/v1/report-role — reports by role */
-export async function getReportsByRole(): Promise<ReportItem[]> {
+
+
+export async function getReportsByRole(params?: {
+  departmentId?: number
+  roleId?: number
+}): Promise<ReportItem[]> {
   try {
-    const res = await api.get<ApiEnvelope<ReportItem[]>>("/report-role")
+    const search = new URLSearchParams()
+    if (params?.departmentId) search.set("departmentId", String(params.departmentId))
+    if (params?.roleId) search.set("roleId", String(params.roleId))
+
+    const res = await api.get<ApiEnvelope<ReportItem[]>>(`/report-role?${search.toString()}`)
     const payload = (res?.data ?? res) as ReportItem[]
     const apiData = Array.isArray(payload) ? payload : []
-    
-    // If API returns empty, or just to provide the requested dummy data
+
+
     const dummyReports: ReportItem[] = [
       { id: 1, code: "P100", name: "Employee Time Summation" },
       { id: 2, code: "P101", name: "Employee by Function Code" },
@@ -255,4 +273,20 @@ export async function getReportsByRole(): Promise<ReportItem[]> {
       { id: 12, code: "WIC", name: "Time Study" },
     ]
   }
+}
+
+export async function getDashboardOverview(): Promise<DashboardOverview> {
+  const res = await api.get<ApiEnvelope<DashboardOverview>>("/dashboard/overview")
+  const payload = (res?.data ?? res) as DashboardOverview
+  return (
+    payload ?? {
+      totalUserCount: 0,
+      totalCostPoolCount: 0,
+      totalJobPoolCount: 0,
+      totalDepartmentCount: 0,
+      totalTimeStudyProgramCount: 0,
+      totalActivityCount: 0,
+      totalActivityDepartmentCount: 0,
+    }
+  )
 }

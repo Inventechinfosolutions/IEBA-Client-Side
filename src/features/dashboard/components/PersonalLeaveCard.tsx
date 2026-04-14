@@ -1,15 +1,6 @@
 import { Link } from "react-router-dom"
 import iconPersonalLeave from "@/Assets/icon-personal-leave.png"
-
-interface Props {
-  total: number
-  approved: number
-  open: number
-  rejected: number
-  nextHolidayMonth: string
-  nextHolidayDay: string
-  isLoading?: boolean
-}
+import type { PersonalLeaveCardProps, StatRowProps } from "../types"
 
 export function PersonalLeaveCard({
   total,
@@ -19,7 +10,7 @@ export function PersonalLeaveCard({
   nextHolidayMonth,
   nextHolidayDay,
   isLoading,
-}: Props) {
+}: PersonalLeaveCardProps) {
   return (
     <Link to="/leave-approval" className="block h-full">
       <div className="flex h-full flex-col rounded-[10px] border border-[#E8EAF6] bg-white shadow-[0_0_20px_0_#0000001a] hover:shadow-[0_4px_16px_rgba(108,93,211,0.10)] transition-shadow duration-200">
@@ -66,11 +57,7 @@ function StatRow({
   label,
   value,
   loading,
-}: {
-  label: string
-  value: number
-  loading?: boolean
-}) {
+}: StatRowProps) {
   return (
     <div className="flex items-center justify-between">
       <span className="text-[15px] text-[#4B5563]">{label}</span>

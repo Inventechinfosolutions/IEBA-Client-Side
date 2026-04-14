@@ -68,17 +68,17 @@ export interface TodoListResult {
 
 
 
+import { HolidayType } from "./enums/dashboard.enum"
+
 export interface Holiday {
   date: string
   description: string
 }
 
 export interface HolidayQueryParams {
-  type: "yearly"
+  type: HolidayType
   year: number
 }
-
-
 
 export interface UserCountResult {
   count: number
@@ -96,12 +96,10 @@ export interface ProgramCountResult {
   count: number
 }
 
-
 export interface JpCpTotals {
   jobPools: number
   costPools: number
 }
-
 
 export interface ReportItem {
   id: string | number
@@ -112,15 +110,97 @@ export interface ReportItem {
   criteria?: unknown
 }
 
-
-
-export type PayrollPeriodType = "weekly" | "biweekly" | "semimonthly" | "monthly"
-
 export interface PayrollDateRange {
   startDate: string
   endDate: string
   totalWeekdays: number
   periodLabel: string
+}
+
+export interface PayrollManagementCardProps {
+  canViewPayroll?: boolean
+  onDownloadTemplate?: () => void
+}
+
+export interface PayrollChartData {
+  month: string
+  progress: number
+}
+
+export interface PersonalLeaveCardProps {
+  total: number
+  approved: number
+  open: number
+  rejected: number
+  nextHolidayMonth: string
+  nextHolidayDay: string
+  isLoading?: boolean
+}
+
+export interface PersonalTimeStudyCardProps {
+  totalApproved: number
+  totalSubmitted: number
+  percent: string
+  periodLabel: string
+  isLoading?: boolean
+  noBlur?: boolean
+}
+
+export interface ReportsCardProps {
+  reports: ReportItem[]
+  isLoading?: boolean
+}
+
+export interface TimeStudyStatusCardProps {
+  approved: number
+  pendingApproval: number
+  notSubmitted: number
+  isLoading?: boolean
+}
+
+export interface TodoCardProps {
+  items: TodoItem[]
+  isLoading?: boolean
+}
+
+export interface UsersCardProps {
+  userCount: number
+  activeUsers: number
+  isLoading?: boolean
+}
+
+export interface StaffStatsCardProps {
+  open: number
+  approved: number
+  rejected: number
+  deptCount: number
+  programCount: number
+  activitiesCount?: number
+  jobPools?: number
+  costPools?: number
+  isLoading?: boolean
+}
+
+export interface StatRowProps {
+  label: string
+  value: number | string
+  loading?: boolean
+}
+
+export interface NavRowProps {
+  to?: string
+  label: string
+  value?: number | string
+  loading?: boolean
+}
+
+export interface StatusRowProps {
+  icon: string
+  label: string
+  count: number
+  actionLabel: string
+  onAction: () => void
+  loading?: boolean
 }
 
 
@@ -132,7 +212,7 @@ export interface DashboardSummary {
   tsPercent: number
   currentPeriodLabel: string
 
- 
+
   totalTRApprovedBy: number
   totalTRApprovalRequest: number
   totalTRNotSubmitted: number
@@ -140,28 +220,34 @@ export interface DashboardSummary {
 
   selfLeave: SelfLeaveStats
 
- 
+
   staffLeave: StaffLeaveStats
 
-  
+
   holidayList: Holiday[]
   nextHolidayMonth: string
   nextHolidayDay: string
 
-  
+
   todos: TodoItem[]
 
 
-  userCount: number
-  activeUsers: number
-  deptCount: number
-  tspCount: number
-  jpCpTotals: JpCpTotals | null
+  overview: DashboardOverview | null
 
   reports: ReportItem[]
 }
 
 
+
+export interface DashboardOverview {
+  totalUserCount: number
+  totalCostPoolCount: number
+  totalJobPoolCount: number
+  totalDepartmentCount: number
+  totalTimeStudyProgramCount: number
+  totalActivityCount: number
+  totalActivityDepartmentCount: number
+}
 
 export interface ApiEnvelope<T> {
   statusCode: number

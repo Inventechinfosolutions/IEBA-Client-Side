@@ -3,6 +3,7 @@ export { DashboardPage } from "./pages/DashboardPage"
 export { dashboardKeys } from "./keys"
 export type {
   DashboardSummary,
+  DashboardOverview,
   ReportItem,
   Holiday,
   JpCpTotals,
