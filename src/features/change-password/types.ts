@@ -17,6 +17,14 @@ export type ChangePasswordResponse = {
 export type ChangePasswordFormModalProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
+  /**
+   * When true, the dialog cannot be closed/cancelled until password is changed.
+   */
+  required?: boolean
+  /**
+   * Called after a successful password change (after dialog closes).
+   */
+  onSuccess?: () => void
 }
 
 export type ChangePasswordFieldName = "oldPassword" | "newPassword" | "confirmPassword"

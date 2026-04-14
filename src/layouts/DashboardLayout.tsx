@@ -23,22 +23,23 @@ import {
   Settings,
   MapPin,
   User as UserIcon,
-  Plus,
-  Bell,
 } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
 import { usePermissions } from "@/hooks/usePermissions"
 import { ChangePasswordFormModal } from "@/features/change-password"
 import { ChangeCountyDialog } from "@/features/auth/components/ChangeCountyDialog"
 import { MimicBanner, useMimicSession } from "@/features/user/user-mimic"
+import { markPasswordChangedForUser } from "@/lib/auth-storage"
 
 export function DashboardLayout() {
-  const { user, signOut } = useAuth()
+  const { user, signOut, establishDashboardSession } = useAuth()
   const { isSuperAdmin } = usePermissions()
   const { data: mimic } = useMimicSession()
   const countyName = user?.countyName?.trim() || ""
   const [changePasswordOpen, setChangePasswordOpen] = useState(false)
   const [changeCountyOpen, setChangeCountyOpen] = useState(false)
+  const forcePasswordChange = !!user?.isPasswordChangeRequired
+  const isChangePasswordModalOpen = forcePasswordChange || changePasswordOpen
 
   return (
     <>
@@ -144,8 +145,17 @@ export function DashboardLayout() {
                   </DropdownMenuContent>
                 </DropdownMenu>
                 <ChangePasswordFormModal
-                  open={changePasswordOpen}
-                  onOpenChange={setChangePasswordOpen}
+                  open={isChangePasswordModalOpen}
+                  onOpenChange={(nextOpen) => {
+                    if (forcePasswordChange && !nextOpen) return
+                    setChangePasswordOpen(nextOpen)
+                  }}
+                  required={forcePasswordChange}
+                  onSuccess={() => {
+                    if (!user) return
+                    markPasswordChangedForUser(user.id)
+                    establishDashboardSession({ ...user, isPasswordChangeRequired: false })
+                  }}
                 />
                 {changeCountyOpen && (
                   <ChangeCountyDialog

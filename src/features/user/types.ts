@@ -223,6 +223,11 @@ export type UserDetailsDto = {
   spmp?: boolean
   multilingual?: boolean
   pki?: boolean
+  /**
+   * Backend may include a flag/object indicating the user must change password.
+   * Some environments return `{}` rather than a boolean, so we treat presence as truthy.
+   */
+  isPasswordChangeRequired?: boolean | Record<string, never> | null
   user: { loginId: string }
   /** Serialized USER contacts (`type: phone` holds primary phone digits). */
   contacts?: Array<{

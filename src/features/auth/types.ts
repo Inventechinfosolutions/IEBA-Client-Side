@@ -1,10 +1,17 @@
 import type { z } from "zod"
 
-import { forgotPasswordSchema, loginSchema, otpSchema } from "./schemas"
+import {
+  forgotPasswordSchema,
+  loginSchema,
+  otpSchema,
+  resetPasswordSchema,
+} from "./schemas"
+import type { AuthJourney, AuthNextPage } from "./enums/auth.enum"
 
 export type LoginFormValues = z.infer<typeof loginSchema>
 export type ForgotPasswordFormValues = z.infer<typeof forgotPasswordSchema>
 export type OtpFormValues = z.infer<typeof otpSchema>
+export type ResetPasswordFormValues = z.infer<typeof resetPasswordSchema>
 
 export type ForgotPasswordPayload = {
   email: string
@@ -12,6 +19,24 @@ export type ForgotPasswordPayload = {
 
 export type ForgotPasswordResponse = {
   message: string
+  /**
+   * Some backends return an interim token (similar to login->otp flow) that must be used
+   * as `Authorization: Bearer <token>` when calling `/auth/validate-otp`.
+   */
+  accessToken?: string
+  access_token?: string
+  token?: string
+  otp?: string | number
+}
+
+export type SendResetOtpPayload = {
+  loginId: string
+}
+
+export type SendResetOtpResponse = {
+  message: string
+  loginId: string
+  otp?: string
 }
 
 export type OtpPayload = {
@@ -30,8 +55,13 @@ export type GlobalNamespaceItem = {
 
 export type OtpLocationState = {
   email: string
-  password: string
+  /**
+   * Present for login OTP journey (used for "Resend OTP" via login API).
+   * Omitted for forgot-password OTP journey (resend uses forgot-password API instead).
+   */
+  password?: string
   otp?: string
+  journey?: AuthJourney
 }
 
 export type ChangeCountyBody = {
@@ -54,6 +84,20 @@ export type ApiEnvelope = {
   data?: Record<string, unknown>
 }
 
+export type ResetPasswordPayload = {
+  userId: string
+  password: string
+}
+
+export type ResetPasswordResponse = {
+  message: string
+}
+
+export type ResetPasswordLocationState = {
+  email?: string
+  userId?: string
+}
+
 // Login API types (kept separate from form types)
 export type LoginApiData = {
   userId: string
@@ -62,8 +106,8 @@ export type LoginApiData = {
   accessToken?: string
   access_token?: string
   token?: string
-  nextPage?: string
-  next_page?: string
+  nextPage?: AuthNextPage | string
+  next_page?: AuthNextPage | string
 }
 
 export type LoginCredentials = {
@@ -92,7 +136,7 @@ export type LogoutApiEnvelope = {
 export type ValidateLoginOtpBody = {
   loginId: string
   otp: string
-  journey: "dashboard" | "resetpassword" | "login"
+  journey: AuthJourney
   nameSpace?: string
 }
 

@@ -4,7 +4,7 @@ import { GuestOnlyRoute } from "@/components/GuestOnlyRoute"
 import { ProtectedRoute } from "@/components/ProtectedRoute"
 import { PermissionRoute } from "@/components/PermissionRoute"
 import { DashboardLayout } from "@/layouts/DashboardLayout"
-import { LoginPage, ForgotPassword, OtpAuthentication } from "@/features/auth"
+import { LoginPage, ForgotPassword, OtpAuthentication, ResetPassword } from "@/features/auth"
 import { DashboardPage } from "@/features/dashboard/pages/DashboardPage"
 import { MasterCodePage } from "@/features/master-code"
 import { ProgramPage } from "@/features/program"
@@ -57,6 +57,14 @@ export function createAppRouter(queryClient: QueryClient) {
       element: (
         <GuestOnlyRoute>
           <OtpAuthentication />
+        </GuestOnlyRoute>
+      ),
+    },
+    {
+      path: "/reset-password",
+      element: (
+        <GuestOnlyRoute>
+          <ResetPassword />
         </GuestOnlyRoute>
       ),
     },
