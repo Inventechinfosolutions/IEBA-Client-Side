@@ -17,7 +17,7 @@ export const dashboardKeys = {
   staffLeave: () => [...dashboardKeys.all, "staff-leave"] as const,
 
 
-  todos: () => [...dashboardKeys.all, "todos"] as const,
+  todos: (userId: string | number) => [...dashboardKeys.all, "todos", String(userId)] as const,
 
   
   holidays: (year: number) => [...dashboardKeys.all, "holidays", year] as const,

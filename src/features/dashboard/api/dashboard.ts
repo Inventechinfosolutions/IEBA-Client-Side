@@ -1,7 +1,7 @@
 import { api } from "@/lib/api"
+import { getUsersTotalCountByStatus, getUsersTotalCountUnfiltered } from "@/features/user/api"
 import type {
   ApiEnvelope,
-  ActiveUserResult,
   DashboardOverview,
   Holiday,
   JpCpTotals,
@@ -11,7 +11,6 @@ import type {
   TimeStudySuperAggregateResult,
   TodoItem,
   TodoListResult,
-  UserCountResult,
 } from "../types"
 import { PayrollPeriod, TimeStudyStatus, DashboardQueryType } from "../enums/dashboard.enum"
 
@@ -159,10 +158,10 @@ export async function getStaffLeave(): Promise<LeaveAggregateResult> {
 }
 
 
-export async function getTodos(): Promise<TodoListResult> {
-  const res = await api.get<ApiEnvelope<{ data: TodoItem[] }>>(
-    "/todos",
-  )
+export async function getTodos(userId: string | number): Promise<TodoListResult> {
+  const search = new URLSearchParams()
+  search.set("userId", String(userId))
+  const res = await api.get<ApiEnvelope<{ data: TodoItem[] }>>(`/todos?${search.toString()}`)
   const payload = (res?.data ?? res) as { data: TodoItem[] }
   return { items: payload?.data ?? [] }
 }
@@ -177,22 +176,14 @@ export async function getHolidays(year: number): Promise<Holiday[]> {
 }
 
 
-export async function getUserCount(): Promise<number> {
-  const res = await api.get<ApiEnvelope<UserCountResult | number>>(
-    "/user?screen=dashboard",
-  )
-  const payload = (res?.data ?? res) as UserCountResult | number
-  if (typeof payload === "number") return payload
-  return (payload as UserCountResult)?.count ?? 0
+/** Total users: GET /users with no `status` (pagination meta only). */
+export async function getDashboardAllUsersCount(): Promise<number> {
+  return getUsersTotalCountUnfiltered()
 }
 
-
+/** Active user count from GET /users?status=active (pagination meta), not /user/active-users. */
 export async function getActiveUsers(): Promise<number> {
-  const res = await api.get<ApiEnvelope<ActiveUserResult>>(
-    "/user/active-users",
-  )
-  const payload = (res?.data ?? res) as ActiveUserResult
-  return payload?.userCount ?? 0
+  return getUsersTotalCountByStatus("active")
 }
 
 

@@ -23,8 +23,6 @@ import {
   Settings,
   MapPin,
   User as UserIcon,
-  Plus,
-  Bell,
 } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
 import { AppLogout } from "@/features/settings/components/General/AppLogout"
@@ -32,14 +30,19 @@ import { usePermissions } from "@/hooks/usePermissions"
 import { ChangePasswordFormModal } from "@/features/change-password"
 import { ChangeCountyDialog } from "@/features/auth/components/ChangeCountyDialog"
 import { MimicBanner, useMimicSession } from "@/features/user/user-mimic"
+import { markPasswordChangedForUser } from "@/lib/auth-storage"
+import { useGetProfileImage } from "@/features/Profile/queries/getProfileImage"
 
 export function DashboardLayout() {
-  const { user, signOut } = useAuth()
+  const { user, signOut, establishDashboardSession } = useAuth()
   const { isSuperAdmin } = usePermissions()
   const { data: mimic } = useMimicSession()
+  const profileImageQuery = useGetProfileImage(user?.id)
   const countyName = user?.countyName?.trim() || ""
   const [changePasswordOpen, setChangePasswordOpen] = useState(false)
   const [changeCountyOpen, setChangeCountyOpen] = useState(false)
+  const forcePasswordChange = !!user?.isPasswordChangeRequired
+  const isChangePasswordModalOpen = forcePasswordChange || changePasswordOpen
 
   return (
     <SidebarProvider>
@@ -72,7 +75,7 @@ export function DashboardLayout() {
                       className="flex items-center gap-2 bg-transparent px-0 py-0 border-0 outline-none hover:bg-transparent"
                     >
                       <Avatar className="h-9 w-9">
-                        <AvatarImage src={user.avatar} alt={user.name} />
+                        <AvatarImage src={profileImageQuery.data ?? user.avatar} alt={user.name} />
                         <AvatarFallback>
                           <UserIcon className="h-5 w-5 text-gray-400" />
                         </AvatarFallback>
@@ -145,8 +148,17 @@ export function DashboardLayout() {
                   </DropdownMenuContent>
                 </DropdownMenu>
                 <ChangePasswordFormModal
-                  open={changePasswordOpen}
-                  onOpenChange={setChangePasswordOpen}
+                  open={isChangePasswordModalOpen}
+                  onOpenChange={(nextOpen) => {
+                    if (forcePasswordChange && !nextOpen) return
+                    setChangePasswordOpen(nextOpen)
+                  }}
+                  required={forcePasswordChange}
+                  onSuccess={() => {
+                    if (!user) return
+                    markPasswordChangedForUser(user.id)
+                    establishDashboardSession({ ...user, isPasswordChangeRequired: false })
+                  }}
                 />
                 {changeCountyOpen && (
                   <ChangeCountyDialog

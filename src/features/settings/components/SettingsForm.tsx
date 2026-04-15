@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 import { FormProvider, useForm } from "react-hook-form"
 import { toast } from "sonner"
 import { Check, X } from "lucide-react"
@@ -55,7 +55,8 @@ function getSettingsSaveSuccessMessage(submitterSection?: SettingsFormSaveSectio
 
 function SettingsFormInner({ settings, isSaving, onSubmitSettings }: SettingsFormInnerProps) {
   const { derivedFiscalYear, fiscalYearUi } = useSettingsFormFiscalState()
-  const countyClientQuery = useGetCountyClient(true)
+  const [openSection, setOpenSection] = useState<string | undefined>(undefined)
+  const countyClientQuery = useGetCountyClient(openSection === "County")
 
   const formValues = useMemo((): SettingsFormValues => {
     const base = mapToSettingsFormValues(settings, derivedFiscalYear)
@@ -108,7 +109,11 @@ function SettingsFormInner({ settings, isSaving, onSubmitSettings }: SettingsFor
     <SettingsFiscalYearUiProvider value={fiscalYearUi}>
       <FormProvider {...form}>
         <form onSubmit={handleSettingsFormSubmit}>
-          <SettingsAccordion isSaving={isSaving} />
+          <SettingsAccordion
+            isSaving={isSaving}
+            openSection={openSection}
+            onOpenSectionChange={setOpenSection}
+          />
         </form>
       </FormProvider>
     </SettingsFiscalYearUiProvider>

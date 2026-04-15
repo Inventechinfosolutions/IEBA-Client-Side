@@ -29,9 +29,12 @@ import {
 } from "@/features/Profile/schemas"
 import { ImageCropUploadDialog } from "@/features/Profile/components/ImageCropUploadDialog"
 import { RELATIONSHIP_OPTIONS, UserRelationship } from "@/features/Profile/enums/userrelationship.enum"
-import type { ProfileDetailFormValues } from "@/features/Profile/types"
+import type { ProfileDetailFormProps, ProfileDetailFormValues } from "@/features/Profile/types"
 import { useGetProfileDetail } from "@/features/Profile/queries/getProfileDetail"
 import { useUpdateProfileDetail } from "@/features/Profile/mutations/updateProfileDetail"
+import { useGetProfileImage } from "@/features/Profile/queries/getProfileImage"
+import { useUploadProfileImage } from "@/features/Profile/mutations/uploadProfileImage"
+import { useDeleteProfileImage } from "@/features/Profile/mutations/deleteProfileImage"
 
 function getFirstErrorMessage(value: unknown): string | null {
   if (!value || typeof value !== "object") return null
@@ -135,14 +138,17 @@ function ProfileDetailForm({
   onSubmit,
   onCancel,
   isSaving,
-}: {
-  initialValues: ProfileDetailFormValues
-  onSubmit: (values: ProfileDetailFormValues) => Promise<void>
-  onCancel: () => void
-  isSaving: boolean
-}) {
+}: ProfileDetailFormProps) {
   const [jobDutyViewOpen, setJobDutyViewOpen] = useState(false)
-  const [avatarSrc, setAvatarSrc] = useState<string>(profileAvatar)
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
+
+  const { user } = useAuth()
+  const userId = user?.id?.trim() ?? ""
+  const profileImageQuery = useGetProfileImage(userId)
+  const uploadImage = useUploadProfileImage()
+  const deleteImage = useDeleteProfileImage()
+
+  const avatarSrc = avatarPreview ?? profileImageQuery.data ?? profileAvatar
 
   const methods = useForm<ProfileDetailFormValues>({
     resolver: zodResolver(profileDetailFormSchema),
@@ -187,6 +193,18 @@ function ProfileDetailForm({
         <div className="flex items-start gap-8">
           <ImageCropUploadDialog
             title="Profile Update"
+            initialImageSrc={profileImageQuery.data ?? null}
+            onDeleteImage={async () => {
+              if (!userId) return
+              try {
+                await deleteImage.mutateAsync(userId)
+                setAvatarPreview(profileAvatar)
+                toast.success("Profile image deleted.", { position: "top-center" })
+              } catch (e) {
+                const message = e instanceof Error ? e.message : "Failed to delete profile image."
+                toast.error(message, { position: "top-center", icon: profileErrorToastIcon })
+              }
+            }}
             onConfirmWithoutImage={() => {
               toast.error(profileDetailMessages.imageChooseFile, {
                 position: "top-center",
@@ -199,9 +217,20 @@ function ProfileDetailForm({
                 icon: profileErrorToastIcon,
               })
             }}
-            onImageCropped={(cropped) => {
-              setAvatarSrc(cropped)
-              toast.success(profileDetailMessages.imageUpdated, { position: "top-center" })
+            onImageCropped={async (cropped) => {
+              setAvatarPreview(cropped)
+              try {
+                await uploadImage.mutateAsync({
+                  userId,
+                  dataUrl: cropped,
+                  fileName: userId ? `profile-${userId}.png` : "profile.png",
+                })
+                toast.success(profileDetailMessages.imageUpdated, { position: "top-center" })
+              } catch (e) {
+                setAvatarPreview(null)
+                const message = e instanceof Error ? e.message : "Failed to upload profile image."
+                toast.error(message, { position: "top-center", icon: profileErrorToastIcon })
+              }
             }}
             renderTrigger={({ openDialog }) => (
               <div className="mt-2 flex h-[200px] w-[200px] items-center justify-center rounded-full bg-white">

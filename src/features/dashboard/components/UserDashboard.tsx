@@ -1,4 +1,3 @@
-import React from "react"
 import { useAuth } from "@/contexts/AuthContext"
 import {
   usePersonalTimeStudy,
@@ -14,8 +13,7 @@ import { ReportsCard } from "../components/ReportsCard"
 import { TodoCard } from "../components/TodoCard"
 import { TimeStudyStatusCard } from "../components/TimeStudyStatusCard"
 import { Card } from "@/components/ui/card"
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, XCircle, Building2, Briefcase } from "lucide-react"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, XCircle } from "lucide-react"
 import { PayrollPeriod } from "../enums/dashboard.enum"
 
 export function UserDashboard() {
@@ -24,11 +22,7 @@ export function UserDashboard() {
   const payrollType = PayrollPeriod.Biweekly // Correct enum value
 
   const deptRoles = user?.departmentRoles ?? []
-  const [selectedDeptRoleIdx, setSelectedDeptRoleIdx] = React.useState<string>(
-    deptRoles.length > 0 ? "0" : ""
-  )
-
-  const currentDeptRole = deptRoles[Number(selectedDeptRoleIdx)]
+  const currentDeptRole = deptRoles[0]
   const departmentId = currentDeptRole?.departmentId
   const roleId = currentDeptRole?.roleId
 
@@ -46,7 +40,7 @@ export function UserDashboard() {
     roleId,
   })
   const selfLeave = useSelfLeave(userId)
-  const todos = useTodos()
+  const todos = useTodos(userId)
   const reports = useReportsByRole({ departmentId, roleId })
   const holidays = useHolidays()
 

@@ -9,8 +9,11 @@ import { TodoToolbar } from "../components/TodoToolbar"
 import { useTodoModule } from "../hooks/useTodoModule"
 import { useTodoUI } from "../hooks/useTodoUi"
 import type { TodoFormValues } from "../types"
+import { useAuth } from "@/contexts/AuthContext"
 
 export function TodoPage() {
+  const { user } = useAuth()
+  const userId = user?.id ?? ""
   const getToastOptions = () => {
     const bg = "#22c55e"
     return {
@@ -31,7 +34,7 @@ export function TodoPage() {
   const ui = useTodoUI()
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
-  const todoModule = useTodoModule({ page, pageSize })
+  const todoModule = useTodoModule({ page, pageSize, userId })
 
   const isTableLoading = todoModule.isLoading || todoModule.isCreating || todoModule.isUpdating
   const rows = useMemo(() => {

@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 import { dashboardKeys } from "../keys"
 import {
+  getActiveUsers,
   getHolidays,
   getLeaveDetails,
   getPayrollDateRange,
@@ -10,6 +11,7 @@ import {
   getTimeRecordRequests,
   getTodos,
   getDashboardOverview,
+  getDashboardAllUsersCount,
 } from "../api/dashboard"
 import type {
   DashboardOverview,
@@ -147,7 +149,7 @@ export function useStaffLeave(options?: { enabled?: boolean }) {
 }
 
 
-export function useTodos() {
+export function useTodos(userId: string | number) {
   const formatter = new Intl.DateTimeFormat("en-US", {
     year: "numeric",
     day: "2-digit",
@@ -155,8 +157,8 @@ export function useTodos() {
   })
 
   return useQuery({
-    queryKey: dashboardKeys.todos(),
-    queryFn: getTodos,
+    queryKey: dashboardKeys.todos(userId),
+    queryFn: () => getTodos(userId),
     select(data): TodoItem[] {
       return (data.items ?? []).map((item) => ({
         ...item,
@@ -164,6 +166,7 @@ export function useTodos() {
         day: formatter.format(Date.parse(item.createdAt)),
       }))
     },
+    enabled: !!userId,
     ...staleOptions,
   })
 }
@@ -237,6 +240,24 @@ export function useDashboardOverview(options?: { enabled?: boolean }) {
   return useQuery<DashboardOverview>({
     queryKey: dashboardKeys.overview(),
     queryFn: getDashboardOverview,
+    enabled: options?.enabled,
+    ...staleOptions,
+  })
+}
+
+export function useActiveUsers(options?: { enabled?: boolean }) {
+  return useQuery({
+    queryKey: dashboardKeys.activeUsers(),
+    queryFn: getActiveUsers,
+    enabled: options?.enabled,
+    ...staleOptions,
+  })
+}
+
+export function useDashboardUserCount(options?: { enabled?: boolean }) {
+  return useQuery({
+    queryKey: dashboardKeys.userCount(),
+    queryFn: getDashboardAllUsersCount,
     enabled: options?.enabled,
     ...staleOptions,
   })

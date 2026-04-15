@@ -10,6 +10,12 @@ export type User = {
   countyName?: string
   avatar?: string
 
+  /**
+   * When true, user must change password before continuing into the app.
+   * Populated from user-details API.
+   */
+  isPasswordChangeRequired?: boolean
+
   roles?: string[]
 
   permissions?: string[]

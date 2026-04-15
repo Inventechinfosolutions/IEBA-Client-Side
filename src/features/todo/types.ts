@@ -37,6 +37,7 @@ export type TodoRow = {
 export type GetTodosParams = {
   page: number
   pageSize: number
+  userId: string | number
 }
 
 export type TodoListResponse = {

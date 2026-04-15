@@ -18,6 +18,13 @@ export const changePasswordSchema = z
     newPassword: passwordPolicy,
     confirmPassword: z.string().min(1, "Please re-enter New Password"),
   })
+  .refine(
+    (val) => val.newPassword.trim() !== val.oldPassword.trim(),
+    {
+      message: "New password cannot be the same as old password",
+      path: ["newPassword"],
+    }
+  )
   .refine((val) => val.newPassword === val.confirmPassword, {
     message: "New password and confirm password should match",
     path: ["confirmPassword"],

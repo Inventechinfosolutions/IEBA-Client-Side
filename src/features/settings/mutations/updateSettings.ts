@@ -8,6 +8,7 @@ import { updatePayrollSettings } from "../payroll"
 import {
   createCountyLocation,
   deleteCountyLocation,
+  uploadCountyLogo,
   updateCountyClient,
   updateCountyLocation,
 } from "@/features/settings/components/Country/api"
@@ -69,9 +70,15 @@ async function saveCountyToBackend(
     include_weekend: Boolean(input.values.county.includedWeekends),
   })
 
+  const nextLogoDataUrl = (input.values.county.logoDataUrl ?? "").trim()
+  if (nextLogoDataUrl.startsWith("data:")) {
+    await uploadCountyLogo(clientId, nextLogoDataUrl)
+  }
+
   const desired = normalizeCountyLocations(input.values)
   const existing = [...existingLocations].sort((a, b) => a.id - b.id)
   const existingIds = new Set(existing.map((l) => l.id))
+  const existingById = new Map(existing.map((l) => [l.id, l] as const))
   const keptIds = new Set(
     desired.map((d) => d.locationId).filter((id): id is number => typeof id === "number"),
   )
@@ -95,7 +102,20 @@ async function saveCountyToBackend(
     }
 
     if (row.locationId !== undefined && existingIds.has(row.locationId)) {
-      await updateCountyLocation(row.locationId, payload)
+      const current = existingById.get(row.locationId)
+      const same =
+        !!current &&
+        (current.name ?? "").trim() === payload.name.trim() &&
+        (current.street ?? "").trim() === (payload.street ?? "").trim() &&
+        (current.city ?? "").trim() === (payload.city ?? "").trim() &&
+        (current.state ?? "").trim() === (payload.state ?? "").trim() &&
+        (current.zip ?? "").trim() === (payload.zip ?? "").trim() &&
+        Boolean(current.primary) === Boolean(payload.primary) &&
+        (current.status ?? "active") === payload.status
+
+      if (!same) {
+        await updateCountyLocation(row.locationId, payload)
+      }
     } else {
       await createCountyLocation(payload)
     }

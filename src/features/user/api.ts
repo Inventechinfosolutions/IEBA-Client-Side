@@ -170,6 +170,35 @@ export async function apiGetUserModuleRows(params: GetUserModuleParams): Promise
 }
 
 /**
+ * GET /users — total row count with no `status` filter (`page=1`, `limit=1`).
+ * Dashboard “Users” total (all users).
+ */
+export async function getUsersTotalCountUnfiltered(): Promise<number> {
+  const search = new URLSearchParams()
+  search.set("page", "1")
+  search.set("limit", "1")
+  search.set("sort", "ASC")
+  const res = await api.get<ApiResponseDto<UserListResponseDto>>(`/users?${search.toString()}`)
+  const dto = asUserListResponseDto(res)
+  return typeof dto.meta?.totalItems === "number" ? dto.meta.totalItems : dto.data.length
+}
+
+/**
+ * GET /users — total row count for one `status` (`page=1`, `limit=1`).
+ * Dashboard “Active users” uses `active` only.
+ */
+export async function getUsersTotalCountByStatus(status: "active" | "inactive"): Promise<number> {
+  const search = new URLSearchParams()
+  search.set("page", "1")
+  search.set("limit", "1")
+  search.set("sort", "ASC")
+  search.set("status", status)
+  const res = await api.get<ApiResponseDto<UserListResponseDto>>(`/users?${search.toString()}`)
+  const dto = asUserListResponseDto(res)
+  return typeof dto.meta?.totalItems === "number" ? dto.meta.totalItems : dto.data.length
+}
+
+/**
  * Creates Tab 1 employee/login record. Legacy UAT used `POST .../user/direct`; v2 uses `POST /users`.
  */
 export async function apiCreateUser(input: CreateUserRequestDto): Promise<CreateUserResponseDto> {

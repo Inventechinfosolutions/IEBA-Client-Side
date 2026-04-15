@@ -80,14 +80,6 @@ export interface HolidayQueryParams {
   year: number
 }
 
-export interface UserCountResult {
-  count: number
-}
-
-export interface ActiveUserResult {
-  userCount: number
-}
-
 export interface DepartmentCountResult {
   count: number
 }
