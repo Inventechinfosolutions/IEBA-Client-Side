@@ -20,6 +20,8 @@ import {
   useHolidays,
   useDashboardOverview,
   useReportsByRole,
+  useActiveUsers,
+  useDashboardUserCount,
 } from "../queries/dashboardQueries"
 import { getPayrollDateRange } from "../api/dashboard"
 import { Building2 } from "lucide-react"
@@ -75,9 +77,11 @@ export function DashboardPage() {
 
   const selfLeave = useSelfLeave(userId)
   const staffLeave = useStaffLeave({ enabled: isAdmin })
-  const todos = useTodos()
+  const todos = useTodos(userId)
   const holidays = useHolidays()
   const overview = useDashboardOverview({ enabled: isAdmin })
+  const dashboardUserCount = useDashboardUserCount({ enabled: isAdmin })
+  const activeUsers = useActiveUsers({ enabled: isAdmin })
   const reports = useReportsByRole({ 
     departmentId, 
     roleId,
@@ -86,7 +90,7 @@ export function DashboardPage() {
 
   
   const {
-    totalUserCount: userCountVal = 0,
+    totalUserCount: overviewUserCount = 0,
     totalDepartmentCount: deptCountVal = 0,
     totalTimeStudyProgramCount: programCountVal = 0,
     totalJobPoolCount: jobPoolsVal = 0,
@@ -94,7 +98,8 @@ export function DashboardPage() {
     totalActivityCount: activityCountVal = 0,
   } = overview.data ?? {}
 
-  const activeUsersVal = 0
+  const userCountVal = dashboardUserCount.data ?? overviewUserCount
+  const activeUsersVal = activeUsers.data ?? 0
 
   const tsApproved = personalTS.data?.approved ?? 0
   const tsSubmitted = personalTS.data?.submitted ?? 0
@@ -210,7 +215,7 @@ export function DashboardPage() {
           <UsersCard
             userCount={userCountVal}
             activeUsers={activeUsersVal}
-            isLoading={overview.isLoading}
+            isLoading={dashboardUserCount.isLoading || activeUsers.isLoading}
           />
           <div className="flex-1 min-h-0">
             <HolidayListCard />
