@@ -1,6 +1,6 @@
 import type { FieldErrors } from "react-hook-form"
 
-import { PAYROLL_COLUMN_DEFS } from "@/features/settings/components/Payroll/types"
+import { PAYROLL_COLUMN_DEFS } from "@/features/settings/payroll"
 import type { SettingsFormSaveSection } from "@/features/settings/enums/setting.enum"
 import { SETTINGS_FORM_SAVE_SECTION_ORDER } from "@/features/settings/settingsForm.constants"
 import type {
@@ -11,39 +11,39 @@ import type {
 
 const DEFAULT_SECTION_ERROR = "Please fix the errors in this section before saving."
 
-function walkFieldErrorTree(obj: unknown): string | null {
+function extractFirstErrorMessage(obj: unknown): string | null {
   if (!obj || typeof obj !== "object") return null
   const node = obj as Record<string, unknown>
   if (typeof node.message === "string" && node.message.trim()) return node.message
   for (const key of Object.keys(node)) {
-    const found = walkFieldErrorTree(node[key])
+    const found = extractFirstErrorMessage(node[key])
     if (found) return found
   }
   return null
 }
 
-export function resolveSettingsFormSectionErrorMessage(
+export function getSettingsFormSectionErrorMessage(
   errors: FieldErrors<SettingsFormValues>,
   section: SettingsFormSaveSection,
 ): string {
   const sectionErrors = (errors as Record<string, unknown>)[section]
   if (!sectionErrors) return DEFAULT_SECTION_ERROR
-  return walkFieldErrorTree(sectionErrors) ?? DEFAULT_SECTION_ERROR
+  return extractFirstErrorMessage(sectionErrors) ?? DEFAULT_SECTION_ERROR
 }
 
-export function resolveFirstSettingsFormErrorMessage(
+export function getSettingsFormFirstErrorMessage(
   errors: FieldErrors<SettingsFormValues>,
 ): string {
   const errRecord = errors as Record<string, unknown>
   for (const section of SETTINGS_FORM_SAVE_SECTION_ORDER) {
     const sectionErrors = errRecord[section]
     if (!sectionErrors) continue
-    return walkFieldErrorTree(sectionErrors) ?? DEFAULT_SECTION_ERROR
+    return extractFirstErrorMessage(sectionErrors) ?? DEFAULT_SECTION_ERROR
   }
   return "Please fix the errors before saving."
 }
 
-export function buildSettingsFormValues(
+export function mapToSettingsFormValues(
   settings: SettingsModel,
   derivedFiscalYear: SettingsFormDerivedFiscalYear,
 ): SettingsFormValues {
@@ -67,7 +67,7 @@ export function buildSettingsFormValues(
       addresses,
     },
     general: {
-      screenInactivityTimeMinutes: settings.general?.screenInactivityTimeMinutes ?? 120,
+      screenInactivityTimeMinutes: Number(localStorage.getItem("SCREEN_INACTIVITY_TIME_IN_MIN")) || settings.general?.screenInactivityTimeMinutes || 120,
     },
     reports: {
       reportKey: settings.reports?.reportKey ?? "",

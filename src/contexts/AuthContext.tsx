@@ -147,6 +147,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     clearToken()
     clearStoredUser()
     clearStoredMimicSession()
+    localStorage.removeItem("SCREEN_INACTIVITY_TIME_IN_MIN")
+    localStorage.removeItem("APP_LAST_ACTIVITY_TIME")
   }, [queryClient])
 
   const clearError = useCallback(() => setError(null), [])

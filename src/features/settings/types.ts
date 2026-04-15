@@ -9,7 +9,10 @@ import type { LoginSettingsModel } from "@/features/settings/components/Login/ty
 import type { GeneralSettingsModel } from "@/features/settings/components/General/types"
 import type { ReportsSettingsModel } from "@/features/settings/components/Reports/types"
 import type { FiscalYearSettingsModel } from "@/features/settings/components/FiscalYear/types"
-import type { PayrollSettingsModel } from "@/features/settings/components/Payroll/types"
+import type { PayrollSettingsModel } from "./payroll"
+
+export type ReportOption = { key: string; label: string }
+export type ActivityOption = { code: string; label: string }
 
 export type SettingsSection =
   | "County"

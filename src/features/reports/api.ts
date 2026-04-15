@@ -1,4 +1,4 @@
-import { delay, mockReportOptions, MOCK_NETWORK_DELAY_MS } from "@/features/settings/mock"
+import { REPORT_OPTIONS } from "@/features/settings/constants"
 import { getToken } from "@/lib/api"
 import { API_BASE_URL } from "@/lib/config"
 
@@ -9,8 +9,7 @@ type PostReportBlobOptions = {
 }
 
 export async function apiGetReportCatalog(): Promise<ReportCatalogItem[]> {
-  await delay(MOCK_NETWORK_DELAY_MS)
-  return mockReportOptions.map((r) => ({ key: r.key, label: r.label }))
+  return REPORT_OPTIONS.map((r) => ({ key: r.key, label: r.label }))
 }
 
 async function postReportBlob(
