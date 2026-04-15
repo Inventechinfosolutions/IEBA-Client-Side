@@ -38,3 +38,31 @@ export const PAYROLL_COLUMN_DEFS = [
 export const PAYROLL_TABLE_SCROLL_MAX_HEIGHT_PX = 430
 
 export const PAYROLL_BY_OPTIONS: PayrollBy[] = ["Weekly", "Bi-Weekly", "Semi-Monthly", "Monthly"]
+
+export type BackendPayrollSettingItem = {
+  id: number
+  columnname: string
+  displayOrder: number | null
+  isEnable: boolean
+  isEditable: boolean
+  slno: number
+}
+
+export type PayrollSettingsResponse = {
+  items: BackendPayrollSettingItem[]
+  payrollPeriod?: string
+}
+
+export type PayrollSettingsBulkUpdateColumn = {
+  id: number
+  columnname?: string
+  displayOrder?: number
+  isEnable?: boolean
+  isEditable?: boolean
+  slno?: number
+}
+
+export type PayrollSettingsBulkUpdateInput = {
+  payrollBy?: PayrollBy
+  columns?: PayrollSettingsBulkUpdateColumn[]
+}

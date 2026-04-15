@@ -1,4 +1,5 @@
 import tableEmptyIcon from "@/assets/icons/table-empty.png"
+import tableEditIcon from "@/assets/icons/table-edit.png"
 import { Skeleton } from "@/components/ui/skeleton"
 import { TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { cn } from "@/lib/utils"
@@ -8,35 +9,6 @@ import type { PayrollDataTableProps, PayrollManagementRow } from "../types"
 /** Matches `PayrollDetailsSection` Card shell (border + radius; no extra shadow inside page card). */
 const payrollTableCardClass =
   "rounded-[8px] border border-[#e7e9f2] bg-white shadow-none ring-0"
-
-const PAYROLL_TABLE_COLUMNS: { key: keyof PayrollManagementRow; label: string }[] = [
-  { key: "employeeId", label: "Employee ID" },
-  { key: "employeeFirstName", label: "First Name" },
-  { key: "employeeMiddleName", label: "Middle Name" },
-  { key: "employeeLastName", label: "Last Name" },
-  { key: "suffix", label: "Suffix" },
-  { key: "department", label: "Department" },
-  { key: "bargainingUnit", label: "Bargaining Unit" },
-  { key: "type", label: "Type" },
-  { key: "position", label: "Position" },
-  { key: "payPeriodBegin", label: "Pay Period Begin" },
-  { key: "payPeriodEnd", label: "Pay Period End" },
-  { key: "checkDate", label: "Check Date" },
-  { key: "fica", label: "FICA" },
-  { key: "pers", label: "PERS" },
-  { key: "defComp", label: "Def Comp" },
-  { key: "cafeteria", label: "Cafeteria" },
-  { key: "lifeInsurance", label: "Life Insurance" },
-  { key: "standby", label: "Standby" },
-  { key: "spa", label: "SPA" },
-  { key: "cellStipend", label: "Cell Stipend" },
-  { key: "std", label: "STD" },
-  { key: "ot", label: "OT" },
-  { key: "recruitingIncentive", label: "Recruiting Incentive" },
-  { key: "cashOut", label: "Cash Out" },
-  { key: "payout", label: "Payout" },
-  { key: "salary", label: "Salary" },
-]
 
 /** Horizontal scroll for wide grid; keeps page width fixed (matches payroll card). */
 const tableScrollClass =
@@ -48,7 +20,8 @@ const thBaseClass =
 const tdBaseClass =
   "min-w-[120px] whitespace-nowrap border-b border-[#eef0f5] px-3 py-2 text-left text-[12px] text-[#111827]"
 
-const colCount = PAYROLL_TABLE_COLUMNS.length
+const actionThClass = "min-w-[84px] px-3 text-center border-l border-white/50"
+const actionTdClass = "min-w-[84px] px-3 py-2 text-center border-l border-[#eff0f5]"
 
 const SKELETON_ROW_COUNT = 8
 
@@ -76,15 +49,35 @@ function rowKey(row: PayrollManagementRow, index: number): string {
   return `${row.employeeId}-${row.payPeriodBegin}-${row.checkDate}-${index}`
 }
 
-function PayrollHeaderRow() {
+type PayrollColumn = { label: string; dataKey: string }
+
+function labelToDataKey(label: string): string {
+  // Backend row payload uses lowercase keys like "employeeid", "payperiodbegin", etc.
+  // We derive the cell key from the configured column label so renamed/added columns
+  // can be shown without changing frontend code.
+  return label.toLowerCase().replace(/[^a-z0-9]/g, "")
+}
+
+function toCellText(value: unknown): string {
+  if (value === null || value === undefined) return ""
+  if (typeof value === "string") return value
+  if (typeof value === "number" || typeof value === "boolean" || typeof value === "bigint") return String(value)
+  try {
+    return JSON.stringify(value)
+  } catch {
+    return String(value)
+  }
+}
+
+function PayrollHeaderRow({ columns }: { columns: readonly PayrollColumn[] }) {
   return (
     <TableHeader className="[&_tr]:border-b-0">
       <TableRow className="border-0 hover:bg-transparent">
-        {PAYROLL_TABLE_COLUMNS.map((col, index) => {
-          const isLast = index === PAYROLL_TABLE_COLUMNS.length - 1
+        {columns.map((col, index) => {
+          const isLast = index === columns.length - 1
           return (
             <TableHead
-              key={col.key}
+              key={`${col.dataKey}-${index}`}
               className={cn(
                 thBaseClass,
                 isLast ? "border-r-0" : "border-r border-white/50",
@@ -94,19 +87,26 @@ function PayrollHeaderRow() {
             </TableHead>
           )
         })}
+        <TableHead className={cn(thBaseClass, actionThClass, "border-r-0")}>Action</TableHead>
       </TableRow>
     </TableHeader>
   )
 }
 
-export function PayrollDataTable({ rows, isLoading }: PayrollDataTableProps) {
+export function PayrollDataTable({ rows, isLoading, columns, onEditRow, showEditAction = true }: PayrollDataTableProps) {
+  const derivedColumns: PayrollColumn[] =
+    columns && columns.length > 0
+      ? columns.map((c) => ({ label: c, dataKey: labelToDataKey(c) }))
+      : []
+
+  const colCount = derivedColumns.length + 1
   const showEmptyBody = !isLoading && rows.length === 0
 
   if (showEmptyBody) {
     return (
       <div className={cn(tableScrollClass, payrollTableCardClass)}>
         <table className="w-max min-w-full border-collapse text-left text-[12px]">
-          <PayrollHeaderRow />
+          <PayrollHeaderRow columns={derivedColumns} />
           <TableBody>
             <TableRow className="border-0 hover:bg-transparent">
               <TableCell colSpan={colCount} className="border-0 p-0 align-middle">
@@ -143,7 +143,7 @@ export function PayrollDataTable({ rows, isLoading }: PayrollDataTableProps) {
   return (
     <div className={cn(tableScrollClass, payrollTableCardClass)}>
       <table className="w-max min-w-full border-collapse text-left text-[12px]">
-        <PayrollHeaderRow />
+        <PayrollHeaderRow columns={derivedColumns} />
         <TableBody aria-busy={isLoading}>
           {isLoading ? (
             Array.from({ length: SKELETON_ROW_COUNT }, (_, rowIndex) => (
@@ -151,11 +151,11 @@ export function PayrollDataTable({ rows, isLoading }: PayrollDataTableProps) {
                 key={`payroll-skeleton-${rowIndex}`}
                 className="border-[#eef0f5] hover:bg-transparent"
               >
-                {PAYROLL_TABLE_COLUMNS.map((col, colIndex) => {
-                  const isLastCol = colIndex === PAYROLL_TABLE_COLUMNS.length - 1
+                {derivedColumns.map((col, colIndex) => {
+                  const isLastCol = colIndex === derivedColumns.length - 1
                   return (
                     <TableCell
-                      key={col.key}
+                      key={`${col.dataKey}-${colIndex}`}
                       className={cn(
                         tdBaseClass,
                         isLastCol ? "border-r-0" : "border-r border-[#eff0f5]",
@@ -168,25 +168,45 @@ export function PayrollDataTable({ rows, isLoading }: PayrollDataTableProps) {
                     </TableCell>
                   )
                 })}
+                <TableCell className={cn(tdBaseClass, actionTdClass, "border-r-0")}>
+                  <Skeleton className={cn("h-7 w-7 rounded-[6px] bg-[#e8eaf2] mx-auto")} aria-hidden />
+                </TableCell>
               </TableRow>
             ))
           ) : (
             rows.map((row, index) => (
               <TableRow key={rowKey(row, index)} className="border-[#eef0f5]">
-                {PAYROLL_TABLE_COLUMNS.map((col, colIndex) => {
-                  const isLastCol = colIndex === PAYROLL_TABLE_COLUMNS.length - 1
+                {derivedColumns.map((col, colIndex) => {
+                  const isLastCol = colIndex === derivedColumns.length - 1
                   return (
                     <TableCell
-                      key={col.key}
+                      key={`${col.dataKey}-${colIndex}`}
                       className={cn(
                         tdBaseClass,
                         isLastCol ? "border-r-0" : "border-r border-[#eff0f5]",
                       )}
                     >
-                      {row[col.key]}
+                      {toCellText((row as unknown as Record<string, unknown>)[col.dataKey])}
                     </TableCell>
                   )
                 })}
+                <TableCell className={cn(tdBaseClass, actionTdClass, "border-r-0")}>
+                  {showEditAction ? (
+                    <button
+                      type="button"
+                      onClick={() => onEditRow?.(row)}
+                      className={cn(
+                        "inline-flex items-center justify-center rounded-[6px] bg-transparent p-1",
+                        "hover:bg-[#f7f7fb] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]/25",
+                        onEditRow ? "cursor-pointer" : "opacity-60 cursor-default hover:bg-transparent",
+                      )}
+                      aria-label="Edit row"
+                      disabled={!onEditRow}
+                    >
+                      <img src={tableEditIcon} alt="" aria-hidden className="size-4 object-contain" />
+                    </button>
+                  ) : null}
+                </TableCell>
               </TableRow>
             ))
           )}

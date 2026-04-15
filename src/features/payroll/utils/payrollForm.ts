@@ -9,9 +9,10 @@ import type {
 
 export function buildPayrollDetailsDefaultValues(
   _options: PayrollFilterOptionsResponse,
+  payrollType: PayrollDetailsFormValues["payrollType"] = PayrollFrequency.BI_WEEKLY,
 ): PayrollDetailsFormValues {
   return {
-    payrollType: PayrollFrequency.BI_WEEKLY,
+    payrollType,
     fiscalYearId: "",
     periodType: "month",
     monthOrQuarterId: "m-all",

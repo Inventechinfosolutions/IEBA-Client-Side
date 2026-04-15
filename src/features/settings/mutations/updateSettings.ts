@@ -120,7 +120,52 @@ async function updateSettings(
         editable: Boolean(c.editable),
       })),
     }
-    await updatePayrollSettings(payrollPayload)
+
+    const prev = queryClient.getQueryData(settingsKeys.payroll.detail()) as PayrollSettingsModel | undefined
+    const prevByKey = new Map((prev?.columns ?? []).map((c) => [String(c.key), c] as const))
+
+    const changedColumns = payrollPayload.columns
+      .map((nextCol, index) => {
+        const prevCol = prevByKey.get(String(nextCol.key))
+        const id = Number(nextCol.key)
+        if (!Number.isFinite(id) || id <= 0) return null
+
+        const patch: { id: number; columnname?: string; displayOrder?: number; isEnable?: boolean; isEditable?: boolean; slno?: number } = { id }
+
+        // Order change
+        const nextOrder = index + 1
+        const prevOrder = prev?.columns ? prev.columns.findIndex((c) => String(c.key) === String(nextCol.key)) + 1 : nextOrder
+        if (prev && prevOrder !== nextOrder) {
+          patch.displayOrder = nextOrder
+          patch.slno = nextOrder
+        }
+
+        // Field changes
+        if (prevCol) {
+          if (prevCol.label !== nextCol.label) patch.columnname = nextCol.label
+          if (Boolean(prevCol.enabled) !== Boolean(nextCol.enabled)) patch.isEnable = Boolean(nextCol.enabled)
+          if (Boolean(prevCol.editable) !== Boolean(nextCol.editable)) patch.isEditable = Boolean(nextCol.editable)
+        } else {
+          // If we don't have a baseline, send full row fields (still as bulk)
+          patch.columnname = nextCol.label
+          patch.displayOrder = nextOrder
+          patch.isEnable = Boolean(nextCol.enabled)
+          patch.isEditable = Boolean(nextCol.editable)
+          patch.slno = nextOrder
+        }
+
+        // Only keep if something changed (besides id)
+        const { id: _id, ...rest } = patch
+        return Object.keys(rest).length > 0 ? patch : null
+      })
+      .filter((c): c is NonNullable<typeof c> => c !== null)
+
+    const payrollByChanged = prev ? prev.payrollBy !== payrollPayload.payrollBy : true
+
+    await updatePayrollSettings({
+      payrollBy: payrollByChanged ? payrollPayload.payrollBy : undefined,
+      columns: changedColumns.length > 0 ? changedColumns : undefined,
+    })
   }
 
   const next: SettingsModel = {

@@ -13,6 +13,7 @@ import { PayrollFrequency, PAYROLL_FREQUENCY_OPTIONS } from "../enums/payrollFre
 import type { PayrollUploadFormValues, PayrollUploadSectionProps } from "../types"
 import { downloadPayrollTemplate } from "../api/payrollApi"
 import { triggerBrowserDownloadBlob } from "../utils/payrollCsv"
+import { cn } from "@/lib/utils"
 
 const sectionCardShadowClass = "shadow-[0_4px_16px_rgba(16,24,40,0.12)]"
 
@@ -25,14 +26,24 @@ const defaultUploadValues: PayrollUploadFormValues = {
 const primaryActionButtonClass =
   "h-[44px] rounded-[8px] border-0 bg-[var(--primary)] text-[12px] font-medium text-white hover:bg-[var(--primary)]/90 disabled:opacity-70"
 
-export function PayrollUploadSection({ isUploading, onSubmitUpload }: PayrollUploadSectionProps) {
+export function PayrollUploadSection({
+  isUploading,
+  onSubmitUpload,
+  settingsPayrollType,
+  isPayrollTypeLocked = false,
+}: PayrollUploadSectionProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
 
   const form = useForm<PayrollUploadFormValues>({
     resolver: zodResolver(payrollUploadFormSchema),
-    defaultValues: defaultUploadValues,
+    values: {
+      uploadType: settingsPayrollType ?? defaultUploadValues.uploadType,
+    },
     mode: "onSubmit",
+    resetOptions: {
+      keepDirtyValues: true,
+    },
   })
 
   const handlePickFileClick = () => {
@@ -72,7 +83,11 @@ export function PayrollUploadSection({ isUploading, onSubmitUpload }: PayrollUpl
                     onBlur={field.onBlur}
                     options={UPLOAD_TYPE_OPTIONS}
                     placeholder="Select type"
-                    className="h-[46px]! min-h-[46px]! w-full rounded-[6px]! border-[#d6d7dc]! bg-[#f3f4f6]! text-[14px]! text-[#111827]!"
+                    disabled={isPayrollTypeLocked}
+                    className={cn(
+                      "h-[46px]! min-h-[46px]! w-full rounded-[6px]! border-[#d6d7dc]! bg-[#f3f4f6]! text-[14px]! text-[#111827]!",
+                      isPayrollTypeLocked && "cursor-not-allowed",
+                    )}
                     itemButtonClassName="rounded-[6px] px-3 py-2"
                     itemLabelClassName="!text-[14px]"
                   />

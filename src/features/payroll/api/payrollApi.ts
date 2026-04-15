@@ -205,3 +205,19 @@ export async function fetchPayrollRows(params: GetPayrollRowsParams): Promise<Pa
     salary: row.salary,
   }))
 }
+
+/**
+ * Update a payroll management row.
+ * Note: backend route is expected to accept a partial update payload.
+ */
+export async function updatePayrollRow(rowId: string | number, patch: Record<string, unknown>): Promise<void> {
+  await api.put(`/payrollmanagement/${rowId}`, patch)
+}
+
+/**
+ * Delete a payroll management row by backend id.
+ * DELETE /api/v1/payrollmanagement/:id
+ */
+export async function deletePayrollRow(rowId: string | number): Promise<void> {
+  await api.delete(`/payrollmanagement/${rowId}`)
+}
