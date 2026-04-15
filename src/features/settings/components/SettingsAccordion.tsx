@@ -11,12 +11,22 @@ import { ReportsForm } from "@/features/settings/components/Reports/ReportsForm"
 import { GeneralForm } from "@/features/settings/components/General/GeneralForm"
 import { LoginForm } from "@/features/settings/components/Login/LoginForm"
 
-export function SettingsAccordion({ isSaving }: { isSaving: boolean }) {
+export function SettingsAccordion({
+  isSaving,
+  openSection,
+  onOpenSectionChange,
+}: {
+  isSaving: boolean
+  openSection: string | undefined
+  onOpenSectionChange: (next: string | undefined) => void
+}) {
   return (
     <div className="rounded-[8px] bg-white">
       <Accordion
         type="single"
         collapsible
+        value={openSection}
+        onValueChange={(next) => onOpenSectionChange(next || undefined)}
       >
         {SETTINGS_ACCORDION_SECTIONS.map((section) => (
           <AccordionItem

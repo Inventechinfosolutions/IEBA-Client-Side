@@ -1,6 +1,7 @@
 import { Controller, useFieldArray, useFormContext } from "react-hook-form"
 import { Clock, Plus } from "lucide-react"
 import { toast } from "sonner"
+import { useQueryClient } from "@tanstack/react-query"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -14,6 +15,8 @@ import { ImageCropUploadDialog } from "@/features/Profile/components/ImageCropUp
 import type { CountyFormProps, RequiredLabelProps } from "./types"
 import { parseLocationId } from "@/features/settings/components/Country/locationUtils"
 import { useDeleteCountyLocation } from "@/features/settings/mutations/deleteCountyLocation"
+import { deleteCountyLogo } from "@/features/settings/components/Country/api"
+import { settingsCountyClientQueryKey } from "@/features/settings/queries/getCountyClient"
 
 const labelClassName =
   "mb-1 block select-none text-[12px] font-normal text-[#2a2f3a] lg:min-h-[2.75rem]"
@@ -39,6 +42,7 @@ function RequiredLabel({ children }: RequiredLabelProps) {
 
 export function CountyForm({ isSaving }: CountyFormProps) {
   const { control, register, watch, setValue, getValues } = useFormContext<SettingsFormValues>()
+  const queryClient = useQueryClient()
   const logoDataUrl = watch("county.logoDataUrl")
   const isTimeRangeEnabled = watch("county.isTimeRangeEnabled")
   const endTimeValue = watch("county.endTime")
@@ -90,6 +94,16 @@ export function CountyForm({ isSaving }: CountyFormProps) {
           </label>
           <ImageCropUploadDialog
             title="County Logo Update"
+            initialImageSrc={logoDataUrl ?? null}
+            onDeleteImage={async () => {
+              const cached = queryClient.getQueriesData({ queryKey: settingsCountyClientQueryKey })
+              const first = cached.find(([, data]) => Boolean(data))?.[1] as { id?: number } | undefined
+              if (first?.id) {
+                await deleteCountyLogo(first.id)
+              }
+              setValue("county.logoDataUrl", null, { shouldDirty: true })
+              toast.success("County logo removed")
+            }}
             onImageCropped={(cropped) => {
               setValue("county.logoDataUrl", cropped, { shouldDirty: true })
             }}
@@ -98,7 +112,7 @@ export function CountyForm({ isSaving }: CountyFormProps) {
                 <div className="relative w-fit">
                   <div className="size-[160px] overflow-hidden rounded-full bg-white shadow-[0_8px_30px_rgba(17,24,39,0.08)]">
                     <img
-                      src={logoDataUrl ?? defaultCountyAvatar}
+                      src={logoDataUrl || defaultCountyAvatar}
                       alt="County logo"
                       className="h-full w-full cursor-pointer object-cover"
                       role="button"

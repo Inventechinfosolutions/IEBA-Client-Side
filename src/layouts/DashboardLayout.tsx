@@ -31,11 +31,13 @@ import { ChangePasswordFormModal } from "@/features/change-password"
 import { ChangeCountyDialog } from "@/features/auth/components/ChangeCountyDialog"
 import { MimicBanner, useMimicSession } from "@/features/user/user-mimic"
 import { markPasswordChangedForUser } from "@/lib/auth-storage"
+import { useGetProfileImage } from "@/features/Profile/queries/getProfileImage"
 
 export function DashboardLayout() {
   const { user, signOut, establishDashboardSession } = useAuth()
   const { isSuperAdmin } = usePermissions()
   const { data: mimic } = useMimicSession()
+  const profileImageQuery = useGetProfileImage(user?.id)
   const countyName = user?.countyName?.trim() || ""
   const [changePasswordOpen, setChangePasswordOpen] = useState(false)
   const [changeCountyOpen, setChangeCountyOpen] = useState(false)
@@ -73,7 +75,7 @@ export function DashboardLayout() {
                       className="flex items-center gap-2 bg-transparent px-0 py-0 border-0 outline-none hover:bg-transparent"
                     >
                       <Avatar className="h-9 w-9">
-                        <AvatarImage src={user.avatar} alt={user.name} />
+                        <AvatarImage src={profileImageQuery.data ?? user.avatar} alt={user.name} />
                         <AvatarFallback>
                           <UserIcon className="h-5 w-5 text-gray-400" />
                         </AvatarFallback>
