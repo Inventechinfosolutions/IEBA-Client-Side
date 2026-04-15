@@ -106,7 +106,7 @@ const mainNav: NavItem[] = [
   // ── Super-admin only (no permission key in the permission table) ──────────
   { title: "Users",                 url: "/users",                 icon: Users,            permission: "superadmin" },
   { title: "Department Role",       url: "/department-role",       icon: Building2,        permission: "superadmin" },
-  { title: "Master Code",           url: "/master-code",           icon: SquareTerminal,   permission: "superadmin" },
+  { title: "Master Code",           url: "/master-code",           icon: SquareTerminal,   permission: ["mastercode", "user", "payroll"] },
 ]
 
 // ---------------------------------------------------------------------------

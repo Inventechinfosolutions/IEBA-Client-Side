@@ -118,7 +118,7 @@ const ContactInfo = ({
           <TooltipProvider delayDuration={200}>
             <Tooltip>
               <TooltipTrigger asChild>
-                <span className="text-[#6C5DD3] break-words break-all text-[12px] cursor-pointer">
+                <span className="text-[#6C5DD3] font-medium text-[12px] cursor-pointer">
                   {effective!.email}
                 </span>
               </TooltipTrigger>
@@ -132,7 +132,7 @@ const ContactInfo = ({
             </Tooltip>
           </TooltipProvider>
         ) : (
-          <span className="text-[#6C5DD3] break-words break-all text-[12px]">{""}</span>
+          <span className="text-[#6C5DD3] wrap-break-word text-[12px]">{""}</span>
         )}
       </div>
       <div className="flex items-center gap-[6px] border-t border-[#E5E7EB] py-[6px]">
@@ -243,13 +243,13 @@ export function DepartmentTable({
               checked={filters.inactive}
               className="size-5 rounded-[6px] border-white bg-white data-[state=checked]:border-white data-[state=checked]:bg-[#6C5DD3] data-[state=checked]:text-white shadow-none"
             />
-            <span className="text-[14px] font-[500] text-white select-none whitespace-nowrap">Inactive</span>
+            <span className="text-[14px] font-medium text-white select-none whitespace-nowrap">Inactive</span>
           </button>
 
           {canAddDepartment && (
             <Button
               onClick={onAdd}
-              className="h-[48px] rounded-[8px] bg-[#6C5DD3] px-[20px] text-[14px] font-[500] hover:bg-[#5B4DC5]"
+              className="h-[48px] rounded-[8px] bg-[#6C5DD3] px-[20px] text-[14px] font-medium hover:bg-[#5B4DC5]"
             >
               <span className="mr-2 text-[18px]">+</span> Add Department
             </Button>
@@ -300,14 +300,14 @@ export function DepartmentTable({
                         <span className="max-w-full whitespace-normal break-normal font-[400]">Code</span>
                         <span className="inline-flex shrink-0 flex-col">
                           <span
-                            className={`h-0 w-0 border-b-[5px] border-l-[4px] border-r-[4px] border-l-transparent border-r-transparent ${
+                            className={`h-0 w-0 border-b-[5px] border-l-4 border-r-4 border-l-transparent border-r-transparent ${
                               sortBy === "code" && sortDirection === "asc"
                                 ? "border-b-[#1E8BFF]"
                                 : "border-b-white/60"
                             }`}
                           />
                           <span
-                            className={`mt-0.5 h-0 w-0 border-l-[4px] border-r-[4px] border-t-[5px] border-l-transparent border-r-transparent ${
+                            className={`mt-0.5 h-0 w-0 border-l-4 border-r-4 border-t-[5px] border-l-transparent border-r-transparent ${
                               sortBy === "code" && sortDirection === "desc"
                                 ? "border-t-[#201547]"
                                 : "border-t-white"
@@ -348,14 +348,14 @@ export function DepartmentTable({
                         <span className="max-w-full whitespace-normal break-normal font-[400]">Department</span>
                         <span className="inline-flex shrink-0 flex-col">
                           <span
-                            className={`h-0 w-0 border-b-[5px] border-l-[4px] border-r-[4px] border-l-transparent border-r-transparent ${
+                            className={`h-0 w-0 border-b-[5px] border-l-4 border-r-4 border-l-transparent border-r-transparent ${
                               sortBy === "name" && sortDirection === "asc"
                                 ? "border-b-[#1E8BFF]"
                                 : "border-b-white/60"
                             }`}
                           />
                           <span
-                            className={`mt-0.5 h-0 w-0 border-l-[4px] border-r-[4px] border-t-[5px] border-l-transparent border-r-transparent ${
+                            className={`mt-0.5 h-0 w-0 border-l-4 border-r-4 border-t-[5px] border-l-transparent border-r-transparent ${
                               sortBy === "name" && sortDirection === "desc"
                                 ? "border-t-[#201547]"
                                 : "border-t-white"
@@ -370,21 +370,23 @@ export function DepartmentTable({
                   </Tooltip>
                 </TooltipProvider>
               </TableHead>
-              <TableHead className="border-r border-[#FFFFFF66] px-[8px] py-[28px] text-left text-[14px] font-[500] text-white whitespace-normal break-words leading-tight">
+              <TableHead className="border-r border-[#FFFFFF66] px-[8px] py-[28px] text-left text-[14px] font-medium text-white whitespace-normal wrap-break-word leading-tight">
                 Address
               </TableHead>
-              <TableHead className="border-r border-[#FFFFFF66] px-[8px] py-[28px] text-left text-[14px] font-[500] text-white whitespace-normal break-words leading-tight">
+              <TableHead className="border-r border-[#FFFFFF66] px-[8px] py-[28px] text-left text-[14px] font-medium text-white whitespace-normal wrap-break-word leading-tight">
                 Primary Contact
               </TableHead>
-              <TableHead className="border-r border-[#FFFFFF66] px-[8px] py-[28px] text-left text-[14px] font-[500] text-white whitespace-normal break-words leading-tight">
+              <TableHead className="border-r border-[#FFFFFF66] px-[8px] py-[28px] text-left text-[14px] font-medium text-white whitespace-normal wrap-break-word leading-tight">
                 Secondary Contact
               </TableHead>
-              <TableHead className="border-r border-[#FFFFFF66] px-[8px] py-[28px] text-left text-[14px] font-[500] text-white whitespace-normal break-words leading-tight">
+              <TableHead className="border-r border-[#FFFFFF66] px-[8px] py-[28px] text-left text-[14px] font-medium text-white whitespace-normal wrap-break-word leading-tight">
                 Billing Contact
               </TableHead>
-              <TableHead className="border-r border-[#FFFFFF66] px-[4px] py-[28px] text-center text-[14px] font-[500] text-white whitespace-normal break-words leading-[1.1]">
-                Allow Multi <br /> Codes
-              </TableHead>
+              {canUpdateDepartment && (
+                <TableHead className="border-r border-[#FFFFFF66] px-[4px] py-[28px] text-center text-[14px] font-[500] text-white whitespace-normal wrap-break-word leading-[1.1]">
+                  Allow Multi <br /> Codes
+                </TableHead>
+              )}
               <TableHead className="border-r border-[#FFFFFF66] px-[4px] py-[28px] text-center text-[14px] font-[500] text-white whitespace-normal break-words leading-[1.1]">
                 Multi <br /> Codes
               </TableHead>
@@ -400,14 +402,14 @@ export function DepartmentTable({
             {isLoading ? (
               Array.from({ length: 3 }).map((_, i) => (
                 <TableRow key={i} className="border-b border-[#E5E7EB]">
-                  <TableCell colSpan={10} className="px-[16px] py-[16px]">
+                  <TableCell colSpan={canUpdateDepartment ? 10 : 9} className="px-[16px] py-[16px]">
                     <Skeleton className="h-[80px] w-full" />
                   </TableCell>
                 </TableRow>
               ))
             ) : sortedDepartments.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={10} className="py-[60px] text-center text-[14px] text-[#6B7280]">
+                <TableCell colSpan={canUpdateDepartment ? 10 : 9} className="py-[60px] text-center text-[14px] text-[#6B7280]">
                   No data found
                 </TableCell>
               </TableRow>
@@ -452,15 +454,17 @@ export function DepartmentTable({
                       resolved={dept.billingContactId ? usersById.get(dept.billingContactId) ?? null : null}
                     />
                   </TableCell>
-                  <TableCell className="border-r border-[#E5E7EB] px-[8px] py-[16px] text-center">
-                    <div className="flex justify-center">
-                      <img 
-                        src={dept.settings.allowMultiCodes ? statusCheckImg : statusCrossImg} 
-                        alt={dept.settings.allowMultiCodes ? "Check" : "Cross"} 
-                        className="h-[14px] w-[14px]" 
-                      />
-                    </div>
-                  </TableCell>
+                  {canUpdateDepartment && (
+                    <TableCell className="border-r border-[#E5E7EB] px-[8px] py-[16px] text-center">
+                      <div className="flex justify-center">
+                        <img 
+                          src={dept.settings.allowMultiCodes ? statusCheckImg : statusCrossImg} 
+                          alt={dept.settings.allowMultiCodes ? "Check" : "Cross"} 
+                          className="h-[14px] w-[14px]" 
+                        />
+                      </div>
+                    </TableCell>
+                  )}
                   <TableCell className="border-r border-[#E5E7EB] px-[8px] py-[16px] text-center">
                     <div className="flex flex-col items-center gap-1">
                       {dept.settings.multiCodes ? (

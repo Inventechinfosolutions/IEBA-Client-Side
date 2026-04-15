@@ -9,8 +9,18 @@ import { MasterCodeToolbar } from "../components/MasterCodeToolbar"
 import { useMasterCodeUI } from "../hooks/useMasterCodeUi"
 import { useMasterCodes } from "../hooks/useMasterCode"
 import type { MasterCodeFormValues } from "../types"
+import { usePermissions } from "@/hooks/usePermissions"
 
 export function MasterCodePage() {
+  const { isSuperAdmin, isDepartmentAdmin, canView } = usePermissions()
+
+  const canAdd = isSuperAdmin || isDepartmentAdmin
+  const canEdit = isSuperAdmin || isDepartmentAdmin
+
+  if (!isSuperAdmin && !canView("mastercode") && !canView("user") && !canView("payroll")) {
+    return null
+  }
+
   const successToastOptions = {
     position: "top-center" as const,
     icon: (
@@ -111,6 +121,7 @@ export function MasterCodePage() {
           onToggleAllowMultiCodes={handleToggleMultiCodes}
           onToggleInactiveOnly={ui.toggleInactiveOnly}
           onAddFfp={ui.openAddModal}
+          canAdd={canAdd}
         />
         <div className="mb-5">
           <MasterCodeTable
@@ -118,6 +129,7 @@ export function MasterCodePage() {
             rows={masterCodes.rows}
             isLoading={isTableLoading}
             onEditRow={ui.openEditModal}
+            canEdit={canEdit}
           />
         </div>
         <MasterCodePagination

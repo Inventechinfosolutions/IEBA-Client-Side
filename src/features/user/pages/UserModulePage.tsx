@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react"
-import { useNavigate } from "react-router-dom"
+import { useLocation, useNavigate } from "react-router-dom"
 import { useQuery } from "@tanstack/react-query"
 import { Check, Loader2, X } from "lucide-react"
 import { toast } from "sonner"
@@ -69,6 +69,7 @@ const emptyFormValues: UserModuleFormValues = {
 
 export function UserModulePage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { user, establishDashboardSession } = useAuth()
   const isGlobalAdmin = isGlobalAdminLogin(user)
   const { data: mimicSession } = useMimicSession()
@@ -78,7 +79,7 @@ export function UserModulePage() {
     position: "top-center" as const,
     icon: (
       <span className="inline-flex size-4 items-center justify-center rounded-full bg-[#22c55e] text-white">
-        <Check className="size-3 stroke-[3]" />
+        <Check className="size-3 stroke-3" />
       </span>
     ),
     className:
@@ -89,7 +90,7 @@ export function UserModulePage() {
     position: "top-center" as const,
     icon: (
       <span className="inline-flex size-4 items-center justify-center rounded-full bg-[#ef4444] text-white">
-        <X className="size-3 stroke-[3]" />
+        <X className="size-3 stroke-3" />
       </span>
     ),
     className:
@@ -102,6 +103,13 @@ export function UserModulePage() {
   const [pageSize, setPageSize] = useState(10)
   const [showForm, setShowForm] = useState(false)
   const [formMode, setFormMode] = useState<UserModuleFormMode>("add")
+
+  // Reset to table view on navigation (e.g. sidebar click)
+  const [lastLocationKey, setLastLocationKey] = useState(location.key)
+  if (lastLocationKey !== location.key) {
+    setLastLocationKey(location.key)
+    setShowForm(false)
+  }
   const [selectedRow, setSelectedRow] = useState<UserModuleRow | null>(null)
   const [formSessionId, setFormSessionId] = useState(0)
   /** After first successful create in the add wizard, further saves use PUT /users/:id. */
@@ -139,6 +147,8 @@ export function UserModulePage() {
     queryKey: userModuleKeys.detail(selectedRow?.id ?? ""),
     queryFn: () => apiGetUserDetails(selectedRow!.id),
     enabled: shouldFetchEditDetails,
+    staleTime: 0,
+    gcTime: 0,
     retry: 1,
   })
 
@@ -234,6 +244,7 @@ export function UserModulePage() {
   }
 
   const handleEditRow = (row: UserModuleRow) => {
+    void queryClient.removeQueries({ queryKey: userModuleKeys.detail(row.id) })
     setFormMode("edit")
     setSelectedRow(row)
     setFormSessionId((prev) => prev + 1)
@@ -347,6 +358,7 @@ export function UserModulePage() {
 
   return (
     <section
+      key={location.key}
       className="font-roboto *:font-roboto w-full"
       style={{
         zoom: 1.2,

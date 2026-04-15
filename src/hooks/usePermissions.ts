@@ -13,6 +13,9 @@ export function usePermissions() {
   const permSet = new Set(permissions)
 
   const isSuperAdmin = permSet.has("superadmin:all")
+  const roles = user?.roles ?? []
+  const isDepartmentAdmin = roles.includes("Department Admin")
+  const isPayrollAdmin = roles.includes("Payroll Admin")
 
   /**
    * Returns true if the user has the exact permission string,
@@ -51,6 +54,8 @@ export function usePermissions() {
     permissions,
     permSet,
     isSuperAdmin,
+    isDepartmentAdmin,
+    isPayrollAdmin,
     has,
     canView,
     canAdd,
