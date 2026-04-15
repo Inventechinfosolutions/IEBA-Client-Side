@@ -99,7 +99,7 @@ const mainNav: NavItem[] = [
   { title: "To-Do",                 url: "/to-do",                 icon: ListTodo,         permission: "todo" },
 
   // ── Admin: needs "module:view" ────────────────────────────────────────────
-  { title: "Department",            url: "/department",            icon: Home,             permission: "department" },
+  { title: "Department",            url: "/department",            icon: Home,             permission: null },
   { title: "Job Classification",    url: "/job-classification",    icon: LayoutGrid,       permission: "jobclassification" },
   { title: "Job Pool",              url: "/job-pool",              icon: Briefcase,        permission: "jobpool" },
 

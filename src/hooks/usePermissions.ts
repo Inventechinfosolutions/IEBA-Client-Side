@@ -60,6 +60,7 @@ export function usePermissions() {
     isPayrollAdmin,
     isTimeStudyAdmin,
     isTimeStudySupervisor,
+    user,
     has,
     canView,
     canAdd,

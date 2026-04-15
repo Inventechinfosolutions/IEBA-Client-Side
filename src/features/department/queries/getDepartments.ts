@@ -13,6 +13,7 @@ export function useGetDepartments(
      */
     search?: string
     sort?: "ASC" | "DESC"
+    userId?: string
   },
   options?: {
     enabled?: boolean
@@ -28,6 +29,7 @@ export function useGetDepartments(
             limit: params.limit,
             status: params.status,
             sort: params.sort,
+            userId: params.userId,
           }),
     // Server is source of truth — never show stale list after DB changes.
     staleTime: 0,

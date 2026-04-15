@@ -221,6 +221,7 @@ export type GetDepartmentsParams = {
   limit?: number
   status?: DepartmentApiRecordStatus
   sort?: DepartmentApiListSortOrder
+  userId?: string
 }
 
 export type GetAllDepartmentsParams = {
