@@ -31,9 +31,7 @@ function nextSortState(prev: LeaveApprovalSortState, key: LeaveApprovalSortKey):
 export function LeaveApprovalPage() {
   const { 
     isSuperAdmin, 
-    isDepartmentAdmin, 
-    isTimeStudyAdmin, 
-    isTimeStudySupervisor 
+    canReview
   } = usePermissions()
 
   const [page, setPage] = useState(1)
@@ -46,7 +44,7 @@ export function LeaveApprovalPage() {
   /** Bumps on each open so the comments form remounts with empty defaults (no useEffect). */
   const [commentsModalFormKey, setCommentsModalFormKey] = useState(0)
 
-  const hasAccess = isSuperAdmin || isDepartmentAdmin || isTimeStudyAdmin || isTimeStudySupervisor
+  const hasAccess = isSuperAdmin || canReview("userleave")
 
   const leaveModule = useLeaveApprovals({
     page,

@@ -118,7 +118,7 @@ const ContactInfo = ({
           <TooltipProvider delayDuration={200}>
             <Tooltip>
               <TooltipTrigger asChild>
-                <span className="text-[#6C5DD3] font-medium text-[12px] cursor-pointer">
+                <span className="cursor-pointer whitespace-normal break-all text-[12px] font-medium text-[#6C5DD3]">
                   {effective!.email}
                 </span>
               </TooltipTrigger>
@@ -156,9 +156,9 @@ export function DepartmentTable({
   onAdd,
   onEdit,
 }: DepartmentTableProps) {
-  const { isSuperAdmin, isDepartmentAdmin } = usePermissions()
-  const canUpdateDepartment = isSuperAdmin || isDepartmentAdmin
-  const canAddDepartment = isSuperAdmin || isDepartmentAdmin
+  const { isSuperAdmin, canAdd, canUpdate } = usePermissions()
+  const canUpdateDepartment = isSuperAdmin || canUpdate("department")
+  const canAddDepartment = isSuperAdmin || canAdd("department")
 
   const usersQuery = useGetDepartmentUsers()
   const usersById = useMemo(() => {
@@ -261,20 +261,20 @@ export function DepartmentTable({
       <div className="overflow-hidden rounded-[8px] border border-[#E5E7EB] bg-white">
         <Table className="w-full table-fixed border-collapse">
           <colgroup>
-            <col className={canUpdateDepartment ? "w-[10%]" : "w-[14%]"} /> {/* Code */}
-            <col className={canUpdateDepartment ? "w-[14%]" : "w-[18%]"} /> {/* Name */}
-            <col className={canUpdateDepartment ? "w-[15%]" : "w-[20%]"} /> {/* Address */}
-            <col className={canUpdateDepartment ? "w-[11%]" : "w-[12%]"} /> {/* Primary */}
-            <col className={canUpdateDepartment ? "w-[11%]" : "w-[12%]"} /> {/* Secondary */}
-            <col className={canUpdateDepartment ? "w-[11%]" : "w-[12%]"} /> {/* Billing */}
-            {canUpdateDepartment && <col className="w-[8%]" />} {/* Allow Multi */}
-            <col className={canUpdateDepartment ? "w-[7%]" : "w-[8%]"} /> {/* Multi Codes */}
-            <col className={canUpdateDepartment ? "w-[6%]" : "col-auto"} /> {/* Active */}
-            {canUpdateDepartment && <col className="w-[7%]" />} {/* Action */}
+            <col className={canUpdateDepartment ? "w-[9%]" : "w-[11%]"} /> {/* Code */}
+            <col className={canUpdateDepartment ? "w-[11%]" : "w-[13%]"} /> {/* Name */}
+            <col className={canUpdateDepartment ? "w-[13%]" : "w-[15%]"} /> {/* Address */}
+            <col className={canUpdateDepartment ? "w-[10%]" : "w-[12%]"} /> {/* Primary */}
+            <col className={canUpdateDepartment ? "w-[10%]" : "w-[12%]"} /> {/* Secondary */}
+            <col className={canUpdateDepartment ? "w-[10%]" : "w-[12%]"} /> {/* Billing */}
+            {canUpdateDepartment && <col className="w-[9%]" />} {/* Allow Multi */}
+            <col className={canUpdateDepartment ? "w-[10%]" : "w-[14%]"} /> {/* Multi Codes */}
+            <col className={canUpdateDepartment ? "w-[9%]" : "w-[11%]"} /> {/* Active */}
+            {canUpdateDepartment && <col className="w-[9%]" />} {/* Action */}
           </colgroup>
           <TableHeader>
             <TableRow className="bg-[#6C5DD3] hover:bg-[#6C5DD3]">
-              <TableHead className="h-[91px] border-r border-[#FFFFFF66] p-[12px] align-middle text-left text-[14px] font-normal font-['Roboto',sans-serif] leading-[1.4] text-white whitespace-normal break-normal">
+              <TableHead className="h-[48px] border-r border-[#FFFFFF66] p-[8px] align-middle text-left text-[14px] font-medium text-white">
                 <TooltipProvider>
                   <Tooltip open={isSortTooltipOpen && sortTooltipColumn === "code"}>
                     <TooltipTrigger asChild>
@@ -295,19 +295,19 @@ export function DepartmentTable({
                           setIsSortTooltipOpen(true)
                         }}
                         onBlur={() => setIsSortTooltipOpen(false)}
-                        className="flex h-full max-w-full cursor-pointer items-center gap-2 text-left font-normal"
+                        className="flex h-full max-w-full cursor-pointer items-center gap-2 text-left font-medium"
                       >
-                        <span className="max-w-full whitespace-normal break-normal font-normal">Code</span>
+                        <span className="whitespace-nowrap font-medium">Code</span>
                         <span className="inline-flex shrink-0 flex-col">
                           <span
-                            className={`h-0 w-0 border-b-[5px] border-l-4 border-r-4 border-l-transparent border-r-transparent ${
+                            className={`h-0 w-0 border-b-[4px] border-l-3 border-r-3 border-l-transparent border-r-transparent ${
                               sortBy === "code" && sortDirection === "asc"
                                 ? "border-b-[#1E8BFF]"
                                 : "border-b-white/60"
                             }`}
                           />
                           <span
-                            className={`mt-0.5 h-0 w-0 border-l-4 border-r-4 border-t-[5px] border-l-transparent border-r-transparent ${
+                            className={`mt-0.5 h-0 w-0 border-l-3 border-r-3 border-t-[4px] border-l-transparent border-r-transparent ${
                               sortBy === "code" && sortDirection === "desc"
                                 ? "border-t-[#201547]"
                                 : "border-t-white"
@@ -322,7 +322,7 @@ export function DepartmentTable({
                   </Tooltip>
                 </TooltipProvider>
               </TableHead>
-              <TableHead className="h-[91px] border-r border-[#FFFFFF66] p-[12px] align-middle text-left text-[14px] font-normal font-['Roboto',sans-serif] leading-[1.4] text-white whitespace-normal break-normal">
+              <TableHead className="h-[48px] border-r border-[#FFFFFF66] p-[8px] align-middle text-left text-[14px] font-medium text-white">
                 <TooltipProvider>
                   <Tooltip open={isSortTooltipOpen && sortTooltipColumn === "name"}>
                     <TooltipTrigger asChild>
@@ -343,19 +343,19 @@ export function DepartmentTable({
                           setIsSortTooltipOpen(true)
                         }}
                         onBlur={() => setIsSortTooltipOpen(false)}
-                        className="flex h-full max-w-full cursor-pointer items-center gap-2 text-left font-normal"
+                        className="flex h-full max-w-full cursor-pointer items-center gap-2 text-left font-medium"
                       >
-                        <span className="max-w-full whitespace-normal break-normal font-normal">Department</span>
+                        <span className="whitespace-nowrap font-medium">Department</span>
                         <span className="inline-flex shrink-0 flex-col">
                           <span
-                            className={`h-0 w-0 border-b-[5px] border-l-4 border-r-4 border-l-transparent border-r-transparent ${
+                            className={`h-0 w-0 border-b-[4px] border-l-3 border-r-3 border-l-transparent border-r-transparent ${
                               sortBy === "name" && sortDirection === "asc"
                                 ? "border-b-[#1E8BFF]"
                                 : "border-b-white/60"
                             }`}
                           />
                           <span
-                            className={`mt-0.5 h-0 w-0 border-l-4 border-r-4 border-t-[5px] border-l-transparent border-r-transparent ${
+                            className={`mt-0.5 h-0 w-0 border-l-3 border-r-3 border-t-[4px] border-l-transparent border-r-transparent ${
                               sortBy === "name" && sortDirection === "desc"
                                 ? "border-t-[#201547]"
                                 : "border-t-white"
@@ -370,31 +370,31 @@ export function DepartmentTable({
                   </Tooltip>
                 </TooltipProvider>
               </TableHead>
-              <TableHead className="border-r border-[#FFFFFF66] px-[8px] py-[28px] text-left text-[14px] font-medium text-white whitespace-normal wrap-break-word leading-tight">
+              <TableHead className="h-[48px] border-r border-[#FFFFFF66] p-[8px] text-left text-[14px] font-medium text-white">
                 Address
               </TableHead>
-              <TableHead className="border-r border-[#FFFFFF66] px-[8px] py-[28px] text-left text-[14px] font-medium text-white whitespace-normal wrap-break-word leading-tight">
+              <TableHead className="h-[48px] border-r border-[#FFFFFF66] p-[8px] text-left text-[14px] font-medium text-white">
                 Primary Contact
               </TableHead>
-              <TableHead className="border-r border-[#FFFFFF66] px-[8px] py-[28px] text-left text-[14px] font-medium text-white whitespace-normal wrap-break-word leading-tight">
+              <TableHead className="h-[48px] border-r border-[#FFFFFF66] p-[8px] text-left text-[14px] font-medium text-white">
                 Secondary Contact
               </TableHead>
-              <TableHead className="border-r border-[#FFFFFF66] px-[8px] py-[28px] text-left text-[14px] font-medium text-white whitespace-normal wrap-break-word leading-tight">
+              <TableHead className="h-[48px] border-r border-[#FFFFFF66] p-[8px] text-left text-[14px] font-medium text-white">
                 Billing Contact
               </TableHead>
               {canUpdateDepartment && (
-                <TableHead className="border-r border-[#FFFFFF66] px-[4px] py-[28px] text-center text-[14px] font-medium text-white whitespace-normal wrap-break-word leading-[1.1]">
+                <TableHead className="h-[48px] border-r border-[#FFFFFF66] p-[4px] text-center text-[13px] font-medium text-white leading-tight">
                   Allow Multi <br /> codes
                 </TableHead>
               )}
-              <TableHead className="border-r border-[#FFFFFF66] px-[4px] py-[28px] text-center text-[14px] font-medium text-white whitespace-normal wrap-break-word leading-[1.1]">
+              <TableHead className="h-[48px] border-r border-[#FFFFFF66] p-[4px] text-center text-[13px] font-medium text-white leading-tight">
                 Multi <br /> Codes
               </TableHead>
-              <TableHead className="border-r border-[#FFFFFF66] px-[4px] py-[28px] text-center text-[14px] font-medium text-white whitespace-normal wrap-break-word leading-tight">
+              <TableHead className="h-[48px] border-r border-[#FFFFFF66] p-[4px] text-center text-[14px] font-medium text-white">
                 Active
               </TableHead>
               {canUpdateDepartment && (
-                <TableHead className="px-[4px] py-[28px] text-center text-[14px] font-medium text-white whitespace-normal wrap-break-word leading-tight">
+                <TableHead className="h-[48px] p-[4px] text-center text-[14px] font-medium text-white">
                   Action
                 </TableHead>
               )}
@@ -457,7 +457,7 @@ export function DepartmentTable({
                     />
                   </TableCell>
                   {canUpdateDepartment && (
-                    <TableCell className="border-r border-[#D1D5DB] px-[8px] py-[16px] text-center">
+                    <TableCell className="border-r border-[#D1D5DB] px-3 py-2 text-center">
                       <div className="flex justify-center">
                         <img 
                           src={dept.settings.allowMultiCodes ? statusCheckImg : statusCrossImg} 
@@ -491,7 +491,7 @@ export function DepartmentTable({
                   </TableCell>
                   {canUpdateDepartment && (
                     <TableCell className="px-[4px] py-[16px] text-center">
-                      {(isSuperAdmin || isDepartmentAdmin || dept.canEdit) && (
+                      {(canUpdateDepartment || dept.canEdit) && (
                         <button
                           onClick={() => onEdit?.(dept.id)}
                           className="inline-flex h-[28px] w-[28px] items-center justify-center transition-opacity hover:opacity-80"

@@ -12,12 +12,12 @@ import type { MasterCodeFormValues } from "../types"
 import { usePermissions } from "@/hooks/usePermissions"
 
 export function MasterCodePage() {
-  const { isSuperAdmin, isDepartmentAdmin, canView } = usePermissions()
+  const { isSuperAdmin, canAdd, canUpdate, canView } = usePermissions()
 
-  const canAdd = isSuperAdmin || isDepartmentAdmin
-  const canEdit = isSuperAdmin || isDepartmentAdmin
+  const hasAddPermission = isSuperAdmin || canAdd("mastercode")
+  const hasEditPermission = isSuperAdmin || canUpdate("mastercode")
 
-  if (!isSuperAdmin && !canView("mastercode") && !canView("user") && !canView("payroll")) {
+  if (!isSuperAdmin && !canView("mastercode")) {
     return null
   }
 
@@ -114,22 +114,22 @@ export function MasterCodePage() {
         />
       </div>
       <div className="mt-5">
-        <MasterCodeToolbar
-          codeType={ui.activeTab}
-          allowMultiCodes={allowMultiCodes}
-          inactiveOnly={ui.inactiveOnly}
-          onToggleAllowMultiCodes={handleToggleMultiCodes}
-          onToggleInactiveOnly={ui.toggleInactiveOnly}
-          onAddFfp={ui.openAddModal}
-          canAdd={canAdd}
-        />
+          <MasterCodeToolbar
+            codeType={ui.activeTab}
+            allowMultiCodes={allowMultiCodes}
+            inactiveOnly={ui.inactiveOnly}
+            onToggleAllowMultiCodes={handleToggleMultiCodes}
+            onToggleInactiveOnly={ui.toggleInactiveOnly}
+            onAddFfp={ui.openAddModal}
+            canAdd={hasAddPermission}
+          />
         <div className="mb-5">
           <MasterCodeTable
             codeType={ui.activeTab}
             rows={masterCodes.rows}
             isLoading={isTableLoading}
             onEditRow={ui.openEditModal}
-            canEdit={canEdit}
+            canEdit={hasEditPermission}
           />
         </div>
         <MasterCodePagination

@@ -106,7 +106,7 @@ const mainNav: NavItem[] = [
   // ── Super-admin only (no permission key in the permission table) ──────────
   { title: "Users",                 url: "/users",                 icon: Users,            permission: "superadmin" },
   { title: "Department Role",       url: "/department-role",       icon: Building2,        permission: "superadmin" },
-  { title: "Master Code",           url: "/master-code",           icon: SquareTerminal,   permission: ["mastercode", "user", "payroll"] },
+  { title: "Master Code",           url: "/master-code",           icon: SquareTerminal,   permission: "mastercode" },
 ]
 
 // ---------------------------------------------------------------------------
@@ -114,13 +114,12 @@ const mainNav: NavItem[] = [
 // ---------------------------------------------------------------------------
 export function AppSidebar() {
   const { user, signOut } = useAuth()
-  const { isSuperAdmin, isPayrollAdmin, canView, has } = usePermissions()
+  const { isSuperAdmin, canView, has } = usePermissions()
   const [changePasswordOpen, setChangePasswordOpen] = useState(false)
   const location = useLocation()
 
   /** Returns true when the nav item should be visible to this user. */
   function isVisible(item: NavItem): boolean {
-    if (isPayrollAdmin && item.url === "/leave-approval") return false
     if (item.permission === null) return true                    // always show
     if (item.permission === "superadmin") return isSuperAdmin    // superadmin-only pages
     if (isSuperAdmin) return true                               // superadmin sees everything
