@@ -1,30 +1,25 @@
 import { api } from "@/lib/api"
-import type { PayrollBy, PayrollColumnSettingModel, PayrollSettingsModel } from "../types"
-
-export type PayrollSettingsResponse = {
-  items: Array<{
-    id: number
-    columnname: string
-    displayOrder: number | null
-    isEnable: boolean
-    isEditable: boolean
-    slno: number
-  }>
-  payrollPeriod?: string
-}
+import type { 
+  PayrollBy, 
+  PayrollColumnSettingModel, 
+  PayrollSettingsModel,
+  BackendPayrollSettingItem,
+  PayrollSettingsBulkUpdateInput,
+  PayrollSettingsBulkUpdateColumn
+} from "../types"
 
 export async function getPayrollSettings(): Promise<PayrollSettingsModel> {
   const res = await api.get<{
     success: boolean
-    data: { items: any[]; payrollPeriod?: { value: string } }
+    data: { items: BackendPayrollSettingItem[]; payrollPeriod?: { value: string } }
   }>("/payrollmanagement/settings")
   const data = res.data
 
-  const items = (data?.items ?? []).sort((a: any, b: any) => (a.displayOrder ?? a.slno) - (b.displayOrder ?? b.slno))
+  const items = (data?.items ?? []).sort((a: BackendPayrollSettingItem, b: BackendPayrollSettingItem) => (a.displayOrder ?? a.slno) - (b.displayOrder ?? b.slno))
   const periodValue = data?.payrollPeriod?.value ?? "Monthly"
 
   // Transform backend format to frontend format
-  const rows: PayrollColumnSettingModel[] = items.map((item: any) => ({
+  const rows: PayrollColumnSettingModel[] = items.map((item: BackendPayrollSettingItem) => ({
     key: item.id.toString(),
     label: item.columnname,
     enabled: Boolean(item.isEnable),
@@ -45,27 +40,47 @@ export async function getPayrollSettings(): Promise<PayrollSettingsModel> {
   }
 }
 
-export async function updatePayrollSettings(data: PayrollSettingsModel): Promise<void> {
-  // 1. Update Columns
-  const columnsBody = data.columns.map((col, index) => ({
-    id: Number(col.key) || undefined,
-    columnname: col.label,
-    displayOrder: index + 1,
-    isEnable: col.enabled,
-    isEditable: col.editable,
-    slno: index + 1,
-  }))
 
-  await api.post("/payrollmanagement/settings", columnsBody)
 
-  // 2. Update Payroll Period (PAYROLL_TYPE)
+function payrollByToBackendValue(payrollBy: PayrollBy): string {
   // Map frontend labels (e.g. "Bi-Weekly") back to backend strings (e.g. "biweekly")
   let periodValue = "monthly"
-  const low = data.payrollBy.toLowerCase().replace(/[^a-z]/g, "")
+  const low = payrollBy.toLowerCase().replace(/[^a-z]/g, "")
   if (low === "weekly") periodValue = "weekly"
   else if (low === "biweekly") periodValue = "biweekly"
   else if (low === "semimonthly") periodValue = "semimonthly"
   else if (low === "monthly") periodValue = "monthly"
+  return periodValue
+}
 
-  await api.put("/setting/PAYROLL_TYPE", { value: periodValue })
+/**
+ * Bulk update payroll column settings.
+ * Backend does not expose a single bulk endpoint, so we update only changed
+ * rows via `PUT /payrollmanagement/settings/:id` and send only changed fields.
+ */
+export async function updatePayrollSettings(data: PayrollSettingsBulkUpdateInput): Promise<void> {
+  // 1) Update changed columns.
+  // Prefer a true bulk endpoint if the backend supports it (single request),
+  // otherwise fall back to per-id updates.
+  if (Array.isArray(data.columns) && data.columns.length > 0) {
+    try {
+      // Backend expects a raw JSON array body.
+      await api.put("/payrollmanagement/settings/bulk", data.columns)
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      // Fallback for backends without bulk support (e.g. "Cannot PUT /api/v1/payrollmanagement/settings/bulk").
+      if (/cannot put|not found|404/i.test(msg)) {
+        await Promise.all(
+          data.columns.map(({ id, ...patch }: PayrollSettingsBulkUpdateColumn) => api.put(`/payrollmanagement/settings/${id}`, patch)),
+        )
+      } else {
+        throw err
+      }
+    }
+  }
+
+  // 2) Update Payroll Period only if included
+  if (data.payrollBy) {
+    await api.put("/setting/PAYROLL_TYPE", { value: payrollByToBackendValue(data.payrollBy) })
+  }
 }

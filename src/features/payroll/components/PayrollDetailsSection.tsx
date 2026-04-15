@@ -25,21 +25,24 @@ function RadioChoice({
   label,
   selected,
   id,
+  disabled = false,
 }: {
   value: string
   label: string
   selected: boolean
   id: string
+  disabled?: boolean
 }) {
   return (
     <label
       htmlFor={id}
       className={cn(
-        "flex cursor-pointer items-center gap-2 text-[12px] text-[#111827]",
+        "flex items-center gap-2 text-[12px] text-[#111827]",
+        disabled ? "cursor-not-allowed" : "cursor-pointer",
         !selected && "opacity-80",
       )}
     >
-      <RadioGroupItem value={value} id={id} className="border-[#d6d7dc]" />
+      <RadioGroupItem value={value} id={id} className="border-[#d6d7dc]" disabled={disabled} />
       <span>{label}</span>
     </label>
   )
@@ -69,15 +72,22 @@ export function PayrollDetailsSection({
   filterOptions,
   isOptionsLoading,
   isRowsLoading,
+  settingsPayrollType,
+  isPayrollTypeLocked = false,
   onGetRows,
   onDownloadCurrentRows,
   onDelete,
   activeQueryParams,
 }: PayrollDetailsSectionProps) {
+  const detailsFormValues = buildPayrollDetailsDefaultValues(filterOptions, settingsPayrollType)
+
   const form = useForm<PayrollDetailsFormValues>({
     resolver: zodResolver(payrollDetailsFormSchema),
-    defaultValues: buildPayrollDetailsDefaultValues(filterOptions),
+    values: detailsFormValues,
     mode: "onSubmit",
+    resetOptions: {
+      keepDirtyValues: true,
+    },
   })
 
   const periodType = useWatch({ control: form.control, name: "periodType" })
@@ -119,8 +129,11 @@ export function PayrollDetailsSection({
             render={({ field }) => (
               <RadioGroup
                 value={field.value}
-                onValueChange={field.onChange}
-                className="flex flex-wrap gap-x-6 gap-y-2"
+                onValueChange={isPayrollTypeLocked ? undefined : field.onChange}
+                className={cn(
+                  "flex flex-wrap gap-x-6 gap-y-2",
+                  isPayrollTypeLocked && "cursor-not-allowed",
+                )}
               >
                 {PAYROLL_TYPE_OPTIONS.map((opt) => (
                   <RadioChoice
@@ -129,6 +142,7 @@ export function PayrollDetailsSection({
                     value={opt.value}
                     label={opt.label}
                     selected={field.value === opt.value}
+                    disabled={isPayrollTypeLocked}
                   />
                 ))}
               </RadioGroup>
