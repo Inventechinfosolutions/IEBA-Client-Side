@@ -114,12 +114,13 @@ const mainNav: NavItem[] = [
 // ---------------------------------------------------------------------------
 export function AppSidebar() {
   const { user, signOut } = useAuth()
-  const { isSuperAdmin, canView, has } = usePermissions()
+  const { isSuperAdmin, isPayrollAdmin, canView, has } = usePermissions()
   const [changePasswordOpen, setChangePasswordOpen] = useState(false)
   const location = useLocation()
 
   /** Returns true when the nav item should be visible to this user. */
   function isVisible(item: NavItem): boolean {
+    if (isPayrollAdmin && item.url === "/leave-approval") return false
     if (item.permission === null) return true                    // always show
     if (item.permission === "superadmin") return isSuperAdmin    // superadmin-only pages
     if (isSuperAdmin) return true                               // superadmin sees everything

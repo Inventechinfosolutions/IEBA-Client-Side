@@ -8,6 +8,8 @@ import { useLeaveApprovals } from "../hooks/useLeaveApprovals"
 import { useUpdateLeaveApproval } from "../mutations/updateLeaveApproval"
 import { toast } from "sonner"
 import { Check } from "lucide-react"
+
+import { usePermissions } from "@/hooks/usePermissions"
 import type {
   LeaveApprovalFilters,
   LeaveApprovalSortKey,
@@ -27,6 +29,13 @@ function nextSortState(prev: LeaveApprovalSortState, key: LeaveApprovalSortKey):
 }
 
 export function LeaveApprovalPage() {
+  const { 
+    isSuperAdmin, 
+    isDepartmentAdmin, 
+    isTimeStudyAdmin, 
+    isTimeStudySupervisor 
+  } = usePermissions()
+
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [filters, setFilters] = useState<LeaveApprovalFilters>(defaultFilters)
@@ -37,12 +46,19 @@ export function LeaveApprovalPage() {
   /** Bumps on each open so the comments form remounts with empty defaults (no useEffect). */
   const [commentsModalFormKey, setCommentsModalFormKey] = useState(0)
 
+  const hasAccess = isSuperAdmin || isDepartmentAdmin || isTimeStudyAdmin || isTimeStudySupervisor
+
   const leaveModule = useLeaveApprovals({
     page,
     pageSize,
     filters,
     sort,
+    enabled: hasAccess
   })
+
+  if (!hasAccess) {
+    return null
+  }
   const updateMutation = useUpdateLeaveApproval({ page, pageSize, filters, sort })
 
   const isTableLoading = leaveModule.isLoading || leaveModule.isFetching
@@ -137,7 +153,7 @@ export function LeaveApprovalPage() {
                   position: "top-center",
                   icon: (
                     <span className="inline-flex size-4 items-center justify-center rounded-full bg-[#22c55e] text-white">
-                      <Check className="size-3 stroke-[3]" />
+                    <Check className="size-3 stroke-3" />
                     </span>
                   ),
                 })

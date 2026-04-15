@@ -16,6 +16,8 @@ export function usePermissions() {
   const roles = user?.roles ?? []
   const isDepartmentAdmin = roles.includes("Department Admin")
   const isPayrollAdmin = roles.includes("Payroll Admin")
+  const isTimeStudyAdmin = roles.includes("Time Study Admin")
+  const isTimeStudySupervisor = roles.includes("Time Study Supervisor")
 
   /**
    * Returns true if the user has the exact permission string,
@@ -56,6 +58,8 @@ export function usePermissions() {
     isSuperAdmin,
     isDepartmentAdmin,
     isPayrollAdmin,
+    isTimeStudyAdmin,
+    isTimeStudySupervisor,
     has,
     canView,
     canAdd,

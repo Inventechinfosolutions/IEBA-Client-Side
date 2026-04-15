@@ -8,8 +8,8 @@ export function useLeaveApprovals(params: GetLeaveApprovalsParams) {
     rows: query.data?.items ?? [],
     totalItems: query.data?.totalItems ?? 0,
     userOptions: query.data?.userOptions ?? [],
-    isLoading: query.isLoading,
-    isFetching: query.isFetching,
+    isLoading: query.isLoading && (params.enabled !== false),
+    isFetching: query.isFetching && (params.enabled !== false),
     error: query.error,
   }
 }
