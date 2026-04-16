@@ -38,8 +38,12 @@ export function StaffStatsCard({
           <NavRow to="/department" label="Departments" value={deptCount} loading={isLoading} />
           <NavRow to="/program" label="Programs" value={programCount} loading={isLoading} />
           <NavRow to="/county-activity-code" label="Activities" value={activitiesCount} loading={isLoading} />
-          <NavRow to="/job-pool" label="Job Pools" value={jobPools} loading={isLoading} />
-          <NavRow to="/costpool" label="Cost Pools" value={costPools} loading={isLoading} />
+          {(jobPools !== undefined || costPools !== undefined) && (
+            <>
+              <NavRow to="/job-pool" label="Job Pools" value={jobPools} loading={isLoading} />
+              <NavRow to="/costpool" label="Cost Pools" value={costPools} loading={isLoading} />
+            </>
+          )}
         </div>
       </div>
     </div>
