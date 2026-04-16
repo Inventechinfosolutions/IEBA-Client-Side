@@ -1,4 +1,5 @@
-import type { ReactNode } from "react"
+import { useMemo, type ReactNode } from "react"
+import { useQuery } from "@tanstack/react-query"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Controller, useForm, useWatch } from "react-hook-form"
 
@@ -9,6 +10,9 @@ import { Label } from "@/components/ui/label"
 import { MultiSelectDropdown } from "@/components/ui/multi-select-dropdown"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { cn } from "@/lib/utils"
+import { useAuth } from "@/contexts/AuthContext"
+import { usePermissions } from "@/hooks/usePermissions"
+import { getUserDetails } from "@/features/auth/api/getUserDetails"
 
 import { payrollDetailsFormSchema } from "../schemas"
 import { PAYROLL_FREQUENCY_OPTIONS } from "../enums/payrollFrequency"
@@ -79,6 +83,31 @@ export function PayrollDetailsSection({
   onDelete,
   activeQueryParams,
 }: PayrollDetailsSectionProps) {
+  const { user } = useAuth()
+  const { isSuperAdmin, isDepartmentAdmin, isPayrollAdmin } = usePermissions()
+  const isRestrictedAdmin = isDepartmentAdmin || isPayrollAdmin
+
+  // Locally fetch user details to get the most accurate department list
+  const { data: userDetails, isLoading: isDetailsLoading } = useQuery({
+    queryKey: ["user-details-local", user?.id],
+    queryFn: () => (user?.id ? getUserDetails(user.id) : Promise.reject("No user ID")),
+    enabled: !!user?.id && isRestrictedAdmin,
+  })
+  
+  // Get all unique department IDs from either the API response or the user context
+  const assignedDepartmentIds = useMemo(() => {
+    if (isSuperAdmin) return []
+    
+    // If we have fresh details from the API, use the 'departments' list
+    const deptList = (userDetails as any)?.data?.departments || (userDetails as any)?.departments
+    if (deptList) {
+      return deptList.map((d: any) => String(d.id))
+    }
+    
+    // Fallback to the context's departmentRoles
+    return (user?.departmentRoles || []).map(dr => String(dr.departmentId))
+  }, [user?.departmentRoles, userDetails?.departments, isSuperAdmin])
+
   const detailsFormValues = buildPayrollDetailsDefaultValues(filterOptions, settingsPayrollType)
 
   const form = useForm<PayrollDetailsFormValues>({
@@ -100,7 +129,12 @@ export function PayrollDetailsSection({
     periodType === "month" ? filterOptions.monthOptions : filterOptions.quarterOptions
 
   const fiscalYearOptions: SingleSelectOption[] = [...filterOptions.fiscalYears]
-  const departmentOptions: SingleSelectOption[] = [...filterOptions.departments]
+  
+  // FILTER: Only show the assigned departments for Dept/Payroll admins
+  const departmentOptions: SingleSelectOption[] = isSuperAdmin
+    ? [...filterOptions.departments]
+    : filterOptions.departments.filter(d => assignedDepartmentIds.includes(d.value))
+
   const employeeOptions: SingleSelectOption[] = (departmentUsers as DepartmentUser[]).map((u) => ({
     value: String(u.employeeId || u.id),
     label: u.name || `${u.firstName || ""} ${u.lastName || ""}`.trim() || String(u.employeeId || u.id),
@@ -261,8 +295,8 @@ export function PayrollDetailsSection({
                   onBlur={field.onBlur}
                   options={departmentOptions}
                   placeholder="Department"
-                  disabled={isOptionsLoading}
-                  isLoading={isOptionsLoading}
+                  disabled={isOptionsLoading || (isRestrictedAdmin && isDetailsLoading)}
+                  isLoading={isOptionsLoading || (isRestrictedAdmin && isDetailsLoading)}
                   className="h-[46px]! min-h-[46px]! w-full rounded-[6px]! border-[#d6d7dc]! text-[14px]!"
                   itemButtonClassName="rounded-[6px] px-3 py-2"
                   itemLabelClassName="!text-[14px]"
