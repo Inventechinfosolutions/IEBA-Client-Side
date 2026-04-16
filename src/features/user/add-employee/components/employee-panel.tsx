@@ -72,12 +72,14 @@ export function EmployeePanel({
           ) : null}
 
           <div className="mt-5 flex items-center justify-end gap-3">
-            <Button
-              type="submit"
-              className="h-9 min-w-[72px] cursor-pointer rounded-[8px] bg-[#6C5DD3] px-5 text-[12px] text-white hover:bg-[#6C5DD3]"
-            >
-              Save
-            </Button>
+            {activeTab !== "timeStudy" ? (
+              <Button
+                type="submit"
+                className="h-9 min-w-[72px] cursor-pointer rounded-[8px] bg-[#6C5DD3] px-5 text-[12px] text-white hover:bg-[#6C5DD3]"
+              >
+                Save
+              </Button>
+            ) : null}
             {!isLastTab && !(isEditMode && activeTab === "employee") ? (
               <Button
                 type="button"

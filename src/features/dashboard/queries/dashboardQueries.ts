@@ -156,6 +156,18 @@ export function useTodos(userId: string | number) {
     month: "long",
   })
 
+  const formatTodoDate = (item: TodoItem) => {
+    const preferredDate =
+      item.updatedAt ?? item.completedAt ?? item.completedDate ?? item.createdAt
+    const parsed = Date.parse(preferredDate)
+    if (!Number.isNaN(parsed)) {
+      return formatter.format(parsed)
+    }
+
+    const createdParsed = Date.parse(item.createdAt)
+    return Number.isNaN(createdParsed) ? "" : formatter.format(createdParsed)
+  }
+
   return useQuery({
     queryKey: dashboardKeys.todos(userId),
     queryFn: () => getTodos(userId),
@@ -163,7 +175,7 @@ export function useTodos(userId: string | number) {
       return (data.items ?? []).map((item) => ({
         ...item,
         key: item.id,
-        day: formatter.format(Date.parse(item.createdAt)),
+        day: formatTodoDate(item),
       }))
     },
     enabled: !!userId,

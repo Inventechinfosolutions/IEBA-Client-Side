@@ -10,6 +10,7 @@ import { PayrollManagementCard } from "../components/PayrollManagementCard"
 import { ReportsCard } from "../components/ReportsCard"
 import { StaffStatsCard } from "../components/StaffStatsCard"
 import { UserDashboard } from "../components/UserDashboard"
+import { useMimicSession } from "@/features/user/user-mimic"
 
 import {
   usePersonalTimeStudy,
@@ -24,9 +25,6 @@ import {
   useDashboardUserCount,
 } from "../queries/dashboardQueries"
 import { getPayrollDateRange } from "../api/dashboard"
-import { Building2 } from "lucide-react"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import React from "react"
 
 
 import { PayrollPeriod } from "../enums/dashboard.enum"
@@ -36,23 +34,92 @@ function hasPermission(permissions: string[] | undefined, key: string): boolean 
   return permissions.includes(key) || permissions.includes("superadmin:all")
 }
 
+function isDepartmentAdminLikeRole(normalizedRoleName: string): boolean {
+  if (!normalizedRoleName) return false
+
+  const knownExactRoleNames = new Set([
+    "departmentadmin",
+    "departmentadministrator",
+    "deptadmin",
+    "timestudysupervisor",
+    "timestudyadmin",
+    "timestudyadministrator",
+  ])
+
+  if (knownExactRoleNames.has(normalizedRoleName)) return true
+
+  const isDepartmentAdminByKeywords =
+    normalizedRoleName.includes("department") && normalizedRoleName.includes("admin")
+  const isTimeStudyAdminByKeywords =
+    normalizedRoleName.includes("timestudy") &&
+    (normalizedRoleName.includes("admin") || normalizedRoleName.includes("supervisor"))
+
+  return isDepartmentAdminByKeywords || isTimeStudyAdminByKeywords
+}
+
 export function DashboardPage() {
   const { user } = useAuth()
+  const { data: mimicSession } = useMimicSession()
   const userId = user?.id ?? ""
   const permissions = user?.permissions
 
+  const deptRoles = user?.departmentRoles ?? []
+  const normalizeRoleName = (role: string) => role.trim().toLowerCase().replace(/[^a-z]/g, "")
+  const normalizedRoleNames = [
+    ...deptRoles.map((dr) => normalizeRoleName(dr.roleName)),
+    ...(user?.roles ?? []).map((role) => normalizeRoleName(role)),
+  ].filter((role) => role.length > 0)
+  const hasSuperAdminRole = normalizedRoleNames.some((role) => role === "superadmin")
+  const hasPayrollAdminRole = normalizedRoleNames.some(
+    (role) => role === "payrolladmin" || role === "payroll"
+  )
+  const hasDeptTsRole = normalizedRoleNames.some(isDepartmentAdminLikeRole)
+  const hasDepartmentAndPayrollRole = hasDeptTsRole && hasPayrollAdminRole
+  const isUserOrPayrollRole = (role: string) =>
+    role === "user" || role === "payroll" || role === "payrolladmin"
+  const hasOnlyUserPayrollRoleMix =
+    normalizedRoleNames.length > 0 && normalizedRoleNames.every((role) => isUserOrPayrollRole(role))
+  const hasMultipleDepartmentRoles = deptRoles.length > 1
+  const shouldUseAdminDashboardForRoleMix =
+    hasDeptTsRole || (hasMultipleDepartmentRoles && !hasOnlyUserPayrollRoleMix)
+  const isAdmin = mimicSession
+    ? hasSuperAdminRole
+    : hasSuperAdminRole || hasPermission(permissions, "superadmin:all")
+  const canAddPayroll = hasPermission(permissions, "payroll:add")
+  const canCreateUser =
+    hasPermission(permissions, "user:create") || hasPermission(permissions, "user:add")
 
-  const isAdmin = hasPermission(permissions, "superadmin:all")
-  const canAddPayroll = hasPermission(permissions, "payroll:add") || isAdmin
+  const isPayrollAdmin = mimicSession
+    ? hasPayrollAdminRole && !isAdmin && !shouldUseAdminDashboardForRoleMix
+    : canAddPayroll && !isAdmin && !shouldUseAdminDashboardForRoleMix
+  const isDeptOrTSAdmin = mimicSession
+    ? !isAdmin && !isPayrollAdmin && shouldUseAdminDashboardForRoleMix
+    : !isAdmin && !isPayrollAdmin && shouldUseAdminDashboardForRoleMix
+  const isRegularUser = !isAdmin && !isPayrollAdmin && !isDeptOrTSAdmin
+  const hasUserRole = normalizedRoleNames.some((role) => role === "user")
+  const shouldTreatPayrollRoleMixAsSuperAdmin =
+    hasPayrollAdminRole && (hasDeptTsRole || hasUserRole) && !hasSuperAdminRole
+  const isUserLikeDashboard =
+    (hasOnlyUserPayrollRoleMix || isRegularUser || isPayrollAdmin) &&
+    !shouldTreatPayrollRoleMixAsSuperAdmin
+  const canViewAdminLayout = !isUserLikeDashboard
+  const isSuperAdminLikeDashboard =
+    isAdmin || hasDepartmentAndPayrollRole || shouldTreatPayrollRoleMixAsSuperAdmin
+  const canAlwaysViewUserCard = hasDeptTsRole
+  const showUserManagement = isSuperAdminLikeDashboard || canCreateUser || canAlwaysViewUserCard
+  const showPayrollCard = isSuperAdminLikeDashboard
+  const showStaffStatsCard = isAdmin || isPayrollAdmin || isDeptOrTSAdmin
+  const row2TemplateColumns = showPayrollCard
+    ? "0.90fr 1.10fr 1.23fr 0.81fr"
+    : showStaffStatsCard
+      ? "0.90fr 1.23fr 0.81fr"
+      : "0.90fr 1.23fr"
 
 
   const payrollType = PayrollPeriod.Monthly
   const { label: periodLabel } = getPayrollDateRange(payrollType)
 
-  const deptRoles = user?.departmentRoles ?? []
-  const [selectedDeptRoleIdx, setSelectedDeptRoleIdx] = React.useState<string>(
-    deptRoles.length > 0 ? "0" : ""
-  )
+  const selectedDeptRoleIdx = "0"
 
   const currentDeptRole = deptRoles[Number(selectedDeptRoleIdx)]
   const departmentId = currentDeptRole?.departmentId
@@ -64,7 +131,7 @@ export function DashboardPage() {
     reqMins: 480,
     departmentId,
     roleId,
-    enabled: isAdmin,
+    enabled: canViewAdminLayout,
   })
 
   const timeRecordRequests = useTimeRecordRequests({ 
@@ -72,20 +139,20 @@ export function DashboardPage() {
     payrollType, 
     departmentId, 
     roleId,
-    enabled: isAdmin,
+    enabled: canViewAdminLayout,
   })
 
   const selfLeave = useSelfLeave(userId)
-  const staffLeave = useStaffLeave({ enabled: isAdmin })
+  const staffLeave = useStaffLeave({ enabled: canViewAdminLayout })
   const todos = useTodos(userId)
   const holidays = useHolidays()
-  const overview = useDashboardOverview({ enabled: isAdmin })
-  const dashboardUserCount = useDashboardUserCount({ enabled: isAdmin })
-  const activeUsers = useActiveUsers({ enabled: isAdmin })
+  const overview = useDashboardOverview({ enabled: canViewAdminLayout })
+  const dashboardUserCount = useDashboardUserCount({ enabled: showUserManagement })
+  const activeUsers = useActiveUsers({ enabled: isSuperAdminLikeDashboard })
   const reports = useReportsByRole({ 
     departmentId, 
     roleId,
-    enabled: isAdmin,
+    enabled: canViewAdminLayout,
   })
 
   
@@ -127,42 +194,12 @@ export function DashboardPage() {
   const reportsData = reports.data ?? []
 
 
-  if (!isAdmin) {
+  if (isUserLikeDashboard) {
     return <UserDashboard />
   }
 
   return (
     <div className="flex flex-col gap-4 w-full min-h-0">
-      {/* Header with Selector */}
-      {deptRoles.length > 0 && (
-        <div className="flex items-center justify-between bg-white p-3 rounded-[15px] shadow-[0_4px_16px_rgba(0,0,0,0.04)] border border-[#E8EAF6] transition-all duration-300 hover:shadow-[0_6px_20px_rgba(0,0,0,0.06)]">
-          <div className="flex items-center gap-2">
-            <Building2 className="w-5 h-5 text-[#6C5DD3]" />
-            <span className="text-sm font-semibold text-[#111827]">Department Scope</span>
-          </div>
-          <Select
-            value={selectedDeptRoleIdx}
-            onValueChange={setSelectedDeptRoleIdx}
-          >
-            <SelectTrigger className="w-[300px] h-10 rounded-xl border-[#E5E7EB] bg-[#F9FAFB] text-sm focus:ring-[#6C5DD3]/20 focus:border-[#6C5DD3]/40">
-              <SelectValue placeholder="Select Department/Role" />
-            </SelectTrigger>
-            <SelectContent className="rounded-xl border-[#E8EAF6] shadow-xl">
-              {deptRoles.map((dr, idx) => (
-                <SelectItem key={idx} value={String(idx)} className="cursor-pointer hover:bg-[#6C5DD3]/5 rounded-lg my-1 mx-1">
-                  <div className="flex items-center gap-2 py-1">
-                    <span className="font-semibold text-[#111827]">{dr.departmentName}</span>
-                    <span className="text-[#9CA3AF]">—</span>
-                    <span className="text-[#6B7280]">{dr.roleName}</span>
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      )}
-
-
       <div
         className="grid gap-4 h-[250px]"
         style={{ gridTemplateColumns: "0.86fr 0.7fr 1.24fr 1.2fr" }}
@@ -208,28 +245,33 @@ export function DashboardPage() {
       </div>
 
       {/* ── Row 2: h-[285px] ── */}
-      <div className="grid gap-4 h-[285px]" style={{ gridTemplateColumns: "0.90fr 1.10fr 1.23fr 0.81fr" }}>
+      <div className="grid gap-4 h-[285px]" style={{ gridTemplateColumns: row2TemplateColumns }}>
 
 
-        <div className="flex flex-col gap-3">
-          <UsersCard
-            userCount={userCountVal}
-            activeUsers={activeUsersVal}
-            isLoading={dashboardUserCount.isLoading || activeUsers.isLoading}
-          />
-          <div className="flex-1 min-h-0">
+        {showUserManagement ? (
+          <div className="flex flex-col gap-3">
+            <UsersCard
+              userCount={userCountVal}
+                activeUsers={isSuperAdminLikeDashboard ? activeUsersVal : undefined}
+                showActiveUsers={isSuperAdminLikeDashboard}
+                isLoading={
+                  isSuperAdminLikeDashboard
+                    ? dashboardUserCount.isLoading || activeUsers.isLoading
+                    : dashboardUserCount.isLoading
+                }
+            />
+            <div className="flex-1 min-h-0">
+              <HolidayListCard />
+            </div>
+          </div>
+        ) : (
+          <div className="h-full min-h-0 overflow-hidden">
             <HolidayListCard />
           </div>
-        </div>
+        )}
 
         {/* Payroll Management */}
-        {canAddPayroll ? (
-          <PayrollManagementCard canViewPayroll />
-        ) : (
-          <div className="flex items-center justify-center rounded-[10px] border border-dashed border-[#E8EAF6] bg-white text-sm text-[#9CA3AF] shadow-[0_0_20px_0_#0000001a]">
-            No payroll access
-          </div>
-        )}
+        {showPayrollCard && <PayrollManagementCard canViewPayroll />}
 
         {/* Reports */}
         <div className="h-full overflow-hidden min-h-0">
@@ -237,17 +279,19 @@ export function DashboardPage() {
         </div>
 
         {/* Staff Leave + Stats */}
-        <StaffStatsCard
-          open={staffLeaveOpen}
-          approved={staffLeaveApproved}
-          rejected={staffLeaveRejected}
-          deptCount={deptCountVal}
-          programCount={programCountVal}
-          activitiesCount={activityCountVal}
-          jobPools={jobPoolsVal}
-          costPools={costPoolsVal}
-          isLoading={staffLeave.isLoading || overview.isLoading}
-        />
+        {showStaffStatsCard && (
+          <StaffStatsCard
+            open={staffLeaveOpen}
+            approved={staffLeaveApproved}
+            rejected={staffLeaveRejected}
+            deptCount={deptCountVal}
+            programCount={programCountVal}
+            activitiesCount={activityCountVal}
+            jobPools={isSuperAdminLikeDashboard ? jobPoolsVal : undefined}
+            costPools={isSuperAdminLikeDashboard ? costPoolsVal : undefined}
+            isLoading={staffLeave.isLoading || overview.isLoading}
+          />
+        )}
       </div>
     </div>
   )

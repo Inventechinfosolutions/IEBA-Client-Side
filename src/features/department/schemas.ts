@@ -86,6 +86,7 @@ export const DEPARTMENT_FORM_DEFAULT_VALUES: z.infer<typeof departmentUpsertSche
 
 export const departmentSchema = departmentUpsertSchema.extend({
   id: z.string(),
+  canEdit: z.boolean().optional(),
 })
 
 export const departmentFilterSchema = z.object({

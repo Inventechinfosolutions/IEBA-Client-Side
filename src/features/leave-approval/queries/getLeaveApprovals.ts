@@ -23,6 +23,7 @@ function isLeaveDetailsPayload(res: unknown): res is UserLeaveDetailsResponseDto
 export function useGetLeaveApprovals(params: GetLeaveApprovalsParams) {
   return useQuery({
     queryKey: leaveApprovalKeys.list(params),
+    enabled: params.enabled,
     queryFn: async () => {
       const statusFilter: LeaveApprovalStatusValue | undefined = (() => {
         if (params.filters.type === "All") return undefined

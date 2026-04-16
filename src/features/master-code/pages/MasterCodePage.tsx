@@ -9,8 +9,18 @@ import { MasterCodeToolbar } from "../components/MasterCodeToolbar"
 import { useMasterCodeUI } from "../hooks/useMasterCodeUi"
 import { useMasterCodes } from "../hooks/useMasterCode"
 import type { MasterCodeFormValues } from "../types"
+import { usePermissions } from "@/hooks/usePermissions"
 
 export function MasterCodePage() {
+  const { isSuperAdmin, canAdd, canUpdate, canView } = usePermissions()
+
+  const hasAddPermission = isSuperAdmin || canAdd("mastercode")
+  const hasEditPermission = isSuperAdmin || canUpdate("mastercode")
+
+  if (!isSuperAdmin && !canView("mastercode")) {
+    return null
+  }
+
   const successToastOptions = {
     position: "top-center" as const,
     icon: (
@@ -104,20 +114,22 @@ export function MasterCodePage() {
         />
       </div>
       <div className="mt-5">
-        <MasterCodeToolbar
-          codeType={ui.activeTab}
-          allowMultiCodes={allowMultiCodes}
-          inactiveOnly={ui.inactiveOnly}
-          onToggleAllowMultiCodes={handleToggleMultiCodes}
-          onToggleInactiveOnly={ui.toggleInactiveOnly}
-          onAddFfp={ui.openAddModal}
-        />
+          <MasterCodeToolbar
+            codeType={ui.activeTab}
+            allowMultiCodes={allowMultiCodes}
+            inactiveOnly={ui.inactiveOnly}
+            onToggleAllowMultiCodes={handleToggleMultiCodes}
+            onToggleInactiveOnly={ui.toggleInactiveOnly}
+            onAddFfp={ui.openAddModal}
+            canAdd={hasAddPermission}
+          />
         <div className="mb-5">
           <MasterCodeTable
             codeType={ui.activeTab}
             rows={masterCodes.rows}
             isLoading={isTableLoading}
             onEditRow={ui.openEditModal}
+            canEdit={hasEditPermission}
           />
         </div>
         <MasterCodePagination

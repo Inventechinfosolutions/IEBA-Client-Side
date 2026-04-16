@@ -20,6 +20,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { HelpCircle, CheckCircle2, X, Search, ChevronDown, Check } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { toast } from "sonner"
+import { usePermissions } from "@/hooks/usePermissions"
 import { useCreateDepartment } from "../mutations/createDepartment"
 import { useUpdateDepartment } from "../mutations/updateDepartment"
 import { useGetDepartmentById } from "../queries/getDepartmentById"
@@ -141,6 +142,9 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
 
     const [isMultiCodesOpen, setIsMultiCodesOpen] = useState(false)
     const [multiCodesSearch, setMultiCodesSearch] = useState("")
+
+    const { canUpdate: hasUpdatePerm } = usePermissions()
+    const canUpdateDepartment = hasUpdatePerm("department")
 
     const usersQuery = useGetDepartmentUsers()
     const userOptions = usersQuery.data ?? []
@@ -692,7 +696,9 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                                     </div>
                                 )}
                                 <div className="grid grid-cols-1 gap-5 py-8 min-h-[300px]">
-                                    {DEPARTMENT_SETTINGS_ROWS.map((setting) => (
+                                    {DEPARTMENT_SETTINGS_ROWS
+                                        .filter(s => s.key !== 'allowMultiCodes' || canUpdateDepartment)
+                                        .map((setting) => (
                                         <div key={setting.key} className="space-y-2">
                                             <div className="flex items-center gap-4">
                                                 <Checkbox

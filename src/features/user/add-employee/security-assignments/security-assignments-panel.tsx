@@ -113,7 +113,7 @@ function RoleTransferPanel({
             }`}
             aria-label="Toggle all"
           >
-            <Check className="size-3.5 stroke-[3]" />
+            <Check className="size-3.5 stroke-3" />
           </button>
           <span className="flex-1">
           <span className="font-bold text-white/90">{items.length}</span>
@@ -142,7 +142,7 @@ function RoleTransferPanel({
                       }`}
                       aria-label={`Toggle all ${group.department}`}
                     >
-                      <Check className="size-3.5 stroke-[3]" />
+                      <Check className="size-3.5 stroke-3" />
                     </button>
                   </div>
 
@@ -170,7 +170,7 @@ function RoleTransferPanel({
                               <div className="absolute left-4 top-0 h-full w-px bg-[#E5E7EB]" />
                               <div className="absolute left-4 top-1/2 h-px w-3 bg-[#E5E7EB]" />
                             </div>
-                            <div className="pl-6 text-[10px] font-medium text-[#111827] whitespace-normal break-words">
+                            <div className="pl-6 text-[10px] font-medium text-[#111827] whitespace-normal wrap-break-word">
                               {item.name}
                             </div>
                           </div>
@@ -181,7 +181,7 @@ function RoleTransferPanel({
                                 : "border-[#E5E7EB] bg-white text-transparent hover:border-[#D1D5DB]"
                             }`}
                           >
-                            <Check className="size-3.5 stroke-[3]" />
+                            <Check className="size-3.5 stroke-3" />
                           </div>
                         </button>
                       )
@@ -304,11 +304,46 @@ export function SecurityAssignmentsPanel({
   const [toggledA, setToggledA] = useState<string[]>([])
 
   const toggle = (id: string, isAssigned: boolean) => {
-    if (isAssigned) {
-      setToggledA((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
+    const list = isAssigned ? assignedItems : unassignedItems
+    const toggled = isAssigned ? toggledA : toggledU
+    const setToggled = isAssigned ? setToggledA : setToggledU
+
+    const item = list.find((i) => i.id === id)
+    if (!item) return
+    const isSelecting = !toggled.includes(id)
+    const roleName = item.name.trim()
+
+    // 1. Department Admin selects everything in dept except Payroll Admin
+    if (roleName === "Department Admin") {
+      const peerIds = list
+        .filter((i) => i.department === item.department && i.name.trim() !== "Payroll Admin")
+        .map((i) => i.id)
+
+      if (isSelecting) {
+        setToggled((prev) => [...new Set([...prev, ...peerIds, id])])
+      } else {
+        setToggled((prev) => prev.filter((x) => x !== id && !peerIds.includes(x)))
+      }
       return
     }
-    setToggledU((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
+
+    // 2. Time Study Admin selects Time Study Supervisor and User
+    if (roleName === "Time Study Admin") {
+      const targets = ["Time Study Supervisor", "User"]
+      const peerIds = list
+        .filter((i) => i.department === item.department && targets.includes(i.name.trim()))
+        .map((i) => i.id)
+
+      if (isSelecting) {
+        setToggled((prev) => [...new Set([...prev, ...peerIds, id])])
+      } else {
+        setToggled((prev) => prev.filter((x) => x !== id && !peerIds.includes(x)))
+      }
+      return
+    }
+
+    // Default toggle
+    setToggled((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
   }
 
   const toggleAllUnassigned = () => {
@@ -465,7 +500,7 @@ export function SecurityAssignmentsPanel({
                 <Checkbox
                   checked={field.value}
                   onCheckedChange={(checked) => field.onChange(checked === true)}
-                  className="size-3.5 cursor-pointer rounded-[3px] border-[#c2c6d1] data-[state=checked]:border-[var(--primary)] data-[state=checked]:bg-[var(--primary)]"
+                  className="size-3.5 cursor-pointer rounded-[3px] border-[#c2c6d1] data-[state=checked]:border-(--primary) data-[state=checked]:bg-(--primary)"
                 />
               )}
             />
@@ -480,7 +515,7 @@ export function SecurityAssignmentsPanel({
                 <Checkbox
                   checked={field.value}
                   onCheckedChange={(checked) => field.onChange(checked === true)}
-                  className="size-3.5 cursor-pointer rounded-[3px] border-[#c2c6d1] data-[state=checked]:border-[var(--primary)] data-[state=checked]:bg-[var(--primary)]"
+                  className="size-3.5 cursor-pointer rounded-[3px] border-[#c2c6d1] data-[state=checked]:border-(--primary) data-[state=checked]:bg-(--primary)"
                 />
               )}
             />

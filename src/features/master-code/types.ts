@@ -113,6 +113,7 @@ export type MasterCodeTableProps = {
   rows: MasterCodeRow[]
   isLoading: boolean
   onEditRow: (row: MasterCodeRow) => void
+  canEdit?: boolean
 }
 
 export type MasterCodeSortKey = "code" | "name"
@@ -129,6 +130,7 @@ export type MasterCodeToolbarProps = {
   onToggleAllowMultiCodes: () => void
   onToggleInactiveOnly: () => void
   onAddFfp: () => void
+  canAdd?: boolean
 }
 
 export type MasterCodePaginationProps = {
