@@ -46,6 +46,7 @@ import { useGetScheduleTimeStudyFiscalYears } from "../queries/getScheduleTimeSt
 import {
   scheduleTimeStudyFormSchema,
 } from "../schemas"
+import { usePermissions } from "@/hooks/usePermissions"
 import type {
   ScheduleTimeStudyFiscalYearOption,
   ScheduleTimeStudyFormValues,
@@ -123,6 +124,12 @@ function ScheduleTimeStudyTableLoaded({
   departments,
   fiscalYearOptions,
 }: ScheduleTimeStudyTableLoadedProps) {
+  const { isSuperAdmin, assignedDepartmentIds } = usePermissions()
+  const filteredDepartments = useMemo(() => {
+    if (isSuperAdmin) return departments
+    return departments.filter(d => assignedDepartmentIds.some(id => String(id) === String(d.id)))
+  }, [departments, isSuperAdmin, assignedDepartmentIds])
+
   const [activeTab, setActiveTab] = useState<ScheduleTimeStudyTab>(
     "time-study-period-management"
   )
@@ -185,7 +192,7 @@ function ScheduleTimeStudyTableLoaded({
             align="start"
             className="max-h-[280px] rounded-[14px] border-[#E5E7EB] p-1"
           >
-            {departments.map((dept) => (
+            {filteredDepartments.map((dept) => (
               <SelectItem key={dept.id} value={String(dept.id)}>
                 {dept.name}
               </SelectItem>
