@@ -82,7 +82,7 @@ export type CostPoolListQueryParams = {
   page?: number
   limit?: number
   search?: string
-  departmentId?: number
+  departmentId?: number | string
   costpoolStatus?: CostPoolStatus
   method?: string
   type?: string

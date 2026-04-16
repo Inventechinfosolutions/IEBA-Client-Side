@@ -94,19 +94,24 @@ export function PayrollDetailsSection({
     enabled: !!user?.id && isRestrictedAdmin,
   })
   
-  // Get all unique department IDs from either the API response or the user context
+  // Get all unique department IDs (normalized to strings for the dropdown component)
   const assignedDepartmentIds = useMemo(() => {
-    if (isSuperAdmin) return []
+    if (isSuperAdmin) return new Set<string>()
     
-    // If we have fresh details from the API, use the 'departments' list
-    const deptList = (userDetails as any)?.data?.departments || (userDetails as any)?.departments
-    if (deptList) {
-      return deptList.map((d: any) => String(d.id))
+    const apiDepts = (userDetails as any)?.data?.departments || (userDetails as any)?.departments
+    const contextDepts = user?.departmentRoles || []
+    
+    const assigned = new Set<string>()
+    
+    if (Array.isArray(apiDepts)) {
+      apiDepts.forEach((d: any) => assigned.add(String(d.id || d.departmentId)))
     }
-    
-    // Fallback to the context's departmentRoles
-    return (user?.departmentRoles || []).map(dr => String(dr.departmentId))
-  }, [user?.departmentRoles, userDetails?.departments, isSuperAdmin])
+    if (assigned.size === 0 && Array.isArray(contextDepts)) {
+      contextDepts.forEach((dr) => assigned.add(String(dr.departmentId)))
+    }
+      
+    return assigned
+  }, [user?.departmentRoles, userDetails, isSuperAdmin])
 
   const detailsFormValues = buildPayrollDetailsDefaultValues(filterOptions, settingsPayrollType)
 
@@ -133,7 +138,7 @@ export function PayrollDetailsSection({
   // FILTER: Only show the assigned departments for Dept/Payroll admins
   const departmentOptions: SingleSelectOption[] = isSuperAdmin
     ? [...filterOptions.departments]
-    : filterOptions.departments.filter(d => assignedDepartmentIds.includes(d.value))
+    : filterOptions.departments.filter(d => assignedDepartmentIds.has(d.value))
 
   const employeeOptions: SingleSelectOption[] = (departmentUsers as DepartmentUser[]).map((u) => ({
     value: String(u.employeeId || u.id),
