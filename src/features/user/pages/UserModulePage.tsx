@@ -251,7 +251,20 @@ export function UserModulePage() {
       setToken(result.accessToken)
       const details = await apiGetUserDetails(result.userId)
       const nextRoles = details.roles?.map((r) => r.name) ?? []
-      const nextPerms = details.allpermissions ?? []
+      const deptRoles = details.departmentsRoles?.map((dr) => ({
+        departmentId: dr.departmentId,
+        roleId: dr.roleId,
+        departmentName: dr.department?.name ?? "",
+        roleName: dr.role?.name ?? "",
+      }))
+      let nextPerms = details.allpermissions ?? []
+      if (!nextPerms || nextPerms.length === 0) {
+        const all = new Set<string>()
+        details.departmentsRoles?.forEach((dr) => {
+          dr.permissions?.forEach((p) => all.add(p))
+        })
+        nextPerms = Array.from(all)
+      }
       const displayName =
         (details.name ?? "").trim() ||
         `${details.firstName ?? ""} ${details.lastName ?? ""}`.trim() ||
@@ -267,6 +280,7 @@ export function UserModulePage() {
         avatar: user.avatar,
         roles: nextRoles,
         permissions: nextPerms,
+        departmentRoles: deptRoles,
       })
       setStoredMimicSession({
         originalToken,

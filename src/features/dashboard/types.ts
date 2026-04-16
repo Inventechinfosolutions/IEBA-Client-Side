@@ -59,6 +59,9 @@ export interface TodoItem {
   description?: string
   status: string
   createdAt: string
+  updatedAt?: string
+  completedAt?: string
+  completedDate?: string
   day?: string
 }
 
@@ -157,7 +160,8 @@ export interface TodoCardProps {
 
 export interface UsersCardProps {
   userCount: number
-  activeUsers: number
+  activeUsers?: number
+  showActiveUsers?: boolean
   isLoading?: boolean
 }
 
