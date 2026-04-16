@@ -18,6 +18,7 @@ export type TransferItem = {
   id: string
   name: string
   code?: string
+  disabled?: boolean
 }
 
 export type JobPoolRow = {
@@ -27,6 +28,7 @@ export type JobPoolRow = {
   /** Human-readable department name for table display */
   department: string
   active: boolean
+  assignedJobClassificationIds?: string[]
   assignedActivityIds?: string[]
   assignedEmployeeIds?: string[]
   /** Optional derived fields for simpler API-style representation */
@@ -42,6 +44,7 @@ export type GetJobPoolsParams = {
   pageSize: number
   search: string
   inactiveOnly: boolean
+  departmentId?: string
 }
 
 export type JobPoolListResponse = {
@@ -104,6 +107,6 @@ export type TransferPanelProps = {
 /** Shared alias — avoids repeating the full UseFormReturn generic on every section props type. */
 export type JobPoolFormReturn = UseFormReturn<JobPoolFormValues>
 
-export type JobClassificationSectionProps = { form: JobPoolFormReturn }
-export type ActivitySectionProps          = { form: JobPoolFormReturn }
-export type EmployeeSectionProps          = { form: JobPoolFormReturn }
+export type JobClassificationSectionProps = { form: JobPoolFormReturn; departmentName: string }
+export type ActivitySectionProps          = { form: JobPoolFormReturn; departmentName: string }
+export type EmployeeSectionProps          = { form: JobPoolFormReturn; departmentName: string }

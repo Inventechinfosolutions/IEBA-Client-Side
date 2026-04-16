@@ -1,4 +1,4 @@
-import { useRef, useState } from "react"
+import { useMemo, useRef, useState } from "react"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { ChevronDown, ChevronUp } from "lucide-react"
@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { useGetDepartments } from "@/features/department/queries/getDepartments"
+import { usePermissions } from "@/hooks/usePermissions"
 
 import { jobPoolFormSchema } from "../../schemas"
 import type { JobPoolFormModalProps, JobPoolFormValues } from "../../types"
@@ -28,25 +29,47 @@ export function JobPoolFormModal({
   onOpenChange,
   onSave,
 }: JobPoolFormModalProps) {
+  const { isDepartmentAdmin, assignedDepartmentIds } = usePermissions()
   const form = useForm<JobPoolFormValues>({
     resolver: zodResolver(jobPoolFormSchema),
     defaultValues: initialValues,
   })
 
   const [isDepartmentOpen, setIsDepartmentOpen] = useState(false)
-  const [selectedDepartmentLabel, setSelectedDepartmentLabel] = useState<string>("")
+  const [selectedDepartmentLabel, setSelectedDepartmentLabel] = useState<string>(
+    mode === "edit" ? (initialValues.department ?? "") : ""
+  )
   const departmentDropdownRef = useRef<HTMLDivElement | null>(null)
+
+  // Reset form when switching to Add mode (modal re-mounts via key, but reset for safety)
+  const prevOpenRef = useRef(false)
+  if (open && !prevOpenRef.current && mode === "add") {
+    form.reset(initialValues)
+    setSelectedDepartmentLabel("")
+  }
+  prevOpenRef.current = open
+
+  const handleClose = () => {
+    form.reset()
+    setSelectedDepartmentLabel("")
+    setIsDepartmentOpen(false)
+    onOpenChange(false)
+  }
 
   const {
     data: activeDepartmentsData,
     isLoading: isDepartmentsLoading,
   } = useGetDepartments({ status: "active", page: 1, limit: 100 }, { enabled: open && mode === "add" })
-  const activeDepartments = activeDepartmentsData?.items ?? []
 
-  const handleClose = () => {
-    form.reset()
-    onOpenChange(false)
-  }
+  const activeDepartments = useMemo(() => {
+    const items = activeDepartmentsData?.items ?? []
+    if (isDepartmentAdmin) {
+      const allowedSet = new Set(assignedDepartmentIds.map((id: number | string) => String(id)))
+      return items.filter((dept: any) => allowedSet.has(String(dept.id)))
+    }
+    return items
+  }, [activeDepartmentsData, isDepartmentAdmin, assignedDepartmentIds])
+
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -160,6 +183,10 @@ export function JobPoolFormModal({
                                           shouldTouch: true,
                                           shouldValidate: true,
                                         })
+                                        // Reset dependent selections when department changes
+                                        form.setValue("assignedJobClassificationIds", [])
+                                        form.setValue("assignedEmployeeIds", [])
+                                        
                                         setSelectedDepartmentLabel(label)
                                         setIsDepartmentOpen(false)
                                       }
@@ -193,9 +220,18 @@ export function JobPoolFormModal({
 
               {/* Modular Sections */}
               <div className="space-y-10 mt-10">
-                <JobClassificationSection form={form} />
-                <ActivitySection form={form} />
-                <EmployeeSection form={form} />
+                {(() => {
+                  const deptId = form.watch("department")
+                  const currentDeptName = activeDepartments.find(d => String(d.id) === String(deptId))?.name || ""
+                  
+                  return (
+                    <>
+                      <JobClassificationSection form={form} departmentName={currentDeptName} />
+                      <ActivitySection form={form} departmentName={currentDeptName} />
+                      <EmployeeSection form={form} departmentName={currentDeptName} />
+                    </>
+                  )
+                })()}
               </div>
             </div>
           </div>

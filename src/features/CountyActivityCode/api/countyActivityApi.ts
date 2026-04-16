@@ -85,43 +85,10 @@ export async function apiGetCountyActivityLinkedDepartmentIds(
 }
 
 
-const ACTIVITY_DEPARTMENTS_LIST_LIMIT = 1000
-const ACTIVITY_DEPT_GLOBAL_MAX_PAGES = 20
+const ACTIVITY_DEPARTMENTS_LIST_LIMIT = 100
 
-async function fetchAllCountyActivityDepartmentLinks(): Promise<ApiActivityDepartmentResDto[]> {
-  const all: ApiActivityDepartmentResDto[] = []
-  const limit = ACTIVITY_DEPARTMENTS_LIST_LIMIT
-  for (let page = 1; page <= ACTIVITY_DEPT_GLOBAL_MAX_PAGES; page += 1) {
-    const search = new URLSearchParams({
-      page: String(page),
-      limit: String(limit),
-    })
-    const raw = await api.get<unknown>(`/activity-departments?${search.toString()}`)
-    const { items, totalItems } = parseCountyActivityDepartmentListPage(raw)
-    if (items.length === 0) break
-    all.push(...items)
-    if (items.length < limit) break
-    if (totalItems > 0 && all.length >= totalItems) break
-  }
-  return all
-}
 
-function buildCountyActivityIdToDepartmentIdsMap(
-  links: ApiActivityDepartmentResDto[],
-): Map<number, number[]> {
-  const byActivity = new Map<number, Set<number>>()
-  for (const link of links) {
-    const aid = link.activityId
-    if (!byActivity.has(aid)) byActivity.set(aid, new Set())
-    byActivity.get(aid)!.add(link.departmentId)
-  }
-  return new Map(
-    [...byActivity.entries()].map(([aid, set]) => [
-      aid,
-      [...set].sort((a, b) => a - b),
-    ]),
-  )
-}
+
 
 async function fetchCountyActivityDepartmentLinks(
   activityId: number,
@@ -639,15 +606,25 @@ export async function apiGetCountyActivityHierarchy(): Promise<ApiActivityTreeRe
   return Array.isArray(data) ? data : []
 }
 
+export async function apiGetCountyActivitiesByDepartmentId(
+  departmentId: number,
+): Promise<ApiActivityDepartmentResDto[]> {
+  const searchParams = new URLSearchParams({
+    departmentId: String(departmentId),
+    page: "1",
+    limit: "100",
+  })
+  const raw = await api.get<unknown>(`/activity-departments?${searchParams.toString()}`)
+  const { items } = parseCountyActivityDepartmentListPage(raw)
+  return items
+}
+
 /** County grid: hierarchy + all activity–department links + catalog enrichment (enrichment usually from query cache). */
 export async function apiGetCountyActivityCodeTableRows(
   enrichment: ReadonlyMap<string, ActivityCatalogEnrichmentValue>,
 ): Promise<CountyActivityCodeRow[]> {
-  const [tree, activityDeptLinks] = await Promise.all([
-    apiGetCountyActivityHierarchy(),
-    fetchAllCountyActivityDepartmentLinks(),
-  ])
-  const linkByActivity = buildCountyActivityIdToDepartmentIdsMap(activityDeptLinks)
+  const tree = await apiGetCountyActivityHierarchy()
+  const linkByActivity = new Map<number, number[]>()
   return buildCountyActivityCodeRowsFromHierarchy(tree, enrichment, linkByActivity)
 }
 

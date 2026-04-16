@@ -1,105 +1,91 @@
-import type { Dispatch, SetStateAction } from "react"
 import { useMemo, useState } from "react"
-import { ChevronRight, ChevronLeft } from "lucide-react"
 import { TransferPanel } from "./TransferPanel"
-import type { TransferItem, EmployeeSectionProps } from "../../types"
-import { useGetJobClassificationUsers } from "../../../job-classification/queries/getJobClassificationUsers"
+import type { EmployeeSectionProps } from "../../types"
+import { useGetJobClassifications } from "../../../job-classification/queries/getJobClassifications"
 
 export function EmployeeSection({ form }: EmployeeSectionProps) {
   const selectedDept = form.watch("department")
-  const assignedJobClassificationIds = form.watch("assignedJobClassificationIds")
+  const assignedClassIds = form.watch("assignedJobClassificationIds") || []
 
-  const hasDeptAndClassifications =
-    !!selectedDept && Array.isArray(assignedJobClassificationIds) && assignedJobClassificationIds.length > 0
-
-  const { data: usersData = [] } = useGetJobClassificationUsers(
-    hasDeptAndClassifications
-      ? {
-          departmentId: Number(selectedDept),
-          jobClassificationIds: assignedJobClassificationIds,
-        }
-      : null,
-  )
-
-  const allUsers = useMemo(() => {
-    if (!hasDeptAndClassifications) return []
-    return usersData.map((u) => ({ id: u.id, name: u.name }))
-  }, [usersData, hasDeptAndClassifications])
+  // Fetch ALL classifications (no dept filter) so users are always found
+  const { data: jobClassesData } = useGetJobClassifications({
+    page: 1,
+    pageSize: 100,
+    search: "",
+    inactiveOnly: false,
+  })
 
   const [searchU, setSearchU] = useState("")
   const [searchA, setSearchA] = useState("")
-  const [toggledU, setToggledU] = useState<string[]>([])
-  const [toggledA, setToggledA] = useState<string[]>([])
 
-  const assignedIds = form.watch("assignedEmployeeIds")
+  // ASSIGNED employees = users from ASSIGNED classifications (right panel)
+  const assignedUsers = useMemo(() => {
+    if (!selectedDept || assignedClassIds.length === 0) return []
+    const items = jobClassesData?.items ?? []
+    const uniqueMap = new Map()
+    items
+      .filter(jc => assignedClassIds.includes(String(jc.id)))
+      .flatMap(jc => jc.users || [])
+      .forEach(u => {
+        if (u.id && !uniqueMap.has(u.id)) {
+          uniqueMap.set(u.id, { id: u.id, name: u.name })
+        }
+      })
+    return Array.from(uniqueMap.values())
+  }, [jobClassesData, selectedDept, assignedClassIds])
 
-  const getFiltered = (items: TransferItem[], assignedIds: string[], search: string, isAssigned: boolean) => {
-    const list = isAssigned 
-      ? items.filter(i => assignedIds.includes(i.id))
-      : items.filter(i => !assignedIds.includes(i.id))
-    
-    if (!search.trim()) return list
-    return list.filter(i => i.name.toLowerCase().includes(search.toLowerCase()))
-  }
+  // UNASSIGNED employees = users from UNASSIGNED classifications (left panel)
+  // Exclude users who already appear in Assigned panel
+  const unassignedUsers = useMemo(() => {
+    if (!selectedDept) return []
+    const assignedUserIds = new Set(assignedUsers.map(u => u.id))
+    const items = jobClassesData?.items ?? []
+    const uniqueMap = new Map()
+    items
+      .filter(jc => !assignedClassIds.includes(String(jc.id)))
+      .flatMap(jc => jc.users || [])
+      .forEach(u => {
+        if (u.id && !assignedUserIds.has(u.id) && !uniqueMap.has(u.id)) {
+          uniqueMap.set(u.id, { id: u.id, name: u.name })
+        }
+      })
+    return Array.from(uniqueMap.values())
+  }, [jobClassesData, selectedDept, assignedClassIds, assignedUsers])
 
-  const filteredU = getFiltered(allUsers, assignedIds, searchU, false)
-  const filteredA = getFiltered(allUsers, assignedIds, searchA, true)
+  const filteredU = searchU.trim()
+    ? unassignedUsers.filter(u => u.name.toLowerCase().includes(searchU.toLowerCase()))
+    : unassignedUsers
 
-  const handleTransfer = (idsToTransfer: string[], isMovingToAssigned: boolean) => {
-    const current = form.getValues("assignedEmployeeIds")
-    if (isMovingToAssigned) {
-      form.setValue("assignedEmployeeIds", [...new Set([...current, ...idsToTransfer])])
-      setToggledU([])
-    } else {
-      form.setValue("assignedEmployeeIds", current.filter(id => !idsToTransfer.includes(id)))
-      setToggledA([])
-    }
-  }
-
-  const handleToggle = (id: string, setState: Dispatch<SetStateAction<string[]>>) => {
-    setState(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
-  }
+  const filteredA = searchA.trim()
+    ? assignedUsers.filter(u => u.name.toLowerCase().includes(searchA.toLowerCase()))
+    : assignedUsers
 
   return (
     <div className="grid grid-cols-[1fr_60px_1fr] items-center gap-4">
       <TransferPanel
         title="Unassigned Employee"
         items={filteredU}
-        selectedIds={toggledU}
-        onToggleItem={(id) => handleToggle(id, setToggledU)}
+        selectedIds={[]}
+        onToggleItem={() => {}}
         searchValue={searchU}
         onSearchChange={setSearchU}
         count={filteredU.length}
-        isSearchDisabled={true}
+        isSearchDisabled={false}
         isListDisabled={true}
       />
       <div className="flex flex-col gap-3 pt-12">
-        <button
-          type="button"
-          onClick={() => handleTransfer(toggledU, true)}
-          disabled={toggledU.length === 0}
-          className="flex size-11 cursor-pointer items-center justify-center rounded-[10px] bg-[#6C5DD3] text-white shadow-lg shadow-[#6C5DD3]/20 hover:brightness-110 active:scale-95 transition-all disabled:cursor-not-allowed"
-        >
-          <ChevronRight className="size-5 stroke-[2.5]" />
-        </button>
-        <button
-          type="button"
-          onClick={() => handleTransfer(toggledA, false)}
-          disabled={toggledA.length === 0}
-          className="flex size-11 cursor-pointer items-center justify-center rounded-[10px] bg-[#6C5DD3] text-white shadow-lg shadow-[#6C5DD3]/20 hover:brightness-110 active:scale-95 transition-all disabled:cursor-not-allowed"
-        >
-          <ChevronLeft className="size-5 stroke-[2.5]" />
-        </button>
+        <div className="size-11" />
+        <div className="size-11" />
       </div>
       <TransferPanel
         title="Assigned Employee"
         items={filteredA}
-        selectedIds={toggledA}
-        onToggleItem={(id) => handleToggle(id, setToggledA)}
+        selectedIds={[]}
+        onToggleItem={() => {}}
         searchValue={searchA}
         onSearchChange={setSearchA}
         count={filteredA.length}
-        isSearchDisabled={true}
+        isSearchDisabled={false}
         isListDisabled={true}
       />
     </div>

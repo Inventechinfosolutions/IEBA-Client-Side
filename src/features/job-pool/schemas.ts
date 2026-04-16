@@ -13,4 +13,5 @@ export const jobPoolFormSchema = z.object({
   assignedJobClassificationIds: z.array(z.string()),
   assignedActivityIds: z.array(z.string()),
   assignedEmployeeIds: z.array(z.string()),
+  id: z.string().optional(),
 });
