@@ -73,10 +73,11 @@ function normalizeTodoListResponse(raw: unknown): TodoListResponse {
   return { items: [], totalItems: 0 }
 }
 
-export async function apiGetTodos(params: { page?: number; pageSize?: number }) {
+export async function apiGetTodos(params: { page?: number; pageSize?: number; userId: string | number }) {
   const search = new URLSearchParams()
   if (params.page) search.set("page", String(params.page))
   if (params.pageSize) search.set("limit", String(Math.min(100, params.pageSize)))
+  search.set("userId", String(params.userId))
   const raw = await api.get<unknown>(`/todos?${search.toString()}`)
   const res = raw as { data?: unknown }
   // Backend wraps in ApiResponseDto { data, message, ... }

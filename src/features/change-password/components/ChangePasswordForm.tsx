@@ -11,6 +11,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 
@@ -86,7 +87,12 @@ const PasswordField = ({
   </div>
 )
 
-export function ChangePasswordFormModal({ open, onOpenChange }: ChangePasswordFormModalProps) {
+export function ChangePasswordFormModal({
+  open,
+  onOpenChange,
+  required = false,
+  onSuccess,
+}: ChangePasswordFormModalProps) {
   const mutation = useChangePassword()
   const [visibility, setVisibility] = useState<PasswordVisibilityState>({
     oldPassword: false,
@@ -123,6 +129,7 @@ export function ChangePasswordFormModal({ open, onOpenChange }: ChangePasswordFo
         onSuccess: (res) => {
           toast.success(res.message || "Password changed successfully.", { position: "top-center" })
           closeModal()
+          onSuccess?.()
         },
         onError: (err) => {
           toast.error(err.message, { position: "top-center" })
@@ -137,6 +144,7 @@ export function ChangePasswordFormModal({ open, onOpenChange }: ChangePasswordFo
       open={open}
       onOpenChange={(nextOpen) => {
         if (!nextOpen) {
+          if (required) return
           closeModal()
           return
         }
@@ -156,6 +164,9 @@ export function ChangePasswordFormModal({ open, onOpenChange }: ChangePasswordFo
             <DialogTitle className="text-[18px] font-semibold text-[#111827]">
               Change Password
             </DialogTitle>
+            <DialogDescription className="sr-only">
+              Enter your current password, then choose a new password and confirm it.
+            </DialogDescription>
           </DialogHeader>
 
           <div className="flex flex-col items-center space-y-5">
@@ -202,13 +213,15 @@ export function ChangePasswordFormModal({ open, onOpenChange }: ChangePasswordFo
             >
               Submit
             </Button>
-            <Button
-              type="button"
-              onClick={closeModal}
-              className="h-[50px] w-[130px] cursor-pointer rounded-[10px] bg-[#DADADA] px-[21.2344px] text-[16px] font-medium text-[#111827] hover:bg-[#DADADA]"
-            >
-              Cancel
-            </Button>
+            {!required && (
+              <Button
+                type="button"
+                onClick={closeModal}
+                className="h-[50px] w-[130px] cursor-pointer rounded-[10px] bg-[#DADADA] px-[21.2344px] text-[16px] font-medium text-[#111827] hover:bg-[#DADADA]"
+              >
+                Cancel
+              </Button>
+            )}
           </div>
         </form>
       </DialogContent>

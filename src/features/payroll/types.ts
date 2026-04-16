@@ -80,6 +80,10 @@ export type PayrollDetailsFormValues = {
 
 export type PayrollUploadSectionProps = {
   isUploading: boolean
+  /** Defaults from Settings > Payroll (payrollBy). */
+  settingsPayrollType?: PayrollFrequencyType
+  /** Lock payroll type UI based on settings response. */
+  isPayrollTypeLocked?: boolean
   onSubmitUpload: (values: PayrollUploadFormValues, file: File | null) => void
 }
 
@@ -87,6 +91,10 @@ export type PayrollDetailsSectionProps = {
   filterOptions: PayrollFilterOptionsResponse
   isOptionsLoading: boolean
   isRowsLoading: boolean
+  /** Defaults from Settings > Payroll (payrollBy). */
+  settingsPayrollType?: PayrollFrequencyType
+  /** Lock payroll type UI based on settings response. */
+  isPayrollTypeLocked?: boolean
   onGetRows: (params: GetPayrollRowsParams) => void
   onDownloadCurrentRows: () => void
   onDelete: (params: GetPayrollRowsParams) => void
@@ -104,4 +112,10 @@ export type DepartmentUser = {
 export type PayrollDataTableProps = {
   rows: readonly PayrollManagementRow[]
   isLoading: boolean
+  /** Column headers in the exact order to render (from settings API). */
+  columns: readonly string[]
+  /** Optional edit action per row (Action column). */
+  onEditRow?: (row: PayrollManagementRow) => void
+  /** If false, hide the Edit icon (still keeps Action column). */
+  showEditAction?: boolean
 }

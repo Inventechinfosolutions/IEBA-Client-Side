@@ -2,22 +2,20 @@ import { useQuery } from "@tanstack/react-query"
 import { dashboardKeys } from "../keys"
 import {
   getActiveUsers,
-  getDepartmentCount,
   getHolidays,
-  getJpCpTotals,
   getLeaveDetails,
   getPayrollDateRange,
   getPersonalTimeStudy,
-  getProgramCount,
   getReportsByRole,
   getStaffLeave,
   getTimeRecordRequests,
   getTodos,
-  getUserCount,
+  getDashboardOverview,
+  getDashboardAllUsersCount,
 } from "../api/dashboard"
 import type {
+  DashboardOverview,
   Holiday,
-  JpCpTotals,
   LeaveAggregateResult,
   ReportItem,
   SelfLeaveStats,
@@ -27,7 +25,7 @@ import type {
 } from "../types"
 import { LeaveStatus, TimeStudyStatus } from "../enums/dashboard.enum"
 
-const STALE_TIME = 60_000 // 1 min
+const STALE_TIME = 60_000
 const GC_TIME = STALE_TIME * 2
 
 
@@ -36,7 +34,7 @@ const staleOptions = {
   gcTime: GC_TIME,
   refetchOnMount: true as const,
   refetchOnWindowFocus: false as const,
-  retry: false as const, // Fail fast to reduce skeleton timing
+  retry: false as const,
 }
 
 
@@ -44,12 +42,15 @@ export function usePersonalTimeStudy(params: {
   userId: string | number
   payrollType: string
   reqMins: number
+  departmentId?: number
+  roleId?: number
+  enabled?: boolean
 }) {
   const { startDate, endDate } = getPayrollDateRange(params.payrollType)
 
   return useQuery({
-    queryKey: [...dashboardKeys.personalTimeStudy(), { startDate, endDate, userId: params.userId }],
-    queryFn: () => getPersonalTimeStudy({ startDate, endDate, userId: params.userId }),
+    queryKey: [...dashboardKeys.personalTimeStudy(), { startDate, endDate, userId: params.userId, departmentId: params.departmentId, roleId: params.roleId }],
+    queryFn: () => getPersonalTimeStudy({ startDate, endDate, userId: params.userId, departmentId: params.departmentId, roleId: params.roleId }),
     select(data) {
       let approved = 0
       let submitted = 0
@@ -59,7 +60,7 @@ export function usePersonalTimeStudy(params: {
       }
       return { approved, submitted }
     },
-    enabled: !!params.userId,
+    enabled: (params.enabled !== false) && !!params.userId,
     ...staleOptions,
   })
 }
@@ -68,24 +69,27 @@ export function usePersonalTimeStudy(params: {
 export function useTimeRecordRequests(params: {
   userId: string | number
   payrollType: string
+  departmentId?: number
+  roleId?: number
+  enabled?: boolean
 }) {
   const { startDate, endDate } = getPayrollDateRange(params.payrollType)
 
   return useQuery({
-    queryKey: [...dashboardKeys.timeRecordRequests(), { startDate, endDate }],
-    queryFn: () => getTimeRecordRequests({ startDate, endDate, userId: params.userId }),
+    queryKey: [...dashboardKeys.timeRecordRequests(), { startDate, endDate, userId: params.userId, departmentId: params.departmentId, roleId: params.roleId }],
+    queryFn: () => getTimeRecordRequests({ startDate, endDate, userId: params.userId, departmentId: params.departmentId, roleId: params.roleId }),
     select(data: TimeStudySuperAggregateResult) {
       let approved = 0
       let pendingApproval = 0
       let notSubmitted = 0
       for (const s of data.statusCounts) {
-        if (s.q_status === "approved") approved = s.count
-        else if (s.q_status === "submitted") pendingApproval = s.count
+        if (s.q_status === TimeStudyStatus.Approved) approved = s.count
+        else if (s.q_status === TimeStudyStatus.Submitted) pendingApproval = s.count
         else notSubmitted = s.count
       }
       return { approved, pendingApproval, notSubmitted }
     },
-    enabled: !!params.userId,
+    enabled: (params.enabled !== false) && !!params.userId,
     ...staleOptions,
   })
 }
@@ -122,7 +126,7 @@ export function useSelfLeave(userId: string | number) {
 }
 
 
-export function useStaffLeave() {
+export function useStaffLeave(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: dashboardKeys.staffLeave(),
     queryFn: getStaffLeave,
@@ -131,19 +135,21 @@ export function useStaffLeave() {
       let approved = 0
       let rejected = 0
       for (const s of data.statusCounts) {
-        if (s.q_status === LeaveStatus.Requested) requested = Number(s.count)
-        else if (s.q_status === LeaveStatus.Approved || s.q_status === LeaveStatus.LeaveApproved)
+        const status = (s as any).status || s.q_status
+        if (status === LeaveStatus.Requested) requested = Number(s.count)
+        else if (status === LeaveStatus.Approved || status === LeaveStatus.LeaveApproved)
           approved = Number(s.count)
-        else if (s.q_status === LeaveStatus.Rejected) rejected = Number(s.count)
+        else if (status === LeaveStatus.Rejected) rejected = Number(s.count)
       }
       return { requested, approved, rejected }
     },
+    enabled: options?.enabled,
     ...staleOptions,
   })
 }
 
 
-export function useTodos() {
+export function useTodos(userId: string | number) {
   const formatter = new Intl.DateTimeFormat("en-US", {
     year: "numeric",
     day: "2-digit",
@@ -151,8 +157,8 @@ export function useTodos() {
   })
 
   return useQuery({
-    queryKey: dashboardKeys.todos(),
-    queryFn: getTodos,
+    queryKey: dashboardKeys.todos(userId),
+    queryFn: () => getTodos(userId),
     select(data): TodoItem[] {
       return (data.items ?? []).map((item) => ({
         ...item,
@@ -160,98 +166,99 @@ export function useTodos() {
         day: formatter.format(Date.parse(item.createdAt)),
       }))
     },
+    enabled: !!userId,
     ...staleOptions,
   })
 }
 
-export function useHolidays() {
+export function useHolidays(options?: { enabled?: boolean }) {
   const year = new Date().getFullYear()
 
   return useQuery({
     queryKey: dashboardKeys.holidays(year),
     queryFn: () => getHolidays(year),
     select(data: Holiday[]) {
-      const today = new Date(new Date().toDateString())
-      const upcoming = data.filter((h) => {
-        const d = new Date(h.date.split("T")[0])
-        return d >= today
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+
+      // Normalize and parse dates safely
+      const parseDate = (dStr: string) => {
+        const t = dStr.trim()
+        // Try YYYY-MM-DD
+        let m = /^(\d{4})-(\d{2})-(\d{2})/.exec(t)
+        if (m) return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]))
+        // Try MM-DD-YYYY
+        m = /^(\d{2})-(\d{2})-(\d{4})/.exec(t)
+        if (m) return new Date(Number(m[3]), Number(m[1]) - 1, Number(m[2]))
+        return new Date(t)
+      }
+
+      const sorted = [...data].sort((a, b) => {
+        const da = parseDate(a.date).getTime()
+        const db = parseDate(b.date).getTime()
+        return da - db
+      })
+
+      const upcoming = sorted.filter((h) => {
+        const d = parseDate(h.date)
+        return d.getTime() >= today.getTime()
       })
 
       let nextMonth = ""
       let nextDay = "0"
       if (upcoming.length > 0) {
-        const dateStr = upcoming[0].date.split("T")[0]
-        nextMonth = new Date(dateStr).toLocaleString("en-US", { month: "long" })
-        nextDay = new Date(dateStr).getDate().toString()
+        const nextDate = parseDate(upcoming[0].date)
+        nextMonth = nextDate.toLocaleString("en-US", { month: "long" })
+        nextDay = nextDate.getDate().toString()
       }
 
-      const formattedList = data.map((h) => ({
-        date: h.date,
-        description: h.description,
-      }))
-
-      return { list: formattedList, nextMonth, nextDay }
+      return { list: sorted, nextMonth, nextDay }
     },
+    enabled: options?.enabled !== false,
     ...staleOptions,
   })
 }
 
 
-export function useUserCount() {
+export function useReportsByRole(params?: {
+  departmentId?: number
+  roleId?: number
+  enabled?: boolean
+}) {
   return useQuery({
-    queryKey: dashboardKeys.userCount(),
-    queryFn: getUserCount,
-    ...staleOptions,
-  })
-}
-
-
-export function useActiveUsers() {
-  return useQuery({
-    queryKey: dashboardKeys.activeUsers(),
-    queryFn: getActiveUsers,
-    ...staleOptions,
-  })
-}
-
-
-export function useDepartmentCount() {
-  return useQuery({
-    queryKey: dashboardKeys.departmentCount(),
-    queryFn: getDepartmentCount,
-    ...staleOptions,
-  })
-}
-
-
-export function useProgramCount() {
-  return useQuery({
-    queryKey: dashboardKeys.programCount(),
-    queryFn: getProgramCount,
-    ...staleOptions,
-  })
-}
-
-
-export function useJpCpTotals() {
-  return useQuery({
-    queryKey: dashboardKeys.jpCpTotals(),
-    queryFn: getJpCpTotals,
-    select(data: JpCpTotals | null) {
-      return data
-    },
-    ...staleOptions,
-  })
-}
-
-
-export function useReportsByRole() {
-  return useQuery({
-    queryKey: dashboardKeys.reports(),
-    queryFn: getReportsByRole,
+    queryKey: [...dashboardKeys.reports(), params],
+    queryFn: () => getReportsByRole(params),
     select(data: ReportItem[]) {
       return data
     },
+    enabled: params?.enabled !== false,
+    ...staleOptions,
+  })
+}
+
+export function useDashboardOverview(options?: { enabled?: boolean }) {
+  return useQuery<DashboardOverview>({
+    queryKey: dashboardKeys.overview(),
+    queryFn: getDashboardOverview,
+    enabled: options?.enabled,
+    ...staleOptions,
+  })
+}
+
+export function useActiveUsers(options?: { enabled?: boolean }) {
+  return useQuery({
+    queryKey: dashboardKeys.activeUsers(),
+    queryFn: getActiveUsers,
+    enabled: options?.enabled,
+    ...staleOptions,
+  })
+}
+
+export function useDashboardUserCount(options?: { enabled?: boolean }) {
+  return useQuery({
+    queryKey: dashboardKeys.userCount(),
+    queryFn: getDashboardAllUsersCount,
+    enabled: options?.enabled,
     ...staleOptions,
   })
 }

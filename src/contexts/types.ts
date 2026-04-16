@@ -4,15 +4,28 @@ export type User = {
   id: string
   name: string
   email: string
-  /** Selected tenant/namespace key from OTP step. */
+ 
   namespace?: string
-  /** Human-friendly county name for header display, e.g. 'Lassen County'. */
+
   countyName?: string
   avatar?: string
-  /** Optional array of role names, e.g. ['super admin']. */
+
+  /**
+   * When true, user must change password before continuing into the app.
+   * Populated from user-details API.
+   */
+  isPasswordChangeRequired?: boolean
+
   roles?: string[]
-  /** Optional flat list of permission strings such as 'superadmin:all'. */
+
   permissions?: string[]
+
+  departmentRoles?: Array<{
+    departmentId: number
+    roleId: number
+    departmentName: string
+    roleName: string
+  }>
 }
 
 export type AuthContextValue = {
@@ -20,7 +33,7 @@ export type AuthContextValue = {
   isAuthenticated: boolean
   isLoading: boolean
   signIn: (email: string, password: string) => Promise<LoginResult | void>
-  /** After login when `nextPage` is `dashboard`; token is already in storage from `loginRequest`. */
+  
   establishDashboardSession: (user: User) => void
   signOut: () => void
   error: string | null

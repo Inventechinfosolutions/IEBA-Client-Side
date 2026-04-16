@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 import { FormProvider, useForm } from "react-hook-form"
 import { toast } from "sonner"
 import { Check, X } from "lucide-react"
@@ -10,9 +10,9 @@ import { useSettingsFormData } from "@/features/settings/hooks/useSettingsFormDa
 import { useSettingsFormFiscalState } from "@/features/settings/hooks/useSettingsFormFiscalState"
 import { SETTINGS_FORM_SECTION_SUCCESS_MESSAGES } from "@/features/settings/settingsForm.constants"
 import {
-  buildSettingsFormValues,
-  resolveFirstSettingsFormErrorMessage,
-  resolveSettingsFormSectionErrorMessage,
+  getSettingsFormFirstErrorMessage,
+  getSettingsFormSectionErrorMessage,
+  mapToSettingsFormValues,
 } from "@/features/settings/settingsForm.utils"
 import { settingsFormSchema } from "@/features/settings/schemas"
 import type { SettingsFormInnerProps, SettingsFormValues } from "@/features/settings/types"
@@ -46,7 +46,7 @@ function showSettingsFormSuccessToast(message: string) {
   })
 }
 
-function resolveSettingsSaveSuccessMessage(submitterSection?: SettingsFormSaveSection) {
+function getSettingsSaveSuccessMessage(submitterSection?: SettingsFormSaveSection) {
   return (
     (submitterSection && SETTINGS_FORM_SECTION_SUCCESS_MESSAGES[submitterSection]) ||
     SETTINGS_FORM_SECTION_SUCCESS_MESSAGES[SettingsFormSaveSection.County]
@@ -55,10 +55,11 @@ function resolveSettingsSaveSuccessMessage(submitterSection?: SettingsFormSaveSe
 
 function SettingsFormInner({ settings, isSaving, onSubmitSettings }: SettingsFormInnerProps) {
   const { derivedFiscalYear, fiscalYearUi } = useSettingsFormFiscalState()
-  const countyClientQuery = useGetCountyClient(true)
+  const [openSection, setOpenSection] = useState<string | undefined>(undefined)
+  const countyClientQuery = useGetCountyClient(openSection === "County")
 
   const formValues = useMemo((): SettingsFormValues => {
-    const base = buildSettingsFormValues(settings, derivedFiscalYear)
+    const base = mapToSettingsFormValues(settings, derivedFiscalYear)
     if (!countyClientQuery.data) return base
     return {
       ...base,
@@ -77,42 +78,42 @@ function SettingsFormInner({ settings, isSaving, onSubmitSettings }: SettingsFor
 
   const handleSettingsFormSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
+    if (isSaving) return
 
-    const submitter = (e.nativeEvent as SubmitEvent).submitter as HTMLElement | null
-    const rawSection = submitter?.getAttribute("data-settings-section")
+    const native = e.nativeEvent as SubmitEvent
+    // Robust submitter discovery
+    const submitter = (native.submitter || document.activeElement) as HTMLElement | null
+    const attr = submitter?.getAttribute("data-settings-section")
+    const submitterSection = isSettingsFormSaveSection(attr) ? attr : undefined
 
-    if (isSettingsFormSaveSection(rawSection)) {
-      form.clearErrors()
-      const isValid = await form.trigger(rawSection)
-      if (!isValid) {
-        showSettingsFormErrorToast(
-          resolveSettingsFormSectionErrorMessage(form.formState.errors, rawSection),
-        )
-        return
-      }
+    // Clear previous errors so validation state is fresh for the current section
+    form.clearErrors()
 
-      onSubmitSettings(form.getValues(), { submitterSection: rawSection })
+    // Trigger validation for the section OR the whole form
+    const isValid = submitterSection 
+      ? await form.trigger(submitterSection) 
+      : await form.trigger()
+
+    if (!isValid) {
+      const message = submitterSection 
+        ? getSettingsFormSectionErrorMessage(form.formState.errors, submitterSection)
+        : getSettingsFormFirstErrorMessage(form.formState.errors)
+      showSettingsFormErrorToast(message)
       return
     }
 
-    void form.handleSubmit(
-      (submittedValues, event) => {
-        const native = event?.nativeEvent as SubmitEvent | undefined
-        const attr = native?.submitter?.getAttribute("data-settings-section")
-        const submitterSection = isSettingsFormSaveSection(attr) ? attr : undefined
-        onSubmitSettings(submittedValues, { submitterSection })
-      },
-      (errors) => {
-        showSettingsFormErrorToast(resolveFirstSettingsFormErrorMessage(errors))
-      },
-    )(e)
+    onSubmitSettings(form.getValues(), { submitterSection })
   }
 
   return (
     <SettingsFiscalYearUiProvider value={fiscalYearUi}>
       <FormProvider {...form}>
-        <form onSubmit={(e) => void handleSettingsFormSubmit(e)}>
-          <SettingsAccordion isSaving={isSaving} />
+        <form onSubmit={handleSettingsFormSubmit}>
+          <SettingsAccordion
+            isSaving={isSaving}
+            openSection={openSection}
+            onOpenSectionChange={setOpenSection}
+          />
         </form>
       </FormProvider>
     </SettingsFiscalYearUiProvider>
@@ -139,7 +140,7 @@ export function SettingsForm() {
           { values, submitterSection: meta?.submitterSection },
           {
             onSuccess: () => {
-              showSettingsFormSuccessToast(resolveSettingsSaveSuccessMessage(meta?.submitterSection))
+              showSettingsFormSuccessToast(getSettingsSaveSuccessMessage(meta?.submitterSection))
             },
             onError: (error) => {
               showSettingsFormErrorToast(error.message)

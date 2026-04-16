@@ -1,5 +1,7 @@
+import { zodResolver } from "@hookform/resolvers/zod"
 import { useRef, useState } from "react"
-import { X } from "lucide-react"
+import { useForm } from "react-hook-form"
+import { Trash2, X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -8,11 +10,22 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import {
+  ImageCropDragMode,
+  ProfileImageOrigin,
+} from "@/features/Profile/enums/imageCropUploadDialog.enum"
+import {
+  profileImageUploadDefaultValues,
+  profileImageUploadSchema,
+} from "@/features/Profile/schemas"
+import type {
+  ImageCropDragStart,
+  ImageCropOffset,
+  ImageCropUploadDialogProps,
+  ProfileImageUploadFormValues,
+} from "@/features/Profile/types"
 
-// ─── Crop utility ─────────────────────────────────────────────────────────────
-// Extracts the circular region from the source image using canvas.
-// The image is rendered with objectFit:cover + scale + translate, so we
-// reverse that transform to find the source pixel region.
+
 async function getCroppedImg(
   imageSrc: string,
   cirX: number,      // circle centre x in container px
@@ -20,7 +33,7 @@ async function getCroppedImg(
   diameter: number,  // crop circle diameter in container px
   contW: number,
   contH: number,
-  offset: { x: number; y: number }, // image pan offset (container-relative translate)
+  offset: ImageCropOffset, // image pan offset (container-relative translate)
   scale: number,                     // extra zoom scale
 ): Promise<string> {
   const image = await new Promise<HTMLImageElement>((resolve, reject) => {
@@ -56,31 +69,24 @@ async function getCroppedImg(
   ctx.drawImage(image, srcX, srcY, srcSize, srcSize, 0, 0, out, out)
   return canvas.toDataURL("image/png")
 }
-// ─────────────────────────────────────────────────────────────────────────────
 
-const MIN_SIZE   = 80
-const MAX_SIZE   = 440
-const RING_WIDTH = 18   // px thick grab zone on the circle edge
-
-type DragMode = "none" | "move-circle" | "resize-circle" | "pan-image"
-
-type ImageCropUploadDialogProps = {
-  title: string
-  onImageCropped: (dataUrl: string) => void
-  onCropError?: () => void
-  onConfirmWithoutImage?: () => void
-  renderTrigger: (actions: { openDialog: () => void }) => React.ReactNode
-}
+const MIN_SIZE = 80
+const MAX_SIZE = 440
+const RING_WIDTH = 18 // px thick grab zone on the circle edge
 
 export function ImageCropUploadDialog({
   title,
   onImageCropped,
+  initialImageSrc = null,
+  onDeleteImage,
   onCropError,
   onConfirmWithoutImage,
   renderTrigger,
 }: ImageCropUploadDialogProps) {
   const [open, setOpen]         = useState(false)
   const [imageSrc, setImageSrc] = useState<string | null>(null)
+  const [imageOrigin, setImageOrigin] = useState<ProfileImageOrigin>(ProfileImageOrigin.NONE)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   // Circle position (px from container top-left) & size
   const [cirX, setCirX]         = useState(234)
@@ -88,7 +94,7 @@ export function ImageCropUploadDialog({
   const [cropSize, setCropSize] = useState(240)
 
   // Image pan / zoom
-  const [imgOffset, setImgOffset] = useState({ x: 0, y: 0 })
+  const [imgOffset, setImgOffset] = useState<ImageCropOffset>({ x: 0, y: 0 })
   const [imgScale, setImgScale]   = useState(1)
 
   // Cursor shown on the SVG layer
@@ -98,14 +104,15 @@ export function ImageCropUploadDialog({
   const fileInputRef = useRef<HTMLInputElement | null>(null)
 
   // Drag state in refs (pointer capture delivers move/up without useEffect)
-  const dragMode  = useRef<DragMode>("none")
-  const dragStart = useRef<{
-    clientX: number; clientY: number
-    cx: number; cy: number
-    ox: number; oy: number
-    cs: number
-  } | null>(null)
+  const dragMode = useRef<ImageCropDragMode>(ImageCropDragMode.NONE)
+  const dragStart = useRef<ImageCropDragStart | null>(null)
   const activePointerId = useRef<number | null>(null)
+
+  const imageUploadForm = useForm<ProfileImageUploadFormValues>({
+    resolver: zodResolver(profileImageUploadSchema),
+    defaultValues: profileImageUploadDefaultValues,
+    mode: "onChange",
+  })
 
   const centerCircleInContainer = () => {
     requestAnimationFrame(() => {
@@ -120,26 +127,55 @@ export function ImageCropUploadDialog({
 
   // ── Reset all state ───────────────────────────────────────────────────────
   const resetAll = () => {
-    if (imageSrc) URL.revokeObjectURL(imageSrc)
+    if (imageOrigin === ProfileImageOrigin.INTERNAL && imageSrc) URL.revokeObjectURL(imageSrc)
     setImageSrc(null)
+    setImageOrigin(ProfileImageOrigin.NONE)
     setImgOffset({ x: 0, y: 0 })
     setImgScale(1)
     setCropSize(240)
     setCirX(234); setCirY(230)
     activePointerId.current = null
-    dragMode.current = "none"
+    dragMode.current = ImageCropDragMode.NONE
     dragStart.current = null
+    imageUploadForm.reset(profileImageUploadDefaultValues)
     if (fileInputRef.current) fileInputRef.current.value = ""
   }
 
+  const initializeFromExternalImage = () => {
+    if (imageSrc || !initialImageSrc) return
+    setImageSrc(initialImageSrc)
+    setImageOrigin(ProfileImageOrigin.EXTERNAL)
+  }
+
+  const openDialog = () => {
+    setOpen(true)
+    initializeFromExternalImage()
+  }
+
   // ── Pick image ────────────────────────────────────────────────────────────
-  const handlePickImage = (file: File | null) => {
+  const selectImageFile = async (file: File | null) => {
     if (!file) return
-    if (imageSrc) URL.revokeObjectURL(imageSrc)
+    imageUploadForm.setValue("imageFile", file, { shouldValidate: true })
+    const isValid = await imageUploadForm.trigger("imageFile")
+    if (!isValid) return
+    if (imageOrigin === ProfileImageOrigin.INTERNAL && imageSrc) URL.revokeObjectURL(imageSrc)
     setImageSrc(URL.createObjectURL(file))
+    setImageOrigin(ProfileImageOrigin.INTERNAL)
     setImgOffset({ x: 0, y: 0 })
     setImgScale(1)
     setCropSize(240)
+  }
+
+  const handleDelete = async () => {
+    if (!onDeleteImage) return
+    setIsDeleting(true)
+    try {
+      await onDeleteImage()
+      resetAll()
+      setOpen(false)
+    } finally {
+      setIsDeleting(false)
+    }
   }
 
   // ── Helpers: hit zone ─────────────────────────────────────────────────────
@@ -149,12 +185,12 @@ export function ImageCropUploadDialog({
     return Math.sqrt((clientX - rect.left - cirX) ** 2 + (clientY - rect.top - cirY) ** 2)
   }
 
-  const classifyHit = (clientX: number, clientY: number): DragMode => {
+  const classifyHit = (clientX: number, clientY: number): ImageCropDragMode => {
     const dist = getDist(clientX, clientY)
     const r    = cropSize / 2
-    if (Math.abs(dist - r) <= RING_WIDTH) return "resize-circle"
-    if (dist < r - RING_WIDTH)            return "move-circle"
-    return "pan-image"
+    if (Math.abs(dist - r) <= RING_WIDTH) return ImageCropDragMode.RESIZE_CIRCLE
+    if (dist < r - RING_WIDTH) return ImageCropDragMode.MOVE_CIRCLE
+    return ImageCropDragMode.PAN_IMAGE
   }
 
   const beginDragFromHit = (clientX: number, clientY: number) => {
@@ -170,18 +206,18 @@ export function ImageCropUploadDialog({
   const applyDragMove = (clientX: number, clientY: number) => {
     const mode = dragMode.current
     const ds   = dragStart.current
-    if (mode === "none" || !ds) return
+    if (mode === ImageCropDragMode.NONE || !ds) return
     const rect = containerRef.current?.getBoundingClientRect()
     if (!rect) return
 
     const dx = clientX - ds.clientX
     const dy = clientY - ds.clientY
 
-    if (mode === "move-circle") {
+    if (mode === ImageCropDragMode.MOVE_CIRCLE) {
       const r = ds.cs / 2
       setCirX(Math.max(r, Math.min(rect.width  - r, ds.cx + dx)))
       setCirY(Math.max(r, Math.min(rect.height - r, ds.cy + dy)))
-    } else if (mode === "resize-circle") {
+    } else if (mode === ImageCropDragMode.RESIZE_CIRCLE) {
       const screenCx = rect.left + ds.cx
       const screenCy = rect.top  + ds.cy
       const dist = Math.sqrt((clientX - screenCx) ** 2 + (clientY - screenCy) ** 2)
@@ -209,7 +245,7 @@ export function ImageCropUploadDialog({
 
   const handleSvgPointerMove = (e: React.PointerEvent<SVGSVGElement>) => {
     applyDragMove(e.clientX, e.clientY)
-    if (dragMode.current === "none") updateHoverCursor(e.clientX, e.clientY)
+    if (dragMode.current === ImageCropDragMode.NONE) updateHoverCursor(e.clientX, e.clientY)
   }
 
   const endActivePointer = (e: React.PointerEvent<SVGSVGElement>) => {
@@ -222,7 +258,7 @@ export function ImageCropUploadDialog({
     } catch {
       /* already released */
     }
-    dragMode.current = "none"
+    dragMode.current = ImageCropDragMode.NONE
     dragStart.current = null
   }
 
@@ -251,12 +287,21 @@ export function ImageCropUploadDialog({
 
   // ── SVG geometry ──────────────────────────────────────────────────────────
   const r = cropSize / 2
+  const showViewOnly = imageOrigin === ProfileImageOrigin.EXTERNAL && !!imageSrc
+  const showCropper = !!imageSrc && !showViewOnly
 
   return (
     <>
-      {renderTrigger({ openDialog: () => setOpen(true) })}
+      {renderTrigger({ openDialog })}
 
-      <Dialog open={open} onOpenChange={(next) => { setOpen(next); if (!next) resetAll() }}>
+      <Dialog
+        open={open}
+        onOpenChange={(next) => {
+          setOpen(next)
+          if (next) initializeFromExternalImage()
+          if (!next) resetAll()
+        }}
+      >
         <DialogContent
           showClose={false}
           className="flex h-[529px] w-[520px] max-w-none flex-col gap-0 rounded-[8px] border-0 bg-white p-0"
@@ -273,7 +318,9 @@ export function ImageCropUploadDialog({
               type="file"
               accept="image/*"
               className="hidden"
-              onChange={(e) => handlePickImage(e.target.files?.[0] ?? null)}
+              onChange={(e) => {
+                void selectImageFile(e.target.files?.[0] ?? null)
+              }}
             />
 
             {!imageSrc ? (
@@ -285,6 +332,37 @@ export function ImageCropUploadDialog({
               >
                 Choose a file
               </button>
+            ) : showViewOnly ? (
+              <div className="flex min-h-0 w-full flex-1 flex-col">
+                <div className="flex flex-1 items-center justify-center rounded-[6px] bg-white">
+                  <div className="flex flex-col items-center">
+                    <img
+                      src={imageSrc}
+                      alt="Profile image"
+                      className="h-[240px] w-[240px] rounded-full object-cover"
+                      draggable={false}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => fileInputRef.current?.click()}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") fileInputRef.current?.click()
+                      }}
+                    />
+                    {onDeleteImage ? (
+                      <button
+                        type="button"
+                        onClick={handleDelete}
+                        disabled={isDeleting}
+                        className="mt-4 inline-flex items-center justify-center rounded-[8px] border border-[#fca5a5] px-4 py-2 text-[12px] font-medium text-[#b91c1c] hover:bg-[#fee2e2] disabled:opacity-60"
+                        aria-label="Delete profile image"
+                      >
+                        <Trash2 className="mr-2 size-4" aria-hidden />
+                        Delete
+                      </button>
+                    ) : null}
+                  </div>
+                </div>
+              </div>
             ) : (
               <div className="flex min-h-0 w-full flex-1 flex-col">
                 {/* ── crop area ── */}
@@ -361,7 +439,7 @@ export function ImageCropUploadDialog({
                 </div>
 
                 {/* ── bottom row ── */}
-                <div className="mt-2 flex items-center justify-end">
+                <div className="mt-2 flex items-center justify-between">
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
@@ -369,6 +447,7 @@ export function ImageCropUploadDialog({
                   >
                     Choose another file
                   </button>
+                  {/* Delete moved to footer next to Cancel (per design) */}
                 </div>
               </div>
             )}
@@ -382,14 +461,25 @@ export function ImageCropUploadDialog({
               >
                 Cancel
               </Button>
-              <Button
-                type="button"
-                onClick={handleConfirm}
-                disabled={!imageSrc}
-                className="h-12 min-w-[92px] rounded-[10px] bg-[#6C5DD3] px-6 text-[12px] text-white hover:bg-[#6C5DD3] cursor-pointer disabled:opacity-60"
-              >
-                OK
-              </Button>
+
+              {showCropper ? (
+                <Button
+                  type="button"
+                  onClick={handleConfirm}
+                  disabled={!imageSrc}
+                  className="h-12 min-w-[92px] rounded-[10px] bg-[#6C5DD3] px-6 text-[12px] text-white hover:bg-[#6C5DD3] cursor-pointer disabled:opacity-60"
+                >
+                  OK
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  onClick={() => { resetAll(); setOpen(false) }}
+                  className="h-12 min-w-[92px] rounded-[10px] bg-[#6C5DD3] px-6 text-[12px] text-white hover:bg-[#6C5DD3] cursor-pointer disabled:opacity-60"
+                >
+                  Close
+                </Button>
+              )}
             </div>
           </div>
         </DialogContent>

@@ -28,6 +28,7 @@ import { otpSchema } from "@/features/auth/schemas"
 import { useGlobalNamespaces } from "@/features/auth/queries/getGlobalNamespaces"
 import { useValidateLoginOtp } from "@/features/auth/mutations/useValidateLoginOtp"
 import { getUserDetails } from "@/features/auth/api/getUserDetails"
+import { AuthJourney } from "@/features/auth/enums/auth.enum"
 import {
   type OtpFormValues,
   type OtpLocationState,
@@ -35,6 +36,7 @@ import {
   type OtpResponse,
 } from "@/features/auth/types"
 import { useLogin } from "@/features/auth/mutations/login"
+import { useSendResetOtp } from "@/features/auth/mutations/sendResetOtp"
 import iebaLogo from "@/assets/ieba-logo.png"
 import forgotPasswordBg from "@/assets/forgot-password-bg.png"
 import mailIcon from "@/assets/login-mail-icon.png"
@@ -52,7 +54,11 @@ export function OtpAuthentication() {
   const location = useLocation()
   const state = location.state as OtpLocationState | null
   const email = state?.email ?? ""
-  const hasCredentials = Boolean(state?.email && state?.password)
+  const journey = state?.journey ?? AuthJourney.Dashboard
+  const hasCredentials =
+    journey === AuthJourney.Dashboard
+      ? Boolean(state?.email && state?.password)
+      : Boolean(state?.email)
   const initialOtp = (state?.otp ?? "").replace(/\D/g, "").slice(0, 6)
   const form = useForm<OtpFormValues>({
     resolver: zodResolver(otpSchema),
@@ -67,7 +73,9 @@ export function OtpAuthentication() {
   } = form
   const otpValue = watch("otp")
 
-  const globalNamespacesQuery = useGlobalNamespaces(countyModalOpen && hasCredentials)
+  const globalNamespacesQuery = useGlobalNamespaces(
+    countyModalOpen && hasCredentials && journey === AuthJourney.Dashboard
+  )
 
   const verifyOtpMutation = useMutation<OtpResponse, Error, OtpPayload>({
     mutationFn: async (payload) => ({
@@ -82,14 +90,52 @@ export function OtpAuthentication() {
   })
 
   const resendLoginMutation = useLogin()
+  const resendForgotOtpMutation = useSendResetOtp()
 
   const validateLoginOtpMutation = useValidateLoginOtp()
 
   if (!hasCredentials) {
-    return <Navigate to="/login" replace />
+    return (
+      <Navigate
+        to={journey === AuthJourney.ResetPassword ? "/forgot-password" : "/login"}
+        replace
+      />
+    )
   }
 
   function handleSubmit(values: OtpFormValues) {
+    if (journey === AuthJourney.ResetPassword) {
+      const otp = values.otp.replace(/\D/g, "").slice(0, 6)
+      if (otp.length < 6) {
+        toast.error("Enter a valid 6-digit OTP")
+        return
+      }
+      validateLoginOtpMutation.mutate(
+        { loginId: email.trim(), otp, journey: AuthJourney.ResetPassword },
+        {
+          onSuccess: (result) => {
+            setToken(result.accessToken)
+            toast.success("OTP verified successfully", {
+              icon: (
+                <CircleCheckIcon className="size-4 shrink-0 text-green-600 dark:text-green-400" />
+              ),
+            })
+            navigate("/reset-password", {
+              replace: true,
+              state: {
+                email: email.trim(),
+                userId: result.userId,
+              },
+            })
+          },
+          onError: (error) => {
+            toast.error(error.message || "OTP verification failed")
+          },
+        }
+      )
+      return
+    }
+
     verifyOtpMutation.mutate({ otp: values.otp })
   }
 
@@ -108,7 +154,7 @@ export function OtpAuthentication() {
       {
         loginId: email.trim(),
         otp,
-        journey: "dashboard",
+        journey: AuthJourney.Dashboard,
         nameSpace: selectedNameSpace,
       },
       {
@@ -188,6 +234,38 @@ export function OtpAuthentication() {
   }
 
   function handleResendOtp() {
+    if (journey === AuthJourney.ResetPassword) {
+      resendForgotOtpMutation.mutate(
+        { loginId: email },
+        {
+          onSuccess: (data) => {
+            const nextOtp =
+              data.otp == null ? "" : String(data.otp).replace(/\D/g, "").slice(0, 6)
+            if (nextOtp) {
+              setValue("otp", nextOtp, { shouldValidate: true })
+            }
+            navigate(location.pathname, {
+              replace: true,
+              state: {
+                email: (data.loginId || email).trim(),
+                otp: nextOtp || undefined,
+                journey: AuthJourney.ResetPassword,
+              } satisfies OtpLocationState,
+            })
+            toast.success("OTP sent successfully", {
+              icon: (
+                <CircleCheckIcon className="size-4 shrink-0 text-green-600 dark:text-green-400" />
+              ),
+            })
+          },
+          onError: (error) => {
+            toast.error(error.message || "Failed to resend OTP")
+          },
+        }
+      )
+      return
+    }
+
     const password = state?.password
     if (!password) return
     resendLoginMutation.mutate(
@@ -206,6 +284,7 @@ export function OtpAuthentication() {
               email: data.loginId,
               password,
               otp: data.otp,
+              journey: AuthJourney.Dashboard,
             } satisfies OtpLocationState,
           })
           toast.success("OTP sent successfully", {
@@ -311,7 +390,11 @@ export function OtpAuthentication() {
             <button
               type="button"
               onClick={handleResendOtp}
-              disabled={resendLoginMutation.isPending}
+              disabled={
+                journey === AuthJourney.ResetPassword
+                  ? resendForgotOtpMutation.isPending
+                  : resendLoginMutation.isPending
+              }
               className="text-sm font-normal text-[#000000] underline underline-offset-2 hover:text-gray-700"
             >
               Resend OTP
@@ -328,7 +411,11 @@ export function OtpAuthentication() {
 
           <Button
             type="submit"
-            disabled={verifyOtpMutation.isPending}
+            disabled={
+              journey === AuthJourney.ResetPassword
+                ? validateLoginOtpMutation.isPending
+                : verifyOtpMutation.isPending
+            }
             className="mt-2 h-11 w-full rounded-[6px] border-0 text-[18px] font-medium text-white hover:opacity-90"
             style={{ background: "linear-gradient(90deg, #00c5fb, #6c5dd3)" }}
           >
@@ -342,8 +429,11 @@ export function OtpAuthentication() {
       </Card>
       </div>
 
-      {/* County picker modal – props from screenshots, Tailwind */}
-      <Dialog open={countyModalOpen} onOpenChange={(open) => !open && handleCountyCancel()}>
+      {/* County picker modal – used only for dashboard journey */}
+      <Dialog
+        open={journey === AuthJourney.Dashboard ? countyModalOpen : false}
+        onOpenChange={(open) => !open && handleCountyCancel()}
+      >
         <DialogContent
           overlayClassName="bg-black/40"
           className="top-[31%] z-[60] w-[min(520px,92vw)] max-w-[92vw] border-0 bg-white p-0 shadow-lg sm:rounded-[6px] [&>button]:hidden"

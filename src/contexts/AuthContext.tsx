@@ -13,6 +13,8 @@ import { clearToken, getToken, setToken } from "@/lib/api"
 import {
   clearStoredUser,
   getStoredUser,
+  hasPasswordBeenChangedForUser,
+  markPasswordChangedForUser,
   setStoredUser,
 } from "@/lib/auth-storage"
 import { clearStoredMimicSession } from "@/features/user/user-mimic/storage"
@@ -65,6 +67,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         let roles: string[] | undefined
         let permissions: string[] | undefined
         let displayName: string | undefined
+        let departmentRoles: User["departmentRoles"] | undefined
+        let isPasswordChangeRequired: boolean | undefined
         
         try {
           // IMPORTANT: Set token first so getUserDetails call is authorized
@@ -72,6 +76,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const details = await getUserDetails(result.userId)
           roles = details.roles?.map((r) => r.name)
           permissions = details.allpermissions
+          isPasswordChangeRequired = !!details.isPasswordChangeRequired
+          departmentRoles = details.departmentsRoles?.map(dr => ({
+            departmentId: dr.departmentId,
+            roleId: dr.roleId,
+            departmentName: dr.department?.name ?? "",
+            roleName: dr.role?.name ?? "",
+          }))
           if (!permissions || permissions.length === 0) {
             const all = new Set<string>()
             details.departmentsRoles?.forEach(dr => {
@@ -93,8 +104,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             ? displayName 
             : result.loginId.split("@")[0] || result.loginId,
           email: result.loginId,
+          isPasswordChangeRequired:
+            isPasswordChangeRequired && !hasPasswordBeenChangedForUser(result.userId)
+              ? true
+              : false,
           roles,
           permissions,
+          departmentRoles,
         }
         setStoredUser(authUser)
         queryClient.setQueryData<User | null>(AUTH_SESSION_QUERY_KEY, authUser)
@@ -131,6 +147,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     clearToken()
     clearStoredUser()
     clearStoredMimicSession()
+    localStorage.removeItem("SCREEN_INACTIVITY_TIME_IN_MIN")
+    localStorage.removeItem("APP_LAST_ACTIVITY_TIME")
   }, [queryClient])
 
   const clearError = useCallback(() => setError(null), [])

@@ -1,7 +1,7 @@
 import { z } from "zod"
 
 import { UserRelationship } from "./enums/userrelationship.enum"
-import type { ProfileDetailFormValues } from "./types"
+import type { ProfileDetailFormValues, ProfileImageUploadFormValues } from "./types"
 
 const requiredNonEmptyString = (fieldLabel: string) =>
   z.string().trim().min(1, `${fieldLabel} is required`)
@@ -124,5 +124,23 @@ export const profileDetailDefaultValues: ProfileDetailFormValues = {
     emailLoginId: "",
     location: "",
   },
+}
+
+const MAX_PROFILE_IMAGE_SIZE_BYTES = 5 * 1024 * 1024
+
+export const profileImageUploadSchema = z.object({
+  imageFile: z
+    .instanceof(File)
+    .nullable()
+    .refine((file) => file !== null, "Please choose an image file.")
+    .refine((file) => !file || file.type.startsWith("image/"), "Selected file must be an image.")
+    .refine(
+      (file) => !file || file.size <= MAX_PROFILE_IMAGE_SIZE_BYTES,
+      "Image size must be 5MB or less."
+    ),
+})
+
+export const profileImageUploadDefaultValues: ProfileImageUploadFormValues = {
+  imageFile: null,
 }
 

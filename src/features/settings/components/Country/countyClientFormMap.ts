@@ -21,7 +21,8 @@ export function mapCountyClientDetailToCountySettings(
   const start = client.startTime ?? "00:00"
 
   return {
-    logoDataUrl: client.document?.content ?? null,
+    // Prefer document content (base64/data URL), then document URL, then legacy `logo`.
+    logoDataUrl: client.document?.content ?? client.document?.url ?? client.logo ?? null,
     countyName: client.name ?? "",
     welcomeMessage: client.message ?? "",
     isTimeRangeEnabled: Boolean(client.timeRule),

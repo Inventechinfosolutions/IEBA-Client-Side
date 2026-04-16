@@ -5,18 +5,28 @@ import { cn } from "@/lib/utils"
 import { SETTINGS_ACCORDION_SECTIONS } from "@/features/settings/types"
 import { CountyForm } from "@/features/settings/components/Country/CountyForm"
 import { AutoGenerateCodeForm } from "@/features/settings/components/AutoGenerateCode/AutoGenerateCodeForm"
-import { PayrollForm } from "@/features/settings/components/Payroll/PayrollForm"
+import { PayrollForm } from "@/features/settings/payroll"
 import { FiscalYearForm } from "@/features/settings/components/FiscalYear/FiscalYearForm"
 import { ReportsForm } from "@/features/settings/components/Reports/ReportsForm"
 import { GeneralForm } from "@/features/settings/components/General/GeneralForm"
 import { LoginForm } from "@/features/settings/components/Login/LoginForm"
 
-export function SettingsAccordion({ isSaving }: { isSaving: boolean }) {
+export function SettingsAccordion({
+  isSaving,
+  openSection,
+  onOpenSectionChange,
+}: {
+  isSaving: boolean
+  openSection: string | undefined
+  onOpenSectionChange: (next: string | undefined) => void
+}) {
   return (
     <div className="rounded-[8px] bg-white">
       <Accordion
         type="single"
         collapsible
+        value={openSection}
+        onValueChange={(next) => onOpenSectionChange(next || undefined)}
       >
         {SETTINGS_ACCORDION_SECTIONS.map((section) => (
           <AccordionItem

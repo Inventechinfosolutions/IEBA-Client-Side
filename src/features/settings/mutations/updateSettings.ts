@@ -1,19 +1,19 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-
 import { settingsKeys } from "@/features/settings/keys"
-import { delay, getMockSettings, MOCK_NETWORK_DELAY_MS, setMockSettings } from "@/features/settings/mock"
+import { DEFAULT_SETTINGS } from "@/features/settings/constants"
 import { SettingsFormSaveSection } from "@/features/settings/enums/setting.enum"
 import type { SettingsModel, UpdateSettingsInput } from "@/features/settings/types"
-import type { PayrollBy, PayrollColumnSettingModel } from "@/features/settings/components/Payroll/types"
+import type { PayrollBy, PayrollColumnSettingModel, PayrollSettingsModel } from "../payroll"
+import { updatePayrollSettings } from "../payroll"
 import {
   createCountyLocation,
   deleteCountyLocation,
+  uploadCountyLogo,
   updateCountyClient,
   updateCountyLocation,
 } from "@/features/settings/components/Country/api"
 import { parseLocationId } from "@/features/settings/components/Country/locationUtils"
 import {
-  fetchCountyClientById,
   settingsCountyClientQueryKey,
   type ClientLocation,
 } from "@/features/settings/queries/getCountyClient"
@@ -31,14 +31,14 @@ function normalizeCountyLocations(values: UpdateSettingsInput["values"]): Array<
 }> {
   const rows = values.county.addresses ?? []
   return rows
-    .map((row, idx) => ({
+    .map((row: any) => ({
       locationId: parseLocationId(row.locationId),
       name: (row.location ?? "").trim(),
       street: (row.street ?? "").trim() || undefined,
       city: (row.city ?? "").trim() || undefined,
       state: (row.state ?? "").trim() || undefined,
       zip: (row.zip ?? "").trim() || undefined,
-      primary: idx === 0,
+      primary: true,
     }))
     .filter((r) => r.name.length > 0)
 }
@@ -57,8 +57,7 @@ async function saveCountyToBackend(
   }
 
   const clientId = first.id
-
-  const freshClient = await fetchCountyClientById(clientId)
+  const existingLocations = first.locations ?? []
 
   await updateCountyClient(clientId, {
     name: input.values.county.countyName,
@@ -71,10 +70,15 @@ async function saveCountyToBackend(
     include_weekend: Boolean(input.values.county.includedWeekends),
   })
 
-  // Upsert + delete locations (addresses) via Location API.
+  const nextLogoDataUrl = (input.values.county.logoDataUrl ?? "").trim()
+  if (nextLogoDataUrl.startsWith("data:")) {
+    await uploadCountyLogo(clientId, nextLogoDataUrl)
+  }
+
   const desired = normalizeCountyLocations(input.values)
-  const existing = (freshClient.locations ?? []).slice().sort((a, b) => a.id - b.id)
+  const existing = [...existingLocations].sort((a, b) => a.id - b.id)
   const existingIds = new Set(existing.map((l) => l.id))
+  const existingById = new Map(existing.map((l) => [l.id, l] as const))
   const keptIds = new Set(
     desired.map((d) => d.locationId).filter((id): id is number => typeof id === "number"),
   )
@@ -98,7 +102,20 @@ async function saveCountyToBackend(
     }
 
     if (row.locationId !== undefined && existingIds.has(row.locationId)) {
-      await updateCountyLocation(row.locationId, payload)
+      const current = existingById.get(row.locationId)
+      const same =
+        !!current &&
+        (current.name ?? "").trim() === payload.name.trim() &&
+        (current.street ?? "").trim() === (payload.street ?? "").trim() &&
+        (current.city ?? "").trim() === (payload.city ?? "").trim() &&
+        (current.state ?? "").trim() === (payload.state ?? "").trim() &&
+        (current.zip ?? "").trim() === (payload.zip ?? "").trim() &&
+        Boolean(current.primary) === Boolean(payload.primary) &&
+        (current.status ?? "active") === payload.status
+
+      if (!same) {
+        await updateCountyLocation(row.locationId, payload)
+      }
     } else {
       await createCountyLocation(payload)
     }
@@ -109,38 +126,92 @@ async function updateSettings(
   queryClient: ReturnType<typeof useQueryClient>,
   input: UpdateSettingsInput,
 ): Promise<SettingsModel> {
-  await delay(MOCK_NETWORK_DELAY_MS)
-
   if (input.submitterSection === SettingsFormSaveSection.County) {
     await saveCountyToBackend(queryClient, input)
   }
 
-  const current = getMockSettings()
-  const normalizedAddresses = (input.values.county.addresses ?? []).map((row) => ({
-    locationId: parseLocationId(row.locationId),
-    location: row.location ?? "",
-    street: row.street ?? "",
-    city: row.city ?? "",
-    state: row.state ?? "",
-    zip: row.zip ?? "",
-  }))
+  if (input.submitterSection === SettingsFormSaveSection.Payroll) {
+    const payrollPayload: PayrollSettingsModel = {
+      payrollBy: (input.values.payroll?.payrollBy ?? "Weekly") as PayrollBy,
+      columns: (input.values.payroll?.columns ?? []).map((c: any) => ({
+        key: c.key,
+        label: c.label,
+        enabled: Boolean(c.enabled),
+        editable: Boolean(c.editable),
+      })),
+    }
+
+    const prev = queryClient.getQueryData(settingsKeys.payroll.detail()) as PayrollSettingsModel | undefined
+    const prevByKey = new Map((prev?.columns ?? []).map((c) => [String(c.key), c] as const))
+
+    const changedColumns = payrollPayload.columns
+      .map((nextCol, index) => {
+        const prevCol = prevByKey.get(String(nextCol.key))
+        const id = Number(nextCol.key)
+        if (!Number.isFinite(id) || id <= 0) return null
+
+        const patch: { id: number; columnname?: string; displayOrder?: number; isEnable?: boolean; isEditable?: boolean; slno?: number } = { id }
+
+        // Order change
+        const nextOrder = index + 1
+        const prevOrder = prev?.columns ? prev.columns.findIndex((c) => String(c.key) === String(nextCol.key)) + 1 : nextOrder
+        if (prev && prevOrder !== nextOrder) {
+          patch.displayOrder = nextOrder
+          patch.slno = nextOrder
+        }
+
+        // Field changes
+        if (prevCol) {
+          if (prevCol.label !== nextCol.label) patch.columnname = nextCol.label
+          if (Boolean(prevCol.enabled) !== Boolean(nextCol.enabled)) patch.isEnable = Boolean(nextCol.enabled)
+          if (Boolean(prevCol.editable) !== Boolean(nextCol.editable)) patch.isEditable = Boolean(nextCol.editable)
+        } else {
+          // If we don't have a baseline, send full row fields (still as bulk)
+          patch.columnname = nextCol.label
+          patch.displayOrder = nextOrder
+          patch.isEnable = Boolean(nextCol.enabled)
+          patch.isEditable = Boolean(nextCol.editable)
+          patch.slno = nextOrder
+        }
+
+        // Only keep if something changed (besides id)
+        const { id: _id, ...rest } = patch
+        return Object.keys(rest).length > 0 ? patch : null
+      })
+      .filter((c): c is NonNullable<typeof c> => c !== null)
+
+    const payrollByChanged = prev ? prev.payrollBy !== payrollPayload.payrollBy : true
+
+    await updatePayrollSettings({
+      payrollBy: payrollByChanged ? payrollPayload.payrollBy : undefined,
+      columns: changedColumns.length > 0 ? changedColumns : undefined,
+    })
+  }
+
   const next: SettingsModel = {
-    version: current.version + 1,
+    version: (input.values as any).version ?? 1,
     county: {
-      ...current.county,
+      ...DEFAULT_SETTINGS.county,
       ...input.values.county,
       logoDataUrl: input.values.county.logoDataUrl ?? null,
       welcomeMessage: input.values.county.welcomeMessage ?? "",
       isTimeRangeEnabled: Boolean(input.values.county.isTimeRangeEnabled),
-      addresses: normalizedAddresses,
+      addresses: (input.values.county.addresses ?? []).map((row: any) => ({
+        locationId: parseLocationId(row.locationId),
+        location: row.location ?? "",
+        street: row.street ?? "",
+        city: row.city ?? "",
+        state: row.state ?? "",
+        zip: row.zip ?? "",
+      })),
     },
     general: {
-      ...current.general,
+      ...DEFAULT_SETTINGS.general,
       ...input.values.general,
       screenInactivityTimeMinutes: Number(input.values.general.screenInactivityTimeMinutes),
     },
     reports: {
-      ...current.reports,
+      ...DEFAULT_SETTINGS.reports,
       ...input.values.reports,
       reportKey: String(input.values.reports.reportKey ?? ""),
       selectedActivityCodes: Array.isArray(input.values.reports.selectedActivityCodes)
@@ -148,23 +219,19 @@ async function updateSettings(
         : [],
     },
     login: {
-      ...current.login,
+      ...DEFAULT_SETTINGS.login,
       ...input.values.login,
       otpValidationTimerSeconds: Number(input.values.login.otpValidationTimerSeconds),
     },
     fiscalYear: {
-      fiscalYearStartMonth: "",
-      fiscalYearEndMonth: "",
-      year: "",
-      appliedYearRanges: [],
-      holidays: [],
+      ...DEFAULT_SETTINGS.fiscalYear,
     },
     payroll: {
-      ...current.payroll,
+      ...DEFAULT_SETTINGS.payroll,
       ...input.values.payroll,
       payrollBy: String(input.values.payroll?.payrollBy ?? "Weekly") as PayrollBy,
       columns: Array.isArray(input.values.payroll?.columns)
-        ? input.values.payroll.columns.map((row) => {
+        ? (input.values.payroll.columns as any[]).map((row) => {
             const col = row as PayrollColumnSettingModel
             return {
               key: String(col.key ?? ""),
@@ -177,7 +244,6 @@ async function updateSettings(
     },
   }
 
-  setMockSettings(next)
   return next
 }
 
@@ -187,13 +253,17 @@ export function useUpdateSettings() {
   return useMutation({
     mutationFn: (input: UpdateSettingsInput) => updateSettings(queryClient, input),
     onSuccess: (_data, variables) => {
-      // Do not use `settingsKeys.all` (["settings"]) here: partial matching would also
-      // invalidate the county-client query, then the line below would invalidate it again → duplicate fetches.
-      void queryClient.invalidateQueries({ queryKey: settingsKeys.detail() })
-      if (variables.submitterSection === SettingsFormSaveSection.County) {
-        void queryClient.invalidateQueries({ queryKey: settingsCountyClientQueryKey })
+      if (variables.submitterSection === SettingsFormSaveSection.Payroll) {
+        // Only invalidate payroll query — does NOT trigger general settings refetch
+        void queryClient.invalidateQueries({ queryKey: settingsKeys.payroll.detail() })
+      } else {
+        // All other sections invalidate settings detail only
+        void queryClient.invalidateQueries({ queryKey: settingsKeys.detail() })
+        // County also needs the county client refreshed
+        if (variables.submitterSection === SettingsFormSaveSection.County) {
+          void queryClient.invalidateQueries({ queryKey: settingsCountyClientQueryKey })
+        }
       }
     },
   })
 }
-

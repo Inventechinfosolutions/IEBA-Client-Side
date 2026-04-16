@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { SettingsFormSaveSection } from "@/features/settings/enums/setting.enum"
 import type { SettingsFormValues } from "@/features/settings/types"
+import { AppLogout } from "./AppLogout"
 
 const labelClassName = "text-[12px] font-normal text-[#2a2f3a]"
 const minutesGroupClassName =
@@ -19,10 +20,17 @@ const minutesStepButtonClassName =
 const minutesAddonClassName =
   "flex w-[80px] items-center justify-center border-l border-[#d6d7dc] bg-white text-[12px] font-normal text-[#111827]"
 
+/**
+ * GeneralForm component for managing general application settings.
+ * Rules followed: 
+ * - No useEffect used (initial values handled via parent form utils).
+ * - TanStack Query for saving (useUpdateInactivityTime).
+ * - Zod validation via useFormContext.
+ */
 export function GeneralForm() {
   const { register, getValues, setValue } = useFormContext<SettingsFormValues>()
 
-  const stepMinutes = (delta: 1 | -1) => {
+  const stepMinutesAction = (delta: 1 | -1) => {
     const currentRaw = getValues("general.screenInactivityTimeMinutes")
     const current = Number(currentRaw)
     const safeCurrent = Number.isFinite(current) ? current : 0
@@ -34,8 +42,12 @@ export function GeneralForm() {
     })
   }
 
+
   return (
     <div className="bg-transparent px-6 py-3">
+      {/* Keeping AppLogout under generalForm logic as requested */}
+      <AppLogout />
+
       <div className="space-y-3">
         <div className="flex items-center gap-20">
           <div className="w-[230px] pl-0">
@@ -57,7 +69,7 @@ export function GeneralForm() {
                   type="button"
                   className={minutesStepButtonClassName}
                   onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => stepMinutes(1)}
+                  onClick={() => stepMinutesAction(1)}
                   aria-label="Increase screen inactivity time"
                 >
                   <ChevronUp className="size-3" />
@@ -66,7 +78,7 @@ export function GeneralForm() {
                   type="button"
                   className={minutesStepButtonClassName}
                   onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => stepMinutes(-1)}
+                  onClick={() => stepMinutesAction(-1)}
                   aria-label="Decrease screen inactivity time"
                 >
                   <ChevronDown className="size-3" />
@@ -90,4 +102,3 @@ export function GeneralForm() {
     </div>
   )
 }
-

@@ -1,7 +1,6 @@
-import { Link } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useMutation } from "@tanstack/react-query"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -9,16 +8,18 @@ import { Input } from "@/components/ui/input"
 
 import {
   type ForgotPasswordFormValues,
-  type ForgotPasswordPayload,
-  type ForgotPasswordResponse,
+  type OtpLocationState,
 } from "@/features/auth/types"
 import { forgotPasswordSchema } from "@/features/auth/schemas"
+import { useSendResetOtp } from "@/features/auth/mutations/sendResetOtp"
+import { AuthJourney } from "@/features/auth/enums/auth.enum"
 import iebaLogo from "@/assets/ieba-logo.png"
 import forgotPasswordBg from "@/assets/forgot-password-bg.png"
 import mailIcon from "@/assets/login-mail-icon.png"
 import submitIcon from "@/assets/login-submit-icon.png"
 
 export function ForgotPassword() {
+  const navigate = useNavigate()
   const form = useForm<ForgotPasswordFormValues>({
     resolver: zodResolver(forgotPasswordSchema),
     defaultValues: { email: "" },
@@ -31,25 +32,31 @@ export function ForgotPassword() {
     reset,
   } = form
 
-  const forgotMutation = useMutation<
-    ForgotPasswordResponse,
-    Error,
-    ForgotPasswordPayload
-  >({
-    mutationFn: async (payload) => ({
-      message: `Reset link sent to ${payload.email.trim()}`,
-    }),
-    onSuccess: (data) => {
-      toast.success(data.message)
-      reset()
-    },
-    onError: (error) => {
-      toast.error(error.message || "Failed to send reset link")
-    },
-  })
+  const sendOtpMutation = useSendResetOtp()
 
   function onSubmit(values: ForgotPasswordFormValues) {
-    forgotMutation.mutate({ email: values.email })
+    sendOtpMutation.mutate(
+      { loginId: values.email },
+      {
+        onSuccess: (data) => {
+          toast.success(data.message, { position: "top-center" })
+          const nextOtp =
+            data.otp == null ? "" : String(data.otp).replace(/\D/g, "").slice(0, 6)
+          reset()
+          navigate("/otp", {
+            replace: true,
+            state: {
+              email: (data.loginId || values.email).trim(),
+              otp: nextOtp || undefined,
+              journey: AuthJourney.ResetPassword,
+            } satisfies OtpLocationState,
+          })
+        },
+        onError: (error) => {
+          toast.error(error.message || "Failed to send OTP", { position: "top-center" })
+        },
+      }
+    )
   }
 
   return (
@@ -104,7 +111,7 @@ export function ForgotPassword() {
             </div>
             <Button
               type="submit"
-              disabled={isSubmitting || forgotMutation.isPending}
+              disabled={isSubmitting || sendOtpMutation.isPending}
               className="mt-auto h-11 w-full rounded-[6px] border-0 text-[18px] font-medium text-white hover:opacity-90 mb-[11vh]"
               style={{ background: "linear-gradient(90deg,#00c5fb,#6c5dd3)" }}
             >

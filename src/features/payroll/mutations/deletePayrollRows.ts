@@ -2,17 +2,22 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 import { payrollKeys } from "../key"
 import type { GetPayrollRowsParams } from "../types"
+import { deletePayrollRow } from "../api/payrollApi"
 
-async function dummyDeleteRow(): Promise<{ ok: true }> {
-  return new Promise(resolve => setTimeout(() => resolve({ ok: true }), 500))
+type DeleteDisplayedRowsInput = {
+  params: GetPayrollRowsParams
+  rowIds: readonly (string | number)[]
 }
 
 export function useDeletePayrollRows() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: dummyDeleteRow,
-    onSuccess: (_data, params: GetPayrollRowsParams) => {
-      queryClient.setQueryData(payrollKeys.rows(params), [])
+    mutationFn: async ({ rowIds }: DeleteDisplayedRowsInput) => {
+      await Promise.all(rowIds.map((id) => deletePayrollRow(id)))
+      return { ok: true as const }
+    },
+    onSuccess: (_data, input: DeleteDisplayedRowsInput) => {
+      queryClient.setQueryData(payrollKeys.rows(input.params), [])
     },
   })
 }

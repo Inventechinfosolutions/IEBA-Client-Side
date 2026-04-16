@@ -1,14 +1,9 @@
 import { Link } from "react-router-dom"
 import iconUsersOrange from "@/assets/icon-users-orange.png"
 import iconActiveUsersPurple from "@/assets/icon-active-users-purple.png"
+import type { UsersCardProps } from "../types"
 
-interface Props {
-  userCount: number
-  activeUsers: number
-  isLoading?: boolean
-}
-
-export function UsersCard({ userCount, activeUsers, isLoading }: Props) {
+export function UsersCard({ userCount, activeUsers, isLoading }: UsersCardProps) {
   return (
     <div className="flex flex-col rounded-[10px] border border-[#E8EAF6] bg-white p-4 shadow-[0_0_20px_0_#0000001a] gap-y-3">
       <Link to="/users" className="flex items-center gap-3">
