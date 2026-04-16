@@ -33,6 +33,8 @@ import { ChangeCountyDialog } from "@/features/auth/components/ChangeCountyDialo
 import { MimicBanner, useMimicSession } from "@/features/user/user-mimic"
 import { markPasswordChangedForUser } from "@/lib/auth-storage"
 import { useGetProfileImage } from "@/features/Profile/queries/getProfileImage"
+import { useNotifications } from "@/features/notification/queries/useNotifications"
+import type { Notification } from "@/features/notification/types"
 
 import { NotificationSheet } from "@/features/notification/components/NotificationSheet"
 
@@ -45,8 +47,26 @@ export function DashboardLayout() {
   const [changePasswordOpen, setChangePasswordOpen] = useState(false)
   const [changeCountyOpen, setChangeCountyOpen] = useState(false)
   const [notificationsOpen, setNotificationsOpen] = useState(false)
+  const { data: notificationsData } = useNotifications("unread")
   const forcePasswordChange = !!user?.isPasswordChangeRequired
   const isChangePasswordModalOpen = forcePasswordChange || changePasswordOpen
+
+  const unreadCountFromMeta = notificationsData?.data?.meta?.unreadCount
+  const notifications = Array.isArray(notificationsData?.data?.items)
+    ? notificationsData.data.items
+    : Array.isArray(notificationsData?.data)
+      ? notificationsData.data
+      : Array.isArray(notificationsData)
+        ? notificationsData
+        : []
+  const unreadCount =
+    typeof unreadCountFromMeta === "number"
+      ? unreadCountFromMeta
+      : notifications.reduce(
+          (count: number, notification: Notification) =>
+            notification.read ? count : count + 1,
+          0,
+        )
 
   return (
     <SidebarProvider>
@@ -75,9 +95,14 @@ export function DashboardLayout() {
                 <button
                   type="button"
                   onClick={() => setNotificationsOpen(true)}
-                  className="flex items-center justify-center p-2 text-[#6B7280] transition-colors hover:text-[#111827]"
+                  className="relative flex items-center justify-center p-2 text-[#6B7280] transition-colors hover:text-[#111827]"
                 >
                   <Bell className="size-[22px]" />
+                  {unreadCount > 0 ? (
+                    <span className="absolute -right-1 -top-1 inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-[#FF4D4F] px-1 text-[12px] font-semibold leading-none text-white">
+                      {unreadCount > 99 ? "99+" : unreadCount}
+                    </span>
+                  ) : null}
                 </button>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
