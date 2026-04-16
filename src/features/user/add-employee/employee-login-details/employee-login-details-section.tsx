@@ -12,11 +12,6 @@ import { SingleSelectDropdown, type SingleSelectOption } from "@/components/ui/d
 
 import type { UserModuleFormValues, EmployeeLoginDetailsSectionProps } from "../types"
 import {
-  jobClassificationIdsToMultiSelectString,
-  multiSelectStringToJobClassificationIds,
-} from "../../utility/mapUserDetailsToForm"
-
-import {
   useGetAddEmployeeJobClassifications,
   useGetAddEmployeeLocations,
   useGetMulticodeMasterCodes,
@@ -94,7 +89,7 @@ export function EmployeeLoginDetailsSection({ isEditMode }: EmployeeLoginDetails
                 <Checkbox
                   checked={field.value}
                   onCheckedChange={(checked) => field.onChange(checked === true)}
-                  className="size-3.5 cursor-pointer rounded-[3px] border-[#c2c6d1] data-[state=checked]:border-[var(--primary)] data-[state=checked]:bg-[var(--primary)]"
+                  className="size-3.5 cursor-pointer rounded-[3px] border-[#c2c6d1] data-[state=checked]:border-(--primary) data-[state=checked]:bg-(--primary)"
                 />
               )}
             />
@@ -108,7 +103,7 @@ export function EmployeeLoginDetailsSection({ isEditMode }: EmployeeLoginDetails
                 <Checkbox
                   checked={field.value}
                   onCheckedChange={(checked) => field.onChange(checked === true)}
-                  className="size-3.5 cursor-pointer rounded-[3px] border-[#c2c6d1] data-[state=checked]:border-[var(--primary)] data-[state=checked]:bg-[var(--primary)]"
+                  className="size-3.5 cursor-pointer rounded-[3px] border-[#c2c6d1] data-[state=checked]:border-(--primary) data-[state=checked]:bg-(--primary)"
                 />
               )}
             />
@@ -341,64 +336,62 @@ export function EmployeeLoginDetailsSection({ isEditMode }: EmployeeLoginDetails
 
         <div>
           <label className={labelClassName}>*Job Classification</label>
-          {jobClassificationsQuery.isError ? (
-            <Controller
-              name="jobClassificationIds"
-              control={control}
-              render={({ field }) => (
-                <Input
-                  className={inputClassName}
-                  placeholder="Job classification ids (comma-separated, e.g. 1, 2)"
-                  value={jobClassificationIdsToMultiSelectString(field.value)}
-                  onChange={(e) =>
-                    field.onChange(multiSelectStringToJobClassificationIds(e.target.value))
-                  }
+          <Controller
+            name="jobClassificationIds"
+            control={control}
+            render={({ field }) => {
+              const rows = jobClassificationsQuery.data ?? []
+              const selectedId = field.value?.[0]
+              const rowById = new Map(rows.map((r) => [r.id, r]))
+              const isOrphan = selectedId != null && !rowById.has(selectedId)
+
+              const options: SingleSelectOption[] = rows.map((j) => ({
+                value: String(j.id),
+                label: j.name,
+                key: `job-class-${j.id}`,
+              }))
+
+              if (isOrphan && selectedId != null) {
+                options.unshift({
+                  value: String(selectedId),
+                  label: `Id ${selectedId}`,
+                  key: `job-class-orphan-${selectedId}`,
+                })
+              }
+
+              return (
+                <SingleSelectDropdown
+                  value={selectedId != null ? String(selectedId) : ""}
+                  onChange={(v) => {
+                    const id = Number.parseInt(v, 10)
+                    field.onChange(Number.isFinite(id) ? [id] : [])
+                  }}
                   onBlur={field.onBlur}
+                  onOpenChange={(open) => {
+                    if (open) setJobClassificationMenuOpened(true)
+                  }}
+                  options={options}
+                  placeholder="Select job classification"
+                  isLoading={jobClassificationsEnabled && jobClassificationsQuery.isPending}
+                  loadingLabel="Loading classifications…"
+                  className={inputClassName}
+                  contentClassName="max-h-[280px]"
                 />
-              )}
-            />
-          ) : (
-            <Controller
-              name="jobClassificationIds"
-              control={control}
-              render={({ field }) => {
-                const rows = jobClassificationsQuery.data ?? []
-                const selectedIds = new Set(field.value ?? [])
-                const rowById = new Map(rows.map((r) => [r.id, r]))
-                const orphanIds = [...selectedIds].filter((id) => !rowById.has(id))
-                const options = [
-                  ...rows.map((j) => ({
-                    value: String(j.id),
-                    label: j.name,
-                  })),
-                  ...orphanIds.map((id) => ({
-                    value: String(id),
-                    label: `Id ${id}`,
-                  })),
-                ]
-                return (
-                  <MultiSelectDropdown
-                    value={jobClassificationIdsToMultiSelectString(field.value)}
-                    onChange={(s) => field.onChange(multiSelectStringToJobClassificationIds(s))}
-                    onBlur={field.onBlur}
-                    placeholder="Select job classification"
-                    options={options}
-                    isLoading={
-                      jobClassificationsEnabled && jobClassificationsQuery.isFetching
-                    }
-                    onOpenChange={(open) => {
-                      if (open) setJobClassificationMenuOpened(true)
-                    }}
-                  />
-                )
-              }}
-            />
-          )}
+              )
+            }}
+          />
+          {jobClassificationsQuery.isError ? (
+            <p className="mt-1 text-[11px] text-red-500" role="alert">
+              {jobClassificationsQuery.error instanceof Error
+                ? jobClassificationsQuery.error.message
+                : "Failed to load job classifications"}
+            </p>
+          ) : null}
         </div>
         <div>
           <label className={labelClassName}>Job Duty Statement</label>
           <label className="flex h-[43px] cursor-pointer select-none items-center rounded-[7px] border border-[#e4e7ef] bg-white px-2 text-[11px] text-[#8f96a8]">
-            <span className="rounded-[3px] border border-[#cfd4df] bg-[#f7f8fb] px-2 py-[1px] text-[11px] text-[#2a2f3a]">
+            <span className="rounded-[3px] border border-[#cfd4df] bg-[#f7f8fb] px-2 py-px text-[11px] text-[#2a2f3a]">
               Choose File..
             </span>
             <span className="ml-2 truncate">{selectedJobDutyFile || "No file chosen"}</span>
@@ -429,7 +422,7 @@ export function EmployeeLoginDetailsSection({ isEditMode }: EmployeeLoginDetails
                 <Checkbox
                   checked={field.value}
                   onCheckedChange={(checked) => field.onChange(checked === true)}
-                  className="size-3.5 cursor-pointer rounded-[3px] border-[#c2c6d1] data-[state=checked]:border-[var(--primary)] data-[state=checked]:bg-[var(--primary)]"
+                  className="size-3.5 cursor-pointer rounded-[3px] border-[#c2c6d1] data-[state=checked]:border-(--primary) data-[state=checked]:bg-(--primary)"
                 />
               )}
             />
@@ -443,7 +436,7 @@ export function EmployeeLoginDetailsSection({ isEditMode }: EmployeeLoginDetails
                 <Checkbox
                   checked={field.value}
                   onCheckedChange={(checked) => field.onChange(checked === true)}
-                  className="size-3.5 cursor-pointer rounded-[3px] border-[#c2c6d1] data-[state=checked]:border-[var(--primary)] data-[state=checked]:bg-[var(--primary)]"
+                  className="size-3.5 cursor-pointer rounded-[3px] border-[#c2c6d1] data-[state=checked]:border-(--primary) data-[state=checked]:bg-(--primary)"
                 />
               )}
             />
@@ -468,7 +461,7 @@ export function EmployeeLoginDetailsSection({ isEditMode }: EmployeeLoginDetails
                         })
                       }
                     }}
-                    className="size-3.5 cursor-pointer rounded-[3px] border-[#c2c6d1] data-[state=checked]:border-[var(--primary)] data-[state=checked]:bg-[var(--primary)]"
+                    className="size-3.5 cursor-pointer rounded-[3px] border-[#c2c6d1] data-[state=checked]:border-(--primary) data-[state=checked]:bg-(--primary)"
                   />
                 )}
               />

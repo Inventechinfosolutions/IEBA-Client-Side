@@ -206,6 +206,7 @@ export type GetLeaveApprovalsParams = {
   pageSize: number
   filters: LeaveApprovalFilters
   sort: LeaveApprovalSortState
+  enabled?: boolean
 }
 
 export type LeaveApprovalListResponse = {

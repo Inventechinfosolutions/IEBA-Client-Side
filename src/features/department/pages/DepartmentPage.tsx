@@ -2,6 +2,7 @@ import { useState } from "react"
 import { DepartmentTable } from "../components/DepartmentTable"
 import { DepartmentAddPage } from "../components/DepartmentAddModal"
 import { useDepartments } from "../hooks/useDepartments"
+import { usePermissions } from "@/hooks/usePermissions"
 import type { DepartmentFilter } from "../types"
 
 const DEFAULT_FILTERS: DepartmentFilter = {
@@ -10,7 +11,12 @@ const DEFAULT_FILTERS: DepartmentFilter = {
 }
 
 export function DepartmentPage() {
+  const { isSuperAdmin, user } = usePermissions()
   const [filters, setFilters] = useState<DepartmentFilter>(DEFAULT_FILTERS)
+  
+  // Super Admin sees all; others see only their assigned departments.
+  const userIdFilter = isSuperAdmin ? undefined : user?.id
+
   const {
     departments,
     totalItems,
@@ -18,7 +24,7 @@ export function DepartmentPage() {
     pagination,
     onPageChange,
     onPageSizeChange,
-  } = useDepartments(filters)
+  } = useDepartments(filters, userIdFilter)
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)

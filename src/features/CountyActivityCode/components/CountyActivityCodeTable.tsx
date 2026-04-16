@@ -695,22 +695,22 @@ export function CountyActivityCodeTable({
       <div className="overflow-hidden rounded-[10px] border border-[#E5E7EB]">
         <Table className="w-full table-fixed border-collapse">
           <colgroup>
-            <col className="w-[9%]" />
-            <col className="w-[13%]" />
-            <col className="w-[12%]" />
-            <col className="w-[9%]" />
-            <col className="w-[8%]" />
-            <col className="w-[6%]" />
-            <col className="w-[5%]" />
-            <col className="w-[6%]" />
-            <col className="w-[4%]" />
-            <col className="w-[6%]" />
-            <col className="w-[5%]" />
-            <col className="w-[8%]" />
-            <col className="w-[9%]" />
+            <col className={canUpdateCountyActivity ? "w-[9%]" : "w-[10%]"} /> {/* Code */}
+            <col className={canUpdateCountyActivity ? "w-[13%]" : "w-[15%]"} /> {/* Name */}
+            <col className={canUpdateCountyActivity ? "w-[12%]" : "w-[15%]"} /> {/* Desc */}
+            <col className={canUpdateCountyActivity ? "w-[9%]" : "w-[10%]"} /> {/* Dept */}
+            <col className={canUpdateCountyActivity ? "w-[8%]" : "w-[9%]"} /> {/* Type */}
+            <col className={canUpdateCountyActivity ? "w-[6%]" : "w-[7%]"} /> {/* Code */}
+            <col className={canUpdateCountyActivity ? "w-[5%]" : "w-[5%]"} /> {/* SPMP */}
+            <col className={canUpdateCountyActivity ? "w-[6%]" : "w-[7%]"} /> {/* Match */}
+            <col className={canUpdateCountyActivity ? "w-[4%]" : "w-[5%]"} /> {/* % */}
+            <col className={canUpdateCountyActivity ? "w-[6%]" : "w-[7%]"} /> {/* Active */}
+            <col className={canUpdateCountyActivity ? "w-[5%]" : "w-[5%]"} /> {/* Leave */}
+            <col className={canUpdateCountyActivity ? "w-[8%]" : "w-[5%]"} /> {/* Multiple */}
+            {canUpdateCountyActivity && <col className="w-[9%]" />} {/* Action */}
           </colgroup>
           <TableHeader>
-            <TableRow className="h-[91px] bg-[#6C5DD3] hover:bg-[#6C5DD3]">
+            <TableRow className="h-[48px] bg-[#6C5DD3] hover:bg-[#6C5DD3]">
               {[
                 "County Activity Code",
                 "County Activity Name",
@@ -724,11 +724,11 @@ export function CountyActivityCodeTable({
                 "Active",
                 "Leave Code",
                 "Multiple Job Pools",
-                "Action",
+                ...(canUpdateCountyActivity ? ["Action"] : []),
               ].map((column, index) => (
                 <TableHead
                   key={column}
-                  className={`h-[91px] align-middle border-r border-[#FFFFFF66] bg-[#6C5DD3] p-[12px] text-[14px] font-[400] leading-[1.35] whitespace-normal break-normal text-white font-['Roboto',sans-serif] last:border-r-0 ${
+                  className={`h-[48px] align-middle border-r border-[#FFFFFF66] bg-[#6C5DD3] p-[8px] text-[14px] font-[500] leading-tight whitespace-normal break-normal text-white font-['Roboto',sans-serif] last:border-r-0 ${
                     ["Match", "%", "Active"].includes(column) ? "text-center" : "text-left"
                   }`}
                 >
@@ -868,7 +868,7 @@ export function CountyActivityCodeTable({
             ) : rows.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={13}
+                  colSpan={canUpdateCountyActivity ? 13 : 12}
                   className="h-20 text-center text-sm text-muted-foreground"
                 >
                   No county activity codes found.
@@ -982,8 +982,8 @@ export function CountyActivityCodeTable({
                       />
                     )}
                   </TableCell>
-                  <TableCell className="px-[14px] py-[5px] align-top text-center">
-                    {canUpdateCountyActivity && (
+                  {canUpdateCountyActivity && (
+                    <TableCell className="px-[14px] py-[5px] align-top text-center">
                       <Button
                         type="button"
                         size="icon"
@@ -1001,8 +1001,8 @@ export function CountyActivityCodeTable({
                           className="h-4 w-4 object-contain"
                         />
                       </Button>
-                    )}
-                  </TableCell>
+                    </TableCell>
+                  )}
                   </TableRow>
                 )
 
@@ -1100,8 +1100,8 @@ export function CountyActivityCodeTable({
                             />
                           )}
                         </TableCell>
-                        <TableCell className="px-[14px] py-[5px] align-top text-center">
-                          {canUpdateCountyActivity && (
+                        {canUpdateCountyActivity && (
+                          <TableCell className="px-[14px] py-[5px] align-top text-center">
                             <Button
                               type="button"
                               size="icon"
@@ -1119,8 +1119,8 @@ export function CountyActivityCodeTable({
                                 className="h-4 w-4 object-contain"
                               />
                             </Button>
-                          )}
-                        </TableCell>
+                          </TableCell>
+                        )}
                       </TableRow>
                     ))
                   : []

@@ -99,14 +99,14 @@ const mainNav: NavItem[] = [
   { title: "To-Do",                 url: "/to-do",                 icon: ListTodo,         permission: "todo" },
 
   // ── Admin: needs "module:view" ────────────────────────────────────────────
-  { title: "Department",            url: "/department",            icon: Home,             permission: "department" },
+  { title: "Department",            url: "/department",            icon: Home,             permission: null },
   { title: "Job Classification",    url: "/job-classification",    icon: LayoutGrid,       permission: "jobclassification" },
   { title: "Job Pool",              url: "/job-pool",              icon: Briefcase,        permission: "jobpool" },
 
   // ── Super-admin only (no permission key in the permission table) ──────────
   { title: "Users",                 url: "/users",                 icon: Users,            permission: "superadmin" },
   { title: "Department Role",       url: "/department-role",       icon: Building2,        permission: "superadmin" },
-  { title: "Master Code",           url: "/master-code",           icon: SquareTerminal,   permission: "superadmin" },
+  { title: "Master Code",           url: "/master-code",           icon: SquareTerminal,   permission: "mastercode" },
 ]
 
 // ---------------------------------------------------------------------------

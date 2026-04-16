@@ -35,6 +35,7 @@ export function MasterCodeTable({
   rows,
   isLoading,
   onEditRow,
+  canEdit,
 }: MasterCodeTableProps) {
   const [expandedRowId, setExpandedRowId] = useState<string | null>(null)
   const [sortState, setSortState] = useState<MasterCodeSortState>({
@@ -49,7 +50,7 @@ export function MasterCodeTable({
     `${codeType} (%)`,
     "Match",
     "Status",
-    "Action",
+    ...(canEdit ? ["Action"] : []),
   ]
   const sortedRows = useMemo(() => {
     const sorted = [...rows]
@@ -92,20 +93,20 @@ export function MasterCodeTable({
       <Table className="table-fixed">
         <colgroup>
           <col style={{ width: "120px" }} />
-          <col style={{ width: "470px" }} />
+          <col style={{ width: canEdit ? "470px" : "548px" }} />
           <col style={{ width: "74px" }} />
           <col style={{ width: "84px" }} />
           <col style={{ width: "84px" }} />
           <col style={{ width: "74px" }} />
           <col style={{ width: "74px" }} />
-          <col style={{ width: "78px" }} />
+          {canEdit && <col style={{ width: "78px" }} />}
         </colgroup>
         <TableHeader className="[&_tr]:border-b-0">
           <TableRow className="hover:bg-transparent">
             {headers.map((header, idx) => (
               <TableHead
                 key={header}
-                className={`h-10 bg-[var(--primary)] px-3 text-[12px] font-medium text-white ${
+                className={`h-10 bg-(--primary) px-3 text-[12px] font-medium text-white ${
                   idx === headers.length - 1 ? "border-r-0" : "border-r border-white/50"
                 } ${
                   idx === 0 ||
@@ -193,9 +194,11 @@ export function MasterCodeTable({
                   <TableCell className="border-r border-[#eff0f5] px-3 py-2 text-center">
                     <Skeleton className="mx-auto h-4 w-4 rounded-sm" />
                   </TableCell>
-                  <TableCell className="border-r border-[#eff0f5] px-3 py-2 text-center">
-                    <Skeleton className="mx-auto h-3.5 w-3.5 rounded-sm" />
-                  </TableCell>
+                  {canEdit && (
+                    <TableCell className="border-r border-[#eff0f5] px-3 py-2 text-center">
+                      <Skeleton className="mx-auto h-3.5 w-3.5 rounded-sm" />
+                    </TableCell>
+                  )}
                 </TableRow>
               ))
             : sortedRows.map((row) => {
@@ -220,14 +223,14 @@ export function MasterCodeTable({
                 return (
                   <Fragment key={row.id}>
                     <TableRow className="min-h-[40px] border-b border-[#eff0f5] hover:bg-transparent">
-                      <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-center text-[12px] text-[#232735] whitespace-normal break-words">
+                      <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-center text-[12px] text-[#232735] whitespace-normal wrap-break-word">
                         <div className="flex items-center justify-center gap-3">
                           <button
                             type="button"
                             onClick={() =>
                               setExpandedRowId((prev) => (prev === row.id ? null : row.id))
                             }
-                            className="inline-flex cursor-pointer items-center text-[var(--primary)]"
+                            className="inline-flex cursor-pointer items-center text-(--primary)"
                           >
                             {isExpanded ? (
                               <ChevronDown className="size-3.5" />
@@ -275,52 +278,54 @@ export function MasterCodeTable({
                           />
                         )}
                       </TableCell>
-                      <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-center text-[12px] text-[#262a35] whitespace-normal break-words">
+                      <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-center text-[12px] text-[#262a35] whitespace-normal wrap-break-word">
                         {row.ffpPercent}
                       </TableCell>
-                      <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-center text-[12px] text-[#262a35] whitespace-normal break-words">
+                      <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-center text-[12px] text-[#262a35] whitespace-normal wrap-break-word">
                         {row.match}
                       </TableCell>
-                      <TableCell className="border-r border-[#eff0f5] px-3 py-2 text-center">
-                        {row.status ? (
-                          <img
-                            src={tableCheckIcon}
-                            alt=""
-                            aria-hidden="true"
-                            className="mx-auto size-[12px] object-contain"
-                          />
-                        ) : (
-                          <img
-                            src={tableCloseIcon}
-                            alt=""
-                            aria-hidden="true"
-                            className="mx-auto size-[12px] object-contain"
-                          />
+                        <TableCell className="border-r border-[#eff0f5] px-3 py-2 text-center">
+                          {row.status ? (
+                            <img
+                              src={tableCheckIcon}
+                              alt=""
+                              aria-hidden="true"
+                              className="mx-auto size-[12px] object-contain"
+                            />
+                          ) : (
+                            <img
+                              src={tableCloseIcon}
+                              alt=""
+                              aria-hidden="true"
+                              className="mx-auto size-[12px] object-contain"
+                            />
+                          )}
+                        </TableCell>
+                        {canEdit && (
+                          <TableCell className="border-r border-[#eff0f5] px-3 py-2 text-center">
+                            <button
+                              type="button"
+                              onClick={() => onEditRow(row)}
+                              className="inline-flex cursor-pointer items-center opacity-80 drop-shadow-[0_1px_0_rgba(108,93,211,0.35)] transition-opacity hover:opacity-100"
+                            >
+                              <img
+                                src={tableEditIcon}
+                                alt=""
+                                aria-hidden="true"
+                                className="size-[11px] object-contain"
+                              />
+                            </button>
+                          </TableCell>
                         )}
-                      </TableCell>
-                      <TableCell className="border-r border-[#eff0f5] px-3 py-2 text-center">
-                        <button
-                          type="button"
-                          onClick={() => onEditRow(row)}
-                          className="inline-flex cursor-pointer items-center opacity-80 drop-shadow-[0_1px_0_rgba(108,93,211,0.35)] transition-opacity hover:opacity-100"
-                        >
-                          <img
-                            src={tableEditIcon}
-                            alt=""
-                            aria-hidden="true"
-                            className="size-[11px] object-contain"
-                          />
-                        </button>
-                      </TableCell>
-                    </TableRow>
+                      </TableRow>
                     {isExpanded ? (
                       <TableRow className="border-b border-[#eff0f5] hover:bg-transparent">
-                        <TableCell colSpan={8} className="px-4 py-3 text-left">
-                          <p className="text-[12px] font-medium text-[var(--primary)]">
+                        <TableCell colSpan={canEdit ? 8 : 7} className="px-4 py-3 text-left">
+                          <p className="text-[12px] font-medium text-(--primary)">
                             Activity Description
                           </p>
                           <div
-                            className="mt-1.5 pl-20 max-w-[1110px] whitespace-normal break-words text-[12px] leading-5 text-[#4b5563] [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:my-0.5"
+                            className="mt-1.5 pl-20 max-w-[1110px] whitespace-normal wrap-break-word text-[12px] leading-5 text-[#4b5563] [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:my-0.5"
                             dangerouslySetInnerHTML={{
                               __html: sanitizedActivityDescription,
                             }}
@@ -333,7 +338,7 @@ export function MasterCodeTable({
               })}
           {!isLoading && sortedRows.length === 0 ? (
             <TableRow className="h-[210px] hover:bg-transparent">
-              <TableCell colSpan={8} className="text-center">
+              <TableCell colSpan={canEdit ? 8 : 7} className="text-center">
                 <img
                   src={tableEmptyIcon}
                   alt=""

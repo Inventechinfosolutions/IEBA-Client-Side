@@ -2,7 +2,7 @@ import { useCallback, useMemo, useState } from "react"
 import { useGetDepartments } from "../queries/getDepartments"
 import type { DepartmentFilter } from "../types"
 
-export function useDepartments(filters: DepartmentFilter) {
+export function useDepartments(filters: DepartmentFilter, userId?: string) {
   const [pagination, setPagination] = useState({
     page: 1,
     pageSize: 10,
@@ -20,6 +20,7 @@ export function useDepartments(filters: DepartmentFilter) {
     limit: queryLimit,
     search: searchText,
     sort: "ASC",
+    userId,
   })
 
   const apiItems = data?.items ?? []

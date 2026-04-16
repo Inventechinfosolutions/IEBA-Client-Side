@@ -5,6 +5,7 @@ import { toast } from "sonner"
 
 import tableEmptyIcon from "@/assets/icons/table-empty.png"
 import { SingleSelectDropdown } from "@/components/ui/dropdown"
+import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { TransferListMoveButton } from "@/components/ui/transfer-list-move-button"
@@ -27,6 +28,7 @@ import {
   useUnassignUserActivitiesTs,
   useUnassignUserProgramsTs,
 } from "../mutations/time-study-program-activity-transfer"
+import { apiUpdateUser } from "../../api"
 import {
   useGetActivityDepartmentsForDepartment,
   useGetAddEmployeeDepartments,
@@ -366,6 +368,32 @@ export function TimeStudyAssignmentsPanel({
   const [toggledProgramsA, setToggledProgramsA] = useState<string[]>([])
   const [toggledActivitiesU, setToggledActivitiesU] = useState<string[]>([])
   const [toggledActivitiesA, setToggledActivitiesA] = useState<string[]>([])
+  const [isSavingTsMinDay, setIsSavingTsMinDay] = useState(false)
+
+  const handleSaveTsMinDay = async () => {
+    const userId = userIdForTs.trim()
+    if (!userId) {
+      toast.error("User ID is missing. Save employee details first.")
+      return
+    }
+
+    const val = watch("tsMinDay")?.trim()
+    const n = Number.parseInt(val ?? "", 10)
+    if (val !== "" && (!Number.isFinite(n) || n < 0)) {
+      toast.error("Please enter a valid number of minutes.")
+      return
+    }
+
+    setIsSavingTsMinDay(true)
+    try {
+      await apiUpdateUser(userId, { tsMinPerDay: Number.isFinite(n) ? n : undefined })
+      toast.success("TS Minutes/Day updated successfully.", addEmployeeTransferSuccessToastOptions)
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to update TS Minutes/Day")
+    } finally {
+      setIsSavingTsMinDay(false)
+    }
+  }
 
   /**
    * Add mode: Time Study department starts empty each visit (independent of Employee tab claiming unit)
@@ -852,13 +880,25 @@ export function TimeStudyAssignmentsPanel({
         </div>
 
         <div className="flex items-center gap-4">
-          <label className="select-none text-[11px] font-medium text-[#2a2f3a]">TS Minutes/Day</label>
-          <div className="flex h-[46px] items-center rounded-[7px] border border-[#d2d8e3] bg-white px-3">
-            <Input
-              {...register("tsMinDay")}
-              className="h-auto w-[70px] border-0 bg-transparent p-0 text-[12px] text-[#111827] shadow-none focus-visible:ring-0"
-            />
-            <span className="ml-6 select-none text-[11px] text-[#2a2f3a]">Min/Day</span>
+          <div className="flex flex-col gap-1">
+            <label className="select-none text-[11px] font-medium text-[#2a2f3a]">TS Minutes/Day</label>
+            <div className="flex items-center gap-3">
+              <div className="flex h-[46px] items-center rounded-[7px] border border-[#d2d8e3] bg-white px-3">
+                <Input
+                  {...register("tsMinDay")}
+                  className="h-auto w-[70px] border-0 bg-transparent p-0 text-[12px] text-[#111827] shadow-none focus-visible:ring-0"
+                />
+                <span className="ml-6 select-none text-[11px] text-[#2a2f3a]">Min/Day</span>
+              </div>
+              <Button
+                type="button"
+                onClick={handleSaveTsMinDay}
+                disabled={!canPersistTsTransfers || isSavingTsMinDay}
+                className="h-[46px] rounded-[7px] bg-[#6C5DD3] px-5 text-[12px] font-medium text-white hover:bg-[#6C5DD3] disabled:opacity-50"
+              >
+                {isSavingTsMinDay ? "Saving..." : "Save"}
+              </Button>
+            </div>
           </div>
         </div>
       </div>
