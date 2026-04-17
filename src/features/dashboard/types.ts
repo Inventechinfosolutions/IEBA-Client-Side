@@ -237,6 +237,7 @@ export interface DashboardSummary {
 
 export interface DashboardOverview {
   totalUserCount: number
+  totalActiveUserCount: number
   totalCostPoolCount: number
   totalJobPoolCount: number
   totalDepartmentCount: number

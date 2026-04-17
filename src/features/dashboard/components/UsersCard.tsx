@@ -10,8 +10,11 @@ export function UsersCard({
   isLoading,
 }: UsersCardProps) {
   return (
-    <div className="flex flex-col rounded-[10px] border border-[#E8EAF6] bg-white p-4 shadow-[0_0_20px_0_#0000001a] gap-y-3">
-      <Link to="/users" className="flex items-center gap-3">
+    <Link
+      to="/user"
+      className="flex flex-col rounded-[10px] border border-[#E8EAF6] bg-white p-4 shadow-[0_0_20px_0_#0000001a] gap-y-3 hover:shadow-[0_8px_30px_rgba(108,93,211,0.12)] transition-all duration-200 group"
+    >
+      <div className="flex items-center gap-3">
         <img
           src={iconUsersOrange}
           alt="Users"
@@ -20,14 +23,14 @@ export function UsersCard({
         {isLoading ? (
           <div className="h-5 w-20 animate-pulse rounded bg-[#e5e7eb]" />
         ) : (
-          <span className="text-[16px] font-medium text-[#1a1a2e] whitespace-nowrap">
+          <span className="text-[16px] font-medium text-[#1a1a2e] whitespace-nowrap group-hover:text-[#6C5DD3] transition-colors">
             Users {userCount}
           </span>
         )}
-      </Link>
+      </div>
 
       {showActiveUsers && (
-        <Link to="/users" className="flex items-center gap-3">
+        <div className="flex items-center gap-3">
           <img
             src={iconActiveUsersPurple}
             alt="Active Users"
@@ -36,12 +39,12 @@ export function UsersCard({
           {isLoading ? (
             <div className="h-5 w-28 animate-pulse rounded bg-[#e5e7eb]" />
           ) : (
-            <span className="text-[16px] font-medium text-[#1a1a2e] whitespace-nowrap">
+            <span className="text-[16px] font-medium text-[#1a1a2e] whitespace-nowrap group-hover:text-[#6C5DD3] transition-colors">
               Active Users {activeUsers ?? 0}
             </span>
           )}
-        </Link>
+        </div>
       )}
-    </div>
+    </Link>
   )
 }
