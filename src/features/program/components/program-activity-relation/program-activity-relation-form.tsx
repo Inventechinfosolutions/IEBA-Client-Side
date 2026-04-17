@@ -1,6 +1,7 @@
 import type { Dispatch, SetStateAction } from "react"
 import { useMemo, useState } from "react"
-import { useAuth } from "@/contexts/AuthContext"
+
+import { usePermissions } from "@/hooks/usePermissions"
 import tableEmptyIcon from "@/assets/icons/table-empty.png"
 import { SingleSelectDropdown } from "@/components/ui/dropdown"
 import { Input } from "@/components/ui/input"
@@ -24,7 +25,7 @@ import type {
 import { TransferPanel } from "./transfer-panel"
 
 export function ProgramActivityRelationForm({ form, departmentIds }: ProgramActivityRelationFormProps) {
-  const { user } = useAuth()
+
   const formOptionsQuery = useGetProgramFormOptions(
     true,
     "Program Activity Relation",
@@ -34,14 +35,15 @@ export function ProgramActivityRelationForm({ form, departmentIds }: ProgramActi
   const departmentOptions = formOptionsQuery.data?.departmentOptions ?? []
   const departmentIdByName = formOptionsQuery.data?.departmentIdByName ?? {}
 
-  const isSuperAdmin = user?.roles?.some(r => r.toLowerCase() === "super admin") ?? false;
+  const { user, isSuperAdmin, isDepartmentAdmin } = usePermissions()
+  
   const isRestrictedRole = (user?.roles?.some(role => {
     const r = role.toLowerCase();
     return r.includes("payroll admin") || 
            r.includes("time study admin") || 
            r.includes("time study supervisor") || 
            r.toLowerCase() === "user";
-  }) ?? false) && !isSuperAdmin;
+  }) ?? false) && !isSuperAdmin && !isDepartmentAdmin;
 
   const selectedDepartment = form.watch("programActivityRelationDepartment") || ""
   const selectedDepartmentId = departmentIdByName[selectedDepartment.trim()]

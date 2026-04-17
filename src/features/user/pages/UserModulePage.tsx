@@ -12,6 +12,7 @@ import { getToken, setToken } from "@/lib/api"
 import { useGetDepartments } from "@/features/department/queries/getDepartments"
 import { UserTable } from "../components/UserTable"
 import { UserToolbar } from "../components/UserToolbar"
+import { usePermissions } from "@/hooks/usePermissions"
 import { assignUserDepartmentRoles, fetchDepartmentRolesCatalog } from "../add-employee/api"
 import { parseMultiSelectStoredValues } from "@/components/ui/multi-select-dropdown"
 import { apiGetUserDetails } from "../api"
@@ -106,18 +107,16 @@ export function UserModulePage() {
   const [showForm, setShowForm] = useState(false)
   const [formMode, setFormMode] = useState<UserModuleFormMode>("add")
 
-  // Use session roles directly without waiting for a re-fetch
-  const isSuperOrAdmin = useMemo(() => {
-    return user?.roles?.some(r => r.toLowerCase() === "super admin" || r.toLowerCase().includes("time study admin")) ?? false;
-  }, [user])
+  const { isSuperAdmin, assignedDepartmentIds, isDepartmentAdmin, isPayrollAdmin, isTimeStudyAdmin } = usePermissions()
+  const isRestrictedAdmin = isDepartmentAdmin || isPayrollAdmin || isTimeStudyAdmin
 
   const { data: allDepartmentsData } = useGetDepartments(
     { status: "active", page: 1, limit: 1000 },
-    { enabled: isSuperOrAdmin }
+    { enabled: isSuperAdmin }
   )
 
   const allowedDepartments = useMemo(() => {
-    if (isSuperOrAdmin && allDepartmentsData?.items) {
+    if (isSuperAdmin && allDepartmentsData?.items) {
       return allDepartmentsData.items.map((d: any) => ({ id: Number(d.id), name: d.name }))
     }
     if (user?.departmentRoles) {
@@ -131,7 +130,7 @@ export function UserModulePage() {
       return Array.from(map.entries()).map(([id, name]) => ({ id, name }))
     }
     return []
-  }, [isSuperOrAdmin, allDepartmentsData, user])
+  }, [isSuperAdmin, allDepartmentsData, user])
 
   // Reset to table view on navigation (e.g. sidebar click)
   const [lastLocationKey, setLastLocationKey] = useState(location.key)
@@ -166,7 +165,11 @@ export function UserModulePage() {
     firstName: searchFilters.firstName || undefined,
     lastName: searchFilters.lastName || undefined,
     employeeId: searchFilters.employeeId || undefined,
-    departmentId: selectedDepartmentId ? Number(selectedDepartmentId) : undefined,
+    departmentId: selectedDepartmentId
+      ? String(selectedDepartmentId)
+      : (isRestrictedAdmin && !isSuperAdmin && assignedDepartmentIds.length > 0
+          ? assignedDepartmentIds.join(",")
+          : undefined),
   })
   const isTableLoading = userModule.isLoading
 

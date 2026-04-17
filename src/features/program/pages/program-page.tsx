@@ -3,7 +3,8 @@ import { Check } from "lucide-react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { toast } from "sonner"
-import { useAuth } from "@/contexts/AuthContext"
+
+import { usePermissions } from "@/hooks/usePermissions"
 
 import { MasterCodePagination } from "@/features/master-code/components/MasterCodePagination"
 import { BudgetUnitTable } from "../components/budget-unit-table"
@@ -144,10 +145,8 @@ export function ProgramPage() {
         : mapProgramTabToSection(activeTab)
       : undefined
 
-  const { user } = useAuth()
+  const { user, isSuperAdmin, isDepartmentAdmin } = usePermissions()
 
-  const isSuperAdmin = user?.roles?.some(r => r.toLowerCase() === "super admin") ?? false;
-  const isDepartmentAdmin = (user?.roles?.some(r => r.toLowerCase() === "department admin") ?? false) && !isSuperAdmin;
   const isRestrictedRole = (user?.roles?.some(role => {
     const r = role.toLowerCase();
     return r.includes("payroll admin") ||
