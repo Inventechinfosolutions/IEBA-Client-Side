@@ -200,7 +200,8 @@ export function useGetCountyActivityForEdit(activityId: string | null, enabled: 
       : [...countyActivityCodeKeys.all, "activity-detail", "idle"] as const,
     queryFn: () => apiGetCountyActivityForEdit(Number(activityId)),
     enabled: Boolean(enabled && activityId),
-    staleTime: 60_000,
+    staleTime: 0,
+    refetchOnMount: "always",
     refetchOnWindowFocus: false,
   })
 }

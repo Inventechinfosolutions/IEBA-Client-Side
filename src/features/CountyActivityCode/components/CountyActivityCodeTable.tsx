@@ -80,6 +80,7 @@ import {
   useGetCountyActivityForEdit,
   useGetCountyActivityMasterCodes,
 } from "../queries/getCountyActivityCodes"
+import { parseMasterCodeDisplay } from "../api/countyActivityApi"
 import { usePermissions } from "@/hooks/usePermissions"
 
 function toastCountyActivityCodeApiError(err: unknown, fallback: string): void {
@@ -227,6 +228,14 @@ export function CountyActivityCodeTable({
   const editActivityId = editOpen && rowToEdit ? rowToEdit.id : null
   const editDetailQuery = useGetCountyActivityForEdit(editActivityId, editOpen)
 
+  const [editSelectedPrimaryId, setEditSelectedPrimaryId] = useState<string | null>(null)
+  const editPrimaryDetailQuery = useGetCountyActivityForEdit(
+    editSelectedPrimaryId,
+    editOpen &&
+      rowToEdit?.rowType === CountyActivityGridRowType.SUB &&
+      Boolean(editSelectedPrimaryId?.trim()),
+  )
+
   const editSyncedMasterCodeType = useMemo(() => {
     if (!editOpen || !rowToEdit || !editDetailQuery.isSuccess || !editDetailQuery.data) {
       return ""
@@ -325,10 +334,18 @@ export function CountyActivityCodeTable({
   const editForm = useForm<CountyActivityAddFormValues>({
     resolver: zodResolver(countyActivityAddFormSchema),
     defaultValues: countyActivityAddDefaultValues,
-    ...(editFormValuesFromServer !== undefined
-      ? { values: editFormValuesFromServer }
-      : {}),
   })
+
+  const lastResetRowIdRef = useRef<string | null>(null)
+  
+  if (editFormValuesFromServer !== undefined && editOpen && rowToEdit && lastResetRowIdRef.current !== rowToEdit.id) {
+    lastResetRowIdRef.current = rowToEdit.id
+    editForm.reset(editFormValuesFromServer, { keepDefaultValues: true })
+  }
+  
+  if (!editOpen && lastResetRowIdRef.current !== null) {
+    lastResetRowIdRef.current = null
+  }
 
   const editMasterCodeTypeWatched = editForm.watch("masterCodeType")
   const editMasterCodesQuery = useGetCountyActivityMasterCodes(
@@ -697,8 +714,8 @@ export function CountyActivityCodeTable({
           <colgroup>
             <col className={canUpdateCountyActivity ? "w-[9%]" : "w-[10%]"} /> {/* Code */}
             <col className={canUpdateCountyActivity ? "w-[13%]" : "w-[15%]"} /> {/* Name */}
-            <col className={canUpdateCountyActivity ? "w-[12%]" : "w-[15%]"} /> {/* Desc */}
-            <col className={canUpdateCountyActivity ? "w-[9%]" : "w-[10%]"} /> {/* Dept */}
+            <col className={canUpdateCountyActivity ? "w-[10%]" : "w-[12%]"} /> {/* Desc */}
+            <col className={canUpdateCountyActivity ? "w-[11%]" : "w-[13%]"} /> {/* Dept */}
             <col className={canUpdateCountyActivity ? "w-[8%]" : "w-[9%]"} /> {/* Type */}
             <col className={canUpdateCountyActivity ? "w-[6%]" : "w-[7%]"} /> {/* Code */}
             <col className={canUpdateCountyActivity ? "w-[5%]" : "w-[5%]"} /> {/* SPMP */}
@@ -1277,9 +1294,7 @@ export function CountyActivityCodeTable({
                   ? (rowToEdit.parentId ?? null)
                   : null
               }
-              readOnlyPrimaryPicker={
-                rowToEdit.rowType === CountyActivityGridRowType.SUB
-              }
+              readOnlyPrimaryPicker={false}
               masterCodeTypeOptions={tenantMasterCodeTypeNamesQuery.data ?? []}
               isMasterCodeTypeOptionsLoading={tenantMasterCodeTypeNamesQuery.isLoading}
               masterCodeOptions={editMasterCodeOptions}
@@ -1287,11 +1302,20 @@ export function CountyActivityCodeTable({
               isEditSourceLoading={editDetailQuery.isPending}
               departmentNames={departmentNames}
               onSelectedPrimaryIdChange={(id) => {
-                const selected = findCountyActivityRowForSubParentPickerById(id)
-                if (!selected) return
-                editForm.setValue("masterCodeType", selected.masterCodeType)
-                editForm.setValue("masterCode", selected.masterCode)
-                editForm.setValue("department", selected.department)
+                setEditSelectedPrimaryId(id)
+                if (editPrimaryDetailQuery.data && String(editPrimaryDetailQuery.data.activity.id) === id) {
+                  const { activity, departmentNames: deptNames } = editPrimaryDetailQuery.data
+                  editForm.setValue("masterCodeType", activity.activityCodeType)
+                  editForm.setValue("masterCode", parseMasterCodeDisplay(activity.activityCode))
+                  editForm.setValue("department", deptNames.join(", "))
+                } else {
+                  const selected = findCountyActivityRowForSubParentPickerById(id)
+                  if (selected) {
+                    editForm.setValue("masterCodeType", selected.masterCodeType)
+                    editForm.setValue("masterCode", selected.masterCode)
+                    editForm.setValue("department", selected.department)
+                  }
+                }
               }}
               onEditSave={() => {
                 void submitCountyActivityEditFromEditModal()
