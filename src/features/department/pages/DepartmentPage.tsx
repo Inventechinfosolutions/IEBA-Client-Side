@@ -41,7 +41,7 @@ export function DepartmentPage() {
   }
 
   return (
-    <div className="w-full h-full overflow-hidden">
+    <div className="w-full min-h-0">
       <div className="w-full rounded-[10px] bg-white p-4 sm:p-6 shadow-sm border border-[#E5E7EB]">
         <DepartmentTable
           departments={departments}
