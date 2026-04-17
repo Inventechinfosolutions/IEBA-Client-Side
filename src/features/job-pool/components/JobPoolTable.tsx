@@ -110,16 +110,16 @@ export function JobPoolTable({
         <div className="min-w-0 flex-1">
           <Table className="table-fixed">
             <colgroup>
-              <col style={{ width: "12%" }} />
-              <col style={{ width: "42%" }} />
-              <col style={{ width: "19%" }} />
-              <col style={{ width: "12%" }} />
-              <col style={{ width: "7.5%" }} />
-              <col style={{ width: "7.5%" }} />
+              <col style={{ width: canUpdateJobPool ? "12%" : "13.5%" }} />
+              <col style={{ width: canUpdateJobPool ? "42%" : "46.5%" }} />
+              <col style={{ width: canUpdateJobPool ? "19%" : "21%" }} />
+              <col style={{ width: canUpdateJobPool ? "12%" : "13%" }} />
+              <col style={{ width: canUpdateJobPool ? "7.5%" : "6%" }} />
+              {canUpdateJobPool && <col style={{ width: "7.5%" }} />}
             </colgroup>
             <TableHeader className="[&_tr]:border-b-0">
               <TableRow className="hover:bg-transparent">
-                <TableHead className="h-[44px] border-r border-white/20 bg-[var(--primary)] px-3 text-[12px] font-medium text-white">
+                <TableHead className="h-[44px] border-r border-white/20 bg-(--primary) px-3 text-[12px] font-medium text-white">
                   <TooltipProvider>
                     <Tooltip open={tooltipOpenKey === "name"}>
                       <TooltipTrigger asChild>
@@ -133,7 +133,7 @@ export function JobPoolTable({
                           className="relative flex h-full w-full cursor-pointer items-center justify-start pr-4 text-left text-white"
                         >
                           <span>Job Pool</span>
-                          <span className="pointer-events-none absolute right-[0px] inline-flex flex-col items-center leading-none">
+                          <span className="pointer-events-none absolute right-0 inline-flex flex-col items-center leading-none">
                             <ChevronUp
                               className={`size-[10px] ${
                                 sortState.key === "name" && sortState.direction === "asc"
@@ -171,7 +171,7 @@ export function JobPoolTable({
                           className="relative flex h-full w-full cursor-pointer items-center justify-start pr-4 text-left text-white"
                         >
                           <span>Job Classification</span>
-                          <span className="pointer-events-none absolute right-[0px] inline-flex flex-col items-center leading-none">
+                          <span className="pointer-events-none absolute right-0 inline-flex flex-col items-center leading-none">
                             <ChevronUp
                               className={`size-[10px] ${
                                 sortState.key === "jobClassifications" && sortState.direction === "asc"
@@ -209,7 +209,7 @@ export function JobPoolTable({
                           className="relative flex h-full w-full cursor-pointer items-center justify-start pr-4 text-left text-white"
                         >
                           <span>Users</span>
-                          <span className="pointer-events-none absolute right-[0px] inline-flex flex-col items-center leading-none">
+                          <span className="pointer-events-none absolute right-0 inline-flex flex-col items-center leading-none">
                             <ChevronUp
                               className={`size-[10px] ${
                                 sortState.key === "users" && sortState.direction === "asc"
@@ -239,9 +239,11 @@ export function JobPoolTable({
                 <TableHead className="h-[44px] border-r border-white/20 bg-(--primary) px-3 text-center text-[12px] font-medium text-white">
                   Active
                 </TableHead>
-                <TableHead className="h-[44px] bg-(--primary) px-3 text-center text-[12px] font-medium text-white">
-                  Action
-                </TableHead>
+                {canUpdateJobPool && (
+                  <TableHead className="h-[44px] bg-(--primary) px-3 text-center text-[12px] font-medium text-white">
+                    Action
+                  </TableHead>
+                )}
               </TableRow>
             </TableHeader>
           </Table>
@@ -254,12 +256,12 @@ export function JobPoolTable({
       >
         <Table className="table-fixed">
           <colgroup>
-            <col style={{ width: "12%" }} />
-            <col style={{ width: "42%" }} />
-            <col style={{ width: "19%" }} />
-            <col style={{ width: "12%" }} />
-            <col style={{ width: "7.5%" }} />
-            <col style={{ width: "7.5%" }} />
+            <col style={{ width: canUpdateJobPool ? "12%" : "13.5%" }} />
+            <col style={{ width: canUpdateJobPool ? "42%" : "46.5%" }} />
+            <col style={{ width: canUpdateJobPool ? "19%" : "21%" }} />
+            <col style={{ width: canUpdateJobPool ? "12%" : "13%" }} />
+            <col style={{ width: canUpdateJobPool ? "7.5%" : "6%" }} />
+            {canUpdateJobPool && <col style={{ width: "7.5%" }} />}
           </colgroup>
           <TableBody>
             {isLoading
@@ -294,12 +296,12 @@ export function JobPoolTable({
                     className="h-[48px] border-b border-[#eff0f5] bg-white hover:bg-[#fafafa]"
                   >
                     {/* Job Pool */}
-                    <TableCell className="align-middle border-r border-[#eff0f5] px-3 py-2.5 text-[11px] text-[#232735] break-words whitespace-normal">
+                    <TableCell className="align-middle border-r border-[#eff0f5] px-3 py-2.5 text-[11px] text-[#232735] wrap-break-word whitespace-normal">
                       {row.name}
                     </TableCell>
                     
                     {/* Job Classification tags */}
-                    <TableCell className="align-middle border-r border-[#eff0f5] px-3 py-2.5 text-[11px] text-[#232735] break-words whitespace-normal">
+                    <TableCell className="align-middle border-r border-[#eff0f5] px-3 py-2.5 text-[11px] text-[#232735] wrap-break-word whitespace-normal">
                       <div className="flex flex-wrap gap-2">
                         {row.jobClassifications.map((tag, idx) => (
                           <span
@@ -313,7 +315,7 @@ export function JobPoolTable({
                     </TableCell>
 
                     {/* Users */}
-                    <TableCell className="align-middle border-r border-[#eff0f5] px-3 py-2.5 text-[11px] text-[#232735] break-words whitespace-normal">
+                    <TableCell className="align-middle border-r border-[#eff0f5] px-3 py-2.5 text-[11px] text-[#232735] wrap-break-word whitespace-normal">
                       {row.userprofiles && row.userprofiles.length > 0 ? (
                         <div className="flex flex-wrap gap-2">
                           {row.userprofiles
@@ -337,7 +339,7 @@ export function JobPoolTable({
                     </TableCell>
 
                     {/* Department */}
-                    <TableCell className="align-middle border-r border-[#eff0f5] px-3 py-2.5 text-[11px] text-[#232735] break-words whitespace-normal text-center">
+                    <TableCell className="align-middle border-r border-[#eff0f5] px-3 py-2.5 text-[11px] text-[#232735] wrap-break-word whitespace-normal text-center">
                       {row.department}
                     </TableCell>
 
@@ -360,9 +362,9 @@ export function JobPoolTable({
                       )}
                     </TableCell>
 
-                    {/* Action */}
-                    <TableCell className="align-middle px-4 py-2.5 text-center whitespace-normal">
-                      {canUpdateJobPool && (
+                    {/* Action - only render cell if user has permission */}
+                    {canUpdateJobPool && (
+                      <TableCell className="align-middle px-4 py-2.5 text-center whitespace-normal">
                         <button
                           type="button"
                           onClick={() => onEditRow(row)}
@@ -375,14 +377,14 @@ export function JobPoolTable({
                             className="size-[16px] object-contain"
                           />
                         </button>
-                      )}
-                    </TableCell>
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))}
 
             {!isLoading && sortedRows.length === 0 && (
               <TableRow className="h-[150px] bg-white hover:bg-white transition-none">
-                <TableCell colSpan={6} className="text-center align-middle">
+                <TableCell colSpan={canUpdateJobPool ? 6 : 5} className="text-center align-middle">
                   <img
                     src={tableEmptyIcon}
                     alt="No data"

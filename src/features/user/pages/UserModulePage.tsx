@@ -9,8 +9,11 @@ import { MasterCodePagination } from "@/features/master-code/components/MasterCo
 import { queryClient } from "@/main"
 import { useAuth } from "@/contexts/AuthContext"
 import { getToken, setToken } from "@/lib/api"
+import { useGetDepartments } from "@/features/department/queries/getDepartments"
 import { UserTable } from "../components/UserTable"
 import { UserToolbar } from "../components/UserToolbar"
+import { assignUserDepartmentRoles, fetchDepartmentRolesCatalog } from "../add-employee/api"
+import { parseMultiSelectStoredValues } from "@/components/ui/multi-select-dropdown"
 import { apiGetUserDetails } from "../api"
 import { useUserModule } from "../hooks/useUserModule"
 import { userModuleKeys } from "../keys"
@@ -30,8 +33,6 @@ import {
   type UserModuleFormValues,
   type UserModuleRow,
 } from "../types"
-
-
 
 const emptyFormValues: UserModuleFormValues = {
   employeeNo: "",
@@ -99,10 +100,38 @@ export function UserModulePage() {
 
   const [inactiveOnly, setInactiveOnly] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
+  const [selectedDepartmentId, setSelectedDepartmentId] = useState<string | undefined>()
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [showForm, setShowForm] = useState(false)
   const [formMode, setFormMode] = useState<UserModuleFormMode>("add")
+
+  // Use session roles directly without waiting for a re-fetch
+  const isSuperOrAdmin = useMemo(() => {
+    return user?.roles?.some(r => r.toLowerCase() === "super admin" || r.toLowerCase().includes("time study admin")) ?? false;
+  }, [user])
+
+  const { data: allDepartmentsData } = useGetDepartments(
+    { status: "active", page: 1, limit: 1000 },
+    { enabled: isSuperOrAdmin }
+  )
+
+  const allowedDepartments = useMemo(() => {
+    if (isSuperOrAdmin && allDepartmentsData?.items) {
+      return allDepartmentsData.items.map((d: any) => ({ id: Number(d.id), name: d.name }))
+    }
+    if (user?.departmentRoles) {
+      // Map department roles up to unique departments based on ID and name
+      const map = new Map<number, string>()
+      user.departmentRoles.forEach(dr => {
+        if (dr.departmentId) {
+          map.set(dr.departmentId, dr.departmentName)
+        }
+      })
+      return Array.from(map.entries()).map(([id, name]) => ({ id, name }))
+    }
+    return []
+  }, [isSuperOrAdmin, allDepartmentsData, user])
 
   // Reset to table view on navigation (e.g. sidebar click)
   const [lastLocationKey, setLastLocationKey] = useState(location.key)
@@ -137,6 +166,7 @@ export function UserModulePage() {
     firstName: searchFilters.firstName || undefined,
     lastName: searchFilters.lastName || undefined,
     employeeId: searchFilters.employeeId || undefined,
+    departmentId: selectedDepartmentId ? Number(selectedDepartmentId) : undefined,
   })
   const isTableLoading = userModule.isLoading
 
@@ -351,6 +381,40 @@ export function UserModulePage() {
 
       const created = await userModule.createRowAsync({ values })
       setDraftUserId(created.id)
+
+      if (values.autoAssignedDepartments?.trim()) {
+        try {
+          const deptIds = parseMultiSelectStoredValues(values.autoAssignedDepartments)
+          if (deptIds.length > 0) {
+            const rolesCatalog = await fetchDepartmentRolesCatalog()
+            
+            // Build the payload dynamically ensuring we use the exact departmentrole ID mapped to each dept
+            const mappedDepartments = deptIds
+              .map(idStr => {
+                const deptIdNum = Number(idStr);
+                const matchingRole = rolesCatalog.find(
+                  r => r.id.startsWith(`${deptIdNum}-`) && r.name.toLowerCase() === "user"
+                );
+                if (matchingRole) {
+                   const roleId = matchingRole.id.split("-").pop();
+                   if (roleId) return { id: deptIdNum, roles: [{ id: roleId }] };
+                }
+                return null;
+              })
+              .filter((d): d is { id: number, roles: { id: string }[] } => d !== null);
+
+            if (mappedDepartments.length > 0) {
+              await assignUserDepartmentRoles({
+                userId: created.id,
+                departments: mappedDepartments
+              })
+            }
+          }
+        } catch (autoAssignError) {
+           toast.error(autoAssignError instanceof Error ? autoAssignError.message : "Failed to auto-assign departments.")
+           // Continue to show success for user creation
+        }
+      }
       toast.success(
         "Employee details saved. You can go to the next tab without saving again.",
         successToastOptions
@@ -441,6 +505,12 @@ export function UserModulePage() {
             }}
             onSelectSuggestion={(value) => {
               setSearchTerm(value)
+              setPage(1)
+            }}
+            departmentId={selectedDepartmentId}
+            allowedDepartments={allowedDepartments}
+            onDepartmentChange={(val) => {
+              setSelectedDepartmentId(val)
               setPage(1)
             }}
             onAddEmployee={handleAddEmployee}

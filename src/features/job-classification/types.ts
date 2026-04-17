@@ -13,12 +13,22 @@ export type ActiveTools = {
 
 export type JobClassificationFormValues = z.infer<typeof jobClassificationFormSchema>
 
+export type JobClassificationUser = {
+  id: string
+  name: string
+  firstName?: string
+  lastName?: string
+  status?: string
+}
+
 export type JobClassificationRow = {
   id: string
   code: string
   name: string
   active: boolean
   activityDescription?: string
+  jobPoolId?: string
+  users?: JobClassificationUser[]
 }
 
 export type GetJobClassificationsParams = {
@@ -113,6 +123,13 @@ export type JobClassificationResDto = Record<string, unknown> & {
   status?: unknown
   description?: string | null
   activityDescription?: string | null
+  users?: {
+    id?: string | number
+    name?: string
+    firstName?: string
+    lastName?: string
+    status?: string
+  }[]
 }
 
 export type CreateJobClassificationReqDto = {

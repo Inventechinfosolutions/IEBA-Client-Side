@@ -8,6 +8,9 @@ import { queryClient } from "@/main"
 import { TransferListMoveButton } from "@/components/ui/transfer-list-move-button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { useAuth } from "@/contexts/AuthContext"
+import { useQuery } from "@tanstack/react-query"
+import { apiGetUserDetails } from "../../api"
 
 import type {
   AddEmployeeSecurityRoleCatalogItem,
@@ -233,6 +236,17 @@ export function SecurityAssignmentsPanel({
   const employeeName = `${watch("firstName") ?? ""} ${watch("lastName") ?? ""}`.trim()
   const assignedRoles = watch("roleAssignments") ?? []
   const securitySnapshots = watch("securityAssignedSnapshots") ?? []
+  
+  const { user } = useAuth()
+  
+  // Use session roles directly to avoid flashing all departments while loading
+  const isSuperOrAdmin = user?.roles?.some(r => r.toLowerCase() === "super admin" || r.toLowerCase().includes("time study admin")) ?? false;
+  const isDepartmentAdmin = (user?.roles?.some(r => r.toLowerCase() === "department admin") ?? false) && !isSuperOrAdmin;
+  
+  const allowedDepartmentNames = useMemo(() => {
+    if (!isDepartmentAdmin || !user?.departmentRoles) return null;
+    return new Set(user.departmentRoles.map(dr => dr.departmentName));
+  }, [isDepartmentAdmin, user?.departmentRoles]);
 
   /**
    * Unassigned API (with `userId` in edit) returns server “still unassigned” rows; we also remove anything
@@ -240,7 +254,12 @@ export function SecurityAssignmentsPanel({
    */
   const unassignedItems = useMemo(() => {
     if (!unassignedQuery.isSuccess || !unassignedQuery.data) return []
-    const data = unassignedQuery.data
+    let data = unassignedQuery.data
+
+    if (isDepartmentAdmin && allowedDepartmentNames) {
+      data = data.filter(i => allowedDepartmentNames.has(i.department));
+    }
+
     const snapIds = new Set(securitySnapshots.map((s) => s.id))
     const assignedPairKeys = new Set(
       securitySnapshots.map((s) => departmentRolePairKey(s.department, s.name)),
@@ -271,6 +290,8 @@ export function SecurityAssignmentsPanel({
     isAddMode,
     isEditMode,
     securitySnapshots,
+    isDepartmentAdmin,
+    allowedDepartmentNames,
   ])
 
   /**

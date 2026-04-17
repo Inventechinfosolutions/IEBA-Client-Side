@@ -17,6 +17,9 @@ export function useUpdateJobPool() {
       await queryClient.invalidateQueries({
         queryKey: jobPoolKeys.detail(variables.id),
       })
+      await queryClient.invalidateQueries({
+        queryKey: ["jobClassification"],
+      })
     },
   })
 }

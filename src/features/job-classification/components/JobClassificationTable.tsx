@@ -77,14 +77,15 @@ export function JobClassificationTable({
         <div className="min-w-0 flex-1">
           <Table className="table-fixed">
             <colgroup>
-              <col style={{ width: "18%" }} />
-              <col style={{ width: "55%" }} />
-              <col style={{ width: "12.5%" }} />
-              <col style={{ width: "12.5%" }} />
+              <col style={{ width: canUpdateJobClassification ? "15%" : "17%" }} />
+              <col style={{ width: canUpdateJobClassification ? "35%" : "40%" }} />
+              <col style={{ width: canUpdateJobClassification ? "25%" : "28%" }} />
+              <col style={{ width: canUpdateJobClassification ? "12.5%" : "15%" }} />
+              {canUpdateJobClassification && <col style={{ width: "12.5%" }} />}
             </colgroup>
             <TableHeader className="[&_tr]:border-b-0">
               <TableRow className="hover:bg-transparent">
-                <TableHead className="h-[44px] border-r border-[#FFFFFF66] bg-[var(--primary)] px-3 text-[12px] font-medium text-white">
+                <TableHead className="h-[44px] border-r border-white/40 bg-(--primary) px-3 text-[12px] font-medium text-white">
                   <TooltipProvider>
                     <Tooltip open={tooltipOpenKey === "code"}>
                       <TooltipTrigger asChild>
@@ -98,16 +99,16 @@ export function JobClassificationTable({
                           className="relative flex h-full w-full cursor-pointer items-center justify-start pr-4 text-left text-white"
                         >
                           <span>Code</span>
-                          <span className="pointer-events-none absolute right-[0px] inline-flex flex-col items-center leading-none">
+                          <span className="pointer-events-none absolute right-0 inline-flex flex-col items-center leading-none">
                             <span
-                              className={`h-0 w-0 border-b-[5px] border-l-[4px] border-r-[4px] border-l-transparent border-r-transparent ${
+                              className={`h-0 w-0 border-b-[5px] border-l-4 border-r-4 border-l-transparent border-r-transparent ${
                                 sortState.key === "code" && sortState.direction === "asc"
                                   ? "border-b-[#1E8BFF]"
                                   : "border-b-white/60"
                               }`}
                             />
                             <span
-                              className={`mt-0.5 h-0 w-0 border-l-[4px] border-r-[4px] border-t-[5px] border-l-transparent border-r-transparent ${
+                              className={`mt-0.5 h-0 w-0 border-l-4 border-r-4 border-t-[5px] border-l-transparent border-r-transparent ${
                                 sortState.key === "code" && sortState.direction === "desc"
                                   ? "border-t-[#201547]"
                                   : "border-t-white"
@@ -122,7 +123,7 @@ export function JobClassificationTable({
                     </Tooltip>
                   </TooltipProvider>
                 </TableHead>
-                <TableHead className="h-[44px] border-r border-[#FFFFFF66] bg-[var(--primary)] px-3 text-[12px] font-medium text-white">
+                <TableHead className="h-[44px] border-r border-white/40 bg-(--primary) px-3 text-[12px] font-medium text-white">
                   <TooltipProvider>
                     <Tooltip open={tooltipOpenKey === "name"}>
                       <TooltipTrigger asChild>
@@ -136,16 +137,16 @@ export function JobClassificationTable({
                           className="relative flex h-full w-full cursor-pointer items-center justify-start pr-4 text-left text-white"
                         >
                           <span>Name</span>
-                          <span className="pointer-events-none absolute right-[0px] inline-flex flex-col items-center leading-none">
+                          <span className="pointer-events-none absolute right-0 inline-flex flex-col items-center leading-none">
                             <span
-                              className={`h-0 w-0 border-b-[5px] border-l-[4px] border-r-[4px] border-l-transparent border-r-transparent ${
+                              className={`h-0 w-0 border-b-[5px] border-l-4 border-r-4 border-l-transparent border-r-transparent ${
                                 sortState.key === "name" && sortState.direction === "asc"
                                   ? "border-b-[#1E8BFF]"
                                   : "border-b-white/60"
                               }`}
                             />
                             <span
-                              className={`mt-0.5 h-0 w-0 border-l-[4px] border-r-[4px] border-t-[5px] border-l-transparent border-r-transparent ${
+                              className={`mt-0.5 h-0 w-0 border-l-4 border-r-4 border-t-[5px] border-l-transparent border-r-transparent ${
                                 sortState.key === "name" && sortState.direction === "desc"
                                   ? "border-t-[#201547]"
                                   : "border-t-white"
@@ -160,16 +161,22 @@ export function JobClassificationTable({
                     </Tooltip>
                   </TooltipProvider>
                 </TableHead>
-                <TableHead className="h-[44px] border-r border-[#FFFFFF66] bg-[var(--primary)] px-3 text-center text-[12px] font-medium text-white">
+                <TableHead className="h-[44px] border-r border-white/40 bg-(--primary) px-3 text-center text-[12px] font-medium text-white">
+                  Users
+                </TableHead>
+                <TableHead className="h-[44px] border-r border-white/40 bg-(--primary) px-3 text-center text-[12px] font-medium text-white">
                   Active
                 </TableHead>
-                <TableHead className="h-[44px] bg-[var(--primary)] px-3 text-center text-[12px] font-medium text-white">
-                  Action
-                </TableHead>
+                {canUpdateJobClassification && (
+                  <TableHead className="h-[44px] bg-(--primary) px-3 text-center text-[12px] font-medium text-white">
+                    Action
+                  </TableHead>
+                )}
               </TableRow>
             </TableHeader>
           </Table>
         </div>
+        <div className="h-[44px] w-[12px] shrink-0 border-l border-white/20 bg-(--primary)" />
       </div>
       <div
         className="program-table-scroll overflow-y-auto [scrollbar-gutter:stable]"
@@ -177,10 +184,11 @@ export function JobClassificationTable({
       >
         <Table className="table-fixed">
           <colgroup>
-            <col style={{ width: "18%" }} />
-            <col style={{ width: "55%" }} />
-            <col style={{ width: "12.5%" }} />
-            <col style={{ width: "12.5%" }} />
+            <col style={{ width: canUpdateJobClassification ? "15%" : "17%" }} />
+            <col style={{ width: canUpdateJobClassification ? "35%" : "40%" }} />
+            <col style={{ width: canUpdateJobClassification ? "25%" : "28%" }} />
+            <col style={{ width: canUpdateJobClassification ? "12.5%" : "15%" }} />
+            {canUpdateJobClassification && <col style={{ width: "12.5%" }} />}
           </colgroup>
           <TableBody>
             {isLoading
@@ -195,6 +203,9 @@ export function JobClassificationTable({
                     <TableCell className="border-r border-[#eff0f5] px-3 py-2">
                       <Skeleton className="h-3.5 w-[80%]" />
                     </TableCell>
+                    <TableCell className="border-r border-[#eff0f5] px-3 py-2">
+                      <Skeleton className="h-3.5 w-full" />
+                    </TableCell>
                     <TableCell className="border-r border-[#eff0f5] px-3 py-2 text-center">
                       <Skeleton className="mx-auto h-5 w-5 rounded-sm" />
                     </TableCell>
@@ -208,11 +219,29 @@ export function JobClassificationTable({
                     key={row.id}
                     className="h-[48px] border-b border-[#eff0f5] bg-white hover:bg-[#fafafa]"
                   >
-                    <TableCell className="align-middle border-r border-[#eff0f5] px-3 py-2.5 text-[11px] text-[#232735] break-words whitespace-normal">
+                    <TableCell className="align-middle border-r border-[#eff0f5] px-3 py-2.5 text-[11px] text-[#232735] wrap-break-word whitespace-normal">
                       {row.code}
                     </TableCell>
-                    <TableCell className="align-middle border-r border-[#eff0f5] px-3 py-2.5 text-[11px] text-[#232735] break-words whitespace-normal">
+                    <TableCell className="align-middle border-r border-[#eff0f5] px-3 py-2.5 text-[11px] text-[#232735] wrap-break-word whitespace-normal">
                       {row.name}
+                    </TableCell>
+
+                    {/* Users */}
+                    <TableCell className="align-middle border-r border-[#eff0f5] px-3 py-2.5 text-[11px] text-[#232735] wrap-break-word whitespace-normal">
+                      {row.users && row.users.length > 0 ? (
+                        <div className="flex flex-wrap gap-2">
+                          {row.users.map((user) => (
+                            <span
+                              key={user.id}
+                              className="inline-flex items-center rounded-[6px] border border-[#d8dae3] bg-[#f8f9fa] px-2 py-1 text-[10px] text-[#232735]"
+                            >
+                              {user.name}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-[#9ca3af]">—</span>
+                      )}
                     </TableCell>
 
                     {/* Active */}
@@ -234,9 +263,9 @@ export function JobClassificationTable({
                       )}
                     </TableCell>
 
-                    {/* Action */}
-                    <TableCell className="align-top px-4 py-2.5 text-center whitespace-normal">
-                      {canUpdateJobClassification && (
+                    {/* Action - only render cell if user has update permission */}
+                    {canUpdateJobClassification && (
+                      <TableCell className="align-middle px-4 py-2.5 text-center whitespace-normal">
                         <button
                           type="button"
                           onClick={() => onEditRow(row)}
@@ -249,14 +278,14 @@ export function JobClassificationTable({
                             className="size-[16px] object-contain"
                           />
                         </button>
-                      )}
-                    </TableCell>
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))}
 
             {!isLoading && sortedRows.length === 0 && (
               <TableRow className="h-[150px] bg-white">
-                <TableCell colSpan={4} className="text-center align-middle">
+                <TableCell colSpan={canUpdateJobClassification ? 5 : 4} className="text-center align-middle">
                   <img
                     src={tableEmptyIcon}
                     alt="No data"

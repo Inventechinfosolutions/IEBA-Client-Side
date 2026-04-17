@@ -2,6 +2,7 @@ import { useState } from "react"
 import { Check } from "lucide-react"
 import { toast } from "sonner"
 
+import { usePermissions } from "@/hooks/usePermissions"
 import { MasterCodePagination } from "@/features/master-code/components/MasterCodePagination"
 import { JobPoolFormModal } from "../components/add-pool/JobPoolFormModal"
 import { JobPoolTable } from "../components/JobPoolTable"
@@ -44,6 +45,9 @@ export function JobPoolPage() {
   const [modalMode, setModalMode]     = useState<JobPoolFormMode>("add")
   const [selectedRow, setSelectedRow] = useState<JobPoolRow | null>(null)
 
+  const { isDepartmentAdmin, assignedDepartmentIds } = usePermissions()
+  const deptFilter = isDepartmentAdmin ? assignedDepartmentIds.join(",") : undefined
+
   const {
     rows,
     totalItems,
@@ -52,7 +56,7 @@ export function JobPoolPage() {
     isUpdating,
     createJobPoolAsync,
     updateJobPoolAsync,
-  } = useJobPoolModule({ page, pageSize, search, inactiveOnly })
+  } = useJobPoolModule({ page, pageSize, search, inactiveOnly, departmentId: deptFilter })
 
   function handleSearchChange(value: string) {
     setSearch(value)

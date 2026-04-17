@@ -1,4 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod"
+import { useQuery } from "@tanstack/react-query"
 import { PlusIcon, SearchIcon } from "lucide-react"
 import { useMemo, useState } from "react"
 import { useForm } from "react-hook-form"
@@ -41,7 +42,9 @@ import {
 import { useGetDepartments } from "@/features/department/queries/getDepartments"
 import editIconImg from "@/assets/edit-icon.png"
 import statusCheckImg from "@/assets/status-check.png"
+import { useAuth } from "@/contexts/AuthContext"
 import { usePermissions } from "@/hooks/usePermissions"
+import { getUserDetails } from "@/features/auth/api/getUserDetails"
 
 import {
   detailToUpsertFormValues,
@@ -85,15 +88,51 @@ function CostPoolCreateDialogContent({
   onClose: () => void
   onCreated: () => void
 }) {
+  const { user } = useAuth()
+  const { isSuperAdmin, isDepartmentAdmin } = usePermissions()
+  const isRestricted = !isSuperAdmin
+  
   const departmentsQuery = useGetDepartments({ status: "active", page: 1, limit: 100 })
-  const departmentOptions = useMemo(
-    () =>
-      (departmentsQuery.data?.items ?? []).map((d) => ({
-        id: d.id,
-        name: d.name,
-      })),
-    [departmentsQuery.data],
-  )
+  
+  // Locally fetch user details to get the most accurate department list
+  const { data: userDetails, isLoading: isDetailsLoading } = useQuery({
+    queryKey: ["user-details-local", user?.id],
+    queryFn: () => (user?.id ? getUserDetails(user.id) : Promise.reject("No user ID")),
+    enabled: !!user?.id && isRestricted,
+  })
+
+  const departmentOptions = useMemo(() => {
+    const rawOptions = (departmentsQuery.data?.items ?? []).map((d) => ({
+      id: Number(d.id),
+      name: d.name,
+    }))
+    
+    if (isSuperAdmin) return rawOptions.map(opt => ({ ...opt, id: String(opt.id) }))
+    
+    // Get assigned IDs from local API response or context
+    const apiDepts = (userDetails as any)?.data?.departments || (userDetails as any)?.departments
+    const contextDepts = user?.departmentRoles || []
+    
+    const assignedIds = new Set<number>()
+    
+    if (Array.isArray(apiDepts)) {
+      apiDepts.forEach((d: any) => assignedIds.add(Number(d.id || d.departmentId)))
+    }
+    if (assignedIds.size === 0 && Array.isArray(contextDepts)) {
+      contextDepts.forEach((dr) => assignedIds.add(Number(dr.departmentId)))
+    }
+      
+    // If we have assigned IDs, filter the list. Otherwise return all (fallback)
+    const filtered = assignedIds.size > 0 
+      ? rawOptions.filter(opt => assignedIds.has(opt.id))
+      : rawOptions
+
+    // Convert to the expected type CostPoolDepartmentOption[] (id must be string)
+    return filtered.map(opt => ({
+      ...opt,
+      id: String(opt.id)
+    }))
+  }, [departmentsQuery.data, userDetails, user, isSuperAdmin])
 
   const form = useForm<CostPoolUpsertFormValues>({
     resolver: zodResolver(costPoolUpsertFormSchema),
@@ -129,7 +168,7 @@ function CostPoolCreateDialogContent({
       onSubmit={() => void submit()}
       onClose={onClose}
       departmentOptions={departmentOptions}
-      departmentsLoading={departmentsQuery.isPending}
+      departmentsLoading={departmentsQuery.isPending || isDetailsLoading}
       activityRows={activityRows}
       activitiesLoading={picklist.isPending && departmentId > 0}
     />
@@ -205,15 +244,42 @@ function CostPoolEditDialogContent({
     enabled: true,
     refetchOnMountAlways: true,
   })
+  const { user } = useAuth()
+  const { isSuperAdmin } = usePermissions()
+  const isRestricted = !isSuperAdmin
+
   const departmentsQuery = useGetDepartments({ status: "active", page: 1, limit: 100 })
-  const departmentOptions = useMemo(
-    () =>
-      (departmentsQuery.data?.items ?? []).map((d) => ({
-        id: d.id,
-        name: d.name,
-      })),
-    [departmentsQuery.data],
-  )
+  
+  const { data: userDetails, isLoading: isDetailsLoading } = useQuery({
+    queryKey: ["user-details-local", user?.id],
+    queryFn: () => (user?.id ? getUserDetails(user.id) : Promise.reject("No user ID")),
+    enabled: !!user?.id && isRestricted,
+  })
+
+  const departmentOptions = useMemo(() => {
+    const rawOptions = (departmentsQuery.data?.items ?? []).map((d) => ({
+      id: Number(d.id),
+      name: d.name,
+    }))
+    
+    if (isSuperAdmin) return rawOptions.map(opt => ({ ...opt, id: String(opt.id) }))
+    
+    const apiDepts = (userDetails as any)?.data?.departments || (userDetails as any)?.departments
+    const contextDepts = user?.departmentRoles || []
+    
+    const assignedIds = new Set<number>()
+    
+    if (Array.isArray(apiDepts)) {
+      apiDepts.forEach((d: any) => assignedIds.add(Number(d.id || d.departmentId)))
+    }
+    if (assignedIds.size === 0 && Array.isArray(contextDepts)) {
+      contextDepts.forEach((dr) => assignedIds.add(Number(dr.departmentId)))
+    }
+      
+    return assignedIds.size > 0 
+      ? rawOptions.filter(opt => assignedIds.has(opt.id)).map(opt => ({ ...opt, id: String(opt.id) }))
+      : rawOptions.map(opt => ({ ...opt, id: String(opt.id) }))
+  }, [departmentsQuery.data, userDetails, user, isSuperAdmin])
 
   const activityRows = useMemo(() => {
     if (!detailQuery.data) return []
@@ -244,7 +310,7 @@ function CostPoolEditDialogContent({
       activityRows={activityRows}
       activitiesLoading={detailQuery.isFetching}
       departmentOptions={departmentOptions}
-      departmentsLoading={departmentsQuery.isPending}
+      departmentsLoading={departmentsQuery.isPending || isDetailsLoading}
       onClose={onClose}
       onUpdated={onUpdated}
     />

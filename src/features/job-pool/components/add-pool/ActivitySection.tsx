@@ -4,18 +4,20 @@ import { ChevronRight, ChevronLeft } from "lucide-react"
 import { TransferPanel } from "./TransferPanel"
 import type { TransferItem, ActivitySectionProps } from "../../types"
 
-import { useGetCountyActivityCodes } from "../../../CountyActivityCode/queries/getCountyActivityCodes"
+import { useGetActivitiesByDepartment } from "../../../CountyActivityCode/queries/getCountyActivityCodes"
 
-export function ActivitySection({ form }: ActivitySectionProps) {
+export function ActivitySection({ form, departmentName }: ActivitySectionProps) {
   const selectedDept = form.watch("department")
-  const { data: activitiesData = [] } = useGetCountyActivityCodes()
+  const { data: activitiesData = [] } = useGetActivitiesByDepartment(
+    selectedDept ? Number(selectedDept) : null
+  )
   
   const allActivities = useMemo(() => {
     if (!selectedDept) return []
     return activitiesData.map(a => ({ 
-      id: a.id, 
-      name: a.countyActivityName,
-      code: a.countyActivityCode 
+      id: String(a.id), 
+      name: a.name,
+      code: a.code 
     })) ?? []
   }, [activitiesData, selectedDept])
 
@@ -65,7 +67,7 @@ export function ActivitySection({ form }: ActivitySectionProps) {
         onSearchChange={setSearchU}
         isActivity
         count={filteredU.length}
-        selectedDept={selectedDept}
+        selectedDept={departmentName}
       />
       <div className="flex flex-col gap-3 pt-12">
         <button
@@ -95,7 +97,7 @@ export function ActivitySection({ form }: ActivitySectionProps) {
         onSearchChange={setSearchA}
         isActivity
         count={filteredA.length}
-        selectedDept={selectedDept}
+        selectedDept={departmentName}
       />
     </div>
   )

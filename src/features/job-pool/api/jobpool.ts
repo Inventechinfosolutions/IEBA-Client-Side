@@ -144,6 +144,7 @@ function toJobPoolRow(dto: JobPoolResDto): JobPoolRow {
     department: departmentName,
     active: isActiveStatus(dto.status),
     jobClassifications,
+    assignedJobClassificationIds: jobClassifications.map((jc) => jc.id),
     assignedActivityIds: activities.map((id) => String(id)),
     assignedEmployeeIds: users.map((id) => String(id)),
     departmentId: dto.departmentId != null ? String(dto.departmentId) : undefined,
@@ -154,20 +155,21 @@ function toJobPoolRow(dto: JobPoolResDto): JobPoolRow {
 }
 
 export async function getJobPools(params: GetJobPoolsParams): Promise<JobPoolListResponse> {
-  const { page, pageSize, search, inactiveOnly } = params
+  const { page, pageSize, search, inactiveOnly, departmentId } = params
 
-  const searchParams = new URLSearchParams()
-  searchParams.set("page", String(page))
-  searchParams.set("limit", String(pageSize))
-
+  const parts: string[] = []
+  parts.push(`page=${page}`)
+  parts.push(`limit=${pageSize}`)
   if (search.trim()) {
-    searchParams.set("search", search.trim())
+    parts.push(`search=${encodeURIComponent(search.trim())}`)
+  }
+  parts.push(`status=${inactiveOnly ? "inactive" : "active"}`)
+  if (departmentId) {
+    parts.push(`departmentId=${departmentId}`)
   }
 
-  searchParams.set("status", inactiveOnly ? "inactive" : "active")
-
   const res = await api.get<ApiEnvelope<JobPoolListResponseDto> | JobPoolListResponseDto>(
-    `/jobpool?${searchParams.toString()}`,
+    `/jobpool?${parts.join("&")}`,
   )
 
   const payload =

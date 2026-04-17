@@ -9,7 +9,6 @@ import type {
   JobClassificationListResponseDto,
   JobClassificationResDto,
   JobClassificationRow,
-  JobClassificationUsersResponseDto,
   UpdateJobClassificationReqDto,
 } from "../types"
 
@@ -33,12 +32,24 @@ function toJobClassificationRow(dto: JobClassificationResDto): JobClassification
           ? dto.status.toLowerCase() === "active"
           : true
 
+  const users = Array.isArray(dto.users)
+    ? dto.users.map((u) => ({
+        id: String(u.id),
+        name: String(u.name || `${u.firstName || ""} ${u.lastName || ""}`.trim()),
+        firstName: String(u.firstName || ""),
+        lastName: String(u.lastName || ""),
+        status: String(u.status || "active"),
+      }))
+    : []
+
   return {
     id: idRaw == null ? "" : String(idRaw),
     code: typeof codeRaw === "string" ? codeRaw : "",
     name: typeof nameRaw === "string" ? nameRaw : "",
     active,
     activityDescription: descriptionRaw ?? "",
+    jobPoolId: String(dto.jobPoolId ?? ""),
+    users,
   }
 }
 
@@ -161,25 +172,5 @@ export type JobClassificationUser = {
   name: string
 }
 
-export async function getJobClassificationUsers(
-  body: GetJobClassificationUsersBody,
-): Promise<JobClassificationUser[]> {
-  const response = await api.post<JobClassificationApiEnvelope<JobClassificationUsersResponseDto>>(
-    "/jobclassification/users",
-    body,
-  )
 
-  const envelopeOrDto = (response as JobClassificationApiEnvelope<JobClassificationUsersResponseDto>)?.data
-    ? (response as JobClassificationApiEnvelope<JobClassificationUsersResponseDto>).data
-    : ((response as unknown) as JobClassificationUsersResponseDto | undefined)
-
-  const list = Array.isArray(envelopeOrDto?.data) ? envelopeOrDto.data : []
-
-  return list
-    .map((user: { id?: string; name?: string }) => ({
-      id: typeof user.id === "string" ? user.id : "",
-      name: typeof user.name === "string" ? user.name : "",
-    }))
-    .filter((u: JobClassificationUser) => u.id && u.name)
-}
 

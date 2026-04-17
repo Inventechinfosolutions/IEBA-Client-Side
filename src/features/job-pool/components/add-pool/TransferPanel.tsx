@@ -104,15 +104,16 @@ export function TransferPanel({
             <div className={`flex flex-col ${isActivity ? "pl-6" : ""}`}>
               {items.map((item) => {
                 const isSelected = selectedIds.includes(item.id)
+                const isDisabled = isListDisabled || item.disabled
                 return (
                   <button
                     key={item.id}
                     type="button"
-                    onClick={() => onToggleItem(item.id)}
-                    disabled={isListDisabled}
+                    onClick={() => !isDisabled && onToggleItem(item.id)}
+                    disabled={isDisabled}
                     className={`group relative flex items-start justify-between px-4 py-3 text-left transition-colors border-b border-[#F3F4F6] last:border-0 ${
                       isSelected ? "bg-[#F3F0FF]" : "hover:bg-[#F9FAFB]"
-                    } ${isListDisabled ? "cursor-not-allowed!" : "cursor-pointer"}`}
+                    } ${isDisabled ? "cursor-not-allowed! opacity-50" : "cursor-pointer"}`}
                   >
                     <div className="flex items-start flex-1 min-w-0 pt-0.5">
                       {isActivity && (
@@ -123,23 +124,23 @@ export function TransferPanel({
                         </div>
                       )}
                       
-                      <span className={`text-[13px] font-medium whitespace-normal break-words pr-2 ${isActivity ? "pl-6" : ""}`}>
+                      <span className={`text-[13px] font-medium whitespace-normal wrap-break-word pr-2 ${isActivity ? "pl-6" : ""}`}>
                         {item.code ? (
                           <>
                             <span className="text-[#6C5DD3] font-bold">({item.code})</span>
-                            <span className={isSelected ? "text-[#6C5DD3]" : "text-[#111827]"}> - {item.name}</span>
+                            <span className={isSelected ? "text-[#6C5DD3]" : (isDisabled ? "text-[#9CA3AF]" : "text-[#111827]")}> - {item.name}</span>
                           </>
                         ) : (
-                          <span className={isSelected ? "text-[#6C5DD3]" : "text-[#374151]"}>{item.name}</span>
+                          <span className={isSelected ? "text-[#6C5DD3]" : (isDisabled ? "text-[#9CA3AF]" : "text-[#374151]")}>{item.name}</span>
                         )}
                       </span>
                     </div>
-
+ 
                     <div
                       className={`flex size-5 shrink-0 items-center justify-center rounded-[6px] border shadow-sm transition-all mt-0.5 ${
                         isSelected
                           ? "bg-[#6C5DD3] border-[#6C5DD3] text-white"
-                          : `bg-white border-[#D1D5DB] text-transparent ${isListDisabled ? "bg-[#F3F4F6]" : "hover:border-[#6C5DD3]/30"}`
+                          : `bg-white border-[#D1D5DB] text-transparent ${isDisabled ? "bg-[#F3F4F6]" : "hover:border-[#6C5DD3]/30"}`
                       }`}
                     >
                       <Check className="size-3.2 stroke-3" />

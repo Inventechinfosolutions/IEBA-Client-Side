@@ -71,19 +71,22 @@ function unwrapDetail(
 }
 
 function buildListSearch(params: CostPoolListQueryParams): string {
-  const search = new URLSearchParams()
-  if (params.page != null) search.set("page", String(params.page))
-  if (params.limit != null) search.set("limit", String(params.limit))
+  const parts: string[] = []
+  if (params.page != null) parts.push(`page=${params.page}`)
+  if (params.limit != null) parts.push(`limit=${params.limit}`)
   if (params.search != null && params.search.trim() !== "") {
-    search.set("search", params.search.trim())
+    parts.push(`search=${encodeURIComponent(params.search.trim())}`)
   }
-  if (params.departmentId != null) search.set("departmentId", String(params.departmentId))
+  if (params.departmentId != null) {
+    // We intentionally do NOT encode commas here to satisfy the requirement
+    parts.push(`departmentId=${params.departmentId}`)
+  }
   if (params.costpoolStatus != null) {
-    search.set("costpoolStatus", params.costpoolStatus)
+    parts.push(`costpoolStatus=${params.costpoolStatus}`)
   }
-  if (params.method != null) search.set("method", params.method)
-  if (params.type != null) search.set("type", params.type)
-  return search.toString()
+  if (params.method != null) parts.push(`method=${params.method}`)
+  if (params.type != null) parts.push(`type=${params.type}`)
+  return parts.join("&")
 }
 
 export async function fetchCostPoolList(

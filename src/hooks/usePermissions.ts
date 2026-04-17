@@ -1,3 +1,4 @@
+import { useMemo } from "react"
 import { useAuth } from "@/contexts/AuthContext"
 
 /**
@@ -9,15 +10,22 @@ import { useAuth } from "@/contexts/AuthContext"
  */
 export function usePermissions() {
   const { user } = useAuth()
+  
   const permissions: string[] = user?.permissions ?? []
-  const permSet = new Set(permissions)
+  const permSet = useMemo(() => new Set(permissions), [permissions])
 
-  const isSuperAdmin = permSet.has("superadmin:all")
+  const isSuperAdmin = useMemo(() => permSet.has("superadmin:all"), [permSet])
   const roles = user?.roles ?? []
-  const isDepartmentAdmin = roles.includes("Department Admin")
-  const isPayrollAdmin = roles.includes("Payroll Admin")
-  const isTimeStudyAdmin = roles.includes("Time Study Admin")
-  const isTimeStudySupervisor = roles.includes("Time Study Supervisor")
+  
+  const isDepartmentAdmin = useMemo(() => roles.includes("Department Admin"), [roles])
+  const isPayrollAdmin = useMemo(() => roles.includes("Payroll Admin"), [roles])
+  const isTimeStudyAdmin = useMemo(() => roles.includes("Time Study Admin"), [roles])
+  const isTimeStudySupervisor = useMemo(() => roles.includes("Time Study Supervisor"), [roles])
+
+  const assignedDepartmentIds = useMemo(() => {
+    if (!user?.departmentRoles) return []
+    return Array.from(new Set(user.departmentRoles.map(dr => dr.departmentId)))
+  }, [user?.departmentRoles])
 
   /**
    * Returns true if the user has the exact permission string,
@@ -60,6 +68,7 @@ export function usePermissions() {
     isPayrollAdmin,
     isTimeStudyAdmin,
     isTimeStudySupervisor,
+    assignedDepartmentIds,
     user,
     has,
     canView,
