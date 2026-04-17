@@ -143,10 +143,20 @@ export function DashboardPage() {
   })
 
   const selfLeave = useSelfLeave(userId)
-  const staffLeave = useStaffLeave({ enabled: canViewAdminLayout })
+  const staffLeave = useStaffLeave({ 
+    userId: isSuperAdminLikeDashboard ? undefined : userId,
+    departmentId: isSuperAdminLikeDashboard ? undefined : departmentId, 
+    roleId: isSuperAdminLikeDashboard ? undefined : roleId, 
+    enabled: canViewAdminLayout 
+  })
   const todos = useTodos(userId)
   const holidays = useHolidays()
-  const overview = useDashboardOverview({ enabled: canViewAdminLayout })
+  const overview = useDashboardOverview({ 
+    userId: isSuperAdminLikeDashboard ? undefined : userId,
+    departmentId: isSuperAdminLikeDashboard ? undefined : departmentId, 
+    roleId: isSuperAdminLikeDashboard ? undefined : roleId, 
+    enabled: canViewAdminLayout 
+  })
   const dashboardUserCount = useDashboardUserCount({ enabled: showUserManagement })
   const activeUsers = useActiveUsers({ enabled: isSuperAdminLikeDashboard })
   const reports = useReportsByRole({ 
