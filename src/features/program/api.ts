@@ -200,6 +200,9 @@ async function fetchBudgetUnits(params: GetProgramsParams): Promise<ProgramListR
   if (trimmedSearch) {
     query.set("search", trimmedSearch)
   }
+  if (params.departmentIds && params.departmentIds.length > 0) {
+    query.set("departmentIds", params.departmentIds.join(","))
+  }
   const res = await api.get<ApiEnvelope<BudgetUnitListResponseDto>>(
     `/budgetunits?${query.toString()}`
   )
@@ -227,6 +230,9 @@ async function fetchTimeStudyPrograms(params: GetProgramsParams): Promise<Progra
   const trimmedSearch = params.search?.trim()
   if (trimmedSearch) {
     query.set("search", trimmedSearch)
+  }
+  if (params.departmentIds && params.departmentIds.length > 0) {
+    query.set("departmentIds", params.departmentIds.join(","))
   }
 
   const res = await api.get<ApiEnvelope<TimeStudyProgramListResponseDto>>(

@@ -24,6 +24,7 @@ export function ProgramToolbar({
   onSearchChange,
   onToggleInactiveOnly,
   onAddProgram,
+  hideAdd = false,
 }: ProgramToolbarProps) {
   const { canAdd } = usePermissions()
 
@@ -33,7 +34,7 @@ export function ProgramToolbar({
     return "timestudyactivity"
   }
 
-  const showAdd = canAdd(getModuleKey(activeTabLabel))
+  const showAdd = canAdd(getModuleKey(activeTabLabel)) && !hideAdd
 
   return (
     <div className="mb-2 flex items-center justify-between gap-3">

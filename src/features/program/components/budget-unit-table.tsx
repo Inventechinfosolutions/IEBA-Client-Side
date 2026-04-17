@@ -52,12 +52,13 @@ export const BudgetUnitTable = forwardRef<BudgetUnitTableHandle, BudgetUnitTable
       setExpandedProgramGroups: setExternalExpandedProgramGroups,
       expandedPrograms: externalExpandedPrograms,
       setExpandedPrograms: setExternalExpandedPrograms,
+      readonly = false,
     },
     ref,
   ) {
   const { canAdd, canUpdate } = usePermissions()
-  const canAddBudgetProgram = canAdd("budgetprogram")
-  const canUpdateBudgetProgram = canUpdate("budgetprogram")
+  const canAddBudgetProgram = canAdd("budgetprogram") && !readonly
+  const canUpdateBudgetProgram = canUpdate("budgetprogram") && !readonly
 
   const [sortState, setSortState] = useState<ProgramTableSortState>({
     key: "code",
@@ -423,7 +424,7 @@ export const BudgetUnitTable = forwardRef<BudgetUnitTableHandle, BudgetUnitTable
               <col style={{ width: "170px" }} />
               <col style={{ width: "190px" }} />
               <col style={{ width: "70px" }} />
-              <col style={{ width: "70px" }} />
+              {!readonly && <col style={{ width: "70px" }} />}
             </colgroup>
             <TableHeader className="[&_tr]:border-b-0">
               <TableRow className="hover:bg-transparent">
@@ -515,9 +516,11 @@ export const BudgetUnitTable = forwardRef<BudgetUnitTableHandle, BudgetUnitTable
                 <TableHead className="h-10 border-r border-white/50 bg-[var(--primary)] px-3 text-center text-[12px] font-medium text-white">
                   Active
                 </TableHead>
-                <TableHead className="h-10 border-r-0 bg-[var(--primary)] px-3 text-center text-[12px] font-medium text-white">
-                  Action
-                </TableHead>
+                {!readonly && (
+                  <TableHead className="h-10 border-r-0 bg-[var(--primary)] px-3 text-center text-[12px] font-medium text-white">
+                    Action
+                  </TableHead>
+                )}
               </TableRow>
             </TableHeader>
           </Table>
@@ -532,7 +535,7 @@ export const BudgetUnitTable = forwardRef<BudgetUnitTableHandle, BudgetUnitTable
             <col style={{ width: "170px" }} />
             <col style={{ width: "190px" }} />
             <col style={{ width: "70px" }} />
-            <col style={{ width: "70px" }} />
+            {!readonly && <col style={{ width: "70px" }} />}
           </colgroup>
           <TableBody>
             {isLoading
@@ -544,7 +547,9 @@ export const BudgetUnitTable = forwardRef<BudgetUnitTableHandle, BudgetUnitTable
                     <TableCell className="border-r border-[#eff0f5] px-3 py-2"><Skeleton className="h-3.5 w-[80%]" /></TableCell>
                     <TableCell className="border-r border-[#eff0f5] px-3 py-2"><Skeleton className="h-3.5 w-[70%]" /></TableCell>
                     <TableCell className="border-r border-[#eff0f5] px-3 py-2"><Skeleton className="mx-auto h-4 w-4 rounded-sm" /></TableCell>
-                    <TableCell className="border-r border-[#eff0f5] px-3 py-2"><Skeleton className="mx-auto h-3.5 w-3.5 rounded-sm" /></TableCell>
+                    {!readonly && (
+                      <TableCell className="border-r border-[#eff0f5] px-3 py-2"><Skeleton className="mx-auto h-3.5 w-3.5 rounded-sm" /></TableCell>
+                    )}
                   </TableRow>
                 ))
               : hierarchyRows.map((displayRow) => (
@@ -640,6 +645,7 @@ export const BudgetUnitTable = forwardRef<BudgetUnitTableHandle, BudgetUnitTable
                         <img src={displayRow.row.active ? tableCheckIcon : tableCloseIcon} alt="" aria-hidden="true" className="mx-auto size-[12px] object-contain" />
                       )}
                     </TableCell>
+                    {!readonly && (
                     <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-center whitespace-normal">
                       {displayRow.kind === "group"
                         ? null
@@ -705,6 +711,8 @@ export const BudgetUnitTable = forwardRef<BudgetUnitTableHandle, BudgetUnitTable
                               </button>
                             )}
                     </TableCell>
+                    )}
+
                   </TableRow>
                   {/* Removed group-level skeleton: loading is now shown only directly under the expanded BU Program row */}
                   {displayRow.kind === "data" &&
@@ -733,16 +741,18 @@ export const BudgetUnitTable = forwardRef<BudgetUnitTableHandle, BudgetUnitTable
                         <TableCell className="border-r border-[#eff0f5] px-3 py-2">
                           <Skeleton className="mx-auto h-4 w-4 rounded-sm" />
                         </TableCell>
+                        {!readonly && (
                         <TableCell className="border-r border-[#eff0f5] px-3 py-2">
                           <Skeleton className="mx-auto h-3.5 w-3.5 rounded-sm" />
                         </TableCell>
+                        )}
                       </TableRow>
                     )}
                   </>
                 ))}
             {!isLoading && hierarchyRows.length === 0 ? (
               <TableRow className="h-[210px] hover:bg-transparent">
-                <TableCell colSpan={7} className="text-center">
+                <TableCell colSpan={readonly ? 6 : 7} className="text-center">
                   <img
                     src={tableEmptyIcon}
                     alt=""

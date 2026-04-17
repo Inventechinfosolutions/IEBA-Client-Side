@@ -36,9 +36,10 @@ export function TimeStudyProgramTable({
   isLoading,
   onEditRow,
   lastUpdatedRow,
+  readonly = false,
 }: TimeStudyProgramTableProps) {
   const { canUpdate } = usePermissions()
-  const canUpdateTsProgram = canUpdate("timestudyprogram")
+  const canUpdateTsProgram = canUpdate("timestudyprogram") && !readonly
 
   const [sortState, setSortState] = useState<ProgramTableSortState>({
     key: "code",
@@ -239,7 +240,7 @@ export function TimeStudyProgramTable({
               <col style={{ width: "170px" }} />
               <col style={{ width: "110px" }} />
               <col style={{ width: "80px" }} />
-              <col style={{ width: "80px" }} />
+              {!readonly && <col style={{ width: "80px" }} />}
             </colgroup>
             <TableHeader className="[&_tr]:border-b-0">
               <TableRow className="hover:bg-transparent">
@@ -331,9 +332,11 @@ export function TimeStudyProgramTable({
                 <TableHead className="h-10 border-r border-white/50 bg-[var(--primary)] px-3 text-center text-[12px] font-medium text-white">
                   Active
                 </TableHead>
-                <TableHead className="h-10 border-r-0 bg-[var(--primary)] px-3 text-center text-[12px] font-medium text-white">
-                  Action
-                </TableHead>
+                {!readonly && (
+                  <TableHead className="h-10 border-r-0 bg-[var(--primary)] px-3 text-center text-[12px] font-medium text-white">
+                    Action
+                  </TableHead>
+                )}
               </TableRow>
             </TableHeader>
           </Table>
@@ -348,7 +351,7 @@ export function TimeStudyProgramTable({
             <col style={{ width: "170px" }} />
             <col style={{ width: "110px" }} />
             <col style={{ width: "80px" }} />
-            <col style={{ width: "80px" }} />
+            {!readonly && <col style={{ width: "80px" }} />}
           </colgroup>
           <TableBody>
             {isLoading
@@ -360,7 +363,9 @@ export function TimeStudyProgramTable({
                     <TableCell className="border-r border-[#eff0f5] px-3 py-2"><Skeleton className="h-3.5 w-[80%]" /></TableCell>
                     <TableCell className="border-r border-[#eff0f5] px-3 py-2"><Skeleton className="h-3.5 w-[55%]" /></TableCell>
                     <TableCell className="border-r border-[#eff0f5] px-3 py-2"><Skeleton className="mx-auto h-4 w-4 rounded-sm" /></TableCell>
-                    <TableCell className="border-r border-[#eff0f5] px-3 py-2"><Skeleton className="mx-auto h-3.5 w-3.5 rounded-sm" /></TableCell>
+                    {!readonly && (
+                      <TableCell className="border-r border-[#eff0f5] px-3 py-2"><Skeleton className="mx-auto h-3.5 w-3.5 rounded-sm" /></TableCell>
+                    )}
                   </TableRow>
                 ))
               : displayRows.map((row) => (
@@ -412,9 +417,10 @@ export function TimeStudyProgramTable({
                     <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-center whitespace-normal">
                       <img src={row.isMultiCode ? tableCheckIcon : tableCloseIcon} alt="" aria-hidden="true" className="mx-auto size-[12px] object-contain" />
                     </TableCell>
-                    <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-center whitespace-normal">
+                     <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-center whitespace-normal">
                       <img src={row.active ? tableCheckIcon : tableCloseIcon} alt="" aria-hidden="true" className="mx-auto size-[12px] object-contain" />
                     </TableCell>
+                    {!readonly && (
                     <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-center whitespace-normal">
                       {canUpdateTsProgram && (
                         <button
@@ -431,6 +437,7 @@ export function TimeStudyProgramTable({
                         </button>
                       )}
                     </TableCell>
+                    )}
                   </TableRow>
                   {row.hierarchyLevel === 0 &&
                     expandedPrograms[row.id] &&
@@ -457,16 +464,18 @@ export function TimeStudyProgramTable({
                         <TableCell className="border-r border-[#eff0f5] px-3 py-2">
                           <Skeleton className="mx-auto h-4 w-4 rounded-sm" />
                         </TableCell>
+                        {!readonly && (
                         <TableCell className="border-r border-[#eff0f5] px-3 py-2">
                           <Skeleton className="mx-auto h-3.5 w-3.5 rounded-sm" />
                         </TableCell>
+                        )}
                       </TableRow>
                     )}
                   </>
                 ))}
             {!isLoading && displayRows.length === 0 ? (
               <TableRow className="h-[210px] hover:bg-transparent">
-                <TableCell colSpan={7} className="text-center">
+                <TableCell colSpan={readonly ? 6 : 7} className="text-center">
                   <img
                     src={tableEmptyIcon}
                     alt=""

@@ -36,6 +36,7 @@ export const ProgramFormModal = forwardRef<ProgramFormModalHandle, ProgramFormMo
   isSubmitting = false,
   onOpenChange,
   onSave,
+  departmentIds,
 }: ProgramFormModalProps, ref) {
   const isTimeStudyContext = contextTab === "Time Study programs"
   const sections: ProgramFormSection[] = isTimeStudyContext
@@ -56,9 +57,10 @@ export const ProgramFormModal = forwardRef<ProgramFormModalHandle, ProgramFormMo
   const activeSection = form.watch("formSection") as ProgramFormSection
 
   const formOptionsQuery = useGetProgramFormOptions(
-    open && mode === "add",
+    open && (mode === "add" || mode === "edit"),
     contextTab,
-    activeSection
+    activeSection,
+    departmentIds
   )
   const departmentOptions = formOptionsQuery.data?.departmentOptions ?? []
   const budgetUnitNameOptions = formOptionsQuery.data?.budgetUnitNameOptions ?? []
@@ -69,7 +71,8 @@ export const ProgramFormModal = forwardRef<ProgramFormModalHandle, ProgramFormMo
   // - Budget Units context: use Budget Programs (type=program) from form options
   // - Time Study context, TS Sub-Program One & Two: use Time Study Primary Programs
   const tsPrimaryProgramsQuery = useGetActivePrimaryTimeStudyPrograms(
-    open && mode === "add" && isTsSecondaryOrTertiary
+    open && (mode === "add" || mode === "edit") && isTsSecondaryOrTertiary,
+    departmentIds
   )
 
   const budgetProgramNameOptions = isTsSecondaryOrTertiary
