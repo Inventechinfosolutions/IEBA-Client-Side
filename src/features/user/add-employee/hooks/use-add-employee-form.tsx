@@ -228,18 +228,22 @@ export function useAddEmployeeForm({ mode, initialValues, onSave }: UseAddEmploy
       showMustSaveBeforeNextToast("supervisor")
       return
     }
-    if (!isEditMode && activeTab === "security" && !addSecurityTransferSucceeded) {
-      toast.warning(ADD_EMPLOYEE_SECURITY_TRANSFER_REQUIRED, {
-        position: "top-center",
-        icon: (
-          <span className="inline-flex size-4 shrink-0 items-center justify-center rounded-full bg-[#eab308] text-white">
-            <AlertTriangle className="size-3 stroke-[2.5]" />
-          </span>
-        ),
-        className: warningToastClassName,
-        classNames: warningToastInnerClassNames,
-      })
-      return
+    if (!isEditMode && activeTab === "security") {
+      const snapshots = getValues("securityAssignedSnapshots") ?? []
+      const hasAssignments = addSecurityTransferSucceeded || snapshots.length > 0
+      if (!hasAssignments) {
+        toast.warning(ADD_EMPLOYEE_SECURITY_TRANSFER_REQUIRED, {
+          position: "top-center",
+          icon: (
+            <span className="inline-flex size-4 shrink-0 items-center justify-center rounded-full bg-[#eab308] text-white">
+              <AlertTriangle className="size-3 stroke-[2.5]" />
+            </span>
+          ),
+          className: warningToastClassName,
+          classNames: warningToastInnerClassNames,
+        })
+        return
+      }
     }
     if (!isLastTab) {
       const nextTab = orderedAddEmployeeTabs[activeTabIndex + 1]
@@ -272,8 +276,8 @@ export function useAddEmployeeForm({ mode, initialValues, onSave }: UseAddEmploy
     if (tabSaved.employee) unlocked = Math.max(unlocked, orderedAddEmployeeTabs.indexOf("security"))
 
     // Security -> Supervisor (successful transfer + at least one assignment in UI)
-    if (addSecurityTransferSucceeded) {
-      const snapshots = getValues("securityAssignedSnapshots") ?? []
+    const snapshots = getValues("securityAssignedSnapshots") ?? []
+    if (addSecurityTransferSucceeded || snapshots.length > 0) {
       if (snapshots.length > 0) {
         unlocked = Math.max(unlocked, orderedAddEmployeeTabs.indexOf("supervisor"))
       }
@@ -326,7 +330,7 @@ export function useAddEmployeeForm({ mode, initialValues, onSave }: UseAddEmploy
       {
         icon: (
           <span className="inline-flex size-4 items-center justify-center rounded-full bg-[#22c55e] text-white">
-            <Check className="size-3 stroke-[3]" />
+            <Check className="size-3 stroke-3" />
           </span>
         ),
         className:

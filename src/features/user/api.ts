@@ -155,6 +155,7 @@ export async function apiGetUserModuleRows(params: GetUserModuleParams): Promise
   if (firstName) search.set("firstName", firstName)
   if (lastName) search.set("lastName", lastName)
   if (employeeId) search.set("employeeId", employeeId)
+  if (params.departmentId !== undefined) search.set("departmentId", String(params.departmentId))
 
   const res = await api.get<ApiResponseDto<UserListResponseDto>>(`/users?${search.toString()}`)
   const dto = asUserListResponseDto(res)

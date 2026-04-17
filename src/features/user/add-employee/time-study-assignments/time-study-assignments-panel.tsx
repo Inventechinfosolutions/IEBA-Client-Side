@@ -293,6 +293,7 @@ export function TimeStudyAssignmentsPanel({
   const { register, watch, setValue } = useFormContext<UserModuleFormValues>()
   const isAddMode = mode === "add"
   const employeeName = `${watch("firstName") ?? ""} ${watch("lastName") ?? ""}`.trim()
+  const securityAssignedSnapshots = watch("securityAssignedSnapshots") ?? []
 
   /** GET /departments — add-mode Time Study department dropdown only. */
   const masterDepartmentNames = useMemo(
@@ -300,10 +301,16 @@ export function TimeStudyAssignmentsPanel({
     [departmentsQuery.data],
   )
 
-  const departmentSelectOptionsFromMaster = useMemo(
-    () => masterDepartmentNames.map((name) => ({ value: name, label: name })),
-    [masterDepartmentNames],
-  )
+  const departmentSelectOptionsFromMaster = useMemo(() => {
+    const map = new Map<string, { value: string; label: string }>()
+    for (const snap of securityAssignedSnapshots) {
+      if (snap.department && snap.department.trim()) {
+        const dName = snap.department.trim()
+        map.set(dName, { value: dName, label: dName })
+      }
+    }
+    return Array.from(map.values()).sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: "base" }))
+  }, [securityAssignedSnapshots])
 
   /** Edit mode: departments from GET …/user/programs-activities when the user has TS assignments. */
   const departmentSelectOptionsFromUserBundle = useMemo(() => {
@@ -323,24 +330,20 @@ export function TimeStudyAssignmentsPanel({
   }, [userProgramsActivitiesQuery.data])
 
   /**
-   * Edit mode: bundle departments when present; otherwise all tenant departments from GET /departments
-   * so admins can assign the first TS program/activity when programs-activities returns an empty list.
+   * Edit mode filters by departments assigned in the Security panel.
    */
   const departmentSelectOptionsForEditMode = useMemo(() => {
-    if (departmentSelectOptionsFromUserBundle.length > 0) {
-      return departmentSelectOptionsFromUserBundle
+    const map = new Map<string, { value: string; label: string }>()
+    for (const snap of securityAssignedSnapshots) {
+      if (snap.departmentId && snap.department) {
+        map.set(String(snap.departmentId), {
+          value: String(snap.departmentId),
+          label: snap.department.trim(),
+        })
+      }
     }
-    const rows = departmentsQuery.data ?? []
-    const opts: { value: string; label: string }[] = []
-    for (const d of rows) {
-      const id = parseDepartmentNumericId(d)
-      if (id == null) continue
-      const name = d.name.trim()
-      if (!name) continue
-      opts.push({ value: String(id), label: name })
-    }
-    return opts.sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: "base" }))
-  }, [departmentSelectOptionsFromUserBundle, departmentsQuery.data])
+    return Array.from(map.values()).sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: "base" }))
+  }, [securityAssignedSnapshots])
 
   const globalProgramCatalog = useMemo<AddEmployeeTimeStudyTransferItem[]>(() => {
     const rows = programsQuery.data ?? []
@@ -836,7 +839,7 @@ export function TimeStudyAssignmentsPanel({
                 onBlur={() => {}}
                 options={departmentSelectOptionsFromMaster}
                 placeholder={
-                  masterDepartmentNames.length === 0 ? "No departments loaded" : "Select department"
+                  departmentSelectOptionsFromMaster.length === 0 ? "No assigned departments" : "Select department"
                 }
                 isLoading={addModeDepartmentDropdownLoading}
                 contentClassName="max-h-[180px]"
@@ -866,7 +869,7 @@ export function TimeStudyAssignmentsPanel({
                 options={departmentSelectOptionsForEditMode}
                 placeholder={
                   departmentSelectOptionsForEditMode.length === 0
-                    ? "No departments available"
+                    ? "No assigned departments"
                     : "Select department"
                 }
                 isLoading={editModeDepartmentDropdownLoading}

@@ -19,11 +19,17 @@ import {
 import { useEmployeeLoginDetailsUi } from "../hooks/use-add-employee-form"
 import { formatPhoneUs10Input } from "../schemas"
 
+import { useAuth } from "@/contexts/AuthContext"
+
 export function EmployeeLoginDetailsSection({ isEditMode }: EmployeeLoginDetailsSectionProps) {
   /** Edit mode: defer GET /jobclassification until the user opens the picker. */
   const [jobClassificationMenuOpened, setJobClassificationMenuOpened] = useState(false)
-  /** Edit mode: defer GET /location until the user opens the picker. */
   const [locationMenuOpened, setLocationMenuOpened] = useState(false)
+
+  const { user } = useAuth()
+  
+  const isSuperOrAdmin = user?.roles?.some(r => r.toLowerCase() === "super admin" || r.toLowerCase().includes("time study admin")) ?? false;
+  const isDepartmentAdmin = (user?.roles?.some(r => r.toLowerCase() === "department admin") ?? false) && !isSuperOrAdmin;
 
   const jobClassificationsEnabled = !isEditMode || jobClassificationMenuOpened
   const locationsEnabled = !isEditMode || locationMenuOpened
@@ -498,6 +504,34 @@ export function EmployeeLoginDetailsSection({ isEditMode }: EmployeeLoginDetails
           </div>
         </div>
       </div>
+
+      {isDepartmentAdmin && !isEditMode && (
+        <div className="mt-4 grid grid-cols-3 gap-3">
+          <div>
+            <label className={labelClassName}>Department Assignment</label>
+            <Controller
+              name="autoAssignedDepartments"
+              control={control}
+              render={({ field }) => {
+                const depMap = new Map<number, string>()
+                user?.departmentRoles?.forEach(dr => {
+                  if (dr.departmentId) depMap.set(dr.departmentId, dr.departmentName)
+                })
+                const options = Array.from(depMap.entries()).map(([id, name]) => ({ label: name, value: String(id) }))
+                return (
+                  <MultiSelectDropdown
+                    value={field.value ?? ""}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    placeholder="Select departments"
+                    options={options}
+                  />
+                )
+              }}
+            />
+          </div>
+        </div>
+      )}
     </>
   )
 }

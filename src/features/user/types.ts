@@ -71,6 +71,7 @@ export type GetUserModuleParams = {
   firstName?: string
   lastName?: string
   employeeId?: string
+  departmentId?: number
 }
 
 export type PaginationMetaDto = {
@@ -286,9 +287,12 @@ export type UserToolbarProps = {
   inactiveOnly: boolean
   searchTerm: string
   suggestions: string[]
+  departmentId?: string
+  allowedDepartments: Array<{ id: number; name: string }>
   onToggleInactiveOnly: () => void
   onSearchChange: (value: string) => void
   onSelectSuggestion: (value: string) => void
+  onDepartmentChange: (departmentId: string | undefined) => void
   onAddEmployee: () => void
 }
 
