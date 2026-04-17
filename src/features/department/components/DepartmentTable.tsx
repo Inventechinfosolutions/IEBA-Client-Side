@@ -261,20 +261,20 @@ export function DepartmentTable({
       <div className="overflow-hidden rounded-[8px] border border-[#E5E7EB] bg-white">
         <Table className="w-full table-fixed border-collapse">
           <colgroup>
-            <col className={canUpdateDepartment ? "w-[9%]" : "w-[11%]"} /> {/* Code */}
-            <col className={canUpdateDepartment ? "w-[11%]" : "w-[13%]"} /> {/* Name */}
-            <col className={canUpdateDepartment ? "w-[13%]" : "w-[15%]"} /> {/* Address */}
-            <col className={canUpdateDepartment ? "w-[10%]" : "w-[12%]"} /> {/* Primary */}
-            <col className={canUpdateDepartment ? "w-[10%]" : "w-[12%]"} /> {/* Secondary */}
-            <col className={canUpdateDepartment ? "w-[10%]" : "w-[12%]"} /> {/* Billing */}
-            {canUpdateDepartment && <col className="w-[9%]" />} {/* Allow Multi */}
-            <col className={canUpdateDepartment ? "w-[10%]" : "w-[14%]"} /> {/* Multi Codes */}
-            <col className={canUpdateDepartment ? "w-[9%]" : "w-[11%]"} /> {/* Active */}
-            {canUpdateDepartment && <col className="w-[9%]" />} {/* Action */}
+            <col className={canUpdateDepartment ? "w-[9%]" : "w-[11%]"} /> { /* Code */ }
+            <col className={canUpdateDepartment ? "w-[11%]" : "w-[13%]"} /> { /* Name/Department */ }
+            <col className={canUpdateDepartment ? "w-[10%]" : "w-[12%]"} /> { /* Address */ }
+            <col className={canUpdateDepartment ? "w-[12%]" : "w-[14%]"} /> { /* Primary Contact */ }
+            <col className={canUpdateDepartment ? "w-[12%]" : "w-[14%]"} /> { /* Secondary Contact */ }
+            <col className={canUpdateDepartment ? "w-[12%]" : "w-[14%]"} /> { /* Billing Contact */ }
+            {canUpdateDepartment && <col className="w-[8%]" />} { /* Allow Multi */ }
+            <col className={canUpdateDepartment ? "w-[6%]" : "w-[8%]"} /> { /* Multi Codes */ }
+            <col className={canUpdateDepartment ? "w-[6%]" : "w-[7%]"} /> { /* Active */ }
+            {canUpdateDepartment && <col className="w-[6%]" />} { /* Action */ }
           </colgroup>
           <TableHeader>
             <TableRow className="bg-[#6C5DD3] hover:bg-[#6C5DD3]">
-              <TableHead className="h-[48px] border-r border-[#FFFFFF66] p-[8px] align-middle text-left text-[14px] font-medium text-white">
+              <TableHead className="h-[90px] border-r border-[#FFFFFF66] p-[8px] align-middle text-left text-[14px] font-medium text-white">
                 <TooltipProvider>
                   <Tooltip open={isSortTooltipOpen && sortTooltipColumn === "code"}>
                     <TooltipTrigger asChild>
@@ -322,7 +322,7 @@ export function DepartmentTable({
                   </Tooltip>
                 </TooltipProvider>
               </TableHead>
-              <TableHead className="h-[48px] border-r border-[#FFFFFF66] p-[8px] align-middle text-left text-[14px] font-medium text-white">
+              <TableHead className="h-[60px] border-r border-[#FFFFFF66] p-[8px] align-middle text-left text-[14px] font-medium text-white">
                 <TooltipProvider>
                   <Tooltip open={isSortTooltipOpen && sortTooltipColumn === "name"}>
                     <TooltipTrigger asChild>
@@ -370,31 +370,31 @@ export function DepartmentTable({
                   </Tooltip>
                 </TooltipProvider>
               </TableHead>
-              <TableHead className="h-[48px] border-r border-[#FFFFFF66] p-[8px] text-left text-[14px] font-medium text-white">
+              <TableHead className="h-[60px] border-r border-[#FFFFFF66] p-[8px] text-left text-[14px] font-medium text-white">
                 Address
               </TableHead>
-              <TableHead className="h-[48px] border-r border-[#FFFFFF66] p-[8px] text-left text-[14px] font-medium text-white">
+              <TableHead className="h-[60px] border-r border-[#FFFFFF66] p-[8px] text-left text-[14px] font-medium text-white">
                 Primary Contact
               </TableHead>
-              <TableHead className="h-[48px] border-r border-[#FFFFFF66] p-[8px] text-left text-[14px] font-medium text-white">
+              <TableHead className="h-[60px] border-r border-[#FFFFFF66] p-[8px] text-left text-[14px] font-medium text-white">
                 Secondary Contact
               </TableHead>
-              <TableHead className="h-[48px] border-r border-[#FFFFFF66] p-[8px] text-left text-[14px] font-medium text-white">
+              <TableHead className="h-[60px] border-r border-[#FFFFFF66] p-[8px] text-left text-[14px] font-medium text-white">
                 Billing Contact
               </TableHead>
               {canUpdateDepartment && (
-                <TableHead className="h-[48px] border-r border-[#FFFFFF66] p-[4px] text-center text-[13px] font-medium text-white leading-tight">
+                <TableHead className="h-[60px] border-r border-[#FFFFFF66] p-[4px] text-center text-[13px] font-medium text-white leading-tight">
                   Allow Multi <br /> codes
                 </TableHead>
               )}
-              <TableHead className="h-[48px] border-r border-[#FFFFFF66] p-[4px] text-center text-[13px] font-medium text-white leading-tight">
+              <TableHead className="h-[60px] border-r border-[#FFFFFF66] p-[4px] text-center text-[13px] font-medium text-white leading-tight">
                 Multi <br /> Codes
               </TableHead>
-              <TableHead className="h-[48px] border-r border-[#FFFFFF66] p-[4px] text-center text-[14px] font-medium text-white">
+              <TableHead className="h-[60px] border-r border-[#FFFFFF66] p-[4px] text-center text-[14px] font-medium text-white">
                 Active
               </TableHead>
               {canUpdateDepartment && (
-                <TableHead className="h-[48px] p-[4px] text-center text-[14px] font-medium text-white">
+                  <TableHead className="h-[60px] p-[4px] text-center text-[14px] font-medium text-white">
                   Action
                 </TableHead>
               )}
@@ -404,14 +404,14 @@ export function DepartmentTable({
             {isLoading ? (
               Array.from({ length: 3 }).map((_, i) => (
                 <TableRow key={i} className="border-b border-[#E5E7EB]">
-                  <TableCell colSpan={canUpdateDepartment ? 11 : 9} className="px-[16px] py-[16px]">
+                  <TableCell colSpan={canUpdateDepartment ? 10 : 8} className="px-[16px] py-[16px]">
                     <Skeleton className="h-[80px] w-full" />
                   </TableCell>
                 </TableRow>
               ))
             ) : sortedDepartments.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={canUpdateDepartment ? 11 : 9} className="py-[60px] text-center text-[14px] text-[#6B7280]">
+                <TableCell colSpan={canUpdateDepartment ? 10 : 8} className="py-[60px] text-center text-[14px] text-[#6B7280]">
                   No data found
                 </TableCell>
               </TableRow>
@@ -508,7 +508,6 @@ export function DepartmentTable({
         </Table>
       </div>
 
-      {/* ── Pagination ────────────────────────────────────────────────── */}
       <div className="my-8 flex min-h-[67px] w-full flex-wrap items-center justify-end gap-3 rounded-[12px] bg-[#FFFFFF] px-4 py-3 shadow-[0_0_20px_0_#0000001a]">
         <span className="text-[14px] text-[#4B5563]">Total {totalItems} items</span>
         <Pagination className="mx-0 w-auto justify-end">
@@ -563,7 +562,7 @@ export function DepartmentTable({
               </span>
             </SelectValue>
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent position="popper">
             {PAGE_SIZES.map((size) => (
               <SelectItem key={size} value={String(size)}>
                 {size} / page

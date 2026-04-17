@@ -142,6 +142,7 @@ function toDepartmentUI(dto: DepartmentResDto, options?: ToDepartmentUIOptions):
       removeStartEndTime: dto.startorEndTime ?? false,
       removeSupportingDocument: dto.supportingDoc ?? false,
       removeAutoFillEndTime: dto.removeAutoFillEndTime ?? false,
+      removeDescriptionActivityNote: dto.removeDescriptionActivityNote ?? false,
     },
     canEdit: (dto as any).action === "edit",
   }
@@ -180,6 +181,7 @@ function toCreateUpdateDto(values: DepartmentUpsertValues): CreateDepartmentReqD
     removeAutoFillEndTime: values.settings.removeAutoFillEndTime,
     startorEndTime: values.settings.removeStartEndTime,
     supportingDoc: values.settings.removeSupportingDocument,
+    removeDescriptionActivityNote: values.settings.removeDescriptionActivityNote,
     primaryContactId: values.primaryContactId ?? null,
     secondaryContactId: values.secondaryContactId ?? null,
     billingContactId: values.billingContactId ?? null,
@@ -196,48 +198,44 @@ export async function getDepartments(
   const sort = params?.sort
   const userId = params?.userId
 
-  const search = new URLSearchParams()
-  search.set("page", String(page))
-  search.set("limit", String(limit))
+  const searchParams = new URLSearchParams()
+  searchParams.set("page", String(page))
+  searchParams.set("limit", String(limit))
   if (sort) {
-    search.set("sort", sort)
+    searchParams.set("sort", sort)
   }
   if (status) {
-    search.set("status", status)
+    searchParams.set("status", status)
   }
   if (userId) {
-    search.set("method", "users")
-    search.set("userId", userId)
+    searchParams.set("method", "users")
+    searchParams.set("userId", userId)
+  }
+  if (params?.search) {
+    searchParams.set("search", params.search)
   }
 
   const res = await api.get<DepartmentApiEnvelope<DepartmentListResponseDto>>(
-    `/departments?${search.toString()}`
+    `/departments?${searchParams.toString()}`
   )
 
-  const payload = (res?.data ?? res) as any
-  
-  // Backend returns:
-  // 1. { data: DepartmentResDto[], meta: ... } for paginated list
-  // 2. DepartmentResDto[] directly for method=users
-  const list = Array.isArray(payload) 
-    ? payload 
-    : Array.isArray(payload?.data) 
-      ? payload.data 
+  const envelope = (res?.data ?? res) as any
+  const payload = envelope?.data ?? envelope
+
+  const list = Array.isArray(payload)
+    ? payload
+    : Array.isArray(payload?.data)
+      ? payload.data
       : []
 
   const items = list
     .map((x: any) => toDepartmentUI(x as DepartmentResDto, { includeAddress: true }))
-    .filter((d: Department) => d.code !== "0" && d.name.toLowerCase() !== "all")
+    .filter((d: any) => d.code !== "0" && d.name.toLowerCase() !== "all")
 
-  const meta = !Array.isArray(payload) ? payload?.meta : null
-  const total =
-    typeof meta?.totalItems === "number"
-      ? meta.totalItems
-      : typeof meta?.total === "number"
-        ? meta.total
-        : typeof meta?.itemCount === "number"
-          ? meta.itemCount
-          : items.length
+  const meta = payload?.meta
+  const total = typeof meta?.totalItems === "number"
+    ? meta.totalItems
+    : Array.isArray(payload) ? payload.length : items.length
 
   return { items, total }
 }

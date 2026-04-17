@@ -116,6 +116,7 @@ export const DEPARTMENT_SETTINGS_ROWS: readonly {
   { key: "removeStartEndTime", label: "Remove Start and End Time" },
   { key: "removeSupportingDocument", label: "Remove Supporting Document" },
   { key: "removeAutoFillEndTime", label: "Remove Auto Fill End Time" },
+  { key: "removeDescriptionActivityNote", label: "Remove Description/Activity/Note" },
 ] as const
 
 /** Resolved contact row for the department table when the list API has richer data than the department DTO. */
@@ -168,39 +169,41 @@ export type DepartmentResDto = Record<string, unknown> & {
   billingContactId?: unknown
   allowMultiCodes?: boolean
   multiCodes?: unknown
-  allowUserOrCostpoolDirect?: boolean
-  costallocation?: boolean
-  apportioning?: boolean
-  autoApportioning?: boolean
-  removeAutoFillEndTime?: boolean
-  startorEndTime?: boolean
-  supportingDoc?: boolean
+  allowUserOrCostpoolDirect?: boolean;
+  costallocation?: boolean;
+  apportioning?: boolean;
+  autoApportioning?: boolean;
+  removeAutoFillEndTime?: boolean;
+  startorEndTime?: boolean;
+  supportingDoc?: boolean;
+  removeDescriptionActivityNote?: boolean;
 }
 
 export type DepartmentAddressCreateDto = {
-  addressLine1: string
-  city: string
-  state: string
-  zipCode: string
+  addressLine1: string;
+  city: string;
+  state: string;
+  zipCode: string;
 }
 
 export type CreateDepartmentReqDto = {
-  code: string
-  name: string
-  status: DepartmentApiRecordStatus
-  address?: DepartmentAddressCreateDto
-  apportioning?: boolean
-  costallocation?: boolean
-  autoApportioning?: boolean
-  allowUserOrCostpoolDirect?: boolean
-  allowMultiCodes?: boolean
-  multiCodes?: string[]
-  removeAutoFillEndTime?: boolean
-  startorEndTime?: boolean
-  supportingDoc?: boolean
-  primaryContactId?: string | null
-  secondaryContactId?: string | null
-  billingContactId?: string | null
+  code: string;
+  name: string;
+  status: DepartmentApiRecordStatus;
+  address?: DepartmentAddressCreateDto;
+  apportioning?: boolean;
+  costallocation?: boolean;
+  autoApportioning?: boolean;
+  allowUserOrCostpoolDirect?: boolean;
+  allowMultiCodes?: boolean;
+  multiCodes?: string[];
+  removeAutoFillEndTime?: boolean;
+  startorEndTime?: boolean;
+  supportingDoc?: boolean;
+  removeDescriptionActivityNote?: boolean;
+  primaryContactId?: string | null;
+  secondaryContactId?: string | null;
+  billingContactId?: string | null;
 }
 
 export type UpdateDepartmentReqDto = Partial<CreateDepartmentReqDto>
@@ -222,6 +225,7 @@ export type GetDepartmentsParams = {
   status?: DepartmentApiRecordStatus
   sort?: DepartmentApiListSortOrder
   userId?: string
+  search?: string
 }
 
 export type GetAllDepartmentsParams = {

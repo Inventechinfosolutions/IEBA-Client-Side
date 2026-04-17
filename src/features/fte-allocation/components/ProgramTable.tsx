@@ -74,7 +74,7 @@ export function ProgramTable({
     name: "programs",
   })
 
-  // Watch for real-time total calculation
+ 
   const currentPrograms = watch("programs") || []
 
   const totalBudgeted = currentPrograms.reduce(
@@ -107,10 +107,10 @@ export function ProgramTable({
       </div>
 
       {/* ── Programs table (3 columns only) ───────────────────────────────── */}
-      <div className="overflow-hidden rounded-[8px] border border-[#E5E7EB] bg-white">
+      <div className="overflow-hidden rounded-[8px] border border-[#E5E7EB] bg-white [&_[data-slot=table-container]]:max-h-[400px] [&_[data-slot=table-container]]:overflow-y-auto [&_[data-slot=table-container]]:program-table-scroll [&_[data-slot=table-container]]:scrollbar-auto">
         <Table className="w-full border-collapse table-fixed">
-          <TableHeader>
-            <TableRow className="bg-[#6C5DD3] hover:bg-[#6C5DD3]">
+          <TableHeader className="sticky top-0 z-20 bg-[#6C5DD3]">
+            <TableRow className="bg-[#6C5DD3] hover:bg-[#6C5DD3] border-none">
               <TableHead className="w-auto border-r border-[#FFFFFF66] px-[12px] py-[13px] text-left text-[14px] font-[400] text-white">
                 Program
               </TableHead>
@@ -203,7 +203,8 @@ export function ProgramTable({
         </Table>
       </div>
 
-      {/* ── Update button bar ─────────────────────────────────────────────── */}
+     
+     
       <div className="flex items-center justify-end rounded-[8px] border border-[#E5E7EB] bg-white px-4 py-[12px] shadow-[0_0_20px_0_#0000001a]">
         <Button
           type="button"

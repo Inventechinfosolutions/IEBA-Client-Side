@@ -24,6 +24,7 @@ export const departmentSettingsSchema = z.object({
   removeStartEndTime: z.boolean(),
   removeSupportingDocument: z.boolean(),
   removeAutoFillEndTime: z.boolean(),
+  removeDescriptionActivityNote: z.boolean(),
 })
 
 export const departmentUpsertSchema = z.object({
@@ -81,6 +82,7 @@ export const DEPARTMENT_FORM_DEFAULT_VALUES: z.infer<typeof departmentUpsertSche
     removeStartEndTime: false,
     removeSupportingDocument: false,
     removeAutoFillEndTime: false,
+    removeDescriptionActivityNote: false,
   },
 }
 

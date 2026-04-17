@@ -21,16 +21,7 @@ export function useGetDepartments(
 ) {
   return useQuery({
     queryKey: [...departmentKeys.lists(), params],
-    queryFn: () =>
-      params.search?.trim()
-        ? getAllDepartments({ status: params.status, sort: params.sort })
-        : getDepartments({
-            page: params.page,
-            limit: params.limit,
-            status: params.status,
-            sort: params.sort,
-            userId: params.userId,
-          }),
+    queryFn: () => getDepartments(params),
     // Server is source of truth — never show stale list after DB changes.
     staleTime: 0,
     gcTime: 0,

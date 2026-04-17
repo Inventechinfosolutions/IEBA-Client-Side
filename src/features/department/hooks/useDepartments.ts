@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react"
+import { useCallback, useState } from "react"
 import { useGetDepartments } from "../queries/getDepartments"
 import type { DepartmentFilter } from "../types"
 
@@ -10,38 +10,17 @@ export function useDepartments(filters: DepartmentFilter, userId?: string) {
 
   const status: "active" | "inactive" = filters.inactive ? "inactive" : "active"
   const searchText = (filters.search ?? "").trim()
-  const hasSearch = searchText.length > 0
-  const queryPage = hasSearch ? 1 : pagination.page
-  const queryLimit = hasSearch ? 100 : pagination.pageSize
-
   const { data, isLoading, isFetching } = useGetDepartments({
     status,
-    page: queryPage,
-    limit: queryLimit,
+    page: pagination.page,
+    limit: pagination.pageSize,
     search: searchText,
     sort: "ASC",
     userId,
   })
 
-  const apiItems = data?.items ?? []
-  const apiTotal = data?.total ?? 0
-
-  const filteredAndPaginated = useMemo(() => {
-    if (!hasSearch) {
-      return { items: apiItems, totalItems: apiTotal }
-    }
-
-    const q = searchText.toLowerCase()
-    const filtered = apiItems.filter((dept) => {
-      const code = dept.code.toLowerCase()
-      const name = dept.name.toLowerCase()
-      return code.includes(q) || name.includes(q)
-    })
-
-    const start = (pagination.page - 1) * pagination.pageSize
-    const end = start + pagination.pageSize
-    return { items: filtered.slice(start, end), totalItems: filtered.length }
-  }, [apiItems, apiTotal, searchText, hasSearch, pagination.page, pagination.pageSize])
+  const departments = data?.items ?? []
+  const totalItems = data?.total ?? 0
 
   const onPageChange = useCallback((page: number) => {
     setPagination((prev) => ({ ...prev, page }))
@@ -52,12 +31,12 @@ export function useDepartments(filters: DepartmentFilter, userId?: string) {
   }, [])
 
   return {
-    departments: filteredAndPaginated.items,
-    totalItems: filteredAndPaginated.totalItems,
+    departments,
+    totalItems,
     isLoading: isLoading || isFetching,
     pagination: {
       ...pagination,
-      totalItems: filteredAndPaginated.totalItems,
+      totalItems,
     },
     onPageChange,
     onPageSizeChange,
