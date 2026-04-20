@@ -36,9 +36,9 @@ export function JobPoolFormModal({
   })
 
   const [isDepartmentOpen, setIsDepartmentOpen] = useState(false)
-  const [selectedDepartmentLabel, setSelectedDepartmentLabel] = useState<string>(
-    mode === "edit" ? (initialValues.department ?? "") : ""
-  )
+  // For edit mode, initialValues.department holds a raw ID. We resolve the
+  // label once the departments list is available via a derived value below.
+  const [selectedDepartmentLabel, setSelectedDepartmentLabel] = useState<string>("")
   const departmentDropdownRef = useRef<HTMLDivElement | null>(null)
 
   // Reset form when switching to Add mode (modal re-mounts via key, but reset for safety)
@@ -59,7 +59,7 @@ export function JobPoolFormModal({
   const {
     data: activeDepartmentsData,
     isLoading: isDepartmentsLoading,
-  } = useGetDepartments({ status: "active", page: 1, limit: 100 }, { enabled: open && mode === "add" })
+  } = useGetDepartments({ status: "active", page: 1, limit: 100 }, { enabled: open })
 
   const activeDepartments = useMemo(() => {
     const items = activeDepartmentsData?.items ?? []
@@ -128,7 +128,11 @@ export function JobPoolFormModal({
                   <div className="relative" ref={departmentDropdownRef}>
                     <Input
                       id="jp-department-trigger"
-                      value={selectedDepartmentLabel || form.watch("department") || ""}
+                      value={
+                        selectedDepartmentLabel ||
+                        activeDepartments.find(d => String(d.id) === String(form.watch("department")))?.name ||
+                        ""
+                      }
                       readOnly
                       onMouseDown={(event) => event.preventDefault()}
                       onClick={() => mode !== "edit" && setIsDepartmentOpen((prev) => !prev)}
