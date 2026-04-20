@@ -149,9 +149,17 @@ export async function getLeaveDetails(userId: string | number): Promise<LeaveAgg
 }
 
 
-export async function getStaffLeave(): Promise<LeaveAggregateResult> {
+export async function getStaffLeave(params?: {
+  userId?: string | number
+  departmentId?: number
+  roleId?: number
+}): Promise<LeaveAggregateResult> {
+  const search = new URLSearchParams({ action: "leaveDetails" })
+  if (params?.userId) search.set("userId", String(params.userId))
+  if (params?.departmentId) search.set("departmentId", String(params.departmentId))
+  if (params?.roleId) search.set("roleId", String(params.roleId))
   const res = await api.get<ApiEnvelope<{ statusCounts: LeaveAggregateResult["statusCounts"] }>>(
-    "/usersleave?action=leaveDetails",
+    `/usersleave?${search.toString()}`,
   )
   const payload = (res?.data ?? res) as { statusCounts: LeaveAggregateResult["statusCounts"] }
   return { statusCounts: payload?.statusCounts ?? [] }
@@ -266,8 +274,17 @@ export async function getReportsByRole(params?: {
   }
 }
 
-export async function getDashboardOverview(): Promise<DashboardOverview> {
-  const res = await api.get<ApiEnvelope<DashboardOverview>>("/dashboard/overview")
+export async function getDashboardOverview(params?: {
+  userId?: string | number
+  departmentId?: number
+  roleId?: number
+}): Promise<DashboardOverview> {
+  const search = new URLSearchParams()
+  if (params?.userId) search.set("userId", String(params.userId))
+  if (params?.departmentId) search.set("departmentId", String(params.departmentId))
+  if (params?.roleId) search.set("roleId", String(params.roleId))
+  const url = search.toString() ? `/dashboard/overview?${search.toString()}` : "/dashboard/overview"
+  const res = await api.get<ApiEnvelope<DashboardOverview>>(url)
   const payload = (res?.data ?? res) as DashboardOverview
   return (
     payload ?? {

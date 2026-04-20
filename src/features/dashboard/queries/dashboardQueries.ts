@@ -104,20 +104,30 @@ export function useSelfLeave(userId: string | number) {
       let approved = 0
       let rejected = 0
       let total = 0
+      
+      console.log('Self Leave Raw Data:', data)
+      
       for (const s of data.statusCounts) {
+        const status = (s as any).status || s.q_status
         const count = Number(s.count)
         total += count
-        if (s.q_status === LeaveStatus.Requested) {
+        
+        console.log('Processing self leave status:', status, 'count:', count)
+        
+        if (status === LeaveStatus.Requested || status === 'requested') {
           requested = count
         } else if (
-          s.q_status === LeaveStatus.Approved ||
-          s.q_status === LeaveStatus.LeaveApproved
+          status === LeaveStatus.Approved ||
+          status === 'approved' ||
+          status === LeaveStatus.LeaveApproved
         ) {
           approved = count
-        } else if (s.q_status === LeaveStatus.Rejected) {
+        } else if (status === LeaveStatus.Rejected || status === 'rejected') {
           rejected = count
         }
       }
+      
+      console.log('Self Leave Result:', { requested, approved, rejected, total })
       return { requested, approved, rejected, total }
     },
     enabled: !!userId,
@@ -126,21 +136,38 @@ export function useSelfLeave(userId: string | number) {
 }
 
 
-export function useStaffLeave(options?: { enabled?: boolean }) {
+export function useStaffLeave(options?: { 
+  userId?: string | number
+  departmentId?: number
+  roleId?: number
+  enabled?: boolean 
+}) {
   return useQuery({
-    queryKey: dashboardKeys.staffLeave(),
-    queryFn: getStaffLeave,
+    queryKey: [...dashboardKeys.staffLeave(), { userId: options?.userId, departmentId: options?.departmentId, roleId: options?.roleId }],
+    queryFn: () => getStaffLeave({ userId: options?.userId, departmentId: options?.departmentId, roleId: options?.roleId }),
     select(data: LeaveAggregateResult): StaffLeaveStats {
       let requested = 0
       let approved = 0
       let rejected = 0
+      
+      console.log('Staff Leave Raw Data:', data)
+      
       for (const s of data.statusCounts) {
         const status = (s as any).status || s.q_status
-        if (status === LeaveStatus.Requested) requested = Number(s.count)
-        else if (status === LeaveStatus.Approved || status === LeaveStatus.LeaveApproved)
-          approved = Number(s.count)
-        else if (status === LeaveStatus.Rejected) rejected = Number(s.count)
+        const count = Number(s.count)
+        
+        console.log('Processing status:', status, 'count:', count)
+        
+        if (status === LeaveStatus.Requested || status === 'requested') {
+          requested = count
+        } else if (status === LeaveStatus.Approved || status === 'approved' || status === LeaveStatus.LeaveApproved) {
+          approved = count
+        } else if (status === LeaveStatus.Rejected || status === 'rejected') {
+          rejected = count
+        }
       }
+      
+      console.log('Staff Leave Result:', { requested, approved, rejected })
       return { requested, approved, rejected }
     },
     enabled: options?.enabled,
@@ -248,10 +275,15 @@ export function useReportsByRole(params?: {
   })
 }
 
-export function useDashboardOverview(options?: { enabled?: boolean }) {
+export function useDashboardOverview(options?: { 
+  userId?: string | number
+  departmentId?: number
+  roleId?: number
+  enabled?: boolean 
+}) {
   return useQuery<DashboardOverview>({
-    queryKey: dashboardKeys.overview(),
-    queryFn: getDashboardOverview,
+    queryKey: [...dashboardKeys.overview(), { userId: options?.userId, departmentId: options?.departmentId, roleId: options?.roleId }],
+    queryFn: () => getDashboardOverview({ userId: options?.userId, departmentId: options?.departmentId, roleId: options?.roleId }),
     enabled: options?.enabled,
     ...staleOptions,
   })

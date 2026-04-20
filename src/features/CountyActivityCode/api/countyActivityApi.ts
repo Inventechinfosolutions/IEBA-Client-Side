@@ -85,7 +85,7 @@ export async function apiGetCountyActivityLinkedDepartmentIds(
 }
 
 
-const ACTIVITY_DEPARTMENTS_LIST_LIMIT = 100
+const ACTIVITY_DEPARTMENTS_LIST_LIMIT = 1000
 
 
 
@@ -612,7 +612,7 @@ export async function apiGetCountyActivitiesByDepartmentId(
   const searchParams = new URLSearchParams({
     departmentId: String(departmentId),
     page: "1",
-    limit: "100",
+    limit: String(COUNTY_ACTIVITY_ACTIVITIES_API_MAX_LIMIT),
   })
   const raw = await api.get<unknown>(`/activity-departments?${searchParams.toString()}`)
   const { items } = parseCountyActivityDepartmentListPage(raw)

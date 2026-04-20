@@ -87,7 +87,20 @@ function NavRow({
   )
 
   if (to) {
-    return <Link to={to}>{content}</Link>
+    return (
+      <Link to={to} className="block group">
+        <div className="flex items-center justify-between">
+          <span className="text-[14px] font-semibold text-[#1a1a2e] group-hover:text-[#6C5DD3] transition-colors cursor-pointer">
+            {label}
+          </span>
+          {loading ? (
+            <div className="h-5 w-10 animate-pulse rounded bg-[#e5e7eb]" />
+          ) : (
+            <span className="text-[14px] font-semibold text-[#1a1a2e]">{value ?? "–"}</span>
+          )}
+        </div>
+      </Link>
+    )
   }
   return content
 }

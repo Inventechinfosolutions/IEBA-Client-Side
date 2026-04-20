@@ -143,12 +143,21 @@ export function DashboardPage() {
   })
 
   const selfLeave = useSelfLeave(userId)
-  const staffLeave = useStaffLeave({ enabled: canViewAdminLayout })
+  const staffLeave = useStaffLeave({ 
+    userId: isSuperAdminLikeDashboard ? undefined : userId,
+    departmentId: isSuperAdminLikeDashboard ? undefined : departmentId, 
+    roleId: isSuperAdminLikeDashboard ? undefined : roleId, 
+    enabled: canViewAdminLayout 
+  })
   const todos = useTodos(userId)
   const holidays = useHolidays()
-  const overview = useDashboardOverview({ enabled: canViewAdminLayout })
+  const overview = useDashboardOverview({ 
+    userId: isSuperAdminLikeDashboard ? undefined : userId,
+    departmentId: isSuperAdminLikeDashboard ? undefined : departmentId, 
+    roleId: isSuperAdminLikeDashboard ? undefined : roleId, 
+    enabled: canViewAdminLayout 
+  })
   const dashboardUserCount = useDashboardUserCount({ enabled: showUserManagement })
-  const activeUsers = useActiveUsers({ enabled: isSuperAdminLikeDashboard })
   const reports = useReportsByRole({ 
     departmentId, 
     roleId,
@@ -156,17 +165,19 @@ export function DashboardPage() {
   })
 
   
+  // Backend returns user-specific counts based on assignments
   const {
     totalUserCount: overviewUserCount = 0,
-    totalDepartmentCount: deptCountVal = 0,
-    totalTimeStudyProgramCount: programCountVal = 0,
-    totalJobPoolCount: jobPoolsVal = 0,
-    totalCostPoolCount: costPoolsVal = 0,
-    totalActivityCount: activityCountVal = 0,
+    totalActiveUserCount: overviewActiveUserCount = 0,
+    totalDepartmentCount: deptCountVal = 0,              // User's assigned departments
+    totalTimeStudyProgramCount: programCountVal = 0,     // Programs in user's departments
+    totalJobPoolCount: jobPoolsVal = 0,                  // Tenant-level
+    totalCostPoolCount: costPoolsVal = 0,                // Tenant-level
+    totalActivityDepartmentCount: activityCountVal = 0,  // Activities in user's departments
   } = overview.data ?? {}
 
-  const userCountVal = dashboardUserCount.data ?? overviewUserCount
-  const activeUsersVal = activeUsers.data ?? 0
+  const userCountVal = overviewUserCount ?? dashboardUserCount.data ?? 0
+  const activeUsersVal = overviewActiveUserCount
 
   const tsApproved = personalTS.data?.approved ?? 0
   const tsSubmitted = personalTS.data?.submitted ?? 0
@@ -256,8 +267,8 @@ export function DashboardPage() {
                 showActiveUsers={isSuperAdminLikeDashboard}
                 isLoading={
                   isSuperAdminLikeDashboard
-                    ? dashboardUserCount.isLoading || activeUsers.isLoading
-                    : dashboardUserCount.isLoading
+                    ? dashboardUserCount.isLoading || overview.isLoading
+                    : dashboardUserCount.isLoading || overview.isLoading
                 }
             />
             <div className="flex-1 min-h-0">
