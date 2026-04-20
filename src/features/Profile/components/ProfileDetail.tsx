@@ -35,6 +35,7 @@ import { useUpdateProfileDetail } from "@/features/Profile/mutations/updateProfi
 import { useGetProfileImage } from "@/features/Profile/queries/getProfileImage"
 import { useUploadProfileImage } from "@/features/Profile/mutations/uploadProfileImage"
 import { useDeleteProfileImage } from "@/features/Profile/mutations/deleteProfileImage"
+import { capitalize } from "@/lib/utils"
 
 function getFirstErrorMessage(value: unknown): string | null {
   if (!value || typeof value !== "object") return null
@@ -258,10 +259,17 @@ function ProfileDetailForm({
                 <label className={labelClassName}>
                   *First Name
                 </label>
-                <Input
-                  {...register("firstName")}
-                  className={errors.firstName ? `${inputClassName} border-[#ef4444]` : inputClassName}
-                  placeholder="First Name"
+                <Controller
+                  name="firstName"
+                  control={control}
+                  render={({ field }) => (
+                    <Input
+                      {...field}
+                      className={errors.firstName ? `${inputClassName} border-[#ef4444]` : inputClassName}
+                      placeholder="First Name"
+                      onChange={(e) => field.onChange(capitalize(e.target.value))}
+                    />
+                  )}
                 />
               </div>
               <div>
@@ -270,10 +278,17 @@ function ProfileDetailForm({
               </div>
               <div>
                 <label className={labelClassName}>*Last Name</label>
-                <Input
-                  {...register("lastName")}
-                  className={errors.lastName ? `${inputClassName} border-[#ef4444]` : inputClassName}
-                  placeholder="Last Name"
+                <Controller
+                  name="lastName"
+                  control={control}
+                  render={({ field }) => (
+                    <Input
+                      {...field}
+                      className={errors.lastName ? `${inputClassName} border-[#ef4444]` : inputClassName}
+                      placeholder="Last Name"
+                      onChange={(e) => field.onChange(capitalize(e.target.value))}
+                    />
+                  )}
                 />
               </div>
             </div>
@@ -322,24 +337,38 @@ function ProfileDetailForm({
           <div className="grid grid-cols-5 gap-4">
             <div>
               <label className={labelClassName}>First Name</label>
-              <Input
-                {...register("emergencyContact.firstName")}
-                className={
-                  errors.emergencyContact?.firstName
-                    ? `${inputClassName} border-[#ef4444]`
-                    : inputClassName
-                }
-                placeholder="First Name"
+              <Controller
+                name="emergencyContact.firstName"
+                control={control}
+                render={({ field }) => (
+                  <Input
+                    {...field}
+                    className={
+                      errors.emergencyContact?.firstName
+                        ? `${inputClassName} border-[#ef4444]`
+                        : inputClassName
+                    }
+                    placeholder="First Name"
+                    onChange={(e) => field.onChange(capitalize(e.target.value))}
+                  />
+                )}
               />
             </div>
             <div>
               <label className={labelClassName}>Last Name</label>
-              <Input
-                {...register("emergencyContact.lastName")}
-                className={
-                  errors.emergencyContact?.lastName ? `${inputClassName} border-[#ef4444]` : inputClassName
-                }
-                placeholder="Last Name"
+              <Controller
+                name="emergencyContact.lastName"
+                control={control}
+                render={({ field }) => (
+                  <Input
+                    {...field}
+                    className={
+                      errors.emergencyContact?.lastName ? `${inputClassName} border-[#ef4444]` : inputClassName
+                    }
+                    placeholder="Last Name"
+                    onChange={(e) => field.onChange(capitalize(e.target.value))}
+                  />
+                )}
               />
             </div>
             <div>
@@ -579,7 +608,7 @@ function ProfileDetailForm({
 
 export function ProfileDetail() {
   const navigate = useNavigate()
-  const { user, isLoading: authSessionLoading } = useAuth()
+  const { user, establishDashboardSession, isLoading: authSessionLoading } = useAuth()
   const userId = user?.id?.trim() ?? ""
 
   const profileQuery = useGetProfileDetail(user?.id)
@@ -635,6 +664,14 @@ export function ProfileDetail() {
             values,
             persist: profileQuery.data?.persist,
           })
+          
+          if (user) {
+            establishDashboardSession({
+              ...user,
+              name: `${values.firstName} ${values.lastName}`.trim(),
+            })
+          }
+
           toast.success(profileDetailMessages.saveSuccess, {
             position: "top-center",
           })

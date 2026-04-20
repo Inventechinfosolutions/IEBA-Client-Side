@@ -21,6 +21,7 @@ import { formatPhoneUs10Input } from "../schemas"
 
 
 import { usePermissions } from "@/hooks/usePermissions"
+import { capitalize } from "@/lib/utils"
 
 export function EmployeeLoginDetailsSection({ isEditMode }: EmployeeLoginDetailsSectionProps) {
   /** Edit mode: defer GET /jobclassification until the user opens the picker. */
@@ -205,11 +206,33 @@ export function EmployeeLoginDetailsSection({ isEditMode }: EmployeeLoginDetails
 
         <div>
           <label className={labelClassName}>*First Name</label>
-          <Input {...register("firstName")} className={inputClassName} placeholder="First Name" />
+          <Controller
+            name="firstName"
+            control={control}
+            render={({ field }) => (
+              <Input
+                {...field}
+                className={inputClassName}
+                placeholder="First Name"
+                onChange={(e) => field.onChange(capitalize(e.target.value))}
+              />
+            )}
+          />
         </div>
         <div>
           <label className={labelClassName}>*Last Name</label>
-          <Input {...register("lastName")} className={inputClassName} placeholder="Last Name" />
+          <Controller
+            name="lastName"
+            control={control}
+            render={({ field }) => (
+              <Input
+                {...field}
+                className={inputClassName}
+                placeholder="Last Name"
+                onChange={(e) => field.onChange(capitalize(e.target.value))}
+              />
+            )}
+          />
         </div>
         <div>
           <label className={labelClassName}>Phone</label>
