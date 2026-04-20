@@ -158,6 +158,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       user,
       isAuthenticated: !!user,
       isLoading: sessionLoading || authLoading,
+      isInitialLoading: sessionLoading,
       signIn,
       establishDashboardSession,
       signOut,

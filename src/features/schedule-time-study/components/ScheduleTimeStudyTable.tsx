@@ -36,6 +36,19 @@ import type { ScheduledTimeStudyRowEnriched, ScheduledTimeStudyTableProps } from
 import { DEFAULT_SCHEDULE_PARTICIPANT_GROUP_OPTIONS } from "../types"
 import { SchedulePayPeriodGroupStatus } from "../enums/schedule-time-study.enum"
 import { ScheduleTimeStudyForm } from "./ScheduleTimeStudyForm"
+import { Check } from "lucide-react"
+import { toast } from "sonner"
+
+const participantGroupSuccessToastOptions = {
+  position: "top-center" as const,
+  icon: (
+    <span className="inline-flex size-4 items-center justify-center rounded-full bg-[#22c55e] text-white">
+      <Check className="size-3 stroke-3" />
+    </span>
+  ),
+  className:
+    "!w-fit !max-w-[340px] !min-h-[35px] !rounded-[8px] !border-0 !px-3 !py-2 !text-[12px] !whitespace-nowrap !shadow-[0_8px_22px_rgba(17,24,39,0.18)]",
+}
 
 export function ScheduledTimeStudyTable({
   selectedStudyYear,
@@ -196,6 +209,7 @@ export function ScheduledTimeStudyTable({
                             if (!Number.isFinite(id) || id <= 0) return
                             try {
                               await deleteRow.mutateAsync(id)
+                              toast.success("Deleted successfully", participantGroupSuccessToastOptions)
                             } catch {
                               // Error toast handled at higher-level API wrapper patterns elsewhere; keep silent here.
                             }
