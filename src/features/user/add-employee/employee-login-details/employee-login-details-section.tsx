@@ -19,17 +19,16 @@ import {
 import { useEmployeeLoginDetailsUi } from "../hooks/use-add-employee-form"
 import { formatPhoneUs10Input } from "../schemas"
 
-import { useAuth } from "@/contexts/AuthContext"
+
+import { usePermissions } from "@/hooks/usePermissions"
 
 export function EmployeeLoginDetailsSection({ isEditMode }: EmployeeLoginDetailsSectionProps) {
   /** Edit mode: defer GET /jobclassification until the user opens the picker. */
   const [jobClassificationMenuOpened, setJobClassificationMenuOpened] = useState(false)
   const [locationMenuOpened, setLocationMenuOpened] = useState(false)
 
-  const { user } = useAuth()
-  
-  const isSuperOrAdmin = user?.roles?.some(r => r.toLowerCase() === "super admin" || r.toLowerCase().includes("time study admin")) ?? false;
-  const isDepartmentAdmin = (user?.roles?.some(r => r.toLowerCase() === "department admin") ?? false) && !isSuperOrAdmin;
+  const { isSuperAdmin, isDepartmentAdmin, user } = usePermissions()
+  const showDeptAutoAssign = isDepartmentAdmin && !isSuperAdmin
 
   const jobClassificationsEnabled = !isEditMode || jobClassificationMenuOpened
   const locationsEnabled = !isEditMode || locationMenuOpened
@@ -505,7 +504,7 @@ export function EmployeeLoginDetailsSection({ isEditMode }: EmployeeLoginDetails
         </div>
       </div>
 
-      {isDepartmentAdmin && !isEditMode && (
+      {showDeptAutoAssign && !isEditMode && (
         <div className="mt-4 grid grid-cols-3 gap-3">
           <div>
             <label className={labelClassName}>Department Assignment</label>

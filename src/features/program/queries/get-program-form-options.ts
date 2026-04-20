@@ -60,7 +60,11 @@ async function fetchAllPages<TItem>(
   return all
 }
 
-async function fetchProgramFormOptions(contextTab?: string, activeSection?: ProgramFormSection) {
+async function fetchProgramFormOptions(
+  contextTab?: string,
+  activeSection?: ProgramFormSection,
+  departmentIds?: number[]
+) {
   const departments = await fetchAllPages<DepartmentResDto>(
     "/departments?sort=ASC&status=active",
     (payload) => ({
@@ -71,6 +75,7 @@ async function fetchProgramFormOptions(contextTab?: string, activeSection?: Prog
 
   const activeDepartments = departments
     .filter((d) => isActiveStatus(d.status))
+    .filter((d) => !departmentIds || (typeof d.id === "number" && departmentIds.includes(d.id)))
     .map((d) => ({
       id: typeof d.id === "number" ? d.id : null,
       name: typeof d.name === "string" ? d.name.trim() : "",
@@ -103,8 +108,12 @@ async function fetchProgramFormOptions(contextTab?: string, activeSection?: Prog
       })
     )
 
-    const activeBudgetUnits = budgetUnits.filter((bu) => isActiveStatus(bu.status))
-
+    const activeBudgetUnits = budgetUnits.filter((bu) => {
+      if (!isActiveStatus(bu.status)) return false
+      if (departmentIds && bu.department?.id && !departmentIds.includes(bu.department.id))
+        return false
+      return true
+    })
     budgetUnitNameOptions = activeBudgetUnits
       .map((bu) => (typeof bu.name === "string" ? bu.name.trim() : ""))
       .filter(Boolean)
@@ -143,7 +152,7 @@ async function fetchProgramFormOptions(contextTab?: string, activeSection?: Prog
     (!contextTab && activeSection == null)
 
   if (shouldLoadBudgetPrograms) {
-    const result = await fetchActiveBudgetProgramsForBuSubProgram()
+    const result = await fetchActiveBudgetProgramsForBuSubProgram(departmentIds)
     budgetProgramNameOptions = result.budgetProgramNameOptions
     budgetProgramLookup = result.budgetProgramLookup
     budgetProgramIdByName = result.budgetProgramIdByName
@@ -164,11 +173,12 @@ async function fetchProgramFormOptions(contextTab?: string, activeSection?: Prog
 export function useGetProgramFormOptions(
   enabled = true,
   contextTab?: string,
-  activeSection?: ProgramFormSection
+  activeSection?: ProgramFormSection,
+  departmentIds?: number[]
 ) {
   return useQuery({
-    queryKey: ["program", "form-options", contextTab, activeSection],
-    queryFn: () => fetchProgramFormOptions(contextTab, activeSection),
+    queryKey: ["program", "form-options", contextTab, activeSection, departmentIds],
+    queryFn: () => fetchProgramFormOptions(contextTab, activeSection, departmentIds),
     // Short stale window so switching Program tabs / modal sections picks up fresh lookups.
     staleTime: 0,
     gcTime: 30 * 60_000,
@@ -180,7 +190,7 @@ export function useGetProgramFormOptions(
 }
 
 // Active Budget Programs (type=program) for BU Sub-Program tab (Budget Unit Program Name dropdown).
-async function fetchActiveBudgetProgramsForBuSubProgram() {
+async function fetchActiveBudgetProgramsForBuSubProgram(departmentIds?: number[]) {
   const items = await fetchAllPages<{
     id?: number
     code?: string
@@ -196,7 +206,11 @@ async function fetchActiveBudgetProgramsForBuSubProgram() {
     })
   )
 
-  const activePrograms = items.filter((p) => isActiveStatus(p.status))
+  const activePrograms = items.filter((p) => {
+    if (!isActiveStatus(p.status)) return false;
+    if (departmentIds && p.department?.id && !departmentIds.includes(p.department.id)) return false;
+    return true;
+  });
 
   const budgetProgramNameOptions = activePrograms
     .map((p) => (typeof p.name === "string" ? p.name.trim() : ""))
@@ -242,7 +256,7 @@ export function useActiveBuProgramsForSubProgram(enabled: boolean) {
 }
 
 // Active Time Study Primary Programs (type=primary) for TS Sub-Program One tab (TS Program dropdown).
-async function fetchActivePrimaryTimeStudyPrograms() {
+async function fetchActivePrimaryTimeStudyPrograms(departmentIds?: number[]) {
   // For the TS Program dropdown we don't need full pagination support,
   // just a single fetch with a high enough limit to cover all active primary programs.
   const search = new URLSearchParams()
@@ -252,6 +266,9 @@ async function fetchActivePrimaryTimeStudyPrograms() {
   search.set("sort", "ASC")
   search.set("status", "active")
   search.set("type", "primary")
+  if (departmentIds && departmentIds.length > 0) {
+    search.set("departmentIds", departmentIds.join(","))
+  }
 
   const raw = await api.get<ApiEnvelope<{ data?: {
     id?: number
@@ -291,10 +308,10 @@ async function fetchActivePrimaryTimeStudyPrograms() {
   }
 }
 
-export function useGetActivePrimaryTimeStudyPrograms(enabled: boolean) {
+export function useGetActivePrimaryTimeStudyPrograms(enabled: boolean, departmentIds?: number[]) {
   return useQuery({
-    queryKey: ["program", "form-options", "timestudyprograms", "type-primary"],
-    queryFn: () => fetchActivePrimaryTimeStudyPrograms(),
+    queryKey: ["program", "form-options", "timestudyprograms", "type-primary", departmentIds],
+    queryFn: () => fetchActivePrimaryTimeStudyPrograms(departmentIds),
     enabled,
     staleTime: 0,
     gcTime: 30 * 60_000,

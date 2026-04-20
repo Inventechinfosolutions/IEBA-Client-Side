@@ -8,5 +8,9 @@ export function useGetUserModuleRows(params: GetUserModuleParams) {
   return useQuery({
     queryKey: userModuleKeys.list(params),
     queryFn: (): Promise<UserModuleListResponse> => apiGetUserModuleRows(params),
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
   })
 }

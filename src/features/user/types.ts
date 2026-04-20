@@ -71,7 +71,7 @@ export type GetUserModuleParams = {
   firstName?: string
   lastName?: string
   employeeId?: string
-  departmentId?: number
+  departmentId?: string | number
 }
 
 export type PaginationMetaDto = {

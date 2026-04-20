@@ -8,9 +8,7 @@ import { queryClient } from "@/main"
 import { TransferListMoveButton } from "@/components/ui/transfer-list-move-button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { useAuth } from "@/contexts/AuthContext"
-import { useQuery } from "@tanstack/react-query"
-import { apiGetUserDetails } from "../../api"
+import { usePermissions } from "@/hooks/usePermissions"
 
 import type {
   AddEmployeeSecurityRoleCatalogItem,
@@ -237,16 +235,13 @@ export function SecurityAssignmentsPanel({
   const assignedRoles = watch("roleAssignments") ?? []
   const securitySnapshots = watch("securityAssignedSnapshots") ?? []
   
-  const { user } = useAuth()
-  
-  // Use session roles directly to avoid flashing all departments while loading
-  const isSuperOrAdmin = user?.roles?.some(r => r.toLowerCase() === "super admin" || r.toLowerCase().includes("time study admin")) ?? false;
-  const isDepartmentAdmin = (user?.roles?.some(r => r.toLowerCase() === "department admin") ?? false) && !isSuperOrAdmin;
+  const { isSuperAdmin, isDepartmentAdmin, user } = usePermissions()
+  const isRestrictedDeptAdmin = isDepartmentAdmin && !isSuperAdmin
   
   const allowedDepartmentNames = useMemo(() => {
-    if (!isDepartmentAdmin || !user?.departmentRoles) return null;
+    if (!isRestrictedDeptAdmin || !user?.departmentRoles) return null;
     return new Set(user.departmentRoles.map(dr => dr.departmentName));
-  }, [isDepartmentAdmin, user?.departmentRoles]);
+  }, [isRestrictedDeptAdmin, user?.departmentRoles]);
 
   /**
    * Unassigned API (with `userId` in edit) returns server “still unassigned” rows; we also remove anything
@@ -256,7 +251,7 @@ export function SecurityAssignmentsPanel({
     if (!unassignedQuery.isSuccess || !unassignedQuery.data) return []
     let data = unassignedQuery.data
 
-    if (isDepartmentAdmin && allowedDepartmentNames) {
+    if (isRestrictedDeptAdmin && allowedDepartmentNames) {
       data = data.filter(i => allowedDepartmentNames.has(i.department));
     }
 
@@ -290,7 +285,7 @@ export function SecurityAssignmentsPanel({
     isAddMode,
     isEditMode,
     securitySnapshots,
-    isDepartmentAdmin,
+    isRestrictedDeptAdmin,
     allowedDepartmentNames,
   ])
 

@@ -46,6 +46,7 @@ export type GetProgramsParams = {
   pageSize: number
   search: string
   inactiveOnly: boolean
+  departmentIds?: number[]
 }
 
 export type ProgramListResponse = {
@@ -197,6 +198,7 @@ export type ProgramFormModalProps = {
   isSubmitting?: boolean
   onOpenChange: (open: boolean) => void
   onSave: (values: ProgramFormValues) => void
+  departmentIds?: number[]
 }
 
 export type ProgramFormModalHandle = {
@@ -228,6 +230,7 @@ export type ProgramToolbarProps = {
   onSearchChange: (value: string) => void
   onToggleInactiveOnly: () => void
   onAddProgram: () => void
+  hideAdd?: boolean
 }
 
 export type TimeStudyProgramFormProps = {
@@ -248,6 +251,7 @@ export type TimeStudyInputShellProps = {
 }
 export type ProgramActivityRelationFormProps = {
   form: UseFormReturn<ProgramFormValues>
+  departmentIds?: number[]
 }
 
 export type TimeStudyProgramTableProps = {
@@ -255,6 +259,7 @@ export type TimeStudyProgramTableProps = {
   isLoading: boolean
   onEditRow: (row: ProgramRow) => void
   lastUpdatedRow?: ProgramRow | null
+  readonly?: boolean
 }
 
 export type BudgetUnitTableHandle = {
@@ -276,6 +281,7 @@ export type BudgetUnitTableProps = {
   setExpandedProgramGroups?: React.Dispatch<React.SetStateAction<Record<string, boolean>>>
   expandedPrograms?: Record<string, boolean>
   setExpandedPrograms?: React.Dispatch<React.SetStateAction<Record<string, boolean>>>
+  readonly?: boolean
 }
 
 export type ProgramTableSortState = {

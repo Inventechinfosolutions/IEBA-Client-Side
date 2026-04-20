@@ -1,5 +1,7 @@
 import type { Dispatch, SetStateAction } from "react"
 import { useMemo, useState } from "react"
+
+import { usePermissions } from "@/hooks/usePermissions"
 import tableEmptyIcon from "@/assets/icons/table-empty.png"
 import { SingleSelectDropdown } from "@/components/ui/dropdown"
 import { Input } from "@/components/ui/input"
@@ -22,14 +24,26 @@ import type {
 } from "../../types"
 import { TransferPanel } from "./transfer-panel"
 
-export function ProgramActivityRelationForm({ form }: ProgramActivityRelationFormProps) {
+export function ProgramActivityRelationForm({ form, departmentIds }: ProgramActivityRelationFormProps) {
+
   const formOptionsQuery = useGetProgramFormOptions(
     true,
     "Program Activity Relation",
     "Budget Unit",
+    departmentIds
   )
   const departmentOptions = formOptionsQuery.data?.departmentOptions ?? []
   const departmentIdByName = formOptionsQuery.data?.departmentIdByName ?? {}
+
+  const { user, isSuperAdmin, isDepartmentAdmin } = usePermissions()
+  
+  const isRestrictedRole = (user?.roles?.some(role => {
+    const r = role.toLowerCase();
+    return r.includes("payroll admin") || 
+           r.includes("time study admin") || 
+           r.includes("time study supervisor") || 
+           r.toLowerCase() === "user";
+  }) ?? false) && !isSuperAdmin && !isDepartmentAdmin;
 
   const selectedDepartment = form.watch("programActivityRelationDepartment") || ""
   const selectedDepartmentId = departmentIdByName[selectedDepartment.trim()]
@@ -262,20 +276,22 @@ export function ProgramActivityRelationForm({ form }: ProgramActivityRelationFor
           selectedDept={selectedDepartment}
         />
 
-        <div className="flex flex-col gap-3 pt-10">
-          <TransferListMoveButton
-            direction="forward"
-            disabled={toggledU.length === 0}
-            aria-label="Move selected to assigned"
-            onClick={() => handleTransfer(toggledU, true)}
-          />
-          <TransferListMoveButton
-            direction="back"
-            disabled={toggledA.length === 0}
-            aria-label="Move selected to unassigned"
-            onClick={() => handleTransfer(toggledA, false)}
-          />
-        </div>
+        {!isRestrictedRole && (
+          <div className="flex flex-col gap-3 pt-10">
+            <TransferListMoveButton
+              direction="forward"
+              disabled={toggledU.length === 0}
+              aria-label="Move selected to assigned"
+              onClick={() => handleTransfer(toggledU, true)}
+            />
+            <TransferListMoveButton
+              direction="back"
+              disabled={toggledA.length === 0}
+              aria-label="Move selected to unassigned"
+              onClick={() => handleTransfer(toggledA, false)}
+            />
+          </div>
+        )}
 
         <TransferPanel
           title="Select Activities(Assigned)"

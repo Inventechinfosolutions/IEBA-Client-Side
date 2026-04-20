@@ -4,6 +4,8 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { toast } from "sonner"
 
+import { usePermissions } from "@/hooks/usePermissions"
+
 import { MasterCodePagination } from "@/features/master-code/components/MasterCodePagination"
 import { BudgetUnitTable } from "../components/budget-unit-table"
 import { ProgramActivityRelationForm } from "../components/program-activity-relation/program-activity-relation-form"
@@ -143,10 +145,46 @@ export function ProgramPage() {
         : mapProgramTabToSection(activeTab)
       : undefined
 
+  const { user, isSuperAdmin, isDepartmentAdmin } = usePermissions()
+
+  const isRestrictedRole = (user?.roles?.some(role => {
+    const r = role.toLowerCase();
+    return r.includes("payroll admin") ||
+           r.includes("time study admin") ||
+           r.includes("time study supervisor") ||
+           r.toLowerCase() === "user";
+  }) ?? false) && !isSuperAdmin && !isDepartmentAdmin;
+
+  const assignedDepartmentIds = useMemo(() => {
+    if (isSuperAdmin) return undefined;
+    const ids = new Set<number>();
+    user?.departmentRoles?.forEach(dr => {
+      if (dr.departmentId) ids.add(dr.departmentId);
+    });
+    return Array.from(ids);
+  }, [user, isSuperAdmin]);
+
+  const assignedDepartmentNames = useMemo(() => {
+    if (isSuperAdmin) return undefined;
+    const names = new Set<string>();
+    user?.departmentRoles?.forEach(dr => {
+      if (dr.departmentName) names.add(dr.departmentName.trim());
+    });
+    return Array.from(names);
+  }, [user, isSuperAdmin]);
+
+  const filteredTabs = useMemo(() => {
+    if (isRestrictedRole) {
+      return ["Budget Units", "Time Study programs"] as ProgramTab[]
+    }
+    return tabs
+  }, [isRestrictedRole])
+
   const formOptionsQuery = useGetProgramFormOptions(
     modalOpen && modalMode === "add",
     activeTab,
-    addSectionForLookups
+    addSectionForLookups,
+    assignedDepartmentIds
   )
 
   const programModule = useProgramModule({
@@ -155,6 +193,7 @@ export function ProgramPage() {
     pageSize,
     search,
     inactiveOnly,
+    departmentIds: assignedDepartmentIds
   })
 
   const programActivityRelationFilterForm = useForm<ProgramFormValues>({
@@ -414,7 +453,7 @@ export function ProgramPage() {
       } as React.CSSProperties}
     >
       <div className="-mx-5 -mt-5 md:-mx-6 md:-mt-6">
-        <ProgramTabs tabs={tabs} activeTab={activeTab} onChange={handleTabChange} />
+        <ProgramTabs tabs={filteredTabs} activeTab={activeTab} onChange={handleTabChange} />
       </div>
       <div className="mt-5">
         {activeTab !== "Program Activity Relation" ? (
@@ -425,11 +464,15 @@ export function ProgramPage() {
             onSearchChange={handleSearchChange}
             onToggleInactiveOnly={() => setInactiveOnly((prev) => !prev)}
             onAddProgram={handleAddProgram}
+            hideAdd={isRestrictedRole}
           />
         ) : null}
         {activeTab === "Program Activity Relation" ? (
           <div className="mb-5">
-            <ProgramActivityRelationForm form={programActivityRelationFilterForm} />
+            <ProgramActivityRelationForm 
+              form={programActivityRelationFilterForm} 
+              departmentIds={assignedDepartmentIds}
+            />
           </div>
         ) : null}
         {activeTab !== "Program Activity Relation" ? (
@@ -449,6 +492,7 @@ export function ProgramPage() {
                   setExpandedProgramGroups={setExpandedProgramGroups}
                   expandedPrograms={expandedPrograms}
                   setExpandedPrograms={setExpandedPrograms}
+                  readonly={isRestrictedRole}
                 />
               ) : (
                 <TimeStudyProgramTable
@@ -456,6 +500,7 @@ export function ProgramPage() {
                   isLoading={isTableLoading}
                   onEditRow={handleEditRow}
                   lastUpdatedRow={lastUpdatedTimeStudyRow}
+                  readonly={isRestrictedRole}
                 />
               )}
             </div>
@@ -473,7 +518,7 @@ export function ProgramPage() {
         ) : null}
       </div>
       <ProgramFormModal
-        key={modalSessionId}
+        key={`modal-${modalSessionId}`}
         open={modalOpen}
         mode={modalMode}
         initialValues={modalInitialValues}
@@ -483,6 +528,7 @@ export function ProgramPage() {
         isSubmitting={programModule.isCreating || programModule.isUpdating}
         onOpenChange={setModalOpen}
         onSave={handleSaveForm}
+        departmentIds={assignedDepartmentIds}
         ref={modalResetRef}
       />
     </section>
