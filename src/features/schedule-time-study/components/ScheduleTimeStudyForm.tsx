@@ -37,6 +37,17 @@ import type {
   ScheduleTimeStudyModalFormValues,
 } from "../types"
 
+const participantGroupSuccessToastOptions = {
+  position: "top-center" as const,
+  icon: (
+    <span className="inline-flex size-4 items-center justify-center rounded-full bg-[#22c55e] text-white">
+      <Check className="size-3 stroke-3" />
+    </span>
+  ),
+  className:
+    "!w-fit !max-w-[340px] !min-h-[35px] !rounded-[8px] !border-0 !px-3 !py-2 !text-[12px] !whitespace-nowrap !shadow-[0_8px_22px_rgba(17,24,39,0.18)]",
+}
+
 function getFirstNestedFormError(errors: unknown): string | null {
   if (!errors || typeof errors !== "object") return null
   const record = errors as Record<string, unknown>
@@ -182,6 +193,10 @@ export function ScheduleTimeStudyForm({
           }
         }
         await createBatch.mutateAsync({ items })
+        toast.success(
+          editingRow ? "Scheduling updated successfully" : "Scheduling created successfully",
+          participantGroupSuccessToastOptions,
+        )
         onOpenChange(false)
         form.reset({
           ...scheduleTimeStudyModalDefaultValues,
@@ -535,10 +550,24 @@ export function ScheduleTimeStudyForm({
 
                 const resolveUserLabel = (id: string): string => {
                   const u = departmentUsers.find((x) => x.id === id)
+                  let jpUserLabel = ""
+                  if (!u) {
+                    for (const jp of jobPools) {
+                      const jpu = jp.userprofiles?.find((x) => x.id === id)
+                      if (jpu) {
+                        jpUserLabel =
+                          (jpu.name ?? "").trim() ||
+                          `${jpu.firstName ?? ""} ${jpu.lastName ?? ""}`.trim()
+                        if (jpUserLabel) break
+                      }
+                    }
+                  }
+
                   return (
                     (u?.name ?? "").trim() ||
                     `${u?.firstName ?? ""} ${u?.lastName ?? ""}`.trim() ||
                     (u?.user?.loginId ?? "").trim() ||
+                    jpUserLabel ||
                     id
                   )
                 }
@@ -547,9 +576,13 @@ export function ScheduleTimeStudyForm({
                   const jp = jobPools.find((p) => String(p.id) === jobPoolId)
                   const users = jp?.userprofiles ?? []
                   return users.map((u) => {
+                    const deptUser = departmentUsers.find((du) => du.id === u.id)
                     const label =
                       (u.name ?? "").trim() ||
                       `${u.firstName ?? ""} ${u.lastName ?? ""}`.trim() ||
+                      (deptUser?.name ?? "").trim() ||
+                      `${deptUser?.firstName ?? ""} ${deptUser?.lastName ?? ""}`.trim() ||
+                      (deptUser?.user?.loginId ?? "").trim() ||
                       u.id
                     return { id: u.id, label }
                   })
@@ -589,6 +622,8 @@ export function ScheduleTimeStudyForm({
                         const jobPoolIds = [...new Set((g.jobPools ?? []).map((x) => x.trim()).filter(Boolean))]
 
                         const jobPoolUserRows = jobPoolIds.flatMap(resolveJobPoolUsers)
+                        const jobPoolUserIdsSet = new Set(jobPoolUserRows.map((u) => u.id))
+                        const filteredUserIds = userIds.filter((id) => !jobPoolUserIdsSet.has(id))
 
                         return (
                           <div key={g.id} className="overflow-hidden rounded-[8px] border border-[#E5E7EB]">
@@ -608,11 +643,11 @@ export function ScheduleTimeStudyForm({
                                 </span>
                               </div>
 
-                              {userIds.length === 0 ? (
+                              {filteredUserIds.length === 0 ? (
                                 <div className="px-6 py-2 text-[12px] text-[#6B7280]">No users assigned.</div>
                               ) : (
                                 <div className="flex flex-col pb-2">
-                                  {userIds.map((id) => (
+                                  {filteredUserIds.map((id) => (
                                     <div
                                       key={`u-${g.id}-${id}`}
                                       className="relative grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-2 py-1 pl-[60px] pr-5"

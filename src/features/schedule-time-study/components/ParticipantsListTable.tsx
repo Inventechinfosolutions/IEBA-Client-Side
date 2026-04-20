@@ -1,5 +1,5 @@
-import { Eye, Trash2 } from "lucide-react"
-import { useState } from "react"
+import { Eye, Trash2, Check } from "lucide-react"
+import { useMemo, useState } from "react"
 import { toast } from "sonner"
 
 import editIconImg from "@/assets/edit-icon.png"
@@ -35,9 +35,21 @@ import { useDeleteRmtsGroup } from "../mutations/deleteRmtsGroup"
 import { formatRmtsGroupMutationError } from "../utils/rmtsGroupMutationMessages"
 import { useGetRmtsGroups } from "../queries/getRmtsGroups"
 import { useGetScheduleTimeStudyUsersByDepartment } from "../queries/getScheduleTimeStudyUsersByDepartment"
+import { useGetScheduleTimeStudyJobPoolsByDepartment } from "../queries/getScheduleTimeStudyJobPoolsByDepartment"
 import { useGetRmtsGroupById } from "../queries/getRmtsGroupById"
 import type { ParticipantsListRow, ParticipantsListTableProps } from "../types"
 import { ParticipantsListForm, ParticipantUsersModal } from "./ParticipantsListForm"
+
+const participantGroupSuccessToastOptions = {
+  position: "top-center" as const,
+  icon: (
+    <span className="inline-flex size-4 items-center justify-center rounded-full bg-[#22c55e] text-white">
+      <Check className="size-3 stroke-3" />
+    </span>
+  ),
+  className:
+    "!w-fit !max-w-[340px] !min-h-[35px] !rounded-[8px] !border-0 !px-3 !py-2 !text-[12px] !whitespace-nowrap !shadow-[0_8px_22px_rgba(17,24,39,0.18)]",
+}
 
 export function ParticipantsListTable({
   studyYear,
@@ -62,18 +74,42 @@ export function ParticipantsListTable({
   const departmentUsersQuery = useGetScheduleTimeStudyUsersByDepartment({
     departmentId: usersModalOpen ? departmentId : null,
   })
+  const jobPoolsQuery = useGetScheduleTimeStudyJobPoolsByDepartment({
+    departmentId: usersModalOpen ? departmentId : null,
+  })
 
   const assignedUserIds = groupByIdQuery.data?.users ?? []
   const departmentUsers = departmentUsersQuery.data ?? []
-  const assignedUsers = assignedUserIds.map((id) => {
-    const u = departmentUsers.find((x) => x.id === id)
-    const label =
-      (u?.name ?? "").trim() ||
-      `${u?.firstName ?? ""} ${u?.lastName ?? ""}`.trim() ||
-      (u?.user?.loginId ?? "").trim() ||
-      id
-    return { id, label }
-  })
+  const jobPools = jobPoolsQuery.data ?? []
+
+  const assignedUsers = useMemo(() => {
+    const userMap = new Map<string, string>()
+
+    // Fill with department users
+    for (const u of departmentUsers) {
+      const label =
+        (u.name ?? "").trim() ||
+        `${u.firstName ?? ""} ${u.lastName ?? ""}`.trim() ||
+        (u.user?.loginId ?? "").trim()
+      if (label && u.id) userMap.set(u.id, label)
+    }
+
+    // Complement with job pool user details
+    for (const jp of jobPools) {
+      const profiles = jp.userprofiles ?? []
+      for (const p of profiles) {
+        const label = (p.name ?? "").trim() || `${p.firstName ?? ""} ${p.lastName ?? ""}`.trim()
+        if (label && p.id && !userMap.has(p.id)) {
+          userMap.set(p.id, label)
+        }
+      }
+    }
+
+    return assignedUserIds.map((id) => ({
+      id,
+      label: userMap.get(id) || id,
+    }))
+  }, [assignedUserIds, departmentUsers, jobPools])
 
   return (
     <div className="mt-8 space-y-4">
@@ -260,9 +296,17 @@ export function ParticipantsListTable({
                                   `Delete participant group "${row.groupName}"? This cannot be undone.`,
                                 )
                                 if (!ok) return
-                                void deleteGroup.mutateAsync(id).catch((error: unknown) => {
-                                  toast.error(formatRmtsGroupMutationError(error))
-                                })
+                                void deleteGroup
+                                  .mutateAsync(id)
+                                  .then(() => {
+                                    toast.success(
+                                      "Deleted successfully",
+                                      participantGroupSuccessToastOptions,
+                                    )
+                                  })
+                                  .catch((error: unknown) => {
+                                    toast.error(formatRmtsGroupMutationError(error))
+                                  })
                               }}
                             >
                               <Trash2 className="size-3.5" />
@@ -340,7 +384,11 @@ export function ParticipantsListTable({
             : "List of User in Group"
         }
         departmentLabel={selectedDepartmentName}
-        loading={groupByIdQuery.isFetching || departmentUsersQuery.isFetching}
+        loading={
+          groupByIdQuery.isFetching ||
+          departmentUsersQuery.isFetching ||
+          jobPoolsQuery.isFetching
+        }
         users={assignedUsers}
       />
     </div>

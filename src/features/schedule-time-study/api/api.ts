@@ -19,7 +19,7 @@ import type {
   UpdateRmtsGroupPayload,
   UpdateRmtsPayPeriodPayload,
 } from "../types"
-import { compareMmDdYyyy } from "../utils/dates"
+import { compareMmDdYyyy, parseFlexibleToMmDdYyyy } from "../utils/dates"
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object"
@@ -59,8 +59,10 @@ function normalizeFiscalYearsPayload(payload: unknown): ScheduleTimeStudyFiscalY
             : typeof o.fiscalYear === "string"
               ? o.fiscalYear.trim()
               : id
-    const start = typeof o.start === "string" ? o.start.trim() : undefined
-    const end = typeof o.end === "string" ? o.end.trim() : undefined
+
+    const start = parseFlexibleToMmDdYyyy(o.start) ?? undefined
+    const end = parseFlexibleToMmDdYyyy(o.end) ?? undefined
+
     if (!id || !label) continue
     out.push({
       id,

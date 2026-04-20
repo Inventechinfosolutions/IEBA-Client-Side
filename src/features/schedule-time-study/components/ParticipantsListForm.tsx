@@ -35,6 +35,17 @@ import type {
   ParticipantsListFormValues,
 } from "../types"
 
+const participantGroupSuccessToastOptions = {
+  position: "top-center" as const,
+  icon: (
+    <span className="inline-flex size-4 items-center justify-center rounded-full bg-[#22c55e] text-white">
+      <Check className="size-3 stroke-3" />
+    </span>
+  ),
+  className:
+    "!w-fit !max-w-[340px] !min-h-[35px] !rounded-[8px] !border-0 !px-3 !py-2 !text-[12px] !whitespace-nowrap !shadow-[0_8px_22px_rgba(17,24,39,0.18)]",
+}
+
 export function ParticipantsListForm({
   open,
   onOpenChange,
@@ -74,7 +85,7 @@ export function ParticipantsListForm({
     selectedDepartmentName.trim() || (selectedDepartment.trim() ? "—" : "")
 
   const usersQuery = useGetScheduleTimeStudyUsersByDepartment({
-    departmentId: selectedUserBy === "user" && open ? departmentId : null,
+    departmentId: open ? departmentId : null,
   })
   const departmentUsers = usersQuery.data ?? []
 
@@ -140,8 +151,10 @@ export function ParticipantsListForm({
           id,
           body: payload,
         })
+        toast.success("Participant group updated successfully", participantGroupSuccessToastOptions)
       } else {
         await createGroup.mutateAsync(payload)
+        toast.success("Participant group created successfully", participantGroupSuccessToastOptions)
       }
       onOpenChange(false)
       form.reset({
@@ -339,9 +352,13 @@ export function ParticipantsListForm({
                                 {/* Users list with tree lines */}
                                 <div className="flex flex-col pb-2">
                                   {users.map((u) => {
+                                    const deptUser = departmentUsers.find((du) => du.id === u.id)
                                     const label =
                                       (u.name ?? "").trim() ||
                                       `${u.firstName ?? ""} ${u.lastName ?? ""}`.trim() ||
+                                      (deptUser?.name ?? "").trim() ||
+                                      `${deptUser?.firstName ?? ""} ${deptUser?.lastName ?? ""}`.trim() ||
+                                      (deptUser?.user?.loginId ?? "").trim() ||
                                       u.id
                                     return (
                                       <button
