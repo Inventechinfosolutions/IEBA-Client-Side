@@ -140,24 +140,18 @@ export async function getTimeRecordRequests(params: {
 }
 
 
-export async function getLeaveDetails(userId: string | number): Promise<LeaveAggregateResult> {
+export async function getLeaveDetails(): Promise<LeaveAggregateResult> {
   const res = await api.get<ApiEnvelope<{ statusCounts: LeaveAggregateResult["statusCounts"] }>>(
-    `/usersleave?action=leaveDetails&userId=${userId}`,
+    "/usersleave?action=leaveDetails",
   )
   const payload = (res?.data ?? res) as { statusCounts: LeaveAggregateResult["statusCounts"] }
   return { statusCounts: payload?.statusCounts ?? [] }
 }
 
 
-export async function getStaffLeave(params?: {
-  userId?: string | number
-  departmentId?: number
-  roleId?: number
-}): Promise<LeaveAggregateResult> {
+export async function getStaffLeave(userId?: string | number): Promise<LeaveAggregateResult> {
   const search = new URLSearchParams({ action: "leaveDetails" })
-  if (params?.userId) search.set("userId", String(params.userId))
-  if (params?.departmentId) search.set("departmentId", String(params.departmentId))
-  if (params?.roleId) search.set("roleId", String(params.roleId))
+  if (userId) search.set("userId", String(userId))
   const res = await api.get<ApiEnvelope<{ statusCounts: LeaveAggregateResult["statusCounts"] }>>(
     `/usersleave?${search.toString()}`,
   )

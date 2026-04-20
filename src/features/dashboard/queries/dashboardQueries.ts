@@ -25,8 +25,8 @@ import type {
 } from "../types"
 import { LeaveStatus, TimeStudyStatus } from "../enums/dashboard.enum"
 
-const STALE_TIME = 60_000
-const GC_TIME = STALE_TIME * 2
+const STALE_TIME = 0
+const GC_TIME = 300_000 // 5 minutes
 
 
 const staleOptions = {
@@ -95,10 +95,10 @@ export function useTimeRecordRequests(params: {
 }
 
 
-export function useSelfLeave(userId: string | number) {
+export function useSelfLeave() {
   return useQuery({
-    queryKey: dashboardKeys.leaveDetails(userId),
-    queryFn: () => getLeaveDetails(userId),
+    queryKey: [...dashboardKeys.leaveDetails("self")],
+    queryFn: () => getLeaveDetails(),
     select(data: LeaveAggregateResult): SelfLeaveStats {
       let requested = 0
       let approved = 0
@@ -130,7 +130,6 @@ export function useSelfLeave(userId: string | number) {
       console.log('Self Leave Result:', { requested, approved, rejected, total })
       return { requested, approved, rejected, total }
     },
-    enabled: !!userId,
     ...staleOptions,
   })
 }
@@ -138,13 +137,11 @@ export function useSelfLeave(userId: string | number) {
 
 export function useStaffLeave(options?: { 
   userId?: string | number
-  departmentId?: number
-  roleId?: number
   enabled?: boolean 
 }) {
   return useQuery({
-    queryKey: [...dashboardKeys.staffLeave(), { userId: options?.userId, departmentId: options?.departmentId, roleId: options?.roleId }],
-    queryFn: () => getStaffLeave({ userId: options?.userId, departmentId: options?.departmentId, roleId: options?.roleId }),
+    queryKey: [...dashboardKeys.staffLeave(), { userId: options?.userId }],
+    queryFn: () => getStaffLeave(options?.userId),
     select(data: LeaveAggregateResult): StaffLeaveStats {
       let requested = 0
       let approved = 0
