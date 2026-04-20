@@ -21,9 +21,9 @@ import {
   useHolidays,
   useDashboardOverview,
   useReportsByRole,
-  useActiveUsers,
   useDashboardUserCount,
 } from "../queries/dashboardQueries"
+import { downloadPayrollTemplate } from "@/features/payroll/api/payrollApi"
 import { getPayrollDateRange } from "../api/dashboard"
 
 
@@ -75,6 +75,7 @@ export function DashboardPage() {
   )
   const hasDeptTsRole = normalizedRoleNames.some(isDepartmentAdminLikeRole)
   const hasDepartmentAndPayrollRole = hasDeptTsRole && hasPayrollAdminRole
+  const hasUserRole = normalizedRoleNames.some((role) => role === "user")
   const isUserOrPayrollRole = (role: string) =>
     role === "user" || role === "payroll" || role === "payrolladmin"
   const hasOnlyUserPayrollRoleMix =
@@ -82,7 +83,7 @@ export function DashboardPage() {
   const hasMultipleDepartmentRoles = deptRoles.length > 1
   const shouldUseAdminDashboardForRoleMix =
     hasDeptTsRole || (hasMultipleDepartmentRoles && !hasOnlyUserPayrollRoleMix)
-  const isAdmin = mimicSession
+  const isSuperAdmin = mimicSession
     ? hasSuperAdminRole
     : hasSuperAdminRole || hasPermission(permissions, "superadmin:all")
   const canAddPayroll = hasPermission(permissions, "payroll:add")
@@ -90,25 +91,23 @@ export function DashboardPage() {
     hasPermission(permissions, "user:create") || hasPermission(permissions, "user:add")
 
   const isPayrollAdmin = mimicSession
-    ? hasPayrollAdminRole && !isAdmin && !shouldUseAdminDashboardForRoleMix
-    : canAddPayroll && !isAdmin && !shouldUseAdminDashboardForRoleMix
+    ? hasPayrollAdminRole && !isSuperAdmin && !shouldUseAdminDashboardForRoleMix
+    : canAddPayroll && !isSuperAdmin && !shouldUseAdminDashboardForRoleMix
   const isDeptOrTSAdmin = mimicSession
-    ? !isAdmin && !isPayrollAdmin && shouldUseAdminDashboardForRoleMix
-    : !isAdmin && !isPayrollAdmin && shouldUseAdminDashboardForRoleMix
-  const isRegularUser = !isAdmin && !isPayrollAdmin && !isDeptOrTSAdmin
-  const hasUserRole = normalizedRoleNames.some((role) => role === "user")
+    ? !isSuperAdmin && !isPayrollAdmin && shouldUseAdminDashboardForRoleMix
+    : !isSuperAdmin && !isPayrollAdmin && shouldUseAdminDashboardForRoleMix
+  const isRegularUser = !isSuperAdmin && !isPayrollAdmin && !isDeptOrTSAdmin
   const shouldTreatPayrollRoleMixAsSuperAdmin =
-    hasPayrollAdminRole && (hasDeptTsRole || hasUserRole) && !hasSuperAdminRole
+    hasPayrollAdminRole && (hasDeptTsRole || hasUserRole) && !isSuperAdmin
   const isUserLikeDashboard =
-    (hasOnlyUserPayrollRoleMix || isRegularUser || isPayrollAdmin) &&
-    !shouldTreatPayrollRoleMixAsSuperAdmin
+    hasOnlyUserPayrollRoleMix || isRegularUser || isPayrollAdmin
   const canViewAdminLayout = !isUserLikeDashboard
-  const isSuperAdminLikeDashboard =
-    isAdmin || hasDepartmentAndPayrollRole || shouldTreatPayrollRoleMixAsSuperAdmin
+  const isSuperAdminLikeDashboard = isSuperAdmin
+  const shouldShowExtendedStats = isSuperAdmin || hasDepartmentAndPayrollRole || shouldTreatPayrollRoleMixAsSuperAdmin
   const canAlwaysViewUserCard = hasDeptTsRole
-  const showUserManagement = isSuperAdminLikeDashboard || canCreateUser || canAlwaysViewUserCard
-  const showPayrollCard = isSuperAdminLikeDashboard
-  const showStaffStatsCard = isAdmin || isPayrollAdmin || isDeptOrTSAdmin
+  const showUserManagement = isSuperAdmin || canCreateUser || canAlwaysViewUserCard
+  const showPayrollCard = isSuperAdmin || hasPayrollAdminRole
+  const showStaffStatsCard = isSuperAdmin || isPayrollAdmin || isDeptOrTSAdmin
   const row2TemplateColumns = showPayrollCard
     ? "0.90fr 1.10fr 1.23fr 0.81fr"
     : showStaffStatsCard
@@ -142,11 +141,9 @@ export function DashboardPage() {
     enabled: canViewAdminLayout,
   })
 
-  const selfLeave = useSelfLeave(userId)
+  const selfLeave = useSelfLeave()
   const staffLeave = useStaffLeave({ 
-    userId: isSuperAdminLikeDashboard ? undefined : userId,
-    departmentId: isSuperAdminLikeDashboard ? undefined : departmentId, 
-    roleId: isSuperAdminLikeDashboard ? undefined : roleId, 
+    userId: userId,
     enabled: canViewAdminLayout 
   })
   const todos = useTodos(userId)
@@ -163,9 +160,24 @@ export function DashboardPage() {
     roleId,
     enabled: canViewAdminLayout,
   })
+  
+  const handleDownloadTemplate = async () => {
+    try {
+      const blob = await downloadPayrollTemplate()
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement("a")
+      link.href = url
+      link.setAttribute("download", "payroll_template.xlsx")
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.URL.revokeObjectURL(url)
+    } catch (error) {
+      console.error("Failed to download payroll template:", error)
+    }
+  }
 
   
-  // Backend returns user-specific counts based on assignments
   const {
     totalUserCount: overviewUserCount = 0,
     totalActiveUserCount: overviewActiveUserCount = 0,
@@ -173,6 +185,7 @@ export function DashboardPage() {
     totalTimeStudyProgramCount: programCountVal = 0,     // Programs in user's departments
     totalJobPoolCount: jobPoolsVal = 0,                  // Tenant-level
     totalCostPoolCount: costPoolsVal = 0,                // Tenant-level
+    totalActivityCount: masterActivityCountVal = 0,      // Tenant-level master activities
     totalActivityDepartmentCount: activityCountVal = 0,  // Activities in user's departments
   } = overview.data ?? {}
 
@@ -263,10 +276,10 @@ export function DashboardPage() {
           <div className="flex flex-col gap-3">
             <UsersCard
               userCount={userCountVal}
-                activeUsers={isSuperAdminLikeDashboard ? activeUsersVal : undefined}
-                showActiveUsers={isSuperAdminLikeDashboard}
+                activeUsers={shouldShowExtendedStats ? activeUsersVal : undefined}
+                showActiveUsers={shouldShowExtendedStats}
                 isLoading={
-                  isSuperAdminLikeDashboard
+                  shouldShowExtendedStats
                     ? dashboardUserCount.isLoading || overview.isLoading
                     : dashboardUserCount.isLoading || overview.isLoading
                 }
@@ -282,7 +295,12 @@ export function DashboardPage() {
         )}
 
         {/* Payroll Management */}
-        {showPayrollCard && <PayrollManagementCard canViewPayroll />}
+        {showPayrollCard && (
+          <PayrollManagementCard 
+            canViewPayroll 
+            onDownloadTemplate={handleDownloadTemplate} 
+          />
+        )}
 
         {/* Reports */}
         <div className="h-full overflow-hidden min-h-0">
@@ -297,9 +315,9 @@ export function DashboardPage() {
             rejected={staffLeaveRejected}
             deptCount={deptCountVal}
             programCount={programCountVal}
-            activitiesCount={activityCountVal}
-            jobPools={isSuperAdminLikeDashboard ? jobPoolsVal : undefined}
-            costPools={isSuperAdminLikeDashboard ? costPoolsVal : undefined}
+            activitiesCount={isSuperAdmin ? masterActivityCountVal : activityCountVal}
+            jobPools={shouldShowExtendedStats ? jobPoolsVal : undefined}
+            costPools={shouldShowExtendedStats ? costPoolsVal : undefined}
             isLoading={staffLeave.isLoading || overview.isLoading}
           />
         )}

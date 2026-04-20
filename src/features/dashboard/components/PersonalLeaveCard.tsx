@@ -36,15 +36,15 @@ export function PersonalLeaveCard({
             <span className="text-[14px] font-bold text-[#1a1a2e]">Holiday</span>
           </div>
           <div className="flex flex-col border-l border-[#F0F0F0]" style={{ width: "50%" }}>
-            <div className="flex flex-1 items-center justify-center border-b border-[#F0F0F0] py-1.5">
+            <div className="flex flex-1 items-center justify-center border-b border-[#F0F0F0] py-1">
               <span className="text-sm font-bold text-[#6C5DD3]">
                 {nextHolidayMonth || "–"}
               </span>
             </div>
-            <div className="flex flex-1 items-center justify-center py-1.5">
+            <div className="flex flex-1 items-center justify-center py-1">
               <span className="text-sm font-bold text-[#6C5DD3]">
                 {nextHolidayDay === "0" ? "–" : nextHolidayDay}
-              </span>
+              </span> 
             </div>
           </div>
         </div>
