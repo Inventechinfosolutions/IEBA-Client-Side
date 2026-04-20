@@ -32,6 +32,7 @@ export type AuthContextValue = {
   user: User | null
   isAuthenticated: boolean
   isLoading: boolean
+  isInitialLoading: boolean
   signIn: (email: string, password: string) => Promise<LoginResult | void>
   
   establishDashboardSession: (user: User) => void

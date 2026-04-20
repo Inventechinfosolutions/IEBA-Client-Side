@@ -6,10 +6,10 @@ type ProtectedRouteProps = {
 }
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
-  const { isAuthenticated, isLoading } = useAuth()
+  const { isAuthenticated, isInitialLoading } = useAuth()
   const location = useLocation()
 
-  if (isLoading) {
+  if (isInitialLoading) {
     return (
       <div className="flex min-h-svh items-center justify-center">
         <div className="text-muted-foreground">Loading…</div>

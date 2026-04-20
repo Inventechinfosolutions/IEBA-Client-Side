@@ -1,26 +1,22 @@
-import { useState } from "react"
 import { Link, useLocation } from "react-router-dom"
+import { cn } from "@/lib/utils"
 import {
-  LayoutDashboard,
-  ScrollText,
   Users,
-  Building2,
-  Table2,
   CalendarClock,
   Layers,
-  BarChart2,
   FileText,
   CircleDollarSign,
   Briefcase,
   LayoutGrid,
   SquareTerminal,
-  IdCard,
-  Folder,
   Home,
   User,
-  FileSpreadsheet,
   ListTodo,
-  User as UserIcon,
+  Gauge,
+  Clock,
+  ClipboardCheck,
+  SquarePen,
+  ScrollText,
   type LucideIcon,
 } from "lucide-react"
 
@@ -31,25 +27,12 @@ import {
   SidebarGroup,
   SidebarGroupContent,
   SidebarHeader,
-  SidebarFooter,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarFooter,
 } from "@/components/ui/sidebar"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { LockKeyhole, LogOut, Settings } from "lucide-react"
-import { useAuth } from "@/contexts/AuthContext"
 import { usePermissions } from "@/hooks/usePermissions"
-import { ChangePasswordFormModal } from "@/features/change-password"
 
 // ---------------------------------------------------------------------------
 // Nav definition
@@ -72,50 +55,31 @@ type NavItem = {
 }
 
 const mainNav: NavItem[] = [
-  // ── Always visible ────────────────────────────────────────────────────────
-  { title: "Dashboard",             url: "/",                      icon: LayoutDashboard,  permission: null },
-
-  // ── Time Study ────────────────────────────────────────────────────────────
-  { title: "Personal Time Study",   url: "/personal-time-study",   icon: ScrollText,       permission: "timestudypersonal" },
-  { title: "Schedule Time Study",   url: "/schedule-time-study",   icon: CalendarClock,    permission: "scheduletimestudy" },
-
-  // ── Program & Activities ──────────────────────────────────────────────────
-  // /program has 3 tabs: Budget Units (budgetprogram), Time Study programs (timestudyprogram),
-  // Program Activity Relation (timestudyactivity) — show if user can view ANY of them.
-  { title: "Program",               url: "/program",               icon: Folder,           permission: ["budgetprogram", "timestudyprogram", "timestudyactivity"] },
-  { title: "County Activity Code",  url: "/county-activity-code",  icon: Table2,           permission: "countyactivity" },
-
-  // ── People & Leave ────────────────────────────────────────────────────────
-  { title: "User",                  url: "/user",                  icon: User,             permission: "user" },
-  { title: "Leave Approval",        url: "/leave-approval",        icon: FileText,         permission: "userleave:review" },
-
-  // ── Finance ───────────────────────────────────────────────────────────────
-  { title: "Payroll",               url: "/payroll",               icon: CircleDollarSign, permission: "payroll" },
-  { title: "Cost Pool",             url: "/costpool",              icon: Layers,           permission: "costpool" },
-  { title: "FTE Allocation",        url: "/fte-allocation",        icon: BarChart2,        permission: "costallocation" },
-
-  // ── Reporting ─────────────────────────────────────────────────────────────
-  { title: "Reports",               url: "/reports",               icon: FileSpreadsheet,  permission: "report" },
+  { title: "Dashboard",             url: "/",                      icon: Gauge,            permission: null },
+  { title: "Personal Time Study",   url: "/personal-time-study",   icon: Clock,            permission: "timestudypersonal" },
   { title: "To-Do",                 url: "/to-do",                 icon: ListTodo,         permission: "todo" },
-
-  // ── Admin: needs "module:view" ────────────────────────────────────────────
+  { title: "User",                  url: "/user",                  icon: User,             permission: "user" },
+  { title: "Reports",               url: "/reports",               icon: FileText,         permission: "report" },
+  { title: "Payroll",               url: "/payroll",               icon: CircleDollarSign, permission: "payroll" },
   { title: "Department",            url: "/department",            icon: Home,             permission: null },
+  { title: "Program",               url: "/program",               icon: ClipboardCheck,   permission: ["budgetprogram", "timestudyprogram", "timestudyactivity"] },
+  { title: "County Activity Code",  url: "/county-activity-code",  icon: SquarePen,        permission: "countyactivity" },
+  { title: "Master Code",           url: "/master-code",           icon: SquareTerminal,   permission: "mastercode" },
+  { title: "Department Role",       url: "/department-role",       icon: ScrollText,       permission: "superadmin" },
   { title: "Job Classification",    url: "/job-classification",    icon: LayoutGrid,       permission: "jobclassification" },
   { title: "Job Pool",              url: "/job-pool",              icon: Briefcase,        permission: "jobpool" },
-
-  // ── Super-admin only (no permission key in the permission table) ──────────
+  { title: "Leave Approval",        url: "/leave-approval",        icon: FileText,         permission: "userleave:review" },
+  { title: "FTE Allocation",        url: "/fte-allocation",        icon: FileText,         permission: "costallocation" },
+  { title: "Cost Pool",             url: "/costpool",              icon: Layers,           permission: "costpool" },
+  { title: "Schedule Time Study",   url: "/schedule-time-study",   icon: CalendarClock,    permission: "scheduletimestudy" },
   { title: "Users",                 url: "/users",                 icon: Users,            permission: "superadmin" },
-  { title: "Department Role",       url: "/department-role",       icon: Building2,        permission: "superadmin" },
-  { title: "Master Code",           url: "/master-code",           icon: SquareTerminal,   permission: "mastercode" },
 ]
 
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 export function AppSidebar() {
-  const { user, signOut } = useAuth()
   const { isSuperAdmin, canView, has } = usePermissions()
-  const [changePasswordOpen, setChangePasswordOpen] = useState(false)
   const location = useLocation()
 
   /** Returns true when the nav item should be visible to this user. */
@@ -171,10 +135,20 @@ export function AppSidebar() {
                       location.pathname.startsWith(item.url + "/")
                 return (
                   <SidebarMenuItem key={item.url}>
-                    <SidebarMenuButton asChild isActive={isActive}>
-                      <Link to={item.url}>
-                        <item.icon className="size-4" />
-                        <span>{item.title}</span>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={isActive}
+                      className={cn(
+                        "relative rounded-none!",
+                        isActive && "text-[#6C5DD3] bg-[#6C5DD3]/5"
+                      )}
+                    >
+                      <Link to={item.url} className="flex w-full items-center">
+                        <item.icon className={cn("size-4", isActive && "text-[#6C5DD3]")} />
+                        <span className="flex-1">{item.title}</span>
+                        {isActive && (
+                          <div className="absolute right-0 top-1/2 -translate-y-1/2 h-8 w-[2px] bg-[#6C5DD3]" />
+                        )}
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -185,94 +159,7 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="border-t border-sidebar-border">
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <SidebarMenuButton
-                  size="lg"
-                  className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
-                >
-                  <Avatar className="h-8 w-8 rounded-lg">
-                    <AvatarImage src={user?.avatar} alt={user?.name} />
-                    <AvatarFallback className="rounded-lg">
-                      <UserIcon className="size-4 text-muted-foreground" />
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="grid flex-1 text-left text-sm leading-tight">
-                    <span className="truncate font-semibold">
-                      {user?.name ?? "User"}
-                    </span>
-                    <span className="truncate text-xs text-sidebar-foreground/80">
-                      {user?.email ?? ""}
-                    </span>
-                  </div>
-                </SidebarMenuButton>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg"
-                side="top"
-                align="start"
-                sideOffset={4}
-              >
-                <DropdownMenuLabel className="p-0 font-normal">
-                  <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-                    <Avatar className="h-8 w-8 rounded-lg">
-                      <AvatarImage src={user?.avatar} alt={user?.name} />
-                      <AvatarFallback className="rounded-lg">
-                        <UserIcon className="size-4 text-muted-foreground" />
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="grid flex-1 text-left text-sm leading-tight">
-                      <span className="truncate font-semibold">
-                        {user?.name ?? "User"}
-                      </span>
-                      <span className="truncate text-xs text-sidebar-foreground/80">
-                        {user?.email ?? ""}
-                      </span>
-                    </div>
-                  </div>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuGroup>
-                  <DropdownMenuItem asChild>
-                    <Link to="/profile">
-                      <IdCard className="mr-2 size-4" />
-                      Profile
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onSelect={(e) => {
-                      e.preventDefault()
-                      setChangePasswordOpen(true)
-                    }}
-                  >
-                    <LockKeyhole className="mr-2 size-4" />
-                    Change Password
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link to="/settings">
-                      <Settings className="mr-2 size-4" />
-                      Settings
-                    </Link>
-                  </DropdownMenuItem>
-                </DropdownMenuGroup>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => signOut()}>
-                  <LogOut className="mr-2 size-4" />
-                  Log out
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarFooter>
-
-      <ChangePasswordFormModal
-        open={changePasswordOpen}
-        onOpenChange={setChangePasswordOpen}
-      />
+      <SidebarFooter className="h-[40px] bg-white border-none" />
     </Sidebar>
   )
 }

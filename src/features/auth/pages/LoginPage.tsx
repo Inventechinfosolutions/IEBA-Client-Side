@@ -18,7 +18,7 @@ import submitIcon from "@/assets/login-submit-icon.png"
 
 export function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
-  const { error, clearError, signIn } = useAuth()
+  const { error, clearError, signIn, isLoading } = useAuth()
   const navigate = useNavigate()
   const loginMutation = useLogin()
 
@@ -143,11 +143,11 @@ export function LoginPage() {
               </div>
               <Button
                 type="submit"
-                disabled={loginMutation.isPending}
+                disabled={isLoading}
                 className="h-11 w-full rounded-[6px] border-0 text-[18px] font-medium text-white hover:opacity-90"
                 style={{ background: "linear-gradient(90deg,#00c5fb,#6c5dd3)" }}
               >
-                {loginMutation.isPending ? (
+                {isLoading ? (
                   <span className="flex items-center justify-center gap-2">
                     <img src={submitIcon} alt="" className="h-[28px] w-auto animate-spin object-contain [filter:brightness(0)_invert(1)]" />
                     Signing in…

@@ -110,10 +110,10 @@ export function DashboardLayout() {
                       type="button"
                       className="flex items-center gap-2 bg-transparent px-0 py-0 border-0 outline-none hover:bg-transparent"
                     >
-                      <Avatar className="h-9 w-9">
+                      <Avatar className="h-12 w-12 border border-black">
                         <AvatarImage src={profileImageQuery.data ?? user.avatar} alt={user.name} />
                         <AvatarFallback>
-                          <UserIcon className="h-5 w-5 text-gray-400" />
+                          <UserIcon className="h-6 w-6 text-gray-400" />
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex flex-col items-start leading-tight">
