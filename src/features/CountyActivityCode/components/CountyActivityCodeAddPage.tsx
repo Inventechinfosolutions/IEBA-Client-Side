@@ -237,16 +237,22 @@ export function CountyActivityCodeAddPage({
       })
     }
 
-    form.handleSubmit((raw) => {
-      const values = mergeCountyActivityAddFormForSubmit(raw, {
-        tab,
-        copyFromMasterEnabled,
-        masterRow: masterRowForCopy,
-        subParentDetail: subParentActivityDetail,
-        selectedPrimaryId,
-      })
-      onAddSave?.(tab, values)
-    })()
+    form.handleSubmit(
+      (raw) => {
+        const values = mergeCountyActivityAddFormForSubmit(raw, {
+          tab,
+          copyFromMasterEnabled,
+          masterRow: masterRowForCopy,
+          subParentDetail: subParentActivityDetail,
+          selectedPrimaryId,
+        })
+        onAddSave?.(tab, values)
+      },
+      (errors) => {
+        console.error("Add validation errors:", errors)
+        toast.error("Please fill all required fields correctly.")
+      },
+    )()
   }
 
   return (
@@ -433,6 +439,11 @@ export function CountyActivityCodeAddPage({
                       : form.setValue("countyActivityCode", event.target.value)
                   }
                 />
+                {form.formState.errors.countyActivityCode && (
+                  <p className="text-[12px] text-red-500">
+                    {form.formState.errors.countyActivityCode.message}
+                  </p>
+                )}
               </div>
               <div className="min-w-0 space-y-1">
                 <label className="text-[14px] font-normal text-[#1F2937]">
@@ -450,6 +461,11 @@ export function CountyActivityCodeAddPage({
                       : form.setValue("countyActivityName", event.target.value)
                   }
                 />
+                {form.formState.errors.countyActivityName && (
+                  <p className="text-[12px] text-red-500">
+                    {form.formState.errors.countyActivityName.message}
+                  </p>
+                )}
               </div>
             </div>
           ) : (
@@ -519,6 +535,11 @@ export function CountyActivityCodeAddPage({
                   : form.setValue("description", event.target.value)
               }
             />
+            {form.formState.errors.description && (
+              <p className="text-[12px] text-red-500">
+                {form.formState.errors.description.message}
+              </p>
+            )}
           </div>
 
           {tab === CountyActivityGridRowType.PRIMARY && (

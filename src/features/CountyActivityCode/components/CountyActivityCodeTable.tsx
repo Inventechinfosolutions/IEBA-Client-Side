@@ -93,6 +93,24 @@ function getCountyActivityCodeRowDepartmentLabel(row: CountyActivityCodeRow): st
   return dept.length > 0 ? dept : "—"
 }
 
+function mapCountyActivityRowToFormValues(row: CountyActivityCodeRow): CountyActivityAddFormValues {
+  return {
+    copyCode: false,
+    countyActivityCode: row.countyActivityCode,
+    countyActivityName: row.countyActivityName,
+    description: row.description,
+    masterCodeType: row.masterCodeType,
+    masterCode: row.masterCode,
+    match: row.match,
+    percentage: row.percentage,
+    active: row.active,
+    leaveCode: row.leaveCode,
+    docRequired: row.docRequired,
+    multipleJobPools: row.multipleJobPools,
+    department: row.department,
+  }
+}
+
 /** Renders comma-separated department labels one per line (UAT-style). */
 function CountyActivityDepartmentStackCell({ label }: CountyActivityDepartmentStackProps) {
   const raw = label.trim()
@@ -188,6 +206,38 @@ export function CountyActivityCodeTable({
   const totalPages = Math.max(1, pagination.totalPages)
   const pageNumbers = Array.from({ length: totalPages }, (_, index) => index + 1)
 
+  const getVisiblePageNumbers = () => {
+    if (totalPages <= 7) return pageNumbers
+
+    const current = pagination.page
+    const delta = 1
+    const left = current - delta
+    const right = current + delta
+    const range = []
+    const rangeWithDots: (number | string)[] = []
+    let l: number | undefined
+
+    for (let i = 1; i <= totalPages; i++) {
+      if (i === 1 || i === totalPages || (i >= left && i <= right)) {
+        range.push(i)
+      }
+    }
+
+    for (const i of range) {
+      if (l !== undefined) {
+        if (i - l === 2) {
+          rangeWithDots.push(l + 1)
+        } else if (i - l !== 1) {
+          rangeWithDots.push("...")
+        }
+      }
+      rangeWithDots.push(i)
+      l = i
+    }
+
+    return rangeWithDots
+  }
+
   const [addOpen, setAddOpen] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
   const [rowToEdit, setRowToEdit] = useState<CountyActivityCodeRow | null>(null)
@@ -264,30 +314,65 @@ export function CountyActivityCodeTable({
     if (!editOpen || !rowToEdit || rowToEdit.rowType !== CountyActivityGridRowType.PRIMARY) {
       return 0
     }
+
+    const isPending =
+      editHydrationCodesQuery.isPending ||
+      (editHydrationCodesQuery.isFetching && !editHydrationCodesQuery.isSuccess)
+
+    if (isPending) {
+      return null
+    }
+
+    if (!editHydrationCodesQuery.isSuccess) {
+      return 0
+    }
+
     const items = editHydrationCodesQuery.data?.items ?? []
-    const code = rowToEdit.catalogActivityCode.trim()
-    if (!code || items.length === 0) return 0
-    const hit = items.find((m) => (m.code ?? "").trim() === code)
+    const rawCode = rowToEdit.catalogActivityCode.trim()
+    if (!rawCode || items.length === 0) return 0
+
+    // Loose match: try exact first, then try numeric-value match to handle leading zeros (e.g. "00071" vs "71")
+    const searchCode = rawCode.toLowerCase()
+    let hit = items.find((m) => (m.code ?? "").trim().toLowerCase() === searchCode)
+
+    if (!hit) {
+      const numericSearch = Number.parseInt(searchCode, 10)
+      if (!Number.isNaN(numericSearch)) {
+        hit = items.find((m) => {
+          const mCode = (m.code ?? "").trim()
+          return Number.parseInt(mCode, 10) === numericSearch
+        })
+      }
+    }
+
     return hit ? Number(hit.id) : 0
   }, [
     editOpen,
     rowToEdit?.rowType,
     rowToEdit?.catalogActivityCode,
+    editHydrationCodesQuery.isPending,
+    editHydrationCodesQuery.isFetching,
+    editHydrationCodesQuery.isSuccess,
     editHydrationCodesQuery.data?.items,
   ])
 
   const editFormValuesFromServer = useMemo((): CountyActivityAddFormValues | undefined => {
-    if (!editOpen || !rowToEdit || !editDetailQuery.isSuccess || !editDetailQuery.data) {
-      return undefined
+    if (!editOpen || !rowToEdit) return undefined
+
+    const isDetailReady = editDetailQuery.isSuccess && editDetailQuery.data && Number(editDetailQuery.data.activity.id) === Number(rowToEdit.id)
+    
+    // Fallback to existing row data while waiting for full detail/hydration
+    if (!isDetailReady || resolvedEditMasterCodeId === null) {
+      return mapCountyActivityRowToFormValues(rowToEdit)
     }
+
     const { activity, departmentNames: editDeptNames } = editDetailQuery.data
-    if (activity.id !== Number(rowToEdit.id)) return undefined
 
     const parent =
       rowToEdit.rowType === CountyActivityGridRowType.SUB && rowToEdit.parentId
         ? primaryRows.find((r) => r.id === rowToEdit.parentId) ?? null
         : null
-
+    
     if (rowToEdit.rowType === CountyActivityGridRowType.PRIMARY) {
       return {
         copyCode: false,
@@ -334,18 +419,11 @@ export function CountyActivityCodeTable({
   const editForm = useForm<CountyActivityAddFormValues>({
     resolver: zodResolver(countyActivityAddFormSchema),
     defaultValues: countyActivityAddDefaultValues,
+    values: editFormValuesFromServer,
+    resetOptions: {
+      keepDirtyValues: true,
+    },
   })
-
-  const lastResetRowIdRef = useRef<string | null>(null)
-  
-  if (editFormValuesFromServer !== undefined && editOpen && rowToEdit && lastResetRowIdRef.current !== rowToEdit.id) {
-    lastResetRowIdRef.current = rowToEdit.id
-    editForm.reset(editFormValuesFromServer, { keepDefaultValues: true })
-  }
-  
-  if (!editOpen && lastResetRowIdRef.current !== null) {
-    lastResetRowIdRef.current = null
-  }
 
   const editMasterCodeTypeWatched = editForm.watch("masterCodeType")
   const editMasterCodesQuery = useGetCountyActivityMasterCodes(
@@ -542,12 +620,20 @@ export function CountyActivityCodeTable({
 
     let masterCatalog: { code: string; type: string } | undefined
     if (rowToEdit.rowType === CountyActivityGridRowType.PRIMARY) {
-      if (values.masterCode <= 0) {
-        toast.error("Select a master code")
-        return
+      let catalogId = values.masterCode
+      let catalog = editMasterCodeOptions.find((o) => o.value === catalogId)
+
+      // Fallback: if masterCode is 0 or not found by ID (maybe due to stale seeding), try to match by code
+      if (!catalog) {
+        const currentCode = rowToEdit.catalogActivityCode.trim().toLowerCase()
+        const found = editMasterCodeOptions.find((o) => o.code.toLowerCase() === currentCode)
+        if (found) {
+          catalogId = found.value
+          catalog = found
+        }
       }
-      const catalog = editMasterCodeOptions.find((o) => o.value === values.masterCode)
-      if (!catalog?.code) {
+
+      if (catalogId <= 0 || !catalog?.code) {
         toast.error("Select a valid master code")
         return
       }
@@ -597,6 +683,9 @@ export function CountyActivityCodeTable({
         },
       },
     )
+  }, (errors) => {
+    console.error("Edit validation errors:", errors)
+    toast.error("Please fill all required fields correctly.")
   })
 
   const sortedRows = useMemo(() => {
@@ -1008,7 +1097,6 @@ export function CountyActivityCodeTable({
                         className="text-[#6C5DD3] hover:bg-[#6C5DD3]/10"
                         onClick={() => {
                           setRowToEdit(row)
-                          editForm.reset({ ...countyActivityAddDefaultValues, copyCode: false })
                           setEditOpen(true)
                         }}
                       >
@@ -1126,7 +1214,6 @@ export function CountyActivityCodeTable({
                               className="text-[#6C5DD3] hover:bg-[#6C5DD3]/10"
                               onClick={() => {
                                 setRowToEdit(child)
-                                editForm.reset({ ...countyActivityAddDefaultValues, copyCode: false })
                                 setEditOpen(true)
                               }}
                             >
@@ -1164,18 +1251,24 @@ export function CountyActivityCodeTable({
                 className={pagination.page <= 1 ? "pointer-events-none opacity-50" : ""}
               />
             </PaginationItem>
-            {pageNumbers.slice(0, 7).map((page) => (
-              <PaginationItem key={page}>
-                <PaginationLink
-                  href="#"
-                  isActive={pagination.page === page}
-                  onClick={(event) => {
-                    event.preventDefault()
-                    onPageChange(page)
-                  }}
-                >
-                  {page}
-                </PaginationLink>
+            {getVisiblePageNumbers().map((page, index) => (
+              <PaginationItem key={index}>
+                {page === "..." ? (
+                  <span className="flex h-10 w-10 items-center justify-center text-[#4B5563]">
+                    ...
+                  </span>
+                ) : (
+                  <PaginationLink
+                    href="#"
+                    isActive={pagination.page === page}
+                    onClick={(event) => {
+                      event.preventDefault()
+                      onPageChange(Number(page))
+                    }}
+                  >
+                    {page}
+                  </PaginationLink>
+                )}
               </PaginationItem>
             ))}
             <PaginationItem>
@@ -1299,7 +1392,12 @@ export function CountyActivityCodeTable({
               isMasterCodeTypeOptionsLoading={tenantMasterCodeTypeNamesQuery.isLoading}
               masterCodeOptions={editMasterCodeOptions}
               isMasterCodeOptionsLoading={editMasterCodesQuery.isLoading}
-              isEditSourceLoading={editDetailQuery.isPending}
+              isEditSourceLoading={
+                // For sub rows, we already have enough data to show the form immediately.
+                // We only show the loader for primary rows if we're still waiting for the master code hydration.
+                rowToEdit?.rowType === CountyActivityGridRowType.PRIMARY &&
+                editHydrationCodesQuery.isPending
+              }
               departmentNames={departmentNames}
               onSelectedPrimaryIdChange={(id) => {
                 setEditSelectedPrimaryId(id)
