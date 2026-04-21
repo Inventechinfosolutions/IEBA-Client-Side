@@ -394,7 +394,7 @@ export function ScheduleTimeStudyForm({
 
                           {openGroupsDropdownIndex === index ? (
                             <div className="absolute top-[calc(100%+8px)] z-50 w-full rounded-[14px] border border-[#E5E7EB] bg-white p-2 shadow-[0_8px_24px_#0000001A]">
-                              <div className="space-y-1">
+                              <div className="max-h-[260px] overflow-y-auto space-y-1">
                                 {groupOptions
                                   .filter((group) =>
                                     group.toLowerCase().includes(groupsSearch.trim().toLowerCase())
