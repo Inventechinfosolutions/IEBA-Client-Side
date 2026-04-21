@@ -196,7 +196,6 @@ function normalizeDepartmentRoleDetail(raw: unknown): DepartmentRoleDetail {
   const nestedDept = asRecord(nestedRole?.department)
 
   // Diagnostic Log to see exactly what we're getting from the API
-  console.log('DEBUG: normalizeDepartmentRoleDetail inner data:', inner)
 
   let departmentName =
     typeof dept?.name === "string"
@@ -430,7 +429,6 @@ export async function updateDepartmentRole(
     ...(permissions ? { permissions } : {}),
   }
 
-  console.log("DEBUG: updateDepartmentRole payload:", payload)
   const res = await api.put<ApiResponseDto<unknown>>(
     `/department-roles/${encodeURIComponent(id)}`,
     payload

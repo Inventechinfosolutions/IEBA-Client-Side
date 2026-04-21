@@ -246,7 +246,6 @@ export function DepartmentRolePage() {
           }
 
           toast.success("Role updated successfully", successToastOptions)
-          setAddOpen(false)
         } catch (error) {
           toast.error(
             error instanceof Error ? error.message : "Failed to update role"
@@ -282,7 +281,6 @@ export function DepartmentRolePage() {
         {
           onSuccess: () => {
             toast.success("New Role created Successfully", successToastOptions)
-            setAddOpen(false)
           },
           onError: (error) => {
             toast.error(

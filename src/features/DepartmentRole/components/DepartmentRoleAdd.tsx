@@ -99,20 +99,6 @@ export function DepartmentRoleAdd({
     ...(editFormValues ? { values: editFormValues } : {}),
   })
 
-  // Diagnostic Logs
-  if (open) {
-    console.log('[DepartmentRolePage] Edit Modal Detail:', {
-      mode,
-      editRoleId,
-      hasEditDetail: Boolean(editDetail),
-      isDetailLoading: isEditDetailLoading,
-      deptInDetail: editDetail?.departmentName,
-      deptInForm: form.watch("department"),
-      availableDeptOptions: departmentOptions,
-      globalCatalogSize: globalCatalog ? Object.keys(globalCatalog).length : 0,
-    })
-  }
-
   const activeValue = useWatch({
     control: form.control,
     name: "active",
@@ -236,51 +222,63 @@ export function DepartmentRoleAdd({
   const transferToAssigned = async () => {
     const toAssign = Array.from(selectedAvailable)
     if (toAssign.length === 0) return
-    const prev = [...assignedPermissions]
     
-    // Merge new selections into assigned list
     const nextAssigned = new Set(assignedPermissions)
     toAssign.forEach(id => {
       if (!id.includes(":")) {
-        // It's a whole module. Remove any individual perms of this module first
+        // Whole module selected: remove all individual perms of this module and add the module label
         Array.from(nextAssigned).forEach(cur => {
           if (cur.startsWith(`${id}:`)) nextAssigned.delete(cur)
         })
         nextAssigned.add(id)
       } else {
-        // It's an individual permission. Only add if the whole module isn't there
+        // Individual permission selected
         const [mod] = id.split(":")
+        // Only add if the whole module isn't already assigned
         if (!nextAssigned.has(mod)) {
           nextAssigned.add(id)
         }
       }
     })
 
-    form.setValue("assignedPermissions", Array.from(nextAssigned))
+    form.setValue("assignedPermissions", Array.from(nextAssigned), { shouldDirty: true })
     setSelectedAvailable(new Set())
   }
 
   const transferToAvailable = async () => {
     const toRemove = Array.from(selectedAssigned)
     if (toRemove.length === 0) return
-    const prev = [...assignedPermissions]
     
     const nextAssigned = new Set(assignedPermissions)
     toRemove.forEach(id => {
       if (!id.includes(":")) {
-        // Removing whole module
+        // Removing whole module: just delete the label and any stray perms
         nextAssigned.delete(id)
-        // Also remove any stray individual perms if they existed
         Array.from(nextAssigned).forEach(cur => {
           if (cur.startsWith(`${id}:`)) nextAssigned.delete(cur)
         })
       } else {
-        // Removing individual permission
-        nextAssigned.delete(id)
+        // Removing an individual permission
+        const [mod, perm] = id.split(":")
+        
+        if (nextAssigned.has(mod)) {
+          // If the WHOLE module was assigned, we must remove the module label 
+          // and add back all individual permissions EXCEPT the one being removed.
+          nextAssigned.delete(mod)
+          const allModulePerms = getPermissionsForLabel(mod)
+          allModulePerms.forEach(p => {
+            if (p !== perm) {
+              nextAssigned.add(`${mod}:${p}`)
+            }
+          })
+        } else {
+          // Module wasn't whole, just delete the individual perm
+          nextAssigned.delete(id)
+        }
       }
     })
 
-    form.setValue("assignedPermissions", Array.from(nextAssigned))
+    form.setValue("assignedPermissions", Array.from(nextAssigned), { shouldDirty: true })
     setSelectedAssigned(new Set())
   }
 
@@ -292,19 +290,18 @@ export function DepartmentRoleAdd({
       )
       const nextLabels = values.assignedPermissions
 
-      const toAddLabels = nextLabels.filter((l) => !initialLabels.includes(l))
-      const toRemoveLabels = initialLabels.filter(
-        (l) => !nextLabels.includes(l)
+      // Flatten both to exact permission IDs first to prevent half-module glitches
+      const initialPermIds = permissionLabelsToApiPermissionIds(
+        initialLabels,
+        activeCatalog
+      )
+      const nextPermIds = permissionLabelsToApiPermissionIds(
+        nextLabels,
+        activeCatalog
       )
 
-      const permIdsToAdd = permissionLabelsToApiPermissionIds(
-        toAddLabels,
-        activeCatalog
-      )
-      const permIdsToRemove = permissionLabelsToApiPermissionIds(
-        toRemoveLabels,
-        activeCatalog
-      )
+      const permIdsToAdd = nextPermIds.filter((id) => !initialPermIds.includes(id))
+      const permIdsToRemove = initialPermIds.filter((id) => !nextPermIds.includes(id))
 
       onSubmit({
         childId: editRoleId,
@@ -327,14 +324,9 @@ export function DepartmentRoleAdd({
 
   const handleOpenChange = (next: boolean) => {
     if (!next) {
-      form.reset({
-        department: departments[0] ?? "",
-        roleName: "",
-        active: true,
-        assignedPermissions: [],
-      })
       setSelectedAvailable(new Set())
       setSelectedAssigned(new Set())
+      form.reset()
     }
     onOpenChange(next)
   }
