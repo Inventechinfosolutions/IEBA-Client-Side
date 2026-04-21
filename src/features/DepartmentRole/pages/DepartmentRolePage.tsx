@@ -62,8 +62,14 @@ export function DepartmentRolePage() {
   const editDetailQuery = useDepartmentRoleDetailQuery(editRoleId || "")
   const editDetailResolved = editDetailQuery.data
 
-  /** Load while on this page so edit dialog has names before first open (avoids empty department Select). */
-  const activeDepartmentsQuery = useGetDepartments({ status: "active", page: 1, limit: 100 }, { enabled: true })
+  /** 
+   * ONLY fetch departments when needed (Add or Edit modal is being prepared).
+   * This prevents the unwanted API call on initial page load.
+   */
+  const activeDepartmentsQuery = useGetDepartments(
+    { status: "active", page: 1, limit: 100 },
+    { enabled: addOpen || Boolean(editRoleId) }
+  )
 
   const viewRole: DepartmentRoleViewData | null = useMemo(() => {
     if (!viewDetailQuery.data) return null
@@ -76,14 +82,6 @@ export function DepartmentRolePage() {
       permissionGroups: d.permissionGroups,
     }
   }, [viewDetailQuery.data])
-
-
-  /**
-   * Keep edit dialog on spinner until we can build stable `editFormValues` (react-hook-form `values`).
-   * First open often had role detail before `GET /departments` finished, so `departmentName` stayed ""
-   * and the Select never matched an option; reopen worked because the catalog was cached.
-   */
-
 
   const departmentSelectOptions = useMemo(() => {
     const fromTable = data
