@@ -147,15 +147,15 @@ export function UserModulePage() {
     const raw = searchTerm.trim()
     if (!raw) return { firstName: "", lastName: "", employeeId: "" }
     const normalized = raw.replace(/\s+/g, " ")
-    /** Employee id is often numeric; if not, treat as name search. */
     if (/^\d+$/.test(normalized)) {
       return { firstName: "", lastName: "", employeeId: normalized }
     }
     const parts = normalized.split(" ").filter(Boolean)
     if (parts.length >= 2) {
-      return { firstName: parts[0], lastName: parts.slice(1).join(" "), employeeId: "" }
+      // name column is "lastName firstName", so first word = lastName, rest = firstName
+      return { firstName: parts.slice(1).join(" "), lastName: parts[0], employeeId: "" }
     }
-    return { firstName: normalized, lastName: "", employeeId: "" }
+    return { firstName: "", lastName: normalized, employeeId: "" }
   }, [searchTerm])
 
   const userModule = useUserModule({

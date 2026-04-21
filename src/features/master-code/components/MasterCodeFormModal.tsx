@@ -12,7 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
+import { TitleCaseInput } from "@/components/ui/title-case-input"
 import { masterCodeFormSchema } from "@/features/master-code/schemas"
 import { MasterCodeTypeEnum } from "../enums/masterCodeType"
 import { useGetMasterCodeById } from "../queries/getMasterCodes"
@@ -249,14 +249,14 @@ export function MasterCodeFormModal({
           >
             <div className="space-y-1">
               <label className="block whitespace-nowrap text-[12px] text-[#111827]">{`*${codeType} Code`}</label>
-              <Input
+              <TitleCaseInput
                 {...register("code")}
                 className="h-[40px] select-text rounded-[9px] border border-[#c5cad5] bg-white px-2.5 text-[13px] text-[#111827] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
               />
             </div>
             <div className="space-y-1">
               <label className="block text-[12px] text-[#111827]">{`*${codeType} Name`}</label>
-              <Input
+              <TitleCaseInput
                 {...register("name")}
                 className="h-[40px] select-text rounded-[9px] border border-[#c5cad5] bg-white px-2.5 text-[13px] text-[#111827] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
               />
@@ -266,7 +266,7 @@ export function MasterCodeFormModal({
                 <div className="space-y-1">
                   <label className="block text-[12px] text-[#111827]">{`*${codeType} (%)`}</label>
                   <div className="group/percent relative rounded-[9px]">
-                    <Input
+                    <TitleCaseInput
                       {...register("ffpPercent")}
                       type="number"
                       step="0.50"
@@ -294,7 +294,7 @@ export function MasterCodeFormModal({
                 </div>
                 <div className="space-y-1">
                   <label className="block text-[12px] text-[#111827]">Match</label>
-                  <Input
+                  <TitleCaseInput
                     {...register("match")}
                     className="h-[40px] select-text rounded-[9px] border border-[#c5cad5] bg-white px-2.5 text-[13px] text-[#111827] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
                   />

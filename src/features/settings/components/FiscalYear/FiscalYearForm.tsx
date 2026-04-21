@@ -4,7 +4,7 @@ import { CalendarDays, Check, ChevronLeft, ChevronRight, Plus, X } from "lucide-
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { TitleCaseInput } from "@/components/ui/title-case-input"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Calendar } from "@/components/ui/calendar"
 import {
@@ -574,7 +574,7 @@ export function FiscalYearForm() {
             </div>
             <div className="space-y-2">
               <label className="mb-2 block text-[14px] font-normal text-[#2a2f3a]">Holiday</label>
-              <Input
+              <TitleCaseInput
                 value={holidayDraft.holiday}
                 onChange={(e) => setHolidayDraft((p) => ({ ...p, holiday: e.target.value }))}
                 placeholder="Enter Holiday"
@@ -585,7 +585,7 @@ export function FiscalYearForm() {
 
           {editingHolidayId !== null ? (
             <div className="mt-5 flex items-center gap-2 text-[14px] text-[#2a2f3a]">
-              <input
+              <TitleCaseInput
                 id="holiday-enable-disable"
                 type="checkbox"
                 checked={holidayDraft.optional}

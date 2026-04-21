@@ -1,7 +1,7 @@
 import { ChevronDown, ChevronUp } from "lucide-react"
 
 import { SingleSelectDropdown } from "@/components/ui/dropdown"
-import { Input } from "@/components/ui/input"
+import { TitleCaseInput } from "@/components/ui/title-case-input"
 import { Textarea } from "@/components/ui/textarea"
 import type { BudgetUnitsFormProps } from "../types"
 
@@ -69,7 +69,7 @@ export function BudgetUnitsForm({
 
     return (
       <div className="group relative">
-        <Input
+        <TitleCaseInput
           type="text"
           inputMode="decimal"
           value={form.watch(field) || "0.00"}
@@ -121,7 +121,7 @@ export function BudgetUnitsForm({
           <div className="space-y-1">
             <label className="block text-[14px] text-[#111827]">*Department</label>
             {formMode === "edit" ? (
-              <Input
+              <TitleCaseInput
                 value={form.watch("budgetUnitDepartment") || ""}
                 disabled
                 readOnly
@@ -149,7 +149,7 @@ export function BudgetUnitsForm({
           </div>
           <div className="space-y-1">
             <label className="block text-[14px] text-[#111827]">*BU Code</label>
-            <Input
+            <TitleCaseInput
               {...form.register("budgetUnitCode")}
               placeholder="Enter budget unit code"
               className="h-[40px] rounded-[9px] border border-[#c5cad5] bg-white px-2.5 text-[13px] text-[#111827] placeholder:text-[#a7afbf] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
@@ -157,7 +157,7 @@ export function BudgetUnitsForm({
           </div>
           <div className="space-y-1">
             <label className="block text-[14px] text-[#111827]">*BU Name</label>
-            <Input
+            <TitleCaseInput
               {...form.register("budgetUnitName")}
               placeholder="Enter budget unit name"
               className="h-[40px] rounded-[9px] border border-[#c5cad5] bg-white px-2.5 text-[13px] text-[#111827] placeholder:text-[#a7afbf] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
@@ -181,7 +181,7 @@ export function BudgetUnitsForm({
           <div className="space-y-1">
             <label className="block text-[14px] text-[#111827]">*BU Name</label>
             {formMode === "edit" ? (
-              <Input
+              <TitleCaseInput
                 value={form.watch("buProgramBudgetUnitName") || ""}
                 disabled
                 readOnly
@@ -220,7 +220,7 @@ export function BudgetUnitsForm({
           </div>
           <div className="space-y-1">
             <label className="block text-[14px] text-[#111827]">*BU Code</label>
-            <Input
+            <TitleCaseInput
               {...form.register("buProgramCode")}
               disabled
               placeholder="Enter BU Code"
@@ -229,7 +229,7 @@ export function BudgetUnitsForm({
           </div>
           <div className="space-y-1">
             <label className="block text-[14px] text-[#111827]">*Department</label>
-            <Input
+            <TitleCaseInput
               {...form.register("buProgramDepartment")}
               disabled
               placeholder="Select Department"
@@ -239,7 +239,7 @@ export function BudgetUnitsForm({
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
               <label className="block text-[14px] text-[#111827]">*BU Program Code</label>
-              <Input
+              <TitleCaseInput
                 {...form.register("buProgramProgramCode")}
                 placeholder="Enter Program Code"
                 className="h-[40px] rounded-[9px] border border-[#c5cad5] bg-white px-2.5 text-[13px] text-[#111827] placeholder:text-[#a7afbf] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
@@ -247,7 +247,7 @@ export function BudgetUnitsForm({
             </div>
             <div className="space-y-1">
               <label className="block text-[14px] text-[#111827]">*BU Program</label>
-              <Input
+              <TitleCaseInput
                 {...form.register("buProgramProgramName")}
                 placeholder="Enter Program Name"
                 className="h-[40px] rounded-[9px] border border-[#c5cad5] bg-white px-2.5 text-[13px] text-[#111827] placeholder:text-[#a7afbf] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
@@ -272,7 +272,7 @@ export function BudgetUnitsForm({
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
               <label className="block text-[14px] text-[#111827]">BU Program</label>
-              <Input
+              <TitleCaseInput
                 value={form.watch("buSubProgramBudgetUnitProgramName") || ""}
                 disabled
                 className="h-[44px] rounded-[9px] border border-[#c5cad5] bg-white px-2.5 text-[13px] text-[#111827] disabled:pointer-events-auto disabled:cursor-not-allowed disabled:!border-[0.8px] disabled:!border-[#cfd4dd] disabled:!bg-[#d2d4d9]/20 disabled:!text-black disabled:opacity-100"
@@ -280,7 +280,7 @@ export function BudgetUnitsForm({
             </div>
             <div className="space-y-1">
               <label className="block text-[14px] text-[#111827]">BU Program Code</label>
-              <Input
+              <TitleCaseInput
                 value={form.watch("buSubProgramBudgetCode") || ""}
                 disabled
                 className="h-[44px] rounded-[9px] border border-[#c5cad5] bg-white px-2.5 text-[13px] text-[#111827] disabled:pointer-events-auto disabled:cursor-not-allowed disabled:!border-[0.8px] disabled:!border-[#cfd4dd] disabled:!bg-[#d2d4d9]/20 disabled:!text-black disabled:opacity-100"
@@ -290,7 +290,7 @@ export function BudgetUnitsForm({
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
               <label className="block text-[14px] text-[#111827]">BU Sub Program</label>
-              <Input
+              <TitleCaseInput
                 {...form.register("buSubProgramName")}
                 placeholder="Enter Name"
                 className="h-[44px] rounded-[9px] border border-[#c5cad5] bg-white px-2.5 text-[13px] text-[#111827] placeholder:text-[#a7afbf] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
@@ -298,7 +298,7 @@ export function BudgetUnitsForm({
             </div>
             <div className="space-y-1">
               <label className="block text-[14px] text-[#111827]">BU Sub Program Code</label>
-              <Input
+              <TitleCaseInput
                 {...form.register("buSubProgramCode")}
                 placeholder="Enter Code"
                 className="h-[44px] rounded-[9px] border border-[#c5cad5] bg-white px-2.5 text-[13px] text-[#111827] placeholder:text-[#a7afbf] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
@@ -323,7 +323,7 @@ export function BudgetUnitsForm({
           <div className="space-y-1">
             <label className="block text-[14px] text-[#111827]">*Budget Unit Program Name</label>
             {formMode === "edit" ? (
-              <Input
+              <TitleCaseInput
                 value={form.watch("buSubProgramBudgetUnitProgramName") || ""}
                 disabled
                 readOnly
@@ -366,7 +366,7 @@ export function BudgetUnitsForm({
           </div>
           <div className="space-y-1">
             <label className="block text-[14px] text-[#111827]">*Budget Code</label>
-            <Input
+            <TitleCaseInput
               {...form.register("buSubProgramBudgetCode")}
               disabled
               placeholder="Enter Budget Code"
@@ -375,7 +375,7 @@ export function BudgetUnitsForm({
           </div>
           <div className="space-y-1">
             <label className="block text-[14px] text-[#111827]">*Department</label>
-            <Input
+            <TitleCaseInput
               {...form.register("buSubProgramDepartment")}
               disabled
               placeholder="Select Department"
@@ -385,7 +385,7 @@ export function BudgetUnitsForm({
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
               <label className="block text-[14px] text-[#111827]">*BU Sub Program Code</label>
-              <Input
+              <TitleCaseInput
                 {...form.register("buSubProgramCode")}
                 placeholder="Enter Code"
                 className="h-[40px] rounded-[9px] border border-[#c5cad5] bg-white px-2.5 text-[13px] text-[#111827] placeholder:text-[#a7afbf] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
@@ -393,7 +393,7 @@ export function BudgetUnitsForm({
             </div>
             <div className="space-y-1">
               <label className="block text-[14px] text-[#111827]">*BU Sub Program</label>
-              <Input
+              <TitleCaseInput
                 {...form.register("buSubProgramName")}
                 placeholder="Enter Name"
                 className="h-[40px] rounded-[9px] border border-[#c5cad5] bg-white px-2.5 text-[13px] text-[#111827] placeholder:text-[#a7afbf] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"

@@ -1,7 +1,7 @@
 import { Check, Plus } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { TitleCaseInput } from "@/components/ui/title-case-input"
 import { usePermissions } from "@/hooks/usePermissions"
 import type { ProgramToolbarProps } from "../types"
 
@@ -38,7 +38,7 @@ export function ProgramToolbar({
 
   return (
     <div className="mb-2 flex items-center justify-between gap-3">
-      <Input
+      <TitleCaseInput
         value={searchValue}
         onChange={(event) => onSearchChange(event.target.value)}
         placeholder={getSearchPlaceholder(activeTabLabel)}

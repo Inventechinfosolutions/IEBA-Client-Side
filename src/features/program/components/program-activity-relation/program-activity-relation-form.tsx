@@ -4,7 +4,7 @@ import { useMemo, useState } from "react"
 import { usePermissions } from "@/hooks/usePermissions"
 import tableEmptyIcon from "@/assets/icons/table-empty.png"
 import { SingleSelectDropdown } from "@/components/ui/dropdown"
-import { Input } from "@/components/ui/input"
+import { TitleCaseInput } from "@/components/ui/title-case-input"
 import { TransferListMoveButton } from "@/components/ui/transfer-list-move-button"
 import { cn } from "@/lib/utils"
 import { programActivityRelationKeys } from "../../keys"
@@ -151,9 +151,9 @@ export function ProgramActivityRelationForm({ form, departmentIds }: ProgramActi
 
   return (
     <div className="w-full px-1">
-      <input type="hidden" {...form.register("programActivityRelationDepartment")} />
-      <input type="hidden" {...form.register("programActivityRelationProgram")} />
-      <input type="hidden" {...form.register("programActivityRelationSort")} />
+      <TitleCaseInput type="hidden" {...form.register("programActivityRelationDepartment")} />
+      <TitleCaseInput type="hidden" {...form.register("programActivityRelationProgram")} />
+      <TitleCaseInput type="hidden" {...form.register("programActivityRelationSort")} />
 
       <div className="flex w-full items-end justify-between gap-3 py-0.5">
         <div className="flex min-w-0 flex-1 items-end gap-3">
@@ -192,7 +192,7 @@ export function ProgramActivityRelationForm({ form, departmentIds }: ProgramActi
               Program
             </label>
             {programDisabled ? (
-              <Input
+              <TitleCaseInput
                 id="par-program-trigger"
                 value={form.watch("programActivityRelationProgram") || ""}
                 disabled

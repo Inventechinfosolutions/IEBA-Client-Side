@@ -5,7 +5,7 @@ import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Input } from "@/components/ui/input"
+import { TitleCaseInput } from "@/components/ui/title-case-input"
 import {
   Select,
   SelectContent,
@@ -427,7 +427,7 @@ export function CountyActivityCodeAddPage({
                 <label className="text-[14px] font-normal text-[#1F2937]">
                   Activity Code
                 </label>
-                <Input
+                <TitleCaseInput
                   readOnly={primaryFieldsLocked}
                   className={`h-[48px] w-full rounded-[10px] border-[#D9D9D9] ${
                     primaryFieldsLocked ? "cursor-not-allowed bg-muted/50" : ""
@@ -449,7 +449,7 @@ export function CountyActivityCodeAddPage({
                 <label className="text-[14px] font-normal text-[#1F2937]">
                   Activity Name
                 </label>
-                <Input
+                <TitleCaseInput
                   readOnly={primaryFieldsLocked}
                   className={`h-[48px] w-full rounded-[10px] border-[#D9D9D9] ${
                     primaryFieldsLocked ? "cursor-not-allowed bg-muted/50" : ""
@@ -502,7 +502,7 @@ export function CountyActivityCodeAddPage({
                 <label className="text-[14px] font-normal text-[#1F2937]">
                   Secondary Code
                 </label>
-                <Input
+                <TitleCaseInput
                   className="h-[48px] w-full rounded-[10px] border-[#D9D9D9]"
                   value={form.watch("countyActivityCode")}
                   onChange={(event) => form.setValue("countyActivityCode", event.target.value)}
@@ -512,7 +512,7 @@ export function CountyActivityCodeAddPage({
                 <label className="text-[14px] font-normal text-[#1F2937]">
                   Activity Name
                 </label>
-                <Input
+                <TitleCaseInput
                   className="h-[48px] w-full rounded-[10px] border-[#D9D9D9]"
                   value={form.watch("countyActivityName")}
                   onChange={(event) => form.setValue("countyActivityName", event.target.value)}
@@ -552,7 +552,7 @@ export function CountyActivityCodeAddPage({
                 <div className="space-y-3 p-3">
                   <div className="relative">
                     <SearchIcon className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#9CA3AF]" />
-                    <Input
+                    <TitleCaseInput
                       value={leftSearch}
                       onChange={(event) => setLeftSearch(event.target.value)}
                       placeholder="Search here"
@@ -609,7 +609,7 @@ export function CountyActivityCodeAddPage({
                 <div className="space-y-3 p-3">
                   <div className="relative">
                     <SearchIcon className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#9CA3AF]" />
-                    <Input
+                    <TitleCaseInput
                       value={rightSearch}
                       onChange={(event) => setRightSearch(event.target.value)}
                       placeholder="Search here"

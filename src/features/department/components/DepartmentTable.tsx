@@ -2,7 +2,7 @@ import { useState, useMemo } from "react"
 import { User, Phone, Mail, MapPin } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { TitleCaseInput } from "@/components/ui/title-case-input"
 import {
   Pagination,
   PaginationContent,
@@ -215,7 +215,7 @@ export function DepartmentTable({
   
       <div className="flex items-center justify-between">
         <div className="w-[300px]">
-          <Input
+          <TitleCaseInput
             value={filters.search || ""}
             onChange={(e) => {
               onSearchChange(e.target.value)

@@ -5,7 +5,7 @@ import { toast } from "sonner"
 
 import { SingleSelectDropdown } from "@/components/ui/dropdown"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { TitleCaseInput } from "@/components/ui/title-case-input"
 import { TransferListMoveButton } from "@/components/ui/transfer-list-move-button"
 
 import { addEmployeeTransferSuccessToastOptions } from "../schemas"
@@ -788,7 +788,7 @@ export function TimeStudyAssignmentsPanel({
             <label className="select-none text-[11px] font-medium text-[#2a2f3a]">TS Minutes/Day</label>
             <div className="flex items-center gap-3">
               <div className="flex h-[46px] items-center rounded-[7px] border border-[#d2d8e3] bg-white px-3">
-                <Input
+                <TitleCaseInput
                   {...register("tsMinDay")}
                   className="h-auto w-[70px] border-0 bg-transparent p-0 text-[12px] text-[#111827] shadow-none focus-visible:ring-0"
                 />

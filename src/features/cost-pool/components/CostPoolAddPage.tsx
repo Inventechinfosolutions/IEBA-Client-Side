@@ -3,7 +3,7 @@ import { useMemo, useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Input } from "@/components/ui/input"
+import { TitleCaseInput } from "@/components/ui/title-case-input"
 import { Label } from "@/components/ui/label"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import {
@@ -196,7 +196,7 @@ export function CostPoolAddPage({
               className={!hasDepartment ? "cursor-not-allowed" : ""}
               aria-disabled={!hasDepartment}
             >
-              <Input
+              <TitleCaseInput
                 placeholder="Cost Pool Name"
                 disabled={!hasDepartment}
                 className={[
@@ -241,7 +241,7 @@ export function CostPoolAddPage({
               </div>
 
               <div className="border-t border-[#E5E7EB] p-3">
-                <Input
+                <TitleCaseInput
                   placeholder=""
                   value={unassignedSearch}
                   onChange={(e) => setUnassignedSearch(e.target.value)}
@@ -387,7 +387,7 @@ export function CostPoolAddPage({
               </div>
 
               <div className="border-t border-[#E5E7EB] p-3">
-                <Input
+                <TitleCaseInput
                   placeholder=""
                   value={assignedSearch}
                   onChange={(e) => setAssignedSearch(e.target.value)}

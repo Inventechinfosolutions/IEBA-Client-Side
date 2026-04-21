@@ -12,7 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
+import { TitleCaseInput } from "@/components/ui/title-case-input"
 import { Label } from "@/components/ui/label"
 import {
   Select,
@@ -167,7 +167,7 @@ export function EmployeeLeaveRequestDialog({
                       name={`entries.${index}.date`}
                       render={({ field: f, fieldState }) => (
                         <>
-                          <Input
+                          <TitleCaseInput
                             type="date"
                             className="h-9 text-sm"
                             {...f}
@@ -189,7 +189,7 @@ export function EmployeeLeaveRequestDialog({
                       name={`entries.${index}.startTime`}
                       render={({ field: f, fieldState }) => (
                         <>
-                          <Input
+                          <TitleCaseInput
                             type="time"
                             className="h-9 text-sm"
                             {...f}
@@ -211,7 +211,7 @@ export function EmployeeLeaveRequestDialog({
                       name={`entries.${index}.endTime`}
                       render={({ field: f, fieldState }) => (
                         <>
-                          <Input
+                          <TitleCaseInput
                             type="time"
                             className="h-9 text-sm"
                             {...f}
@@ -303,7 +303,7 @@ export function EmployeeLeaveRequestDialog({
                       name={`entries.${index}.totalMinApplied`}
                       render={({ field: f, fieldState }) => (
                         <>
-                          <Input
+                          <TitleCaseInput
                             type="text"
                             inputMode="numeric"
                             className="h-9 text-sm tabular-nums"
@@ -328,7 +328,7 @@ export function EmployeeLeaveRequestDialog({
                       name={`entries.${index}.comment`}
                       render={({ field: f, fieldState }) => (
                         <>
-                          <Input
+                          <TitleCaseInput
                             className="h-9 text-sm"
                             placeholder="Comment"
                             {...f}

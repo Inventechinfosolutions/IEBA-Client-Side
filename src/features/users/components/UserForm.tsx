@@ -12,7 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
+import { TitleCaseInput } from "@/components/ui/title-case-input"
 
 const userFormSchema = z.object({
   name: z.string().min(1, "Name is required").min(2, "Name must be at least 2 characters"),
@@ -76,7 +76,7 @@ export function UserForm({
             <label htmlFor="name" className="text-sm font-medium">
               Name
             </label>
-            <Input
+            <TitleCaseInput
               id="name"
               placeholder="John Doe"
               {...form.register("name")}
@@ -92,7 +92,7 @@ export function UserForm({
             <label htmlFor="email" className="text-sm font-medium">
               Email
             </label>
-            <Input
+            <TitleCaseInput
               id="email"
               type="email"
               placeholder="john@example.com"

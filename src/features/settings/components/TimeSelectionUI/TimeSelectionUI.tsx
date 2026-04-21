@@ -2,7 +2,7 @@ import { useMemo, useRef, useState } from "react"
 import { Clock } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { TitleCaseInput } from "@/components/ui/title-case-input"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -94,7 +94,7 @@ export function TimeSelectionUI({
     >
       <DropdownMenuTrigger asChild disabled={disabled}>
         <div className={`relative ${inputWidthClassName} ${disabled ? "cursor-not-allowed" : "cursor-text"}`}>
-          <Input
+          <TitleCaseInput
             type="text"
             disabled={disabled}
             placeholder={placeholder}

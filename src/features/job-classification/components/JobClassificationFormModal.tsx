@@ -12,7 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
+import { TitleCaseInput } from "@/components/ui/title-case-input"
 import { jobClassificationFormSchema } from "../schemas"
 import type { JobClassificationFormModalProps, JobClassificationFormValues, ActiveTools } from "../types"
 
@@ -207,7 +207,7 @@ export function JobClassificationFormModal({
           <div className="grid grid-cols-[220px_minmax(0,1fr)] items-end gap-5">
             <div className="space-y-1">
               <label className="block text-[14px] text-[#111827] mb-1">*Code</label>
-              <Input
+              <TitleCaseInput
                 {...register("code")}
                 placeholder="Job Code"
                 className="h-[52px] select-text rounded-[9px] border border-[#c5cad5] bg-white px-3 text-[14px] text-[#111827] placeholder:text-[#a7afbf] placeholder:text-[12px] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
@@ -215,7 +215,7 @@ export function JobClassificationFormModal({
             </div>
             <div className="space-y-1">
               <label className="block text-[14px] text-[#111827] mb-1">*Name</label>
-              <Input
+              <TitleCaseInput
                 {...register("name")}
                 placeholder="Job Classification"
                 className="h-[52px] select-text rounded-[9px] border border-[#c5cad5] bg-white px-3 text-[14px] text-[#111827] placeholder:text-[#a7afbf] placeholder:text-[12px] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"

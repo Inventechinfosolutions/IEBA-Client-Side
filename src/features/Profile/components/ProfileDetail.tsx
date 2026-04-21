@@ -13,7 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
+import { TitleCaseInput } from "@/components/ui/title-case-input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
@@ -263,7 +263,7 @@ function ProfileDetailForm({
                   name="firstName"
                   control={control}
                   render={({ field }) => (
-                    <Input
+                    <TitleCaseInput
                       {...field}
                       className={errors.firstName ? `${inputClassName} border-[#ef4444]` : inputClassName}
                       placeholder="First Name"
@@ -274,7 +274,7 @@ function ProfileDetailForm({
               </div>
               <div>
                 <label className={labelClassName}>MI</label>
-                <Input {...register("mi")} className={inputClassName} placeholder="" />
+                <TitleCaseInput {...register("mi")} className={inputClassName} placeholder="" />
               </div>
               <div>
                 <label className={labelClassName}>*Last Name</label>
@@ -282,7 +282,7 @@ function ProfileDetailForm({
                   name="lastName"
                   control={control}
                   render={({ field }) => (
-                    <Input
+                    <TitleCaseInput
                       {...field}
                       className={errors.lastName ? `${inputClassName} border-[#ef4444]` : inputClassName}
                       placeholder="Last Name"
@@ -296,7 +296,7 @@ function ProfileDetailForm({
             <div className="grid grid-cols-2 gap-6">
               <div>
                 <label className={labelClassName}>Area Code</label>
-                <Input
+                <TitleCaseInput
                   {...register("areaCode")}
                   className={errors.areaCode ? `${inputClassName} border-[#ef4444]` : inputClassName}
                  
@@ -308,7 +308,7 @@ function ProfileDetailForm({
                   name="telephoneNumber"
                   control={control}
                   render={({ field }) => (
-                    <Input
+                    <TitleCaseInput
                       value={field.value ?? ""}
                       onChange={(e) => field.onChange(formatPhone(e.target.value))}
                       className={
@@ -341,7 +341,7 @@ function ProfileDetailForm({
                 name="emergencyContact.firstName"
                 control={control}
                 render={({ field }) => (
-                  <Input
+                  <TitleCaseInput
                     {...field}
                     className={
                       errors.emergencyContact?.firstName
@@ -360,7 +360,7 @@ function ProfileDetailForm({
                 name="emergencyContact.lastName"
                 control={control}
                 render={({ field }) => (
-                  <Input
+                  <TitleCaseInput
                     {...field}
                     className={
                       errors.emergencyContact?.lastName ? `${inputClassName} border-[#ef4444]` : inputClassName
@@ -377,7 +377,7 @@ function ProfileDetailForm({
                 name="emergencyContact.areaCode"
                 control={control}
                 render={({ field }) => (
-                  <Input
+                  <TitleCaseInput
                     value={field.value ?? ""}
                     onChange={(e) => field.onChange(digitsOnlyAreaCode(e.target.value))}
                     className={
@@ -399,7 +399,7 @@ function ProfileDetailForm({
                 name="emergencyContact.telephoneNumber"
                 control={control}
                 render={({ field }) => (
-                  <Input
+                  <TitleCaseInput
                     value={field.value ?? ""}
                     onChange={(e) => field.onChange(formatPhone(e.target.value))}
                     className={
@@ -462,7 +462,7 @@ function ProfileDetailForm({
           <div className="grid grid-cols-4 gap-4">
             <div>
               <label className={labelClassName}>Employee ID</label>
-              <Input
+              <TitleCaseInput
                 {...register("onRecords.employeeId")}
                 className={
                   errors.onRecords?.employeeId
@@ -474,7 +474,7 @@ function ProfileDetailForm({
             </div>
             <div>
               <label className={labelClassName}>*Position ID</label>
-              <Input
+              <TitleCaseInput
                 {...register("onRecords.positionId")}
                 className={
                   errors.onRecords?.positionId
@@ -486,7 +486,7 @@ function ProfileDetailForm({
             </div>
             <div>
               <label className={labelClassName}>Job Classification</label>
-              <Input
+              <TitleCaseInput
                 {...register("onRecords.jobClassification")}
                 className={
                   errors.onRecords?.jobClassification
@@ -515,7 +515,7 @@ function ProfileDetailForm({
           <div className="mt-4 grid grid-cols-4 gap-4">
             <div>
               <label className={labelClassName}>Primary Supervisor</label>
-              <Input
+              <TitleCaseInput
                 {...register("onRecords.primarySupervisor")}
                 className={
                   errors.onRecords?.primarySupervisor
@@ -527,7 +527,7 @@ function ProfileDetailForm({
             </div>
             <div>
               <label className={labelClassName}>Secondary Supervisor</label>
-              <Input
+              <TitleCaseInput
                 {...register("onRecords.secondarySupervisor")}
                 className={
                   errors.onRecords?.secondarySupervisor
@@ -539,7 +539,7 @@ function ProfileDetailForm({
             </div>
             <div>
               <label className={labelClassName}>Email ID / Login Id</label>
-              <Input
+              <TitleCaseInput
                 {...register("onRecords.emailLoginId")}
                 className={
                   errors.onRecords?.emailLoginId
@@ -551,7 +551,7 @@ function ProfileDetailForm({
             </div>
             <div>
               <label className={labelClassName}>Location</label>
-              <Input
+              <TitleCaseInput
                 {...register("onRecords.location")}
                 className={
                   errors.onRecords?.location ? `${inputClassName} border-[#ef4444]` : inputClassName

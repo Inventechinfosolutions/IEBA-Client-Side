@@ -8,7 +8,7 @@ import { useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
+import { TitleCaseInput } from "@/components/ui/title-case-input"
 import {
   Pagination,
   PaginationContent,
@@ -405,7 +405,7 @@ export function CostPoolTable({
         <div className="w-full max-w-[300px]">
           <form onSubmit={(event) => event.preventDefault()} className="relative">
             <SearchIcon className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#9CA3AF]" />
-            <Input
+            <TitleCaseInput
               placeholder="Search here"
               className="h-12 rounded-[8px] border border-[#D9D9D9] bg-white pl-9 text-[16px] text-[#1F2937] placeholder:text-[#9CA3AF]"
               {...filterForm.register("search")}

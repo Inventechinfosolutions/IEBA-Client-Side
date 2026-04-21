@@ -2,7 +2,7 @@ import { useState } from "react"
 import { Check, Plus, Search } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { TitleCaseInput } from "@/components/ui/title-case-input"
 import { SingleSelectDropdown } from "@/components/ui/dropdown"
 import { usePermissions } from "@/hooks/usePermissions"
 import type { UserToolbarProps } from "@/features/user/types"
@@ -35,7 +35,7 @@ export function UserToolbar({
           onBlurCapture={() => setIsSearchFocused(false)}
         >
           <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-[#a6aaba]" />
-          <Input
+          <TitleCaseInput
             value={searchTerm}
             onChange={(event) => onSearchChange(event.target.value)}
             placeholder="Search here"

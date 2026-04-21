@@ -13,7 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { parseMultiSelectStoredValues } from "@/components/ui/multi-select-dropdown"
-import { Input } from "@/components/ui/input"
+import { TitleCaseInput } from "@/components/ui/title-case-input"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { cn } from "@/lib/utils"
@@ -678,7 +678,7 @@ export function ReportForm({ module }: ReportFormProps) {
                   name="dateFrom"
                   control={control}
                   render={({ field }) => (
-                    <Input
+                    <TitleCaseInput
                       id="reports-date-from"
                       type="date"
                       className={dateInputInRowClassName}
@@ -702,7 +702,7 @@ export function ReportForm({ module }: ReportFormProps) {
                   name="dateTo"
                   control={control}
                   render={({ field }) => (
-                    <Input
+                    <TitleCaseInput
                       id="reports-date-to"
                       type="date"
                       className={dateInputInRowClassName}
@@ -919,7 +919,7 @@ export function ReportForm({ module }: ReportFormProps) {
               name="fileName"
               control={control}
               render={({ field }) => (
-                <Input
+                <TitleCaseInput
                   id="reports-file-name"
                   placeholder="file name"
                   className={fileNameInputClassName}

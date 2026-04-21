@@ -19,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Input } from "@/components/ui/input"
+import { TitleCaseInput } from "@/components/ui/title-case-input"
 import { Label } from "@/components/ui/label"
 import { addRoleFormSchema } from "../schemas"
 import type { AddRoleFormSchema } from "../schemas"
@@ -302,7 +302,7 @@ export function DepartmentRoleAdd({
               <Label htmlFor="roleName" className="text-black">
                 Role Name
               </Label>
-              <Input
+              <TitleCaseInput
                 id="roleName"
                 placeholder="Role Name"
                 className={cn(

@@ -7,7 +7,7 @@ import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
+import { TitleCaseInput } from "@/components/ui/title-case-input"
 import { Label } from "@/components/ui/label"
 import {
   Select,
@@ -501,7 +501,7 @@ export function TimeStudyPeriodsForm({
 
                 <div className="space-y-1">
                   <Label className="text-[14px] font-normal text-black">Select Department</Label>
-                  <Input
+                  <TitleCaseInput
                     value={departmentLabel}
                     readOnly
                     className="h-12 w-[150px] cursor-not-allowed rounded-[10px] border-[#D1D5DB] bg-[#F9FAFB] px-[11px] text-[14px]"
@@ -512,7 +512,7 @@ export function TimeStudyPeriodsForm({
               <div className="grid grid-cols-7 gap-2">
                 <div className="space-y-1">
                   <Label className="text-[14px] font-normal text-black">Time Study Period</Label>
-                  <Input
+                  <TitleCaseInput
                     className="h-10 rounded-[14px] border-[#D1D5DB]"
                     value={timeStudyPeriod}
                     onChange={(event) =>
@@ -525,7 +525,7 @@ export function TimeStudyPeriodsForm({
 
                 <div className="space-y-1">
                   <Label className="text-[14px] font-normal text-black">Start Date</Label>
-                  <Input
+                  <TitleCaseInput
                     readOnly={!isCreateDateEditable}
                     type={isCreateDateEditable ? "date" : "text"}
                     className={cn(
@@ -554,7 +554,7 @@ export function TimeStudyPeriodsForm({
 
                 <div className="space-y-1">
                   <Label className="text-[14px] font-normal text-black">End Date</Label>
-                  <Input
+                  <TitleCaseInput
                     readOnly={!isCreateDateEditable}
                     type={isCreateDateEditable ? "date" : "text"}
                     className={cn(
@@ -578,7 +578,7 @@ export function TimeStudyPeriodsForm({
                   <Label className="text-[14px] font-normal text-black">
                     Hours <span className="text-[12px]">(8 hrs/day)</span>
                   </Label>
-                  <Input
+                  <TitleCaseInput
                     readOnly={isCreateMode}
                     className={cn(
                       "h-10 rounded-[14px] border-[#D1D5DB]",
@@ -591,7 +591,7 @@ export function TimeStudyPeriodsForm({
 
                 <div className="space-y-1">
                   <Label className="text-[14px] font-normal text-black">Holidays</Label>
-                  <Input
+                  <TitleCaseInput
                     readOnly={isCreateMode}
                     className={cn(
                       "h-10 rounded-[14px] border-[#D1D5DB]",
@@ -604,7 +604,7 @@ export function TimeStudyPeriodsForm({
 
                 <div className="space-y-1">
                   <Label className="text-[14px] font-normal text-black">Allocable</Label>
-                  <Input
+                  <TitleCaseInput
                     readOnly={isCreateMode}
                     className={cn(
                       "h-10 rounded-[14px] border-[#D1D5DB]",
@@ -617,7 +617,7 @@ export function TimeStudyPeriodsForm({
 
                 <div className="space-y-1">
                   <Label className="text-[14px] font-normal text-black">Non-Allocable</Label>
-                  <Input
+                  <TitleCaseInput
                     readOnly={isCreateMode}
                     className={cn(
                       "h-10 rounded-[14px] border-[#D1D5DB]",
