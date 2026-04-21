@@ -145,17 +145,13 @@ export function UserModulePage() {
 
   const searchFilters = useMemo(() => {
     const raw = searchTerm.trim()
-    if (!raw) return { firstName: "", lastName: "", employeeId: "" }
+    if (!raw) return { firstName: "", lastName: "", name: "", employeeId: "" }
     const normalized = raw.replace(/\s+/g, " ")
     if (/^\d+$/.test(normalized)) {
-      return { firstName: "", lastName: "", employeeId: normalized }
+      return { firstName: "", lastName: "", name: "", employeeId: normalized }
     }
-    const parts = normalized.split(" ").filter(Boolean)
-    if (parts.length >= 2) {
-      // name column is "lastName firstName", so first word = lastName, rest = firstName
-      return { firstName: parts.slice(1).join(" "), lastName: parts[0], employeeId: "" }
-    }
-    return { firstName: "", lastName: normalized, employeeId: "" }
+    // We send everything as the full name to search on the backed `name` column
+    return { firstName: "", lastName: "", name: normalized, employeeId: "" }
   }, [searchTerm])
 
   const userModule = useUserModule({
@@ -164,6 +160,7 @@ export function UserModulePage() {
     inactiveOnly,
     firstName: searchFilters.firstName || undefined,
     lastName: searchFilters.lastName || undefined,
+    name: searchFilters.name || undefined,
     employeeId: searchFilters.employeeId || undefined,
     departmentId: selectedDepartmentId
       ? String(selectedDepartmentId)

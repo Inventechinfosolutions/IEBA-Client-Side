@@ -70,6 +70,7 @@ export type GetUserModuleParams = {
   /** Optional filters for GET /users (case-insensitive partial match, ANDed when multiple set). */
   firstName?: string
   lastName?: string
+  name?: string
   employeeId?: string
   departmentId?: string | number
 }
