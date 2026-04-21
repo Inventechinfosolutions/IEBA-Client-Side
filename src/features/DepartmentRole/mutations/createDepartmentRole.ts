@@ -2,18 +2,13 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 import { createDepartmentRole } from "../api/departmentRoles"
 import { departmentRoleKeys } from "../keys"
-import type { AddRoleFormValues, DepartmentRolesListFilters } from "../types"
-
-type CreateInput = AddRoleFormValues & {
-  departmentId: number
-  listFilters: DepartmentRolesListFilters
-}
+import type { CreateDepartmentRoleMutationInput } from "../types"
 
 export function useCreateDepartmentRole() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async (input: CreateInput) => {
+    mutationFn: async (input: CreateDepartmentRoleMutationInput) => {
       const status = input.active ? "active" : "inactive"
       return createDepartmentRole({
         departmentId: input.departmentId,
@@ -21,6 +16,7 @@ export function useCreateDepartmentRole() {
         role: { name: input.roleName.trim() },
         isAdmin: false,
         assignedPermissionLabels: input.assignedPermissions,
+        permissionCatalogByModuleName: input.permissionCatalogByModuleName,
       })
     },
     onSuccess: async (_id, variables) => {

@@ -7,20 +7,18 @@ import type {
   DepartmentRolePermissionModuleGroup,
   DepartmentRoleWithChildren,
   RoleStatus,
+  ApiDepartmentRoleListItem,
+  ApiDepartmentWithRolesRow,
+  DepartmentRolesListPayload,
+  DepartmentRolesPageResult,
+  CreateDepartmentRoleBody,
+  MutateDepartmentRolePermissionsBody,
+  UpdateDepartmentRoleBody,
 } from "../types"
 
 import { buildCreateDepartmentRolePermissions } from "./departmentRoleCreatePermissions"
 
 /** Mirrors backend list payload (same shape as GET used in add-employee catalog). */
-type ApiDepartmentRoleListItem = {
-  id: number
-  roleId: number
-  isAdmin: boolean
-  status: string
-  role: { id: number; name: string }
-  /** When true, same as legacy `data.default` — view-only row, checkbox disabled. */
-  autoselected?: boolean
-}
 
 function resolveAutoselected(dr: ApiDepartmentRoleListItem): boolean {
   const o = dr as Record<string, unknown>
@@ -35,24 +33,7 @@ function resolveAutoselected(dr: ApiDepartmentRoleListItem): boolean {
   return dr.isAdmin === true
 }
 
-type ApiDepartmentWithRolesRow = {
-  id: number
-  code: string
-  name: string
-  status: string
-  departmentroles: ApiDepartmentRoleListItem[]
-}
 
-type DepartmentRolesListPayload = {
-  data: ApiDepartmentWithRolesRow[]
-  meta: {
-    totalItems: number
-    itemCount?: number
-    itemsPerPage?: number
-    totalPages?: number
-    currentPage?: number
-  }
-}
 
 function assertSuccessData<T>(res: ApiResponseDto<T>, failureMessage: string): T {
   if (!res?.success || res.data == null) {
@@ -101,10 +82,6 @@ export function mapApiDepartmentRowToUi(
   }
 }
 
-export type DepartmentRolesPageResult = {
-  items: DepartmentRoleWithChildren[]
-  totalItems: number
-}
 
 export async function fetchDepartmentRolesPage(params: {
   page: number
@@ -215,14 +192,29 @@ function normalizeDepartmentRoleDetail(raw: unknown): DepartmentRoleDetail {
       : ""
 
   const dept = asRecord(inner.department)
+  const nestedRole = asRecord(inner.role)
+  const nestedDept = asRecord(nestedRole?.department)
+
+  // Diagnostic Log to see exactly what we're getting from the API
+  console.log('DEBUG: normalizeDepartmentRoleDetail inner data:', inner)
+
   let departmentName =
     typeof dept?.name === "string"
       ? dept.name.trim()
-      : typeof inner.departmentName === "string"
-        ? inner.departmentName.trim()
-        : typeof inner.department === "string"
-          ? inner.department.trim()
-          : ""
+      : typeof nestedDept?.name === "string"
+        ? nestedDept.name.trim()
+        : typeof inner.departmentName === "string"
+          ? inner.departmentName.trim()
+          : typeof inner.department === "string"
+            ? inner.department.trim()
+            : typeof root.departmentName === "string"
+              ? root.departmentName.trim()
+              : ""
+  
+  // Extra fallback: check for departmentName match in top level keys
+  if (!departmentName && typeof inner.departmentName === "string") {
+    departmentName = inner.departmentName.trim()
+  }
 
   const deptIdFromNested =
     typeof dept?.id === "number"
@@ -349,24 +341,16 @@ export async function fetchDepartmentRoleById(id: string): Promise<DepartmentRol
       res as ApiResponseDto<unknown>,
       "Failed to load department role"
     )
-    return normalizeDepartmentRoleDetail(data)
+    const normalized = normalizeDepartmentRoleDetail(data)
+    return normalized
   }
-  return normalizeDepartmentRoleDetail(res)
+  const normalized = normalizeDepartmentRoleDetail(res)
+  return normalized
 }
 
 /**
  * POST /department-roles — full DTO in one request (includes permissions; no follow-up assign on create).
  */
-export type CreateDepartmentRoleBody = {
-  departmentId: number
-  status: string
-  role: { name: string }
-  isAdmin?: boolean
-  /** Add Role transfer-list labels → expanded to `{ permissionId, moduleId }[]`. */
-  assignedPermissionLabels?: readonly string[]
-  /** When set (e.g. from GET role template), replaces hardcoded bundles for expansion. */
-  permissionCatalogByModuleName?: DepartmentRolePermissionCatalog | null
-}
 
 function extractCreatedId(data: unknown): number {
   const o = asRecord(data) ?? {}
@@ -401,11 +385,6 @@ export async function createDepartmentRole(
   return extractCreatedId(data)
 }
 
-export type MutateDepartmentRolePermissionsBody = {
-  departmentRoleId: number
-  /** Permission names/codes, or switch to `permissionIds` in the payload if your API expects ids. */
-  permissions: string[]
-}
 
 export async function assignDepartmentRolePermissions(
   body: MutateDepartmentRolePermissionsBody
@@ -427,10 +406,6 @@ export async function unassignDepartmentRolePermissions(
   assertSuccessOk(res, "Failed to unassign permissions")
 }
 
-export type UpdateDepartmentRoleBody = {
-  roleName?: string
-  status?: string
-}
 
 /**
  * Updates a department-role row (custom role name / status).
@@ -440,9 +415,74 @@ export async function updateDepartmentRole(
   id: string,
   body: UpdateDepartmentRoleBody
 ): Promise<void> {
+  const permissions = body.assignedPermissionLabels
+    ? buildCreateDepartmentRolePermissions(
+        body.assignedPermissionLabels,
+        body.permissionCatalogByModuleName
+      )
+    : undefined
+
+  // Use 'name' and 'status' at top level
+  // and 'permissions' as an array of { id, moduleId }
+  const payload = {
+    ...(body.name ? { name: body.name } : {}),
+    ...(body.status ? { status: body.status } : {}),
+    ...(permissions ? { permissions } : {}),
+  }
+
+  console.log("DEBUG: updateDepartmentRole payload:", payload)
   const res = await api.put<ApiResponseDto<unknown>>(
     `/department-roles/${encodeURIComponent(id)}`,
-    body
+    payload
   )
   assertSuccessOk(res, "Failed to update department role")
+}
+
+/**
+ * GET /department-roles/permissions/catalog
+ * Returns all active permissions grouped by module name.
+ * Used by the Add Role modal TransferPanel in create mode.
+ */
+export async function fetchPermissionCatalog(): Promise<DepartmentRolePermissionCatalog> {
+  const res = await api.get<ApiResponseDto<any>>(
+    "/department-roles/permissions/catalog"
+  )
+  const data = assertSuccessData(res, "Failed to load permission catalog")
+  
+  // Standardize: If API returns a flat array, group it by module name
+  if (Array.isArray(data)) {
+    const out: DepartmentRolePermissionCatalog = {}
+    for (const p of data) {
+      // Use p.permissionId if available, fallback to p.id if it's a string
+      const pid = p?.permissionId || (typeof p?.id === 'string' ? p.id : null)
+      if (!pid) continue
+      
+      let modName = p.module?.name?.trim() || p.moduleName?.trim() || ""
+      
+      // Fallback: If no name, parse from ID prefix (e.g. 'jobpool:add' -> 'Jobpool')
+      if (!modName) {
+        const prefix = pid.split(":")[0]
+        if (prefix) {
+          modName = prefix.charAt(0).toUpperCase() + prefix.slice(1)
+        } else {
+          modName = "Other"
+        }
+      }
+
+      const label = shuttleLabelForModuleName(modName)
+      if (!out[label]) out[label] = []
+      
+      // Check for duplicates
+      const exists = out[label].some(x => x.permissionId === pid)
+      if (!exists) {
+        out[label].push({
+          permissionId: pid,
+          moduleId: p.moduleId || p.module?.id || 0
+        })
+      }
+    }
+    return out
+  }
+
+  return (data || {}) as DepartmentRolePermissionCatalog
 }

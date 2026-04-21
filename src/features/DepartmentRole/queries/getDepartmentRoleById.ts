@@ -16,5 +16,7 @@ export function useDepartmentRoleDetailQuery(
         : ([...departmentRoleKeys.all, "detail", "none"] as const),
     queryFn: () => fetchDepartmentRoleById(id as string),
     enabled,
+    staleTime: 0,
+    refetchOnMount: "always",
   })
 }

@@ -2,12 +2,17 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 import { updateDepartmentRole } from "../api/departmentRoles"
 import { departmentRoleKeys } from "../keys"
-import type { DepartmentRolesListFilters, RoleStatus } from "../types"
+import type {
+  DepartmentRolesListFilters,
+  DepartmentRolePermissionCatalog,
+} from "../types"
 
 type UpdateChildInput = {
   childId: string
-  roleName: string
-  status: RoleStatus
+  name?: string
+  status?: string
+  assignedPermissionLabels?: string[]
+  permissionCatalogByModuleName?: DepartmentRolePermissionCatalog | null
   listFilters: DepartmentRolesListFilters
 }
 
@@ -17,8 +22,10 @@ export function useUpdateDepartmentRoleChild() {
   return useMutation({
     mutationFn: async (input: UpdateChildInput) => {
       await updateDepartmentRole(input.childId, {
-        roleName: input.roleName.trim(),
+        name: input.name,
         status: input.status,
+        assignedPermissionLabels: input.assignedPermissionLabels,
+        permissionCatalogByModuleName: input.permissionCatalogByModuleName,
       })
     },
     onSuccess: async (_void, variables) => {

@@ -17,21 +17,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination"
-import {
   Table,
   TableBody,
   TableCell,
@@ -41,13 +26,13 @@ import {
 } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
+import { MasterCodePagination } from "@/features/master-code/components/MasterCodePagination"
 import type { DepartmenRoleTableProps } from "../types"
 import { cn } from "@/lib/utils"
 import statusCheckImg from "@/assets/status-check.png"
 import statusCrossImg from "@/assets/status-cross.png"
 import { usePermissions } from "@/hooks/usePermissions"
 
-const PAGE_SIZES = [5, 10, 25, 50] as const
 
 export function DepartmenRoleTable({
   data,
@@ -74,10 +59,6 @@ export function DepartmenRoleTable({
     })
   }
 
-  const totalPages = Math.max(
-    1,
-    Math.ceil(pagination.totalItems / pagination.pageSize)
-  )
   /** Server returns one page per request; `data` is already the current page. */
   const rows = data
 
@@ -193,7 +174,12 @@ export function DepartmenRoleTable({
                             aria-label="Active"
                           />
                         ) : (
-                          <span className="text-muted-foreground">—</span>
+                          <img
+                            src={statusCrossImg}
+                            alt="Inactive"
+                            className="h-[18px] w-[18px] shrink-0 object-contain"
+                            aria-label="Inactive"
+                          />
                         )}
                       </div>
                     </TableCell>
@@ -311,76 +297,13 @@ export function DepartmenRoleTable({
         </TableBody>
       </Table>
 
-      <div
-        className={cn(
-          "custom--pagination flex h-16 w-full items-center justify-end gap-4 rounded-lg bg-white px-4 py-2.5 shadow-[0_0_20px_0_#0000001a]",
-          "my-8"
-        )}
-      >
-        <span className="text-sm text-[#4B5563]">
-          Total {pagination.totalItems} items
-        </span>
-        <Pagination className="w-auto mx-0 justify-end">
-          <PaginationContent className="gap-2">
-            <PaginationItem>
-              <PaginationPrevious
-                text=""
-                href="#"
-                onClick={(e) => {
-                  e.preventDefault()
-                  if (pagination.page > 1) onPageChange(pagination.page - 1)
-                }}
-                className={
-                  pagination.page <= 1
-                    ? "pointer-events-none opacity-50"
-                    : "cursor-pointer"
-                }
-              />
-            </PaginationItem>
-            <PaginationItem>
-              <PaginationLink
-                href="#"
-                isActive
-                onClick={(e) => e.preventDefault()}
-                className="cursor-default"
-              >
-                {pagination.page}
-              </PaginationLink>
-            </PaginationItem>
-            <PaginationItem>
-              <PaginationNext
-                text=""
-                href="#"
-                onClick={(e) => {
-                  e.preventDefault()
-                  if (pagination.page < totalPages)
-                    onPageChange(pagination.page + 1)
-                }}
-                className={
-                  pagination.page >= totalPages
-                    ? "pointer-events-none opacity-50"
-                    : "cursor-pointer"
-                }
-              />
-            </PaginationItem>
-          </PaginationContent>
-        </Pagination>
-        <Select
-          value={String(pagination.pageSize)}
-          onValueChange={(v) => onPageSizeChange(Number(v))}
-        >
-          <SelectTrigger className="h-8 w-24 rounded-md border-[#D1D5DB] bg-white text-sm text-[#4B5563]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {PAGE_SIZES.map((size) => (
-              <SelectItem key={size} value={String(size)}>
-                {size} / page
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      <MasterCodePagination
+        totalItems={pagination.totalItems}
+        currentPage={pagination.page}
+        pageSize={pagination.pageSize}
+        onPageChange={onPageChange}
+        onPageSizeChange={onPageSizeChange}
+      />
     </div>
   )
 }

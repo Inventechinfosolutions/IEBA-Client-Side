@@ -4,7 +4,7 @@ import { useDepartmentRolesListQuery } from "../queries/getDepartmentRoles"
 import type { DepartmentRolesListFilters, PaginationState } from "../types"
 
 const DEFAULT_PAGE_SIZE = 10
-const LIST_STATUS = "active" as const
+const LIST_STATUS = undefined
 
 export function useDepartmentRoles() {
   const [page, setPage] = useState(1)

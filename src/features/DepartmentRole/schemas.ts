@@ -12,13 +12,9 @@ export const departmentRoleFormSchema = z.object({
   status: z.enum(["active", "inactive"]),
 })
 
-export type DepartmentRoleFormSchema = z.infer<typeof departmentRoleFormSchema>
-
 export const addRoleFormSchema = z.object({
   department: z.string().min(1, "Department is required"),
   roleName: z.string().min(1, "Role name is required"),
   active: z.boolean(),
   assignedPermissions: z.array(z.string()),
 })
-
-export type AddRoleFormSchema = z.infer<typeof addRoleFormSchema>
