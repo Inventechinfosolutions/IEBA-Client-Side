@@ -24,6 +24,7 @@ import { useCreateRmtsGroup } from "../mutations/createRmtsGroup"
 import { useUpdateRmtsGroup } from "../mutations/updateRmtsGroup"
 import { useGetScheduleTimeStudyUsersByDepartment } from "../queries/getScheduleTimeStudyUsersByDepartment"
 import { useGetScheduleTimeStudyJobPoolsByDepartment } from "../queries/getScheduleTimeStudyJobPoolsByDepartment"
+import { useGetRmtsGroupById } from "../queries/getRmtsGroupById"
 import {
   participantsListFormDefaultValues,
   participantsListFormSchema,
@@ -95,30 +96,97 @@ export function ParticipantsListForm({
   })
   const jobPools = jobPoolsQuery.data ?? []
 
-  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([])
-  const [selectedJobPoolIds, setSelectedJobPoolIds] = useState<string[]>([])
+  const [manualUserIds, setManualUserIds] = useState<string[] | null>(null)
+  const [manualJobPoolUserIds, setManualJobPoolUserIds] = useState<string[] | null>(null)
+  const [manualJobPoolIds, setManualJobPoolIds] = useState<string[] | null>(null)
+
+  const groupDetailsQuery = useGetRmtsGroupById({
+    id: editingRow?.id ? Number(editingRow.id) : null,
+  })
+
+  const selectedUserIds = useMemo(() => {
+    if (manualUserIds !== null) return manualUserIds
+    if (open && editingRow?.grouptype === RmtsGroupType.User && groupDetailsQuery.data?.users) {
+      return groupDetailsQuery.data.users
+    }
+    return []
+  }, [manualUserIds, open, editingRow, groupDetailsQuery.data])
+
+  const selectedJobPoolIds = useMemo(() => {
+    if (manualJobPoolIds !== null) return manualJobPoolIds
+    if (open && editingRow?.grouptype === RmtsGroupType.JobPool && groupDetailsQuery.data?.jobPools) {
+      return groupDetailsQuery.data.jobPools
+    }
+    return []
+  }, [manualJobPoolIds, open, editingRow, groupDetailsQuery.data])
+
+  const selectedJobPoolUserIds = useMemo(() => {
+    if (manualJobPoolUserIds !== null) return manualJobPoolUserIds
+    if (open && editingRow?.grouptype === RmtsGroupType.JobPool && groupDetailsQuery.data?.users) {
+      return groupDetailsQuery.data.users
+    }
+    return []
+  }, [manualJobPoolUserIds, open, editingRow, groupDetailsQuery.data])
+
   const allJobPoolIds = useMemo(() => jobPools.map((jp) => jp.id).filter(Boolean), [jobPools])
   const allJobPoolsSelected =
     allJobPoolIds.length > 0 && allJobPoolIds.every((id) => selectedJobPoolIds.includes(id))
 
   const toggleJobPoolAll = (checked: boolean) => {
-    setSelectedJobPoolIds(checked ? allJobPoolIds : [])
+    setManualJobPoolIds(checked ? allJobPoolIds : [])
+    if (checked) {
+      const allUserIds = jobPools.flatMap((jp) => (jp.userprofiles ?? []).map((u) => u.id))
+      setManualJobPoolUserIds([...new Set(allUserIds)])
+    } else {
+      setManualJobPoolUserIds([])
+    }
   }
+  const toggleUserAll = (checked: boolean) => {
+    setManualUserIds(checked ? departmentUsers.map((u) => u.id) : [])
+  }
+
   const toggleJobPoolOne = (jobPoolId: string, checked: boolean) => {
-    setSelectedJobPoolIds((prev) => {
-      const has = prev.includes(jobPoolId)
-      if (checked) return has ? prev : [...prev, jobPoolId]
-      return has ? prev.filter((x) => x !== jobPoolId) : prev
+    const jp = jobPools.find((j) => j.id === jobPoolId)
+    const userIdsInPool = (jp?.userprofiles ?? []).map((u) => u.id)
+
+    setManualJobPoolIds((prev) => {
+      const current = prev ?? (editingRow?.grouptype === RmtsGroupType.JobPool ? groupDetailsQuery.data?.jobPools ?? [] : [])
+      const has = current.includes(jobPoolId)
+      if (checked) return has ? current : [...current, jobPoolId]
+      return has ? current.filter((x) => x !== jobPoolId) : current
+    })
+
+    setManualJobPoolUserIds((prev) => {
+      const current = prev ?? (editingRow?.grouptype === RmtsGroupType.JobPool ? groupDetailsQuery.data?.users ?? [] : [])
+      if (checked) {
+        const next = [...current]
+        userIdsInPool.forEach((id) => {
+          if (!next.includes(id)) next.push(id)
+        })
+        return next
+      } else {
+        return current.filter((id) => !userIdsInPool.includes(id))
+      }
     })
   }
  
   const toggleUserOne = (userId: string, jobPoolId?: string) => {
-    setSelectedUserIds((prev) =>
-      prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId],
-    )
-    // In "job-pool" mode, selecting users should also select their parent job pool
-    if (selectedUserBy === "job-pool" && jobPoolId) {
-      setSelectedJobPoolIds((prev) => (prev.includes(jobPoolId) ? prev : [...prev, jobPoolId]))
+    if (selectedUserBy === "job-pool") {
+      setManualJobPoolUserIds((prev) => {
+        const current = prev ?? (editingRow?.grouptype === RmtsGroupType.JobPool ? groupDetailsQuery.data?.users ?? [] : [])
+        return current.includes(userId) ? current.filter((id) => id !== userId) : [...current, userId]
+      })
+      if (jobPoolId) {
+        setManualJobPoolIds((prev) => {
+          const current = prev ?? (editingRow?.grouptype === RmtsGroupType.JobPool ? groupDetailsQuery.data?.jobPools ?? [] : [])
+          return current.includes(jobPoolId) ? current : [...current, jobPoolId]
+        })
+      }
+    } else {
+      setManualUserIds((prev) => {
+        const current = prev ?? (editingRow?.grouptype === RmtsGroupType.User ? groupDetailsQuery.data?.users ?? [] : [])
+        return current.includes(userId) ? current.filter((id) => id !== userId) : [...current, userId]
+      })
     }
   }
 
@@ -138,7 +206,7 @@ export function ParticipantsListForm({
       departmentId,
       ...(values.selectedUserBy === "user"
         ? { users: selectedUserIds }
-        : { jobPools: selectedJobPoolIds, users: selectedUserIds }),
+        : { jobPools: selectedJobPoolIds, users: selectedJobPoolUserIds }),
     }
 
     try {
@@ -162,15 +230,27 @@ export function ParticipantsListForm({
         department: selectedDepartment,
         studyYear: selectedStudyYear,
       })
-      setSelectedUserIds([])
-      setSelectedJobPoolIds([])
+      setManualUserIds(null)
+      setManualJobPoolUserIds(null)
+      setManualJobPoolIds(null)
+
     } catch (error) {
       toast.error(formatRmtsGroupMutationError(error))
     }
   })
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog 
+      open={open} 
+      onOpenChange={(isOpen) => {
+        if (!isOpen) {
+          setManualUserIds(null)
+          setManualJobPoolUserIds(null)
+          setManualJobPoolIds(null)
+        }
+        onOpenChange(isOpen)
+      }}
+    >
       <DialogContent
         showClose={false}
         className="min-h-[520px] w-[980px] max-w-[calc(100vw-2rem)] rounded-[6px] border border-[#E5E7EB] bg-white p-[18px_26px_24px]"
@@ -250,14 +330,34 @@ export function ParticipantsListForm({
                 }
                 className="flex h-12 items-center gap-5"
               >
-                <label className="flex items-center gap-2 text-[14px] text-black">
-                  <RadioGroupItem value="job-pool" />
-                  Job Pool
-                </label>
-                <label className="flex items-center gap-2 text-[14px] text-black">
-                  <RadioGroupItem value="user" />
-                  User
-                </label>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem 
+                    value="job-pool" 
+                    id="job-pool" 
+                    disabled={!!editingRow}
+                    className={editingRow ? "cursor-not-allowed opacity-50" : ""}
+                  />
+                  <Label 
+                    htmlFor="job-pool" 
+                    className={`text-[14px] font-normal text-black ${editingRow ? "cursor-not-allowed opacity-50" : ""}`}
+                  >
+                    Job Pool
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem 
+                    value="user" 
+                    id="user" 
+                    disabled={!!editingRow}
+                    className={editingRow ? "cursor-not-allowed opacity-50" : ""}
+                  />
+                  <Label 
+                    htmlFor="user" 
+                    className={`text-[14px] font-normal text-black ${editingRow ? "cursor-not-allowed opacity-50" : ""}`}
+                  >
+                    User
+                  </Label>
+                </div>
               </RadioGroup>
             </div>
           </div>
@@ -289,39 +389,14 @@ export function ParticipantsListForm({
                   </div>
                 ) : (
                   <div className="p-4">
-                    <div className="overflow-hidden rounded-[8px] border border-[#E5E7EB]">
-                      {/* Department row */}
-                      <div className="grid h-7 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 bg-[#F3F4F6] pl-4 pr-5 text-[10px] font-semibold text-[#374151]">
-                        <span className="min-w-0">{selectedDepartmentLabel || "—"}</span>
-                        <button
-                          type="button"
-                          aria-label={allJobPoolsSelected ? "Deselect all job pools" : "Select all job pools"}
-                          disabled={allJobPoolIds.length === 0}
-                          onClick={() => toggleJobPoolAll(!allJobPoolsSelected)}
-                          className={`flex size-4.5 shrink-0 items-center justify-center rounded-[6px] border shadow-sm transition-all disabled:cursor-not-allowed disabled:opacity-50 ${
-                            allJobPoolsSelected
-                              ? "border-[#6C5DD3] bg-[#6C5DD3] text-white"
-                              : "border-[#E5E7EB] bg-white text-transparent hover:border-[#D1D5DB]"
-                          }`}
-                        >
-                          <Check className="size-3.5 stroke-[3]" />
-                        </button>
-                      </div>
-
-                      <div className="border-t border-[#E5E7EB] bg-white">
-                      <div className="px-6 py-0.5">
-                        <span className="inline-flex items-center justify-center rounded-[6px] border border-[#E5E7EB] bg-white px-3 py-1 text-[10px] font-bold text-[#374151] shadow-sm">
-                          Job Pool
-                        </span>
-                      </div>
-                      <ScrollArea className="h-[396px] pb-2">
+                    <ScrollArea className="h-[396px] pb-2">
                         <div className="flex flex-col">
                           {jobPools.map((jp) => {
                             const users = jp.userprofiles ?? []
                             return (
                               <div key={jp.id} className="border-b border-[#f1f3f7] last:border-b-0">
                                 {/* Job pool name row (grey like UAT) */}
-                                <div className="grid h-7 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 bg-[#F3F4F6] pl-4 pr-5 text-[10px] font-semibold text-[#374151]">
+                                <div className="grid h-7 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 bg-[#F3F4F6] pl-4 pr-5 text-[12px] font-semibold text-[#374151]">
                                   <span className="min-w-0">{jp.name || "—"}</span>
                                   <button
                                     type="button"
@@ -344,7 +419,7 @@ export function ParticipantsListForm({
                                 </div>
 
                                 <div className="px-6 py-0.5">
-                                  <span className="inline-flex items-center justify-center rounded-[6px] border border-[#E5E7EB] bg-white px-3 py-1 text-[10px] font-bold text-[#374151] shadow-sm">
+                                  <span className="inline-flex items-center justify-center rounded-[6px] border border-[#E5E7EB] bg-white px-3 py-1 text-[12px] font-bold text-[#374151] shadow-sm">
                                     Job Pool
                                   </span>
                                 </div>
@@ -361,35 +436,33 @@ export function ParticipantsListForm({
                                       (deptUser?.user?.loginId ?? "").trim() ||
                                       u.id
                                     return (
-                                      <button
+                                      <div
                                         key={u.id}
-                                        type="button"
-                                        onClick={() => toggleUserOne(u.id, jp.id)}
                                         className={`group relative grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-2 py-1 pl-[60px] pr-5 text-left transition-colors ${
-                                          selectedUserIds.includes(u.id)
+                                          selectedJobPoolIds.includes(jp.id)
                                             ? "bg-[#F3F0FF]"
                                             : "hover:bg-[#F9FAFB]"
                                         }`}
                                       >
                                         <div className="min-w-0 pr-2">
                                           <div className="absolute left-6 top-0.5 flex h-full w-8 items-center justify-center">
-                                            <div className="absolute left-4 top-0 h-full w-px bg-[#E5E7EB]" />
-                                            <div className="absolute left-4 top-1/2 h-px w-3 bg-[#E5E7EB]" />
+                                            <div className="absolute left-4 top-0 h-full w-[1.5px] bg-[#D1D5DB]" />
+                                            <div className="absolute left-4 top-1/2 h-[1.5px] w-3 bg-[#D1D5DB]" />
                                           </div>
-                                          <div className="pl-6 text-[10px] font-medium text-[#111827] whitespace-normal break-words">
+                                          <div className="pl-6 text-[14px] font-normal text-[#111827] whitespace-normal break-words">
                                             {label}
                                           </div>
                                         </div>
                                         <div
                                           className={`flex size-4.5 shrink-0 items-center justify-center rounded-[6px] border shadow-sm transition-all ${
-                                            selectedUserIds.includes(u.id)
+                                            selectedJobPoolIds.includes(jp.id)
                                               ? "border-[#6C5DD3] bg-[#6C5DD3] text-white"
-                                              : "border-[#E5E7EB] bg-white text-transparent hover:border-[#D1D5DB]"
+                                              : "border-[#E5E7EB] bg-[#F3F4F6] text-transparent hover:border-[#D1D5DB]"
                                           }`}
                                         >
                                           <Check className="size-3.5 stroke-[3]" />
                                         </div>
-                                      </button>
+                                      </div>
                                     )
                                   })}
                                 </div>
@@ -399,9 +472,7 @@ export function ParticipantsListForm({
                         </div>
                       </ScrollArea>
                     </div>
-                    </div>
-                  </div>
-                )
+                  )
               ) : selectedUserBy !== "user" ? (
                 <div className="flex min-h-[450px] items-center justify-center px-6 text-[14px] text-[#6B7280]">
                   Select “User” to load department users.
@@ -425,15 +496,28 @@ export function ParticipantsListForm({
                 </div>
               ) : (
                 <div className="p-4">
-                  <div className="overflow-hidden rounded-[8px] border border-[#E5E7EB]">
                     {/* Department row */}
-                    <div className="grid h-7 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 bg-[#F3F4F6] pl-4 pr-5 text-[10px] font-semibold text-[#374151]">
+                    <div className="grid h-7 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 bg-[#F3F4F6] pl-4 pr-5 text-[12px] font-semibold text-[#374151]">
                       <span className="min-w-0">{selectedDepartmentLabel || "—"}</span>
-                      <Checkbox
-                        checked={false}
-                        disabled
-                        className="size-4.5 shrink-0 rounded-[6px] border-[#E5E7EB] bg-white opacity-60"
-                      />
+                      <button
+                        type="button"
+                        aria-label={
+                          selectedUserIds.length === departmentUsers.length
+                            ? "Deselect all users"
+                            : "Select all users"
+                        }
+                        onClick={() =>
+                          toggleUserAll(selectedUserIds.length !== departmentUsers.length)
+                        }
+                        className={`flex size-4.5 shrink-0 items-center justify-center rounded-[6px] border shadow-sm transition-all ${
+                          departmentUsers.length > 0 &&
+                          selectedUserIds.length === departmentUsers.length
+                            ? "border-[#6C5DD3] bg-[#6C5DD3] text-white"
+                            : "border-[#E5E7EB] bg-white text-transparent hover:border-[#D1D5DB]"
+                        }`}
+                      >
+                        <Check className="size-3.5 stroke-[3]" />
+                      </button>
                     </div>
 
                     {/* Roles list */}
@@ -441,8 +525,8 @@ export function ParticipantsListForm({
                       <ScrollArea className="h-[360px] pb-2">
                         <div className="flex flex-col">
                           <div className="px-6 py-0.5">
-                            <span className="inline-flex items-center justify-center rounded-[6px] border border-[#E5E7EB] bg-white px-3 py-1 text-[10px] font-bold text-[#374151] shadow-sm">
-                              Job Pool
+                            <span className="inline-flex items-center justify-center rounded-[6px] border border-[#E5E7EB] bg-white px-3 py-1 text-[12px] font-bold text-[#374151] shadow-sm">
+                              Users
                             </span>
                           </div>
                           {departmentUsers.map((u) => {
@@ -464,10 +548,10 @@ export function ParticipantsListForm({
                               >
                                 <div className="min-w-0 pr-2">
                                   <div className="absolute left-6 top-0.5 flex h-full w-8 items-center justify-center">
-                                    <div className="absolute left-4 top-0 h-full w-px bg-[#E5E7EB]" />
-                                    <div className="absolute left-4 top-1/2 h-px w-3 bg-[#E5E7EB]" />
+                                    <div className="absolute left-4 top-0 h-full w-[1.5px] bg-[#D1D5DB]" />
+                                    <div className="absolute left-4 top-1/2 h-[1.5px] w-3 bg-[#D1D5DB]" />
                                   </div>
-                                  <div className="pl-6 text-[10px] font-medium text-[#111827] whitespace-normal break-words">
+                                  <div className="pl-6 text-[14px] font-normal text-[#111827] whitespace-normal break-words">
                                     {label}
                                   </div>
                                 </div>
@@ -486,7 +570,6 @@ export function ParticipantsListForm({
                         </div>
                       </ScrollArea>
                     </div>
-                  </div>
                 </div>
               )}
             </div>
@@ -521,6 +604,7 @@ export function ParticipantUsersModal({
   departmentLabel,
   loading,
   users,
+  grouptype,
 }: ParticipantUsersModalProps) {
   const list = users ?? []
   const dept = (departmentLabel ?? "").trim() || "—"
@@ -555,21 +639,19 @@ export function ParticipantUsersModal({
               </div>
             ) : (
               <div className="p-4">
-                <div className="overflow-hidden rounded-[8px] border border-[#E5E7EB]">
-                  <div className="grid h-7 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 bg-[#F3F4F6] pl-4 pr-5 text-[10px] font-semibold text-[#374151]">
+                  <div className="grid h-7 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 bg-[#F3F4F6] pl-4 pr-5 text-[12px] font-semibold text-[#374151]">
                     <span className="min-w-0">{dept}</span>
                     <Checkbox
                       checked={false}
-                      disabled
-                      className="size-4.5 shrink-0 rounded-[6px] border-[#E5E7EB] bg-white opacity-60"
+                      className="size-4.5 shrink-0 rounded-[6px] border-[#E5E7EB] bg-white opacity-60 pointer-events-none"
                     />
                   </div>
                   <div className="border-t border-[#E5E7EB] bg-white">
                     <ScrollArea className="h-[360px] pb-2">
                       <div className="flex flex-col">
                         <div className="px-6 py-0.5">
-                          <span className="inline-flex items-center justify-center rounded-[6px] border border-[#E5E7EB] bg-white px-3 py-1 text-[10px] font-bold text-[#374151] shadow-sm">
-                            Job Pool
+                          <span className="inline-flex items-center justify-center rounded-[6px] border border-[#E5E7EB] bg-white px-3 py-1 text-[11px] font-bold text-[#374151] shadow-sm">
+                            {grouptype === "job-pool" ? "Job Pool" : "Users"}
                           </span>
                         </div>
                         {list.map((u) => (
@@ -579,10 +661,10 @@ export function ParticipantUsersModal({
                           >
                             <div className="min-w-0 pr-2">
                               <div className="absolute left-6 top-0.5 flex h-full w-8 items-center justify-center">
-                                <div className="absolute left-4 top-0 h-full w-px bg-[#E5E7EB]" />
-                                <div className="absolute left-4 top-1/2 h-px w-3 bg-[#E5E7EB]" />
+                                <div className="absolute left-4 top-0 h-full w-[1.5px] bg-[#D1D5DB]" />
+                                <div className="absolute left-4 top-1/2 h-[1.5px] w-3 bg-[#D1D5DB]" />
                               </div>
-                              <div className="pl-6 text-[10px] font-medium text-[#111827] whitespace-normal break-words">
+                              <div className="pl-6 text-[14px] font-normal text-[#111827] whitespace-normal break-words">
                                 {u.label}
                               </div>
                             </div>
@@ -594,7 +676,6 @@ export function ParticipantUsersModal({
                       </div>
                     </ScrollArea>
                   </div>
-                </div>
               </div>
             )}
           </div>

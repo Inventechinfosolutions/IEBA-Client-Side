@@ -134,6 +134,7 @@ export type ParticipantUsersModalProps = {
   departmentLabel?: string
   loading?: boolean
   users?: Array<{ id: string; label: string }>
+  grouptype?: RmtsGroupTypeValue
 }
 
 export type ParticipantsListTableProps = {

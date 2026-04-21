@@ -390,6 +390,7 @@ export function ParticipantsListTable({
           jobPoolsQuery.isFetching
         }
         users={assignedUsers}
+        grouptype={groupByIdQuery.data?.grouptype as any}
       />
     </div>
   )

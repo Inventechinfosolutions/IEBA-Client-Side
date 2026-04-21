@@ -626,19 +626,18 @@ export function ScheduleTimeStudyForm({
                         const filteredUserIds = userIds.filter((id) => !jobPoolUserIdsSet.has(id))
 
                         return (
-                          <div key={g.id} className="overflow-hidden rounded-[8px] border border-[#E5E7EB]">
-                            <div className="grid h-7 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 bg-[#F3F4F6] pl-4 pr-5 text-[10px] font-semibold text-[#374151]">
+                          <div key={g.id} className="overflow-hidden rounded-[8px] border border-[#E5E7EB] mb-4 last:mb-0">
+                            <div className="grid h-7 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 bg-[#F3F4F6] pl-4 pr-5 text-[12px] font-semibold text-[#374151]">
                               <span className="min-w-0">{g.name || "—"}</span>
                               <Checkbox
                                 checked={false}
-                                disabled
-                                className="size-4.5 shrink-0 rounded-[6px] border-[#E5E7EB] bg-white opacity-60"
+                                className="size-4.5 shrink-0 rounded-[6px] border-[#E5E7EB] bg-white opacity-60 pointer-events-none"
                               />
                             </div>
 
                             <div className="border-t border-[#E5E7EB] bg-white">
                               <div className="px-6 py-0.5">
-                                <span className="inline-flex items-center justify-center rounded-[6px] border border-[#E5E7EB] bg-white px-3 py-1 text-[10px] font-bold text-[#374151] shadow-sm">
+                                <span className="inline-flex items-center justify-center rounded-[6px] border border-[#E5E7EB] bg-white px-3 py-1 text-[11px] font-bold text-[#374151] shadow-sm">
                                   Users
                                 </span>
                               </div>
@@ -653,13 +652,13 @@ export function ScheduleTimeStudyForm({
                                       className="relative grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-2 py-1 pl-[60px] pr-5"
                                     >
                                       <div className="min-w-0 pr-2">
-                                        <div className="absolute left-6 top-0.5 flex h-full w-8 items-center justify-center">
-                                          <div className="absolute left-4 top-0 h-full w-px bg-[#E5E7EB]" />
-                                          <div className="absolute left-4 top-1/2 h-px w-3 bg-[#E5E7EB]" />
-                                        </div>
-                                        <div className="pl-6 text-[10px] font-medium text-[#111827] whitespace-normal break-words">
-                                          {resolveUserLabel(id)}
-                                        </div>
+                                          <div className="absolute left-6 top-0.5 flex h-full w-8 items-center justify-center">
+                                            <div className="absolute left-4 top-0 h-full w-[1.5px] bg-[#D1D5DB]" />
+                                            <div className="absolute left-4 top-1/2 h-[1.5px] w-3 bg-[#D1D5DB]" />
+                                          </div>
+                                          <div className="pl-6 text-[14px] font-normal text-[#111827] whitespace-normal break-words">
+                                            {resolveUserLabel(id)}
+                                          </div>
                                       </div>
                                       <div className="flex size-4.5 shrink-0 items-center justify-center rounded-[6px] border border-[#6C5DD3] bg-[#6C5DD3] text-white shadow-sm">
                                         <Check className="size-3.5 stroke-[3]" />
@@ -669,8 +668,8 @@ export function ScheduleTimeStudyForm({
                                 </div>
                               )}
 
-                              <div className="px-6 py-0.5">
-                                <span className="inline-flex items-center justify-center rounded-[6px] border border-[#E5E7EB] bg-white px-3 py-1 text-[10px] font-bold text-[#374151] shadow-sm">
+                              <div className="px-6 py-2">
+                                <span className="inline-flex items-center justify-center rounded-[6px] border border-[#E5E7EB] bg-white px-3 py-1 text-[12px] font-bold text-[#374151] shadow-sm">
                                   Jobpool
                                 </span>
                               </div>
@@ -687,13 +686,13 @@ export function ScheduleTimeStudyForm({
                                       className="relative grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-2 py-1 pl-[60px] pr-5"
                                     >
                                       <div className="min-w-0 pr-2">
-                                        <div className="absolute left-6 top-0.5 flex h-full w-8 items-center justify-center">
-                                          <div className="absolute left-4 top-0 h-full w-px bg-[#E5E7EB]" />
-                                          <div className="absolute left-4 top-1/2 h-px w-3 bg-[#E5E7EB]" />
-                                        </div>
-                                        <div className="pl-6 text-[10px] font-medium text-[#111827] whitespace-normal break-words">
-                                          {u.label}
-                                        </div>
+                                          <div className="absolute left-6 top-0.5 flex h-full w-8 items-center justify-center">
+                                            <div className="absolute left-4 top-0 h-full w-[1.5px] bg-[#D1D5DB]" />
+                                            <div className="absolute left-4 top-1/2 h-[1.5px] w-3 bg-[#D1D5DB]" />
+                                          </div>
+                                          <div className="pl-6 text-[14px] font-normal text-[#111827] whitespace-normal break-words">
+                                            {u.label}
+                                          </div>
                                       </div>
                                       <div className="flex size-4.5 shrink-0 items-center justify-center rounded-[6px] border border-[#6C5DD3] bg-[#6C5DD3] text-white shadow-sm">
                                         <Check className="size-3.5 stroke-[3]" />
