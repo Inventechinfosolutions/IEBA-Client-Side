@@ -155,7 +155,7 @@ export function createAppRouter(queryClient: QueryClient) {
         },
         {
           path: "fte-allocation",
-          element: <PermissionRoute permission="costallocation"><FteAllocationPage /></PermissionRoute>,
+          element: <PermissionRoute permission="superadmin"><FteAllocationPage /></PermissionRoute>,
         },
         {
           path: "department",

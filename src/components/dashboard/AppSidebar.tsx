@@ -69,7 +69,7 @@ const mainNav: NavItem[] = [
   { title: "Job Classification",    url: "/job-classification",    icon: LayoutGrid,       permission: "jobclassification" },
   { title: "Job Pool",              url: "/job-pool",              icon: Briefcase,        permission: "jobpool" },
   { title: "Leave Approval",        url: "/leave-approval",        icon: FileText,         permission: "userleave:review" },
-  { title: "FTE Allocation",        url: "/fte-allocation",        icon: FileText,         permission: "costallocation" },
+  { title: "FTE Allocation",        url: "/fte-allocation",        icon: FileText,         permission: "superadmin" },
   { title: "Cost Pool",             url: "/costpool",              icon: Layers,           permission: "costpool" },
   { title: "Schedule Time Study",   url: "/schedule-time-study",   icon: CalendarClock,    permission: "scheduletimestudy" },
   { title: "Users",                 url: "/users",                 icon: Users,            permission: "superadmin" },
