@@ -140,6 +140,8 @@ const userModuleFormFieldsSchema = z.object({
   clientAdmin: z.boolean(),
   assignedMultiCodes: z.string().trim().optional(),
   autoAssignedDepartments: z.string().trim().optional(),
+  copyUser: z.boolean().optional().default(false),
+  copyUserId: z.string().trim().optional(),
 })
 
 const passwordMatchRefine = {
