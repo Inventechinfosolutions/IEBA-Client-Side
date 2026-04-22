@@ -1,3 +1,6 @@
+import { z } from "zod"
+import type { addRoleFormSchema, departmentRoleFormSchema } from "./schemas"
+
 export type RoleStatus = "active" | "inactive"
 
 export type DepartmentRoleRow = {
@@ -40,6 +43,7 @@ export type AddRoleFormValues = {
   roleName: string
   active: boolean
   assignedPermissions: string[]
+  permissionCatalogByModuleName?: DepartmentRolePermissionCatalog | null
 }
 
 /**
@@ -118,20 +122,18 @@ export type DepartmentRoleAddProps = {
   editDetail?: DepartmentRoleDetail | null
   isEditDetailLoading?: boolean
   editDetailError?: Error | null
-  onSubmit: (values:
-    | AddRoleFormValues
-    | { childId: string; roleName: string; active: boolean }) => void
+  onSubmit: (
+    values:
+      | AddRoleFormValues
+      | {
+          childId: string
+          roleName: string
+          active: boolean
+          permIdsToAdd?: string[]
+          permIdsToRemove?: string[]
+        }
+  ) => void
   isSubmitting?: boolean
-  /**
-   * Edit mode: after shuttle → Assigned, persist via POST assign (expanded bundle ids).
-   */
-  onEditAssignPermissionLabels?: (labels: string[]) => Promise<void>
-  /**
-   * Edit mode: after shuttle → Available, persist via POST unassign.
-   */
-  onEditUnassignPermissionLabels?: (labels: string[]) => Promise<void>
-  /** True while edit assign/unassign request is in flight (disables transfer buttons). */
-  isEditPermissionTransferPending?: boolean
 }
 
 export type DepartmentRoleViewData = {
@@ -155,4 +157,97 @@ export type DepartmentRoleEditInitialValues = {
   departmentName: string
   roleName: string
   active: boolean
+}
+
+/** TransferPanel item types */
+export type TransferPanelItem = {
+  id: string
+  name: string
+  permissions: string[]
+}
+
+export type TransferPanelProps = {
+  title: string
+  items: TransferPanelItem[]
+  selectedIds: string[]
+  onToggleItem: (id: string) => void
+  onTogglePermission?: (itemId: string, permission: string) => void
+  totalCount: number
+  allSelected: boolean
+  onSelectAll: (checked: boolean) => void
+}
+
+/** POST /department-roles `permissions[]` item. */
+export type DepartmentRoleCreatePermissionRef = {
+  id: string
+  moduleId: number
+}
+
+/** Schema inference types */
+export type DepartmentRoleFormSchema = z.infer<typeof departmentRoleFormSchema>
+export type AddRoleFormSchema = z.infer<typeof addRoleFormSchema>
+
+/** API specific types */
+export type ApiDepartmentRoleListItem = {
+  id: number
+  roleId: number
+  isAdmin: boolean
+  status: string
+  role: { id: number; name: string }
+  /** When true, same as legacy `data.default` — view-only row, checkbox disabled. */
+  autoselected?: boolean
+}
+
+export type ApiDepartmentWithRolesRow = {
+  id: number
+  code: string
+  name: string
+  status: string
+  departmentroles: ApiDepartmentRoleListItem[]
+}
+
+export type DepartmentRolesListPayload = {
+  data: ApiDepartmentWithRolesRow[]
+  meta: {
+    totalItems: number
+    itemCount?: number
+    itemsPerPage?: number
+    totalPages?: number
+    currentPage?: number
+  }
+}
+
+export type DepartmentRolesPageResult = {
+  items: DepartmentRoleWithChildren[]
+  totalItems: number
+}
+
+export type CreateDepartmentRoleBody = {
+  departmentId: number
+  status: string
+  role: { name: string }
+  isAdmin?: boolean
+  /** Add Role transfer-list labels → expanded to `{ permissionId, moduleId }[]`. */
+  assignedPermissionLabels?: readonly string[]
+  /** When set (e.g. from GET role template), replaces hardcoded bundles for expansion. */
+  permissionCatalogByModuleName?: DepartmentRolePermissionCatalog | null
+}
+
+export type MutateDepartmentRolePermissionsBody = {
+  departmentRoleId: number
+  /** Permission names/codes, or switch to `permissionIds` in the payload if your API expects ids. */
+  permissions: string[]
+}
+
+export type UpdateDepartmentRoleBody = {
+  name?: string
+  status?: string
+  assignedPermissionLabels?: readonly string[]
+  permissionCatalogByModuleName?: DepartmentRolePermissionCatalog | null
+}
+
+/** Mutation Input types */
+export type CreateDepartmentRoleMutationInput = AddRoleFormValues & {
+  departmentId: number
+  listFilters: DepartmentRolesListFilters
 }

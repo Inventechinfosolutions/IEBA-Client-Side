@@ -151,9 +151,11 @@ export async function apiGetUserModuleRows(params: GetUserModuleParams): Promise
   search.set("status", params.inactiveOnly ? "inactive" : "active")
   const firstName = (params.firstName ?? "").trim()
   const lastName = (params.lastName ?? "").trim()
+  const nameParam = (params.name ?? "").trim()
   const employeeId = (params.employeeId ?? "").trim()
   if (firstName) search.set("firstName", firstName)
   if (lastName) search.set("lastName", lastName)
+  if (nameParam) search.set("name", nameParam)
   if (employeeId) search.set("employeeId", employeeId)
   if (params.departmentId !== undefined) search.set("departmentId", String(params.departmentId))
 

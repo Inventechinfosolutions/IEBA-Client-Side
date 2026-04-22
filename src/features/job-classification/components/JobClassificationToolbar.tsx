@@ -1,7 +1,7 @@
 import { Check, Plus } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { TitleCaseInput } from "@/components/ui/title-case-input"
 import { usePermissions } from "@/hooks/usePermissions"
 import type { JobClassificationToolbarProps } from "../types"
 
@@ -16,7 +16,7 @@ export function JobClassificationToolbar({
   const canAddJobClassification = canAdd("jobclassification")
   return (
     <div className="flex items-center justify-between gap-3">
-      <Input
+      <TitleCaseInput
         value={searchValue}
         onChange={(e) => onSearchChange(e.target.value)}
         placeholder="Search Here"

@@ -10,7 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
+import { TitleCaseInput } from "@/components/ui/title-case-input"
 import { Textarea } from "@/components/ui/textarea"
 import { TodoStatusEnum } from "../enums/todoStatus"
 import { todoFormSchema } from "../schemas"
@@ -76,7 +76,7 @@ export function TodoFormModal({
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="px-12 pb-12 pt-1">
-          <input type="hidden" {...form.register("status")} />
+          <TitleCaseInput type="hidden" {...form.register("status")} />
           <div className="space-y-8">
             {isEditMode && isFetching ? (
               <div className="flex h-[150px] items-center justify-center">
@@ -88,7 +88,7 @@ export function TodoFormModal({
                   <label className="mb-1 block text-[12px] text-[#111827]">
                     *Title
                   </label>
-                  <Input
+                  <TitleCaseInput
                     {...form.register("title")}
                     disabled={isEditMode}
                     placeholder="Enter To Do Title"
@@ -111,7 +111,7 @@ export function TodoFormModal({
                             : "cursor-pointer text-[#111827]"
                         }`}
                       >
-                        <input
+                        <TitleCaseInput
                           type="radio"
                           value={statusOption}
                           checked={selectedStatus === statusOption}
@@ -144,7 +144,7 @@ export function TodoFormModal({
                 <label className="mb-1 block text-[12px] text-[#111827]">
                   *Title
                 </label>
-                <Input
+                <TitleCaseInput
                   {...form.register("title")}
                   placeholder="Enter To Do Title"
                   className="h-[46px] w-[282px] rounded-[8px] border-[#dfe3ee] text-[12px] placeholder:text-[12px] placeholder:text-gray-400 focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"

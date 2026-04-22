@@ -12,7 +12,7 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Input } from "@/components/ui/input"
+import { TitleCaseInput } from "@/components/ui/title-case-input"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
@@ -423,7 +423,7 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                                         <Label htmlFor="code" className="text-[13px] font-[500] text-[#374151]">
                                             *Code
                                         </Label>
-                                        <Input
+                                        <TitleCaseInput
                                             id="code"
                                             placeholder="Code"
                                             {...register("code")}
@@ -435,7 +435,7 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                                         <Label htmlFor="name" className="text-[13px] font-[500] text-[#374151] mt-15">
                                             *Department
                                         </Label>
-                                        <Input
+                                        <TitleCaseInput
                                             id="name"
                                             placeholder="Enter Department"
                                             {...register("name")}
@@ -497,7 +497,7 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                                             <div className="grid grid-cols-2 gap-x-8 gap-y-6">
                                                 <div className="space-y-2">
                                                     <Label className="text-[14px] font-[500] text-[#374151]">*Street</Label>
-                                                    <Input
+                                                    <TitleCaseInput
                                                         placeholder="Enter Street"
                                                         {...register("address.street")}
                                                         onChange={(e) => {
@@ -509,7 +509,7 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                                                 </div>
                                                 <div className="space-y-2">
                                                     <Label className="text-[14px] font-[500] text-[#374151]">*City</Label>
-                                                    <Input
+                                                    <TitleCaseInput
                                                         placeholder="Enter City"
                                                         {...register("address.city")}
                                                         onChange={(e) => {
@@ -521,7 +521,7 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                                                 </div>
                                                 <div className="space-y-2">
                                                     <Label className="text-[14px] font-[500] text-[#374151]">*State</Label>
-                                                    <Input
+                                                    <TitleCaseInput
                                                         placeholder="Enter State"
                                                         {...register("address.state")}
                                                         onChange={(e) => {
@@ -533,7 +533,7 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                                                 </div>
                                                 <div className="space-y-2">
                                                     <Label className="text-[14px] font-[500] text-[#374151]">*Zip</Label>
-                                                    <Input
+                                                    <TitleCaseInput
                                                         placeholder="Enter Zip min 3 digits"
                                                         {...register("address.zip")}
                                                         onChange={(e) => {
@@ -622,7 +622,7 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                                                 </div>
                                                 <div className="space-y-2">
                                                     <Label className="text-[14px] font-[500] text-[#374151]">Mobile</Label>
-                                                    <Input
+                                                    <TitleCaseInput
                                                         readOnly
                                                         placeholder="Enter Mobile"
                                                         {...register(`${DEPARTMENT_CONTACT_FORM_PREFIX[detailsTab]}.phone` as const)}
@@ -631,7 +631,7 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                                                 </div>
                                                 <div className="space-y-2">
                                                     <Label className="text-[14px] font-[500] text-[#374151]">Email</Label>
-                                                    <Input
+                                                    <TitleCaseInput
                                                         readOnly
                                                         placeholder="Enter Email"
                                                         {...register(`${DEPARTMENT_CONTACT_FORM_PREFIX[detailsTab]}.email` as const)}
@@ -640,7 +640,7 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                                                 </div>
                                                 <div className="space-y-2">
                                                     <Label className="text-[14px] font-[500] text-[#374151]">Location</Label>
-                                                    <Input
+                                                    <TitleCaseInput
                                                         readOnly
                                                         placeholder="Enter Location"
                                                         {...register(`${DEPARTMENT_CONTACT_FORM_PREFIX[detailsTab]}.location` as const)}
@@ -783,7 +783,7 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                                                                 <div className="mb-2 px-2 py-1">
                                                                     <div className="relative">
                                                                         <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-[#9CA3AF]" />
-                                                                        <Input 
+                                                                        <TitleCaseInput 
                                                                             className="h-9 pl-9 text-[14px] focus-visible:ring-0 focus-visible:ring-offset-0 border-[#E5E7EB] rounded-[8px]"
                                                                             placeholder="Search..."
                                                                             value={multiCodesSearch}

@@ -9,7 +9,7 @@ import {
   Dialog,
   DialogContent,
 } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
+import { TitleCaseInput } from "@/components/ui/title-case-input"
 import { useGetDepartments } from "@/features/department/queries/getDepartments"
 import { usePermissions } from "@/hooks/usePermissions"
 
@@ -124,9 +124,9 @@ export function JobPoolFormModal({
               >
                 <div className="space-y-2">
                   <label className="text-[14px] font-semibold text-[#374151]" htmlFor="jp-department-trigger">Department</label>
-                  <input type="hidden" {...form.register("department")} />
+                  <TitleCaseInput type="hidden" {...form.register("department")} />
                   <div className="relative" ref={departmentDropdownRef}>
-                    <Input
+                    <TitleCaseInput
                       id="jp-department-trigger"
                       value={
                         selectedDepartmentLabel ||
@@ -213,7 +213,7 @@ export function JobPoolFormModal({
 
                 <div className="space-y-2">
                   <label className="text-[13px] font-semibold text-[#374151]">Job Pool</label>
-                  <Input
+                  <TitleCaseInput
                     {...form.register("name")}
                     placeholder="Job Pool Name"
                     disabled={!form.watch("department")}

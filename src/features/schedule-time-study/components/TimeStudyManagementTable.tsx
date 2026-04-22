@@ -7,7 +7,7 @@ import { toast } from "sonner"
 
 import editIconImg from "@/assets/edit-icon.png"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { TitleCaseInput } from "@/components/ui/title-case-input"
 import { Label } from "@/components/ui/label"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
@@ -278,7 +278,7 @@ function ScheduleTimeStudyTableLoaded({
               className="flex flex-wrap items-start gap-3"
             >
               <div className="w-full sm:w-[297px]">
-                <Input
+                <TitleCaseInput
                   id="schedule-time-study-file"
                   type="file"
                   className="sr-only"

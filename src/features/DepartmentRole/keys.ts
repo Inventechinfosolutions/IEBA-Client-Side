@@ -7,4 +7,5 @@ export const departmentRoleKeys = {
     [...departmentRoleKeys.lists(), filters] as const,
   details: () => [...departmentRoleKeys.all, "detail"] as const,
   detail: (id: string) => [...departmentRoleKeys.details(), id] as const,
+  catalog: () => [...departmentRoleKeys.all, "permissions", "catalog"] as const,
 }

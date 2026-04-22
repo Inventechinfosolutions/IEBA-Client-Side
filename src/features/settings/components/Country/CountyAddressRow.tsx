@@ -2,7 +2,7 @@ import { Trash2 } from "lucide-react"
 import { Controller, useFormContext } from "react-hook-form"
 
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { TitleCaseInput } from "@/components/ui/title-case-input"
 import type { SettingsFormValues } from "@/features/settings/types"
 import type { CountyAddressRowProps } from "./types"
 
@@ -25,7 +25,7 @@ export function CountyAddressRow({
         control={control}
         name={`county.addresses.${index}.locationId`}
         render={({ field }) => (
-          <input
+          <TitleCaseInput
             type="hidden"
             name={field.name}
             ref={field.ref}
@@ -41,7 +41,7 @@ export function CountyAddressRow({
         <label className={labelClassName}>
           <span className="text-[#ef4444]">*</span>Location
         </label>
-        <Input
+        <TitleCaseInput
           {...register(`county.addresses.${index}.location` as const)}
           className={inputClassName}
           placeholder="Location"
@@ -51,7 +51,7 @@ export function CountyAddressRow({
         <label className={labelClassName}>
           <span className="text-[#ef4444]">*</span>Street
         </label>
-        <Input
+        <TitleCaseInput
           {...register(`county.addresses.${index}.street` as const)}
           className={inputClassName}
           placeholder="Street"
@@ -61,7 +61,7 @@ export function CountyAddressRow({
         <label className={labelClassName}>
           <span className="text-[#ef4444]">*</span>City
         </label>
-        <Input
+        <TitleCaseInput
           {...register(`county.addresses.${index}.city` as const)}
           className={inputClassName}
           placeholder="City"
@@ -71,7 +71,7 @@ export function CountyAddressRow({
         <label className={labelClassName}>
           <span className="text-[#ef4444]">*</span>State
         </label>
-        <Input
+        <TitleCaseInput
           {...register(`county.addresses.${index}.state` as const)}
           className={inputClassName}
           placeholder="State"
@@ -81,7 +81,7 @@ export function CountyAddressRow({
         <label className={labelClassName}>
           <span className="text-[#ef4444]">*</span>Zip
         </label>
-        <Input
+        <TitleCaseInput
           {...register(`county.addresses.${index}.zip` as const)}
           className={inputClassName}
           placeholder="Zip"

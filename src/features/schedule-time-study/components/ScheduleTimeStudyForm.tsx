@@ -6,7 +6,7 @@ import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
+import { TitleCaseInput } from "@/components/ui/title-case-input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -277,7 +277,7 @@ export function ScheduleTimeStudyForm({
 
                 <div className="space-y-1">
                   <Label className="text-[14px] font-normal text-black">Select Department</Label>
-                  <Input
+                  <TitleCaseInput
                     readOnly
                     value={selectedDepartmentLabel}
                     className="!h-12 w-[160px] cursor-not-allowed rounded-[10px] border-[#D1D5DB] bg-[#F9FAFB] px-[11px] text-[14px] text-[#111827]"
@@ -367,7 +367,7 @@ export function ScheduleTimeStudyForm({
                                   </button>
                                 </span>
                               ))}
-                              <input
+                              <TitleCaseInput
                                 value={openGroupsDropdownIndex === index ? groupsSearch : ""}
                                 onFocus={() => setOpenGroupsDropdownIndex(index)}
                                 onChange={(event) => {

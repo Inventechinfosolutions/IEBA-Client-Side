@@ -3,6 +3,7 @@ import { Controller, useFormContext } from "react-hook-form"
 import { Eye, EyeOff } from "lucide-react"
 
 import { Checkbox } from "@/components/ui/checkbox"
+import { TitleCaseInput } from "@/components/ui/title-case-input"
 import { Input } from "@/components/ui/input"
 import {
   MultiSelectDropdown,
@@ -121,7 +122,7 @@ export function EmployeeLoginDetailsSection({ isEditMode }: EmployeeLoginDetails
       <div className="grid grid-cols-3 gap-3">
         <div>
           <label className={labelClassName}>*Employee #</label>
-          <Input
+          <TitleCaseInput
             {...register("employeeNo")}
             className={isEditMode ? employeeNoInputClassName : inputClassName}
             placeholder="Enter Employee #"
@@ -130,7 +131,7 @@ export function EmployeeLoginDetailsSection({ isEditMode }: EmployeeLoginDetails
         </div>
         <div>
           <label className={labelClassName}>Position #</label>
-          <Input {...register("positionNo")} className={inputClassName} placeholder="Enter Position #" />
+          <TitleCaseInput {...register("positionNo")} className={inputClassName} placeholder="Enter Position #" />
         </div>
         <div>
           <label className={labelClassName}>Location</label>
@@ -210,7 +211,7 @@ export function EmployeeLoginDetailsSection({ isEditMode }: EmployeeLoginDetails
             name="firstName"
             control={control}
             render={({ field }) => (
-              <Input
+              <TitleCaseInput
                 {...field}
                 className={inputClassName}
                 placeholder="First Name"
@@ -225,7 +226,7 @@ export function EmployeeLoginDetailsSection({ isEditMode }: EmployeeLoginDetails
             name="lastName"
             control={control}
             render={({ field }) => (
-              <Input
+              <TitleCaseInput
                 {...field}
                 className={inputClassName}
                 placeholder="Last Name"
@@ -240,7 +241,7 @@ export function EmployeeLoginDetailsSection({ isEditMode }: EmployeeLoginDetails
             name="phone"
             control={control}
             render={({ field }) => (
-              <Input
+              <TitleCaseInput
                 {...field}
                 className={inputClassName}
                 placeholder="___-___-____"
@@ -337,7 +338,7 @@ export function EmployeeLoginDetailsSection({ isEditMode }: EmployeeLoginDetails
           <>
             <div>
               <label className={labelClassName}>Email Address</label>
-              <Input
+              <TitleCaseInput
                 {...register("emailAddress")}
                 className={`${blockedInputClassName} cursor-not-allowed`}
                 placeholder="Email"
@@ -352,7 +353,7 @@ export function EmployeeLoginDetailsSection({ isEditMode }: EmployeeLoginDetails
         {!isEditMode ? (
           <div>
             <label className={labelClassName}>Email Address</label>
-            <Input
+            <TitleCaseInput
               {...register("emailAddress")}
               className={`${blockedInputClassName} cursor-not-allowed`}
               placeholder="Email"
@@ -423,7 +424,7 @@ export function EmployeeLoginDetailsSection({ isEditMode }: EmployeeLoginDetails
               Choose File..
             </span>
             <span className="ml-2 truncate">{selectedJobDutyFile || "No file chosen"}</span>
-            <input
+            <TitleCaseInput
               type="file"
               className="hidden"
               onChange={(event) =>
@@ -435,7 +436,7 @@ export function EmployeeLoginDetailsSection({ isEditMode }: EmployeeLoginDetails
 
         <div>
           <label className={labelClassName}>*Claiming Unit</label>
-          <Input
+          <TitleCaseInput
             {...register("claimingUnit")}
             className={inputClassName}
             placeholder="Enter claiming unit"

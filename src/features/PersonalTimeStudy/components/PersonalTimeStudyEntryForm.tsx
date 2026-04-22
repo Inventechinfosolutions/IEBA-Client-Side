@@ -2,7 +2,7 @@ import { Plus, Trash2 } from "lucide-react"
 import { useCallback, useRef, useState } from "react"
 
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { TitleCaseInput } from "@/components/ui/title-case-input"
 import { Label } from "@/components/ui/label"
 import {
   Select,
@@ -211,7 +211,7 @@ export function PersonalTimeStudyEntryForm({
                   <Label className="text-xs text-muted-foreground">
                     Start <RequiredMark />
                   </Label>
-                  <Input
+                  <TitleCaseInput
                     type="time"
                     step={60}
                     value={parent.start}
@@ -273,7 +273,7 @@ export function PersonalTimeStudyEntryForm({
                   <Label className="text-xs text-muted-foreground">
                     End <RequiredMark />
                   </Label>
-                  <Input
+                  <TitleCaseInput
                     type="time"
                     step={60}
                     value={parent.end}
@@ -287,7 +287,7 @@ export function PersonalTimeStudyEntryForm({
                   <Label className="text-xs text-muted-foreground">
                     Total (min.) <RequiredMark />
                   </Label>
-                  <Input
+                  <TitleCaseInput
                     readOnly
                     tabIndex={-1}
                     value={totalDisplay}
@@ -299,7 +299,7 @@ export function PersonalTimeStudyEntryForm({
                   <Label className="text-xs text-muted-foreground">
                     Description / activity notes <RequiredMark />
                   </Label>
-                  <Input
+                  <TitleCaseInput
                     value={parent.description}
                     onChange={(e) =>
                       updateParent(parent.id, { description: e.target.value })
@@ -409,7 +409,7 @@ export function PersonalTimeStudyEntryForm({
                         <Label className="text-xs text-muted-foreground">
                           Total (min.) <RequiredMark />
                         </Label>
-                        <Input
+                        <TitleCaseInput
                           type="number"
                           min={0}
                           inputMode="numeric"
@@ -426,7 +426,7 @@ export function PersonalTimeStudyEntryForm({
                         <Label className="text-xs text-muted-foreground">
                           Description / activity notes
                         </Label>
-                        <Input
+                        <TitleCaseInput
                           value={sub.description}
                           onChange={(e) =>
                             updateSubRow(parent.id, sub.id, {

@@ -6,14 +6,15 @@ import { useDepartmentRoles } from "../hooks/useDepartmentRoles"
 import { DepartmenRoleTable } from "../components/DepartmenRoleTable"
 import { DepartmentRoleAdd } from "../components/DepartmentRoleAdd"
 import { DepartmentRoleView } from "../components/DepartmentRoleView"
-import { permissionLabelsToApiPermissionIds } from "../api/departmentRoleCreatePermissions"
 import { useCreateDepartmentRole } from "../mutations/createDepartmentRole"
 import { useAssignDepartmentRolePermissions } from "../mutations/assignDepartmentRolePermissions"
 import { useUnassignDepartmentRolePermissions } from "../mutations/unassignDepartmentRolePermissions"
 import { useUpdateDepartmentRoleChildStatus } from "../mutations/updateDepartmentRoleChildStatus"
+import { useUpdateDepartmentRoleChild } from "../mutations/updateDepartmentRoleChild"
 import { useGetDepartments } from "@/features/department/queries/getDepartments"
 
 import { useDepartmentRoleDetailQuery } from "../queries/getDepartmentRoleById"
+import { assignedModuleLabelsFromDetail } from "../api/departmentRoleCreatePermissions"
 import type {
   AddRoleFormValues,
   DepartmentRoleDetail,
@@ -58,12 +59,17 @@ export function DepartmentRolePage() {
     enabled: viewOpen && Boolean(viewRoleId),
   })
 
-  const editDetailQuery = useDepartmentRoleDetailQuery(editRoleId, {
-    enabled: addOpen && addMode === "edit" && Boolean(editRoleId),
-  })
+  const editDetailQuery = useDepartmentRoleDetailQuery(editRoleId || "")
+  const editDetailResolved = editDetailQuery.data
 
-  /** Load while on this page so edit dialog has names before first open (avoids empty department Select). */
-  const activeDepartmentsQuery = useGetDepartments({ status: "active", page: 1, limit: 100 }, { enabled: true })
+  /** 
+   * ONLY fetch departments when needed (Add or Edit modal is being prepared).
+   * This prevents the unwanted API call on initial page load.
+   */
+  const activeDepartmentsQuery = useGetDepartments(
+    { status: "active", page: 1, limit: 100 },
+    { enabled: addOpen || Boolean(editRoleId) }
+  )
 
   const viewRole: DepartmentRoleViewData | null = useMemo(() => {
     if (!viewDetailQuery.data) return null
@@ -76,73 +82,6 @@ export function DepartmentRolePage() {
       permissionGroups: d.permissionGroups,
     }
   }, [viewDetailQuery.data])
-
-  const editDetailError = useMemo(() => {
-    if (addMode !== "edit" || !editRoleId) return null
-    return editDetailQuery.error instanceof Error
-      ? editDetailQuery.error
-      : editDetailQuery.error != null
-        ? new Error(String(editDetailQuery.error))
-        : null
-  }, [addMode, editRoleId, editDetailQuery.error])
-
-  /**
-   * Keep edit dialog on spinner until we can build stable `editFormValues` (react-hook-form `values`).
-   * First open often had role detail before `GET /departments` finished, so `departmentName` stayed ""
-   * and the Select never matched an option; reopen worked because the catalog was cached.
-   */
-  const isEditDetailLoading = useMemo(() => {
-    if (addMode !== "edit" || !editRoleId) return false
-    if (!editDetailQuery.data) {
-      return editDetailQuery.isPending || editDetailQuery.isFetching
-    }
-    const d = editDetailQuery.data
-    if (d.departmentName?.trim()) return false
-    if (d.departmentId == null) return false
-    const row = data.find(
-      (r) =>
-        r.departmentId === d.departmentId || Number(r.id) === d.departmentId
-    )
-    if (row?.departmentName?.trim()) return false
-    return (
-      activeDepartmentsQuery.isPending || activeDepartmentsQuery.isFetching
-    )
-  }, [
-    activeDepartmentsQuery.isFetching,
-    activeDepartmentsQuery.isPending,
-    addMode,
-    data,
-    editRoleId,
-    editDetailQuery.data,
-    editDetailQuery.isPending,
-    editDetailQuery.isFetching,
-  ])
-
-  /**
-   * When GET omits nested `department.name`, resolve from the department-role table row, then from
-   * `GET /departments` so pagination does not hide the label.
-   */
-  const editDetailResolved = useMemo((): DepartmentRoleDetail | null => {
-    const d = editDetailQuery.data
-    if (!d) return null
-    const name = d.departmentName?.trim() ?? ""
-    if (name) return d
-    if (d.departmentId == null) return d
-    const row = data.find(
-      (r) =>
-        r.departmentId === d.departmentId || Number(r.id) === d.departmentId
-    )
-    const fromTable = row?.departmentName?.trim() ?? ""
-    if (fromTable) return { ...d, departmentName: fromTable }
-    const fromCatalog = activeDepartmentsQuery.data?.items?.find(
-      (x) =>
-        Number(x.id) === d.departmentId ||
-        String(x.id) === String(d.departmentId)
-    )
-    const fromApi = fromCatalog?.name?.trim() ?? ""
-    if (fromApi) return { ...d, departmentName: fromApi }
-    return d
-  }, [activeDepartmentsQuery.data, data, editDetailQuery.data])
 
   const departmentSelectOptions = useMemo(() => {
     const fromTable = data
@@ -158,6 +97,7 @@ export function DepartmentRolePage() {
 
   const createRole = useCreateDepartmentRole()
   const updateChildStatus = useUpdateDepartmentRoleChildStatus()
+  const updateChild = useUpdateDepartmentRoleChild()
   const assignPerms = useAssignDepartmentRolePermissions()
   const unassignPerms = useUnassignDepartmentRolePermissions()
 
@@ -190,14 +130,30 @@ export function DepartmentRolePage() {
     setViewOpen(true)
   }, [])
 
-  const handleEdit = useCallback((childId: string) => {
-    setEditRoleId(childId)
-    setAddDepartment(undefined)
-    setAddDepartmentId(undefined)
-    setAddMode("edit")
-    setAddDialogKey((k) => k + 1)
-    setAddOpen(true)
-  }, [])
+  const handleEdit = useCallback(
+    (childId: string) => {
+      // Find the parent row that contains this child role to get the department name
+      let foundDeptName: string | undefined
+      for (const dept of data) {
+        const matchingChild = dept.children?.find((c) => c.id === childId)
+        if (matchingChild) {
+          foundDeptName = dept.departmentName
+          break
+        }
+      }
+
+      if (foundDeptName) {
+        setAddDepartment(foundDeptName)
+      }
+
+      setEditRoleId(childId)
+      setAddDepartmentId(undefined)
+      setAddMode("edit")
+      setAddDialogKey((k) => k + 1)
+      setAddOpen(true)
+    },
+    [data]
+  )
 
   const handleToggleChildStatus = useCallback(
     (childId: string, active: boolean) => {
@@ -235,7 +191,68 @@ export function DepartmentRolePage() {
   )
 
   const handleAddRoleSubmit = useCallback(
-    (values: AddRoleFormValues) => {
+    async (
+      values:
+        | AddRoleFormValues
+        | {
+            childId: string
+            roleName: string
+            active: boolean
+            permIdsToAdd?: string[]
+            permIdsToRemove?: string[]
+          }
+    ) => {
+      // Handle Update Case (Batched)
+      if ("childId" in values) {
+        try {
+          const detail = editDetailResolved
+          if (!detail) throw new Error("Edit data not loaded")
+
+          // 1. Update Name/Status if changed
+          const initialStatus = detail.active ? "active" : "inactive"
+          const nextStatus = values.active ? "active" : "inactive"
+          const statusChanged = initialStatus !== nextStatus
+          const nameChanged = detail.roleName !== values.roleName
+
+          if (statusChanged || nameChanged) {
+            await updateChild.mutateAsync({
+              childId: values.childId,
+              name: nameChanged ? values.roleName : undefined,
+              status: statusChanged ? nextStatus : undefined,
+              listFilters,
+            })
+          }
+
+          // 2. Assign new permissions
+          if (values.permIdsToAdd && values.permIdsToAdd.length > 0) {
+            await assignPerms.mutateAsync({
+              departmentRoleId: Number(values.childId),
+              permissions: values.permIdsToAdd,
+              listFilters,
+              detailId: values.childId,
+            })
+          }
+
+          // 3. Unassign removed permissions
+          if (values.permIdsToRemove && values.permIdsToRemove.length > 0) {
+            await unassignPerms.mutateAsync({
+              departmentRoleId: Number(values.childId),
+              permissions: values.permIdsToRemove,
+              listFilters,
+              detailId: values.childId,
+            })
+          }
+
+          toast.success("Role updated successfully", successToastOptions)
+        } catch (error) {
+          toast.error(
+            error instanceof Error ? error.message : "Failed to update role"
+          )
+        }
+        return
+      }
+
+      // Handle Create Case
       const dept = data.find((d) => d.departmentName === values.department)
       const alreadyExists =
         dept?.roles.some(
@@ -262,7 +279,6 @@ export function DepartmentRolePage() {
         {
           onSuccess: () => {
             toast.success("New Role created Successfully", successToastOptions)
-            setAddOpen(false)
           },
           onError: (error) => {
             toast.error(
@@ -282,40 +298,11 @@ export function DepartmentRolePage() {
       listFilters,
       resolveDepartmentId,
       successToastOptions,
+      updateChild,
+      editDetailResolved,
     ]
   )
 
-  const handleEditAssignLabels = useCallback(
-    async (labels: string[]) => {
-      if (!editRoleId) return
-      const catalog = editDetailQuery.data?.permissionCatalogByModuleName
-      const ids = permissionLabelsToApiPermissionIds(labels, catalog)
-      if (ids.length === 0) return
-      await assignPerms.mutateAsync({
-        departmentRoleId: Number(editRoleId),
-        permissions: ids,
-        listFilters,
-        detailId: editRoleId,
-      })
-    },
-    [assignPerms, editDetailQuery.data, editRoleId, listFilters]
-  )
-
-  const handleEditUnassignLabels = useCallback(
-    async (labels: string[]) => {
-      if (!editRoleId) return
-      const catalog = editDetailQuery.data?.permissionCatalogByModuleName
-      const ids = permissionLabelsToApiPermissionIds(labels, catalog)
-      if (ids.length === 0) return
-      await unassignPerms.mutateAsync({
-        departmentRoleId: Number(editRoleId),
-        permissions: ids,
-        listFilters,
-        detailId: editRoleId,
-      })
-    },
-    [editDetailQuery.data, editRoleId, listFilters, unassignPerms]
-  )
 
   return (
     <div className="space-y-6">
@@ -333,7 +320,7 @@ export function DepartmentRolePage() {
       <DepartmentRoleAdd
         key={addDialogKey}
         open={addOpen}
-        onOpenChange={(next) => {
+        onOpenChange={(next: boolean) => {
           setAddOpen(next)
           if (!next) {
             setEditRoleId(null)
@@ -345,23 +332,14 @@ export function DepartmentRolePage() {
         initialDepartment={addDepartment}
         mode={addMode}
         editRoleId={editRoleId}
-        editDetail={editDetailResolved}
-        isEditDetailLoading={isEditDetailLoading}
-        editDetailError={editDetailError}
-        onSubmit={(values) => {
-          if ("childId" in values) return
-          handleAddRoleSubmit(values)
-        }}
-        onEditAssignPermissionLabels={
-          addMode === "edit" ? handleEditAssignLabels : undefined
+        onSubmit={handleAddRoleSubmit}
+        isSubmitting={
+          (addMode === "create" && createRole.isPending) ||
+          (addMode === "edit" &&
+            (updateChild.isPending ||
+              assignPerms.isPending ||
+              unassignPerms.isPending))
         }
-        onEditUnassignPermissionLabels={
-          addMode === "edit" ? handleEditUnassignLabels : undefined
-        }
-        isEditPermissionTransferPending={
-          assignPerms.isPending || unassignPerms.isPending
-        }
-        isSubmitting={addMode === "create" && createRole.isPending}
       />
       <DepartmentRoleView
         open={viewOpen}

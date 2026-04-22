@@ -1,5 +1,5 @@
 import { Search, Check } from "lucide-react"
-import { Input } from "@/components/ui/input"
+import { TitleCaseInput } from "@/components/ui/title-case-input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import tableEmptyIcon from "@/assets/icons/table-empty.png"
 import type { TransferPanelProps } from "../../types"
@@ -57,7 +57,7 @@ export function TransferPanel({
           {!isActivity && (
             <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#9CA3AF]" />
           )}
-          <Input
+          <TitleCaseInput
             placeholder={isActivity ? "" : "Search here"}
             value={searchValue}
             onChange={(e) => onSearchChange(e.target.value)}

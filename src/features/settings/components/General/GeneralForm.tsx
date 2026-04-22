@@ -2,7 +2,7 @@ import { useFormContext } from "react-hook-form"
 import { ChevronDown, ChevronUp } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { TitleCaseInput } from "@/components/ui/title-case-input"
 import { SettingsFormSaveSection } from "@/features/settings/enums/setting.enum"
 import type { SettingsFormValues } from "@/features/settings/types"
 import { AppLogout } from "./AppLogout"
@@ -56,7 +56,7 @@ export function GeneralForm() {
 
           <div className={minutesGroupClassName}>
             <div className="group relative">
-              <Input
+              <TitleCaseInput
                 type="number"
                 min={1}
                 step={1}

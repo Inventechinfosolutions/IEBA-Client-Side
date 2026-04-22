@@ -1,6 +1,6 @@
 import { Checkbox } from "@/components/ui/checkbox"
 import { SingleSelectDropdown } from "@/components/ui/dropdown"
-import { Input } from "@/components/ui/input"
+import { TitleCaseInput } from "@/components/ui/title-case-input"
 import type {
   TimeStudyFieldLabelProps,
   TimeStudyInputShellProps,
@@ -18,7 +18,7 @@ function InputShell({
   disabled = false,
 }: TimeStudyInputShellProps) {
   return (
-    <Input
+    <TitleCaseInput
       value={value ?? ""}
       onChange={(event) => onChange?.(event.target.value)}
       placeholder={placeholder}

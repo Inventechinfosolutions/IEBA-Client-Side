@@ -4,7 +4,7 @@ import { toast } from "sonner"
 import { useQueryClient } from "@tanstack/react-query"
 
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { TitleCaseInput } from "@/components/ui/title-case-input"
 import { Switch } from "@/components/ui/switch"
 import { SettingsFormSaveSection } from "@/features/settings/enums/setting.enum"
 import type { SettingsFormValues } from "@/features/settings/types"
@@ -138,12 +138,12 @@ export function CountyForm({ isSaving }: CountyFormProps) {
                   County Name
                 </span>
               </label>
-              <Input {...register("county.countyName")} className={inputClassName} />
+              <TitleCaseInput {...register("county.countyName")} className={inputClassName} />
             </div>
 
             <div className="min-w-0 sm:col-span-1 lg:col-span-1">
               <label className={labelClassName}>Welcome Message</label>
-              <Input
+              <TitleCaseInput
                 {...register("county.welcomeMessage")}
                 className={inputClassName}
                 placeholder="Welcome message"
@@ -154,7 +154,7 @@ export function CountyForm({ isSaving }: CountyFormProps) {
               <label className={labelClassName}>
                 <RequiredLabel>Start Time</RequiredLabel>
               </label>
-              <input type="hidden" {...register("county.startTime1")} />
+              <TitleCaseInput type="hidden" {...register("county.startTime1")} />
               <div className={controlRowClassName}>
                 <Controller
                   name="county.isTimeRangeEnabled"
@@ -188,7 +188,7 @@ export function CountyForm({ isSaving }: CountyFormProps) {
                 <RequiredLabel>End Time</RequiredLabel>
               </label>
               <div className="relative w-[100px] cursor-not-allowed">
-                <Input
+                <TitleCaseInput
                   type="text"
                   disabled
                   value={endTimeValue ?? "00:00"}

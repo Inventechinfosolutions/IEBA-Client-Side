@@ -6,8 +6,7 @@ export { useDepartmentRolesListQuery } from "./queries/getDepartmentRoles"
 export { useDepartmentRoleDetailQuery } from "./queries/getDepartmentRoleById"
 export { useDepartmentRoles } from "./hooks/useDepartmentRoles"
 export { departmentRoleKeys } from "./keys"
-export { departmentRoleFormSchema } from "./schemas"
-export { addRoleFormSchema } from "./schemas"
+export { departmentRoleFormSchema, addRoleFormSchema } from "./schemas"
 export type {
   DepartmentRoleRow,
   DepartmentRoleWithChildren,
@@ -19,5 +18,9 @@ export type {
   PaginationState,
   RoleStatus,
   DepartmentRoleViewData,
+  DepartmentRoleFormSchema,
+  AddRoleFormSchema,
+  TransferPanelItem,
+  TransferPanelProps,
+  DepartmentRoleCreatePermissionRef,
 } from "./types"
-export type { DepartmentRoleFormSchema, AddRoleFormSchema } from "./schemas"

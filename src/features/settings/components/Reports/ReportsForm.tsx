@@ -9,7 +9,7 @@ import {
   parseMultiSelectStoredValues,
 } from "@/components/ui/multi-select-dropdown"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Input } from "@/components/ui/input"
+import { TitleCaseInput } from "@/components/ui/title-case-input"
 import { Switch } from "@/components/ui/switch"
 import { Table, TableBody, TableCell, TableHeader, TableRow } from "@/components/ui/table"
 import { cn } from "@/lib/utils"
@@ -154,7 +154,7 @@ export function ReportsForm() {
                   onCloseAutoFocus={(e) => e.preventDefault()}
                   className="w-[320px] rounded-[10px] border border-[#e7e9f2] bg-white p-3 shadow-[0_10px_24px_rgba(17,24,39,0.18)]"
                 >
-                  <Input
+                  <TitleCaseInput
                     value={tableSearchDraft}
                     onChange={(e) => setTableSearchDraft(e.target.value)}
                     placeholder="Search value"
