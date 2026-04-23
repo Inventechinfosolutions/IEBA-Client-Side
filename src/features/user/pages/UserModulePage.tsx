@@ -67,6 +67,8 @@ const emptyFormValues: UserModuleFormValues = {
   supervisorApportioning: false,
   clientAdmin: false,
   assignedMultiCodes: "",
+  copyUser: false,
+  copyUserId: "",
 }
 
 export function UserModulePage() {
@@ -112,11 +114,11 @@ export function UserModulePage() {
 
   const { data: allDepartmentsData } = useGetDepartments(
     { status: "active", page: 1, limit: 1000 },
-    { enabled: isSuperAdmin }
+    { enabled: isSuperAdmin || (isRestrictedAdmin && !isDepartmentAdmin) }
   )
 
   const allowedDepartments = useMemo(() => {
-    if (isSuperAdmin && allDepartmentsData?.items) {
+    if ((isSuperAdmin || (isRestrictedAdmin && !isDepartmentAdmin)) && allDepartmentsData?.items) {
       return allDepartmentsData.items.map((d: any) => ({ id: Number(d.id), name: d.name }))
     }
     if (user?.departmentRoles) {
@@ -130,7 +132,7 @@ export function UserModulePage() {
       return Array.from(map.entries()).map(([id, name]) => ({ id, name }))
     }
     return []
-  }, [isSuperAdmin, allDepartmentsData, user])
+  }, [isSuperAdmin, isRestrictedAdmin, isDepartmentAdmin, allDepartmentsData, user])
 
   // Reset to table view on navigation (e.g. sidebar click)
   const [lastLocationKey, setLastLocationKey] = useState(location.key)
@@ -164,7 +166,7 @@ export function UserModulePage() {
     employeeId: searchFilters.employeeId || undefined,
     departmentId: selectedDepartmentId
       ? String(selectedDepartmentId)
-      : (isRestrictedAdmin && !isSuperAdmin && assignedDepartmentIds.length > 0
+      : (isDepartmentAdmin && !isSuperAdmin && assignedDepartmentIds.length > 0
           ? assignedDepartmentIds.join(",")
           : undefined),
   })
@@ -222,6 +224,8 @@ export function UserModulePage() {
       supervisorApportioning: selectedRow.supervisorApportioning ?? false,
       clientAdmin: selectedRow.clientAdmin ?? false,
       assignedMultiCodes: selectedRow.assignedMultiCodes ?? "",
+      copyUser: false,
+      copyUserId: "",
     }
   }, [formMode, selectedRow])
 

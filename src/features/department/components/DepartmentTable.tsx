@@ -261,15 +261,19 @@ export function DepartmentTable({
       <div className="overflow-hidden rounded-[8px] border border-[#E5E7EB] bg-white">
         <Table className="w-full table-fixed border-collapse">
           <colgroup>
-            <col className={canUpdateDepartment ? "w-[9%]" : "w-[11%]"} /> { /* Code */ }
-            <col className={canUpdateDepartment ? "w-[11%]" : "w-[13%]"} /> { /* Name/Department */ }
-            <col className={canUpdateDepartment ? "w-[10%]" : "w-[12%]"} /> { /* Address */ }
-            <col className={canUpdateDepartment ? "w-[12%]" : "w-[14%]"} /> { /* Primary Contact */ }
-            <col className={canUpdateDepartment ? "w-[12%]" : "w-[14%]"} /> { /* Secondary Contact */ }
-            <col className={canUpdateDepartment ? "w-[12%]" : "w-[14%]"} /> { /* Billing Contact */ }
-            {canUpdateDepartment && <col className="w-[8%]" />} { /* Allow Multi */ }
-            <col className={canUpdateDepartment ? "w-[6%]" : "w-[8%]"} /> { /* Multi Codes */ }
-            <col className={canUpdateDepartment ? "w-[6%]" : "w-[7%]"} /> { /* Active */ }
+            <col className={canUpdateDepartment ? "w-[9%]" : "w-[18%]"} /> { /* Code */ }
+            <col className={canUpdateDepartment ? "w-[11%]" : "w-[20%]"} /> { /* Name/Department */ }
+            <col className={canUpdateDepartment ? "w-[10%]" : "w-[20%]"} /> { /* Address */ }
+            {canUpdateDepartment && (
+              <>
+                <col className="w-[12%]" /> { /* Primary Contact */ }
+                <col className="w-[12%]" /> { /* Secondary Contact */ }
+                <col className="w-[12%]" /> { /* Billing Contact */ }
+              </>
+            )}
+            <col className={canUpdateDepartment ? "w-[8%]" : "w-[15%]"} /> { /* Allow Multi */ }
+            <col className={canUpdateDepartment ? "w-[6%]" : "w-[12%]"} /> { /* Multi Codes */ }
+            <col className={canUpdateDepartment ? "w-[6%]" : "w-[15%]"} /> { /* Active */ }
             {canUpdateDepartment && <col className="w-[6%]" />} { /* Action */ }
           </colgroup>
           <TableHeader>
@@ -373,20 +377,22 @@ export function DepartmentTable({
               <TableHead className="h-[60px] border-r border-[#FFFFFF66] p-[8px] text-left text-[14px] font-medium text-white">
                 Address
               </TableHead>
-              <TableHead className="h-[60px] border-r border-[#FFFFFF66] p-[8px] text-left text-[14px] font-medium text-white">
-                Primary Contact
-              </TableHead>
-              <TableHead className="h-[60px] border-r border-[#FFFFFF66] p-[8px] text-left text-[14px] font-medium text-white">
-                Secondary Contact
-              </TableHead>
-              <TableHead className="h-[60px] border-r border-[#FFFFFF66] p-[8px] text-left text-[14px] font-medium text-white">
-                Billing Contact
-              </TableHead>
               {canUpdateDepartment && (
-                <TableHead className="h-[60px] border-r border-[#FFFFFF66] p-[4px] text-center text-[13px] font-medium text-white leading-tight">
-                  Allow Multi <br /> codes
-                </TableHead>
+                <>
+                  <TableHead className="h-[60px] border-r border-[#FFFFFF66] p-[8px] text-left text-[14px] font-medium text-white">
+                    Primary Contact
+                  </TableHead>
+                  <TableHead className="h-[60px] border-r border-[#FFFFFF66] p-[8px] text-left text-[14px] font-medium text-white">
+                    Secondary Contact
+                  </TableHead>
+                  <TableHead className="h-[60px] border-r border-[#FFFFFF66] p-[8px] text-left text-[14px] font-medium text-white">
+                    Billing Contact
+                  </TableHead>
+                </>
               )}
+              <TableHead className="h-[60px] border-r border-[#FFFFFF66] p-[4px] text-center text-[13px] font-medium text-white leading-tight">
+                Allow Multi <br /> codes
+              </TableHead>
               <TableHead className="h-[60px] border-r border-[#FFFFFF66] p-[4px] text-center text-[13px] font-medium text-white leading-tight">
                 Multi <br /> Codes
               </TableHead>
@@ -404,14 +410,14 @@ export function DepartmentTable({
             {isLoading ? (
               Array.from({ length: 3 }).map((_, i) => (
                 <TableRow key={i} className="border-b border-[#E5E7EB]">
-                  <TableCell colSpan={canUpdateDepartment ? 10 : 8} className="px-[16px] py-[16px]">
+                  <TableCell colSpan={canUpdateDepartment ? 10 : 6} className="px-[16px] py-[16px]">
                     <Skeleton className="h-[80px] w-full" />
                   </TableCell>
                 </TableRow>
               ))
             ) : sortedDepartments.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={canUpdateDepartment ? 10 : 8} className="py-[60px] text-center text-[14px] text-[#6B7280]">
+                <TableCell colSpan={canUpdateDepartment ? 10 : 6} className="py-[60px] text-center text-[14px] text-[#6B7280]">
                   No data found
                 </TableCell>
               </TableRow>
@@ -435,38 +441,40 @@ export function DepartmentTable({
                       {dept.address.zip}
                     </div>
                   </TableCell>
-                  <TableCell className="border-r border-[#D1D5DB] px-[8px] py-[10px] align-top">
-                    <ContactInfo
-                      contactId={dept.primaryContactId}
-                      contact={dept.primaryContact}
-                      resolved={dept.primaryContactId ? usersById.get(dept.primaryContactId) ?? null : null}
-                    />
-                  </TableCell>
-                  <TableCell className="border-r border-[#D1D5DB] px-[8px] py-[10px] align-top">
-                    <ContactInfo
-                      contactId={dept.secondaryContactId}
-                      contact={dept.secondaryContact}
-                      resolved={dept.secondaryContactId ? usersById.get(dept.secondaryContactId) ?? null : null}
-                    />
-                  </TableCell>
-                  <TableCell className="border-r border-[#D1D5DB] px-[8px] py-[10px] align-top">
-                    <ContactInfo
-                      contactId={dept.billingContactId}
-                      contact={dept.billingContact}
-                      resolved={dept.billingContactId ? usersById.get(dept.billingContactId) ?? null : null}
-                    />
-                  </TableCell>
                   {canUpdateDepartment && (
-                    <TableCell className="border-r border-[#D1D5DB] px-3 py-2 text-center">
-                      <div className="flex justify-center">
-                        <img 
-                          src={dept.settings.allowMultiCodes ? statusCheckImg : statusCrossImg} 
-                          alt={dept.settings.allowMultiCodes ? "Check" : "Cross"} 
-                          className="h-[14px] w-[14px]" 
+                    <>
+                      <TableCell className="border-r border-[#D1D5DB] px-[8px] py-[10px] align-top">
+                        <ContactInfo
+                          contactId={dept.primaryContactId}
+                          contact={dept.primaryContact}
+                          resolved={dept.primaryContactId ? usersById.get(dept.primaryContactId) ?? null : null}
                         />
-                      </div>
-                    </TableCell>
+                      </TableCell>
+                      <TableCell className="border-r border-[#D1D5DB] px-[8px] py-[10px] align-top">
+                        <ContactInfo
+                          contactId={dept.secondaryContactId}
+                          contact={dept.secondaryContact}
+                          resolved={dept.secondaryContactId ? usersById.get(dept.secondaryContactId) ?? null : null}
+                        />
+                      </TableCell>
+                      <TableCell className="border-r border-[#D1D5DB] px-[8px] py-[10px] align-top">
+                        <ContactInfo
+                          contactId={dept.billingContactId}
+                          contact={dept.billingContact}
+                          resolved={dept.billingContactId ? usersById.get(dept.billingContactId) ?? null : null}
+                        />
+                      </TableCell>
+                    </>
                   )}
+                  <TableCell className="border-r border-[#D1D5DB] px-3 py-2 text-center">
+                    <div className="flex justify-center">
+                      <img 
+                        src={dept.settings.allowMultiCodes ? statusCheckImg : statusCrossImg} 
+                        alt={dept.settings.allowMultiCodes ? "Check" : "Cross"} 
+                        className="h-[14px] w-[14px]" 
+                      />
+                    </div>
+                  </TableCell>
                   <TableCell className="border-r border-[#D1D5DB] px-[8px] py-[16px] text-center">
                     <div className="flex flex-col items-center gap-1">
                       {dept.settings.multiCodes ? (
