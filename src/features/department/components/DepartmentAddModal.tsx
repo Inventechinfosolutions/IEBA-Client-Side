@@ -143,7 +143,7 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
     const [isMultiCodesOpen, setIsMultiCodesOpen] = useState(false)
     const [multiCodesSearch, setMultiCodesSearch] = useState("")
 
-    const { canUpdate: hasUpdatePerm } = usePermissions()
+    const { canUpdate: hasUpdatePerm, isDepartmentAdmin } = usePermissions()
     const canUpdateDepartment = hasUpdatePerm("department")
 
     const usersQuery = useGetDepartmentUsers()
@@ -427,7 +427,8 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                                             id="code"
                                             placeholder="Code"
                                             {...register("code")}
-                                            className="h-[57px] rounded-[8px] border-[#E5E7EB] focus:ring-1 focus:ring-[#6C5DD3]"
+                                            readOnly={isDepartmentAdmin}
+                                            className={`h-[57px] rounded-[8px] border-[#E5E7EB] focus:ring-1 focus:ring-[#6C5DD3] ${isDepartmentAdmin ? 'cursor-not-allowed bg-[#F9FAFB]' : ''}`}
                                         />
                                         {errors.code && <p className="text-[12px] text-red-500">{errors.code.message}</p>}
                                     </div>
@@ -439,7 +440,8 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                                             id="name"
                                             placeholder="Enter Department"
                                             {...register("name")}
-                                            className="h-[57px] w-full rounded-[8px] border-[#E5E7EB] focus:ring-1 focus:ring-[#6C5DD3]"
+                                            readOnly={isDepartmentAdmin}
+                                            className={`h-[57px] w-full rounded-[8px] border-[#E5E7EB] focus:ring-1 focus:ring-[#6C5DD3] ${isDepartmentAdmin ? 'cursor-not-allowed bg-[#F9FAFB]' : ''}`}
                                         />
                                         {errors.name && <p className="text-[12px] text-red-500">{errors.name.message}</p>}
                                     </div>
