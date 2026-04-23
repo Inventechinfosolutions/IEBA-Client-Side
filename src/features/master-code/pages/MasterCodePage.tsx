@@ -14,10 +14,10 @@ import { usePermissions } from "@/hooks/usePermissions"
 export function MasterCodePage() {
   const { isSuperAdmin, canAdd, canUpdate, canView } = usePermissions()
 
-  const hasAddPermission = isSuperAdmin || canAdd("mastercode")
-  const hasEditPermission = isSuperAdmin || canUpdate("mastercode")
+  const hasAddPermission = isSuperAdmin || canAdd("activity")
+  const hasEditPermission = isSuperAdmin || canUpdate("activity")
 
-  if (!isSuperAdmin && !canView("mastercode")) {
+  if (!isSuperAdmin && !canView("activity")) {
     return null
   }
 

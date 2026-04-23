@@ -64,7 +64,7 @@ const mainNav: NavItem[] = [
   { title: "Department",            url: "/department",            icon: Home,             permission: null },
   { title: "Program",               url: "/program",               icon: ClipboardCheck,   permission: ["budgetprogram", "timestudyprogram", "timestudyactivity"] },
   { title: "County Activity Code",  url: "/county-activity-code",  icon: SquarePen,        permission: "countyactivity" },
-  { title: "Master Code",           url: "/master-code",           icon: SquareTerminal,   permission: "mastercode" },
+  { title: "Master Code",           url: "/master-code",           icon: SquareTerminal,   permission: "activity" },
   { title: "Department Role",       url: "/department-role",       icon: ScrollText,       permission: "superadmin" },
   { title: "Job Classification",    url: "/job-classification",    icon: LayoutGrid,       permission: "jobclassification" },
   { title: "Job Pool",              url: "/job-pool",              icon: Briefcase,        permission: "jobpool" },
