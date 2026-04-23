@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod"
-import { Check, Inbox, Trash2 } from "lucide-react"
+import { AlertCircle, Check, Inbox, Trash2, X } from "lucide-react"
 import type { FormEvent } from "react"
 import { useMemo, useState } from "react"
 import { useForm, useWatch } from "react-hook-form"
@@ -46,6 +46,7 @@ import { useGetScheduleTimeStudyFiscalYears } from "../queries/getScheduleTimeSt
 import {
   scheduleTimeStudyFormSchema,
 } from "../schemas"
+import { fetchScheduleTimeStudyPeriodRows } from "../queries/getRmtsPayPeriods"
 import { usePermissions } from "@/hooks/usePermissions"
 import type {
   ScheduleTimeStudyFiscalYearOption,
@@ -60,6 +61,17 @@ const payPeriodDeleteSuccessToastOptions = {
   icon: (
     <span className="inline-flex size-4 items-center justify-center rounded-full bg-[#22c55e] text-white">
       <Check className="size-3 stroke-3" />
+    </span>
+  ),
+  className:
+    "!w-fit !max-w-[340px] !min-h-[35px] !rounded-[8px] !border-0 !px-3 !py-2 !text-[12px] !whitespace-nowrap !shadow-[0_8px_22px_rgba(17,24,39,0.18)]",
+}
+
+const noDataToastOptions = {
+  position: "top-center" as const,
+  icon: (
+    <span className="inline-flex size-4 items-center justify-center rounded-full bg-[#facc15] text-white">
+      <AlertCircle className="size-3 stroke-3" />
     </span>
   ),
   className:
@@ -233,9 +245,19 @@ function ScheduleTimeStudyTableLoaded({
             <div className="mt-6 space-y-1">
               <Select
                 value={selectedStudyYear}
-                onValueChange={(value) =>
+                onValueChange={(value) => {
                   form.setValue("studyYear", value, { shouldValidate: true })
-                }
+                  if (departmentId) {
+                    void fetchScheduleTimeStudyPeriodRows({
+                      fiscalyear: value,
+                      departmentId,
+                    }).then((rows) => {
+                      if (rows.length === 0) {
+                        toast.error("No record found", noDataToastOptions)
+                      }
+                    })
+                  }
+                }}
               >
                 <SelectTrigger className="h-[54px] w-[170px] rounded-[10px] border-[#D1D5DB] px-[12px] text-[14px] font-normal text-[#111827] shadow-none focus:ring-0 [&_[data-slot=select-value]]:text-[14px]">
                   <SelectValue placeholder="Select year" />

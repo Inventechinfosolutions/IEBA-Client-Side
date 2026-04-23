@@ -4,6 +4,8 @@ import { useState } from "react"
 import { useFieldArray, useForm, useWatch } from "react-hook-form"
 import { toast } from "sonner"
 
+import { cn } from "@/lib/utils"
+
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { TitleCaseInput } from "@/components/ui/title-case-input"
@@ -36,6 +38,7 @@ import type {
   ScheduleTimeStudyFormProps,
   ScheduleTimeStudyModalFormValues,
 } from "../types"
+import { MultiSelectDropdown } from "@/components/ui/multi-select-dropdown"
 
 const participantGroupSuccessToastOptions = {
   position: "top-center" as const,
@@ -218,10 +221,6 @@ export function ScheduleTimeStudyForm({
       .map((group) => group.trim())
       .filter(Boolean)
 
-  const setSelectedGroups = (index: number, groups: string[]) => {
-    const nextValue = groups.join(", ")
-    form.setValue(`entries.${index}.groups`, nextValue, { shouldValidate: true })
-  }
 
   const availablePeriods = periodRows.filter(
     (row) => getFiscalYearLabelFromMmDdYyyy(row.startDate) === studyYear
@@ -231,6 +230,8 @@ export function ScheduleTimeStudyForm({
     participantGroupOptions.length > 0
       ? participantGroupOptions
       : [...DEFAULT_SCHEDULE_PARTICIPANT_GROUP_OPTIONS]
+
+  const multiSelectGroupOptions = groupOptions.map((g) => ({ value: g, label: g }))
 
   return (
     <>
@@ -345,92 +346,115 @@ export function ScheduleTimeStudyForm({
                       <div className="space-y-1">
                         <Label className="text-[14px] font-normal text-black">Groups</Label>
                         <div className="relative">
-                          <div className="flex min-h-[40px] w-full items-center gap-1 rounded-[10px] border border-[#D1D5DB] px-2">
-                            <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1">
+                          <div
+                            className={cn(
+                              "flex min-h-[40px] w-full items-center gap-1 rounded-[10px] border border-[#D1D5DB] px-2 transition-all cursor-text",
+                              openGroupsDropdownIndex === index && "border-[#6C5DD3] ring-1 ring-[#6C5DD3]"
+                            )}
+                            onClick={() => setOpenGroupsDropdownIndex(index)}
+                          >
+                            <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1 py-1">
                               {getSelectedGroups(groupsValue).map((group) => (
                                 <span
                                   key={group}
-                                  className="inline-flex max-w-[120px] items-center gap-1 rounded-[6px] bg-[#F3F4F6] px-2 py-0.5 text-[14px] text-[#111827]"
+                                  className="inline-flex max-w-[150px] items-center gap-1 rounded-[4px] bg-[#F3F4F6] px-2 py-0.5 text-[13px] text-[#111827]"
                                 >
                                   <span className="truncate">{group}</span>
                                   <button
                                     type="button"
-                                    className="text-[#9CA3AF]"
-                                    onClick={() => {
+                                    className="text-[#9CA3AF] hover:text-[#EF4444]"
+                                    onClick={(e) => {
+                                      e.stopPropagation()
                                       const nextGroups = getSelectedGroups(groupsValue).filter(
                                         (item) => item !== group
                                       )
-                                      setSelectedGroups(index, nextGroups)
+                                      form.setValue(`entries.${index}.groups`, nextGroups.join(", "), {
+                                        shouldValidate: true,
+                                      })
                                     }}
                                   >
                                     <X className="size-3.5" />
                                   </button>
                                 </span>
                               ))}
-                              <TitleCaseInput
+                              <input
+                                autoFocus={openGroupsDropdownIndex === index}
                                 value={openGroupsDropdownIndex === index ? groupsSearch : ""}
+                                onChange={(e) => setGroupsSearch(e.target.value)}
                                 onFocus={() => setOpenGroupsDropdownIndex(index)}
-                                onChange={(event) => {
-                                  setOpenGroupsDropdownIndex(index)
-                                  setGroupsSearch(event.target.value)
-                                }}
-                                className="min-w-[80px] flex-1 bg-transparent text-[14px] outline-none"
+                                className="min-w-[60px] flex-1 bg-transparent text-[14px] outline-none"
                                 placeholder={
                                   getSelectedGroups(groupsValue).length === 0 ? "Select group" : ""
                                 }
                               />
                             </div>
-                            <Search className="size-4 text-[#C4C4C4]" />
-                            <button
-                              type="button"
-                              className="text-[#9CA3AF]"
-                              onClick={() =>
-                                setOpenGroupsDropdownIndex((prev) => (prev === index ? null : index))
-                              }
-                            >
-                              <ChevronDown className="size-4" />
-                            </button>
+                            <div className="flex items-center gap-1 shrink-0">
+                              <Search className="size-4 text-[#C4C4C4]" />
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  setOpenGroupsDropdownIndex(openGroupsDropdownIndex === index ? null : index)
+                                }}
+                                className="text-[#9CA3AF]"
+                              >
+                                <ChevronDown
+                                  className={cn(
+                                    "size-4 transition-transform",
+                                    openGroupsDropdownIndex === index && "rotate-180"
+                                  )}
+                                />
+                              </button>
+                            </div>
                           </div>
 
-                          {openGroupsDropdownIndex === index ? (
-                            <div className="absolute top-[calc(100%+8px)] z-50 w-full rounded-[14px] border border-[#E5E7EB] bg-white p-2 shadow-[0_8px_24px_#0000001A]">
-                              <div className="max-h-[260px] overflow-y-auto space-y-1">
-                                {groupOptions
-                                  .filter((group) =>
-                                    group.toLowerCase().includes(groupsSearch.trim().toLowerCase())
-                                  )
-                                  .map((group) => {
-                                    const selectedGroups = getSelectedGroups(groupsValue)
-                                    const isSelected = selectedGroups.includes(group)
-                                    return (
-                                      <button
-                                        key={group}
-                                        type="button"
-                                        className="flex w-full items-center justify-between rounded-[8px] px-3 py-2 text-left text-[14px] hover:bg-[#F3F4F6]"
-                                        onClick={() => {
-                                          const nextGroups = isSelected
-                                            ? selectedGroups.filter((item) => item !== group)
-                                            : [...selectedGroups, group]
-                                          setSelectedGroups(index, nextGroups)
-                                        }}
-                                      >
-                                        <span>{group}</span>
-                                        {isSelected ? (
-                                          <Check className="size-4 text-[#6C5DD3]" />
-                                        ) : null}
-                                      </button>
+                          {openGroupsDropdownIndex === index && (
+                            <div
+                              className="absolute top-[calc(100%+6px)] z-50 w-full rounded-[12px] border border-[#E5E7EB] bg-white p-1 shadow-[0_10px_30px_rgba(0,0,0,0.12)]"
+                              onMouseDown={(e) => e.preventDefault()} // Prevent focus loss when clicking list
+                            >
+                              <ScrollArea className="max-h-[260px]">
+                                <div className="space-y-0.5 p-1">
+                                  {groupOptions
+                                    .filter((g) =>
+                                      g.toLowerCase().includes(groupsSearch.toLowerCase())
                                     )
-                                  })}
-                                {groupOptions.filter((group) =>
-                                  group.toLowerCase().includes(groupsSearch.trim().toLowerCase())
-                                ).length === 0 ? (
-                                  <div className="px-3 py-2 text-[14px] text-[#9CA3AF]">
-                                    No groups found
-                                  </div>
-                                ) : null}
-                              </div>
+                                    .map((group) => {
+                                      const isSelected = getSelectedGroups(groupsValue).includes(group)
+                                      return (
+                                        <button
+                                          key={group}
+                                          type="button"
+                                          className={cn(
+                                            "flex w-full items-center justify-between rounded-[8px] px-3 py-2 text-left text-[14px] hover:bg-[#F3F4F6] transition-colors",
+                                            isSelected && "bg-[#F3F4F6] text-[#6C5DD3] font-medium"
+                                          )}
+                                          onClick={() => {
+                                            const current = getSelectedGroups(groupsValue)
+                                            const next = isSelected
+                                              ? current.filter((i) => i !== group)
+                                              : [...current, group]
+                                            form.setValue(`entries.${index}.groups`, next.join(", "), {
+                                              shouldValidate: true,
+                                            })
+                                          }}
+                                        >
+                                          <span>{group}</span>
+                                          {isSelected && <Check className="size-4 text-[#6C5DD3]" strokeWidth={2.5} />}
+                                        </button>
+                                      )
+                                    })}
+                                  {groupOptions.filter((g) =>
+                                    g.toLowerCase().includes(groupsSearch.toLowerCase())
+                                  ).length === 0 && (
+                                    <div className="px-3 py-4 text-center text-[14px] text-[#9CA3AF]">
+                                      No groups found
+                                    </div>
+                                  )}
+                                </div>
+                              </ScrollArea>
                             </div>
-                          ) : null}
+                          )}
                         </div>
                       </div>
 
