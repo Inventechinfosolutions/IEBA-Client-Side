@@ -3,7 +3,7 @@ import { useMemo, useState } from "react"
 
 import { usePermissions } from "@/hooks/usePermissions"
 import tableEmptyIcon from "@/assets/icons/table-empty.png"
-import { SingleSelectDropdown } from "@/components/ui/dropdown"
+import { SingleSelectSearchDropdown } from "@/components/ui/dropdown-search"
 import { TitleCaseInput } from "@/components/ui/title-case-input"
 import { TransferListMoveButton } from "@/components/ui/transfer-list-move-button"
 import { cn } from "@/lib/utils"
@@ -147,7 +147,7 @@ export function ProgramActivityRelationForm({ form, departmentIds }: ProgramActi
   }
 
   const programDisabledClass =
-    "h-[40px] rounded-[7px] border border-[#c6cedd] px-3 pr-8 !text-[10px] !font-normal text-[#111827] shadow-none placeholder:!text-[10px] placeholder:text-[#b0b8c8] disabled:pointer-events-auto disabled:cursor-not-allowed disabled:!border-[0.8px] disabled:!border-[#cfd4dd] disabled:!bg-[#d2d4d9]/20 disabled:!text-black disabled:opacity-100"
+    "h-[41px] rounded-[10px] border border-[#d0d5df] px-3 pr-8 !text-[11px] !font-normal text-[#111827] shadow-none placeholder:text-[11px]! placeholder:text-[#b0b8c8] disabled:pointer-events-auto disabled:cursor-not-allowed disabled:border-[0.8px]! disabled:border-[#cfd4dd]! disabled:bg-[#d2d4d9]/20! disabled:text-black! disabled:opacity-100"
 
   return (
     <div className="w-full px-1">
@@ -161,7 +161,7 @@ export function ProgramActivityRelationForm({ form, departmentIds }: ProgramActi
             <label className="block text-[10px] text-[#111827]" htmlFor="par-department-trigger">
               Department
             </label>
-            <SingleSelectDropdown
+            <SingleSelectSearchDropdown
               value={form.watch("programActivityRelationDepartment") ?? ""}
               onChange={(department) => {
                 form.setValue("programActivityRelationDepartment", department, {
@@ -179,11 +179,11 @@ export function ProgramActivityRelationForm({ form, departmentIds }: ProgramActi
               options={departmentOptions.map((d) => ({ value: d, label: d }))}
               placeholder="Select Department"
               className={cn(
-                "!min-h-[40px] h-[40px] w-full !rounded-[7px] !border-[#c6cedd] !px-3 !pr-9 !text-[10px] !font-normal",
-                "focus-visible:!border-[#1595ff] focus-visible:!ring-2 focus-visible:!ring-[#1595ff33]",
+                "min-h-[41px]! h-[41px] w-full rounded-[10px]! border-[#d0d5df]! px-3! pr-9! text-[11px]! font-normal!",
+                "focus-within:border-[#6C5DD3]! focus-within:ring-1! focus-within:ring-[#6C5DD333]!",
               )}
-              itemButtonClassName="rounded-[6px] border border-transparent px-3 py-2 hover:bg-[#f3f4f6]"
-              itemLabelClassName="!text-[10px] !font-normal"
+              itemButtonClassName="rounded-[6px] border border-transparent px-3 py-2 hover:bg-[#f3f4f8]"
+              itemLabelClassName="text-[11px]! font-normal!"
             />
           </div>
 
@@ -202,7 +202,7 @@ export function ProgramActivityRelationForm({ form, departmentIds }: ProgramActi
                 className={programDisabledClass}
               />
             ) : (
-              <SingleSelectDropdown
+              <SingleSelectSearchDropdown
                 value={form.watch("programActivityRelationProgram") ?? ""}
                 onChange={(name) => {
                   form.setValue("programActivityRelationProgram", name, {
@@ -220,13 +220,13 @@ export function ProgramActivityRelationForm({ form, departmentIds }: ProgramActi
                   </div>
                 }
                 className={cn(
-                  "!min-h-[40px] h-[40px] w-full !rounded-[7px] bg-white !px-3 !pr-9 !text-[10px] !font-normal",
+                  "min-h-[41px]! h-[41px] w-full rounded-[10px]! bg-white px-3! pr-9! text-[11px]! font-normal!",
                   isProgramEmpty
-                    ? "!border-[var(--primary)] focus-visible:!border-[var(--primary)] focus-visible:!ring-2 focus-visible:!ring-[color:rgba(108,93,211,0.22)]"
-                    : "!border-[#c6cedd] focus-visible:!border-[#1595ff] focus-visible:!ring-2 focus-visible:!ring-[#1595ff33]",
+                    ? "border-(--primary)! focus-within:border-(--primary)! focus-within:ring-1! focus-within:ring-[rgba(108,93,211,0.22)]!"
+                    : "border-[#d0d5df]! focus-within:border-[#6C5DD3]! focus-within:ring-1! focus-within:ring-[#6C5DD333]!",
                 )}
-                itemButtonClassName="rounded-[6px] border border-transparent px-3 py-2 hover:bg-[#f3f4f6]"
-                itemLabelClassName="!text-[10px] !font-normal"
+                itemButtonClassName="rounded-[6px] border border-transparent px-3 py-2 hover:bg-[#f3f4f8]"
+                itemLabelClassName="text-[11px]! font-normal!"
               />
             )}
           </div>
@@ -239,7 +239,7 @@ export function ProgramActivityRelationForm({ form, departmentIds }: ProgramActi
           >
             .
           </label>
-          <SingleSelectDropdown
+          <SingleSelectSearchDropdown
             value={form.watch("programActivityRelationSort") ?? ""}
             onChange={(option) => {
               form.setValue("programActivityRelationSort", option, {
@@ -253,11 +253,11 @@ export function ProgramActivityRelationForm({ form, departmentIds }: ProgramActi
             placeholder="Sorted dropdown sample"
             emptyListMessage="No sort options"
             className={cn(
-              "!min-h-[40px] h-[40px] w-full !rounded-[7px] !border-[#c6cedd] !px-3 !pr-9 !text-[10px] !font-normal",
-              "focus-visible:!border-[#1595ff] focus-visible:!ring-2 focus-visible:!ring-[#1595ff33]",
+              "min-h-[41px]! h-[41px] w-full rounded-[10px]! border-[#d0d5df]! px-3! pr-9! text-[11px]! font-normal!",
+              "focus-within:border-[#6C5DD3]! focus-within:ring-1! focus-within:ring-[#6C5DD333]!",
             )}
-            itemButtonClassName="rounded-[6px] border border-transparent px-3 py-2 hover:bg-[#f3f4f6]"
-            itemLabelClassName="!text-[10px] !font-normal"
+            itemButtonClassName="rounded-[6px] border border-transparent px-3 py-2 hover:bg-[#f3f4f8]"
+            itemLabelClassName="text-[11px]! font-normal!"
           />
         </div>
       </div>

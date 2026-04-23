@@ -30,6 +30,7 @@ export type ProgramRow = {
   department: string
   active: boolean
   parentBudgetUnitName?: string
+  parentBudgetUnitCode?: string
   parentProgramName?: string
   parentProgramCode?: string
   hierarchyLevel?: 0 | 1 | 2 | 3

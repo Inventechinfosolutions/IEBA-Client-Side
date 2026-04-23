@@ -110,7 +110,7 @@ export function SingleSelectDropdown({
           className={cn(
             "relative flex min-h-[43px] w-full items-center rounded-[7px] border border-[#c6cedd] bg-white px-3 py-1.5 pr-9 text-left shadow-none",
             "text-[11px] font-normal leading-[16px] text-[#111827]",
-            "cursor-pointer outline-none focus-visible:border-[#3b82f6] focus-visible:ring-1 focus-visible:ring-[#3b82f640]",
+            "cursor-pointer outline-none focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]",
             disabledEffective && "cursor-not-allowed bg-[#f2f2f2] opacity-100",
             className,
           )}

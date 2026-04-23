@@ -135,7 +135,7 @@ export function SingleSelectSearchDropdown({
         <div
           className={cn(
             "relative flex min-h-[43px] w-full items-center rounded-[7px] border border-[#c6cedd] bg-white px-3 py-1.5 pr-9",
-            "focus-within:border-[#3b82f6] focus-within:ring-1 focus-within:ring-[#3b82f640]",
+            "focus-within:border-[#6C5DD3] focus-within:ring-1 focus-within:ring-[#6C5DD333]",
             disabledEffective && "cursor-not-allowed bg-[#f2f2f2] opacity-100",
             className,
           )}
@@ -170,7 +170,7 @@ export function SingleSelectSearchDropdown({
             )}
           />
           {open ? (
-            <Search className="pointer-events-none absolute right-3 top-1/2 size-3.5 -translate-y-1/2 text-[#6b7280]" />
+            <Search className="pointer-events-none absolute right-3 top-1/2 size-3 -translate-y-1/2 text-[#6b7280]" />
           ) : (
             <ChevronDown className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-[#6b7280]" />
           )}

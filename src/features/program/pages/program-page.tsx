@@ -164,15 +164,6 @@ export function ProgramPage() {
     return Array.from(ids);
   }, [user, isSuperAdmin]);
 
-  const assignedDepartmentNames = useMemo(() => {
-    if (isSuperAdmin) return undefined;
-    const names = new Set<string>();
-    user?.departmentRoles?.forEach(dr => {
-      if (dr.departmentName) names.add(dr.departmentName.trim());
-    });
-    return Array.from(names);
-  }, [user, isSuperAdmin]);
-
   const filteredTabs = useMemo(() => {
     if (isRestrictedRole) {
       return ["Budget Units", "Time Study programs"] as ProgramTab[]
@@ -256,15 +247,12 @@ export function ProgramPage() {
 
       const isTsSecondary = selectedRow.tab === "Time Study programs" && section === "BU Sub-Program"
 
-      // For TS secondary rows: parentBudgetUnitName = the linked BU Program name (e.g. "Adult Program")
-      // buSubProgramBudgetUnitProgramName → TS Program dropdown (primary TS program name)
-      // buSubProgramBudgetCode            → BU Program display field
       const buSubProgramInitial = {
         buSubProgramBudgetUnitProgramName: isTsSecondary
-          ? selectedRow.parentBudgetUnitName?.trim() ?? ""  // primary TS program name
+          ? selectedRow.parentProgramName?.trim() ?? ""  // Level 1 TS Program name
           : effectiveParentName,
         buSubProgramBudgetCode: isTsSecondary
-          ? selectedRow.parentBudgetUnitName?.trim() ?? ""  // BU Program display value
+          ? selectedRow.parentBudgetUnitCode?.trim() ?? ""  // linked BU Program code
           : effectiveParentCode,
         buSubProgramDepartment: selectedRow.department,
         buSubProgramCode: selectedRow.code,
@@ -274,10 +262,9 @@ export function ProgramPage() {
       }
 
       // For TS Sub-Program Two edit, we need special field mapping:
-      // budgetUnitName        → primary TS program name (shown in "TS Program" dropdown)
-      // budgetUnitDescription → BU Program name (auto-populated display field)
-      // buProgramProgramName  → subprogram's own name
-      // buProgramProgramCode  → subprogram's own code
+      // budgetUnitName        → parent TS program name (Level 2)
+      // budgetUnitCode        → parent TS program code (Level 2)
+      // budgetUnitDescription → linked BU Program code
       const isTsSubProgramTwo = selectedRow.tab === "Time Study programs" && section === "Budget Unit"
 
       return {
@@ -287,20 +274,20 @@ export function ProgramPage() {
         costAllocation: selectedRow.costAllocation ?? false,
         budgetUnitDepartment: selectedRow.department,
         budgetUnitCode: isTsSubProgramTwo
-          ? selectedRow.parentBudgetUnitName?.trim() ?? ""  // primary program name (used as code key in lookup)
+          ? selectedRow.parentProgramCode?.trim() ?? ""  // parent TS sub-program code (Level 2)
           : selectedRow.code,
         budgetUnitName: isTsSubProgramTwo
-          ? selectedRow.parentBudgetUnitName?.trim() ?? ""  // primary TS program name → fills the TS Program dropdown
+          ? selectedRow.parentProgramName?.trim() ?? ""  // parent TS sub-program name (Level 2)
           : selectedRow.name,
         budgetUnitDescription: isTsSubProgramTwo
-          ? selectedRow.parentBudgetUnitName?.trim() ?? ""  // BU Program name (display-only locked field)
+          ? selectedRow.parentBudgetUnitCode?.trim() ?? ""  // linked BU Program code
           : selectedRow.description,
         budgetUnitMedicalPct: selectedRow.medicalPct,
         buProgramBudgetUnitName: buNameForProgramTab,
         buProgramDepartment: selectedRow.department,
         buProgramCode: selectedRow.code,
-        buProgramProgramCode: isTsSubProgramTwo ? selectedRow.code : selectedRow.code,
-        buProgramProgramName: isTsSubProgramTwo ? selectedRow.name : selectedRow.name,
+        buProgramProgramCode: selectedRow.code,
+        buProgramProgramName: selectedRow.name,
         buProgramDescription: selectedRow.description,
         buProgramMedicalPct: selectedRow.medicalPct,
         ...buSubProgramInitial,

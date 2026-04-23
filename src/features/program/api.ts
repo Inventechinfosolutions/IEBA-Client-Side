@@ -103,6 +103,10 @@ function mapTimeStudyProgramToProgramRow(raw: TimeStudyProgramResDto): ProgramRo
     raw.budgetProgram && typeof raw.budgetProgram.name === "string"
       ? raw.budgetProgram.name
       : undefined
+  const parentBudgetUnitCode =
+    raw.budgetProgram && typeof raw.budgetProgram.code === "string"
+      ? raw.budgetProgram.code
+      : undefined
   const timeStudyBudgetProgramId: string | undefined =
     raw.budgetProgram && typeof raw.budgetProgram.id === "number"
       ? String(raw.budgetProgram.id)
@@ -128,6 +132,7 @@ function mapTimeStudyProgramToProgramRow(raw: TimeStudyProgramResDto): ProgramRo
     department: departmentName,
     active: isActiveStatus(raw.status),
     parentBudgetUnitName,
+    parentBudgetUnitCode,
     hierarchyLevel,
     type: normalizedType || undefined,
     parentId: raw.parentId == null ? undefined : String(raw.parentId),
@@ -721,7 +726,34 @@ export async function apiGetProgramRowById(input: {
       `/timestudyprograms/${encodeURIComponent(row.id)}`
     )
     const entity = raw?.data ?? (raw as ApiEnvelope<TimeStudyProgramResDto>).data
-    return mapTimeStudyProgramToProgramRow(entity as TimeStudyProgramResDto)
+    const mapped = mapTimeStudyProgramToProgramRow(entity as TimeStudyProgramResDto)
+
+    // Preserve table context (hierarchy level and existing parent info)
+    const result: ProgramRow = {
+      ...mapped,
+      parentProgramName: row.parentProgramName,
+      parentProgramCode: row.parentProgramCode,
+      parentBudgetUnitCode: row.parentBudgetUnitCode || mapped.parentBudgetUnitCode,
+      hierarchyLevel: row.hierarchyLevel,
+    }
+
+    // If parent info is missing from the table context but we have a parentId, fetch it now.
+    if (result.parentId && (!result.parentProgramName || !result.parentProgramCode)) {
+      try {
+        const parentRes = await api.get<ApiEnvelope<TimeStudyProgramResDto>>(
+          `/timestudyprograms/${encodeURIComponent(result.parentId)}`
+        )
+        const parentEntity = parentRes?.data ?? (parentRes as ApiEnvelope<TimeStudyProgramResDto>).data
+        if (parentEntity) {
+          result.parentProgramName = parentEntity.name
+          result.parentProgramCode = parentEntity.code ?? undefined
+        }
+      } catch {
+        // Fallback to what we have
+      }
+    }
+
+    return result
   }
  // Program Activity Relation not yet wired to backend.
   return row

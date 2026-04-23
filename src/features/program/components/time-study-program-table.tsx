@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react"
+import React, { useMemo, useRef, useState } from "react"
 import { ChevronDown, ChevronRight, ChevronUp } from "lucide-react"
 
 import tableCheckIcon from "@/assets/icons/table-check.png"
@@ -114,7 +114,9 @@ export function TimeStudyProgramTable({
   const mapTimeStudyChildToRow = (
     raw: TimeStudyProgramResDto,
     hierarchyLevel: 1 | 2,
-    fallbackParentId: string
+    fallbackParentId: string,
+    parentName?: string,
+    parentCode?: string
   ): ProgramRow => {
     const id = raw.id == null ? "" : String(raw.id)
     const code = raw.code == null ? "" : String(raw.code)
@@ -124,6 +126,10 @@ export function TimeStudyProgramTable({
     const parentBudgetUnitName =
       raw.budgetProgram && typeof raw.budgetProgram.name === "string"
         ? raw.budgetProgram.name
+        : undefined
+    const parentBudgetUnitCode =
+      raw.budgetProgram && typeof raw.budgetProgram.code === "string"
+        ? raw.budgetProgram.code
         : undefined
     const timeStudyBudgetProgramId =
       raw.budgetProgram && typeof raw.budgetProgram.id === "number"
@@ -140,6 +146,9 @@ export function TimeStudyProgramTable({
       department: departmentName,
       active: raw.status === "active",
       parentBudgetUnitName,
+      parentBudgetUnitCode,
+      parentProgramName: parentName,
+      parentProgramCode: parentCode,
       hierarchyLevel,
       parentId: raw.parentId ? String(raw.parentId) : fallbackParentId,
       type: hierarchyLevel === 1 ? "secondary" : "subprogram",
@@ -195,7 +204,7 @@ export function TimeStudyProgramTable({
       )
 
       const mapped: ProgramRow[] = filtered.map((item) =>
-        mapTimeStudyChildToRow(item, isLevel0 ? 1 : 2, rowId)
+        mapTimeStudyChildToRow(item, isLevel0 ? 1 : 2, rowId, row.name, row.code)
       )
       mapped.sort((a, b) =>
         a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" })
@@ -228,9 +237,9 @@ export function TimeStudyProgramTable({
 
   return (
     <div className="overflow-hidden rounded-[4px] border border-[#e6e7ef]">
-      <div className="flex">
-        <div className="min-w-0 flex-1">
-          <Table className="table-fixed">
+      <div className="overflow-x-auto">
+        <div className="program-table-scroll [scrollbar-gutter:stable]">
+          <Table className="table-fixed min-w-[970px]">
             <colgroup>
               <col style={{ width: "140px" }} />
               <col style={{ width: "220px" }} />
@@ -240,9 +249,9 @@ export function TimeStudyProgramTable({
               <col style={{ width: "80px" }} />
               {!readonly && <col style={{ width: "80px" }} />}
             </colgroup>
-            <TableHeader className="[&_tr]:border-b-0">
+            <TableHeader className="sticky top-0 z-10 bg-(--primary) shadow-[0_1px_0_rgba(0,0,0,0.05)] [&_tr]:border-b-0">
               <TableRow className="hover:bg-transparent">
-                <TableHead className="h-10 border-r border-white/50 bg-[var(--primary)] px-3 text-[12px] font-medium text-white">
+                <TableHead className="h-10 border-r border-white/50 bg-(--primary) px-3 text-[12px] font-medium text-white">
                   <TooltipProvider>
                     <Tooltip open={tooltipOpenKey === "code"}>
                       <TooltipTrigger asChild>
@@ -256,7 +265,7 @@ export function TimeStudyProgramTable({
                           className="relative flex h-full w-full cursor-pointer items-center justify-start pr-4 text-left text-white"
                         >
                           <span>TS Code</span>
-                          <span className="pointer-events-none absolute right-[0px] inline-flex flex-col items-center leading-none">
+                          <span className="pointer-events-none absolute right-0 inline-flex flex-col items-center leading-none">
                             <ChevronUp
                               className={`size-[10px] ${
                                 sortState.key === "code" && sortState.direction === "asc"
@@ -280,7 +289,7 @@ export function TimeStudyProgramTable({
                     </Tooltip>
                   </TooltipProvider>
                 </TableHead>
-                <TableHead className="h-10 border-r border-white/50 bg-[var(--primary)] px-3 text-[12px] font-medium text-white">
+                <TableHead className="h-10 border-r border-white/50 bg-(--primary) px-3 text-[12px] font-medium text-white">
                   <TooltipProvider>
                     <Tooltip open={tooltipOpenKey === "name"}>
                       <TooltipTrigger asChild>
@@ -294,7 +303,7 @@ export function TimeStudyProgramTable({
                           className="relative flex h-full w-full cursor-pointer items-center justify-start pr-4 text-left text-white"
                         >
                           <span>TS Program</span>
-                          <span className="pointer-events-none absolute right-[0px] inline-flex flex-col items-center leading-none">
+                          <span className="pointer-events-none absolute right-0 inline-flex flex-col items-center leading-none">
                             <ChevronUp
                               className={`size-[10px] ${
                                 sortState.key === "name" && sortState.direction === "asc"
@@ -318,186 +327,173 @@ export function TimeStudyProgramTable({
                     </Tooltip>
                   </TooltipProvider>
                 </TableHead>
-                <TableHead className="h-10 border-r border-white/50 bg-[var(--primary)] px-3 text-[12px] font-medium text-white">
+                <TableHead className="h-10 border-r border-white/50 bg-(--primary) px-3 text-[12px] font-medium text-white">
                   BU Program
                 </TableHead>
-                <TableHead className="h-10 border-r border-white/50 bg-[var(--primary)] px-3 text-[12px] font-medium text-white">
+                <TableHead className="h-10 border-r border-white/50 bg-(--primary) px-3 text-[12px] font-medium text-white">
                   Department
                 </TableHead>
-                <TableHead className="h-10 border-r border-white/50 bg-[var(--primary)] px-3 text-[12px] font-medium text-white">
+                <TableHead className="h-10 border-r border-white/50 bg-(--primary) px-3 text-[12px] font-medium text-white">
                   MultiCodes
                 </TableHead>
-                <TableHead className="h-10 border-r border-white/50 bg-[var(--primary)] px-3 text-center text-[12px] font-medium text-white">
+                <TableHead className="h-10 border-r border-white/50 bg-(--primary) px-3 text-center text-[12px] font-medium text-white">
                   Active
                 </TableHead>
                 {!readonly && (
-                  <TableHead className="h-10 border-r-0 bg-[var(--primary)] px-3 text-center text-[12px] font-medium text-white">
+                  <TableHead className="h-10 border-r-0 bg-(--primary) px-3 text-center text-[12px] font-medium text-white">
                     Action
                   </TableHead>
                 )}
               </TableRow>
             </TableHeader>
-          </Table>
-        </div>
-      </div>
-      <div className="program-table-scroll [scrollbar-gutter:stable]">
-        <Table className="table-fixed">
-          <colgroup>
-            <col style={{ width: "140px" }} />
-            <col style={{ width: "220px" }} />
-            <col style={{ width: "170px" }} />
-            <col style={{ width: "170px" }} />
-            <col style={{ width: "110px" }} />
-            <col style={{ width: "80px" }} />
-            {!readonly && <col style={{ width: "80px" }} />}
-          </colgroup>
-          <TableBody>
-            {isLoading
-              ? skeletonRows.map((rowId) => (
-                  <TableRow key={rowId} className="h-10 border-b border-[#eff0f5] hover:bg-transparent">
-                    <TableCell className="border-r border-[#eff0f5] px-3 py-2"><Skeleton className="h-3.5 w-[70%]" /></TableCell>
-                    <TableCell className="border-r border-[#eff0f5] px-3 py-2"><Skeleton className="h-3.5 w-[80%]" /></TableCell>
-                    <TableCell className="border-r border-[#eff0f5] px-3 py-2"><Skeleton className="h-3.5 w-[65%]" /></TableCell>
-                    <TableCell className="border-r border-[#eff0f5] px-3 py-2"><Skeleton className="h-3.5 w-[80%]" /></TableCell>
-                    <TableCell className="border-r border-[#eff0f5] px-3 py-2"><Skeleton className="h-3.5 w-[55%]" /></TableCell>
-                    <TableCell className="border-r border-[#eff0f5] px-3 py-2"><Skeleton className="mx-auto h-4 w-4 rounded-sm" /></TableCell>
-                    {!readonly && (
-                      <TableCell className="border-r border-[#eff0f5] px-3 py-2"><Skeleton className="mx-auto h-3.5 w-3.5 rounded-sm" /></TableCell>
-                    )}
-                  </TableRow>
-                ))
-              : displayRows.map((row) => (
-                  <>
-                  <TableRow key={row.id} className="min-h-[40px] border-b border-[#eff0f5] hover:bg-transparent">
-                    <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-[12px] text-[#232735] whitespace-pre-wrap break-all [overflow-wrap:anywhere] max-w-[140px]">
-                      <div
-                        className="flex items-center gap-1"
-                        style={{
-                          paddingLeft:
-                            row.hierarchyLevel === 1 ? "14px" : row.hierarchyLevel === 2 ? "28px" : "0px",
-                        }}
-                      >
-                        {(row.hierarchyLevel === 0 || row.hierarchyLevel === 1) ? (
+            <TableBody>
+              {isLoading
+                ? skeletonRows.map((rowId) => (
+                    <TableRow key={rowId} className="h-10 border-b border-[#eff0f5] hover:bg-transparent">
+                      <TableCell className="border-r border-[#eff0f5] px-3 py-2"><Skeleton className="h-3.5 w-[70%]" /></TableCell>
+                      <TableCell className="border-r border-[#eff0f5] px-3 py-2"><Skeleton className="h-3.5 w-[80%]" /></TableCell>
+                      <TableCell className="border-r border-[#eff0f5] px-3 py-2"><Skeleton className="h-3.5 w-[65%]" /></TableCell>
+                      <TableCell className="border-r border-[#eff0f5] px-3 py-2"><Skeleton className="h-3.5 w-[80%]" /></TableCell>
+                      <TableCell className="border-r border-[#eff0f5] px-3 py-2"><Skeleton className="h-3.5 w-[55%]" /></TableCell>
+                      <TableCell className="border-r border-[#eff0f5] px-3 py-2"><Skeleton className="mx-auto h-4 w-4 rounded-sm" /></TableCell>
+                      {!readonly && (
+                        <TableCell className="border-r border-[#eff0f5] px-3 py-2"><Skeleton className="mx-auto h-3.5 w-3.5 rounded-sm" /></TableCell>
+                      )}
+                    </TableRow>
+                  ))
+                : displayRows.map((row) => (
+                    <React.Fragment key={row.id}>
+                    <TableRow className="min-h-[40px] border-b border-[#eff0f5] hover:bg-transparent">
+                      <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-[12px] text-[#232735] whitespace-pre-wrap break-all wrap-anywhere max-w-[140px]">
+                        <div
+                          className="flex items-center gap-1"
+                          style={{
+                            paddingLeft:
+                              row.hierarchyLevel === 1 ? "14px" : row.hierarchyLevel === 2 ? "28px" : "0px",
+                          }}
+                        >
+                          {(row.hierarchyLevel === 0 || row.hierarchyLevel === 1) ? (
+                            <button
+                              type="button"
+                              onClick={(event) => {
+                                event.stopPropagation()
+                                setExpandedPrograms((prev) => {
+                                  const next = !prev[row.id]
+                                  if (next) {
+                                    // Stale time = 0: always clear old data and refetch fresh
+                                    setChildrenByParentId((prev) => {
+                                      const updated = { ...prev }
+                                      delete updated[row.id]
+                                      return updated
+                                    })
+                                    void ensureChildrenLoaded(row)
+                                  } else {
+                                    // On collapse, clear children so re-expand always fetches fresh
+                                    setChildrenByParentId((prev) => {
+                                      const updated = { ...prev }
+                                      delete updated[row.id]
+                                      return updated
+                                    })
+                                  }
+                                  return { ...prev, [row.id]: next }
+                                })
+                              }}
+                              className="inline-flex cursor-pointer items-center text-(--primary)"
+                              aria-label={row.hierarchyLevel === 0 ? "Toggle TS secondary programs" : "Toggle TS subprograms"}
+                            >
+                              {expandedPrograms[row.id] ? (
+                                <ChevronUp className="size-3.5" />
+                              ) : (
+                                <ChevronRight className="size-3.5" />
+                              )}
+                            </button>
+                          ) : null}
+                          {row.code}
+                        </div>
+                      </TableCell>
+                      <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-[12px] text-[#232735] whitespace-pre-wrap break-all wrap-anywhere max-w-[220px]">
+                        {row.name}
+                      </TableCell>
+                      <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-[12px] text-[#232735] whitespace-pre-wrap break-all wrap-anywhere max-w-[170px]">
+                        {row.parentBudgetUnitName ?? ""}
+                      </TableCell>
+                      <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-[12px] text-[#232735] whitespace-pre-wrap break-all wrap-anywhere max-w-[170px]">
+                        {row.department}
+                      </TableCell>
+                      <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-center whitespace-normal">
+                        <img src={row.isMultiCode ? tableCheckIcon : tableCloseIcon} alt="" aria-hidden="true" className="mx-auto size-[12px] object-contain" />
+                      </TableCell>
+                       <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-center whitespace-normal">
+                        <img src={row.active ? tableCheckIcon : tableCloseIcon} alt="" aria-hidden="true" className="mx-auto size-[12px] object-contain" />
+                      </TableCell>
+                      {!readonly && (
+                      <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-center whitespace-normal">
+                        {canUpdateTsProgram && (
                           <button
                             type="button"
-                            onClick={(event) => {
-                              event.stopPropagation()
-                              setExpandedPrograms((prev) => {
-                                const next = !prev[row.id]
-                                if (next) {
-                                  // Stale time = 0: always clear old data and refetch fresh
-                                  setChildrenByParentId((prev) => {
-                                    const updated = { ...prev }
-                                    delete updated[row.id]
-                                    return updated
-                                  })
-                                  void ensureChildrenLoaded(row)
-                                } else {
-                                  // On collapse, clear children so re-expand always fetches fresh
-                                  setChildrenByParentId((prev) => {
-                                    const updated = { ...prev }
-                                    delete updated[row.id]
-                                    return updated
-                                  })
-                                }
-                                return { ...prev, [row.id]: next }
-                              })
-                            }}
-                            className="inline-flex cursor-pointer items-center text-[var(--primary)]"
-                            aria-label={row.hierarchyLevel === 0 ? "Toggle TS secondary programs" : "Toggle TS subprograms"}
+                            onClick={() => onEditRow(row)}
+                            className="inline-flex cursor-pointer items-center opacity-80 drop-shadow-[0_1px_0_rgba(108,93,211,0.35)] transition-opacity hover:opacity-100"
                           >
-                            {expandedPrograms[row.id] ? (
-                              <ChevronUp className="size-3.5" />
-                            ) : (
-                              <ChevronRight className="size-3.5" />
-                            )}
+                            <img
+                              src={tableEditIcon}
+                              alt=""
+                              aria-hidden="true"
+                              className="size-[11px] object-contain"
+                            />
                           </button>
-                        ) : null}
-                        {row.code}
-                      </div>
-                    </TableCell>
-                    <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-[12px] text-[#232735] whitespace-pre-wrap break-all [overflow-wrap:anywhere] max-w-[220px]">
-                      {row.name}
-                    </TableCell>
-                    <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-[12px] text-[#232735] whitespace-pre-wrap break-all [overflow-wrap:anywhere] max-w-[170px]">
-                      {row.parentBudgetUnitName ?? ""}
-                    </TableCell>
-                    <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-[12px] text-[#232735] whitespace-pre-wrap break-all [overflow-wrap:anywhere] max-w-[170px]">
-                      {row.department}
-                    </TableCell>
-                    <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-center whitespace-normal">
-                      <img src={row.isMultiCode ? tableCheckIcon : tableCloseIcon} alt="" aria-hidden="true" className="mx-auto size-[12px] object-contain" />
-                    </TableCell>
-                     <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-center whitespace-normal">
-                      <img src={row.active ? tableCheckIcon : tableCloseIcon} alt="" aria-hidden="true" className="mx-auto size-[12px] object-contain" />
-                    </TableCell>
-                    {!readonly && (
-                    <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-center whitespace-normal">
-                      {canUpdateTsProgram && (
-                        <button
-                          type="button"
-                          onClick={() => onEditRow(row)}
-                          className="inline-flex cursor-pointer items-center opacity-80 drop-shadow-[0_1px_0_rgba(108,93,211,0.35)] transition-opacity hover:opacity-100"
-                        >
-                          <img
-                            src={tableEditIcon}
-                            alt=""
-                            aria-hidden="true"
-                            className="size-[11px] object-contain"
-                          />
-                        </button>
-                      )}
-                    </TableCell>
-                    )}
-                  </TableRow>
-                  {(row.hierarchyLevel === 0 || row.hierarchyLevel === 1) &&
-                    expandedPrograms[row.id] &&
-                    childrenLoading[row.id] && (
-                      <TableRow
-                        key={`ts-loading-${row.id}`}
-                        className="h-10 border-b border-[#eff0f5] hover:bg-transparent"
-                      >
-                        <TableCell className="border-r border-[#eff0f5] px-3 py-2">
-                          <Skeleton className="h-3.5 w-[70%]" />
-                        </TableCell>
-                        <TableCell className="border-r border-[#eff0f5] px-3 py-2">
-                          <Skeleton className="h-3.5 w-[80%]" />
-                        </TableCell>
-                        <TableCell className="border-r border-[#eff0f5] px-3 py-2">
-                          <Skeleton className="h-3.5 w-[65%]" />
-                        </TableCell>
-                        <TableCell className="border-r border-[#eff0f5] px-3 py-2">
-                          <Skeleton className="h-3.5 w-[80%]" />
-                        </TableCell>
-                        <TableCell className="border-r border-[#eff0f5] px-3 py-2">
-                          <Skeleton className="h-3.5 w-[55%]" />
-                        </TableCell>
-                        <TableCell className="border-r border-[#eff0f5] px-3 py-2">
-                          <Skeleton className="mx-auto h-4 w-4 rounded-sm" />
-                        </TableCell>
-                        {!readonly && (
-                        <TableCell className="border-r border-[#eff0f5] px-3 py-2">
-                          <Skeleton className="mx-auto h-3.5 w-3.5 rounded-sm" />
-                        </TableCell>
                         )}
-                      </TableRow>
-                    )}
-                  </>
-                ))}
-            {!isLoading && displayRows.length === 0 ? (
-              <TableRow className="h-[210px] hover:bg-transparent">
-                <TableCell colSpan={readonly ? 6 : 7} className="text-center">
-                  <img
-                    src={tableEmptyIcon}
-                    alt=""
-                    aria-hidden="true"
-                    className="mx-auto h-[73px] w-[82px] object-contain opacity-80"
-                  />
-                </TableCell>
-              </TableRow>
-            ) : null}
-          </TableBody>
-        </Table>
+                      </TableCell>
+                      )}
+                    </TableRow>
+                    {(row.hierarchyLevel === 0 || row.hierarchyLevel === 1) &&
+                      expandedPrograms[row.id] &&
+                      childrenLoading[row.id] && (
+                        <TableRow
+                          key={`ts-loading-${row.id}`}
+                          className="h-10 border-b border-[#eff0f5] hover:bg-transparent"
+                        >
+                          <TableCell className="border-r border-[#eff0f5] px-3 py-2">
+                            <Skeleton className="h-3.5 w-[70%]" />
+                          </TableCell>
+                          <TableCell className="border-r border-[#eff0f5] px-3 py-2">
+                            <Skeleton className="h-3.5 w-[80%]" />
+                          </TableCell>
+                          <TableCell className="border-r border-[#eff0f5] px-3 py-2">
+                            <Skeleton className="h-3.5 w-[65%]" />
+                          </TableCell>
+                          <TableCell className="border-r border-[#eff0f5] px-3 py-2">
+                            <Skeleton className="h-3.5 w-[80%]" />
+                          </TableCell>
+                          <TableCell className="border-r border-[#eff0f5] px-3 py-2">
+                            <Skeleton className="h-3.5 w-[55%]" />
+                          </TableCell>
+                          <TableCell className="border-r border-[#eff0f5] px-3 py-2">
+                            <Skeleton className="mx-auto h-4 w-4 rounded-sm" />
+                          </TableCell>
+                          {!readonly && (
+                          <TableCell className="border-r border-[#eff0f5] px-3 py-2">
+                            <Skeleton className="mx-auto h-3.5 w-3.5 rounded-sm" />
+                          </TableCell>
+                          )}
+                        </TableRow>
+                      )}
+                    </React.Fragment>
+                  ))}
+              {!isLoading && displayRows.length === 0 ? (
+                <TableRow className="h-[210px] hover:bg-transparent">
+                  <TableCell colSpan={readonly ? 6 : 7} className="text-center">
+                    <img
+                      src={tableEmptyIcon}
+                      alt=""
+                      aria-hidden="true"
+                      className="mx-auto h-[73px] w-[82px] object-contain opacity-80"
+                    />
+                  </TableCell>
+                </TableRow>
+              ) : null}
+            </TableBody>
+          </Table>
+        </div>
       </div>
     </div>
   )
