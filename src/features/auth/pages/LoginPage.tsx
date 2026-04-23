@@ -47,7 +47,6 @@ export function LoginPage() {
             password: values.password,
             otp: result.otp,
           },
-          replace: true,
         })
         return
       }

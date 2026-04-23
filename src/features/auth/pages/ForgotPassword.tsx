@@ -44,7 +44,6 @@ export function ForgotPassword() {
             data.otp == null ? "" : String(data.otp).replace(/\D/g, "").slice(0, 6)
           reset()
           navigate("/otp", {
-            replace: true,
             state: {
               email: (data.loginId || values.email).trim(),
               otp: nextOtp || undefined,

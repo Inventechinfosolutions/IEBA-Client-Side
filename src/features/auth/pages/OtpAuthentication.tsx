@@ -190,7 +190,7 @@ export function OtpAuthentication() {
           }
 
           const loginId = email.trim()
-          const countyName = selectedCountyLabel ?? ""
+          const countyName = selectedCountyLabel?.toUpperCase() ?? ""
 
           establishDashboardSession({
             id: result.userId,
@@ -452,17 +452,17 @@ export function OtpAuthentication() {
               </div>
             </DialogTitle>
           </DialogHeader>
-        <div className="px-8 pb-10 pt-1 sm:px-9">
-          <div className="mb-3 w-full">
-            <h6 className="block text-left text-[16px] font-normal leading-tight text-[#000000E0]">
-              Pick a county to proceed
-            </h6>
-          </div>
-          <div className="flex w-full justify-center">
+        <div className="px-8 pb-4 pt-1 sm:px-9">
+          <div className="mx-auto w-full max-w-[360px]">
+            <div className="mb-3 w-full">
+              <h6 className="block text-left text-[16px]  font-normal leading-tight text-[#000000E0]">
+                Pick a county to proceed
+              </h6>
+            </div>
             <div className="relative w-full">
               {countyDropdownOpen ? (
                 <div
-                  className={`relative flex h-[54px] w-full items-center rounded-[14px] border bg-white ${
+                  className={`relative flex h-[48px] w-full items-center rounded-[10px] border bg-white ${
                     countyError ? "border-red-500 ring-1 ring-red-500" : "border-[#6C5DD3] ring-1 ring-[#6C5DD3]"
                   }`}
                 >
@@ -482,19 +482,19 @@ export function OtpAuthentication() {
                     setCountyDropdownOpen(true)
                     setCountySearch("")
                   }}
-                  className={`flex h-[54px] w-full items-center justify-between rounded-[14px] border bg-white px-4 text-left ${
+                  className={`flex h-[48px] w-full items-center justify-between rounded-[10px] border bg-white px-4 text-left ${
                     countyError ? "border-red-500 ring-1 ring-red-500" : "border-[#d9d9d9]"
                   }`}
                 >
-                  <span className={`text-[16px] ${selectedNameSpace ? "text-[#000000D9]" : "text-[#00000073]"}`}>
-                    {selectedCountyLabel ?? "Select county"}
+                  <span className={`text-[14px] ${selectedNameSpace ? "text-[#000000D9]" : "text-[#00000073]"}`}>
+                    {selectedCountyLabel?.toUpperCase() ?? "Select county"}
                   </span>
                   <ChevronDown className="h-5 w-5 text-[#00000073]" />
                 </button>
               )}
 
               {countyDropdownOpen && (
-                <div className="absolute left-0 top-[66px] z-50 w-full overflow-hidden rounded-[14px] border border-[#d9d9d9] bg-white shadow-md">
+                <div className="absolute left-0 top-[52px] z-50 w-full overflow-hidden rounded-[10px] border border-[#d9d9d9] bg-white shadow-md">
                   <div className="max-h-[220px] overflow-y-auto py-1">
                     {globalNamespacesQuery.isLoading && (
                       <div className="px-5 py-2 text-[15px] text-[#00000073]">
@@ -528,13 +528,13 @@ export function OtpAuthentication() {
                             setCountyDropdownOpen(false)
                             setCountySearch("")
                           }}
-                          className={`block w-full px-5 py-1.5 text-left text-[16px] ${
+                          className={`block w-full px-5 py-1.5 text-left text-[14px] ${
                             selectedNameSpace === row.nameSpace
                               ? "bg-[#e6f4ff] font-semibold text-[#000000D9]"
                               : "text-[#000000D9] hover:bg-[#f5f5f5]"
                           }`}
                         >
-                          {row.countyName}
+                          {row.countyName.toUpperCase()}
                         </button>
                       ))}
                     {globalNamespacesQuery.isSuccess && filteredCountyOptions.length === 0 && (
