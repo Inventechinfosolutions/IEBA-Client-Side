@@ -306,7 +306,11 @@ export function JobPoolTable({
                         {row.jobClassifications.map((tag, idx) => (
                           <span
                             key={idx}
-                            className="inline-flex items-center rounded-[6px] border border-[#d8dae3] bg-[#f8f9fa] px-2 py-1 text-[10px] text-[#232735]"
+                            className={`inline-flex items-center rounded-[6px] bg-[#f8f9fa] px-2 py-1 text-[10px] text-[#232735] ${
+                              tag.status?.toLowerCase() === "inactive"
+                                ? "border border-red-300"
+                                : "border border-[#d8dae3]"
+                            }`}
                           >
                             {tag.name}
                           </span>
@@ -322,12 +326,17 @@ export function JobPoolTable({
                             .map((u) => ({
                               id: u.id,
                               label: formatUserName(u),
+                              status: u.status,
                             }))
                             .filter((u) => u.id && u.label)
                             .map((u) => (
                               <span
                                 key={u.id}
-                                className="inline-flex items-center rounded-[6px] border border-[#d8dae3] bg-[#f8f9fa] px-2 py-1 text-[10px] text-[#232735]"
+                                className={`inline-flex items-center rounded-[6px] bg-[#f8f9fa] px-2 py-1 text-[10px] text-[#232735] ${
+                                  u.status?.toLowerCase() === "inactive"
+                                    ? "border border-red-300"
+                                    : "border border-[#d8dae3]"
+                                }`}
                               >
                                 {u.label}
                               </span>
