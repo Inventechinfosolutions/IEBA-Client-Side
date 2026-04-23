@@ -11,7 +11,7 @@ export const countyActivityAddFormSchema = z.object({
   copyCode: z.boolean(),
   countyActivityCode: z.string().min(1, "County activity code is required"),
   countyActivityName: z.string().min(1, "County activity name is required"),
-  description: z.string().min(1, "Description is required"),
+  description: z.string(),
   
   department: z.string(),
   /** Empty while adding is allowed; primary save still validates type + code in the table handler. */

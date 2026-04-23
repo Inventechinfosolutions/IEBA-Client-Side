@@ -29,6 +29,20 @@ import type {
   CountyActivityCodeAddPageProps,
 } from "../types"
 
+
+function stripHtmlTags(html: string): string {
+  return html
+    .replace(/<[^>]*>/g, " ") 
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/\s{2,}/g, " ")   
+    .trim()
+}
+
 function mergeCountyActivityAddFormForSubmit(
   raw: CountyActivityAddFormValues,
   ctx: CountyActivityAddFormMergeContext,
@@ -41,7 +55,7 @@ function mergeCountyActivityAddFormForSubmit(
       ...v,
       countyActivityCode: (row.code ?? "").trim(),
       countyActivityName: row.name.trim(),
-      description: (row.activityDescription ?? "").trim(),
+      description: stripHtmlTags((row.activityDescription ?? "").trim()),
       match: normalizeCatalogMatchForCountyActivityGrid(row.match),
       percentage: Number.isFinite(pct) ? pct : 0,
     }
@@ -139,7 +153,7 @@ export function CountyActivityCodeAddPage({
 
   const displayDescription =
     primaryFieldsLocked && masterRowForCopy
-      ? (masterRowForCopy.activityDescription ?? "").trim()
+      ? stripHtmlTags((masterRowForCopy.activityDescription ?? "").trim())
       : form.watch("description")
 
   const departmentValue = form.watch("department")
@@ -185,24 +199,10 @@ export function CountyActivityCodeAddPage({
     form.setValue("department", next.join(", "), { shouldValidate: true })
     setSelectedRight([])
   }
-
   const handleCountyActivityAddOrEditSave = () => {
-    if (mode === CountyActivityAddPageMode.EDIT) {
-      onEditSave?.()
-      return
-    }
-    if (tab === CountyActivityGridRowType.PRIMARY && assignedDepartments.length === 0) {
-      form.setError("department", { message: "Department is required", type: "manual" })
-      return
-    }
-
     // Copy-from-master shows master values in the UI but RHF state can still be empty; Zod runs
     // inside handleSubmit before our merge callback, so we sync master row into the form first.
-    if (
-      mode === CountyActivityAddPageMode.ADD &&
-      tab === CountyActivityGridRowType.PRIMARY &&
-      copyFromMasterEnabled
-    ) {
+    if (tab === CountyActivityGridRowType.PRIMARY && copyFromMasterEnabled) {
       if (masterActivityQuery.isPending || masterActivityQuery.isFetching) {
         toast.error("Wait for the activity code to finish loading.")
         return
@@ -221,7 +221,7 @@ export function CountyActivityCodeAddPage({
           shouldValidate: false,
           shouldDirty: true,
         })
-        form.setValue("description", (row.activityDescription ?? "").trim(), {
+        form.setValue("description", stripHtmlTags((row.activityDescription ?? "").trim()), {
           shouldValidate: false,
           shouldDirty: true,
         })
@@ -237,6 +237,20 @@ export function CountyActivityCodeAddPage({
       })
     }
 
+    if (mode === CountyActivityAddPageMode.EDIT) {
+      onEditSave?.()
+      return
+    }
+
+    if (tab === CountyActivityGridRowType.PRIMARY && assignedDepartments.length === 0) {
+      form.setError("department", { message: "Department is required", type: "manual" })
+      return
+    }
+
+    submitAdd()
+  }
+
+  const submitAdd = () => {
     form.handleSubmit(
       (raw) => {
         const values = mergeCountyActivityAddFormForSubmit(raw, {
@@ -254,6 +268,7 @@ export function CountyActivityCodeAddPage({
       },
     )()
   }
+
 
   return (
     <div className="overflow-hidden rounded-[10px] border border-[#EBEDF0] bg-white">
