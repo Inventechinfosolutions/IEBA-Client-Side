@@ -1,7 +1,7 @@
 import { z } from "zod"
 
 export const departmentContactSchema = z.object({
-  name: z.string().min(1, "Name is required"),
+  name: z.string().optional().or(z.literal("")),
   phone: z.string().optional().or(z.literal("")),
   email: z.string().email("Invalid email").optional().or(z.literal("")),
   location: z.string().optional().or(z.literal("")),

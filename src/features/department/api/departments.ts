@@ -228,14 +228,19 @@ export async function getDepartments(
       ? payload.data
       : []
 
-  const items = list
-    .map((x: any) => toDepartmentUI(x as DepartmentResDto, { includeAddress: true }))
-    .filter((d: any) => d.code !== "0" && d.name.toLowerCase() !== "all")
+  const items = list.map((x: any) =>
+    toDepartmentUI(x as DepartmentResDto, { includeAddress: true })
+  )
 
-  const meta = payload?.meta
-  const total = typeof meta?.totalItems === "number"
-    ? meta.totalItems
-    : Array.isArray(payload) ? payload.length : items.length
+  const meta = envelope?.meta || payload?.meta
+  const total =
+    typeof meta?.totalItems === "number"
+      ? meta.totalItems
+      : typeof meta?.total === "number"
+        ? meta.total
+        : Array.isArray(payload)
+          ? payload.length
+          : items.length
 
   return { items, total }
 }
