@@ -321,3 +321,65 @@ export function useGetActivePrimaryTimeStudyPrograms(enabled: boolean, departmen
   })
 }
 
+// Active Time Study Secondary Programs (type=secondary) for TS Sub-Program Two tab (TS Program dropdown).
+async function fetchActiveSecondaryTimeStudyPrograms(departmentIds?: number[]) {
+  const search = new URLSearchParams()
+  search.set("page", "1")
+  search.set("limit", "100")
+  search.set("sort", "ASC")
+  search.set("status", "active")
+  search.set("type", "secondary")
+  if (departmentIds && departmentIds.length > 0) {
+    search.set("departmentIds", departmentIds.join(","))
+  }
+
+  const raw = await api.get<ApiEnvelope<{ data?: {
+    id?: number
+    code?: string
+    name?: string
+    status?: unknown
+    type?: string
+    department?: DepartmentResDto | null
+  }[]; meta?: PaginationMeta }>>(`/timestudyprograms?${search.toString()}`)
+  const payload = raw?.data ?? raw
+  const list = Array.isArray(payload?.data) ? payload.data : []
+
+  const activePrograms = list.filter((p) => isActiveStatus(p.status))
+
+  const budgetProgramNameOptions = activePrograms
+    .map((p) => (typeof p.name === "string" ? p.name.trim() : ""))
+    .filter(Boolean)
+    .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }))
+
+  const budgetProgramLookup: Record<string, { code: string; department: string }> = {}
+
+  for (const p of activePrograms) {
+    const name = typeof p.name === "string" ? p.name.trim() : ""
+    if (!name) continue
+    const code = typeof p.code === "string" ? p.code : ""
+    const deptName =
+      p.department && typeof p.department.name === "string" ? p.department.name : ""
+    budgetProgramLookup[name] = {
+      code,
+      department: deptName,
+    }
+  }
+
+  return {
+    budgetProgramNameOptions,
+    budgetProgramLookup,
+  }
+}
+
+export function useGetActiveSecondaryTimeStudyPrograms(enabled: boolean, departmentIds?: number[]) {
+  return useQuery({
+    queryKey: ["program", "form-options", "timestudyprograms", "type-secondary", departmentIds],
+    queryFn: () => fetchActiveSecondaryTimeStudyPrograms(departmentIds),
+    enabled,
+    staleTime: 0,
+    gcTime: 30 * 60_000,
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+  })
+}

@@ -1,5 +1,5 @@
 import { Checkbox } from "@/components/ui/checkbox"
-import { SingleSelectDropdown } from "@/components/ui/dropdown"
+import { SingleSelectSearchDropdown } from "@/components/ui/dropdown-search"
 import { TitleCaseInput } from "@/components/ui/title-case-input"
 import type {
   TimeStudyFieldLabelProps,
@@ -43,7 +43,7 @@ export function TimeStudyProgramForm({
       <div className="mx-auto grid w-[500px] grid-cols-1 gap-4">
         <div className="space-y-1">
           <FieldLabel text="*Department" />
-          <SingleSelectDropdown
+          <SingleSelectSearchDropdown
             value={form.watch("buProgramDepartment") ?? ""}
             onChange={(value) =>
               form.setValue("buProgramDepartment", value, { shouldDirty: true, shouldValidate: true })
@@ -59,7 +59,7 @@ export function TimeStudyProgramForm({
         </div>
         <div className="space-y-1">
           <FieldLabel text="*Budget (BU) Program" />
-          <SingleSelectDropdown
+          <SingleSelectSearchDropdown
             value={form.watch("buProgramBudgetUnitName") ?? ""}
             onChange={(value) =>
               form.setValue("buProgramBudgetUnitName", value, { shouldDirty: true, shouldValidate: true })
@@ -116,7 +116,7 @@ export function TimeStudyProgramForm({
       <div className="mx-auto grid w-[500px] grid-cols-1 gap-4">
         <div className="space-y-1">
           <FieldLabel text="*TS Program" />
-          <SingleSelectDropdown
+          <SingleSelectSearchDropdown
             value={form.watch("buSubProgramBudgetUnitProgramName") ?? ""}
             onChange={(value) => {
               form.setValue("buSubProgramBudgetUnitProgramName", value, {
@@ -199,9 +199,9 @@ export function TimeStudyProgramForm({
     <div className="mx-auto grid w-[500px] grid-cols-1 gap-4">
       <div className="space-y-1">
         <FieldLabel text="*TS Program" />
-        <SingleSelectDropdown
+        <SingleSelectSearchDropdown
           value={form.watch("budgetUnitName") ?? ""}
-          onChange={(value) => {
+          onChange={(value: string) => {
             form.setValue("budgetUnitName", value, { shouldDirty: true, shouldValidate: true })
             form.setValue("budgetUnitCode", value, { shouldDirty: true, shouldValidate: true })
             form.setValue("budgetUnitDepartment", budgetProgramLookup[value]?.department ?? "", {

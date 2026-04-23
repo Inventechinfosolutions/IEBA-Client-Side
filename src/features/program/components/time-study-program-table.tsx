@@ -91,27 +91,22 @@ export function TimeStudyProgramTable({
 
       if (!expandedPrograms[primary.id]) continue
 
-      const allChildren = childrenByParentId[primary.id] ?? []
-      const secondaries = allChildren.filter((c) => c.hierarchyLevel === 1)
-      const subprograms = allChildren.filter((c) => c.hierarchyLevel === 2)
-
-      const renderedSubIds = new Set<string>()
+      // Level 1: secondaries stored under the primary's id
+      const secondaries = childrenByParentId[primary.id] ?? []
 
       for (const sec of secondaries) {
         const effectiveSecondary = applyUpdatedRow(sec)
         flattened.push(effectiveSecondary)
-        // sub.parentId from backend = the secondary's numeric id
-        const subs = subprograms.filter((sub) => sub.parentId === sec.id)
-        for (const sub of subs) {
-          const effectiveSub = applyUpdatedRow(sub)
-          flattened.push(effectiveSub)
-          renderedSubIds.add(sub.id)
+
+        // Only show subprograms if this secondary is expanded
+        if (!expandedPrograms[sec.id]) continue
+
+        // Level 2: subprograms stored under the secondary's own id
+        const subprograms = childrenByParentId[sec.id] ?? []
+        for (const sub of subprograms) {
+          flattened.push(applyUpdatedRow(sub))
         }
       }
-
-      // Any subprograms whose parentId didn't match a secondary (e.g. parentId = primaryId as fallback)
-      const orphanSubs = subprograms.filter((sub) => !renderedSubIds.has(sub.id))
-      flattened.push(...orphanSubs.map(applyUpdatedRow))
     }
     return flattened
   }, [expandedPrograms, sortedPrograms, childrenByParentId, lastUpdatedRow])
@@ -154,59 +149,62 @@ export function TimeStudyProgramTable({
     }
   }
 
-  /** Refetch secondary + sub-program rows whenever a primary TS Program row is expanded (not only the first time). */
-  const ensureChildrenLoaded = async (primaryId: string) => {
-    const primary = mergedRows.find((row) => row.id === primaryId)
-    if (!primary?.timeStudyBudgetProgramId) return
-    if (childrenInFlightRef.current.has(primaryId)) return
+  /**
+   * Lazy-load children for a given row:
+   * - Level 0 (primary): fetches `type=secondary`, stores under primary's id
+   * - Level 1 (secondary): fetches `type=subprogram` filtered by parentId, stores under secondary's id
+   */
+  const ensureChildrenLoaded = async (row: ProgramRow) => {
+    const rowId = row.id
+    if (childrenInFlightRef.current.has(rowId)) return
 
-    childrenInFlightRef.current.add(primaryId)
-    setChildrenLoading((prev) => ({ ...prev, [primaryId]: true }))
+    const isLevel0 = (row.hierarchyLevel ?? 0) === 0
+
+    // For level 0 we need the budget program id; for level 1 we use the secondary's own id as parentId filter
+    if (isLevel0 && !row.timeStudyBudgetProgramId) return
+
+    childrenInFlightRef.current.add(rowId)
+    setChildrenLoading((prev) => ({ ...prev, [rowId]: true }))
     try {
-      const searchSec = new URLSearchParams()
-      searchSec.set("page", "1")
-      searchSec.set("limit", "100")
-      searchSec.set("sort", "ASC")
-      searchSec.set("status", "active")
-      searchSec.set("type", "secondary")
-      searchSec.set("budgetProgramId", primary.timeStudyBudgetProgramId)
+      const search = new URLSearchParams()
+      search.set("page", "1")
+      search.set("limit", "100")
+      search.set("sort", "ASC")
+      search.set("status", "active")
 
-      const searchSub = new URLSearchParams()
-      searchSub.set("page", "1")
-      searchSub.set("limit", "100")
-      searchSub.set("sort", "ASC")
-      searchSub.set("status", "active")
-      searchSub.set("type", "subprogram")
-      searchSub.set("budgetProgramId", primary.timeStudyBudgetProgramId)
+      if (isLevel0) {
+        // Fetch direct secondary children of this primary
+        search.set("type", "secondary")
+        search.set("budgetProgramId", row.timeStudyBudgetProgramId!)
+      } else {
+        // Fetch subprograms that belong to this secondary
+        search.set("type", "subprogram")
+        // Use the secondary's timeStudyBudgetProgramId to scope the API call
+        if (row.timeStudyBudgetProgramId) {
+          search.set("budgetProgramId", row.timeStudyBudgetProgramId)
+        }
+      }
 
-      const [resSec, resSub] = await Promise.all([
-        api.get<any>(`/timestudyprograms?${searchSec.toString()}`),
-        api.get<any>(`/timestudyprograms?${searchSub.toString()}`)
-      ])
+      const response = await api.get<any>(`/timestudyprograms?${search.toString()}`)
+      const payload = response?.data ?? response
+      const list: any[] = Array.isArray(payload?.data) ? payload.data : []
 
-      const payloadSec = resSec?.data ?? resSec
-      const payloadSub = resSub?.data ?? resSub
+      // Direct match: child's parentId must match the current row's id
+      const filtered = list.filter(
+        (item: any) => String(item.parentId) === String(row.id)
+      )
 
-      const listSec = Array.isArray(payloadSec?.data) ? payloadSec.data : []
-      const listSub = Array.isArray(payloadSub?.data) ? payloadSub.data : []
+      const mapped: ProgramRow[] = filtered.map((item) =>
+        mapTimeStudyChildToRow(item, isLevel0 ? 1 : 2, rowId)
+      )
+      mapped.sort((a, b) =>
+        a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" })
+      )
 
-      // Filter locally in case backend doesn't support budgetProgramId filtering
-      const validSec = listSec.filter((item: any) => String(item.budgetProgram?.id) === primary.timeStudyBudgetProgramId)
-      const validSub = listSub.filter((item: any) => String(item.budgetProgram?.id) === primary.timeStudyBudgetProgramId)
-
-      const mappedSec: ProgramRow[] = validSec.map((item: any) => mapTimeStudyChildToRow(item, 1, primaryId))
-      const mappedSub: ProgramRow[] = validSub.map((item: any) => mapTimeStudyChildToRow(item, 2, primaryId))
-
-      const combined = [...mappedSec, ...mappedSub]
-      combined.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" }))
-
-      setChildrenByParentId((prev) => ({
-        ...prev,
-        [primaryId]: combined,
-      }))
+      setChildrenByParentId((prev) => ({ ...prev, [rowId]: mapped }))
     } finally {
-      childrenInFlightRef.current.delete(primaryId)
-      setChildrenLoading((prev) => ({ ...prev, [primaryId]: false }))
+      childrenInFlightRef.current.delete(rowId)
+      setChildrenLoading((prev) => ({ ...prev, [rowId]: false }))
     }
   }
 
@@ -379,7 +377,7 @@ export function TimeStudyProgramTable({
                             row.hierarchyLevel === 1 ? "14px" : row.hierarchyLevel === 2 ? "28px" : "0px",
                         }}
                       >
-                        {row.hierarchyLevel === 0 ? (
+                        {(row.hierarchyLevel === 0 || row.hierarchyLevel === 1) ? (
                           <button
                             type="button"
                             onClick={(event) => {
@@ -387,13 +385,26 @@ export function TimeStudyProgramTable({
                               setExpandedPrograms((prev) => {
                                 const next = !prev[row.id]
                                 if (next) {
-                                  void ensureChildrenLoaded(row.id)
+                                  // Stale time = 0: always clear old data and refetch fresh
+                                  setChildrenByParentId((prev) => {
+                                    const updated = { ...prev }
+                                    delete updated[row.id]
+                                    return updated
+                                  })
+                                  void ensureChildrenLoaded(row)
+                                } else {
+                                  // On collapse, clear children so re-expand always fetches fresh
+                                  setChildrenByParentId((prev) => {
+                                    const updated = { ...prev }
+                                    delete updated[row.id]
+                                    return updated
+                                  })
                                 }
                                 return { ...prev, [row.id]: next }
                               })
                             }}
                             className="inline-flex cursor-pointer items-center text-[var(--primary)]"
-                            aria-label="Toggle TS secondary programs"
+                            aria-label={row.hierarchyLevel === 0 ? "Toggle TS secondary programs" : "Toggle TS subprograms"}
                           >
                             {expandedPrograms[row.id] ? (
                               <ChevronUp className="size-3.5" />
@@ -439,7 +450,7 @@ export function TimeStudyProgramTable({
                     </TableCell>
                     )}
                   </TableRow>
-                  {row.hierarchyLevel === 0 &&
+                  {(row.hierarchyLevel === 0 || row.hierarchyLevel === 1) &&
                     expandedPrograms[row.id] &&
                     childrenLoading[row.id] && (
                       <TableRow

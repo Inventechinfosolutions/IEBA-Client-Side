@@ -1,6 +1,6 @@
 import { ChevronDown, ChevronUp } from "lucide-react"
 
-import { SingleSelectDropdown } from "@/components/ui/dropdown"
+import { SingleSelectSearchDropdown } from "@/components/ui/dropdown-search"
 import { TitleCaseInput } from "@/components/ui/title-case-input"
 import { Textarea } from "@/components/ui/textarea"
 import type { BudgetUnitsFormProps } from "../types"
@@ -129,7 +129,7 @@ export function BudgetUnitsForm({
                 className="h-[44px] rounded-[7px] border border-[#c6cedd] px-3 text-[14px] font-normal text-[#111827] shadow-none disabled:pointer-events-auto disabled:cursor-not-allowed disabled:!border-[0.8px] disabled:!border-[#cfd4dd] disabled:!bg-[#d2d4d9]/20 disabled:!text-black disabled:opacity-100"
               />
             ) : (
-              <SingleSelectDropdown
+              <SingleSelectSearchDropdown
                 value={form.watch("budgetUnitDepartment") ?? ""}
                 onChange={(department) => {
                   form.setValue("budgetUnitDepartment", department, {
@@ -141,7 +141,7 @@ export function BudgetUnitsForm({
                 onBlur={() => {}}
                 options={departmentOptions.map((d) => ({ value: d, label: d }))}
                 placeholder="Select Department"
-                className="!min-h-[44px] h-[44px] !rounded-[7px] !border-[#c6cedd] !px-3 !pr-9 !text-[14px] !font-normal focus-visible:!border-[#6C5DD3] focus-visible:!ring-0"
+                className="h-[44px] min-h-[44px]! rounded-[7px]! border-[#c6cedd]! px-3! pr-9! text-[14px]! font-normal! focus-visible:border-[#6C5DD3]! focus-visible:ring-0!"
                 itemButtonClassName="rounded-[4px] px-2.5 py-1.5"
                 itemLabelClassName="!text-[14px]"
               />
@@ -190,7 +190,7 @@ export function BudgetUnitsForm({
                 className="h-[44px] rounded-[7px] border border-[#c6cedd] px-3 text-[14px] font-normal text-[#111827] shadow-none placeholder:text-[12px] placeholder:text-[#b0b8c8] disabled:pointer-events-auto disabled:cursor-not-allowed disabled:!border-[0.8px] disabled:!border-[#cfd4dd] disabled:!bg-[#d2d4d9]/20 disabled:!text-black disabled:opacity-100"
               />
             ) : (
-              <SingleSelectDropdown
+              <SingleSelectSearchDropdown
                 value={form.watch("buProgramBudgetUnitName") ?? ""}
                 onChange={(name) => {
                   form.setValue("buProgramBudgetUnitName", name, {
@@ -212,7 +212,7 @@ export function BudgetUnitsForm({
                 onBlur={() => {}}
                 options={budgetUnitNameOptions.map((n) => ({ value: n, label: n }))}
                 placeholder="Select Budget Unit"
-                className="!min-h-[44px] h-[44px] !rounded-[7px] !border-[#c6cedd] !px-3 !pr-9 !text-[14px] !font-normal focus-visible:!border-[#6C5DD3] focus-visible:!ring-0"
+                className="h-[44px] min-h-[44px]! rounded-[7px]! border-[#c6cedd]! px-3! pr-9! text-[14px]! font-normal! focus-visible:border-[#6C5DD3]! focus-visible:ring-0!"
                 itemButtonClassName="rounded-[4px] px-2.5 py-1.5"
                 itemLabelClassName="!text-[14px]"
               />
@@ -332,7 +332,7 @@ export function BudgetUnitsForm({
                 className="h-[44px] rounded-[7px] border border-[#c6cedd] px-3 text-[14px] font-normal text-[#111827] shadow-none placeholder:text-[12px] placeholder:text-[#b0b8c8] disabled:pointer-events-auto disabled:cursor-not-allowed disabled:!border-[0.8px] disabled:!border-[#cfd4dd] disabled:!bg-[#d2d4d9]/20 disabled:!text-black disabled:opacity-100"
               />
             ) : (
-              <SingleSelectDropdown
+              <SingleSelectSearchDropdown
                 value={form.watch("buSubProgramBudgetUnitProgramName") ?? ""}
                 onChange={(name) => {
                   form.setValue("buSubProgramBudgetUnitProgramName", name, {
@@ -358,7 +358,7 @@ export function BudgetUnitsForm({
                 onBlur={() => {}}
                 options={budgetProgramNameOptions.map((n) => ({ value: n, label: n }))}
                 placeholder="Select Budget Program"
-                className="!min-h-[44px] h-[44px] !rounded-[7px] !border-[#c6cedd] !px-3 !pr-9 !text-[14px] !font-normal focus-visible:!border-[#6C5DD3] focus-visible:!ring-0"
+                className="h-[44px] min-h-[44px]! rounded-[7px]! border-[#c6cedd]! px-3! pr-9! text-[14px]! font-normal! focus-visible:border-[#6C5DD3]! focus-visible:ring-0!"
                 itemButtonClassName="rounded-[4px] px-2.5 py-1.5"
                 itemLabelClassName="!text-[14px]"
               />
