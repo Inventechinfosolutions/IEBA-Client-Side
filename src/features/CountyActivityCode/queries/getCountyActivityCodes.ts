@@ -165,10 +165,20 @@ export function useGetCountyActivityActivePrimarySubPicker() {
 }
 
 /**
- * Master activity-code options for one code type — `GET /activity-codes?type=…&status=active`
- * (paged until complete). Runs when the user selects a code type so the Network tab shows the
- * typed activity-codes request (not only a one-time full-catalog fetch).
+ * Master activity-code catalog: `GET /activity-codes` (no type filter).
+ * Used for "Copy code" dropdowns in Add/Edit modals without hitting `/master-codes`.
  */
+export function useGetMasterActivityCatalog(enabled: boolean) {
+  return useQuery({
+    queryKey: masterCodeKeys.activityCodesCatalogAll(),
+    queryFn: () => apiFetchActivityCodesCatalogAll({ inactiveOnly: false }),
+    enabled,
+    staleTime: 5 * 60_000,
+    gcTime: 15 * 60_000,
+  })
+}
+
+
 export function useGetCountyActivityMasterCodes(codeType: string, enabled: boolean) {
   const typeSelected = codeType.trim().length > 0
   const typeTrimmed = codeType.trim()

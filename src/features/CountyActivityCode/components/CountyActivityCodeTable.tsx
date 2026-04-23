@@ -72,16 +72,30 @@ import { useUpdateCountyActivityCode } from "../mutations/updateCountyActivityCo
 import { useCreateCountyActivityCode } from "../mutations/createCountyActivityCode"
 import { ActivityStatusEnum } from "@/features/master-code/enums/activityStatus"
 
-import { useGetMasterCodeOptions } from "@/features/department/queries/getMasterCodeOptions"
 
 import { COUNTY_ACTIVITY_SEARCH_DEBOUNCE_MS } from "../constants"
 import { countyActivityCodeKeys } from "../keys"
 import {
   useGetCountyActivityForEdit,
   useGetCountyActivityMasterCodes,
+  useGetMasterActivityCatalog,
 } from "../queries/getCountyActivityCodes"
 import { parseMasterCodeDisplay } from "../api/countyActivityApi"
 import { usePermissions } from "@/hooks/usePermissions"
+import { useGetDepartments } from "@/features/department/queries/getDepartments"
+
+function stripHtmlTags(html: string): string {
+  return html
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/\s{2,}/g, " ")
+    .trim()
+}
 
 function toastCountyActivityCodeApiError(err: unknown, fallback: string): void {
   const msg = err instanceof Error ? err.message.trim() : ""
@@ -182,7 +196,7 @@ export function CountyActivityCodeTable({
   onPageSizeChange,
 }: CountyActivityCodeTableProps) {
   const queryClient = useQueryClient()
-  const { canAdd, canUpdate } = usePermissions()
+  const { canAdd, canUpdate, isSuperAdmin, user } = usePermissions()
   const canAddCountyActivity = canAdd("countyactivity")
   const canUpdateCountyActivity = canUpdate("countyactivity")
 
@@ -271,9 +285,7 @@ export function CountyActivityCodeTable({
 
   const addMasterCodeType = addForm.watch("masterCodeType")
 
-  const tenantMasterCodeTypeNamesQuery = useGetMasterCodeOptions(
-    addOpen || editOpen,
-  )
+  const masterCatalogQuery = useGetMasterActivityCatalog(addOpen || editOpen)
 
   const editActivityId = editOpen && rowToEdit ? rowToEdit.id : null
   const editDetailQuery = useGetCountyActivityForEdit(editActivityId, editOpen)
@@ -302,32 +314,24 @@ export function CountyActivityCodeTable({
     return (parent?.masterCodeType ?? rowToEdit.masterCodeType).trim()
   }, [editOpen, rowToEdit, editDetailQuery.isSuccess, editDetailQuery.data, primaryRows])
 
-  const editHydrationCodesQuery = useGetCountyActivityMasterCodes(
-    editSyncedMasterCodeType,
-    editOpen &&
-      rowToEdit?.rowType === CountyActivityGridRowType.PRIMARY &&
-      editDetailQuery.isSuccess &&
-      editSyncedMasterCodeType.length > 0,
-  )
 
   const resolvedEditMasterCodeId = useMemo(() => {
     if (!editOpen || !rowToEdit || rowToEdit.rowType !== CountyActivityGridRowType.PRIMARY) {
       return 0
     }
 
-    const isPending =
-      editHydrationCodesQuery.isPending ||
-      (editHydrationCodesQuery.isFetching && !editHydrationCodesQuery.isSuccess)
-
-    if (isPending) {
+    if (masterCatalogQuery.isPending) {
       return null
     }
 
-    if (!editHydrationCodesQuery.isSuccess) {
+    if (!masterCatalogQuery.isSuccess) {
       return 0
     }
 
-    const items = editHydrationCodesQuery.data?.items ?? []
+    const typeToFilter = editSyncedMasterCodeType.trim().toLowerCase()
+    const items = (masterCatalogQuery.data ?? []).filter(
+      (item) => String(item.type ?? "").trim().toLowerCase() === typeToFilter
+    )
     const rawCode = rowToEdit.catalogActivityCode.trim()
     if (!rawCode || items.length === 0) return 0
 
@@ -350,10 +354,10 @@ export function CountyActivityCodeTable({
     editOpen,
     rowToEdit?.rowType,
     rowToEdit?.catalogActivityCode,
-    editHydrationCodesQuery.isPending,
-    editHydrationCodesQuery.isFetching,
-    editHydrationCodesQuery.isSuccess,
-    editHydrationCodesQuery.data?.items,
+    editSyncedMasterCodeType,
+    masterCatalogQuery.isPending,
+    masterCatalogQuery.isSuccess,
+    masterCatalogQuery.data,
   ])
 
   const editFormValuesFromServer = useMemo((): CountyActivityAddFormValues | undefined => {
@@ -378,7 +382,7 @@ export function CountyActivityCodeTable({
         copyCode: false,
         countyActivityCode: activity.code,
         countyActivityName: activity.name,
-        description: (activity.description ?? "").trim(),
+        description: stripHtmlTags((activity.description ?? "").trim()),
         masterCodeType: activity.activityCodeType,
         masterCode: resolvedEditMasterCodeId,
         match: rowToEdit.match,
@@ -395,7 +399,7 @@ export function CountyActivityCodeTable({
       copyCode: false,
       countyActivityCode: activity.code,
       countyActivityName: activity.name,
-      description: (activity.description ?? "").trim(),
+      description: stripHtmlTags((activity.description ?? "").trim()),
       masterCodeType: parent?.masterCodeType ?? rowToEdit.masterCodeType,
       masterCode: 0,
       match: rowToEdit.match,
@@ -426,18 +430,22 @@ export function CountyActivityCodeTable({
   })
 
   const editMasterCodeTypeWatched = editForm.watch("masterCodeType")
-  const editMasterCodesQuery = useGetCountyActivityMasterCodes(
-    editMasterCodeTypeWatched.trim() !== ""
-      ? editMasterCodeTypeWatched
-      : editSyncedMasterCodeType,
-    editOpen &&
-      rowToEdit != null &&
-      rowToEdit.rowType !== CountyActivityGridRowType.SUB,
-  )
 
+  // Code Type dropdown: derived from the all-activity-codes catalog (replaces old /master-codes call)
+  const masterCodeTypeOptions = useMemo(() => {
+    const data = masterCatalogQuery.data ?? []
+    const types = new Set<string>()
+    for (const item of data) {
+      const t = String(item.type ?? "").trim()
+      if (t) types.add(t)
+    }
+    return [...types].sort((a, b) => a.localeCompare(b))
+  }, [masterCatalogQuery.data])
+
+  // Code dropdown (Add modal): per-type call fires when user selects a Code Type
   const addMasterCodesQuery = useGetCountyActivityMasterCodes(
     addMasterCodeType,
-    addOpen && addTab === CountyActivityGridRowType.PRIMARY,
+    addOpen && addTab === CountyActivityGridRowType.PRIMARY && addMasterCodeType.trim().length > 0,
   )
 
   const addMasterCodeOptions = useMemo(
@@ -450,6 +458,16 @@ export function CountyActivityCodeTable({
     [addMasterCodesQuery.data?.items],
   )
 
+  // Code dropdown (Edit modal): per-type call fires when user selects or modal loads a Code Type
+  const editMasterCodesQuery = useGetCountyActivityMasterCodes(
+    editMasterCodeTypeWatched.trim() !== ""
+      ? editMasterCodeTypeWatched
+      : editSyncedMasterCodeType,
+    editOpen &&
+      rowToEdit != null &&
+      rowToEdit.rowType !== CountyActivityGridRowType.SUB,
+  )
+
   const editMasterCodeOptions = useMemo(
     () =>
       (editMasterCodesQuery.data?.items ?? []).map((item) => ({
@@ -460,12 +478,35 @@ export function CountyActivityCodeTable({
     [editMasterCodesQuery.data?.items],
   )
 
+  const userDepartmentsQuery = useGetDepartments(
+    {
+      status: "active",
+      page: 1,
+      limit: 100,
+      userId: user?.id,
+    },
+    { enabled: !isSuperAdmin && !!user?.id && (addOpen || editOpen) }
+  )
+
   const departmentNames = useMemo(() => {
+    if (isSuperAdmin) {
+      return departments
+        .map((d) => d.name.trim())
+        .filter(Boolean)
+        .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }))
+    }
+
+    const userDepts = userDepartmentsQuery.data?.items ?? []
+    const userDeptNames = new Set(
+      userDepts.map((d) => d.name.trim().toLowerCase())
+    )
+
     return departments
+      .filter((d) => userDeptNames.has(d.name.trim().toLowerCase()))
       .map((d) => d.name.trim())
       .filter(Boolean)
       .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }))
-  }, [departments])
+  }, [departments, isSuperAdmin, userDepartmentsQuery.data?.items])
 
   const departmentIdByName = useMemo(() => {
     const map: Record<string, number> = {}
@@ -582,26 +623,18 @@ export function CountyActivityCodeTable({
               { ...countyActivityAddDefaultValues },
               { keepDirty: false, keepTouched: false, keepErrors: false },
             )
-            setAddFormMountKey((k) => k + 1)
             setCurrentPrimaryId(null)
-            setCurrentPrimaryDefaults({
-              masterCodeType: values.masterCodeType,
-              masterCode: values.masterCode,
-              department: values.department,
-            })
-            return
+            setCurrentPrimaryDefaults(null)
+          } else {
+            if (currentPrimaryId) {
+              setExpandedRowIds((prev) => ({ ...prev, [currentPrimaryId]: true }))
+            }
+            addForm.reset(countyActivityAddDefaultValues)
+            setCurrentPrimaryId(null)
+            setCurrentPrimaryDefaults(null)
           }
 
-          if (currentPrimaryId) {
-            setExpandedRowIds((prev) => ({ ...prev, [currentPrimaryId]: true }))
-          }
-          addForm.reset({
-            ...countyActivityAddDefaultValues,
-            department: values.department,
-            masterCodeType: values.masterCodeType,
-            masterCode: values.masterCode,
-            active: true,
-          })
+          setAddFormMountKey((k) => k + 1)
         },
         onError: (err) => {
           toastCountyActivityCodeApiError(
@@ -1315,10 +1348,10 @@ export function CountyActivityCodeTable({
             onAddSave={submitCreateCountyActivityFromAddModal}
             subParentActivityDetail={addSubParentDetailQuery.data ?? null}
             tab={addTab}
-            masterCodeTypeOptions={tenantMasterCodeTypeNamesQuery.data ?? []}
-            isMasterCodeTypeOptionsLoading={tenantMasterCodeTypeNamesQuery.isLoading}
+            masterCodeTypeOptions={masterCodeTypeOptions}
+            isMasterCodeTypeOptionsLoading={masterCatalogQuery.isPending}
             masterCodeOptions={addMasterCodeOptions}
-            isMasterCodeOptionsLoading={addMasterCodesQuery.isLoading}
+            isMasterCodeOptionsLoading={addMasterCodesQuery.isPending}
             departmentNames={departmentNames}
             onTabChange={(nextTab) => {
               setAddTab(nextTab)
@@ -1388,15 +1421,14 @@ export function CountyActivityCodeTable({
                   : null
               }
               readOnlyPrimaryPicker={false}
-              masterCodeTypeOptions={tenantMasterCodeTypeNamesQuery.data ?? []}
-              isMasterCodeTypeOptionsLoading={tenantMasterCodeTypeNamesQuery.isLoading}
+              masterCodeTypeOptions={masterCodeTypeOptions}
+              isMasterCodeTypeOptionsLoading={masterCatalogQuery.isPending}
               masterCodeOptions={editMasterCodeOptions}
-              isMasterCodeOptionsLoading={editMasterCodesQuery.isLoading}
+              isMasterCodeOptionsLoading={editMasterCodesQuery.isPending}
               isEditSourceLoading={
-                // For sub rows, we already have enough data to show the form immediately.
-                // We only show the loader for primary rows if we're still waiting for the master code hydration.
+                // Only show the full-page loader for primary rows while the per-type codes are hydrating.
                 rowToEdit?.rowType === CountyActivityGridRowType.PRIMARY &&
-                editHydrationCodesQuery.isPending
+                editMasterCodesQuery.isPending
               }
               departmentNames={departmentNames}
               onSelectedPrimaryIdChange={(id) => {
