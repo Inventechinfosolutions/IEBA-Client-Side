@@ -1,5 +1,5 @@
-import React, { useMemo, useRef, useState } from "react"
-import { ChevronDown, ChevronRight, ChevronUp } from "lucide-react"
+import React, { forwardRef, useImperativeHandle, useMemo, useRef, useState } from "react"
+import { ChevronDown, ChevronRight, ChevronUp, EllipsisVertical, Pencil, Plus } from "lucide-react"
 
 import tableCheckIcon from "@/assets/icons/table-check.png"
 import tableCloseIcon from "@/assets/icons/table-close.png"
@@ -17,6 +17,12 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
@@ -26,19 +32,23 @@ import type {
   ProgramRow,
   ProgramSortKey,
   ProgramTableSortState,
+  TimeStudyProgramTableHandle,
   TimeStudyProgramTableProps,
   TimeStudyProgramResDto,
 } from "../types"
 import { usePermissions } from "@/hooks/usePermissions"
 
-export function TimeStudyProgramTable({
-  rows,
-  isLoading,
-  onEditRow,
-  lastUpdatedRow,
-  readonly = false,
-}: TimeStudyProgramTableProps) {
-  const { canUpdate } = usePermissions()
+export const TimeStudyProgramTable = forwardRef<TimeStudyProgramTableHandle, TimeStudyProgramTableProps>(
+  function TimeStudyProgramTable({
+    rows,
+    isLoading,
+    onEditRow,
+    onAddSubProgramFromParent,
+    lastUpdatedRow,
+    readonly = false,
+  }: TimeStudyProgramTableProps, ref) {
+  const { canAdd, canUpdate } = usePermissions()
+  const canAddTsProgram = canAdd("timestudyprogram") && !readonly
   const canUpdateTsProgram = canUpdate("timestudyprogram") && !readonly
 
   const [sortState, setSortState] = useState<ProgramTableSortState>({
@@ -50,6 +60,18 @@ export function TimeStudyProgramTable({
   const [childrenByParentId, setChildrenByParentId] = useState<Record<string, ProgramRow[]>>({})
   const [childrenLoading, setChildrenLoading] = useState<Record<string, boolean>>({})
   const childrenInFlightRef = useRef(new Set<string>())
+
+  useImperativeHandle(ref, () => ({
+    collapseRow: (rowId: string) => {
+      childrenInFlightRef.current.delete(rowId)
+      setChildrenByParentId((prev) => {
+        const updated = { ...prev }
+        delete updated[rowId]
+        return updated
+      })
+      setExpandedPrograms((prev) => ({ ...prev, [rowId]: false }))
+    },
+  }), [])
 
   const mergedRows = useMemo(() => {
     const children = Object.values(childrenByParentId).flat()
@@ -381,6 +403,7 @@ export function TimeStudyProgramTable({
                                   const next = !prev[row.id]
                                   if (next) {
                                     // Stale time = 0: always clear old data and refetch fresh
+                                    childrenInFlightRef.current.delete(row.id)
                                     setChildrenByParentId((prev) => {
                                       const updated = { ...prev }
                                       delete updated[row.id]
@@ -388,7 +411,8 @@ export function TimeStudyProgramTable({
                                     })
                                     void ensureChildrenLoaded(row)
                                   } else {
-                                    // On collapse, clear children so re-expand always fetches fresh
+                                    // On collapse, clear children AND inflight guard so re-expand always fetches fresh
+                                    childrenInFlightRef.current.delete(row.id)
                                     setChildrenByParentId((prev) => {
                                       const updated = { ...prev }
                                       delete updated[row.id]
@@ -426,24 +450,68 @@ export function TimeStudyProgramTable({
                        <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-center whitespace-normal">
                         <img src={row.active ? tableCheckIcon : tableCloseIcon} alt="" aria-hidden="true" className="mx-auto size-[12px] object-contain" />
                       </TableCell>
-                      {!readonly && (
-                      <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-center whitespace-normal">
-                        {canUpdateTsProgram && (
-                          <button
-                            type="button"
-                            onClick={() => onEditRow(row)}
-                            className="inline-flex cursor-pointer items-center opacity-80 drop-shadow-[0_1px_0_rgba(108,93,211,0.35)] transition-opacity hover:opacity-100"
-                          >
-                            <img
-                              src={tableEditIcon}
-                              alt=""
-                              aria-hidden="true"
-                              className="size-[11px] object-contain"
-                            />
-                          </button>
-                        )}
-                      </TableCell>
-                      )}
+      {!readonly && (
+      <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-center whitespace-normal">
+        {row.hierarchyLevel === 1
+          ? // Sub-Program One: 3-dot menu with Add + Edit (mirrors BU Program in BudgetUnitTable)
+            (canAddTsProgram || canUpdateTsProgram) && (
+              <div className="flex justify-center">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      type="button"
+                      onClick={(e) => e.stopPropagation()}
+                      className="inline-flex cursor-pointer items-center justify-center text-(--primary) opacity-90 transition-opacity hover:opacity-100"
+                      aria-label="Open row actions"
+                    >
+                      <EllipsisVertical className="size-[14px]" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent
+                    align="center"
+                    side="bottom"
+                    sideOffset={6}
+                    className="w-[92px]! min-w-[92px]! rounded-[6px] border border-[#edf0f6] p-1 shadow-[0_8px_20px_rgba(17,24,39,0.14)]"
+                  >
+                    {canAddTsProgram && (
+                      <DropdownMenuItem
+                        onClick={() => onAddSubProgramFromParent?.(row)}
+                        className="cursor-pointer gap-1.5 rounded-[8px] px-1.5 py-1 text-[12px] text-[#111827]"
+                      >
+                        <Plus className="size-[13px] text-(--primary)" />
+                        Add
+                      </DropdownMenuItem>
+                    )}
+                    {canUpdateTsProgram && (
+                      <DropdownMenuItem
+                        onClick={() => onEditRow(row)}
+                        className="cursor-pointer gap-1.5 rounded-[8px] px-1.5 py-1 text-[12px] text-[#111827]"
+                      >
+                        <Pencil className="size-[13px] text-(--primary)" />
+                        Edit
+                      </DropdownMenuItem>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            )
+          : // Primary (level 0) and Sub-Program Two (level 2): plain edit icon only
+            canUpdateTsProgram && (
+              <button
+                type="button"
+                onClick={() => onEditRow(row)}
+                className="inline-flex cursor-pointer items-center opacity-80 drop-shadow-[0_1px_0_rgba(108,93,211,0.35)] transition-opacity hover:opacity-100"
+              >
+                <img
+                  src={tableEditIcon}
+                  alt=""
+                  aria-hidden="true"
+                  className="size-[11px] object-contain"
+                />
+              </button>
+            )}
+      </TableCell>
+      )}
                     </TableRow>
                     {(row.hierarchyLevel === 0 || row.hierarchyLevel === 1) &&
                       expandedPrograms[row.id] &&
@@ -497,5 +565,7 @@ export function TimeStudyProgramTable({
       </div>
     </div>
   )
-}
+  }
+)
 
+TimeStudyProgramTable.displayName = "TimeStudyProgramTable"

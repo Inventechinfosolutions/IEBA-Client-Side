@@ -25,6 +25,7 @@ import type {
   ProgramFormValues,
   ProgramRow,
   ProgramTab,
+  TimeStudyProgramTableHandle,
 } from "../types"
 
 const tabs: ProgramTab[] = [
@@ -128,6 +129,7 @@ export function ProgramPage() {
   const [lastUpdatedBudgetRow, setLastUpdatedBudgetRow] = useState<ProgramRow | null>(null)
   const [lastUpdatedTimeStudyRow, setLastUpdatedTimeStudyRow] = useState<ProgramRow | null>(null)
   const budgetUnitTableRef = useRef<BudgetUnitTableHandle | null>(null)
+  const tsTableRef = useRef<TimeStudyProgramTableHandle | null>(null)
 
   const isSubProgramQuickAdd = modalMode === "add" && Boolean(selectedProgramForSubAdd)
 
@@ -141,7 +143,9 @@ export function ProgramPage() {
   const addSectionForLookups: ProgramFormSection | undefined =
     modalMode === "add"
       ? isSubProgramQuickAdd
-        ? "BU Sub-Program"
+        ? activeTab === "Time Study programs"
+          ? "Budget Unit"     // TS Sub-Program Two
+          : "BU Sub-Program"  // Budget Units sub-program
         : mapProgramTabToSection(activeTab)
       : undefined
 
@@ -294,6 +298,21 @@ export function ProgramPage() {
       }
     }
     if (modalMode === "add" && selectedProgramForSubAdd) {
+      // Time Study tab: adding Sub-Program Two from a Sub-Program One parent
+      // → opens "Budget Unit" section (mapped to TS Sub-Program Two form)
+      if (activeTab === "Time Study programs") {
+        return {
+          ...emptyFormValues,
+          formSection: "Budget Unit",
+          active: true,
+          budgetUnitName: selectedProgramForSubAdd.name,
+          budgetUnitCode: selectedProgramForSubAdd.code,
+          budgetUnitDepartment: selectedProgramForSubAdd.department,
+          budgetUnitDescription: selectedProgramForSubAdd.parentBudgetUnitName ?? "",
+          budgetUnitMedicalPct: "0.0",
+        }
+      }
+      // Budget Units tab: adding BU Sub-Program from a BU Program parent
       return {
         ...emptyFormValues,
         formSection: "BU Sub-Program",
@@ -390,6 +409,11 @@ export function ProgramPage() {
           }
         } else if (activeTab === "Time Study programs") {
           setLastUpdatedTimeStudyRow(updatedRow)
+          // If this was a quick-add Sub-Program Two from a Sub-Program One row,
+          // collapse the parent so re-expand triggers a fresh fetch showing the new record.
+          if (selectedProgramForSubAdd) {
+            tsTableRef.current?.collapseRow(selectedProgramForSubAdd.id)
+          }
         }
       }
     }
@@ -483,9 +507,11 @@ export function ProgramPage() {
                 />
               ) : (
                 <TimeStudyProgramTable
+                  ref={tsTableRef}
                   rows={programModule.rows}
                   isLoading={isTableLoading}
                   onEditRow={handleEditRow}
+                  onAddSubProgramFromParent={handleAddSubProgramFromProgram}
                   lastUpdatedRow={lastUpdatedTimeStudyRow}
                   readonly={isRestrictedRole}
                 />

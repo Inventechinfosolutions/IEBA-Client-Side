@@ -241,6 +241,7 @@ export type TimeStudyProgramFormProps = {
   departmentOptions: string[]
   budgetProgramNameOptions: string[]
   budgetProgramLookup: Record<string, { code: string; department: string }>
+  isQuickAdd?: boolean
 }
 
 export type TimeStudyFieldLabelProps = { text: string }
@@ -259,8 +260,14 @@ export type TimeStudyProgramTableProps = {
   rows: ProgramRow[]
   isLoading: boolean
   onEditRow: (row: ProgramRow) => void
+  onAddSubProgramFromParent?: (row: ProgramRow) => void
   lastUpdatedRow?: ProgramRow | null
   readonly?: boolean
+}
+
+export type TimeStudyProgramTableHandle = {
+  /** Collapse a specific row by id so re-expand triggers a fresh fetch. */
+  collapseRow: (rowId: string) => void
 }
 
 export type BudgetUnitTableHandle = {

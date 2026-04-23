@@ -35,6 +35,7 @@ export function TimeStudyProgramForm({
   departmentOptions,
   budgetProgramNameOptions,
   budgetProgramLookup,
+  isQuickAdd = false,
 }: TimeStudyProgramFormProps) {
   const isEditMode = formMode === "edit"
 
@@ -216,7 +217,7 @@ export function TimeStudyProgramForm({
           onBlur={() => {}}
           options={budgetProgramNameOptions.map((o) => ({ value: o, label: o }))}
           placeholder="Select TS Program"
-          disabled={isEditMode}
+          disabled={isEditMode || isQuickAdd}
           className="!min-h-[44px] h-[44px] !rounded-[7px] !border-[#c6cedd] !px-3 !pr-9 !text-[14px] !font-normal"
           itemButtonClassName="rounded-[4px] px-2.5 py-1.5"
           itemLabelClassName="!text-[14px]"

@@ -292,6 +292,7 @@ export const ProgramFormModal = forwardRef<ProgramFormModalHandle, ProgramFormMo
               departmentOptions={departmentOptions}
               budgetProgramNameOptions={budgetProgramNameOptions}
               budgetProgramLookup={budgetProgramLookup}
+              isQuickAdd={hideSectionTabs && activeSection === "Budget Unit"}
             />
           ) : (
             <BudgetUnitsForm
