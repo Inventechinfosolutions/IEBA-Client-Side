@@ -86,7 +86,6 @@ export function SecurityAssignmentsPanel({
   const isAddMode = mode === "add"
   const isEditMode = mode === "edit"
   const { watch, control, setValue, getValues } = useFormContext<UserModuleFormValues>()
-  const employeeName = `${watch("firstName") ?? ""} ${watch("lastName") ?? ""}`.trim()
   const assignedRoles = watch("roleAssignments") ?? []
   const securitySnapshots = watch("securityAssignedSnapshots") ?? []
   
@@ -357,13 +356,48 @@ export function SecurityAssignmentsPanel({
     setToggledA([])
   }
 
+  const firstName = watch("firstName")
+  const lastName = watch("lastName")
+  const fullName = `${firstName ?? ""} ${lastName ?? ""}`.trim()
+
   return (
     <div className="pt-1">
       <div className="mb-3 flex items-start justify-between">
-        <p className="select-none text-[12px] font-semibold uppercase text-[#111827]">{employeeName}</p>
+        <div className="flex items-center gap-4">
+          {isAddMode ? (
+            <>
+              <label className="flex cursor-not-allowed items-center gap-2 text-[11px] select-none text-[#9ca3af]">
+                <Controller
+                  name="copyUser"
+                  control={control}
+                  render={({ field }) => (
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={(checked) => field.onChange(checked === true)}
+                      disabled
+                      className="size-4 rounded-[3px] border-[#c2c6d1] data-[state=checked]:border-(--primary) data-[state=checked]:bg-(--primary) disabled:cursor-not-allowed disabled:bg-[#f3f4f6] disabled:border-[#e5e7eb] disabled:opacity-100"
+                    />
+                  )}
+                />
+                Copy User
+              </label>
 
-        <div className="flex items-center gap-5 pr-1 pt-1">
-          <label className="flex cursor-pointer select-none items-center gap-2 text-[11px] text-[#111827]">
+              <input
+                type="text"
+                readOnly
+                disabled
+                className="h-10 w-[280px] rounded-[10px] border border-[#e5e7eb] bg-[#f3f4f6] px-3 text-[11px] outline-none transition-colors cursor-not-allowed text-[#9ca3af]"
+              />
+            </>
+          ) : (
+            <p className="text-[12px] font-semibold uppercase text-[#111827]">
+              {fullName}
+            </p>
+          )}
+        </div>
+
+        <div className="flex items-center gap-5 pr-1 pt-2">
+          <label className="flex cursor-not-allowed items-center gap-2 text-[11px] select-none text-[#9ca3af]">
             <Controller
               name="supervisorApportioning"
               control={control}
@@ -371,27 +405,30 @@ export function SecurityAssignmentsPanel({
                 <Checkbox
                   checked={field.value}
                   onCheckedChange={(checked) => field.onChange(checked === true)}
-                  className="size-3.5 cursor-pointer rounded-[3px] border-[#c2c6d1] data-[state=checked]:border-(--primary) data-[state=checked]:bg-(--primary)"
+                  disabled
+                  className="size-4 rounded-[3px] border-[#c2c6d1] data-[state=checked]:border-(--primary) data-[state=checked]:bg-(--primary) disabled:cursor-not-allowed disabled:bg-[#f3f4f6] disabled:border-[#e5e7eb] disabled:opacity-100"
                 />
               )}
             />
             Supervisor Apportioning
           </label>
 
-          <label className="flex cursor-pointer select-none items-center gap-2 text-[11px] text-[#111827]">
-            <Controller
-              name="clientAdmin"
-              control={control}
-              render={({ field }) => (
-                <Checkbox
-                  checked={field.value}
-                  onCheckedChange={(checked) => field.onChange(checked === true)}
-                  className="size-3.5 cursor-pointer rounded-[3px] border-[#c2c6d1] data-[state=checked]:border-(--primary) data-[state=checked]:bg-(--primary)"
-                />
-              )}
-            />
-            Client Admin
-          </label>
+          {isSuperAdmin && (
+            <label className="flex cursor-pointer select-none items-center gap-2 text-[11px] text-[#111827]">
+              <Controller
+                name="clientAdmin"
+                control={control}
+                render={({ field }) => (
+                  <Checkbox
+                    checked={field.value}
+                    onCheckedChange={(checked) => field.onChange(checked === true)}
+                    className="size-4 cursor-pointer rounded-[3px] border-[#c2c6d1] data-[state=checked]:border-(--primary) data-[state=checked]:bg-(--primary)"
+                  />
+                )}
+              />
+              Client Admin
+            </label>
+          )}
         </div>
       </div>
 

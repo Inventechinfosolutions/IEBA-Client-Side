@@ -1,6 +1,7 @@
 import { Search, Check } from "lucide-react"
 import { TitleCaseInput } from "@/components/ui/title-case-input"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { toTitleCase } from "@/lib/utils"
 import tableEmptyIcon from "@/assets/icons/table-empty.png"
 import type { TransferPanelProps } from "../../types"
 
@@ -23,32 +24,41 @@ export function TransferPanel({
   return (
     <div className="flex flex-col rounded-[8px] border border-[#E5E7EB] bg-white overflow-hidden">
       {/* Header */}
-      <div className="flex h-11 items-center bg-[#6C5DD3] px-3 text-[13px] font-medium text-white gap-3">
-        <span className="flex-1">{title}</span>
-        {isActivity && (
-          <button
-            type="button"
-            onClick={onToggleAll}
-            disabled={isListDisabled || !onToggleAll}
-            className={`flex items-center gap-2 transition-opacity ${
-              isListDisabled ? "cursor-not-allowed! opacity-60" : "cursor-pointer hover:opacity-80"
-            }`}
-          >
-            <span className="text-white/90 text-[11px]">All</span>
-            <div
-              className={`flex size-[18px] items-center justify-center rounded-[5px] border-0 shadow-sm transition-all ${
-                allSelected
-                  ? "bg-white text-[#6C5DD3] opacity-100"
-                  : "bg-white text-transparent opacity-40 hover:opacity-60"
+      <div className="flex h-11 items-center bg-[#6C5DD3] px-3 text-[14px] font-bold text-white gap-3">
+        {!isActivity ? (
+          <>
+            <span className="text-[14px] font-bold text-white whitespace-nowrap">
+              {count} Items
+            </span>
+            <span className="flex-1 text-right">{title}</span>
+          </>
+        ) : (
+          <>
+            <span className="flex-1">{title}</span>
+            <button
+              type="button"
+              onClick={onToggleAll}
+              disabled={isListDisabled || !onToggleAll}
+              className={`flex items-center gap-2 transition-opacity ${
+                isListDisabled ? "cursor-not-allowed! opacity-60" : "cursor-pointer hover:opacity-80"
               }`}
             >
-              <Check className="size-3.2 stroke-3" />
-            </div>
-          </button>
+              <span className="text-white text-[12px] font-bold">All</span>
+              <div
+                className={`flex size-[18px] items-center justify-center rounded-[5px] border-0 shadow-sm transition-all ${
+                  allSelected
+                    ? "bg-[#6C5DD3] border-[#6C5DD3] text-white"
+                    : "bg-white text-transparent opacity-100 hover:brightness-95"
+                }`}
+              >
+                <Check className="size-3.2 stroke-3" />
+              </div>
+            </button>
+            <span className="text-[14px] font-bold text-white whitespace-nowrap">
+              {count}
+            </span>
+          </>
         )}
-        <span className="inline-flex items-center justify-center rounded-[6px] bg-white/20 px-2 py-0.5 text-[11px] font-bold whitespace-nowrap">
-          {count} Items
-        </span>
       </div>
 
       {/* Search/Input Area */}
@@ -128,10 +138,10 @@ export function TransferPanel({
                         {item.code ? (
                           <>
                             <span className="text-[#6C5DD3] font-bold">({item.code})</span>
-                            <span className={isSelected ? "text-[#6C5DD3]" : (isDisabled ? "text-[#9CA3AF]" : "text-[#111827]")}> - {item.name}</span>
+                            <span className={isSelected ? "text-[#6C5DD3]" : (isDisabled ? "text-[#9CA3AF]" : "text-[#111827]")}> - {toTitleCase(item.name)}</span>
                           </>
                         ) : (
-                          <span className={isSelected ? "text-[#6C5DD3]" : (isDisabled ? "text-[#9CA3AF]" : "text-[#374151]")}>{item.name}</span>
+                          <span className={isSelected ? "text-[#6C5DD3]" : (isDisabled ? "text-[#9CA3AF]" : "text-[#374151]")}>{toTitleCase(item.name)}</span>
                         )}
                       </span>
                     </div>

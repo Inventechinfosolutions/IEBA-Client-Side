@@ -9,6 +9,7 @@ import type {
   AddEmployeeDepartmentSupervisorRow,
   SupervisorMenuOpen,
   SupervisorPickerOption,
+  UserModuleFormMode,
   UserModuleFormValues,
 } from "../types"
 
@@ -63,7 +64,8 @@ const supervisorEmptyListSlot = (
 )
 
 /** UI tab: Supervisor Assignments */
-export function SupervisorAssignmentsPanel() {
+export function SupervisorAssignmentsPanel({ mode }: { mode: UserModuleFormMode }) {
+  const isAddMode = mode === "add"
   const [menuOpen, setMenuOpen] = useState<SupervisorMenuOpen>(null)
   const { control, setValue, watch } = useFormContext<UserModuleFormValues>()
   const employeeName = `${watch("firstName") ?? ""} ${watch("lastName") ?? ""}`.trim()
@@ -154,7 +156,11 @@ export function SupervisorAssignmentsPanel() {
 
   return (
     <div className="pt-1">
-      <p className="mb-5 select-none text-[12px] font-semibold uppercase text-[#111827]">{employeeName}</p>
+      {!isAddMode ? (
+        <p className="mb-5 select-none text-[12px] font-semibold uppercase text-[#111827]">
+          {employeeName}
+        </p>
+      ) : null}
       {supervisorsFetchEnabled && supervisorsQuery.isError ? (
         <p className="mb-3 text-[11px] text-red-500" role="alert">
           {supervisorsQuery.error instanceof Error

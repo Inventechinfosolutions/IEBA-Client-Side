@@ -16,6 +16,7 @@ import {
   useGetAddEmployeeJobClassifications,
   useGetAddEmployeeLocations,
   useGetMulticodeMasterCodes,
+  useGetAddEmployeeDepartments,
 } from "../queries/get-add-employee"
 import { useEmployeeLoginDetailsUi } from "../hooks/use-add-employee-form"
 import { formatPhoneUs10Input } from "../schemas"
@@ -29,7 +30,7 @@ export function EmployeeLoginDetailsSection({ isEditMode }: EmployeeLoginDetails
   const [jobClassificationMenuOpened, setJobClassificationMenuOpened] = useState(false)
   const [locationMenuOpened, setLocationMenuOpened] = useState(false)
 
-  const { isSuperAdmin, isDepartmentAdmin, user } = usePermissions()
+  const { isSuperAdmin, isDepartmentAdmin, isPayrollAdmin, isTimeStudyAdmin, user } = usePermissions()
   const showDeptAutoAssign = isDepartmentAdmin && !isSuperAdmin
 
   const jobClassificationsEnabled = !isEditMode || jobClassificationMenuOpened
@@ -259,21 +260,33 @@ export function EmployeeLoginDetailsSection({ isEditMode }: EmployeeLoginDetails
           ) : null}
         </div>
 
-        <div>
-          <label className={labelClassName}>*Login Id</label>
-          <Input
-            {...loginIdField}
-            className={inputClassName}
-            placeholder="Email"
-            onChange={(e) => {
-              void loginIdField.onChange(e)
-              setValue("emailAddress", e.target.value, {
-                shouldValidate: true,
-                shouldDirty: true,
-              })
-            }}
-          />
-        </div>
+        {!isEditMode ? (
+          <div>
+            <label className={labelClassName}>*Login Id</label>
+            <Input
+              {...loginIdField}
+              className={inputClassName}
+              placeholder="Email"
+              onChange={(e) => {
+                void loginIdField.onChange(e)
+                setValue("emailAddress", e.target.value, {
+                  shouldValidate: true,
+                  shouldDirty: true,
+                })
+              }}
+            />
+          </div>
+        ) : (
+          <div className="col-span-1">
+            <label className={labelClassName}>Login Id / Email Address</label>
+            <Input
+              {...loginIdField}
+              className={`${blockedInputClassName} cursor-not-allowed`}
+              readOnly
+              tabIndex={-1}
+            />
+          </div>
+        )}
 
         {!isEditMode ? (
           <>
@@ -334,21 +347,7 @@ export function EmployeeLoginDetailsSection({ isEditMode }: EmployeeLoginDetails
               ) : null}
             </div>
           </>
-        ) : (
-          <>
-            <div>
-              <label className={labelClassName}>Email Address</label>
-              <TitleCaseInput
-                {...register("emailAddress")}
-                className={`${blockedInputClassName} cursor-not-allowed`}
-                placeholder="Email"
-                readOnly
-                tabIndex={-1}
-              />
-            </div>
-            <div aria-hidden className="min-h-0" />
-          </>
-        )}
+        ) : null}
 
         {!isEditMode ? (
           <div>
@@ -537,10 +536,13 @@ export function EmployeeLoginDetailsSection({ isEditMode }: EmployeeLoginDetails
               control={control}
               render={({ field }) => {
                 const depMap = new Map<number, string>()
-                user?.departmentRoles?.forEach(dr => {
+                user?.departmentRoles?.forEach((dr) => {
                   if (dr.departmentId) depMap.set(dr.departmentId, dr.departmentName)
                 })
-                const options = Array.from(depMap.entries()).map(([id, name]) => ({ label: name, value: String(id) }))
+                const options = Array.from(depMap.entries()).map(([id, name]) => ({
+                  label: name,
+                  value: String(id),
+                }))
                 return (
                   <MultiSelectDropdown
                     value={field.value ?? ""}

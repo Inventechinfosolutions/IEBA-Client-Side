@@ -61,7 +61,7 @@ export function EmployeePanel({
             />
           ) : null}
           {activeTab === "supervisor" ? (
-            <SupervisorAssignmentsPanel />
+            <SupervisorAssignmentsPanel mode={mode} />
           ) : null}
           {activeTab === "timeStudy" ? (
             <TimeStudyAssignmentsPanel

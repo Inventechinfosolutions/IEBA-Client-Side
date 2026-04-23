@@ -151,7 +151,7 @@ export function TodoTable({
               </TableRow>
             ))
           ) : rows.length === 0 ? (
-            <TableRow className="hover:bg-transparent">
+            <TableRow className="border-b-0 hover:bg-transparent">
               <TableCell colSpan={6} className="h-[250px] p-0">
                 <div className="h-full">
                   <div className="flex h-[126px] items-center justify-center border-b border-[#eff0f5]">
@@ -210,7 +210,7 @@ export function TodoTable({
               ))}
             </>
           )}
-          <TableRow className="h-[120px] border-t border-[#e9ecf3] hover:bg-transparent">
+          <TableRow className="h-[120px] hover:bg-transparent">
             <TableCell colSpan={6} className="p-0">
               {footer ? (
                 <div className="flex h-[120px] w-full items-end px-5 pb-4">
