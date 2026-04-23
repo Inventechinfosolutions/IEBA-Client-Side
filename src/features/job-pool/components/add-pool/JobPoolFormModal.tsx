@@ -84,24 +84,26 @@ export function JobPoolFormModal({
         >
           {/* Header Section */}
           <div className="flex flex-col border-b border-[#F3F4F6]">
-            <div className="flex items-center justify-between px-8 py-6">
+            <div className="relative flex items-center justify-center px-8 py-6">
               <h2 className="text-[24px] font-semibold text-[#111827]">
                 {mode === "add" ? "Add Job Pool" : "Edit Job Pool"}
               </h2>
-              <Controller
-                control={form.control}
-                name="active"
-                render={({ field }) => (
-                  <label className="flex items-center gap-2.5 cursor-pointer select-none">
-                    <Checkbox
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                      className="size-5 rounded-[4px] border-[#E5E7EB] data-[state=checked]:border-[#6C5DD3] data-[state=checked]:bg-[#6C5DD3] data-[state=checked]:text-white shadow-sm"
-                    />
-                    <span className="text-[15px] font-medium text-[#374151]">Active</span>
-                  </label>
-                )}
-              />
+              <div className="absolute right-8">
+                <Controller
+                  control={form.control}
+                  name="active"
+                  render={({ field }) => (
+                    <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        className="size-5 rounded-[4px] border-[#E5E7EB] data-[state=checked]:border-[#6C5DD3] data-[state=checked]:bg-[#6C5DD3] data-[state=checked]:text-white shadow-sm"
+                      />
+                      <span className="text-[15px] font-medium text-[#374151]">Active</span>
+                    </label>
+                  )}
+                />
+              </div>
             </div>
           </div>
 
