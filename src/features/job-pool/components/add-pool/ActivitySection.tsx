@@ -29,9 +29,10 @@ export function ActivitySection({ form, departmentName }: ActivitySectionProps) 
   const assignedIds = form.watch("assignedActivityIds")
 
   const getFiltered = (items: TransferItem[], assignedIds: string[], search: string, isAssigned: boolean) => {
+    const assignedSet = new Set(assignedIds)
     const list = isAssigned 
-      ? items.filter(i => assignedIds.includes(i.id))
-      : items.filter(i => !assignedIds.includes(i.id))
+      ? items.filter(i => assignedSet.has(i.id))
+      : items.filter(i => !assignedSet.has(i.id))
     
     if (!search.trim()) return list
     return list.filter(i => i.name.toLowerCase().includes(search.toLowerCase()))

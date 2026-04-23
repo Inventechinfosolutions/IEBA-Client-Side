@@ -8,6 +8,7 @@ import { JobPoolFormModal } from "../components/add-pool/JobPoolFormModal"
 import { JobPoolTable } from "../components/JobPoolTable"
 import { JobPoolToolbar } from "../components/JobPoolToolbar"
 import { useJobPoolModule } from "../hooks/useJobPoolModule"
+import { useGetJobPoolById } from "../queries/getJobPoolById"
 import type {
   JobPoolFormMode,
   JobPoolFormValues,
@@ -58,6 +59,10 @@ export function JobPoolPage() {
     updateJobPoolAsync,
   } = useJobPoolModule({ page, pageSize, search, inactiveOnly, departmentId: deptFilter })
 
+  const { data: fetchedJobPool } = useGetJobPoolById(
+    modalMode === "edit" && modalOpen && selectedRow ? selectedRow.id : undefined
+  )
+
   function handleSearchChange(value: string) {
     setSearch(value)
     setPage(1)
@@ -97,17 +102,18 @@ export function JobPoolPage() {
     }
   }
 
+  const sourceRow = modalMode === "edit" ? (fetchedJobPool || selectedRow) : null
   const initialValues: JobPoolFormValues =
-    modalMode === "edit" && selectedRow
+    modalMode === "edit" && sourceRow
       ? {
-          name: selectedRow.name,
+          name: sourceRow.name,
           // Prefer raw department id when available so dependent lookups (job classifications)
           // can correctly call APIs that expect `departmentId`.
-          department: selectedRow.departmentId ?? selectedRow.department,
-          active: selectedRow.active,
-          assignedJobClassificationIds: selectedRow.jobClassifications.map(c => c.id),
-          assignedActivityIds: selectedRow.assignedActivityIds || [], 
-          assignedEmployeeIds: selectedRow.assignedEmployeeIds || [], 
+          department: sourceRow.departmentId ?? sourceRow.department,
+          active: sourceRow.active,
+          assignedJobClassificationIds: sourceRow.assignedJobClassificationIds || sourceRow.jobClassifications.map(c => c.id),
+          assignedActivityIds: sourceRow.assignedActivityIds || [], 
+          assignedEmployeeIds: sourceRow.assignedEmployeeIds || [], 
         }
       : emptyFormValues
 

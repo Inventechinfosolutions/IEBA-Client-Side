@@ -245,3 +245,14 @@ export async function updateJobPool(id: string, values: JobPoolFormValues): Prom
   return toJobPoolRow(payload as JobPoolResDto)
 }
 
+export async function getJobPoolById(id: string): Promise<JobPoolRow> {
+  const res = await api.get<ApiEnvelope<JobPoolResDto> | JobPoolResDto>(`/jobpool/${id}`)
+
+  const payload =
+    (res as ApiEnvelope<JobPoolResDto>).data ??
+    (res as JobPoolResDto | undefined) ??
+    {}
+
+  return toJobPoolRow(payload as JobPoolResDto)
+}
+

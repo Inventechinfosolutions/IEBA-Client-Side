@@ -5,12 +5,12 @@ import { useGetJobClassifications } from "../../../job-classification/queries/ge
 
 export function EmployeeSection({ form }: EmployeeSectionProps) {
   const selectedDept = form.watch("department")
-  const assignedClassIds = form.watch("assignedJobClassificationIds") || []
+
 
   // Fetch ALL classifications (no dept filter) so users are always found
   const { data: jobClassesData } = useGetJobClassifications({
     page: 1,
-    pageSize: 100,
+    pageSize: 10000,
     search: "",
     inactiveOnly: false,
   })
@@ -18,39 +18,34 @@ export function EmployeeSection({ form }: EmployeeSectionProps) {
   const [searchU, setSearchU] = useState("")
   const [searchA, setSearchA] = useState("")
 
-  // ASSIGNED employees = users from ASSIGNED classifications (right panel)
-  const assignedUsers = useMemo(() => {
-    if (!selectedDept || assignedClassIds.length === 0) return []
-    const items = jobClassesData?.items ?? []
-    const uniqueMap = new Map()
-    items
-      .filter(jc => assignedClassIds.includes(String(jc.id)))
-      .flatMap(jc => jc.users || [])
-      .forEach(u => {
-        if (u.id && !uniqueMap.has(u.id)) {
-          uniqueMap.set(u.id, { id: u.id, name: u.name })
-        }
-      })
-    return Array.from(uniqueMap.values())
-  }, [jobClassesData, selectedDept, assignedClassIds])
+  const assignedEmployeeIds = form.watch("assignedEmployeeIds") || []
 
-  // UNASSIGNED employees = users from UNASSIGNED classifications (left panel)
-  // Exclude users who already appear in Assigned panel
-  const unassignedUsers = useMemo(() => {
-    if (!selectedDept) return []
-    const assignedUserIds = new Set(assignedUsers.map(u => u.id))
+  const allUsersMap = useMemo(() => {
+    const map = new Map()
+    if (!selectedDept) return map
     const items = jobClassesData?.items ?? []
-    const uniqueMap = new Map()
     items
-      .filter(jc => !assignedClassIds.includes(String(jc.id)))
       .flatMap(jc => jc.users || [])
       .forEach(u => {
-        if (u.id && !assignedUserIds.has(u.id) && !uniqueMap.has(u.id)) {
-          uniqueMap.set(u.id, { id: u.id, name: u.name })
+        if (u.id && !map.has(u.id)) {
+          map.set(u.id, { id: u.id, name: u.name })
         }
       })
-    return Array.from(uniqueMap.values())
-  }, [jobClassesData, selectedDept, assignedClassIds, assignedUsers])
+    return map
+  }, [jobClassesData, selectedDept])
+
+  const assignedUsers = useMemo(() => {
+    return assignedEmployeeIds
+      .map(id => allUsersMap.get(id))
+      .filter(Boolean)
+  }, [assignedEmployeeIds, allUsersMap])
+
+  const unassignedUsers = useMemo(() => {
+    const assignedSet = new Set(assignedEmployeeIds)
+    return Array.from(allUsersMap.values()).filter(
+      u => !assignedSet.has(u.id)
+    )
+  }, [assignedEmployeeIds, allUsersMap])
 
   const filteredU = searchU.trim()
     ? unassignedUsers.filter(u => u.name.toLowerCase().includes(searchU.toLowerCase()))

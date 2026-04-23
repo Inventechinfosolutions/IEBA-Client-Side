@@ -5,48 +5,27 @@ import { TransferPanel } from "./TransferPanel"
 import type { TransferItem, JobClassificationSectionProps } from "../../types"
 
 import { useGetJobClassifications } from "../../../job-classification/queries/getJobClassifications"
-import { useGetJobPools } from "../../queries/getJobPools"
-
 export function JobClassificationSection({ form }: JobClassificationSectionProps) {
   const selectedDept = form.watch("department")
 
   const { data: jobClassesData } = useGetJobClassifications({
     page: 1,
-    pageSize: 100,
+    pageSize: 10000,
     search: "",
     inactiveOnly: false,
   })
 
-  const { data: deptPoolsData } = useGetJobPools({
-    departmentId: selectedDept || undefined,
-    page: 1,
-    pageSize: 100,
-    search: "",
-    inactiveOnly: false,
-  })
 
-  const deptPoolIds = useMemo(() => {
-    return new Set((deptPoolsData?.items ?? []).map(p => String(p.id)))
-  }, [deptPoolsData])
-  
-  const currentPoolId = form.watch("id")
   const assignedIds = form.watch("assignedJobClassificationIds")
 
   const allJobClasses = useMemo(() => {
     if (!selectedDept) return []
-    return jobClassesData?.items.map((jc) => {
-      const assignedIds = (jc.jobPoolId || "").split(",").map(id => id.trim())
-      const isAlreadyInDept = assignedIds.some(id => 
-        deptPoolIds.has(id) && String(id) !== String(currentPoolId || "")
-      )
-      
-      return { 
-        id: String(jc.id), 
-        name: jc.name,
-        disabled: isAlreadyInDept 
-      }
-    }) ?? []
-  }, [jobClassesData, selectedDept, deptPoolIds, currentPoolId])
+    return jobClassesData?.items.map((jc) => ({ 
+      id: String(jc.id), 
+      name: jc.name,
+      disabled: false 
+    })) ?? []
+  }, [jobClassesData, selectedDept])
 
   const [searchU, setSearchU] = useState("")
   const [searchA, setSearchA] = useState("")
@@ -54,9 +33,10 @@ export function JobClassificationSection({ form }: JobClassificationSectionProps
   const [toggledA, setToggledA] = useState<string[]>([])
 
   const getFiltered = (items: TransferItem[], assignedIds: string[], search: string, isAssigned: boolean) => {
+    const assignedSet = new Set(assignedIds)
     const list = isAssigned 
-      ? items.filter(i => assignedIds.includes(i.id)).map(i => ({ ...i, disabled: false }))
-      : items.filter(i => !assignedIds.includes(i.id))
+      ? items.filter(i => assignedSet.has(i.id)).map(i => ({ ...i, disabled: false }))
+      : items.filter(i => !assignedSet.has(i.id))
     
     if (!search.trim()) return list
     return list.filter(i => i.name.toLowerCase().includes(search.toLowerCase()))

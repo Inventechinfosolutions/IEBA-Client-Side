@@ -33,6 +33,7 @@ export function JobPoolFormModal({
   const form = useForm<JobPoolFormValues>({
     resolver: zodResolver(jobPoolFormSchema),
     defaultValues: initialValues,
+    values: initialValues,
   })
 
   const [isDepartmentOpen, setIsDepartmentOpen] = useState(false)
