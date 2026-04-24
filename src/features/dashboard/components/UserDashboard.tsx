@@ -39,7 +39,7 @@ export function UserDashboard() {
     departmentId,
     roleId,
   })
-  const selfLeave = useSelfLeave(userId)
+  const selfLeave = useSelfLeave()
   const todos = useTodos(userId)
   const reports = useReportsByRole({ departmentId, roleId })
   const holidays = useHolidays()

@@ -89,7 +89,7 @@ function CostPoolCreateDialogContent({
   onCreated: () => void
 }) {
   const { user } = useAuth()
-  const { isSuperAdmin, isDepartmentAdmin } = usePermissions()
+  const { isSuperAdmin } = usePermissions()
   const isRestricted = !isSuperAdmin
   
   const departmentsQuery = useGetDepartments({ status: "active", page: 1, limit: 100 })

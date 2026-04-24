@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query"
 import { departmentKeys } from "../keys"
-import { getAllDepartments, getDepartments } from "../api/departments"
+import { getDepartments } from "../api/departments"
 
 export function useGetDepartments(
   params: {

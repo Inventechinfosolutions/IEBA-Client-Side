@@ -64,7 +64,8 @@ export function useAddEmployeeForm({ mode, initialValues, onSave }: UseAddEmploy
   }, [])
 
   const methods = useForm<UserModuleFormValues>({
-    resolver: zodResolver(isEditMode ? userModuleFormEditSchema : userModuleFormSchema),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    resolver: zodResolver(isEditMode ? userModuleFormEditSchema : userModuleFormSchema) as any,
     defaultValues: initialValues,
     shouldUnregister: false,
     /** After a field is touched once, validation re-runs on change so password length errors clear when corrected. */
@@ -143,7 +144,7 @@ export function useAddEmployeeForm({ mode, initialValues, onSave }: UseAddEmploy
         ...data,
         locationId: data.locationId ?? snapshot.locationId,
         location: data.location ?? snapshot.location ?? "",
-      }
+      } as unknown as UserModuleFormValues
 
       // Add-mode tab-specific required checks (not represented in the base schema).
       if (!isEditMode && tabWhenSaving === "security") {

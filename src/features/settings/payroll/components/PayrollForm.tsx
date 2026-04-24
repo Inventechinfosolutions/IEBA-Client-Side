@@ -149,7 +149,7 @@ function SortablePayrollRow({ row, storageIndex, updateRow, isSortingActive }: S
 }
 
 export function PayrollForm() {
-  const { control, getValues, trigger, watch } = useFormContext<SettingsFormValues>()
+  const { control, getValues, watch } = useFormContext<SettingsFormValues>()
   const { update, replace } = useFieldArray({ control, name: "payroll.columns" })
 
   const columns = watch("payroll.columns") as PayrollColumnSettingModel[]

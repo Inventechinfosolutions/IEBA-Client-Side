@@ -2,8 +2,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 import {
   unassignDepartmentRolePermissions,
-  type MutateDepartmentRolePermissionsBody,
 } from "../api/departmentRoles"
+import type { MutateDepartmentRolePermissionsBody } from "../types"
 import { departmentRoleKeys } from "../keys"
 import type { DepartmentRolesListFilters } from "../types"
 

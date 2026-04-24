@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod"
-import { AlertCircle, Check, Inbox, Trash2, X } from "lucide-react"
+import { AlertCircle, Check, Inbox, Trash2 } from "lucide-react"
 import type { FormEvent } from "react"
 import { useMemo, useState } from "react"
 import { useForm, useWatch } from "react-hook-form"
