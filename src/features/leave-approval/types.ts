@@ -207,6 +207,7 @@ export type GetLeaveApprovalsParams = {
   filters: LeaveApprovalFilters
   sort: LeaveApprovalSortState
   enabled?: boolean
+  supervisorUserId?: string
 }
 
 export type LeaveApprovalListResponse = {

@@ -8,6 +8,7 @@ import { useLeaveApprovals } from "../hooks/useLeaveApprovals"
 import { useUpdateLeaveApproval } from "../mutations/updateLeaveApproval"
 import { toast } from "sonner"
 import { Check } from "lucide-react"
+import { useAuth } from "@/contexts/AuthContext"
 
 import { usePermissions } from "@/hooks/usePermissions"
 import type {
@@ -33,6 +34,7 @@ export function LeaveApprovalPage() {
     isSuperAdmin, 
     canReview
   } = usePermissions()
+  const { user } = useAuth()
 
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
@@ -51,7 +53,8 @@ export function LeaveApprovalPage() {
     pageSize,
     filters,
     sort,
-    enabled: hasAccess
+    enabled: hasAccess,
+    supervisorUserId: isSuperAdmin ? undefined : user?.id,
   })
 
   if (!hasAccess) {

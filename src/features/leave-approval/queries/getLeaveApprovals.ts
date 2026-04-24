@@ -42,6 +42,7 @@ export function useGetLeaveApprovals(params: GetLeaveApprovalsParams) {
         sort: params.sort?.direction === "asc" ? "ASC" : "DESC",
         status: statusFilter,
         filterUserId,
+        userId: params.supervisorUserId,
       })
 
       if (isLeaveDetailsPayload(res)) {
