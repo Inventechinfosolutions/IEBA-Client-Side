@@ -42,6 +42,7 @@ type JobPoolUserResDto = {
   firstName?: string | null
   lastName?: string | null
   name?: string | null
+  status?: string | null
 }
 
 type JobPoolDepartmentResDto = {
@@ -90,6 +91,7 @@ function toJobClassificationTag(dto: JobPoolJobClassificationResDto): JobClassif
   return {
     id,
     name: code && name ? `${code} | ${name}` : code || name || id,
+    status: typeof dto.status === "string" ? dto.status : undefined,
   }
 }
 
@@ -136,6 +138,7 @@ function toJobPoolRow(dto: JobPoolResDto): JobPoolRow {
     name: user.name ?? undefined,
     firstName: user.firstName ?? undefined,
     lastName: user.lastName ?? undefined,
+    status: user.status ?? undefined,
   }))
 
   return {

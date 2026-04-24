@@ -143,7 +143,7 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
     const [isMultiCodesOpen, setIsMultiCodesOpen] = useState(false)
     const [multiCodesSearch, setMultiCodesSearch] = useState("")
 
-    const { canUpdate: hasUpdatePerm } = usePermissions()
+    const { canUpdate: hasUpdatePerm, isDepartmentAdmin } = usePermissions()
     const canUpdateDepartment = hasUpdatePerm("department")
 
     const usersQuery = useGetDepartmentUsers()
@@ -272,7 +272,11 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
     const onSubmit = (_data: DepartmentUpsertValues) => {
         // If we're on the settings tab and submitting the main form
         if (activeTab === "settings") {
-            setShowCreateConfirm(true)
+            if (id) {
+                void handleSave()
+            } else {
+                setShowCreateConfirm(true)
+            }
         }
     }
 
@@ -367,8 +371,9 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
             if (!isValid) return
         }
         if (value === "details" && (departmentId != null || isDepartmentSaved)) {
-            // Edit mode should land on Address first; create mode can keep Primary as the default after save.
-            setDetailsTab(id ? "address" : "primary")
+            // Edit mode or unsaved create mode should land on Address first.
+            // Only after successful creation (departmentId set in create flow) do we land on Primary.
+            setDetailsTab((id || !departmentId) ? "address" : "primary")
         }
         setActiveTab(value as ActiveTab)
     }
@@ -427,7 +432,8 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                                             id="code"
                                             placeholder="Code"
                                             {...register("code")}
-                                            className="h-[57px] rounded-[8px] border-[#E5E7EB] focus:ring-1 focus:ring-[#6C5DD3]"
+                                            readOnly={isDepartmentAdmin}
+                                            className={`h-[57px] rounded-[8px] border-[#E5E7EB] focus:ring-1 focus:ring-[#6C5DD3] ${isDepartmentAdmin ? 'cursor-not-allowed bg-[#F9FAFB]' : ''}`}
                                         />
                                         {errors.code && <p className="text-[12px] text-red-500">{errors.code.message}</p>}
                                     </div>
@@ -439,7 +445,8 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                                             id="name"
                                             placeholder="Enter Department"
                                             {...register("name")}
-                                            className="h-[57px] w-full rounded-[8px] border-[#E5E7EB] focus:ring-1 focus:ring-[#6C5DD3]"
+                                            readOnly={isDepartmentAdmin}
+                                            className={`h-[57px] w-full rounded-[8px] border-[#E5E7EB] focus:ring-1 focus:ring-[#6C5DD3] ${isDepartmentAdmin ? 'cursor-not-allowed bg-[#F9FAFB]' : ''}`}
                                         />
                                         {errors.name && <p className="text-[12px] text-red-500">{errors.name.message}</p>}
                                     </div>
@@ -590,7 +597,7 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                                                         }}
                                                     >
                                                         <SelectTrigger style={{ height: '57px' }} className="w-full rounded-[8px] border-[#E5E7EB] text-[#111827] focus:ring-1 focus:ring-[#3B82F6] data-[state=open]:border-[#3B82F6]">
-                                                            <SelectValue placeholder={`Select Contact Name`} />
+                                                            <SelectValue placeholder={id ? "Not Assigned" : "Select Contact Name"} />
                                                         </SelectTrigger>
                                                         <SelectContent position="popper" sideOffset={8} className="w-[var(--radix-select-trigger-width)] bg-white rounded-[8px] shadow-[0_4px_16px_#00000024] p-1 border-[#E5E7EB] z-50">
                                                             {usersQuery.isLoading && (
@@ -670,7 +677,7 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                                         }}
                                         className="w-[140px] h-[50px] bg-[#6C5DD3] hover:bg-[#5B4DC5] rounded-[8px] text-[16px] font-[500]"
                                     >
-                                        {detailsTab === "address" && !isDepartmentSaved ? "Next" : "Save"}
+                                        {detailsTab === "address" && !departmentId ? "Next" : "Save"}
                                     </Button>
                                     <Button
                                         type="button"
@@ -852,7 +859,11 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                                                 "code", "name", "address.street", "address.city", "address.state", "address.zip"
                                             ])
                                             if (isValid) {
-                                                setShowCreateConfirm(true)
+                                                if (id) {
+                                                    void handleSave()
+                                                } else {
+                                                    setShowCreateConfirm(true)
+                                                }
                                             } else {
                                                 setActiveTab("details")
                                                 setShowSummaryErrors(true)

@@ -12,6 +12,7 @@ export type JobClassificationTag = {
   id: string
   name: string
   isHighlighted?: boolean
+  status?: string
 }
 
 export type TransferItem = {
@@ -36,7 +37,7 @@ export type JobPoolRow = {
   departmentId?: string
   departmentName?: string
   jobClassificationName?: { name: string; status: string }[]
-  userprofiles?: { id: string; name?: string; firstName?: string; lastName?: string }[]
+  userprofiles?: { id: string; name?: string; firstName?: string; lastName?: string; status?: string }[]
 }
 
 export type GetJobPoolsParams = {
