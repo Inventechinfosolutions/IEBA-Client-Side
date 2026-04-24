@@ -147,7 +147,7 @@ export function SingleSelectSearchDropdown({
               setSearchQuery(e.target.value)
               if (!open) openMenu()
             }}
-            onBlur={(e) => {
+            onBlur={() => {
               if (selectingRef.current) return
 
               onBlur()

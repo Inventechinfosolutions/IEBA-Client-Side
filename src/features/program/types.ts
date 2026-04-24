@@ -268,6 +268,8 @@ export type TimeStudyProgramTableProps = {
 export type TimeStudyProgramTableHandle = {
   /** Collapse a specific row by id so re-expand triggers a fresh fetch. */
   collapseRow: (rowId: string) => void
+  /** Merge updated row into local state to survive multiple edits */
+  patchTimeStudyProgramRow: (updatedRow: ProgramRow) => void
 }
 
 export type BudgetUnitTableHandle = {

@@ -110,6 +110,7 @@ export const ProgramFormModal = forwardRef<ProgramFormModalHandle, ProgramFormMo
     isTimeStudyContext
       ? {
           "Budget Unit": [
+            "active",
             "budgetUnitName",
             "budgetUnitCode",
             "budgetUnitDepartment",
@@ -118,12 +119,14 @@ export const ProgramFormModal = forwardRef<ProgramFormModalHandle, ProgramFormMo
             "buProgramProgramCode",
           ],
           "BU Program": [
+            "active",
             "buProgramDepartment",
             "buProgramBudgetUnitName",
             "buProgramProgramName",
             "buProgramProgramCode",
           ],
           "BU Sub-Program": [
+            "active",
             "buSubProgramBudgetUnitProgramName",
             "buSubProgramDepartment",
             "buSubProgramBudgetCode",
@@ -133,6 +136,7 @@ export const ProgramFormModal = forwardRef<ProgramFormModalHandle, ProgramFormMo
         }
       : {
           "Budget Unit": [
+            "active",
             "budgetUnitDepartment",
             "budgetUnitCode",
             "budgetUnitName",
@@ -140,6 +144,7 @@ export const ProgramFormModal = forwardRef<ProgramFormModalHandle, ProgramFormMo
             "budgetUnitMedicalPct",
           ],
           "BU Program": [
+            "active",
             "buProgramBudgetUnitName",
             "buProgramCode",
             "buProgramDepartment",
@@ -149,6 +154,7 @@ export const ProgramFormModal = forwardRef<ProgramFormModalHandle, ProgramFormMo
             "buProgramMedicalPct",
           ],
           "BU Sub-Program": [
+            "active",
             "buSubProgramBudgetUnitProgramName",
             "buSubProgramBudgetCode",
             "buSubProgramDepartment",
@@ -187,7 +193,7 @@ export const ProgramFormModal = forwardRef<ProgramFormModalHandle, ProgramFormMo
         </span>
       ),
       className:
-        "!w-fit !max-w-[340px] !min-h-[35px] !rounded-[8px] !border-0 !px-3 !py-2 !text-[12px] !shadow-[0_8px_22px_rgba(17,24,39,0.18)]",
+        "!w-fit !max-w-none !whitespace-nowrap !min-h-[35px] !rounded-[8px] !border-0 !px-3 !py-2 !text-[12px] !shadow-[0_8px_22px_rgba(17,24,39,0.18)]",
     })
   }
 

@@ -14,7 +14,7 @@ import { ProgramTabs } from "../components/program-tabs"
 import { TimeStudyProgramTable } from "../components/time-study-program-table"
 import { ProgramToolbar } from "../components/program-toolbar"
 import { useProgramModule } from "../hooks/use-program-module"
-import { apiGetProgramRowById } from "../api"
+import { apiGetProgramRowById, apiCheckActiveSubPrograms } from "../api"
 import { useGetProgramFormOptions } from "../queries/get-program-form-options"
 import { programFormSchema } from "../schemas"
 import type {
@@ -130,6 +130,7 @@ export function ProgramPage() {
   const [lastUpdatedTimeStudyRow, setLastUpdatedTimeStudyRow] = useState<ProgramRow | null>(null)
   const budgetUnitTableRef = useRef<BudgetUnitTableHandle | null>(null)
   const tsTableRef = useRef<TimeStudyProgramTableHandle | null>(null)
+  const [activeChildrenFlags, setActiveChildrenFlags] = useState({ one: false, two: false })
 
   const isSubProgramQuickAdd = modalMode === "add" && Boolean(selectedProgramForSubAdd)
 
@@ -294,6 +295,8 @@ export function ProgramPage() {
         buProgramProgramName: selectedRow.name,
         buProgramDescription: selectedRow.description,
         buProgramMedicalPct: selectedRow.medicalPct,
+        hasActiveSubProgramOne: activeChildrenFlags.one,
+        hasActiveSubProgramTwo: activeChildrenFlags.two,
         ...buSubProgramInitial,
       }
     }
@@ -354,6 +357,13 @@ export function ProgramPage() {
     try {
       setIsEditDetailLoading(true)
       const freshRow = await apiGetProgramRowById({ activeTab, row })
+      
+      let flags = { hasActiveSubProgramOne: false, hasActiveSubProgramTwo: false }
+      if (activeTab === "Time Study programs") {
+        flags = await apiCheckActiveSubPrograms(freshRow)
+      }
+      setActiveChildrenFlags({ one: flags.hasActiveSubProgramOne, two: flags.hasActiveSubProgramTwo })
+
       setModalMode("edit")
       setSelectedRow(freshRow)
       setSelectedProgramForSubAdd(null)
@@ -409,6 +419,7 @@ export function ProgramPage() {
           }
         } else if (activeTab === "Time Study programs") {
           setLastUpdatedTimeStudyRow(updatedRow)
+          tsTableRef.current?.patchTimeStudyProgramRow(updatedRow)
           // If this was a quick-add Sub-Program Two from a Sub-Program One row,
           // collapse the parent so re-expand triggers a fresh fetch showing the new record.
           if (selectedProgramForSubAdd) {

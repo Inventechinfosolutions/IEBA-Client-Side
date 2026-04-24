@@ -59,6 +59,7 @@ export const TimeStudyProgramTable = forwardRef<TimeStudyProgramTableHandle, Tim
   const [expandedPrograms, setExpandedPrograms] = useState<Record<string, boolean>>({})
   const [childrenByParentId, setChildrenByParentId] = useState<Record<string, ProgramRow[]>>({})
   const [childrenLoading, setChildrenLoading] = useState<Record<string, boolean>>({})
+  const [patchedRows, setPatchedRows] = useState<Record<string, ProgramRow>>({})
   const childrenInFlightRef = useRef(new Set<string>())
 
   useImperativeHandle(ref, () => ({
@@ -70,6 +71,9 @@ export const TimeStudyProgramTable = forwardRef<TimeStudyProgramTableHandle, Tim
         return updated
       })
       setExpandedPrograms((prev) => ({ ...prev, [rowId]: false }))
+    },
+    patchTimeStudyProgramRow: (updatedRow: ProgramRow) => {
+      setPatchedRows((prev) => ({ ...prev, [updatedRow.id]: updatedRow }))
     },
   }), [])
 
@@ -98,6 +102,12 @@ export const TimeStudyProgramTable = forwardRef<TimeStudyProgramTableHandle, Tim
     const flattened: ProgramRow[] = []
 
     const applyUpdatedRow = (row: ProgramRow): ProgramRow => {
+      if (patchedRows[row.id]) {
+        return {
+          ...row,
+          ...patchedRows[row.id],
+        }
+      }
       if (lastUpdatedRow && row.id === lastUpdatedRow.id) {
         return {
           ...row,
@@ -131,7 +141,7 @@ export const TimeStudyProgramTable = forwardRef<TimeStudyProgramTableHandle, Tim
       }
     }
     return flattened
-  }, [expandedPrograms, sortedPrograms, childrenByParentId, lastUpdatedRow])
+  }, [expandedPrograms, sortedPrograms, childrenByParentId, lastUpdatedRow, patchedRows])
 
   const mapTimeStudyChildToRow = (
     raw: TimeStudyProgramResDto,
@@ -201,7 +211,6 @@ export const TimeStudyProgramTable = forwardRef<TimeStudyProgramTableHandle, Tim
       search.set("page", "1")
       search.set("limit", "100")
       search.set("sort", "ASC")
-      search.set("status", "active")
 
       if (isLevel0) {
         // Fetch direct secondary children of this primary
@@ -473,7 +482,7 @@ export const TimeStudyProgramTable = forwardRef<TimeStudyProgramTableHandle, Tim
                     sideOffset={6}
                     className="w-[92px]! min-w-[92px]! rounded-[6px] border border-[#edf0f6] p-1 shadow-[0_8px_20px_rgba(17,24,39,0.14)]"
                   >
-                    {canAddTsProgram && (
+                    {canAddTsProgram && row.active && (
                       <DropdownMenuItem
                         onClick={() => onAddSubProgramFromParent?.(row)}
                         className="cursor-pointer gap-1.5 rounded-[8px] px-1.5 py-1 text-[12px] text-[#111827]"

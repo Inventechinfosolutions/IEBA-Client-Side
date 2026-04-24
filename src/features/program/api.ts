@@ -783,6 +783,77 @@ export async function apiGetProgramActivityRelationTimeStudyPrograms(
   return { data: maybeArray }
 }
 
+export async function apiCheckActiveSubPrograms(row: ProgramRow): Promise<{ hasActiveSubProgramOne: boolean, hasActiveSubProgramTwo: boolean }> {
+  let hasActiveSubProgramOne = false
+  let hasActiveSubProgramTwo = false
+
+  if (row.tab === "Time Study programs" && row.id) {
+    const type = (row.type ?? "").toLowerCase().trim()
+    
+    if (type === "primary" || type === "") {
+      const search = new URLSearchParams()
+      search.set("page", "1")
+      search.set("limit", "100")
+      search.set("status", "active")
+      search.set("type", "secondary")
+      if (row.timeStudyBudgetProgramId) {
+        search.set("budgetProgramId", row.timeStudyBudgetProgramId)
+      }
+      const res = await api.get<any>(`/timestudyprograms?${search.toString()}`)
+      const payload = res?.data ?? res
+      const list: any[] = Array.isArray(payload?.data) ? payload.data : []
+      const activeChildren = list.filter((item: any) => String(item.parentId) === String(row.id))
+      hasActiveSubProgramOne = activeChildren.length > 0
+
+      // Also check if any grandchild (subprogram) is active
+      const searchAllSec = new URLSearchParams()
+      searchAllSec.set("page", "1")
+      searchAllSec.set("limit", "100")
+      searchAllSec.set("type", "secondary")
+      if (row.timeStudyBudgetProgramId) {
+        searchAllSec.set("budgetProgramId", row.timeStudyBudgetProgramId)
+      }
+      const resAllSec = await api.get<any>(`/timestudyprograms?${searchAllSec.toString()}`)
+      const payloadAllSec = resAllSec?.data ?? resAllSec
+      const listAllSec: any[] = Array.isArray(payloadAllSec?.data) ? payloadAllSec.data : []
+      const mySecondaries = listAllSec.filter((item: any) => String(item.parentId) === String(row.id))
+      const mySecondaryIds = mySecondaries.map((s: any) => String(s.id))
+
+      if (mySecondaryIds.length > 0) {
+        const searchActSub = new URLSearchParams()
+        searchActSub.set("page", "1")
+        searchActSub.set("limit", "100")
+        searchActSub.set("status", "active")
+        searchActSub.set("type", "subprogram")
+        if (row.timeStudyBudgetProgramId) {
+          searchActSub.set("budgetProgramId", row.timeStudyBudgetProgramId)
+        }
+        const resActSub = await api.get<any>(`/timestudyprograms?${searchActSub.toString()}`)
+        const payloadActSub = resActSub?.data ?? resActSub
+        const listActSub: any[] = Array.isArray(payloadActSub?.data) ? payloadActSub.data : []
+        const activeMySubprograms = listActSub.filter((item: any) => mySecondaryIds.includes(String(item.parentId)))
+        hasActiveSubProgramTwo = activeMySubprograms.length > 0
+      }
+    } else if (type === "secondary") {
+      const search = new URLSearchParams()
+      search.set("page", "1")
+      search.set("limit", "100")
+      search.set("status", "active")
+      search.set("type", "subprogram")
+      if (row.timeStudyBudgetProgramId) {
+        search.set("budgetProgramId", row.timeStudyBudgetProgramId)
+      }
+      const res = await api.get<any>(`/timestudyprograms?${search.toString()}`)
+      const payload = res?.data ?? res
+      const list: any[] = Array.isArray(payload?.data) ? payload.data : []
+      const activeChildren = list.filter((item: any) => String(item.parentId) === String(row.id))
+      hasActiveSubProgramTwo = activeChildren.length > 0
+    }
+  }
+
+  return { hasActiveSubProgramOne, hasActiveSubProgramTwo }
+}
+
 export async function apiGetProgramActivityRelationActivities(
   departmentId: number,
   programId: number,

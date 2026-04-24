@@ -26,6 +26,8 @@ const programFormBaseSchema = z.object({
   programActivityRelationDepartment: z.string().trim(),
   programActivityRelationProgram: z.string().trim(),
   programActivityRelationSort: z.string().trim(),
+  hasActiveSubProgramOne: z.boolean().optional(),
+  hasActiveSubProgramTwo: z.boolean().optional(),
 })
 
 export const programFormSchema = programFormBaseSchema.superRefine((values, ctx) => {
@@ -109,6 +111,32 @@ export const timeStudyProgramFormSchema = programFormBaseSchema.superRefine((val
         path: [field],
         message: "Please fill all the required fields",
       })
+    }
+  }
+
+  if (values.active === false) {
+    if (values.formSection === "BU Program") {
+      if (values.hasActiveSubProgramOne) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["active"],
+          message: "Can't change status as Sub Time Study Program are still active",
+        })
+      } else if (values.hasActiveSubProgramTwo) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["active"],
+          message: "Can't change status as Sub Time Study Program two are still active",
+        })
+      }
+    } else if (values.formSection === "BU Sub-Program") {
+      if (values.hasActiveSubProgramTwo) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["active"],
+          message: "Can't change status as Sub Time Study Program two are still active",
+        })
+      }
     }
   }
 })
