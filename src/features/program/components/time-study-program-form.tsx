@@ -1,5 +1,5 @@
 import { Checkbox } from "@/components/ui/checkbox"
-import { SingleSelectDropdown } from "@/components/ui/dropdown"
+import { SingleSelectSearchDropdown } from "@/components/ui/dropdown-search"
 import { TitleCaseInput } from "@/components/ui/title-case-input"
 import type {
   TimeStudyFieldLabelProps,
@@ -23,7 +23,7 @@ function InputShell({
       onChange={(event) => onChange?.(event.target.value)}
       placeholder={placeholder}
       disabled={disabled}
-      className="h-[44px] rounded-[10px] border border-[#d4d8e2] bg-white px-3 text-[14px] text-[#111827] placeholder:text-[14px] placeholder:text-[#b0b8c8] focus-visible:border-[#6C5DD3] focus-visible:ring-0 disabled:pointer-events-auto disabled:cursor-not-allowed disabled:!border-[0.8px] disabled:!border-[#cfd4dd] disabled:!bg-[#d2d4d9]/20 disabled:!text-black disabled:opacity-100"
+      className="h-[44px] rounded-[10px] border border-[#d4d8e2] bg-white px-3 text-[14px] text-[#111827] placeholder:text-[14px] placeholder:text-[#b0b8c8] focus-visible:border-[#6C5DD3] focus-visible:ring-0 disabled:pointer-events-auto disabled:cursor-not-allowed disabled:border-[0.8px]! disabled:border-[#cfd4dd]! disabled:bg-[#d2d4d9]/20! disabled:text-black! disabled:opacity-100"
     />
   )
 }
@@ -35,6 +35,7 @@ export function TimeStudyProgramForm({
   departmentOptions,
   budgetProgramNameOptions,
   budgetProgramLookup,
+  isQuickAdd = false,
 }: TimeStudyProgramFormProps) {
   const isEditMode = formMode === "edit"
 
@@ -43,7 +44,7 @@ export function TimeStudyProgramForm({
       <div className="mx-auto grid w-[500px] grid-cols-1 gap-4">
         <div className="space-y-1">
           <FieldLabel text="*Department" />
-          <SingleSelectDropdown
+          <SingleSelectSearchDropdown
             value={form.watch("buProgramDepartment") ?? ""}
             onChange={(value) =>
               form.setValue("buProgramDepartment", value, { shouldDirty: true, shouldValidate: true })
@@ -59,7 +60,7 @@ export function TimeStudyProgramForm({
         </div>
         <div className="space-y-1">
           <FieldLabel text="*Budget (BU) Program" />
-          <SingleSelectDropdown
+          <SingleSelectSearchDropdown
             value={form.watch("buProgramBudgetUnitName") ?? ""}
             onChange={(value) =>
               form.setValue("buProgramBudgetUnitName", value, { shouldDirty: true, shouldValidate: true })
@@ -116,7 +117,7 @@ export function TimeStudyProgramForm({
       <div className="mx-auto grid w-[500px] grid-cols-1 gap-4">
         <div className="space-y-1">
           <FieldLabel text="*TS Program" />
-          <SingleSelectDropdown
+          <SingleSelectSearchDropdown
             value={form.watch("buSubProgramBudgetUnitProgramName") ?? ""}
             onChange={(value) => {
               form.setValue("buSubProgramBudgetUnitProgramName", value, {
@@ -199,9 +200,9 @@ export function TimeStudyProgramForm({
     <div className="mx-auto grid w-[500px] grid-cols-1 gap-4">
       <div className="space-y-1">
         <FieldLabel text="*TS Program" />
-        <SingleSelectDropdown
+        <SingleSelectSearchDropdown
           value={form.watch("budgetUnitName") ?? ""}
-          onChange={(value) => {
+          onChange={(value: string) => {
             form.setValue("budgetUnitName", value, { shouldDirty: true, shouldValidate: true })
             form.setValue("budgetUnitCode", value, { shouldDirty: true, shouldValidate: true })
             form.setValue("budgetUnitDepartment", budgetProgramLookup[value]?.department ?? "", {
@@ -216,7 +217,7 @@ export function TimeStudyProgramForm({
           onBlur={() => {}}
           options={budgetProgramNameOptions.map((o) => ({ value: o, label: o }))}
           placeholder="Select TS Program"
-          disabled={isEditMode}
+          disabled={isEditMode || isQuickAdd}
           className="!min-h-[44px] h-[44px] !rounded-[7px] !border-[#c6cedd] !px-3 !pr-9 !text-[14px] !font-normal"
           itemButtonClassName="rounded-[4px] px-2.5 py-1.5"
           itemLabelClassName="!text-[14px]"

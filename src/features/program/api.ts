@@ -103,10 +103,17 @@ function mapTimeStudyProgramToProgramRow(raw: TimeStudyProgramResDto): ProgramRo
     raw.budgetProgram && typeof raw.budgetProgram.name === "string"
       ? raw.budgetProgram.name
       : undefined
-  const timeStudyBudgetProgramId =
+  const parentBudgetUnitCode =
+    raw.budgetProgram && typeof raw.budgetProgram.code === "string"
+      ? raw.budgetProgram.code
+      : undefined
+  const timeStudyBudgetProgramId: string | undefined =
     raw.budgetProgram && typeof raw.budgetProgram.id === "number"
       ? String(raw.budgetProgram.id)
-      : undefined
+      // Fallback: legacy search API returns budgetProgramId as a plain number
+      : typeof (raw as any).budgetProgramId === "number"
+        ? String((raw as any).budgetProgramId)
+        : undefined
 
   const hierarchyLevel: 0 | 1 | 2 =
     normalizedType === TimeStudyProgramTypeEnum.SECONDARY
@@ -125,6 +132,7 @@ function mapTimeStudyProgramToProgramRow(raw: TimeStudyProgramResDto): ProgramRo
     department: departmentName,
     active: isActiveStatus(raw.status),
     parentBudgetUnitName,
+    parentBudgetUnitCode,
     hierarchyLevel,
     type: normalizedType || undefined,
     parentId: raw.parentId == null ? undefined : String(raw.parentId),
@@ -253,7 +261,44 @@ async function fetchTimeStudyPrograms(params: GetProgramsParams): Promise<Progra
       ? undefined
       : (rawPayload as TimeStudyProgramListResponseDto).meta
 
-  const items = list.map(mapTimeStudyProgramToProgramRow)
+  // When using search, backend returns a plain array (legacy searchPrograms) with ALL types.
+  // Filter to only primary-type items so secondary/subprogram don't appear as top-level rows.
+  const filteredList = Array.isArray(rawPayload)
+    ? (list as any[]).filter((item) => {
+        const t = typeof item.type === "string" ? item.type.trim().toLowerCase() : ""
+        return t === TimeStudyProgramTypeEnum.PRIMARY || t === ""
+      })
+    : list
+
+  // When search returns a flat array, enrich items with budgetProgram/department names
+  // by fetching the budget programs list (one extra call, cached per session).
+  let enrichedList: any[] = filteredList as any[]
+  if (Array.isArray(rawPayload) && filteredList.length > 0) {
+    try {
+      const bpRes = await api.get<any>("/budgetprograms?page=1&limit=200&sort=ASC&status=active")
+      const bpPayload = bpRes?.data ?? bpRes
+      const bpList: any[] = Array.isArray(bpPayload?.data) ? bpPayload.data : []
+      const bpMap = new Map<number, any>(bpList.map((bp: any) => [bp.id, bp]))
+
+      enrichedList = (filteredList as any[]).map((item: any) => {
+        // Skip if already has nested objects
+        if (item.budgetProgram) return item
+        const bp = bpMap.get(item.budgetProgramId)
+        if (!bp) return item
+        return {
+          ...item,
+          budgetProgram: { id: bp.id, code: bp.code ?? "", name: bp.name ?? "", status: bp.status ?? "active" },
+          department: bp.department
+            ? { id: bp.department.id, code: bp.department.code ?? "", name: bp.department.name ?? "", status: bp.department.status ?? "active" }
+            : item.departmentId ? { id: item.departmentId, code: "", name: "", status: "active" } : undefined,
+        }
+      })
+    } catch {
+      // Best-effort enrichment; fall back to unenriched items
+    }
+  }
+
+  const items = enrichedList.map((item: any) => mapTimeStudyProgramToProgramRow(item as TimeStudyProgramResDto))
   const totalItems = extractTotalItems(meta) ?? items.length
 
   return { items, totalItems }
@@ -447,27 +492,32 @@ export async function apiCreateProgram(input: CreateProgramInput & {
 
       if (!budgetProgramId) throw new Error("Please Select Budget Program")
     } else if (isSecondary || !isPrimary) {
-      // For secondary and tertiary (subprogram), the selected "TS Program" is the Primary Time Study Program.
+      // For secondary, the selected "TS Program" is the Primary.
+      // For tertiary (subprogram), the selected "TS Program" is the Secondary.
       // We must fetch it to get its ID (parentId) and its budgetProgramId.
-      const primaryName = isSecondary 
+      const parentName = isSecondary 
         ? values.buSubProgramBudgetUnitProgramName.trim()
         : values.budgetUnitName.trim()
         
+      const searchType = isSecondary 
+        ? TimeStudyProgramTypeEnum.PRIMARY 
+        : "secondary" // The backend enum doesn't have secondary/subprogram, it uses string
+
       const search = new URLSearchParams()
       search.set("page", "1")
       search.set("limit", "100")
       search.set("status", TimeStudyProgramStatusEnum.ACTIVE)
-      search.set("type", TimeStudyProgramTypeEnum.PRIMARY)
+      search.set("type", searchType)
       
       const res = await api.get<ApiEnvelope<{ data?: any[] }>>(`/timestudyprograms?${search.toString()}`)
       const list = Array.isArray(res?.data?.data) ? res.data.data : []
-      const found = list.find((p: any) => p.name === primaryName)
+      const found = list.find((p: any) => p.name === parentName)
       
-      if (!found) throw new Error(`Could not find active TS Program: ${primaryName}`)
+      if (!found) throw new Error(`Could not find active TS Program: ${parentName}`)
       
       parentId = found.id
       budgetProgramId = found.budgetProgram?.id
-      if (!budgetProgramId) throw new Error(`TS Program '${primaryName}' is missing budgetProgramId`)
+      if (!budgetProgramId) throw new Error(`TS Program '${parentName}' is missing budgetProgramId`)
     }
 
     const code = isPrimary
@@ -676,7 +726,34 @@ export async function apiGetProgramRowById(input: {
       `/timestudyprograms/${encodeURIComponent(row.id)}`
     )
     const entity = raw?.data ?? (raw as ApiEnvelope<TimeStudyProgramResDto>).data
-    return mapTimeStudyProgramToProgramRow(entity as TimeStudyProgramResDto)
+    const mapped = mapTimeStudyProgramToProgramRow(entity as TimeStudyProgramResDto)
+
+    // Preserve table context (hierarchy level and existing parent info)
+    const result: ProgramRow = {
+      ...mapped,
+      parentProgramName: row.parentProgramName,
+      parentProgramCode: row.parentProgramCode,
+      parentBudgetUnitCode: row.parentBudgetUnitCode || mapped.parentBudgetUnitCode,
+      hierarchyLevel: row.hierarchyLevel,
+    }
+
+    // If parent info is missing from the table context but we have a parentId, fetch it now.
+    if (result.parentId && (!result.parentProgramName || !result.parentProgramCode)) {
+      try {
+        const parentRes = await api.get<ApiEnvelope<TimeStudyProgramResDto>>(
+          `/timestudyprograms/${encodeURIComponent(result.parentId)}`
+        )
+        const parentEntity = parentRes?.data ?? (parentRes as ApiEnvelope<TimeStudyProgramResDto>).data
+        if (parentEntity) {
+          result.parentProgramName = parentEntity.name
+          result.parentProgramCode = parentEntity.code ?? undefined
+        }
+      } catch {
+        // Fallback to what we have
+      }
+    }
+
+    return result
   }
  // Program Activity Relation not yet wired to backend.
   return row
