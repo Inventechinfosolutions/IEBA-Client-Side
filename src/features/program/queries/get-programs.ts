@@ -12,6 +12,7 @@ export function useGetPrograms(params: GetProgramsParams) {
     gcTime: 0,
     refetchOnMount: "always",
     refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
   })
 }
 

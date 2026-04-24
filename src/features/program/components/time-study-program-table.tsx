@@ -413,8 +413,8 @@ export const TimeStudyProgramTable = forwardRef<TimeStudyProgramTableHandle, Tim
                                   if (next) {
                                     // Stale time = 0: always clear old data and refetch fresh
                                     childrenInFlightRef.current.delete(row.id)
-                                    setChildrenByParentId((prev) => {
-                                      const updated = { ...prev }
+                                    setChildrenByParentId((prevC) => {
+                                      const updated = { ...prevC }
                                       delete updated[row.id]
                                       return updated
                                     })
@@ -422,8 +422,17 @@ export const TimeStudyProgramTable = forwardRef<TimeStudyProgramTableHandle, Tim
                                   } else {
                                     // On collapse, clear children AND inflight guard so re-expand always fetches fresh
                                     childrenInFlightRef.current.delete(row.id)
-                                    setChildrenByParentId((prev) => {
-                                      const updated = { ...prev }
+                                    setChildrenByParentId((prevC) => {
+                                      const updated = { ...prevC }
+                                      // Auto-collapse children if closing Level 0 (Primary)
+                                      if (row.hierarchyLevel === 0) {
+                                        const secondaries = prevC[row.id] ?? []
+                                        setExpandedPrograms((prevE) => {
+                                          const nextE = { ...prevE }
+                                          secondaries.forEach((s) => delete nextE[s.id])
+                                          return nextE
+                                        })
+                                      }
                                       delete updated[row.id]
                                       return updated
                                     })

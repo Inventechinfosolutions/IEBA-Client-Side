@@ -77,6 +77,32 @@ export const programFormSchema = programFormBaseSchema.superRefine((values, ctx)
         })
       }
     }
+    
+    if (values.formSection === "Budget Unit") {
+      if (!values.active) {
+        if (values.hasActiveSubProgramOne) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["active"],
+            message: "Can't change status as BU Programs are still active",
+          })
+        } else if (values.hasActiveSubProgramTwo) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["active"],
+            message: "Can't change status as BU Sub-Programs are still active",
+          })
+        }
+      }
+    } else if (values.formSection === "BU Program") {
+      if (!values.active && values.hasActiveSubProgramTwo) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["active"],
+          message: "Can't change status as BU Sub-Programs are still active",
+        })
+      }
+    }
   })
 
 export const timeStudyProgramFormSchema = programFormBaseSchema.superRefine((values, ctx) => {

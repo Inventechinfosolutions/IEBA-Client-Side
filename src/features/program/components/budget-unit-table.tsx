@@ -35,7 +35,7 @@ import type {
   ProgramSortKey,
   ProgramTableSortState,
 } from "../types"
-import { BudgetProgramStatusEnum, BudgetProgramTypeEnum } from "../enums/enums"
+import { BudgetProgramTypeEnum } from "../enums/enums"
 import { usePermissions } from "@/hooks/usePermissions"
 
 export const BudgetUnitTable = forwardRef<BudgetUnitTableHandle, BudgetUnitTableProps>(
@@ -45,7 +45,6 @@ export const BudgetUnitTable = forwardRef<BudgetUnitTableHandle, BudgetUnitTable
       isLoading,
       onEditRow,
       onAddSubProgramFromProgram,
-      lastUpdatedRow,
       expandedBudgetUnits: externalExpandedBudgetUnits,
       setExpandedBudgetUnits: setExternalExpandedBudgetUnits,
       expandedProgramGroups: externalExpandedProgramGroups,
@@ -88,6 +87,7 @@ export const BudgetUnitTable = forwardRef<BudgetUnitTableHandle, BudgetUnitTable
   const [budgetProgramsByBudgetUnitId, setBudgetProgramsByBudgetUnitId] = useState<
     Record<string, ProgramRow[]>
   >({})
+  const [patchedRows, setPatchedRows] = useState<Record<string, ProgramRow>>({})
   const budgetProgramsByBudgetUnitIdRef = useRef(budgetProgramsByBudgetUnitId)
   budgetProgramsByBudgetUnitIdRef.current = budgetProgramsByBudgetUnitId
 
@@ -102,17 +102,13 @@ export const BudgetUnitTable = forwardRef<BudgetUnitTableHandle, BudgetUnitTable
 
   const hierarchyRows = useMemo<DisplayHierarchyRow[]>(() => {
     const applyUpdatedRow = (row: ProgramRow): ProgramRow => {
-      if (
-        lastUpdatedRow &&
-        row.id === lastUpdatedRow.id &&
-        row.hierarchyLevel === lastUpdatedRow.hierarchyLevel
-      ) {
-        const merged = { ...row, ...lastUpdatedRow }
+      const patched = patchedRows[row.id]
+      if (patched) {
         return {
-          ...merged,
-          // API tree `parentId` is null for level-1 programs; table uses BU id — never drop it.
-          parentId: merged.parentId ?? row.parentId,
-          tab: merged.tab ?? row.tab,
+          ...row,
+          ...patched,
+          parentId: patched.parentId ?? row.parentId,
+          tab: patched.tab ?? row.tab,
         }
       }
       return row
@@ -185,7 +181,7 @@ export const BudgetUnitTable = forwardRef<BudgetUnitTableHandle, BudgetUnitTable
       }
     }
     return flattened
-  }, [expandedBudgetUnits, expandedProgramGroups, expandedPrograms, mergedRows, sortState, lastUpdatedRow])
+  }, [expandedBudgetUnits, expandedProgramGroups, expandedPrograms, mergedRows, sortState, patchedRows])
 
   const handleSort = (key: ProgramSortKey) => {
     setSortState((prev) => {
@@ -197,6 +193,7 @@ export const BudgetUnitTable = forwardRef<BudgetUnitTableHandle, BudgetUnitTable
   }
 
   function patchBudgetProgramRow(updatedRow: ProgramRow) {
+    setPatchedRows((prev) => ({ ...prev, [updatedRow.id]: updatedRow }))
     setBudgetProgramsByBudgetUnitId((prev) => {
       let foundBucket: string | null = null
       for (const buId of Object.keys(prev)) {
@@ -246,10 +243,7 @@ export const BudgetUnitTable = forwardRef<BudgetUnitTableHandle, BudgetUnitTable
     budgetUnitId: string,
     options?: { force?: boolean },
   ) => {
-    if (!options?.force) {
-      const cached = budgetProgramsByBudgetUnitIdRef.current[budgetUnitId]
-      if (cached?.some((r) => r.hierarchyLevel === 1)) return
-    }
+    // Remove cache check to always fetch fresh data on expansion
     if (options?.force) {
       budgetProgramsInFlightRef.current.delete(budgetUnitId)
     }
@@ -263,7 +257,6 @@ export const BudgetUnitTable = forwardRef<BudgetUnitTableHandle, BudgetUnitTable
       search.set("page", "1")
       search.set("limit", "100")
       search.set("sort", "ASC")
-      search.set("status", BudgetProgramStatusEnum.ACTIVE)
       search.set("type", BudgetProgramTypeEnum.PROGRAM)
       search.set("budgetUnitId", budgetUnitId)
 
@@ -327,7 +320,6 @@ export const BudgetUnitTable = forwardRef<BudgetUnitTableHandle, BudgetUnitTable
       search.set("page", "1")
       search.set("limit", "100")
       search.set("sort", "ASC")
-      search.set("status", BudgetProgramStatusEnum.ACTIVE)
       search.set("type", BudgetProgramTypeEnum.SUBPROGRAM)
       search.set("budgetUnitId", budgetUnitId)
 
@@ -368,6 +360,26 @@ export const BudgetUnitTable = forwardRef<BudgetUnitTableHandle, BudgetUnitTable
   const toggleBudgetUnit = (budgetUnitId: string) => {
     setExpandedBudgetUnits((prev) => {
       const nextExpanded = !prev[budgetUnitId]
+      // Always clear children and force fresh load when expanding
+      if (nextExpanded) {
+        setBudgetProgramsByBudgetUnitId((prev) => {
+          const updated = { ...prev }
+          delete updated[budgetUnitId]
+          return updated
+        })
+        budgetProgramsInFlightRef.current.delete(budgetUnitId)
+        void ensureBudgetProgramsLoaded(budgetUnitId, { force: true })
+      } else {
+        // When closing a BU, also collapse all its programs
+        setExpandedPrograms((prev) => {
+          const next = { ...prev }
+          const programsForBu = budgetProgramsByBudgetUnitId[budgetUnitId] ?? []
+          programsForBu.forEach((p) => {
+            delete next[p.id]
+          })
+          return next
+        })
+      }
       return {
         ...prev,
         [budgetUnitId]: nextExpanded,
@@ -379,8 +391,25 @@ export const BudgetUnitTable = forwardRef<BudgetUnitTableHandle, BudgetUnitTable
     setExpandedProgramGroups((prev) => {
       const nextExpanded = !prev[budgetUnitId]
       if (nextExpanded) {
-        // When expanding the "BU Program" group, lazy-load BU Programs (type=program)
+        // Clear children to force fresh load from API
+        setBudgetProgramsByBudgetUnitId((prevB) => {
+          const updated = { ...prevB }
+          delete updated[budgetUnitId]
+          return updated
+        })
+        budgetProgramsInFlightRef.current.delete(budgetUnitId)
         void ensureBudgetProgramsLoaded(budgetUnitId)
+      } else {
+        // AUTO-CLOSE: when closing the group header, collapse all Level 2 programs under this BU
+        setExpandedPrograms((prevE) => {
+          const nextE = { ...prevE }
+          const programsForBu = budgetProgramsByBudgetUnitId[budgetUnitId] ?? []
+          // HierarchyLevel 1 in budgetProgramsByBudgetUnitId represents the BU Program (Level 2 visually)
+          programsForBu.forEach((p) => {
+            if (p.hierarchyLevel === 1) delete nextE[p.id]
+          })
+          return nextE
+        })
       }
       return {
         ...prev,
@@ -393,8 +422,13 @@ export const BudgetUnitTable = forwardRef<BudgetUnitTableHandle, BudgetUnitTable
     setExpandedPrograms((prev) => {
       const nextExpanded = !prev[programId]
       if (nextExpanded) {
-        // When expanding a specific BU Program row (e.g. >11111), lazy-load its sub-programs (type=subprogram)
+        // Clear children to force fresh load from API
+        const inFlightKey = `${budgetUnitId}:subprograms`
+        budgetProgramsInFlightRef.current.delete(inFlightKey)
         void ensureBudgetSubProgramsLoaded(budgetUnitId, programId)
+      } else {
+        // When collapsing a program, ensure its sub-programs (if any) are also collapsed
+        // so that re-expanding it later doesn't show stale expanded sub-rows.
       }
       return {
         ...prev,
@@ -654,7 +688,7 @@ export const BudgetUnitTable = forwardRef<BudgetUnitTableHandle, BudgetUnitTable
                                       sideOffset={6}
                                       className="w-[92px]! min-w-[92px]! rounded-[6px] border border-[#edf0f6] p-1 shadow-[0_8px_20px_rgba(17,24,39,0.14)]"
                                     >
-                                      {canAddBudgetProgram && (
+                                      {canAddBudgetProgram && displayRow.row.active && (
                                         <DropdownMenuItem
                                           onClick={() => onAddSubProgramFromProgram?.(displayRow.row)}
                                           className="cursor-pointer gap-1.5 rounded-[8px] px-1.5 py-1 text-[12px] text-[#111827]"

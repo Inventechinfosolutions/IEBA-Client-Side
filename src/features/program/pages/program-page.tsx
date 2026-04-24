@@ -14,7 +14,7 @@ import { ProgramTabs } from "../components/program-tabs"
 import { TimeStudyProgramTable } from "../components/time-study-program-table"
 import { ProgramToolbar } from "../components/program-toolbar"
 import { useProgramModule } from "../hooks/use-program-module"
-import { apiGetProgramRowById, apiCheckActiveSubPrograms } from "../api"
+import { apiGetProgramRowById, apiCheckActiveSubPrograms, apiCheckActiveBudgetSubPrograms } from "../api"
 import { useGetProgramFormOptions } from "../queries/get-program-form-options"
 import { programFormSchema } from "../schemas"
 import type {
@@ -126,8 +126,6 @@ export function ProgramPage() {
   const [expandedBudgetUnits, setExpandedBudgetUnits] = useState<Record<string, boolean>>({})
   const [expandedProgramGroups, setExpandedProgramGroups] = useState<Record<string, boolean>>({})
   const [expandedPrograms, setExpandedPrograms] = useState<Record<string, boolean>>({})
-  const [lastUpdatedBudgetRow, setLastUpdatedBudgetRow] = useState<ProgramRow | null>(null)
-  const [lastUpdatedTimeStudyRow, setLastUpdatedTimeStudyRow] = useState<ProgramRow | null>(null)
   const budgetUnitTableRef = useRef<BudgetUnitTableHandle | null>(null)
   const tsTableRef = useRef<TimeStudyProgramTableHandle | null>(null)
   const [activeChildrenFlags, setActiveChildrenFlags] = useState({ one: false, two: false })
@@ -330,7 +328,7 @@ export function ProgramPage() {
       ...emptyFormValues,
       formSection: mapProgramTabToSection(activeTab),
     }
-  }, [activeTab, modalMode, selectedProgramForSubAdd, selectedRow, formOptionsQuery.data])
+  }, [activeTab, modalMode, selectedProgramForSubAdd, selectedRow, formOptionsQuery.data, activeChildrenFlags])
   const shouldLockModalSectionTabs = modalMode === "edit"
 
   const handleTabChange = (nextTab: ProgramTab) => {
@@ -361,6 +359,8 @@ export function ProgramPage() {
       let flags = { hasActiveSubProgramOne: false, hasActiveSubProgramTwo: false }
       if (activeTab === "Time Study programs") {
         flags = await apiCheckActiveSubPrograms(freshRow)
+      } else if (activeTab === "Budget Units") {
+        flags = await apiCheckActiveBudgetSubPrograms(freshRow)
       }
       setActiveChildrenFlags({ one: flags.hasActiveSubProgramOne, two: flags.hasActiveSubProgramTwo })
 
@@ -412,13 +412,8 @@ export function ProgramPage() {
 
       if (updatedRow) {
         if (activeTab === "Budget Units") {
-          setLastUpdatedBudgetRow(updatedRow)
-          const hl = updatedRow.hierarchyLevel
-          if (hl === 1 || hl === 2) {
-            budgetUnitTableRef.current?.patchBudgetProgramRow(updatedRow)
-          }
+          budgetUnitTableRef.current?.patchBudgetProgramRow(updatedRow)
         } else if (activeTab === "Time Study programs") {
-          setLastUpdatedTimeStudyRow(updatedRow)
           tsTableRef.current?.patchTimeStudyProgramRow(updatedRow)
           // If this was a quick-add Sub-Program Two from a Sub-Program One row,
           // collapse the parent so re-expand triggers a fresh fetch showing the new record.
@@ -507,7 +502,6 @@ export function ProgramPage() {
                   isLoading={isTableLoading}
                   onEditRow={handleEditRow}
                   onAddSubProgramFromProgram={handleAddSubProgramFromProgram}
-                  lastUpdatedRow={lastUpdatedBudgetRow}
                   expandedBudgetUnits={expandedBudgetUnits}
                   setExpandedBudgetUnits={setExpandedBudgetUnits}
                   expandedProgramGroups={expandedProgramGroups}
@@ -523,7 +517,6 @@ export function ProgramPage() {
                   isLoading={isTableLoading}
                   onEditRow={handleEditRow}
                   onAddSubProgramFromParent={handleAddSubProgramFromProgram}
-                  lastUpdatedRow={lastUpdatedTimeStudyRow}
                   readonly={isRestrictedRole}
                 />
               )}
