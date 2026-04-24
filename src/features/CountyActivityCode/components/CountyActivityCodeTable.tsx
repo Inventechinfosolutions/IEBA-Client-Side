@@ -1050,7 +1050,7 @@ export function CountyActivityCodeTable({
                     {row.countyActivityName}
                   </TableCell>
                   <CountyActivityDescriptionTableCell description={row.description} />
-                  <TableCell className="min-w-0 border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] leading-[1.4] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
+                  <TableCell className="min-w-0 border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] leading-[1.4] whitespace-normal break-words font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
                     <CountyActivityDepartmentStackCell label={getCountyActivityCodeRowDepartmentLabel(row)} />
                   </TableCell>
                   <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
@@ -1083,10 +1083,16 @@ export function CountyActivityCodeTable({
                     </span>
                   </TableCell>
                   <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-center">
-                    {row.active && (
+                    {row.active ? (
                       <img
                         src={statusCheckImg}
                         alt="active"
+                        className="mx-auto h-4 w-4 object-contain"
+                      />
+                    ) : (
+                      <img
+                        src={statusCrossImg}
+                        alt="inactive"
                         className="mx-auto h-4 w-4 object-contain"
                       />
                     )}
@@ -1157,7 +1163,7 @@ export function CountyActivityCodeTable({
                           {child.countyActivityName}
                         </TableCell>
                         <CountyActivityDescriptionTableCell description={child.description} />
-                        <TableCell className="min-w-0 border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] leading-[1.4] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
+                        <TableCell className="min-w-0 border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] leading-[1.4] whitespace-normal break-words font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
                           <CountyActivityDepartmentStackCell
                             label={
                               child.rowType === CountyActivityGridRowType.SUB
@@ -1177,33 +1183,40 @@ export function CountyActivityCodeTable({
                             : child.masterCode}
                         </TableCell>
                         <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-center text-[13px] text-[#C4C4C4]">
-                          {child.spmp ? (
+                          {/* Sub rows have no master code — SPMP is always N/cross */}
+                          <img
+                            src={statusCrossImg}
+                            alt="No"
+                            className="mx-auto h-4 w-4 object-contain"
+                          />
+                        </TableCell>
+                        <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-center text-[13px] text-[#C4C4C4]">
+                          {/* Sub rows have no master code — Match is always N/cross */}
+                          <img
+                            src={statusCrossImg}
+                            alt="No"
+                            className="mx-auto h-4 w-4 object-contain"
+                          />
+                        </TableCell>
+                        <TableCell className="border-r border-[#E5E7EB] px-[8px] py-[5px] align-middle text-center text-[13px] text-[#C4C4C4]">
+                          {/* Sub rows have no master code — % is always N/cross */}
+                          <img
+                            src={statusCrossImg}
+                            alt="No"
+                            className="mx-auto h-4 w-4 object-contain"
+                          />
+                        </TableCell>
+                        <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-center">
+                          {child.active ? (
                             <img
                               src={statusCheckImg}
-                              alt="Yes"
+                              alt="active"
                               className="mx-auto h-4 w-4 object-contain"
                             />
                           ) : (
                             <img
                               src={statusCrossImg}
-                              alt="No"
-                              className="mx-auto h-4 w-4 object-contain"
-                            />
-                          )}
-                        </TableCell>
-                        <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-center text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
-                          {child.match}
-                        </TableCell>
-                        <TableCell className="border-r border-[#E5E7EB] px-[8px] py-[5px] align-top text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
-                          <span className="block w-full text-center">
-                            {child.percentage.toFixed(2)}
-                          </span>
-                        </TableCell>
-                        <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-center">
-                          {child.active && (
-                            <img
-                              src={statusCheckImg}
-                              alt="active"
+                              alt="inactive"
                               className="mx-auto h-4 w-4 object-contain"
                             />
                           )}

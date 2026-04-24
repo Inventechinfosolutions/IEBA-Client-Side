@@ -129,21 +129,19 @@ function resolveParentCatalogForSubCreate(
 
 function invalidateAllCountyActivityCaches(
   queryClient: QueryClient,
-  input: UpdateCountyActivityApiInput,
+  input: { id: string },
 ): void {
   void queryClient.invalidateQueries({ queryKey: countyActivityCodeKeys.lists() })
   void queryClient.invalidateQueries({ queryKey: countyActivityCodeKeys.pagedLists() })
   void queryClient.invalidateQueries({
     queryKey: countyActivityCodeKeys.activityDetail(input.id),
   })
-  if (input.rowType === CountyActivityGridRowType.PRIMARY) {
-    void queryClient.invalidateQueries({
-      queryKey: countyActivityCodeKeys.activePrimarySubPicker(),
-    })
-    void queryClient.invalidateQueries({
-      queryKey: countyActivityCodeKeys.topLevel(),
-    })
-  }
+  void queryClient.invalidateQueries({
+    queryKey: countyActivityCodeKeys.activePrimarySubPicker(),
+  })
+  void queryClient.invalidateQueries({
+    queryKey: countyActivityCodeKeys.topLevel(),
+  })
 }
 
 /**
@@ -317,7 +315,7 @@ export function applyCountyActivityQueryCacheAfterUpdate(
   })
 
   if (statusFlip) {
-    void queryClient.invalidateQueries({ queryKey: countyActivityCodeKeys.pagedLists() })
+    invalidateAllCountyActivityCaches(queryClient, input)
   } else {
     const pagedQueries = queryClient.getQueryCache().findAll({
       queryKey: countyActivityCodeKeys.pagedLists(),

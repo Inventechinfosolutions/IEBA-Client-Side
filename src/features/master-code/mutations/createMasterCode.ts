@@ -19,6 +19,10 @@ export function useCreateMasterCode() {
         queryKey: masterCodeKeys.activityCodesCatalogAll(),
       })
       await queryClient.invalidateQueries({ queryKey: countyActivityCodeKeys.lists() })
+      // Paginated county table and top-level use their own cache keys — must also be
+      // invalidated so rows are rebuilt with the updated enrichment (spmp / match / %).
+      await queryClient.invalidateQueries({ queryKey: countyActivityCodeKeys.pagedLists() })
+      await queryClient.invalidateQueries({ queryKey: countyActivityCodeKeys.topLevel() })
     },
   })
 }
