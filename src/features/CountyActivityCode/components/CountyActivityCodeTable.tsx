@@ -450,11 +450,16 @@ export function CountyActivityCodeTable({
 
   const addMasterCodeOptions = useMemo(
     () =>
-      (addMasterCodesQuery.data?.items ?? []).map((item) => ({
-        label: item.code ? `${item.code} * ${item.name}` : item.name,
-        value: Number(item.id),
-        code: String(item.code ?? "").trim(),
-      })).filter((o) => o.code.length > 0),
+      (addMasterCodesQuery.data?.items ?? [])
+        .map((item) => ({
+          label: item.code ? `${item.code} * ${item.name}` : item.name,
+          value: Number(item.id),
+          code: String(item.code ?? "").trim(),
+        }))
+        .filter((o) => o.code.length > 0)
+        .sort((a, b) =>
+          a.code.localeCompare(b.code, undefined, { numeric: true, sensitivity: "base" }),
+        ),
     [addMasterCodesQuery.data?.items],
   )
 
@@ -472,11 +477,16 @@ export function CountyActivityCodeTable({
 
   const editMasterCodeOptions = useMemo(
     () =>
-      (editMasterCodesQuery.data?.items ?? []).map((item) => ({
-        label: item.code ? `${item.code} * ${item.name}` : item.name,
-        value: Number(item.id),
-        code: String(item.code ?? "").trim(),
-      })).filter((o) => o.code.length > 0),
+      (editMasterCodesQuery.data?.items ?? [])
+        .map((item) => ({
+          label: item.code ? `${item.code} * ${item.name}` : item.name,
+          value: Number(item.id),
+          code: String(item.code ?? "").trim(),
+        }))
+        .filter((o) => o.code.length > 0)
+        .sort((a, b) =>
+          a.code.localeCompare(b.code, undefined, { numeric: true, sensitivity: "base" }),
+        ),
     [editMasterCodesQuery.data?.items],
   )
 
