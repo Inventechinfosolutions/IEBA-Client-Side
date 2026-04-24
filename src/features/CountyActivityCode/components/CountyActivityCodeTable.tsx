@@ -429,7 +429,7 @@ export function CountyActivityCodeTable({
     },
   })
 
-  const editMasterCodeTypeWatched = editForm.watch("masterCodeType")
+  // const editMasterCodeTypeWatched = editForm.watch("masterCodeType")
 
   // Code Type dropdown: derived from the all-activity-codes catalog (replaces old /master-codes call)
   const masterCodeTypeOptions = useMemo(() => {
@@ -459,13 +459,15 @@ export function CountyActivityCodeTable({
   )
 
   // Code dropdown (Edit modal): per-type call fires when user selects or modal loads a Code Type
+  const editMasterCodesQueryType =
+    editSyncedMasterCodeType.trim() || rowToEdit?.masterCodeType?.trim() || ""
+
   const editMasterCodesQuery = useGetCountyActivityMasterCodes(
-    editMasterCodeTypeWatched.trim() !== ""
-      ? editMasterCodeTypeWatched
-      : editSyncedMasterCodeType,
+    editMasterCodesQueryType,
     editOpen &&
       rowToEdit != null &&
-      rowToEdit.rowType !== CountyActivityGridRowType.SUB,
+      rowToEdit.rowType !== CountyActivityGridRowType.SUB &&
+      editMasterCodesQueryType.trim().length > 0,
   )
 
   const editMasterCodeOptions = useMemo(
@@ -1057,7 +1059,7 @@ export function CountyActivityCodeTable({
                     {row.masterCodeType}
                   </TableCell>
                   <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
-                    {row.masterCode}
+                    {row.catalogActivityCode || "—"}
                   </TableCell>
                   <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-center text-[13px] text-[#C4C4C4]">
                     {row.spmp ? (
@@ -1180,7 +1182,7 @@ export function CountyActivityCodeTable({
                         <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
                           {child.rowType === CountyActivityGridRowType.SUB
                             ? ""
-                            : child.masterCode}
+                            : child.catalogActivityCode || "—"}
                         </TableCell>
                         <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-center text-[13px] text-[#C4C4C4]">
                           {/* Sub rows have no master code — SPMP is always N/cross */}
