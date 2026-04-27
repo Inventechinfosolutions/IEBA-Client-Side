@@ -123,7 +123,7 @@ export function SingleSelectSearchDropdown({
     : placeholder
 
   return (
-    <Popover open={open} onOpenChange={(next) => { if (!next) closeMenu() }}>
+    <Popover modal={false} open={open} onOpenChange={(next) => { if (!next) closeMenu() }}>
       {/* PopoverAnchor lets the content align to this element without it being the trigger */}
       <PopoverAnchor asChild>
         <div
@@ -175,8 +175,9 @@ export function SingleSelectSearchDropdown({
         // Prevent popover from stealing focus away from the input
         onOpenAutoFocus={(e) => e.preventDefault()}
         onCloseAutoFocus={(e) => e.preventDefault()}
+        onWheel={(e) => e.stopPropagation()}
         className={cn(
-          "z-90 p-0",
+          "z-[1000] p-0",
           "w-[var(--radix-popover-trigger-width)]",
           "max-h-[260px] overflow-auto rounded-[7px] border border-[#d9deea] bg-white shadow-[0_8px_18px_rgba(17,24,39,0.12)]",
           contentClassName,
