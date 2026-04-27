@@ -455,7 +455,12 @@ export const TimeStudyProgramTable = forwardRef<TimeStudyProgramTableHandle, Tim
                               )}
                             </button>
                           ) : null}
-                          {row.code}
+                          <span className="inline-flex items-center">
+                            {row.code}
+                            {row.isMultiCode && (
+                              <span className="text-[var(--primary)] font-bold ml-0.5 text-[12px] -translate-y-1">**</span>
+                            )}
+                          </span>
                         </div>
                       </TableCell>
                       <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-[12px] text-[#232735] whitespace-pre-wrap break-all wrap-anywhere max-w-[220px]">

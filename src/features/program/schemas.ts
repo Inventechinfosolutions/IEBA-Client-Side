@@ -28,6 +28,7 @@ const programFormBaseSchema = z.object({
   programActivityRelationSort: z.string().trim(),
   hasActiveSubProgramOne: z.boolean().optional(),
   hasActiveSubProgramTwo: z.boolean().optional(),
+  isMultiCode: z.boolean().optional(),
 })
 
 export const programFormSchema = programFormBaseSchema.superRefine((values, ctx) => {

@@ -295,6 +295,7 @@ export function ProgramPage() {
         buProgramMedicalPct: selectedRow.medicalPct,
         hasActiveSubProgramOne: activeChildrenFlags.one,
         hasActiveSubProgramTwo: activeChildrenFlags.two,
+        isMultiCode: selectedRow.isMultiCode,
         ...buSubProgramInitial,
       }
     }
