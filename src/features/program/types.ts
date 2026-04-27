@@ -29,6 +29,10 @@ export type ProgramRow = {
   description: string
   department: string
   active: boolean
+  /** Active status of this row's direct parent — set by the table so the edit
+   *  form can enforce "cannot activate child when parent is inactive" without
+   *  an extra API call. undefined = no parent (Level 0). */
+  parentActive?: boolean
   parentBudgetUnitName?: string
   parentBudgetUnitCode?: string
   parentProgramName?: string
@@ -277,6 +281,8 @@ export type BudgetUnitTableHandle = {
   patchBudgetProgramRow: (updatedRow: ProgramRow) => void
   /** Refetch programs for a BU from the API (bypasses the “already loaded” skip). */
   refreshBudgetUnitPrograms: (budgetUnitId: string) => Promise<void>
+  /** Collapse a specific row so re-expand triggers a fresh fetch. */
+  collapseRow: (rowId: string, parentId?: string) => void
 }
 
 export type BudgetUnitTableProps = {

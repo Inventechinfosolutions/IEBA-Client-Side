@@ -128,7 +128,7 @@ export function ProgramPage() {
   const [expandedPrograms, setExpandedPrograms] = useState<Record<string, boolean>>({})
   const budgetUnitTableRef = useRef<BudgetUnitTableHandle | null>(null)
   const tsTableRef = useRef<TimeStudyProgramTableHandle | null>(null)
-  const [activeChildrenFlags, setActiveChildrenFlags] = useState({ one: false, two: false })
+  const [activeChildrenFlags, setActiveChildrenFlags] = useState({ one: false, two: false, parentActive: undefined as boolean | undefined })
 
   const isSubProgramQuickAdd = modalMode === "add" && Boolean(selectedProgramForSubAdd)
 
@@ -296,6 +296,7 @@ export function ProgramPage() {
         hasActiveSubProgramOne: activeChildrenFlags.one,
         hasActiveSubProgramTwo: activeChildrenFlags.two,
         isMultiCode: selectedRow.isMultiCode,
+        parentActive: activeChildrenFlags.parentActive,
         ...buSubProgramInitial,
       }
     }
@@ -355,6 +356,10 @@ export function ProgramPage() {
   const handleEditRow = async (row: ProgramRow) => {
     try {
       setIsEditDetailLoading(true)
+      // Capture parentActive from the table row BEFORE the API fetch,
+      // since the freshRow returned by the API won't carry this field
+      // (it's stamped by the table hierarchy builder at render time).
+      const parentActive = row.parentActive
       const freshRow = await apiGetProgramRowById({ activeTab, row })
       
       let flags = { hasActiveSubProgramOne: false, hasActiveSubProgramTwo: false }
@@ -363,7 +368,7 @@ export function ProgramPage() {
       } else if (activeTab === "Budget Units") {
         flags = await apiCheckActiveBudgetSubPrograms(freshRow)
       }
-      setActiveChildrenFlags({ one: flags.hasActiveSubProgramOne, two: flags.hasActiveSubProgramTwo })
+      setActiveChildrenFlags({ one: flags.hasActiveSubProgramOne, two: flags.hasActiveSubProgramTwo, parentActive })
 
       setModalMode("edit")
       setSelectedRow(freshRow)
@@ -414,8 +419,13 @@ export function ProgramPage() {
       if (updatedRow) {
         if (activeTab === "Budget Units") {
           budgetUnitTableRef.current?.patchBudgetProgramRow(updatedRow)
+          // User requested: "when we update any parent > close this so we can refetch crt data"
+          // Collapse the row so when they expand it again, children are fresh.
+          budgetUnitTableRef.current?.collapseRow(updatedRow.id, updatedRow.parentId)
         } else if (activeTab === "Time Study programs") {
           tsTableRef.current?.patchTimeStudyProgramRow(updatedRow)
+          // Same for TS table
+          tsTableRef.current?.collapseRow(updatedRow.id)
           // If this was a quick-add Sub-Program Two from a Sub-Program One row,
           // collapse the parent so re-expand triggers a fresh fetch showing the new record.
           if (selectedProgramForSubAdd) {

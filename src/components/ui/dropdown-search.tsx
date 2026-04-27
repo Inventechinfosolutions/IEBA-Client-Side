@@ -78,7 +78,7 @@ export function SingleSelectSearchDropdown({
   const valueTrimmed = String(value ?? "").trim()
 
   const selectedLabel = useMemo(
-    () => (valueTrimmed ? (options.find((o) => o.value === valueTrimmed)?.label ?? "") : ""),
+    () => (valueTrimmed ? (options.find((o) => o.value === valueTrimmed)?.label ?? valueTrimmed) : ""),
     [valueTrimmed, options],
   )
 

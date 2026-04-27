@@ -64,13 +64,39 @@ export const TimeStudyProgramTable = forwardRef<TimeStudyProgramTableHandle, Tim
 
   useImperativeHandle(ref, () => ({
     collapseRow: (rowId: string) => {
-      childrenInFlightRef.current.delete(rowId)
-      setChildrenByParentId((prev) => {
-        const updated = { ...prev }
-        delete updated[rowId]
-        return updated
+      setChildrenByParentId((prevC) => {
+        const nextC = { ...prevC }
+        const idsToClear = new Set<string>([rowId])
+        const queue = [rowId]
+
+        // Find all descendant IDs
+        while (queue.length > 0) {
+          const currentId = queue.shift()!
+          const children = nextC[currentId]
+          if (children) {
+            for (const child of children) {
+              idsToClear.add(child.id)
+              queue.push(child.id)
+            }
+          }
+          delete nextC[currentId]
+        }
+
+        // Clear inflight refs and expanded state for all descendants
+        idsToClear.forEach((id) => {
+          childrenInFlightRef.current.delete(id)
+        })
+
+        setExpandedPrograms((prevE) => {
+          const nextE = { ...prevE }
+          idsToClear.forEach((id) => {
+            nextE[id] = false
+          })
+          return nextE
+        })
+
+        return nextC
       })
-      setExpandedPrograms((prev) => ({ ...prev, [rowId]: false }))
     },
     patchTimeStudyProgramRow: (updatedRow: ProgramRow) => {
       setPatchedRows((prev) => ({ ...prev, [updatedRow.id]: updatedRow }))
@@ -128,7 +154,11 @@ export const TimeStudyProgramTable = forwardRef<TimeStudyProgramTableHandle, Tim
 
       for (const sec of secondaries) {
         const effectiveSecondary = applyUpdatedRow(sec)
-        flattened.push(effectiveSecondary)
+        flattened.push({
+          ...effectiveSecondary,
+          // L1 parent is the TS Primary — stamp its active status
+          parentActive: effectivePrimary.active,
+        })
 
         // Only show subprograms if this secondary is expanded
         if (!expandedPrograms[sec.id]) continue
@@ -136,7 +166,11 @@ export const TimeStudyProgramTable = forwardRef<TimeStudyProgramTableHandle, Tim
         // Level 2: subprograms stored under the secondary's own id
         const subprograms = childrenByParentId[sec.id] ?? []
         for (const sub of subprograms) {
-          flattened.push(applyUpdatedRow(sub))
+          flattened.push({
+            ...applyUpdatedRow(sub),
+            // L2 parent is the TS Secondary — stamp its active status
+            parentActive: effectiveSecondary.active,
+          })
         }
       }
     }

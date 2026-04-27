@@ -219,15 +219,11 @@ export const BudgetUnitTable = forwardRef<BudgetUnitTableHandle, BudgetUnitTable
         return updated
       })
       setExpandedBudgetUnits((prev) => ({ ...prev, [buId]: false }))
-      setExpandedProgramGroups((prev) => {
-        const next = { ...prev }
-        delete next[buId]
-        return next
-      })
+      setExpandedProgramGroups((prev) => ({ ...prev, [buId]: false }))
       setExpandedPrograms((prev) => {
-        const next: Record<string, boolean> = {}
-        for (const key of Object.keys(prev)) {
-          if (!key.startsWith(`${buId}:`)) next[key] = prev[key]
+        const next = { ...prev }
+        for (const key of Object.keys(next)) {
+          if (key.startsWith(`${buId}:`)) next[key] = false
         }
         return next
       })
@@ -349,6 +345,43 @@ export const BudgetUnitTable = forwardRef<BudgetUnitTableHandle, BudgetUnitTable
         patchBudgetProgramRowRef.current(updatedRow),
       refreshBudgetUnitPrograms: (budgetUnitId: string) =>
         ensureBudgetProgramsLoadedRef.current(budgetUnitId, { force: true }),
+      collapseRow: (rowId: string, parentId?: string) => {
+        if (!parentId) {
+          // Budget Unit update (Level 0): Collapse the BU and its groups
+          setExpandedBudgetUnits((prev) => ({ ...prev, [rowId]: false }))
+          setExpandedProgramGroups((prev) => ({ ...prev, [rowId]: false }))
+          setBudgetProgramsByBudgetUnitId((prev) => {
+            const next = { ...prev }
+            delete next[rowId]
+            return next
+          })
+          budgetProgramsInFlightRef.current.delete(rowId)
+          budgetProgramsInFlightRef.current.delete(`${rowId}:subprograms`)
+          setExpandedPrograms((prev) => {
+            const next = { ...prev }
+            for (const key of Object.keys(next)) {
+              if (key.startsWith(`${rowId}:`)) next[key] = false
+            }
+            return next
+          })
+        } else {
+          // Program update (Level 1): Collapse ONLY this program's children caret.
+          // The "BU Program" group and the Budget Unit itself stay open.
+          const expandKey = `${parentId}:${rowId}`
+          setExpandedPrograms((prev) => ({ ...prev, [expandKey]: false }))
+
+          // Granularly remove sub-programs of THIS program ONLY from BU cache
+          setBudgetProgramsByBudgetUnitId((prev) => {
+            const rows = prev[parentId]
+            if (!rows) return prev
+            return {
+              ...prev,
+              [parentId]: rows.filter((r) => !(r.hierarchyLevel === 2 && r.parentId === rowId)),
+            }
+          })
+          budgetProgramsInFlightRef.current.delete(`${parentId}:subprograms`)
+        }
+      },
     }),
     [],
   )
@@ -642,7 +675,7 @@ export const BudgetUnitTable = forwardRef<BudgetUnitTableHandle, BudgetUnitTable
                         ? `group-${displayRow.budgetUnitId}`
                         : displayRow.row.hierarchyLevel === 0
                           ? `bu-${displayRow.row.id}`
-                          : displayRow.row.hierarchyLevel === 2
+                          : displayRow.row.hierarchyLevel === 1
                             ? `prog-${displayRow.row.id}`
                             : `sub-${displayRow.row.id}`
                     }>
