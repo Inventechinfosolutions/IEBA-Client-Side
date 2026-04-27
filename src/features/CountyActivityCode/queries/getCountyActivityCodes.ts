@@ -25,23 +25,20 @@ import type { ActivityCatalogEnrichmentValue, CountyActivityPagedListParams } fr
 const CATALOG_ENRICHMENT_STALE_MS = 10 * 60_000
 const MASTER_CODE_OPTIONS_STALE_MS = 60_000
 
-async function ensureActivityCatalogEnrichmentMap(
+async function fetchActivityCatalogEnrichmentMap(
   queryClient: ReturnType<typeof useQueryClient>,
 ): Promise<ReadonlyMap<string, ActivityCatalogEnrichmentValue>> {
-  return queryClient.ensureQueryData({
-    queryKey: masterCodeKeys.activityCodesCatalogEnrichment(),
-    queryFn: async () => {
-      const rows = await queryClient.ensureQueryData({
-        queryKey: masterCodeKeys.activityCodesCatalogAll(),
-        queryFn: () => apiFetchActivityCodesCatalogAll({ inactiveOnly: false }),
-        staleTime: CATALOG_ENRICHMENT_STALE_MS,
-        gcTime: 30 * 60_000,
-      })
-      return buildCountyActivityCatalogEnrichmentMapFromMasterCodes(rows)
-    },
+  // Use fetchQuery (not ensureQueryData) so the enrichment map is always rebuilt
+  // from up-to-date master-code data. ensureQueryData would serve a 10-min stale
+  // cache even when the county table itself is refetching, causing SPMP / Match / %
+  // to show stale defaults (false / "N" / 0) for newly added or updated master codes.
+  const rows = await queryClient.fetchQuery({
+    queryKey: masterCodeKeys.activityCodesCatalogAll(),
+    queryFn: () => apiFetchActivityCodesCatalogAll({ inactiveOnly: false }),
     staleTime: CATALOG_ENRICHMENT_STALE_MS,
     gcTime: 30 * 60_000,
   })
+  return buildCountyActivityCatalogEnrichmentMapFromMasterCodes(rows)
 }
 
 /** Full hierarchy grid: `GET /activities/hierarchy` + activity–department links + catalog enrichment. */
@@ -51,10 +48,10 @@ export function useGetCountyActivityCodes() {
   return useQuery({
     queryKey: countyActivityCodeKeys.lists(),
     queryFn: async () => {
-      const enrichment = await ensureActivityCatalogEnrichmentMap(queryClient)
+      const enrichment = await fetchActivityCatalogEnrichmentMap(queryClient)
       return apiGetCountyActivityCodeTableRows(enrichment)
     },
-    staleTime: 30_000,
+    staleTime: 0,
     gcTime: 10 * 60_000,
     refetchOnMount: "always",
     refetchOnWindowFocus: false,
@@ -76,7 +73,7 @@ export function useGetCountyActivityPagedList(params: CountyActivityPagedListPar
       status,
     }),
     queryFn: async () => {
-      const enrichment = await ensureActivityCatalogEnrichmentMap(queryClient)
+      const enrichment = await fetchActivityCatalogEnrichmentMap(queryClient)
       const needsAggregatedCatalog =
         params.page === 1 && params.pageSize > COUNTY_ACTIVITY_ACTIVITIES_API_MAX_LIMIT
 
@@ -112,7 +109,7 @@ export function useGetCountyActivityTopLevel() {
   return useQuery({
     queryKey: countyActivityCodeKeys.topLevel(),
     queryFn: async () => {
-      const enrichment = await ensureActivityCatalogEnrichmentMap(queryClient)
+      const enrichment = await fetchActivityCatalogEnrichmentMap(queryClient)
       const dtos = await apiGetCountyActivityTopLevel()
       const rows = mapCountyActivityListItemsToGridRows(dtos, enrichment)
       const primaries = rows.filter(
@@ -140,7 +137,7 @@ export function useGetCountyActivityActivePrimarySubPicker() {
   return useQuery({
     queryKey: countyActivityCodeKeys.activePrimarySubPicker(),
     queryFn: async () => {
-      const enrichment = await ensureActivityCatalogEnrichmentMap(queryClient)
+      const enrichment = await fetchActivityCatalogEnrichmentMap(queryClient)
       const payload = await apiGetCountyActivitiesCatalogAggregated({
         status: "active",
         sort: "ASC",

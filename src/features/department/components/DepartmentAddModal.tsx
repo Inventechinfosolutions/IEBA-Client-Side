@@ -134,6 +134,7 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
     const [isDepartmentSaved, setIsDepartmentSaved] = useState(!!id)
     const [departmentId, setDepartmentId] = useState<string | null>(id)
     const [showCreateConfirm, setShowCreateConfirm] = useState(false)
+    const [showInactiveConfirm, setShowInactiveConfirm] = useState(false)
     const [showSaveContactConfirm, setShowSaveContactConfirm] = useState(false)
     const [pendingTabChange, setPendingTabChange] = useState<PendingTabChange | null>(null)
     const [modifiedContacts, setModifiedContacts] = useState<ModifiedContacts>({
@@ -432,8 +433,8 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                                             id="code"
                                             placeholder="Code"
                                             {...register("code")}
-                                            readOnly={isDepartmentAdmin}
-                                            className={`h-[57px] rounded-[8px] border-[#E5E7EB] focus:ring-1 focus:ring-[#6C5DD3] ${isDepartmentAdmin ? 'cursor-not-allowed bg-[#F9FAFB]' : ''}`}
+                                            readOnly={isDepartmentAdmin && !!id}
+                                            className={`h-[57px] rounded-[8px] border-[#E5E7EB] focus:ring-1 focus:ring-[#6C5DD3] ${(isDepartmentAdmin && !!id) ? 'cursor-not-allowed bg-[#F9FAFB]' : ''}`}
                                         />
                                         {errors.code && <p className="text-[12px] text-red-500">{errors.code.message}</p>}
                                     </div>
@@ -445,8 +446,8 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                                             id="name"
                                             placeholder="Enter Department"
                                             {...register("name")}
-                                            readOnly={isDepartmentAdmin}
-                                            className={`h-[57px] w-full rounded-[8px] border-[#E5E7EB] focus:ring-1 focus:ring-[#6C5DD3] ${isDepartmentAdmin ? 'cursor-not-allowed bg-[#F9FAFB]' : ''}`}
+                                            readOnly={isDepartmentAdmin && !!id}
+                                            className={`h-[57px] w-full rounded-[8px] border-[#E5E7EB] focus:ring-1 focus:ring-[#6C5DD3] ${(isDepartmentAdmin && !!id) ? 'cursor-not-allowed bg-[#F9FAFB]' : ''}`}
                                         />
                                         {errors.name && <p className="text-[12px] text-red-500">{errors.name.message}</p>}
                                     </div>
@@ -454,7 +455,13 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                                         <Checkbox
                                             id="active"
                                             checked={active}
-                                            onCheckedChange={(val) => setValue("active", !!val)}
+                                            onCheckedChange={(val) => {
+                                                if (active && !val) {
+                                                    setShowInactiveConfirm(true)
+                                                } else {
+                                                    setValue("active", !!val)
+                                                }
+                                            }}
                                             className="h-[20px] w-[20px] data-[state=checked]:bg-[#6C5DD3] data-[state=checked]:border-[#6C5DD3]"
                                         />
                                         <Label htmlFor="active" className="text-[15px] font-[500] text-[#374151]">Active</Label>
@@ -939,6 +946,34 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                     <Button
                         type="button"
                         onClick={handleConfirmContactSave}
+                        className="w-[100px] h-[40px] bg-[#6C5DD3] hover:bg-[#5B4DC5] text-white rounded-[8px]"
+                    >
+                        OK
+                    </Button>
+                </div>
+            </DialogContent>
+        </Dialog>
+
+        <Dialog open={showInactiveConfirm} onOpenChange={setShowInactiveConfirm}>
+            <DialogContent className="max-w-[440px] p-6 rounded-[12px] bg-white border-0 shadow-lg">
+                <DialogTitle className="sr-only">Confirm Deactivation</DialogTitle>
+                <div className="text-center text-[15px] text-[#111827] mt-2 font-[500]">
+                    Are you sure do you want to change Active to Inactive Department ?
+                </div>
+                <div className="flex justify-center gap-4 mt-6">
+                    <Button
+                        type="button"
+                        onClick={() => setShowInactiveConfirm(false)}
+                        className="w-[100px] h-[40px] bg-[#E5E7EB] hover:bg-[#D1D5DB] text-[#374151] rounded-[8px]"
+                    >
+                        Cancel
+                    </Button>
+                    <Button
+                        type="button"
+                        onClick={() => {
+                            setValue("active", false)
+                            setShowInactiveConfirm(false)
+                        }}
                         className="w-[100px] h-[40px] bg-[#6C5DD3] hover:bg-[#5B4DC5] text-white rounded-[8px]"
                     >
                         OK

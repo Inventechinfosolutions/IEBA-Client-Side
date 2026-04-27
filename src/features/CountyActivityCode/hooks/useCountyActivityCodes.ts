@@ -88,48 +88,122 @@ export function useCountyActivityCodes(
     )
 
     const pageRows = rowsWithDepartmentLabels
-    const primaryIds = new Set(
+    
+    // Identify all rows that have NO parent (these are the headers/root rows)
+    const primaryIdsOnPage = new Set(
       pageRows
-        .filter((r) => r.rowType === CountyActivityGridRowType.PRIMARY)
-        .map((r) => r.id),
+        .filter((r) => !r.parentId)
+        .map((r) => String(r.id)),
     )
 
     const useHierarchyChildren =
       hierarchyQuery.data != null && hierarchyRowsWithDept.length > 0
 
+    const rowById = new Map<string, CountyActivityCodeRow>()
+    if (useHierarchyChildren) {
+      for (const r of hierarchyRowsWithDept) {
+        rowById.set(String(r.id), r)
+      }
+    }
+
+    // Identify parents of any rows that have a parent (check row itself and hierarchy fallback)
+    const parentIdsOfSubsOnPage = new Set<string>()
+    for (const r of pageRows) {
+      const rid = String(r.id)
+      let pid = r.parentId ? String(r.parentId) : null
+      if (!pid && useHierarchyChildren) {
+        pid = rowById.get(rid)?.parentId ? String(rowById.get(rid)?.parentId) : null
+      }
+      if (pid) {
+        parentIdsOfSubsOnPage.add(pid)
+      }
+    }
+
+    // All primary IDs that we need to act as "Headers" for this page
+    const allRelevantPrimaryIds = new Set([...primaryIdsOnPage, ...parentIdsOfSubsOnPage])
+
     const subByParent: Record<string, CountyActivityCodeRow[]> = {}
 
     if (useHierarchyChildren) {
-      const statusMatchesFilter = (r: CountyActivityCodeRow) =>
-        filters.inactive ? !r.active : r.active
-
       for (const r of hierarchyRowsWithDept) {
-        if (r.rowType !== CountyActivityGridRowType.SUB || !r.parentId) continue
-        if (!statusMatchesFilter(r)) continue
-        if (!primaryIds.has(r.parentId)) continue
-        subByParent[r.parentId] = [...(subByParent[r.parentId] ?? []), r]
+        const rid = String(r.id)
+        let pid = r.parentId ? String(r.parentId) : null
+        if (!pid) continue
+
+        if (!allRelevantPrimaryIds.has(pid)) continue
+
+        const parentIsOnPage = primaryIdsOnPage.has(pid)
+        
+        let includeSub = false
+        if (filters.inactive) {
+          // Inactive table: only show children if the parent is also inactive (on page)
+          includeSub = parentIsOnPage
+        } else {
+          // Active table: always show children if the parent is active (regardless of child's active status)
+          const parentRow = rowById.get(pid)
+          includeSub = (parentRow ? parentRow.active : true)
+        }
+
+        if (includeSub) {
+          subByParent[pid] = [...(subByParent[pid] ?? []), r]
+        }
       }
     }
 
     const topLevel: CountyActivityCodeRow[] = []
+    const seenIds = new Set<string>()
+
     for (const row of pageRows) {
-      if (row.rowType === CountyActivityGridRowType.PRIMARY) {
+      const rowId = String(row.id)
+      if (seenIds.has(rowId)) continue
+
+      let pid = row.parentId ? String(row.parentId) : null
+      if (!pid && useHierarchyChildren) {
+        // Fallback to hierarchy to see if this is actually a sub
+        pid = rowById.get(rowId)?.parentId ? String(rowById.get(rowId)?.parentId) : null
+      }
+      
+      // If it still has no parent, it's a top-level primary row
+      if (!pid) {
         topLevel.push(row)
+        seenIds.add(rowId)
         continue
       }
-      if (!row.parentId) {
-        topLevel.push(row)
-        continue
-      }
-      if (primaryIds.has(row.parentId)) {
-        if (useHierarchyChildren) {
+
+      // If it has a parent, try to group it
+      if (allRelevantPrimaryIds.has(pid)) {
+        const parentRow = rowById.get(pid)
+
+        if (filters.inactive) {
+          // Inactive mode: if parent is ACTIVE, hide the child from the inactive table
+          if (parentRow && parentRow.active) {
+            continue
+          }
+        } else {
+          // Active mode: if parent is INACTIVE, hide the child from the active table
+          if (parentRow && !parentRow.active) {
+            continue
+          }
+        }
+
+        // Pull in the primary header if it's not on the page yet
+        if (!primaryIdsOnPage.has(pid) && !seenIds.has(pid)) {
+          if (parentRow) {
+            topLevel.push(parentRow)
+            seenIds.add(pid)
+          }
+        }
+        
+        if (primaryIdsOnPage.has(pid) || seenIds.has(pid)) {
+          if (!useHierarchyChildren) {
+            subByParent[pid] = [...(subByParent[pid] ?? []), row]
+          }
           continue
         }
-        const pid = row.parentId
-        subByParent[pid] = [...(subByParent[pid] ?? []), row]
-        continue
       }
+
       topLevel.push(row)
+      seenIds.add(rowId)
     }
 
     return {

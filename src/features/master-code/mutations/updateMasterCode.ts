@@ -21,6 +21,8 @@ export function useUpdateMasterCode() {
         queryKey: masterCodeKeys.activityCodesCatalogAll(),
       })
       await queryClient.invalidateQueries({ queryKey: countyActivityCodeKeys.lists() })
+      await queryClient.invalidateQueries({ queryKey: countyActivityCodeKeys.pagedLists() })
+      await queryClient.invalidateQueries({ queryKey: countyActivityCodeKeys.topLevel() })
     },
   })
 }

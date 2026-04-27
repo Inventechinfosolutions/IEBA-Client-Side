@@ -429,7 +429,7 @@ export function CountyActivityCodeTable({
     },
   })
 
-  const editMasterCodeTypeWatched = editForm.watch("masterCodeType")
+  // const editMasterCodeTypeWatched = editForm.watch("masterCodeType")
 
   // Code Type dropdown: derived from the all-activity-codes catalog (replaces old /master-codes call)
   const masterCodeTypeOptions = useMemo(() => {
@@ -450,31 +450,43 @@ export function CountyActivityCodeTable({
 
   const addMasterCodeOptions = useMemo(
     () =>
-      (addMasterCodesQuery.data?.items ?? []).map((item) => ({
-        label: item.code ? `${item.code} * ${item.name}` : item.name,
-        value: Number(item.id),
-        code: String(item.code ?? "").trim(),
-      })).filter((o) => o.code.length > 0),
+      (addMasterCodesQuery.data?.items ?? [])
+        .map((item) => ({
+          label: item.code ? `${item.code} * ${item.name}` : item.name,
+          value: Number(item.id),
+          code: String(item.code ?? "").trim(),
+        }))
+        .filter((o) => o.code.length > 0)
+        .sort((a, b) =>
+          a.code.localeCompare(b.code, undefined, { numeric: true, sensitivity: "base" }),
+        ),
     [addMasterCodesQuery.data?.items],
   )
 
   // Code dropdown (Edit modal): per-type call fires when user selects or modal loads a Code Type
+  const editMasterCodesQueryType =
+    editSyncedMasterCodeType.trim() || rowToEdit?.masterCodeType?.trim() || ""
+
   const editMasterCodesQuery = useGetCountyActivityMasterCodes(
-    editMasterCodeTypeWatched.trim() !== ""
-      ? editMasterCodeTypeWatched
-      : editSyncedMasterCodeType,
+    editMasterCodesQueryType,
     editOpen &&
       rowToEdit != null &&
-      rowToEdit.rowType !== CountyActivityGridRowType.SUB,
+      rowToEdit.rowType !== CountyActivityGridRowType.SUB &&
+      editMasterCodesQueryType.trim().length > 0,
   )
 
   const editMasterCodeOptions = useMemo(
     () =>
-      (editMasterCodesQuery.data?.items ?? []).map((item) => ({
-        label: item.code ? `${item.code} * ${item.name}` : item.name,
-        value: Number(item.id),
-        code: String(item.code ?? "").trim(),
-      })).filter((o) => o.code.length > 0),
+      (editMasterCodesQuery.data?.items ?? [])
+        .map((item) => ({
+          label: item.code ? `${item.code} * ${item.name}` : item.name,
+          value: Number(item.id),
+          code: String(item.code ?? "").trim(),
+        }))
+        .filter((o) => o.code.length > 0)
+        .sort((a, b) =>
+          a.code.localeCompare(b.code, undefined, { numeric: true, sensitivity: "base" }),
+        ),
     [editMasterCodesQuery.data?.items],
   )
 
@@ -1050,14 +1062,14 @@ export function CountyActivityCodeTable({
                     {row.countyActivityName}
                   </TableCell>
                   <CountyActivityDescriptionTableCell description={row.description} />
-                  <TableCell className="min-w-0 border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] leading-[1.4] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
+                  <TableCell className="min-w-0 border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] leading-[1.4] whitespace-normal break-words font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
                     <CountyActivityDepartmentStackCell label={getCountyActivityCodeRowDepartmentLabel(row)} />
                   </TableCell>
                   <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
                     {row.masterCodeType}
                   </TableCell>
                   <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
-                    {row.masterCode}
+                    {row.catalogActivityCode || "—"}
                   </TableCell>
                   <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-center text-[13px] text-[#C4C4C4]">
                     {row.spmp ? (
@@ -1083,10 +1095,16 @@ export function CountyActivityCodeTable({
                     </span>
                   </TableCell>
                   <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-center">
-                    {row.active && (
+                    {row.active ? (
                       <img
                         src={statusCheckImg}
                         alt="active"
+                        className="mx-auto h-4 w-4 object-contain"
+                      />
+                    ) : (
+                      <img
+                        src={statusCrossImg}
+                        alt="inactive"
                         className="mx-auto h-4 w-4 object-contain"
                       />
                     )}
@@ -1157,7 +1175,7 @@ export function CountyActivityCodeTable({
                           {child.countyActivityName}
                         </TableCell>
                         <CountyActivityDescriptionTableCell description={child.description} />
-                        <TableCell className="min-w-0 border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] leading-[1.4] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
+                        <TableCell className="min-w-0 border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] leading-[1.4] whitespace-normal break-words font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
                           <CountyActivityDepartmentStackCell
                             label={
                               child.rowType === CountyActivityGridRowType.SUB
@@ -1174,36 +1192,43 @@ export function CountyActivityCodeTable({
                         <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
                           {child.rowType === CountyActivityGridRowType.SUB
                             ? ""
-                            : child.masterCode}
+                            : child.catalogActivityCode || "—"}
                         </TableCell>
                         <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-center text-[13px] text-[#C4C4C4]">
-                          {child.spmp ? (
+                          {/* Sub rows have no master code — SPMP is always N/cross */}
+                          <img
+                            src={statusCrossImg}
+                            alt="No"
+                            className="mx-auto h-4 w-4 object-contain"
+                          />
+                        </TableCell>
+                        <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-center text-[13px] text-[#C4C4C4]">
+                          {/* Sub rows have no master code — Match is always N/cross */}
+                          <img
+                            src={statusCrossImg}
+                            alt="No"
+                            className="mx-auto h-4 w-4 object-contain"
+                          />
+                        </TableCell>
+                        <TableCell className="border-r border-[#E5E7EB] px-[8px] py-[5px] align-middle text-center text-[13px] text-[#C4C4C4]">
+                          {/* Sub rows have no master code — % is always N/cross */}
+                          <img
+                            src={statusCrossImg}
+                            alt="No"
+                            className="mx-auto h-4 w-4 object-contain"
+                          />
+                        </TableCell>
+                        <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-center">
+                          {child.active ? (
                             <img
                               src={statusCheckImg}
-                              alt="Yes"
+                              alt="active"
                               className="mx-auto h-4 w-4 object-contain"
                             />
                           ) : (
                             <img
                               src={statusCrossImg}
-                              alt="No"
-                              className="mx-auto h-4 w-4 object-contain"
-                            />
-                          )}
-                        </TableCell>
-                        <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-center text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
-                          {child.match}
-                        </TableCell>
-                        <TableCell className="border-r border-[#E5E7EB] px-[8px] py-[5px] align-top text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
-                          <span className="block w-full text-center">
-                            {child.percentage.toFixed(2)}
-                          </span>
-                        </TableCell>
-                        <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-center">
-                          {child.active && (
-                            <img
-                              src={statusCheckImg}
-                              alt="active"
+                              alt="inactive"
                               className="mx-auto h-4 w-4 object-contain"
                             />
                           )}
