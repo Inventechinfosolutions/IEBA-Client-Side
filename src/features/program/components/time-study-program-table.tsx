@@ -408,37 +408,42 @@ export const TimeStudyProgramTable = forwardRef<TimeStudyProgramTableHandle, Tim
                               type="button"
                               onClick={(event) => {
                                 event.stopPropagation()
-                                setExpandedPrograms((prev) => {
-                                  const next = !prev[row.id]
-                                  if (next) {
-                                    // Stale time = 0: always clear old data and refetch fresh
-                                    childrenInFlightRef.current.delete(row.id)
+                                const nextExpanded = !expandedPrograms[row.id]
+                                if (nextExpanded) {
+                                  // Always fetch fresh — clear stale data and inflight guard first
+                                  childrenInFlightRef.current.delete(row.id)
+                                  setChildrenByParentId((prevC) => {
+                                    const updated = { ...prevC }
+                                    delete updated[row.id]
+                                    return updated
+                                  })
+                                  setExpandedPrograms((prev) => ({ ...prev, [row.id]: true }))
+                                  void ensureChildrenLoaded(row)
+                                } else {
+                                  // On collapse: clear inflight guard and children
+                                  childrenInFlightRef.current.delete(row.id)
+                                  if (row.hierarchyLevel === 0) {
+                                    // Auto-collapse all secondaries under this primary
+                                    setExpandedPrograms((prev) => {
+                                      const secondaries = childrenByParentId[row.id] ?? []
+                                      const next = { ...prev, [row.id]: false }
+                                      secondaries.forEach((s) => { next[s.id] = false })
+                                      return next
+                                    })
                                     setChildrenByParentId((prevC) => {
                                       const updated = { ...prevC }
                                       delete updated[row.id]
                                       return updated
                                     })
-                                    void ensureChildrenLoaded(row)
                                   } else {
-                                    // On collapse, clear children AND inflight guard so re-expand always fetches fresh
-                                    childrenInFlightRef.current.delete(row.id)
+                                    setExpandedPrograms((prev) => ({ ...prev, [row.id]: false }))
                                     setChildrenByParentId((prevC) => {
                                       const updated = { ...prevC }
-                                      // Auto-collapse children if closing Level 0 (Primary)
-                                      if (row.hierarchyLevel === 0) {
-                                        const secondaries = prevC[row.id] ?? []
-                                        setExpandedPrograms((prevE) => {
-                                          const nextE = { ...prevE }
-                                          secondaries.forEach((s) => delete nextE[s.id])
-                                          return nextE
-                                        })
-                                      }
                                       delete updated[row.id]
                                       return updated
                                     })
                                   }
-                                  return { ...prev, [row.id]: next }
-                                })
+                                }
                               }}
                               className="inline-flex cursor-pointer items-center text-(--primary)"
                               aria-label={row.hierarchyLevel === 0 ? "Toggle TS secondary programs" : "Toggle TS subprograms"}

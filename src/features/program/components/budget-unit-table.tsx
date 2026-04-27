@@ -101,8 +101,15 @@ export const BudgetUnitTable = forwardRef<BudgetUnitTableHandle, BudgetUnitTable
   }, [budgetProgramsByBudgetUnitId, rows])
 
   const hierarchyRows = useMemo<DisplayHierarchyRow[]>(() => {
+    // Use the same level-prefixed key as React Fragment keys to avoid ID collision
+    // e.g. BU 1140 id="1" and Program 401100 id="1" → "bu-1" vs "prog-1"
+    const patchKey = (row: ProgramRow): string => {
+      if (row.hierarchyLevel === 0) return `bu-${row.id}`
+      if (row.hierarchyLevel === 1) return `prog-${row.id}`
+      return `sub-${row.id}`
+    }
     const applyUpdatedRow = (row: ProgramRow): ProgramRow => {
-      const patched = patchedRows[row.id]
+      const patched = patchedRows[patchKey(row)]
       if (patched) {
         return {
           ...row,
@@ -196,11 +203,42 @@ export const BudgetUnitTable = forwardRef<BudgetUnitTableHandle, BudgetUnitTable
   }
 
   function patchBudgetProgramRow(updatedRow: ProgramRow) {
-    setPatchedRows((prev) => ({ ...prev, [updatedRow.id]: updatedRow }))
+    // Use same level-prefixed key to avoid collision between BU/Program/SubProgram with same numeric id
+    let pKey: string
+    if (updatedRow.hierarchyLevel === 0) pKey = `bu-${updatedRow.id}`
+    else if (updatedRow.hierarchyLevel === 1) pKey = `prog-${updatedRow.id}`
+    else pKey = `sub-${updatedRow.id}`
+    setPatchedRows((prev) => ({ ...prev, [pKey]: updatedRow }))
+
+   
+    if (updatedRow.hierarchyLevel === 0) {
+      const buId = updatedRow.id
+      setBudgetProgramsByBudgetUnitId((prev) => {
+        const updated = { ...prev }
+        delete updated[buId]
+        return updated
+      })
+      setExpandedBudgetUnits((prev) => ({ ...prev, [buId]: false }))
+      setExpandedProgramGroups((prev) => {
+        const next = { ...prev }
+        delete next[buId]
+        return next
+      })
+      setExpandedPrograms((prev) => {
+        const next: Record<string, boolean> = {}
+        for (const key of Object.keys(prev)) {
+          if (!key.startsWith(`${buId}:`)) next[key] = prev[key]
+        }
+        return next
+      })
+      return
+    }
+
     setBudgetProgramsByBudgetUnitId((prev) => {
       let foundBucket: string | null = null
       for (const buId of Object.keys(prev)) {
-        if (prev[buId].some((r) => r.id === updatedRow.id)) {
+       
+        if (prev[buId].some((r) => r.id === updatedRow.id && r.hierarchyLevel === updatedRow.hierarchyLevel)) {
           foundBucket = buId
           break
         }
@@ -209,7 +247,7 @@ export const BudgetUnitTable = forwardRef<BudgetUnitTableHandle, BudgetUnitTable
         return {
           ...prev,
           [foundBucket]: prev[foundBucket].map((r) =>
-            r.id === updatedRow.id
+            r.id === updatedRow.id && r.hierarchyLevel === updatedRow.hierarchyLevel
               ? {
                   ...r,
                   ...updatedRow,
@@ -299,10 +337,16 @@ export const BudgetUnitTable = forwardRef<BudgetUnitTableHandle, BudgetUnitTable
   const ensureBudgetProgramsLoadedRef = useRef(ensureBudgetProgramsLoaded)
   ensureBudgetProgramsLoadedRef.current = ensureBudgetProgramsLoaded
 
+  // Always keep a ref to the latest patchBudgetProgramRow so useImperativeHandle
+  // (which has empty deps []) never calls a stale closure that has the wrong setters.
+  const patchBudgetProgramRowRef = useRef(patchBudgetProgramRow)
+  patchBudgetProgramRowRef.current = patchBudgetProgramRow
+
   useImperativeHandle(
     ref,
     () => ({
-      patchBudgetProgramRow,
+      patchBudgetProgramRow: (updatedRow: ProgramRow) =>
+        patchBudgetProgramRowRef.current(updatedRow),
       refreshBudgetUnitPrograms: (budgetUnitId: string) =>
         ensureBudgetProgramsLoadedRef.current(budgetUnitId, { force: true }),
     }),
