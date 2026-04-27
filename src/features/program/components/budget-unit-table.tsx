@@ -136,7 +136,7 @@ export const BudgetUnitTable = forwardRef<BudgetUnitTableHandle, BudgetUnitTable
     for (const budgetUnit of budgetUnits) {
       const effectiveBudgetUnit = applyUpdatedRow(budgetUnit)
       flattened.push({ kind: "data", row: effectiveBudgetUnit })
-      if (!expandedBudgetUnits[budgetUnit.id]) continue
+      if (expandedBudgetUnits[budgetUnit.id] !== true) continue
 
       flattened.push({
         kind: "group",
@@ -144,7 +144,7 @@ export const BudgetUnitTable = forwardRef<BudgetUnitTableHandle, BudgetUnitTable
         label: "BU Program",
         hierarchyLevel: 1,
       })
-      if (!expandedProgramGroups[budgetUnit.id]) continue
+      if (expandedProgramGroups[budgetUnit.id] !== true) continue
 
       const linkedProgramSource = programs.filter((program) => program.parentId === budgetUnit.id)
       const linkedPrograms =
@@ -155,7 +155,10 @@ export const BudgetUnitTable = forwardRef<BudgetUnitTableHandle, BudgetUnitTable
       for (const program of linkedPrograms) {
         const effectiveProgram = applyUpdatedRow(program)
         flattened.push({ kind: "data", row: { ...effectiveProgram, hierarchyLevel: 2 } })
-        if (!expandedPrograms[program.id]) continue
+        // Use composite key buId:programId to avoid ID collision
+        // (BU 1140 id="1" and Program 401100 id="1" are different entities)
+        const programExpandKey = `${budgetUnit.id}:${program.id}`
+        if (expandedPrograms[programExpandKey] !== true) continue
 
         // When a BU Program row is expanded, show only its own sub-programs,
         // matched by parentId coming from the backend response.
@@ -358,83 +361,101 @@ export const BudgetUnitTable = forwardRef<BudgetUnitTableHandle, BudgetUnitTable
   }
 
   const toggleBudgetUnit = (budgetUnitId: string) => {
-    setExpandedBudgetUnits((prev) => {
-      const nextExpanded = !prev[budgetUnitId]
-      // Always clear children and force fresh load when expanding
-      if (nextExpanded) {
-        setBudgetProgramsByBudgetUnitId((prev) => {
-          const updated = { ...prev }
-          delete updated[budgetUnitId]
-          return updated
-        })
-        budgetProgramsInFlightRef.current.delete(budgetUnitId)
-        void ensureBudgetProgramsLoaded(budgetUnitId, { force: true })
-      } else {
-        // When closing a BU, also collapse all its programs
-        setExpandedPrograms((prev) => {
-          const next = { ...prev }
-          const programsForBu = budgetProgramsByBudgetUnitId[budgetUnitId] ?? []
-          programsForBu.forEach((p) => {
-            delete next[p.id]
-          })
-          return next
-        })
-      }
-      return {
-        ...prev,
-        [budgetUnitId]: nextExpanded,
-      }
+    const nextExpanded = !(expandedBudgetUnits[budgetUnitId] === true)
+    setBudgetProgramsByBudgetUnitId((prevB) => {
+      const updated = { ...prevB }
+      delete updated[budgetUnitId]
+      return updated
     })
+    budgetProgramsInFlightRef.current.delete(budgetUnitId)
+    if (nextExpanded) {
+      // Only expand the BU row itself; BU Program group stays collapsed until user clicks it
+      setExpandedProgramGroups((prevG) => ({ ...prevG, [budgetUnitId]: false }))
+      setExpandedPrograms((prevE) => {
+        // Remove all composite keys for this BU: "budgetUnitId:*"
+        const next: Record<string, boolean> = {}
+        for (const key of Object.keys(prevE)) {
+          if (!key.startsWith(`${budgetUnitId}:`)) next[key] = prevE[key]
+        }
+        return next
+      })
+      setExpandedBudgetUnits((prev) => ({ ...prev, [budgetUnitId]: true }))
+      // Do NOT pre-fetch programs here — they are fetched when user opens BU Program group
+    } else {
+      setExpandedProgramGroups((prevG) => {
+        const next = { ...prevG }
+        delete next[budgetUnitId]
+        return next
+      })
+      setExpandedPrograms((prevE) => {
+        // Remove all composite keys for this BU: "budgetUnitId:*"
+        const next: Record<string, boolean> = {}
+        for (const key of Object.keys(prevE)) {
+          if (!key.startsWith(`${budgetUnitId}:`)) next[key] = prevE[key]
+        }
+        return next
+      })
+      setExpandedBudgetUnits((prev) => ({ ...prev, [budgetUnitId]: false }))
+    }
   }
 
   const toggleProgramGroup = (budgetUnitId: string) => {
-    setExpandedProgramGroups((prev) => {
-      const nextExpanded = !prev[budgetUnitId]
-      if (nextExpanded) {
-        // Clear children to force fresh load from API
-        setBudgetProgramsByBudgetUnitId((prevB) => {
-          const updated = { ...prevB }
-          delete updated[budgetUnitId]
-          return updated
-        })
-        budgetProgramsInFlightRef.current.delete(budgetUnitId)
-        void ensureBudgetProgramsLoaded(budgetUnitId)
-      } else {
-        // AUTO-CLOSE: when closing the group header, collapse all Level 2 programs under this BU
-        setExpandedPrograms((prevE) => {
-          const nextE = { ...prevE }
-          const programsForBu = budgetProgramsByBudgetUnitId[budgetUnitId] ?? []
-          // HierarchyLevel 1 in budgetProgramsByBudgetUnitId represents the BU Program (Level 2 visually)
-          programsForBu.forEach((p) => {
-            if (p.hierarchyLevel === 1) delete nextE[p.id]
-          })
-          return nextE
-        })
-      }
-      return {
-        ...prev,
-        [budgetUnitId]: nextExpanded,
-      }
-    })
+    const nextExpanded = !(expandedProgramGroups[budgetUnitId] === true)
+    if (nextExpanded) {
+      setBudgetProgramsByBudgetUnitId((prevB) => {
+        const updated = { ...prevB }
+        delete updated[budgetUnitId]
+        return updated
+      })
+      budgetProgramsInFlightRef.current.delete(budgetUnitId)
+      setExpandedPrograms((prevE) => {
+        const next: Record<string, boolean> = {}
+        for (const key of Object.keys(prevE)) {
+          if (!key.startsWith(`${budgetUnitId}:`)) next[key] = prevE[key]
+        }
+        return next
+      })
+      setExpandedProgramGroups((prev) => ({ ...prev, [budgetUnitId]: true }))
+      void ensureBudgetProgramsLoaded(budgetUnitId)
+    } else {
+      setBudgetProgramsByBudgetUnitId((prevB) => {
+        const updated = { ...prevB }
+        delete updated[budgetUnitId]
+        return updated
+      })
+      setExpandedPrograms((prevE) => {
+        const next: Record<string, boolean> = {}
+        for (const key of Object.keys(prevE)) {
+          if (!key.startsWith(`${budgetUnitId}:`)) next[key] = prevE[key]
+        }
+        return next
+      })
+      setExpandedProgramGroups((prev) => ({ ...prev, [budgetUnitId]: false }))
+    }
   }
 
   const toggleProgram = (budgetUnitId: string, programId: string) => {
-    setExpandedPrograms((prev) => {
-      const nextExpanded = !prev[programId]
-      if (nextExpanded) {
-        // Clear children to force fresh load from API
-        const inFlightKey = `${budgetUnitId}:subprograms`
-        budgetProgramsInFlightRef.current.delete(inFlightKey)
-        void ensureBudgetSubProgramsLoaded(budgetUnitId, programId)
-      } else {
-        // When collapsing a program, ensure its sub-programs (if any) are also collapsed
-        // so that re-expanding it later doesn't show stale expanded sub-rows.
-      }
-      return {
-        ...prev,
-        [programId]: nextExpanded,
-      }
-    })
+    // Use composite key to avoid ID collision (e.g. BU id=1 and Program id=1)
+    const expandKey = `${budgetUnitId}:${programId}`
+    const nextExpanded = !(expandedPrograms[expandKey] === true)
+    if (nextExpanded) {
+      const inFlightKey = `${budgetUnitId}:subprograms`
+      budgetProgramsInFlightRef.current.delete(inFlightKey)
+      setExpandedPrograms((prev) => ({ ...prev, [expandKey]: true }))
+      void ensureBudgetSubProgramsLoaded(budgetUnitId, programId)
+    } else {
+      setBudgetProgramsByBudgetUnitId((prevB) => {
+        const existing = prevB[budgetUnitId]
+        if (!existing) return prevB
+        return {
+          ...prevB,
+          [budgetUnitId]: existing.filter(
+            (r) => !(r.hierarchyLevel === 2 && r.parentId === programId)
+          ),
+        }
+      })
+      setExpandedPrograms((prev) => ({ ...prev, [expandKey]: false }))
+    }
   }
 
   const getTooltipText = (key: ProgramSortKey) => {
@@ -572,7 +593,15 @@ export const BudgetUnitTable = forwardRef<BudgetUnitTableHandle, BudgetUnitTable
                     </TableRow>
                   ))
                 : hierarchyRows.map((displayRow) => (
-                    <React.Fragment key={displayRow.kind === "group" ? `group-${displayRow.budgetUnitId}` : displayRow.row.id}>
+                    <React.Fragment key={
+                      displayRow.kind === "group"
+                        ? `group-${displayRow.budgetUnitId}`
+                        : displayRow.row.hierarchyLevel === 0
+                          ? `bu-${displayRow.row.id}`
+                          : displayRow.row.hierarchyLevel === 2
+                            ? `prog-${displayRow.row.id}`
+                            : `sub-${displayRow.row.id}`
+                    }>
                     <TableRow
                       className={`min-h-[40px] border-b border-[#eff0f5] hover:bg-transparent ${
                         displayRow.kind === "group" ||
@@ -639,7 +668,7 @@ export const BudgetUnitTable = forwardRef<BudgetUnitTableHandle, BudgetUnitTable
                                 className="inline-flex cursor-pointer items-center text-(--primary)"
                                 aria-label="Toggle program children"
                               >
-                                {expandedPrograms[displayRow.row.id] ? <ChevronUp className="size-3.5" /> : <ChevronRight className="size-3.5" />}
+                                {expandedPrograms[`${displayRow.row.parentId ?? ""}:${displayRow.row.id}`] ? <ChevronUp className="size-3.5" /> : <ChevronRight className="size-3.5" />}
                               </button>
                             ) : null}
                             {displayRow.row.code}
