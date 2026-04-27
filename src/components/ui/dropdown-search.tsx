@@ -47,12 +47,6 @@ export type SingleSelectSearchDropdownProps = {
   onOpenChange?: (open: boolean) => void
 }
 
-/**
- * Single-choice combobox dropdown.
- * The trigger itself is a searchable input — no extra search box inside the list.
- * Uses Radix Popover (not DropdownMenu) so focus stays on the input while typing.
- * No useEffect anywhere.
- */
 export function SingleSelectSearchDropdown({
   value,
   onChange,
@@ -151,15 +145,11 @@ export function SingleSelectSearchDropdown({
             onClick={openMenu}
             onChange={(e) => {
               setSearchQuery(e.target.value)
-              // Make sure menu is open when user starts typing
               if (!open) openMenu()
             }}
             onBlur={() => {
-              // If a list item's mousedown is in progress, don't close —
-              // onMouseDown on the item calls e.preventDefault() which keeps
-              // focus on the input; handleSelect will run right after.
               if (selectingRef.current) return
-              closeMenu()
+
               onBlur()
             }}
             className={cn(

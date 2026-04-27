@@ -196,11 +196,6 @@ export function TimeStudyAssignmentsPanel({
   const employeeName = `${watch("firstName") ?? ""} ${watch("lastName") ?? ""}`.trim()
   const securityAssignedSnapshots = watch("securityAssignedSnapshots") ?? []
 
-  /** GET /departments — add-mode Time Study department dropdown only. */
-  const masterDepartmentNames = useMemo(
-    () => (departmentsQuery.data ?? []).map((d) => d.name).filter((n) => n.length > 0),
-    [departmentsQuery.data],
-  )
 
   const departmentSelectOptionsFromMaster = useMemo(() => {
     const map = new Map<string, { value: string; label: string }>()

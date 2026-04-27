@@ -38,7 +38,6 @@ import type {
   ScheduleTimeStudyFormProps,
   ScheduleTimeStudyModalFormValues,
 } from "../types"
-import { MultiSelectDropdown } from "@/components/ui/multi-select-dropdown"
 
 const participantGroupSuccessToastOptions = {
   position: "top-center" as const,
@@ -231,7 +230,6 @@ export function ScheduleTimeStudyForm({
       ? participantGroupOptions
       : [...DEFAULT_SCHEDULE_PARTICIPANT_GROUP_OPTIONS]
 
-  const multiSelectGroupOptions = groupOptions.map((g) => ({ value: g, label: g }))
 
   return (
     <>

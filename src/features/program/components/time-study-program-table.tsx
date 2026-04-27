@@ -59,6 +59,7 @@ export const TimeStudyProgramTable = forwardRef<TimeStudyProgramTableHandle, Tim
   const [expandedPrograms, setExpandedPrograms] = useState<Record<string, boolean>>({})
   const [childrenByParentId, setChildrenByParentId] = useState<Record<string, ProgramRow[]>>({})
   const [childrenLoading, setChildrenLoading] = useState<Record<string, boolean>>({})
+  const [patchedRows, setPatchedRows] = useState<Record<string, ProgramRow>>({})
   const childrenInFlightRef = useRef(new Set<string>())
 
   useImperativeHandle(ref, () => ({
@@ -70,6 +71,9 @@ export const TimeStudyProgramTable = forwardRef<TimeStudyProgramTableHandle, Tim
         return updated
       })
       setExpandedPrograms((prev) => ({ ...prev, [rowId]: false }))
+    },
+    patchTimeStudyProgramRow: (updatedRow: ProgramRow) => {
+      setPatchedRows((prev) => ({ ...prev, [updatedRow.id]: updatedRow }))
     },
   }), [])
 
@@ -98,6 +102,12 @@ export const TimeStudyProgramTable = forwardRef<TimeStudyProgramTableHandle, Tim
     const flattened: ProgramRow[] = []
 
     const applyUpdatedRow = (row: ProgramRow): ProgramRow => {
+      if (patchedRows[row.id]) {
+        return {
+          ...row,
+          ...patchedRows[row.id],
+        }
+      }
       if (lastUpdatedRow && row.id === lastUpdatedRow.id) {
         return {
           ...row,
@@ -131,7 +141,7 @@ export const TimeStudyProgramTable = forwardRef<TimeStudyProgramTableHandle, Tim
       }
     }
     return flattened
-  }, [expandedPrograms, sortedPrograms, childrenByParentId, lastUpdatedRow])
+  }, [expandedPrograms, sortedPrograms, childrenByParentId, lastUpdatedRow, patchedRows])
 
   const mapTimeStudyChildToRow = (
     raw: TimeStudyProgramResDto,
@@ -201,7 +211,6 @@ export const TimeStudyProgramTable = forwardRef<TimeStudyProgramTableHandle, Tim
       search.set("page", "1")
       search.set("limit", "100")
       search.set("sort", "ASC")
-      search.set("status", "active")
 
       if (isLevel0) {
         // Fetch direct secondary children of this primary
@@ -399,28 +408,42 @@ export const TimeStudyProgramTable = forwardRef<TimeStudyProgramTableHandle, Tim
                               type="button"
                               onClick={(event) => {
                                 event.stopPropagation()
-                                setExpandedPrograms((prev) => {
-                                  const next = !prev[row.id]
-                                  if (next) {
-                                    // Stale time = 0: always clear old data and refetch fresh
-                                    childrenInFlightRef.current.delete(row.id)
-                                    setChildrenByParentId((prev) => {
-                                      const updated = { ...prev }
+                                const nextExpanded = !expandedPrograms[row.id]
+                                if (nextExpanded) {
+                                  // Always fetch fresh — clear stale data and inflight guard first
+                                  childrenInFlightRef.current.delete(row.id)
+                                  setChildrenByParentId((prevC) => {
+                                    const updated = { ...prevC }
+                                    delete updated[row.id]
+                                    return updated
+                                  })
+                                  setExpandedPrograms((prev) => ({ ...prev, [row.id]: true }))
+                                  void ensureChildrenLoaded(row)
+                                } else {
+                                  // On collapse: clear inflight guard and children
+                                  childrenInFlightRef.current.delete(row.id)
+                                  if (row.hierarchyLevel === 0) {
+                                    // Auto-collapse all secondaries under this primary
+                                    setExpandedPrograms((prev) => {
+                                      const secondaries = childrenByParentId[row.id] ?? []
+                                      const next = { ...prev, [row.id]: false }
+                                      secondaries.forEach((s) => { next[s.id] = false })
+                                      return next
+                                    })
+                                    setChildrenByParentId((prevC) => {
+                                      const updated = { ...prevC }
                                       delete updated[row.id]
                                       return updated
                                     })
-                                    void ensureChildrenLoaded(row)
                                   } else {
-                                    // On collapse, clear children AND inflight guard so re-expand always fetches fresh
-                                    childrenInFlightRef.current.delete(row.id)
-                                    setChildrenByParentId((prev) => {
-                                      const updated = { ...prev }
+                                    setExpandedPrograms((prev) => ({ ...prev, [row.id]: false }))
+                                    setChildrenByParentId((prevC) => {
+                                      const updated = { ...prevC }
                                       delete updated[row.id]
                                       return updated
                                     })
                                   }
-                                  return { ...prev, [row.id]: next }
-                                })
+                                }
                               }}
                               className="inline-flex cursor-pointer items-center text-(--primary)"
                               aria-label={row.hierarchyLevel === 0 ? "Toggle TS secondary programs" : "Toggle TS subprograms"}
@@ -473,7 +496,7 @@ export const TimeStudyProgramTable = forwardRef<TimeStudyProgramTableHandle, Tim
                     sideOffset={6}
                     className="w-[92px]! min-w-[92px]! rounded-[6px] border border-[#edf0f6] p-1 shadow-[0_8px_20px_rgba(17,24,39,0.14)]"
                   >
-                    {canAddTsProgram && (
+                    {canAddTsProgram && row.active && (
                       <DropdownMenuItem
                         onClick={() => onAddSubProgramFromParent?.(row)}
                         className="cursor-pointer gap-1.5 rounded-[8px] px-1.5 py-1 text-[12px] text-[#111827]"

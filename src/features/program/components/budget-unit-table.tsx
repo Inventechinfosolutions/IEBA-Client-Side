@@ -35,7 +35,7 @@ import type {
   ProgramSortKey,
   ProgramTableSortState,
 } from "../types"
-import { BudgetProgramStatusEnum, BudgetProgramTypeEnum } from "../enums/enums"
+import { BudgetProgramTypeEnum } from "../enums/enums"
 import { usePermissions } from "@/hooks/usePermissions"
 
 export const BudgetUnitTable = forwardRef<BudgetUnitTableHandle, BudgetUnitTableProps>(
@@ -45,7 +45,6 @@ export const BudgetUnitTable = forwardRef<BudgetUnitTableHandle, BudgetUnitTable
       isLoading,
       onEditRow,
       onAddSubProgramFromProgram,
-      lastUpdatedRow,
       expandedBudgetUnits: externalExpandedBudgetUnits,
       setExpandedBudgetUnits: setExternalExpandedBudgetUnits,
       expandedProgramGroups: externalExpandedProgramGroups,
@@ -88,6 +87,7 @@ export const BudgetUnitTable = forwardRef<BudgetUnitTableHandle, BudgetUnitTable
   const [budgetProgramsByBudgetUnitId, setBudgetProgramsByBudgetUnitId] = useState<
     Record<string, ProgramRow[]>
   >({})
+  const [patchedRows, setPatchedRows] = useState<Record<string, ProgramRow>>({})
   const budgetProgramsByBudgetUnitIdRef = useRef(budgetProgramsByBudgetUnitId)
   budgetProgramsByBudgetUnitIdRef.current = budgetProgramsByBudgetUnitId
 
@@ -101,18 +101,21 @@ export const BudgetUnitTable = forwardRef<BudgetUnitTableHandle, BudgetUnitTable
   }, [budgetProgramsByBudgetUnitId, rows])
 
   const hierarchyRows = useMemo<DisplayHierarchyRow[]>(() => {
+    // Use the same level-prefixed key as React Fragment keys to avoid ID collision
+    // e.g. BU 1140 id="1" and Program 401100 id="1" → "bu-1" vs "prog-1"
+    const patchKey = (row: ProgramRow): string => {
+      if (row.hierarchyLevel === 0) return `bu-${row.id}`
+      if (row.hierarchyLevel === 1) return `prog-${row.id}`
+      return `sub-${row.id}`
+    }
     const applyUpdatedRow = (row: ProgramRow): ProgramRow => {
-      if (
-        lastUpdatedRow &&
-        row.id === lastUpdatedRow.id &&
-        row.hierarchyLevel === lastUpdatedRow.hierarchyLevel
-      ) {
-        const merged = { ...row, ...lastUpdatedRow }
+      const patched = patchedRows[patchKey(row)]
+      if (patched) {
         return {
-          ...merged,
-          // API tree `parentId` is null for level-1 programs; table uses BU id — never drop it.
-          parentId: merged.parentId ?? row.parentId,
-          tab: merged.tab ?? row.tab,
+          ...row,
+          ...patched,
+          parentId: patched.parentId ?? row.parentId,
+          tab: patched.tab ?? row.tab,
         }
       }
       return row
@@ -140,7 +143,7 @@ export const BudgetUnitTable = forwardRef<BudgetUnitTableHandle, BudgetUnitTable
     for (const budgetUnit of budgetUnits) {
       const effectiveBudgetUnit = applyUpdatedRow(budgetUnit)
       flattened.push({ kind: "data", row: effectiveBudgetUnit })
-      if (!expandedBudgetUnits[budgetUnit.id]) continue
+      if (expandedBudgetUnits[budgetUnit.id] !== true) continue
 
       flattened.push({
         kind: "group",
@@ -148,7 +151,7 @@ export const BudgetUnitTable = forwardRef<BudgetUnitTableHandle, BudgetUnitTable
         label: "BU Program",
         hierarchyLevel: 1,
       })
-      if (!expandedProgramGroups[budgetUnit.id]) continue
+      if (expandedProgramGroups[budgetUnit.id] !== true) continue
 
       const linkedProgramSource = programs.filter((program) => program.parentId === budgetUnit.id)
       const linkedPrograms =
@@ -159,7 +162,10 @@ export const BudgetUnitTable = forwardRef<BudgetUnitTableHandle, BudgetUnitTable
       for (const program of linkedPrograms) {
         const effectiveProgram = applyUpdatedRow(program)
         flattened.push({ kind: "data", row: { ...effectiveProgram, hierarchyLevel: 2 } })
-        if (!expandedPrograms[program.id]) continue
+        // Use composite key buId:programId to avoid ID collision
+        // (BU 1140 id="1" and Program 401100 id="1" are different entities)
+        const programExpandKey = `${budgetUnit.id}:${program.id}`
+        if (expandedPrograms[programExpandKey] !== true) continue
 
         // When a BU Program row is expanded, show only its own sub-programs,
         // matched by parentId coming from the backend response.
@@ -185,7 +191,7 @@ export const BudgetUnitTable = forwardRef<BudgetUnitTableHandle, BudgetUnitTable
       }
     }
     return flattened
-  }, [expandedBudgetUnits, expandedProgramGroups, expandedPrograms, mergedRows, sortState, lastUpdatedRow])
+  }, [expandedBudgetUnits, expandedProgramGroups, expandedPrograms, mergedRows, sortState, patchedRows])
 
   const handleSort = (key: ProgramSortKey) => {
     setSortState((prev) => {
@@ -197,10 +203,42 @@ export const BudgetUnitTable = forwardRef<BudgetUnitTableHandle, BudgetUnitTable
   }
 
   function patchBudgetProgramRow(updatedRow: ProgramRow) {
+    // Use same level-prefixed key to avoid collision between BU/Program/SubProgram with same numeric id
+    let pKey: string
+    if (updatedRow.hierarchyLevel === 0) pKey = `bu-${updatedRow.id}`
+    else if (updatedRow.hierarchyLevel === 1) pKey = `prog-${updatedRow.id}`
+    else pKey = `sub-${updatedRow.id}`
+    setPatchedRows((prev) => ({ ...prev, [pKey]: updatedRow }))
+
+   
+    if (updatedRow.hierarchyLevel === 0) {
+      const buId = updatedRow.id
+      setBudgetProgramsByBudgetUnitId((prev) => {
+        const updated = { ...prev }
+        delete updated[buId]
+        return updated
+      })
+      setExpandedBudgetUnits((prev) => ({ ...prev, [buId]: false }))
+      setExpandedProgramGroups((prev) => {
+        const next = { ...prev }
+        delete next[buId]
+        return next
+      })
+      setExpandedPrograms((prev) => {
+        const next: Record<string, boolean> = {}
+        for (const key of Object.keys(prev)) {
+          if (!key.startsWith(`${buId}:`)) next[key] = prev[key]
+        }
+        return next
+      })
+      return
+    }
+
     setBudgetProgramsByBudgetUnitId((prev) => {
       let foundBucket: string | null = null
       for (const buId of Object.keys(prev)) {
-        if (prev[buId].some((r) => r.id === updatedRow.id)) {
+       
+        if (prev[buId].some((r) => r.id === updatedRow.id && r.hierarchyLevel === updatedRow.hierarchyLevel)) {
           foundBucket = buId
           break
         }
@@ -209,7 +247,7 @@ export const BudgetUnitTable = forwardRef<BudgetUnitTableHandle, BudgetUnitTable
         return {
           ...prev,
           [foundBucket]: prev[foundBucket].map((r) =>
-            r.id === updatedRow.id
+            r.id === updatedRow.id && r.hierarchyLevel === updatedRow.hierarchyLevel
               ? {
                   ...r,
                   ...updatedRow,
@@ -246,10 +284,7 @@ export const BudgetUnitTable = forwardRef<BudgetUnitTableHandle, BudgetUnitTable
     budgetUnitId: string,
     options?: { force?: boolean },
   ) => {
-    if (!options?.force) {
-      const cached = budgetProgramsByBudgetUnitIdRef.current[budgetUnitId]
-      if (cached?.some((r) => r.hierarchyLevel === 1)) return
-    }
+    // Remove cache check to always fetch fresh data on expansion
     if (options?.force) {
       budgetProgramsInFlightRef.current.delete(budgetUnitId)
     }
@@ -263,7 +298,6 @@ export const BudgetUnitTable = forwardRef<BudgetUnitTableHandle, BudgetUnitTable
       search.set("page", "1")
       search.set("limit", "100")
       search.set("sort", "ASC")
-      search.set("status", BudgetProgramStatusEnum.ACTIVE)
       search.set("type", BudgetProgramTypeEnum.PROGRAM)
       search.set("budgetUnitId", budgetUnitId)
 
@@ -303,10 +337,16 @@ export const BudgetUnitTable = forwardRef<BudgetUnitTableHandle, BudgetUnitTable
   const ensureBudgetProgramsLoadedRef = useRef(ensureBudgetProgramsLoaded)
   ensureBudgetProgramsLoadedRef.current = ensureBudgetProgramsLoaded
 
+  // Always keep a ref to the latest patchBudgetProgramRow so useImperativeHandle
+  // (which has empty deps []) never calls a stale closure that has the wrong setters.
+  const patchBudgetProgramRowRef = useRef(patchBudgetProgramRow)
+  patchBudgetProgramRowRef.current = patchBudgetProgramRow
+
   useImperativeHandle(
     ref,
     () => ({
-      patchBudgetProgramRow,
+      patchBudgetProgramRow: (updatedRow: ProgramRow) =>
+        patchBudgetProgramRowRef.current(updatedRow),
       refreshBudgetUnitPrograms: (budgetUnitId: string) =>
         ensureBudgetProgramsLoadedRef.current(budgetUnitId, { force: true }),
     }),
@@ -327,7 +367,6 @@ export const BudgetUnitTable = forwardRef<BudgetUnitTableHandle, BudgetUnitTable
       search.set("page", "1")
       search.set("limit", "100")
       search.set("sort", "ASC")
-      search.set("status", BudgetProgramStatusEnum.ACTIVE)
       search.set("type", BudgetProgramTypeEnum.SUBPROGRAM)
       search.set("budgetUnitId", budgetUnitId)
 
@@ -366,41 +405,101 @@ export const BudgetUnitTable = forwardRef<BudgetUnitTableHandle, BudgetUnitTable
   }
 
   const toggleBudgetUnit = (budgetUnitId: string) => {
-    setExpandedBudgetUnits((prev) => {
-      const nextExpanded = !prev[budgetUnitId]
-      return {
-        ...prev,
-        [budgetUnitId]: nextExpanded,
-      }
+    const nextExpanded = !(expandedBudgetUnits[budgetUnitId] === true)
+    setBudgetProgramsByBudgetUnitId((prevB) => {
+      const updated = { ...prevB }
+      delete updated[budgetUnitId]
+      return updated
     })
+    budgetProgramsInFlightRef.current.delete(budgetUnitId)
+    if (nextExpanded) {
+      // Only expand the BU row itself; BU Program group stays collapsed until user clicks it
+      setExpandedProgramGroups((prevG) => ({ ...prevG, [budgetUnitId]: false }))
+      setExpandedPrograms((prevE) => {
+        // Remove all composite keys for this BU: "budgetUnitId:*"
+        const next: Record<string, boolean> = {}
+        for (const key of Object.keys(prevE)) {
+          if (!key.startsWith(`${budgetUnitId}:`)) next[key] = prevE[key]
+        }
+        return next
+      })
+      setExpandedBudgetUnits((prev) => ({ ...prev, [budgetUnitId]: true }))
+      // Do NOT pre-fetch programs here — they are fetched when user opens BU Program group
+    } else {
+      setExpandedProgramGroups((prevG) => {
+        const next = { ...prevG }
+        delete next[budgetUnitId]
+        return next
+      })
+      setExpandedPrograms((prevE) => {
+        // Remove all composite keys for this BU: "budgetUnitId:*"
+        const next: Record<string, boolean> = {}
+        for (const key of Object.keys(prevE)) {
+          if (!key.startsWith(`${budgetUnitId}:`)) next[key] = prevE[key]
+        }
+        return next
+      })
+      setExpandedBudgetUnits((prev) => ({ ...prev, [budgetUnitId]: false }))
+    }
   }
 
   const toggleProgramGroup = (budgetUnitId: string) => {
-    setExpandedProgramGroups((prev) => {
-      const nextExpanded = !prev[budgetUnitId]
-      if (nextExpanded) {
-        // When expanding the "BU Program" group, lazy-load BU Programs (type=program)
-        void ensureBudgetProgramsLoaded(budgetUnitId)
-      }
-      return {
-        ...prev,
-        [budgetUnitId]: nextExpanded,
-      }
-    })
+    const nextExpanded = !(expandedProgramGroups[budgetUnitId] === true)
+    if (nextExpanded) {
+      setBudgetProgramsByBudgetUnitId((prevB) => {
+        const updated = { ...prevB }
+        delete updated[budgetUnitId]
+        return updated
+      })
+      budgetProgramsInFlightRef.current.delete(budgetUnitId)
+      setExpandedPrograms((prevE) => {
+        const next: Record<string, boolean> = {}
+        for (const key of Object.keys(prevE)) {
+          if (!key.startsWith(`${budgetUnitId}:`)) next[key] = prevE[key]
+        }
+        return next
+      })
+      setExpandedProgramGroups((prev) => ({ ...prev, [budgetUnitId]: true }))
+      void ensureBudgetProgramsLoaded(budgetUnitId)
+    } else {
+      setBudgetProgramsByBudgetUnitId((prevB) => {
+        const updated = { ...prevB }
+        delete updated[budgetUnitId]
+        return updated
+      })
+      setExpandedPrograms((prevE) => {
+        const next: Record<string, boolean> = {}
+        for (const key of Object.keys(prevE)) {
+          if (!key.startsWith(`${budgetUnitId}:`)) next[key] = prevE[key]
+        }
+        return next
+      })
+      setExpandedProgramGroups((prev) => ({ ...prev, [budgetUnitId]: false }))
+    }
   }
 
   const toggleProgram = (budgetUnitId: string, programId: string) => {
-    setExpandedPrograms((prev) => {
-      const nextExpanded = !prev[programId]
-      if (nextExpanded) {
-        // When expanding a specific BU Program row (e.g. >11111), lazy-load its sub-programs (type=subprogram)
-        void ensureBudgetSubProgramsLoaded(budgetUnitId, programId)
-      }
-      return {
-        ...prev,
-        [programId]: nextExpanded,
-      }
-    })
+    // Use composite key to avoid ID collision (e.g. BU id=1 and Program id=1)
+    const expandKey = `${budgetUnitId}:${programId}`
+    const nextExpanded = !(expandedPrograms[expandKey] === true)
+    if (nextExpanded) {
+      const inFlightKey = `${budgetUnitId}:subprograms`
+      budgetProgramsInFlightRef.current.delete(inFlightKey)
+      setExpandedPrograms((prev) => ({ ...prev, [expandKey]: true }))
+      void ensureBudgetSubProgramsLoaded(budgetUnitId, programId)
+    } else {
+      setBudgetProgramsByBudgetUnitId((prevB) => {
+        const existing = prevB[budgetUnitId]
+        if (!existing) return prevB
+        return {
+          ...prevB,
+          [budgetUnitId]: existing.filter(
+            (r) => !(r.hierarchyLevel === 2 && r.parentId === programId)
+          ),
+        }
+      })
+      setExpandedPrograms((prev) => ({ ...prev, [expandKey]: false }))
+    }
   }
 
   const getTooltipText = (key: ProgramSortKey) => {
@@ -538,7 +637,15 @@ export const BudgetUnitTable = forwardRef<BudgetUnitTableHandle, BudgetUnitTable
                     </TableRow>
                   ))
                 : hierarchyRows.map((displayRow) => (
-                    <React.Fragment key={displayRow.kind === "group" ? `group-${displayRow.budgetUnitId}` : displayRow.row.id}>
+                    <React.Fragment key={
+                      displayRow.kind === "group"
+                        ? `group-${displayRow.budgetUnitId}`
+                        : displayRow.row.hierarchyLevel === 0
+                          ? `bu-${displayRow.row.id}`
+                          : displayRow.row.hierarchyLevel === 2
+                            ? `prog-${displayRow.row.id}`
+                            : `sub-${displayRow.row.id}`
+                    }>
                     <TableRow
                       className={`min-h-[40px] border-b border-[#eff0f5] hover:bg-transparent ${
                         displayRow.kind === "group" ||
@@ -605,7 +712,7 @@ export const BudgetUnitTable = forwardRef<BudgetUnitTableHandle, BudgetUnitTable
                                 className="inline-flex cursor-pointer items-center text-(--primary)"
                                 aria-label="Toggle program children"
                               >
-                                {expandedPrograms[displayRow.row.id] ? <ChevronUp className="size-3.5" /> : <ChevronRight className="size-3.5" />}
+                                {expandedPrograms[`${displayRow.row.parentId ?? ""}:${displayRow.row.id}`] ? <ChevronUp className="size-3.5" /> : <ChevronRight className="size-3.5" />}
                               </button>
                             ) : null}
                             {displayRow.row.code}
@@ -654,7 +761,7 @@ export const BudgetUnitTable = forwardRef<BudgetUnitTableHandle, BudgetUnitTable
                                       sideOffset={6}
                                       className="w-[92px]! min-w-[92px]! rounded-[6px] border border-[#edf0f6] p-1 shadow-[0_8px_20px_rgba(17,24,39,0.14)]"
                                     >
-                                      {canAddBudgetProgram && (
+                                      {canAddBudgetProgram && displayRow.row.active && (
                                         <DropdownMenuItem
                                           onClick={() => onAddSubProgramFromProgram?.(displayRow.row)}
                                           className="cursor-pointer gap-1.5 rounded-[8px] px-1.5 py-1 text-[12px] text-[#111827]"

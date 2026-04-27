@@ -65,14 +65,7 @@ export function triggerBrowserDownloadBlob(filename: string, blob: Blob): void {
   URL.revokeObjectURL(url)
 }
 
-function clamp(n: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, n))
-}
 
-function computeHeaderColumnWidths(headers: readonly string[]): number[] {
-  // Approximate “auto-fit” based on header length.
-  return headers.map((h) => clamp(h.length + 2, 10, 34))
-}
 
 export async function buildPayrollRowsXlsxBlob(
   headers: readonly string[],

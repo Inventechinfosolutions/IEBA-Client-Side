@@ -3,7 +3,7 @@ import { useState } from "react"
 import tableEmptyIcon from "@/assets/icons/table-empty.png"
 import { ScrollArea } from "@/components/ui/scroll-area"
 
-import type { TransferPanelItem, TransferPanelProps } from "../types"
+import type { TransferPanelProps } from "../types"
 
 export function TransferPanel({
   title,

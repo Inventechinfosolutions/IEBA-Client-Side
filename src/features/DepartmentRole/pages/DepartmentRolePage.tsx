@@ -14,10 +14,8 @@ import { useUpdateDepartmentRoleChild } from "../mutations/updateDepartmentRoleC
 import { useGetDepartments } from "@/features/department/queries/getDepartments"
 
 import { useDepartmentRoleDetailQuery } from "../queries/getDepartmentRoleById"
-import { assignedModuleLabelsFromDetail } from "../api/departmentRoleCreatePermissions"
 import type {
   AddRoleFormValues,
-  DepartmentRoleDetail,
   DepartmentRoleViewData,
 } from "../types"
 

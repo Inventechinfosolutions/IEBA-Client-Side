@@ -3,7 +3,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 
 import type { WeekSummaryRow } from "./PersonalTimeStudyWeekSummary"
-import { PersonalTimeStudyWeekSummary } from "./PersonalTimeStudyWeekSummary"
 
 type PersonalTimeStudyCalendarCardProps = {
   weekRows: WeekSummaryRow[]
@@ -11,7 +10,6 @@ type PersonalTimeStudyCalendarCardProps = {
 }
 
 export function PersonalTimeStudyCalendarCard({
-  weekRows,
   className,
 }: PersonalTimeStudyCalendarCardProps) {
   return (

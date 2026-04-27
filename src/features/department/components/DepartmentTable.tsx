@@ -59,7 +59,7 @@ const ContactInfo = ({
   const effective = resolved ?? contact
   const hasDisplay =
     !!effective &&
-    effective.name.trim() !== "" &&
+    (effective.name ?? "").trim() !== "" &&
     effective.name !== "Not Assigned"
 
   if (!hasDisplay && !hasId) {

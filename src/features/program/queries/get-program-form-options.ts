@@ -181,11 +181,11 @@ export function useGetProgramFormOptions(
     queryFn: () => fetchProgramFormOptions(contextTab, activeSection, departmentIds),
     // Short stale window so switching Program tabs / modal sections picks up fresh lookups.
     staleTime: 0,
-    gcTime: 30 * 60_000,
+    gcTime: 0,
     enabled,
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: false,
-    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    refetchOnMount: "always",
   })
 }
 
@@ -248,10 +248,10 @@ export function useActiveBuProgramsForSubProgram(enabled: boolean) {
     queryFn: () => fetchActiveBudgetProgramsForBuSubProgram(),
     enabled,
     staleTime: 0,
-    gcTime: 30 * 60_000,
-    refetchOnMount: true,
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: false,
+    gcTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
   })
 }
 
@@ -314,10 +314,10 @@ export function useGetActivePrimaryTimeStudyPrograms(enabled: boolean, departmen
     queryFn: () => fetchActivePrimaryTimeStudyPrograms(departmentIds),
     enabled,
     staleTime: 0,
-    gcTime: 30 * 60_000,
-    refetchOnMount: true,
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: false,
+    gcTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
   })
 }
 
@@ -377,9 +377,9 @@ export function useGetActiveSecondaryTimeStudyPrograms(enabled: boolean, departm
     queryFn: () => fetchActiveSecondaryTimeStudyPrograms(departmentIds),
     enabled,
     staleTime: 0,
-    gcTime: 30 * 60_000,
-    refetchOnMount: true,
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: false,
+    gcTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
   })
 }

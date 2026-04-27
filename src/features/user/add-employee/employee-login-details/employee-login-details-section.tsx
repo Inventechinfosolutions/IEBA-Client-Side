@@ -16,7 +16,6 @@ import {
   useGetAddEmployeeJobClassifications,
   useGetAddEmployeeLocations,
   useGetMulticodeMasterCodes,
-  useGetAddEmployeeDepartments,
 } from "../queries/get-add-employee"
 import { useEmployeeLoginDetailsUi } from "../hooks/use-add-employee-form"
 import { formatPhoneUs10Input } from "../schemas"
@@ -30,7 +29,7 @@ export function EmployeeLoginDetailsSection({ isEditMode }: EmployeeLoginDetails
   const [jobClassificationMenuOpened, setJobClassificationMenuOpened] = useState(false)
   const [locationMenuOpened, setLocationMenuOpened] = useState(false)
 
-  const { isSuperAdmin, isDepartmentAdmin, isPayrollAdmin, isTimeStudyAdmin, user } = usePermissions()
+  const { isSuperAdmin, isDepartmentAdmin, user } = usePermissions()
   const showDeptAutoAssign = isDepartmentAdmin && !isSuperAdmin
 
   const jobClassificationsEnabled = !isEditMode || jobClassificationMenuOpened

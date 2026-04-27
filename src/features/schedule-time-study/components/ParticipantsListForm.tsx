@@ -128,19 +128,7 @@ export function ParticipantsListForm({
     return []
   }, [manualJobPoolUserIds, open, editingRow, groupDetailsQuery.data])
 
-  const allJobPoolIds = useMemo(() => jobPools.map((jp) => jp.id).filter(Boolean), [jobPools])
-  const allJobPoolsSelected =
-    allJobPoolIds.length > 0 && allJobPoolIds.every((id) => selectedJobPoolIds.includes(id))
 
-  const toggleJobPoolAll = (checked: boolean) => {
-    setManualJobPoolIds(checked ? allJobPoolIds : [])
-    if (checked) {
-      const allUserIds = jobPools.flatMap((jp) => (jp.userprofiles ?? []).map((u) => u.id))
-      setManualJobPoolUserIds([...new Set(allUserIds)])
-    } else {
-      setManualJobPoolUserIds([])
-    }
-  }
   const toggleUserAll = (checked: boolean) => {
     setManualUserIds(checked ? departmentUsers.map((u) => u.id) : [])
   }

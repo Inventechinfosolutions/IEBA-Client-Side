@@ -637,12 +637,15 @@ export async function apiUpdateProgram(input: UpdateProgramInput & {
       medicalpercent: parsePercent(values.buSubProgramMedicalPct),
     }
 
-    const raw = await api.put<ApiEnvelope<BudgetProgramResDto>>(
+    await api.put<ApiEnvelope<BudgetProgramResDto>>(
       `/budgetprograms/${encodeURIComponent(id)}`,
       body
     )
-    const entity = raw?.data ?? (raw as ApiEnvelope<BudgetProgramResDto>).data
-    if (!entity) throw new Error("Update response missing data")
+    const detail = await api.get<ApiEnvelope<BudgetProgramResDto>>(
+      `/budgetprograms/${encodeURIComponent(id)}`
+    )
+    const entity = detail?.data ?? (detail as ApiEnvelope<BudgetProgramResDto>).data
+    if (!entity) throw new Error("Failed to load updated budget sub program")
 
     return mapBudgetProgramEntityToBudgetUnitsRow(entity as BudgetProgramResDto, 2)
   }
@@ -675,12 +678,15 @@ export async function apiUpdateProgram(input: UpdateProgramInput & {
       multiCodeType: TimeStudyProgramMultiCodeTypeEnum.NORMAL,
       groupMaster: false,
     }
-    const raw = await api.put<ApiEnvelope<TimeStudyProgramResDto>>(
+    await api.put<ApiEnvelope<TimeStudyProgramResDto>>(
       `/timestudyprograms/${encodeURIComponent(id)}`,
       body
     )
-    const entity = raw?.data ?? (raw as ApiEnvelope<TimeStudyProgramResDto>).data
-    if (!entity) throw new Error("Update response missing data")
+    const detail = await api.get<ApiEnvelope<TimeStudyProgramResDto>>(
+      `/timestudyprograms/${encodeURIComponent(id)}`
+    )
+    const entity = detail?.data ?? (detail as ApiEnvelope<TimeStudyProgramResDto>).data
+    if (!entity) throw new Error("Failed to load updated time study program")
 
     return mapTimeStudyProgramToProgramRow(entity as TimeStudyProgramResDto)
   }
@@ -781,6 +787,127 @@ export async function apiGetProgramActivityRelationTimeStudyPrograms(
       : []
 
   return { data: maybeArray }
+}
+
+export async function apiCheckActiveBudgetSubPrograms(row: ProgramRow): Promise<{ hasActiveSubProgramOne: boolean, hasActiveSubProgramTwo: boolean }> {
+  let hasActiveSubProgramOne = false
+  let hasActiveSubProgramTwo = false
+
+  if (row.tab === "Budget Units" && row.id) {
+    if (row.hierarchyLevel === 0 || row.type === "bu") {
+      // Budget Unit: Check for any active BU Programs (level 1)
+      const search = new URLSearchParams()
+      search.set("page", "1")
+      search.set("limit", "100")
+      search.set("status", "active")
+      search.set("type", "program")
+      search.set("budgetUnitId", row.id)
+      const res = await api.get<any>(`/budgetprograms?${search.toString()}`)
+      const payload = res?.data ?? res
+      const list: any[] = Array.isArray(payload?.data) ? payload.data : []
+      hasActiveSubProgramOne = list.length > 0
+
+      // Also check for any active BU Sub-Programs (level 2) anywhere under this BU
+      const searchSub = new URLSearchParams()
+      searchSub.set("page", "1")
+      searchSub.set("limit", "100")
+      searchSub.set("status", "active")
+      searchSub.set("type", "subprogram")
+      searchSub.set("budgetUnitId", row.id)
+      const resSub = await api.get<any>(`/budgetprograms?${searchSub.toString()}`)
+      const payloadSub = resSub?.data ?? resSub
+      const listSub: any[] = Array.isArray(payloadSub?.data) ? payloadSub.data : []
+      hasActiveSubProgramTwo = listSub.length > 0
+    } else if (row.hierarchyLevel === 2 || row.type === "program") {
+      // BU Program: Check for active BU Sub-Programs (level 3) with parentId = row.id
+      const search = new URLSearchParams()
+      search.set("page", "1")
+      search.set("limit", "100")
+      search.set("status", "active")
+      search.set("type", "subprogram")
+      if (row.parentId) {
+        search.set("budgetUnitId", row.parentId)
+      }
+      const res = await api.get<any>(`/budgetprograms?${search.toString()}`)
+      const payload = res?.data ?? res
+      const list: any[] = Array.isArray(payload?.data) ? payload.data : []
+      const activeChildren = list.filter((item: any) => String(item.parentId) === String(row.id))
+      hasActiveSubProgramTwo = activeChildren.length > 0
+    }
+  }
+
+  return { hasActiveSubProgramOne, hasActiveSubProgramTwo }
+}
+
+export async function apiCheckActiveSubPrograms(row: ProgramRow): Promise<{ hasActiveSubProgramOne: boolean, hasActiveSubProgramTwo: boolean }> {
+  let hasActiveSubProgramOne = false
+  let hasActiveSubProgramTwo = false
+
+  if (row.tab === "Time Study programs" && row.id) {
+    const type = (row.type ?? "").toLowerCase().trim()
+    
+    if (type === "primary" || type === "") {
+      const search = new URLSearchParams()
+      search.set("page", "1")
+      search.set("limit", "100")
+      search.set("status", "active")
+      search.set("type", "secondary")
+      if (row.timeStudyBudgetProgramId) {
+        search.set("budgetProgramId", row.timeStudyBudgetProgramId)
+      }
+      const res = await api.get<any>(`/timestudyprograms?${search.toString()}`)
+      const payload = res?.data ?? res
+      const list: any[] = Array.isArray(payload?.data) ? payload.data : []
+      const activeChildren = list.filter((item: any) => String(item.parentId) === String(row.id))
+      hasActiveSubProgramOne = activeChildren.length > 0
+
+      // Also check if any grandchild (subprogram) is active
+      const searchAllSec = new URLSearchParams()
+      searchAllSec.set("page", "1")
+      searchAllSec.set("limit", "100")
+      searchAllSec.set("type", "secondary")
+      if (row.timeStudyBudgetProgramId) {
+        searchAllSec.set("budgetProgramId", row.timeStudyBudgetProgramId)
+      }
+      const resAllSec = await api.get<any>(`/timestudyprograms?${searchAllSec.toString()}`)
+      const payloadAllSec = resAllSec?.data ?? resAllSec
+      const listAllSec: any[] = Array.isArray(payloadAllSec?.data) ? payloadAllSec.data : []
+      const mySecondaries = listAllSec.filter((item: any) => String(item.parentId) === String(row.id))
+      const mySecondaryIds = mySecondaries.map((s: any) => String(s.id))
+
+      if (mySecondaryIds.length > 0) {
+        const searchActSub = new URLSearchParams()
+        searchActSub.set("page", "1")
+        searchActSub.set("limit", "100")
+        searchActSub.set("status", "active")
+        searchActSub.set("type", "subprogram")
+        if (row.timeStudyBudgetProgramId) {
+          searchActSub.set("budgetProgramId", row.timeStudyBudgetProgramId)
+        }
+        const resActSub = await api.get<any>(`/timestudyprograms?${searchActSub.toString()}`)
+        const payloadActSub = resActSub?.data ?? resActSub
+        const listActSub: any[] = Array.isArray(payloadActSub?.data) ? payloadActSub.data : []
+        const activeMySubprograms = listActSub.filter((item: any) => mySecondaryIds.includes(String(item.parentId)))
+        hasActiveSubProgramTwo = activeMySubprograms.length > 0
+      }
+    } else if (type === "secondary") {
+      const search = new URLSearchParams()
+      search.set("page", "1")
+      search.set("limit", "100")
+      search.set("status", "active")
+      search.set("type", "subprogram")
+      if (row.timeStudyBudgetProgramId) {
+        search.set("budgetProgramId", row.timeStudyBudgetProgramId)
+      }
+      const res = await api.get<any>(`/timestudyprograms?${search.toString()}`)
+      const payload = res?.data ?? res
+      const list: any[] = Array.isArray(payload?.data) ? payload.data : []
+      const activeChildren = list.filter((item: any) => String(item.parentId) === String(row.id))
+      hasActiveSubProgramTwo = activeChildren.length > 0
+    }
+  }
+
+  return { hasActiveSubProgramOne, hasActiveSubProgramTwo }
 }
 
 export async function apiGetProgramActivityRelationActivities(

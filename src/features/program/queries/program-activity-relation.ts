@@ -157,7 +157,7 @@ export function useProgramActivityRelationTimeStudyProgramsQuery(departmentId: n
     queryKey: programActivityRelationKeys.timeStudyPrograms(departmentId),
     enabled: typeof departmentId === "number",
     queryFn: () => apiGetProgramActivityRelationTimeStudyPrograms(departmentId!),
-    staleTime: 60_000,
+    staleTime: 0,
   })
 }
 
@@ -170,7 +170,7 @@ export function useProgramActivityRelationActivitiesQuery(
     queryKey: programActivityRelationKeys.activitiesScope(departmentId, programId),
     enabled,
     queryFn: () => apiGetProgramActivityRelationActivities(departmentId!, programId!),
-    staleTime: 60_000,
+    staleTime: 0,
   })
 }
 
