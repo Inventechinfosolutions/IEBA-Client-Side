@@ -161,7 +161,14 @@ export const BudgetUnitTable = forwardRef<BudgetUnitTableHandle, BudgetUnitTable
 
       for (const program of linkedPrograms) {
         const effectiveProgram = applyUpdatedRow(program)
-        flattened.push({ kind: "data", row: { ...effectiveProgram, hierarchyLevel: 2 } })
+        flattened.push({
+          kind: "data",
+          row: {
+            ...effectiveProgram,
+            hierarchyLevel: 2,
+            parentActive: effectiveBudgetUnit.active,
+          },
+        })
         // Use composite key buId:programId to avoid ID collision
         // (BU 1140 id="1" and Program 401100 id="1" are different entities)
         const programExpandKey = `${budgetUnit.id}:${program.id}`
@@ -185,6 +192,7 @@ export const BudgetUnitTable = forwardRef<BudgetUnitTableHandle, BudgetUnitTable
               hierarchyLevel: 3,
               parentProgramName: program.name,
               parentProgramCode: program.code,
+              parentActive: effectiveProgram.active,
             },
           })
         }
@@ -218,6 +226,17 @@ export const BudgetUnitTable = forwardRef<BudgetUnitTableHandle, BudgetUnitTable
         delete updated[buId]
         return updated
       })
+      // Also clear patchedRows for any children of this BU to ensure fresh data on re-expand
+      setPatchedRows((prev) => {
+        const next = { ...prev }
+        Object.keys(next).forEach((key) => {
+          const row = next[key]
+          if (row.parentId === buId) {
+            delete next[key]
+          }
+        })
+        return next
+      })
       setExpandedBudgetUnits((prev) => ({ ...prev, [buId]: false }))
       setExpandedProgramGroups((prev) => ({ ...prev, [buId]: false }))
       setExpandedPrograms((prev) => {
@@ -228,6 +247,21 @@ export const BudgetUnitTable = forwardRef<BudgetUnitTableHandle, BudgetUnitTable
         return next
       })
       return
+    }
+
+    // If Level 1 (BU Program) updated, clear patchedRows for its sub-programs
+    if (updatedRow.hierarchyLevel === 1 || updatedRow.hierarchyLevel === 2) {
+      setPatchedRows((prev) => {
+        const next = { ...prev }
+        Object.keys(next).forEach((key) => {
+          const row = next[key]
+          // If this is a sub-program belonging to the updated BU Program
+          if (row.hierarchyLevel === 2 && row.parentId === updatedRow.id) {
+            delete next[key]
+          }
+        })
+        return next
+      })
     }
 
     setBudgetProgramsByBudgetUnitId((prev) => {
@@ -323,6 +357,18 @@ export const BudgetUnitTable = forwardRef<BudgetUnitTableHandle, BudgetUnitTable
           (r) => r.hierarchyLevel === 2 && r.parentId != null && programIds.has(String(r.parentId)),
         )
         return { ...prev, [budgetUnitId]: [...mapped, ...preservedSubs] }
+      })
+
+      setPatchedRows((prev) => {
+        const next = { ...prev }
+        mapped.forEach((r) => {
+          let pKey: string
+          if (r.hierarchyLevel === 0) pKey = `bu-${r.id}`
+          else if (r.hierarchyLevel === 1) pKey = `prog-${r.id}`
+          else pKey = `sub-${r.id}`
+          delete next[pKey]
+        })
+        return next
       })
     } finally {
       setBudgetProgramsLoading((prev) => ({ ...prev, [budgetUnitId]: false }))
@@ -429,6 +475,18 @@ export const BudgetUnitTable = forwardRef<BudgetUnitTableHandle, BudgetUnitTable
           ...prev,
           [budgetUnitId]: [...withoutSub, ...mapped],
         }
+      })
+
+      setPatchedRows((prev) => {
+        const next = { ...prev }
+        mapped.forEach((r) => {
+          let pKey: string
+          if (r.hierarchyLevel === 0) pKey = `bu-${r.id}`
+          else if (r.hierarchyLevel === 1) pKey = `prog-${r.id}`
+          else pKey = `sub-${r.id}`
+          delete next[pKey]
+        })
+        return next
       })
     } finally {
       setBudgetProgramsLoading((prev) => ({ ...prev, [budgetUnitId]: false }))

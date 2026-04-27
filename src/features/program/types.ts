@@ -43,6 +43,7 @@ export type ProgramRow = {
   timeStudyBudgetProgramId?: string
   costAllocation?: boolean
   isMultiCode?: boolean
+  multiCodeType?: string
 }
 
 export type GetProgramsParams = {

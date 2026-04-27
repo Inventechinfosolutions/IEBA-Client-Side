@@ -29,6 +29,7 @@ const programFormBaseSchema = z.object({
   hasActiveSubProgramOne: z.boolean().optional(),
   hasActiveSubProgramTwo: z.boolean().optional(),
   isMultiCode: z.boolean().optional(),
+  multiCodeType: z.string().optional(),
   parentActive: z.boolean().optional(),
 })
 
@@ -91,8 +92,7 @@ export const programFormSchema = programFormBaseSchema.superRefine((values, ctx)
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["active"],
-        message:
-          "Cannot activate this BU Program — its parent Budget Unit is Inactive. Activate the Budget Unit first.",
+        message: "Cannot activate: Parent Budget Unit is inactive. Please activate it first.",
       })
     }
   }
@@ -103,8 +103,7 @@ export const programFormSchema = programFormBaseSchema.superRefine((values, ctx)
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["active"],
-        message:
-          "Cannot activate this Sub-Program — its parent BU Program is Inactive. Activate the BU Program first.",
+        message: "Cannot activate: Parent BU Program is inactive. Please activate it first.",
       })
     }
   }
@@ -158,8 +157,7 @@ export const timeStudyProgramFormSchema = programFormBaseSchema.superRefine((val
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["active"],
-        message:
-          "Cannot activate this Secondary TS Program — its parent Primary TS Program is Inactive. Activate the Primary TS Program first.",
+        message: "Cannot activate: Parent TS Primary Program is inactive. Please activate it first.",
       })
     }
   }
@@ -170,8 +168,7 @@ export const timeStudyProgramFormSchema = programFormBaseSchema.superRefine((val
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["active"],
-        message:
-          "Cannot activate this TS Sub-Program — its parent Secondary TS Program is Inactive. Activate the Secondary TS Program first.",
+        message: "Cannot activate: Parent TS Sub-Program One is inactive. Please activate it first.",
       })
     }
   }

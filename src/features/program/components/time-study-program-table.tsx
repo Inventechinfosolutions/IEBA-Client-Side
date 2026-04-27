@@ -99,7 +99,18 @@ export const TimeStudyProgramTable = forwardRef<TimeStudyProgramTableHandle, Tim
       })
     },
     patchTimeStudyProgramRow: (updatedRow: ProgramRow) => {
-      setPatchedRows((prev) => ({ ...prev, [updatedRow.id]: updatedRow }))
+      setPatchedRows((prev) => {
+        const next = { ...prev, [updatedRow.id]: updatedRow }
+        // If this is a Primary or Secondary, clear its children from patchedRows
+        // so they show their fresh status from the backend on re-expand.
+        Object.keys(next).forEach((key) => {
+          const row = next[key]
+          if (row.parentId === updatedRow.id) {
+            delete next[key]
+          }
+        })
+        return next
+      })
     },
   }), [])
 
@@ -276,6 +287,14 @@ export const TimeStudyProgramTable = forwardRef<TimeStudyProgramTableHandle, Tim
       )
 
       setChildrenByParentId((prev) => ({ ...prev, [rowId]: mapped }))
+
+      setPatchedRows((prev) => {
+        const next = { ...prev }
+        mapped.forEach((r) => {
+          delete next[r.id]
+        })
+        return next
+      })
     } finally {
       childrenInFlightRef.current.delete(rowId)
       setChildrenLoading((prev) => ({ ...prev, [rowId]: false }))
