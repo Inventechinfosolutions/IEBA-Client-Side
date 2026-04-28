@@ -46,5 +46,5 @@ export async function apiMgtActionUserTimeRecord(params: {
   endDate: string
   status: string
 }): Promise<void> {
-  await api.post("/timestudyrecords/action", params)
+  await api.post("/timestudyrecords/user/timeentry/record/action", params)
 }
