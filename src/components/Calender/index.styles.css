@@ -142,13 +142,24 @@
 /* Days of week header + week summary columns: one grid with Sun–Sat + TOTAL + STATUS */
 .calendar-weeks-grid {
   display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr)) minmax(4.75rem, auto) minmax(3.25rem, auto);
-  gap: 0.15rem;
+  grid-template-columns: repeat(7, 1fr) 1.2fr 1fr;
   align-items: center;
+  justify-items: center;
+  row-gap: 0.75rem;
+  column-gap: 0;
+  width: 100%;
+}
+
+.calendar-weeks-grid.has-action {
+  grid-template-columns: repeat(7, 1fr) 1.2fr 1fr 1fr;
 }
 
 /* Extra space below Sun–Sat + header labels (matches previous days-of-week margin) */
 .calendar-weeks-grid > *:nth-child(-n + 9) {
+  margin-bottom: 0.15rem;
+}
+
+.calendar-weeks-grid.has-action > *:nth-child(-n + 10) {
   margin-bottom: 0.15rem;
 }
 
@@ -184,7 +195,6 @@
   font-size: 0.7rem;
   font-weight: 600;
   color: #111827;
-  border-top: 1px solid #e5e7eb;
 }
 
 .week-summary-status {
@@ -192,7 +202,14 @@
   align-items: center;
   justify-content: center;
   min-height: 2.5rem;
-  border-top: 1px solid #e5e7eb;
+}
+
+.week-summary-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.5rem;
+  width: 100%;
 }
 
 .week-summary-status-dot {

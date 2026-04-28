@@ -8,11 +8,8 @@ import { cn } from "@/lib/utils"
 import { apiUploadSupportingDoc } from "../api/personalTimeStudyApi"
 import { toast } from "sonner"
 import { SingleSelectSearchDropdown } from "@/components/ui/dropdown-search"
-import { SingleSelectDropdown } from "@/components/ui/dropdown"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { ScrollArea } from "@/components/ui/scroll-area"
-
-const EMPTY = "__empty__"
 
 function newId(): string {
   return typeof crypto !== "undefined" && "randomUUID" in crypto
@@ -132,7 +129,7 @@ function TimePicker24h({
                 placeholder="--:--"
                 onChange={(e) => onChange(e.target.value)}
                 onFocus={() => setOpen(true)}
-                className="h-7 pr-8 text-[11px] font-normal rounded-[6px]"
+                className="h-10 pr-8 text-[11px] font-normal rounded-[6px]"
               />
               <Clock className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 opacity-50" />
             </div>
@@ -148,10 +145,10 @@ function TimePicker24h({
               const container = e.currentTarget as HTMLElement
               setTimeout(() => {
                 const selectedItems = container.querySelectorAll('[data-selected="true"]')
-                selectedItems.forEach(item => {
+                selectedItems.forEach((item) => {
                   item.scrollIntoView({ block: "start", behavior: "auto" })
                 })
-              }, 10)
+              }, 50)
             }}
           >
             <div className="flex h-[160px] divide-x">
@@ -163,9 +160,9 @@ function TimePicker24h({
                       variant="ghost"
                       data-selected={h === hour}
                       className={cn(
-                        "h-6 w-full justify-center text-[10px] font-normal",
-                        h === hour ? "bg-[#eef8ff]" : "bg-transparent",
-                        "hover:bg-[#f3f4f8]"
+                        "h-7 w-full justify-center text-[11px] font-normal",
+                        h === hour ? "bg-[#6C5DD3]/10 text-[#6C5DD3]" : "bg-transparent",
+                        "hover:bg-[#6C5DD3]/5"
                       )}
                       onClick={() => {
                         const newVal = `${hour}:${m || "00"}`
@@ -185,9 +182,9 @@ function TimePicker24h({
                       variant="ghost"
                       data-selected={m === minute}
                       className={cn(
-                        "h-6 w-full justify-center text-[10px] font-normal",
-                        m === minute ? "bg-[#eef8ff]" : "bg-transparent",
-                        "hover:bg-[#f3f4f8]"
+                        "h-7 w-full justify-center text-[11px] font-normal",
+                        m === minute ? "bg-[#6C5DD3]/10 text-[#6C5DD3]" : "bg-transparent",
+                        "hover:bg-[#6C5DD3]/5"
                       )}
                       onClick={() => {
                         onChange(`${h || "00"}:${minute}`)
@@ -228,7 +225,7 @@ function SupportingDocField({
   const pillLabel = uploading
     ? "Uploading..."
     : docs.length === 0
-    ? "Choose doc"
+    ? "Supporting doc"
     : extraCount > 0
     ? `${firstDoc.name.slice(0, 14)}… +${extraCount}`
     : firstDoc.name.length > 16
@@ -251,7 +248,7 @@ function SupportingDocField({
         }}
       />
       {/* Pill */}
-      <div className="flex h-7 w-full items-center rounded-[6px] border border-input bg-background text-[11px] overflow-hidden">
+      <div className="flex h-10 w-full items-center rounded-[6px] border border-input bg-background text-[11px] overflow-hidden">
         <button
           type="button"
           className="flex flex-1 min-w-0 items-center px-2 overflow-hidden"
@@ -272,7 +269,7 @@ function SupportingDocField({
           type="button"
           disabled={uploading}
           onClick={() => fileRef.current?.click()}
-          className="shrink-0 border-l border-input px-2 h-full text-primary hover:bg-accent disabled:opacity-40"
+          className="shrink-0 border-l border-input px-2 h-full text-[#6C5DD3] hover:bg-accent disabled:opacity-40"
         >
           <Plus className="size-3" />
         </button>
@@ -287,7 +284,7 @@ function SupportingDocField({
                 href={doc.url}
                 target="_blank"
                 rel="noreferrer"
-                className="shrink-0 text-primary hover:opacity-70"
+                className="shrink-0 text-[#6C5DD3] hover:opacity-70"
                 onClick={() => setOpen(false)}
               >
                 <Eye className="size-3.5" />
@@ -499,18 +496,18 @@ export function PersonalTimeStudyEntryForm({
   return (
     <section
       className={cn(
-        "w-full rounded-[8px] border-0 ring-0 bg-white p-2 shadow-[0_4px_16px_rgba(16,24,40,0.12)]",
+        "w-full rounded-[6px] border-0 ring-0 bg-white p-2 shadow-[0_4px_16px_rgba(16,24,40,0.12)]",
         className
       )}
     >
       <div className="mb-2 flex items-center justify-between gap-2">
-        <h2 className="text-[11px] font-semibold text-foreground">
+        <h2 className="text-[14px] font-bold text-[#6C5DD3]">
           Time entries
         </h2>
         <Button
           type="button"
           size="icon"
-          className="size-9 shrink-0 bg-primary text-primary-foreground hover:bg-primary/90"
+          className="size-9 shrink-0 bg-[#6C5DD3] text-primary-foreground hover:bg-[#6C5DD3]/90"
           aria-label="Add parent time entry at top"
           onClick={addParentAtTop}
         >
@@ -548,7 +545,7 @@ export function PersonalTimeStudyEntryForm({
                     }))}
                     onChange={(v) => updateParent(parent.id, { tsProgram: v })}
                     onBlur={() => { }}
-                    className="h-7 min-h-0 rounded-[6px]"
+                    className="h-10 min-h-0 rounded-[6px]"
                   />
                 </div>
 
@@ -565,7 +562,7 @@ export function PersonalTimeStudyEntryForm({
                     }))}
                     onChange={(v) => updateParent(parent.id, { serviceActivity: v })}
                     onBlur={() => { }}
-                    className="h-7 min-h-0 rounded-[6px]"
+                    className="h-10 min-h-0 rounded-[6px]"
                   />
                 </div>
 
@@ -584,10 +581,10 @@ export function PersonalTimeStudyEntryForm({
                     tabIndex={-1}
                     value={totalDisplay}
                     placeholder="—"
-                    className="h-7 cursor-default bg-muted rounded-[6px]"
+                    className="h-10 cursor-default bg-muted rounded-[6px] text-[11px] font-normal"
                   />
                 </div>
-                <div className="min-w-[120px] flex-[2] space-y-0.5">
+                <div className="min-w-[120px] flex-2 space-y-0.5">
                   <Label className="text-[11px] text-muted-foreground">
                     Description / activity notes <RequiredMark />
                   </Label>
@@ -597,7 +594,7 @@ export function PersonalTimeStudyEntryForm({
                       updateParent(parent.id, { description: e.target.value })
                     }
                     placeholder="Notes"
-                    className="h-7 rounded-[6px]"
+                    className="h-10 rounded-[6px] text-[10px] font-normal"
                   />
                 </div>
                 <SupportingDocField
@@ -614,7 +611,7 @@ export function PersonalTimeStudyEntryForm({
                       type="button"
                       size="icon"
                       variant="ghost"
-                      className="size-9 shrink-0 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                      className="size-10 shrink-0 text-destructive hover:bg-destructive/10 hover:text-destructive"
                       aria-label="Remove parent time entry"
                       onClick={() => removeParent(parent.id)}
                     >
@@ -625,7 +622,7 @@ export function PersonalTimeStudyEntryForm({
                     type="button"
                     size="icon"
                     variant="outline"
-                    className="size-9 shrink-0 border-green-600 text-green-700 hover:bg-green-50"
+                    className="size-10 shrink-0 border-[#6C5DD3] text-[#6C5DD3] hover:bg-[#6C5DD3]/10"
                     aria-label="Add nested row under this parent"
                     onClick={() => addSubRow(parent.id)}
                   >
@@ -688,7 +685,7 @@ export function PersonalTimeStudyEntryForm({
                           className="h-9"
                         />
                       </div>
-                      <div className="min-w-[200px] flex-[2] space-y-1.5">
+                      <div className="min-w-[200px] flex-2 space-y-1.5">
                         <Label className="text-xs text-muted-foreground">
                           Description / activity notes
                         </Label>
@@ -727,6 +724,7 @@ export function PersonalTimeStudyEntryForm({
       <div className="mt-3 flex flex-wrap justify-end gap-2">
         <Button
           type="button"
+          className="h-10 px-6 bg-[#6C5DD3] hover:bg-[#6C5DD3]/90"
           onClick={() => {
             onSave?.(mapToPayload())
           }}
@@ -735,7 +733,7 @@ export function PersonalTimeStudyEntryForm({
         </Button>
         <Button
           type="button"
-          className="bg-green-600 text-white hover:bg-green-600/90"
+          className="h-10 px-6 bg-green-600 text-white hover:bg-green-700"
           onClick={() => {
             onSubmit?.(mapToPayload())
           }}

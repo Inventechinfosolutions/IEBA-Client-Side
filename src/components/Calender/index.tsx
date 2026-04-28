@@ -51,6 +51,12 @@ export type AppCalenderProps = Omit<ComponentProps<"div">, "children"> & {
   onMonthChange?: (date: Date) => void
   /** Status overrides for individual days (mapped by YYYY-MM-DD). */
   dayStatuses?: Record<string, { status: DateStatus; color?: string }>
+  /** If true, renders an additional ACTION column at the end of the calendar grid. */
+  showActionColumn?: boolean
+  /** Render function for the STATUS column to override default dot. */
+  renderStatus?: (weekIndex: number, dates: Date[], status: DateStatus) => React.ReactNode
+  /** Render function for the ACTION column. Receives week index, dates, and week status. */
+  renderAction?: (weekIndex: number, dates: Date[], status: DateStatus) => React.ReactNode
 }
 
 interface CalendarDay {
@@ -140,6 +146,9 @@ const AppCalender = ({
   currentMonthDate: propsCurrentMonthDate,
   onMonthChange,
   dayStatuses,
+  showActionColumn,
+  renderStatus,
+  renderAction,
   className,
   ...divProps
 }: AppCalenderProps) => {
@@ -329,7 +338,7 @@ const AppCalender = ({
             <div className="calendar-header">
               <button
                 onClick={() => handleMonthChange(new Date(Date.UTC(currentDate.getUTCFullYear(), currentDate.getUTCMonth() - 1)))}
-                className="p-2 rounded-full bg-primary text-primary-foreground border-none cursor-pointer transition-all duration-200 ease-in-out hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-opacity-50"
+                className="p-2 rounded-full bg-[#6C5DD3] text-primary-foreground border-none cursor-pointer transition-all duration-200 ease-in-out hover:bg-[#6C5DD3]/90 focus:outline-none focus:ring-2 focus:ring-[#6C5DD3] focus:ring-opacity-50"
               >
                 ‹
               </button>
@@ -345,7 +354,7 @@ const AppCalender = ({
 
               <button
                 onClick={() => handleMonthChange(new Date(Date.UTC(currentDate.getUTCFullYear(), currentDate.getUTCMonth() + 1)))}
-                className="p-2 rounded-full bg-primary text-primary-foreground border-none cursor-pointer transition-all duration-200 ease-in-out hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-opacity-50"
+                className="p-2 rounded-full bg-[#6C5DD3] text-primary-foreground border-none cursor-pointer transition-all duration-200 ease-in-out hover:bg-[#6C5DD3]/90 focus:outline-none focus:ring-2 focus:ring-[#6C5DD3] focus:ring-opacity-50"
               >
                 ›
               </button>
@@ -396,8 +405,8 @@ const AppCalender = ({
               </div>
             )}
 
-            {/* Single grid: Sun–Sat + TOTAL(MIN.) + STATUS per row — rows align with week bands */}
-            <div className="calendar-weeks-grid">
+            {/* Single grid: Sun–Sat + TOTAL(MIN.) + STATUS + optionally ACTION per row */}
+            <div className={cn("calendar-weeks-grid", showActionColumn && "has-action")}>
               <div className="days-of-week-container">
                 {rotatedDays.map((day) => (
                   <div key={day}>{day}</div>
@@ -405,6 +414,7 @@ const AppCalender = ({
               </div>
               <div className="week-summary-header">TOTAL(MIN.)</div>
               <div className="week-summary-header">STATUS</div>
+              {showActionColumn && <div className="week-summary-header">ACTION</div>}
 
               {calendarWeeks.map((week, weekIndex) => {
                 const weekKey = formatWeekStartUtcKey(week[0].date)
@@ -451,14 +461,21 @@ const AppCalender = ({
                     ))}
                     <div className="week-summary-total">{weekTotal}</div>
                     <div className="week-summary-status">
-                      <span
-                        className="week-summary-status-dot"
-                        style={{
-                          backgroundColor: weekSummaryDotColors[weekStatus as DateStatus] || "#94a3b8", 
-                        }}
-                        title={weekStatus?.replace(/_/g, " ")}
-                      />
+                      {renderStatus ? renderStatus(weekIndex, week.map(d => d.date), weekStatus as DateStatus) : (
+                        <span
+                          className="week-summary-status-dot"
+                          style={{
+                            backgroundColor: weekSummaryDotColors[weekStatus as DateStatus] || "#94a3b8", 
+                          }}
+                          title={weekStatus?.replace(/_/g, " ")}
+                        />
+                      )}
                     </div>
+                    {showActionColumn && (
+                      <div className="week-summary-action">
+                        {renderAction && renderAction(weekIndex, week.map(d => d.date), weekStatus as DateStatus)}
+                      </div>
+                    )}
                   </Fragment>
                 )
               })}

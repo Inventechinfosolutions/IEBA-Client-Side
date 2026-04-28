@@ -60,36 +60,36 @@ export function MgtCalendarCard({
   const todayStr = format(new Date(), "yyyy-MM-dd")
 
   return (
-    <div className="rounded-[8px] bg-white p-4 shadow-[0_4px_16px_rgba(16,24,40,0.12)]">
+    <div className="rounded-[6px] bg-white p-4 shadow-[0_4px_16px_rgba(16,24,40,0.12)]">
       {/* Month navigation — same style as PersonalTimeStudyCalendarCard */}
       <div className="mb-3 flex items-center justify-between">
         <div className="flex gap-1">
           <button
             onClick={() => onMonthChange(subMonths(currentDate, 12))}
-            className="rounded p-1 text-[#6B4EFF] hover:bg-purple-50"
+            className="rounded p-1 text-[#6C5DD3] hover:bg-purple-50"
           >
             <ChevronsLeft className="h-4 w-4" />
           </button>
           <button
             onClick={() => onMonthChange(subMonths(currentDate, 1))}
-            className="rounded p-1 text-[#6B4EFF] hover:bg-purple-50"
+            className="rounded p-1 text-[#6C5DD3] hover:bg-purple-50"
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
         </div>
-        <span className="text-sm font-semibold text-[#6B4EFF]">
+        <span className="text-sm font-semibold text-[#6C5DD3]">
           {format(currentDate, "MMMM yyyy")}
         </span>
         <div className="flex gap-1">
           <button
             onClick={() => onMonthChange(addMonths(currentDate, 1))}
-            className="rounded p-1 text-[#6B4EFF] hover:bg-purple-50"
+            className="rounded p-1 text-[#6C5DD3] hover:bg-purple-50"
           >
             <ChevronRight className="h-4 w-4" />
           </button>
           <button
             onClick={() => onMonthChange(addMonths(currentDate, 12))}
-            className="rounded p-1 text-[#6B4EFF] hover:bg-purple-50"
+            className="rounded p-1 text-[#6C5DD3] hover:bg-purple-50"
           >
             <ChevronsRight className="h-4 w-4" />
           </button>
@@ -129,7 +129,7 @@ export function MgtCalendarCard({
                           <div className="flex flex-col items-center gap-0.5">
                             <span className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-medium transition-colors ${
                               isToday
-                                ? "bg-[#6B4EFF]/20 text-[#6B4EFF] font-bold"
+                                ? "bg-[#6C5DD3]/20 text-[#6C5DD3] font-bold"
                                 : isOtherMonth
                                 ? "text-gray-300"
                                 : "text-gray-700"
