@@ -6,6 +6,8 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { TitleCaseInput } from "@/components/ui/title-case-input"
 import { SettingsFormSaveSection } from "@/features/settings/enums/setting.enum"
 import type { SettingsFormValues } from "@/features/settings/types"
+import { usePermissions } from "@/hooks/usePermissions"
+import { cn } from "@/lib/utils"
 
 const labelClassName = "text-[12px] font-normal text-[#2a2f3a]"
 const otpGroupClassName =
@@ -22,6 +24,8 @@ const otpAddonClassName =
 
 export function LoginForm() {
   const { control, register, getValues, setValue } = useFormContext<SettingsFormValues>()
+  const { isSuperAdmin } = usePermissions()
+  const readOnly = !isSuperAdmin
 
   const stepOtpTimer = (delta: 1 | -1) => {
     const currentRaw = getValues("login.otpValidationTimerSeconds")
@@ -36,7 +40,7 @@ export function LoginForm() {
   }
 
   return (
-    <div className="bg-transparent px-6 py-3">
+    <div className={cn("bg-transparent px-6 py-3", readOnly && "pointer-events-none opacity-60")}>
       <div className="space-y-4">
         <div className="space-y-3">
           <div className="flex items-center gap-20">
@@ -97,15 +101,17 @@ export function LoginForm() {
           </div>
         </div>
 
-        <div className="flex justify-end">
-          <Button
-            type="submit"
-            data-settings-section={SettingsFormSaveSection.Login}
-            className="h-[44px] w-[88px] cursor-pointer rounded-[10px] bg-[var(--primary)] px-0 py-2 text-[14px] font-medium text-white hover:bg-[var(--primary)]"
-          >
-            Save
-          </Button>
-        </div>
+        {!readOnly && (
+          <div className="flex justify-end">
+            <Button
+              type="submit"
+              data-settings-section={SettingsFormSaveSection.Login}
+              className="h-[44px] w-[88px] cursor-pointer rounded-[10px] bg-[var(--primary)] px-0 py-2 text-[14px] font-medium text-white hover:bg-[var(--primary)]"
+            >
+              Save
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   )

@@ -2,9 +2,10 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { settingsKeys } from "@/features/settings/keys"
 import { DEFAULT_SETTINGS } from "@/features/settings/constants"
 import { SettingsFormSaveSection } from "@/features/settings/enums/setting.enum"
-import type { SettingsModel, UpdateSettingsInput } from "@/features/settings/types"
+import type { SettingsModel, UpdateSettingsInput, ReportOption } from "@/features/settings/types"
 import type { PayrollBy, PayrollColumnSettingModel, PayrollSettingsModel } from "../payroll"
 import { updatePayrollSettings } from "../payroll"
+import { api } from "@/lib/api"
 import {
   createCountyLocation,
   deleteCountyLocation,
@@ -128,6 +129,32 @@ async function updateSettings(
 ): Promise<SettingsModel> {
   if (input.submitterSection === SettingsFormSaveSection.County) {
     await saveCountyToBackend(queryClient, input)
+  }
+
+  if (input.submitterSection === SettingsFormSaveSection.Reports) {
+    const reportOptions = queryClient.getQueryData<ReportOption[]>(settingsKeys.reports.list()) ?? []
+    const selectedReportKey = input.values.reports?.reportKey
+    const selectedReport = reportOptions.find(r => r.key === selectedReportKey)
+    
+    if (selectedReport?.id) {
+      const reportData = (input.values.reports?.selectedActivityCodes ?? []).join(",")
+      const inclusionMode = input.values.reports?.exclusionMode === "include" ? "included" : "excluded"
+      
+      await api.put(`/report/${selectedReport.id}`, {
+        type: inclusionMode,
+        reportdata: reportData,
+      })
+    }
+  }
+
+  if (input.submitterSection === SettingsFormSaveSection.Login) {
+    const twoFactorAuth = Boolean(input.values.login?.twoFactorAuthentication)
+    const otpTimer = input.values.login?.otpValidationTimerSeconds ?? 120
+    
+    await Promise.all([
+      api.put(`/setting/TWO_FA_ENABLED`, { value: String(twoFactorAuth) }),
+      api.put(`/setting/OTP_VALIDATION_TIMEOUT`, { value: String(otpTimer) })
+    ])
   }
 
   if (input.submitterSection === SettingsFormSaveSection.Payroll) {
@@ -262,6 +289,9 @@ export function useUpdateSettings() {
         // County also needs the county client refreshed
         if (variables.submitterSection === SettingsFormSaveSection.County) {
           void queryClient.invalidateQueries({ queryKey: settingsCountyClientQueryKey })
+        }
+        if (variables.submitterSection === SettingsFormSaveSection.Reports) {
+          void queryClient.invalidateQueries({ queryKey: settingsKeys.reports.list() })
         }
       }
     },
