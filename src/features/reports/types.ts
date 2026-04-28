@@ -17,17 +17,42 @@ export type ReportDownloadType = z.infer<typeof reportDownloadTypeSchema>
 export type ReportCatalogItem = {
   key: string
   label: string
+  criteria?: {
+    monthly?: boolean
+    multipleEmployees?: boolean
+    showProgramSelect?: boolean
+    showActivitySelect?: boolean
+    showCostPoolSelect?: boolean
+    showFiscalYearSelect?: boolean
+    showQuarterSelect?: boolean
+    showYear?: boolean
+    showDate?: boolean
+    showWeekSelect?: boolean
+    showEmployeeFirst?: boolean
+    filterProgramsByUser?: boolean
+    showMonthBy?: { type: string }[]
+    showmasterCodes?: boolean
+    showDates?: boolean
+    showMonthly?: boolean
+    showQtr?: boolean
+    showTimeStudy?: boolean
+    showScheduleTime?: boolean
+  }
 }
 
 /** Normalized payload sent to view/download APIs. */
 export type ReportRunPayload = {
   reportKey: string
-  selectMonthBy: "qtr" | "dates"
+  selectMonthBy: "qtr" | "dates" | "month" | "year"
+  month?: string
+  year?: string
+  weekId?: string
   fiscalYearId?: string
   quarter?: string
   dateFrom?: string
   dateTo?: string
   departmentId?: string
+  masterCode?: string
   /** Resolved from multi-select (comma-separated form value). */
   employeeIds?: string[]
   /** Comma-separated ids for APIs that expect a single field. */
@@ -36,12 +61,16 @@ export type ReportRunPayload = {
   activityId?: string
   costPoolIds?: string[]
   costPoolId?: string
+  programIds?: string[]
+  programId?: string
   includeActiveEmployees: boolean
   includeInactiveEmployees: boolean
   includeActiveActivities?: boolean
   includeInactiveActivities?: boolean
   includeActiveCostPools?: boolean
   includeInactiveCostPools?: boolean
+  includeActivePrograms?: boolean
+  includeInactivePrograms?: boolean
   includeUnapprovedTime: boolean
   downloadType: ReportDownloadType
   fileName?: string
@@ -70,7 +99,13 @@ export type ReportSelectOption = {
   label: string
 }
 
-export type ReportSecondaryLayout = "employee" | "employee-activities" | "cost-pool-employee"
+export type ReportSecondaryLayout = 
+  | "employee" 
+  | "employee-activities" 
+  | "cost-pool-employee" 
+  | "program-employee"
+  | "dynamic"
+
 
 export type ReportEmployeeMultiSelectProps = {
   value: string

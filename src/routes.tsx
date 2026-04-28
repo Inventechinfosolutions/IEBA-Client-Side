@@ -1,4 +1,5 @@
 import type { QueryClient } from "@tanstack/react-query"
+import { lazy, Suspense } from "react"
 import { createBrowserRouter, Navigate } from "react-router-dom"
 import { GuestOnlyRoute } from "@/components/GuestOnlyRoute"
 import { ProtectedRoute } from "@/components/ProtectedRoute"
@@ -8,7 +9,8 @@ import { LoginPage, ForgotPassword, OtpAuthentication, ResetPassword } from "@/f
 import { DashboardPage } from "@/features/dashboard/pages/DashboardPage"
 import { MasterCodePage } from "@/features/master-code"
 import { ProgramPage } from "@/features/program"
-import { ReportsPage } from "@/features/reports"
+const ReportsPage = lazy(() => import("@/features/reports/pages/ReportsPage"))
+
 import { TodoPage } from "@/features/todo"
 import { UserModulePage } from "@/features/user"
 import { LeaveApprovalPage } from "@/features/leave-approval"
@@ -177,7 +179,16 @@ export function createAppRouter(queryClient: QueryClient) {
           path: "job-pool",
           element: <PermissionRoute permission="jobpool"><JobPoolPage /></PermissionRoute>,
         },
-        { path: "reports", element: <PermissionRoute permission="report"><ReportsPage /></PermissionRoute> },
+        { 
+          path: "reports", 
+          element: (
+            <PermissionRoute permission="report">
+              <Suspense fallback={null}>
+                <ReportsPage />
+              </Suspense>
+            </PermissionRoute>
+          ) 
+        },
         {
           path: "payroll",
           element: <PermissionRoute permission="payroll"><PayrollPage /></PermissionRoute>,
@@ -186,7 +197,6 @@ export function createAppRouter(queryClient: QueryClient) {
             return null
           },
         },
-        { path: "reports", element: <ReportsPage /> },
       ],
     },
     { path: "*", element: <Navigate to="/" replace /> },
