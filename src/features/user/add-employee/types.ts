@@ -277,6 +277,7 @@ export type AddEmployeeSecurityRolePanelProps = {
   selectedIds: string[]
   onToggleItem: (id: string) => void
   onToggleAll: () => void
+  onToggleDepartmentGroup?: (idsToAdd: string[], idsToRemove: string[]) => void
 }
 
 /** Program or activity row in Time Study transfer panels (with optional code for display). */
@@ -292,6 +293,7 @@ export type AddEmployeeTimeStudyTransferPanelProps = {
   items: AddEmployeeTimeStudyTransferItem[]
   selectedIds: string[]
   onToggleItem: (id: string) => void
+  onToggleAll: () => void
   searchValue: string
   onSearchChange: (value: string) => void
   selectedDept: string

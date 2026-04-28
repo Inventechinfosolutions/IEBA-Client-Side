@@ -703,6 +703,43 @@ export function TimeStudyAssignmentsPanel({
     setToggledActivitiesA([])
   }
 
+  const toggleAllProgramsU = () => {
+    const allSelected = filteredProgramsU.length > 0 && filteredProgramsU.every((p) => toggledProgramsU.includes(p.id))
+    if (allSelected) {
+      const filteredIds = new Set(filteredProgramsU.map((p) => p.id))
+      setToggledProgramsU((prev) => prev.filter((id) => !filteredIds.has(id)))
+    } else {
+      setToggledProgramsU((prev) => Array.from(new Set([...prev, ...filteredProgramsU.map((p) => p.id)])))
+    }
+  }
+  const toggleAllProgramsA = () => {
+    const allSelected = filteredProgramsA.length > 0 && filteredProgramsA.every((p) => toggledProgramsA.includes(p.id))
+    if (allSelected) {
+      const filteredIds = new Set(filteredProgramsA.map((p) => p.id))
+      setToggledProgramsA((prev) => prev.filter((id) => !filteredIds.has(id)))
+    } else {
+      setToggledProgramsA((prev) => Array.from(new Set([...prev, ...filteredProgramsA.map((p) => p.id)])))
+    }
+  }
+  const toggleAllActivitiesU = () => {
+    const allSelected = filteredActivitiesU.length > 0 && filteredActivitiesU.every((a) => toggledActivitiesU.includes(a.id))
+    if (allSelected) {
+      const filteredIds = new Set(filteredActivitiesU.map((a) => a.id))
+      setToggledActivitiesU((prev) => prev.filter((id) => !filteredIds.has(id)))
+    } else {
+      setToggledActivitiesU((prev) => Array.from(new Set([...prev, ...filteredActivitiesU.map((a) => a.id)])))
+    }
+  }
+  const toggleAllActivitiesA = () => {
+    const allSelected = filteredActivitiesA.length > 0 && filteredActivitiesA.every((a) => toggledActivitiesA.includes(a.id))
+    if (allSelected) {
+      const filteredIds = new Set(filteredActivitiesA.map((a) => a.id))
+      setToggledActivitiesA((prev) => prev.filter((id) => !filteredIds.has(id)))
+    } else {
+      setToggledActivitiesA((prev) => Array.from(new Set([...prev, ...filteredActivitiesA.map((a) => a.id)])))
+    }
+  }
+
   return (
     <div className="pt-2">
       <p className="mb-4 select-none text-[12px] font-semibold uppercase text-[#111827]">
@@ -808,6 +845,7 @@ export function TimeStudyAssignmentsPanel({
           items={filteredProgramsU}
           selectedIds={toggledProgramsU}
           onToggleItem={(id) => setToggledProgramsU((prev) => toggleList(prev, id))}
+          onToggleAll={toggleAllProgramsU}
           searchValue={searchProgramsU}
           onSearchChange={setSearchProgramsU}
           selectedDept={selectedDept}
@@ -833,6 +871,7 @@ export function TimeStudyAssignmentsPanel({
           items={filteredProgramsA}
           selectedIds={toggledProgramsA}
           onToggleItem={(id) => setToggledProgramsA((prev) => toggleList(prev, id))}
+          onToggleAll={toggleAllProgramsA}
           searchValue={searchProgramsA}
           onSearchChange={setSearchProgramsA}
           selectedDept={selectedDept}
@@ -845,6 +884,7 @@ export function TimeStudyAssignmentsPanel({
           items={filteredActivitiesU}
           selectedIds={toggledActivitiesU}
           onToggleItem={(id) => setToggledActivitiesU((prev) => toggleList(prev, id))}
+          onToggleAll={toggleAllActivitiesU}
           searchValue={searchActivitiesU}
           onSearchChange={setSearchActivitiesU}
           selectedDept={selectedDept}
@@ -870,6 +910,7 @@ export function TimeStudyAssignmentsPanel({
           items={filteredActivitiesA}
           selectedIds={toggledActivitiesA}
           onToggleItem={(id) => setToggledActivitiesA((prev) => toggleList(prev, id))}
+          onToggleAll={toggleAllActivitiesA}
           searchValue={searchActivitiesA}
           onSearchChange={setSearchActivitiesA}
           selectedDept={selectedDept}

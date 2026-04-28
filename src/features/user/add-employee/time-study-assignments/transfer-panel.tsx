@@ -11,10 +11,13 @@ export function TransferPanel({
   items,
   selectedIds,
   onToggleItem,
+  onToggleAll,
   searchValue,
   onSearchChange,
   selectedDept,
 }: AddEmployeeTimeStudyTransferPanelProps) {
+  const allSelected = items.length > 0 && items.every((item) => selectedIds.includes(item.id))
+
   return (
     <div className="flex flex-col overflow-hidden rounded-[8px] border border-[#E5E7EB] bg-white">
       <div className="flex h-10 items-center justify-between gap-3 bg-[#6C5DD3] px-3 text-[11px] font-medium text-white">
@@ -38,8 +41,20 @@ export function TransferPanel({
       <ScrollArea className="h-[220px] py-2 px-2">
         {items.length > 0 ? (
           <div className="flex flex-col">
-            <div className="flex h-7 items-center justify-between bg-[#F3F4F6] px-4 text-[10px] font-semibold text-[#374151]">
-              <span>{selectedDept}</span>
+            <div className="grid h-7 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 bg-[#F3F4F6] pl-4 pr-9 text-[10px] font-semibold text-[#374151]">
+              <span className="min-w-0">{selectedDept}</span>
+              <button
+                type="button"
+                onClick={onToggleAll}
+                className={`flex size-4.5 shrink-0 items-center justify-center rounded-[6px] border shadow-sm transition-all ${
+                  allSelected
+                    ? "border-[#6C5DD3] bg-white text-[#6C5DD3]"
+                    : "border-[#E5E7EB] bg-white text-transparent hover:border-[#D1D5DB]"
+                }`}
+                aria-label={`Toggle all ${selectedDept}`}
+              >
+                <Check className="size-3.5 stroke-3" />
+              </button>
             </div>
             <div className="px-6 py-0.5">
               <span className="inline-flex items-center justify-center rounded-[6px] border border-[#E5E7EB] bg-white px-3 py-1 text-[10px] font-bold text-[#374151] shadow-sm">
