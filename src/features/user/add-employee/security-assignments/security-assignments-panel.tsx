@@ -89,13 +89,14 @@ export function SecurityAssignmentsPanel({
   const assignedRoles = watch("roleAssignments") ?? []
   const securitySnapshots = watch("securityAssignedSnapshots") ?? []
   
-  const { isSuperAdmin, isDepartmentAdmin, user } = usePermissions()
-  const isRestrictedDeptAdmin = isDepartmentAdmin && !isSuperAdmin
-  
+  const { isSuperAdmin, user } = usePermissions()
+  // All non-super-admin roles are restricted to their assigned departments only
+  const isRestrictedNonSuperAdmin = !isSuperAdmin
+
   const allowedDepartmentNames = useMemo(() => {
-    if (!isRestrictedDeptAdmin || !user?.departmentRoles) return null;
-    return new Set(user.departmentRoles.map(dr => dr.departmentName));
-  }, [isRestrictedDeptAdmin, user?.departmentRoles]);
+    if (!isRestrictedNonSuperAdmin || !user?.departmentRoles) return null
+    return new Set(user.departmentRoles.map(dr => dr.departmentName))
+  }, [isRestrictedNonSuperAdmin, user?.departmentRoles])
 
   /**
    * Unassigned API (with `userId` in edit) returns server “still unassigned” rows; we also remove anything
@@ -105,8 +106,8 @@ export function SecurityAssignmentsPanel({
     if (!unassignedQuery.isSuccess || !unassignedQuery.data) return []
     let data = unassignedQuery.data
 
-    if (isRestrictedDeptAdmin && allowedDepartmentNames) {
-      data = data.filter(i => allowedDepartmentNames.has(i.department));
+    if (isRestrictedNonSuperAdmin && allowedDepartmentNames) {
+      data = data.filter(i => allowedDepartmentNames.has(i.department))
     }
 
     const snapIds = new Set(securitySnapshots.map((s) => s.id))
@@ -139,7 +140,7 @@ export function SecurityAssignmentsPanel({
     isAddMode,
     isEditMode,
     securitySnapshots,
-    isRestrictedDeptAdmin,
+    isRestrictedNonSuperAdmin,
     allowedDepartmentNames,
   ])
 

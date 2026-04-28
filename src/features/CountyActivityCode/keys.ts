@@ -10,12 +10,13 @@ export const countyActivityCodeKeys = {
     [...countyActivityCodeKeys.lists(), filters] as const,
   /** Prefix for all paginated `GET /activities` caches (any page/search/status). */
   pagedLists: () => [...countyActivityCodeKeys.all, "paged"] as const,
-  /** Paginated `GET /activities` (search, status, page, pageSize). */
+  /** Paginated `GET /activities` (search, status, page, pageSize, departmentIds). */
   pagedList: (params: {
     page: number
     pageSize: number
     search: string
     status: string
+    departmentIds?: number[]
   }) => [...countyActivityCodeKeys.pagedLists(), params] as const,
   /** `GET /activities/top-level` — table / shared active-primary context (main grid). */
   topLevel: () => [...countyActivityCodeKeys.all, "top-level"] as const,
