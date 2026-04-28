@@ -105,6 +105,7 @@ export type PagedListParams = {
   pageSize: number
   search: string
   status: string
+  departmentIds?: number[]
 }
 
 export type CountyActivityListQueryParams = {
@@ -114,6 +115,8 @@ export type CountyActivityListQueryParams = {
   /** Backend `ActivityStatusEnum` string (`active` | `inactive`). */
   status?: string
   sort?: "ASC" | "DESC"
+  /** Filter to activities linked to any of these department IDs (non-super-admin). */
+  departmentIds?: number[]
 }
 
 /** Params for paginated `GET /activities` (toolbar search is debounced before reaching the query). */
@@ -122,6 +125,8 @@ export type CountyActivityPagedListParams = {
   pageSize: number
   search: string
   showInactive: boolean
+  /** Department IDs to restrict results to — undefined = SuperAdmin (no filter). */
+  assignedDepartmentIds?: number[]
 }
 
 export type ApiActivityDepartmentResDto = {
