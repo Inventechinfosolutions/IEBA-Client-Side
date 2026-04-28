@@ -22,20 +22,20 @@ export function PersonalTimeStudyLegendCard({
 }: PersonalTimeStudyLegendCardProps) {
   return (
     <Card
-      className={cn("flex h-full min-h-0 flex-col shadow-sm", className)}
+      className={cn("flex h-full min-h-0 flex-col gap-0 border-0 ring-0 py-0 bg-white shadow-[0_4px_16px_rgba(16,24,40,0.12)] rounded-[8px]", className)}
       size="sm"
     >
-      <CardHeader className="shrink-0 border-b border-border/60 pb-3">
-        <CardTitle className="text-base font-semibold text-foreground">
+      <CardHeader className="shrink-0 px-3 pt-2 pb-1">
+        <CardTitle className="text-[11px] font-semibold text-foreground">
           Status legend
         </CardTitle>
       </CardHeader>
-      <CardContent className="pt-4">
-        <ul className="flex flex-col gap-3">
+      <CardContent className="px-3 pt-1 pb-3">
+        <ul className="flex flex-col gap-1.5">
           {LEGEND_ITEMS.map(({ key, label }) => (
-            <li key={key} className="flex items-center gap-3 text-sm">
+            <li key={key} className="flex items-center gap-1.5 text-[11px]">
               <span
-                className="flex size-6 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold text-white"
+                className="flex size-4 shrink-0 items-center justify-center rounded-full text-[8px] font-semibold text-white"
                 style={{ backgroundColor: PERSONAL_TIME_STUDY_LEGEND[key] }}
               >
                 1

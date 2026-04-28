@@ -19,13 +19,13 @@ export function PersonalTimeStudyNotesSection({
   return (
     <section
       className={cn(
-        "flex w-full min-h-0 flex-col rounded-xl border border-border/80 bg-card p-4 shadow-sm ring-1 ring-primary/10",
+        "flex w-full min-h-0 flex-col rounded-[8px] border-0 ring-0 bg-white p-3 shadow-[0_4px_16px_rgba(16,24,40,0.12)]",
         className
       )}
     >
       <Label
         htmlFor="pts-notes"
-        className="mb-2 shrink-0 text-base font-semibold text-primary"
+        className="mb-1 shrink-0 text-[11px] font-semibold text-primary"
       >
         Notes
       </Label>
@@ -34,10 +34,10 @@ export function PersonalTimeStudyNotesSection({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder="Add notes…"
-        className="min-h-[120px] flex-1 resize-y"
+        className="min-h-[70px] flex-1 resize-y text-[11px]"
       />
-      <div className="mt-3 flex shrink-0 justify-end">
-        <Button type="button" onClick={onSave}>
+      <div className="mt-2 flex shrink-0 justify-end">
+        <Button type="button" size="sm" className="h-7 text-[11px]" onClick={onSave}>
           Save Notes
         </Button>
       </div>

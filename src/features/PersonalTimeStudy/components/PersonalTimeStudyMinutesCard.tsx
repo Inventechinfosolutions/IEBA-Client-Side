@@ -16,15 +16,15 @@ export function PersonalTimeStudyMinutesCard({
 }: PersonalTimeStudyMinutesCardProps) {
   return (
     <Card
-      className={cn("flex h-full min-h-0 flex-col shadow-sm", className)}
+      className={cn("flex h-full min-h-0 flex-col gap-0 border-0 ring-0 py-0 bg-white shadow-[0_4px_16px_rgba(16,24,40,0.12)] rounded-[8px]", className)}
       size="sm"
     >
-      <CardHeader className="shrink-0 border-b border-border/60 pb-3">
-        <CardTitle className="text-base font-semibold text-foreground">
+      <CardHeader className="shrink-0 px-3 pt-2 pb-1">
+        <CardTitle className="text-[11px] font-semibold text-foreground">
           Minutes
         </CardTitle>
       </CardHeader>
-      <CardContent className="flex flex-col gap-3 pt-4 text-sm">
+      <CardContent className="flex flex-col gap-1.5 px-3 pt-2 pb-3 text-[11px]">
         <div className="flex items-center justify-between gap-2">
           <span className="text-muted-foreground">Allocated TS Minutes</span>
           <span className="font-semibold tabular-nums text-primary">
