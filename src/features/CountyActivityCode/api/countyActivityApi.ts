@@ -508,7 +508,7 @@ export function buildCountyActivityGridRowAfterUpdate(
   }
 }
 
-/** GET `/activities` — paginated list (page, limit, search, status, sort). */
+/** GET `/activities` — paginated list (page, limit, search, status, sort, departmentIds). */
 export async function apiGetCountyActivitiesPage(
   params: CountyActivityListQueryParams,
 ): Promise<CountyActivityListResponsePayload> {
@@ -521,10 +521,13 @@ export async function apiGetCountyActivitiesPage(
   if (term) searchParams.set("search", term)
   const st = params.status?.trim()
   if (st) searchParams.set("status", st)
+  let url = `/activities?${searchParams.toString()}`
+  // Append departmentIds as a literal comma-separated value (URLSearchParams encodes commas as %2C)
+  if (params.departmentIds && params.departmentIds.length > 0) {
+    url += `&departmentIds=${params.departmentIds.join(",")}`
+  }
 
-  const raw = await api.get<ApiResponseDto<CountyActivityListResponsePayload>>(
-    `/activities?${searchParams.toString()}`,
-  )
+  const raw = await api.get<ApiResponseDto<CountyActivityListResponsePayload>>(url)
   if (!raw.success || raw.data == null) {
     throw new Error(raw.message?.trim() || "Failed to load county activities")
   }
@@ -540,7 +543,7 @@ export async function apiGetCountyActivitiesPage(
  * {@link COUNTY_ACTIVITY_ACTIVITIES_API_MAX_LIMIT} per request (backend cap).
  */
 export async function apiGetCountyActivitiesCatalogAggregated(
-  params: Pick<CountyActivityListQueryParams, "search" | "status" | "sort">,
+  params: Pick<CountyActivityListQueryParams, "search" | "status" | "sort" | "departmentIds">,
 ): Promise<CountyActivityListResponsePayload> {
   const chunk = COUNTY_ACTIVITY_ACTIVITIES_API_MAX_LIMIT
   const sort = params.sort ?? "ASC"
@@ -555,6 +558,7 @@ export async function apiGetCountyActivitiesCatalogAggregated(
       search: params.search,
       status: params.status,
       sort,
+      departmentIds: params.departmentIds,
     })
     if (firstMeta == null) firstMeta = inner.meta
     all.push(...inner.data)

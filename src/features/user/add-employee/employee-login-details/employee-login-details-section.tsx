@@ -29,8 +29,9 @@ export function EmployeeLoginDetailsSection({ isEditMode }: EmployeeLoginDetails
   const [jobClassificationMenuOpened, setJobClassificationMenuOpened] = useState(false)
   const [locationMenuOpened, setLocationMenuOpened] = useState(false)
 
-  const { isSuperAdmin, isDepartmentAdmin, user } = usePermissions()
-  const showDeptAutoAssign = isDepartmentAdmin && !isSuperAdmin
+  const { isSuperAdmin, user } = usePermissions()
+  // Show dept assignment for all non-super-admin roles (PayrollAdmin, TimeStudyAdmin, DeptAdmin, etc.)
+  const showDeptAutoAssign = !isSuperAdmin
 
   const jobClassificationsEnabled = !isEditMode || jobClassificationMenuOpened
   const locationsEnabled = !isEditMode || locationMenuOpened

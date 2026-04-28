@@ -27,17 +27,26 @@ const DEFAULT_PAGINATION: CountyActivityPagination = {
 export function useCountyActivityCodes(
   filters: CountyActivityFilterFormValues,
   departments: readonly Department[],
+  /** undefined = SuperAdmin (no filter). Set = restrict rows to activities linked to these dept IDs. */
+  assignedDeptIds?: Set<number>,
 ) {
   const queryClient = useQueryClient()
   const [pagination, setPagination] = useState<CountyActivityPagination>(
     DEFAULT_PAGINATION,
   )
 
+  // Convert Set to sorted array for stable query key + API call
+  const assignedDepartmentIds = useMemo<number[] | undefined>(() => {
+    if (assignedDeptIds === undefined) return undefined
+    return [...assignedDeptIds].sort((a, b) => a - b)
+  }, [assignedDeptIds])
+
   const catalogQuery = useGetCountyActivityPagedList({
     page: pagination.page,
     pageSize: pagination.pageSize,
     search: filters.search.trim(),
     showInactive: filters.inactive,
+    assignedDepartmentIds,
   })
 
   const hierarchyQuery = useGetCountyActivityCodes()
@@ -46,7 +55,7 @@ export function useCountyActivityCodes(
   const topLevelQuery = useGetCountyActivityTopLevel()
 
   /** Aggregated active `GET /activities` — Sub modal “Primary Activity Code” only. */
-  const subPickerQuery = useGetCountyActivityActivePrimarySubPicker()
+  const subPickerQuery = useGetCountyActivityActivePrimarySubPicker(assignedDepartmentIds)
 
   const catalogMeta = catalogQuery.data?.meta
   const serverTotalPages = catalogMeta?.totalPages

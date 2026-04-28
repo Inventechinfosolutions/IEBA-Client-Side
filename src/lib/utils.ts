@@ -14,3 +14,14 @@ export function toTitleCase(value: string): string {
   if (!value) return ""
   return value.replace(/\b\w/g, (char) => char.toUpperCase())
 }
+/** Converts ID/Name rows to select options. */
+export function mapIdNameRowsToSelectOptions<T extends { id: string | number; name?: string; label?: string; code?: string }>(
+  rows: readonly T[],
+) {
+  return [...rows]
+    .map((row) => ({ 
+      value: String(row.id), 
+      label: row.label ?? row.name ?? String(row.id) 
+    }))
+    .sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: "base" }))
+}

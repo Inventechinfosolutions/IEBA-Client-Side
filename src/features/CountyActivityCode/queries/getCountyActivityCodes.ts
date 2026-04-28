@@ -64,6 +64,7 @@ export function useGetCountyActivityPagedList(params: CountyActivityPagedListPar
   const queryClient = useQueryClient()
   const status = params.showInactive ? "inactive" : "active"
   const search = params.search.trim()
+  const departmentIds = params.assignedDepartmentIds ?? []
 
   return useQuery({
     queryKey: countyActivityCodeKeys.pagedList({
@@ -71,6 +72,7 @@ export function useGetCountyActivityPagedList(params: CountyActivityPagedListPar
       pageSize: params.pageSize,
       search,
       status,
+      departmentIds: departmentIds.length > 0 ? departmentIds : undefined,
     }),
     queryFn: async () => {
       const enrichment = await fetchActivityCatalogEnrichmentMap(queryClient)
@@ -82,6 +84,7 @@ export function useGetCountyActivityPagedList(params: CountyActivityPagedListPar
             search: search.length > 0 ? search : undefined,
             status,
             sort: "ASC",
+            departmentIds: departmentIds.length > 0 ? departmentIds : undefined,
           })
         : await apiGetCountyActivitiesPage({
             page: params.page,
@@ -89,6 +92,7 @@ export function useGetCountyActivityPagedList(params: CountyActivityPagedListPar
             search: search.length > 0 ? search : undefined,
             status,
             sort: "ASC",
+            departmentIds: departmentIds.length > 0 ? departmentIds : undefined,
           })
       const rows = mapCountyActivityListItemsToGridRows(payload.data, enrichment)
       return { rows, meta: payload.meta, raw: payload.data }
@@ -131,16 +135,18 @@ export function useGetCountyActivityTopLevel() {
 }
 
 /** Sub county modal only: full active catalog from `GET /activities`, then primary rows. */
-export function useGetCountyActivityActivePrimarySubPicker() {
+export function useGetCountyActivityActivePrimarySubPicker(assignedDepartmentIds?: number[]) {
   const queryClient = useQueryClient()
+  const deptIds = assignedDepartmentIds && assignedDepartmentIds.length > 0 ? assignedDepartmentIds : undefined
 
   return useQuery({
-    queryKey: countyActivityCodeKeys.activePrimarySubPicker(),
+    queryKey: [...countyActivityCodeKeys.activePrimarySubPicker(), { departmentIds: deptIds }] as const,
     queryFn: async () => {
       const enrichment = await fetchActivityCatalogEnrichmentMap(queryClient)
       const payload = await apiGetCountyActivitiesCatalogAggregated({
         status: "active",
         sort: "ASC",
+        departmentIds: deptIds,
       })
       const rows = mapCountyActivityListItemsToGridRows(payload.data, enrichment)
       const primaries = rows.filter(

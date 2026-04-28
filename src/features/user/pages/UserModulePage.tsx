@@ -109,20 +109,22 @@ export function UserModulePage() {
   const [showForm, setShowForm] = useState(false)
   const [formMode, setFormMode] = useState<UserModuleFormMode>("add")
 
-  const { isSuperAdmin, assignedDepartmentIds, isDepartmentAdmin, isPayrollAdmin, isTimeStudyAdmin } = usePermissions()
-  const isRestrictedAdmin = isDepartmentAdmin || isPayrollAdmin || isTimeStudyAdmin
+  const { isSuperAdmin, assignedDepartmentIds } = usePermissions()
 
+  // Only SuperAdmin needs the full department list from the API.
+  // All other roles use their assigned departments from the auth context.
   const { data: allDepartmentsData } = useGetDepartments(
     { status: "active", page: 1, limit: 1000 },
-    { enabled: isSuperAdmin || (isRestrictedAdmin && !isDepartmentAdmin) }
+    { enabled: isSuperAdmin }
   )
 
   const allowedDepartments = useMemo(() => {
-    if ((isSuperAdmin || (isRestrictedAdmin && !isDepartmentAdmin)) && allDepartmentsData?.items) {
+    // SuperAdmin: show all departments fetched from API
+    if (isSuperAdmin && allDepartmentsData?.items) {
       return allDepartmentsData.items.map((d: any) => ({ id: Number(d.id), name: d.name }))
     }
+    // All other roles: restrict to only departments assigned to this user
     if (user?.departmentRoles) {
-      // Map department roles up to unique departments based on ID and name
       const map = new Map<number, string>()
       user.departmentRoles.forEach(dr => {
         if (dr.departmentId) {
@@ -132,7 +134,7 @@ export function UserModulePage() {
       return Array.from(map.entries()).map(([id, name]) => ({ id, name }))
     }
     return []
-  }, [isSuperAdmin, isRestrictedAdmin, isDepartmentAdmin, allDepartmentsData, user])
+  }, [isSuperAdmin, allDepartmentsData, user])
 
   // Reset to table view on navigation (e.g. sidebar click)
   const [lastLocationKey, setLastLocationKey] = useState(location.key)
@@ -164,9 +166,11 @@ export function UserModulePage() {
     lastName: searchFilters.lastName || undefined,
     name: searchFilters.name || undefined,
     employeeId: searchFilters.employeeId || undefined,
+    // SuperAdmin sees all users; all other roles are scoped to their assigned departments.
+    // selectedDepartmentId (toolbar picker) takes priority when explicitly chosen.
     departmentId: selectedDepartmentId
       ? String(selectedDepartmentId)
-      : (isDepartmentAdmin && !isSuperAdmin && assignedDepartmentIds.length > 0
+      : (!isSuperAdmin && assignedDepartmentIds.length > 0
           ? assignedDepartmentIds.join(",")
           : undefined),
   })

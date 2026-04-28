@@ -11,7 +11,14 @@ import type { ReportsSettingsModel } from "@/features/settings/components/Report
 import type { FiscalYearSettingsModel } from "@/features/settings/components/FiscalYear/types"
 import type { PayrollSettingsModel } from "./payroll"
 
-export type ReportOption = { key: string; label: string }
+export type ReportOption = { 
+  key: string; 
+  label: string;
+  id?: number;
+  criteria?: string | null;
+  type?: string;
+  reportdata?: string | null;
+}
 export type ActivityOption = { code: string; label: string }
 
 export type SettingsSection =

@@ -1,11 +1,30 @@
 import { useQuery } from "@tanstack/react-query"
 
+import { api } from "@/lib/api"
 import { settingsKeys } from "@/features/settings/keys"
-import { ACTIVITY_OPTIONS } from "@/features/settings/constants"
 import type { ActivityOption } from "@/features/settings/types"
 
 async function fetchActivityOptions(): Promise<ActivityOption[]> {
-  return ACTIVITY_OPTIONS
+  try {
+    const res = await api.get<any>("/activity-codes?limit=1000&status=active")
+    const items = res.data?.data ?? []
+    
+    // Deduplicate by code since activity codes can have multiple types
+    const uniqueMap = new Map<string, ActivityOption>()
+    for (const a of items) {
+      if (!uniqueMap.has(a.code)) {
+        uniqueMap.set(a.code, {
+          code: a.code,
+          label: a.name,
+        })
+      }
+    }
+    
+    return Array.from(uniqueMap.values())
+  } catch (error) {
+    console.error("Failed to fetch activity options:", error)
+    return []
+  }
 }
 
 export function useActivityOptions() {
