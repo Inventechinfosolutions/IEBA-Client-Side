@@ -28,83 +28,88 @@ const programFormBaseSchema = z.object({
   programActivityRelationSort: z.string().trim(),
   hasActiveSubProgramOne: z.boolean().optional(),
   hasActiveSubProgramTwo: z.boolean().optional(),
+  isMultiCode: z.boolean().optional(),
+  multiCodeType: z.string().optional(),
+  parentActive: z.boolean().optional(),
 })
 
+// ─── Budget Units tab schema ───────────────────────────────────────────────
 export const programFormSchema = programFormBaseSchema.superRefine((values, ctx) => {
-    const budgetUnitDepartmentField = "budgetUnitDepartment"
-    const buProgramFirstField = "buProgramBudgetUnitName"
-    const buSubProgramFirstField = "buSubProgramBudgetUnitProgramName"
+  const budgetUnitDepartmentField = "budgetUnitDepartment"
+  const buProgramFirstField = "buProgramBudgetUnitName"
+  const buSubProgramFirstField = "buSubProgramBudgetUnitProgramName"
 
-    const requiredBySection: Record<typeof values.formSection, string[]> = {
-      "Budget Unit": [
-        "budgetUnitDepartment",
-        "budgetUnitCode",
-        "budgetUnitName",
-        "budgetUnitDescription",
-        "budgetUnitMedicalPct",
-      ],
-      "BU Program": [
-        "buProgramBudgetUnitName",
-        "buProgramCode",
-        "buProgramDepartment",
-        "buProgramProgramCode",
-        "buProgramProgramName",
-        "buProgramDescription",
-        "buProgramMedicalPct",
-      ],
-      "BU Sub-Program": [
-        "buSubProgramBudgetUnitProgramName",
-        "buSubProgramBudgetCode",
-        "buSubProgramDepartment",
-        "buSubProgramCode",
-        "buSubProgramName",
-        "buSubProgramDescription",
-        "buSubProgramMedicalPct",
-      ],
-    }
+  const requiredBySection: Record<typeof values.formSection, string[]> = {
+    "Budget Unit": [
+      "budgetUnitDepartment",
+      "budgetUnitCode",
+      "budgetUnitName",
+      "budgetUnitDescription",
+      "budgetUnitMedicalPct",
+    ],
+    "BU Program": [
+      "buProgramBudgetUnitName",
+      "buProgramCode",
+      "buProgramDepartment",
+      "buProgramProgramCode",
+      "buProgramProgramName",
+      "buProgramDescription",
+      "buProgramMedicalPct",
+    ],
+    "BU Sub-Program": [
+      "buSubProgramBudgetUnitProgramName",
+      "buSubProgramBudgetCode",
+      "buSubProgramDepartment",
+      "buSubProgramCode",
+      "buSubProgramName",
+      "buSubProgramDescription",
+      "buSubProgramMedicalPct",
+    ],
+  }
 
-    for (const field of requiredBySection[values.formSection]) {
-      const key = field as keyof typeof values
-      if (!values[key]) {
-        let message = "Please fill all the required fields"
-        if (field === budgetUnitDepartmentField) message = "Please Select Department"
-        if (field === buProgramFirstField) message = "Please Select Budget Unit"
-        if (field === buSubProgramFirstField) message = "Please Select Budget Program"
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: [field],
-          message,
-        })
-      }
+  for (const field of requiredBySection[values.formSection]) {
+    const key = field as keyof typeof values
+    if (!values[key]) {
+      let message = "Please fill all the required fields"
+      if (field === budgetUnitDepartmentField) message = "Please Select Department"
+      if (field === buProgramFirstField) message = "Please Select Budget Unit"
+      if (field === buSubProgramFirstField) message = "Please Select Budget Program"
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: [field],
+        message,
+      })
     }
-    
-    if (values.formSection === "Budget Unit") {
-      if (!values.active) {
-        if (values.hasActiveSubProgramOne) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            path: ["active"],
-            message: "Can't change status as BU Programs are still active",
-          })
-        } else if (values.hasActiveSubProgramTwo) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            path: ["active"],
-            message: "Can't change status as BU Sub-Programs are still active",
-          })
-        }
-      }
-    } else if (values.formSection === "BU Program") {
-      if (!values.active && values.hasActiveSubProgramTwo) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: ["active"],
-          message: "Can't change status as BU Sub-Programs are still active",
-        })
-      }
-    }
-  })
+  }
 
+  // ── Status hierarchy rules ────────────────────────────────────────────────
+  // Rule: A child CANNOT be set to Active when its direct parent is Inactive.
+  // Deactivation is always allowed — the backend cascades status to children.
+
+  if (values.formSection === "BU Program") {
+    // Level 1: parent is the Budget Unit (Level 0)
+    if (values.active && values.parentActive === false) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["active"],
+        message: "Cannot activate: Parent Budget Unit is inactive. Please activate it first.",
+      })
+    }
+  }
+
+  if (values.formSection === "BU Sub-Program") {
+    // Level 2: parent is the BU Program (Level 1)
+    if (values.active && values.parentActive === false) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["active"],
+        message: "Cannot activate: Parent BU Program is inactive. Please activate it first.",
+      })
+    }
+  }
+})
+
+// ─── Time Study Programs tab schema ───────────────────────────────────────
 export const timeStudyProgramFormSchema = programFormBaseSchema.superRefine((values, ctx) => {
   const requiredBySection: Record<typeof values.formSection, (keyof typeof values)[]> = {
     "Budget Unit": [
@@ -140,29 +145,33 @@ export const timeStudyProgramFormSchema = programFormBaseSchema.superRefine((val
     }
   }
 
-  if (values.active === false) {
-    if (values.formSection === "BU Program") {
-      if (values.hasActiveSubProgramOne) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: ["active"],
-          message: "Can't change status as Sub Time Study Program are still active",
-        })
-      } else if (values.hasActiveSubProgramTwo) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: ["active"],
-          message: "Can't change status as Sub Time Study Program two are still active",
-        })
-      }
-    } else if (values.formSection === "BU Sub-Program") {
-      if (values.hasActiveSubProgramTwo) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: ["active"],
-          message: "Can't change status as Sub Time Study Program two are still active",
-        })
-      }
+  // ── Status hierarchy rules ────────────────────────────────────────────────
+  // Time Study hierarchy mapping:
+  //   formSection "BU Program"     → Level 0 (TS Primary)   — no parent
+  //   formSection "BU Sub-Program" → Level 1 (TS Secondary) — parent is TS Primary
+  //   formSection "Budget Unit"    → Level 2 (TS Sub-Prog)  — parent is TS Secondary
+
+  if (values.formSection === "BU Sub-Program") {
+    // Level 1 (TS Secondary): parent is the TS Primary
+    if (values.active && values.parentActive === false) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["active"],
+        message: "Cannot activate: Parent TS Primary Program is inactive. Please activate it first.",
+      })
+    }
+  }
+
+  if (values.formSection === "Budget Unit") {
+    // Level 2 (TS Sub-Program Two): parent is the TS Secondary
+    if (values.active && values.parentActive === false) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["active"],
+        message: "Cannot activate: Parent TS Sub-Program One is inactive. Please activate it first.",
+      })
     }
   }
 })
+
+

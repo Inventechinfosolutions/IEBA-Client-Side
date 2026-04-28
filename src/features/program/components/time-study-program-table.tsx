@@ -64,16 +64,53 @@ export const TimeStudyProgramTable = forwardRef<TimeStudyProgramTableHandle, Tim
 
   useImperativeHandle(ref, () => ({
     collapseRow: (rowId: string) => {
-      childrenInFlightRef.current.delete(rowId)
-      setChildrenByParentId((prev) => {
-        const updated = { ...prev }
-        delete updated[rowId]
-        return updated
+      setChildrenByParentId((prevC) => {
+        const nextC = { ...prevC }
+        const idsToClear = new Set<string>([rowId])
+        const queue = [rowId]
+
+        // Find all descendant IDs
+        while (queue.length > 0) {
+          const currentId = queue.shift()!
+          const children = nextC[currentId]
+          if (children) {
+            for (const child of children) {
+              idsToClear.add(child.id)
+              queue.push(child.id)
+            }
+          }
+          delete nextC[currentId]
+        }
+
+        // Clear inflight refs and expanded state for all descendants
+        idsToClear.forEach((id) => {
+          childrenInFlightRef.current.delete(id)
+        })
+
+        setExpandedPrograms((prevE) => {
+          const nextE = { ...prevE }
+          idsToClear.forEach((id) => {
+            nextE[id] = false
+          })
+          return nextE
+        })
+
+        return nextC
       })
-      setExpandedPrograms((prev) => ({ ...prev, [rowId]: false }))
     },
     patchTimeStudyProgramRow: (updatedRow: ProgramRow) => {
-      setPatchedRows((prev) => ({ ...prev, [updatedRow.id]: updatedRow }))
+      setPatchedRows((prev) => {
+        const next = { ...prev, [updatedRow.id]: updatedRow }
+        // If this is a Primary or Secondary, clear its children from patchedRows
+        // so they show their fresh status from the backend on re-expand.
+        Object.keys(next).forEach((key) => {
+          const row = next[key]
+          if (row.parentId === updatedRow.id) {
+            delete next[key]
+          }
+        })
+        return next
+      })
     },
   }), [])
 
@@ -128,7 +165,11 @@ export const TimeStudyProgramTable = forwardRef<TimeStudyProgramTableHandle, Tim
 
       for (const sec of secondaries) {
         const effectiveSecondary = applyUpdatedRow(sec)
-        flattened.push(effectiveSecondary)
+        flattened.push({
+          ...effectiveSecondary,
+          // L1 parent is the TS Primary — stamp its active status
+          parentActive: effectivePrimary.active,
+        })
 
         // Only show subprograms if this secondary is expanded
         if (!expandedPrograms[sec.id]) continue
@@ -136,7 +177,11 @@ export const TimeStudyProgramTable = forwardRef<TimeStudyProgramTableHandle, Tim
         // Level 2: subprograms stored under the secondary's own id
         const subprograms = childrenByParentId[sec.id] ?? []
         for (const sub of subprograms) {
-          flattened.push(applyUpdatedRow(sub))
+          flattened.push({
+            ...applyUpdatedRow(sub),
+            // L2 parent is the TS Secondary — stamp its active status
+            parentActive: effectiveSecondary.active,
+          })
         }
       }
     }
@@ -242,6 +287,14 @@ export const TimeStudyProgramTable = forwardRef<TimeStudyProgramTableHandle, Tim
       )
 
       setChildrenByParentId((prev) => ({ ...prev, [rowId]: mapped }))
+
+      setPatchedRows((prev) => {
+        const next = { ...prev }
+        mapped.forEach((r) => {
+          delete next[r.id]
+        })
+        return next
+      })
     } finally {
       childrenInFlightRef.current.delete(rowId)
       setChildrenLoading((prev) => ({ ...prev, [rowId]: false }))
@@ -455,7 +508,12 @@ export const TimeStudyProgramTable = forwardRef<TimeStudyProgramTableHandle, Tim
                               )}
                             </button>
                           ) : null}
-                          {row.code}
+                          <span className="inline-flex items-center">
+                            {row.code}
+                            {row.isMultiCode && (
+                              <span className="text-[var(--primary)] font-bold ml-0.5 text-[12px] -translate-y-1">**</span>
+                            )}
+                          </span>
                         </div>
                       </TableCell>
                       <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-[12px] text-[#232735] whitespace-pre-wrap break-all wrap-anywhere max-w-[220px]">

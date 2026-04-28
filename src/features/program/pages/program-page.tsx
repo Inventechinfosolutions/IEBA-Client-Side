@@ -97,6 +97,30 @@ function getSaveSuccessMessage(
   return "Budget Sub Program Saved Successfully"
 }
 
+function detectSection(row: ProgramRow): ProgramFormSection {
+  if (row.tab === "Budget Units") {
+    const isBackendSubprogram = typeof row.type === "string" && row.type.toLowerCase() === "subprogram"
+
+    if (row.hierarchyLevel === 0 || row.type === "bu") {
+      return "Budget Unit"
+    } else if (isBackendSubprogram || row.hierarchyLevel === 3) {
+      return "BU Sub-Program"
+    } else {
+      return "BU Program"
+    }
+  } else {
+    // Time Study tab — use row.type exclusively, never hierarchyLevel:
+    const tsType = (row.type ?? "").toLowerCase().trim()
+    if (tsType === "secondary") {
+      return "BU Sub-Program"
+    } else if (tsType === "subprogram") {
+      return "Budget Unit"
+    } else {
+      return "BU Program"
+    }
+  }
+}
+
 export function ProgramPage() {
   const successToastOptions = {
     position: "top-center" as const,
@@ -128,7 +152,7 @@ export function ProgramPage() {
   const [expandedPrograms, setExpandedPrograms] = useState<Record<string, boolean>>({})
   const budgetUnitTableRef = useRef<BudgetUnitTableHandle | null>(null)
   const tsTableRef = useRef<TimeStudyProgramTableHandle | null>(null)
-  const [activeChildrenFlags, setActiveChildrenFlags] = useState({ one: false, two: false })
+  const [activeChildrenFlags, setActiveChildrenFlags] = useState({ one: false, two: false, parentActive: undefined as boolean | undefined })
 
   const isSubProgramQuickAdd = modalMode === "add" && Boolean(selectedProgramForSubAdd)
 
@@ -139,14 +163,17 @@ export function ProgramPage() {
   // section for the current add-mode so that when opening "Add Budget Unit"
   // we only load departments, and defer Budget Units / Budget Programs until
   // the user switches to the corresponding sections.
-  const addSectionForLookups: ProgramFormSection | undefined =
-    modalMode === "add"
-      ? isSubProgramQuickAdd
+  const currentSectionForLookups = useMemo<ProgramFormSection | undefined>(() => {
+    if (!modalOpen) return undefined
+    if (modalMode === "add") {
+      return isSubProgramQuickAdd
         ? activeTab === "Time Study programs"
           ? "Budget Unit"     // TS Sub-Program Two
           : "BU Sub-Program"  // Budget Units sub-program
         : mapProgramTabToSection(activeTab)
-      : undefined
+    }
+    return selectedRow ? detectSection(selectedRow) : undefined
+  }, [modalOpen, modalMode, isSubProgramQuickAdd, activeTab, selectedRow])
 
   const { user, isSuperAdmin, isDepartmentAdmin } = usePermissions()
 
@@ -175,9 +202,9 @@ export function ProgramPage() {
   }, [isRestrictedRole])
 
   const formOptionsQuery = useGetProgramFormOptions(
-    modalOpen && modalMode === "add",
+    modalOpen,
     activeTab,
-    addSectionForLookups,
+    currentSectionForLookups,
     assignedDepartmentIds
   )
 
@@ -200,36 +227,7 @@ export function ProgramPage() {
   const modalInitialValues = useMemo<ProgramFormValues>(() => {
     if (modalMode === "edit" && selectedRow) {
 
-      let section: ProgramFormSection
-      if (selectedRow.tab === "Budget Units") {
-        // In Budget Units tab:
-        // Use type if available, fallback to hierarchyLevel logic otherwise
-        const specialSubProgramCodes = ["208", "211"] // Fallbacks for backend DB parentId=null issues
-        const isBackendSubprogram = typeof selectedRow.type === "string" && selectedRow.type.toLowerCase() === "subprogram"
-        const isForcedSubprogram = specialSubProgramCodes.includes(selectedRow.code.trim())
-
-        if (selectedRow.hierarchyLevel === 0 || selectedRow.type === "bu") {
-          section = "Budget Unit"
-        } else if (isBackendSubprogram || isForcedSubprogram || selectedRow.hierarchyLevel === 3) {
-          section = "BU Sub-Program"
-        } else {
-          section = "BU Program"
-        }
-      } else {
-        // Time Study tab — use row.type exclusively, never hierarchyLevel:
-        // type="primary"    → BU Program (TS Primary Program)
-        // type="secondary"  → BU Sub-Program (TS Sub-Program One)
-        // type="subprogram" → Budget Unit (TS Sub-Program Two)
-        const tsType = (selectedRow.type ?? "").toLowerCase().trim()
-        if (tsType === "secondary") {
-          section = "BU Sub-Program"
-        } else if (tsType === "subprogram") {
-          section = "Budget Unit"
-        } else {
-          // primary (or unknown) → TS Primary Program
-          section = "BU Program"
-        }
-      }
+      const section = detectSection(selectedRow)
       const buNameForProgramTab =
         selectedRow.tab === "Budget Units"
           ? selectedRow.name
@@ -295,6 +293,9 @@ export function ProgramPage() {
         buProgramMedicalPct: selectedRow.medicalPct,
         hasActiveSubProgramOne: activeChildrenFlags.one,
         hasActiveSubProgramTwo: activeChildrenFlags.two,
+        isMultiCode: selectedRow.isMultiCode,
+        multiCodeType: selectedRow.multiCodeType,
+        parentActive: activeChildrenFlags.parentActive,
         ...buSubProgramInitial,
       }
     }
@@ -354,6 +355,10 @@ export function ProgramPage() {
   const handleEditRow = async (row: ProgramRow) => {
     try {
       setIsEditDetailLoading(true)
+      // Capture parentActive from the table row BEFORE the API fetch,
+      // since the freshRow returned by the API won't carry this field
+      // (it's stamped by the table hierarchy builder at render time).
+      const parentActive = row.parentActive
       const freshRow = await apiGetProgramRowById({ activeTab, row })
       
       let flags = { hasActiveSubProgramOne: false, hasActiveSubProgramTwo: false }
@@ -362,7 +367,7 @@ export function ProgramPage() {
       } else if (activeTab === "Budget Units") {
         flags = await apiCheckActiveBudgetSubPrograms(freshRow)
       }
-      setActiveChildrenFlags({ one: flags.hasActiveSubProgramOne, two: flags.hasActiveSubProgramTwo })
+      setActiveChildrenFlags({ one: flags.hasActiveSubProgramOne, two: flags.hasActiveSubProgramTwo, parentActive })
 
       setModalMode("edit")
       setSelectedRow(freshRow)
@@ -413,8 +418,13 @@ export function ProgramPage() {
       if (updatedRow) {
         if (activeTab === "Budget Units") {
           budgetUnitTableRef.current?.patchBudgetProgramRow(updatedRow)
+          // User requested: "when we update any parent > close this so we can refetch crt data"
+          // Collapse the row so when they expand it again, children are fresh.
+          budgetUnitTableRef.current?.collapseRow(updatedRow.id, updatedRow.parentId)
         } else if (activeTab === "Time Study programs") {
           tsTableRef.current?.patchTimeStudyProgramRow(updatedRow)
+          // Same for TS table
+          tsTableRef.current?.collapseRow(updatedRow.id)
           // If this was a quick-add Sub-Program Two from a Sub-Program One row,
           // collapse the parent so re-expand triggers a fresh fetch showing the new record.
           if (selectedProgramForSubAdd) {

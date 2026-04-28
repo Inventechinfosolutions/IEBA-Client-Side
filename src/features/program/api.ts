@@ -139,6 +139,7 @@ function mapTimeStudyProgramToProgramRow(raw: TimeStudyProgramResDto): ProgramRo
     timeStudyBudgetProgramId,
     costAllocation: raw.costAllocation === true,
     isMultiCode: raw.isMultiCode === true,
+    multiCodeType: typeof raw.multiCodeType === "string" ? raw.multiCodeType : undefined,
   }
 }
 
@@ -667,16 +668,28 @@ export async function apiUpdateProgram(input: UpdateProgramInput & {
         ? values.buSubProgramName.trim()
         : values.buProgramProgramName.trim() // TS Sub-Program Two uses buProgramProgramName
 
-    // We omit departmentId and budgetProgramId because they are locked.
+    // We omit departmentId because it is locked.
     const body: Record<string, unknown> = {
       code,
       name,
       status: toStatus(values.active),
       type,
       costAllocation: values.costAllocation,
-      isMultiCode: false,
-      multiCodeType: TimeStudyProgramMultiCodeTypeEnum.NORMAL,
-      groupMaster: false,
+    }
+
+    if (values.isMultiCode !== undefined) {
+      body.isMultiCode = values.isMultiCode
+    }
+
+    if (values.multiCodeType !== undefined) {
+      body.multiCodeType = values.multiCodeType
+    }
+
+    if (isPrimary && values.buProgramBudgetUnitName) {
+      const budgetProgramId = input.lookups?.budgetProgramIdByName?.[values.buProgramBudgetUnitName]
+      if (budgetProgramId) {
+        body.budgetProgramId = budgetProgramId
+      }
     }
     await api.put<ApiEnvelope<TimeStudyProgramResDto>>(
       `/timestudyprograms/${encodeURIComponent(id)}`,
