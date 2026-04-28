@@ -11,12 +11,16 @@ export const reportDownloadTypeSchema = z.enum(REPORT_DOWNLOAD_TYPES)
 export const reportFormSchema = z
   .object({
     reportKey: z.string().trim().min(1, "Select a report"),
-    selectMonthBy: z.enum(["qtr", "dates"]),
+    selectMonthBy: z.enum(["qtr", "dates", "month", "year", "scheduled"]),
+    month: z.string().optional(),
+    year: z.string().optional(),
+    weekId: z.string().optional(),
     fiscalYearId: z.string().optional(),
     quarter: z.string().optional(),
     dateFrom: z.string().optional(),
     dateTo: z.string().optional(),
     departmentId: z.string().optional(),
+    masterCode: z.string().optional(),
     /** Comma-separated employee ids (multi-select). */
     employeeIds: z.string().optional(),
     includeActiveEmployees: z.boolean(),
@@ -29,7 +33,13 @@ export const reportFormSchema = z
     costPoolIds: z.string().optional(),
     includeActiveCostPools: z.boolean(),
     includeInactiveCostPools: z.boolean(),
+    /** Comma-separated program ids (multi-select); used when report layout includes programs. */
+    programIds: z.string().optional(),
+    includeActivePrograms: z.boolean(),
+    includeInactivePrograms: z.boolean(),
     includeUnapprovedTime: z.boolean(),
+    scheduleTime: z.boolean().optional(),
+    timeStudyPeriodId: z.string().optional(),
     retainParameters: z.boolean(),
     downloadType: reportDownloadTypeSchema,
     fileName: z.string().optional(),
@@ -49,6 +59,22 @@ export const reportFormSchema = z
           code: z.ZodIssueCode.custom,
           message: "Select a quarter",
           path: ["quarter"],
+        })
+      }
+    } else if (data.selectMonthBy === "month") {
+      if (!data.month?.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Select a month",
+          path: ["month"],
+        })
+      }
+    } else if (data.selectMonthBy === "year") {
+      if (!data.year?.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Select a year",
+          path: ["year"],
         })
       }
     } else {
@@ -85,11 +111,15 @@ export const reportDownloadFileNameSchema = z
 export const REPORT_FORM_DEFAULT_VALUES: z.infer<typeof reportFormSchema> = {
   reportKey: "",
   selectMonthBy: "qtr",
+  month: "2025-04",
+  year: "2025-2026",
+  weekId: "",
   fiscalYearId: "2025-2026",
   quarter: "Qtr-4",
   dateFrom: "",
   dateTo: "",
   departmentId: "",
+  masterCode: "BOTH",
   employeeIds: "",
   includeActiveEmployees: true,
   includeInactiveEmployees: false,
@@ -99,8 +129,14 @@ export const REPORT_FORM_DEFAULT_VALUES: z.infer<typeof reportFormSchema> = {
   costPoolIds: "",
   includeActiveCostPools: true,
   includeInactiveCostPools: false,
+  programIds: "",
+  includeActivePrograms: true,
+  includeInactivePrograms: false,
   includeUnapprovedTime: true,
+  scheduleTime: false,
+  timeStudyPeriodId: "",
   retainParameters: false,
   downloadType: "PDF",
   fileName: "",
 }
+

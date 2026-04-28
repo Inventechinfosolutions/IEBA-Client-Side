@@ -56,9 +56,27 @@ async function apiRequest<T>(
     throw new Error(message)
   }
 
-  const contentType = response.headers.get("content-type")
-  if (contentType?.includes("application/json")) {
-    const body = (await response.json()) as unknown
+  const contentType = response.headers.get("content-type") ?? ""
+
+  // Binary responses — return as blob without attempting text/JSON parse
+  if (
+    contentType.includes("application/pdf") ||
+    contentType.includes("application/vnd.") ||
+    contentType.includes("application/octet-stream") ||
+    contentType.startsWith("image/")
+  ) {
+    return (await response.blob()) as T
+  }
+
+  // For JSON and all other content types (including 304 responses where the
+  // content-type header may be absent), read as text and parse as JSON.
+  const bodyText = await response.text()
+  if (!bodyText || bodyText.trim() === "") {
+    return undefined as T
+  }
+
+  try {
+    const body = JSON.parse(bodyText) as unknown
     if (
       body &&
       typeof body === "object" &&
@@ -74,9 +92,14 @@ async function apiRequest<T>(
       throw new Error(msg)
     }
     return body as T
+  } catch (e) {
+    if (e instanceof SyntaxError) {
+      // Body text is not JSON — wrap in blob as fallback
+      return new Blob([bodyText]) as T
+    }
+    throw e
   }
 
-  return undefined as T
 }
 
 export const api = {
