@@ -131,7 +131,7 @@ export function MgtEmployeePanel({
       </div>
 
       {/* Scrollable list — fixed height so panel never shrinks */}
-      <div className="overflow-y-auto divide-y divide-gray-200 h-[325px]">
+      <div className="overflow-y-auto divide-y divide-gray-200 h-[430px]">
         {isLoading ? (
           <div className="flex h-full items-center justify-center">
             <img src={tableEmptyIcon} alt="" className="size-[80px] object-contain" />
@@ -158,8 +158,8 @@ export function MgtEmployeePanel({
         )}
       </div>
 
-      {/* Bottom spacing to match img 2 */}
-      <div className="h-12 bg-white shrink-0" />
+      {/* Bottom spacing reduced */}
+      <div className="h-2 bg-white shrink-0" />
     </div>
     </TooltipProvider>
   )

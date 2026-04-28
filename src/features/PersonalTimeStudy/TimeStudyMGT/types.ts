@@ -11,10 +11,28 @@ export type MgtEmployeeRow = {
 export type MgtDayStatus = {
   status: string
   color?: string
+  allocatedMinutes?: number
+  consumedMinutes?: number
+  balanceMinutes?: number
 }
 
 // ─── Month legend map ─────────────────────────────────────────────────────────
 export type MgtDayStatusMap = Record<string, MgtDayStatus>
+
+/** Week summary for the calendar grid. */
+export type MgtWeekSummary = {
+  totalMinutes: number
+  status: string
+}
+
+/** Full data structure for the MGT legend. */
+export type MgtMonthLegendData = {
+  dayMap: MgtDayStatusMap
+  weekSummaries: Record<string, MgtWeekSummary>
+  allocatedTotal: number
+  actualTotal: number
+  balanceTotal: number
+}
 
 // ─── Minutes summary shown in the bottom bar ─────────────────────────────────
 export type MgtMinutesSummary = {

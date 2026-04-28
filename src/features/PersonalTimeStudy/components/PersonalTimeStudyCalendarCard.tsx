@@ -11,6 +11,7 @@ type PersonalTimeStudyCalendarCardProps = {
   currentMonthDate?: Date
   onMonthChange?: (date: Date) => void
   dayStatuses?: Record<string, any>
+  weekSummaries?: Record<string, any>
   showActionColumn?: boolean
   renderStatus?: (weekIndex: number, dates: Date[], status: any) => React.ReactNode
   renderAction?: (weekIndex: number, dates: Date[], status: any) => React.ReactNode
@@ -24,6 +25,7 @@ export function PersonalTimeStudyCalendarCard({
   currentMonthDate,
   onMonthChange,
   dayStatuses,
+  weekSummaries,
   showActionColumn,
   renderStatus,
   renderAction,
@@ -47,6 +49,7 @@ export function PersonalTimeStudyCalendarCard({
             currentMonthDate={currentMonthDate}
             onMonthChange={onMonthChange}
             dayStatuses={dayStatuses}
+            weekSummaries={weekSummaries}
             showActionColumn={showActionColumn}
             renderStatus={renderStatus}
             renderAction={renderAction}

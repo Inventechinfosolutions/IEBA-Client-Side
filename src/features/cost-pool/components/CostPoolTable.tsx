@@ -9,21 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
 import { TitleCaseInput } from "@/components/ui/title-case-input"
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import { MasterCodePagination } from "@/features/master-code/components/MasterCodePagination"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   Table,
@@ -342,8 +328,6 @@ export function CostPoolTable({
 
   const showInactive = filterForm.watch("inactive")
   const searchValue = filterForm.watch("search")
-  const totalPages = Math.max(1, Math.ceil(totalItems / pagination.pageSize))
-  const pageNumbers = Array.from({ length: totalPages }, (_, index) => index + 1)
 
   const [addOpen, setAddOpen] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
@@ -463,7 +447,7 @@ export function CostPoolTable({
               {["Cost Pool", "Department", "Active", "Action"].map((column) => (
                 <TableHead
                   key={column}
-                  className={`h-[48px] align-middle border-r border-[#FFFFFF66] bg-[#6C5DD3] px-[12px] py-[8px] text-[14px] font-[400] leading-[1.2] whitespace-normal break-normal text-white font-['Roboto',sans-serif] last:border-r-0 ${
+                  className={`h-[48px] align-middle border-r border-[#FFFFFF66] bg-[#6C5DD3] px-[12px] py-[8px] text-[14px] font-normal leading-[1.2] whitespace-normal break-normal text-white font-['Roboto',sans-serif] last:border-r-0 ${
                     ["Department", "Active", "Action"].includes(column)
                       ? "text-center"
                       : "text-left"
@@ -497,9 +481,9 @@ export function CostPoolTable({
                               )
                             }
                             onBlur={() => setOpenTooltipColumn(null)}
-                            className="flex h-full w-full cursor-pointer items-center justify-between gap-2 text-left font-[400]"
+                            className="flex h-full w-full cursor-pointer items-center justify-between gap-2 text-left font-normal"
                           >
-                            <span className="max-w-full whitespace-normal break-normal font-[400]">
+                            <span className="max-w-full whitespace-normal break-normal font-normal">
                               {column}
                             </span>
                             <span className="ml-1 inline-flex shrink-0 flex-col items-center leading-none">
@@ -531,7 +515,7 @@ export function CostPoolTable({
                       </Tooltip>
                     </TooltipProvider>
                   ) : (
-                    <span className="inline-flex h-full items-center max-w-full whitespace-normal break-normal font-[400]">
+                    <span className="inline-flex h-full items-center max-w-full whitespace-normal break-normal font-normal">
                       {column}
                     </span>
                   )}
@@ -572,10 +556,10 @@ export function CostPoolTable({
             ) : (
               sortedRows.map((row) => (
                 <TableRow key={row.id} className="border-b border-[#E5E7EB]">
-                  <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[6px] align-top text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
+                  <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[6px] align-top text-left text-[14px] font-normal font-['Roboto',sans-serif] text-[#000000E0]">
                     {row.costPool}
                   </TableCell>
-                  <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[6px] align-top text-center text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
+                  <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[6px] align-top text-center text-[14px] font-normal font-['Roboto',sans-serif] text-[#000000E0]">
                     {row.department}
                   </TableCell>
                   <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[6px] align-middle text-center">
@@ -612,70 +596,14 @@ export function CostPoolTable({
             )}
           </TableBody>
         </Table>
-      </div>
-
-      <div className="my-8 flex min-h-[67px] w-full flex-wrap items-center justify-end gap-3 rounded-[12px] bg-[#FFFFFF] px-4 py-3 shadow-[0_0_20px_0_#0000001a]">
-        <span className="text-[14px] text-[#4B5563]">Total {totalItems} items</span>
-        <Pagination className="mx-0 w-auto justify-end">
-          <PaginationContent className="gap-1">
-            <PaginationItem>
-              <PaginationPrevious
-                href="#"
-                text=""
-                onClick={(event) => {
-                  event.preventDefault()
-                  if (pagination.page > 1) onPageChange(pagination.page - 1)
-                }}
-                className={pagination.page <= 1 ? "pointer-events-none opacity-50" : ""}
-              />
-            </PaginationItem>
-            {pageNumbers.slice(0, 7).map((page) => (
-              <PaginationItem key={page}>
-                <PaginationLink
-                  href="#"
-                  isActive={pagination.page === page}
-                  onClick={(event) => {
-                    event.preventDefault()
-                    onPageChange(page)
-                  }}
-                >
-                  {page}
-                </PaginationLink>
-              </PaginationItem>
-            ))}
-            <PaginationItem>
-              <PaginationNext
-                href="#"
-                text=""
-                onClick={(event) => {
-                  event.preventDefault()
-                  if (pagination.page < totalPages) onPageChange(pagination.page + 1)
-                }}
-                className={pagination.page >= totalPages ? "pointer-events-none opacity-50" : ""}
-              />
-            </PaginationItem>
-          </PaginationContent>
-        </Pagination>
-
-        <Select
-          value={String(pagination.pageSize)}
-          onValueChange={(value) => onPageSizeChange(Number(value))}
-        >
-          <SelectTrigger className="h-10 w-[108px] rounded-[12px] border-[#E5E7EB]">
-            <SelectValue>
-              <span className="text-[14px] text-[#4B5563]">
-                {pagination.pageSize} / page
-              </span>
-            </SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            {PAGE_SIZES.map((size) => (
-              <SelectItem key={size} value={String(size)}>
-                {size} / page
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      </div>      <div className="mt-4">
+        <MasterCodePagination
+          totalItems={totalItems}
+          currentPage={pagination.page}
+          pageSize={pagination.pageSize}
+          onPageChange={onPageChange}
+          onPageSizeChange={onPageSizeChange}
+        />
       </div>
 
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
