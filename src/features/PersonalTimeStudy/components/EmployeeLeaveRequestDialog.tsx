@@ -1,6 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Plus, Trash2 } from "lucide-react"
-import { useCallback } from "react"
+import { useCallback, useMemo, useState } from "react"
+import { useQueries } from "@tanstack/react-query"
 import { Controller, useFieldArray, useForm } from "react-hook-form"
 import { toast } from "sonner"
 
@@ -16,9 +17,10 @@ import { TitleCaseInput } from "@/components/ui/title-case-input"
 import { SingleSelectSearchDropdown } from "@/components/ui/dropdown-search"
 import { TimePickerDropdown } from "@/components/ui/time-picker"
 import { Clock } from "lucide-react"
-import { useState } from "react"
+
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
+import { apiGetProgramActivityRelationActivities } from "@/features/program/api"
 
 import {
   EMPLOYEE_LEAVE_EMPTY_SELECT_VALUE,
@@ -28,17 +30,7 @@ import {
 
 const EMPTY = EMPLOYEE_LEAVE_EMPTY_SELECT_VALUE
 
-/** Placeholder options — replace with API-driven data when available. */
-const PROGRAM_CODE_OPTIONS = [
-  { value: "PRG-100", label: "PRG-100" },
-  { value: "PRG-200", label: "PRG-200" },
-  { value: "PRG-300", label: "PRG-300" },
-]
-const ACTIVITY_CODE_OPTIONS = [
-  { value: "ACT-10", label: "ACT-10" },
-  { value: "ACT-20", label: "ACT-20" },
-  { value: "ACT-30", label: "ACT-30" },
-]
+
 
 function createEmptyRow(): EmployeeLeaveRequestFormValues["entries"][number] {
   return {
@@ -60,6 +52,7 @@ export type EmployeeLeaveRequestDialogProps = {
   /** Final submit — optional */
   onSubmit?: (values: EmployeeLeaveRequestFormValues) => void | Promise<void>
   className?: string
+  dropdownData?: any[]
 }
 
 const headerGridClass =
@@ -72,25 +65,46 @@ function TimePicker24h({
   value,
   onChange,
   className,
+  disabled = false,
 }: {
   value: string
   onChange: (v: string) => void
   className?: string
+  disabled?: boolean
 }) {
   const [open, setOpen] = useState(false)
 
   return (
     <div className={cn("flex flex-col gap-1 w-full shrink-0", className)}>
-      <Popover open={open} onOpenChange={setOpen}>
+      <Popover open={open} onOpenChange={(val) => !disabled && setOpen(val)}>
         <div className="relative">
           <PopoverTrigger asChild>
-            <div className="relative cursor-pointer" onClick={() => setOpen(true)}>
+            <div 
+              className={cn("relative cursor-pointer", disabled && "opacity-60 cursor-not-allowed")} 
+              onClick={(e) => {
+                if (disabled) {
+                  e.preventDefault()
+                  return
+                }
+                setOpen(true)
+              }}
+            >
               <TitleCaseInput
                 value={value}
+                disabled={disabled}
                 placeholder="--:--"
                 onChange={(e) => onChange(e.target.value)}
-                onFocus={() => setOpen(true)}
-                className="h-10 pr-8 text-sm font-normal rounded-[6px] cursor-pointer w-full"
+                onFocus={(e) => {
+                  if (disabled) {
+                    e.preventDefault()
+                    return
+                  }
+                  setOpen(true)
+                }}
+                className={cn(
+                  "h-10 pr-8 text-sm font-normal rounded-[6px] cursor-pointer w-full",
+                  disabled && "cursor-not-allowed bg-muted text-muted-foreground pointer-events-none"
+                )}
               />
               <Clock className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 opacity-50" />
             </div>
@@ -130,13 +144,97 @@ function calculateMinutesDiff(start: string, end: string): number {
   return diff
 }
 
+function addMinutesToTime(time: string, minutesToAdd: number): string {
+  if (!time) return ""
+  const [hStr, mStr] = time.split(":")
+  let h = parseInt(hStr || "0", 10)
+  let m = parseInt(mStr || "0", 10)
+  if (isNaN(h) || isNaN(m)) return ""
+  
+  m += minutesToAdd
+  h += Math.floor(m / 60)
+  m = m % 60
+  h = h % 24
+  
+  if (h < 0) h += 24
+  if (m < 0) m += 60
+  
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`
+}
+
 export function EmployeeLeaveRequestDialog({
   open,
   onOpenChange,
   onSave,
   onSubmit,
   className,
+  dropdownData,
 }: EmployeeLeaveRequestDialogProps) {
+
+  
+  const programs = useMemo(() => {
+    const list = dropdownData?.flatMap((d: any) => d.programs) ?? []
+    const unique = Array.from(new Map(list.map((p: any) => [p.id, p])).values())
+    return unique
+  }, [dropdownData])
+
+  const activities = useMemo(() => {
+    const list = dropdownData?.flatMap((d: any) => d.activities) ?? []
+    const unique = Array.from(new Map(list.map((a: any) => [a.id, a])).values())
+    return unique
+  }, [dropdownData])
+
+  const programQueries = useMemo(() => {
+    const list: { departmentId: number; programId: number }[] = []
+    for (const bundle of dropdownData ?? []) {
+      const deptId = bundle.departmentId
+      if (!deptId) continue
+      for (const p of bundle.programs) {
+        list.push({ departmentId: deptId, programId: p.id })
+      }
+    }
+    return list
+  }, [dropdownData])
+
+  const programActivityQueryResults = useQueries({
+    queries: programQueries.map((item) => ({
+      queryKey: ["programActivityRelation", "activities", item.departmentId, item.programId],
+      queryFn: () => apiGetProgramActivityRelationActivities(item.departmentId, item.programId),
+      staleTime: 5 * 60 * 1000,
+    })),
+  })
+
+  const getActivitiesForProgram = useCallback((programId: string): Set<string> => {
+    const index = programQueries.findIndex((pq) => String(pq.programId) === programId)
+    if (index === -1) return new Set()
+    const result = programActivityQueryResults[index]
+    if (!result?.data) return new Set()
+
+    const ids = new Set<string>()
+    const roots = result.data.assignedActivities
+
+    function traverse(node: any) {
+      if (!node) return
+      if (node.assigned) {
+        const idStr = String(node.key || "")
+        const id = idStr.split("-").pop()
+        if (id) ids.add(id)
+      }
+      if (Array.isArray(node.children)) {
+        node.children.forEach(traverse)
+      }
+    }
+
+    if (Array.isArray(roots)) {
+      for (const deptNode of roots) {
+        if (Array.isArray(deptNode.activity)) {
+          deptNode.activity.forEach(traverse)
+        }
+      }
+    }
+    return ids
+  }, [programQueries, programActivityQueryResults])
+
   const form = useForm<EmployeeLeaveRequestFormValues>({
     resolver: zodResolver(employeeLeaveRequestFormSchema),
     defaultValues: {
@@ -148,6 +246,8 @@ export function EmployeeLeaveRequestDialog({
     control: form.control,
     name: "entries",
   })
+
+  const formEntries = form.watch("entries")
 
   const resetForm = useCallback(() => {
     form.reset({ entries: [createEmptyRow()] })
@@ -269,8 +369,16 @@ export function EmployeeLeaveRequestDialog({
                           value={f.value}
                           onChange={(v) => {
                             f.onChange(v)
-                            const currentEnd = form.getValues(`entries.${index}.endTime`)
-                            updateDuration(index, v, currentEnd)
+                            
+                            // Auto-add 15 minutes for the end time
+                            const newEnd = addMinutesToTime(v, 15)
+                            form.setValue(`entries.${index}.endTime`, newEnd, {
+                              shouldValidate: true,
+                              shouldDirty: true,
+                            })
+                            
+                            // Calculate total duration using the new end time
+                            updateDuration(index, v, newEnd)
                           }}
                           className="w-full"
                         />
@@ -313,7 +421,10 @@ export function EmployeeLeaveRequestDialog({
                           <SingleSelectSearchDropdown
                             value={f.value === EMPTY ? "" : f.value}
                             placeholder="Select..."
-                            options={PROGRAM_CODE_OPTIONS}
+                            options={programs.map((p: any) => ({
+                              value: String(p.id),
+                              label: `${p.code} - ${p.name}`,
+                            }))}
                             onChange={(v) => f.onChange(v || EMPTY)}
                             onBlur={f.onBlur}
                             className="h-10 min-h-0 rounded-[6px]"
@@ -333,14 +444,29 @@ export function EmployeeLeaveRequestDialog({
                       name={`entries.${index}.activityCode`}
                       render={({ field: f, fieldState }) => (
                         <>
-                          <SingleSelectSearchDropdown
-                            value={f.value === EMPTY ? "" : f.value}
-                            placeholder="Select..."
-                            options={ACTIVITY_CODE_OPTIONS}
-                            onChange={(v) => f.onChange(v || EMPTY)}
-                            onBlur={f.onBlur}
-                            className="h-10 min-h-0 rounded-[6px]"
-                          />
+                          {(() => {
+                            const programId = formEntries?.[index]?.programCode
+                            const hasProgram = programId && programId !== EMPTY
+                            const allowedIds = hasProgram ? getActivitiesForProgram(programId) : new Set<string>()
+                            const options = hasProgram 
+                              ? activities.filter((a) => allowedIds.has(String(a.id))).map((a: any) => ({
+                                  value: String(a.id),
+                                  label: `${a.code} - ${a.name}`,
+                                }))
+                              : []
+
+                            return (
+                              <SingleSelectSearchDropdown
+                                value={f.value === EMPTY ? "" : f.value}
+                                placeholder="Select activity"
+                                disabled={!hasProgram}
+                                options={options}
+                                onChange={(v) => f.onChange(v || EMPTY)}
+                                onBlur={f.onBlur}
+                                className="h-9 min-h-0 text-[13px] bg-white border-border/60"
+                              />
+                            )
+                          })()}
                           {fieldState.error?.message && (
                             <p className="text-xs text-destructive">{fieldState.error.message}</p>
                           )}

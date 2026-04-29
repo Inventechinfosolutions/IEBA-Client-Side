@@ -1,5 +1,6 @@
 import { ChevronDown, Clock, Eye, Plus, Trash2 } from "lucide-react"
 import { useCallback, useMemo, useRef, useState } from "react"
+import { useQueries } from "@tanstack/react-query"
 
 import { Button } from "@/components/ui/button"
 import { TitleCaseInput } from "@/components/ui/title-case-input"
@@ -10,6 +11,7 @@ import { toast } from "sonner"
 import { SingleSelectSearchDropdown } from "@/components/ui/dropdown-search"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { TimePickerDropdown } from "@/components/ui/time-picker"
+import { apiGetProgramActivityRelationActivities } from "@/features/program/api"
 
 /** Inline required-field asterisk — available to all components in this module. */
 function RequiredMark() {
@@ -90,6 +92,24 @@ function computeDurationMinutes(start: string, end: string): string {
   return String(d)
 }
 
+function addMinutesToTime(time: string, minutesToAdd: number): string {
+  if (!time) return ""
+  const [hStr, mStr] = time.split(":")
+  let h = parseInt(hStr || "0", 10)
+  let m = parseInt(mStr || "0", 10)
+  if (isNaN(h) || isNaN(m)) return ""
+  
+  m += minutesToAdd
+  h += Math.floor(m / 60)
+  m = m % 60
+  h = h % 24
+  
+  if (h < 0) h += 24
+  if (m < 0) m += 60
+  
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`
+}
+
 type PersonalTimeStudyEntryFormProps = {
   className?: string
   dateStr: string
@@ -106,11 +126,13 @@ function TimePicker24h({
   onChange,
   label,
   required = true,
+  disabled = false,
 }: {
   value: string
   onChange: (v: string) => void
   label: string
   required?: boolean
+  disabled?: boolean
 }) {
   const [open, setOpen] = useState(false)
 
@@ -119,16 +141,35 @@ function TimePicker24h({
       <Label className="text-[11px] text-muted-foreground">
         {label} {required && <span className="text-destructive">*</span>}
       </Label>
-      <Popover open={open} onOpenChange={setOpen}>
+      <Popover open={open} onOpenChange={(val) => !disabled && setOpen(val)}>
         <div className="relative">
           <PopoverTrigger asChild>
-            <div className="relative cursor-pointer" onClick={() => setOpen(true)}>
+            <div 
+              className={cn("relative cursor-pointer", disabled && "opacity-60 cursor-not-allowed")} 
+              onClick={(e) => {
+                if (disabled) {
+                  e.preventDefault()
+                  return
+                }
+                setOpen(true)
+              }}
+            >
               <TitleCaseInput
                 value={value}
+                disabled={disabled}
                 placeholder="--:--"
                 onChange={(e) => onChange(e.target.value)}
-                onFocus={() => setOpen(true)}
-                className="h-10 pr-8 text-[11px] font-normal rounded-[6px] cursor-pointer"
+                onFocus={(e) => {
+                  if (disabled) {
+                    e.preventDefault()
+                    return
+                  }
+                  setOpen(true)
+                }}
+                className={cn(
+                  "h-10 pr-8 text-[11px] font-normal rounded-[6px] cursor-pointer",
+                  disabled && "cursor-not-allowed bg-muted disabled:bg-muted disabled:opacity-100 text-muted-foreground pointer-events-none"
+                )}
               />
               <Clock className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 opacity-50" />
             </div>
@@ -332,6 +373,57 @@ export function PersonalTimeStudyEntryForm({
     return unique
   }, [dropdownData])
 
+  const programQueries = useMemo(() => {
+    const list: { departmentId: number; programId: number }[] = []
+    for (const bundle of dropdownData ?? []) {
+      const deptId = bundle.departmentId
+      if (!deptId) continue
+      for (const p of bundle.programs) {
+        list.push({ departmentId: deptId, programId: p.id })
+      }
+    }
+    return list
+  }, [dropdownData])
+
+  const programActivityQueryResults = useQueries({
+    queries: programQueries.map((item) => ({
+      queryKey: ["programActivityRelation", "activities", item.departmentId, item.programId],
+      queryFn: () => apiGetProgramActivityRelationActivities(item.departmentId, item.programId),
+      staleTime: 5 * 60 * 1000,
+    })),
+  })
+
+  const getActivitiesForProgram = useCallback((programId: string): Set<string> => {
+    const index = programQueries.findIndex((pq) => String(pq.programId) === programId)
+    if (index === -1) return new Set()
+    const result = programActivityQueryResults[index]
+    if (!result?.data) return new Set()
+
+    const ids = new Set<string>()
+    const roots = result.data.assignedActivities
+
+    function traverse(node: any) {
+      if (!node) return
+      if (node.assigned) {
+        const idStr = String(node.key || "")
+        const id = idStr.split("-").pop()
+        if (id) ids.add(id)
+      }
+      if (Array.isArray(node.children)) {
+        node.children.forEach(traverse)
+      }
+    }
+
+    if (Array.isArray(roots)) {
+      for (const deptNode of roots) {
+        if (Array.isArray(deptNode.activity)) {
+          deptNode.activity.forEach(traverse)
+        }
+      }
+    }
+    return ids
+  }, [programQueries, programActivityQueryResults])
+
   /** The first parent row on initial load — never deletable; stays identified even when new rows are prepended. */
   const initialParentIdRef = useRef<string | null>(null)
   if (initialParentIdRef.current === null && parents.length > 0) {
@@ -484,7 +576,12 @@ export function PersonalTimeStudyEntryForm({
                 <TimePicker24h
                   label="Start"
                   value={parent.start}
-                  onChange={(v) => updateParent(parent.id, { start: v })}
+                  onChange={(v) => {
+                    updateParent(parent.id, { 
+                      start: v,
+                      end: addMinutesToTime(v, 15)
+                    })
+                  }}
                 />
 
                 <div className="min-w-[100px] flex-1 space-y-0.5">
@@ -511,10 +608,17 @@ export function PersonalTimeStudyEntryForm({
                   <SingleSelectSearchDropdown
                     value={parent.serviceActivity}
                     placeholder="Select activity"
-                    options={activities.map((a) => ({
-                      value: String(a.id),
-                      label: `${a.code} - ${a.name}`,
-                    }))}
+                    disabled={!parent.tsProgram}
+                    options={(() => {
+                      if (!parent.tsProgram) return []
+                      const allowedIds = getActivitiesForProgram(parent.tsProgram)
+                      return activities
+                        .filter((a) => allowedIds.has(String(a.id)))
+                        .map((a) => ({
+                          value: String(a.id),
+                          label: `${a.code} - ${a.name}`,
+                        }))
+                    })()}
                     onChange={(v) => updateParent(parent.id, { serviceActivity: v })}
                     onBlur={() => { }}
                     className="h-10 min-h-0 rounded-[6px]"
@@ -524,6 +628,7 @@ export function PersonalTimeStudyEntryForm({
                 <TimePicker24h
                   label="End"
                   value={parent.end}
+                  disabled={!parent.start}
                   onChange={(v) => updateParent(parent.id, { end: v })}
                 />
 
@@ -614,10 +719,17 @@ export function PersonalTimeStudyEntryForm({
                         <SingleSelectSearchDropdown
                           value={sub.serviceActivity}
                           placeholder="Select activity"
-                          options={activities.map((a) => ({
-                            value: String(a.id),
-                            label: `${a.code} - ${a.name}`,
-                          }))}
+                          disabled={!sub.studyProgram}
+                          options={(() => {
+                            if (!sub.studyProgram) return []
+                            const allowedIds = getActivitiesForProgram(sub.studyProgram)
+                            return activities
+                              .filter((a) => allowedIds.has(String(a.id)))
+                              .map((a) => ({
+                                value: String(a.id),
+                                label: `${a.code} - ${a.name}`,
+                              }))
+                          })()}
                           onChange={(v) => updateSubRow(parent.id, sub.id, { serviceActivity: v })}
                           onBlur={() => { }}
                           className="h-9 min-h-0"

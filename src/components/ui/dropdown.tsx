@@ -10,6 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
+import tableEmptyIcon from "@/assets/icons/table-empty.png"
 
 export type SingleSelectOption = {
   value: string
@@ -43,8 +44,6 @@ export type SingleSelectDropdownProps = {
   itemButtonClassName?: string
   /** Extra classes on each option label span */
   itemLabelClassName?: string
-  /** Shown when `options` is empty and not loading (default: “No options available”). */
-  emptyListMessage?: string
   /** Replaces default empty text when there are no options (e.g. illustration). */
   emptyListSlot?: ReactNode
   /** Notified when the menu opens or closes (lazy-fetch on first open). */
@@ -69,7 +68,6 @@ export function SingleSelectDropdown({
   contentClassName,
   itemButtonClassName,
   itemLabelClassName,
-  emptyListMessage = "No options available",
   emptyListSlot,
   onOpenChange,
 }: SingleSelectDropdownProps) {
@@ -144,7 +142,9 @@ export function SingleSelectDropdown({
           emptyListSlot !== undefined ? (
             <div className="p-1">{emptyListSlot}</div>
           ) : (
-            <div className="px-3 py-2 text-[11px] text-[#6b7280]">{emptyListMessage}</div>
+            <div className="flex flex-col items-center justify-center px-3 py-6 text-center">
+              <img src={tableEmptyIcon} alt="" className="size-20 object-contain opacity-100" />
+            </div>
           )
         ) : (
           <div className="p-1">

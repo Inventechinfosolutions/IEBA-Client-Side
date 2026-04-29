@@ -9,6 +9,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
+import tableEmptyIcon from "@/assets/icons/table-empty.png"
 
 export type MultiSelectOption = {
   value: string
@@ -42,8 +43,6 @@ export type MultiSelectDropdownProps = {
   /** Visible selections in the trigger before “+N…” (Settings → Reports uses 2). */
   maxVisibleItems?: number
   className?: string
-  /** Shown when `options` is empty and not loading (default: “No options available”). */
-  emptyListMessage?: string
   /** Radix menu open state (e.g. lazy-fetch catalog on first open in edit mode). */
   onOpenChange?: (open: boolean) => void
 }
@@ -62,7 +61,6 @@ export function MultiSelectDropdown({
   isLoading = false,
   maxVisibleItems = 2,
   className,
-  emptyListMessage = "No options available",
   onOpenChange,
 }: MultiSelectDropdownProps) {
   const selectedValues = useMemo(() => parseMultiSelectStoredValues(value), [value])
@@ -157,13 +155,15 @@ export function MultiSelectDropdown({
         avoidCollisions={false}
         sideOffset={6}
         className={cn(
-          "z-[90] w-[var(--radix-dropdown-menu-trigger-width)] p-0",
+          "z-90 w-(--radix-dropdown-menu-trigger-width) p-0",
           reportsDropdownContentClassName,
         )}
         onCloseAutoFocus={(e) => e.preventDefault()}
       >
         {options.length === 0 && !isLoading ? (
-          <div className="px-3 py-2 text-[11px] text-[#6b7280]">{emptyListMessage}</div>
+          <div className="flex flex-col items-center justify-center px-3 py-6 text-center">
+            <img src={tableEmptyIcon} alt="" className="size-20 object-contain opacity-100" />
+          </div>
         ) : (
           <div className="p-1">
             {options.map((opt) => {
