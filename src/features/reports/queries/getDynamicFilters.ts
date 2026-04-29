@@ -48,19 +48,27 @@ export function useGetListAllPrograms(enabled = true) {
   })
 }
 
-export function useGetUsersUnderDepartment(departmentId: string | undefined, userId: string | undefined, enabled = true) {
+export function useGetUsersUnderDepartment(departmentId: string | undefined, userId: string | undefined, masterCode?: string, enabled = true) {
   return useQuery({
-    queryKey: [...reportKeys.all, "users-under-department", { departmentId, userId }],
-    queryFn: () => apiGetUsersUnderDepartment(departmentId!, userId!),
+    queryKey: [...reportKeys.all, "users-under-department", { departmentId, userId, masterCode }],
+    queryFn: () => apiGetUsersUnderDepartment(departmentId!, userId!, masterCode),
     enabled: enabled && !!departmentId && !!userId,
     staleTime: 5 * 60_000,
   })
 }
-/** Fetch activities filtered by department + selected employees. */
-export function useGetActivitiesByDepartmentAndUsers(departmentId: string | undefined, userIds: string[], enabled = true) {
+/** Fetch activities filtered by department + selected employees + date range. */
+export function useGetActivitiesByDepartmentAndUsers(
+  departmentId: string | undefined,
+  userIds: string[],
+  startDate?: string,
+  endDate?: string,
+  activityStatus = "active",
+  masterCode?: string,
+  enabled = true,
+) {
   return useQuery({
-    queryKey: [...reportKeys.all, "activities-by-dept-users", { departmentId, userIds }],
-    queryFn: () => apiGetActivitiesByDepartmentAndUsers(departmentId!, userIds),
+    queryKey: [...reportKeys.all, "activities-by-dept-users", { departmentId, userIds, startDate, endDate, activityStatus, masterCode }],
+    queryFn: () => apiGetActivitiesByDepartmentAndUsers(departmentId!, userIds, startDate, endDate, activityStatus, masterCode),
     enabled: enabled && !!departmentId && userIds.length > 0,
     staleTime: 5 * 60_000,
   })

@@ -70,24 +70,26 @@ function buildBackendPayload(body: ReportRunPayload, overrideDownloadType?: stri
   }
 }
 
-/** Triggers the download of a report via /report/generate. */
+/** Download report (PDF/Excel) via /report/data. */
 export async function apiPostDownloadReport(body: ReportRunPayload, options?: { type?: string; signal?: AbortSignal }): Promise<any> {
   const downloadType = options?.type || body.downloadType
   const payload = buildBackendPayload(body, downloadType)
-  return api.post("/report/generate", payload, {
+  return api.post("/report/data", payload, {
     signal: options?.signal,
+    responseType: "blob",
     headers: {
       Accept: "application/pdf, application/octet-stream, */*",
     },
   })
 }
 
-/** View report data via /report/data. */
+/** View report preview via /report/generate. */
 export async function apiPostViewReport(body: ReportRunPayload, options?: { signal?: AbortSignal }): Promise<any> {
   // Use the same generation flow as Postman-proven downloads to guarantee file output for in-page preview.
   const payload = buildBackendPayload(body, "PDF")
   return api.post("/report/generate", payload, {
     signal: options?.signal,
+    responseType: "blob",
     headers: {
       Accept: "application/pdf, application/octet-stream, */*",
     },
@@ -166,12 +168,13 @@ export async function apiGetListAllPrograms(): Promise<ReportSelectOption[]> {
   }))
 }
 
-export async function apiGetUsersUnderDepartment(departmentId: string, currentUserId: string): Promise<ReportSelectOption[]> {
+export async function apiGetUsersUnderDepartment(departmentId: string, currentUserId: string, masterCode?: string): Promise<ReportSelectOption[]> {
   const params = new URLSearchParams()
   params.append("type", "getusersunderdepartmentbystatus")
   params.append("departmentId", departmentId)
   params.append("departmentStatus", "active")
   params.append("userId", currentUserId)
+  if (masterCode && masterCode !== "BOTH") params.append("masterCode", masterCode)
 
   const data = await api.get<any>(`/users?${params.toString()}`)
   const list = Array.isArray(data) ? data : Array.isArray(data.data) ? data.data : []
@@ -192,23 +195,31 @@ function unwrapListData(raw: any): any[] {
   return []
 }
 
-/** Reports filter: activities available for a department (optionally scoped by users). */
+/** Reports filter: activities available for selected users within a date range. */
 export async function apiGetActivitiesByDepartmentAndUsers(
   departmentId: string,
-  _userIds: string[],
+  userIds: string[],
+  startDate?: string,
+  endDate?: string,
+  activityStatus = "active",
+  masterCode?: string,
 ): Promise<ReportSelectOption[]> {
   const search = new URLSearchParams()
-  search.set("page", "1")
-  search.set("limit", "1000")
+  search.set("userId", userIds.join(","))
+  if (startDate) search.set("startDate", startDate)
+  if (endDate) search.set("endDate", endDate)
+  search.set("activityStatus", activityStatus)
   search.set("departmentId", departmentId)
+  if (masterCode && masterCode !== "BOTH") search.set("masterCode", masterCode)
 
-  const raw = await api.get<any>(`/activity-departments?${search.toString()}`)
+  // Call the specific endpoint you provided
+  const raw = await api.get<any>(`/activitycode/activitydepartment/activitydepartmentlist?${search.toString()}`)
   const list = unwrapListData(raw)
 
   return list
     .map((r: any) => ({
-      value: String(r.id ?? r.activityDepartmentId ?? r.activityId ?? ""),
-      label: r.name || r.label || r.code || String(r.id ?? ""),
+      value: String(r.value ?? r.id ?? r.activityDepartmentId ?? r.activityId ?? ""),
+      label: r.label || r.name || r.code || String(r.id ?? ""),
     }))
     .filter((o: ReportSelectOption) => o.value.trim() !== "")
 }
