@@ -1,4 +1,4 @@
-import React, { useMemo, useState, Fragment } from "react"
+import React, { useMemo, useState, useRef, useCallback, Fragment } from "react"
 import { Controller, useForm, useWatch } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { ChevronDown, Loader2, Search, X } from "lucide-react"
@@ -26,11 +26,12 @@ import {
   useGetUsersUnderDepartment,
   useGetTimeStudyProgramsForUsers,
   useGetRmtsPayPeriods,
+  useGetActivitiesByDepartmentAndUsers,
 } from "../queries/getDynamicFilters"
 import type { ReportsModuleApi } from "../hooks/useReportsModule"
 import { useGetDepartments } from "@/features/department/queries/getDepartments"
 import { useCostPoolListQuery } from "@/features/cost-pool/queries/getCostPools"
-import { useGetActivitiesByDepartment } from "@/features/CountyActivityCode/queries/getCountyActivityCodes"
+
 import { useListFiscalYears } from "@/features/settings/queries/listFiscalYears"
 import { useGetUserModuleRows } from "@/features/user/queries/getUsers"
 import { CostPoolStatus } from "@/features/cost-pool/enums/cost-pool.enum"
@@ -54,6 +55,55 @@ import type {
 } from "../types"
 import { mapReportFormToRunPayload } from "../utils/mapReportFormToRunPayload"
 import { readStoredReportFormParams, writeStoredReportFormParams } from "../utils/reportFormSessionStorage"
+
+/**
+ * Progress bar driven by TanStack mutation's isPending — no useEffect.
+ * Uses a callback ref to start/stop a requestAnimationFrame loop.
+ * Percentage is computed from elapsed time (asymptotic curve → 95% over ~30s).
+ */
+function LoadingProgress({ isLoading }: { isLoading: boolean }) {
+  const [pct, setPct] = useState(0)
+  const rafRef = useRef<number>(0)
+  const startRef = useRef<number>(0)
+
+  const containerRef = useCallback((node: HTMLDivElement | null) => {
+    if (node) {
+      // Component just mounted → start the animation loop
+      startRef.current = performance.now()
+      const tick = () => {
+        const elapsed = (performance.now() - startRef.current) / 1000
+        // Asymptotic curve: fast start, slows down, caps at 95%
+        const p = Math.min(95, 100 * (1 - Math.exp(-elapsed / 10)))
+        setPct(Math.floor(p))
+        rafRef.current = requestAnimationFrame(tick)
+      }
+      rafRef.current = requestAnimationFrame(tick)
+    } else {
+      // Component unmounting → cancel the loop
+      cancelAnimationFrame(rafRef.current)
+    }
+  }, [])
+
+  if (!isLoading) return null
+
+  return (
+    <div ref={containerRef} className="space-y-2 pt-3 pb-2">
+      <div className="flex items-center justify-between text-[13px] text-[#6b7280]">
+        <div className="flex items-center gap-2">
+          <Loader2 className="size-3 animate-spin text-[#6C5DD3]" />
+          <span>Generating report...</span>
+        </div>
+        <span className="font-semibold text-[#111827]">{pct}%</span>
+      </div>
+      <div className="h-1.5 w-full overflow-hidden rounded-full bg-[#F3F4F6]">
+        <div
+          className="h-full rounded-full bg-[#6C5DD3] transition-[width] duration-300 ease-out"
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+    </div>
+  )
+}
 
 const labelClassName = "mb-2 block text-[14px] font-normal text-[#2a2f3a]"
 
@@ -139,11 +189,20 @@ function ReportEmployeeMultiSelect({
   emptyListMessage = "No options available",
 }: ReportEmployeeMultiSelectProps) {
   const [menuOpen, setMenuOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState("")
 
   const selectedValues = useMemo(() => parseMultiSelectStoredValues(value), [value])
   const optionValues = useMemo(() => options.map((o) => o.value), [options])
-  const allOptionsSelected =
-    optionValues.length > 0 && optionValues.every((v) => selectedValues.includes(v))
+
+  const filteredOptions = useMemo(() => {
+    if (!searchQuery.trim()) return options
+    const q = searchQuery.toLowerCase()
+    return options.filter((o) => o.label.toLowerCase().includes(q))
+  }, [options, searchQuery])
+
+  const filteredValues = useMemo(() => filteredOptions.map((o) => o.value), [filteredOptions])
+  const allFilteredSelected =
+    filteredValues.length > 0 && filteredValues.every((v) => selectedValues.includes(v))
 
   const selectedItems = useMemo(() => {
     return selectedValues.map((v) => {
@@ -164,11 +223,15 @@ function ReportEmployeeMultiSelect({
   }
 
   const toggleSelectAll = () => {
-    if (allOptionsSelected) {
-      onChange("")
+    if (allFilteredSelected) {
+      // Deselect only the filtered items
+      const remaining = selectedValues.filter((v) => !filteredValues.includes(v))
+      onChange(serializeEmployeeIdsField(remaining))
       return
     }
-    onChange(serializeEmployeeIdsField(optionValues))
+    // Add all filtered items to current selection
+    const merged = new Set([...selectedValues, ...filteredValues])
+    onChange(serializeEmployeeIdsField([...merged]))
   }
 
   const openMenuExplicit = () => {
@@ -176,10 +239,15 @@ function ReportEmployeeMultiSelect({
     setMenuOpen(true)
   }
 
+  const handleOpenChange = (open: boolean) => {
+    setMenuOpen(open)
+    if (!open) setSearchQuery("")
+  }
+
   const hasSelection = selectedItems.length > 0
 
   return (
-    <DropdownMenu modal={false} open={menuOpen} onOpenChange={setMenuOpen}>
+    <DropdownMenu modal={false} open={menuOpen} onOpenChange={handleOpenChange}>
       <DropdownMenuTrigger asChild disabled={disabled}>
         <div
           role="button"
@@ -286,24 +354,54 @@ function ReportEmployeeMultiSelect({
         className={cn("z-[90] w-[var(--radix-dropdown-menu-trigger-width)] p-0", reportEmployeeListPanelClassName)}
         onCloseAutoFocus={(e) => e.preventDefault()}
       >
-        {options.length === 0 ? (
-          <div className="px-3 py-2 text-[14px] text-[#6b7280]">{emptyListMessage}</div>
+        {/* Search input */}
+        <div className="border-b border-[#e5e7eb] px-3 py-2">
+          <div className="flex items-center gap-2 rounded-[6px] border border-[#d6d7dc] bg-[#f9fafb] px-2.5 py-1.5">
+            <Search className="size-3.5 shrink-0 text-[#9ca3af]" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search..."
+              className="min-w-0 flex-1 border-0 bg-transparent text-[13px] text-[#111827] placeholder-[#9ca3af] outline-none"
+              autoFocus
+              onClick={(e) => e.stopPropagation()}
+              onKeyDown={(e) => e.stopPropagation()}
+            />
+            {searchQuery && (
+              <span
+                role="button"
+                tabIndex={0}
+                className="cursor-pointer text-[#9ca3af] hover:text-[#6b7280]"
+                onClick={(e) => { e.stopPropagation(); setSearchQuery("") }}
+                onKeyDown={(e) => { if (e.key === "Enter") { e.stopPropagation(); setSearchQuery("") } }}
+              >
+                <X className="size-3" />
+              </span>
+            )}
+          </div>
+        </div>
+
+        {filteredOptions.length === 0 ? (
+          <div className="px-3 py-2 text-[14px] text-[#6b7280]">
+            {options.length === 0 ? emptyListMessage : "No matching results"}
+          </div>
         ) : (
           <div className={reportEmployeeListScrollClassName}>
             <label
               className={cn(
                 "flex w-full cursor-pointer items-center gap-3 border-b border-[#e5e7eb] px-3 py-2.5 hover:bg-[#f3f4f8]",
-                allOptionsSelected ? "bg-[#eef8ff]" : "bg-transparent",
+                allFilteredSelected ? "bg-[#eef8ff]" : "bg-transparent",
               )}
             >
               <Checkbox
-                checked={allOptionsSelected}
+                checked={allFilteredSelected}
                 onCheckedChange={() => toggleSelectAll()}
                 className="shrink-0"
               />
               <span className="truncate text-[14px] font-medium text-[#111827]">Select All</span>
             </label>
-            {options.map((opt) => {
+            {filteredOptions.map((opt) => {
               const selected = selectedValues.includes(opt.value)
               return (
                 <label
@@ -343,6 +441,7 @@ function ReportSecondaryPickBlock({
   placeholder,
   emptyListMessage,
   maxVisibleChips = 2,
+  onValuesChange,
 }: ReportSecondaryPickBlockProps) {
   /* Padding on the positioned parent skewed `top-full`; keep pb on this outer wrapper only (pb-16 clears bar + mt-3). */
   return (
@@ -388,7 +487,10 @@ function ReportSecondaryPickBlock({
             render={({ field }) => (
               <ReportEmployeeMultiSelect
                 value={typeof field.value === "string" ? field.value : ""}
-                onChange={field.onChange}
+                onChange={(val) => {
+                  field.onChange(val)
+                  onValuesChange?.(val)
+                }}
                 onBlur={field.onBlur}
                 options={options}
                 placeholder={placeholder}
@@ -476,6 +578,7 @@ export function ReportForm({ module }: ReportFormProps) {
   const monthVal = useWatch({ control, name: "month" })
   const yearVal = useWatch({ control, name: "year" })
   const weekIdVal = useWatch({ control, name: "weekId" })
+  const masterCode = useWatch({ control, name: "masterCode" })
 
   const { actualDateFrom, actualDateTo } = useMemo(() => {
     if (selectMonthBy === "dates") {
@@ -545,17 +648,34 @@ export function ReportForm({ module }: ReportFormProps) {
 
   const { data: maaEmployeesData } = useGetMaaEmployees(activityIdsArr, departmentId, isMaaReport)
   const { data: costPoolUsersData } = useGetCostPoolUsers(costPoolIdsArr, user?.id ?? "", ["active"], isCostPoolReport)
-  const shouldFetchDepartmentUsers = !!departmentId && !isMaaReport && !isCostPoolReport
+  const shouldFetchDepartmentUsers = !!departmentId && !isCostPoolReport
   const { data: departmentUsersData, isSuccess: isDepartmentUsersLoaded } = useGetUsersUnderDepartment(
     departmentId, 
     user?.id ?? "", 
+    masterCode,
     shouldFetchDepartmentUsers
   )
-  const shouldFetchActivities = currentReportItem?.criteria?.showActivitySelect === true && !!departmentId
-  const canFetchActivitiesForCurrentReport =
-    shouldFetchActivities && (!shouldFetchDepartmentUsers || isDepartmentUsersLoaded)
-  const { data: activitiesByDepartmentData } = useGetActivitiesByDepartment(
-    canFetchActivitiesForCurrentReport ? Number(departmentId) : null,
+  // Format dates from ISO (YYYY-MM-DD) to backend format (MM-DD-YYYY) for the activities API
+  const activityStartDate = useMemo(() => {
+    if (!actualDateFrom) return undefined
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(actualDateFrom)
+    return m ? `${m[2]}-${m[3]}-${m[1]}` : actualDateFrom
+  }, [actualDateFrom])
+  const activityEndDate = useMemo(() => {
+    if (!actualDateTo) return undefined
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(actualDateTo)
+    return m ? `${m[2]}-${m[3]}-${m[1]}` : actualDateTo
+  }, [actualDateTo])
+
+  const shouldFetchActivities = currentReportItem?.criteria?.showActivitySelect === true && !!departmentId && employeeIds.length > 0
+  const { data: activitiesByDepartmentData } = useGetActivitiesByDepartmentAndUsers(
+    departmentId,
+    employeeIds,
+    activityStartDate,
+    activityEndDate,
+    "active",
+    masterCode,
+    shouldFetchActivities,
   )
 
   const {
@@ -583,7 +703,7 @@ export function ReportForm({ module }: ReportFormProps) {
 
   const { data: fiscalYearsData } = useListFiscalYears()
   const { data: departmentsData } = useGetDepartments({ status: "active", page: 1, limit: 100 })
-  const { data: maaTcmDepartmentsData } = useGetMaaTcmActivityDepartments(isMaaReport)
+  const { data: maaTcmDepartmentsData } = useGetMaaTcmActivityDepartments(false)
   const { data: allProgramsData } = useGetListAllPrograms(
     currentReportItem?.criteria?.showProgramSelect === true && !shouldFilterProgramsByUser
   )
@@ -628,8 +748,12 @@ export function ReportForm({ module }: ReportFormProps) {
   )
 
   const departmentOptions = useMemo(() => {
-    return (departmentsData?.items ? mapIdNameRowsToSelectOptions(departmentsData.items) : [])
-  }, [departmentsData])
+    const all = departmentsData?.items ? mapIdNameRowsToSelectOptions(departmentsData.items) : []
+    if (reportKey === "P110-SS") {
+      return all.filter((opt) => opt.label === "Social Services")
+    }
+    return all
+  }, [departmentsData, reportKey])
 
   const employeeOptions = useMemo(() => {
     // Create a base list from all loaded users
@@ -639,12 +763,12 @@ export function ReportForm({ module }: ReportFormProps) {
 
     let specificList: ReportSelectOption[] | undefined = undefined
 
-    if (reportKey.includes("MAA") || reportKey.includes("TCM")) {
-      if (maaEmployeesData) specificList = maaEmployeesData
+    if (departmentId && departmentUsersData) {
+      specificList = departmentUsersData
     } else if (reportKey === "DSSRPT3" || reportKey === "DSSRPT4") {
       if (costPoolUsersData) specificList = costPoolUsersData
-    } else if (departmentId && departmentUsersData) {
-      specificList = departmentUsersData
+    } else if ((reportKey.includes("MAA") || reportKey.includes("TCM")) && maaEmployeesData) {
+      specificList = maaEmployeesData
     }
 
     // If we have a specific list (like department users), merge it with the general list
@@ -659,24 +783,11 @@ export function ReportForm({ module }: ReportFormProps) {
   }, [reportKey, maaEmployeesData, costPoolUsersData, departmentUsersData, departmentId, employeesData])
 
   const activityOptions = useMemo(() => {
-    let baseList: ReportSelectOption[] = []
-    if (isMaaReport && maaTcmDepartmentsData) {
-      baseList = maaTcmDepartmentsData
-    } else if (activitiesByDepartmentData) {
-      baseList = mapIdNameRowsToSelectOptions(
-        activitiesByDepartmentData.map((row) => ({
-          id: row.id,
-          name: row.name,
-        })),
-      )
+    if (activitiesByDepartmentData) {
+      return activitiesByDepartmentData
     }
-
-    // In a multi-select, we want to ensure any currently selected values have labels
-    // even if they aren't in the primary filtered list (e.g. they belong to another dept).
-    return baseList
+    return []
   }, [
-    isMaaReport,
-    maaTcmDepartmentsData,
     activitiesByDepartmentData,
   ])
 
@@ -1175,10 +1286,17 @@ const ReportFiltersBody = ({
                 <SingleSelectDropdown
                   value={field.value}
                   onChange={(val) => {
-                    field.onChange(val)
                     const item = module.catalogItems.find((i) => i.key === val)
-                    const monthByOpts = item?.criteria?.showMonthBy?.map((o: any) => o.type)
 
+                    // Reset all fields to defaults, keeping only the new report key
+                    form.reset({
+                      ...REPORT_FORM_DEFAULT_VALUES,
+                      reportKey: val,
+                      fileName: item?.label ?? "",
+                    })
+
+                    // Set the appropriate period type based on report criteria
+                    const monthByOpts = item?.criteria?.showMonthBy?.map((o: any) => o.type)
                     if (monthByOpts && monthByOpts.length > 0) {
                       form.setValue("selectMonthBy", monthByOpts[0] as "qtr" | "dates" | "month" | "year")
                     } else if (isTrue(item?.criteria?.monthly) || isTrue(item?.criteria?.showMonthly)) {
@@ -1189,9 +1307,6 @@ const ReportFiltersBody = ({
                       form.setValue("selectMonthBy", "qtr")
                     } else if (isTrue(item?.criteria?.showDate) || isTrue(item?.criteria?.showDates)) {
                       form.setValue("selectMonthBy", "dates")
-                    }
-                    if (item) {
-                      form.setValue("fileName", item.label)
                     }
                   }}
                   onBlur={field.onBlur}
@@ -1225,7 +1340,16 @@ const ReportFiltersBody = ({
                 render={({ field }) => (
                   <SingleSelectDropdown
                     value={field.value ?? ""}
-                    onChange={field.onChange}
+                    onChange={(val) => {
+                      if ((field.value ?? "") !== val) {
+                        form.setValue("departmentId", "")
+                        form.setValue("employeeIds", "")
+                        form.setValue("activityIds", "")
+                        form.setValue("costPoolIds", "")
+                        form.setValue("programIds", "")
+                      }
+                      field.onChange(val)
+                    }}
                     onBlur={field.onBlur}
                     options={[
                       { value: "BOTH", label: "BOTH" },
@@ -1451,6 +1575,7 @@ const ReportFiltersBody = ({
                 options={employeeOptions}
                 placeholder="Select Employee"
                 emptyListMessage="No employees available"
+                onValuesChange={() => setValue("activityIds", "")}
               />
             </div>
           )}
@@ -1522,6 +1647,8 @@ const ReportFiltersBody = ({
             {downloadError.message}
           </p>
         ) : null}
+
+        <LoadingProgress isLoading={isViewPending || isDownloadPending} />
 
         {/* Row 4: download row — narrow type, file name grows, button right */}
         <div className="flex min-w-0 flex-wrap items-end gap-4 pt-6">

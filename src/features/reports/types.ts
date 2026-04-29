@@ -131,4 +131,5 @@ export type ReportSecondaryPickBlockProps = {
   placeholder: string
   emptyListMessage: string
   maxVisibleChips?: number
+  onValuesChange?: (next: string) => void
 }
