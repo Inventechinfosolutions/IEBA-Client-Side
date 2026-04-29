@@ -846,8 +846,8 @@ export function CountyActivityCodeTable({
       <div className="overflow-hidden rounded-[10px] border border-[#E5E7EB]">
         <Table className="w-full table-fixed border-collapse">
           <colgroup>
-            <col className={canUpdateCountyActivity ? "w-[9%]" : "w-[10%]"} /> {/* Code */}
-            <col className={canUpdateCountyActivity ? "w-[13%]" : "w-[15%]"} /> {/* Name */}
+            <col className={canUpdateCountyActivity ? "w-[11%]" : "w-[12%]"} /> {/* Code */}
+            <col className={canUpdateCountyActivity ? "w-[11%]" : "w-[13%]"} /> {/* Name */}
             <col className={canUpdateCountyActivity ? "w-[10%]" : "w-[12%]"} /> {/* Desc */}
             <col className={canUpdateCountyActivity ? "w-[11%]" : "w-[13%]"} /> {/* Dept */}
             <col className={canUpdateCountyActivity ? "w-[8%]" : "w-[9%]"} /> {/* Type */}
@@ -1033,10 +1033,10 @@ export function CountyActivityCodeTable({
 
                 const countyActivityPrimaryTableRow = (
                   <TableRow key={row.id} className="border-b border-[#E5E7EB]">
-                    <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
+                    <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0] whitespace-normal break-all">
                       <button
                         type="button"
-                        className={`mr-2 inline-flex size-5 items-center justify-center rounded-[6px] ${
+                        className={`mr-1 inline-flex size-5 shrink-0 items-center justify-center rounded-[6px] align-middle ${
                           hasChildren ? "text-[#6C5DD3] hover:bg-[#6C5DD3]/10" : "opacity-0"
                         }`}
                         aria-label={isExpanded ? "Collapse" : "Expand"}
@@ -1056,7 +1056,7 @@ export function CountyActivityCodeTable({
                           )
                         ) : null}
                       </button>
-                      <span className="align-middle">{row.countyActivityCode}</span>
+                      {row.countyActivityCode}
                     </TableCell>
                   <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] leading-[1.4] whitespace-normal break-words font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
                     {row.countyActivityName}
@@ -1168,7 +1168,7 @@ export function CountyActivityCodeTable({
                         key={child.id}
                         className="border-b border-[#E5E7EB] bg-[#F6F5FF]"
                       >
-                        <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
+                        <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0] whitespace-normal break-all">
                           <span className="ml-7">{child.countyActivityCode}</span>
                         </TableCell>
                         <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] leading-[1.4] whitespace-normal break-words font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
