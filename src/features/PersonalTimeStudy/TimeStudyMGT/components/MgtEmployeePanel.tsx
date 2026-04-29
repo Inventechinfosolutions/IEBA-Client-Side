@@ -146,7 +146,7 @@ export function MgtEmployeePanel({
               key={emp.id}
               id={`mgt-employee-${emp.id}`}
               onClick={() => onSelect(emp)}
-              className={`w-full pl-3 pr-4 py-2.5 text-left text-[14px] transition-colors ${
+              className={`w-full cursor-pointer pl-3 pr-4 py-2.5 text-left text-[14px] transition-colors ${
                 selectedUserId === emp.id
                   ? "bg-purple-50 font-semibold text-[#6B4EFF]"
                   : "text-gray-700 hover:bg-gray-50"

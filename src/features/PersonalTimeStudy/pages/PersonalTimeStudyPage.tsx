@@ -6,6 +6,7 @@ import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 
 import { useAuth } from "@/contexts/AuthContext"
+import { usePermissions } from "@/hooks/usePermissions"
 import {
   apiGetDayDetail,
   apiGetMonthLegend,
@@ -28,6 +29,10 @@ export function PersonalTimeStudyPage() {
   const { user } = useAuth()
   const queryClient = useQueryClient()
   const userId = user?.id ?? ""
+
+  
+  const { canReview } = usePermissions()
+  const canReviewMgt = canReview("timestudysupervisor")
 
   // Tab state
   const [activeTab, setActiveTab] = useState<ActiveTab>("personal")
@@ -114,7 +119,7 @@ export function PersonalTimeStudyPage() {
 
         {/* Tab Bar — Program-style design */}
         <div className="border-b border-[#eef0f5]">
-          <div className="grid grid-cols-2 select-none gap-0 bg-white">
+          <div className={cn("grid select-none gap-0 bg-white", canReviewMgt ? "grid-cols-2" : "grid-cols-1")}>
             <button
               id="tab-personal-time-study"
               type="button"
@@ -128,19 +133,21 @@ export function PersonalTimeStudyPage() {
             >
               Personal Time Study
             </button>
-            <button
-              id="tab-time-study-mgt"
-              type="button"
-              onClick={() => setActiveTab("mgt")}
-              className={cn(
-                "flex h-[63px] cursor-pointer items-center justify-center rounded-[6px] border px-3 text-[17px] leading-none font-medium tracking-wide",
-                activeTab === "mgt"
-                  ? "border-[#6C5DD3] bg-[#6C5DD3] text-white"
-                  : "border-[#e8e9ef] bg-white text-[#6C5DD3]"
-              )}
-            >
-              Time Study MGT
-            </button>
+            {canReviewMgt && (
+              <button
+                id="tab-time-study-mgt"
+                type="button"
+                onClick={() => setActiveTab("mgt")}
+                className={cn(
+                  "flex h-[63px] cursor-pointer items-center justify-center rounded-[6px] border px-3 text-[17px] leading-none font-medium tracking-wide",
+                  activeTab === "mgt"
+                    ? "border-[#6C5DD3] bg-[#6C5DD3] text-white"
+                    : "border-[#e8e9ef] bg-white text-[#6C5DD3]"
+                )}
+              >
+                Time Study MGT
+              </button>
+            )}
           </div>
         </div>
 
@@ -204,7 +211,9 @@ export function PersonalTimeStudyPage() {
           )}
 
           {/* ── Time Study MGT Tab ── */}
-          {activeTab === "mgt" && <TimeStudyMGTPage />}
+          {activeTab === "mgt" && canReviewMgt && (
+            <TimeStudyMGTPage />
+          )}
 
         </div>
       </div>

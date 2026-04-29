@@ -8,13 +8,14 @@ import type { MgtEmployeeRow } from "../types"
  * Fetch the employee list for the MGT tab.
  * Uses the existing /users endpoint with optional name search.
  */
-export async function apiMgtGetEmployeeList(search?: string): Promise<MgtEmployeeRow[]> {
+export async function apiMgtGetEmployeeList(search?: string, departmentId?: string): Promise<MgtEmployeeRow[]> {
   const res = await apiGetUserModuleRows({
     page: 1,
     pageSize: 100,
     sort: "ASC",
     inactiveOnly: false,
     name: search || undefined,
+    departmentId: departmentId,
   })
   return res.items.map((u) => ({
     id: u.id,
