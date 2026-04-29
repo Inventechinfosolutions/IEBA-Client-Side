@@ -9,7 +9,12 @@ import { apiUploadSupportingDoc } from "../api/personalTimeStudyApi"
 import { toast } from "sonner"
 import { SingleSelectSearchDropdown } from "@/components/ui/dropdown-search"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { ScrollArea } from "@/components/ui/scroll-area"
+import { TimePickerDropdown } from "@/components/ui/time-picker"
+
+/** Inline required-field asterisk — available to all components in this module. */
+function RequiredMark() {
+  return <span className="text-destructive">*</span>
+}
 
 function newId(): string {
   return typeof crypto !== "undefined" && "randomUUID" in crypto
@@ -94,42 +99,36 @@ type PersonalTimeStudyEntryFormProps = {
   onSubmit?: (parents: any[]) => void
 }
 
-function RequiredMark() {
-  return <span className="text-destructive">*</span>
-}
 
-const HOURS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0"))
-const MINUTES = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, "0"))
-
+/** Local 24-hour time picker — uses the shared TimePickerDropdown for its scrollable panel. */
 function TimePicker24h({
   value,
   onChange,
-  label
+  label,
+  required = true,
 }: {
-  value: string;
-  onChange: (v: string) => void;
-  label: string;
+  value: string
+  onChange: (v: string) => void
+  label: string
+  required?: boolean
 }) {
   const [open, setOpen] = useState(false)
-  const parts = (value || "").split(":")
-  const h = parts[0] ?? ""
-  const m = parts[1] ?? ""
 
   return (
     <div className="flex flex-col gap-1 w-[80px] shrink-0">
       <Label className="text-[11px] text-muted-foreground">
-        {label} <RequiredMark />
+        {label} {required && <span className="text-destructive">*</span>}
       </Label>
       <Popover open={open} onOpenChange={setOpen}>
         <div className="relative">
           <PopoverTrigger asChild>
-            <div className="relative">
+            <div className="relative cursor-pointer" onClick={() => setOpen(true)}>
               <TitleCaseInput
                 value={value}
                 placeholder="--:--"
                 onChange={(e) => onChange(e.target.value)}
                 onFocus={() => setOpen(true)}
-                className="h-10 pr-8 text-[11px] font-normal rounded-[6px]"
+                className="h-10 pr-8 text-[11px] font-normal rounded-[6px] cursor-pointer"
               />
               <Clock className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 opacity-50" />
             </div>
@@ -138,64 +137,20 @@ function TimePicker24h({
             className="p-0"
             align="start"
             side="bottom"
-            avoidCollisions={false}
+            avoidCollisions={true}
+            collisionPadding={8}
             sideOffset={4}
             onOpenAutoFocus={(e) => {
               e.preventDefault()
               const container = e.currentTarget as HTMLElement
               setTimeout(() => {
-                const selectedItems = container.querySelectorAll('[data-selected="true"]')
-                selectedItems.forEach((item) => {
-                  item.scrollIntoView({ block: "start", behavior: "auto" })
-                })
+                container
+                  .querySelectorAll('[data-selected="true"]')
+                  .forEach((el) => el.scrollIntoView({ block: "start", behavior: "auto" }))
               }, 50)
             }}
           >
-            <div className="flex h-[160px] divide-x">
-              <ScrollArea className="flex-1">
-                <div className="flex flex-col p-1">
-                  {HOURS.map((hour) => (
-                    <Button
-                      key={hour}
-                      variant="ghost"
-                      data-selected={h === hour}
-                      className={cn(
-                        "h-7 w-full justify-center text-[11px] font-normal",
-                        h === hour ? "bg-[#6C5DD3]/10 text-[#6C5DD3]" : "bg-transparent",
-                        "hover:bg-[#6C5DD3]/5"
-                      )}
-                      onClick={() => {
-                        const newVal = `${hour}:${m || "00"}`
-                        onChange(newVal)
-                      }}
-                    >
-                      {hour}
-                    </Button>
-                  ))}
-                </div>
-              </ScrollArea>
-              <ScrollArea className="flex-1">
-                <div className="flex flex-col p-1">
-                  {MINUTES.map((minute) => (
-                    <Button
-                      key={minute}
-                      variant="ghost"
-                      data-selected={m === minute}
-                      className={cn(
-                        "h-7 w-full justify-center text-[11px] font-normal",
-                        m === minute ? "bg-[#6C5DD3]/10 text-[#6C5DD3]" : "bg-transparent",
-                        "hover:bg-[#6C5DD3]/5"
-                      )}
-                      onClick={() => {
-                        onChange(`${h || "00"}:${minute}`)
-                      }}
-                    >
-                      {minute}
-                    </Button>
-                  ))}
-                </div>
-              </ScrollArea>
-            </div>
+            <TimePickerDropdown value={value} onChange={onChange} />
           </PopoverContent>
         </div>
       </Popover>
@@ -260,18 +215,18 @@ function SupportingDocField({
           <button
             type="button"
             onClick={() => setOpen((v) => !v)}
-            className="shrink-0 px-1 text-muted-foreground hover:text-foreground"
+            className="shrink-0 w-12 h-full text-muted-foreground hover:text-foreground flex items-center justify-center"
           >
-            <ChevronDown className={cn("size-3 transition-transform", open && "rotate-180")} />
+            <ChevronDown className={cn("size-5 transition-transform", open && "rotate-180")} />
           </button>
         )}
         <button
           type="button"
           disabled={uploading}
           onClick={() => fileRef.current?.click()}
-          className="shrink-0 border-l border-input px-2 h-full text-[#6C5DD3] hover:bg-accent disabled:opacity-40"
+          className="shrink-0 w-10 border-l border-input h-full text-[#6C5DD3] hover:bg-accent disabled:opacity-40 flex items-center justify-center"
         >
-          <Plus className="size-3" />
+          <Plus className="size-5" />
         </button>
       </div>
       {/* Dropdown */}

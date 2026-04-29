@@ -60,7 +60,7 @@ export function PersonalTimeStudyLeaveCard({
         </ul>
         <Button
           type="button"
-          className="mt-auto w-full bg-[#6C5DD3] hover:bg-[#6C5DD3]/90"
+          className="mt-auto w-full bg-[#6C5DD3] hover:bg-[#6C5DD3]/90 rounded-[6px]"
           onClick={() => setLeaveDialogOpen(true)}
         >
           Leave Request
