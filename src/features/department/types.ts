@@ -117,6 +117,9 @@ export const DEPARTMENT_SETTINGS_ROWS: readonly {
   { key: "removeSupportingDocument", label: "Remove Supporting Document" },
   { key: "removeAutoFillEndTime", label: "Remove Auto Fill End Time" },
   { key: "removeDescriptionActivityNote", label: "Remove Description/Activity/Note" },
+  { key: "removeDescriptionActivityNoteAnchor", label: "Remove Description/Activity/Note Anchor" },
+  { key: "removeDescriptionActivityNoteMultiCode", label: "Remove Description/Activity/Note MultiCode" },
+  { key: "moveSaveSubmitToTop", label: "Move Save and Submit Button to Top" },
 ] as const
 
 /** Resolved contact row for the department table when the list API has richer data than the department DTO. */
@@ -177,6 +180,9 @@ export type DepartmentResDto = Record<string, unknown> & {
   startorEndTime?: boolean;
   supportingDoc?: boolean;
   removeDescriptionActivityNote?: boolean;
+  removeDescriptionActivityNoteAnchor?: boolean;
+  removeDescriptionActivityNoteMultiCode?: boolean;
+  moveSaveSubmitToTop?: boolean;
 }
 
 export type DepartmentAddressCreateDto = {
@@ -201,6 +207,9 @@ export type CreateDepartmentReqDto = {
   startorEndTime?: boolean;
   supportingDoc?: boolean;
   removeDescriptionActivityNote?: boolean;
+  removeDescriptionActivityNoteAnchor?: boolean;
+  removeDescriptionActivityNoteMultiCode?: boolean;
+  moveSaveSubmitToTop?: boolean;
   primaryContactId?: string | null;
   secondaryContactId?: string | null;
   billingContactId?: string | null;

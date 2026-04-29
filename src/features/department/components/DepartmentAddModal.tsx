@@ -698,23 +698,23 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                         </TabsContent>
 
                         <TabsContent value="settings" className="mt-0">
-                            <div className="px-8 pb-8">
+                            <div className="px-6 pb-6">
                                 {id && (
-                                    <div className="pt-8 space-y-1">
-                                        <div className="text-[15px] font-[600] text-[#374151]">
+                                    <div className="pt-4 space-y-1">
+                                        <div className="text-[14px] font-[600] text-[#374151]">
                                             Code: <span className="text-[#6C5DD3]">{currentCode}</span>
                                         </div>
-                                        <div className="text-[15px] font-[600] text-[#374151]">
+                                        <div className="text-[14px] font-[600] text-[#374151]">
                                             Department Name: <span className="text-[#6C5DD3]">{currentName}</span>
                                         </div>
                                     </div>
                                 )}
-                                <div className="grid grid-cols-1 gap-5 py-8 min-h-[300px]">
+                                <div className="grid grid-cols-1 gap-3 py-4 min-h-[300px]">
                                     {DEPARTMENT_SETTINGS_ROWS
                                         .filter(s => s.key !== 'allowMultiCodes' || canUpdateDepartment)
                                         .map((setting) => (
-                                        <div key={setting.key} className="space-y-2">
-                                            <div className="flex items-center gap-4">
+                                        <div key={setting.key} className="space-y-1">
+                                            <div className="flex items-center gap-3">
                                                 <Checkbox
                                                     id={setting.key}
                                                     checked={!!settings[setting.key as keyof typeof settings]}
@@ -736,12 +736,15 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                                                         if (setting.key === "apportioning" && isChecked) {
                                                             setValue("settings.autoApportioning", true)
                                                         }
+                                                        if (setting.key === "removeStartEndTime" && isChecked) {
+                                                            setValue("settings.removeAutoFillEndTime", false)
+                                                        }
                                                     }}
-                                                    className="h-[22px] w-[22px] data-[state=checked]:bg-[#6C5DD3] data-[state=checked]:border-[#6C5DD3] disabled:cursor-not-allowed disabled:opacity-50"
+                                                    className="h-[18px] w-[18px] data-[state=checked]:bg-[#6C5DD3] data-[state=checked]:border-[#6C5DD3] disabled:cursor-not-allowed disabled:opacity-50"
                                                 />
                                                 <Label
                                                     htmlFor={setting.key}
-                                                    className={`text-[16px] font-[400] text-[#374151] ${
+                                                    className={`text-[14px] font-[400] text-[#374151] ${
                                                         setting.key === "removeAutoFillEndTime" &&
                                                         settings.removeStartEndTime
                                                             ? "cursor-not-allowed opacity-60"
