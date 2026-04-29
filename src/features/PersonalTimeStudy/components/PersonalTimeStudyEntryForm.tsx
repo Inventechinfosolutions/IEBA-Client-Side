@@ -150,7 +150,7 @@ function TimePicker24h({
               }, 50)
             }}
           >
-            <TimePickerDropdown value={value} onChange={onChange} />
+            <TimePickerDropdown value={value} onChange={onChange} onClose={() => setOpen(false)} />
           </PopoverContent>
         </div>
       </Popover>

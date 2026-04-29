@@ -13,7 +13,9 @@ export async function apiGetMonthLegend(params: {
   month: number
   year: number
 }): Promise<UserMonthLegendResDto> {
-  const res = await api.post<ApiEnvelope<UserMonthLegendResDto>>("/timestudyrecords/user/monthlegend", params)
+  const res = await api.get<ApiEnvelope<UserMonthLegendResDto>>(
+    `/timestudyrecords/user/monthlegend?userId=${params.userId}&month=${params.month}&year=${params.year}`
+  )
   return res.data!
 }
 
@@ -23,10 +25,9 @@ export async function apiGetDayDetail(params: {
   month: number
   year: number
 }): Promise<UserDayLegendDetailResDto> {
-  const { date, ...body } = params
-  const res = await api.post<ApiEnvelope<UserDayLegendDetailResDto>>(
-    `/timestudyrecords/user/daydetail?date=${date}`,
-    body
+  const { date, userId, month, year } = params
+  const res = await api.get<ApiEnvelope<UserDayLegendDetailResDto>>(
+    `/timestudyrecords/user/daydetail?date=${date}&userId=${userId}&month=${month}&year=${year}`
   )
   return res.data!
 }
