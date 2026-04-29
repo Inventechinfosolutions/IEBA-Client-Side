@@ -44,7 +44,11 @@ export function useTimeStudyMGT() {
   const filteredEmployees = useMemo(() => {
     if (!search.trim()) return employees
     const q = search.toLowerCase()
-    return employees.filter(e => e.employee?.toLowerCase().includes(q))
+    return employees.filter(e => {
+      const parts = [e.employee, e.firstName, e.lastName].filter(Boolean)
+      const name = parts.join(" ").toLowerCase()
+      return name.includes(q)
+    })
   }, [employees, search])
 
   const { dayStatuses, weekSummaries, allocatedTotal, actualTotal, balanceTotal } = useMemo(() => {
@@ -78,15 +82,23 @@ export function useTimeStudyMGT() {
       weekMap[weekKey].days.push(d.status)
     }
 
-    // Determine week status (simplified: if any day is submitted, week is submitted; if any approved, etc.)
+    // Determine week status (if any day is submitted, week is submitted; if any approved, etc.)
     const finalWeekSummaries: Record<string, MgtWeekSummary> = {}
     for (const [key, val] of Object.entries(weekMap)) {
       let finalStatus = "notsubmitted"
-      if (val.days.includes("approved")) finalStatus = "approved"
-      else if (val.days.includes("rejected")) finalStatus = "rejected"
-      else if (val.days.includes("submitted") || val.days.includes("submittedexceed") || val.days.includes("submittedless")) {
+      const lowerDays = val.days.map(d => String(d).toLowerCase())
+      
+      if (lowerDays.includes("approved")) finalStatus = "approved"
+      else if (lowerDays.includes("rejected")) finalStatus = "rejected"
+      else if (
+        lowerDays.some(d => d.startsWith("submitted")) || 
+        lowerDays.includes("target met") || 
+        lowerDays.includes("equal hours") ||
+        val.totalMinutes > 0
+      ) {
         finalStatus = "submitted"
       }
+      
       finalWeekSummaries[key] = { totalMinutes: val.totalMinutes, status: finalStatus }
     }
 

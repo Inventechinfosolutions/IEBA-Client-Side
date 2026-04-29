@@ -16,15 +16,16 @@ export type TimePickerDropdownProps = {
   onClose?: () => void
   /** Extra classes on the root div */
   className?: string
+  /** Interval between minutes (e.g. 15) */
+  minuteStep?: number
 }
-
-
 
 export function TimePickerDropdown({
   value,
   onChange,
   onClose,
   className,
+  minuteStep = 1,
 }: TimePickerDropdownProps) {
   const [localTime, setLocalTime] = useState(value || "00:00")
 
@@ -36,6 +37,8 @@ export function TimePickerDropdown({
   const parts = localTime.split(":")
   const h = parts[0] ?? ""
   const m = parts[1] ?? ""
+
+  const filteredMinutes = MINUTES.filter((m) => parseInt(m, 10) % minuteStep === 0)
 
   const handleOk = () => {
     onChange(localTime)
@@ -72,7 +75,7 @@ export function TimePickerDropdown({
         {/* Minutes column */}
         <ScrollArea className="flex-1">
           <div className="flex flex-col p-1.5 gap-0.5">
-            {MINUTES.map((minute) => (
+            {filteredMinutes.map((minute) => (
               <button
                 key={minute}
                 type="button"
