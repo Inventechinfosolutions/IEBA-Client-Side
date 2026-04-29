@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils"
 import {
   Fragment,
   useCallback,
-  useEffect,
+  useMemo,
   useState,
   type ComponentProps,
   type CSSProperties,
@@ -14,12 +14,18 @@ import "./index.styles.css"
 type SelectionMode = 'day' | 'week';
 
 const DateStatus = {
-  APPROVED_TIME_ENTRY: 'APPROVED_TIME_ENTRY',
-  LESS_HOURS: 'LESS_HOURS',
-  MORE_HOURS: 'MORE_HOURS',
-  SUBMITTED: 'SUBMITTED',
-  APPROVED: 'APPROVED',
-  REJECTED: 'REJECTED',
+  APPROVED: 'approved',
+  REJECTED: 'rejected',
+  SUBMITTED: 'submitted',
+  SUBMITTED_LESS: 'submittedless',
+  SUBMITTED_EXCEED: 'submittedexceed',
+  NOT_SUBMITTED: 'notsubmitted',
+  LEAVE: 'leave',
+  HOLIDAY: 'holiday',
+  WEEKEND: 'weekend',
+  APPROVED_TIME_ENTRY: 'approved_time_entry',
+  LESS_HOURS: 'less_hours',
+  MORE_HOURS: 'more_hours',
 } as const
 
 type DateStatus = (typeof DateStatus)[keyof typeof DateStatus]
@@ -35,6 +41,22 @@ export type AppCalenderProps = Omit<ComponentProps<"div">, "children"> & {
   showBuiltInLegend?: boolean
   /** Total minutes submitted for the week + rolled-up week status. When omitted, weeks show 0 and a neutral status dot. */
   weekSummaries?: Record<string, CalendarWeekSummary>
+  /** Controlled selected date. */
+  selectedDate?: Date | null
+  /** Callback when a date is clicked. */
+  onDateSelect?: (date: Date) => void
+  /** Controlled month/year viewport. */
+  currentMonthDate?: Date
+  /** Callback when month/year navigation occurs. */
+  onMonthChange?: (date: Date) => void
+  /** Status overrides for individual days (mapped by YYYY-MM-DD). */
+  dayStatuses?: Record<string, { status: DateStatus; color?: string }>
+  /** If true, renders an additional ACTION column at the end of the calendar grid. */
+  showActionColumn?: boolean
+  /** Render function for the STATUS column to override default dot. */
+  renderStatus?: (weekIndex: number, dates: Date[], status: DateStatus) => React.ReactNode
+  /** Render function for the ACTION column. Receives week index, dates, and week status. */
+  renderAction?: (weekIndex: number, dates: Date[], status: DateStatus) => React.ReactNode
 }
 
 interface CalendarDay {
@@ -45,30 +67,39 @@ interface CalendarDay {
   isToday: boolean;
   isWeekSelected: boolean;
   status: DateStatus;
+  color?: string;
   weekDay: string;
 }
 
 const statusColors: Record<DateStatus, string> = {
-  [DateStatus.APPROVED_TIME_ENTRY]: '#D3D3D3',
-  [DateStatus.LESS_HOURS]: '#FFE4B5',
-  [DateStatus.MORE_HOURS]: '#FFB6C1',
-  [DateStatus.SUBMITTED]: '#B0E0E6',
-  [DateStatus.APPROVED]: '#00FF00',
-  [DateStatus.REJECTED]: '#FF0000',
+  [DateStatus.APPROVED_TIME_ENTRY]: '#6C757D',
+  [DateStatus.LESS_HOURS]: '#FFC107',
+  [DateStatus.MORE_HOURS]: '#DC3545',
+  [DateStatus.SUBMITTED]: '#28A745',
+  [DateStatus.SUBMITTED_LESS]: '#FFC107',
+  [DateStatus.SUBMITTED_EXCEED]: '#DC3545',
+  [DateStatus.APPROVED]: '#28A745',
+  [DateStatus.REJECTED]: '#DC3545',
+  [DateStatus.NOT_SUBMITTED]: '#f3f4f6',
+  [DateStatus.LEAVE]: '#93c5fd',
+  [DateStatus.HOLIDAY]: '#fde68a',
+  [DateStatus.WEEKEND]: '#f1f5f9',
 };
 
-/**
- * Colors for the week TOTAL/STATUS column only (not day cells).
- * Week status is about submitted time for the whole week — avoid day-level bright red here; use neutral/warning tones.
- */
 const weekSummaryDotColors: Record<DateStatus, string> = {
-  [DateStatus.APPROVED_TIME_ENTRY]: '#D3D3D3',
-  [DateStatus.LESS_HOURS]: '#FFE4B5',
-  [DateStatus.MORE_HOURS]: '#FFB6C1',
-  [DateStatus.SUBMITTED]: '#B0E0E6',
-  [DateStatus.APPROVED]: '#22c55e',
-  [DateStatus.REJECTED]: '#94a3b8',
-}
+  [DateStatus.APPROVED_TIME_ENTRY]: '#6C757D',
+  [DateStatus.LESS_HOURS]: '#FFC107',
+  [DateStatus.MORE_HOURS]: '#DC3545',
+  [DateStatus.SUBMITTED]: '#28A745',
+  [DateStatus.SUBMITTED_LESS]: '#FFC107',
+  [DateStatus.SUBMITTED_EXCEED]: '#DC3545',
+  [DateStatus.APPROVED]: '#28A745',
+  [DateStatus.REJECTED]: '#DC3545',
+  [DateStatus.NOT_SUBMITTED]: '#f3f4f6',
+  [DateStatus.LEAVE]: '#93c5fd',
+  [DateStatus.HOLIDAY]: '#fde68a',
+  [DateStatus.WEEKEND]: '#f1f5f9',
+};;
 
 /** Build lookup key for `weekSummaries` from the first day of a calendar row (UTC). */
 export function formatWeekStartUtcKey(date: Date): string {
@@ -110,18 +141,29 @@ function getStartOfCalendarGrid(date: Date, timezone: string, locale: string) {
 const AppCalender = ({
   showBuiltInLegend = true,
   weekSummaries,
+  selectedDate: propsSelectedDate,
+  onDateSelect,
+  currentMonthDate: propsCurrentMonthDate,
+  onMonthChange,
+  dayStatuses,
+  showActionColumn,
+  renderStatus,
+  renderAction,
   className,
   ...divProps
 }: AppCalenderProps) => {
   const [selectedTimezone] = useState("America/Los_Angeles")
   const [locale] = useState("en-GB")
   const [selectionMode] = useState<SelectionMode>("day")
-  const [currentDate, setCurrentDate] = useState(() => getNowInTimezone('America/Los_Angeles', locale));
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [internalCurrentDate, setInternalCurrentDate] = useState(() => getNowInTimezone('America/Los_Angeles', locale));
+  const currentDate = propsCurrentMonthDate ?? internalCurrentDate;
+
+  const [internalSelectedDate, setInternalSelectedDate] = useState<Date | null>(null);
+  const selectedDate = propsSelectedDate !== undefined ? propsSelectedDate : internalSelectedDate;
+
   const [selectedWeekDates, setSelectedWeekDates] = useState<Date[]>([]);
   const [showMonthSelect, setShowMonthSelect] = useState(false);
   const [showYearSelect, setShowYearSelect] = useState(false);
-  const [calendarWeeks, setCalendarWeeks] = useState<CalendarDay[][]>([]);
 
   const months = Array.from({ length: 12 }, (_, i) =>
     new Date(Date.UTC(2000, i)).toLocaleString(locale, { month: 'long', timeZone: selectedTimezone })
@@ -149,23 +191,27 @@ const AppCalender = ({
     ...daysOfWeek.slice(0, firstDayOfWeek)
   ];
 
-  const getDateStatus = useCallback((date: Date): DateStatus => {
-    const day = date.getUTCDate();
-    if (day % 6 === 0) return DateStatus.APPROVED_TIME_ENTRY;
-    if (day % 5 === 0) return DateStatus.LESS_HOURS;
-    if (day % 4 === 0) return DateStatus.MORE_HOURS;
-    if (day % 3 === 0) return DateStatus.SUBMITTED;
-    if (day % 2 === 0) return DateStatus.APPROVED;
-    return DateStatus.REJECTED;
-  }, []);
+  const getDateInfo = useCallback((date: Date): { status: DateStatus; color?: string } => {
+    if (dayStatuses) {
+      const key = date.toISOString().split('T')[0]
+      const info = dayStatuses[key]
+      if (info) {
+        return {
+          status: info.status,
+          color: info.color
+        }
+      }
+    }
+    return { status: DateStatus.NOT_SUBMITTED };
+  }, [dayStatuses]);
 
-  const generateCalendarDays = useCallback(() => {
+  const calendarWeeks = useMemo(() => {
     const startDate = getStartOfCalendarGrid(currentDate, selectedTimezone, locale);
     const weeks: CalendarDay[][] = [];
     const today = getNowInTimezone(selectedTimezone, locale);
 
     let currentWeek: CalendarDay[] = [];
-    for (let i = 0; i < 36; i++) {
+    for (let i = 0; i < 42; i++) {
       const date = new Date(Date.UTC(startDate.getUTCFullYear(), startDate.getUTCMonth(), startDate.getUTCDate() + i));
 
       const isSelected = selectionMode === 'day' && selectedDate
@@ -186,7 +232,7 @@ const AppCalender = ({
         isSelected,
         isToday,
         isWeekSelected,
-        status: getDateStatus(date)
+        ...getDateInfo(date)
       });
 
       if (currentWeek.length === 7) {
@@ -194,23 +240,16 @@ const AppCalender = ({
         currentWeek = [];
       }
     }
-    setCalendarWeeks(weeks)
-  }, [currentDate, selectedDate, selectedWeekDates, selectedTimezone, selectionMode, getDateStatus, locale, rotatedDays]);
-
-  // Update current date when timezone changes
-  useEffect(() => {
-    setCurrentDate(getNowInTimezone(selectedTimezone, locale));
-    setSelectedDate(null);
-    setSelectedWeekDates([]);
-  }, [selectedTimezone, locale]);
-
-  useEffect(() => {
-    generateCalendarDays();
-  }, [currentDate, selectedDate, selectedWeekDates, selectedTimezone, selectionMode, locale]); // Add all dependencies that generateCalendarDays uses
+    return weeks
+  }, [currentDate, selectedDate, selectedWeekDates, selectedTimezone, selectionMode, getDateInfo, locale, rotatedDays]);
 
   const handleDayClick = (date: Date) => {
     if (selectionMode === 'day') {
-      setSelectedDate(date);
+      if (onDateSelect) {
+        onDateSelect(date);
+      } else {
+        setInternalSelectedDate(date);
+      }
       setSelectedWeekDates([]);
     } else {
       const firstDayOfWeek = new Intl.DateTimeFormat(locale).resolvedOptions().weekday === 'monday' ? 1 : 0;
@@ -231,7 +270,19 @@ const AppCalender = ({
         ));
       });
       setSelectedWeekDates(week);
-      setSelectedDate(null);
+      if (onDateSelect) {
+        onDateSelect(null as any);
+      } else {
+        setInternalSelectedDate(null);
+      }
+    }
+  };
+
+  const handleMonthChange = (newDate: Date) => {
+    if (onMonthChange) {
+      onMonthChange(newDate);
+    } else {
+      setInternalCurrentDate(newDate);
     }
   };
 
@@ -286,8 +337,8 @@ const AppCalender = ({
             {/* Calendar Header */}
             <div className="calendar-header">
               <button
-                onClick={() => setCurrentDate(new Date(Date.UTC(currentDate.getUTCFullYear(), currentDate.getUTCMonth() - 1)))}
-                className="p-2 rounded-full bg-primary text-primary-foreground border-none cursor-pointer transition-all duration-200 ease-in-out hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-opacity-50"
+                onClick={() => handleMonthChange(new Date(Date.UTC(currentDate.getUTCFullYear(), currentDate.getUTCMonth() - 1)))}
+                className="p-2 rounded-full bg-[#6C5DD3] text-primary-foreground border-none cursor-pointer transition-all duration-200 ease-in-out hover:bg-[#6C5DD3]/90 focus:outline-none focus:ring-2 focus:ring-[#6C5DD3] focus:ring-opacity-50"
               >
                 ‹
               </button>
@@ -302,8 +353,8 @@ const AppCalender = ({
               </div>
 
               <button
-                onClick={() => setCurrentDate(new Date(Date.UTC(currentDate.getUTCFullYear(), currentDate.getUTCMonth() + 1)))}
-                className="p-2 rounded-full bg-primary text-primary-foreground border-none cursor-pointer transition-all duration-200 ease-in-out hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-opacity-50"
+                onClick={() => handleMonthChange(new Date(Date.UTC(currentDate.getUTCFullYear(), currentDate.getUTCMonth() + 1)))}
+                className="p-2 rounded-full bg-[#6C5DD3] text-primary-foreground border-none cursor-pointer transition-all duration-200 ease-in-out hover:bg-[#6C5DD3]/90 focus:outline-none focus:ring-2 focus:ring-[#6C5DD3] focus:ring-opacity-50"
               >
                 ›
               </button>
@@ -320,7 +371,7 @@ const AppCalender = ({
                       }).formatToParts(currentDate);
                       const year = parseInt(parts.find(p => p.type === 'year')?.value || '0');
                       const newDate = new Date(Date.UTC(year, monthIndex, 1));
-                      setCurrentDate(newDate);
+                      handleMonthChange(newDate);
                       setShowMonthSelect(false);
                     }}
                     className="cursor-pointer p-2 text-center hover:bg-accent rounded text-foreground"
@@ -343,7 +394,7 @@ const AppCalender = ({
                       const month = parseInt(parts.find(p => p.type === 'month')?.value || '0') - 1;
                       const day = parseInt(parts.find(p => p.type === 'day')?.value || '0');
                       const newDate = new Date(Date.UTC(year, month, day));
-                      setCurrentDate(newDate);
+                      handleMonthChange(newDate);
                       setShowYearSelect(false);
                     }}
                     className="cursor-pointer p-2 text-center hover:bg-accent rounded text-foreground"
@@ -354,8 +405,8 @@ const AppCalender = ({
               </div>
             )}
 
-            {/* Single grid: Sun–Sat + TOTAL(MIN.) + STATUS per row — rows align with week bands */}
-            <div className="calendar-weeks-grid">
+            {/* Single grid: Sun–Sat + TOTAL(MIN.) + STATUS + optionally ACTION per row */}
+            <div className={cn("calendar-weeks-grid", showActionColumn && "has-action")}>
               <div className="days-of-week-container">
                 {rotatedDays.map((day) => (
                   <div key={day}>{day}</div>
@@ -363,12 +414,13 @@ const AppCalender = ({
               </div>
               <div className="week-summary-header">TOTAL(MIN.)</div>
               <div className="week-summary-header">STATUS</div>
+              {showActionColumn && <div className="week-summary-header">ACTION</div>}
 
               {calendarWeeks.map((week, weekIndex) => {
                 const weekKey = formatWeekStartUtcKey(week[0].date)
                 const summary = weekSummaries?.[weekKey]
                 const weekTotal = summary?.totalMinutes ?? 0
-                const weekStatus = summary?.status ?? DateStatus.APPROVED_TIME_ENTRY
+                const weekStatus = (summary?.status as DateStatus) ?? DateStatus.NOT_SUBMITTED
                 return (
                   <Fragment key={`week-${week[0]?.date.getTime() ?? weekIndex}`}>
                     {week.map((dayObj, index) => (
@@ -400,7 +452,7 @@ const AppCalender = ({
                         )}
                         style={
                           {
-                            backgroundColor: statusColors[dayObj.status],
+                            backgroundColor: dayObj.color || "#f3f4f6", 
                           } as CSSProperties
                         }
                       >
@@ -409,14 +461,21 @@ const AppCalender = ({
                     ))}
                     <div className="week-summary-total">{weekTotal}</div>
                     <div className="week-summary-status">
-                      <span
-                        className="week-summary-status-dot"
-                        style={{
-                          backgroundColor: weekSummaryDotColors[weekStatus],
-                        }}
-                        title={weekStatus.replace(/_/g, " ")}
-                      />
+                      {renderStatus ? renderStatus(weekIndex, week.map(d => d.date), weekStatus as DateStatus) : (
+                        <span
+                          className="week-summary-status-dot"
+                          style={{
+                            backgroundColor: weekSummaryDotColors[weekStatus as DateStatus] || "#94a3b8", 
+                          }}
+                          title={weekStatus?.replace(/_/g, " ")}
+                        />
+                      )}
                     </div>
+                    {showActionColumn && (
+                      <div className="week-summary-action">
+                        {renderAction && renderAction(weekIndex, week.map(d => d.date), weekStatus as DateStatus)}
+                      </div>
+                    )}
                   </Fragment>
                 )
               })}
@@ -431,81 +490,33 @@ const AppCalender = ({
             <h3 className="text-lg font-semibold text-foreground mb-4">
               Time Entry Status
             </h3>
-            <div className="flex flex-wrap  gap-4">
+            <div className="flex flex-wrap gap-4">
               <div className="flex items-center space-x-3">
                 <div
                   className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-medium"
-                  style={{
-                    backgroundColor: statusColors[DateStatus.APPROVED_TIME_ENTRY],
-                  }}
+                  style={{ backgroundColor: "#28A745" }}
                 >
                   1
                 </div>
-                <span className="text-foreground">Approved Time Entry</span>
+                <span className="text-foreground">Submitted (Target Met)</span>
               </div>
               <div className="flex items-center space-x-3">
                 <div
                   className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-medium"
-                  style={{
-                    backgroundColor: statusColors[DateStatus.LESS_HOURS],
-                  }}
+                  style={{ backgroundColor: "#FFC107" }}
                 >
                   1
                 </div>
-                <span
-                  className="text-foreground"
-                  style={{ color: statusColors[DateStatus.LESS_HOURS] }}
-                >
-                  Less Hours
-                </span>
+                <span className="text-foreground">Less Hours</span>
               </div>
               <div className="flex items-center space-x-3">
                 <div
                   className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-medium"
-                  style={{
-                    backgroundColor: statusColors[DateStatus.MORE_HOURS],
-                  }}
+                  style={{ backgroundColor: "#DC3545" }}
                 >
                   1
                 </div>
-                <span
-                  className="text-foreground"
-                  style={{ color: statusColors[DateStatus.MORE_HOURS] }}
-                >
-                  More Hours
-                </span>
-              </div>
-              <div className="flex items-center space-x-3">
-                <div
-                  className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-medium"
-                  style={{
-                    backgroundColor: statusColors[DateStatus.APPROVED],
-                  }}
-                >
-                  1
-                </div>
-                <span
-                  className="text-foreground"
-                  style={{ color: statusColors[DateStatus.APPROVED] }}
-                >
-                  Approved
-                </span>
-              </div>
-              <div className="flex items-center space-x-3">
-                <div
-                  className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-medium"
-                  style={{
-                    backgroundColor: statusColors[DateStatus.SUBMITTED],
-                  }}
-                >
-                  1
-                </div>
-                <span
-                  className="text-foreground"
-                  style={{ color: statusColors[DateStatus.SUBMITTED] }}
-                >
-                  Submitted
-                </span>
+                <span className="text-foreground">Exceed Hours</span>
               </div>
             </div>
           </div>

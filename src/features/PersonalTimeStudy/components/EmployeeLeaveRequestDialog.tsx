@@ -13,14 +13,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { TitleCaseInput } from "@/components/ui/title-case-input"
-import { Label } from "@/components/ui/label"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import { SingleSelectSearchDropdown } from "@/components/ui/dropdown-search"
+import { TimePickerDropdown } from "@/components/ui/time-picker"
+import { Clock } from "lucide-react"
+import { useState } from "react"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
 
 import {
@@ -31,9 +28,17 @@ import {
 
 const EMPTY = EMPLOYEE_LEAVE_EMPTY_SELECT_VALUE
 
-/** Placeholder options — replace with `useGetPersonalTimeStudyMasterCodes` when APIs exist. */
-const PROGRAM_CODE_OPTIONS = ["PRG-100", "PRG-200", "PRG-300"] as const
-const ACTIVITY_CODE_OPTIONS = ["ACT-10", "ACT-20", "ACT-30"] as const
+/** Placeholder options — replace with API-driven data when available. */
+const PROGRAM_CODE_OPTIONS = [
+  { value: "PRG-100", label: "PRG-100" },
+  { value: "PRG-200", label: "PRG-200" },
+  { value: "PRG-300", label: "PRG-300" },
+]
+const ACTIVITY_CODE_OPTIONS = [
+  { value: "ACT-10", label: "ACT-10" },
+  { value: "ACT-20", label: "ACT-20" },
+  { value: "ACT-30", label: "ACT-30" },
+]
 
 function createEmptyRow(): EmployeeLeaveRequestFormValues["entries"][number] {
   return {
@@ -58,10 +63,62 @@ export type EmployeeLeaveRequestDialogProps = {
 }
 
 const headerGridClass =
-  "grid min-w-[920px] grid-cols-[minmax(8.5rem,1fr)_minmax(6.5rem,0.9fr)_minmax(6.5rem,0.9fr)_minmax(7rem,1fr)_minmax(7rem,1fr)_minmax(5.5rem,0.75fr)_minmax(10rem,1.2fr)_2.5rem] items-end gap-2 border-b border-border pb-2 text-xs font-medium text-muted-foreground"
+  "grid min-w-[1020px] grid-cols-[minmax(8.5rem,1fr)_minmax(6.5rem,0.9fr)_minmax(6.5rem,0.9fr)_minmax(10rem,1.5fr)_minmax(10rem,1.5fr)_minmax(8.5rem,1fr)_minmax(10rem,1.2fr)_2.5rem] items-end gap-4 text-[14px] font-normal text-[#4A4A4A] whitespace-nowrap"
 
 const rowGridClass =
-  "grid min-w-[920px] grid-cols-[minmax(8.5rem,1fr)_minmax(6.5rem,0.9fr)_minmax(6.5rem,0.9fr)_minmax(7rem,1fr)_minmax(7rem,1fr)_minmax(5.5rem,0.75fr)_minmax(10rem,1.2fr)_2.5rem] items-center gap-2 py-2"
+  "grid min-w-[1020px] grid-cols-[minmax(8.5rem,1fr)_minmax(6.5rem,0.9fr)_minmax(6.5rem,0.9fr)_minmax(10rem,1.5fr)_minmax(10rem,1.5fr)_minmax(8.5rem,1fr)_minmax(10rem,1.2fr)_2.5rem] items-end gap-4 py-2"
+
+function TimePicker24h({
+  value,
+  onChange,
+  className,
+}: {
+  value: string
+  onChange: (v: string) => void
+  className?: string
+}) {
+  const [open, setOpen] = useState(false)
+
+  return (
+    <div className={cn("flex flex-col gap-1 w-full shrink-0", className)}>
+      <Popover open={open} onOpenChange={setOpen}>
+        <div className="relative">
+          <PopoverTrigger asChild>
+            <div className="relative cursor-pointer" onClick={() => setOpen(true)}>
+              <TitleCaseInput
+                value={value}
+                placeholder="--:--"
+                onChange={(e) => onChange(e.target.value)}
+                onFocus={() => setOpen(true)}
+                className="h-10 pr-8 text-sm font-normal rounded-[6px] cursor-pointer w-full"
+              />
+              <Clock className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 opacity-50" />
+            </div>
+          </PopoverTrigger>
+          <PopoverContent
+            className="p-0"
+            align="start"
+            side="bottom"
+            avoidCollisions={true}
+            collisionPadding={8}
+            sideOffset={4}
+            onOpenAutoFocus={(e) => {
+              e.preventDefault()
+              const container = e.currentTarget as HTMLElement
+              setTimeout(() => {
+                container
+                  .querySelectorAll('[data-selected="true"]')
+                  .forEach((el) => el.scrollIntoView({ block: "start", behavior: "auto" }))
+              }, 50)
+            }}
+          >
+            <TimePickerDropdown value={value} onChange={onChange} />
+          </PopoverContent>
+        </div>
+      </Popover>
+    </div>
+  )
+}
 
 export function EmployeeLeaveRequestDialog({
   open,
@@ -88,9 +145,7 @@ export function EmployeeLeaveRequestDialog({
 
   const handleClose = useCallback(
     (next: boolean) => {
-      if (!next) {
-        resetForm()
-      }
+      if (!next) resetForm()
       onOpenChange(next)
     },
     [onOpenChange, resetForm]
@@ -131,7 +186,7 @@ export function EmployeeLeaveRequestDialog({
         showClose
         overlayClassName="bg-black/55"
         className={cn(
-          "flex max-h-[min(90vh,800px)] w-full max-w-[min(96vw,1100px)] flex-col gap-0 overflow-hidden p-0 sm:rounded-lg",
+          "flex max-h-[min(90vh,800px)] w-full max-w-[min(96vw,1200px)] flex-col gap-0 overflow-hidden p-0 sm:rounded-lg bg-white",
           className
         )}
       >
@@ -146,6 +201,7 @@ export function EmployeeLeaveRequestDialog({
           onSubmit={(e) => e.preventDefault()}
         >
           <div className="min-h-0 flex-1 overflow-x-auto overflow-y-auto px-4 py-3 sm:px-6">
+            {/* Column headers */}
             <div className={headerGridClass}>
               <span>Date</span>
               <span>Start Time</span>
@@ -160,8 +216,9 @@ export function EmployeeLeaveRequestDialog({
             <div className="divide-y divide-border">
               {fields.map((field, index) => (
                 <div key={field.id} className={rowGridClass}>
+
+                  {/* Date */}
                   <div className="space-y-1">
-                    <Label className="sr-only">Date</Label>
                     <Controller
                       control={form.control}
                       name={`entries.${index}.date`}
@@ -169,135 +226,101 @@ export function EmployeeLeaveRequestDialog({
                         <>
                           <TitleCaseInput
                             type="date"
-                            className="h-9 text-sm"
+                            className="h-10 text-sm rounded-[6px]"
                             {...f}
                           />
-                          {fieldState.error?.message ? (
-                            <p className="text-xs text-destructive">
-                              {fieldState.error.message}
-                            </p>
-                          ) : null}
+                          {fieldState.error?.message && (
+                            <p className="text-xs text-destructive">{fieldState.error.message}</p>
+                          )}
                         </>
                       )}
                     />
                   </div>
 
-                  <div className="space-y-1">
-                    <Label className="sr-only">Start Time</Label>
-                    <Controller
-                      control={form.control}
-                      name={`entries.${index}.startTime`}
-                      render={({ field: f, fieldState }) => (
-                        <>
-                          <TitleCaseInput
-                            type="time"
-                            className="h-9 text-sm"
-                            {...f}
-                          />
-                          {fieldState.error?.message ? (
-                            <p className="text-xs text-destructive">
-                              {fieldState.error.message}
-                            </p>
-                          ) : null}
-                        </>
-                      )}
-                    />
-                  </div>
+                  {/* Start Time — reuses shared TimePicker24h */}
+                  <Controller
+                    control={form.control}
+                    name={`entries.${index}.startTime`}
+                    render={({ field: f, fieldState }) => (
+                      <div className="space-y-1">
+                        <TimePicker24h
+                          value={f.value}
+                          onChange={f.onChange}
+                          className="w-full"
+                        />
+                        {fieldState.error?.message && (
+                          <p className="text-xs text-destructive">{fieldState.error.message}</p>
+                        )}
+                      </div>
+                    )}
+                  />
 
-                  <div className="space-y-1">
-                    <Label className="sr-only">End Time</Label>
-                    <Controller
-                      control={form.control}
-                      name={`entries.${index}.endTime`}
-                      render={({ field: f, fieldState }) => (
-                        <>
-                          <TitleCaseInput
-                            type="time"
-                            className="h-9 text-sm"
-                            {...f}
-                          />
-                          {fieldState.error?.message ? (
-                            <p className="text-xs text-destructive">
-                              {fieldState.error.message}
-                            </p>
-                          ) : null}
-                        </>
-                      )}
-                    />
-                  </div>
+                  {/* End Time — reuses shared TimePicker24h */}
+                  <Controller
+                    control={form.control}
+                    name={`entries.${index}.endTime`}
+                    render={({ field: f, fieldState }) => (
+                      <div className="space-y-1">
+                        <TimePicker24h
+                          value={f.value}
+                          onChange={f.onChange}
+                          className="w-full"
+                        />
+                        {fieldState.error?.message && (
+                          <p className="text-xs text-destructive">{fieldState.error.message}</p>
+                        )}
+                      </div>
+                    )}
+                  />
 
+                  {/* Program Code — reuses shared SingleSelectSearchDropdown */}
                   <div className="space-y-1">
-                    <Label className="sr-only">Program Code</Label>
                     <Controller
                       control={form.control}
                       name={`entries.${index}.programCode`}
                       render={({ field: f, fieldState }) => (
                         <>
-                          <Select
-                            value={f.value === "" ? EMPTY : f.value}
-                            onValueChange={f.onChange}
-                          >
-                            <SelectTrigger className="h-9 w-full text-sm">
-                              <SelectValue placeholder="Program Code" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value={EMPTY} disabled>
-                                Select…
-                              </SelectItem>
-                              {PROGRAM_CODE_OPTIONS.map((code) => (
-                                <SelectItem key={code} value={code}>
-                                  {code}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          {fieldState.error?.message ? (
-                            <p className="text-xs text-destructive">
-                              {fieldState.error.message}
-                            </p>
-                          ) : null}
+                          <SingleSelectSearchDropdown
+                            value={f.value === EMPTY ? "" : f.value}
+                            placeholder="Select..."
+                            options={PROGRAM_CODE_OPTIONS}
+                            onChange={(v) => f.onChange(v || EMPTY)}
+                            onBlur={f.onBlur}
+                            className="h-10 min-h-0 rounded-[6px]"
+                          />
+                          {fieldState.error?.message && (
+                            <p className="text-xs text-destructive">{fieldState.error.message}</p>
+                          )}
                         </>
                       )}
                     />
                   </div>
 
+                  {/* Activity Code — reuses shared SingleSelectSearchDropdown */}
                   <div className="space-y-1">
-                    <Label className="sr-only">Activity Code</Label>
                     <Controller
                       control={form.control}
                       name={`entries.${index}.activityCode`}
                       render={({ field: f, fieldState }) => (
                         <>
-                          <Select
-                            value={f.value === "" ? EMPTY : f.value}
-                            onValueChange={f.onChange}
-                          >
-                            <SelectTrigger className="h-9 w-full text-sm">
-                              <SelectValue placeholder="Activity Code" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value={EMPTY} disabled>
-                                Select…
-                              </SelectItem>
-                              {ACTIVITY_CODE_OPTIONS.map((code) => (
-                                <SelectItem key={code} value={code}>
-                                  {code}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          {fieldState.error?.message ? (
-                            <p className="text-xs text-destructive">
-                              {fieldState.error.message}
-                            </p>
-                          ) : null}
+                          <SingleSelectSearchDropdown
+                            value={f.value === EMPTY ? "" : f.value}
+                            placeholder="Select..."
+                            options={ACTIVITY_CODE_OPTIONS}
+                            onChange={(v) => f.onChange(v || EMPTY)}
+                            onBlur={f.onBlur}
+                            className="h-10 min-h-0 rounded-[6px]"
+                          />
+                          {fieldState.error?.message && (
+                            <p className="text-xs text-destructive">{fieldState.error.message}</p>
+                          )}
                         </>
                       )}
                     />
                   </div>
 
+                  {/* Total Min Applied */}
                   <div className="space-y-1">
-                    <Label className="sr-only">Total Min Applied</Label>
                     <Controller
                       control={form.control}
                       name={`entries.${index}.totalMinApplied`}
@@ -306,49 +329,46 @@ export function EmployeeLeaveRequestDialog({
                           <TitleCaseInput
                             type="text"
                             inputMode="numeric"
-                            className="h-9 text-sm tabular-nums"
+                            className="h-10 text-sm tabular-nums rounded-[6px]"
                             placeholder="0"
                             autoComplete="off"
                             {...f}
                           />
-                          {fieldState.error?.message ? (
-                            <p className="text-xs text-destructive">
-                              {fieldState.error.message}
-                            </p>
-                          ) : null}
+                          {fieldState.error?.message && (
+                            <p className="text-xs text-destructive">{fieldState.error.message}</p>
+                          )}
                         </>
                       )}
                     />
                   </div>
 
+                  {/* Comment */}
                   <div className="space-y-1">
-                    <Label className="sr-only">Comment</Label>
                     <Controller
                       control={form.control}
                       name={`entries.${index}.comment`}
                       render={({ field: f, fieldState }) => (
                         <>
                           <TitleCaseInput
-                            className="h-9 text-sm"
+                            className="h-10 text-sm rounded-[6px]"
                             placeholder="Comment"
                             {...f}
                           />
-                          {fieldState.error?.message ? (
-                            <p className="text-xs text-destructive">
-                              {fieldState.error.message}
-                            </p>
-                          ) : null}
+                          {fieldState.error?.message && (
+                            <p className="text-xs text-destructive">{fieldState.error.message}</p>
+                          )}
                         </>
                       )}
                     />
                   </div>
 
-                  <div className="flex justify-center">
+                  {/* Row action: add / remove */}
+                  <div className="flex items-end justify-center pb-0.5">
                     {index === 0 ? (
                       <Button
                         type="button"
                         size="icon"
-                        className="size-9 shrink-0"
+                        className="size-10 shrink-0 rounded-[6px] bg-[#6C5DD3] hover:bg-[#6C5DD3]/90"
                         onClick={() => append(createEmptyRow())}
                         aria-label="Add leave row"
                       >
@@ -359,7 +379,7 @@ export function EmployeeLeaveRequestDialog({
                         type="button"
                         size="icon"
                         variant="destructive"
-                        className="size-9 shrink-0"
+                        className="size-10 shrink-0 rounded-[6px]"
                         onClick={() => remove(index)}
                         aria-label="Remove leave row"
                       >
@@ -367,6 +387,7 @@ export function EmployeeLeaveRequestDialog({
                       </Button>
                     )}
                   </div>
+
                 </div>
               ))}
             </div>
@@ -378,6 +399,7 @@ export function EmployeeLeaveRequestDialog({
               variant="default"
               disabled={form.formState.isSubmitting}
               onClick={() => void handleSave()}
+              className="h-10 rounded-[6px] bg-[#6C5DD3] hover:bg-[#6C5DD3]/90 px-8 text-white"
             >
               Save
             </Button>
@@ -385,6 +407,7 @@ export function EmployeeLeaveRequestDialog({
               type="button"
               disabled={form.formState.isSubmitting}
               onClick={() => void handleSubmitFinal()}
+              className="h-10 rounded-[6px] bg-[#6C5DD3] hover:bg-[#6C5DD3]/90 px-8 text-white"
             >
               Submit
             </Button>
@@ -392,6 +415,7 @@ export function EmployeeLeaveRequestDialog({
               type="button"
               variant="secondary"
               onClick={() => handleClose(false)}
+              className="h-10 rounded-[6px] px-8"
             >
               Exit
             </Button>

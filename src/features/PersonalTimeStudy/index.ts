@@ -14,5 +14,4 @@ export type {
   PersonalTimeStudyRow,
   PersonalTimeStudyFilterFormValues,
   PersonalTimeStudyPagination,
-  PersonalTimeStudyPageState,
 } from "./types"

@@ -26,7 +26,7 @@ export function PersonalTimeStudyTable({
   return (
     <ul className="list-inside list-disc text-sm">
       {rows.map((row) => (
-        <li key={row.id}>{row.label}</li>
+        <li key={row.id}>{row.activityname}</li>
       ))}
     </ul>
   )
