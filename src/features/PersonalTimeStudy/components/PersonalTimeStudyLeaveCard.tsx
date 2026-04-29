@@ -13,6 +13,8 @@ type PersonalTimeStudyLeaveCardProps = {
   open: number
   rejected: number
   className?: string
+  dropdownData?: any[]
+  onOpen?: () => void
 }
 
 export function PersonalTimeStudyLeaveCard({
@@ -21,6 +23,8 @@ export function PersonalTimeStudyLeaveCard({
   open,
   rejected,
   className,
+  dropdownData,
+  onOpen,
 }: PersonalTimeStudyLeaveCardProps) {
   const [leaveDialogOpen, setLeaveDialogOpen] = useState(false)
 
@@ -61,7 +65,10 @@ export function PersonalTimeStudyLeaveCard({
         <Button
           type="button"
           className="mt-auto w-full bg-[#6C5DD3] hover:bg-[#6C5DD3]/90 rounded-[6px]"
-          onClick={() => setLeaveDialogOpen(true)}
+          onClick={() => {
+            onOpen?.()
+            setLeaveDialogOpen(true)
+          }}
         >
           Leave Request
         </Button>
@@ -70,6 +77,7 @@ export function PersonalTimeStudyLeaveCard({
       <EmployeeLeaveRequestDialog
         open={leaveDialogOpen}
         onOpenChange={setLeaveDialogOpen}
+        dropdownData={dropdownData}
         onSave={async () => {
           /* wire save draft API */
         }}

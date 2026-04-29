@@ -48,6 +48,10 @@ export function PersonalTimeStudyPage() {
     queryKey: ["personal-time-study", "month", userId, month, year],
     queryFn: () => apiGetMonthLegend({ userId, month, year }),
     enabled: !!userId && activeTab === "personal",
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
   })
 
   // 3. Fetch Day Detail — only when Personal tab is active
@@ -55,6 +59,10 @@ export function PersonalTimeStudyPage() {
     queryKey: ["personal-time-study", "day", userId, dateStr],
     queryFn: () => apiGetDayDetail({ userId, date: dateStr, month, year }),
     enabled: !!userId && activeTab === "personal",
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
   })
 
   // 4. Fetch user & dropdown data
@@ -62,12 +70,20 @@ export function PersonalTimeStudyPage() {
     queryKey: ["user-details", userId],
     queryFn: () => getUserDetails(userId),
     enabled: !!userId,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
   })
 
   const dropdownQuery = useQuery({
     queryKey: ["personal-time-study", "dropdowns", userId],
     queryFn: () => apiGetUserProgramsAndActivities(userId),
     enabled: !!userId && activeTab === "personal",
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
   })
 
   // 5. Calendar day statuses
@@ -179,6 +195,8 @@ export function PersonalTimeStudyPage() {
                       approved={dayQuery.data?.leaveRecords?.filter(r => r.status.toLowerCase() === "approved").length ?? 0}
                       open={dayQuery.data?.leaveRecords?.filter(r => r.status.toLowerCase() === "open").length ?? 0}
                       rejected={dayQuery.data?.leaveRecords?.filter(r => r.status.toLowerCase() === "rejected").length ?? 0}
+                      dropdownData={dropdownQuery.data}
+                      onOpen={() => dropdownQuery.refetch()}
                     />
                     <PersonalTimeStudyMinutesCard
                       className="min-h-0 sm:col-span-2 lg:col-span-1"
