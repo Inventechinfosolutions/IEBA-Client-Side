@@ -112,12 +112,22 @@ function TimePicker24h({
               }, 50)
             }}
           >
-            <TimePickerDropdown value={value} onChange={onChange} />
+            <TimePickerDropdown value={value} onChange={onChange} onClose={() => setOpen(false)} />
           </PopoverContent>
         </div>
       </Popover>
     </div>
   )
+}
+
+function calculateMinutesDiff(start: string, end: string): number {
+  if (!start || !end) return 0
+  const [startH, startM] = start.split(":").map(Number)
+  const [endH, endM] = end.split(":").map(Number)
+  if (isNaN(startH) || isNaN(startM) || isNaN(endH) || isNaN(endM)) return 0
+  let diff = (endH * 60 + endM) - (startH * 60 + startM)
+  if (diff < 0) diff += 24 * 60 // handle overnight crossing
+  return diff
 }
 
 export function EmployeeLeaveRequestDialog({
@@ -141,6 +151,18 @@ export function EmployeeLeaveRequestDialog({
 
   const resetForm = useCallback(() => {
     form.reset({ entries: [createEmptyRow()] })
+  }, [form])
+
+  const updateDuration = useCallback((index: number, newStart: string, newEnd: string) => {
+    if (newStart && newEnd) {
+      const diff = calculateMinutesDiff(newStart, newEnd)
+      if (diff > 0) {
+        form.setValue(`entries.${index}.totalMinApplied`, String(diff), {
+          shouldValidate: true,
+          shouldDirty: true,
+        })
+      }
+    }
   }, [form])
 
   const handleClose = useCallback(
@@ -245,7 +267,11 @@ export function EmployeeLeaveRequestDialog({
                       <div className="space-y-1">
                         <TimePicker24h
                           value={f.value}
-                          onChange={f.onChange}
+                          onChange={(v) => {
+                            f.onChange(v)
+                            const currentEnd = form.getValues(`entries.${index}.endTime`)
+                            updateDuration(index, v, currentEnd)
+                          }}
                           className="w-full"
                         />
                         {fieldState.error?.message && (
@@ -263,7 +289,11 @@ export function EmployeeLeaveRequestDialog({
                       <div className="space-y-1">
                         <TimePicker24h
                           value={f.value}
-                          onChange={f.onChange}
+                          onChange={(v) => {
+                            f.onChange(v)
+                            const currentStart = form.getValues(`entries.${index}.startTime`)
+                            updateDuration(index, currentStart, v)
+                          }}
                           className="w-full"
                         />
                         {fieldState.error?.message && (
