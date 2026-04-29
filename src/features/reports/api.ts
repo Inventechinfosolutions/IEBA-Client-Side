@@ -114,7 +114,7 @@ export async function apiGetMaaEmployees(activityTypes: string[], departmentId?:
 
 export async function apiGetCostPoolUsers(costPoolIds: string[], userId: string, employeeStatus?: string[]): Promise<ReportSelectOption[]> {
   const params = new URLSearchParams()
-  if (costPoolIds.length > 0) params.append("costPoolIds", costPoolIds.join(","))
+  if (costPoolIds.length > 0) params.append("costpoolIds", costPoolIds.join(","))
   params.append("userId", userId)
   if (employeeStatus && employeeStatus.length > 0) params.append("employeeStatus", employeeStatus.join(","))
 
@@ -258,6 +258,8 @@ export async function apiGetRmtsPayPeriods(
     .map((r: any) => ({
       value: String(r.id || r.payPeriodId || r.value || ""),
       label: r.name || r.label || r.description || String(r.id || ""),
+      startDate: typeof r.startdt === "string" ? r.startdt : (typeof r.startDate === "string" ? r.startDate : undefined),
+      endDate: typeof r.enddt === "string" ? r.enddt : (typeof r.endDate === "string" ? r.endDate : undefined),
     }))
     .filter((o: ReportSelectOption) => o.value.trim() !== "")
 }
