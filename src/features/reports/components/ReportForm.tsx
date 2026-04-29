@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useRef, useCallback, Fragment } from "react"
+import { useMemo, useState, useRef, useCallback, Fragment } from "react"
 import { Controller, useForm, useWatch } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { ChevronDown, Loader2, Search, X } from "lucide-react"
@@ -21,12 +21,12 @@ import { cn } from "@/lib/utils"
 import { 
   useGetCostPoolUsers, 
   useGetMaaEmployees,
-  useGetMaaTcmActivityDepartments,
   useGetListAllPrograms,
   useGetUsersUnderDepartment,
   useGetTimeStudyProgramsForUsers,
   useGetRmtsPayPeriods,
   useGetActivitiesByDepartmentAndUsers,
+  useGetCostPoolsByDepartment,
 } from "../queries/getDynamicFilters"
 import type { ReportsModuleApi } from "../hooks/useReportsModule"
 import { useGetDepartments } from "@/features/department/queries/getDepartments"
@@ -42,7 +42,6 @@ import {
   reportDownloadFileNameSchema,
   reportFormSchema,
 } from "../schemas"
-import { getWeeksForQuarter } from "../utils/weeks"
 import { ReportWeekCalendarPicker } from "./ReportWeekCalendarPicker"
 import type {
   ReportEmployeeMultiSelectProps,
@@ -192,8 +191,6 @@ function ReportEmployeeMultiSelect({
   const [searchQuery, setSearchQuery] = useState("")
 
   const selectedValues = useMemo(() => parseMultiSelectStoredValues(value), [value])
-  const optionValues = useMemo(() => options.map((o) => o.value), [options])
-
   const filteredOptions = useMemo(() => {
     if (!searchQuery.trim()) return options
     const q = searchQuery.toLowerCase()
@@ -529,6 +526,15 @@ function asBlobResponse(payload: unknown): Blob | null {
   return null
 }
 
+function normalizeToDateInputValue(raw?: string): string | undefined {
+  if (!raw) return undefined
+  const iso = /^(\d{4})-(\d{2})-(\d{2})/.exec(raw)
+  if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`
+  const mdy = /^(\d{2})-(\d{2})-(\d{4})$/.exec(raw)
+  if (mdy) return `${mdy[3]}-${mdy[1]}-${mdy[2]}`
+  return undefined
+}
+
 export type ReportFormProps = {
   module: ReportsModuleApi
 }
@@ -582,6 +588,9 @@ export function ReportForm({ module }: ReportFormProps) {
 
   const { actualDateFrom, actualDateTo } = useMemo(() => {
     if (selectMonthBy === "dates") {
+      return { actualDateFrom: dateFrom, actualDateTo: dateTo }
+    }
+    if (selectMonthBy === "scheduled") {
       return { actualDateFrom: dateFrom, actualDateTo: dateTo }
     }
     if (selectMonthBy === "month" && monthVal) {
@@ -644,12 +653,23 @@ export function ReportForm({ module }: ReportFormProps) {
   }, [costPoolIdsRaw])
 
   const isMaaReport = useMemo(() => reportKey.includes("MAA") || reportKey.includes("TCM"), [reportKey])
-  const isCostPoolReport = useMemo(() => reportKey === "DSSRPT3" || reportKey === "DSSRPT4", [reportKey])
+  const shouldShowCostPool = useMemo(
+    () =>
+      isTrue(currentReportItem?.criteria?.showCostPoolSelect) ||
+      isTrue(currentReportItem?.criteria?.showCostPool),
+    [currentReportItem],
+  )
+  const shouldFetchCostPoolUsers = shouldShowCostPool && costPoolIdsArr.length > 0
 
   const { data: maaEmployeesData } = useGetMaaEmployees(activityIdsArr, departmentId, isMaaReport)
-  const { data: costPoolUsersData } = useGetCostPoolUsers(costPoolIdsArr, user?.id ?? "", ["active"], isCostPoolReport)
-  const shouldFetchDepartmentUsers = !!departmentId && !isCostPoolReport
-  const { data: departmentUsersData, isSuccess: isDepartmentUsersLoaded } = useGetUsersUnderDepartment(
+  const { data: costPoolUsersData } = useGetCostPoolUsers(
+    costPoolIdsArr,
+    user?.id ?? "",
+    ["active"],
+    shouldFetchCostPoolUsers,
+  )
+  const shouldFetchDepartmentUsers = !!departmentId && !isMaaReport && !shouldShowCostPool
+  const { data: departmentUsersData } = useGetUsersUnderDepartment(
     departmentId, 
     user?.id ?? "", 
     masterCode,
@@ -667,7 +687,12 @@ export function ReportForm({ module }: ReportFormProps) {
     return m ? `${m[2]}-${m[3]}-${m[1]}` : actualDateTo
   }, [actualDateTo])
 
-  const shouldFetchActivities = currentReportItem?.criteria?.showActivitySelect === true && !!departmentId && employeeIds.length > 0
+  const hasScheduledDateRange = selectMonthBy !== "scheduled" || (!!activityStartDate && !!activityEndDate)
+  const shouldFetchActivities =
+    currentReportItem?.criteria?.showActivitySelect === true &&
+    !!departmentId &&
+    employeeIds.length > 0 &&
+    hasScheduledDateRange
   const { data: activitiesByDepartmentData } = useGetActivitiesByDepartmentAndUsers(
     departmentId,
     employeeIds,
@@ -703,18 +728,23 @@ export function ReportForm({ module }: ReportFormProps) {
 
   const { data: fiscalYearsData } = useListFiscalYears()
   const { data: departmentsData } = useGetDepartments({ status: "active", page: 1, limit: 100 })
-  const { data: maaTcmDepartmentsData } = useGetMaaTcmActivityDepartments(false)
   const { data: allProgramsData } = useGetListAllPrograms(
     currentReportItem?.criteria?.showProgramSelect === true && !shouldFilterProgramsByUser
   )
   const { data: costPoolsData } = useCostPoolListQuery(
     { costpoolStatus: CostPoolStatus.ACTIVE, page: 1, limit: 100 },
+    { enabled: shouldShowCostPool && !departmentId },
+  )
+  const shouldFetchCostPoolsByDepartment = shouldShowCostPool && !!departmentId
+  const { data: costPoolsByDepartmentData } = useGetCostPoolsByDepartment(
+    departmentId,
+    shouldFetchCostPoolsByDepartment,
   )
   const { data: employeesData } = useGetUserModuleRows({ 
     inactiveOnly: false, 
     page: 1, 
     pageSize: 1000 
-  })
+  }, { enabled: !departmentId && !isMaaReport && !shouldShowCostPool })
 
 
   const { data: userSpecificPrograms } = useGetTimeStudyProgramsForUsers(
@@ -763,12 +793,12 @@ export function ReportForm({ module }: ReportFormProps) {
 
     let specificList: ReportSelectOption[] | undefined = undefined
 
-    if (departmentId && departmentUsersData) {
-      specificList = departmentUsersData
-    } else if (reportKey === "DSSRPT3" || reportKey === "DSSRPT4") {
+    if (shouldShowCostPool) {
       if (costPoolUsersData) specificList = costPoolUsersData
     } else if ((reportKey.includes("MAA") || reportKey.includes("TCM")) && maaEmployeesData) {
       specificList = maaEmployeesData
+    } else if (departmentId && departmentUsersData) {
+      specificList = departmentUsersData
     }
 
     // If we have a specific list (like department users), merge it with the general list
@@ -780,7 +810,7 @@ export function ReportForm({ module }: ReportFormProps) {
     }
 
     return allUsers
-  }, [reportKey, maaEmployeesData, costPoolUsersData, departmentUsersData, departmentId, employeesData])
+  }, [reportKey, shouldShowCostPool, maaEmployeesData, costPoolUsersData, departmentUsersData, departmentId, employeesData])
 
   const activityOptions = useMemo(() => {
     if (activitiesByDepartmentData) {
@@ -792,9 +822,12 @@ export function ReportForm({ module }: ReportFormProps) {
   ])
 
   const costPoolOptions = useMemo(() => {
+    if (costPoolsByDepartmentData) {
+      return costPoolsByDepartmentData
+    }
     // costPoolsData from useCostPoolListQuery returns { data, meta }
     return costPoolsData?.data ? mapIdNameRowsToSelectOptions(costPoolsData.data) : []
-  }, [costPoolsData])
+  }, [costPoolsByDepartmentData, costPoolsData])
 
   const programOptions = useMemo(() => {
     const all = allProgramsData ?? []
@@ -896,12 +929,12 @@ type ReportFiltersBodyProps = {
   yearQuarterSelectTrigger: string
   dateInputInRowClassName: string
   setValue: any
-  fiscalYearId: string | number
-  quarter: string | number
+  fiscalYearId: string
+  quarter: string
   selectMonthBy: string
   formState: any
   timeStudyPeriodOptions: any[]
-  departmentId: string | number
+  departmentId?: string
 }
 
 const ReportFiltersBody = ({
@@ -1161,7 +1194,18 @@ const ReportFiltersBody = ({
               render={({ field }) => (
                 <SingleSelectDropdown
                   value={field.value ?? ""}
-                  onChange={field.onChange}
+                  onChange={(val) => {
+                    field.onChange(val)
+                    const selectedPeriod = timeStudyPeriodOptions.find((opt) => opt.value === val)
+                    const nextFrom = normalizeToDateInputValue(selectedPeriod?.startDate)
+                    const nextTo = normalizeToDateInputValue(selectedPeriod?.endDate)
+                    if (nextFrom) {
+                      setValue("dateFrom", nextFrom, { shouldValidate: true })
+                    }
+                    if (nextTo) {
+                      setValue("dateTo", nextTo, { shouldValidate: true })
+                    }
+                  }}
                   onBlur={field.onBlur}
                   options={timeStudyPeriodOptions}
                   placeholder={departmentId && fiscalYearId ? "Select Time Study Period" : "Select fiscal year and department"}
@@ -1367,7 +1411,7 @@ const ReportFiltersBody = ({
             </div>
           )}
 
-          {currentReportItem?.criteria?.showDepartmentSelect !== false && (
+          {(currentReportItem?.criteria as { showDepartmentSelect?: boolean } | undefined)?.showDepartmentSelect !== false && (
             <div className="min-w-0 w-full max-w-[350px] shrink-0">
               <label className={labelClassName} htmlFor="reports-department">
                 Department
@@ -1477,11 +1521,12 @@ const ReportFiltersBody = ({
             <div className="grid min-w-0 grid-cols-1 gap-x-10 gap-y-12 md:grid-cols-2 md:gap-y-0">
               {(() => {
                 const { criteria } = currentReportItem
+                const costPoolFirst = isTrue(criteria.showCostPoolSelect) || isTrue(criteria.showCostPool)
                 const filterBlocks = [
                   {
                     id: "employee",
                     show: isTrue(criteria.multipleEmployees),
-                    order: 1,
+                    order: costPoolFirst ? 2 : 1,
                     render: () => (
                       <ReportSecondaryPickBlock
                         control={control}
@@ -1537,8 +1582,8 @@ const ReportFiltersBody = ({
                   },
                   {
                     id: "costPool",
-                    show: isTrue(criteria.showCostPoolSelect),
-                    order: 4,
+                    show: isTrue(criteria.showCostPoolSelect) || isTrue(criteria.showCostPool),
+                    order: costPoolFirst ? 1 : 4,
                     render: () => (
                       <ReportSecondaryPickBlock
                         control={control}
