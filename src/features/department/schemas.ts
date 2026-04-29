@@ -25,6 +25,9 @@ export const departmentSettingsSchema = z.object({
   removeSupportingDocument: z.boolean(),
   removeAutoFillEndTime: z.boolean(),
   removeDescriptionActivityNote: z.boolean(),
+  removeDescriptionActivityNoteAnchor: z.boolean(),
+  removeDescriptionActivityNoteMultiCode: z.boolean(),
+  moveSaveSubmitToTop: z.boolean(),
 })
 
 export const departmentUpsertSchema = z.object({
@@ -83,6 +86,9 @@ export const DEPARTMENT_FORM_DEFAULT_VALUES: z.infer<typeof departmentUpsertSche
     removeSupportingDocument: false,
     removeAutoFillEndTime: false,
     removeDescriptionActivityNote: false,
+    removeDescriptionActivityNoteAnchor: false,
+    removeDescriptionActivityNoteMultiCode: false,
+    moveSaveSubmitToTop: false,
   },
 }
 
