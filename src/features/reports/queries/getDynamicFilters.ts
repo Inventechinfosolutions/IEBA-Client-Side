@@ -48,14 +48,17 @@ export function useGetListAllPrograms(enabled = true) {
   })
 }
 
-export function useGetUsersUnderDepartment(departmentId: string | undefined, userId: string | undefined, masterCode?: string, enabled = true) {
+export function useGetUsersUnderDepartment(departmentId: string | undefined, userId: string | undefined, masterCode?: string, userStatus: string[] = ["active"], enabled = true) {
+  const statusStr = userStatus.length ? userStatus.join(",") : "active";
   return useQuery({
-    queryKey: [...reportKeys.all, "users-under-department", { departmentId, userId, masterCode }],
-    queryFn: () => apiGetUsersUnderDepartment(departmentId!, userId!, masterCode),
-    enabled: enabled && !!departmentId && !!userId,
-    staleTime: 5 * 60_000,
+    queryKey: [...reportKeys.all, "users-under-department", { departmentId, userId, masterCode, statusStr }],
+    queryFn: () => apiGetUsersUnderDepartment(departmentId!, userId || "", masterCode, statusStr),
+    enabled: enabled && !!departmentId,
+    staleTime: 10_000, // Reduced staleTime for more consistent updates
   })
 }
+
+
 /** Fetch activities filtered by department + selected employees + date range. */
 export function useGetActivitiesByDepartmentAndUsers(
   departmentId: string | undefined,

@@ -74,9 +74,8 @@ function buildBackendPayload(body: ReportRunPayload, overrideDownloadType?: stri
 export async function apiPostDownloadReport(body: ReportRunPayload, options?: { type?: string; signal?: AbortSignal }): Promise<any> {
   const downloadType = options?.type || body.downloadType
   const payload = buildBackendPayload(body, downloadType)
-  return api.post("/report/data", payload, {
+  return api.post("/report/generate", payload, {
     signal: options?.signal,
-    responseType: "blob",
     headers: {
       Accept: "application/pdf, application/octet-stream, */*",
     },
@@ -89,7 +88,6 @@ export async function apiPostViewReport(body: ReportRunPayload, options?: { sign
   const payload = buildBackendPayload(body, "PDF")
   return api.post("/report/generate", payload, {
     signal: options?.signal,
-    responseType: "blob",
     headers: {
       Accept: "application/pdf, application/octet-stream, */*",
     },
@@ -113,18 +111,22 @@ export async function apiGetMaaEmployees(activityTypes: string[], departmentId?:
 }
 
 export async function apiGetCostPoolUsers(costPoolIds: string[], userId: string, employeeStatus?: string[]): Promise<ReportSelectOption[]> {
-  const params = new URLSearchParams()
-  if (costPoolIds.length > 0) params.append("costpoolIds", costPoolIds.join(","))
-  params.append("userId", userId)
-  if (employeeStatus && employeeStatus.length > 0) params.append("employeeStatus", employeeStatus.join(","))
-
-  const data = await api.get<any>(`/report/cost-pools/users?${params.toString()}`)
-  const list = Array.isArray(data) ? data : Array.isArray(data.data) ? data.data : []
-
+  // Build query string manually so commas stay raw (not percent‑encoded).
+  // Each ID/value is individually encoded, then joined with a literal comma.
+  const encodedCostPoolIds = costPoolIds.map(encodeURIComponent).join(',');
+  const encodedUserId = encodeURIComponent(userId);
+  const parts = [`costpoolIds=${encodedCostPoolIds}`, `userId=${encodedUserId}`];
+  if (employeeStatus && employeeStatus.length > 0) {
+    const encodedStatus = employeeStatus.map(encodeURIComponent).join(',');
+    parts.push(`employeeStatus=${encodedStatus}`);
+  }
+  const query = parts.join('&');
+  const data = await api.get<any>(`/report/cost-pools/users?${query}`);
+  const list = Array.isArray(data) ? data : Array.isArray(data.data) ? data.data : [];
   return list.map((r: any) => ({
     value: String(r.id),
     label: r.name || r.label,
-  }))
+  }));
 }
 
 export async function apiGetMaaTcmActivityDepartments(): Promise<ReportSelectOption[]> {
@@ -168,15 +170,16 @@ export async function apiGetListAllPrograms(): Promise<ReportSelectOption[]> {
   }))
 }
 
-export async function apiGetUsersUnderDepartment(departmentId: string, currentUserId: string, masterCode?: string): Promise<ReportSelectOption[]> {
-  const params = new URLSearchParams()
-  params.append("type", "getusersunderdepartmentbystatus")
-  params.append("departmentId", departmentId)
-  params.append("departmentStatus", "active")
-  params.append("userId", currentUserId)
-  if (masterCode && masterCode !== "BOTH") params.append("masterCode", masterCode)
+export async function apiGetUsersUnderDepartment(departmentId: string, currentUserId: string, masterCode?: string, departmentStatus = "active"): Promise<ReportSelectOption[]> {
+  const parts = [
+    "type=getusersunderdepartmentbystatus",
+    `departmentId=${encodeURIComponent(departmentId)}`,
+    `departmentStatus=${departmentStatus.split(',').map(encodeURIComponent).join(',')}`,
+    `userId=${encodeURIComponent(currentUserId)}`
+  ];
+  if (masterCode && masterCode !== "BOTH") parts.push(`masterCode=${encodeURIComponent(masterCode)}`);
 
-  const data = await api.get<any>(`/users?${params.toString()}`)
+  const data = await api.get<any>(`/users?${parts.join('&')}`)
   const list = Array.isArray(data) ? data : Array.isArray(data.data) ? data.data : []
 
   return list.map((r: any) => ({
@@ -204,16 +207,16 @@ export async function apiGetActivitiesByDepartmentAndUsers(
   activityStatus = "active",
   masterCode?: string,
 ): Promise<ReportSelectOption[]> {
-  const search = new URLSearchParams()
-  search.set("userId", userIds.join(","))
-  if (startDate) search.set("startDate", startDate)
-  if (endDate) search.set("endDate", endDate)
-  search.set("activityStatus", activityStatus)
-  search.set("departmentId", departmentId)
-  if (masterCode && masterCode !== "BOTH") search.set("masterCode", masterCode)
+  const encodedUserIds = userIds.map(encodeURIComponent).join(',');
+  const parts = [`userIds=${encodedUserIds}`];
+  if (startDate) parts.push(`startDate=${encodeURIComponent(startDate)}`);
+  if (endDate) parts.push(`endDate=${encodeURIComponent(endDate)}`);
+  parts.push(`activityStatus=${activityStatus.split(',').map(encodeURIComponent).join(',')}`);
+  if (departmentId) parts.push(`departmentId=${encodeURIComponent(departmentId)}`);
+  if (masterCode && masterCode !== "BOTH") parts.push(`masterCode=${encodeURIComponent(masterCode)}`);
 
-  // Call the specific endpoint you provided
-  const raw = await api.get<any>(`/activitycode/activitydepartment/activitydepartmentlist?${search.toString()}`)
+  // Call the new records-based lookup endpoint on the report service
+  const raw = await api.get<any>(`/report/activity-departments/by-records?${parts.join('&')}`)
   const list = unwrapListData(raw)
 
   return list
