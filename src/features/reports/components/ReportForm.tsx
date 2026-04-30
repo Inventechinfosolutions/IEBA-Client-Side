@@ -1,4 +1,4 @@
-import React, { useMemo, useState, Fragment ,useRef, useCallback} from "react"
+import { useMemo, useState, Fragment ,useRef, useCallback} from "react"
 import { useLocation } from "react-router-dom"
 import { Controller, useForm, useWatch } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -34,7 +34,6 @@ import { useGetDepartments } from "@/features/department/queries/getDepartments"
 import { useCostPoolListQuery } from "@/features/cost-pool/queries/getCostPools"
 
 import { useListFiscalYears } from "@/features/settings/queries/listFiscalYears"
-import { useGetUserModuleRows } from "@/features/user/queries/getUsers"
 import { CostPoolStatus } from "@/features/cost-pool/enums/cost-pool.enum"
 import {
   REPORT_DOWNLOAD_TYPES,
@@ -769,11 +768,6 @@ export function ReportForm({ module }: ReportFormProps) {
     departmentId,
     shouldFetchCostPoolsByDepartment,
   )
-  const { data: employeesData } = useGetUserModuleRows({ 
-    inactiveOnly: false, 
-    page: 1, 
-    pageSize: 1000 
-  }, { enabled: !departmentId && !isMaaReport && !shouldShowCostPool })
 
 
   const { data: userSpecificPrograms } = useGetTimeStudyProgramsForUsers(

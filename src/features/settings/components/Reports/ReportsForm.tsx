@@ -114,7 +114,6 @@ export function ReportsForm() {
                 disabled={isActivitiesFieldDisabled}
                 isLoading={activityOptionsPending}
                 maxVisibleItems={2}
-                emptyListMessage="No activity codes available"
                 options={activityOptions.map((a) => ({
                   value: a.code,
                   label: `${a.code} ${a.label}`,

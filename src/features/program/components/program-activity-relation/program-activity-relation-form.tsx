@@ -251,7 +251,6 @@ export function ProgramActivityRelationForm({ form, departmentIds }: ProgramActi
             onBlur={() => {}}
             options={sortOptions.map((o) => ({ value: o, label: o }))}
             placeholder="Sorted dropdown sample"
-            emptyListMessage="No sort options"
             className={cn(
               "min-h-[41px]! h-[41px] w-full rounded-[10px]! border-[#d0d5df]! px-3! pr-9! text-[11px]! font-normal!",
               "focus-within:border-[#6C5DD3]! focus-within:ring-1! focus-within:ring-[#6C5DD333]!",

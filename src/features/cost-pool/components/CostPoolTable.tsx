@@ -66,7 +66,6 @@ import type {
   CostPoolUpsertFormValues,
 } from "../types"
 
-const PAGE_SIZES = [10, 20, 30, 50] as const
 
 function CostPoolCreateDialogContent({
   onClose,

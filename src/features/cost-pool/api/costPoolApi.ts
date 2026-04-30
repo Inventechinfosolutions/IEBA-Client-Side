@@ -13,7 +13,6 @@ import type {
   CostPoolUpsertFormValues,
   CreateCostPoolRequestDto,
   CreateCostPoolResponseDto,
-  UpdateCostPoolRequestDto,
 } from "../types"
 
 function unwrapCostPoolListPayload(

@@ -132,12 +132,6 @@ export function CostPoolAddPage({
     return assignedUsers.filter((u) => u.displayName.toLowerCase().includes(q))
   }, [assignedUsers, assignedUserSearch])
 
-  const allUnassignedUsersSelected =
-    filteredUnassignedUsers.length > 0 &&
-    filteredUnassignedUsers.every((u) => selectedUnassignedUserIds.includes(u.userId))
-  const allAssignedUsersSelected =
-    filteredAssignedUsers.length > 0 &&
-    filteredAssignedUsers.every((u) => selectedAssignedUserIds.includes(u.userId))
 
   const moveToAssigned = () => {
     if (selectedUnassignedIds.length === 0) return
