@@ -109,6 +109,12 @@ type PersonalTimeStudyEntryFormProps = {
   onSave?: (parents: any[]) => void
   onSubmit?: (parents: any[]) => void
   onDelete?: (id: number) => void
+  userId?: string
+  username?: string
+  readonly?: boolean
+  allocatedTotal?: number
+  actualTotal?: number
+  balanceTotal?: number
 }
 
 function TimePicker24h({
@@ -184,31 +190,39 @@ function SupportingDocField({
         "flex h-10 w-full items-center rounded-[6px] border border-input text-[11px] overflow-hidden",
         disabled ? "bg-[#F2F4F7] cursor-not-allowed opacity-70" : "bg-background"
       )}>
-        <button type="button" disabled={disabled} className={cn("flex flex-1 min-w-0 items-center px-2 overflow-hidden", disabled && "cursor-not-allowed")} onClick={() => !disabled && docs.length > 0 && setOpen((v) => !v)}>
+        <button type="button" className="flex flex-1 min-w-0 items-center px-2 overflow-hidden" onClick={() => setOpen((v) => !v)}>
           <span className="truncate text-foreground">{pillLabel}</span>
         </button>
-        {docs.length > 0 && (
-          <button type="button" disabled={disabled} onClick={() => !disabled && setOpen((v) => !v)} className={cn("shrink-0 w-12 h-full text-muted-foreground hover:text-foreground flex items-center justify-center", disabled && "cursor-not-allowed")}>
-            <ChevronDown className={cn("size-5 transition-transform", open && "rotate-180")} />
+        <button type="button" onClick={() => setOpen((v) => !v)} className="shrink-0 w-12 h-full text-muted-foreground hover:text-foreground flex items-center justify-center">
+          <ChevronDown className={cn("size-5 transition-transform", open && "rotate-180")} />
+        </button>
+        {!disabled && (
+          <button type="button" disabled={uploading} onClick={() => fileRef.current?.click()} className={cn("shrink-0 w-10 border-l border-input h-full text-[#6C5DD3] hover:bg-accent flex items-center justify-center", uploading && "opacity-40 cursor-not-allowed")}>
+            <Plus className="size-5" />
           </button>
         )}
-        <button type="button" disabled={disabled || uploading} onClick={() => !disabled && fileRef.current?.click()} className={cn("shrink-0 w-10 border-l border-input h-full text-[#6C5DD3] hover:bg-accent flex items-center justify-center", (disabled || uploading) && "opacity-40 cursor-not-allowed")}>
-          <Plus className="size-5" />
-        </button>
       </div>
-      {open && docs.length > 0 && (
+      {open && (
         <div className="absolute left-0 top-full z-50 mt-1 w-[220px] rounded-md border border-border bg-white shadow-lg py-1">
-          {docs.map((doc) => (
-            <div key={doc.name} className="flex items-center gap-2 px-3 py-1.5">
-              <span className="flex-1 truncate text-[11px] text-foreground">{doc.name}</span>
-              <a href={doc.url} target="_blank" rel="noreferrer" className="shrink-0 text-[#6C5DD3] hover:opacity-70" onClick={() => setOpen(false)}>
-                <Eye className="size-3.5" />
-              </a>
-              <button type="button" disabled={disabled} className="shrink-0 text-destructive hover:opacity-70 disabled:opacity-30" onClick={() => { onDelete(parentId, doc.name); if (docs.length <= 1) setOpen(false); }}>
-                <Trash2 className="size-3.5" />
-              </button>
+          {docs.length === 0 ? (
+            <div className="px-3 py-2 text-[11px] text-muted-foreground italic">
+              No documents uploaded
             </div>
-          ))}
+          ) : (
+            docs.map((doc) => (
+              <div key={doc.name} className="flex items-center gap-2 px-3 py-1.5">
+                <span className="flex-1 truncate text-[11px] text-foreground">{doc.name}</span>
+                <a href={doc.url} target="_blank" rel="noreferrer" className="shrink-0 text-[#6C5DD3] hover:opacity-70" onClick={() => setOpen(false)}>
+                  <Eye className="size-3.5" />
+                </a>
+                {!disabled && (
+                  <button type="button" className="shrink-0 text-destructive hover:opacity-70" onClick={() => { onDelete(parentId, doc.name); if (docs.length <= 1) setOpen(false); }}>
+                    <Trash2 className="size-3.5" />
+                  </button>
+                )}
+              </div>
+            ))
+          )}
         </div>
       )}
     </div>
@@ -225,10 +239,16 @@ export function PersonalTimeStudyEntryForm({
   onSave,
   onSubmit,
   onDelete,
+  userId: propsUserId,
+  username: propsUsername,
+  readonly = false,
+  allocatedTotal,
+  actualTotal,
+  balanceTotal,
 }: PersonalTimeStudyEntryFormProps) {
   const { user } = useAuth()
-  const userId = user?.id || ""
-  const username = user?.name || ""
+  const userId = propsUserId || user?.id || ""
+  const username = propsUsername || user?.name || ""
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false)
   const [parents, setParents] = useState<TimeEntryParentRow[]>([createParent()])
   const [prevInitialRecords, setPrevInitialRecords] = useState<any[] | undefined>(undefined)
@@ -289,12 +309,13 @@ export function PersonalTimeStudyEntryForm({
   }
 
   const isLocked = useMemo(() => {
+    if (readonly) return true
     if (!initialRecords) return false
     return initialRecords.some(rec => 
       rec.date?.split("T")[0] === dateStr &&
       ["submitted", "approved"].includes(rec.status?.toLowerCase())
     )
-  }, [initialRecords, dateStr])
+  }, [initialRecords, dateStr, readonly])
 
   const [uploadingId, setUploadingId] = useState<string | null>(null)
 
@@ -479,8 +500,22 @@ export function PersonalTimeStudyEntryForm({
 
   return (
     <section className={cn("w-full rounded-[6px] border-0 bg-white p-4 shadow-[0_4px_16px_rgba(16,24,40,0.12)]", className)}>
-      <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-[14px] font-bold text-[#6C5DD3]">Time entries</h2>
+      {/* Header with optional totals */}
+      {(allocatedTotal !== undefined || actualTotal !== undefined || balanceTotal !== undefined) && (
+        <div className="mb-4 flex flex-wrap items-center justify-end gap-6 border-b border-gray-100 pb-3 text-sm">
+          <span className="text-gray-500">
+            Allocated TS Minutes: <span className="font-semibold text-gray-900">{allocatedTotal ?? 0}</span>
+          </span>
+          <span className="text-gray-500">
+            Actual Minutes: <span className="font-semibold text-gray-900">{actualTotal ?? 0}</span>
+          </span>
+          <span className="text-gray-500">
+            Balance: <span className="font-semibold text-gray-900">{balanceTotal ?? 0}</span>
+          </span>
+        </div>
+      )}
+
+      <div className="mb-4 flex items-center justify-end">
         <Button 
           size="icon" 
           disabled={isLocked} 
@@ -623,22 +658,24 @@ export function PersonalTimeStudyEntryForm({
         })}
       </div>
 
-      <div className="mt-4 flex justify-end gap-2">
-        <Button 
-          disabled={isLocked} 
-          className={cn("h-10 px-8 bg-[#6C5DD3] hover:bg-[#5B4DBF]", isLocked && "cursor-not-allowed")} 
-          onClick={handleSave}
-        >
-          Save
-        </Button>
-        <Button 
-          disabled={isLocked} 
-          className={cn("h-10 px-8 bg-green-600 hover:bg-green-700 text-white", isLocked && "cursor-not-allowed")} 
-          onClick={() => setShowSubmitConfirm(true)}
-        >
-          Submit
-        </Button>
-      </div>
+      {!readonly && (
+        <div className="mt-4 flex justify-end gap-2">
+          <Button 
+            disabled={isLocked} 
+            className={cn("h-10 px-8 bg-[#6C5DD3] hover:bg-[#5B4DBF]", isLocked && "cursor-not-allowed")} 
+            onClick={handleSave}
+          >
+            Save
+          </Button>
+          <Button 
+            disabled={isLocked} 
+            className={cn("h-10 px-8 bg-green-600 hover:bg-green-700 text-white", isLocked && "cursor-not-allowed")} 
+            onClick={() => setShowSubmitConfirm(true)}
+          >
+            Submit
+          </Button>
+        </div>
+      )}
 
       {showSubmitConfirm && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 px-4">

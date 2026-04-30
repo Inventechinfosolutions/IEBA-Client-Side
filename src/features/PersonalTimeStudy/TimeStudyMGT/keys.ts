@@ -12,4 +12,12 @@ export const timeStudyMGTKeys = {
   /** Minute summary for a specific user + month + year */
   minutesSummary: (userId: string, month: number, year: number) =>
     [...timeStudyMGTKeys.all, "minutesSummary", userId, month, year] as const,
+
+  /** Day detail for a specific user + date */
+  dayDetail: (userId: string, date: string) =>
+    [...timeStudyMGTKeys.all, "dayDetail", userId, date] as const,
+
+  /** Dropdowns for a specific user */
+  dropdowns: (userId: string) =>
+    [...timeStudyMGTKeys.all, "dropdowns", userId] as const,
 }

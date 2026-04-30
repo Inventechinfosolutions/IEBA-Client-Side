@@ -9,25 +9,10 @@
  * AppCalender internally). The week summary columns are rendered in a
  * separate table column that aligns row-by-row with the week rows.
  */
-import {
-  format,
-  startOfMonth,
-  endOfMonth,
-  eachDayOfInterval,
-  getDay,
-  addMonths,
-  subMonths,
-} from "date-fns"
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react"
 import type { MgtDayStatusMap } from "../types"
 
-const STATUS_COLOR_MAP: Record<string, string> = {
-  approved:   "#6B7280",
-  lesshours:  "#F97316",
-  morehours:  "#EF4444",
-  equalhours: "#22C55E",
-  submitted:  "#3B82F6",
-}
+
 
 type MgtCalendarCardProps = {
   currentDate: Date
@@ -46,18 +31,27 @@ export function MgtCalendarCard({
   onApproveWeek,
   onRejectWeek,
 }: MgtCalendarCardProps) {
-  const monthStart = startOfMonth(currentDate)
-  const monthEnd   = endOfMonth(currentDate)
-  const days       = eachDayOfInterval({ start: monthStart, end: monthEnd })
-  const startPad   = (getDay(monthStart) + 6) % 7 // Mon = 0
+  const year = currentDate.getUTCFullYear()
+  const month = currentDate.getUTCMonth()
+  
+  const monthStart = new Date(Date.UTC(year, month, 1))
+  const monthEnd   = new Date(Date.UTC(year, month + 1, 0))
+  
+  const days: Date[] = []
+  const curDay = new Date(monthStart)
+  while (curDay <= monthEnd) {
+    days.push(new Date(curDay))
+    curDay.setUTCDate(curDay.getUTCDate() + 1)
+  }
 
+  const startPad   = (monthStart.getUTCDay() + 6) % 7 // Mon = 0
   const cells: (Date | null)[] = [...Array(startPad).fill(null), ...days]
   while (cells.length % 7 !== 0) cells.push(null)
 
   const weeks: (Date | null)[][] = []
   for (let i = 0; i < cells.length; i += 7) weeks.push(cells.slice(i, i + 7))
 
-  const todayStr = format(new Date(), "yyyy-MM-dd")
+  const todayStr = new Date().toISOString().split("T")[0]
 
   return (
     <div className="rounded-[6px] bg-white p-4 shadow-[0_4px_16px_rgba(16,24,40,0.12)]">
@@ -65,30 +59,46 @@ export function MgtCalendarCard({
       <div className="mb-3 flex items-center justify-between">
         <div className="flex gap-1">
           <button
-            onClick={() => onMonthChange(subMonths(currentDate, 12))}
+            onClick={() => {
+              const d = new Date(currentDate)
+              d.setUTCFullYear(d.getUTCFullYear() - 1)
+              onMonthChange(d)
+            }}
             className="rounded p-1 text-[#6C5DD3] hover:bg-purple-50"
           >
             <ChevronsLeft className="h-4 w-4" />
           </button>
           <button
-            onClick={() => onMonthChange(subMonths(currentDate, 1))}
+            onClick={() => {
+              const d = new Date(currentDate)
+              d.setUTCMonth(d.getUTCMonth() - 1)
+              onMonthChange(d)
+            }}
             className="rounded p-1 text-[#6C5DD3] hover:bg-purple-50"
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
         </div>
         <span className="text-sm font-semibold text-[#6C5DD3]">
-          {format(currentDate, "MMMM yyyy")}
+          {currentDate.toLocaleString("en-US", { month: "long", year: "numeric", timeZone: "UTC" })}
         </span>
         <div className="flex gap-1">
           <button
-            onClick={() => onMonthChange(addMonths(currentDate, 1))}
+            onClick={() => {
+              const d = new Date(currentDate)
+              d.setUTCMonth(d.getUTCMonth() + 1)
+              onMonthChange(d)
+            }}
             className="rounded p-1 text-[#6C5DD3] hover:bg-purple-50"
           >
             <ChevronRight className="h-4 w-4" />
           </button>
           <button
-            onClick={() => onMonthChange(addMonths(currentDate, 12))}
+            onClick={() => {
+              const d = new Date(currentDate)
+              d.setUTCFullYear(d.getUTCFullYear() + 1)
+              onMonthChange(d)
+            }}
             className="rounded p-1 text-[#6C5DD3] hover:bg-purple-50"
           >
             <ChevronsRight className="h-4 w-4" />
@@ -117,11 +127,11 @@ export function MgtCalendarCard({
               return (
                 <tr key={wi} className="border-b border-gray-100">
                   {week.map((d, di) => {
-                    const dateStr  = d ? format(d, "yyyy-MM-dd") : null
+                    const dateStr  = d ? d.toISOString().split("T")[0] : null
                     const isToday  = dateStr === todayStr
-                    const isOtherMonth = d && d.getMonth() !== currentDate.getMonth()
+                    const isOtherMonth = d && d.getUTCMonth() !== currentDate.getUTCMonth()
                     const ds       = dateStr ? dayStatuses[dateStr] : undefined
-                    const dotColor = ds?.color ?? (ds?.status ? STATUS_COLOR_MAP[ds.status.toLowerCase()] : undefined)
+                    const dotColor = ds?.color
 
                     return (
                       <td key={di} className="py-2 text-center">
@@ -134,7 +144,7 @@ export function MgtCalendarCard({
                                 ? "text-gray-300"
                                 : "text-gray-700"
                             }`}>
-                              {d.getDate()}
+                              {d.getUTCDate()}
                             </span>
                             {dotColor && (
                               <span

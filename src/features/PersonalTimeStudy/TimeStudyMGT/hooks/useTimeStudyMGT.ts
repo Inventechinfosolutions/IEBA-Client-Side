@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react"
 import { useGetMGTEmployeeList } from "../queries/useGetMGTEmployeeList"
 import { useGetMGTMonthLegend } from "../queries/useGetMGTMonthLegend"
+import { useGetMGTDayDetail } from "../queries/useGetMGTDayDetail"
+import { useGetMGTDropdowns } from "../queries/useGetMGTDropdowns"
 import { usePermissions } from "@/hooks/usePermissions"
 import type { MgtEmployeeRow, MgtDayStatusMap, MgtWeekSummary } from "../types"
 
@@ -12,10 +14,7 @@ function getWeekStartKey(dateStr: string): string {
   const day = date.getUTCDay()
   const diff = date.getUTCDate() - day
   const sunday = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), diff))
-  const y = sunday.getUTCFullYear()
-  const m = String(sunday.getUTCMonth() + 1).padStart(2, '0')
-  const d = String(sunday.getUTCDate()).padStart(2, '0')
-  return `${y}-${m}-${d}`
+  return sunday.toISOString().split('T')[0]
 }
 
 /**
@@ -26,10 +25,17 @@ export function useTimeStudyMGT() {
   const [search, setSearch]                           = useState("")
   const [selectedUserId, setSelectedUserId]           = useState<string | null>(null)
   const [selectedEmployee, setSelectedEmployee]       = useState<MgtEmployeeRow | null>(null)
-  const [currentDate, setCurrentDate]                 = useState(new Date())
+  const [currentDate, setCurrentDate]                 = useState(() => {
+    const now = new Date()
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  })
+  const [selectedDate, setSelectedDate]               = useState<Date | null>(() => {
+    const now = new Date()
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  })
 
-  const month = currentDate.getMonth() + 1
-  const year  = currentDate.getFullYear()
+  const month = currentDate.getUTCMonth() + 1
+  const year  = currentDate.getUTCFullYear()
 
   const { isSuperAdmin, assignedDepartmentIds } = usePermissions()
 
@@ -37,6 +43,12 @@ export function useTimeStudyMGT() {
   const deptFilter = !isSuperAdmin && assignedDepartmentIds.length > 0 ? assignedDepartmentIds.join(",") : undefined
   const employeeListQuery = useGetMGTEmployeeList(search || undefined, deptFilter)
   const monthLegendQuery  = useGetMGTMonthLegend(selectedUserId, month, year)
+
+  const dateStr = selectedDate ? 
+    `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}` 
+    : null
+  const dayDetailQuery = useGetMGTDayDetail(selectedUserId, dateStr, month, year)
+  const dropdownQuery = useGetMGTDropdowns(selectedUserId)
 
   // ── Derived data ──────────────────────────────────────────────────────────
   const employees = employeeListQuery.data ?? []
@@ -51,7 +63,7 @@ export function useTimeStudyMGT() {
     })
   }, [employees, search])
 
-  const { dayStatuses, weekSummaries, allocatedTotal, actualTotal, balanceTotal } = useMemo(() => {
+  const { dayStatuses, weekSummaries, allocatedTotal, actualTotal, balanceTotal, legend } = useMemo(() => {
     const dayMap: MgtDayStatusMap = {}
     const weekMap: Record<string, MgtWeekSummary & { days: string[] }> = {}
     let allocatedTotal = 0
@@ -61,17 +73,15 @@ export function useTimeStudyMGT() {
     const rawData = monthLegendQuery.data?.data ?? []
 
     for (const d of rawData) {
+      const s = String(d.status).toLowerCase()
+      const cellColor = (s === "opened" || s === "draft") ? undefined : (d.color ?? undefined)
       dayMap[d.date] = {
         status: d.status,
-        color: d.color ?? undefined,
+        color: cellColor,
         allocatedMinutes: d.allocatedMinutes,
         consumedMinutes: d.consumedMinutes,
         balanceMinutes: d.balanceMinutes,
       }
-
-      allocatedTotal += d.allocatedMinutes ?? 0
-      actualTotal += d.consumedMinutes ?? 0
-      balanceTotal += d.balanceMinutes ?? 0
 
       // Roll up to week summary
       const weekKey = getWeekStartKey(d.date)
@@ -82,32 +92,80 @@ export function useTimeStudyMGT() {
       weekMap[weekKey].days.push(d.status)
     }
 
-    // Determine week status (if any day is submitted, week is submitted; if any approved, etc.)
+    // Compute totals: If a date is selected, show only that day. Otherwise, show month total.
+    const selectedDateKey = selectedDate ? 
+      `${selectedDate.getUTCFullYear()}-${String(selectedDate.getUTCMonth() + 1).padStart(2, '0')}-${String(selectedDate.getUTCDate()).padStart(2, '0')}` 
+      : null
+
+    if (selectedDateKey) {
+      const dayData = rawData.find((d: any) => d.date.split("T")[0] === selectedDateKey)
+      allocatedTotal = dayData?.allocatedMinutes || 0
+      actualTotal = dayData?.consumedMinutes || 0
+    } else {
+      rawData.forEach((d: any) => {
+        allocatedTotal += d.allocatedMinutes || 0
+        actualTotal += d.consumedMinutes || 0
+      })
+    }
+    balanceTotal = allocatedTotal - actualTotal
+
+    // Determine week status
     const finalWeekSummaries: Record<string, MgtWeekSummary> = {}
     for (const [key, val] of Object.entries(weekMap)) {
       let finalStatus = "notsubmitted"
       const lowerDays = val.days.map(d => String(d).toLowerCase())
       
-      if (lowerDays.includes("approved")) finalStatus = "approved"
-      else if (lowerDays.includes("rejected")) finalStatus = "rejected"
-      else if (
-        lowerDays.some(d => d.startsWith("submitted")) || 
-        lowerDays.includes("target met") || 
-        lowerDays.includes("equal hours") ||
-        val.totalMinutes > 0
-      ) {
+      const hasSubmitted = lowerDays.some(d => 
+        d.startsWith("submitted") || 
+        d.includes("target met") || 
+        d.includes("equal hours") ||
+        d === "less_hours" ||
+        d === "more_hours" ||
+        d === "equal_hours" ||
+        d === "submitted"
+      )
+
+      if (hasSubmitted) {
         finalStatus = "submitted"
+      } else if (lowerDays.includes("rejected")) {
+        finalStatus = "rejected"
+      } else if (lowerDays.length > 0 && lowerDays.every(d => d === "approved" || d === "holiday" || d === "weekend")) {
+        finalStatus = "approved"
       }
       
       finalWeekSummaries[key] = { totalMinutes: val.totalMinutes, status: finalStatus }
     }
+
+
+    // Extract dynamic legend from data
+    const statusMap = new Map<string, string>()
+    rawData.forEach((d: any) => {
+      if (d.status && d.color) {
+        const s = String(d.status).toLowerCase()
+        if (!statusMap.has(s)) {
+          statusMap.set(s, d.color)
+        }
+      }
+    })
+
+    const dynamicLegend = Array.from(statusMap.entries()).map(([status, color]) => {
+      // Map raw status to friendly labels if needed, or just capitalize
+      let label = status.charAt(0).toUpperCase() + status.slice(1).replace(/_/g, " ")
+      if (status === "approved_time_entry") label = "Approved Time Entry"
+      if (status === "less_hours" || status === "submittedless") label = "Less Hours"
+      if (status === "more_hours" || status === "submittedexceed") label = "More Hours"
+      if (status === "equal_hours" || status === "submitted") label = "Equal Hours"
+      
+      return { status, color, label }
+    })
 
     return {
       dayStatuses: dayMap,
       weekSummaries: finalWeekSummaries,
       allocatedTotal,
       actualTotal,
-      balanceTotal
+      balanceTotal,
+      legend: dynamicLegend
     }
   }, [monthLegendQuery.data])
 
@@ -115,11 +173,22 @@ export function useTimeStudyMGT() {
   function selectEmployee(employee: MgtEmployeeRow) {
     setSelectedUserId(employee.id)
     setSelectedEmployee(employee)
+    
+    // Reset selection to today when switching users
+    const now = new Date()
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    setSelectedDate(today)
+    setCurrentDate(today)
   }
 
   function clearSelection() {
     setSelectedUserId(null)
     setSelectedEmployee(null)
+    
+    const now = new Date()
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    setSelectedDate(today)
+    setCurrentDate(today)
   }
 
   return {
@@ -130,6 +199,8 @@ export function useTimeStudyMGT() {
     selectedEmployee,
     currentDate,
     setCurrentDate,
+    selectedDate,
+    setSelectedDate,
     month,
     year,
 
@@ -140,10 +211,14 @@ export function useTimeStudyMGT() {
     allocatedTotal,
     actualTotal,
     balanceTotal,
+    legend,
+    dayDetail: dayDetailQuery.data,
+    dropdownData: dropdownQuery.data,
 
     // Loading states
     isEmployeeListLoading: employeeListQuery.isLoading,
     isMonthLegendLoading:  monthLegendQuery.isLoading,
+    isDayDetailLoading:    dayDetailQuery.isLoading,
 
     // Actions
     selectEmployee,

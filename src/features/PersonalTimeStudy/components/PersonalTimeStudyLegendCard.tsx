@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
+import { Check } from "lucide-react"
 
 import { PERSONAL_TIME_STUDY_LEGEND } from "../constants"
 
@@ -38,7 +39,7 @@ export function PersonalTimeStudyLegendCard({
                 className="flex size-5 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold text-white"
                 style={{ backgroundColor: PERSONAL_TIME_STUDY_LEGEND[key] }}
               >
-                1
+                <Check className="size-3 text-white" />
               </span>
               <span 
                 style={{ color: PERSONAL_TIME_STUDY_LEGEND[key] }}
@@ -52,3 +53,4 @@ export function PersonalTimeStudyLegendCard({
     </Card>
   )
 }
+

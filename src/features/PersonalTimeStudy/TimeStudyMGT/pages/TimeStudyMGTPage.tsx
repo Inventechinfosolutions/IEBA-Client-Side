@@ -5,18 +5,23 @@ import { PersonalTimeStudyCalendarCard } from "../../components/PersonalTimeStud
 import { Check, X, Unlock, Bell, Info } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { useActionUserTimeRecord } from "../mutations/useActionUserTimeRecord"
+import { PersonalTimeStudyEntryForm } from "../../components/PersonalTimeStudyEntryForm"
 
 export function TimeStudyMGTPage() {
   const {
     search, setSearch,
     selectedUserId,
+    selectedEmployee,
     currentDate, setCurrentDate,
+    selectedDate, setSelectedDate,
     filteredEmployees,
     dayStatuses,
     weekSummaries,
     allocatedTotal,
     actualTotal,
     balanceTotal,
+    dayDetail,
+    dropdownData,
     isEmployeeListLoading,
     selectEmployee,
   } = useTimeStudyMGT()
@@ -44,6 +49,8 @@ export function TimeStudyMGTPage() {
           <div className="flex-1 min-w-0">
             <PersonalTimeStudyCalendarCard
               weekRows={[]}
+              selectedDate={selectedDate}
+              onDateSelect={setSelectedDate}
               currentMonthDate={currentDate}
               onMonthChange={setCurrentDate}
               dayStatuses={dayStatuses}
@@ -185,18 +192,23 @@ export function TimeStudyMGTPage() {
 
         </div>
 
-        {/* Bottom minutes summary bar */}
-        <div className="flex justify-end items-center gap-6 rounded-[6px] border border-gray-100 bg-white px-6 py-5 text-sm shadow-[0_4px_16px_rgba(16,24,40,0.12)]">
-          <span className="text-gray-600">
-            Allocated TS Minutes: <span className="font-semibold text-gray-800">{allocatedTotal}</span>
-          </span>
-          <span className="text-gray-600">
-            Actual Minutes: <span className="font-semibold text-gray-800">{actualTotal}</span>
-          </span>
-          <span className="text-gray-600">
-            Balance: <span className="font-semibold text-gray-800">{balanceTotal}</span>
-          </span>
-        </div>
+        {/* Read-only Time Study Entry Form with totals integrated */}
+        {selectedUserId && selectedDate && (
+          <div className="mt-4 mb-4">
+            <PersonalTimeStudyEntryForm
+              key={`${selectedUserId}-${selectedDate.toISOString()}`}
+              dateStr={selectedDate.toISOString().split("T")[0]}
+              userId={selectedUserId}
+              username={selectedEmployee ? `${selectedEmployee.firstName} ${selectedEmployee.lastName}` : ""}
+              initialRecords={dayDetail?.timeStudyRecords}
+              dropdownData={dropdownData}
+              readonly={true}
+              allocatedTotal={allocatedTotal}
+              actualTotal={actualTotal}
+              balanceTotal={balanceTotal}
+            />
+          </div>
+        )}
 
       </div>
     </TooltipProvider>
