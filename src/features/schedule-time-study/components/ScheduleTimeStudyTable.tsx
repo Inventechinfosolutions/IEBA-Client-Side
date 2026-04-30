@@ -1,4 +1,6 @@
+import dayjs from "dayjs"
 import { useState } from "react"
+
 import statusCrossImg from "@/assets/status-cross.png"
 import editIconImg from "@/assets/edit-icon.png"
 import { Trash2 } from "lucide-react"
@@ -169,19 +171,24 @@ export function ScheduledTimeStudyTable({
                 ))
               : scheduledRows.map((row) => (
                   <TableRow key={row.id} className="h-[44px] border-[#EDEDED]">
-                    <TableCell className="border-r border-[#E5E7EB] px-4 py-2 text-[13px] text-[#111827]">
+                    <TableCell className="border-r border-[#E5E7EB] px-4 py-2 text-[13px] text-[#111827] break-words">
                       {row.timeStudyPeriod}
                     </TableCell>
-                    <TableCell className="border-r border-[#E5E7EB] px-3 py-2 text-center text-[13px] text-[#111827]">
-                      {row.startDate}
+                    <TableCell className="border-r border-[#E5E7EB] px-3 py-2 text-center text-[13px] text-[#111827] break-words">
+                      {dayjs(row.startDate).isValid() && row.startDate.includes("T")
+                        ? dayjs(row.startDate).format("MM-DD-YYYY")
+                        : row.startDate}
                     </TableCell>
-                    <TableCell className="border-r border-[#E5E7EB] px-3 py-2 text-center text-[13px] text-[#111827]">
-                      {row.endDate}
+
+                    <TableCell className="border-r border-[#E5E7EB] px-3 py-2 text-center text-[13px] text-[#111827] break-words">
+                      {dayjs(row.endDate).isValid() && row.endDate.includes("T")
+                        ? dayjs(row.endDate).format("MM-DD-YYYY")
+                        : row.endDate}
                     </TableCell>
-                    <TableCell className="border-r border-[#E5E7EB] px-3 py-2 text-[13px] text-[#111827]">
+                    <TableCell className="border-r border-[#E5E7EB] px-3 py-2 text-[13px] text-[#111827] break-words">
                       {row.groups}
                     </TableCell>
-                    <TableCell className="border-r border-[#E5E7EB] px-3 py-2 text-[13px] text-[#111827]">
+                    <TableCell className="border-r border-[#E5E7EB] px-3 py-2 text-[13px] text-[#111827] break-words">
                       {row.status}
                     </TableCell>
                     <TableCell className="px-3 py-2">
