@@ -46,9 +46,18 @@ export type CostPoolResDto = {
   updatedAt?: string
 }
 
+export type CostPoolUserSummaryResDto = {
+  id: string
+  firstName: string
+  lastName: string
+  status: string
+}
+
 export type CostPoolDetailResDto = CostPoolResDto & {
   assignedActivities?: CostPoolActivitySummaryResDto[]
   unassignedActivities?: CostPoolActivitySummaryResDto[]
+  assignedUsers?: CostPoolUserSummaryResDto[]
+  unassignedUsers?: CostPoolUserSummaryResDto[]
 }
 
 export type CostPoolListResponseDto = {
@@ -68,6 +77,7 @@ export type CreateCostPoolRequestDto = {
   status?: CostPoolStatus
   departmentId: number
   activityDepartmentIds?: number[]
+  users?: string[]
 }
 
 export type UpdateCostPoolRequestDto = {
@@ -76,6 +86,7 @@ export type UpdateCostPoolRequestDto = {
   status?: CostPoolStatus
   departmentId?: number
   activityDepartmentIds?: number[]
+  users?: string[]
 }
 
 export type CostPoolListQueryParams = {
@@ -121,6 +132,7 @@ export type CostPoolUpsertFormValues = {
   departmentId: number
   active: boolean
   assignedActivityDepartmentIds: number[]
+  assignedUserIds: string[]
 }
 
 export type CostPoolActivityPickRow = {
@@ -128,9 +140,15 @@ export type CostPoolActivityPickRow = {
   displayName: string
 }
 
+export type CostPoolUserPickRow = {
+  userId: string
+  displayName: string
+}
+
 export type CostPoolDepartmentOption = {
   id: string
   name: string
+  allowUserCostpoolDirect?: boolean
 }
 
 export type CostPoolVisualCheckboxProps = {
@@ -183,6 +201,9 @@ export type CostPoolUpsertDialogProps = {
   departmentsLoading?: boolean
   activityRows: CostPoolActivityPickRow[]
   activitiesLoading?: boolean
+  userRows: CostPoolUserPickRow[]
+  usersLoading?: boolean
+  allowUserOrCostpoolDirect?: boolean
 }
 
 export type CostPoolAddPageProps = CostPoolUpsertDialogProps

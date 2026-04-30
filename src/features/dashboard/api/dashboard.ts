@@ -220,51 +220,29 @@ export async function getJpCpTotals(): Promise<JpCpTotals | null> {
 
 
 
-export async function getReportsByRole(params?: {
+export async function getReportsByRole(_params?: {
   departmentId?: number
   roleId?: number
 }): Promise<ReportItem[]> {
   try {
     const search = new URLSearchParams()
-    if (params?.departmentId) search.set("departmentId", String(params.departmentId))
-    if (params?.roleId) search.set("roleId", String(params.roleId))
+    search.set("status", "active")
 
-    const res = await api.get<ApiEnvelope<ReportItem[]>>(`/report-role?${search.toString()}`)
-    const payload = (res?.data ?? res) as ReportItem[]
-    const apiData = Array.isArray(payload) ? payload : []
+    const res = await api.get<ApiEnvelope<ReportItem[]>>(`/report?${search.toString()}`)
+    const payload = (res?.data ?? res) as any
+    const apiData = Array.isArray(payload) ? payload : (payload?.data ?? [])
 
-
-    const dummyReports: ReportItem[] = [
-      { id: 1, code: "P100", name: "Employee Time Summation" },
-      { id: 2, code: "P101", name: "Employee by Function Code" },
-      { id: 3, code: "P110", name: "Time Study Daily" },
-      { id: 4, code: "P111", name: "Daily - Start/Stop" },
-      { id: 5, code: "P112", name: "Daily - Start/Stop/Travel" },
-      { id: 6, code: "TSCR", name: "Time Study Calculation Report" },
-      { id: 7, code: "AC741", name: "Disaster Services Time Tracking" },
-      { id: 8, code: "TCM_MAA_ADHOC", name: "Report" },
-      { id: 9, code: "MAATCM", name: "Timestudy MAA/TCM" },
-      { id: 10, code: "DSSRPT2", name: "TIME STUDY HOURS BY EMPLOYEE" },
-      { id: 11, code: "MCAH-TVTS", name: "MCAH - MONTHLY TITLE V TIME STUDY (..." },
-      { id: 12, code: "WIC", name: "Time Study" },
-    ]
-
-    return apiData.length > 0 ? apiData : dummyReports
-  } catch {
-    return [
-      { id: 1, code: "P100", name: "Employee Time Summation" },
-      { id: 2, code: "P101", name: "Employee by Function Code" },
-      { id: 3, code: "P110", name: "Time Study Daily" },
-      { id: 4, code: "P111", name: "Daily - Start/Stop" },
-      { id: 5, code: "P112", name: "Daily - Start/Stop/Travel" },
-      { id: 6, code: "TSCR", name: "Time Study Calculation Report" },
-      { id: 7, code: "AC741", name: "Disaster Services Time Tracking" },
-      { id: 8, code: "TCM_MAA_ADHOC", name: "Report" },
-      { id: 9, code: "MAATCM", name: "Timestudy MAA/TCM" },
-      { id: 10, code: "DSSRPT2", name: "TIME STUDY HOURS BY EMPLOYEE" },
-      { id: 11, code: "MCAH-TVTS", name: "MCAH - MONTHLY TITLE V TIME STUDY (..." },
-      { id: 12, code: "WIC", name: "Time Study" },
-    ]
+    return apiData.map((r: any) => ({
+      id: r.id,
+      code: r.code,
+      name: r.name,
+      filename: r.filename,
+      path: r.path,
+      criteria: r.criteria
+    }))
+  } catch (error) {
+    console.error("Failed to fetch reports:", error)
+    return []
   }
 }
 
