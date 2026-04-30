@@ -1,5 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod"
-import { ChevronDown, ChevronRight, PlusIcon, SearchIcon } from "lucide-react"
+import { ChevronDown, ChevronRight, OctagonXIcon, PlusIcon, SearchIcon } from "lucide-react"
+
 import { useQueryClient } from "@tanstack/react-query"
 import { useForm } from "react-hook-form"
 import { useMemo, useRef, useState } from "react"
@@ -65,7 +66,8 @@ import {
   useGetCountyActivityMasterCodes,
   useGetMasterActivityCatalog,
 } from "../queries/getCountyActivityCodes"
-import { parseMasterCodeDisplay } from "../api/countyActivityApi"
+import { apiPutCountyActivity, parseMasterCodeDisplay } from "../api/countyActivityApi"
+
 import { usePermissions } from "@/hooks/usePermissions"
 import { useGetDepartments } from "@/features/department/queries/getDepartments"
 
@@ -84,8 +86,11 @@ function stripHtmlTags(html: string): string {
 
 function toastCountyActivityCodeApiError(err: unknown, fallback: string): void {
   const msg = err instanceof Error ? err.message.trim() : ""
-  toast.error(msg.length > 0 ? msg : fallback)
+  toast.error(msg.length > 0 ? msg : fallback, {
+    icon: <OctagonXIcon className="size-5 text-red-600" />,
+  })
 }
+
 
 function getCountyActivityCodeRowDepartmentLabel(row: CountyActivityCodeRow): string {
   const dept = row.department?.trim() ?? ""
@@ -648,6 +653,30 @@ export function CountyActivityCodeTable({
 
     const editingRow = rowToEdit
 
+    // Prevent activating a sub-activity if its parent is inactive
+    if (
+      editingRow.rowType === CountyActivityGridRowType.SUB &&
+      values.active &&
+      editingRow.parentId
+    ) {
+      const parent = primaryRows.find((r) => r.id === editingRow.parentId)
+      if (parent && !parent.active) {
+        toast.error(
+          "Cannot activate: Parent County Activity is inactive. Please activate it first.",
+          {
+            icon: <OctagonXIcon className="size-5 text-red-600" />,
+          }
+        )
+
+        return
+      }
+    }
+
+    const isPrimary = editingRow.rowType === CountyActivityGridRowType.PRIMARY
+    const wasActive = editingRow.active
+    const isBecomingActive = values.active
+
+
     updateCountyActivityCode.mutate(
       {
         id: editingRow.id,
@@ -660,7 +689,63 @@ export function CountyActivityCodeTable({
             : undefined,
       },
       {
-        onSuccess: () => {
+        onSuccess: async () => {
+          // Cascading status logic for primary activities
+          if (isPrimary && wasActive !== isBecomingActive) {
+            const children = subRowsByParentId[editingRow.id] ?? []
+            const storageKey = `active_subs_before_inactive_${editingRow.id}`
+
+            if (!isBecomingActive) {
+              // Primary becoming INACTIVE: Inactivate all sub-rows that are currently active
+              const activeSubIds: string[] = []
+              for (const child of children) {
+                if (child.active) {
+                  activeSubIds.push(child.id)
+                  const childValues = mapCountyActivityRowToFormValues(child)
+                  childValues.active = false
+                  try {
+                    await apiPutCountyActivity({
+                      id: child.id,
+                      values: childValues,
+                      rowType: child.rowType,
+                    })
+                  } catch (err) {
+                    console.error(`Failed to inactivate sub-activity ${child.id}:`, err)
+                  }
+                }
+              }
+              // Store the list of IDs that were active
+              if (activeSubIds.length > 0) {
+                sessionStorage.setItem(storageKey, JSON.stringify(activeSubIds))
+              }
+            } else {
+              // Primary becoming ACTIVE: Restore previously active sub-rows
+              const stored = sessionStorage.getItem(storageKey)
+              if (stored) {
+                const idsToRestore = JSON.parse(stored) as string[]
+                for (const childId of idsToRestore) {
+                  const child = children.find((c) => c.id === childId)
+                  if (child && !child.active) {
+                    const childValues = mapCountyActivityRowToFormValues(child)
+                    childValues.active = true
+                    try {
+                      await apiPutCountyActivity({
+                        id: child.id,
+                        values: childValues,
+                        rowType: child.rowType,
+                      })
+                    } catch (err) {
+                      console.error(`Failed to restore sub-activity ${child.id}:`, err)
+                    }
+                  }
+                }
+                sessionStorage.removeItem(storageKey)
+              }
+            }
+            // Invalidate queries to refresh the table with all changes
+            void queryClient.invalidateQueries({ queryKey: countyActivityCodeKeys.all })
+          }
+
           toast.success(
             editingRow.rowType === CountyActivityGridRowType.PRIMARY
               ? "Primary county activity updated successfully."
@@ -684,6 +769,7 @@ export function CountyActivityCodeTable({
     console.error("Edit validation errors:", errors)
     toast.error("Please fill all required fields correctly.")
   })
+
 
   const sortedRows = useMemo(() => {
     if (!sortBy || !sortDirection) return rows
