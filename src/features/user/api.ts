@@ -64,7 +64,15 @@ function asUserListResponseDto(payload: ApiResponseDto<UserListResponseDto>): Us
   if (!payload?.success || !payload.data) {
     throw new Error(payload?.message || "Failed to load users")
   }
-  return payload.data
+  // Handle case where data is directly an array (old format) or an object with data property (new format)
+  const rawData = payload.data as any
+  if (Array.isArray(rawData)) {
+    return { data: rawData, meta: { totalItems: rawData.length, itemCount: rawData.length, itemsPerPage: rawData.length, totalPages: 1, currentPage: 1 } }
+  }
+  if (rawData.data && Array.isArray(rawData.data)) {
+    return rawData
+  }
+  return { data: [], meta: { totalItems: 0, itemCount: 0, itemsPerPage: 10, totalPages: 0, currentPage: 1 } }
 }
 
 function listItemDepartmentLabel(departments: UserListItemApiDto["departments"] | undefined): string {

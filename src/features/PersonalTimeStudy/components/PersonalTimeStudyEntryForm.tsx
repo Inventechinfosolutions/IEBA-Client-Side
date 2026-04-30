@@ -1,19 +1,23 @@
-import { Plus, Trash2 } from "lucide-react"
-import { useCallback, useRef, useState } from "react"
+import { ChevronDown, Clock, Eye, Plus, Trash2 } from "lucide-react"
+import { useCallback, useMemo, useRef, useState } from "react"
+import { useQueries } from "@tanstack/react-query"
 
 import { Button } from "@/components/ui/button"
 import { TitleCaseInput } from "@/components/ui/title-case-input"
 import { Label } from "@/components/ui/label"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { cn } from "@/lib/utils"
+import { apiUploadSupportingDoc } from "../api/personalTimeStudyApi"
+import { toast } from "sonner"
+import { SingleSelectSearchDropdown } from "@/components/ui/dropdown-search"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { TimePickerDropdown } from "@/components/ui/time-picker"
+import { apiGetProgramActivityRelationActivities } from "@/features/program/api"
+import { useAuth } from "@/contexts/AuthContext"
 
-const EMPTY = "__empty__"
+/** Inline required-field asterisk — available to all components in this module. */
+function RequiredMark() {
+  return <span className="text-destructive">*</span>
+}
 
 function newId(): string {
   return typeof crypto !== "undefined" && "randomUUID" in crypto
@@ -23,6 +27,7 @@ function newId(): string {
 
 export type TimeEntrySubRow = {
   id: string
+  dbId?: number
   studyProgram: string
   serviceActivity: string
   totalMin: string
@@ -31,16 +36,17 @@ export type TimeEntrySubRow = {
 
 export type TimeEntryParentRow = {
   id: string
+  dbId?: number
   start: string
   end: string
   tsProgram: string
   serviceActivity: string
   description: string
-  supportingDocLabel: string
+  supportingDocLabel?: string
+  supportingDocs: Array<{ name: string; url: string }>
   subRows: TimeEntrySubRow[]
 }
 
-/** @deprecated Use TimeEntryParentRow — kept for any external imports */
 export type TimeEntryRow = TimeEntryParentRow
 
 function createSubRow(): TimeEntrySubRow {
@@ -62,23 +68,16 @@ function createParent(): TimeEntryParentRow {
     serviceActivity: "",
     description: "",
     supportingDocLabel: "",
+    supportingDocs: [],
     subRows: [],
   }
 }
 
-/** Minutes between two `HH:MM` time strings (same day). */
 function computeDurationMinutes(start: string, end: string): string {
   if (!start?.trim() || !end?.trim()) return ""
   const [sh, sm] = start.split(":").map(Number)
   const [eh, em] = end.split(":").map(Number)
-  if (
-    Number.isNaN(sh) ||
-    Number.isNaN(sm) ||
-    Number.isNaN(eh) ||
-    Number.isNaN(em)
-  ) {
-    return ""
-  }
+  if (isNaN(sh) || isNaN(sm) || isNaN(eh) || isNaN(em)) return ""
   const s = sh * 60 + sm
   const e = eh * 60 + em
   let d = e - s
@@ -86,364 +85,530 @@ function computeDurationMinutes(start: string, end: string): string {
   return String(d)
 }
 
+function addMinutesToTime(time: string, minutesToAdd: number): string {
+  if (!time) return ""
+  const [hStr, mStr] = time.split(":")
+  let h = parseInt(hStr || "0", 10)
+  let m = parseInt(mStr || "0", 10)
+  if (isNaN(h) || isNaN(m)) return ""
+  m += minutesToAdd
+  h += Math.floor(m / 60)
+  m = m % 60
+  h = h % 24
+  if (h < 0) h += 24
+  if (m < 0) m += 60
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`
+}
+
+
 type PersonalTimeStudyEntryFormProps = {
   className?: string
-  onSave?: (parents: TimeEntryParentRow[]) => void
-  onSubmit?: (parents: TimeEntryParentRow[]) => void
+  dateStr: string
+  initialRecords?: any[]
+  dropdownData?: any[]
+  onSave?: (parents: any[]) => void
+  onSubmit?: (parents: any[]) => void
+  onDelete?: (id: number) => void
 }
 
-function RequiredMark() {
-  return <span className="text-destructive">*</span>
+function TimePicker24h({
+  value,
+  onChange,
+  label,
+  required = true,
+  disabled = false,
+}: {
+  value: string
+  onChange: (v: string) => void
+  label: string
+  required?: boolean
+  disabled?: boolean
+}) {
+  const [open, setOpen] = useState(false)
+  return (
+    <div className="flex flex-col gap-1 w-[80px] shrink-0">
+      <Label className="text-[11px] text-muted-foreground">
+        {label} {required && <RequiredMark />}
+      </Label>
+      <Popover open={open} onOpenChange={(val) => !disabled && setOpen(val)}>
+        <PopoverTrigger asChild>
+          <div className={cn("relative", disabled ? "cursor-not-allowed" : "cursor-pointer")}>
+            <TitleCaseInput
+              value={value}
+              disabled={disabled}
+              placeholder="--:--"
+              readOnly
+              className={cn(
+                "h-10 pr-8 text-[11px] font-normal rounded-[6px]",
+                disabled && "bg-[#F2F4F7] cursor-not-allowed opacity-70"
+              )}
+              onClick={() => !disabled && setOpen(true)}
+            />
+            <Clock className="absolute right-3 top-1/2 size-4 -translate-y-1/2 opacity-50 pointer-events-none" />
+          </div>
+        </PopoverTrigger>
+        <PopoverContent className="p-0 w-auto" align="start">
+          <TimePickerDropdown value={value} onChange={(v) => { onChange(v); setOpen(false); }} minuteStep={15} />
+        </PopoverContent>
+      </Popover>
+    </div>
+  )
 }
 
-const parentFieldRowClass =
-  "flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-end"
+function SupportingDocField({
+  parentId,
+  docs,
+  uploading,
+  disabled = false,
+  onAdd,
+  onDelete,
+}: {
+  parentId: string
+  docs: Array<{ name: string; url: string }>
+  uploading: boolean
+  disabled?: boolean
+  onAdd: (parentId: string, files: FileList) => void
+  onDelete: (parentId: string, name: string) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const fileRef = useRef<HTMLInputElement>(null)
+  const firstDoc = docs[0]
+  const extraCount = docs.length - 1
+  const pillLabel = uploading ? "Uploading..." : docs.length === 0 ? "Supporting doc" : extraCount > 0 ? `${firstDoc.name.slice(0, 14)}… +${extraCount}` : firstDoc.name.length > 16 ? `${firstDoc.name.slice(0, 14)}…` : firstDoc.name
+
+  return (
+    <div className={cn("min-w-[90px] flex-1 space-y-0.5 relative", disabled && "cursor-not-allowed")}>
+      <Label className="text-[11px] text-muted-foreground">Supporting doc</Label>
+      <input ref={fileRef} type="file" className="hidden" multiple onChange={(e) => { if (e.target.files?.length) { onAdd(parentId, e.target.files); e.target.value = ""; } }} />
+      <div className={cn(
+        "flex h-10 w-full items-center rounded-[6px] border border-input text-[11px] overflow-hidden",
+        disabled ? "bg-[#F2F4F7] cursor-not-allowed opacity-70" : "bg-background"
+      )}>
+        <button type="button" disabled={disabled} className={cn("flex flex-1 min-w-0 items-center px-2 overflow-hidden", disabled && "cursor-not-allowed")} onClick={() => !disabled && docs.length > 0 && setOpen((v) => !v)}>
+          <span className="truncate text-foreground">{pillLabel}</span>
+        </button>
+        {docs.length > 0 && (
+          <button type="button" disabled={disabled} onClick={() => !disabled && setOpen((v) => !v)} className={cn("shrink-0 w-12 h-full text-muted-foreground hover:text-foreground flex items-center justify-center", disabled && "cursor-not-allowed")}>
+            <ChevronDown className={cn("size-5 transition-transform", open && "rotate-180")} />
+          </button>
+        )}
+        <button type="button" disabled={disabled || uploading} onClick={() => !disabled && fileRef.current?.click()} className={cn("shrink-0 w-10 border-l border-input h-full text-[#6C5DD3] hover:bg-accent flex items-center justify-center", (disabled || uploading) && "opacity-40 cursor-not-allowed")}>
+          <Plus className="size-5" />
+        </button>
+      </div>
+      {open && docs.length > 0 && (
+        <div className="absolute left-0 top-full z-50 mt-1 w-[220px] rounded-md border border-border bg-white shadow-lg py-1">
+          {docs.map((doc) => (
+            <div key={doc.name} className="flex items-center gap-2 px-3 py-1.5">
+              <span className="flex-1 truncate text-[11px] text-foreground">{doc.name}</span>
+              <a href={doc.url} target="_blank" rel="noreferrer" className="shrink-0 text-[#6C5DD3] hover:opacity-70" onClick={() => setOpen(false)}>
+                <Eye className="size-3.5" />
+              </a>
+              <button type="button" disabled={disabled} className="shrink-0 text-destructive hover:opacity-70 disabled:opacity-30" onClick={() => { onDelete(parentId, doc.name); if (docs.length <= 1) setOpen(false); }}>
+                <Trash2 className="size-3.5" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+const parentFieldRowClass = "flex flex-row items-end gap-2 flex-nowrap"
 
 export function PersonalTimeStudyEntryForm({
   className,
+  dateStr,
+  initialRecords,
+  dropdownData,
   onSave,
   onSubmit,
+  onDelete,
 }: PersonalTimeStudyEntryFormProps) {
-  const [parents, setParents] = useState<TimeEntryParentRow[]>(() => [
-    createParent(),
-  ])
-  /** The first parent row on initial load — never deletable; stays identified even when new rows are prepended. */
-  const initialParentIdRef = useRef<string | null>(null)
-  if (initialParentIdRef.current === null && parents.length > 0) {
-    initialParentIdRef.current = parents[parents.length - 1].id
+  const { user } = useAuth()
+  const userId = user?.id || ""
+  const username = user?.name || ""
+  const [showSubmitConfirm, setShowSubmitConfirm] = useState(false)
+  const [parents, setParents] = useState<TimeEntryParentRow[]>([createParent()])
+  const [prevInitialRecords, setPrevInitialRecords] = useState<any[] | undefined>(undefined)
+
+  if (initialRecords !== prevInitialRecords) {
+    setPrevInitialRecords(initialRecords)
+    const syncRecordsToState = () => {
+      if (!initialRecords || initialRecords.length === 0) {
+        setParents([createParent()])
+        return
+      }
+      const filtered = initialRecords.filter((r) => r.date?.split("T")[0] === dateStr)
+      if (filtered.length === 0) {
+        setParents([createParent()])
+        return
+      }
+      const parentMap = new Map<number, TimeEntryParentRow>()
+      const orphans: any[] = []
+      filtered.forEach((rec) => {
+        if (!rec.parentId) {
+          parentMap.set(rec.id, {
+            id: String(rec.id),
+            dbId: rec.id,
+            start: rec.starttime ?? "",
+            end: rec.endtime ?? "",
+            tsProgram: String(rec.programid ?? ""),
+            serviceActivity: String(rec.activityid ?? ""),
+            description: rec.description ?? "",
+            supportingDocLabel: "",
+            supportingDocs: Array.isArray(rec.supportingDocs) ? rec.supportingDocs : [],
+            subRows: [],
+          })
+        } else {
+          orphans.push(rec)
+        }
+      })
+      orphans.forEach((rec) => {
+        const p = parentMap.get(rec.parentId)
+        if (p) {
+          p.subRows.push({
+            id: String(rec.id),
+            dbId: rec.id,
+            studyProgram: String(rec.programid ?? ""),
+            serviceActivity: String(rec.activityid ?? ""),
+            totalMin: String(rec.activitytime ?? ""),
+            description: rec.description ?? "",
+          })
+        }
+      })
+      const sorted = Array.from(parentMap.values()).sort((a, b) => {
+        if (!a.start) return 1
+        if (!b.start) return -1
+        return b.start.localeCompare(a.start)
+      })
+      setParents(sorted.length > 0 ? sorted : [createParent()])
+    }
+    syncRecordsToState()
   }
 
-  const updateParent = useCallback(
-    (id: string, patch: Partial<TimeEntryParentRow>) => {
-      setParents((prev) =>
-        prev.map((p) => (p.id === id ? { ...p, ...patch } : p))
-      )
-    },
-    []
-  )
+  const isLocked = useMemo(() => {
+    if (!initialRecords) return false
+    return initialRecords.some(rec => 
+      rec.date?.split("T")[0] === dateStr &&
+      ["submitted", "approved"].includes(rec.status?.toLowerCase())
+    )
+  }, [initialRecords, dateStr])
 
-  const updateSubRow = useCallback(
-    (parentId: string, subId: string, patch: Partial<TimeEntrySubRow>) => {
-      setParents((prev) =>
-        prev.map((p) => {
-          if (p.id !== parentId) return p
-          return {
-            ...p,
-            subRows: p.subRows.map((s) =>
-              s.id === subId ? { ...s, ...patch } : s
-            ),
-          }
-        })
-      )
-    },
-    []
-  )
+  const [uploadingId, setUploadingId] = useState<string | null>(null)
+
+  const programs = useMemo(() => {
+    const list = dropdownData?.flatMap((d) => d.programs) ?? []
+    return Array.from(new Map(list.map((p) => [p.id, p])).values())
+  }, [dropdownData])
+
+  const activities = useMemo(() => {
+    const list = dropdownData?.flatMap((d) => d.activities) ?? []
+    return Array.from(new Map(list.map((a) => [a.id, a])).values())
+  }, [dropdownData])
+
+  const programQueries = useMemo(() => {
+    const list: { departmentId: number; programId: number }[] = []
+    for (const bundle of dropdownData ?? []) {
+      const deptId = bundle.departmentId
+      if (!deptId) continue
+      for (const p of bundle.programs) {
+        list.push({ departmentId: deptId, programId: p.id })
+      }
+    }
+    return list
+  }, [dropdownData])
+
+  const programActivityQueryResults = useQueries({
+    queries: programQueries.map((item) => ({
+      queryKey: ["programActivityRelation", "activities", item.departmentId, item.programId],
+      queryFn: () => apiGetProgramActivityRelationActivities(item.departmentId, item.programId),
+      staleTime: 5 * 60 * 1000,
+    })),
+  })
+
+  const getActivitiesForProgram = useCallback((programId: string): Set<string> => {
+    const index = programQueries.findIndex((pq) => String(pq.programId) === programId)
+    if (index === -1) return new Set()
+    const result = programActivityQueryResults[index]
+    if (!result?.data) return new Set()
+    const ids = new Set<string>()
+    const roots = result.data.assignedActivities
+    function traverse(node: any) {
+      if (!node) return
+      if (node.assigned) {
+        const idStr = String(node.key || "")
+        const id = idStr.split("-").pop()
+        if (id) ids.add(id)
+      }
+      if (Array.isArray(node.children)) node.children.forEach(traverse)
+    }
+    if (Array.isArray(roots)) {
+      for (const deptNode of roots) {
+        if (Array.isArray(deptNode.activity)) deptNode.activity.forEach(traverse)
+      }
+    }
+    return ids
+  }, [programQueries, programActivityQueryResults])
+
+  const updateParent = useCallback((id: string, patch: Partial<TimeEntryParentRow>) => {
+    setParents((prev) => prev.map((p) => (p.id === id ? { ...p, ...patch } : p)))
+  }, [])
+
+  const updateSubRow = useCallback((parentId: string, subId: string, patch: Partial<TimeEntrySubRow>) => {
+    setParents((prev) => prev.map((p) => {
+      if (p.id !== parentId) return p
+      return { ...p, subRows: p.subRows.map((s) => (s.id === subId ? { ...s, ...patch } : s)) }
+    }))
+  }, [])
 
   const addParentAtTop = useCallback(() => {
-    setParents((prev) => [createParent(), ...prev])
-  }, [])
+    const topParent = parents[0]
+    const newP = createParent()
+    if (topParent) {
+      newP.start = topParent.end || ""
+      newP.end = newP.start ? addMinutesToTime(newP.start, 15) : ""
+    }
+    setParents((prev) => [newP, ...prev])
+  }, [parents])
 
   const removeParent = useCallback((id: string) => {
-    if (id === initialParentIdRef.current) return
+    const p = parents.find((row) => row.id === id)
+    if (p?.dbId) {
+      onDelete?.(p.dbId)
+    }
+
     setParents((prev) => {
-      if (prev.length <= 1) return prev
-      return prev.filter((p) => p.id !== id)
+      const filtered = prev.filter((p) => p.id !== id)
+      return filtered.length > 0 ? filtered : [createParent()]
     })
-  }, [])
+  }, [parents, onDelete])
 
   const addSubRow = useCallback((parentId: string) => {
-    setParents((prev) =>
-      prev.map((p) =>
-        p.id === parentId
-          ? { ...p, subRows: [...p.subRows, createSubRow()] }
-          : p
-      )
-    )
+    setParents((prev) => prev.map((p) => (p.id === parentId ? { ...p, subRows: [...p.subRows, createSubRow()] } : p)))
   }, [])
 
   const removeSubRow = useCallback((parentId: string, subId: string) => {
-    setParents((prev) =>
-      prev.map((p) =>
-        p.id === parentId
-          ? { ...p, subRows: p.subRows.filter((s) => s.id !== subId) }
-          : p
-      )
-    )
+    setParents((prev) => prev.map((p) => (p.id === parentId ? { ...p, subRows: p.subRows.filter((s) => s.id !== subId) } : p)))
   }, [])
 
-  const canDeleteParent = (parentId: string) =>
-    parents.length > 1 && parentId !== initialParentIdRef.current
+  const canDeleteParent = (parentId: string) => {
+    if (isLocked) return false
+    const parent = parents.find((p) => p.id === parentId)
+    return parents.length > 1 || !!parent?.dbId
+  }
+
+  const mapToPayload = (): any[] => {
+    const deptId = dropdownData?.[0]?.departmentId
+    return parents.map((p) => ({
+      id: p.dbId,
+      userId,
+      username,
+      date: dateStr,
+      starttime: p.start,
+      endtime: p.end,
+      activitytime: Number(computeDurationMinutes(p.start, p.end)) || 0,
+      programid: p.tsProgram,
+      activityid: p.serviceActivity,
+      description: p.description,
+      departmentId: deptId,
+      multiCodeRecords: p.subRows.map((s) => {
+        const subDeptId = dropdownData?.find((d) => d.programs.some((pr: any) => String(pr.id) === s.studyProgram))?.departmentId
+        return {
+          programid: s.studyProgram,
+          activityid: s.serviceActivity,
+          activitytime: Number(s.totalMin) || 0,
+          description: s.description,
+          departmentId: subDeptId,
+        }
+      }),
+    }))
+  }
+
+  const validateEntries = () => {
+    for (const p of parents) {
+      if (!p.start || !p.end || !p.tsProgram || !p.serviceActivity || !p.description?.trim()) {
+        toast.error("Please fill all the fields")
+        return false
+      }
+    }
+    return true
+  }
+
+  const handleSave = () => {
+    if (!validateEntries()) return
+    const payload = mapToPayload()
+    if (payload.length === 0) { toast.error("Please add at least one time entry"); return; }
+    onSave?.(payload)
+  }
+
+  const handleSubmitInternal = () => {
+    if (!validateEntries()) return
+    const payload = mapToPayload()
+    if (payload.length === 0) { toast.error("Please add at least one time entry"); return; }
+    onSubmit?.(payload)
+  }
+
+  const handleAddDocs = async (parentId: string, files: FileList) => {
+    const fileArray = Array.from(files)
+    const parentRow = parents.find((p) => p.id === parentId)
+    const recordId = parentRow?.dbId
+    const newDocs = fileArray.map((f) => ({ name: f.name, url: URL.createObjectURL(f) }))
+    updateParent(parentId, { supportingDocs: [...(parentRow?.supportingDocs ?? []), ...newDocs] })
+    if (!recordId) return
+    try {
+      setUploadingId(parentId)
+      for (const f of fileArray) await apiUploadSupportingDoc(recordId, f)
+      toast.success(`${fileArray.length} document(s) uploaded`)
+    } catch {
+      toast.error("Failed to upload document(s)")
+    } finally {
+      setUploadingId(null)
+    }
+  }
+
+  const handleDeleteDoc = (parentId: string, name: string) => {
+    setParents((prev) => prev.map((p) => {
+      if (p.id !== parentId) return p
+      const removed = p.supportingDocs.find((d) => d.name === name)
+      if (removed) URL.revokeObjectURL(removed.url)
+      return { ...p, supportingDocs: p.supportingDocs.filter((d) => d.name !== name) }
+    }))
+  }
 
   return (
-    <section
-      className={cn(
-        "w-full rounded-xl border border-border/80 bg-card p-4 shadow-sm ring-1 ring-primary/10",
-        className
-      )}
-    >
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <h2 className="text-base font-semibold text-foreground">
-          Time entries
-        </h2>
-        <Button
-          type="button"
-          size="icon"
-          className="size-9 shrink-0 bg-primary text-primary-foreground hover:bg-primary/90"
-          aria-label="Add parent time entry at top"
+    <section className={cn("w-full rounded-[6px] border-0 bg-white p-4 shadow-[0_4px_16px_rgba(16,24,40,0.12)]", className)}>
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="text-[14px] font-bold text-[#6C5DD3]">Time entries</h2>
+        <Button 
+          size="icon" 
+          disabled={isLocked} 
+          className={cn("size-9 bg-[#6C5DD3] hover:bg-[#6C5DD3]/90", isLocked && "cursor-not-allowed")} 
           onClick={addParentAtTop}
         >
           <Plus className="size-4" />
         </Button>
       </div>
 
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-3">
         {parents.map((parent) => {
           const totalDisplay = computeDurationMinutes(parent.start, parent.end)
-
           return (
-            <div
-              key={parent.id}
-              className="rounded-lg border border-border/70 bg-card/50 p-3"
-            >
-              {/* Parent row */}
+            <div key={parent.id} className="rounded-md bg-card/50 p-2 border border-border/50">
               <div className={parentFieldRowClass}>
-                <div className="min-w-[140px] flex-1 space-y-1.5">
-                  <Label className="text-xs text-muted-foreground">
-                    Start <RequiredMark />
-                  </Label>
-                  <TitleCaseInput
-                    type="time"
-                    step={60}
-                    value={parent.start}
-                    onChange={(e) =>
-                      updateParent(parent.id, { start: e.target.value })
-                    }
-                    className="h-9"
+                <TimePicker24h label="Start" value={parent.start} disabled={isLocked} onChange={(v) => updateParent(parent.id, { start: v, end: addMinutesToTime(v, 15) })} />
+                <div className="flex-1 space-y-0.5">
+                  <Label className="text-[11px] text-muted-foreground">TS Program <RequiredMark /></Label>
+                  <SingleSelectSearchDropdown 
+                    value={parent.tsProgram} 
+                    placeholder="Select program" 
+                    disabled={isLocked} 
+                    options={programs.map((p) => ({ value: String(p.id), label: `${p.code} - ${p.name}` }))} 
+                    onChange={(v) => updateParent(parent.id, { tsProgram: v })} 
+                    onBlur={() => {}} 
+                    className={cn("h-10 text-[11px]", isLocked && "bg-[#F2F4F7] cursor-not-allowed")} 
                   />
                 </div>
-                <div className="min-w-[160px] flex-1 space-y-1.5">
-                  <Label className="text-xs text-muted-foreground">
-                    TS Program <RequiredMark />
-                  </Label>
-                  <Select
-                    value={parent.tsProgram === "" ? EMPTY : parent.tsProgram}
-                    onValueChange={(v) =>
-                      updateParent(parent.id, {
-                        tsProgram: v === EMPTY ? "" : v,
-                      })
-                    }
-                  >
-                    <SelectTrigger className="h-9 w-full min-w-0">
-                      <SelectValue placeholder="Select program" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value={EMPTY}>Select program</SelectItem>
-                      <SelectItem value="program-a">Program A</SelectItem>
-                      <SelectItem value="program-b">Program B</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="min-w-[160px] flex-1 space-y-1.5">
-                  <Label className="text-xs text-muted-foreground">
-                    Service / Activity <RequiredMark />
-                  </Label>
-                  <Select
-                    value={
-                      parent.serviceActivity === ""
-                        ? EMPTY
-                        : parent.serviceActivity
-                    }
-                    onValueChange={(v) =>
-                      updateParent(parent.id, {
-                        serviceActivity: v === EMPTY ? "" : v,
-                      })
-                    }
-                  >
-                    <SelectTrigger className="h-9 w-full min-w-0">
-                      <SelectValue placeholder="Select activity" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value={EMPTY}>Select activity</SelectItem>
-                      <SelectItem value="svc-1">Service 1</SelectItem>
-                      <SelectItem value="svc-2">Service 2</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="min-w-[140px] flex-1 space-y-1.5">
-                  <Label className="text-xs text-muted-foreground">
-                    End <RequiredMark />
-                  </Label>
-                  <TitleCaseInput
-                    type="time"
-                    step={60}
-                    value={parent.end}
-                    onChange={(e) =>
-                      updateParent(parent.id, { end: e.target.value })
-                    }
-                    className="h-9"
+                <div className="flex-1 space-y-0.5">
+                  <Label className="text-[11px] text-muted-foreground">Service / Activity <RequiredMark /></Label>
+                  <SingleSelectSearchDropdown 
+                    value={parent.serviceActivity} 
+                    placeholder="Select activity" 
+                    disabled={isLocked || !parent.tsProgram} 
+                    options={(() => { if (!parent.tsProgram) return []; const allowed = getActivitiesForProgram(parent.tsProgram); return activities.filter((a) => allowed.has(String(a.id))).map((a) => ({ value: String(a.id), label: `${a.code} - ${a.name}` })); })()} 
+                    onChange={(v) => updateParent(parent.id, { serviceActivity: v })} 
+                    onBlur={() => {}} 
+                    className={cn("h-10 text-[11px]", (isLocked || !parent.tsProgram) && "bg-[#F2F4F7] cursor-not-allowed")} 
                   />
                 </div>
-                <div className="min-w-[100px] max-w-[120px] flex-1 space-y-1.5">
-                  <Label className="text-xs text-muted-foreground">
-                    Total (min.) <RequiredMark />
-                  </Label>
-                  <TitleCaseInput
-                    readOnly
-                    tabIndex={-1}
-                    value={totalDisplay}
-                    placeholder="—"
-                    className="h-9 cursor-default bg-muted"
+                <TimePicker24h label="End" value={parent.end} disabled={isLocked || !parent.start} onChange={(v) => updateParent(parent.id, { end: v })} />
+                <div className="w-[60px] space-y-0.5">
+                  <Label className="text-[11px] text-muted-foreground">Min. <RequiredMark /></Label>
+                  <TitleCaseInput readOnly value={totalDisplay} placeholder="—" className="h-10 bg-[#F2F4F7] text-[11px] cursor-not-allowed" />
+                </div>
+                <div className="flex-[1.5] space-y-0.5">
+                  <Label className="text-[11px] text-muted-foreground">Notes <RequiredMark /></Label>
+                  <TitleCaseInput 
+                    value={parent.description} 
+                    disabled={isLocked} 
+                    onChange={(e) => updateParent(parent.id, { description: e.target.value })} 
+                    placeholder="Notes" 
+                    className={cn("h-10 text-[11px]", isLocked && "bg-[#F2F4F7] cursor-not-allowed")} 
                   />
                 </div>
-                <div className="min-w-[200px] flex-[2] space-y-1.5">
-                  <Label className="text-xs text-muted-foreground">
-                    Description / activity notes <RequiredMark />
-                  </Label>
-                  <TitleCaseInput
-                    value={parent.description}
-                    onChange={(e) =>
-                      updateParent(parent.id, { description: e.target.value })
-                    }
-                    placeholder="Notes"
-                    className="h-9"
-                  />
-                </div>
-                <div className="min-w-[140px] flex-1 space-y-1.5">
-                  <Label className="text-xs text-muted-foreground">
-                    Supporting doc
-                  </Label>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="h-9 w-full justify-center text-xs"
-                    onClick={() => {
-                      /* file picker — wire later */
-                    }}
-                  >
-                    {parent.supportingDocLabel || "Choose Supporting"}
-                  </Button>
-                </div>
-
-                <div className="flex shrink-0 items-end gap-1 self-end pb-0.5">
-                  {canDeleteParent(parent.id) ? (
-                    <Button
-                      type="button"
-                      size="icon"
-                      variant="ghost"
-                      className="size-9 shrink-0 text-destructive hover:bg-destructive/10 hover:text-destructive"
-                      aria-label="Remove parent time entry"
+                <SupportingDocField parentId={parent.id} docs={parent.supportingDocs} uploading={uploadingId === parent.id} disabled={isLocked} onAdd={handleAddDocs} onDelete={handleDeleteDoc} />
+                <div className="flex items-end gap-1 pb-0.5">
+                  {canDeleteParent(parent.id) && (
+                    <Button 
+                      size="icon" 
+                      variant="ghost" 
+                      disabled={isLocked} 
+                      className={cn("size-10 text-destructive hover:bg-destructive/10", isLocked && "cursor-not-allowed")} 
                       onClick={() => removeParent(parent.id)}
                     >
                       <Trash2 className="size-4" />
                     </Button>
-                  ) : null}
-                  <Button
-                    type="button"
-                    size="icon"
-                    variant="outline"
-                    className="size-9 shrink-0 border-green-600 text-green-700 hover:bg-green-50"
-                    aria-label="Add nested row under this parent"
+                  )}
+                  <Button 
+                    size="icon" 
+                    variant="outline" 
+                    disabled={isLocked} 
+                    className={cn("size-10 border-[#6C5DD3] text-[#6C5DD3] hover:bg-[#6C5DD3]/10", isLocked && "cursor-not-allowed")} 
                     onClick={() => addSubRow(parent.id)}
                   >
                     <Plus className="size-4" />
                   </Button>
                 </div>
               </div>
-
-              {/* Nested sub-rows (green) */}
-              {parent.subRows.length > 0 ? (
-                <div className="mt-4 space-y-3 border-l-2 border-primary/25 pl-4 md:ml-8 md:pl-6">
+              {parent.subRows.length > 0 && (
+                <div className="mt-4 space-y-3 border-l-2 border-[#6C5DD3]/20 pl-4 ml-8">
                   {parent.subRows.map((sub) => (
                     <div key={sub.id} className={parentFieldRowClass}>
-                      <div className="min-w-[160px] flex-1 space-y-1.5">
-                        <Label className="text-xs text-muted-foreground">
-                          Time Study Program <RequiredMark />
-                        </Label>
-                        <Select
-                          value={
-                            sub.studyProgram === "" ? EMPTY : sub.studyProgram
-                          }
-                          onValueChange={(v) =>
-                            updateSubRow(parent.id, sub.id, {
-                              studyProgram: v === EMPTY ? "" : v,
-                            })
-                          }
-                        >
-                          <SelectTrigger className="h-9 w-full min-w-0">
-                            <SelectValue placeholder="Select program" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value={EMPTY}>Select program</SelectItem>
-                            <SelectItem value="program-a">Program A</SelectItem>
-                            <SelectItem value="program-b">Program B</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="min-w-[160px] flex-1 space-y-1.5">
-                        <Label className="text-xs text-muted-foreground">
-                          Service / Activity <RequiredMark />
-                        </Label>
-                        <Select
-                          value={
-                            sub.serviceActivity === ""
-                              ? EMPTY
-                              : sub.serviceActivity
-                          }
-                          onValueChange={(v) =>
-                            updateSubRow(parent.id, sub.id, {
-                              serviceActivity: v === EMPTY ? "" : v,
-                            })
-                          }
-                        >
-                          <SelectTrigger className="h-9 w-full min-w-0">
-                            <SelectValue placeholder="Select activity" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value={EMPTY}>Select activity</SelectItem>
-                            <SelectItem value="svc-1">Service 1</SelectItem>
-                            <SelectItem value="svc-2">Service 2</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="min-w-[100px] max-w-[120px] flex-1 space-y-1.5">
-                        <Label className="text-xs text-muted-foreground">
-                          Total (min.) <RequiredMark />
-                        </Label>
-                        <TitleCaseInput
-                          type="number"
-                          min={0}
-                          inputMode="numeric"
-                          value={sub.totalMin}
-                          onChange={(e) =>
-                            updateSubRow(parent.id, sub.id, {
-                              totalMin: e.target.value,
-                            })
-                          }
-                          className="h-9"
+                      <div className="flex-1 space-y-1">
+                        <Label className="text-[11px] text-muted-foreground">Program <RequiredMark /></Label>
+                        <SingleSelectSearchDropdown 
+                          value={sub.studyProgram} 
+                          placeholder="Select program" 
+                          disabled={isLocked} 
+                          options={programs.map((p) => ({ value: String(p.id), label: `${p.code} - ${p.name}` }))} 
+                          onChange={(v) => updateSubRow(parent.id, sub.id, { studyProgram: v })} 
+                          onBlur={() => {}} 
+                          className={cn("h-9 text-[11px]", isLocked && "bg-[#F2F4F7] cursor-not-allowed")} 
                         />
                       </div>
-                      <div className="min-w-[200px] flex-[2] space-y-1.5">
-                        <Label className="text-xs text-muted-foreground">
-                          Description / activity notes
-                        </Label>
-                        <TitleCaseInput
-                          value={sub.description}
-                          onChange={(e) =>
-                            updateSubRow(parent.id, sub.id, {
-                              description: e.target.value,
-                            })
-                          }
-                          placeholder="Notes"
-                          className="h-9"
+                      <div className="flex-1 space-y-1">
+                        <Label className="text-[11px] text-muted-foreground">Activity <RequiredMark /></Label>
+                        <SingleSelectSearchDropdown 
+                          value={sub.serviceActivity} 
+                          placeholder="Select activity" 
+                          disabled={isLocked || !sub.studyProgram} 
+                          options={(() => { if (!sub.studyProgram) return []; const allowed = getActivitiesForProgram(sub.studyProgram); return activities.filter((a) => allowed.has(String(a.id))).map((a) => ({ value: String(a.id), label: `${a.code} - ${a.name}` })); })()} 
+                          onChange={(v) => updateSubRow(parent.id, sub.id, { serviceActivity: v })} 
+                          onBlur={() => {}} 
+                          className={cn("h-9 text-[11px]", (isLocked || !sub.studyProgram) && "bg-[#F2F4F7] cursor-not-allowed")} 
                         />
                       </div>
-                      <div className="flex shrink-0 items-end self-end pb-0.5">
-                        <Button
-                          type="button"
-                          size="icon"
-                          variant="ghost"
-                          className="size-9 shrink-0 text-destructive hover:bg-destructive/10 hover:text-destructive"
-                          aria-label="Remove nested row"
+                      <div className="w-[60px] space-y-1">
+                        <Label className="text-[11px] text-muted-foreground">Min. <RequiredMark /></Label>
+                        <TitleCaseInput type="number" min={0} disabled={isLocked} value={sub.totalMin} onChange={(e) => updateSubRow(parent.id, sub.id, { totalMin: e.target.value })} className={cn("h-9 text-[11px]", isLocked && "bg-[#F2F4F7] cursor-not-allowed")} />
+                      </div>
+                      <div className="flex-1 space-y-1">
+                        <Label className="text-[11px] text-muted-foreground">Notes</Label>
+                        <TitleCaseInput 
+                          value={sub.description} 
+                          disabled={isLocked} 
+                          onChange={(e) => updateSubRow(parent.id, sub.id, { description: e.target.value })} 
+                          placeholder="Notes" 
+                          className={cn("h-9 text-[11px]", isLocked && "bg-[#F2F4F7] cursor-not-allowed")} 
+                        />
+                      </div>
+                      <div className="flex items-end pb-0.5">
+                        <Button 
+                          size="icon" 
+                          variant="ghost" 
+                          disabled={isLocked} 
+                          className={cn("size-9 text-destructive hover:bg-destructive/10", isLocked && "cursor-not-allowed")} 
                           onClick={() => removeSubRow(parent.id, sub.id)}
                         >
                           <Trash2 className="size-4" />
@@ -452,31 +617,40 @@ export function PersonalTimeStudyEntryForm({
                     </div>
                   ))}
                 </div>
-              ) : null}
+              )}
             </div>
           )
         })}
       </div>
 
-      <div className="mt-6 flex flex-wrap justify-end gap-2">
-        <Button
-          type="button"
-          onClick={() => {
-            onSave?.(parents)
-          }}
+      <div className="mt-4 flex justify-end gap-2">
+        <Button 
+          disabled={isLocked} 
+          className={cn("h-10 px-8 bg-[#6C5DD3] hover:bg-[#5B4DBF]", isLocked && "cursor-not-allowed")} 
+          onClick={handleSave}
         >
           Save
         </Button>
-        <Button
-          type="button"
-          className="bg-green-600 text-white hover:bg-green-600/90"
-          onClick={() => {
-            onSubmit?.(parents)
-          }}
+        <Button 
+          disabled={isLocked} 
+          className={cn("h-10 px-8 bg-green-600 hover:bg-green-700 text-white", isLocked && "cursor-not-allowed")} 
+          onClick={() => setShowSubmitConfirm(true)}
         >
           Submit
         </Button>
       </div>
+
+      {showSubmitConfirm && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 px-4">
+          <div className="w-full max-w-[450px] rounded-[12px] bg-white p-6 shadow-2xl">
+            <h3 className="mb-6 text-[16px] font-medium text-center">Are you sure you want to fully submit and lock these entries?</h3>
+            <div className="flex justify-center gap-4">
+              <Button variant="outline" className="h-11 min-w-[100px] bg-[#F2F4F7]" onClick={() => setShowSubmitConfirm(false)}>Cancel</Button>
+              <Button className="h-11 min-w-[100px] bg-[#6C5DD3] text-white" onClick={() => { setShowSubmitConfirm(false); handleSubmitInternal(); }}>OK</Button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   )
 }

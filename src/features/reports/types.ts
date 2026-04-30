@@ -23,6 +23,8 @@ export type ReportCatalogItem = {
     showProgramSelect?: boolean
     showActivitySelect?: boolean
     showCostPoolSelect?: boolean
+    showCostPool?: boolean
+    showDepartmentSelect?: boolean
     showFiscalYearSelect?: boolean
     showQuarterSelect?: boolean
     showYear?: boolean
@@ -97,6 +99,8 @@ export type ReportMockDepartment = {
 export type ReportSelectOption = {
   value: string
   label: string
+  startDate?: string
+  endDate?: string
 }
 
 export type ReportSecondaryLayout = 
@@ -131,4 +135,5 @@ export type ReportSecondaryPickBlockProps = {
   placeholder: string
   emptyListMessage: string
   maxVisibleChips?: number
+  onValuesChange?: (next: string) => void
 }

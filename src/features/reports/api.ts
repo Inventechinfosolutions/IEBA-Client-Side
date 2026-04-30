@@ -70,7 +70,7 @@ function buildBackendPayload(body: ReportRunPayload, overrideDownloadType?: stri
   }
 }
 
-/** Triggers the download of a report via /report/generate. */
+/** Download report (PDF/Excel) via /report/data. */
 export async function apiPostDownloadReport(body: ReportRunPayload, options?: { type?: string; signal?: AbortSignal }): Promise<any> {
   const downloadType = options?.type || body.downloadType
   const payload = buildBackendPayload(body, downloadType)
@@ -82,7 +82,7 @@ export async function apiPostDownloadReport(body: ReportRunPayload, options?: { 
   })
 }
 
-/** View report data via /report/data. */
+/** View report preview via /report/generate. */
 export async function apiPostViewReport(body: ReportRunPayload, options?: { signal?: AbortSignal }): Promise<any> {
   // Use the same generation flow as Postman-proven downloads to guarantee file output for in-page preview.
   const payload = buildBackendPayload(body, "PDF")
@@ -111,18 +111,22 @@ export async function apiGetMaaEmployees(activityTypes: string[], departmentId?:
 }
 
 export async function apiGetCostPoolUsers(costPoolIds: string[], userId: string, employeeStatus?: string[]): Promise<ReportSelectOption[]> {
-  const params = new URLSearchParams()
-  if (costPoolIds.length > 0) params.append("costPoolIds", costPoolIds.join(","))
-  params.append("userId", userId)
-  if (employeeStatus && employeeStatus.length > 0) params.append("employeeStatus", employeeStatus.join(","))
-
-  const data = await api.get<any>(`/report/cost-pools/users?${params.toString()}`)
-  const list = Array.isArray(data) ? data : Array.isArray(data.data) ? data.data : []
-
+  // Build query string manually so commas stay raw (not percent‑encoded).
+  // Each ID/value is individually encoded, then joined with a literal comma.
+  const encodedCostPoolIds = costPoolIds.map(encodeURIComponent).join(',');
+  const encodedUserId = encodeURIComponent(userId);
+  const parts = [`costpoolIds=${encodedCostPoolIds}`, `userId=${encodedUserId}`];
+  if (employeeStatus && employeeStatus.length > 0) {
+    const encodedStatus = employeeStatus.map(encodeURIComponent).join(',');
+    parts.push(`employeeStatus=${encodedStatus}`);
+  }
+  const query = parts.join('&');
+  const data = await api.get<any>(`/report/cost-pools/users?${query}`);
+  const list = Array.isArray(data) ? data : Array.isArray(data.data) ? data.data : [];
   return list.map((r: any) => ({
     value: String(r.id),
     label: r.name || r.label,
-  }))
+  }));
 }
 
 export async function apiGetMaaTcmActivityDepartments(): Promise<ReportSelectOption[]> {
@@ -166,14 +170,16 @@ export async function apiGetListAllPrograms(): Promise<ReportSelectOption[]> {
   }))
 }
 
-export async function apiGetUsersUnderDepartment(departmentId: string, currentUserId: string): Promise<ReportSelectOption[]> {
-  const params = new URLSearchParams()
-  params.append("type", "getusersunderdepartmentbystatus")
-  params.append("departmentId", departmentId)
-  params.append("departmentStatus", "active")
-  params.append("userId", currentUserId)
+export async function apiGetUsersUnderDepartment(departmentId: string, currentUserId: string, masterCode?: string, departmentStatus = "active"): Promise<ReportSelectOption[]> {
+  const parts = [
+    "type=getusersunderdepartmentbystatus",
+    `departmentId=${encodeURIComponent(departmentId)}`,
+    `departmentStatus=${departmentStatus.split(',').map(encodeURIComponent).join(',')}`,
+    `userId=${encodeURIComponent(currentUserId)}`
+  ];
+  if (masterCode && masterCode !== "BOTH") parts.push(`masterCode=${encodeURIComponent(masterCode)}`);
 
-  const data = await api.get<any>(`/users?${params.toString()}`)
+  const data = await api.get<any>(`/users?${parts.join('&')}`)
   const list = Array.isArray(data) ? data : Array.isArray(data.data) ? data.data : []
 
   return list.map((r: any) => ({
@@ -192,23 +198,31 @@ function unwrapListData(raw: any): any[] {
   return []
 }
 
-/** Reports filter: activities available for a department (optionally scoped by users). */
+/** Reports filter: activities available for selected users within a date range. */
 export async function apiGetActivitiesByDepartmentAndUsers(
   departmentId: string,
-  _userIds: string[],
+  userIds: string[],
+  startDate?: string,
+  endDate?: string,
+  activityStatus = "active",
+  masterCode?: string,
 ): Promise<ReportSelectOption[]> {
-  const search = new URLSearchParams()
-  search.set("page", "1")
-  search.set("limit", "1000")
-  search.set("departmentId", departmentId)
+  const encodedUserIds = userIds.map(encodeURIComponent).join(',');
+  const parts = [`userIds=${encodedUserIds}`];
+  if (startDate) parts.push(`startDate=${encodeURIComponent(startDate)}`);
+  if (endDate) parts.push(`endDate=${encodeURIComponent(endDate)}`);
+  parts.push(`activityStatus=${activityStatus.split(',').map(encodeURIComponent).join(',')}`);
+  if (departmentId) parts.push(`departmentId=${encodeURIComponent(departmentId)}`);
+  if (masterCode && masterCode !== "BOTH") parts.push(`masterCode=${encodeURIComponent(masterCode)}`);
 
-  const raw = await api.get<any>(`/activity-departments?${search.toString()}`)
+  // Call the new records-based lookup endpoint on the report service
+  const raw = await api.get<any>(`/report/activity-departments/by-records?${parts.join('&')}`)
   const list = unwrapListData(raw)
 
   return list
     .map((r: any) => ({
-      value: String(r.id ?? r.activityDepartmentId ?? r.activityId ?? ""),
-      label: r.name || r.label || r.code || String(r.id ?? ""),
+      value: String(r.value ?? r.id ?? r.activityDepartmentId ?? r.activityId ?? ""),
+      label: r.label || r.name || r.code || String(r.id ?? ""),
     }))
     .filter((o: ReportSelectOption) => o.value.trim() !== "")
 }
@@ -247,6 +261,8 @@ export async function apiGetRmtsPayPeriods(
     .map((r: any) => ({
       value: String(r.id || r.payPeriodId || r.value || ""),
       label: r.name || r.label || r.description || String(r.id || ""),
+      startDate: typeof r.startdt === "string" ? r.startdt : (typeof r.startDate === "string" ? r.startDate : undefined),
+      endDate: typeof r.enddt === "string" ? r.enddt : (typeof r.endDate === "string" ? r.endDate : undefined),
     }))
     .filter((o: ReportSelectOption) => o.value.trim() !== "")
 }

@@ -12,21 +12,7 @@ import {
   DialogContent,
 } from "@/components/ui/dialog"
 import { TitleCaseInput } from "@/components/ui/title-case-input"
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import { MasterCodePagination } from "@/features/master-code/components/MasterCodePagination"
 import {
   Tooltip,
   TooltipContent,
@@ -52,7 +38,6 @@ import { CountyActivityCodeAddPage } from "./CountyActivityCodeAddPage"
 import {
   CountyActivityAddPageMode,
   CountyActivityGridRowType,
-  CountyActivityTablePageSizeOptions,
 } from "../enums/CountyActivity.enum"
 import type {
   CountyActivityCodeRow,
@@ -217,40 +202,7 @@ export function CountyActivityCodeTable({
 
   const showInactive = filterForm.watch("inactive")
   const searchValue = filterForm.watch("search")
-  const totalPages = Math.max(1, pagination.totalPages)
-  const pageNumbers = Array.from({ length: totalPages }, (_, index) => index + 1)
 
-  const getVisiblePageNumbers = () => {
-    if (totalPages <= 7) return pageNumbers
-
-    const current = pagination.page
-    const delta = 1
-    const left = current - delta
-    const right = current + delta
-    const range = []
-    const rangeWithDots: (number | string)[] = []
-    let l: number | undefined
-
-    for (let i = 1; i <= totalPages; i++) {
-      if (i === 1 || i === totalPages || (i >= left && i <= right)) {
-        range.push(i)
-      }
-    }
-
-    for (const i of range) {
-      if (l !== undefined) {
-        if (i - l === 2) {
-          rangeWithDots.push(l + 1)
-        } else if (i - l !== 1) {
-          rangeWithDots.push("...")
-        }
-      }
-      rangeWithDots.push(i)
-      l = i
-    }
-
-    return rangeWithDots
-  }
 
   const [addOpen, setAddOpen] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
@@ -1294,71 +1246,14 @@ export function CountyActivityCodeTable({
         </Table>
       </div>
 
-      <div className="my-8 flex min-h-[67px] w-full flex-wrap items-center justify-end gap-3 rounded-[15px] bg-[#FFFFFF] px-4 py-3 shadow-[0_0_20px_0_#0000001a]">
-        <span className="text-[14px] text-[#4B5563]">Total {totalItems} items</span>
-        <Pagination className="mx-0 w-auto justify-end">
-          <PaginationContent className="gap-1">
-            <PaginationItem>
-              <PaginationPrevious
-                href="#"
-                text=""
-                onClick={(event) => {
-                  event.preventDefault()
-                  if (pagination.page > 1) onPageChange(pagination.page - 1)
-                }}
-                className={pagination.page <= 1 ? "pointer-events-none opacity-50" : ""}
-              />
-            </PaginationItem>
-            {getVisiblePageNumbers().map((page, index) => (
-              <PaginationItem key={index}>
-                {page === "..." ? (
-                  <span className="flex h-10 w-10 items-center justify-center text-[#4B5563]">
-                    ...
-                  </span>
-                ) : (
-                  <PaginationLink
-                    href="#"
-                    isActive={pagination.page === page}
-                    onClick={(event) => {
-                      event.preventDefault()
-                      onPageChange(Number(page))
-                    }}
-                  >
-                    {page}
-                  </PaginationLink>
-                )}
-              </PaginationItem>
-            ))}
-            <PaginationItem>
-              <PaginationNext
-                href="#"
-                text=""
-                onClick={(event) => {
-                  event.preventDefault()
-                  if (pagination.page < totalPages) onPageChange(pagination.page + 1)
-                }}
-                className={pagination.page >= totalPages ? "pointer-events-none opacity-50" : ""}
-              />
-            </PaginationItem>
-          </PaginationContent>
-        </Pagination>
-        <Select
-          value={String(pagination.pageSize)}
-          onValueChange={(value) => onPageSizeChange(Number(value))}
-        >
-          <SelectTrigger className="h-10 w-[108px] rounded-[12px] border-[#E5E7EB]">
-            <SelectValue>
-              <span className="text-[14px] text-[#4B5563]">{pagination.pageSize} / page</span>
-            </SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            {CountyActivityTablePageSizeOptions.map((size) => (
-              <SelectItem key={size} value={String(size)}>
-                {size} / page
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      <div className="mt-4">
+        <MasterCodePagination
+          totalItems={totalItems}
+          currentPage={pagination.page}
+          pageSize={pagination.pageSize}
+          onPageChange={onPageChange}
+          onPageSizeChange={onPageSizeChange}
+        />
       </div>
 
       <Dialog open={addOpen} onOpenChange={setAddOpen}>

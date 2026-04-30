@@ -229,6 +229,25 @@ export function SecurityAssignmentsPanel({
     )
   }
 
+  // Atomic dept-level toggle — selects/deselects all roles in one department at once
+  const toggleDepartmentGroupU = (idsToAdd: string[], idsToRemove: string[]) => {
+    setToggledU((prev) => {
+      const next = new Set(prev)
+      idsToRemove.forEach((id) => next.delete(id))
+      idsToAdd.forEach((id) => next.add(id))
+      return Array.from(next)
+    })
+  }
+
+  const toggleDepartmentGroupA = (idsToAdd: string[], idsToRemove: string[]) => {
+    setToggledA((prev) => {
+      const next = new Set(prev)
+      idsToRemove.forEach((id) => next.delete(id))
+      idsToAdd.forEach((id) => next.add(id))
+      return Array.from(next)
+    })
+  }
+
   const transferToAssigned = async () => {
     if (toggledU.length === 0) return
     const catalog = unassignedQuery.data ?? []
@@ -440,6 +459,7 @@ export function SecurityAssignmentsPanel({
           selectedIds={toggledU}
           onToggleItem={(id) => toggle(id, false)}
           onToggleAll={toggleAllUnassigned}
+          onToggleDepartmentGroup={toggleDepartmentGroupU}
         />
 
         <div className="flex flex-col gap-3 pt-10">
@@ -463,6 +483,7 @@ export function SecurityAssignmentsPanel({
           selectedIds={toggledA}
           onToggleItem={(id) => toggle(id, true)}
           onToggleAll={toggleAllAssigned}
+          onToggleDepartmentGroup={toggleDepartmentGroupA}
         />
       </div>
     </div>

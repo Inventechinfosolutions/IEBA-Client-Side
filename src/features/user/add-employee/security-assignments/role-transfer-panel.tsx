@@ -15,6 +15,7 @@ export function RoleTransferPanel({
   selectedIds,
   onToggleItem,
   onToggleAll,
+  onToggleDepartmentGroup,
 }: AddEmployeeSecurityRolePanelProps) {
   const groups = useMemo(() => {
     const map = new Map<string, AddEmployeeSecurityRoleItem[]>()
@@ -36,6 +37,18 @@ export function RoleTransferPanel({
     if (deptItems.length === 0) return
     const deptIds = deptItems.map((i) => i.id)
     const isAllDeptSelected = deptIds.every((id) => selectedIds.includes(id))
+
+    // Use atomic bulk handler to avoid state race conditions from per-item loops
+    if (onToggleDepartmentGroup) {
+      if (isAllDeptSelected) {
+        onToggleDepartmentGroup([], deptIds) // deselect all
+      } else {
+        const idsToAdd = deptIds.filter((id) => !selectedIds.includes(id))
+        onToggleDepartmentGroup(idsToAdd, []) // select missing
+      }
+      return
+    }
+
     if (isAllDeptSelected) {
       for (const id of deptIds) {
         if (selectedIds.includes(id)) onToggleItem(id)

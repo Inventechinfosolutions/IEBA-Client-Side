@@ -1,5 +1,6 @@
 import React, { useMemo, useState, Fragment } from "react"
 import { useLocation } from "react-router-dom"
+import { useMemo, useState, useRef, useCallback, Fragment } from "react"
 import { Controller, useForm, useWatch } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { ChevronDown, Loader2, Search, X } from "lucide-react"
@@ -22,16 +23,17 @@ import { cn } from "@/lib/utils"
 import { 
   useGetCostPoolUsers, 
   useGetMaaEmployees,
-  useGetMaaTcmActivityDepartments,
   useGetListAllPrograms,
   useGetUsersUnderDepartment,
   useGetTimeStudyProgramsForUsers,
   useGetRmtsPayPeriods,
+  useGetActivitiesByDepartmentAndUsers,
+  useGetCostPoolsByDepartment,
 } from "../queries/getDynamicFilters"
 import type { ReportsModuleApi } from "../hooks/useReportsModule"
 import { useGetDepartments } from "@/features/department/queries/getDepartments"
 import { useCostPoolListQuery } from "@/features/cost-pool/queries/getCostPools"
-import { useGetActivitiesByDepartment } from "@/features/CountyActivityCode/queries/getCountyActivityCodes"
+
 import { useListFiscalYears } from "@/features/settings/queries/listFiscalYears"
 import { useGetUserModuleRows } from "@/features/user/queries/getUsers"
 import { CostPoolStatus } from "@/features/cost-pool/enums/cost-pool.enum"
@@ -42,7 +44,6 @@ import {
   reportDownloadFileNameSchema,
   reportFormSchema,
 } from "../schemas"
-import { getWeeksForQuarter } from "../utils/weeks"
 import { ReportWeekCalendarPicker } from "./ReportWeekCalendarPicker"
 import type {
   ReportEmployeeMultiSelectProps,
@@ -55,6 +56,55 @@ import type {
 } from "../types"
 import { mapReportFormToRunPayload } from "../utils/mapReportFormToRunPayload"
 import { readStoredReportFormParams, writeStoredReportFormParams } from "../utils/reportFormSessionStorage"
+
+/**
+ * Progress bar driven by TanStack mutation's isPending — no useEffect.
+ * Uses a callback ref to start/stop a requestAnimationFrame loop.
+ * Percentage is computed from elapsed time (asymptotic curve → 95% over ~30s).
+ */
+function LoadingProgress({ isLoading }: { isLoading: boolean }) {
+  const [pct, setPct] = useState(0)
+  const rafRef = useRef<number>(0)
+  const startRef = useRef<number>(0)
+
+  const containerRef = useCallback((node: HTMLDivElement | null) => {
+    if (node) {
+      // Component just mounted → start the animation loop
+      startRef.current = performance.now()
+      const tick = () => {
+        const elapsed = (performance.now() - startRef.current) / 1000
+        // Asymptotic curve: fast start, slows down, caps at 95%
+        const p = Math.min(95, 100 * (1 - Math.exp(-elapsed / 10)))
+        setPct(Math.floor(p))
+        rafRef.current = requestAnimationFrame(tick)
+      }
+      rafRef.current = requestAnimationFrame(tick)
+    } else {
+      // Component unmounting → cancel the loop
+      cancelAnimationFrame(rafRef.current)
+    }
+  }, [])
+
+  if (!isLoading) return null
+
+  return (
+    <div ref={containerRef} className="space-y-2 pt-3 pb-2">
+      <div className="flex items-center justify-between text-[13px] text-[#6b7280]">
+        <div className="flex items-center gap-2">
+          <Loader2 className="size-3 animate-spin text-[#6C5DD3]" />
+          <span>Generating report...</span>
+        </div>
+        <span className="font-semibold text-[#111827]">{pct}%</span>
+      </div>
+      <div className="h-1.5 w-full overflow-hidden rounded-full bg-[#F3F4F6]">
+        <div
+          className="h-full rounded-full bg-[#6C5DD3] transition-[width] duration-300 ease-out"
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+    </div>
+  )
+}
 
 const labelClassName = "mb-2 block text-[14px] font-normal text-[#2a2f3a]"
 
@@ -140,11 +190,18 @@ function ReportEmployeeMultiSelect({
   emptyListMessage = "No options available",
 }: ReportEmployeeMultiSelectProps) {
   const [menuOpen, setMenuOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState("")
 
   const selectedValues = useMemo(() => parseMultiSelectStoredValues(value), [value])
-  const optionValues = useMemo(() => options.map((o) => o.value), [options])
-  const allOptionsSelected =
-    optionValues.length > 0 && optionValues.every((v) => selectedValues.includes(v))
+  const filteredOptions = useMemo(() => {
+    if (!searchQuery.trim()) return options
+    const q = searchQuery.toLowerCase()
+    return options.filter((o) => o.label.toLowerCase().includes(q))
+  }, [options, searchQuery])
+
+  const filteredValues = useMemo(() => filteredOptions.map((o) => o.value), [filteredOptions])
+  const allFilteredSelected =
+    filteredValues.length > 0 && filteredValues.every((v) => selectedValues.includes(v))
 
   const selectedItems = useMemo(() => {
     return selectedValues.map((v) => {
@@ -165,11 +222,15 @@ function ReportEmployeeMultiSelect({
   }
 
   const toggleSelectAll = () => {
-    if (allOptionsSelected) {
-      onChange("")
+    if (allFilteredSelected) {
+      // Deselect only the filtered items
+      const remaining = selectedValues.filter((v) => !filteredValues.includes(v))
+      onChange(serializeEmployeeIdsField(remaining))
       return
     }
-    onChange(serializeEmployeeIdsField(optionValues))
+    // Add all filtered items to current selection
+    const merged = new Set([...selectedValues, ...filteredValues])
+    onChange(serializeEmployeeIdsField([...merged]))
   }
 
   const openMenuExplicit = () => {
@@ -177,10 +238,15 @@ function ReportEmployeeMultiSelect({
     setMenuOpen(true)
   }
 
+  const handleOpenChange = (open: boolean) => {
+    setMenuOpen(open)
+    if (!open) setSearchQuery("")
+  }
+
   const hasSelection = selectedItems.length > 0
 
   return (
-    <DropdownMenu modal={false} open={menuOpen} onOpenChange={setMenuOpen}>
+    <DropdownMenu modal={false} open={menuOpen} onOpenChange={handleOpenChange}>
       <DropdownMenuTrigger asChild disabled={disabled}>
         <div
           role="button"
@@ -287,24 +353,54 @@ function ReportEmployeeMultiSelect({
         className={cn("z-[90] w-[var(--radix-dropdown-menu-trigger-width)] p-0", reportEmployeeListPanelClassName)}
         onCloseAutoFocus={(e) => e.preventDefault()}
       >
-        {options.length === 0 ? (
-          <div className="px-3 py-2 text-[14px] text-[#6b7280]">{emptyListMessage}</div>
+        {/* Search input */}
+        <div className="border-b border-[#e5e7eb] px-3 py-2">
+          <div className="flex items-center gap-2 rounded-[6px] border border-[#d6d7dc] bg-[#f9fafb] px-2.5 py-1.5">
+            <Search className="size-3.5 shrink-0 text-[#9ca3af]" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search..."
+              className="min-w-0 flex-1 border-0 bg-transparent text-[13px] text-[#111827] placeholder-[#9ca3af] outline-none"
+              autoFocus
+              onClick={(e) => e.stopPropagation()}
+              onKeyDown={(e) => e.stopPropagation()}
+            />
+            {searchQuery && (
+              <span
+                role="button"
+                tabIndex={0}
+                className="cursor-pointer text-[#9ca3af] hover:text-[#6b7280]"
+                onClick={(e) => { e.stopPropagation(); setSearchQuery("") }}
+                onKeyDown={(e) => { if (e.key === "Enter") { e.stopPropagation(); setSearchQuery("") } }}
+              >
+                <X className="size-3" />
+              </span>
+            )}
+          </div>
+        </div>
+
+        {filteredOptions.length === 0 ? (
+          <div className="px-3 py-2 text-[14px] text-[#6b7280]">
+            {options.length === 0 ? emptyListMessage : "No matching results"}
+          </div>
         ) : (
           <div className={reportEmployeeListScrollClassName}>
             <label
               className={cn(
                 "flex w-full cursor-pointer items-center gap-3 border-b border-[#e5e7eb] px-3 py-2.5 hover:bg-[#f3f4f8]",
-                allOptionsSelected ? "bg-[#eef8ff]" : "bg-transparent",
+                allFilteredSelected ? "bg-[#eef8ff]" : "bg-transparent",
               )}
             >
               <Checkbox
-                checked={allOptionsSelected}
+                checked={allFilteredSelected}
                 onCheckedChange={() => toggleSelectAll()}
                 className="shrink-0"
               />
               <span className="truncate text-[14px] font-medium text-[#111827]">Select All</span>
             </label>
-            {options.map((opt) => {
+            {filteredOptions.map((opt) => {
               const selected = selectedValues.includes(opt.value)
               return (
                 <label
@@ -344,6 +440,7 @@ function ReportSecondaryPickBlock({
   placeholder,
   emptyListMessage,
   maxVisibleChips = 2,
+  onValuesChange,
 }: ReportSecondaryPickBlockProps) {
   /* Padding on the positioned parent skewed `top-full`; keep pb on this outer wrapper only (pb-16 clears bar + mt-3). */
   return (
@@ -389,7 +486,10 @@ function ReportSecondaryPickBlock({
             render={({ field }) => (
               <ReportEmployeeMultiSelect
                 value={typeof field.value === "string" ? field.value : ""}
-                onChange={field.onChange}
+                onChange={(val) => {
+                  field.onChange(val)
+                  onValuesChange?.(val)
+                }}
                 onBlur={field.onBlur}
                 options={options}
                 placeholder={placeholder}
@@ -426,6 +526,15 @@ function saveBlobAsFile(blob: Blob, baseName: string, downloadType: ReportFormVa
 function asBlobResponse(payload: unknown): Blob | null {
   if (payload instanceof Blob) return payload
   return null
+}
+
+function normalizeToDateInputValue(raw?: string): string | undefined {
+  if (!raw) return undefined
+  const iso = /^(\d{4})-(\d{2})-(\d{2})/.exec(raw)
+  if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`
+  const mdy = /^(\d{2})-(\d{2})-(\d{4})$/.exec(raw)
+  if (mdy) return `${mdy[3]}-${mdy[1]}-${mdy[2]}`
+  return undefined
 }
 
 export type ReportFormProps = {
@@ -489,9 +598,10 @@ export function ReportForm({ module }: ReportFormProps) {
   const monthVal = useWatch({ control, name: "month" })
   const yearVal = useWatch({ control, name: "year" })
   const weekIdVal = useWatch({ control, name: "weekId" })
+  const masterCode = useWatch({ control, name: "masterCode" })
 
   const { actualDateFrom, actualDateTo } = useMemo(() => {
-    if (selectMonthBy === "dates") {
+    if (selectMonthBy === "dates" || selectMonthBy === "scheduled") {
       return { actualDateFrom: dateFrom, actualDateTo: dateTo }
     }
     if (selectMonthBy === "month" && monthVal) {
@@ -541,7 +651,25 @@ export function ReportForm({ module }: ReportFormProps) {
   const departmentId = useWatch({ control, name: "departmentId" })
   const activityIdsRaw = useWatch({ control, name: "activityIds" })
   const costPoolIdsRaw = useWatch({ control, name: "costPoolIds" })
+  const includeActiveEmployees = useWatch({ control, name: "includeActiveEmployees" })
+  const includeInactiveEmployees = useWatch({ control, name: "includeInactiveEmployees" })
+  const includeActiveActivities = useWatch({ control, name: "includeActiveActivities" })
+  const includeInactiveActivities = useWatch({ control, name: "includeInactiveActivities" })
   const { user } = useAuth()
+
+  const employeeStatusArr = useMemo(() => {
+    const statuses: string[] = []
+    if (includeActiveEmployees) statuses.push("active")
+    if (includeInactiveEmployees) statuses.push("inactive")
+    return statuses
+  }, [includeActiveEmployees, includeInactiveEmployees])
+
+  const activityStatusStr = useMemo(() => {
+    const statuses: string[] = []
+    if (includeActiveActivities) statuses.push("active")
+    if (includeInactiveActivities) statuses.push("inactive")
+    return statuses.join(",")
+  }, [includeActiveActivities, includeInactiveActivities])
 
   const activityIdsArr = useMemo(() => {
     if (!activityIdsRaw) return []
@@ -554,21 +682,55 @@ export function ReportForm({ module }: ReportFormProps) {
   }, [costPoolIdsRaw])
 
   const isMaaReport = useMemo(() => reportKey.includes("MAA") || reportKey.includes("TCM"), [reportKey])
-  const isCostPoolReport = useMemo(() => reportKey === "DSSRPT3" || reportKey === "DSSRPT4", [reportKey])
+  const shouldShowCostPool = useMemo(
+    () =>
+      isTrue(currentReportItem?.criteria?.showCostPoolSelect) ||
+      isTrue(currentReportItem?.criteria?.showCostPool),
+    [currentReportItem],
+  )
+  const shouldFetchCostPoolUsers = shouldShowCostPool && costPoolIdsArr.length > 0
 
-  const { data: maaEmployeesData } = useGetMaaEmployees(activityIdsArr, departmentId, isMaaReport)
-  const { data: costPoolUsersData } = useGetCostPoolUsers(costPoolIdsArr, user?.id ?? "", ["active"], isCostPoolReport)
-  const shouldFetchDepartmentUsers = !!departmentId && !isMaaReport && !isCostPoolReport
-  const { data: departmentUsersData, isSuccess: isDepartmentUsersLoaded } = useGetUsersUnderDepartment(
+  const { data: maaEmployeesData } = useGetMaaEmployees(activityIdsArr, departmentId, isMaaReport && !!departmentId)
+  const { data: costPoolUsersData } = useGetCostPoolUsers(
+    costPoolIdsArr,
+    user?.id ?? "",
+    employeeStatusArr,
+    shouldFetchCostPoolUsers,
+  )
+  const shouldFetchDepartmentUsers = !!departmentId && !isMaaReport && !shouldShowCostPool
+  const { data: departmentUsersData } = useGetUsersUnderDepartment(
     departmentId, 
     user?.id ?? "", 
+    masterCode,
+    employeeStatusArr,
     shouldFetchDepartmentUsers
   )
-  const shouldFetchActivities = currentReportItem?.criteria?.showActivitySelect === true && !!departmentId
-  const canFetchActivitiesForCurrentReport =
-    shouldFetchActivities && (!shouldFetchDepartmentUsers || isDepartmentUsersLoaded)
-  const { data: activitiesByDepartmentData } = useGetActivitiesByDepartment(
-    canFetchActivitiesForCurrentReport ? Number(departmentId) : null,
+  // Format dates from ISO (YYYY-MM-DD) to backend format (MM-DD-YYYY) for the activities API
+  const activityStartDate = useMemo(() => {
+    if (!actualDateFrom) return undefined
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(actualDateFrom)
+    return m ? `${m[2]}-${m[3]}-${m[1]}` : actualDateFrom
+  }, [actualDateFrom])
+  const activityEndDate = useMemo(() => {
+    if (!actualDateTo) return undefined
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(actualDateTo)
+    return m ? `${m[2]}-${m[3]}-${m[1]}` : actualDateTo
+  }, [actualDateTo])
+
+  const hasScheduledDateRange = selectMonthBy !== "scheduled" || (!!activityStartDate && !!activityEndDate)
+  const shouldFetchActivities =
+    currentReportItem?.criteria?.showActivitySelect === true &&
+    !!departmentId &&
+    employeeIds.length > 0 &&
+    hasScheduledDateRange
+  const { data: activitiesByDepartmentData } = useGetActivitiesByDepartmentAndUsers(
+    departmentId,
+    employeeIds,
+    activityStartDate,
+    activityEndDate,
+    activityStatusStr || "active",
+    masterCode,
+    shouldFetchActivities,
   )
 
   const {
@@ -596,18 +758,23 @@ export function ReportForm({ module }: ReportFormProps) {
 
   const { data: fiscalYearsData } = useListFiscalYears()
   const { data: departmentsData } = useGetDepartments({ status: "active", page: 1, limit: 100 })
-  const { data: maaTcmDepartmentsData } = useGetMaaTcmActivityDepartments(isMaaReport)
   const { data: allProgramsData } = useGetListAllPrograms(
     currentReportItem?.criteria?.showProgramSelect === true && !shouldFilterProgramsByUser
   )
   const { data: costPoolsData } = useCostPoolListQuery(
     { costpoolStatus: CostPoolStatus.ACTIVE, page: 1, limit: 100 },
+    { enabled: shouldShowCostPool && !departmentId },
+  )
+  const shouldFetchCostPoolsByDepartment = shouldShowCostPool && !!departmentId
+  const { data: costPoolsByDepartmentData } = useGetCostPoolsByDepartment(
+    departmentId,
+    shouldFetchCostPoolsByDepartment,
   )
   const { data: employeesData } = useGetUserModuleRows({ 
     inactiveOnly: false, 
     page: 1, 
     pageSize: 1000 
-  })
+  }, { enabled: !departmentId && !isMaaReport && !shouldShowCostPool })
 
 
   const { data: userSpecificPrograms } = useGetTimeStudyProgramsForUsers(
@@ -641,62 +808,47 @@ export function ReportForm({ module }: ReportFormProps) {
   )
 
   const departmentOptions = useMemo(() => {
-    return (departmentsData?.items ? mapIdNameRowsToSelectOptions(departmentsData.items) : [])
-  }, [departmentsData])
+    const all = departmentsData?.items ? mapIdNameRowsToSelectOptions(departmentsData.items) : []
+    if (reportKey === "P110-SS") {
+      return all.filter((opt) => opt.label === "Social Services")
+    }
+    return all
+  }, [departmentsData, reportKey])
 
   const employeeOptions = useMemo(() => {
-    // Create a base list from all loaded users
-    const allUsers = employeesData?.items 
-      ? mapIdNameRowsToSelectOptions(employeesData.items.map(u => ({ id: u.id, name: u.employee })))
-      : []
-
-    let specificList: ReportSelectOption[] | undefined = undefined
-
-    if (reportKey.includes("MAA") || reportKey.includes("TCM")) {
-      if (maaEmployeesData) specificList = maaEmployeesData
-    } else if (reportKey === "DSSRPT3" || reportKey === "DSSRPT4") {
-      if (costPoolUsersData) specificList = costPoolUsersData
-    } else if (departmentId && departmentUsersData) {
-      specificList = departmentUsersData
+    // 1️⃣ Cost‑pool users take precedence when cost‑pool IDs are selected.
+    if (shouldFetchCostPoolUsers && costPoolUsersData) {
+      return costPoolUsersData;
     }
-
-    // If we have a specific list (like department users), merge it with the general list
-    // to ensure labels are preserved for any previously selected employees.
-    if (specificList) {
-      const specificIds = new Set(specificList.map(o => o.value))
-      const additional = allUsers.filter(o => !specificIds.has(o.value))
-      return [...specificList, ...additional]
+    // 2️⃣ If a department is selected, use its users.
+    if (departmentId && departmentUsersData) {
+      return departmentUsersData;
     }
-
-    return allUsers
-  }, [reportKey, maaEmployeesData, costPoolUsersData, departmentUsersData, departmentId, employeesData])
+    // 3️⃣ MAA/TCM specific employee list.
+    if ((reportKey.includes("MAA") || reportKey.includes("TCM")) && maaEmployeesData) {
+      return maaEmployeesData;
+    }
+    // 4️⃣ For DSSRPT3/DSSRPT4 reports, cost‑pool users are already handled above.
+    // 5️⃣ Fallback – empty list.
+    return [];
+  }, [shouldFetchCostPoolUsers, costPoolUsersData, departmentId, departmentUsersData, reportKey, maaEmployeesData]);
 
   const activityOptions = useMemo(() => {
-    let baseList: ReportSelectOption[] = []
-    if (isMaaReport && maaTcmDepartmentsData) {
-      baseList = maaTcmDepartmentsData
-    } else if (activitiesByDepartmentData) {
-      baseList = mapIdNameRowsToSelectOptions(
-        activitiesByDepartmentData.map((row) => ({
-          id: row.id,
-          name: row.name,
-        })),
-      )
+    if (activitiesByDepartmentData) {
+      return activitiesByDepartmentData
     }
-
-    // In a multi-select, we want to ensure any currently selected values have labels
-    // even if they aren't in the primary filtered list (e.g. they belong to another dept).
-    return baseList
+    return []
   }, [
-    isMaaReport,
-    maaTcmDepartmentsData,
     activitiesByDepartmentData,
   ])
 
   const costPoolOptions = useMemo(() => {
+    if (costPoolsByDepartmentData) {
+      return costPoolsByDepartmentData
+    }
     // costPoolsData from useCostPoolListQuery returns { data, meta }
     return costPoolsData?.data ? mapIdNameRowsToSelectOptions(costPoolsData.data) : []
-  }, [costPoolsData])
+  }, [costPoolsByDepartmentData, costPoolsData])
 
   const programOptions = useMemo(() => {
     const all = allProgramsData ?? []
@@ -798,12 +950,12 @@ type ReportFiltersBodyProps = {
   yearQuarterSelectTrigger: string
   dateInputInRowClassName: string
   setValue: any
-  fiscalYearId: string | number
-  quarter: string | number
+  fiscalYearId: string
+  quarter: string
   selectMonthBy: string
   formState: any
   timeStudyPeriodOptions: any[]
-  departmentId: string | number
+  departmentId?: string
 }
 
 const ReportFiltersBody = ({
@@ -1063,7 +1215,18 @@ const ReportFiltersBody = ({
               render={({ field }) => (
                 <SingleSelectDropdown
                   value={field.value ?? ""}
-                  onChange={field.onChange}
+                  onChange={(val) => {
+                    field.onChange(val)
+                    const selectedPeriod = timeStudyPeriodOptions.find((opt) => opt.value === val)
+                    const nextFrom = normalizeToDateInputValue(selectedPeriod?.startDate)
+                    const nextTo = normalizeToDateInputValue(selectedPeriod?.endDate)
+                    if (nextFrom) {
+                      setValue("dateFrom", nextFrom, { shouldValidate: true })
+                    }
+                    if (nextTo) {
+                      setValue("dateTo", nextTo, { shouldValidate: true })
+                    }
+                  }}
                   onBlur={field.onBlur}
                   options={timeStudyPeriodOptions}
                   placeholder={departmentId && fiscalYearId ? "Select Time Study Period" : "Select fiscal year and department"}
@@ -1188,10 +1351,17 @@ const ReportFiltersBody = ({
                 <SingleSelectDropdown
                   value={field.value}
                   onChange={(val) => {
-                    field.onChange(val)
                     const item = module.catalogItems.find((i) => i.key === val)
-                    const monthByOpts = item?.criteria?.showMonthBy?.map((o: any) => o.type)
 
+                    // Reset all fields to defaults, keeping only the new report key
+                    form.reset({
+                      ...REPORT_FORM_DEFAULT_VALUES,
+                      reportKey: val,
+                      fileName: item?.label ?? "",
+                    })
+
+                    // Set the appropriate period type based on report criteria
+                    const monthByOpts = item?.criteria?.showMonthBy?.map((o: any) => o.type)
                     if (monthByOpts && monthByOpts.length > 0) {
                       form.setValue("selectMonthBy", monthByOpts[0] as "qtr" | "dates" | "month" | "year")
                     } else if (isTrue(item?.criteria?.monthly) || isTrue(item?.criteria?.showMonthly)) {
@@ -1202,9 +1372,6 @@ const ReportFiltersBody = ({
                       form.setValue("selectMonthBy", "qtr")
                     } else if (isTrue(item?.criteria?.showDate) || isTrue(item?.criteria?.showDates)) {
                       form.setValue("selectMonthBy", "dates")
-                    }
-                    if (item) {
-                      form.setValue("fileName", item.label)
                     }
                   }}
                   onBlur={field.onBlur}
@@ -1238,7 +1405,16 @@ const ReportFiltersBody = ({
                 render={({ field }) => (
                   <SingleSelectDropdown
                     value={field.value ?? ""}
-                    onChange={field.onChange}
+                    onChange={(val) => {
+                      if ((field.value ?? "") !== val) {
+                        form.setValue("departmentId", "")
+                        form.setValue("employeeIds", "")
+                        form.setValue("activityIds", "")
+                        form.setValue("costPoolIds", "")
+                        form.setValue("programIds", "")
+                      }
+                      field.onChange(val)
+                    }}
                     onBlur={field.onBlur}
                     options={[
                       { value: "BOTH", label: "BOTH" },
@@ -1256,7 +1432,7 @@ const ReportFiltersBody = ({
             </div>
           )}
 
-          {currentReportItem?.criteria?.showDepartmentSelect !== false && (
+          {(currentReportItem?.criteria as { showDepartmentSelect?: boolean } | undefined)?.showDepartmentSelect !== false && (
             <div className="min-w-0 w-full max-w-[350px] shrink-0">
               <label className={labelClassName} htmlFor="reports-department">
                 Department
@@ -1366,11 +1542,12 @@ const ReportFiltersBody = ({
             <div className="grid min-w-0 grid-cols-1 gap-x-10 gap-y-12 md:grid-cols-2 md:gap-y-0">
               {(() => {
                 const { criteria } = currentReportItem
+                const costPoolFirst = isTrue(criteria.showCostPoolSelect) || isTrue(criteria.showCostPool)
                 const filterBlocks = [
                   {
                     id: "employee",
                     show: isTrue(criteria.multipleEmployees),
-                    order: 1,
+                    order: costPoolFirst ? 2 : 1,
                     render: () => (
                       <ReportSecondaryPickBlock
                         control={control}
@@ -1426,8 +1603,8 @@ const ReportFiltersBody = ({
                   },
                   {
                     id: "costPool",
-                    show: isTrue(criteria.showCostPoolSelect),
-                    order: 4,
+                    show: isTrue(criteria.showCostPoolSelect) || isTrue(criteria.showCostPool),
+                    order: costPoolFirst ? 1 : 4,
                     render: () => (
                       <ReportSecondaryPickBlock
                         control={control}
@@ -1464,6 +1641,7 @@ const ReportFiltersBody = ({
                 options={employeeOptions}
                 placeholder="Select Employee"
                 emptyListMessage="No employees available"
+                onValuesChange={() => setValue("activityIds", "")}
               />
             </div>
           )}
@@ -1535,6 +1713,8 @@ const ReportFiltersBody = ({
             {downloadError.message}
           </p>
         ) : null}
+
+        <LoadingProgress isLoading={isViewPending || isDownloadPending} />
 
         {/* Row 4: download row — narrow type, file name grows, button right */}
         <div className="flex min-w-0 flex-wrap items-end gap-4 pt-6">

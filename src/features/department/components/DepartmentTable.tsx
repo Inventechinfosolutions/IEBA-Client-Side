@@ -3,21 +3,8 @@ import { User, Phone, Mail, MapPin } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { TitleCaseInput } from "@/components/ui/title-case-input"
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import { MasterCodePagination } from "@/features/master-code/components/MasterCodePagination"
+
 import { Skeleton } from "@/components/ui/skeleton"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
@@ -36,7 +23,6 @@ import {
 } from "@/components/ui/tooltip"
 
 import {
-  PAGE_SIZES,
   type DepartmentContactCellProps,
   type DepartmentTableProps,
   type SortColumn,
@@ -207,8 +193,6 @@ export function DepartmentTable({
     setSortDirection("asc")
   }
 
-  const totalPages = Math.max(1, Math.ceil(totalItems / pagination.pageSize))
-  const pageNumbers = Array.from({ length: totalPages }, (_, index) => index + 1)
 
   return (
     <div className="flex flex-1 flex-col gap-[24px]">
@@ -516,68 +500,14 @@ export function DepartmentTable({
         </Table>
       </div>
 
-      <div className="my-8 flex min-h-[67px] w-full flex-wrap items-center justify-end gap-3 rounded-[12px] bg-[#FFFFFF] px-4 py-3 shadow-[0_0_20px_0_#0000001a]">
-        <span className="text-[14px] text-[#4B5563]">Total {totalItems} items</span>
-        <Pagination className="mx-0 w-auto justify-end">
-          <PaginationContent className="gap-1">
-            <PaginationItem>
-              <PaginationPrevious
-                href="#"
-                text=""
-                onClick={(event) => {
-                  event.preventDefault()
-                  if (pagination.pageIndex > 1) onPageChange(pagination.pageIndex - 1)
-                }}
-                className={pagination.pageIndex <= 1 ? "pointer-events-none opacity-50" : ""}
-              />
-            </PaginationItem>
-            {pageNumbers.slice(0, 7).map((page) => (
-              <PaginationItem key={page}>
-                <PaginationLink
-                  href="#"
-                  isActive={pagination.pageIndex === page}
-                  onClick={(event) => {
-                    event.preventDefault()
-                    onPageChange(page)
-                  }}
-                >
-                  {page}
-                </PaginationLink>
-              </PaginationItem>
-            ))}
-            <PaginationItem>
-              <PaginationNext
-                href="#"
-                text=""
-                onClick={(event) => {
-                  event.preventDefault()
-                  if (pagination.pageIndex < totalPages) onPageChange(pagination.pageIndex + 1)
-                }}
-                className={pagination.pageIndex >= totalPages ? "pointer-events-none opacity-50" : ""}
-              />
-            </PaginationItem>
-          </PaginationContent>
-        </Pagination>
-
-        <Select
-          value={String(pagination.pageSize)}
-          onValueChange={(value) => onPageSizeChange(Number(value))}
-        >
-          <SelectTrigger className="h-10 w-[108px] rounded-[12px] border-[#E5E7EB]">
-            <SelectValue>
-              <span className="text-[14px] text-[#4B5563]">
-                {pagination.pageSize} / page
-              </span>
-            </SelectValue>
-          </SelectTrigger>
-          <SelectContent position="popper">
-            {PAGE_SIZES.map((size) => (
-              <SelectItem key={size} value={String(size)}>
-                {size} / page
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      <div className="mt-4">
+        <MasterCodePagination
+          totalItems={totalItems}
+          currentPage={pagination.pageIndex}
+          pageSize={pagination.pageSize}
+          onPageChange={onPageChange}
+          onPageSizeChange={onPageSizeChange}
+        />
       </div>
     </div>
   )

@@ -337,6 +337,10 @@ export function ProgramPage() {
     setPage(1)
     setSearch("")
     setInactiveOnly(false)
+    // Collapse all expanded rows so returning to Budget Units starts fresh
+    setExpandedBudgetUnits({})
+    setExpandedProgramGroups({})
+    setExpandedPrograms({})
   }
 
   const handleSearchChange = (value: string) => {
