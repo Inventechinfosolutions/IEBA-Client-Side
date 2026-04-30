@@ -90,40 +90,18 @@ export function PersonalTimeStudyPage() {
     const now = new Date()
     return new Date(now.getFullYear(), now.getMonth(), now.getDate())
   })
+
+  // Separate viewport state for the calendar (to avoid changing selection on month navigation)
+  const [viewportDate, setViewportDate] = useState<Date>(selectedDate)
+
   const dateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, "0")}-${String(selectedDate.getDate()).padStart(2, "0")}`
-  const month = selectedDate.getMonth() + 1
-  const year = selectedDate.getFullYear()
+  const month = viewportDate.getMonth() + 1
+  const year = viewportDate.getFullYear()
 
   // 2. Fetch Month Legend — only when Personal tab is active
   const monthQuery = useQuery({
     queryKey: personalTimeStudyKeys.monthLegend(userId, month, year),
-    queryFn: async () => {
-      const getMonthData = (m: number, y: number) => {
-        let adjM = m
-        let adjY = y
-        if (m < 1) { adjM = 12; adjY = y - 1 }
-        else if (m > 12) { adjM = 1; adjY = y + 1 }
-        return apiGetMonthLegend({ userId, month: adjM, year: adjY })
-      }
-
-      // Fetch current, previous, and next month to handle weekly boundaries
-      const [prev, curr, next] = await Promise.all([
-        getMonthData(month - 1, year),
-        getMonthData(month, year),
-        getMonthData(month + 1, year)
-      ])
-
-      // Merge data and remove duplicates by date (if any)
-      const mergedMap = new Map<string, any>()
-      ;[...prev.data, ...curr.data, ...next.data].forEach(d => {
-        mergedMap.set(d.date, d)
-      })
-
-      return {
-        ...curr,
-        data: Array.from(mergedMap.values())
-      }
-    },
+    queryFn: () => apiGetMonthLegend({ userId, month, year }),
     enabled: !!userId && activeTab === "personal",
     staleTime: 0,
     gcTime: 0,
@@ -134,7 +112,12 @@ export function PersonalTimeStudyPage() {
   // 3. Fetch Day Detail — only when Personal tab is active
   const dayQuery = useQuery({
     queryKey: personalTimeStudyKeys.dayDetail(userId, dateStr),
-    queryFn: () => apiGetDayDetail({ userId, date: dateStr, month, year }),
+    queryFn: () => apiGetDayDetail({ 
+      userId, 
+      date: dateStr, 
+      month: selectedDate.getMonth() + 1, 
+      year: selectedDate.getFullYear() 
+    }),
     enabled: !!userId && activeTab === "personal",
     staleTime: 0,
     gcTime: 0,
@@ -429,8 +412,8 @@ export function PersonalTimeStudyPage() {
                     weekRows={weekRows}
                     selectedDate={selectedDate}
                     onDateSelect={setSelectedDate}
-                    currentMonthDate={selectedDate}
-                    onMonthChange={setSelectedDate}
+                    currentMonthDate={viewportDate}
+                    onMonthChange={setViewportDate}
                     dayStatuses={dayStatuses}
                     weekSummaries={weekSummaries}
                     renderStatus={renderStatus}

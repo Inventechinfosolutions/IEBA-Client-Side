@@ -33,7 +33,7 @@ export function TimeStudyMGTPage() {
       <div className="flex flex-col gap-4">
 
         {/* 3-column layout: Employee Panel | Calendar | Legend */}
-        <div className="flex gap-4 items-stretch">
+        <div className="flex gap-8 items-stretch px-10">
 
           {/* Left: Employee list */}
           <MgtEmployeePanel
@@ -46,7 +46,7 @@ export function TimeStudyMGTPage() {
           />
 
           {/* Middle: Calendar */}
-          <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0 px-3">
             <PersonalTimeStudyCalendarCard
               weekRows={[]}
               selectedDate={selectedDate}
@@ -197,7 +197,7 @@ export function TimeStudyMGTPage() {
           <div className="mt-4 mb-4">
             <PersonalTimeStudyEntryForm
               key={`${selectedUserId}-${selectedDate.toISOString()}`}
-              dateStr={selectedDate.toISOString().split("T")[0]}
+              dateStr={`${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, "0")}-${String(selectedDate.getDate()).padStart(2, "0")}`}
               userId={selectedUserId}
               username={selectedEmployee ? `${selectedEmployee.firstName} ${selectedEmployee.lastName}` : ""}
               initialRecords={dayDetail?.timeStudyRecords}

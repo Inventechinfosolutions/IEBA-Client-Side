@@ -47,7 +47,12 @@ export function useTimeStudyMGT() {
   const dateStr = selectedDate ? 
     `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}` 
     : null
-  const dayDetailQuery = useGetMGTDayDetail(selectedUserId, dateStr, month, year)
+  const dayDetailQuery = useGetMGTDayDetail(
+    selectedUserId,
+    dateStr,
+    selectedDate ? selectedDate.getMonth() + 1 : month,
+    selectedDate ? selectedDate.getFullYear() : year
+  )
   const dropdownQuery = useGetMGTDropdowns(selectedUserId)
 
   // ── Derived data ──────────────────────────────────────────────────────────
@@ -173,12 +178,6 @@ export function useTimeStudyMGT() {
   function selectEmployee(employee: MgtEmployeeRow) {
     setSelectedUserId(employee.id)
     setSelectedEmployee(employee)
-    
-    // Reset selection to today when switching users
-    const now = new Date()
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-    setSelectedDate(today)
-    setCurrentDate(today)
   }
 
   function clearSelection() {
