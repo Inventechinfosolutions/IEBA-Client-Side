@@ -587,10 +587,7 @@ export function ReportForm({ module }: ReportFormProps) {
   const masterCode = useWatch({ control, name: "masterCode" })
 
   const { actualDateFrom, actualDateTo } = useMemo(() => {
-    if (selectMonthBy === "dates") {
-      return { actualDateFrom: dateFrom, actualDateTo: dateTo }
-    }
-    if (selectMonthBy === "scheduled") {
+    if (selectMonthBy === "dates" || selectMonthBy === "scheduled") {
       return { actualDateFrom: dateFrom, actualDateTo: dateTo }
     }
     if (selectMonthBy === "month" && monthVal) {
@@ -640,7 +637,25 @@ export function ReportForm({ module }: ReportFormProps) {
   const departmentId = useWatch({ control, name: "departmentId" })
   const activityIdsRaw = useWatch({ control, name: "activityIds" })
   const costPoolIdsRaw = useWatch({ control, name: "costPoolIds" })
+  const includeActiveEmployees = useWatch({ control, name: "includeActiveEmployees" })
+  const includeInactiveEmployees = useWatch({ control, name: "includeInactiveEmployees" })
+  const includeActiveActivities = useWatch({ control, name: "includeActiveActivities" })
+  const includeInactiveActivities = useWatch({ control, name: "includeInactiveActivities" })
   const { user } = useAuth()
+
+  const employeeStatusArr = useMemo(() => {
+    const statuses: string[] = []
+    if (includeActiveEmployees) statuses.push("active")
+    if (includeInactiveEmployees) statuses.push("inactive")
+    return statuses
+  }, [includeActiveEmployees, includeInactiveEmployees])
+
+  const activityStatusStr = useMemo(() => {
+    const statuses: string[] = []
+    if (includeActiveActivities) statuses.push("active")
+    if (includeInactiveActivities) statuses.push("inactive")
+    return statuses.join(",")
+  }, [includeActiveActivities, includeInactiveActivities])
 
   const activityIdsArr = useMemo(() => {
     if (!activityIdsRaw) return []
@@ -661,11 +676,11 @@ export function ReportForm({ module }: ReportFormProps) {
   )
   const shouldFetchCostPoolUsers = shouldShowCostPool && costPoolIdsArr.length > 0
 
-  const { data: maaEmployeesData } = useGetMaaEmployees(activityIdsArr, departmentId, isMaaReport)
+  const { data: maaEmployeesData } = useGetMaaEmployees(activityIdsArr, departmentId, isMaaReport && !!departmentId)
   const { data: costPoolUsersData } = useGetCostPoolUsers(
     costPoolIdsArr,
     user?.id ?? "",
-    ["active"],
+    employeeStatusArr,
     shouldFetchCostPoolUsers,
   )
   const shouldFetchDepartmentUsers = !!departmentId && !isMaaReport && !shouldShowCostPool
@@ -673,6 +688,7 @@ export function ReportForm({ module }: ReportFormProps) {
     departmentId, 
     user?.id ?? "", 
     masterCode,
+    employeeStatusArr,
     shouldFetchDepartmentUsers
   )
   // Format dates from ISO (YYYY-MM-DD) to backend format (MM-DD-YYYY) for the activities API
@@ -698,7 +714,7 @@ export function ReportForm({ module }: ReportFormProps) {
     employeeIds,
     activityStartDate,
     activityEndDate,
-    "active",
+    activityStatusStr || "active",
     masterCode,
     shouldFetchActivities,
   )
@@ -786,31 +802,22 @@ export function ReportForm({ module }: ReportFormProps) {
   }, [departmentsData, reportKey])
 
   const employeeOptions = useMemo(() => {
-    // Create a base list from all loaded users
-    const allUsers = employeesData?.items 
-      ? mapIdNameRowsToSelectOptions(employeesData.items.map(u => ({ id: u.id, name: u.employee })))
-      : []
-
-    let specificList: ReportSelectOption[] | undefined = undefined
-
-    if (shouldShowCostPool) {
-      if (costPoolUsersData) specificList = costPoolUsersData
-    } else if ((reportKey.includes("MAA") || reportKey.includes("TCM")) && maaEmployeesData) {
-      specificList = maaEmployeesData
-    } else if (departmentId && departmentUsersData) {
-      specificList = departmentUsersData
+    // 1️⃣ Cost‑pool users take precedence when cost‑pool IDs are selected.
+    if (shouldFetchCostPoolUsers && costPoolUsersData) {
+      return costPoolUsersData;
     }
-
-    // If we have a specific list (like department users), merge it with the general list
-    // to ensure labels are preserved for any previously selected employees.
-    if (specificList) {
-      const specificIds = new Set(specificList.map(o => o.value))
-      const additional = allUsers.filter(o => !specificIds.has(o.value))
-      return [...specificList, ...additional]
+    // 2️⃣ If a department is selected, use its users.
+    if (departmentId && departmentUsersData) {
+      return departmentUsersData;
     }
-
-    return allUsers
-  }, [reportKey, shouldShowCostPool, maaEmployeesData, costPoolUsersData, departmentUsersData, departmentId, employeesData])
+    // 3️⃣ MAA/TCM specific employee list.
+    if ((reportKey.includes("MAA") || reportKey.includes("TCM")) && maaEmployeesData) {
+      return maaEmployeesData;
+    }
+    // 4️⃣ For DSSRPT3/DSSRPT4 reports, cost‑pool users are already handled above.
+    // 5️⃣ Fallback – empty list.
+    return [];
+  }, [shouldFetchCostPoolUsers, costPoolUsersData, departmentId, departmentUsersData, reportKey, maaEmployeesData]);
 
   const activityOptions = useMemo(() => {
     if (activitiesByDepartmentData) {
