@@ -107,9 +107,11 @@ function getNowInTimezone(timezone: string, locale: string) {
 }
 
 function getStartOfCalendarGrid(date: Date, timezone: string, locale: string) {
+  const midDate = new Date(date);
+  midDate.setUTCHours(12);
   const parts = new Intl.DateTimeFormat(locale, {
     year: 'numeric', month: 'numeric', day: 'numeric', timeZone: timezone
-  }).formatToParts(date);
+  }).formatToParts(midDate);
   const year = parseInt(parts.find(p => p.type === 'year')?.value || '0');
   const month = parseInt(parts.find(p => p.type === 'month')?.value || '0') - 1;
   const firstOfMonth = new Date(Date.UTC(year, month, 1));
@@ -152,7 +154,7 @@ const AppCalender = ({
   const [showYearSelect, setShowYearSelect] = useState(false);
 
   const months = Array.from({ length: 12 }, (_, i) =>
-    new Date(Date.UTC(2000, i)).toLocaleString(locale, { month: 'long', timeZone: selectedTimezone })
+    new Date(Date.UTC(2000, i, 1, 12)).toLocaleString(locale, { month: 'long', timeZone: selectedTimezone })
   );
   const years = Array.from({ length: 21 }, (_, i) => {
     const date = new Date();
@@ -226,10 +228,15 @@ const AppCalender = ({
         currentWeek = [];
       }
     }
-    return weeks
+    return weeks.filter(week => week.some(day => day.isCurrentMonth));
   }, [currentDate, selectedDate, selectedWeekDates, selectedTimezone, selectionMode, getDateInfo, locale, rotatedDays]);
 
   const handleDayClick = (date: Date) => {
+    // Auto-navigate if clicking a day from a different month
+    if (date.getUTCMonth() !== currentDate.getUTCMonth()) {
+      handleMonthChange(new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1)))
+    }
+
     if (selectionMode === 'day') {
       if (onDateSelect) {
         onDateSelect(date);
@@ -331,10 +338,18 @@ const AppCalender = ({
 
               <div className="text-2xl font-semibold text-foreground">
                 <Button variant="ghost" onClick={() => setShowMonthSelect(!showMonthSelect)}>
-                  {currentDate.toLocaleString(locale, { month: 'long', timeZone: selectedTimezone })}
+                  {(() => {
+                    const d = new Date(currentDate)
+                    d.setUTCHours(12)
+                    return d.toLocaleString(locale, { month: 'long', timeZone: selectedTimezone })
+                  })()}
                 </Button>{' '}
                 <Button variant="ghost" onClick={() => setShowYearSelect(!showYearSelect)}>
-                  {currentDate.toLocaleString(locale, { year: 'numeric', timeZone: selectedTimezone })}
+                  {(() => {
+                    const d = new Date(currentDate)
+                    d.setUTCHours(12)
+                    return d.toLocaleString(locale, { year: 'numeric', timeZone: selectedTimezone })
+                  })()}
                 </Button>
               </div>
 

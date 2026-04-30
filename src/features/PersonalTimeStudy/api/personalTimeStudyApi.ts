@@ -66,6 +66,18 @@ export async function apiGetUserProgramsAndActivities(userId: string): Promise<a
   return res.data!
 }
 
+/** Updates a single time study record by ID. */
+export async function apiUpdateTimeRecord(
+  id: number,
+  dto: Partial<TimeStudyRecordSubmitItemDto>
+): Promise<TimeStudyRecordResDto> {
+  const res = await api.put<ApiEnvelope<TimeStudyRecordResDto>>(
+    `/timestudyrecords/${id}`,
+    dto
+  )
+  return res.data!
+}
+
 /** Deletes a single time study record by ID. */
 export async function apiDeleteTimeRecord(id: number): Promise<void> {
   await api.delete(`/timestudyrecords/${id}`)

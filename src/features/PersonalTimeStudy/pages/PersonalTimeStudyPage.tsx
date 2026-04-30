@@ -1,9 +1,8 @@
-import { format } from "date-fns"
 import { getUserDetails } from "@/features/auth/api/getUserDetails"
 import { useMemo, useState } from "react"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
-import { Check, X, AlertCircle, Lock } from "lucide-react"
+import { X, Lock, Check } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 
@@ -15,7 +14,8 @@ import {
   apiSaveNotes,
   apiSubmitTimeRecords,
   apiGetUserProgramsAndActivities,
-  apiDeleteTimeRecord
+  apiDeleteTimeRecord,
+  apiUpdateTimeRecord
 } from "../api/personalTimeStudyApi"
 import { PersonalTimeStudyCalendarCard } from "../components/PersonalTimeStudyCalendarCard"
 import { PersonalTimeStudyEntryForm } from "../components/PersonalTimeStudyEntryForm"
@@ -40,6 +40,39 @@ function getWeekStartKey(dateStr: string): string {
   return `${y}-${m}-${d}`
 }
 
+/**
+ * Determines the overall status for a week based on individual day statuses and totals.
+ * Priority: 
+ * 1. All Approved -> "approved"
+ * 2. Any Rejected -> "rejected"
+ * 3. Any Not Submitted -> "pending"
+ * 4. All Submitted -> Compare Total vs Target (equal, less, more)
+ */
+function getWeeklyStatus(days: string[], totalMinutes: number, targetMinutes: number): string {
+  if (days.length === 0) return "notsubmitted"
+
+  const lowerDays = days.map(d => String(d || "").toLowerCase())
+  
+  // 1. Check if everything is approved
+  const allApproved = lowerDays.every(d => d === "approved")
+  if (allApproved) return "approved"
+
+  // 2. Check if there is any rejection
+  const hasRejected = lowerDays.some(d => d === "rejected")
+  if (hasRejected) return "rejected"
+
+  // 3. Check if any working day is not submitted
+  // "opened" or empty string or "notsubmitted" count as pending
+  const hasNotSubmitted = lowerDays.some(d => !d || d === "opened" || d === "notsubmitted" || d === "undefined")
+  if (hasNotSubmitted) return "pending"
+
+  // 4. Everything is submitted (or approved/rejected mix without pending)
+  // Calculate based on totals
+  if (totalMinutes === targetMinutes) return "equal"
+  if (totalMinutes < targetMinutes) return "less"
+  return "more"
+}
+
 export function PersonalTimeStudyPage() {
   const { user } = useAuth()
   const queryClient = useQueryClient()
@@ -53,15 +86,44 @@ export function PersonalTimeStudyPage() {
   const [activeTab, setActiveTab] = useState<ActiveTab>("personal")
 
   // 1. Date state
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date())
-  const dateStr = format(selectedDate, "yyyy-MM-dd")
+  const [selectedDate, setSelectedDate] = useState<Date>(() => {
+    const now = new Date()
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  })
+  const dateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, "0")}-${String(selectedDate.getDate()).padStart(2, "0")}`
   const month = selectedDate.getMonth() + 1
   const year = selectedDate.getFullYear()
 
   // 2. Fetch Month Legend — only when Personal tab is active
   const monthQuery = useQuery({
     queryKey: personalTimeStudyKeys.monthLegend(userId, month, year),
-    queryFn: () => apiGetMonthLegend({ userId, month, year }),
+    queryFn: async () => {
+      const getMonthData = (m: number, y: number) => {
+        let adjM = m
+        let adjY = y
+        if (m < 1) { adjM = 12; adjY = y - 1 }
+        else if (m > 12) { adjM = 1; adjY = y + 1 }
+        return apiGetMonthLegend({ userId, month: adjM, year: adjY })
+      }
+
+      // Fetch current, previous, and next month to handle weekly boundaries
+      const [prev, curr, next] = await Promise.all([
+        getMonthData(month - 1, year),
+        getMonthData(month, year),
+        getMonthData(month + 1, year)
+      ])
+
+      // Merge data and remove duplicates by date (if any)
+      const mergedMap = new Map<string, any>()
+      ;[...prev.data, ...curr.data, ...next.data].forEach(d => {
+        mergedMap.set(d.date, d)
+      })
+
+      return {
+        ...curr,
+        data: Array.from(mergedMap.values())
+      }
+    },
     enabled: !!userId && activeTab === "personal",
     staleTime: 0,
     gcTime: 0,
@@ -104,7 +166,7 @@ export function PersonalTimeStudyPage() {
   // 5. Calendar day & week summaries
   const { dayStatuses, weekSummaries } = useMemo(() => {
     const dayMap: Record<string, { status: string; color?: string }> = {}
-    const weekMap: Record<string, { totalMinutes: number, days: string[] }> = {}
+    const weekMap: Record<string, { totalMinutes: number, targetMinutes: number, days: string[] }> = {}
 
     if (!monthQuery.data?.data) return { dayStatuses: {}, weekSummaries: {} }
 
@@ -116,69 +178,136 @@ export function PersonalTimeStudyPage() {
       
       const weekKey = getWeekStartKey(d.date)
       if (!weekMap[weekKey]) {
-        weekMap[weekKey] = { totalMinutes: 0, days: [] }
+        weekMap[weekKey] = { totalMinutes: 0, targetMinutes: 0, days: [] }
       }
+
+      // Calculate target: 480 mins for Mon-Fri
+      const dateObj = new Date(d.date + 'T12:00:00Z')
+      const dayOfWeek = dateObj.getUTCDay()
+      const isWeekend = dayOfWeek === 0 || dayOfWeek === 6
+      
       weekMap[weekKey].totalMinutes += d.minutes ?? 0
+      if (!isWeekend) {
+        weekMap[weekKey].targetMinutes += 480
+      }
       weekMap[weekKey].days.push(d.status)
     }
 
     const weekSummaries: Record<string, any> = {}
     for (const [key, val] of Object.entries(weekMap)) {
-      let finalStatus = "notsubmitted"
-      const lowerDays = val.days.map(d => String(d).toLowerCase())
-      
-      const allApproved = lowerDays.length > 0 && lowerDays.every(d => d === "approved")
-      const allRejected = lowerDays.length > 0 && lowerDays.every(d => d === "rejected")
-      const hasAnyWork = lowerDays.length > 0 || val.totalMinutes > 0
-
-      if (allApproved) finalStatus = "approved"
-      else if (allRejected) finalStatus = "rejected"
-      else if (hasAnyWork) finalStatus = "submitted"
-      
+      const finalStatus = getWeeklyStatus(val.days, val.totalMinutes, val.targetMinutes)
       weekSummaries[key] = { totalMinutes: val.totalMinutes, status: finalStatus }
     }
 
-    return { dayStatuses: dayMap, weekSummaries }
+    // Extract dynamic legend from data
+    const statusMap = new Map<string, string>()
+    monthQuery.data.data.forEach((d: any) => {
+      if (d.status && d.color) {
+        const s = String(d.status).toLowerCase()
+        if (!statusMap.has(s)) {
+          statusMap.set(s, d.color)
+        }
+      }
+    })
+
+    const dynamicLegend = Array.from(statusMap.entries()).map(([status, color]) => {
+      let label = status.charAt(0).toUpperCase() + status.slice(1).replace(/_/g, " ")
+      if (status === "approved_time_entry") label = "Approved Time Entry"
+      if (status === "less_hours" || status === "submittedless") label = "Less Hours"
+      if (status === "more_hours" || status === "submittedexceed") label = "More Hours"
+      if (status === "equal_hours" || status === "submitted") label = "Equal Hours"
+      return { status, color, label }
+    })
+
+    return { dayStatuses: dayMap, weekSummaries, legend: dynamicLegend }
   }, [monthQuery.data])
 
   const renderStatus = (_weekIndex: number, _dates: Date[], status: any) => {
     const s = String(status).toLowerCase()
+    
+    // 1. Approved (Lock Icon)
     if (s === "approved") {
       return (
         <Tooltip>
           <TooltipTrigger asChild>
-            <span className="inline-flex size-4 items-center justify-center rounded-full bg-[#6C757D] shrink-0 cursor-help">
-              <Lock className="size-2.5 text-white" aria-hidden />
-            </span>
+            <Lock className="size-4 text-gray-500 shrink-0 cursor-help" aria-hidden />
           </TooltipTrigger>
           <TooltipContent className="text-xs">Approved</TooltipContent>
         </Tooltip>
+
       )
     }
+
+    // 2. Rejected (Red X)
     if (s === "rejected") {
       return (
         <Tooltip>
           <TooltipTrigger asChild>
-            <span className="inline-flex size-4 items-center justify-center rounded-full bg-[#DC3545] shrink-0 cursor-help">
-              <X className="size-2.5 text-white" aria-hidden />
+            <span className="inline-flex size-4 items-center justify-center rounded-full bg-white border border-[#DC3545] shrink-0 cursor-help shadow-sm">
+              <X className="size-2.5 text-[#DC3545]" aria-hidden />
             </span>
           </TooltipTrigger>
           <TooltipContent className="text-xs">Rejected</TooltipContent>
         </Tooltip>
       )
     }
-    if (s === "submitted" || s === "submittedexceed" || s === "submittedless") {
+
+    // 3. Pending (Orange X)
+    if (s === "pending") {
       return (
         <Tooltip>
           <TooltipTrigger asChild>
-            <span className="inline-flex size-4 items-center justify-center rounded-full bg-[#F97316] shrink-0 cursor-help">
-              <X className="size-2.5 text-white" aria-hidden />
+            <span className="inline-flex size-4 items-center justify-center rounded-full bg-white border border-[#F97316] shrink-0 cursor-help shadow-sm">
+              <X className="size-2.5 text-[#F97316]" aria-hidden />
             </span>
           </TooltipTrigger>
           <TooltipContent className="text-xs">Time sheet pending</TooltipContent>
         </Tooltip>
       )
     }
+
+    // 4. Equal (Green Check)
+    if (s === "equal") {
+      return (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className="inline-flex size-4 items-center justify-center rounded-full bg-[#28A745] shrink-0 cursor-help shadow-sm">
+              <Check className="size-2.5 text-white" aria-hidden />
+            </span>
+          </TooltipTrigger>
+          <TooltipContent className="text-xs">Equal Hours</TooltipContent>
+        </Tooltip>
+      )
+    }
+
+    // 5. Less (Yellow Alert)
+    if (s === "less") {
+      return (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className="inline-flex size-4 items-center justify-center rounded-full bg-[#FFC107] shrink-0 cursor-help shadow-sm">
+              <Check className="size-2.5 text-white" aria-hidden />
+            </span>
+          </TooltipTrigger>
+          <TooltipContent className="text-xs">Less Hours</TooltipContent>
+        </Tooltip>
+      )
+    }
+
+    // 6. More (Red Alert)
+    if (s === "more") {
+      return (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className="inline-flex size-4 items-center justify-center rounded-full bg-[#DC3545] shrink-0 cursor-help shadow-sm">
+              <Check className="size-2.5 text-white" aria-hidden />
+            </span>
+          </TooltipTrigger>
+          <TooltipContent className="text-xs">More Hours</TooltipContent>
+        </Tooltip>
+      )
+    }
+
     return null
   }
 
@@ -212,8 +341,16 @@ export function PersonalTimeStudyPage() {
   })
 
   const submitMutation = useMutation({
-    mutationFn: ({ records, mode }: { records: any[]; mode: "save" | "submit" }) =>
-      apiSubmitTimeRecords(records, mode),
+    mutationFn: async ({ records, mode }: { records: any[]; mode: "save" | "submit" }) => {
+      // If we are saving a single existing record, use PUT
+      if (mode === "save" && records.length === 1 && records[0].id) {
+        // Strip out 'id' and 'multiCodeRecords' as the backend DTO forbids them in PUT body
+        const { id, multiCodeRecords, ...updatePayload } = records[0]
+        return apiUpdateTimeRecord(id, updatePayload)
+      }
+      // Otherwise use the bulk POST endpoint
+      return apiSubmitTimeRecords(records, mode)
+    },
     onSuccess: (_, { mode }) => {
       toast.success(`Records ${mode === "save" ? "saved" : "submitted"} successfully`)
       queryClient.invalidateQueries({ queryKey: personalTimeStudyKeys.dayDetail(userId, dateStr) })
