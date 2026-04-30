@@ -19,6 +19,7 @@ export const costPoolUpsertFormSchema = z.object({
     .positive("Department is required"),
   active: z.boolean(),
   assignedActivityDepartmentIds: z.array(z.number().int().positive()),
+  assignedUserIds: z.array(z.string()),
 })
 
 export const costPoolFilterDefaultValues: CostPoolFilterFormValues = {
@@ -31,4 +32,5 @@ export const costPoolUpsertDefaultValues: CostPoolUpsertFormValues = {
   departmentId: 0,
   active: true,
   assignedActivityDepartmentIds: [],
+  assignedUserIds: [],
 }

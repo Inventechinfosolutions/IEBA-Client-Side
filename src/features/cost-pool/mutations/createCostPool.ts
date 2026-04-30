@@ -1,7 +1,8 @@
 import { useMutation } from "@tanstack/react-query"
+import { toast } from "sonner"
 import { queryClient } from "@/main"
 
-import { assertAssignableActivityDepartmentIdsForCreate, createCostPool } from "../api/costPoolApi"
+import { createUsersOnCostPool, assertAssignableActivityDepartmentIdsForCreate, createCostPool } from "../api/costPoolApi"
 import { CostPoolStatus } from "../enums/cost-pool.enum"
 import { costPoolKeys } from "../keys"
 import type { CostPoolActivityPickRow, CostPoolUpsertFormValues } from "../types"
@@ -20,12 +21,26 @@ export function useCreateCostPool() {
         values.assignedActivityDepartmentIds,
         cachedPicklist,
       )
-      return createCostPool({
+      const costPool = await createCostPool({
         name: values.costPool.trim(),
         status: values.active ? CostPoolStatus.ACTIVE : CostPoolStatus.INACTIVE,
         departmentId: values.departmentId,
         activityDepartmentIds,
+        // users: values.assignedUserIds, // Removed from main call to satisfy separate API requirement
       })
+
+      if (values.assignedUserIds.length > 0) {
+        const res = await createUsersOnCostPool({
+          costPoolId: costPool.id,
+          departmentId: values.departmentId,
+          users: values.assignedUserIds,
+        })
+        toast.success(res.message || "Cost pool created successfully")
+      } else {
+        toast.success("Cost pool created successfully")
+      }
+
+      return costPool
     },
     onSuccess: (data, { values }) => {
       // Do not use costPoolKeys.all — that also invalidates detail queries and can refetch GET /costpool/:id.

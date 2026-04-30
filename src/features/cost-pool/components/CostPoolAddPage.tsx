@@ -1,5 +1,6 @@
 import { CheckIcon, PlayIcon } from "lucide-react"
 import { useMemo, useState } from "react"
+import tableEmptyIcon from "@/assets/icons/table-empty.png"
 
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -15,7 +16,7 @@ import {
 } from "@/components/ui/select"
 
 import { CostPoolUpsertMode } from "../enums/cost-pool.enum"
-import type { CostPoolUpsertDialogProps, CostPoolVisualCheckboxProps } from "../types"
+import type { CostPoolAddPageProps, CostPoolVisualCheckboxProps } from "../types"
 
 function renderActivityName(value: string) {
   const match = value.match(/^\(([^)]*)\)(.*)$/)
@@ -55,13 +56,22 @@ export function CostPoolAddPage({
   departmentsLoading = false,
   activityRows,
   activitiesLoading = false,
-}: CostPoolUpsertDialogProps) {
+  userRows,
+  usersLoading = false,
+
+}: CostPoolAddPageProps) {
   const [unassignedSearch, setUnassignedSearch] = useState("")
   const [assignedSearch, setAssignedSearch] = useState("")
   const [selectedUnassignedIds, setSelectedUnassignedIds] = useState<number[]>([])
   const [selectedAssignedIds, setSelectedAssignedIds] = useState<number[]>([])
 
+  const [unassignedUserSearch, setUnassignedUserSearch] = useState("")
+  const [assignedUserSearch, setAssignedUserSearch] = useState("")
+  const [selectedUnassignedUserIds, setSelectedUnassignedUserIds] = useState<string[]>([])
+  const [selectedAssignedUserIds, setSelectedAssignedUserIds] = useState<string[]>([])
+
   const assignedIds = form.watch("assignedActivityDepartmentIds")
+  const assignedUserIds = form.watch("assignedUserIds") || []
   const departmentId = form.watch("departmentId")
   const hasDepartment = departmentId > 0
   const departmentCount = hasDepartment ? 1 : 0
@@ -101,6 +111,34 @@ export function CostPoolAddPage({
     filteredAssigned.length > 0 &&
     filteredAssigned.every((a) => selectedAssignedIds.includes(a.activityDepartmentId))
 
+  const assignedUsers = useMemo(
+    () => userRows.filter((u) => assignedUserIds.includes(u.userId)),
+    [userRows, assignedUserIds],
+  )
+  const unassignedUsers = useMemo(
+    () => userRows.filter((u) => !assignedUserIds.includes(u.userId)),
+    [userRows, assignedUserIds],
+  )
+
+  const filteredUnassignedUsers = useMemo(() => {
+    const q = unassignedUserSearch.trim().toLowerCase()
+    if (!q) return unassignedUsers
+    return unassignedUsers.filter((u) => u.displayName.toLowerCase().includes(q))
+  }, [unassignedUsers, unassignedUserSearch])
+
+  const filteredAssignedUsers = useMemo(() => {
+    const q = assignedUserSearch.trim().toLowerCase()
+    if (!q) return assignedUsers
+    return assignedUsers.filter((u) => u.displayName.toLowerCase().includes(q))
+  }, [assignedUsers, assignedUserSearch])
+
+  const allUnassignedUsersSelected =
+    filteredUnassignedUsers.length > 0 &&
+    filteredUnassignedUsers.every((u) => selectedUnassignedUserIds.includes(u.userId))
+  const allAssignedUsersSelected =
+    filteredAssignedUsers.length > 0 &&
+    filteredAssignedUsers.every((u) => selectedAssignedUserIds.includes(u.userId))
+
   const moveToAssigned = () => {
     if (selectedUnassignedIds.length === 0) return
     const allowed = new Set(activityRows.map((a) => a.activityDepartmentId))
@@ -119,6 +157,26 @@ export function CostPoolAddPage({
       assignedIds.filter((id) => !selectedAssignedIds.includes(id)),
     )
     setSelectedAssignedIds([])
+  }
+
+  const moveToAssignedUsers = () => {
+    if (selectedUnassignedUserIds.length === 0) return
+    const allowed = new Set(userRows.map((u) => u.userId))
+    const nextToAdd = selectedUnassignedUserIds.filter((id) => allowed.has(id))
+    form.setValue(
+      "assignedUserIds",
+      Array.from(new Set([...assignedUserIds, ...nextToAdd])),
+    )
+    setSelectedUnassignedUserIds([])
+  }
+
+  const moveToUnassignedUsers = () => {
+    if (selectedAssignedUserIds.length === 0) return
+    form.setValue(
+      "assignedUserIds",
+      assignedUserIds.filter((id) => !selectedAssignedUserIds.includes(id)),
+    )
+    setSelectedAssignedUserIds([])
   }
 
   return (
@@ -156,8 +214,11 @@ export function CostPoolAddPage({
               onValueChange={(value) => {
                 form.setValue("departmentId", Number(value), { shouldValidate: true })
                 form.setValue("assignedActivityDepartmentIds", [])
+                form.setValue("assignedUserIds", [])
                 setSelectedUnassignedIds([])
                 setSelectedAssignedIds([])
+                setSelectedUnassignedUserIds([])
+                setSelectedAssignedUserIds([])
               }}
             >
               <SelectTrigger className="!h-14 w-full rounded-[8px] border-[#E5E7EB] bg-white">
@@ -490,6 +551,194 @@ export function CostPoolAddPage({
             </div>
           </div>
         </div>
+
+        {/* Employee Section — show when users are available for the selected department */}
+        {hasDepartment && (usersLoading || userRows.length > 0) && (
+        <div className="grid grid-cols-12 items-start gap-6 pt-10">
+          <div className="col-span-5">
+            <div className="rounded-[10px] border border-[#E5E7EB] bg-white shadow-[0_4px_14px_rgba(17,24,39,0.05)]">
+              <div className="flex h-[42px] items-center justify-between rounded-t-[10px] bg-[#6C5DD3] px-4 text-[13px] font-medium text-white">
+                <span>{filteredUnassignedUsers.length} item</span>
+                <span>Unassigned Employee</span>
+              </div>
+
+              <div className="p-4">
+                <div className="relative mb-4">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2">
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="text-[#9CA3AF]"
+                    >
+                      <circle cx="11" cy="11" r="8" />
+                      <path d="m21 21-4.3-4.3" />
+                    </svg>
+                  </span>
+                  <TitleCaseInput
+                    placeholder="Search here"
+                    value={unassignedUserSearch}
+                    onChange={(e) => setUnassignedUserSearch(e.target.value)}
+                    className="h-11 rounded-[8px] border-[#E5E7EB] pl-10 text-[13px] placeholder:text-[#9CA3AF] focus:border-[#6C5DD3] focus:ring-[#6C5DD3]"
+                  />
+                </div>
+
+                <ScrollArea className="h-[280px]">
+                  {usersLoading && hasDepartment ? (
+                    <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+                      Loading employees…
+                    </div>
+                  ) : hasDepartment && filteredUnassignedUsers.length > 0 ? (
+                    <div className="space-y-1">
+                      {filteredUnassignedUsers.map((u) => {
+                        const checked = selectedUnassignedUserIds.includes(u.userId)
+                        return (
+                          <div
+                            key={u.userId}
+                            role="button"
+                            tabIndex={0}
+                            className="flex cursor-pointer items-center justify-between rounded-[8px] px-3 py-2.5 transition-colors hover:bg-[#F9FAFB]"
+                            onClick={() =>
+                              setSelectedUnassignedUserIds((prev) =>
+                                prev.includes(u.userId)
+                                  ? prev.filter((x) => x !== u.userId)
+                                  : [...prev, u.userId],
+                              )
+                            }
+                            onKeyDown={(e) => {
+                              if (e.key !== "Enter" && e.key !== " ") return
+                              e.preventDefault()
+                              setSelectedUnassignedUserIds((prev) =>
+                                prev.includes(u.userId)
+                                  ? prev.filter((x) => x !== u.userId)
+                                  : [...prev, u.userId],
+                              )
+                            }}
+                          >
+                            <span className="text-[13px] font-medium text-[#374151]">
+                              {u.displayName}
+                            </span>
+                            <VisualCheckbox checked={checked} />
+                          </div>
+                        )
+                      })}
+                    </div>
+                  ) : (
+                    <div className="flex h-full flex-col items-center justify-center space-y-3 grayscale opacity-80">
+                      <img src={tableEmptyIcon} alt="No data" className="size-25 object-contain" />
+                      
+                    </div>
+                  )}
+                </ScrollArea>
+              </div>
+            </div>
+          </div>
+
+          <div className="col-span-2 flex flex-col items-center justify-center gap-3 pt-32">
+            <Button
+              type="button"
+              onClick={moveToAssignedUsers}
+              disabled={selectedUnassignedUserIds.length === 0}
+              className="h-11 w-17 rounded-[10px] bg-[#6C5DD3] px-0 text-white shadow-[0_10px_18px_rgba(108,93,211,0.25)] hover:bg-[#5B4DC5] disabled:opacity-100 disabled:bg-[#6C5DD3]"
+            >
+              <PlayIcon className="size-3 fill-white text-white" />
+            </Button>
+            <Button
+              type="button"
+              onClick={moveToUnassignedUsers}
+              disabled={selectedAssignedUserIds.length === 0}
+              className="h-11 w-17 rounded-[10px] bg-[#6C5DD3] px-0 text-white shadow-[0_10px_18px_rgba(108,93,211,0.25)] hover:bg-[#5B4DC5] disabled:opacity-100 disabled:bg-[#6C5DD3]"
+            >
+              <PlayIcon className="size-3 rotate-180 fill-white text-white" />
+            </Button>
+          </div>
+
+          <div className="col-span-5">
+            <div className="rounded-[10px] border border-[#E5E7EB] bg-white shadow-[0_4px_14px_rgba(17,24,39,0.05)]">
+              <div className="flex h-[42px] items-center justify-between rounded-t-[10px] bg-[#6C5DD3] px-4 text-[13px] font-medium text-white">
+                <span>{filteredAssignedUsers.length} item</span>
+                <span>Assigned Employee</span>
+              </div>
+
+              <div className="p-4">
+                <div className="relative mb-4">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2">
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="text-[#9CA3AF]"
+                    >
+                      <circle cx="11" cy="11" r="8" />
+                      <path d="m21 21-4.3-4.3" />
+                    </svg>
+                  </span>
+                  <TitleCaseInput
+                    placeholder="Search here"
+                    value={assignedUserSearch}
+                    onChange={(e) => setAssignedUserSearch(e.target.value)}
+                    className="h-11 rounded-[8px] border-[#E5E7EB] pl-10 text-[13px] placeholder:text-[#9CA3AF] focus:border-[#6C5DD3] focus:ring-[#6C5DD3]"
+                  />
+                </div>
+
+                <ScrollArea className="h-[280px]">
+                  {hasDepartment && filteredAssignedUsers.length > 0 ? (
+                    <div className="space-y-1">
+                      {filteredAssignedUsers.map((u) => {
+                        const checked = selectedAssignedUserIds.includes(u.userId)
+                        return (
+                          <div
+                            key={u.userId}
+                            role="button"
+                            tabIndex={0}
+                            className="flex cursor-pointer items-center justify-between rounded-[8px] px-3 py-2.5 transition-colors hover:bg-[#F9FAFB]"
+                            onClick={() =>
+                              setSelectedAssignedUserIds((prev) =>
+                                prev.includes(u.userId)
+                                  ? prev.filter((x) => x !== u.userId)
+                                  : [...prev, u.userId],
+                              )
+                            }
+                            onKeyDown={(e) => {
+                              if (e.key !== "Enter" && e.key !== " ") return
+                              e.preventDefault()
+                              setSelectedAssignedUserIds((prev) =>
+                                prev.includes(u.userId)
+                                  ? prev.filter((x) => x !== u.userId)
+                                  : [...prev, u.userId],
+                              )
+                            }}
+                          >
+                            <span className="text-[13px] font-medium text-[#374151]">
+                              {u.displayName}
+                            </span>
+                            <VisualCheckbox checked={checked} />
+                          </div>
+                        )
+                      })}
+                    </div>
+                  ) : (
+                    <div className="flex h-full flex-col items-center justify-center space-y-3 grayscale opacity-80">
+                      <img src={tableEmptyIcon} alt="No data" className="size-25 object-contain" />
+                      
+                    </div>
+                  )}
+                </ScrollArea>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
         <div className="flex items-center justify-end gap-3 pt-2">
           <Button

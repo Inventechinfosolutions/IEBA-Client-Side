@@ -54,10 +54,22 @@ function normalizeCostPoolDetailPayload(d: unknown): CostPoolDetailResDto {
   const unassignedActivities = Array.isArray(unassignedRaw)
     ? (unassignedRaw as CostPoolDetailResDto["unassignedActivities"])
     : []
+
+  const assignedUsersRaw = o.assignedUsers ?? o.assigned_users
+  const unassignedUsersRaw = o.unassignedUsers ?? o.unassigned_users
+  const assignedUsers = Array.isArray(assignedUsersRaw)
+    ? (assignedUsersRaw as CostPoolDetailResDto["assignedUsers"])
+    : []
+  const unassignedUsers = Array.isArray(unassignedUsersRaw)
+    ? (unassignedUsersRaw as CostPoolDetailResDto["unassignedUsers"])
+    : []
+
   return {
     ...(o as CostPoolResDto),
     assignedActivities,
     unassignedActivities,
+    assignedUsers,
+    unassignedUsers,
   }
 }
 
@@ -116,15 +128,44 @@ export async function createCostPool(body: CreateCostPoolRequestDto): Promise<Cr
   return raw.data
 }
 
-export async function updateCostPool(
-  id: number,
-  body: UpdateCostPoolRequestDto,
-): Promise<CostPoolResDto> {
+export async function updateCostPool(id: number, body: Partial<CreateCostPoolRequestDto>): Promise<CostPoolResDto> {
   const raw = await api.put<ApiResponseDto<CostPoolResDto>>(`/costpool/${id}`, body)
   if (!raw.success || raw.data == null) {
     throw new Error(raw.message || "Failed to update cost pool")
   }
   return raw.data
+}
+
+export async function createUsersOnCostPool(payload: {
+  costPoolId: number
+  departmentId: number
+  users: string[]
+}): Promise<ApiResponseDto<any>> {
+  const raw = await api.post<ApiResponseDto<any>>("/costpooluserassignment", payload)
+  if (!raw.success) {
+    throw new Error(raw.message || "Failed to assign users to cost pool")
+  }
+  return raw
+}
+
+export async function updateUsersOnCostPool(payload: {
+  costPoolId: number
+  departmentId: number
+  users: string[]
+}): Promise<ApiResponseDto<any>> {
+  const raw = await api.put<ApiResponseDto<any>>("/costpooluserassignment", payload)
+  if (!raw.success) {
+    throw new Error(raw.message || "Failed to update user assignments")
+  }
+  return raw
+}
+
+export async function unassignUserFromCostPool(assignmentId: number): Promise<ApiResponseDto<any>> {
+  const raw = await api.delete<ApiResponseDto<any>>(`/costpooluserassignment/${assignmentId}`)
+  if (!raw.success) {
+    throw new Error(raw.message || "Failed to unassign user")
+  }
+  return raw
 }
 
 function pickPositiveInt(...candidates: unknown[]): number {
@@ -251,6 +292,7 @@ export function detailToUpsertFormValues(detail: CostPoolDetailResDto): CostPool
     assignedActivityDepartmentIds: (detail.assignedActivities ?? [])
       .map((a) => summaryActivityDepartmentId(a))
       .filter((id) => id > 0),
+    assignedUserIds: (detail.assignedUsers ?? []).map((u) => String(u.id)).filter(Boolean),
   }
 }
 

@@ -54,6 +54,7 @@ import { CostPoolAddPage } from "./CostPoolAddPage"
 import { useCreateCostPool } from "../mutations/createCostPool"
 import { useUpdateCostPool } from "../mutations/updateCostPool"
 import { useCostPoolActivityPicklistQuery } from "../queries/getCostPoolActivityPicklist"
+import { useCostPoolUserPicklistQuery } from "../queries/getCostPoolUserPicklist"
 import { useCostPoolDetailQuery } from "../queries/getCostPoolDetail"
 import {
   costPoolFilterDefaultValues,
@@ -105,6 +106,7 @@ function CostPoolCreateDialogContent({
     const rawOptions = (departmentsQuery.data?.items ?? []).map((d) => ({
       id: Number(d.id),
       name: d.name,
+      allowUserCostpoolDirect: d.settings.allowUserCostpoolDirect,
     }))
     
     if (isSuperAdmin) return rawOptions.map(opt => ({ ...opt, id: String(opt.id) }))
@@ -146,6 +148,11 @@ function CostPoolCreateDialogContent({
   })
 
   const activityRows = picklist.data ?? []
+  const userPicklist = useCostPoolUserPicklistQuery(departmentId, {
+    enabled: departmentId > 0,
+  })
+  const userRows = userPicklist.data?.users ?? []
+  const allowUserOrCostpoolDirect = userPicklist.data?.allowUserOrCostpoolDirect ?? true
   const createMutation = useCreateCostPool()
 
   const submit = form.handleSubmit((values) => {
@@ -171,6 +178,9 @@ function CostPoolCreateDialogContent({
       departmentsLoading={departmentsQuery.isPending || isDetailsLoading}
       activityRows={activityRows}
       activitiesLoading={picklist.isPending && departmentId > 0}
+      userRows={userRows}
+      usersLoading={userPicklist.isPending && departmentId > 0}
+      allowUserOrCostpoolDirect={allowUserOrCostpoolDirect}
     />
   )
 }
@@ -184,19 +194,25 @@ function CostPoolEditFormBody({
   detail,
   activityRows,
   activitiesLoading,
+  userRows,
+  usersLoading,
   departmentOptions,
   departmentsLoading,
   onClose,
   onUpdated,
+  allowUserOrCostpoolDirect,
 }: {
   costPoolId: number
   detail: CostPoolDetailResDto
   activityRows: CostPoolActivityPickRow[]
   activitiesLoading: boolean
+  userRows: any[]
+  usersLoading: boolean
   departmentOptions: CostPoolDepartmentOption[]
   departmentsLoading: boolean
   onClose: () => void
   onUpdated: () => void
+  allowUserOrCostpoolDirect: boolean
 }) {
   const form = useForm<CostPoolUpsertFormValues>({
     resolver: zodResolver(costPoolUpsertFormSchema),
@@ -207,7 +223,7 @@ function CostPoolEditFormBody({
 
   const submit = form.handleSubmit((values) => {
     updateMutation.mutate(
-      { id: costPoolId, values },
+      { id: costPoolId, values, oldAssignedUsers: detail.assignedUsers },
       {
         onSuccess: () => {
           onUpdated()
@@ -227,6 +243,9 @@ function CostPoolEditFormBody({
       departmentsLoading={departmentsLoading}
       activityRows={activityRows}
       activitiesLoading={activitiesLoading}
+      userRows={userRows}
+      usersLoading={usersLoading}
+      allowUserOrCostpoolDirect={allowUserOrCostpoolDirect}
     />
   )
 }
@@ -260,6 +279,7 @@ function CostPoolEditDialogContent({
     const rawOptions = (departmentsQuery.data?.items ?? []).map((d) => ({
       id: Number(d.id),
       name: d.name,
+      allowUserCostpoolDirect: d.settings.allowUserCostpoolDirect,
     }))
     
     if (isSuperAdmin) return rawOptions.map(opt => ({ ...opt, id: String(opt.id) }))
@@ -286,6 +306,33 @@ function CostPoolEditDialogContent({
     return mergeDetailActivitiesToPickRows(detailQuery.data)
   }, [detailQuery.data])
 
+  const userPicklist = useCostPoolUserPicklistQuery(Number(detailQuery.data?.departmentId || 0), {
+    enabled: !!detailQuery.data?.departmentId,
+  })
+
+  const userRows = useMemo(() => {
+    const picklistUsers = userPicklist.data?.users ?? []
+    
+    // Ensure all users from detail (assigned and unassigned) are in the list
+    const detailAssigned = (detailQuery.data?.assignedUsers ?? []).map((u) => ({
+      userId: String(u.id),
+      displayName: [u.firstName, u.lastName].filter(Boolean).join(" ") || String(u.id),
+    }))
+    const detailUnassigned = (detailQuery.data?.unassignedUsers ?? []).map((u) => ({
+      userId: String(u.id),
+      displayName: [u.firstName, u.lastName].filter(Boolean).join(" ") || String(u.id),
+    }))
+
+    const combined = [...picklistUsers, ...detailAssigned, ...detailUnassigned]
+    const map = new Map<string, any>()
+    for (const u of combined) {
+      if (u.userId) map.set(u.userId, u)
+    }
+    return Array.from(map.values())
+  }, [userPicklist.data?.users, detailQuery.data])
+
+  const allowUserOrCostpoolDirect = userPicklist.data?.allowUserOrCostpoolDirect ?? true
+
   if (detailQuery.isError) {
     return (
       <div className="flex min-h-[240px] w-full max-w-[1150px] items-center justify-center rounded-[10px] bg-white p-8 shadow-[0_0_20px_0_#0000001a]">
@@ -309,6 +356,9 @@ function CostPoolEditDialogContent({
       detail={detailQuery.data}
       activityRows={activityRows}
       activitiesLoading={detailQuery.isFetching}
+      userRows={userRows}
+      usersLoading={userPicklist.isLoading || detailQuery.isFetching}
+      allowUserOrCostpoolDirect={allowUserOrCostpoolDirect}
       departmentOptions={departmentOptions}
       departmentsLoading={departmentsQuery.isPending || isDetailsLoading}
       onClose={onClose}
