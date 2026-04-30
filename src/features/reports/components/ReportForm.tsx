@@ -1,4 +1,5 @@
 import React, { useMemo, useState, Fragment } from "react"
+import { useLocation } from "react-router-dom"
 import { Controller, useForm, useWatch } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { ChevronDown, Loader2, Search, X } from "lucide-react"
@@ -433,6 +434,7 @@ export type ReportFormProps = {
 
 export function ReportForm({ module }: ReportFormProps) {
   const [reportPreviewUrl, setReportPreviewUrl] = useState<string>("")
+  const location = useLocation()
 
   const updateReportPreview = (blob: Blob) => {
     setReportPreviewUrl((previousUrl) => {
@@ -443,24 +445,35 @@ export function ReportForm({ module }: ReportFormProps) {
     })
   }
 
-  const defaultValues = useMemo((): ReportFormValues => {
+  const navState = location.state as any
+
+  const formValues = useMemo((): ReportFormValues => {
     const stored = readStoredReportFormParams()
-    if (!stored) return REPORT_FORM_DEFAULT_VALUES
-    const merged: ReportFormValues = { ...REPORT_FORM_DEFAULT_VALUES, ...stored }
-    const legacyId = (stored as { employeeId?: string }).employeeId
-    if (!merged.employeeIds?.trim() && typeof legacyId === "string" && legacyId.trim() !== "") {
-      merged.employeeIds = legacyId.trim()
+    const base = stored ? { ...REPORT_FORM_DEFAULT_VALUES, ...stored } : { ...REPORT_FORM_DEFAULT_VALUES }
+    
+    if (navState?.number) {
+      base.reportKey = navState.number
     }
-    return merged
-  }, [])
+    if (navState?.filename) {
+      base.fileName = navState.filename
+    }
+
+    const legacyId = (stored as { employeeId?: string })?.employeeId
+    if (!base.employeeIds?.trim() && typeof legacyId === "string" && legacyId.trim() !== "") {
+      base.employeeIds = legacyId.trim()
+    }
+    return base
+  }, [navState])
 
   const form = useForm<ReportFormValues>({
     resolver: zodResolver(reportFormSchema),
-    defaultValues,
+    defaultValues: formValues,
+    values: formValues,
     mode: "onTouched",
   })
 
   const { control, handleSubmit, setError, setValue, formState } = form
+
   const reportKey = useWatch({ control, name: "reportKey" }) ?? ""
   const selectMonthBy = useWatch({ control, name: "selectMonthBy" })
   const fiscalYearId = useWatch({ control, name: "fiscalYearId" }) ?? ""

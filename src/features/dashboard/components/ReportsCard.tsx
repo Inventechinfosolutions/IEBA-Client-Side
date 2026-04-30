@@ -62,14 +62,15 @@ export function ReportsCard({ reports, isLoading }: ReportsCardProps) {
             ))}
 
           {!isLoading && (
-            <div className="flex items-center gap-3 px-4 py-2.5 hover:bg-[#F9F8FF]">
-              <span className="shrink-0 rounded-full bg-[#6C5DD3]/20 px-2 py-0.5 text-[10px] font-bold text-[#6C5DD3] uppercase tracking-wide">
-                TSCR
+            <button
+              type="button"
+              onClick={() => navigate("/reports", { state: { number: "TSCR", name: "Time Study Calculations Report" } })}
+              className="flex w-full items-center px-4 py-5 hover:bg-[#F9F8FF] text-left transition-colors"
+            >
+              <span className="truncate text-[15px]  text-[#6C5DD3] ml-2">
+                Time Study Calculations Report
               </span>
-              <span className="truncate text-sm text-[#6C5DD3] underline-offset-2 hover:underline cursor-pointer">
-                Time Study Calculation Report
-              </span>
-            </div>
+            </button>
           )}
         </div>
       </div>
