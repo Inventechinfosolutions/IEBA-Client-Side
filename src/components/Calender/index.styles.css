@@ -285,3 +285,7 @@
   font-weight: 600;
   color: #1d4ed8;
 }
+
+.day-cell.has-status-color {
+  color: white !important;
+}

@@ -10,6 +10,7 @@ import {
   PopoverAnchor,
 } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
+import tableEmptyIcon from "@/assets/icons/table-empty.png"
 
 export type SingleSelectOption = {
   value: string
@@ -39,8 +40,6 @@ export type SingleSelectSearchDropdownProps = {
   itemButtonClassName?: string
   /** Extra classes on each option label span */
   itemLabelClassName?: string
-  /** Shown when `options` is empty and not loading (default: "No options available"). */
-  emptyListMessage?: string
   /** Replaces default empty text when there are no options (e.g. illustration). */
   emptyListSlot?: ReactNode
   /** Notified when the menu opens or closes */
@@ -61,7 +60,6 @@ export function SingleSelectSearchDropdown({
   contentClassName,
   itemButtonClassName,
   itemLabelClassName,
-  emptyListMessage = "No options available",
   emptyListSlot,
   onOpenChange,
 }: SingleSelectSearchDropdownProps) {
@@ -126,10 +124,10 @@ export function SingleSelectSearchDropdown({
     <Popover modal={false} open={open} onOpenChange={(next) => { if (!next) closeMenu() }}>
       {/* PopoverAnchor lets the content align to this element without it being the trigger */}
       <PopoverAnchor asChild>
-        <div
-          className={cn(
-            "relative flex min-h-[43px] w-full items-center rounded-[7px] border border-[#c6cedd] bg-white px-3 py-1.5 pr-9",
-            "focus-within:border-[#6C5DD3] focus-within:ring-1 focus-within:ring-[#6C5DD333]",
+          <div
+            className={cn(
+              "relative flex min-h-[43px] w-full items-center rounded-[7px] border border-input bg-white px-3 py-1.5 pr-9",
+              "focus-within:border-[#6C5DD3] focus-within:ring-1 focus-within:ring-[#6C5DD333]",
             disabledEffective && "cursor-not-allowed bg-[#f2f2f2] opacity-100",
             className,
           )}
@@ -196,7 +194,9 @@ export function SingleSelectSearchDropdown({
           emptyListSlot !== undefined ? (
             <div className="p-1">{emptyListSlot}</div>
           ) : (
-            <div className="px-3 py-2 text-[11px] text-[#6b7280]">{emptyListMessage}</div>
+            <div className="flex flex-col items-center justify-center px-3 py-6 text-center">
+              <img src={tableEmptyIcon} alt="" className="size-20 object-contain opacity-100" />
+            </div>
           )
         ) : (
           <div className="p-1">

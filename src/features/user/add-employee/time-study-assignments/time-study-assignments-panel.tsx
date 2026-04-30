@@ -1,5 +1,6 @@
 
 import { useMemo, useState } from "react"
+import { useQueries } from "@tanstack/react-query"
 import { useFormContext } from "react-hook-form"
 import { toast } from "sonner"
 
@@ -32,6 +33,7 @@ import {
   useGetAddEmployeeTimeStudyPrograms,
   useGetUserProgramsAndActivities,
 } from "../queries/get-add-employee"
+import { apiGetProgramActivityRelationActivities } from "@/features/program/api"
 
 import { TransferPanel } from "./transfer-panel"
 
@@ -88,9 +90,22 @@ function timeStudyPlacementOverrideKey(departmentName: string, rowId: string): s
 }
 
 function compareTransferItems(a: AddEmployeeTimeStudyTransferItem, b: AddEmployeeTimeStudyTransferItem): number {
-  const c = (a.code ?? "").localeCompare(b.code ?? "", undefined, { sensitivity: "base", numeric: true })
-  if (c !== 0) return c
-  return a.name.localeCompare(b.name, undefined, { sensitivity: "base" })
+  const getSortKey = (item: { code?: string; name: string }) => {
+    const code = (item.code ?? "").trim()
+    const name = item.name.trim()
+    return code ? `(${code}) ${name}` : name
+  }
+
+  const pathA = [...(a.ancestors || []).map(getSortKey), getSortKey(a)]
+  const pathB = [...(b.ancestors || []).map(getSortKey), getSortKey(b)]
+
+  const minLen = Math.min(pathA.length, pathB.length)
+  for (let i = 0; i < minLen; i++) {
+    const cmp = pathA[i].localeCompare(pathB[i], undefined, { sensitivity: "base", numeric: true })
+    if (cmp !== 0) return cmp
+  }
+
+  return pathA.length - pathB.length
 }
 
 function sortTransferItems(items: AddEmployeeTimeStudyTransferItem[]): AddEmployeeTimeStudyTransferItem[] {
@@ -243,12 +258,29 @@ export function TimeStudyAssignmentsPanel({
 
   const globalProgramCatalog = useMemo<AddEmployeeTimeStudyTransferItem[]>(() => {
     const rows = programsQuery.data ?? []
-    return rows.map((p) => ({
-      id: p.id,
-      department: p.department,
-      code: p.code,
-      name: p.name,
-    }))
+    const rowMap = new Map(rows.map((r) => [r.id, r]))
+
+    return rows.map((p) => {
+      const ancestors: { id: string; name: string; code?: string }[] = []
+      let currId = p.parentId
+      let safety = 0
+      while (currId && currId !== "0" && rowMap.has(currId) && safety < 10) {
+        const parent = rowMap.get(currId)!
+        ancestors.unshift({ id: parent.id, name: parent.name, code: parent.code })
+        currId = parent.parentId
+        safety++
+      }
+
+      return {
+        id: p.id,
+        department: p.department,
+        code: p.code,
+        name: p.name,
+        level: ancestors.length + 1,
+        parentId: p.parentId,
+        ancestors,
+      }
+    })
   }, [programsQuery.data])
 
   const [searchProgramsU, setSearchProgramsU] = useState("")
@@ -357,51 +389,24 @@ export function TimeStudyAssignmentsPanel({
     return null
   }, [isAddMode, departmentsQuery.data, timeStudyDeptAddMode, selectedBundle, selectedEditDeptId])
 
-  const activityDepartmentsQuery = useGetActivityDepartmentsForDepartment(
-    selectedDepartmentNumericId,
-    selectedDepartmentNumericId != null,
-  )
-
-  /** Edit: after department change, block transfers until program list + department-scoped activities finish loading. */
-  const tsCatalogRefetchBusy =
-    isEditTimeStudyWithUserBundle &&
-    (programsQuery.isFetching || activityDepartmentsQuery.isFetching)
-
-  const addModeDepartmentDropdownLoading = departmentsQuery.isPending || departmentsQuery.isFetching
-  const editModeDepartmentDropdownLoading =
-    userProgramsActivitiesQuery.isPending ||
-    userProgramsActivitiesQuery.isFetching ||
-    (departmentSelectOptionsFromUserBundle.length === 0 &&
-      (departmentsQuery.isPending || departmentsQuery.isFetching))
-
-  /** ActivityDepartment link ids per selected department (not master GET /activities ids). */
-  const globalActivityCatalog = useMemo<AddEmployeeTimeStudyTransferItem[]>(() => {
-    const deptLabel = selectedDept.trim()
-    if (!deptLabel) return []
-    const rows = activityDepartmentsQuery.data ?? []
-    return rows
-      .filter((a) => isActiveActivityDepartmentStatus(a.status))
-      .map((a) => ({
-        id: String(a.id),
-        department: deptLabel,
-        code: a.code,
-        name: a.name,
-      }))
-  }, [activityDepartmentsQuery.data, selectedDept])
-
   const programCatalogForAddMode = globalProgramCatalog
-  const activityCatalogForAddMode = globalActivityCatalog
 
   const bundleProgramsForSelectedDepartment = useMemo(() => {
     if (!selectedBundle) return []
     const dept = selectedBundle.departmentName.trim()
-    return selectedBundle.programs.map((p) => ({
-      id: String(p.id),
-      code: p.code,
-      name: p.name,
-      department: dept,
-    }))
-  }, [selectedBundle])
+    return selectedBundle.programs.map((p) => {
+      const globalProg = globalProgramCatalog.find((gp) => gp.id === String(p.id))
+      return {
+        id: String(p.id),
+        code: p.code,
+        name: p.name,
+        department: dept,
+        level: globalProg?.level,
+        parentId: globalProg?.parentId,
+        ancestors: globalProg?.ancestors,
+      }
+    })
+  }, [selectedBundle, globalProgramCatalog])
 
   const bundleActivitiesForSelectedDepartment = useMemo(() => {
     if (!selectedBundle) return []
@@ -429,10 +434,6 @@ export function TimeStudyAssignmentsPanel({
     [globalProgramCatalog, selectedDept],
   )
 
-  const globalActivitiesForSelectedDepartment = useMemo(
-    () => filterTransferItemsByDepartment(globalActivityCatalog, selectedDept),
-    [globalActivityCatalog, selectedDept],
-  )
 
   const programAssignedPredicateEditMode = useMemo(
     () => (rowId: string) =>
@@ -461,10 +462,6 @@ export function TimeStudyAssignmentsPanel({
     [programCatalogForAddMode, selectedDept],
   )
 
-  const deptActivitiesAddMode = useMemo(() => {
-    if (!selectedDept) return []
-    return filterTransferItemsByDepartment(activityCatalogForAddMode, selectedDept)
-  }, [activityCatalogForAddMode, selectedDept])
 
   const programsUnassigned = useMemo(() => {
     if (isEditTimeStudyWithUserBundle) {
@@ -499,6 +496,110 @@ export function TimeStudyAssignmentsPanel({
     deptProgramsAddMode,
     assignedProgramIdsAddMode,
   ])
+
+  /**
+   * Activities are only fetched once at least one program is assigned.
+   * This enforces the Department → Program → Activities dependency chain
+   * without useEffect: the query is simply disabled until programsAssigned is non-empty.
+   */
+  const activityDepartmentsQuery = useGetActivityDepartmentsForDepartment(
+    selectedDepartmentNumericId,
+    selectedDepartmentNumericId != null && programsAssigned.length > 0,
+  )
+
+  /**
+   * For each assigned program, fetch its activities in parallel (no useEffect).
+   * The endpoint returns which Activity master IDs are assigned to each program.
+   * We cross-reference these with activityDepartmentsQuery (which has ActivityDepartment IDs
+   * needed for POST /users/new/assign/activity) via row.activityId.
+   */
+  const programActivityQueryResults = useQueries({
+    queries: programsAssigned.map((program) => ({
+      queryKey: ["programActivityRelation", "activities", selectedDepartmentNumericId, program.id],
+      enabled: selectedDepartmentNumericId != null,
+      queryFn: () =>
+        apiGetProgramActivityRelationActivities(
+          selectedDepartmentNumericId!,
+          Number(program.id),
+        ),
+      staleTime: 0,
+    })),
+  })
+
+  /**
+   * Collect the set of master Activity IDs that are assigned to any of the user's programs.
+   * These come from the last segment of each node's tree key (e.g. "dept-1-act-5" → "5").
+   */
+  const { programAssignedActivityIds, activityLevels } = useMemo(() => {
+    const ids = new Set<string>()
+    const levels = new Map<string, number>()
+
+    const traverse = (nodes: any[], currentLevel: number) => {
+      for (const node of nodes) {
+        const id = String(String(node.key ?? "").split("-").at(-1) ?? "")
+        if (id) {
+          ids.add(id)
+          levels.set(id, Math.max(levels.get(id) || 0, currentLevel))
+        }
+        if (Array.isArray(node.children)) {
+          traverse(node.children, currentLevel + 1)
+        }
+      }
+    }
+
+    for (const result of programActivityQueryResults) {
+      if (!result.data) continue
+      const roots = result.data.assignedActivities
+      if (!Array.isArray(roots) || roots.length === 0) continue
+      const activityNode = roots[0]?.activity?.[0]
+      const children = Array.isArray(activityNode?.children) ? activityNode.children : []
+      traverse(children, 0)
+    }
+    return { programAssignedActivityIds: ids, activityLevels: levels }
+  }, [programActivityQueryResults])
+
+  /** ActivityDepartment link ids per selected department (not master GET /activities ids). */
+  const globalActivityCatalog = useMemo<AddEmployeeTimeStudyTransferItem[]>(() => {
+    const deptLabel = selectedDept.trim()
+    if (!deptLabel) return []
+    const rows = activityDepartmentsQuery.data ?? []
+    // Only show activities whose master activityId is assigned to one of the user's programs
+    const filtered =
+      programsAssigned.length > 0 && programAssignedActivityIds.size > 0
+        ? rows.filter((a) => isActiveActivityDepartmentStatus(a.status) && programAssignedActivityIds.has(String(a.id)))
+        : []
+    return filtered.map((a) => ({
+      id: String(a.id),        // ActivityDepartment ID — correct for POST /users/new/assign/activity
+      department: deptLabel,
+      code: a.code,
+      name: a.name,
+      level: activityLevels.get(String(a.id)) || 0,
+    }))
+  }, [activityDepartmentsQuery.data, selectedDept, programsAssigned, programAssignedActivityIds, activityLevels])
+
+  const activityCatalogForAddMode = globalActivityCatalog
+
+  const globalActivitiesForSelectedDepartment = useMemo(
+    () => filterTransferItemsByDepartment(globalActivityCatalog, selectedDept),
+    [globalActivityCatalog, selectedDept],
+  )
+
+  const deptActivitiesAddMode = useMemo(() => {
+    if (!selectedDept) return []
+    return filterTransferItemsByDepartment(activityCatalogForAddMode, selectedDept)
+  }, [activityCatalogForAddMode, selectedDept])
+
+  /** Edit: after department change, block transfers until program list + department-scoped activities finish loading. */
+  const tsCatalogRefetchBusy =
+    isEditTimeStudyWithUserBundle &&
+    (programsQuery.isFetching || activityDepartmentsQuery.isFetching)
+
+  const addModeDepartmentDropdownLoading = departmentsQuery.isPending || departmentsQuery.isFetching
+  const editModeDepartmentDropdownLoading =
+    userProgramsActivitiesQuery.isPending ||
+    userProgramsActivitiesQuery.isFetching ||
+    (departmentSelectOptionsFromUserBundle.length === 0 &&
+      (departmentsQuery.isPending || departmentsQuery.isFetching))
 
   const activitiesUnassigned = useMemo(() => {
     if (isEditTimeStudyWithUserBundle) {

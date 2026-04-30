@@ -9,6 +9,8 @@ export type AddEmployeeListMetaDto = {
   itemsPerPage: number
   totalPages: number
   currentPage: number
+  hasNextPage?: boolean
+  hasPreviousPage?: boolean
 }
 
 /** Backend jobclassification list row (subset used by Add Employee UI). */
@@ -115,6 +117,8 @@ export type AddEmployeeTimeStudyProgramRow = {
   code: string
   name: string
   department: string
+  parentId?: string
+  level?: number
 }
 
 /** GET /timestudyprograms/user/programs-activities?userId= — program row per department bundle. */
@@ -286,6 +290,9 @@ export type AddEmployeeTimeStudyTransferItem = {
   department: string
   name: string
   code?: string
+  level?: number
+  parentId?: string
+  ancestors?: { id: string; name: string; code?: string }[]
 }
 
 export type AddEmployeeTimeStudyTransferPanelProps = {

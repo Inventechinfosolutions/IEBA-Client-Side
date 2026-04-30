@@ -3,6 +3,8 @@ import { getUserDetails } from "@/features/auth/api/getUserDetails"
 import { useMemo, useState } from "react"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
+import { Check, X, AlertCircle, Lock } from "lucide-react"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 
 import { useAuth } from "@/contexts/AuthContext"
@@ -12,7 +14,8 @@ import {
   apiGetMonthLegend,
   apiSaveNotes,
   apiSubmitTimeRecords,
-  apiGetUserProgramsAndActivities
+  apiGetUserProgramsAndActivities,
+  apiDeleteTimeRecord
 } from "../api/personalTimeStudyApi"
 import { PersonalTimeStudyCalendarCard } from "../components/PersonalTimeStudyCalendarCard"
 import { PersonalTimeStudyEntryForm } from "../components/PersonalTimeStudyEntryForm"
@@ -20,10 +23,22 @@ import { PersonalTimeStudyLeaveCard } from "../components/PersonalTimeStudyLeave
 import { PersonalTimeStudyLegendCard } from "../components/PersonalTimeStudyLegendCard"
 import { PersonalTimeStudyMinutesCard } from "../components/PersonalTimeStudyMinutesCard"
 import { PersonalTimeStudyNotesSection } from "../components/PersonalTimeStudyNotesSection"
+import { personalTimeStudyKeys } from "../keys"
 import type { WeekSummaryRow } from "../components/PersonalTimeStudyWeekSummary"
 import { TimeStudyMGTPage } from "../TimeStudyMGT"
 
 type ActiveTab = "personal" | "mgt"
+
+function getWeekStartKey(dateStr: string): string {
+  const date = new Date(dateStr + 'T12:00:00Z')
+  const day = date.getUTCDay()
+  const diff = date.getUTCDate() - day
+  const sunday = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), diff))
+  const y = sunday.getUTCFullYear()
+  const m = String(sunday.getUTCMonth() + 1).padStart(2, '0')
+  const d = String(sunday.getUTCDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
 
 export function PersonalTimeStudyPage() {
   const { user } = useAuth()
@@ -45,16 +60,24 @@ export function PersonalTimeStudyPage() {
 
   // 2. Fetch Month Legend — only when Personal tab is active
   const monthQuery = useQuery({
-    queryKey: ["personal-time-study", "month", userId, month, year],
+    queryKey: personalTimeStudyKeys.monthLegend(userId, month, year),
     queryFn: () => apiGetMonthLegend({ userId, month, year }),
     enabled: !!userId && activeTab === "personal",
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
   })
 
   // 3. Fetch Day Detail — only when Personal tab is active
   const dayQuery = useQuery({
-    queryKey: ["personal-time-study", "day", userId, dateStr],
+    queryKey: personalTimeStudyKeys.dayDetail(userId, dateStr),
     queryFn: () => apiGetDayDetail({ userId, date: dateStr, month, year }),
     enabled: !!userId && activeTab === "personal",
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
   })
 
   // 4. Fetch user & dropdown data
@@ -62,39 +85,130 @@ export function PersonalTimeStudyPage() {
     queryKey: ["user-details", userId],
     queryFn: () => getUserDetails(userId),
     enabled: !!userId,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
   })
 
   const dropdownQuery = useQuery({
-    queryKey: ["personal-time-study", "dropdowns", userId],
+    queryKey: personalTimeStudyKeys.dropdowns(userId),
     queryFn: () => apiGetUserProgramsAndActivities(userId),
     enabled: !!userId && activeTab === "personal",
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
   })
 
-  // 5. Calendar day statuses
-  const dayStatuses = useMemo(() => {
-    if (!monthQuery.data?.data) return {}
-    return monthQuery.data.data.reduce((acc, d) => {
-      acc[d.date] = { status: d.status, color: d.color ?? undefined }
-      return acc
-    }, {} as Record<string, { status: string; color?: string }>)
+  // 5. Calendar day & week summaries
+  const { dayStatuses, weekSummaries } = useMemo(() => {
+    const dayMap: Record<string, { status: string; color?: string }> = {}
+    const weekMap: Record<string, { totalMinutes: number, days: string[] }> = {}
+
+    if (!monthQuery.data?.data) return { dayStatuses: {}, weekSummaries: {} }
+
+    for (const d of monthQuery.data.data) {
+      const s = String(d.status).toLowerCase()
+      // If unlocked (opened), don't show the cell color
+      const cellColor = s === "opened" ? undefined : (d.color ?? undefined)
+      dayMap[d.date] = { status: d.status, color: cellColor }
+      
+      const weekKey = getWeekStartKey(d.date)
+      if (!weekMap[weekKey]) {
+        weekMap[weekKey] = { totalMinutes: 0, days: [] }
+      }
+      weekMap[weekKey].totalMinutes += d.minutes ?? 0
+      weekMap[weekKey].days.push(d.status)
+    }
+
+    const weekSummaries: Record<string, any> = {}
+    for (const [key, val] of Object.entries(weekMap)) {
+      let finalStatus = "notsubmitted"
+      const lowerDays = val.days.map(d => String(d).toLowerCase())
+      
+      const allApproved = lowerDays.length > 0 && lowerDays.every(d => d === "approved")
+      const allRejected = lowerDays.length > 0 && lowerDays.every(d => d === "rejected")
+      const hasAnyWork = lowerDays.length > 0 || val.totalMinutes > 0
+
+      if (allApproved) finalStatus = "approved"
+      else if (allRejected) finalStatus = "rejected"
+      else if (hasAnyWork) finalStatus = "submitted"
+      
+      weekSummaries[key] = { totalMinutes: val.totalMinutes, status: finalStatus }
+    }
+
+    return { dayStatuses: dayMap, weekSummaries }
   }, [monthQuery.data])
+
+  const renderStatus = (_weekIndex: number, _dates: Date[], status: any) => {
+    const s = String(status).toLowerCase()
+    if (s === "approved") {
+      return (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className="inline-flex size-4 items-center justify-center rounded-full bg-[#6C757D] shrink-0 cursor-help">
+              <Lock className="size-2.5 text-white" aria-hidden />
+            </span>
+          </TooltipTrigger>
+          <TooltipContent className="text-xs">Approved</TooltipContent>
+        </Tooltip>
+      )
+    }
+    if (s === "rejected") {
+      return (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className="inline-flex size-4 items-center justify-center rounded-full bg-[#DC3545] shrink-0 cursor-help">
+              <X className="size-2.5 text-white" aria-hidden />
+            </span>
+          </TooltipTrigger>
+          <TooltipContent className="text-xs">Rejected</TooltipContent>
+        </Tooltip>
+      )
+    }
+    if (s === "submitted" || s === "submittedexceed" || s === "submittedless") {
+      return (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className="inline-flex size-4 items-center justify-center rounded-full bg-[#F97316] shrink-0 cursor-help">
+              <X className="size-2.5 text-white" aria-hidden />
+            </span>
+          </TooltipTrigger>
+          <TooltipContent className="text-xs">Time sheet pending</TooltipContent>
+        </Tooltip>
+      )
+    }
+    return null
+  }
 
   // 6. Notes local state
   const [localNotes, setLocalNotes] = useState("")
-  useMemo(() => {
-    if (dayQuery.data?.notes !== undefined) {
-      setLocalNotes(dayQuery.data.notes ?? "")
-    }
-  }, [dayQuery.data?.notes])
+
+  // Sync local notes when date changes or data arrives
+  const fetchedNotes = dayQuery.data?.notes ?? ""
+  const [prevFetchedNotes, setPrevFetchedNotes] = useState<string | null>(null)
+  const [prevDateStr, setPrevDateStr] = useState(dateStr)
+
+  if (dateStr !== prevDateStr) {
+    setPrevDateStr(dateStr)
+    setLocalNotes("") // Clear notes immediately when date changes
+    setPrevFetchedNotes(null)
+  } else if (fetchedNotes !== prevFetchedNotes && dayQuery.isSuccess) {
+    setPrevFetchedNotes(fetchedNotes)
+    setLocalNotes(fetchedNotes)
+  }
 
   // 7. Mutations
   const notesMutation = useMutation({
     mutationFn: (notes: string) => apiSaveNotes({ date: dateStr, notes }),
     onSuccess: () => {
       toast.success("Notes saved")
-      queryClient.invalidateQueries({ queryKey: ["personal-time-study", "day", userId, dateStr] })
+      queryClient.invalidateQueries({ queryKey: personalTimeStudyKeys.dayDetail(userId, dateStr) })
     },
-    onError: () => toast.error("Failed to save notes"),
+    onError: (error: any) => {
+      toast.error(error.message || "Failed to save notes")
+    },
   })
 
   const submitMutation = useMutation({
@@ -102,15 +216,30 @@ export function PersonalTimeStudyPage() {
       apiSubmitTimeRecords(records, mode),
     onSuccess: (_, { mode }) => {
       toast.success(`Records ${mode === "save" ? "saved" : "submitted"} successfully`)
-      queryClient.invalidateQueries({ queryKey: ["personal-time-study", "day", userId, dateStr] })
-      queryClient.invalidateQueries({ queryKey: ["personal-time-study", "month", userId, month, year] })
+      queryClient.invalidateQueries({ queryKey: personalTimeStudyKeys.dayDetail(userId, dateStr) })
+      queryClient.invalidateQueries({ queryKey: personalTimeStudyKeys.monthLegend(userId, month, year) })
     },
-    onError: () => toast.error("Failed to process records"),
+    onError: (error: any) => {
+      toast.error(error.message || "Failed to process records")
+    },
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => apiDeleteTimeRecord(id),
+    onSuccess: () => {
+      toast.success("Entry deleted")
+      queryClient.invalidateQueries({ queryKey: personalTimeStudyKeys.dayDetail(userId, dateStr) })
+      queryClient.invalidateQueries({ queryKey: personalTimeStudyKeys.monthLegend(userId, month, year) })
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "Failed to delete entry")
+    },
   })
 
   const weekRows: WeekSummaryRow[] = useMemo(() => [], [])
 
   return (
+    <TooltipProvider>
     <section className="font-roboto *:font-roboto box-border w-full min-w-0 max-w-full overflow-x-hidden">
       <div className="box-border w-full min-w-0 max-w-full px-6 py-4">
 
@@ -166,6 +295,8 @@ export function PersonalTimeStudyPage() {
                     currentMonthDate={selectedDate}
                     onMonthChange={setSelectedDate}
                     dayStatuses={dayStatuses}
+                    weekSummaries={weekSummaries}
+                    renderStatus={renderStatus}
                     className="h-full min-h-0 w-full min-w-0"
                   />
                 </div>
@@ -179,6 +310,8 @@ export function PersonalTimeStudyPage() {
                       approved={dayQuery.data?.leaveRecords?.filter(r => r.status.toLowerCase() === "approved").length ?? 0}
                       open={dayQuery.data?.leaveRecords?.filter(r => r.status.toLowerCase() === "open").length ?? 0}
                       rejected={dayQuery.data?.leaveRecords?.filter(r => r.status.toLowerCase() === "rejected").length ?? 0}
+                      dropdownData={dropdownQuery.data}
+                      onOpen={() => dropdownQuery.refetch()}
                     />
                     <PersonalTimeStudyMinutesCard
                       className="min-h-0 sm:col-span-2 lg:col-span-1"
@@ -205,6 +338,7 @@ export function PersonalTimeStudyPage() {
                   dropdownData={dropdownQuery.data}
                   onSave={(records) => submitMutation.mutate({ records, mode: "save" })}
                   onSubmit={(records) => submitMutation.mutate({ records, mode: "submit" })}
+                  onDelete={(id) => deleteMutation.mutate(id)}
                 />
               </div>
             </>
@@ -219,5 +353,6 @@ export function PersonalTimeStudyPage() {
       </div>
       </div>
     </section>
+    </TooltipProvider>
   )
 }

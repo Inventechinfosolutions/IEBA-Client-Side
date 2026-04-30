@@ -71,20 +71,6 @@ interface CalendarDay {
   weekDay: string;
 }
 
-const statusColors: Record<DateStatus, string> = {
-  [DateStatus.APPROVED_TIME_ENTRY]: '#6C757D',
-  [DateStatus.LESS_HOURS]: '#FFC107',
-  [DateStatus.MORE_HOURS]: '#DC3545',
-  [DateStatus.SUBMITTED]: '#28A745',
-  [DateStatus.SUBMITTED_LESS]: '#FFC107',
-  [DateStatus.SUBMITTED_EXCEED]: '#DC3545',
-  [DateStatus.APPROVED]: '#28A745',
-  [DateStatus.REJECTED]: '#DC3545',
-  [DateStatus.NOT_SUBMITTED]: '#f3f4f6',
-  [DateStatus.LEAVE]: '#93c5fd',
-  [DateStatus.HOLIDAY]: '#fde68a',
-  [DateStatus.WEEKEND]: '#f1f5f9',
-};
 
 const weekSummaryDotColors: Record<DateStatus, string> = {
   [DateStatus.APPROVED_TIME_ENTRY]: '#6C757D',
@@ -448,11 +434,15 @@ const AppCalender = ({
                             "z-[1] shadow-md ring-2 ring-primary ring-offset-2 ring-offset-background !text-foreground",
                           dayObj.isWeekSelected &&
                             !dayObj.isSelected &&
-                            "border-2 border-primary !text-primary font-medium"
+                            "border-2 border-primary !text-primary font-medium",
+                          dayObj.color && "text-white!"
                         )}
                         style={
                           {
                             backgroundColor: dayObj.color || "#f3f4f6", 
+                            backgroundImage: dayObj.status === DateStatus.REJECTED 
+                              ? `linear-gradient(to top right, transparent 46%, rgba(0,0,0,0.6) 46%, rgba(0,0,0,0.6) 54%, transparent 54%)`
+                              : "none"
                           } as CSSProperties
                         }
                       >

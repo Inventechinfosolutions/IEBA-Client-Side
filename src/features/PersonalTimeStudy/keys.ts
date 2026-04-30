@@ -3,6 +3,18 @@ export const personalTimeStudyKeys = {
   lists: () => [...personalTimeStudyKeys.all, "list"] as const,
   list: (filters?: { search?: string }) =>
     [...personalTimeStudyKeys.lists(), filters] as const,
+  /** Month legend for a specific user + month + year */
+  monthLegend: (userId: string, month: number, year: number) =>
+    [...personalTimeStudyKeys.all, "month", userId, month, year] as const,
+
+  /** Day detail for a specific user + date string */
+  dayDetail: (userId: string, dateStr: string) =>
+    [...personalTimeStudyKeys.all, "day", userId, dateStr] as const,
+
+  /** User programs and activities dropdowns */
+  dropdowns: (userId: string) =>
+    [...personalTimeStudyKeys.all, "dropdowns", userId] as const,
+
   /** Placeholder — align with future `GET .../:id` for edit flows. */
   detail: (id: string) =>
     [...personalTimeStudyKeys.all, "detail", id] as const,

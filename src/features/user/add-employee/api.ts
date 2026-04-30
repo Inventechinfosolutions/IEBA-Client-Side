@@ -78,7 +78,7 @@ function normalizeLocationListRows(payload: unknown): AddEmployeeLocationRow[] {
 export async function fetchAddEmployeeLocations(): Promise<AddEmployeeLocationRow[]> {
   const search = new URLSearchParams()
   search.set("page", "1")
-  search.set("limit", "100")
+  search.set("limit", "1000")
   search.set("sort", "ASC")
   search.set("status", "active")
 
@@ -94,7 +94,7 @@ export async function fetchAddEmployeeLocations(): Promise<AddEmployeeLocationRo
 export async function fetchAddEmployeeJobClassifications(): Promise<AddEmployeeJobClassificationRow[]> {
   const search = new URLSearchParams()
   search.set("page", "1")
-  search.set("limit", "100")
+  search.set("limit", "1000")
   search.set("sort", "ASC")
   search.set("status", "active")
 
@@ -150,7 +150,7 @@ function normalizeCountyActivityPayload(payload: unknown): AddEmployeeCountyActi
 export async function fetchListCountyActivity(): Promise<AddEmployeeCountyActivityRow[]> {
   const search = new URLSearchParams()
   search.set("page", "1")
-  search.set("limit", "100")
+  search.set("limit", "1000")
   search.set("sort", "ASC")
   search.set("status", "active")
 
@@ -164,7 +164,7 @@ export async function fetchListCountyActivity(): Promise<AddEmployeeCountyActivi
 export async function fetchAddEmployeeJobPools(): Promise<AddEmployeeJobPoolRow[]> {
   const search = new URLSearchParams()
   search.set("page", "1")
-  search.set("limit", "100")
+  search.set("limit", "1000")
   search.set("sort", "ASC")
   search.set("status", "active")
 
@@ -190,7 +190,7 @@ export async function fetchAddEmployeeJobPools(): Promise<AddEmployeeJobPoolRow[
 export async function fetchAddEmployeeActivitiesCatalog(): Promise<AddEmployeeActivityCatalogRow[]> {
   const search = new URLSearchParams()
   search.set("page", "1")
-  search.set("limit", "100")
+  search.set("limit", "1000")
 
   const res = await api.get<ApiResponseDto<AddEmployeeActivityListPayload>>(
     `/activities?${search.toString()}`
@@ -307,45 +307,65 @@ function flattenDepartmentsRolesToSecurityItems(
 export async function fetchDepartmentRolesUnassigned(options?: {
   userId?: string
 }): Promise<AddEmployeeSecurityRoleCatalogItem[]> {
-  const search = new URLSearchParams()
-  search.set("page", "1")
-  search.set("limit", "100")
-  search.set("sort", "ASC")
-  const uid = options?.userId?.trim()
-  if (uid) search.set("userId", uid)
+  const allPayloads = []
+  let page = 1
+  const limit = 1000
+  const maxPages = 20
 
-  const res = await api.get<ApiResponseDto<unknown>>(
-    `/departments/user/roles-unassigned?${search.toString()}`,
-  )
-  const payload = unwrapSuccess(res, "Failed to load unassigned department roles")
-  return flattenDepartmentsRolesToSecurityItems(payload)
+  while (page <= maxPages) {
+    const search = new URLSearchParams()
+    search.set("page", String(page))
+    search.set("limit", String(limit))
+    search.set("sort", "ASC")
+    const uid = options?.userId?.trim()
+    if (uid) search.set("userId", uid)
+
+    const res = await api.get<ApiResponseDto<{ data: unknown[]; meta?: { hasNextPage?: boolean } }>>(
+      `/departments/user/roles-unassigned?${search.toString()}`,
+    )
+    const payload = unwrapSuccess(res, "Failed to load unassigned department roles")
+    allPayloads.push(payload)
+    if (!payload.meta?.hasNextPage) break
+    page += 1
+  }
+
+  return allPayloads.flatMap(flattenDepartmentsRolesToSecurityItems)
 }
 
 export async function fetchDepartmentRolesCatalog(): Promise<AddEmployeeSecurityRoleCatalogItem[]> {
-  const search = new URLSearchParams()
-  search.set("page", "1")
-  search.set("limit", "100")
-  search.set("status", "active")
-
-  const res = await api.get<ApiResponseDto<AddEmployeeDepartmentRolesListPayload>>(
-    `/department-roles?${search.toString()}`
-  )
-  const payload = unwrapSuccess(res, "Failed to load department roles")
   const out: AddEmployeeSecurityRoleCatalogItem[] = []
+  let page = 1
+  const limit = 1000
+  const maxPages = 20
 
-  for (const dept of payload.data) {
-    for (const dr of dept.departmentroles ?? []) {
-      if (dr.isAdmin) continue
-      const st = typeof dr.status === "string" ? dr.status.toLowerCase() : ""
-      if (st && st !== "active") continue
-      const roleName = dr.role?.name?.trim() ?? ""
-      if (!roleName) continue
-      out.push({
-        id: `${dept.id}-${dr.id}`,
-        name: roleName,
-        department: dept.name,
-      })
+  while (page <= maxPages) {
+    const search = new URLSearchParams()
+    search.set("page", String(page))
+    search.set("limit", String(limit))
+    search.set("status", "active")
+
+    const res = await api.get<ApiResponseDto<AddEmployeeDepartmentRolesListPayload>>(
+      `/department-roles?${search.toString()}`
+    )
+    const payload = unwrapSuccess(res, "Failed to load department roles")
+
+    for (const dept of payload.data) {
+      for (const dr of dept.departmentroles ?? []) {
+        if (dr.isAdmin) continue
+        const st = typeof dr.status === "string" ? dr.status.toLowerCase() : ""
+        if (st && st !== "active") continue
+        const roleName = dr.role?.name?.trim() ?? ""
+        if (!roleName) continue
+        out.push({
+          id: `${dept.id}-${dr.id}`,
+          name: roleName,
+          department: dept.name,
+        })
+      }
     }
+
+    if (!payload.meta?.hasNextPage) break
+    page += 1
   }
 
   return out
@@ -428,43 +448,77 @@ export async function fetchUserProgramsAndActivities(
 }
 
 export async function fetchAddEmployeeTimeStudyPrograms(): Promise<AddEmployeeTimeStudyProgramRow[]> {
-  const search = new URLSearchParams()
-  search.set("page", "1")
-  search.set("limit", "100")
-  search.set("sort", "ASC")
-  search.set("status", "active")
-
-  const res = await api.get<ApiResponseDto<{ data: unknown[] }>>(
-    `/timestudyprograms?${search.toString()}`
-  )
-  const payload = unwrapSuccess(res, "Failed to load time study programs")
-  const list = Array.isArray(payload.data) ? payload.data : []
   const out: AddEmployeeTimeStudyProgramRow[] = []
+  let page = 1
+  const limit = 1000
+  const maxPages = 20
 
-  for (const raw of list) {
-    if (raw === null || typeof raw !== "object") continue
-    const p = raw as Record<string, unknown>
-    if (!isActiveStatus(p.status)) continue
-    const idRaw = p.id
-    const name = typeof p.name === "string" ? p.name.trim() : ""
-    if (!name) continue
-    const idStr =
-      typeof idRaw === "number" || typeof idRaw === "string" ? String(idRaw).trim() : ""
-    if (!idStr) continue
-    const code = typeof p.code === "string" ? p.code : ""
-    const deptRaw = p.department
-    const department =
-      deptRaw !== null &&
-      typeof deptRaw === "object" &&
-      typeof (deptRaw as { name?: unknown }).name === "string"
-        ? String((deptRaw as { name: string }).name).trim()
-        : ""
-    out.push({
-      id: idStr,
-      code,
-      name,
-      department,
-    })
+  while (page <= maxPages) {
+    const search = new URLSearchParams()
+    search.set("page", String(page))
+    search.set("limit", String(limit))
+    search.set("sort", "ASC")
+    search.set("status", "active")
+
+    const res = await api.get<ApiResponseDto<{ data: unknown[]; meta?: { hasNextPage?: boolean } }>>(
+      `/timestudyprograms?${search.toString()}`
+    )
+    const payload = unwrapSuccess(res, "Failed to load time study programs")
+    const list = Array.isArray(payload.data) ? payload.data : []
+
+    for (const raw of list) {
+      if (raw === null || typeof raw !== "object") continue
+      const p = raw as Record<string, unknown>
+      if (!isActiveStatus(p.status)) continue
+      const idRaw = p.id
+      const name = typeof p.name === "string" ? p.name.trim() : ""
+      if (!name) continue
+      const idStr =
+        typeof idRaw === "number" || typeof idRaw === "string" ? String(idRaw).trim() : ""
+      if (!idStr) continue
+      const code = typeof p.code === "string" ? p.code : ""
+      const deptRaw = p.department
+      const department =
+        deptRaw !== null &&
+        typeof deptRaw === "object" &&
+        typeof (deptRaw as { name?: unknown }).name === "string"
+          ? String((deptRaw as { name: string }).name).trim()
+          : ""
+      
+      const parentIdRaw = p.parentId
+      const parentId = typeof parentIdRaw === "number" || typeof parentIdRaw === "string" ? String(parentIdRaw).trim() : undefined
+
+      out.push({
+        id: idStr,
+        code,
+        name,
+        department,
+        parentId,
+      })
+    }
+
+    if (!payload.meta?.hasNextPage) break
+    page += 1
+  }
+
+  // Calculate levels for the flat list
+  const parentIdMap = new Map<string, string>()
+  for (const row of out) {
+    if (row.parentId) {
+      parentIdMap.set(row.id, row.parentId)
+    }
+  }
+
+  for (const row of out) {
+    let level = 1
+    let curr = row.id
+    let safety = 0
+    while (parentIdMap.has(curr) && safety < 10) {
+      level++
+      curr = parentIdMap.get(curr)!
+      safety++
+    }
+    row.level = level
   }
 
   return out
@@ -488,7 +542,7 @@ function normalizeMasterCodeRow(raw: unknown): AddEmployeeMasterCodeRow | null {
 export async function fetchMulticodeMasterCodes(): Promise<AddEmployeeMasterCodeRow[]> {
   const search = new URLSearchParams()
   search.set("page", "1")
-  search.set("limit", "100")
+  search.set("limit", "1000")
 
   const res = await api.get<ApiResponseDto<AddEmployeeMasterCodeListPayload>>(
     `/master-codes?${search.toString()}`

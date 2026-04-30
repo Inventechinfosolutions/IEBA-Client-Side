@@ -53,27 +53,39 @@ export function TimeStudyMGTPage() {
                 const s = String(status).toLowerCase()
                 if (s === "approved") {
                   return (
-                    <span className="inline-flex size-4 items-center justify-center rounded-full bg-[#22c55e] shrink-0">
-                      <Check className="size-2.5 text-white" aria-hidden />
-                    </span>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="inline-flex size-4 items-center justify-center rounded-full bg-[#22c55e] shrink-0 cursor-help">
+                          <Check className="size-2.5 text-white" aria-hidden />
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent className="text-xs">Approved</TooltipContent>
+                    </Tooltip>
                   )
                 }
                 if (s === "rejected") {
                   return (
-                    <span className="inline-flex size-4 items-center justify-center rounded-full bg-[#EF4444] shrink-0">
-                      <X className="size-2.5 text-white" aria-hidden />
-                    </span>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="inline-flex size-4 items-center justify-center rounded-full bg-[#EF4444] shrink-0 cursor-help">
+                          <X className="size-2.5 text-white" aria-hidden />
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent className="text-xs">Rejected</TooltipContent>
+                    </Tooltip>
                   )
                 }
-                // Submission statuses (Equal/More/Less)
-                if (s === "submitted") {
-                  return <div className="size-2.5 rounded-full bg-[#22c55e]" title="Equal Hours" />
-                }
-                if (s === "submittedexceed") {
-                  return <div className="size-2.5 rounded-full bg-[#EF4444]" title="More Hours" />
-                }
-                if (s === "submittedless") {
-                  return <div className="size-2.5 rounded-full bg-[#EAB308]" title="Less Hours" />
+                if (s === "submitted" || s === "submittedexceed" || s === "submittedless") {
+                  return (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="inline-flex size-4 items-center justify-center rounded-full bg-[#3b82f6] shrink-0 cursor-help">
+                          <Check className="size-2.5 text-white" aria-hidden />
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent className="text-xs">Submitted</TooltipContent>
+                    </Tooltip>
+                  )
                 }
                 return null
               }}
@@ -82,48 +94,83 @@ export function TimeStudyMGTPage() {
                 const isApproved = s === "approved"
                 const isSubmitted = s === "submitted" || s === "submittedexceed" || s === "submittedless"
                 
+                const handleAction = (action: string) => {
+                  if (!selectedUserId) return
+                  const startDate = dates[0].toISOString().split('T')[0]
+                  const endDate = dates[dates.length - 1].toISOString().split('T')[0]
+                  notifyUser({ userId: selectedUserId, startDate, endDate, status: action })
+                }
+
                 return (
                   <div className="flex items-center gap-1.5">
-                    {isApproved || isSubmitted ? (
-                      <span className="inline-flex size-5 items-center justify-center rounded-full bg-white shrink-0 border border-gray-100 shadow-sm">
-                        <Unlock className="size-3.5 text-gray-500" aria-hidden />
-                      </span>
-                    ) : (
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <button 
-                            onClick={() => {
-                              if (!selectedUserId) return
-                              const startDate = dates[0].toISOString().split('T')[0]
-                              const endDate = dates[dates.length - 1].toISOString().split('T')[0]
-                              notifyUser({ userId: selectedUserId, startDate, endDate, status: "notify" })
-                            }}
-                            className="relative inline-flex size-5 items-center justify-center shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
-                          >
-                            <Bell className="size-4" style={{ fill: "#6c5dd3", stroke: "#6c5dd3" }} aria-hidden />
-                          </button>
-                        </TooltipTrigger>
-                        <TooltipContent side="top" className="text-xs">
-                          Notify
-                        </TooltipContent>
-                      </Tooltip>
+                    {/* If Submitted: Show Approve/Reject ONLY */}
+                    {isSubmitted && (
+                      <>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button onClick={() => handleAction("approved")} className="inline-flex size-4 items-center justify-center rounded-full bg-[#22c55e] hover:bg-[#16a34a] shrink-0 transition-colors shadow-sm cursor-pointer">
+                              <Check className="size-2.5 text-white" />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent className="text-xs">Approve</TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button onClick={() => handleAction("rejected")} className="inline-flex size-4 items-center justify-center rounded-full bg-[#EF4444] hover:bg-[#dc2626] shrink-0 transition-colors shadow-sm cursor-pointer">
+                              <X className="size-2.5 text-white" />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent className="text-xs">Reject</TooltipContent>
+                        </Tooltip>
+                      </>
                     )}
-                    
-                    {!isSubmitted && !isApproved ? (
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <button className="text-[#6c5dd3] hover:opacity-80 shrink-0 transition-opacity">
-                            <Info className="size-4" strokeWidth={1.5} />
-                          </button>
-                        </TooltipTrigger>
-                        <TooltipContent side="top" className="max-w-[200px] text-center text-xs">
-                          Time Sheet was not submitted by user do you want to notify them? press notify icon
-                        </TooltipContent>
-                      </Tooltip>
-                    ) : (
-                      <button className="text-[#6c5dd3] hover:opacity-80 shrink-0 transition-opacity">
-                        <Info className="size-4" strokeWidth={1.5} />
-                      </button>
+
+                    {/* If Approved: Show Unlock + Info */}
+                    {isApproved && (
+                      <>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button onClick={() => handleAction("opened")} className="inline-flex size-5 items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 shrink-0 transition-colors border border-gray-200 cursor-pointer">
+                              <Unlock className="size-3 text-gray-600" />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent className="text-xs">Unlock</TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button className="text-[#6c5dd3] hover:opacity-80 shrink-0 transition-opacity cursor-pointer">
+                              <Info className="size-4" strokeWidth={1.5} />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="max-w-[200px] text-center text-xs">
+                            Time Sheet was Approved for a week do you want to unlock it press unlock icon
+                          </TooltipContent>
+                        </Tooltip>
+                      </>
+                    )}
+
+                    {/* If Open/Draft/Rejected/Null: Show Notify + Info */}
+                    {!isSubmitted && !isApproved && (
+                      <>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button onClick={() => handleAction("notify")} className="inline-flex size-5 items-center justify-center shrink-0 cursor-pointer hover:opacity-80 transition-opacity">
+                              <Bell className="size-4" style={{ fill: "#6c5dd3", stroke: "#6c5dd3" }} aria-hidden />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent className="text-xs">Notify</TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button className="text-[#6c5dd3] hover:opacity-80 shrink-0 transition-opacity cursor-pointer">
+                              <Info className="size-4" strokeWidth={1.5} />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="max-w-[200px] text-center text-xs">
+                            Time Sheet was not submitted by user do you want to notify them? press notify icon
+                          </TooltipContent>
+                        </Tooltip>
+                      </>
                     )}
                   </div>
                 )

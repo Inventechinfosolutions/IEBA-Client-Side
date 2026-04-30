@@ -10,6 +10,9 @@ export function useGetMGTEmployeeList(search?: string, departmentId?: string) {
   return useQuery({
     queryKey: [...timeStudyMGTKeys.employeeList(search), departmentId],
     queryFn: () => apiMgtGetEmployeeList(search, departmentId),
-    staleTime: 60_000,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
   })
 }

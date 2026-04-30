@@ -134,7 +134,7 @@ export function MgtEmployeePanel({
       <div className="overflow-y-auto divide-y divide-gray-200 h-[430px]">
         {isLoading ? (
           <div className="flex h-full items-center justify-center">
-            <img src={tableEmptyIcon} alt="" className="size-[80px] object-contain" />
+            <div className="size-8 animate-spin rounded-full border-4 border-[#6C5DD3] border-t-transparent" />
           </div>
         ) : employees.length === 0 ? (
           <div className="flex h-full items-center justify-center">

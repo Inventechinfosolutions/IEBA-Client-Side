@@ -65,3 +65,8 @@ export async function apiGetUserProgramsAndActivities(userId: string): Promise<a
   const res = await api.get<ApiEnvelope<any>>(`/timestudyprograms/user/programs-activities?userId=${userId}`)
   return res.data!
 }
+
+/** Deletes a single time study record by ID. */
+export async function apiDeleteTimeRecord(id: number): Promise<void> {
+  await api.delete(`/timestudyrecords/${id}`)
+}

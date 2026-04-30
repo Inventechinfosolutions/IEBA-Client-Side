@@ -15,6 +15,9 @@ export function useGetMGTMonthLegend(
     queryKey: timeStudyMGTKeys.monthLegend(userId ?? "", month, year),
     queryFn: () => apiMgtGetMonthLegend(userId!, month, year),
     enabled: !!userId,
-    staleTime: 30_000,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
   })
 }

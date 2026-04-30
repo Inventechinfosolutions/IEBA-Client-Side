@@ -95,18 +95,23 @@ export type UserDayLegendDetailResDto = {
 /** Payload for saving/submitting time records. */
 export type TimeStudyRecordSubmitItemDto = {
   id?: number
+  userId: string
+  username: string
   date: string
   starttime?: string
   endtime?: string
+  activitytime?: number
   programid: string
   activityid: string
   description?: string
   status?: TimeStudyRecordStatus
-  subRows?: {
+  departmentId?: number
+  multiCodeRecords?: {
     programid: string
     activityid: string
     activitytime: number
     description?: string
+    departmentId?: number
   }[]
 }
 
