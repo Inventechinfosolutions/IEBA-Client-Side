@@ -3,6 +3,7 @@ import { Controller, useForm } from "react-hook-form"
 
 import { Button } from "@/components/ui/button"
 import { SingleSelectDropdown } from "@/components/ui/dropdown"
+import { SingleSelectSearchDropdown } from "@/components/ui/dropdown-search"
 import { leaveApprovalFiltersSchema } from "../schemas"
 import { leaveApprovalStatusLabel, leaveApprovalStatusValues } from "../enums/leaveApprovalStatus"
 import type { LeaveApprovalFilters, LeaveApprovalToolbarProps } from "../types"
@@ -62,23 +63,20 @@ export function LeaveApprovalToolbar({
             name="userId"
             control={form.control}
             render={({ field }) => (
-              <SingleSelectDropdown
+              <SingleSelectSearchDropdown
                 value={field.value ?? "all"}
                 onChange={field.onChange}
                 onBlur={field.onBlur}
                 options={[
-                  { value: "all", label: "All", key: "all" },
+                  { value: "all", label: "All" },
                   ...userOptions.map((opt) => ({
                     value: opt.id,
                     label: opt.label,
-                    key: opt.id,
                   })),
                 ]}
                 placeholder="All"
-                className="!h-[45px] !min-h-[45px] !w-[140px] !rounded-[6px] !border-[#d6d7dc] !text-[12px] focus-visible:!border-[#6C5DD3] focus-visible:!ring-0"
-                contentClassName="max-h-[224px]"
-                itemButtonClassName="rounded-[6px] px-3 py-2"
-                itemLabelClassName="!text-[12px]"
+                className="!h-[45px] !min-h-[45px] !w-[140px] !rounded-[6px] !border-[#d6d7dc] !text-[12px] focus-visible:!border-[#6C5DD3] focus-visible:!ring-0 shadow-none bg-transparent"
+                contentClassName="w-[200px]"
               />
             )}
           />

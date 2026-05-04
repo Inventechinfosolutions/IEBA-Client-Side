@@ -106,7 +106,7 @@ export function JobPoolTable({
 
   return (
     <div className="overflow-hidden rounded-[4px] border border-[#e6e7ef]">
-      <div className="overflow-y-auto [scrollbar-gutter:stable]">
+      <div className="overflow-y-auto [scrollbar-gutter:stable] bg-[#6C5DD3]">
         <Table className="table-fixed">
           <colgroup>
             <col style={{ width: canUpdateJobPool ? "12%" : "13.5%" }} />

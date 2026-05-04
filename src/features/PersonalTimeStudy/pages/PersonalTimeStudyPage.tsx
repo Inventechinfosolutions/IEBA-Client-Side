@@ -14,6 +14,7 @@ import { PersonalTimeStudyNotesSection } from "../components/PersonalTimeStudyNo
 import { useGetPersonalMonthLegend } from "../queries/getPersonalMonthLegend"
 import { useGetPersonalDayDetail } from "../queries/getPersonalDayDetail"
 import { useGetPersonalDropdowns } from "../queries/getPersonalDropdowns"
+import { useGetTimeEntrySummary } from "../queries/getTimeEntrySummary"
 import { useSavePersonalNotes } from "../mutation/updatePersonalNotes"
 import { useSubmitPersonalTimeRecords } from "../mutation/createPersonalTimeRecords"
 import { useDeletePersonalTimeRecord } from "../mutation/deletePersonalTimeRecord"
@@ -100,6 +101,9 @@ export function PersonalTimeStudyPage() {
 
   // 4. Fetch user & dropdown data
   const dropdownQuery = useGetPersonalDropdowns(userId, activeTab === "personal")
+
+  // 5. Fetch Time Entry Summary (MAA etc)
+  const summaryQuery = useGetTimeEntrySummary(userId, dateStr, activeTab === "personal")
 
   // 5. Calendar day & week summaries
   const { dayStatuses, weekSummaries } = useMemo(() => {
@@ -340,18 +344,23 @@ export function PersonalTimeStudyPage() {
                     <PersonalTimeStudyLegendCard className="min-h-0" />
                     <PersonalTimeStudyLeaveCard
                       className="min-h-0"
-                      leaveCount={dayQuery.data?.leaveRecords?.length ?? 0}
-                      approved={dayQuery.data?.leaveRecords?.filter(r => r.status.toLowerCase() === "approved").length ?? 0}
-                      open={dayQuery.data?.leaveRecords?.filter(r => r.status.toLowerCase() === "open").length ?? 0}
-                      rejected={dayQuery.data?.leaveRecords?.filter(r => r.status.toLowerCase() === "rejected").length ?? 0}
+                      leaveCount={monthQuery.data?.leaveRecords?.length ?? 0}
+                      approved={monthQuery.data?.leaveRecords?.filter(r => r.status?.toLowerCase() === "approved").length ?? 0}
+                      open={monthQuery.data?.leaveRecords?.filter(r => ["draft", "requested"].includes(r.status?.toLowerCase() ?? "")).length ?? 0}
+                      rejected={monthQuery.data?.leaveRecords?.filter(r => r.status?.toLowerCase() === "rejected").length ?? 0}
+                      leaveRecords={monthQuery.data?.leaveRecords}
                       dropdownData={dropdownQuery.data}
                       onOpen={() => dropdownQuery.refetch()}
+                      dateStr={dateStr}
+                      month={month}
+                      year={year}
                     />
                     <PersonalTimeStudyMinutesCard
                       className="min-h-0 sm:col-span-2 lg:col-span-1"
-                      allocatedMinutes={dayQuery.data?.allocatedMinutes ?? 0}
-                      actualMinutes={dayQuery.data?.consumedMinutes ?? 0}
-                      balanceMinutes={dayQuery.data?.balanceMinutes ?? 0}
+                      allocatedMinutes={summaryQuery.data?.tsmins ?? 0}
+                      actualMinutes={summaryQuery.data?.actualnormalactivitytime ?? 0}
+                      balanceMinutes={summaryQuery.data?.actualnormalactivityTimebalance ?? 0}
+                      totalMAAMinutes={summaryQuery.data?.actualmultiactivitytime ?? 0}
                     />
                   </div>
 

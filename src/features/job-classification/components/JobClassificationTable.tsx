@@ -73,7 +73,7 @@ export function JobClassificationTable({
 
   return (
     <div className="overflow-hidden rounded-[4px] border border-[#e6e7ef]">
-      <div className="overflow-y-auto [scrollbar-gutter:stable]">
+      <div className="overflow-y-auto [scrollbar-gutter:stable] bg-[#6C5DD3]">
         <Table className="table-fixed">
           <colgroup>
             <col style={{ width: canUpdateJobClassification ? "15%" : "17%" }} />

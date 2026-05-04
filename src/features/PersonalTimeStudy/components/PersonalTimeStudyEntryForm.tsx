@@ -672,8 +672,8 @@ export function PersonalTimeStudyEntryForm({
 
       {showSubmitConfirm && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 px-4">
-          <div className="w-full max-w-[450px] rounded-[12px] bg-white p-6 shadow-2xl">
-            <h3 className="mb-6 text-[16px] font-medium text-center">Are you sure you want to fully submit and lock these entries?</h3>
+          <div className="w-full max-w-[520px] rounded-[12px] bg-white p-6 shadow-2xl">
+            <h3 className="mb-6 text-[16px] font-medium text-center">Are you sure, you want to lock the time and fully submit it?</h3>
             <div className="flex justify-center gap-4">
               <Button variant="outline" className="h-11 min-w-[100px] bg-[#F2F4F7]" onClick={() => setShowSubmitConfirm(false)}>Cancel</Button>
               <Button className="h-11 min-w-[100px] bg-[#6C5DD3] text-white" onClick={() => { setShowSubmitConfirm(false); handleSubmitInternal(); }}>OK</Button>
