@@ -4,7 +4,8 @@ import { api } from "@/lib/api"
 import type { 
   GetPayrollRowsParams, 
   PayrollFilterOptionsResponse, 
-  PayrollManagementRow 
+  PayrollManagementRow,
+  PayrollRowsResponse
 } from "../types"
 import { getAllDepartments } from "@/features/department/api/departments"
 import { fetchListFiscalYears } from "@/features/settings/queries/listFiscalYears"
@@ -117,16 +118,14 @@ export async function fetchPayrollFilterOptions(): Promise<PayrollFilterOptionsR
  * Fetches payroll management rows based on active filters using the new paginated API.
  * GET /api/v1/payrollmanagement?payrollType=<type>&fiscalYear=<fy>&month=<m>&departmentCode=<code>&empIds=<ids>&page=1&limit=1000
  */
-export async function fetchPayrollRows(params: GetPayrollRowsParams): Promise<PayrollManagementRow[]> {
+export async function fetchPayrollRows(params: GetPayrollRowsParams): Promise<PayrollRowsResponse> {
   const search = new URLSearchParams()
   
-  // Use 'payrolltype' (lowercase) which is confirmed working in the new API
   search.set("payrolltype", params.payrollType.toLowerCase())
   search.set("fiscalYear", params.fiscalYearLabel)
-  search.set("page", "1")
-  search.set("limit", "1000")
+  search.set("page", String(params.page ?? 1))
+  search.set("limit", String(params.limit ?? 10))
 
-  // If "All Months" is selected, send the explicit list of all month numbers to be safe
   const ALL_MONTHS_LIST = "1,2,3,4,5,6,7,8,9,10,11,12"
 
   if (params.monthOrQuarterId === "m-all") {
@@ -138,8 +137,6 @@ export async function fetchPayrollRows(params: GetPayrollRowsParams): Promise<Pa
     }
   } else if (params.monthOrQuarterId.startsWith("q-")) {
     const qNum = params.monthOrQuarterId.replace("q-", "")
-    // Fiscal Year starts in July:
-    // Q1 -> 7,8,9 | Q2 -> 10,11,12 | Q3 -> 1,2,3 | Q4 -> 4,5,6
     const mapping: Record<string, string> = {
       "1": "7,8,9",
       "2": "10,11,12",
@@ -152,7 +149,6 @@ export async function fetchPayrollRows(params: GetPayrollRowsParams): Promise<Pa
   }
 
   if (params.departmentCode && params.departmentCode !== "all") {
-    // Send both variants to be super safe
     search.set("departmentcode", params.departmentCode)
     search.set("departmentCode", params.departmentCode)
   }
@@ -161,49 +157,50 @@ export async function fetchPayrollRows(params: GetPayrollRowsParams): Promise<Pa
     search.set("empIds", params.employeeIds.join(","))
   }
 
-  // Double check payrollType variants
   search.set("payrolltype", params.payrollType.toLowerCase())
   search.set("payrollType", params.payrollType.toLowerCase())
 
-  // Note: We manually build the query string to keep commas unencoded as requested (e.g. 1,2,3)
   const queryString = Array.from(search.entries())
     .map(([key, value]) => `${key}=${value}`)
     .join("&")
 
-  const res = await api.get<{ data: { items: any[] } }>(`/payrollmanagement?${queryString}`)
+  const res = await api.get<{ data: { items: any[]; meta: { totalItems: number } } }>(`/payrollmanagement?${queryString}`)
   
-  // The backend response body has a 'data' property which contains 'items'
   const items = res?.data?.items || []
+  const total = res?.data?.meta?.totalItems || 0
 
-  return items.map((row: any): PayrollManagementRow => ({
-    ...row,
-    employeeId: row.employeeid,
-    employeeFirstName: row.employeefirstname,
-    employeeLastName: row.employeelastname,
-    employeeMiddleName: row.employeemiddlename,
-    suffix: row.suffix,
-    department: row.department,
-    bargainingUnit: row.bargainingunit,
-    type: row.type,
-    position: row.position,
-    payPeriodBegin: row.payperiodbegin,
-    payPeriodEnd: row.payperiodend,
-    checkDate: row.checkdate,
-    fica: row.fica,
-    pers: row.pers,
-    defComp: row.defcomp,
-    cafeteria: row.cafeteria,
-    lifeInsurance: row.lifeinsurance,
-    standby: row.standby,
-    spa: row.spa,
-    cellStipend: row.cellstipend,
-    std: row.std,
-    ot: row.ot,
-    recruitingIncentive: row.recruitingincentive,
-    cashOut: row.cashout,
-    payout: row.payout,
-    salary: row.salary,
-  }))
+  return {
+    total,
+    items: items.map((row: any): PayrollManagementRow => ({
+      ...row,
+      employeeId: row.employeeid,
+      employeeFirstName: row.employeefirstname,
+      employeeLastName: row.employeelastname,
+      employeeMiddleName: row.employeemiddlename,
+      suffix: row.suffix,
+      department: row.department,
+      bargainingUnit: row.bargainingunit,
+      type: row.type,
+      position: row.position,
+      payPeriodBegin: row.payperiodbegin,
+      payPeriodEnd: row.payperiodend,
+      checkDate: row.checkdate,
+      fica: row.fica,
+      pers: row.pers,
+      defComp: row.defcomp,
+      cafeteria: row.cafeteria,
+      lifeInsurance: row.lifeinsurance,
+      standby: row.standby,
+      spa: row.spa,
+      cellStipend: row.cellstipend,
+      std: row.std,
+      ot: row.ot,
+      recruitingIncentive: row.recruitingincentive,
+      cashOut: row.cashout,
+      payout: row.payout,
+      salary: row.salary,
+    }))
+  }
 }
 
 /**

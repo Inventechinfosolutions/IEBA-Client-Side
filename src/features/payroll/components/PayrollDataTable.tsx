@@ -175,7 +175,7 @@ export function PayrollDataTable({ rows, isLoading, columns, onEditRow, showEdit
             ))
           ) : (
             rows.map((row, index) => (
-              <TableRow key={rowKey(row, index)} className="border-[#eef0f5]">
+              <TableRow key={rowKey(row, index)} className="border-[#eef0f5] hover:bg-[#fafafa]">
                 {derivedColumns.map((col, colIndex) => {
                   const isLastCol = colIndex === derivedColumns.length - 1
                   return (

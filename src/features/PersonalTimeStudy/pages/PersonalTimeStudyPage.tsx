@@ -344,7 +344,11 @@ export function PersonalTimeStudyPage() {
                     <PersonalTimeStudyLegendCard className="min-h-0" />
                     <PersonalTimeStudyLeaveCard
                       className="min-h-0"
-                      leaveCount={monthQuery.data?.leaveRecords?.length ?? 0}
+                      leaveCount={
+                        (monthQuery.data?.leaveRecords?.filter(r => r.status?.toLowerCase() === "approved").length ?? 0) +
+                        (monthQuery.data?.leaveRecords?.filter(r => ["draft", "requested"].includes(r.status?.toLowerCase() ?? "")).length ?? 0) +
+                        (monthQuery.data?.leaveRecords?.filter(r => r.status?.toLowerCase() === "rejected").length ?? 0)
+                      }
                       approved={monthQuery.data?.leaveRecords?.filter(r => r.status?.toLowerCase() === "approved").length ?? 0}
                       open={monthQuery.data?.leaveRecords?.filter(r => ["draft", "requested"].includes(r.status?.toLowerCase() ?? "")).length ?? 0}
                       rejected={monthQuery.data?.leaveRecords?.filter(r => r.status?.toLowerCase() === "rejected").length ?? 0}

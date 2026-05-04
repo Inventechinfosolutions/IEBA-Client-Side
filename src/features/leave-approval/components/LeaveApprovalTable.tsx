@@ -196,7 +196,7 @@ export function LeaveApprovalTable({
             </TableRow>
           ) : (
             rows.map((row) => (
-              <TableRow key={row.id} className="min-h-[44px] border-[#e9ecf3] hover:bg-[#FAFAFA]">
+              <TableRow key={row.id} className="min-h-[44px] border-[#e9ecf3] hover:bg-[#fafafa]">
                 <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-center text-[12px] leading-[1.15rem] text-[#111827] whitespace-normal break-words">
                   {`${row.user?.firstName ?? ""} ${row.user?.lastName ?? ""}`.trim() || row.userId}
                 </TableCell>
