@@ -1,6 +1,5 @@
 import * as React from "react"
 import * as RechartsPrimitive from "recharts"
-import type { TooltipValueType } from "recharts"
 
 import { cn } from "@/lib/utils"
 
@@ -137,7 +136,7 @@ function ChartTooltipContent({
     labelKey?: string
   } & Omit<
     RechartsPrimitive.DefaultTooltipContentProps<
-      TooltipValueType,
+      any,
       TooltipNameType
     >,
     "accessibilityLayer"

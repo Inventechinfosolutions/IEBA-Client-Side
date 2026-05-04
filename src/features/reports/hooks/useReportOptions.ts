@@ -15,7 +15,7 @@ import {
   useGetCostPoolsByDepartment
 } from "../queries/getDynamicFilters"
 import { REPORT_QUARTERS, REPORT_DOWNLOAD_TYPES } from "../schemas"
-import type { ReportCatalogItem, ReportSelectOption } from "../types"
+import type { ReportCatalogItem } from "../types"
 
 interface UseReportOptionsProps {
   reportKey: string
@@ -46,12 +46,18 @@ export function useReportOptions({
   const { data: departmentUsersData } = useGetUsersUnderDepartment(
     departmentId, 
     user?.id ?? "", 
+    undefined,
+    ["active"],
     shouldFetchDepartmentUsers
   )
   const shouldFetchActivities = currentReportItem?.criteria?.showActivitySelect === true && !!departmentId
   const { data: activitiesByDepartmentData } = useGetActivitiesByDepartmentAndUsers(
     departmentId,
     selectedEmployeeIds,
+    undefined,
+    undefined,
+    "active",
+    undefined,
     shouldFetchActivities && selectedEmployeeIds.length > 0,
   )
 
@@ -65,7 +71,7 @@ export function useReportOptions({
   const { data: departmentsData } = useGetDepartments({ status: "active", page: 1, limit: 100 })
   const { data: maaTcmDepartmentsData } = useGetMaaTcmActivityDepartments(isMaaReport)
   const { data: listAllProgramsData } = useGetListAllPrograms(currentReportItem?.criteria?.showProgramSelect === true)
-  const { data: costPoolsData } = useCostPoolListQuery({ status: "active", page: 1, limit: 100 }, { enabled: currentReportItem?.criteria?.showCostPoolSelect === true })
+  const { data: costPoolsData } = useCostPoolListQuery({ costpoolStatus: "active", page: 1, limit: 100 }, { enabled: currentReportItem?.criteria?.showCostPoolSelect === true })
   const { data: employeesData } = useGetUserModuleRows({ 
     inactiveOnly: false, 
     page: 1, 
@@ -114,7 +120,7 @@ export function useReportOptions({
     if (shouldFetchCostPoolsByDept && costPoolsByDeptData) {
       return costPoolsByDeptData
     }
-    return costPoolsData?.items ? mapIdNameRowsToSelectOptions(costPoolsData.items) : []
+    return costPoolsData?.data ? mapIdNameRowsToSelectOptions(costPoolsData.data) : []
   }, [shouldFetchCostPoolsByDept, costPoolsByDeptData, costPoolsData])
 
   const programOptions = useMemo(() => {

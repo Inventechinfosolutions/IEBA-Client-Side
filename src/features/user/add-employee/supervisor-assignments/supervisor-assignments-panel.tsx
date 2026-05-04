@@ -196,7 +196,6 @@ export function SupervisorAssignmentsPanel({ mode }: { mode: UserModuleFormMode 
                 contentClassName="max-h-[180px]"
                 className="min-h-[46px] rounded-[7px] border-[#c6cedd] text-[11px] leading-[14px]"
                 emptyListSlot={supervisorEmptyListSlot}
-                emptyListMessage=""
                 itemButtonClassName="rounded-[4px] px-2.5 py-1.5"
                 itemLabelClassName="text-[11px] leading-[16px]"
               />
@@ -230,7 +229,6 @@ export function SupervisorAssignmentsPanel({ mode }: { mode: UserModuleFormMode 
                 contentClassName="max-h-[180px]"
                 className="min-h-[46px] rounded-[7px] border-[#c6cedd] text-[11px] leading-[14px]"
                 emptyListSlot={supervisorEmptyListSlot}
-                emptyListMessage=""
                 itemButtonClassName="rounded-[4px] px-2.5 py-1.5"
                 itemLabelClassName="text-[11px] leading-[16px]"
               />

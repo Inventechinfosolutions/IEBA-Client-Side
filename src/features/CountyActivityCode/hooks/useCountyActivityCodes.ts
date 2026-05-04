@@ -135,7 +135,6 @@ export function useCountyActivityCodes(
 
     if (useHierarchyChildren) {
       for (const r of hierarchyRowsWithDept) {
-        const rid = String(r.id)
         let pid = r.parentId ? String(r.parentId) : null
         if (!pid) continue
 

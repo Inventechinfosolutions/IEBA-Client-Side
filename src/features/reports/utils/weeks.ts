@@ -3,8 +3,7 @@ import {
   format, 
   addDays, 
   getWeek,
-  getYear,
-  startOfQuarter
+  getYear
 } from 'date-fns'
 
 /**
