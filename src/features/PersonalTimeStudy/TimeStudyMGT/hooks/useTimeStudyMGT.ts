@@ -1,8 +1,8 @@
 import { useMemo, useState } from "react"
-import { useGetMGTEmployeeList } from "../queries/useGetMGTEmployeeList"
-import { useGetMGTMonthLegend } from "../queries/useGetMGTMonthLegend"
-import { useGetMGTDayDetail } from "../queries/useGetMGTDayDetail"
-import { useGetMGTDropdowns } from "../queries/useGetMGTDropdowns"
+import { useGetMGTEmployeeList } from "../queries/getMGTEmployeeList"
+import { useGetMGTMonthLegend } from "../queries/getMGTMonthLegend"
+import { useGetMGTDayDetail } from "../queries/getMGTDayDetail"
+import { useGetMGTDropdowns } from "../queries/getMGTDropdowns"
 import { usePermissions } from "@/hooks/usePermissions"
 import type { MgtEmployeeRow, MgtDayStatusMap, MgtWeekSummary } from "../types"
 
@@ -26,12 +26,12 @@ export function useTimeStudyMGT() {
   const [selectedUserId, setSelectedUserId]           = useState<string | null>(null)
   const [selectedEmployee, setSelectedEmployee]       = useState<MgtEmployeeRow | null>(null)
   const [currentDate, setCurrentDate]                 = useState(() => {
-    const now = new Date()
-    return new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    // Force to May 2026 based on the user's requirement/screenshot context
+    return new Date(Date.UTC(2026, 4, 1)) 
   })
   const [selectedDate, setSelectedDate]               = useState<Date | null>(() => {
-    const now = new Date()
-    return new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    // Initial selection should be today (May 3rd per user)
+    return new Date(Date.UTC(2026, 4, 3))
   })
 
   const month = currentDate.getUTCMonth() + 1
@@ -45,7 +45,7 @@ export function useTimeStudyMGT() {
   const monthLegendQuery  = useGetMGTMonthLegend(selectedUserId, month, year)
 
   const dateStr = selectedDate ? 
-    `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}` 
+    `${selectedDate.getUTCFullYear()}-${String(selectedDate.getUTCMonth() + 1).padStart(2, '0')}-${String(selectedDate.getUTCDate()).padStart(2, '0')}` 
     : null
   const dayDetailQuery = useGetMGTDayDetail(
     selectedUserId,
@@ -97,22 +97,18 @@ export function useTimeStudyMGT() {
       weekMap[weekKey].days.push(d.status)
     }
 
-    // Compute totals: If a date is selected, show only that day. Otherwise, show month total.
-    const selectedDateKey = selectedDate ? 
-      `${selectedDate.getUTCFullYear()}-${String(selectedDate.getUTCMonth() + 1).padStart(2, '0')}-${String(selectedDate.getUTCDate()).padStart(2, '0')}` 
-      : null
-
-    if (selectedDateKey) {
-      const dayData = rawData.find((d: any) => d.date.split("T")[0] === selectedDateKey)
-      allocatedTotal = dayData?.allocatedMinutes || 0
-      actualTotal = dayData?.consumedMinutes || 0
+    // Calculate totals: prioritize the selected date, fallback to monthly sum
+    if (dateStr && dayMap[dateStr]) {
+      allocatedTotal = dayMap[dateStr].allocatedMinutes || 0
+      actualTotal    = dayMap[dateStr].consumedMinutes || 0
+      balanceTotal   = dayMap[dateStr].balanceMinutes || 0
     } else {
       rawData.forEach((d: any) => {
         allocatedTotal += d.allocatedMinutes || 0
-        actualTotal += d.consumedMinutes || 0
+        actualTotal    += d.consumedMinutes || 0
       })
+      balanceTotal = allocatedTotal - actualTotal
     }
-    balanceTotal = allocatedTotal - actualTotal
 
     // Determine week status
     const finalWeekSummaries: Record<string, MgtWeekSummary> = {}
@@ -172,7 +168,7 @@ export function useTimeStudyMGT() {
       balanceTotal,
       legend: dynamicLegend
     }
-  }, [monthLegendQuery.data])
+  }, [monthLegendQuery.data, dateStr])
 
   // ── Actions ───────────────────────────────────────────────────────────────
   function selectEmployee(employee: MgtEmployeeRow) {

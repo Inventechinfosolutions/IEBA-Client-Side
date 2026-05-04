@@ -1,6 +1,6 @@
 import { ChevronDown, Clock, Eye, Plus, Trash2 } from "lucide-react"
 import { useCallback, useMemo, useRef, useState } from "react"
-import { useQueries } from "@tanstack/react-query"
+import { useGetProgramActivityRelations } from "../queries/getProgramActivityRelations"
 
 import { Button } from "@/components/ui/button"
 import { TitleCaseInput } from "@/components/ui/title-case-input"
@@ -11,7 +11,6 @@ import { toast } from "sonner"
 import { SingleSelectSearchDropdown } from "@/components/ui/dropdown-search"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { TimePickerDropdown } from "@/components/ui/time-picker"
-import { apiGetProgramActivityRelationActivities } from "@/features/program/api"
 import { useAuth } from "@/contexts/AuthContext"
 
 /** Inline required-field asterisk — available to all components in this module. */
@@ -341,13 +340,7 @@ export function PersonalTimeStudyEntryForm({
     return list
   }, [dropdownData])
 
-  const programActivityQueryResults = useQueries({
-    queries: programQueries.map((item) => ({
-      queryKey: ["programActivityRelation", "activities", item.departmentId, item.programId],
-      queryFn: () => apiGetProgramActivityRelationActivities(item.departmentId, item.programId),
-      staleTime: 5 * 60 * 1000,
-    })),
-  })
+  const programActivityQueryResults = useGetProgramActivityRelations(programQueries)
 
   const getActivitiesForProgram = useCallback((programId: string): Set<string> => {
     const index = programQueries.findIndex((pq) => String(pq.programId) === programId)

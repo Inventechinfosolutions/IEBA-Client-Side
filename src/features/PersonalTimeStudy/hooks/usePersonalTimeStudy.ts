@@ -5,7 +5,7 @@ import type {
   PersonalTimeStudyPagination,
   PersonalTimeStudyRow,
 } from "../types"
-import { personalTimeStudyFilterDefaultValues } from "../schemas"
+import { personalTimeStudyFilterDefaultValues } from "../schema/PersonalTimeStudySchema"
 
 const DEFAULT_PAGINATION: PersonalTimeStudyPagination = {
   page: 1,

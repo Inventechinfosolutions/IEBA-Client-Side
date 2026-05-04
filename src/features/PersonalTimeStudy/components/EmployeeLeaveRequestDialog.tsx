@@ -1,7 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Plus, Trash2 } from "lucide-react"
 import { useCallback, useMemo, useState } from "react"
-import { useQueries } from "@tanstack/react-query"
+import { useGetProgramActivityRelations } from "../queries/getProgramActivityRelations"
 import { Controller, useFieldArray, useForm } from "react-hook-form"
 import { toast } from "sonner"
 
@@ -20,13 +20,13 @@ import { Clock } from "lucide-react"
 
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
-import { apiGetProgramActivityRelationActivities } from "@/features/program/api"
+
 
 import {
   EMPLOYEE_LEAVE_EMPTY_SELECT_VALUE,
   employeeLeaveRequestFormSchema,
   type EmployeeLeaveRequestFormValues,
-} from "../schemas/employeeLeaveRequestSchema"
+} from "../schema/PersonalTimeStudySchema"
 
 const EMPTY = EMPLOYEE_LEAVE_EMPTY_SELECT_VALUE
 
@@ -196,13 +196,7 @@ export function EmployeeLeaveRequestDialog({
     return list
   }, [dropdownData])
 
-  const programActivityQueryResults = useQueries({
-    queries: programQueries.map((item) => ({
-      queryKey: ["programActivityRelation", "activities", item.departmentId, item.programId],
-      queryFn: () => apiGetProgramActivityRelationActivities(item.departmentId, item.programId),
-      staleTime: 5 * 60 * 1000,
-    })),
-  })
+  const programActivityQueryResults = useGetProgramActivityRelations(programQueries)
 
   const getActivitiesForProgram = useCallback((programId: string): Set<string> => {
     const index = programQueries.findIndex((pq) => String(pq.programId) === programId)

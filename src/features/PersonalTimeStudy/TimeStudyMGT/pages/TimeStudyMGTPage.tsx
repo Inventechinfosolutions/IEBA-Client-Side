@@ -4,7 +4,7 @@ import { MgtLegendCard } from "../components/MgtLegendCard"
 import { PersonalTimeStudyCalendarCard } from "../../components/PersonalTimeStudyCalendarCard"
 import { Check, X, Unlock, Bell, Info } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { useActionUserTimeRecord } from "../mutations/useActionUserTimeRecord"
+import { useActionUserTimeRecord } from "../mutations/updateActionUserTimeRecord"
 import { PersonalTimeStudyEntryForm } from "../../components/PersonalTimeStudyEntryForm"
 
 export function TimeStudyMGTPage() {

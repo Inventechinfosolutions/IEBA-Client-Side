@@ -1,9 +1,9 @@
 export const timeStudyMGTKeys = {
   all: ["timeStudyMGT"] as const,
 
-  /** Employee list (with optional search filter) */
-  employeeList: (search?: string) =>
-    [...timeStudyMGTKeys.all, "employees", search ?? ""] as const,
+  /** Employee list (with optional search and department filters) */
+  employeeList: (search?: string, departmentId?: string) =>
+    [...timeStudyMGTKeys.all, "employees", search ?? "", departmentId ?? ""] as const,
 
   /** Month legend for a specific user + month + year */
   monthLegend: (userId: string, month: number, year: number) =>

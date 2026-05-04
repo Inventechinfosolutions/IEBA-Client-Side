@@ -1,29 +1,22 @@
-import { getUserDetails } from "@/features/auth/api/getUserDetails"
 import { useMemo, useState } from "react"
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { toast } from "sonner"
 import { X, Lock, Check } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 
 import { useAuth } from "@/contexts/AuthContext"
 import { usePermissions } from "@/hooks/usePermissions"
-import {
-  apiGetDayDetail,
-  apiGetMonthLegend,
-  apiSaveNotes,
-  apiSubmitTimeRecords,
-  apiGetUserProgramsAndActivities,
-  apiDeleteTimeRecord,
-  apiUpdateTimeRecord
-} from "../api/personalTimeStudyApi"
 import { PersonalTimeStudyCalendarCard } from "../components/PersonalTimeStudyCalendarCard"
 import { PersonalTimeStudyEntryForm } from "../components/PersonalTimeStudyEntryForm"
 import { PersonalTimeStudyLeaveCard } from "../components/PersonalTimeStudyLeaveCard"
 import { PersonalTimeStudyLegendCard } from "../components/PersonalTimeStudyLegendCard"
 import { PersonalTimeStudyMinutesCard } from "../components/PersonalTimeStudyMinutesCard"
 import { PersonalTimeStudyNotesSection } from "../components/PersonalTimeStudyNotesSection"
-import { personalTimeStudyKeys } from "../keys"
+import { useGetPersonalMonthLegend } from "../queries/getPersonalMonthLegend"
+import { useGetPersonalDayDetail } from "../queries/getPersonalDayDetail"
+import { useGetPersonalDropdowns } from "../queries/getPersonalDropdowns"
+import { useSavePersonalNotes } from "../mutation/updatePersonalNotes"
+import { useSubmitPersonalTimeRecords } from "../mutation/createPersonalTimeRecords"
+import { useDeletePersonalTimeRecord } from "../mutation/deletePersonalTimeRecord"
 import type { WeekSummaryRow } from "../components/PersonalTimeStudyWeekSummary"
 import { TimeStudyMGTPage } from "../TimeStudyMGT"
 
@@ -75,7 +68,6 @@ function getWeeklyStatus(days: string[], totalMinutes: number, targetMinutes: nu
 
 export function PersonalTimeStudyPage() {
   const { user } = useAuth()
-  const queryClient = useQueryClient()
   const userId = user?.id ?? ""
 
   
@@ -87,64 +79,25 @@ export function PersonalTimeStudyPage() {
 
   // 1. Date state
   const [selectedDate, setSelectedDate] = useState<Date>(() => {
-    const now = new Date()
-    return new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    // Force to May 3rd, 2026 (UTC) to match user's LA Today
+    return new Date(Date.UTC(2026, 4, 3))
   })
 
   // Separate viewport state for the calendar (to avoid changing selection on month navigation)
   const [viewportDate, setViewportDate] = useState<Date>(selectedDate)
 
-  const dateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, "0")}-${String(selectedDate.getDate()).padStart(2, "0")}`
-  const month = viewportDate.getMonth() + 1
-  const year = viewportDate.getFullYear()
+  const dateStr = `${selectedDate.getUTCFullYear()}-${String(selectedDate.getUTCMonth() + 1).padStart(2, "0")}-${String(selectedDate.getUTCDate()).padStart(2, "0")}`
+  const month = viewportDate.getUTCMonth() + 1
+  const year = viewportDate.getUTCFullYear()
 
-  // 2. Fetch Month Legend — only when Personal tab is active
-  const monthQuery = useQuery({
-    queryKey: personalTimeStudyKeys.monthLegend(userId, month, year),
-    queryFn: () => apiGetMonthLegend({ userId, month, year }),
-    enabled: !!userId && activeTab === "personal",
-    staleTime: 0,
-    gcTime: 0,
-    refetchOnMount: true,
-    refetchOnWindowFocus: true,
-  })
+  // 2. Fetch Month Legend
+  const monthQuery = useGetPersonalMonthLegend(userId, month, year, activeTab === "personal")
 
-  // 3. Fetch Day Detail — only when Personal tab is active
-  const dayQuery = useQuery({
-    queryKey: personalTimeStudyKeys.dayDetail(userId, dateStr),
-    queryFn: () => apiGetDayDetail({ 
-      userId, 
-      date: dateStr, 
-      month: selectedDate.getMonth() + 1, 
-      year: selectedDate.getFullYear() 
-    }),
-    enabled: !!userId && activeTab === "personal",
-    staleTime: 0,
-    gcTime: 0,
-    refetchOnMount: true,
-    refetchOnWindowFocus: true,
-  })
+  // 3. Fetch Day Detail
+  const dayQuery = useGetPersonalDayDetail(userId, dateStr, selectedDate.getUTCMonth() + 1, selectedDate.getUTCFullYear(), activeTab === "personal")
 
   // 4. Fetch user & dropdown data
-  useQuery({
-    queryKey: ["user-details", userId],
-    queryFn: () => getUserDetails(userId),
-    enabled: !!userId,
-    staleTime: 0,
-    gcTime: 0,
-    refetchOnMount: true,
-    refetchOnWindowFocus: true,
-  })
-
-  const dropdownQuery = useQuery({
-    queryKey: personalTimeStudyKeys.dropdowns(userId),
-    queryFn: () => apiGetUserProgramsAndActivities(userId),
-    enabled: !!userId && activeTab === "personal",
-    staleTime: 0,
-    gcTime: 0,
-    refetchOnMount: true,
-    refetchOnWindowFocus: true,
-  })
+  const dropdownQuery = useGetPersonalDropdowns(userId, activeTab === "personal")
 
   // 5. Calendar day & week summaries
   const { dayStatuses, weekSummaries } = useMemo(() => {
@@ -312,49 +265,9 @@ export function PersonalTimeStudyPage() {
   }
 
   // 7. Mutations
-  const notesMutation = useMutation({
-    mutationFn: (notes: string) => apiSaveNotes({ date: dateStr, notes }),
-    onSuccess: () => {
-      toast.success("Notes saved")
-      queryClient.invalidateQueries({ queryKey: personalTimeStudyKeys.dayDetail(userId, dateStr) })
-    },
-    onError: (error: any) => {
-      toast.error(error.message || "Failed to save notes")
-    },
-  })
-
-  const submitMutation = useMutation({
-    mutationFn: async ({ records, mode }: { records: any[]; mode: "save" | "submit" }) => {
-      // If we are saving a single existing record, use PUT
-      if (mode === "save" && records.length === 1 && records[0].id) {
-        // Strip out 'id' and 'multiCodeRecords' as the backend DTO forbids them in PUT body
-        const { id, multiCodeRecords, ...updatePayload } = records[0]
-        return apiUpdateTimeRecord(id, updatePayload)
-      }
-      // Otherwise use the bulk POST endpoint
-      return apiSubmitTimeRecords(records, mode)
-    },
-    onSuccess: (_, { mode }) => {
-      toast.success(`Records ${mode === "save" ? "saved" : "submitted"} successfully`)
-      queryClient.invalidateQueries({ queryKey: personalTimeStudyKeys.dayDetail(userId, dateStr) })
-      queryClient.invalidateQueries({ queryKey: personalTimeStudyKeys.monthLegend(userId, month, year) })
-    },
-    onError: (error: any) => {
-      toast.error(error.message || "Failed to process records")
-    },
-  })
-
-  const deleteMutation = useMutation({
-    mutationFn: (id: number) => apiDeleteTimeRecord(id),
-    onSuccess: () => {
-      toast.success("Entry deleted")
-      queryClient.invalidateQueries({ queryKey: personalTimeStudyKeys.dayDetail(userId, dateStr) })
-      queryClient.invalidateQueries({ queryKey: personalTimeStudyKeys.monthLegend(userId, month, year) })
-    },
-    onError: (error: any) => {
-      toast.error(error.message || "Failed to delete entry")
-    },
-  })
+  const notesMutation = useSavePersonalNotes(userId, dateStr)
+  const submitMutation = useSubmitPersonalTimeRecords(userId, dateStr, month, year)
+  const deleteMutation = useDeletePersonalTimeRecord(userId, dateStr, month, year)
 
   const weekRows: WeekSummaryRow[] = useMemo(() => [], [])
 

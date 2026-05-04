@@ -1,0 +1,15 @@
+import { useQueries } from "@tanstack/react-query"
+import { apiGetProgramActivityRelationActivities } from "@/features/program/api"
+
+/**
+ * Fetches program-activity relations (assigned activities) for multiple program-department pairs.
+ */
+export function useGetProgramActivityRelations(programQueries: { departmentId: number; programId: number }[]) {
+  return useQueries({
+    queries: programQueries.map((item) => ({
+      queryKey: ["programActivityRelation", "activities", item.departmentId, item.programId],
+      queryFn: () => apiGetProgramActivityRelationActivities(item.departmentId, item.programId),
+      staleTime: 5 * 60 * 1000,
+    })),
+  })
+}
