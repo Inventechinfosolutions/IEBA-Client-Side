@@ -9,7 +9,10 @@ export function useGetProgramActivityRelations(programQueries: { departmentId: n
     queries: programQueries.map((item) => ({
       queryKey: ["programActivityRelation", "activities", item.departmentId, item.programId],
       queryFn: () => apiGetProgramActivityRelationActivities(item.departmentId, item.programId),
-      staleTime: 5 * 60 * 1000,
+      staleTime: 0,
+      gcTime: 0,
+      refetchOnMount: true,
+      refetchOnWindowFocus: true,
     })),
   })
 }

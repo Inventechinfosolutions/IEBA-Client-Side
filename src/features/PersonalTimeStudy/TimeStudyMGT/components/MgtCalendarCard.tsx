@@ -10,7 +10,7 @@
  * separate table column that aligns row-by-row with the week rows.
  */
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react"
-import type { MgtDayStatusMap } from "../types"
+import type { MgtDayStatusMap, MgtWeekSummary } from "../types"
 
 
 
@@ -18,6 +18,7 @@ type MgtCalendarCardProps = {
   currentDate: Date
   onMonthChange: (date: Date) => void
   dayStatuses: MgtDayStatusMap
+  weekSummaries: Record<string, MgtWeekSummary>
   /** Called when the supervisor approves a week row */
   onApproveWeek?: (weekIndex: number, dates: Date[]) => void
   /** Called when the supervisor rejects a week row */
@@ -28,6 +29,7 @@ export function MgtCalendarCard({
   currentDate,
   onMonthChange,
   dayStatuses,
+  weekSummaries,
   onApproveWeek,
   onRejectWeek,
 }: MgtCalendarCardProps) {
@@ -123,6 +125,18 @@ export function MgtCalendarCard({
           <tbody>
             {weeks.map((week, wi) => {
               const datesInWeek = week.filter(Boolean) as Date[]
+              
+              // Get the Sunday key for this week row
+              const firstDate = datesInWeek[0]
+              let weekKey = ""
+              if (firstDate) {
+                const d = new Date(firstDate)
+                const day = d.getUTCDay()
+                const diff = d.getUTCDate() - day
+                const sunday = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), diff))
+                weekKey = sunday.toISOString().split('T')[0]
+              }
+              const summary = weekSummaries[weekKey]
 
               return (
                 <tr key={wi} className="border-b border-gray-100">
@@ -159,16 +173,18 @@ export function MgtCalendarCard({
                   })}
 
                   {/* TOTAL(MIN.) */}
-                  <td className="py-2 text-center text-gray-400 text-xs">—</td>
+                  <td className="py-2 text-center text-gray-700 font-medium text-xs">
+                    {summary ? summary.totalMinutes : "—"}
+                  </td>
 
                   {/* STATUS */}
                   <td className="py-2 text-center">
-                    {datesInWeek.length > 0 ? (
+                    {summary ? (
+                      <span className="inline-flex items-center justify-center gap-1 text-[#6C5DD3] text-xs font-medium capitalize">
+                        {summary.status.replace(/_/g, " ")}
+                      </span>
+                    ) : datesInWeek.length > 0 ? (
                       <span className="inline-flex items-center justify-center gap-1 text-gray-400 text-xs">
-                        <svg className="h-4 w-4 text-gray-300" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-                            d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0H4" />
-                        </svg>
                         No data
                       </span>
                     ) : null}

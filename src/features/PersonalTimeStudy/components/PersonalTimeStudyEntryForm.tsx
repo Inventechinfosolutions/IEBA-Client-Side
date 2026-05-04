@@ -152,7 +152,7 @@ function TimePicker24h({
             <Clock className="absolute right-3 top-1/2 size-4 -translate-y-1/2 opacity-50 pointer-events-none" />
           </div>
         </PopoverTrigger>
-        <PopoverContent className="p-0 w-auto" align="start">
+        <PopoverContent className="p-0 w-auto" align="start" side="top" sideOffset={5}>
           <TimePickerDropdown value={value} onChange={(v) => { onChange(v); setOpen(false); }} minuteStep={15} />
         </PopoverContent>
       </Popover>

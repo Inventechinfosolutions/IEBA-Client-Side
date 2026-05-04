@@ -79,14 +79,16 @@ export function PersonalTimeStudyPage() {
 
   // 1. Date state
   const [selectedDate, setSelectedDate] = useState<Date>(() => {
-    // Force to May 3rd, 2026 (UTC) to match user's LA Today
-    return new Date(Date.UTC(2026, 4, 3))
+    // Dynamically calculate "Today" in LA time
+    const now = new Date()
+    const laDate = new Date(now.toLocaleString("en-US", { timeZone: "America/Los_Angeles" }))
+    return new Date(Date.UTC(laDate.getFullYear(), laDate.getMonth(), laDate.getDate()))
   })
 
   // Separate viewport state for the calendar (to avoid changing selection on month navigation)
   const [viewportDate, setViewportDate] = useState<Date>(selectedDate)
 
-  const dateStr = `${selectedDate.getUTCFullYear()}-${String(selectedDate.getUTCMonth() + 1).padStart(2, "0")}-${String(selectedDate.getUTCDate()).padStart(2, "0")}`
+  const dateStr = selectedDate.toISOString().split("T")[0]
   const month = viewportDate.getUTCMonth() + 1
   const year = viewportDate.getUTCFullYear()
 
@@ -117,21 +119,20 @@ export function PersonalTimeStudyPage() {
         weekMap[weekKey] = { totalMinutes: 0, targetMinutes: 0, days: [] }
       }
 
-      // Calculate target: 480 mins for Mon-Fri
-      const dateObj = new Date(d.date + 'T12:00:00Z')
-      const dayOfWeek = dateObj.getUTCDay()
-      const isWeekend = dayOfWeek === 0 || dayOfWeek === 6
-      
       weekMap[weekKey].totalMinutes += d.minutes ?? 0
-      if (!isWeekend) {
-        weekMap[weekKey].targetMinutes += 480
-      }
+      weekMap[weekKey].targetMinutes += d.allocatedMinutes ?? 0
       weekMap[weekKey].days.push(d.status)
     }
 
+    // Find the baseline daily assigned minutes from the DB (first day that has a non-zero value)
+    const dbAssignedMinutes = monthQuery.data.data.find(d => (d.allocatedMinutes ?? 0) > 0)?.allocatedMinutes ?? 0
+
     const weekSummaries: Record<string, any> = {}
     for (const [key, val] of Object.entries(weekMap)) {
-      const finalStatus = getWeeklyStatus(val.days, val.totalMinutes, val.targetMinutes)
+      // Weekly target is strictly 7 * the assigned daily minutes from the DB
+      const weeklyTarget = 7 * dbAssignedMinutes
+      
+      const finalStatus = getWeeklyStatus(val.days, val.totalMinutes, weeklyTarget)
       weekSummaries[key] = { totalMinutes: val.totalMinutes, status: finalStatus }
     }
 

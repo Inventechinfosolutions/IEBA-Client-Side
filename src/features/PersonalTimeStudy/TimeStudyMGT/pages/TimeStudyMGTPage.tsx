@@ -197,7 +197,7 @@ export function TimeStudyMGTPage() {
           <div className="mt-4 mb-4">
             <PersonalTimeStudyEntryForm
               key={`${selectedUserId}-${selectedDate.toISOString()}`}
-              dateStr={`${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, "0")}-${String(selectedDate.getDate()).padStart(2, "0")}`}
+              dateStr={selectedDate.toISOString().split("T")[0]}
               userId={selectedUserId}
               username={selectedEmployee ? `${selectedEmployee.firstName} ${selectedEmployee.lastName}` : ""}
               initialRecords={dayDetail?.timeStudyRecords}

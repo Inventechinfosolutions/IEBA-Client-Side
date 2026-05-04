@@ -26,12 +26,14 @@ export function useTimeStudyMGT() {
   const [selectedUserId, setSelectedUserId]           = useState<string | null>(null)
   const [selectedEmployee, setSelectedEmployee]       = useState<MgtEmployeeRow | null>(null)
   const [currentDate, setCurrentDate]                 = useState(() => {
-    // Force to May 2026 based on the user's requirement/screenshot context
-    return new Date(Date.UTC(2026, 4, 1)) 
+    const now = new Date()
+    const laDate = new Date(now.toLocaleString("en-US", { timeZone: "America/Los_Angeles" }))
+    return new Date(Date.UTC(laDate.getFullYear(), laDate.getMonth(), 1))
   })
   const [selectedDate, setSelectedDate]               = useState<Date | null>(() => {
-    // Initial selection should be today (May 3rd per user)
-    return new Date(Date.UTC(2026, 4, 3))
+    const now = new Date()
+    const laDate = new Date(now.toLocaleString("en-US", { timeZone: "America/Los_Angeles" }))
+    return new Date(Date.UTC(laDate.getFullYear(), laDate.getMonth(), laDate.getDate()))
   })
 
   const month = currentDate.getUTCMonth() + 1
@@ -97,16 +99,19 @@ export function useTimeStudyMGT() {
       weekMap[weekKey].days.push(d.status)
     }
 
-    // Calculate totals: prioritize the selected date, fallback to monthly sum
+    // Calculate totals: prioritize the selected date, fallback to daily average
     if (dateStr && dayMap[dateStr]) {
       allocatedTotal = dayMap[dateStr].allocatedMinutes || 0
       actualTotal    = dayMap[dateStr].consumedMinutes || 0
       balanceTotal   = dayMap[dateStr].balanceMinutes || 0
     } else {
-      rawData.forEach((d: any) => {
-        allocatedTotal += d.allocatedMinutes || 0
-        actualTotal    += d.consumedMinutes || 0
-      })
+      const workingDays = rawData.filter((d: any) => (d.allocatedMinutes ?? 0) > 0)
+      if (workingDays.length > 0) {
+        const sumAllocated = workingDays.reduce((acc: number, d: any) => acc + (d.allocatedMinutes || 0), 0)
+        const sumActual = workingDays.reduce((acc: number, d: any) => acc + (d.consumedMinutes || 0), 0)
+        allocatedTotal = Math.round(sumAllocated / workingDays.length)
+        actualTotal = Math.round(sumActual / workingDays.length)
+      }
       balanceTotal = allocatedTotal - actualTotal
     }
 
@@ -174,6 +179,12 @@ export function useTimeStudyMGT() {
   function selectEmployee(employee: MgtEmployeeRow) {
     setSelectedUserId(employee.id)
     setSelectedEmployee(employee)
+    
+    // Reset to today's date (LA time) so data is always fetched immediately for the new user
+    const now = new Date()
+    const laDate = new Date(now.toLocaleString("en-US", { timeZone: "America/Los_Angeles" }))
+    const today = new Date(Date.UTC(laDate.getUTCFullYear(), laDate.getUTCMonth(), laDate.getUTCDate()))
+    setSelectedDate(today)
   }
 
   function clearSelection() {
