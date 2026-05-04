@@ -11,10 +11,11 @@ export function useSubmitPersonalTimeRecords(userId: string, dateStr: string, mo
   return useMutation({
     mutationFn: async ({ records, mode }: { records: any[]; mode: "save" | "submit" }) => {
       if (mode === "save" && records.length === 1 && records[0].id) {
-        const { id, multiCodeRecords, ...updatePayload } = records[0]
+        const parent = records[0]
+        const { id, ...updatePayload } = parent
         return apiUpdateTimeRecord(id, updatePayload)
       }
-      return apiSubmitTimeRecords(records, mode)
+      return apiSubmitTimeRecords(records, mode, "post")
     },
     onSuccess: (_, { mode }) => {
       toast.success(`Records ${mode === "save" ? "saved" : "submitted"} successfully`)

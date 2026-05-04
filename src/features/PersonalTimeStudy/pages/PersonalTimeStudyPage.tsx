@@ -377,16 +377,22 @@ export function PersonalTimeStudyPage() {
                 </div>
               </div>
 
-              <div className="mt-4 mb-4">
+              <div className="mt-6 mb-4">
                 <PersonalTimeStudyEntryForm
-                  key={dateStr}
-                  dateStr={dateStr}
-                  initialRecords={dayQuery.data?.timeStudyRecords}
-                  dropdownData={dropdownQuery.data}
-                  onSave={(records) => submitMutation.mutate({ records, mode: "save" })}
-                  onSubmit={(records) => submitMutation.mutate({ records, mode: "submit" })}
-                  onDelete={(id) => deleteMutation.mutate(id)}
-                />
+                    key={dateStr}
+                    dateStr={dateStr}
+                    initialRecords={dayQuery.data?.timeStudyRecords}
+                    dropdownData={dropdownQuery.data}
+                    onSave={(records) => submitMutation.mutate({ records, mode: "save" })}
+                    onSubmit={(records) => submitMutation.mutate({ records, mode: "submit" })}
+                    onDelete={(id) => deleteMutation.mutate(id)}
+                    allocatedTotal={summaryQuery.data?.tsmins}
+                    actualTotal={summaryQuery.data?.actualnormalactivitytime}
+                    balanceTotal={summaryQuery.data?.actualnormalactivityTimebalance}
+                    actualMultiTotal={summaryQuery.data?.actualmultiactivitytime}
+                    multiBalanceTotal={summaryQuery.data?.actualmultiactivityTimebalance}
+                    hideSummaryHeader={true}
+                  />
               </div>
             </>
           )}

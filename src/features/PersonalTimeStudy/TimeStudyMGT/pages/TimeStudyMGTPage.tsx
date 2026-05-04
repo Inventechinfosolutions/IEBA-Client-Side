@@ -24,6 +24,8 @@ export function TimeStudyMGTPage() {
     dropdownData,
     isEmployeeListLoading,
     selectEmployee,
+    actualMultiTotal,
+    multiBalanceTotal,
   } = useTimeStudyMGT()
 
   const { mutate: notifyUser } = useActionUserTimeRecord()
@@ -206,6 +208,8 @@ export function TimeStudyMGTPage() {
               allocatedTotal={allocatedTotal}
               actualTotal={actualTotal}
               balanceTotal={balanceTotal}
+              actualMultiTotal={actualMultiTotal}
+              multiBalanceTotal={multiBalanceTotal}
             />
           </div>
         )}

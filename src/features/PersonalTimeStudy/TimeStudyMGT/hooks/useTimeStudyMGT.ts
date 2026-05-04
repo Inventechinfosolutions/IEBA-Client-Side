@@ -3,6 +3,7 @@ import { useGetMGTEmployeeList } from "../queries/getMGTEmployeeList"
 import { useGetMGTMonthLegend } from "../queries/getMGTMonthLegend"
 import { useGetMGTDayDetail } from "../queries/getMGTDayDetail"
 import { useGetMGTDropdowns } from "../queries/getMGTDropdowns"
+import { useGetTimeEntrySummary } from "../../queries/getTimeEntrySummary"
 import { usePermissions } from "@/hooks/usePermissions"
 import type { MgtEmployeeRow, MgtDayStatusMap, MgtWeekSummary } from "../types"
 
@@ -56,6 +57,7 @@ export function useTimeStudyMGT() {
     selectedDate ? selectedDate.getFullYear() : year
   )
   const dropdownQuery = useGetMGTDropdowns(selectedUserId)
+  const summaryQuery  = useGetTimeEntrySummary(selectedUserId || "", dateStr || "", !!selectedUserId && !!dateStr)
 
   // ── Derived data ──────────────────────────────────────────────────────────
   const employees = employeeListQuery.data ?? []
@@ -214,12 +216,14 @@ export function useTimeStudyMGT() {
     filteredEmployees,
     dayStatuses,
     weekSummaries,
-    allocatedTotal,
-    actualTotal,
-    balanceTotal,
+    allocatedTotal: summaryQuery.data?.tsmins ?? allocatedTotal,
+    actualTotal: summaryQuery.data?.actualnormalactivitytime ?? actualTotal,
+    balanceTotal: summaryQuery.data?.actualnormalactivityTimebalance ?? balanceTotal,
     legend,
     dayDetail: dayDetailQuery.data,
     dropdownData: dropdownQuery.data,
+    actualMultiTotal: summaryQuery.data?.actualmultiactivitytime,
+    multiBalanceTotal: summaryQuery.data?.actualmultiactivityTimebalance,
 
     // Loading states
     isEmployeeListLoading: employeeListQuery.isLoading,

@@ -31,6 +31,8 @@ export type TimeEntrySubRow = {
   serviceActivity: string
   totalMin: string
   description: string
+  start: string
+  end: string
 }
 
 export type TimeEntryParentRow = {
@@ -53,8 +55,10 @@ function createSubRow(): TimeEntrySubRow {
     id: newId(),
     studyProgram: "",
     serviceActivity: "",
-    totalMin: "",
+    totalMin: "0",
     description: "",
+    start: "",
+    end: "",
   }
 }
 
@@ -114,6 +118,9 @@ type PersonalTimeStudyEntryFormProps = {
   allocatedTotal?: number
   actualTotal?: number
   balanceTotal?: number
+  actualMultiTotal?: number
+  multiBalanceTotal?: number
+  hideSummaryHeader?: boolean
 }
 
 function TimePicker24h({
@@ -140,16 +147,15 @@ function TimePicker24h({
           <div className={cn("relative", disabled ? "cursor-not-allowed" : "cursor-pointer")}>
             <TitleCaseInput
               value={value}
-              disabled={disabled}
-              placeholder="--:--"
               readOnly
+              placeholder="--:--"
               className={cn(
-                "h-10 pr-8 text-[11px] font-normal rounded-[6px]",
-                disabled && "bg-[#F2F4F7] cursor-not-allowed opacity-70"
+                "h-10 pr-8 text-[11px] font-normal rounded-[6px] text-[#344054] bg-white",
+                disabled && "bg-[#F2F4F7] cursor-not-allowed"
               )}
               onClick={() => !disabled && setOpen(true)}
             />
-            <Clock className="absolute right-3 top-1/2 size-4 -translate-y-1/2 opacity-50 pointer-events-none" />
+            <Clock className="absolute right-3 top-1/2 size-4 -translate-y-1/2 opacity-70 pointer-events-none text-gray-500" />
           </div>
         </PopoverTrigger>
         <PopoverContent className="p-0 w-auto" align="start" side="top" sideOffset={5}>
@@ -231,19 +237,22 @@ function SupportingDocField({
 const parentFieldRowClass = "flex flex-row items-end gap-2 flex-nowrap"
 
 export function PersonalTimeStudyEntryForm({
-  className,
   dateStr,
+  userId: propsUserId,
+  username: propsUsername,
   initialRecords,
   dropdownData,
   onSave,
   onSubmit,
   onDelete,
-  userId: propsUserId,
-  username: propsUsername,
   readonly = false,
   allocatedTotal,
   actualTotal,
   balanceTotal,
+  actualMultiTotal,
+  multiBalanceTotal,
+  hideSummaryHeader = false,
+  className,
 }: PersonalTimeStudyEntryFormProps) {
   const { user } = useAuth()
   const userId = propsUserId || user?.id || ""
@@ -265,10 +274,9 @@ export function PersonalTimeStudyEntryForm({
         return
       }
       const parentMap = new Map<number, TimeEntryParentRow>()
-      const orphans: any[] = []
       filtered.forEach((rec) => {
         if (!rec.parentId) {
-          parentMap.set(rec.id, {
+          const parentRow: TimeEntryParentRow = {
             id: String(rec.id),
             dbId: rec.id,
             start: rec.starttime ?? "",
@@ -278,23 +286,18 @@ export function PersonalTimeStudyEntryForm({
             description: rec.description ?? "",
             supportingDocLabel: "",
             supportingDocs: Array.isArray(rec.supportingDocs) ? rec.supportingDocs : [],
-            subRows: [],
-          })
-        } else {
-          orphans.push(rec)
-        }
-      })
-      orphans.forEach((rec) => {
-        const p = parentMap.get(rec.parentId)
-        if (p) {
-          p.subRows.push({
-            id: String(rec.id),
-            dbId: rec.id,
-            studyProgram: String(rec.programid ?? ""),
-            serviceActivity: String(rec.activityid ?? ""),
-            totalMin: String(rec.activitytime ?? ""),
-            description: rec.description ?? "",
-          })
+            subRows: (rec.multiCodeRecords ?? []).map((m: any) => ({
+              id: String(m.id),
+              dbId: m.id,
+              studyProgram: String(m.programid ?? ""),
+              serviceActivity: String(m.activityid ?? ""),
+              totalMin: String(m.activitytime ?? ""),
+              description: m.description ?? "",
+              start: m.starttime ?? "",
+              end: m.endtime ?? "",
+            })),
+          }
+          parentMap.set(rec.id, parentRow)
         }
       })
       const sorted = Array.from(parentMap.values()).sort((a, b) => {
@@ -340,7 +343,8 @@ export function PersonalTimeStudyEntryForm({
     return list
   }, [dropdownData])
 
-  const programActivityQueryResults = useGetProgramActivityRelations(programQueries)
+  const queriesEnabled = !readonly && !isLocked
+  const programActivityQueryResults = useGetProgramActivityRelations(programQueries, queriesEnabled)
 
   const getActivitiesForProgram = useCallback((programId: string): Set<string> => {
     const index = programQueries.findIndex((pq) => String(pq.programId) === programId)
@@ -367,15 +371,58 @@ export function PersonalTimeStudyEntryForm({
   }, [programQueries, programActivityQueryResults])
 
   const updateParent = useCallback((id: string, patch: Partial<TimeEntryParentRow>) => {
-    setParents((prev) => prev.map((p) => (p.id === id ? { ...p, ...patch } : p)))
-  }, [])
-
-  const updateSubRow = useCallback((parentId: string, subId: string, patch: Partial<TimeEntrySubRow>) => {
     setParents((prev) => prev.map((p) => {
-      if (p.id !== parentId) return p
-      return { ...p, subRows: p.subRows.map((s) => (s.id === subId ? { ...s, ...patch } : s)) }
+      if (p.id !== id) return p
+      const updatedP = { ...p, ...patch }
+      
+      if (patch.start !== undefined || patch.end !== undefined) {
+        if (updatedP.subRows.length > 0) {
+          const parentMin = Number(computeDurationMinutes(updatedP.start, updatedP.end)) || 0
+          const subTotalMin = updatedP.subRows.reduce((sum, s) => sum + (Number(computeDurationMinutes(s.start, s.end)) || 0), 0)
+          if (subTotalMin > parentMin) {
+            toast.error(`Parent total is ${parentMin} mins . Child total should not exceed the parent time.`, { id: `val-${id}` })
+            updatedP.end = "" 
+          }
+        }
+      }
+      return updatedP
     }))
   }, [])
+
+  const updateSubRow = (parentId: string, subRowId: string, updates: Partial<TimeEntrySubRow>) => {
+    if (isLocked) return
+    setParents((prev) =>
+      prev.map((p) => {
+        if (p.id !== parentId) return p
+        
+        const newSubRows = p.subRows.map((s) => {
+          if (s.id !== subRowId) return s
+          const updated = { ...s, ...updates }
+          
+          if (updates.start || updates.end) {
+            updated.totalMin = String(computeDurationMinutes(updated.start, updated.end))
+          } else if (updates.totalMin !== undefined) {
+            // If totalMin is updated manually, try to move end time
+            const mins = Number(updates.totalMin) || 0
+            updated.end = addMinutesToTime(updated.start, mins)
+          }
+          return updated
+        })
+        
+        if (updates.end || updates.start || updates.totalMin) {
+          const parentMinutes = Number(computeDurationMinutes(p.start, p.end)) || 0
+          const subTotalMinutes = newSubRows.reduce((acc, s) => acc + (Number(s.totalMin) || 0), 0)
+          
+          if (subTotalMinutes > parentMinutes) {
+            toast.error(`Parent total is ${parentMinutes} mins. Child total should not exceed the parent time.`)
+            return p // Reject change
+          }
+        }
+
+        return { ...p, subRows: newSubRows }
+      })
+    )
+  }
 
   const addParentAtTop = useCallback(() => {
     const topParent = parents[0]
@@ -400,7 +447,24 @@ export function PersonalTimeStudyEntryForm({
   }, [parents, onDelete])
 
   const addSubRow = useCallback((parentId: string) => {
-    setParents((prev) => prev.map((p) => (p.id === parentId ? { ...p, subRows: [...p.subRows, createSubRow()] } : p)))
+    setParents((prev) => prev.map((p) => {
+      if (p.id !== parentId) return p
+      const lastSub = p.subRows[p.subRows.length - 1]
+      const startTime = lastSub?.end || p.start
+      const endTime = startTime ? addMinutesToTime(startTime, 15) : startTime
+      return { 
+        ...p, 
+        subRows: [
+          ...p.subRows, 
+          { 
+            ...createSubRow(), 
+            start: startTime, 
+            end: endTime, 
+            totalMin: "15" 
+          }
+        ] 
+      }
+    }))
   }, [])
 
   const removeSubRow = useCallback((parentId: string, subId: string) => {
@@ -430,11 +494,15 @@ export function PersonalTimeStudyEntryForm({
       multiCodeRecords: p.subRows.map((s) => {
         const subDeptId = dropdownData?.find((d) => d.programs.some((pr: any) => String(pr.id) === s.studyProgram))?.departmentId
         return {
+          id: s.dbId,
           programid: s.studyProgram,
           activityid: s.serviceActivity,
-          activitytime: Number(s.totalMin) || 0,
+          activitytime: Number(s.totalMin) || Number(computeDurationMinutes(s.start, s.end)) || 0,
           description: s.description,
           departmentId: subDeptId,
+          starttime: s.start,
+          endtime: s.end,
+          recordType: "MULTI_CODE",
         }
       }),
     }))
@@ -445,6 +513,23 @@ export function PersonalTimeStudyEntryForm({
       if (!p.start || !p.end || !p.tsProgram || !p.serviceActivity || !p.description?.trim()) {
         toast.error("Please fill all the fields")
         return false
+      }
+
+      if (p.subRows.length > 0) {
+        const parentMin = Number(computeDurationMinutes(p.start, p.end)) || 0
+        let subTotalMin = 0
+        for (const s of p.subRows) {
+          if (!s.start || !s.end || !s.studyProgram || !s.serviceActivity || !s.description?.trim()) {
+            toast.error("Please fill all the fields in sub-rows")
+            return false
+          }
+          subTotalMin += Number(s.totalMin) || 0
+        }
+
+        if (subTotalMin > parentMin) {
+          toast.error(`Total sub-row minutes (${subTotalMin}) cannot exceed parent minutes (${parentMin})`)
+          return false
+        }
       }
     }
     return true
@@ -493,31 +578,48 @@ export function PersonalTimeStudyEntryForm({
 
   return (
     <section className={cn("w-full rounded-[6px] border-0 bg-white p-4 shadow-[0_4px_16px_rgba(16,24,40,0.12)]", className)}>
-      {/* Header with optional totals */}
-      {(allocatedTotal !== undefined || actualTotal !== undefined || balanceTotal !== undefined) && (
-        <div className="mb-4 flex flex-wrap items-center justify-end gap-6 border-b border-gray-100 pb-3 text-sm">
-          <span className="text-gray-500">
-            Allocated TS Minutes: <span className="font-semibold text-gray-900">{allocatedTotal ?? 0}</span>
-          </span>
-          <span className="text-gray-500">
-            Actual Minutes: <span className="font-semibold text-gray-900">{actualTotal ?? 0}</span>
-          </span>
-          <span className="text-gray-500">
-            Balance: <span className="font-semibold text-gray-900">{balanceTotal ?? 0}</span>
-          </span>
-        </div>
-      )}
+        <div className="mb-6 flex flex-col gap-2">
+          {/* Top Row: Metrics aligned right */}
+          {!hideSummaryHeader && (
+            <div className="flex flex-wrap items-center justify-end gap-x-6 gap-y-2 text-[14px]">
+              <div className="flex items-center gap-1.5">
+                <span className="text-gray-700">Allocated TS Minutes:</span>
+                <span className="font-semibold text-[#6C5DD3]">{allocatedTotal || 0}</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-gray-700">Time Study Minutes:</span>
+                <span className="font-semibold text-[#6C5DD3]">{actualTotal || 0}</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-gray-700">Total MAA Minutes:</span>
+                <span className="font-semibold text-[#6C5DD3]">{actualMultiTotal || 0}</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-gray-700">Time Study Balance:</span>
+                <span className="font-semibold text-[#6C5DD3]">{balanceTotal || 0}</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-gray-700">MAA Balance:</span>
+                <span className="font-semibold text-[#6C5DD3]">{multiBalanceTotal || 0}</span>
+              </div>
+            </div>
+          )}
 
-      <div className="mb-4 flex items-center justify-end">
-        <Button 
-          size="icon" 
-          disabled={isLocked} 
-          className={cn("size-9 bg-[#6C5DD3] hover:bg-[#6C5DD3]/90", isLocked && "cursor-not-allowed")} 
-          onClick={addParentAtTop}
-        >
-          <Plus className="size-4" />
-        </Button>
-      </div>
+          {/* Bottom Row: Title and Button */}
+          <div className="flex items-center justify-between">
+            <h3 className="text-[14px] text-[#6C5DD3] font-semibold">Time Entries</h3>
+            {!readonly && (
+              <Button 
+                size="icon" 
+                disabled={isLocked} 
+                className={cn("size-9 bg-[#6C5DD3] hover:bg-[#6C5DD3]/90", isLocked && "cursor-not-allowed")} 
+                onClick={addParentAtTop}
+              >
+                <Plus className="size-4" />
+              </Button>
+            )}
+          </div>
+        </div>
 
       <div className="flex flex-col gap-3">
         {parents.map((parent) => {
@@ -527,19 +629,21 @@ export function PersonalTimeStudyEntryForm({
               <div className={parentFieldRowClass}>
                 <TimePicker24h label="Start" value={parent.start} disabled={isLocked} onChange={(v) => updateParent(parent.id, { start: v, end: addMinutesToTime(v, 15) })} />
                 <div className="flex-1 space-y-0.5">
-                  <Label className="text-[11px] text-muted-foreground">TS Program <RequiredMark /></Label>
+                  <Label className="text-[11px] text-[#6C5DD3] font-medium">TS Program <RequiredMark /></Label>
                   <SingleSelectSearchDropdown 
                     value={parent.tsProgram} 
                     placeholder="Select program" 
                     disabled={isLocked} 
-                    options={programs.map((p) => ({ value: String(p.id), label: `${p.code} - ${p.name}` }))} 
+                    options={programs
+                      .filter((p: any) => !p.isMultiCode)
+                      .map((p) => ({ value: String(p.id), label: `${p.code}${p.isMultiCode ? "**" : ""} - ${p.name}` }))} 
                     onChange={(v) => updateParent(parent.id, { tsProgram: v })} 
                     onBlur={() => {}} 
                     className={cn("h-10 text-[11px]", isLocked && "bg-[#F2F4F7] cursor-not-allowed")} 
                   />
                 </div>
                 <div className="flex-1 space-y-0.5">
-                  <Label className="text-[11px] text-muted-foreground">Service / Activity <RequiredMark /></Label>
+                  <Label className="text-[11px] text-[#6C5DD3] font-medium">Service / Activity <RequiredMark /></Label>
                   <SingleSelectSearchDropdown 
                     value={parent.serviceActivity} 
                     placeholder="Select activity" 
@@ -559,15 +663,15 @@ export function PersonalTimeStudyEntryForm({
                   <Label className="text-[11px] text-muted-foreground">Notes <RequiredMark /></Label>
                   <TitleCaseInput 
                     value={parent.description} 
-                    disabled={isLocked} 
+                    readOnly={isLocked}
                     onChange={(e) => updateParent(parent.id, { description: e.target.value })} 
                     placeholder="Notes" 
-                    className={cn("h-10 text-[11px]", isLocked && "bg-[#F2F4F7] cursor-not-allowed")} 
+                    className={cn("h-10 text-[11px] text-[#344054] font-normal", isLocked && "bg-[#F2F4F7] cursor-not-allowed")} 
                   />
                 </div>
                 <SupportingDocField parentId={parent.id} docs={parent.supportingDocs} uploading={uploadingId === parent.id} disabled={isLocked} onAdd={handleAddDocs} onDelete={handleDeleteDoc} />
                 <div className="flex items-end gap-1 pb-0.5">
-                  {canDeleteParent(parent.id) && (
+                  {!readonly && canDeleteParent(parent.id) && (
                     <Button 
                       size="icon" 
                       variant="ghost" 
@@ -578,28 +682,33 @@ export function PersonalTimeStudyEntryForm({
                       <Trash2 className="size-4" />
                     </Button>
                   )}
-                  <Button 
-                    size="icon" 
-                    variant="outline" 
-                    disabled={isLocked} 
-                    className={cn("size-10 border-[#6C5DD3] text-[#6C5DD3] hover:bg-[#6C5DD3]/10", isLocked && "cursor-not-allowed")} 
-                    onClick={() => addSubRow(parent.id)}
-                  >
-                    <Plus className="size-4" />
-                  </Button>
+                  {!readonly && (
+                    <Button 
+                      size="icon" 
+                      variant="outline" 
+                      disabled={isLocked} 
+                      className={cn("size-10 border-[#6C5DD3] text-[#6C5DD3] hover:bg-[#6C5DD3]/10", isLocked && "cursor-not-allowed")} 
+                      onClick={() => addSubRow(parent.id)}
+                    >
+                      <Plus className="size-4" />
+                    </Button>
+                  )}
                 </div>
               </div>
               {parent.subRows.length > 0 && (
                 <div className="mt-4 space-y-3 border-l-2 border-[#6C5DD3]/20 pl-4 ml-8">
                   {parent.subRows.map((sub) => (
                     <div key={sub.id} className={parentFieldRowClass}>
+                      <TimePicker24h label="Start" value={sub.start} disabled={isLocked} onChange={(v) => updateSubRow(parent.id, sub.id, { start: v, end: addMinutesToTime(v, 15) })} />
                       <div className="flex-1 space-y-1">
                         <Label className="text-[11px] text-muted-foreground">Program <RequiredMark /></Label>
                         <SingleSelectSearchDropdown 
                           value={sub.studyProgram} 
                           placeholder="Select program" 
                           disabled={isLocked} 
-                          options={programs.map((p) => ({ value: String(p.id), label: `${p.code} - ${p.name}` }))} 
+                          options={programs
+                            .filter((p: any) => p.isMultiCode)
+                            .map((p) => ({ value: String(p.id), label: `${p.code}${p.isMultiCode ? "**" : ""} - ${p.name}` }))} 
                           onChange={(v) => updateSubRow(parent.id, sub.id, { studyProgram: v })} 
                           onBlur={() => {}} 
                           className={cn("h-9 text-[11px]", isLocked && "bg-[#F2F4F7] cursor-not-allowed")} 
@@ -617,30 +726,37 @@ export function PersonalTimeStudyEntryForm({
                           className={cn("h-9 text-[11px]", (isLocked || !sub.studyProgram) && "bg-[#F2F4F7] cursor-not-allowed")} 
                         />
                       </div>
+                      <TimePicker24h label="End" value={sub.end} disabled={isLocked || !sub.start} onChange={(v) => updateSubRow(parent.id, sub.id, { end: v })} />
                       <div className="w-[60px] space-y-1">
-                        <Label className="text-[11px] text-muted-foreground">Min. <RequiredMark /></Label>
-                        <TitleCaseInput type="number" min={0} disabled={isLocked} value={sub.totalMin} onChange={(e) => updateSubRow(parent.id, sub.id, { totalMin: e.target.value })} className={cn("h-9 text-[11px]", isLocked && "bg-[#F2F4F7] cursor-not-allowed")} />
+                        <Label className="text-[11px] text-[#6C5DD3] font-medium">Min. <RequiredMark /></Label>
+                        <TitleCaseInput readOnly value={computeDurationMinutes(sub.start, sub.end)} placeholder="—" className="h-9 bg-[#F2F4F7] text-[11px] cursor-not-allowed" />
                       </div>
                       <div className="flex-1 space-y-1">
-                        <Label className="text-[11px] text-muted-foreground">Notes</Label>
+                          <div className="flex items-center gap-2">
+                            <Label className="text-[11px] text-muted-foreground whitespace-nowrap">
+                              Notes <RequiredMark />
+                            </Label>
+                          </div>
                         <TitleCaseInput 
                           value={sub.description} 
-                          disabled={isLocked} 
+                          readOnly={isLocked}
                           onChange={(e) => updateSubRow(parent.id, sub.id, { description: e.target.value })} 
                           placeholder="Notes" 
-                          className={cn("h-9 text-[11px]", isLocked && "bg-[#F2F4F7] cursor-not-allowed")} 
+                          className={cn("h-9 text-[11px] text-[#344054] font-normal", isLocked && "bg-[#F2F4F7] cursor-not-allowed")} 
                         />
                       </div>
                       <div className="flex items-end pb-0.5">
-                        <Button 
-                          size="icon" 
-                          variant="ghost" 
-                          disabled={isLocked} 
-                          className={cn("size-9 text-destructive hover:bg-destructive/10", isLocked && "cursor-not-allowed")} 
-                          onClick={() => removeSubRow(parent.id, sub.id)}
-                        >
-                          <Trash2 className="size-4" />
-                        </Button>
+                        {!readonly && (
+                          <Button 
+                            size="icon" 
+                            variant="ghost" 
+                            disabled={isLocked} 
+                            className={cn("size-9 text-destructive hover:bg-destructive/10", isLocked && "cursor-not-allowed")} 
+                            onClick={() => removeSubRow(parent.id, sub.id)}
+                          >
+                            <Trash2 className="size-4" />
+                          </Button>
+                        )}
                       </div>
                     </div>
                   ))}

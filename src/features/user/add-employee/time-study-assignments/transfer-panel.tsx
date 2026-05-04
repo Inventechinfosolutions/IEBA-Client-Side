@@ -162,7 +162,10 @@ export function TransferPanel({
                       <div className="ml-1 flex flex-wrap items-center gap-1 text-[10px] font-medium">
                         {item.code ? (
                           <>
-                            <span className="font-bold text-[#6C5DD3]">({item.code})</span>
+                            <span className="font-bold text-[#6C5DD3]">
+                              ({item.code}
+                              {item.isMultiCode ? "**" : ""})
+                            </span>
                             <span className="font-bold text-[#111827]"> — </span>
                             <span className={isSelected ? "text-[#6C5DD3]" : "text-[#111827]"}>
                               {item.name}

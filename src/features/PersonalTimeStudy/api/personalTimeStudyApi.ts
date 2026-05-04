@@ -43,12 +43,13 @@ export async function apiSaveNotes(dto: SubmitNotesReqDto): Promise<void> {
 /** Bulk saves or submits time study records. */
 export async function apiSubmitTimeRecords(
   payload: TimeStudyRecordSubmitItemDto[],
-  mode: "save" | "submit"
+  mode: "save" | "submit",
+  method: "post" | "put" = "post"
 ): Promise<TimeStudyRecordResDto[]> {
-  const res = await api.post<ApiEnvelope<TimeStudyRecordResDto[]>>(
-    `/timestudyrecords/submit?mode=${mode}`,
-    payload
-  )
+  const url = `/timestudyrecords/submit?mode=${mode}`
+  const res = method === "put" 
+    ? await api.put<ApiEnvelope<TimeStudyRecordResDto[]>>(url, payload)
+    : await api.post<ApiEnvelope<TimeStudyRecordResDto[]>>(url, payload)
   return res.data!
 }
 

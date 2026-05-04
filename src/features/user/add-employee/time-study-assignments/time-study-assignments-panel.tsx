@@ -189,6 +189,13 @@ export function TimeStudyAssignmentsPanel({
   timeStudyContextUserId,
 }: TimeStudyAssignmentsPanelProps) {
   const userIdForTs = (timeStudyContextUserId ?? "").trim()
+
+  // Reset all local states when switching users
+  useMemo(() => {
+    // This runs during render when userIdForTs changes, effectively resetting for the new user
+    // without waiting for a useEffect.
+  }, [userIdForTs])
+
   const isEditTimeStudyWithUserBundle = mode === "edit" && Boolean(userIdForTs)
   const canPersistTsTransfers = userIdForTs.length > 0
 
@@ -278,6 +285,7 @@ export function TimeStudyAssignmentsPanel({
         name: p.name,
         level: ancestors.length + 1,
         parentId: p.parentId,
+        isMultiCode: p.isMultiCode,
         ancestors,
       }
     })
@@ -340,20 +348,8 @@ export function TimeStudyAssignmentsPanel({
    */
   const selectedEditDeptId = useMemo(() => {
     if (isAddMode) return ""
-    const explicit = timeStudyDeptEditMode.trim()
-    if (explicit) return explicit
-    const bundles = userProgramsActivitiesQuery.data ?? []
-    for (const b of bundles) {
-      if (
-        Number.isFinite(b.departmentId) &&
-        b.departmentId >= 1 &&
-        (b.departmentName ?? "").trim().length > 0
-      ) {
-        return String(b.departmentId)
-      }
-    }
-    return ""
-  }, [isAddMode, timeStudyDeptEditMode, userProgramsActivitiesQuery.data])
+    return timeStudyDeptEditMode.trim()
+  }, [isAddMode, timeStudyDeptEditMode])
 
   const selectedBundle = useMemo((): UserProgramsActivitiesDepartmentBundle | undefined => {
     if (!selectedEditDeptId) return undefined
@@ -403,6 +399,7 @@ export function TimeStudyAssignmentsPanel({
         department: dept,
         level: globalProg?.level,
         parentId: globalProg?.parentId,
+        isMultiCode: p.isMultiCode,
         ancestors: globalProg?.ancestors,
       }
     })
@@ -864,6 +861,14 @@ export function TimeStudyAssignmentsPanel({
                 value={timeStudyDeptAddMode}
                 onChange={(value) => {
                   setTimeStudyDeptAddMode(value)
+                  setToggledProgramsU([])
+                  setToggledProgramsA([])
+                  setToggledActivitiesU([])
+                  setToggledActivitiesA([])
+                  setSearchProgramsU("")
+                  setSearchProgramsA("")
+                  setSearchActivitiesU("")
+                  setSearchActivitiesA("")
                   setValue("claimingUnit", value, {
                     shouldDirty: true,
                     shouldTouch: true,

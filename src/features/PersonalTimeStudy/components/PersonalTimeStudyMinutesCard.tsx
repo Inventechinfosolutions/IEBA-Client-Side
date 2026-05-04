@@ -30,20 +30,20 @@ export function PersonalTimeStudyMinutesCard({
       </CardHeader>
       <CardContent className="flex flex-col gap-2 px-3 pt-2 pb-4">
         <div className="flex items-center justify-end gap-2 text-[14px]">
-          <span className="font-bold text-black">Allocated TS Minutes:</span>
-          <span className="font-bold tabular-nums text-[#6C5DD3]">
+          <span className="font-semibold text-black">Allocated TS Minutes:</span>
+          <span className="font-semibold tabular-nums text-[#6C5DD3]">
             {allocatedMinutes}
           </span>
         </div>
         <div className="flex items-center justify-end gap-2 text-[14px]">
-          <span className="font-bold text-black">Time Study Minutes:</span>
-          <span className="font-bold tabular-nums text-[#6C5DD3]">
+          <span className="font-semibold text-black">Time Study Minutes:</span>
+          <span className="font-semibold tabular-nums text-[#6C5DD3]">
             {actualMinutes}
           </span>
         </div>
         <div className="flex items-center justify-end gap-2 text-[14px]">
-          <span className="font-bold text-black">Total MAA Minutes:</span>
-          <span className="font-bold tabular-nums text-[#6C5DD3]">
+          <span className="font-semibold text-black">Total MAA Minutes:</span>
+          <span className="font-semibold tabular-nums text-[#6C5DD3]">
             {totalMAAMinutes}
           </span>
         </div>
@@ -51,14 +51,14 @@ export function PersonalTimeStudyMinutesCard({
         <hr className="border-border/60" />
 
         <div className="flex items-center justify-end gap-2 text-[14px]">
-          <span className="font-bold text-black">Time Study Balance:</span>
-          <span className="font-bold tabular-nums text-[#6C5DD3]">
+          <span className="font-semibold text-black">Time Study Balance:</span>
+          <span className="font-semibold tabular-nums text-[#6C5DD3]">
             {balanceMinutes}
           </span>
         </div>
         <div className="flex items-center justify-end gap-2 text-[14px]">
-          <span className="font-bold text-black">MAA Balance:</span>
-          <span className="font-bold tabular-nums text-[#6C5DD3]">
+          <span className="font-semibold text-black">MAA Balance:</span>
+          <span className="font-semibold tabular-nums text-[#6C5DD3]">
             {maaBalance}
           </span>
         </div>

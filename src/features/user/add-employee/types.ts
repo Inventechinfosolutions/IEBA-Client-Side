@@ -119,6 +119,7 @@ export type AddEmployeeTimeStudyProgramRow = {
   department: string
   parentId?: string
   level?: number
+  isMultiCode?: boolean
 }
 
 /** GET /timestudyprograms/user/programs-activities?userId= — program row per department bundle. */
@@ -127,6 +128,7 @@ export type UserProgramsActivitiesProgramItem = {
   code: string
   name: string
   departmentId: number
+  isMultiCode?: boolean
 }
 
 /** GET /timestudyprograms/user/programs-activities?userId= — activity row per department bundle. */
@@ -292,7 +294,8 @@ export type AddEmployeeTimeStudyTransferItem = {
   code?: string
   level?: number
   parentId?: string
-  ancestors?: { id: string; name: string; code?: string }[]
+  isMultiCode?: boolean
+  ancestors?: { id: string; name: string; code?: string; isMultiCode?: boolean }[]
 }
 
 export type AddEmployeeTimeStudyTransferPanelProps = {
