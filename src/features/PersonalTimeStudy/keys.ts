@@ -18,6 +18,7 @@ export const personalTimeStudyKeys = {
   /** Placeholder — align with future `GET .../:id` for edit flows. */
   detail: (id: string) =>
     [...personalTimeStudyKeys.all, "detail", id] as const,
-  /** Placeholder — align with future master-code lookups if needed. */
-  masterCodes: () => [...personalTimeStudyKeys.all, "master-codes"] as const,
+  /** Time entry summary (minutes, balances) for a specific user + date */
+  timeEntrySummary: (userId: string, dateStr: string) =>
+    [...personalTimeStudyKeys.all, "timeentry-summary", userId, dateStr] as const,
 }

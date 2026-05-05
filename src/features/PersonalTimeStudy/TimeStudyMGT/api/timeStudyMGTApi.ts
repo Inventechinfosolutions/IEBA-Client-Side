@@ -35,7 +35,7 @@ export async function apiMgtGetMonthLegend(
   month: number,
   year: number
 ): Promise<UserMonthLegendResDto> {
-  return await apiGetMonthLegend({ userId, month, year })
+  return await apiGetMonthLegend({ userId, month, year, screen: "tsmanagement" })
 }
 
 /**
@@ -47,7 +47,7 @@ export async function apiMgtGetDayDetail(params: {
   month: number
   year: number
 }): Promise<UserDayLegendDetailResDto> {
-  return await apiGetDayDetail(params)
+  return await apiGetDayDetail({ ...params, screen: "tsmanagement" })
 }
 
 /**

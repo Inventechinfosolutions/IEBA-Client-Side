@@ -134,7 +134,7 @@ export function TransferPanel({
                                 <Tooltip>
                                   <TooltipTrigger asChild>
                                     <span
-                                      className="relative flex size-[18px] shrink-0 cursor-help items-center justify-center rounded-full border border-[#6C5DD3] bg-white text-[9px] font-medium text-[#111827]"
+                                      className="relative flex size-[18px] shrink-0 cursor-help items-center justify-center rounded-full border border-[#6C5DD3] bg-[#F9FAFB] text-[9px] font-medium text-[#111827] shadow-[0_4px_8px_rgba(0,0,0,0.15)] -translate-y-px"
                                       style={{ zIndex: 11 }}
                                     >
                                       {i + 1}

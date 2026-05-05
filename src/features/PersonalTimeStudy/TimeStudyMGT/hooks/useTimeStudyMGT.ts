@@ -57,7 +57,7 @@ export function useTimeStudyMGT() {
     selectedDate ? selectedDate.getFullYear() : year
   )
   const dropdownQuery = useGetMGTDropdowns(selectedUserId)
-  const summaryQuery  = useGetTimeEntrySummary(selectedUserId || "", dateStr || "", !!selectedUserId && !!dateStr)
+  const summaryQuery  = useGetTimeEntrySummary(selectedUserId || "", dateStr || "", "tsmanagement", !!selectedUserId && !!dateStr)
 
   // ── Derived data ──────────────────────────────────────────────────────────
   const employees = employeeListQuery.data ?? []

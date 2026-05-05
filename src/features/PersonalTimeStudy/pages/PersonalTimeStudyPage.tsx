@@ -93,6 +93,18 @@ export function PersonalTimeStudyPage() {
   const month = viewportDate.getUTCMonth() + 1
   const year = viewportDate.getUTCFullYear()
 
+  const handleMonthChange = (newViewport: Date) => {
+    setViewportDate(newViewport)
+    // Auto-select the 1st of the new month if current selection is in a different month/year
+    if (
+      selectedDate.getUTCMonth() !== newViewport.getUTCMonth() ||
+      selectedDate.getUTCFullYear() !== newViewport.getUTCFullYear()
+    ) {
+      const firstOfMonth = new Date(Date.UTC(newViewport.getUTCFullYear(), newViewport.getUTCMonth(), 1))
+      setSelectedDate(firstOfMonth)
+    }
+  }
+
   // 2. Fetch Month Legend
   const monthQuery = useGetPersonalMonthLegend(userId, month, year, activeTab === "personal")
 
@@ -103,11 +115,11 @@ export function PersonalTimeStudyPage() {
   const dropdownQuery = useGetPersonalDropdowns(userId, activeTab === "personal")
 
   // 5. Fetch Time Entry Summary (MAA etc)
-  const summaryQuery = useGetTimeEntrySummary(userId, dateStr, activeTab === "personal")
+  const summaryQuery = useGetTimeEntrySummary(userId, dateStr, undefined, activeTab === "personal")
 
   // 5. Calendar day & week summaries
   const { dayStatuses, weekSummaries } = useMemo(() => {
-    const dayMap: Record<string, { status: string; color?: string }> = {}
+    const dayMap: Record<string, { status: string; color?: string; hasNotes?: boolean; noteText?: string }> = {}
     const weekMap: Record<string, { totalMinutes: number, targetMinutes: number, days: string[] }> = {}
 
     if (!monthQuery.data?.data) return { dayStatuses: {}, weekSummaries: {} }
@@ -116,7 +128,7 @@ export function PersonalTimeStudyPage() {
       const s = String(d.status).toLowerCase()
       // If unlocked (opened), don't show the cell color
       const cellColor = s === "opened" ? undefined : (d.color ?? undefined)
-      dayMap[d.date] = { status: d.status, color: cellColor }
+      dayMap[d.date] = { status: d.status, color: cellColor, hasNotes: !!d.notes, noteText: d.notes || undefined }
       
       const weekKey = getWeekStartKey(d.date)
       if (!weekMap[weekKey]) {
@@ -175,7 +187,6 @@ export function PersonalTimeStudyPage() {
           </TooltipTrigger>
           <TooltipContent className="text-xs">Approved</TooltipContent>
         </Tooltip>
-
       )
     }
 
@@ -270,7 +281,7 @@ export function PersonalTimeStudyPage() {
   }
 
   // 7. Mutations
-  const notesMutation = useSavePersonalNotes(userId, dateStr)
+  const notesMutation = useSavePersonalNotes(userId, dateStr, month, year)
   const submitMutation = useSubmitPersonalTimeRecords(userId, dateStr, month, year)
   const deleteMutation = useDeletePersonalTimeRecord(userId, dateStr, month, year)
 
@@ -331,7 +342,7 @@ export function PersonalTimeStudyPage() {
                     selectedDate={selectedDate}
                     onDateSelect={setSelectedDate}
                     currentMonthDate={viewportDate}
-                    onMonthChange={setViewportDate}
+                    onMonthChange={handleMonthChange}
                     dayStatuses={dayStatuses}
                     weekSummaries={weekSummaries}
                     renderStatus={renderStatus}

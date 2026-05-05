@@ -24,12 +24,13 @@ async function apiRequest<T>(
   path: string,
   options: RequestOptions = {}
 ): Promise<T> {
-  const { skipAuth = false, ...fetchOptions } = options
+  const { skipAuth = false, body, ...fetchOptions } = options
 
   const url = `${BASE_URL}${path.startsWith("/") ? path : `/${path}`}`
 
+  const isFormData = body instanceof FormData
   const headers: HeadersInit = {
-    "Content-Type": "application/json",
+    ...(!isFormData && { "Content-Type": "application/json" }),
     ...(fetchOptions.headers as Record<string, string>),
   }
 
@@ -43,6 +44,7 @@ async function apiRequest<T>(
   const response = await fetch(url, {
     ...fetchOptions,
     headers,
+    body: isFormData ? (body as any) : (body ? JSON.stringify(body) : undefined),
   })
 
   if (!response.ok) {
@@ -106,25 +108,25 @@ export const api = {
   get: <T>(path: string, options?: RequestOptions) =>
     apiRequest<T>(path, { ...options, method: "GET" }),
 
-  post: <T>(path: string, body?: unknown, options?: RequestOptions) =>
+  post: <T>(path: string, body?: any, options?: RequestOptions) =>
     apiRequest<T>(path, {
       ...options,
       method: "POST",
-      body: body ? JSON.stringify(body) : undefined,
+      body,
     }),
 
-  put: <T>(path: string, body?: unknown, options?: RequestOptions) =>
+  put: <T>(path: string, body?: any, options?: RequestOptions) =>
     apiRequest<T>(path, {
       ...options,
       method: "PUT",
-      body: body ? JSON.stringify(body) : undefined,
+      body,
     }),
 
-  patch: <T>(path: string, body?: unknown, options?: RequestOptions) =>
+  patch: <T>(path: string, body?: any, options?: RequestOptions) =>
     apiRequest<T>(path, {
       ...options,
       method: "PATCH",
-      body: body ? JSON.stringify(body) : undefined,
+      body,
     }),
 
   delete: <T>(path: string, options?: RequestOptions) =>

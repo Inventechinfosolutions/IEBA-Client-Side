@@ -15,9 +15,12 @@ export async function apiGetMonthLegend(params: {
   userId: string
   month: number
   year: number
+  screen?: string
 }): Promise<UserMonthLegendResDto> {
+  const { userId, month, year, screen } = params
+  const screenParam = screen ? `&screen=${encodeURIComponent(screen)}` : ""
   const res = await api.get<ApiEnvelope<UserMonthLegendResDto>>(
-    `/timestudyrecords/user/monthlegend?userId=${params.userId}&month=${params.month}&year=${params.year}`
+    `/timestudyrecords/user/monthlegend?userId=${userId}&month=${month}&year=${year}${screenParam}`
   )
   return res.data!
 }
@@ -27,10 +30,12 @@ export async function apiGetDayDetail(params: {
   date: string // YYYY-MM-DD
   month: number
   year: number
+  screen?: string
 }): Promise<UserDayLegendDetailResDto> {
-  const { date, userId, month, year } = params
+  const { date, userId, month, year, screen } = params
+  const screenParam = screen ? `&screen=${encodeURIComponent(screen)}` : ""
   const res = await api.get<ApiEnvelope<UserDayLegendDetailResDto>>(
-    `/timestudyrecords/user/daydetail?date=${date}&userId=${userId}&month=${month}&year=${year}`
+    `/timestudyrecords/user/daydetail?date=${date}&userId=${userId}&month=${month}&year=${year}${screenParam}`
   )
   return res.data!
 }
@@ -46,10 +51,11 @@ export async function apiSubmitTimeRecords(
   mode: "save" | "submit",
   method: "post" | "put" = "post"
 ): Promise<TimeStudyRecordResDto[]> {
+  const strippedPayload = payload.map(({ supportingDocs, ...rest }: any) => rest)
   const url = `/timestudyrecords/submit?mode=${mode}`
   const res = method === "put" 
-    ? await api.put<ApiEnvelope<TimeStudyRecordResDto[]>>(url, payload)
-    : await api.post<ApiEnvelope<TimeStudyRecordResDto[]>>(url, payload)
+    ? await api.put<ApiEnvelope<TimeStudyRecordResDto[]>>(url, strippedPayload)
+    : await api.post<ApiEnvelope<TimeStudyRecordResDto[]>>(url, strippedPayload)
   return res.data!
 }
 
@@ -60,9 +66,21 @@ export async function apiUploadSupportingDoc(
 ): Promise<void> {
   const formData = new FormData()
   formData.append("file", file)
-  await api.post(`/timestudyrecords/${recordId}/supporting-doc`, formData, {
-    headers: { "Content-Type": "multipart/form-data" },
-  })
+  await api.post(`/timestudyrecords/${recordId}/supporting-doc`, formData)
+}
+/** Downloads a supporting document for a record by optional docId. Returns a Blob. */
+export async function apiDownloadSupportingDoc(recordId: number, docId?: number): Promise<Blob> {
+  const url = docId
+    ? `/timestudyrecords/${recordId}/supporting-doc?docId=${docId}`
+    : `/timestudyrecords/${recordId}/supporting-doc`
+  return api.get<Blob>(url)
+}
+/** Deletes a specific supporting document by docId, or all docs if docId omitted. */
+export async function apiDeleteSupportingDoc(recordId: number, docId?: number): Promise<void> {
+  const url = docId
+    ? `/timestudyrecords/${recordId}/supporting-doc?docId=${docId}`
+    : `/timestudyrecords/${recordId}/supporting-doc`
+  await api.delete(url)
 }
 /** Fetches programs and activities for the current user's dropdowns. */
 export async function apiGetUserProgramsAndActivities(userId: string): Promise<any> {
@@ -75,9 +93,10 @@ export async function apiUpdateTimeRecord(
   id: number,
   dto: Partial<TimeStudyRecordSubmitItemDto>
 ): Promise<TimeStudyRecordResDto> {
+  const { supportingDocs, ...rest } = dto as any
   const res = await api.put<ApiEnvelope<TimeStudyRecordResDto>>(
     `/timestudyrecords/${id}`,
-    dto
+    rest
   )
   return res.data!
 }
@@ -173,7 +192,8 @@ export async function apiUpdateUserLeave(id: number, values: EmployeeLeaveReques
 }
 
 /** Fetches time entry summary (TS mins, MAA mins, balances) for a specific date. */
-export async function apiGetTimeEntrySummary(userId: string, date: string): Promise<any> {
-  const res = await api.get<ApiEnvelope<any>>(`/timestudyrecords/user/timeentry/record?userId=${userId}&date=${date}`)
+export async function apiGetTimeEntrySummary(userId: string, date: string, screen?: string): Promise<any> {
+  const screenParam = screen ? `&screen=${encodeURIComponent(screen)}` : ""
+  const res = await api.get<ApiEnvelope<any>>(`/timestudyrecords/user/timeentry/record?userId=${userId}&date=${date}${screenParam}`)
   return res.data
 }

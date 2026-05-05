@@ -34,6 +34,7 @@ export type TimeStudyRecordResDto = {
   recordType: TimeStudyRecordType
   createdAt: string
   updatedAt: string
+  supportingDocs?: Array<{ fileName: string; url?: string }>
 }
 
 /** Legend data for a single day in the calendar. */

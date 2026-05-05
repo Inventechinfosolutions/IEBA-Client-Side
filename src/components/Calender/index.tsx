@@ -8,6 +8,12 @@ import {
   type ComponentProps,
   type CSSProperties,
 } from "react"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 import "./index.styles.css"
 
@@ -50,7 +56,7 @@ export type AppCalenderProps = Omit<ComponentProps<"div">, "children"> & {
   /** Callback when month/year navigation occurs. */
   onMonthChange?: (date: Date) => void
   /** Status overrides for individual days (mapped by YYYY-MM-DD). */
-  dayStatuses?: Record<string, { status: DateStatus; color?: string }>
+  dayStatuses?: Record<string, { status: DateStatus; color?: string; hasNotes?: boolean; noteText?: string }>
   /** If true, renders an additional ACTION column at the end of the calendar grid. */
   showActionColumn?: boolean
   /** Render function for the STATUS column to override default dot. */
@@ -68,6 +74,8 @@ interface CalendarDay {
   isWeekSelected: boolean;
   status: DateStatus;
   color?: string;
+  hasNotes?: boolean;
+  noteText?: string;
   weekDay: string;
 }
 
@@ -179,14 +187,16 @@ const AppCalender = ({
     ...daysOfWeek.slice(0, firstDayOfWeek)
   ];
 
-  const getDateInfo = useCallback((date: Date): { status: DateStatus; color?: string } => {
+  const getDateInfo = useCallback((date: Date): { status: DateStatus; color?: string; hasNotes?: boolean; noteText?: string } => {
     if (dayStatuses) {
       const key = date.toISOString().split('T')[0]
       const info = dayStatuses[key]
       if (info) {
         return {
           status: info.status,
-          color: info.color
+          color: info.color,
+          hasNotes: info.hasNotes,
+          noteText: info.noteText
         }
       }
     }
@@ -280,13 +290,14 @@ const AppCalender = ({
   };
 
   return (
-    <div
-      className={cn(
-        "flex flex-col gap-4 bg-background font-sans w-full",
-        className
-      )}
-      {...divProps}
-    >
+    <TooltipProvider>
+      <div
+        className={cn(
+          "flex flex-col gap-4 bg-background font-sans w-full",
+          className
+        )}
+        {...divProps}
+      >
       <div className="ieba-time-study-calendar flex flex-col items-stretch gap-4 w-full">
         <div className="calendar-card w-full">
           {/* Timezone Selector */}
@@ -424,46 +435,65 @@ const AppCalender = ({
                 const weekStatus = (summary?.status as DateStatus) ?? DateStatus.NOT_SUBMITTED
                 return (
                   <Fragment key={`week-${week[0]?.date.getTime() ?? weekIndex}`}>
-                    {week.map((dayObj, index) => (
-                      <div
-                        key={`${dayObj.date.getTime()}-${index}`}
-                        role="button"
-                        tabIndex={0}
-                        onClick={() => handleDayClick(dayObj.date)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" || e.key === " ") {
-                            e.preventDefault()
-                            handleDayClick(dayObj.date)
+                    {week.map((dayObj, index) => {
+                      const cell = (
+                        <div
+                          key={`${dayObj.date.getTime()}-${index}`}
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => handleDayClick(dayObj.date)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault()
+                              handleDayClick(dayObj.date)
+                            }
+                          }}
+                          className={cn(
+                            "day-cell text-foreground",
+                            !dayObj.isCurrentMonth && "not-current-month",
+                            dayObj.isSelected && "selected",
+                            dayObj.isWeekSelected && !dayObj.isSelected && "week-selected",
+                            dayObj.isToday &&
+                              !dayObj.isSelected &&
+                              !dayObj.isWeekSelected &&
+                              "today",
+                            dayObj.isSelected &&
+                              "z-1 shadow-md ring-2 ring-primary ring-offset-2 ring-offset-background text-foreground!",
+                            dayObj.isWeekSelected &&
+                              !dayObj.isSelected &&
+                              "border-2 border-primary text-primary! font-medium",
+                            dayObj.color && "text-white!"
+                          )}
+                          style={
+                            {
+                              backgroundColor: dayObj.color || "#f3f4f6", 
+                              backgroundImage: dayObj.status === DateStatus.REJECTED 
+                                ? `linear-gradient(to top right, transparent 46%, rgba(0,0,0,0.6) 46%, rgba(0,0,0,0.6) 54%, transparent 54%)`
+                                : "none"
+                            } as CSSProperties
                           }
-                        }}
-                        className={cn(
-                          "day-cell text-foreground",
-                          !dayObj.isCurrentMonth && "not-current-month",
-                          dayObj.isSelected && "selected",
-                          dayObj.isWeekSelected && !dayObj.isSelected && "week-selected",
-                          dayObj.isToday &&
-                            !dayObj.isSelected &&
-                            !dayObj.isWeekSelected &&
-                            "today",
-                          dayObj.isSelected &&
-                            "z-[1] shadow-md ring-2 ring-primary ring-offset-2 ring-offset-background !text-foreground",
-                          dayObj.isWeekSelected &&
-                            !dayObj.isSelected &&
-                            "border-2 border-primary !text-primary font-medium",
-                          dayObj.color && "text-white!"
-                        )}
-                        style={
-                          {
-                            backgroundColor: dayObj.color || "#f3f4f6", 
-                            backgroundImage: dayObj.status === DateStatus.REJECTED 
-                              ? `linear-gradient(to top right, transparent 46%, rgba(0,0,0,0.6) 46%, rgba(0,0,0,0.6) 54%, transparent 54%)`
-                              : "none"
-                          } as CSSProperties
-                        }
-                      >
-                        {dayObj.day}
-                      </div>
-                    ))}
+                        >
+                          {dayObj.day}
+                          {dayObj.hasNotes && (
+                            <span className="absolute top-1.5 right-1.5 text-[9px] leading-none text-[#6C5DD3] font-black pointer-events-none" style={{ textShadow: '0 0 4px rgba(255,255,255,0.9), 0 1px 3px rgba(108,93,211,0.5)' }}>
+                              ★
+                            </span>
+                          )}
+                        </div>
+                      );
+
+                      if (dayObj.noteText) {
+                        return (
+                          <Tooltip key={`${dayObj.date.getTime()}-${index}`}>
+                            <TooltipTrigger asChild>{cell}</TooltipTrigger>
+                            <TooltipContent side="top" className="max-w-[200px] text-xs wrap-break-word">
+                              {dayObj.noteText}
+                            </TooltipContent>
+                          </Tooltip>
+                        );
+                      }
+                      return cell;
+                    })}
                     <div className="week-summary-total">{weekTotal}</div>
                     <div className="week-summary-status">
                       {renderStatus ? renderStatus(weekIndex, week.map(d => d.date), weekStatus as DateStatus) : (
@@ -527,7 +557,8 @@ const AppCalender = ({
           </div>
         </div>
       ) : null}
-    </div>
+      </div>
+    </TooltipProvider>
   )
 }
 
