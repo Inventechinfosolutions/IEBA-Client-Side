@@ -1,8 +1,10 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useCallback, useState } from "react"
-import { useForm, type FieldErrors, type FieldValues } from "react-hook-form"
+import { api } from "@/lib/api"
+import { useForm, useFormContext, type FieldErrors, type FieldValues } from "react-hook-form"
 import { AlertTriangle, Check, X } from "lucide-react"
 import { toast } from "sonner"
+import { useUploadUserDocument } from "../mutations/upload-user-document"
 
 import type {
   AddEmployeeFormTab,
@@ -359,10 +361,16 @@ export function useAddEmployeeForm({ mode, initialValues, onSave }: UseAddEmploy
 /**
  * Local UI state for the Employee / Login Details tab (file label, password visibility).
  */
-export function useEmployeeLoginDetailsUi() {
-  const [selectedJobDutyFile, setSelectedJobDutyFile] = useState("")
+export function useEmployeeLoginDetailsUi(userId?: string | null) {
+  const { watch, setValue } = useFormContext<UserModuleFormValues>()
+  const jobDutyFromForm = watch("jobDutyStatement") || ""
+  const [localFileLabel, setLocalFileLabel] = useState("")
+  
+  const selectedJobDutyFile = localFileLabel || jobDutyFromForm
   const [isPasswordVisible, setIsPasswordVisible] = useState(false)
   const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] = useState(false)
+
+  const uploadMutation = useUploadUserDocument()
 
   const togglePasswordVisibility = useCallback(() => {
     setIsPasswordVisible((prev) => !prev)
@@ -372,9 +380,66 @@ export function useEmployeeLoginDetailsUi() {
     setIsConfirmPasswordVisible((prev) => !prev)
   }, [])
 
-  const onJobDutyFileChange = useCallback((fileName: string) => {
-    setSelectedJobDutyFile(fileName)
-  }, [])
+  const onJobDutyFileChange = useCallback(
+    async (file: File | null) => {
+      if (!file) return
+      setLocalFileLabel(file.name)
+      setValue("jobDutyStatement", file.name, { shouldDirty: true })
+      setValue("jobDutyFile", file, { shouldDirty: true })
+
+      if (userId) {
+        try {
+          const res = await uploadMutation.mutateAsync({
+            userId,
+            docType: "job_duty",
+            file,
+          })
+          // Update the ID if the upload returned one
+          if (res?.data?.id) {
+            setValue("jobDutyFileId", res.data.id)
+          }
+        } catch (err) {
+          // Toast is handled by mutation
+        }
+      }
+    },
+    [userId, uploadMutation, setValue],
+  )
+
+  const onDeleteJobDutyFile = useCallback(async () => {
+    const fileId = watch("jobDutyFileId")
+    if (fileId) {
+      try {
+        await api.delete(`/user-documents/${fileId}`)
+        toast.success("Document deleted successfully")
+      } catch (error) {
+        console.error("Delete failed", error)
+      }
+    }
+    setLocalFileLabel("")
+    setValue("jobDutyStatement", "", { shouldDirty: true })
+    setValue("jobDutyFile", null, { shouldDirty: true })
+    setValue("jobDutyFileId", null, { shouldDirty: true })
+  }, [watch, setValue])
+
+  const onPreviewJobDutyFile = useCallback(async () => {
+    const fileId = watch("jobDutyFileId")
+    if (fileId) {
+      try {
+        const blob = await api.get<Blob>(`/user-documents/${fileId}/download`)
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement("a")
+        a.href = url
+        a.download = watch("jobDutyStatement") || "job-duty-statement"
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        window.URL.revokeObjectURL(url)
+      } catch (error) {
+        console.error("Download failed", error)
+      }
+    }
+  }, [watch])
 
   return {
     selectedJobDutyFile,
@@ -383,5 +448,8 @@ export function useEmployeeLoginDetailsUi() {
     togglePasswordVisibility,
     toggleConfirmPasswordVisibility,
     onJobDutyFileChange,
+    onDeleteJobDutyFile,
+    onPreviewJobDutyFile,
+    isUploading: uploadMutation.isPending,
   }
 }

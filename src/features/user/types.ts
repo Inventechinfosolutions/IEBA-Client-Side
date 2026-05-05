@@ -259,6 +259,12 @@ export type UserDetailsDto = {
   allpermissions?: string[]
   allowMultiCodes: boolean
   multiCodes?: string[] | null
+  documents?: Array<{
+    id: number
+    docType: string
+    fileName: string
+    status: string
+  }>
 }
 
 export type UserModuleListResponse = {

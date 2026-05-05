@@ -13,7 +13,7 @@ import { useGetDepartments } from "@/features/department/queries/getDepartments"
 import { UserTable } from "../components/UserTable"
 import { UserToolbar } from "../components/UserToolbar"
 import { usePermissions } from "@/hooks/usePermissions"
-import { assignUserDepartmentRoles, fetchDepartmentRolesCatalog } from "../add-employee/api"
+import { assignUserDepartmentRoles, fetchDepartmentRolesCatalog, apiUploadUserDocument } from "../add-employee/api"
 import { parseMultiSelectStoredValues } from "@/components/ui/multi-select-dropdown"
 import { apiGetUserDetails } from "../api"
 import { useUserModule } from "../hooks/useUserModule"
@@ -389,6 +389,15 @@ export function UserModulePage() {
 
       const created = await userModule.createRowAsync({ values })
       setDraftUserId(created.id)
+
+      if (values.jobDutyFile) {
+        try {
+          await apiUploadUserDocument(created.id, "job_duty", values.jobDutyFile)
+        } catch (uploadError) {
+          console.error("Job Duty Statement upload failed during create:", uploadError)
+          toast.error("User created, but Job Duty Statement upload failed.")
+        }
+      }
 
       if (values.autoAssignedDepartments?.trim()) {
         try {

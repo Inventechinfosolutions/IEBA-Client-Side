@@ -2,7 +2,8 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { FileText, UserRound, X } from "lucide-react"
 import { toast } from "sonner"
 import { Controller, useForm, type FieldErrors } from "react-hook-form"
-import { useMemo, useState } from "react"
+import { useCallback, useMemo, useState } from "react"
+import { api } from "@/lib/api"
 import { useNavigate } from "react-router-dom"
 
 import profileAvatar from "@/assets/profile-avatar.png"
@@ -140,7 +141,7 @@ function ProfileDetailForm({
   onCancel,
   isSaving,
 }: ProfileDetailFormProps) {
-  const [jobDutyViewOpen, setJobDutyViewOpen] = useState(false)
+  // const [jobDutyViewOpen, setJobDutyViewOpen] = useState(false)
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
 
   const { user } = useAuth()
@@ -185,6 +186,28 @@ function ProfileDetailForm({
     (values) => onSubmit(values),
     handleInvalidSubmit
   )
+  
+  const onJobDutyView = useCallback(async () => {
+    const fileId = watch("onRecords.jobDutyFileId")
+    if (fileId) {
+      try {
+        const blob = await api.get<Blob>(`/user-documents/${fileId}/download`)
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement("a")
+        a.href = url
+        a.download = watch("onRecords.jobDutyStatement") || "job-duty-statement"
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        window.URL.revokeObjectURL(url)
+      } catch (error) {
+        console.error("Download failed", error)
+        toast.error("Failed to download job duty statement")
+      }
+    } else {
+      toast.info("No job duty statement available")
+    }
+  }, [watch])
 
   const jobDutyStatement = watch("onRecords.jobDutyStatement")
 
@@ -502,7 +525,7 @@ function ProfileDetailForm({
                 <Button
                   type="button"
                   variant="link"
-                  onClick={() => setJobDutyViewOpen(true)}
+                  onClick={onJobDutyView}
                   className="h-auto p-0 text-[12px] font-medium text-[#6C5DD3] underline-offset-2 hover:text-[#6C5DD3]"
                 >
                   <FileText className="mr-2 size-4" />
@@ -580,28 +603,6 @@ function ProfileDetailForm({
         </div>
       </form>
 
-      <Dialog open={jobDutyViewOpen} onOpenChange={setJobDutyViewOpen}>
-        <DialogContent className="w-[700px] max-w-[95vw] rounded-lg border border-[#e6e7ef] bg-white">
-          <DialogHeader>
-            <DialogTitle className="text-[16px] font-semibold text-[#111827]">
-              Job Duty Statement
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-2">
-            <p className="text-[13px] text-[#4b5563]">
-              File:{" "}
-              <span className="font-medium text-[#111827]">
-                {jobDutyStatement || "—"}
-              </span>
-            </p>
-            <div className="rounded-[8px] border border-[#e6e7ef] bg-[#F4F5FB] p-4">
-              <p className="text-[12px] text-[#4b5563]">
-                This is a placeholder preview for the “Job Duty Statement” file.
-              </p>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </>
   )
 }

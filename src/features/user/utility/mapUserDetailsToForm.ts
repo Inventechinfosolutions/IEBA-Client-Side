@@ -137,8 +137,16 @@ export function mergeUserDetailsIntoFormValues(
       ? details.status.toLowerCase() === "active"
       : previous.active
 
+  const jobDutyDoc = (details.documents ?? []).find(
+    (d: any) => d.docType === "job_duty" || d.docType === "jobdutystatement",
+  )
+  const jobDutyFileName = jobDutyDoc?.fileName ?? ""
+  const jobDutyFileId = jobDutyDoc?.id ?? null
+
   return {
     ...previous,
+    jobDutyStatement: jobDutyFileName || previous.jobDutyStatement,
+    jobDutyFileId: jobDutyFileId || previous.jobDutyFileId,
     employeeNo: String(details.employeeId ?? details.id ?? previous.employeeNo).trim(),
     firstName: details.firstName?.trim() || previous.firstName,
     lastName: details.lastName?.trim() || previous.lastName,

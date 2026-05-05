@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { Controller, useFormContext } from "react-hook-form"
-import { Eye, EyeOff } from "lucide-react"
+import { Eye, EyeOff, Loader2, Trash2 } from "lucide-react"
 
 import { Checkbox } from "@/components/ui/checkbox"
 import { TitleCaseInput } from "@/components/ui/title-case-input"
@@ -24,7 +24,10 @@ import { formatPhoneUs10Input } from "../schemas"
 import { usePermissions } from "@/hooks/usePermissions"
 import { capitalize } from "@/lib/utils"
 
-export function EmployeeLoginDetailsSection({ isEditMode }: EmployeeLoginDetailsSectionProps) {
+export function EmployeeLoginDetailsSection({
+  isEditMode,
+  userId,
+}: EmployeeLoginDetailsSectionProps) {
   /** Edit mode: defer GET /jobclassification until the user opens the picker. */
   const [jobClassificationMenuOpened, setJobClassificationMenuOpened] = useState(false)
   const [locationMenuOpened, setLocationMenuOpened] = useState(false)
@@ -43,10 +46,13 @@ export function EmployeeLoginDetailsSection({ isEditMode }: EmployeeLoginDetails
     selectedJobDutyFile,
     isPasswordVisible,
     isConfirmPasswordVisible,
+    isUploading,
     togglePasswordVisibility,
     toggleConfirmPasswordVisibility,
     onJobDutyFileChange,
-  } = useEmployeeLoginDetailsUi()
+    onDeleteJobDutyFile,
+    onPreviewJobDutyFile,
+  } = useEmployeeLoginDetailsUi(userId)
 
   const {
     register,
@@ -418,19 +424,45 @@ export function EmployeeLoginDetailsSection({ isEditMode }: EmployeeLoginDetails
         </div>
         <div>
           <label className={labelClassName}>Job Duty Statement</label>
-          <label className="flex h-[43px] cursor-pointer select-none items-center rounded-[7px] border border-[#e4e7ef] bg-white px-2 text-[11px] text-[#8f96a8]">
-            <span className="rounded-[3px] border border-[#cfd4df] bg-[#f7f8fb] px-2 py-px text-[11px] text-[#2a2f3a]">
-              Choose File..
-            </span>
-            <span className="ml-2 truncate">{selectedJobDutyFile || "No file chosen"}</span>
-            <TitleCaseInput
-              type="file"
-              className="hidden"
-              onChange={(event) =>
-                onJobDutyFileChange(event.target.files?.[0]?.name ?? "")
-              }
-            />
-          </label>
+          <div className="flex h-[43px] items-center rounded-[7px] border border-[#e4e7ef] bg-white px-2 text-[11px] text-[#8f96a8]">
+            {!selectedJobDutyFile ? (
+              <label className="flex flex-1 cursor-pointer items-center">
+                <span className="rounded-[3px] border border-[#cfd4df] bg-[#f7f8fb] px-2 py-px text-[11px] text-[#2a2f3a]">
+                  Choose File..
+                </span>
+                <span className="ml-2 truncate font-medium text-[#374151]">No file chosen</span>
+                <input
+                  type="file"
+                  className="hidden"
+                  disabled={isUploading}
+                  onChange={(event) => onJobDutyFileChange(event.target.files?.[0] ?? null)}
+                />
+              </label>
+            ) : (
+              <div className="flex flex-1 items-center justify-between overflow-hidden">
+                <span className="truncate font-medium text-[#374151]">{selectedJobDutyFile}</span>
+                <div className="flex items-center gap-2">
+                  {isUploading && <Loader2 className="size-3 animate-spin text-[#6C5DD3]" />}
+                  <button
+                    type="button"
+                    onClick={onPreviewJobDutyFile}
+                    className="flex size-6 items-center justify-center rounded-md text-blue-500 hover:bg-blue-50"
+                    title="Preview"
+                  >
+                    <Eye className="size-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={onDeleteJobDutyFile}
+                    className="flex size-6 items-center justify-center rounded-md text-red-500 hover:bg-red-50"
+                    title="Delete"
+                  >
+                    <Trash2 className="size-4" />
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         <div>
