@@ -4,7 +4,7 @@ import { MgtLegendCard } from "../components/MgtLegendCard"
 import { PersonalTimeStudyCalendarCard } from "../../components/PersonalTimeStudyCalendarCard"
 import { Check, X, Unlock, Bell, Info } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { useActionUserTimeRecord } from "../mutations/useActionUserTimeRecord"
+import { useActionUserTimeRecord } from "../mutations/updateActionUserTimeRecord"
 import { PersonalTimeStudyEntryForm } from "../../components/PersonalTimeStudyEntryForm"
 
 export function TimeStudyMGTPage() {
@@ -24,6 +24,8 @@ export function TimeStudyMGTPage() {
     dropdownData,
     isEmployeeListLoading,
     selectEmployee,
+    actualMultiTotal,
+    multiBalanceTotal,
   } = useTimeStudyMGT()
 
   const { mutate: notifyUser } = useActionUserTimeRecord()
@@ -33,7 +35,7 @@ export function TimeStudyMGTPage() {
       <div className="flex flex-col gap-4">
 
         {/* 3-column layout: Employee Panel | Calendar | Legend */}
-        <div className="flex gap-4 items-stretch">
+        <div className="flex gap-8 items-stretch px-10">
 
           {/* Left: Employee list */}
           <MgtEmployeePanel
@@ -46,7 +48,7 @@ export function TimeStudyMGTPage() {
           />
 
           {/* Middle: Calendar */}
-          <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0 px-3">
             <PersonalTimeStudyCalendarCard
               weekRows={[]}
               selectedDate={selectedDate}
@@ -206,6 +208,8 @@ export function TimeStudyMGTPage() {
               allocatedTotal={allocatedTotal}
               actualTotal={actualTotal}
               balanceTotal={balanceTotal}
+              actualMultiTotal={actualMultiTotal}
+              multiBalanceTotal={multiBalanceTotal}
             />
           </div>
         )}

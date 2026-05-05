@@ -15,6 +15,7 @@ import { PayrollFrequency, type PayrollFrequencyType } from "../enums/payrollFre
 import { usePayrollSettings } from "@/features/settings/payroll"
 import { cn } from "@/lib/utils"
 import { updatePayrollRow } from "../api/payrollApi"
+import { MasterCodePagination } from "@/features/master-code/components/MasterCodePagination"
 
 function mapSettingsPayrollByToPayrollType(payrollBy?: string): PayrollFrequencyType {
   const low = (payrollBy ?? "").toLowerCase().replace(/[^a-z]/g, "")
@@ -28,7 +29,15 @@ function mapSettingsPayrollByToPayrollType(payrollBy?: string): PayrollFrequency
 export function PayrollPage() {
   const filterModule = usePayrollFilterOptions()
   const [activeQueryParams, setActiveQueryParams] = useState<GetPayrollRowsParams | null>(null)
-  const rowsModule = usePayrollRows(activeQueryParams)
+  
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
+
+  const rowsModule = usePayrollRows(
+    activeQueryParams
+      ? { ...activeQueryParams, page, limit: pageSize }
+      : null
+  )
   const payrollSettingsModule = usePayrollSettings()
   const uploadMutation = useUploadPayrollFile()
   const deleteMutation = useDeletePayrollRows()
@@ -103,6 +112,7 @@ export function PayrollPage() {
   )
 
   const handleGetRows = useCallback((params: GetPayrollRowsParams) => {
+    setPage(1) // Reset to first page on new search
     setActiveQueryParams(params)
     // Always force a refetch when clicking 'Get'
     setTimeout(() => {
@@ -216,6 +226,19 @@ export function PayrollPage() {
                 showEditAction={hasAnyEditableEnabledColumn}
                 onEditRow={hasAnyEditableEnabledColumn ? handleEditRow : undefined}
               />
+              
+              {activeQueryParams && rowsModule.rows.length > 0 && (
+                <MasterCodePagination
+                  totalItems={rowsModule.total}
+                  currentPage={page}
+                  pageSize={pageSize}
+                  onPageChange={setPage}
+                  onPageSizeChange={(newSize) => {
+                    setPageSize(newSize)
+                    setPage(1)
+                  }}
+                />
+              )}
             </div>
           </div>
         </div>

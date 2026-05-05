@@ -59,12 +59,15 @@ export type UserMonthLegendResDto = {
   data: UserMonthLegendDayResDto[]
   include_weekend: string
   "sat-sun": string
+  leaveRecords?: UserLeaveDaySnapshotResDto[]
 }
 
 /** Snapshot of a leave record for a specific day. */
 export type UserLeaveDaySnapshotResDto = {
   id: number
   userId: string
+  programid: number
+  activityid: number
   programcode: string
   programname: string
   activitycode: string
@@ -75,6 +78,8 @@ export type UserLeaveDaySnapshotResDto = {
   endtime: string
   leaveTotalTime: number
   status: string
+  requestcomment?: string | null
+  supervisorcomment?: string | null
 }
 
 /** Full detail for a selected day. */
@@ -134,3 +139,10 @@ export type PersonalTimeStudyPagination = {
 
 /** Placeholder for list row (if needed for table views). */
 export type PersonalTimeStudyRow = TimeStudyRecordResDto
+
+/** Payload for leave create/submit mutations. */
+export type CreateLeavePayload = {
+  values: import("./schema/PersonalTimeStudySchema").EmployeeLeaveRequestFormValues
+  userId: string
+  dropdownData?: any[]
+}

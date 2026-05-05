@@ -13,5 +13,9 @@ export function useGetPersonalTimeStudyForEdit(id: string | null) {
         : personalTimeStudyKeys.detail("__none__"),
     queryFn: async () => null,
     enabled: false,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
   })
 }

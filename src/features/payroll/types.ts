@@ -62,6 +62,13 @@ export type GetPayrollRowsParams = {
   departmentId: string
   departmentCode: string
   employeeIds: readonly string[]
+  page?: number
+  limit?: number
+}
+
+export type PayrollRowsResponse = {
+  items: readonly PayrollManagementRow[]
+  total: number
 }
 
 export type PayrollUploadFormValues = {

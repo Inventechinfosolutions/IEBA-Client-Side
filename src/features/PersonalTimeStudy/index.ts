@@ -9,7 +9,7 @@ export { personalTimeStudyKeys } from "./keys"
 export {
   personalTimeStudyFilterFormSchema,
   personalTimeStudyFilterDefaultValues,
-} from "./schemas"
+} from "./schema/PersonalTimeStudySchema"
 export type {
   PersonalTimeStudyRow,
   PersonalTimeStudyFilterFormValues,

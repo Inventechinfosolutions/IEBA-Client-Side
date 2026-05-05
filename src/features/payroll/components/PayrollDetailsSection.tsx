@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { SingleSelectDropdown, type SingleSelectOption } from "@/components/ui/dropdown"
 import { Label } from "@/components/ui/label"
-import { MultiSelectDropdown } from "@/components/ui/multi-select-dropdown"
+import { MultiSelectSearchDropdown } from "@/components/ui/multi-select-search-dropdown"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/contexts/AuthContext"
@@ -321,14 +321,13 @@ export function PayrollDetailsSection({
               name="employeeIdsSerialized"
               control={form.control}
               render={({ field }) => (
-                <MultiSelectDropdown
+                <MultiSelectSearchDropdown
                   value={field.value}
                   onChange={field.onChange}
                   onBlur={field.onBlur}
                   options={employeeOptions}
                   placeholder="Employee"
                   disabled={isOptionsLoading || isUsersLoading}
-                  isLoading={isOptionsLoading || isUsersLoading}
                   maxVisibleItems={2}
                   className="min-h-[46px] w-full rounded-[6px] border-[#d6d7dc] text-[14px]"
                 />

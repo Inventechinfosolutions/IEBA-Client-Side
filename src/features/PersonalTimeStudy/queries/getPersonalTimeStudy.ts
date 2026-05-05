@@ -11,5 +11,9 @@ export function useGetPersonalTimeStudy(filters?: { search?: string }) {
     queryKey: personalTimeStudyKeys.list(filters),
     queryFn: async (): Promise<PersonalTimeStudyRow[]> => [],
     enabled: false,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
   })
 }

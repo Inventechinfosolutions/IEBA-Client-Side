@@ -20,6 +20,14 @@ function parseTimeToMinutes(t: string): number | null {
 
 const EMPTY = "__empty__"
 
+export const personalTimeStudyFilterFormSchema = z.object({
+  search: z.string().trim(),
+})
+
+export const personalTimeStudyFilterDefaultValues = {
+  search: "",
+}
+
 export const employeeLeaveRequestRowSchema = z
   .object({
     date: z.string().trim().min(1, "Date is required"),

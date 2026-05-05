@@ -1,8 +1,9 @@
 import { useMemo, useState } from "react"
-import { useGetMGTEmployeeList } from "../queries/useGetMGTEmployeeList"
-import { useGetMGTMonthLegend } from "../queries/useGetMGTMonthLegend"
-import { useGetMGTDayDetail } from "../queries/useGetMGTDayDetail"
-import { useGetMGTDropdowns } from "../queries/useGetMGTDropdowns"
+import { useGetMGTEmployeeList } from "../queries/getMGTEmployeeList"
+import { useGetMGTMonthLegend } from "../queries/getMGTMonthLegend"
+import { useGetMGTDayDetail } from "../queries/getMGTDayDetail"
+import { useGetMGTDropdowns } from "../queries/getMGTDropdowns"
+import { useGetTimeEntrySummary } from "../../queries/getTimeEntrySummary"
 import { usePermissions } from "@/hooks/usePermissions"
 import type { MgtEmployeeRow, MgtDayStatusMap, MgtWeekSummary } from "../types"
 
@@ -27,11 +28,13 @@ export function useTimeStudyMGT() {
   const [selectedEmployee, setSelectedEmployee]       = useState<MgtEmployeeRow | null>(null)
   const [currentDate, setCurrentDate]                 = useState(() => {
     const now = new Date()
-    return new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const laDate = new Date(now.toLocaleString("en-US", { timeZone: "America/Los_Angeles" }))
+    return new Date(Date.UTC(laDate.getFullYear(), laDate.getMonth(), 1))
   })
   const [selectedDate, setSelectedDate]               = useState<Date | null>(() => {
     const now = new Date()
-    return new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const laDate = new Date(now.toLocaleString("en-US", { timeZone: "America/Los_Angeles" }))
+    return new Date(Date.UTC(laDate.getFullYear(), laDate.getMonth(), laDate.getDate()))
   })
 
   const month = currentDate.getUTCMonth() + 1
@@ -45,10 +48,16 @@ export function useTimeStudyMGT() {
   const monthLegendQuery  = useGetMGTMonthLegend(selectedUserId, month, year)
 
   const dateStr = selectedDate ? 
-    `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}` 
+    `${selectedDate.getUTCFullYear()}-${String(selectedDate.getUTCMonth() + 1).padStart(2, '0')}-${String(selectedDate.getUTCDate()).padStart(2, '0')}` 
     : null
-  const dayDetailQuery = useGetMGTDayDetail(selectedUserId, dateStr, month, year)
+  const dayDetailQuery = useGetMGTDayDetail(
+    selectedUserId,
+    dateStr,
+    selectedDate ? selectedDate.getMonth() + 1 : month,
+    selectedDate ? selectedDate.getFullYear() : year
+  )
   const dropdownQuery = useGetMGTDropdowns(selectedUserId)
+  const summaryQuery  = useGetTimeEntrySummary(selectedUserId || "", dateStr || "", !!selectedUserId && !!dateStr)
 
   // ── Derived data ──────────────────────────────────────────────────────────
   const employees = employeeListQuery.data ?? []
@@ -92,22 +101,21 @@ export function useTimeStudyMGT() {
       weekMap[weekKey].days.push(d.status)
     }
 
-    // Compute totals: If a date is selected, show only that day. Otherwise, show month total.
-    const selectedDateKey = selectedDate ? 
-      `${selectedDate.getUTCFullYear()}-${String(selectedDate.getUTCMonth() + 1).padStart(2, '0')}-${String(selectedDate.getUTCDate()).padStart(2, '0')}` 
-      : null
-
-    if (selectedDateKey) {
-      const dayData = rawData.find((d: any) => d.date.split("T")[0] === selectedDateKey)
-      allocatedTotal = dayData?.allocatedMinutes || 0
-      actualTotal = dayData?.consumedMinutes || 0
+    // Calculate totals: prioritize the selected date, fallback to daily average
+    if (dateStr && dayMap[dateStr]) {
+      allocatedTotal = dayMap[dateStr].allocatedMinutes || 0
+      actualTotal    = dayMap[dateStr].consumedMinutes || 0
+      balanceTotal   = dayMap[dateStr].balanceMinutes || 0
     } else {
-      rawData.forEach((d: any) => {
-        allocatedTotal += d.allocatedMinutes || 0
-        actualTotal += d.consumedMinutes || 0
-      })
+      const workingDays = rawData.filter((d: any) => (d.allocatedMinutes ?? 0) > 0)
+      if (workingDays.length > 0) {
+        const sumAllocated = workingDays.reduce((acc: number, d: any) => acc + (d.allocatedMinutes || 0), 0)
+        const sumActual = workingDays.reduce((acc: number, d: any) => acc + (d.consumedMinutes || 0), 0)
+        allocatedTotal = Math.round(sumAllocated / workingDays.length)
+        actualTotal = Math.round(sumActual / workingDays.length)
+      }
+      balanceTotal = allocatedTotal - actualTotal
     }
-    balanceTotal = allocatedTotal - actualTotal
 
     // Determine week status
     const finalWeekSummaries: Record<string, MgtWeekSummary> = {}
@@ -167,18 +175,18 @@ export function useTimeStudyMGT() {
       balanceTotal,
       legend: dynamicLegend
     }
-  }, [monthLegendQuery.data])
+  }, [monthLegendQuery.data, dateStr])
 
   // ── Actions ───────────────────────────────────────────────────────────────
   function selectEmployee(employee: MgtEmployeeRow) {
     setSelectedUserId(employee.id)
     setSelectedEmployee(employee)
     
-    // Reset selection to today when switching users
+    // Reset to today's date (LA time) so data is always fetched immediately for the new user
     const now = new Date()
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const laDate = new Date(now.toLocaleString("en-US", { timeZone: "America/Los_Angeles" }))
+    const today = new Date(Date.UTC(laDate.getUTCFullYear(), laDate.getUTCMonth(), laDate.getUTCDate()))
     setSelectedDate(today)
-    setCurrentDate(today)
   }
 
   function clearSelection() {
@@ -208,12 +216,14 @@ export function useTimeStudyMGT() {
     filteredEmployees,
     dayStatuses,
     weekSummaries,
-    allocatedTotal,
-    actualTotal,
-    balanceTotal,
+    allocatedTotal: summaryQuery.data?.tsmins ?? allocatedTotal,
+    actualTotal: summaryQuery.data?.actualnormalactivitytime ?? actualTotal,
+    balanceTotal: summaryQuery.data?.actualnormalactivityTimebalance ?? balanceTotal,
     legend,
     dayDetail: dayDetailQuery.data,
     dropdownData: dropdownQuery.data,
+    actualMultiTotal: summaryQuery.data?.actualmultiactivitytime,
+    multiBalanceTotal: summaryQuery.data?.actualmultiactivityTimebalance,
 
     // Loading states
     isEmployeeListLoading: employeeListQuery.isLoading,

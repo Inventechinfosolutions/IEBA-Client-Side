@@ -10,5 +10,9 @@ export function useGetPersonalTimeStudyMasterCodes() {
     queryKey: personalTimeStudyKeys.masterCodes(),
     queryFn: async (): Promise<readonly string[]> => [],
     enabled: false,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
   })
 }

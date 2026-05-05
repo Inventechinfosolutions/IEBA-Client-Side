@@ -1,7 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Plus, Trash2 } from "lucide-react"
 import { useCallback, useMemo, useState } from "react"
-import { useQueries } from "@tanstack/react-query"
+import { useGetProgramActivityRelations } from "../queries/getProgramActivityRelations"
 import { Controller, useFieldArray, useForm } from "react-hook-form"
 import { toast } from "sonner"
 
@@ -20,13 +20,13 @@ import { Clock } from "lucide-react"
 
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
-import { apiGetProgramActivityRelationActivities } from "@/features/program/api"
+
 
 import {
   EMPLOYEE_LEAVE_EMPTY_SELECT_VALUE,
   employeeLeaveRequestFormSchema,
   type EmployeeLeaveRequestFormValues,
-} from "../schemas/employeeLeaveRequestSchema"
+} from "../schema/PersonalTimeStudySchema"
 
 const EMPTY = EMPLOYEE_LEAVE_EMPTY_SELECT_VALUE
 
@@ -51,15 +51,28 @@ export type EmployeeLeaveRequestDialogProps = {
   onSave?: (values: EmployeeLeaveRequestFormValues) => void | Promise<void>
   /** Final submit — optional */
   onSubmit?: (values: EmployeeLeaveRequestFormValues) => void | Promise<void>
+  initialValues?: EmployeeLeaveRequestFormValues
   className?: string
   dropdownData?: any[]
+  title?: string
+  editingStatus?: string | null
 }
 
-const headerGridClass =
-  "grid min-w-[1020px] grid-cols-[minmax(8.5rem,1fr)_minmax(6.5rem,0.9fr)_minmax(6.5rem,0.9fr)_minmax(10rem,1.5fr)_minmax(10rem,1.5fr)_minmax(8.5rem,1fr)_minmax(10rem,1.2fr)_2.5rem] items-end gap-4 text-[14px] font-normal text-[#4A4A4A] whitespace-nowrap"
+const getHeaderGridClass = (isEditing: boolean) =>
+  cn(
+    "grid min-w-[1020px] items-end gap-4 text-[14px] font-normal text-[#4A4A4A] whitespace-nowrap",
+    isEditing
+      ? "grid-cols-[minmax(8.5rem,1fr)_minmax(6.5rem,0.9fr)_minmax(6.5rem,0.9fr)_minmax(10rem,1.5fr)_minmax(10rem,1.5fr)_minmax(8.5rem,1fr)_minmax(10rem,1.2fr)]"
+      : "grid-cols-[minmax(8.5rem,1fr)_minmax(6.5rem,0.9fr)_minmax(6.5rem,0.9fr)_minmax(10rem,1.5fr)_minmax(10rem,1.5fr)_minmax(8.5rem,1fr)_minmax(10rem,1.2fr)_2.5rem]"
+  )
 
-const rowGridClass =
-  "grid min-w-[1020px] grid-cols-[minmax(8.5rem,1fr)_minmax(6.5rem,0.9fr)_minmax(6.5rem,0.9fr)_minmax(10rem,1.5fr)_minmax(10rem,1.5fr)_minmax(8.5rem,1fr)_minmax(10rem,1.2fr)_2.5rem] items-end gap-4 py-2"
+const getRowGridClass = (isEditing: boolean) =>
+  cn(
+    "grid min-w-[1020px] items-end gap-4 py-2",
+    isEditing
+      ? "grid-cols-[minmax(8.5rem,1fr)_minmax(6.5rem,0.9fr)_minmax(6.5rem,0.9fr)_minmax(10rem,1.5fr)_minmax(10rem,1.5fr)_minmax(8.5rem,1fr)_minmax(10rem,1.2fr)]"
+      : "grid-cols-[minmax(8.5rem,1fr)_minmax(6.5rem,0.9fr)_minmax(6.5rem,0.9fr)_minmax(10rem,1.5fr)_minmax(10rem,1.5fr)_minmax(8.5rem,1fr)_minmax(10rem,1.2fr)_2.5rem]"
+  )
 
 function TimePicker24h({
   value,
@@ -80,7 +93,7 @@ function TimePicker24h({
         <div className="relative">
           <PopoverTrigger asChild>
             <div 
-              className={cn("relative cursor-pointer", disabled && "opacity-60 cursor-not-allowed")} 
+              className={cn("relative cursor-pointer", disabled && "cursor-not-allowed")} 
               onClick={(e) => {
                 if (disabled) {
                   e.preventDefault()
@@ -103,7 +116,7 @@ function TimePicker24h({
                 }}
                 className={cn(
                   "h-10 pr-8 text-sm font-normal rounded-[6px] cursor-pointer w-full",
-                  disabled && "cursor-not-allowed bg-muted text-muted-foreground pointer-events-none"
+                  disabled && "cursor-not-allowed bg-muted !text-foreground pointer-events-none !opacity-100"
                 )}
               />
               <Clock className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 opacity-50" />
@@ -169,9 +182,14 @@ export function EmployeeLeaveRequestDialog({
   onSubmit,
   className,
   dropdownData,
+  initialValues,
+  title,
+  editingStatus,
 }: EmployeeLeaveRequestDialogProps) {
 
-  
+  const isEditing = !!initialValues;
+  const isApproved = editingStatus?.toLowerCase() === "approved";
+
   const programs = useMemo(() => {
     const list = dropdownData?.flatMap((d: any) => d.programs) ?? []
     const unique = Array.from(new Map(list.map((p: any) => [p.id, p])).values())
@@ -196,13 +214,7 @@ export function EmployeeLeaveRequestDialog({
     return list
   }, [dropdownData])
 
-  const programActivityQueryResults = useQueries({
-    queries: programQueries.map((item) => ({
-      queryKey: ["programActivityRelation", "activities", item.departmentId, item.programId],
-      queryFn: () => apiGetProgramActivityRelationActivities(item.departmentId, item.programId),
-      staleTime: 5 * 60 * 1000,
-    })),
-  })
+  const programActivityQueryResults = useGetProgramActivityRelations(programQueries)
 
   const getActivitiesForProgram = useCallback((programId: string): Set<string> => {
     const index = programQueries.findIndex((pq) => String(pq.programId) === programId)
@@ -237,7 +249,7 @@ export function EmployeeLeaveRequestDialog({
 
   const form = useForm<EmployeeLeaveRequestFormValues>({
     resolver: zodResolver(employeeLeaveRequestFormSchema),
-    defaultValues: {
+    defaultValues: initialValues || {
       entries: [createEmptyRow()],
     },
   })
@@ -277,6 +289,7 @@ export function EmployeeLeaveRequestDialog({
     async (data) => {
       await onSave?.(data)
       toast.success("Leave request saved")
+      handleClose(false)
     },
     () => {
       const err =
@@ -314,8 +327,13 @@ export function EmployeeLeaveRequestDialog({
       >
         <DialogHeader className="shrink-0 border-b border-border px-6 py-4">
           <DialogTitle className="text-center text-lg font-semibold">
-            Employee Leave Request
+            {title || "Employee Leave Request"}
           </DialogTitle>
+          {isApproved && (
+            <div className="mt-3 mx-auto flex w-fit items-center justify-center rounded-[6px] bg-[#E5E7EB] px-6 py-1.5 text-[13px] italic text-[#1F2937]">
+              Note : You cannot exceed more than {initialValues?.entries?.[0]?.totalMinApplied || 0} minutes
+            </div>
+          )}
         </DialogHeader>
 
         <form
@@ -324,20 +342,20 @@ export function EmployeeLeaveRequestDialog({
         >
           <div className="min-h-0 flex-1 overflow-x-auto overflow-y-auto px-4 py-3 sm:px-6">
             {/* Column headers */}
-            <div className={headerGridClass}>
+            <div className={getHeaderGridClass(isEditing)}>
               <span>Date</span>
               <span>Start Time</span>
               <span>End Time</span>
               <span>Program Code</span>
-              <span>Activity Code</span>
+              <span>Activity</span>
               <span>Total Min Applied</span>
               <span>Comment</span>
-              <span className="sr-only">Row actions</span>
+              {!isEditing && <span className="sr-only">Row actions</span>}
             </div>
 
             <div className="divide-y divide-border">
               {fields.map((field, index) => (
-                <div key={field.id} className={rowGridClass}>
+                <div key={field.id} className={getRowGridClass(isEditing)}>
 
                   {/* Date */}
                   <div className="space-y-1">
@@ -367,6 +385,7 @@ export function EmployeeLeaveRequestDialog({
                       <div className="space-y-1">
                         <TimePicker24h
                           value={f.value}
+                          disabled={isApproved}
                           onChange={(v) => {
                             f.onChange(v)
                             
@@ -425,7 +444,11 @@ export function EmployeeLeaveRequestDialog({
                               value: String(p.id),
                               label: `${p.code} - ${p.name}`,
                             }))}
-                            onChange={(v) => f.onChange(v || EMPTY)}
+                            onChange={(v) => {
+                              f.onChange(v || EMPTY)
+                              // Reset activity when program changes
+                              form.setValue(`entries.${index}.activityCode`, EMPTY, { shouldValidate: false })
+                            }}
                             onBlur={f.onBlur}
                             className="h-10 min-h-0 rounded-[6px]"
                           />
@@ -451,7 +474,7 @@ export function EmployeeLeaveRequestDialog({
                             const options = hasProgram 
                               ? activities.filter((a) => allowedIds.has(String(a.id))).map((a: any) => ({
                                   value: String(a.id),
-                                  label: `${a.code} - ${a.name}`,
+                                label: a.name,
                                 }))
                               : []
 
@@ -480,21 +503,34 @@ export function EmployeeLeaveRequestDialog({
                     <Controller
                       control={form.control}
                       name={`entries.${index}.totalMinApplied`}
-                      render={({ field: f, fieldState }) => (
-                        <>
-                          <TitleCaseInput
-                            type="text"
-                            inputMode="numeric"
-                            className="h-10 text-sm tabular-nums rounded-[6px]"
-                            placeholder="0"
-                            autoComplete="off"
-                            {...f}
-                          />
-                          {fieldState.error?.message && (
-                            <p className="text-xs text-destructive">{fieldState.error.message}</p>
-                          )}
-                        </>
-                      )}
+                      render={({ field: f, fieldState }) => {
+                        const originalTotal = Number(initialValues?.entries?.[index]?.totalMinApplied || 0)
+                        const currentTotal = Number(f.value || 0)
+                        const exceedsOriginal = isApproved && originalTotal > 0 && currentTotal > originalTotal
+
+                        return (
+                          <>
+                            <TitleCaseInput
+                              type="text"
+                              inputMode="numeric"
+                              className={cn(
+                                "h-10 text-sm tabular-nums rounded-[6px]",
+                                isApproved && "cursor-not-allowed bg-muted !opacity-100 !text-foreground",
+                                exceedsOriginal && "border-destructive text-destructive focus-visible:ring-destructive"
+                              )}
+                              disabled={isApproved}
+                              placeholder="0"
+                              autoComplete="off"
+                              {...f}
+                            />
+                            {fieldState.error?.message ? (
+                              <p className="text-xs text-destructive">{fieldState.error.message}</p>
+                            ) : exceedsOriginal ? (
+                              <p className="text-[11px] text-destructive leading-tight">Exceeds {originalTotal} min</p>
+                            ) : null}
+                          </>
+                        )
+                      }}
                     />
                   </div>
 
@@ -519,30 +555,32 @@ export function EmployeeLeaveRequestDialog({
                   </div>
 
                   {/* Row action: add / remove */}
-                  <div className="flex items-end justify-center pb-0.5">
-                    {index === 0 ? (
-                      <Button
-                        type="button"
-                        size="icon"
-                        className="size-10 shrink-0 rounded-[6px] bg-[#6C5DD3] hover:bg-[#6C5DD3]/90"
-                        onClick={() => append(createEmptyRow())}
-                        aria-label="Add leave row"
-                      >
-                        <Plus className="size-4" />
-                      </Button>
-                    ) : (
-                      <Button
-                        type="button"
-                        size="icon"
-                        variant="destructive"
-                        className="size-10 shrink-0 rounded-[6px]"
-                        onClick={() => remove(index)}
-                        aria-label="Remove leave row"
-                      >
-                        <Trash2 className="size-4" />
-                      </Button>
-                    )}
-                  </div>
+                  {!isEditing && (
+                    <div className="flex items-end justify-center pb-0.5">
+                      {index === 0 ? (
+                        <Button
+                          type="button"
+                          size="icon"
+                          className="size-10 shrink-0 rounded-[6px] bg-[#6C5DD3] hover:bg-[#6C5DD3]/90"
+                          onClick={() => append(createEmptyRow())}
+                          aria-label="Add leave row"
+                        >
+                          <Plus className="size-4" />
+                        </Button>
+                      ) : (
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="destructive"
+                          className="size-10 shrink-0 rounded-[6px]"
+                          onClick={() => remove(index)}
+                          aria-label="Remove leave row"
+                        >
+                          <Trash2 className="size-4" />
+                        </Button>
+                      )}
+                    </div>
+                  )}
 
                 </div>
               ))}
@@ -550,15 +588,17 @@ export function EmployeeLeaveRequestDialog({
           </div>
 
           <DialogFooter className="shrink-0 flex-row gap-2 border-t border-border px-6 py-4 sm:justify-end">
-            <Button
-              type="button"
-              variant="default"
-              disabled={form.formState.isSubmitting}
-              onClick={() => void handleSave()}
-              className="h-10 rounded-[6px] bg-[#6C5DD3] hover:bg-[#6C5DD3]/90 px-8 text-white"
-            >
-              Save
-            </Button>
+            {editingStatus?.toLowerCase() !== "requested" && editingStatus?.toLowerCase() !== "approved" && (
+              <Button
+                type="button"
+                variant="default"
+                disabled={form.formState.isSubmitting}
+                onClick={() => void handleSave()}
+                className="h-10 rounded-[6px] bg-[#6C5DD3] hover:bg-[#6C5DD3]/90 px-8 text-white"
+              >
+                Save
+              </Button>
+            )}
             <Button
               type="button"
               disabled={form.formState.isSubmitting}

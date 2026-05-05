@@ -170,7 +170,7 @@ export function ScheduledTimeStudyTable({
                   </TableRow>
                 ))
               : scheduledRows.map((row) => (
-                  <TableRow key={row.id} className="h-[44px] border-[#EDEDED]">
+                  <TableRow key={row.id} className="h-[44px] border-[#EDEDED] hover:bg-[#fafafa]">
                     <TableCell className="border-r border-[#E5E7EB] px-4 py-2 text-[13px] text-[#111827] break-words">
                       {row.timeStudyPeriod}
                     </TableCell>

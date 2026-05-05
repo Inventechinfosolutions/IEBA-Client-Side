@@ -110,7 +110,7 @@ function SortablePayrollRow({ row, storageIndex, updateRow, isSortingActive }: S
       {...(!isSortingActive ? listeners : {})}
       {...(!isSortingActive ? attributes : {})}
     >
-      <TableCell className="w-1/3 border-r border-[#eef0f5] bg-[#FAFAFA] py-1 text-left text-[12px] text-[#111827]">
+      <TableCell className="w-[44%] border-r border-[#eef0f5] bg-[#FAFAFA] py-1 text-left text-[12px] text-[#111827]">
         <div className="flex items-center gap-2 px-2">
           {!isSortingActive ? (
             <span 
@@ -121,10 +121,10 @@ function SortablePayrollRow({ row, storageIndex, updateRow, isSortingActive }: S
           ) : (
              <span className="w-[20px]" />
           )}
-          <span className="select-none pointer-events-none">{row.label}</span>
+          <span className="select-none pointer-events-none whitespace-normal break-words">{row.label}</span>
         </div>
       </TableCell>
-      <TableCell className="w-1/3 border-r border-[#eef0f5] py-1 text-center">
+      <TableCell className="w-[28%] border-r border-[#eef0f5] py-1 text-center">
         <input
           type="checkbox"
           checked={row.enabled}
@@ -134,7 +134,7 @@ function SortablePayrollRow({ row, storageIndex, updateRow, isSortingActive }: S
           aria-label={`${row.label} enabled`}
         />
       </TableCell>
-      <TableCell className="w-1/3 py-1 text-center">
+      <TableCell className="w-[28%] py-1 text-center">
         <input
           type="checkbox"
           checked={row.editable}
@@ -215,7 +215,7 @@ export function PayrollForm() {
               <table className="w-full border-collapse table-fixed text-[12px]">
                 <TableHeader className="bg-white">
                   <TableRow className="border-0 hover:bg-transparent">
-                    <TableHead className="h-[34px] w-1/3 border-b border-r border-[#eef0f5] p-0 text-left align-middle">
+                    <TableHead className="h-[34px] w-[44%] border-b border-r border-[#eef0f5] p-0 text-left align-middle">
                       <TooltipProvider>
                         <Tooltip open={columnNameSortTooltipOpen}>
                           <TooltipTrigger asChild>
@@ -257,10 +257,10 @@ export function PayrollForm() {
                         </Tooltip>
                       </TooltipProvider>
                     </TableHead>
-                    <TableHead className="h-[34px] w-1/3 border-b border-r border-[#eef0f5] text-center text-[12px] font-normal text-[var(--primary)]">
+                    <TableHead className="h-[34px] w-[28%] border-b border-r border-[#eef0f5] text-center text-[12px] font-normal text-[var(--primary)]">
                       Disable/Enable
                     </TableHead>
-                    <TableHead className="h-[34px] w-1/3 border-b border-[#eef0f5] text-center text-[12px] font-normal text-[var(--primary)]">
+                    <TableHead className="h-[34px] w-[28%] border-b border-[#eef0f5] text-center text-[12px] font-normal text-[var(--primary)]">
                       Editable
                     </TableHead>
                   </TableRow>
@@ -306,14 +306,14 @@ export function PayrollForm() {
                     <table className="w-full border-collapse table-fixed text-[12px] bg-white shadow-xl opacity-90 border border-[var(--primary)]/20 rounded-md overflow-hidden">
                       <tbody>
                         <tr className="h-[40px] flex items-center">
-                          <td className="w-1/3 border-r border-[#eef0f5] bg-[#FAFAFA] py-1 text-left px-2 flex items-center gap-2">
+                          <td className="w-[44%] border-r border-[#eef0f5] bg-[#FAFAFA] py-1 text-left px-2 flex items-center gap-2">
                             <SixDotsIcon />
                             <span className="font-medium">{activeRow.label}</span>
                           </td>
-                          <td className="w-1/3 border-r border-[#eef0f5] py-1 text-center">
+                          <td className="w-[28%] border-r border-[#eef0f5] py-1 text-center">
                              <input type="checkbox" checked={activeRow.enabled} readOnly className="size-4" />
                           </td>
-                          <td className="w-1/3 py-1 text-center">
+                          <td className="w-[28%] py-1 text-center">
                              <input type="checkbox" checked={activeRow.editable} readOnly className="size-4" />
                           </td>
                         </tr>

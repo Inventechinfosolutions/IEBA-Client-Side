@@ -196,7 +196,7 @@ export function LeaveApprovalTable({
             </TableRow>
           ) : (
             rows.map((row) => (
-              <TableRow key={row.id} className="min-h-[44px] border-[#e9ecf3] hover:bg-[#FAFAFA]">
+              <TableRow key={row.id} className="min-h-[44px] border-[#e9ecf3] hover:bg-[#fafafa]">
                 <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-center text-[12px] leading-[1.15rem] text-[#111827] whitespace-normal break-words">
                   {`${row.user?.firstName ?? ""} ${row.user?.lastName ?? ""}`.trim() || row.userId}
                 </TableCell>
@@ -210,19 +210,19 @@ export function LeaveApprovalTable({
                   {row.endtime}
                 </TableCell>
                 <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-center text-[12px] leading-[1.15rem] text-[#111827] whitespace-normal break-words">
-                  {`${row.programcode} ${row.programname}`.trim()}
+                  {row.programcode}
                 </TableCell>
                 <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-center text-[12px] text-[#111827]">
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <div className="mx-auto max-w-full cursor-default overflow-hidden text-ellipsis whitespace-nowrap">
-                          {`${row.activitycode} ${row.activityname}`.trim()}
+                          {row.activitycode}
                         </div>
                       </TooltipTrigger>
                       <TooltipContent side="top" sideOffset={6} collisionPadding={12} className="px-3 py-2">
                         <div className="max-w-[320px] whitespace-normal break-words">
-                          {`${row.activitycode} ${row.activityname}`.trim()}
+                          {row.activitycode}
                         </div>
                       </TooltipContent>
                     </Tooltip>

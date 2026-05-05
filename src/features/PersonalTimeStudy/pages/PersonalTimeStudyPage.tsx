@@ -1,29 +1,23 @@
-import { getUserDetails } from "@/features/auth/api/getUserDetails"
 import { useMemo, useState } from "react"
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { toast } from "sonner"
 import { X, Lock, Check } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 
 import { useAuth } from "@/contexts/AuthContext"
 import { usePermissions } from "@/hooks/usePermissions"
-import {
-  apiGetDayDetail,
-  apiGetMonthLegend,
-  apiSaveNotes,
-  apiSubmitTimeRecords,
-  apiGetUserProgramsAndActivities,
-  apiDeleteTimeRecord,
-  apiUpdateTimeRecord
-} from "../api/personalTimeStudyApi"
 import { PersonalTimeStudyCalendarCard } from "../components/PersonalTimeStudyCalendarCard"
 import { PersonalTimeStudyEntryForm } from "../components/PersonalTimeStudyEntryForm"
 import { PersonalTimeStudyLeaveCard } from "../components/PersonalTimeStudyLeaveCard"
 import { PersonalTimeStudyLegendCard } from "../components/PersonalTimeStudyLegendCard"
 import { PersonalTimeStudyMinutesCard } from "../components/PersonalTimeStudyMinutesCard"
 import { PersonalTimeStudyNotesSection } from "../components/PersonalTimeStudyNotesSection"
-import { personalTimeStudyKeys } from "../keys"
+import { useGetPersonalMonthLegend } from "../queries/getPersonalMonthLegend"
+import { useGetPersonalDayDetail } from "../queries/getPersonalDayDetail"
+import { useGetPersonalDropdowns } from "../queries/getPersonalDropdowns"
+import { useGetTimeEntrySummary } from "../queries/getTimeEntrySummary"
+import { useSavePersonalNotes } from "../mutation/updatePersonalNotes"
+import { useSubmitPersonalTimeRecords } from "../mutation/createPersonalTimeRecords"
+import { useDeletePersonalTimeRecord } from "../mutation/deletePersonalTimeRecord"
 import type { WeekSummaryRow } from "../components/PersonalTimeStudyWeekSummary"
 import { TimeStudyMGTPage } from "../TimeStudyMGT"
 
@@ -75,7 +69,6 @@ function getWeeklyStatus(days: string[], totalMinutes: number, targetMinutes: nu
 
 export function PersonalTimeStudyPage() {
   const { user } = useAuth()
-  const queryClient = useQueryClient()
   const userId = user?.id ?? ""
 
   
@@ -87,81 +80,30 @@ export function PersonalTimeStudyPage() {
 
   // 1. Date state
   const [selectedDate, setSelectedDate] = useState<Date>(() => {
+    // Dynamically calculate "Today" in LA time
     const now = new Date()
-    return new Date(now.getFullYear(), now.getMonth(), now.getDate())
-  })
-  const dateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, "0")}-${String(selectedDate.getDate()).padStart(2, "0")}`
-  const month = selectedDate.getMonth() + 1
-  const year = selectedDate.getFullYear()
-
-  // 2. Fetch Month Legend — only when Personal tab is active
-  const monthQuery = useQuery({
-    queryKey: personalTimeStudyKeys.monthLegend(userId, month, year),
-    queryFn: async () => {
-      const getMonthData = (m: number, y: number) => {
-        let adjM = m
-        let adjY = y
-        if (m < 1) { adjM = 12; adjY = y - 1 }
-        else if (m > 12) { adjM = 1; adjY = y + 1 }
-        return apiGetMonthLegend({ userId, month: adjM, year: adjY })
-      }
-
-      // Fetch current, previous, and next month to handle weekly boundaries
-      const [prev, curr, next] = await Promise.all([
-        getMonthData(month - 1, year),
-        getMonthData(month, year),
-        getMonthData(month + 1, year)
-      ])
-
-      // Merge data and remove duplicates by date (if any)
-      const mergedMap = new Map<string, any>()
-      ;[...prev.data, ...curr.data, ...next.data].forEach(d => {
-        mergedMap.set(d.date, d)
-      })
-
-      return {
-        ...curr,
-        data: Array.from(mergedMap.values())
-      }
-    },
-    enabled: !!userId && activeTab === "personal",
-    staleTime: 0,
-    gcTime: 0,
-    refetchOnMount: true,
-    refetchOnWindowFocus: true,
+    const laDate = new Date(now.toLocaleString("en-US", { timeZone: "America/Los_Angeles" }))
+    return new Date(Date.UTC(laDate.getFullYear(), laDate.getMonth(), laDate.getDate()))
   })
 
-  // 3. Fetch Day Detail — only when Personal tab is active
-  const dayQuery = useQuery({
-    queryKey: personalTimeStudyKeys.dayDetail(userId, dateStr),
-    queryFn: () => apiGetDayDetail({ userId, date: dateStr, month, year }),
-    enabled: !!userId && activeTab === "personal",
-    staleTime: 0,
-    gcTime: 0,
-    refetchOnMount: true,
-    refetchOnWindowFocus: true,
-  })
+  // Separate viewport state for the calendar (to avoid changing selection on month navigation)
+  const [viewportDate, setViewportDate] = useState<Date>(selectedDate)
+
+  const dateStr = selectedDate.toISOString().split("T")[0]
+  const month = viewportDate.getUTCMonth() + 1
+  const year = viewportDate.getUTCFullYear()
+
+  // 2. Fetch Month Legend
+  const monthQuery = useGetPersonalMonthLegend(userId, month, year, activeTab === "personal")
+
+  // 3. Fetch Day Detail
+  const dayQuery = useGetPersonalDayDetail(userId, dateStr, selectedDate.getUTCMonth() + 1, selectedDate.getUTCFullYear(), activeTab === "personal")
 
   // 4. Fetch user & dropdown data
-  useQuery({
-    queryKey: ["user-details", userId],
-    queryFn: () => getUserDetails(userId),
-    enabled: !!userId,
-    staleTime: 0,
-    gcTime: 0,
-    refetchOnMount: true,
-    refetchOnWindowFocus: true,
-  })
+  const dropdownQuery = useGetPersonalDropdowns(userId, activeTab === "personal")
 
-  const dropdownQuery = useQuery({
-    queryKey: personalTimeStudyKeys.dropdowns(userId),
-    queryFn: () => apiGetUserProgramsAndActivities(userId),
-    enabled: !!userId && activeTab === "personal",
-    staleTime: 0,
-    gcTime: 0,
-    refetchOnMount: true,
-    refetchOnWindowFocus: true,
-  })
+  // 5. Fetch Time Entry Summary (MAA etc)
+  const summaryQuery = useGetTimeEntrySummary(userId, dateStr, activeTab === "personal")
 
   // 5. Calendar day & week summaries
   const { dayStatuses, weekSummaries } = useMemo(() => {
@@ -181,21 +123,20 @@ export function PersonalTimeStudyPage() {
         weekMap[weekKey] = { totalMinutes: 0, targetMinutes: 0, days: [] }
       }
 
-      // Calculate target: 480 mins for Mon-Fri
-      const dateObj = new Date(d.date + 'T12:00:00Z')
-      const dayOfWeek = dateObj.getUTCDay()
-      const isWeekend = dayOfWeek === 0 || dayOfWeek === 6
-      
       weekMap[weekKey].totalMinutes += d.minutes ?? 0
-      if (!isWeekend) {
-        weekMap[weekKey].targetMinutes += 480
-      }
+      weekMap[weekKey].targetMinutes += d.allocatedMinutes ?? 0
       weekMap[weekKey].days.push(d.status)
     }
 
+    // Find the baseline daily assigned minutes from the DB (first day that has a non-zero value)
+    const dbAssignedMinutes = monthQuery.data.data.find(d => (d.allocatedMinutes ?? 0) > 0)?.allocatedMinutes ?? 0
+
     const weekSummaries: Record<string, any> = {}
     for (const [key, val] of Object.entries(weekMap)) {
-      const finalStatus = getWeeklyStatus(val.days, val.totalMinutes, val.targetMinutes)
+      // Weekly target is strictly 7 * the assigned daily minutes from the DB
+      const weeklyTarget = 7 * dbAssignedMinutes
+      
+      const finalStatus = getWeeklyStatus(val.days, val.totalMinutes, weeklyTarget)
       weekSummaries[key] = { totalMinutes: val.totalMinutes, status: finalStatus }
     }
 
@@ -329,49 +270,9 @@ export function PersonalTimeStudyPage() {
   }
 
   // 7. Mutations
-  const notesMutation = useMutation({
-    mutationFn: (notes: string) => apiSaveNotes({ date: dateStr, notes }),
-    onSuccess: () => {
-      toast.success("Notes saved")
-      queryClient.invalidateQueries({ queryKey: personalTimeStudyKeys.dayDetail(userId, dateStr) })
-    },
-    onError: (error: any) => {
-      toast.error(error.message || "Failed to save notes")
-    },
-  })
-
-  const submitMutation = useMutation({
-    mutationFn: async ({ records, mode }: { records: any[]; mode: "save" | "submit" }) => {
-      // If we are saving a single existing record, use PUT
-      if (mode === "save" && records.length === 1 && records[0].id) {
-        // Strip out 'id' and 'multiCodeRecords' as the backend DTO forbids them in PUT body
-        const { id, multiCodeRecords, ...updatePayload } = records[0]
-        return apiUpdateTimeRecord(id, updatePayload)
-      }
-      // Otherwise use the bulk POST endpoint
-      return apiSubmitTimeRecords(records, mode)
-    },
-    onSuccess: (_, { mode }) => {
-      toast.success(`Records ${mode === "save" ? "saved" : "submitted"} successfully`)
-      queryClient.invalidateQueries({ queryKey: personalTimeStudyKeys.dayDetail(userId, dateStr) })
-      queryClient.invalidateQueries({ queryKey: personalTimeStudyKeys.monthLegend(userId, month, year) })
-    },
-    onError: (error: any) => {
-      toast.error(error.message || "Failed to process records")
-    },
-  })
-
-  const deleteMutation = useMutation({
-    mutationFn: (id: number) => apiDeleteTimeRecord(id),
-    onSuccess: () => {
-      toast.success("Entry deleted")
-      queryClient.invalidateQueries({ queryKey: personalTimeStudyKeys.dayDetail(userId, dateStr) })
-      queryClient.invalidateQueries({ queryKey: personalTimeStudyKeys.monthLegend(userId, month, year) })
-    },
-    onError: (error: any) => {
-      toast.error(error.message || "Failed to delete entry")
-    },
-  })
+  const notesMutation = useSavePersonalNotes(userId, dateStr)
+  const submitMutation = useSubmitPersonalTimeRecords(userId, dateStr, month, year)
+  const deleteMutation = useDeletePersonalTimeRecord(userId, dateStr, month, year)
 
   const weekRows: WeekSummaryRow[] = useMemo(() => [], [])
 
@@ -429,8 +330,8 @@ export function PersonalTimeStudyPage() {
                     weekRows={weekRows}
                     selectedDate={selectedDate}
                     onDateSelect={setSelectedDate}
-                    currentMonthDate={selectedDate}
-                    onMonthChange={setSelectedDate}
+                    currentMonthDate={viewportDate}
+                    onMonthChange={setViewportDate}
                     dayStatuses={dayStatuses}
                     weekSummaries={weekSummaries}
                     renderStatus={renderStatus}
@@ -443,18 +344,27 @@ export function PersonalTimeStudyPage() {
                     <PersonalTimeStudyLegendCard className="min-h-0" />
                     <PersonalTimeStudyLeaveCard
                       className="min-h-0"
-                      leaveCount={dayQuery.data?.leaveRecords?.length ?? 0}
-                      approved={dayQuery.data?.leaveRecords?.filter(r => r.status.toLowerCase() === "approved").length ?? 0}
-                      open={dayQuery.data?.leaveRecords?.filter(r => r.status.toLowerCase() === "open").length ?? 0}
-                      rejected={dayQuery.data?.leaveRecords?.filter(r => r.status.toLowerCase() === "rejected").length ?? 0}
+                      leaveCount={
+                        (monthQuery.data?.leaveRecords?.filter(r => r.status?.toLowerCase() === "approved").length ?? 0) +
+                        (monthQuery.data?.leaveRecords?.filter(r => ["draft", "requested"].includes(r.status?.toLowerCase() ?? "")).length ?? 0) +
+                        (monthQuery.data?.leaveRecords?.filter(r => r.status?.toLowerCase() === "rejected").length ?? 0)
+                      }
+                      approved={monthQuery.data?.leaveRecords?.filter(r => r.status?.toLowerCase() === "approved").length ?? 0}
+                      open={monthQuery.data?.leaveRecords?.filter(r => ["draft", "requested"].includes(r.status?.toLowerCase() ?? "")).length ?? 0}
+                      rejected={monthQuery.data?.leaveRecords?.filter(r => r.status?.toLowerCase() === "rejected").length ?? 0}
+                      leaveRecords={monthQuery.data?.leaveRecords}
                       dropdownData={dropdownQuery.data}
                       onOpen={() => dropdownQuery.refetch()}
+                      dateStr={dateStr}
+                      month={month}
+                      year={year}
                     />
                     <PersonalTimeStudyMinutesCard
                       className="min-h-0 sm:col-span-2 lg:col-span-1"
-                      allocatedMinutes={dayQuery.data?.allocatedMinutes ?? 0}
-                      actualMinutes={dayQuery.data?.consumedMinutes ?? 0}
-                      balanceMinutes={dayQuery.data?.balanceMinutes ?? 0}
+                      allocatedMinutes={summaryQuery.data?.tsmins ?? 0}
+                      actualMinutes={summaryQuery.data?.actualnormalactivitytime ?? 0}
+                      balanceMinutes={summaryQuery.data?.actualnormalactivityTimebalance ?? 0}
+                      totalMAAMinutes={summaryQuery.data?.actualmultiactivitytime ?? 0}
                     />
                   </div>
 
@@ -467,16 +377,22 @@ export function PersonalTimeStudyPage() {
                 </div>
               </div>
 
-              <div className="mt-4 mb-4">
+              <div className="mt-6 mb-4">
                 <PersonalTimeStudyEntryForm
-                  key={dateStr}
-                  dateStr={dateStr}
-                  initialRecords={dayQuery.data?.timeStudyRecords}
-                  dropdownData={dropdownQuery.data}
-                  onSave={(records) => submitMutation.mutate({ records, mode: "save" })}
-                  onSubmit={(records) => submitMutation.mutate({ records, mode: "submit" })}
-                  onDelete={(id) => deleteMutation.mutate(id)}
-                />
+                    key={dateStr}
+                    dateStr={dateStr}
+                    initialRecords={dayQuery.data?.timeStudyRecords}
+                    dropdownData={dropdownQuery.data}
+                    onSave={(records) => submitMutation.mutate({ records, mode: "save" })}
+                    onSubmit={(records) => submitMutation.mutate({ records, mode: "submit" })}
+                    onDelete={(id) => deleteMutation.mutate(id)}
+                    allocatedTotal={summaryQuery.data?.tsmins}
+                    actualTotal={summaryQuery.data?.actualnormalactivitytime}
+                    balanceTotal={summaryQuery.data?.actualnormalactivityTimebalance}
+                    actualMultiTotal={summaryQuery.data?.actualmultiactivitytime}
+                    multiBalanceTotal={summaryQuery.data?.actualmultiactivityTimebalance}
+                    hideSummaryHeader={true}
+                  />
               </div>
             </>
           )}

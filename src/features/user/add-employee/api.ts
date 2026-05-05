@@ -391,11 +391,13 @@ function parseUserProgramsActivitiesBundle(raw: unknown): UserProgramsActivities
       if (!Number.isFinite(id) || !name) continue
       const code = typeof p.code === "string" ? p.code : ""
       const pid = typeof p.departmentId === "number" ? p.departmentId : Number(p.departmentId)
+      const isMultiCode = p.isMultiCode === true
       programs.push({
         id,
         code,
         name,
         departmentId: Number.isFinite(pid) ? pid : departmentId,
+        isMultiCode,
       })
     }
   }
@@ -487,6 +489,7 @@ export async function fetchAddEmployeeTimeStudyPrograms(): Promise<AddEmployeeTi
       
       const parentIdRaw = p.parentId
       const parentId = typeof parentIdRaw === "number" || typeof parentIdRaw === "string" ? String(parentIdRaw).trim() : undefined
+      const isMultiCode = p.isMultiCode === true
 
       out.push({
         id: idStr,
@@ -494,6 +497,7 @@ export async function fetchAddEmployeeTimeStudyPrograms(): Promise<AddEmployeeTi
         name,
         department,
         parentId,
+        isMultiCode,
       })
     }
 

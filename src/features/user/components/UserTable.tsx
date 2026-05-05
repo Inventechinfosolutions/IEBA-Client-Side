@@ -167,7 +167,7 @@ export function UserTable({ rows, isLoading, onEditRow, onSwitchUser }: UserTabl
             : sortedRows.map((row) => (
                 <TableRow
                   key={row.id}
-                  className="border-b border-[#eff0f5] hover:bg-transparent"
+                  className="border-b border-[#eff0f5] hover:bg-[#fafafa]"
                 >
                   <TableCell className="align-top border-r border-[#eff0f5] px-[14px] py-[5px] text-[12px] text-[#232735] whitespace-normal break-words">
                     {row.employee}
