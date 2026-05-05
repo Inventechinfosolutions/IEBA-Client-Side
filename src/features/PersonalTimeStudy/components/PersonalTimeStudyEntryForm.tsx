@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button"
 import { TitleCaseInput } from "@/components/ui/title-case-input"
 import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
-import { apiUploadSupportingDoc } from "../api/personalTimeStudyApi"
 import { toast } from "sonner"
 import { SingleSelectSearchDropdown } from "@/components/ui/dropdown-search"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -44,7 +43,7 @@ export type TimeEntryParentRow = {
   serviceActivity: string
   description: string
   supportingDocLabel?: string
-  supportingDocs: Array<{ name: string; url: string }>
+  supportingDocs: Array<{ name: string; url: string; file?: File }>
   subRows: TimeEntrySubRow[]
 }
 
@@ -175,7 +174,7 @@ function SupportingDocField({
   onDelete,
 }: {
   parentId: string
-  docs: Array<{ name: string; url: string }>
+  docs: Array<{ name: string; url: string; file?: File }>
   uploading: boolean
   disabled?: boolean
   onAdd: (parentId: string, files: FileList) => void
@@ -217,6 +216,11 @@ function SupportingDocField({
             docs.map((doc) => (
               <div key={doc.name} className="flex items-center gap-2 px-3 py-1.5">
                 <span className="flex-1 truncate text-[11px] text-foreground">{doc.name}</span>
+                {doc.file && (
+                  <span title="Pending upload">
+                    <Clock className="size-3 text-amber-500 shrink-0" />
+                  </span>
+                )}
                 <a href={doc.url} target="_blank" rel="noreferrer" className="shrink-0 text-[#6C5DD3] hover:opacity-70" onClick={() => setOpen(false)}>
                   <Eye className="size-3.5" />
                 </a>
@@ -318,8 +322,6 @@ export function PersonalTimeStudyEntryForm({
       ["submitted", "approved"].includes(rec.status?.toLowerCase())
     )
   }, [initialRecords, dateStr, readonly])
-
-  const [uploadingId, setUploadingId] = useState<string | null>(null)
 
   const programs = useMemo(() => {
     const list = dropdownData?.flatMap((d) => d.programs) ?? []
@@ -491,6 +493,7 @@ export function PersonalTimeStudyEntryForm({
       activityid: p.serviceActivity,
       description: p.description,
       departmentId: deptId,
+      supportingDocs: p.supportingDocs,
       multiCodeRecords: p.subRows.map((s) => {
         const subDeptId = dropdownData?.find((d) => d.programs.some((pr: any) => String(pr.id) === s.studyProgram))?.departmentId
         return {
@@ -549,22 +552,19 @@ export function PersonalTimeStudyEntryForm({
     onSubmit?.(payload)
   }
 
-  const handleAddDocs = async (parentId: string, files: FileList) => {
+  const handleAddDocs = (parentId: string, files: FileList) => {
     const fileArray = Array.from(files)
     const parentRow = parents.find((p) => p.id === parentId)
-    const recordId = parentRow?.dbId
-    const newDocs = fileArray.map((f) => ({ name: f.name, url: URL.createObjectURL(f) }))
-    updateParent(parentId, { supportingDocs: [...(parentRow?.supportingDocs ?? []), ...newDocs] })
-    if (!recordId) return
-    try {
-      setUploadingId(parentId)
-      for (const f of fileArray) await apiUploadSupportingDoc(recordId, f)
-      toast.success(`${fileArray.length} document(s) uploaded`)
-    } catch {
-      toast.error("Failed to upload document(s)")
-    } finally {
-      setUploadingId(null)
-    }
+    
+    const newDocs = fileArray.map((f) => ({ 
+      name: f.name, 
+      url: URL.createObjectURL(f),
+      file: f
+    }))
+    
+    updateParent(parentId, { 
+      supportingDocs: [...(parentRow?.supportingDocs ?? []), ...newDocs] 
+    })
   }
 
   const handleDeleteDoc = (parentId: string, name: string) => {
@@ -643,10 +643,10 @@ export function PersonalTimeStudyEntryForm({
                   />
                 </div>
                 <div className="flex-1 space-y-0.5">
-                  <Label className="text-[11px] text-[#6C5DD3] font-medium">Service / Activity <RequiredMark /></Label>
+                  <Label className="text-[11px] text-[#6C5DD3] font-medium">Service / Activity Code <RequiredMark /></Label>
                   <SingleSelectSearchDropdown 
                     value={parent.serviceActivity} 
-                    placeholder="Select activity" 
+                    placeholder="Select Activity Code" 
                     disabled={isLocked || !parent.tsProgram} 
                     options={(() => { if (!parent.tsProgram) return []; const allowed = getActivitiesForProgram(parent.tsProgram); return activities.filter((a) => allowed.has(String(a.id))).map((a) => ({ value: String(a.id), label: `${a.code} - ${a.name}` })); })()} 
                     onChange={(v) => updateParent(parent.id, { serviceActivity: v })} 
@@ -669,7 +669,7 @@ export function PersonalTimeStudyEntryForm({
                     className={cn("h-10 text-[11px] text-[#344054] font-normal", isLocked && "bg-[#F2F4F7] cursor-not-allowed")} 
                   />
                 </div>
-                <SupportingDocField parentId={parent.id} docs={parent.supportingDocs} uploading={uploadingId === parent.id} disabled={isLocked} onAdd={handleAddDocs} onDelete={handleDeleteDoc} />
+                <SupportingDocField parentId={parent.id} docs={parent.supportingDocs} uploading={false} disabled={isLocked} onAdd={handleAddDocs} onDelete={handleDeleteDoc} />
                 <div className="flex items-end gap-1 pb-0.5">
                   {!readonly && canDeleteParent(parent.id) && (
                     <Button 
@@ -715,10 +715,10 @@ export function PersonalTimeStudyEntryForm({
                         />
                       </div>
                       <div className="flex-1 space-y-1">
-                        <Label className="text-[11px] text-muted-foreground">Activity <RequiredMark /></Label>
+                        <Label className="text-[11px] text-muted-foreground">Activity Code <RequiredMark /></Label>
                         <SingleSelectSearchDropdown 
                           value={sub.serviceActivity} 
-                          placeholder="Select activity" 
+                          placeholder="Select Activity Code" 
                           disabled={isLocked || !sub.studyProgram} 
                           options={(() => { if (!sub.studyProgram) return []; const allowed = getActivitiesForProgram(sub.studyProgram); return activities.filter((a) => allowed.has(String(a.id))).map((a) => ({ value: String(a.id), label: `${a.code} - ${a.name}` })); })()} 
                           onChange={(v) => updateSubRow(parent.id, sub.id, { serviceActivity: v })} 
@@ -787,7 +787,7 @@ export function PersonalTimeStudyEntryForm({
       )}
 
       {showSubmitConfirm && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 px-4">
+        <div className="fixed inset-0 z-100 flex items-center justify-center bg-black/40 px-4">
           <div className="w-full max-w-[520px] rounded-[12px] bg-white p-6 shadow-2xl">
             <h3 className="mb-6 text-[16px] font-medium text-center">Are you sure, you want to lock the time and fully submit it?</h3>
             <div className="flex justify-center gap-4">

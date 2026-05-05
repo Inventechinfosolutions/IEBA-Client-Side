@@ -46,10 +46,11 @@ export async function apiSubmitTimeRecords(
   mode: "save" | "submit",
   method: "post" | "put" = "post"
 ): Promise<TimeStudyRecordResDto[]> {
+  const strippedPayload = payload.map(({ supportingDocs, ...rest }: any) => rest)
   const url = `/timestudyrecords/submit?mode=${mode}`
   const res = method === "put" 
-    ? await api.put<ApiEnvelope<TimeStudyRecordResDto[]>>(url, payload)
-    : await api.post<ApiEnvelope<TimeStudyRecordResDto[]>>(url, payload)
+    ? await api.put<ApiEnvelope<TimeStudyRecordResDto[]>>(url, strippedPayload)
+    : await api.post<ApiEnvelope<TimeStudyRecordResDto[]>>(url, strippedPayload)
   return res.data!
 }
 
@@ -75,9 +76,10 @@ export async function apiUpdateTimeRecord(
   id: number,
   dto: Partial<TimeStudyRecordSubmitItemDto>
 ): Promise<TimeStudyRecordResDto> {
+  const { supportingDocs, ...rest } = dto as any
   const res = await api.put<ApiEnvelope<TimeStudyRecordResDto>>(
     `/timestudyrecords/${id}`,
-    dto
+    rest
   )
   return res.data!
 }

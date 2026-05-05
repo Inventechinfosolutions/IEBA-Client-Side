@@ -446,10 +446,10 @@ const AppCalender = ({
                             !dayObj.isWeekSelected &&
                             "today",
                           dayObj.isSelected &&
-                            "z-[1] shadow-md ring-2 ring-primary ring-offset-2 ring-offset-background !text-foreground",
+                            "z-1 shadow-md ring-2 ring-primary ring-offset-2 ring-offset-background text-foreground!",
                           dayObj.isWeekSelected &&
                             !dayObj.isSelected &&
-                            "border-2 border-primary !text-primary font-medium",
+                            "border-2 border-primary text-primary! font-medium",
                           dayObj.color && "text-white!"
                         )}
                         style={

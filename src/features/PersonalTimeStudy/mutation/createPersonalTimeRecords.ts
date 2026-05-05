@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
-import { apiSubmitTimeRecords, apiUpdateTimeRecord } from "../api/personalTimeStudyApi"
+import { apiSubmitTimeRecords, apiUpdateTimeRecord, apiUploadSupportingDoc } from "../api/personalTimeStudyApi"
 import { personalTimeStudyKeys } from "../keys"
 
 /**
@@ -10,12 +10,31 @@ export function useSubmitPersonalTimeRecords(userId: string, dateStr: string, mo
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async ({ records, mode }: { records: any[]; mode: "save" | "submit" }) => {
+      let results: any[]
       if (mode === "save" && records.length === 1 && records[0].id) {
         const parent = records[0]
         const { id, ...updatePayload } = parent
-        return apiUpdateTimeRecord(id, updatePayload)
+        results = [await apiUpdateTimeRecord(id, updatePayload)]
+      } else {
+        results = await apiSubmitTimeRecords(records, mode, "post")
       }
-      return apiSubmitTimeRecords(records, mode, "post")
+
+      // Upload pending documents
+      for (let i = 0; i < records.length; i++) {
+        const original = records[i]
+        const saved = results[i]
+        if (saved?.id && original.supportingDocs) {
+          const pendingFiles = original.supportingDocs
+            .filter((doc: any) => doc.file instanceof File)
+            .map((doc: any) => doc.file)
+          
+          for (const file of pendingFiles) {
+            await apiUploadSupportingDoc(saved.id, file as File)
+          }
+        }
+      }
+
+      return results
     },
     onSuccess: (_, { mode }) => {
       toast.success(`Records ${mode === "save" ? "saved" : "submitted"} successfully`)

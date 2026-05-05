@@ -347,7 +347,7 @@ export function EmployeeLeaveRequestDialog({
               <span>Start Time</span>
               <span>End Time</span>
               <span>Program Code</span>
-              <span>Activity</span>
+              <span>Activity Code</span>
               <span>Total Min Applied</span>
               <span>Comment</span>
               {!isEditing && <span className="sr-only">Row actions</span>}
@@ -474,14 +474,14 @@ export function EmployeeLeaveRequestDialog({
                             const options = hasProgram 
                               ? activities.filter((a) => allowedIds.has(String(a.id))).map((a: any) => ({
                                   value: String(a.id),
-                                label: a.name,
+                                  label: `${a.code} - ${a.name}`,
                                 }))
                               : []
 
                             return (
                               <SingleSelectSearchDropdown
                                 value={f.value === EMPTY ? "" : f.value}
-                                placeholder="Select activity"
+                                placeholder="Select Activity Code"
                                 disabled={!hasProgram}
                                 options={options}
                                 onChange={(v) => f.onChange(v || EMPTY)}
