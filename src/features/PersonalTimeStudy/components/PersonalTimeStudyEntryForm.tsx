@@ -11,6 +11,8 @@ import { SingleSelectSearchDropdown } from "@/components/ui/dropdown-search"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { TimePickerDropdown } from "@/components/ui/time-picker"
 import { useAuth } from "@/contexts/AuthContext"
+import { API_BASE_URL } from "@/lib/config"
+import { apiDownloadSupportingDoc, apiDeleteSupportingDoc } from "../api/personalTimeStudyApi"
 
 /** Inline required-field asterisk — available to all components in this module. */
 function RequiredMark() {
@@ -43,7 +45,7 @@ export type TimeEntryParentRow = {
   serviceActivity: string
   description: string
   supportingDocLabel?: string
-  supportingDocs: Array<{ name: string; url: string; file?: File }>
+  supportingDocs: Array<{ name: string; url: string; file?: File; docId?: number }>
   subRows: TimeEntrySubRow[]
 }
 
@@ -172,33 +174,36 @@ function SupportingDocField({
   disabled = false,
   onAdd,
   onDelete,
+  onDownload,
 }: {
   parentId: string
-  docs: Array<{ name: string; url: string; file?: File }>
+  docs: Array<{ name: string; url: string; file?: File; docId?: number }>
   uploading: boolean
   disabled?: boolean
   onAdd: (parentId: string, files: FileList) => void
   onDelete: (parentId: string, name: string) => void
+  onDownload: (parentId: string, doc: { name: string; url: string; file?: File; docId?: number }) => void
 }) {
   const [open, setOpen] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
-  const firstDoc = docs[0]
-  const extraCount = docs.length - 1
-  const pillLabel = uploading ? "Uploading..." : docs.length === 0 ? "Supporting doc" : extraCount > 0 ? `${firstDoc.name.slice(0, 14)}… +${extraCount}` : firstDoc.name.length > 16 ? `${firstDoc.name.slice(0, 14)}…` : firstDoc.name
+  const pillLabel = uploading ? "Uploading..." : docs.length === 0 ? "Supporting doc" : docs[0].name
+  const extraCount = docs.length > 1 ? docs.length - 1 : 0
 
   return (
-    <div className={cn("min-w-[90px] flex-1 space-y-0.5 relative", disabled && "cursor-not-allowed")}>
+    <div className={cn("min-w-[90px] flex-1 space-y-0.5 relative")}>
       <Label className="text-[11px] text-muted-foreground">Supporting doc</Label>
       <input ref={fileRef} type="file" className="hidden" multiple onChange={(e) => { if (e.target.files?.length) { onAdd(parentId, e.target.files); e.target.value = ""; } }} />
       <div className={cn(
-        "flex h-10 w-full items-center rounded-[6px] border border-input text-[11px] overflow-hidden",
-        disabled ? "bg-[#F2F4F7] cursor-not-allowed opacity-70" : "bg-background"
+        "flex h-10 w-full items-center rounded-[6px] border border-input text-[11px] overflow-hidden bg-white"
       )}>
         <button type="button" className="flex flex-1 min-w-0 items-center px-2 overflow-hidden" onClick={() => setOpen((v) => !v)}>
-          <span className="truncate text-foreground">{pillLabel}</span>
-        </button>
-        <button type="button" onClick={() => setOpen((v) => !v)} className="shrink-0 w-12 h-full text-muted-foreground hover:text-foreground flex items-center justify-center">
-          <ChevronDown className={cn("size-5 transition-transform", open && "rotate-180")} />
+          <span className="truncate text-foreground flex-1">{pillLabel}</span>
+          {extraCount > 0 && (
+            <span className="ml-1 px-1.5 py-0.5 rounded-[6px] bg-[#6C5DD3]/10 text-[#6C5DD3] text-[10px] font-bold shrink-0">
+              +{extraCount}
+            </span>
+          )}
+          <ChevronDown className={cn("size-3 ml-1 text-muted-foreground transition-transform", open && "rotate-180")} />
         </button>
         {!disabled && (
           <button type="button" disabled={uploading} onClick={() => fileRef.current?.click()} className={cn("shrink-0 w-10 border-l border-input h-full text-[#6C5DD3] hover:bg-accent flex items-center justify-center", uploading && "opacity-40 cursor-not-allowed")}>
@@ -216,16 +221,11 @@ function SupportingDocField({
             docs.map((doc) => (
               <div key={doc.name} className="flex items-center gap-2 px-3 py-1.5">
                 <span className="flex-1 truncate text-[11px] text-foreground">{doc.name}</span>
-                {doc.file && (
-                  <span title="Pending upload">
-                    <Clock className="size-3 text-amber-500 shrink-0" />
-                  </span>
-                )}
-                <a href={doc.url} target="_blank" rel="noreferrer" className="shrink-0 text-[#6C5DD3] hover:opacity-70" onClick={() => setOpen(false)}>
+                <button type="button" className="shrink-0 text-[#6C5DD3] hover:opacity-70 cursor-pointer" onClick={() => { onDownload(parentId, doc); setOpen(false); }}>
                   <Eye className="size-3.5" />
-                </a>
+                </button>
                 {!disabled && (
-                  <button type="button" className="shrink-0 text-destructive hover:opacity-70" onClick={() => { onDelete(parentId, doc.name); if (docs.length <= 1) setOpen(false); }}>
+                  <button type="button" className="shrink-0 text-destructive hover:opacity-70 cursor-pointer" onClick={() => { onDelete(parentId, doc.name); if (docs.length <= 1) setOpen(false); }}>
                     <Trash2 className="size-3.5" />
                   </button>
                 )}
@@ -289,7 +289,11 @@ export function PersonalTimeStudyEntryForm({
             serviceActivity: String(rec.activityid ?? ""),
             description: rec.description ?? "",
             supportingDocLabel: "",
-            supportingDocs: Array.isArray(rec.supportingDocs) ? rec.supportingDocs : [],
+            supportingDocs: (rec.supportingDocs ?? []).map((d: any) => ({
+              name: d.fileName,
+              url: `${API_BASE_URL}/timestudyrecords/${rec.id}/supporting-doc`,
+              docId: d.id ?? undefined,
+            })),
             subRows: (rec.multiCodeRecords ?? []).map((m: any) => ({
               id: String(m.id),
               dbId: m.id,
@@ -571,9 +575,48 @@ export function PersonalTimeStudyEntryForm({
     setParents((prev) => prev.map((p) => {
       if (p.id !== parentId) return p
       const removed = p.supportingDocs.find((d) => d.name === name)
-      if (removed) URL.revokeObjectURL(removed.url)
+      if (removed) {
+        // Revoke local blob URL only for unsaved files
+        if (removed.file) URL.revokeObjectURL(removed.url)
+        // If this is a saved doc on the server, delete it via API
+        const parent = p
+        if (!removed.file && removed.docId) {
+          const parentDbId = parent.dbId
+          if (parentDbId) {
+            apiDeleteSupportingDoc(parentDbId, removed.docId).catch(() => {})
+          }
+        }
+      }
       return { ...p, supportingDocs: p.supportingDocs.filter((d) => d.name !== name) }
     }))
+  }
+
+  const handleDownloadDoc = async (parentId: string, doc: any) => {
+    if (doc.file) {
+      const link = document.createElement("a")
+      link.href = doc.url
+      link.download = doc.name
+      link.click()
+      return
+    }
+    const parent = parents.find(p => p.id === parentId)
+    if (!parent?.dbId) {
+      toast.error("Please save the record before downloading.")
+      return
+    }
+    try {
+      const blob = await apiDownloadSupportingDoc(parent.dbId, doc.docId)
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = doc.name
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      window.URL.revokeObjectURL(url)
+    } catch (err: any) {
+      toast.error(err.message || "Download failed")
+    }
   }
 
   return (
@@ -669,7 +712,15 @@ export function PersonalTimeStudyEntryForm({
                     className={cn("h-10 text-[11px] text-[#344054] font-normal", isLocked && "bg-[#F2F4F7] cursor-not-allowed")} 
                   />
                 </div>
-                <SupportingDocField parentId={parent.id} docs={parent.supportingDocs} uploading={false} disabled={isLocked} onAdd={handleAddDocs} onDelete={handleDeleteDoc} />
+                <SupportingDocField 
+                  parentId={parent.id} 
+                  docs={parent.supportingDocs} 
+                  uploading={false} 
+                  disabled={isLocked} 
+                  onAdd={handleAddDocs} 
+                  onDelete={handleDeleteDoc} 
+                  onDownload={handleDownloadDoc} 
+                />
                 <div className="flex items-end gap-1 pb-0.5">
                   {!readonly && canDeleteParent(parent.id) && (
                     <Button 

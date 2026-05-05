@@ -14,6 +14,7 @@ export function useDeletePersonalTimeRecord(userId: string, dateStr: string, mon
       toast.success("Entry deleted")
       queryClient.invalidateQueries({ queryKey: personalTimeStudyKeys.dayDetail(userId, dateStr) })
       queryClient.invalidateQueries({ queryKey: personalTimeStudyKeys.monthLegend(userId, month, year) })
+      queryClient.invalidateQueries({ queryKey: personalTimeStudyKeys.timeEntrySummary(userId, dateStr) })
     },
     onError: (error: any) => {
       toast.error(error.message || "Failed to delete entry")
