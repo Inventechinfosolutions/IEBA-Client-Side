@@ -265,6 +265,11 @@ export function PersonalTimeStudyEntryForm({
   const [parents, setParents] = useState<TimeEntryParentRow[]>([createParent()])
   const [prevInitialRecords, setPrevInitialRecords] = useState<any[] | undefined>(undefined)
 
+  const moveSaveSubmitToTop = useMemo(() => {
+    if (!dropdownData || dropdownData.length === 0) return false
+    return dropdownData.every((d: any) => !!d.moveSaveSubmitToTop)
+  }, [dropdownData])
+
   if (initialRecords !== prevInitialRecords) {
     setPrevInitialRecords(initialRecords)
     const syncRecordsToState = () => {
@@ -651,16 +656,36 @@ export function PersonalTimeStudyEntryForm({
           {/* Bottom Row: Title and Button */}
           <div className="flex items-center justify-between">
             <h3 className="text-[14px] text-[#6C5DD3] font-semibold">Time Entries</h3>
-            {!readonly && (
-              <Button 
-                size="icon" 
-                disabled={isLocked} 
-                className={cn("size-9 bg-[#6C5DD3] hover:bg-[#6C5DD3]/90", isLocked && "cursor-not-allowed")} 
-                onClick={addParentAtTop}
-              >
-                <Plus className="size-4" />
-              </Button>
-            )}
+            <div className="flex items-center gap-3">
+              {!readonly && moveSaveSubmitToTop && (
+                <div className="flex items-center gap-2 mr-4">
+                  <Button 
+                    disabled={isLocked}
+                    className={cn("h-9 px-4 bg-[#6C5DD3] hover:bg-[#5B4DBF] text-[12px]", isLocked && "cursor-not-allowed")} 
+                    onClick={handleSave}
+                  >
+                    Save
+                  </Button>
+                  <Button 
+                    disabled={isLocked}
+                    className={cn("h-9 px-4 bg-green-600 hover:bg-green-700 text-white text-[12px]", isLocked && "cursor-not-allowed")} 
+                    onClick={() => setShowSubmitConfirm(true)}
+                  >
+                    Submit
+                  </Button>
+                </div>
+              )}
+              {!readonly && (
+                <Button 
+                  size="icon" 
+                  disabled={isLocked} 
+                  className={cn("size-9 bg-[#6C5DD3] hover:bg-[#6C5DD3]/90", isLocked && "cursor-not-allowed")} 
+                  onClick={addParentAtTop}
+                >
+                  <Plus className="size-4" />
+                </Button>
+              )}
+            </div>
           </div>
         </div>
 
@@ -818,7 +843,7 @@ export function PersonalTimeStudyEntryForm({
         })}
       </div>
 
-      {!readonly && (
+      {!readonly && !moveSaveSubmitToTop && (
         <div className="mt-4 flex justify-end gap-2">
           <Button 
             disabled={isLocked} 
