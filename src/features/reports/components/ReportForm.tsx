@@ -688,18 +688,21 @@ export function ReportForm({ module }: ReportFormProps) {
   )
   const shouldFetchCostPoolUsers = shouldShowCostPool && costPoolIdsArr.length > 0
 
-  const { data: maaEmployeesData } = useGetMaaEmployees(activityIdsArr, departmentId, isMaaReport && !!departmentId)
+  const showMasterCodes = isTrue(currentReportItem?.criteria?.showmasterCodes)
+  
+  const shouldFetchMaaEmployees = isMaaReport && !!departmentId && !showMasterCodes
+  const { data: maaEmployeesData } = useGetMaaEmployees(activityIdsArr, departmentId, shouldFetchMaaEmployees)
   const { data: costPoolUsersData } = useGetCostPoolUsers(
     costPoolIdsArr,
     user?.id ?? "",
     employeeStatusArr,
     shouldFetchCostPoolUsers,
   )
-  const shouldFetchDepartmentUsers = !!departmentId && !isMaaReport && !shouldShowCostPool
+  const shouldFetchDepartmentUsers = !!departmentId && (!isMaaReport || showMasterCodes) && !shouldShowCostPool
   const { data: departmentUsersData } = useGetUsersUnderDepartment(
     departmentId, 
     user?.id ?? "", 
-    masterCode,
+    showMasterCodes ? masterCode : undefined,
     employeeStatusArr,
     shouldFetchDepartmentUsers
   )
@@ -727,7 +730,7 @@ export function ReportForm({ module }: ReportFormProps) {
     activityStartDate,
     activityEndDate,
     activityStatusStr || "active",
-    masterCode,
+    showMasterCodes ? masterCode : undefined,
     shouldFetchActivities,
   )
 
@@ -755,7 +758,13 @@ export function ReportForm({ module }: ReportFormProps) {
   }, [currentReportItem, employeeIds])
 
   const { data: fiscalYearsData } = useListFiscalYears()
-  const { data: departmentsData } = useGetDepartments({ status: "active", page: 1, limit: 100 })
+  const { data: departmentsData } = useGetDepartments({ 
+    status: "active", 
+    page: 1, 
+    limit: 100,
+    reportKey,
+    masterCode: showMasterCodes ? masterCode : undefined
+  } as any)
   const { data: allProgramsData } = useGetListAllPrograms(
     currentReportItem?.criteria?.showProgramSelect === true && !shouldFilterProgramsByUser
   )

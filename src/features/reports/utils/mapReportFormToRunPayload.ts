@@ -86,6 +86,17 @@ export function mapReportFormToRunPayload(values: ReportFormValues): ReportRunPa
     downloadType: values.downloadType,
     ...(values.fileName?.trim() ? { fileName: values.fileName.trim() } : {}),
     ...(values.masterCode?.trim() ? { masterCode: values.masterCode.trim() } : {}),
+    ...(values.reportKey.trim() === "MAATCM"
+      ? {
+          maaTcmReportingPeriodType:
+            values.selectMonthBy === "month"
+              ? "month"
+              : values.selectMonthBy === "qtr"
+                ? "qtr"
+                : values.selectMonthBy === "year"
+                  ? "year"
+                  : values.selectMonthBy,
+        }
+      : {}),
   }
-
 }

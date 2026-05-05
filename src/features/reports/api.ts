@@ -53,7 +53,7 @@ function buildBackendPayload(body: ReportRunPayload, overrideDownloadType?: stri
   const toDate = formatDateForBackend(body.dateTo)
   const month = monthFromDate(body.dateFrom)
 
-  return {
+  const payload: Record<string, any> = {
     reportCode: body.reportKey,
     reportingPeriodType: body.selectMonthBy,
     fromDate,
@@ -67,7 +67,9 @@ function buildBackendPayload(body: ReportRunPayload, overrideDownloadType?: stri
     unApproved: body.includeUnapprovedTime,
     downloadType: overrideDownloadType || body.downloadType,
     type: "newreports",
+    maaTcmReportingPeriodType: body.maaTcmReportingPeriodType,
   }
+  return payload
 }
 
 /** Download report (PDF/Excel) via /report/data. */
@@ -177,7 +179,11 @@ export async function apiGetUsersUnderDepartment(departmentId: string, currentUs
     `departmentStatus=${departmentStatus.split(',').map(encodeURIComponent).join(',')}`,
     `userId=${encodeURIComponent(currentUserId)}`
   ];
-  if (masterCode && masterCode !== "BOTH") parts.push(`masterCode=${encodeURIComponent(masterCode)}`);
+  if (masterCode) {
+    const codeToSend = masterCode === "BOTH" ? "MAA,TCM" : masterCode;
+    const encodedCode = codeToSend.split(',').map(encodeURIComponent).join(',');
+    parts.push(`masterCode=${encodedCode}`);
+  }
 
   const data = await api.get<any>(`/users?${parts.join('&')}`)
   const list = Array.isArray(data) ? data : Array.isArray(data.data) ? data.data : []
@@ -213,7 +219,11 @@ export async function apiGetActivitiesByDepartmentAndUsers(
   if (endDate) parts.push(`endDate=${encodeURIComponent(endDate)}`);
   parts.push(`activityStatus=${activityStatus.split(',').map(encodeURIComponent).join(',')}`);
   if (departmentId) parts.push(`departmentId=${encodeURIComponent(departmentId)}`);
-  if (masterCode && masterCode !== "BOTH") parts.push(`masterCode=${encodeURIComponent(masterCode)}`);
+  if (masterCode) {
+    const codeToSend = masterCode === "BOTH" ? "MAA,TCM" : masterCode;
+    const encodedCode = codeToSend.split(',').map(encodeURIComponent).join(',');
+    parts.push(`masterCode=${encodedCode}`);
+  }
 
   // Call the new records-based lookup endpoint on the report service
   const raw = await api.get<any>(`/report/activity-departments/by-records?${parts.join('&')}`)
