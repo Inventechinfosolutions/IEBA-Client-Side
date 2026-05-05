@@ -17,7 +17,7 @@ export function useGetMaaEmployees(activityTypes: string[], departmentId?: strin
     queryKey: reportKeys.maaEmployees(activityTypes, departmentId),
     queryFn: () => apiGetMaaEmployees(activityTypes, departmentId),
     enabled: enabled && (activityTypes.length > 0 || !!departmentId),
-    staleTime: 5 * 60_000,
+    staleTime: 0,
   })
 }
 
@@ -26,7 +26,7 @@ export function useGetCostPoolUsers(costPoolIds: string[], userId: string, emplo
     queryKey: reportKeys.costPoolUsers(costPoolIds, userId, employeeStatus),
     queryFn: () => apiGetCostPoolUsers(costPoolIds, userId, employeeStatus),
     enabled: enabled && costPoolIds.length > 0 && !!userId,
-    staleTime: 5 * 60_000,
+    staleTime: 0,
   })
 }
 
@@ -54,7 +54,7 @@ export function useGetUsersUnderDepartment(departmentId: string | undefined, use
     queryKey: [...reportKeys.all, "users-under-department", { departmentId, userId, masterCode, statusStr }],
     queryFn: () => apiGetUsersUnderDepartment(departmentId!, userId || "", masterCode, statusStr),
     enabled: enabled && !!departmentId,
-    staleTime: 10_000, // Reduced staleTime for more consistent updates
+    staleTime: 0,
   })
 }
 
@@ -73,7 +73,7 @@ export function useGetActivitiesByDepartmentAndUsers(
     queryKey: [...reportKeys.all, "activities-by-dept-users", { departmentId, userIds, startDate, endDate, activityStatus, masterCode }],
     queryFn: () => apiGetActivitiesByDepartmentAndUsers(departmentId!, userIds, startDate, endDate, activityStatus, masterCode),
     enabled: enabled && !!departmentId && userIds.length > 0,
-    staleTime: 5 * 60_000,
+    staleTime: 0,
   })
 }
 /** Fetch cost pools filtered by department. */
@@ -82,7 +82,7 @@ export function useGetCostPoolsByDepartment(departmentId: string | undefined, en
     queryKey: [...reportKeys.all, "costpools-by-department", { departmentId }],
     queryFn: () => apiGetCostPoolsByDepartment(departmentId!),
     enabled: enabled && !!departmentId,
-    staleTime: 5 * 60_000,
+    staleTime: 0,
   })
 }
 

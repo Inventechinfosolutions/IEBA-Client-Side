@@ -76,6 +76,7 @@ export type ReportRunPayload = {
   includeUnapprovedTime: boolean
   downloadType: ReportDownloadType
   fileName?: string
+  maaTcmReportingPeriodType?: string
 }
 
 /** Mock catalog row with active/inactive filtering. */
