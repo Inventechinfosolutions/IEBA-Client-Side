@@ -300,10 +300,20 @@ export function PersonalTimeStudyEntryForm({
   const [prevInitialRecords, setPrevInitialRecords] = useState<any[] | undefined>(undefined)
   const [prevLeaveRecords, setPrevLeaveRecords] = useState<any[] | undefined>(undefined)
 
-  const moveSaveSubmitToTop = useMemo(() => {
-    if (!dropdownData || dropdownData.length === 0) return false
-    return dropdownData.every((d: any) => !!d.moveSaveSubmitToTop)
+  const formSettings = useMemo(() => {
+    if (!dropdownData || dropdownData.length === 0) return null
+    return {
+      moveSaveSubmitToTop: dropdownData.some((d: any) => !!d.moveSaveSubmitToTop),
+      removeAutoFillEndTime: dropdownData.some((d: any) => !!d.removeAutoFillEndTime),
+      startorEndTime: dropdownData.some((d: any) => !!d.startorEndTime),
+      supportingDoc: dropdownData.some((d: any) => !!d.supportingDoc),
+      removeDescriptionActivityNote: dropdownData.some((d: any) => !!d.removeDescriptionActivityNote),
+      removeDescriptionActivityNoteAnchor: dropdownData.some((d: any) => !!d.removeDescriptionActivityNoteAnchor),
+      removeDescriptionActivityNoteMultiCode: dropdownData.some((d: any) => !!d.removeDescriptionActivityNoteMultiCode),
+    }
   }, [dropdownData])
+
+  const moveSaveSubmitToTop = formSettings?.moveSaveSubmitToTop ?? false
 
   if (initialRecords !== prevInitialRecords || leaveRecords !== prevLeaveRecords) {
     setPrevInitialRecords(initialRecords)
@@ -463,6 +473,11 @@ export function PersonalTimeStudyEntryForm({
       if (p.id !== id) return p
       const updatedP = { ...p, ...patch }
       
+      // Auto-fill logic
+      if (patch.start !== undefined && !formSettings?.removeAutoFillEndTime) {
+        updatedP.end = addMinutesToTime(patch.start, 15)
+      }
+
       if (patch.start !== undefined || patch.end !== undefined) {
         if (updatedP.subRows.length > 0) {
           const parentMin = Number(computeDurationMinutes(updatedP.start, updatedP.end)) || 0
@@ -475,7 +490,7 @@ export function PersonalTimeStudyEntryForm({
       }
       return updatedP
     }))
-  }, [])
+  }, [formSettings?.removeAutoFillEndTime])
 
   const updateSubRow = (parentId: string, subRowId: string, updates: Partial<TimeEntrySubRow>) => {
     if (isLocked) return
@@ -492,7 +507,9 @@ export function PersonalTimeStudyEntryForm({
           } else if (updates.totalMin !== undefined) {
             // If totalMin is updated manually, try to move end time
             const mins = Number(updates.totalMin) || 0
-            updated.end = addMinutesToTime(updated.start, mins)
+            if (!formSettings?.removeAutoFillEndTime) {
+               updated.end = addMinutesToTime(updated.start, mins)
+            }
           }
           return updated
         })
@@ -517,10 +534,12 @@ export function PersonalTimeStudyEntryForm({
     const newP = createParent()
     if (topParent) {
       newP.start = topParent.end || ""
-      newP.end = newP.start ? addMinutesToTime(newP.start, 15) : ""
+      if (newP.start && !formSettings?.removeAutoFillEndTime) {
+         newP.end = addMinutesToTime(newP.start, 15)
+      }
     }
     setParents((prev) => [newP, ...prev])
-  }, [parents])
+  }, [parents, formSettings?.removeAutoFillEndTime])
 
   const removeParent = useCallback((id: string) => {
     const p = parents.find((row) => row.id === id)
@@ -806,10 +825,16 @@ export function PersonalTimeStudyEntryForm({
         {parents.map((parent) => {
           const totalDisplay = computeDurationMinutes(parent.start, parent.end)
           const isLeaveRow = parent.isLeave
+          const hideTime = !!formSettings?.startorEndTime
+          const hideDocs = !!formSettings?.supportingDoc
+          const hideNotes = !!formSettings?.removeDescriptionActivityNote
+
           return (
             <div key={parent.id} className={cn("rounded-md", !isLeaveRow && "bg-card/50 p-2 border border-border/50")}>
               <div className={cn(parentFieldRowClass, isLeaveRow && "p-2")}>
-                <TimePicker24h label="Start" value={parent.start} disabled={isLocked || isLeaveRow} isLeave={isLeaveRow} onChange={(v) => updateParent(parent.id, { start: v, end: addMinutesToTime(v, 15) })} />
+                {!hideTime && (
+                   <TimePicker24h label="Start" value={parent.start} disabled={isLocked || isLeaveRow} isLeave={isLeaveRow} onChange={(v) => updateParent(parent.id, { start: v })} />
+                )}
                 <div className="flex-1 space-y-0.5">
                   <Label className="text-[11px] text-[#6C5DD3] font-medium">TS Program <RequiredMark /></Label>
                   <SingleSelectSearchDropdown 
@@ -865,31 +890,37 @@ export function PersonalTimeStudyEntryForm({
                     className={cn("h-10 text-[11px]", (isLocked || isLeaveRow || !parent.tsProgram) && "bg-[#F2F4F7] cursor-not-allowed", isLeaveRow && "border-yellow-400")} 
                   />
                 </div>
-                <TimePicker24h label="End" value={parent.end} disabled={isLocked || isLeaveRow || !parent.start} isLeave={isLeaveRow} onChange={(v) => updateParent(parent.id, { end: v })} />
+                {!hideTime && (
+                   <TimePicker24h label="End" value={parent.end} disabled={isLocked || isLeaveRow || !parent.start} isLeave={isLeaveRow} onChange={(v) => updateParent(parent.id, { end: v })} />
+                )}
                 <div className="w-[60px] space-y-0.5">
                   <Label className="text-[11px] text-muted-foreground">Min. <RequiredMark /></Label>
                   <TitleCaseInput readOnly value={totalDisplay} placeholder="—" className={cn("h-10 bg-[#F2F4F7] text-[11px] cursor-not-allowed", isLeaveRow && "border-yellow-400")} />
                 </div>
-                <div className="flex-[1.5] space-y-0.5">
-                  <Label className="text-[11px] text-muted-foreground">Notes </Label>
-                  <TitleCaseInput 
-                    value={parent.description} 
-                    readOnly={isLocked || isLeaveRow}
-                    onChange={(e) => updateParent(parent.id, { description: e.target.value })} 
-                    placeholder="Notes" 
-                    className={cn("h-10 text-[11px] text-[#344054] font-normal", (isLocked || isLeaveRow) && "bg-[#F2F4F7] cursor-not-allowed", isLeaveRow && "border-yellow-400")} 
+                {!hideNotes && (
+                  <div className="flex-[1.5] space-y-0.5">
+                    <Label className="text-[11px] text-muted-foreground">Notes </Label>
+                    <TitleCaseInput 
+                      value={parent.description} 
+                      readOnly={isLocked || isLeaveRow}
+                      onChange={(e) => updateParent(parent.id, { description: e.target.value })} 
+                      placeholder="Notes" 
+                      className={cn("h-10 text-[11px] text-[#344054] font-normal", (isLocked || isLeaveRow) && "bg-[#F2F4F7] cursor-not-allowed", isLeaveRow && "border-yellow-400")} 
+                    />
+                  </div>
+                )}
+                {!hideDocs && (
+                  <SupportingDocField 
+                    parentId={parent.id} 
+                    docs={parent.supportingDocs} 
+                    uploading={false} 
+                    disabled={isLocked || isLeaveRow} 
+                    isLeave={isLeaveRow}
+                    onAdd={handleAddDocs} 
+                    onDelete={handleDeleteDoc} 
+                    onDownload={handleDownloadDoc} 
                   />
-                </div>
-                <SupportingDocField 
-                  parentId={parent.id} 
-                  docs={parent.supportingDocs} 
-                  uploading={false} 
-                  disabled={isLocked || isLeaveRow} 
-                  isLeave={isLeaveRow}
-                  onAdd={handleAddDocs} 
-                  onDelete={handleDeleteDoc} 
-                  onDownload={handleDownloadDoc} 
-                />
+                )}
                 <div className="flex items-end gap-1 pb-0.5">
                   {!readonly && canDeleteParent(parent.id) && (
                     <Button 
@@ -986,20 +1017,26 @@ export function PersonalTimeStudyEntryForm({
                           onChange={(e) => updateSubRow(parent.id, sub.id, { totalMin: e.target.value })}
                         />
                       </div>
-                      <div className="flex-1 space-y-1">
-                          <div className="flex items-center gap-2">
-                            <Label className="text-[11px] text-muted-foreground whitespace-nowrap">
-                              Notes
-                            </Label>
+                      {(() => {
+                        const hideSubNotes = !!formSettings?.removeDescriptionActivityNote
+                        if (hideSubNotes) return null
+                        return (
+                          <div className="flex-1 space-y-1">
+                              <div className="flex items-center gap-2">
+                                <Label className="text-[11px] text-muted-foreground whitespace-nowrap">
+                                  Notes
+                                </Label>
+                              </div>
+                            <TitleCaseInput 
+                              value={sub.description} 
+                              readOnly={isLocked}
+                              onChange={(e) => updateSubRow(parent.id, sub.id, { description: e.target.value })} 
+                              placeholder="Notes" 
+                              className={cn("h-9 text-[11px] text-[#344054] font-normal", isLocked && "bg-[#F2F4F7] cursor-not-allowed")} 
+                            />
                           </div>
-                        <TitleCaseInput 
-                          value={sub.description} 
-                          readOnly={isLocked}
-                          onChange={(e) => updateSubRow(parent.id, sub.id, { description: e.target.value })} 
-                          placeholder="Notes" 
-                          className={cn("h-9 text-[11px] text-[#344054] font-normal", isLocked && "bg-[#F2F4F7] cursor-not-allowed")} 
-                        />
-                      </div>
+                        )
+                      })()}
                       <div className="flex items-end pb-0.5">
                         {!readonly && (
                           <Button 
