@@ -49,6 +49,7 @@ export function OtpAuthentication() {
   const [countyError, setCountyError] = useState(false)
   const [countyDropdownOpen, setCountyDropdownOpen] = useState(false)
   const [countySearch, setCountySearch] = useState("")
+  const [isLoggingIn, setIsLoggingIn] = useState(false)
   const { establishDashboardSession } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
@@ -136,7 +137,19 @@ export function OtpAuthentication() {
       return
     }
 
-    verifyOtpMutation.mutate({ otp: values.otp })
+    setIsLoggingIn(true)
+    verifyOtpMutation.mutate(
+      { otp: values.otp },
+      {
+        onSuccess: () => {
+          setCountyModalOpen(true)
+          setIsLoggingIn(false)
+        },
+        onError: () => {
+          setIsLoggingIn(false)
+        },
+      }
+    )
   }
 
   function handleCountyOk() {
@@ -150,6 +163,7 @@ export function OtpAuthentication() {
       return
     }
     setCountyError(false)
+    setIsLoggingIn(true)
     validateLoginOtpMutation.mutate(
       {
         loginId: email.trim(),
@@ -215,6 +229,7 @@ export function OtpAuthentication() {
           navigate("/", { replace: true })
         },
         onError: (error) => {
+          setIsLoggingIn(false)
           toast.error(error.message || "OTP verification failed")
         },
       }
@@ -413,8 +428,8 @@ export function OtpAuthentication() {
             type="submit"
             disabled={
               journey === AuthJourney.ResetPassword
-                ? validateLoginOtpMutation.isPending
-                : verifyOtpMutation.isPending
+                ? validateLoginOtpMutation.isPending || isLoggingIn
+                : verifyOtpMutation.isPending || isLoggingIn
             }
             className="mt-2 h-11 w-full rounded-[6px] border-0 text-[18px] font-medium text-white hover:opacity-90"
             style={{ background: "linear-gradient(90deg, #00c5fb, #6c5dd3)" }}
@@ -557,10 +572,10 @@ export function OtpAuthentication() {
           <Button
             type="button"
             onClick={handleCountyOk}
-            disabled={validateLoginOtpMutation.isPending}
+            disabled={validateLoginOtpMutation.isPending || isLoggingIn}
             className="h-[35px] min-w-[62px] rounded-[6px] border-0 bg-[#6C5DD3] px-4 text-[15px] font-normal text-white hover:bg-[#5f52bd] disabled:opacity-60"
           >
-            {validateLoginOtpMutation.isPending ? "Verifying…" : "OK"}
+            {validateLoginOtpMutation.isPending || isLoggingIn ? "Verifying…" : "OK"}
           </Button>
           <Button
             type="button"
