@@ -13,6 +13,7 @@ import { ProgramFormModal } from "../components/program-form-modal"
 import { ProgramTabs } from "../components/program-tabs"
 import { TimeStudyProgramTable } from "../components/time-study-program-table"
 import { ProgramToolbar } from "../components/program-toolbar"
+import { UserProgramHistoryTable } from "../components/UserProgramHistoryTable"
 import { useProgramModule } from "../hooks/use-program-module"
 import { apiGetProgramRowById, apiCheckActiveSubPrograms, apiCheckActiveBudgetSubPrograms } from "../api"
 import { useGetProgramFormOptions } from "../queries/get-program-form-options"
@@ -151,8 +152,9 @@ export function ProgramPage() {
   const [expandedProgramGroups, setExpandedProgramGroups] = useState<Record<string, boolean>>({})
   const [expandedPrograms, setExpandedPrograms] = useState<Record<string, boolean>>({})
   const budgetUnitTableRef = useRef<BudgetUnitTableHandle | null>(null)
-  const tsTableRef = useRef<TimeStudyProgramTableHandle | null>(null)
+  const tsTableRefInner = useRef<TimeStudyProgramTableHandle | null>(null)
   const [activeChildrenFlags, setActiveChildrenFlags] = useState({ one: false, two: false, parentActive: undefined as boolean | undefined })
+  const [showHistory, setShowHistory] = useState(false)
 
   const isSubProgramQuickAdd = modalMode === "add" && Boolean(selectedProgramForSubAdd)
 
@@ -341,6 +343,7 @@ export function ProgramPage() {
     setExpandedBudgetUnits({})
     setExpandedProgramGroups({})
     setExpandedPrograms({})
+    setShowHistory(false)
   }
 
   const handleSearchChange = (value: string) => {
@@ -426,13 +429,13 @@ export function ProgramPage() {
           // Collapse the row so when they expand it again, children are fresh.
           budgetUnitTableRef.current?.collapseRow(updatedRow.id, updatedRow.parentId)
         } else if (activeTab === "Time Study programs") {
-          tsTableRef.current?.patchTimeStudyProgramRow(updatedRow)
+          tsTableRefInner.current?.patchTimeStudyProgramRow(updatedRow)
           // Same for TS table
-          tsTableRef.current?.collapseRow(updatedRow.id)
+          tsTableRefInner.current?.collapseRow(updatedRow.id)
           // If this was a quick-add Sub-Program Two from a Sub-Program One row,
           // collapse the parent so re-expand triggers a fresh fetch showing the new record.
           if (selectedProgramForSubAdd) {
-            tsTableRef.current?.collapseRow(selectedProgramForSubAdd.id)
+            tsTableRefInner.current?.collapseRow(selectedProgramForSubAdd.id)
           }
         }
       }
@@ -496,6 +499,8 @@ export function ProgramPage() {
             onToggleInactiveOnly={() => setInactiveOnly((prev) => !prev)}
             onAddProgram={handleAddProgram}
             hideAdd={isRestrictedRole}
+            showHistory={showHistory}
+            onToggleHistory={() => setShowHistory((prev) => !prev)}
           />
         ) : null}
         {activeTab === "Program Activity Relation" ? (
@@ -509,7 +514,13 @@ export function ProgramPage() {
         {activeTab !== "Program Activity Relation" ? (
           <>
             <div className="mb-5">
-              {activeTab === "Budget Units" ? (
+              {showHistory ? (
+                <UserProgramHistoryTable
+                  userId=""
+                  programCode=""
+                  programName="All Programs"
+                />
+              ) : activeTab === "Budget Units" ? (
                 <BudgetUnitTable
                   ref={budgetUnitTableRef}
                   rows={programModule.rows}
@@ -526,7 +537,7 @@ export function ProgramPage() {
                 />
               ) : (
                 <TimeStudyProgramTable
-                  ref={tsTableRef}
+                  ref={tsTableRefInner}
                   rows={programModule.rows}
                   isLoading={isTableLoading}
                   onEditRow={handleEditRow}
@@ -535,16 +546,18 @@ export function ProgramPage() {
                 />
               )}
             </div>
-            <MasterCodePagination
-              totalItems={programModule.totalItems}
-              currentPage={page}
-              pageSize={pageSize}
-              onPageChange={setPage}
-              onPageSizeChange={(newSize) => {
-                setPageSize(newSize)
-                setPage(1)
-              }}
-            />
+            {!showHistory && (
+              <MasterCodePagination
+                totalItems={programModule.totalItems}
+                currentPage={page}
+                pageSize={pageSize}
+                onPageChange={setPage}
+                onPageSizeChange={(newSize) => {
+                  setPageSize(newSize)
+                  setPage(1)
+                }}
+              />
+            )}
           </>
         ) : null}
       </div>

@@ -623,9 +623,8 @@ export function CostPoolAddPage({
                       })}
                     </div>
                   ) : (
-                    <div className="flex h-full flex-col items-center justify-center space-y-3 grayscale opacity-80">
-                      <img src={tableEmptyIcon} alt="No data" className="size-25 object-contain" />
-                      
+                    <div className="flex min-h-[280px] flex-col items-center justify-center space-y-3">
+                      <img src={tableEmptyIcon} alt="No data" className="size-20 object-contain" />
                     </div>
                   )}
                 </ScrollArea>
@@ -722,9 +721,8 @@ export function CostPoolAddPage({
                       })}
                     </div>
                   ) : (
-                    <div className="flex h-full flex-col items-center justify-center space-y-3 grayscale opacity-80">
-                      <img src={tableEmptyIcon} alt="No data" className="size-25 object-contain" />
-                      
+                    <div className="flex min-h-[280px] flex-col items-center justify-center space-y-3">
+                      <img src={tableEmptyIcon} alt="No data" className="size-22 object-contain" />
                     </div>
                   )}
                 </ScrollArea>
