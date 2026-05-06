@@ -711,7 +711,11 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                                 )}
                                 <div className="grid grid-cols-1 gap-3 py-4 min-h-[300px]">
                                     {DEPARTMENT_SETTINGS_ROWS
-                                        .filter(s => s.key !== 'allowMultiCodes' || canUpdateDepartment)
+                                        .filter(s => {
+                                            if (s.key === 'allowMultiCodes' && !canUpdateDepartment) return false;
+                                            if (s.key === 'autoApportioning' && !settings.apportioning) return false;
+                                            return true;
+                                        })
                                         .map((setting) => (
                                         <div key={setting.key} className="space-y-1">
                                             <div className="flex items-center gap-3">
@@ -719,8 +723,10 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                                                     id={setting.key}
                                                     checked={!!settings[setting.key as keyof typeof settings]}
                                                     disabled={
-                                                        setting.key === "removeAutoFillEndTime" &&
-                                                        settings.removeStartEndTime
+                                                        (setting.key === "removeAutoFillEndTime" &&
+                                                            settings.removeStartEndTime) ||
+                                                        (setting.key === "autoApportioning" &&
+                                                            settings.apportioning)
                                                     }
                                                     onCheckedChange={(val) => {
                                                         if (
@@ -733,8 +739,8 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                                                         const fieldPath =
                                                             `settings.${setting.key}` as Path<DepartmentUpsertValues>
                                                         setValue(fieldPath, isChecked)
-                                                        if (setting.key === "apportioning" && isChecked) {
-                                                            setValue("settings.autoApportioning", true)
+                                                        if (setting.key === "apportioning") {
+                                                            setValue("settings.autoApportioning", isChecked)
                                                         }
                                                         if (setting.key === "removeStartEndTime" && isChecked) {
                                                             setValue("settings.removeAutoFillEndTime", false)
@@ -745,8 +751,10 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                                                 <Label
                                                     htmlFor={setting.key}
                                                     className={`text-[14px] font-[400] text-[#374151] ${
-                                                        setting.key === "removeAutoFillEndTime" &&
-                                                        settings.removeStartEndTime
+                                                        (setting.key === "removeAutoFillEndTime" &&
+                                                            settings.removeStartEndTime) ||
+                                                        (setting.key === "autoApportioning" &&
+                                                            settings.apportioning)
                                                             ? "cursor-not-allowed opacity-60"
                                                             : ""
                                                     }`}
