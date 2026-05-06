@@ -208,6 +208,7 @@ export function PersonalTimeStudyLeaveCard({
         leaves={filteredLeaves}
         onEdit={handleEdit}
         onCancel={handleWithdraw}
+        dropdownData={dropdownData}
       />
     </Card>
   )

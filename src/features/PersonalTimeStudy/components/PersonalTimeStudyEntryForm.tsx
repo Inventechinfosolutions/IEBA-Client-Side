@@ -132,6 +132,14 @@ type PersonalTimeStudyEntryFormProps = {
   actualMultiTotal?: number
   multiBalanceTotal?: number
   hideSummaryHeader?: boolean
+  /** Leave records for the selected date — used for overlap validation */
+  leaveRecords?: Array<{
+    starttime: string
+    endtime: string
+    status: string
+    programcode?: string
+    activitycode?: string
+  }>
 }
 
 function TimePicker24h({
@@ -266,6 +274,7 @@ export function PersonalTimeStudyEntryForm({
   actualMultiTotal,
   multiBalanceTotal,
   hideSummaryHeader = false,
+  leaveRecords,
   className,
 }: PersonalTimeStudyEntryFormProps) {
   const { user } = useAuth()
@@ -552,6 +561,44 @@ export function PersonalTimeStudyEntryForm({
           return false
         }
       }
+
+      // ── Leave-overlap check (additive) ──────────────────────────────
+      if (leaveRecords && leaveRecords.length > 0) {
+        const BLOCKING_STATUSES = ["draft", "requested", "approved"]
+        const parseT = (t: string): number | null => {
+          if (!t) return null
+          // Handle both "HH:MM" and "HH:MM:SS"
+          const parts = t.trim().split(":")
+          if (parts.length < 2) return null
+          const h = Number(parts[0])
+          const m = Number(parts[1])
+          if (isNaN(h) || isNaN(m)) return null
+          return h * 60 + m
+        }
+        const entryStart = parseT(p.start)
+        const entryEnd   = parseT(p.end)
+        if (entryStart !== null && entryEnd !== null) {
+          for (const leave of leaveRecords) {
+            const status = (leave.status ?? "").toLowerCase()
+            if (!BLOCKING_STATUSES.includes(status)) continue
+            const leaveStart = parseT(leave.starttime)
+            const leaveEnd   = parseT(leave.endtime)
+            if (leaveStart === null || leaveEnd === null) continue
+            // Ranges overlap when: entryStart < leaveEnd AND leaveStart < entryEnd
+            if (entryStart < leaveEnd && leaveStart < entryEnd) {
+              const fmt = (mins: number) =>
+                `${String(Math.floor(mins / 60)).padStart(2, "0")}:${String(mins % 60).padStart(2, "0")}`
+              toast.error(
+                `Time entry (${fmt(entryStart)}–${fmt(entryEnd)}) overlaps with a ${
+                  status.charAt(0).toUpperCase() + status.slice(1)
+                } leave request (${fmt(leaveStart)}–${fmt(leaveEnd)}). Please adjust the entry time.`
+              )
+              return false
+            }
+          }
+        }
+      }
+      // ─────────────────────────────────────────────────────────────────
     }
     return true
   }

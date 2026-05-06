@@ -392,6 +392,7 @@ export function PersonalTimeStudyPage() {
                     dateStr={dateStr}
                     initialRecords={dayQuery.data?.timeStudyRecords}
                     dropdownData={dropdownQuery.data}
+                    leaveRecords={dayQuery.data?.leaveRecords}
                     onSave={(records) => submitMutation.mutate({ records, mode: "save" })}
                     onSubmit={(records) => submitMutation.mutate({ records, mode: "submit" })}
                     onDelete={(id) => deleteMutation.mutate(id)}

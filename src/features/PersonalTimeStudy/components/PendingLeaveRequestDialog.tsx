@@ -38,6 +38,7 @@ type PendingLeaveRequestDialogProps = {
   leaves: UserLeaveDaySnapshotResDto[]
   onEdit: (leave: UserLeaveDaySnapshotResDto) => void
   onCancel: (leave: UserLeaveDaySnapshotResDto) => void
+  dropdownData?: any[]
 }
 
 export function PendingLeaveRequestDialog({
@@ -47,13 +48,41 @@ export function PendingLeaveRequestDialog({
   leaves,
   onEdit,
   onCancel,
+  dropdownData,
 }: PendingLeaveRequestDialogProps) {
   const isRejected = title.toLowerCase().includes("rejected")
+
+  const getProgramLabel = (leave: UserLeaveDaySnapshotResDto) => {
+    if (dropdownData) {
+      for (const bundle of dropdownData) {
+        const prog = bundle.programs?.find((p: any) => String(p.id) === String(leave.programid))
+        if (prog) {
+          const deptPrefix = (bundle.departmentCode ?? '').split('-')[0]
+          return `${deptPrefix}-${prog.code} - ${prog.name}`
+        }
+      }
+    }
+    // fallback
+    return leave.programcode === leave.programname ? leave.programcode : `${leave.programcode} - ${leave.programname}`
+  }
+
+  const getActivityLabel = (leave: UserLeaveDaySnapshotResDto) => {
+    if (dropdownData) {
+      for (const bundle of dropdownData) {
+        const act = bundle.activities?.find((a: any) => String(a.id) === String(leave.activityid))
+        if (act) {
+          return `${act.code} - ${act.name}`
+        }
+      }
+    }
+    // fallback
+    return `${leave.activitycode} - ${leave.activityname}`
+  }
 
   return (
     <TooltipProvider delayDuration={100}>
       <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent overlayClassName="bg-black/55" className="max-w-[1300px] p-0 overflow-hidden sm:rounded-[8px] bg-white">
+      <DialogContent overlayClassName="bg-black/55" className="max-w-[1400px] p-0 overflow-hidden sm:rounded-[8px] bg-white">
         <DialogHeader className="px-6 py-4">
           <DialogTitle className="text-center text-lg font-semibold text-foreground">
             {title}
@@ -66,15 +95,15 @@ export function PendingLeaveRequestDialog({
             <div className="overflow-y-hidden [scrollbar-gutter:stable] bg-[#6C5DD3]">
               <Table className="table-fixed border-collapse bg-[#6C5DD3]">
                 <colgroup>
-                  <col style={{ width: "12%" }} />
-                  <col style={{ width: "9%" }} />
-                  <col style={{ width: "9%" }} />
-                  <col style={{ width: "12%" }} />
-                  <col style={{ width: "12%" }} />
-                  <col style={{ width: "9%" }} />
-                  <col style={{ width: "9%" }} />
-                  <col style={{ width: "9%" }} />
-                  <col style={{ width: "11%" }} />
+                  <col style={{ width: "10%" }} />
+                  <col style={{ width: "8%" }} />
+                  <col style={{ width: "8%" }} />
+                  <col style={{ width: "16%" }} />
+                  <col style={{ width: "16%" }} />
+                  <col style={{ width: "8%" }} />
+                  <col style={{ width: "8%" }} />
+                  <col style={{ width: "8%" }} />
+                  <col style={{ width: "10%" }} />
                   {!isRejected && <col style={{ width: "8%" }} />}
                 </colgroup>
                 <TableHeader className="bg-[#6C5DD3] hover:bg-[#6C5DD3] [&_tr]:border-b-0">
@@ -98,15 +127,15 @@ export function PendingLeaveRequestDialog({
             <div className="max-h-[220px] overflow-y-scroll program-table-scroll [scrollbar-gutter:stable]">
               <Table className="table-fixed border-collapse">
                 <colgroup>
-                  <col style={{ width: "12%" }} />
-                  <col style={{ width: "9%" }} />
-                  <col style={{ width: "9%" }} />
-                  <col style={{ width: "12%" }} />
-                  <col style={{ width: "12%" }} />
-                  <col style={{ width: "9%" }} />
-                  <col style={{ width: "9%" }} />
-                  <col style={{ width: "9%" }} />
-                  <col style={{ width: "11%" }} />
+                  <col style={{ width: "10%" }} />
+                  <col style={{ width: "8%" }} />
+                  <col style={{ width: "8%" }} />
+                  <col style={{ width: "16%" }} />
+                  <col style={{ width: "16%" }} />
+                  <col style={{ width: "8%" }} />
+                  <col style={{ width: "8%" }} />
+                  <col style={{ width: "8%" }} />
+                  <col style={{ width: "10%" }} />
                   {!isRejected && <col style={{ width: "8%" }} />}
                 </colgroup>
                 <TableBody>
@@ -123,19 +152,21 @@ export function PendingLeaveRequestDialog({
                       <TableRow 
                         key={leave.id} 
                         className={cn(
-                          "bg-white border-border hover:bg-[#fafafa] h-11",
+                          "bg-white border-border hover:bg-[#fafafa] min-h-[44px]",
                           index === leaves.length - 1 ? "border-b-0" : "border-b"
                         )}
                       >
-                        <TableCell className="text-center py-1 border-r border-border/70 text-[12px] px-1">{leave.startdt}</TableCell>
-                        <TableCell className="text-center py-1 border-r border-border/70 text-[12px] px-1">{leave.starttime?.slice(0, 5)}</TableCell>
-                        <TableCell className="text-center py-1 border-r border-border/70 text-[12px] px-1">{leave.endtime?.slice(0, 5)}</TableCell>
-                        <TableCell className="text-center py-1 border-r border-border/70 text-[12px] px-1 font-medium text-foreground/80 wrap-break-word">
-                          {leave.programcode}
+                        <TableCell className="text-center py-2 border-r border-border/70 text-[12px] px-1">{leave.startdt}</TableCell>
+                        <TableCell className="text-center py-2 border-r border-border/70 text-[12px] px-1">{leave.starttime?.slice(0, 5)}</TableCell>
+                        <TableCell className="text-center py-2 border-r border-border/70 text-[12px] px-1">{leave.endtime?.slice(0, 5)}</TableCell>
+                        <TableCell className="text-center py-2 border-r border-border/70 text-[12px] px-2 font-medium text-foreground/80 break-words whitespace-normal">
+                          {getProgramLabel(leave)}
                         </TableCell>
-                        <TableCell className="text-center py-1 border-r border-border/70 text-[12px] px-1 wrap-break-word">{leave.activitycode}</TableCell>
-                        <TableCell className="text-center py-1 border-r border-border/70 text-[12px] px-1">{leave.leaveTotalTime}</TableCell>
-                        <TableCell className="text-center py-1 border-r border-border/70 px-1">
+                        <TableCell className="text-center py-2 border-r border-border/70 text-[12px] px-2 break-words whitespace-normal">
+                          {getActivityLabel(leave)}
+                        </TableCell>
+                        <TableCell className="text-center py-2 border-r border-border/70 text-[12px] px-1">{leave.leaveTotalTime}</TableCell>
+                        <TableCell className="text-center py-2 border-r border-border/70 px-1">
                           {leave.requestcomment ? (
                             <div className="flex justify-center">
                               <Tooltip>
