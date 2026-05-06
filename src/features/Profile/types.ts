@@ -18,6 +18,7 @@ export type OnRecordsValues = {
   positionId: string
   jobClassification: string
   jobDutyStatement: string
+  jobDutyFileId?: number | null
   primarySupervisor: string
   secondarySupervisor: string
   emailLoginId: string

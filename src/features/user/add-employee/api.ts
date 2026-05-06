@@ -653,3 +653,16 @@ export async function unassignUserActivitiesTs(body: AssignUserActivitiesApiBody
     throw new Error(res?.message ?? "Failed to unassign activities")
   }
 }
+
+/**
+ * Uploads a user document (Job Duty Statement, Profile Photo, etc.).
+ */
+export async function apiUploadUserDocument(userId: string, docType: string, file: File): Promise<any> {
+  const formData = new FormData()
+  formData.append("file", file)
+  formData.append("userId", userId)
+  formData.append("docType", docType)
+
+  const res = await api.post<ApiResponseDto<any>>("/user-documents/upload", formData)
+  return unwrapSuccess(res, "Failed to upload document")
+}

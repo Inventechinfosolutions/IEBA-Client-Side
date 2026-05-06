@@ -49,7 +49,12 @@ export function EmployeePanel({
         />
 
         <div className="min-h-[200px] px-8 pb-8 pt-6">
-          {activeTab === "employee" ? <EmployeeLoginDetailsSection isEditMode={isEditMode} /> : null}
+          {activeTab === "employee" ? (
+            <EmployeeLoginDetailsSection
+              isEditMode={isEditMode}
+              userId={securityContextUserId}
+            />
+          ) : null}
           {activeTab === "security" ? (
             <SecurityAssignmentsPanel
               mode={mode}

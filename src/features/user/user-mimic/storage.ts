@@ -1,22 +1,21 @@
 import type { MimicSession } from "./types"
 
-const MIMIC_KEY = "ieba_mimic_session"
+/**
+ * In-memory storage for the mimic session.
+ * By using memory instead of sessionStorage, the mimic state is lost on browser refresh,
+ * effectively "committing" the session as the target user.
+ */
+let memoryMimicSession: MimicSession | null = null
 
 export function getStoredMimicSession(): MimicSession | null {
-  try {
-    const raw = sessionStorage.getItem(MIMIC_KEY)
-    if (!raw) return null
-    return JSON.parse(raw) as MimicSession
-  } catch {
-    return null
-  }
+  return memoryMimicSession
 }
 
 export function setStoredMimicSession(value: MimicSession): void {
-  sessionStorage.setItem(MIMIC_KEY, JSON.stringify(value))
+  memoryMimicSession = value
 }
 
 export function clearStoredMimicSession(): void {
-  sessionStorage.removeItem(MIMIC_KEY)
+  memoryMimicSession = null
 }
 

@@ -209,7 +209,10 @@ export type AddEmployeeDepartmentSupervisorRow = {
 
 export type UserModuleFormMode = "add" | "edit"
 
-export type UserModuleFormValues = z.infer<typeof userModuleFormSchema>
+export type UserModuleFormValues = z.infer<typeof userModuleFormSchema> & {
+  jobDutyFile?: File | null
+  jobDutyFileId?: number | null
+}
 
 export type AddEmployeeFormTab = "employee" | "security" | "supervisor" | "timeStudy"
 
@@ -259,6 +262,7 @@ export type UserFormPageProps = AddEmployeeFormPageProps
 
 export type EmployeeLoginDetailsSectionProps = {
   isEditMode: boolean
+  userId?: string | null
 }
 
 export type EmployeeDetailsContentProps = EmployeeLoginDetailsSectionProps
