@@ -213,8 +213,23 @@ export function SecurityAssignmentsPanel({
       return
     }
 
+    // 3. Time Study Supervisor selects User
+    if (roleName === "Time Study Supervisor") {
+      const peerIds = list
+        .filter((i) => i.department === item.department && i.name.trim() === "User")
+        .map((i) => i.id)
+
+      if (isSelecting) {
+        setToggled((prev) => [...new Set([...prev, ...peerIds, id])])
+      } else {
+        setToggled((prev) => prev.filter((x) => x !== id && !peerIds.includes(x)))
+      }
+      return
+    }
+
     // Default toggle
     setToggled((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
+
   }
 
   const toggleAllUnassigned = () => {

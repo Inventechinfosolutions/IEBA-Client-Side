@@ -34,6 +34,11 @@ export type TimeEntrySubRow = {
   description: string
   start: string
   end: string
+  programCode?: string
+  programName?: string
+  activityCode?: string
+  activityName?: string
+  departmentCode?: string
 }
 
 export type TimeEntryParentRow = {
@@ -47,6 +52,11 @@ export type TimeEntryParentRow = {
   supportingDocLabel?: string
   supportingDocs: Array<{ name: string; url: string; file?: File; docId?: number }>
   subRows: TimeEntrySubRow[]
+  programCode?: string
+  programName?: string
+  activityCode?: string
+  activityName?: string
+  departmentCode?: string
 }
 
 export type TimeEntryRow = TimeEntryParentRow
@@ -56,7 +66,7 @@ function createSubRow(): TimeEntrySubRow {
     id: newId(),
     studyProgram: "",
     serviceActivity: "",
-    totalMin: "0",
+    totalMin: "",
     description: "",
     start: "",
     end: "",
@@ -299,6 +309,11 @@ export function PersonalTimeStudyEntryForm({
               url: `${API_BASE_URL}/timestudyrecords/${rec.id}/supporting-doc`,
               docId: d.id ?? undefined,
             })),
+            programCode: rec.programcode,
+            programName: rec.programname,
+            activityCode: rec.activitycode,
+            activityName: rec.activityname,
+            departmentCode: rec.departmentcode,
             subRows: (rec.multiCodeRecords ?? []).map((m: any) => ({
               id: String(m.id),
               dbId: m.id,
@@ -308,6 +323,11 @@ export function PersonalTimeStudyEntryForm({
               description: m.description ?? "",
               start: m.starttime ?? "",
               end: m.endtime ?? "",
+              programCode: m.programcode,
+              programName: m.programname,
+              activityCode: m.activitycode,
+              activityName: m.activityname,
+              departmentCode: m.departmentcode,
             })),
           }
           parentMap.set(rec.id, parentRow)
@@ -333,12 +353,12 @@ export function PersonalTimeStudyEntryForm({
   }, [initialRecords, dateStr, readonly])
 
   const programs = useMemo(() => {
-    const list = dropdownData?.flatMap((d) => d.programs) ?? []
+    const list = dropdownData?.flatMap((d) => d.programs.map((p: any) => ({ ...p, departmentCode: d.departmentCode }))) ?? []
     return Array.from(new Map(list.map((p) => [p.id, p])).values())
   }, [dropdownData])
 
   const activities = useMemo(() => {
-    const list = dropdownData?.flatMap((d) => d.activities) ?? []
+    const list = dropdownData?.flatMap((d) => d.activities.map((a: any) => ({ ...a, departmentCode: d.departmentCode }))) ?? []
     return Array.from(new Map(list.map((a) => [a.id, a])).values())
   }, [dropdownData])
 
@@ -460,20 +480,9 @@ export function PersonalTimeStudyEntryForm({
   const addSubRow = useCallback((parentId: string) => {
     setParents((prev) => prev.map((p) => {
       if (p.id !== parentId) return p
-      const lastSub = p.subRows[p.subRows.length - 1]
-      const startTime = lastSub?.end || p.start
-      const endTime = startTime ? addMinutesToTime(startTime, 15) : startTime
       return { 
         ...p, 
-        subRows: [
-          ...p.subRows, 
-          { 
-            ...createSubRow(), 
-            start: startTime, 
-            end: endTime, 
-            totalMin: "15" 
-          }
-        ] 
+        subRows: [...p.subRows, createSubRow()] 
       }
     }))
   }, [])
@@ -531,7 +540,7 @@ export function PersonalTimeStudyEntryForm({
         const parentMin = Number(computeDurationMinutes(p.start, p.end)) || 0
         let subTotalMin = 0
         for (const s of p.subRows) {
-          if (!s.start || !s.end || !s.studyProgram || !s.serviceActivity || !s.description?.trim()) {
+          if (!s.totalMin || !s.studyProgram || !s.serviceActivity || !s.description?.trim()) {
             toast.error("Please fill all the fields in sub-rows")
             return false
           }
@@ -702,9 +711,23 @@ export function PersonalTimeStudyEntryForm({
                     value={parent.tsProgram} 
                     placeholder="Select program" 
                     disabled={isLocked} 
-                    options={programs
-                      .filter((p: any) => !p.isMultiCode)
-                      .map((p) => ({ value: String(p.id), label: `${p.code}${p.isMultiCode ? "**" : ""} - ${p.name}` }))} 
+                    options={(() => {
+                      const filtered = programs
+                        .filter((p: any) => !p.isMultiCode)
+                        .map((p: any) => {
+                          const deptPrefix = (p.departmentCode ?? '').split('-')[0]
+                          return { value: String(p.id), label: `${deptPrefix}-${p.code} - ${p.name}` }
+                        });
+                      
+                      if (parent.tsProgram && !filtered.some((o) => o.value === parent.tsProgram)) {
+                        if (parent.programCode || parent.programName) {
+                          const deptPrefix = (parent.departmentCode ?? '').split('-')[0];
+                          const prefix = deptPrefix ? `${deptPrefix}-` : '';
+                          filtered.unshift({ value: parent.tsProgram, label: `${prefix}${parent.programCode ?? ''} - ${parent.programName ?? ''}` });
+                        }
+                      }
+                      return filtered;
+                    })()}
                     onChange={(v) => updateParent(parent.id, { tsProgram: v })} 
                     onBlur={() => {}} 
                     className={cn("h-10 text-[11px]", isLocked && "bg-[#F2F4F7] cursor-not-allowed")} 
@@ -716,7 +739,22 @@ export function PersonalTimeStudyEntryForm({
                     value={parent.serviceActivity} 
                     placeholder="Select Activity Code" 
                     disabled={isLocked || !parent.tsProgram} 
-                    options={(() => { if (!parent.tsProgram) return []; const allowed = getActivitiesForProgram(parent.tsProgram); return activities.filter((a) => allowed.has(String(a.id))).map((a) => ({ value: String(a.id), label: `${a.code} - ${a.name}` })); })()} 
+                    options={(() => {
+                      if (!parent.tsProgram) return [];
+                      const allowed = getActivitiesForProgram(parent.tsProgram);
+                      const filtered = activities
+                        .filter((a: any) => allowed.has(String(a.id)))
+                        .map((a: any) => ({ value: String(a.id), label: `${a.code} - ${a.name}` }));
+                      if (parent.serviceActivity && !filtered.some((o) => o.value === parent.serviceActivity)) {
+                        const fallback = activities.find((a: any) => String(a.id) === parent.serviceActivity) as any;
+                        if (fallback) {
+                          filtered.unshift({ value: String(fallback.id), label: `${fallback.code} - ${fallback.name}` });
+                        } else if (parent.activityCode || parent.activityName) {
+                          filtered.unshift({ value: parent.serviceActivity, label: `${parent.activityCode ?? ''} - ${parent.activityName ?? ''}` });
+                        }
+                      }
+                      return filtered;
+                    })()}
                     onChange={(v) => updateParent(parent.id, { serviceActivity: v })} 
                     onBlur={() => {}} 
                     className={cn("h-10 text-[11px]", (isLocked || !parent.tsProgram) && "bg-[#F2F4F7] cursor-not-allowed")} 
@@ -775,16 +813,29 @@ export function PersonalTimeStudyEntryForm({
                 <div className="mt-4 space-y-3 border-l-2 border-[#6C5DD3]/20 pl-4 ml-8">
                   {parent.subRows.map((sub) => (
                     <div key={sub.id} className={parentFieldRowClass}>
-                      <TimePicker24h label="Start" value={sub.start} disabled={isLocked} onChange={(v) => updateSubRow(parent.id, sub.id, { start: v, end: addMinutesToTime(v, 15) })} />
                       <div className="flex-1 space-y-1">
                         <Label className="text-[11px] text-muted-foreground">Program <RequiredMark /></Label>
                         <SingleSelectSearchDropdown 
                           value={sub.studyProgram} 
                           placeholder="Select program" 
                           disabled={isLocked} 
-                          options={programs
-                            .filter((p: any) => p.isMultiCode)
-                            .map((p) => ({ value: String(p.id), label: `${p.code}${p.isMultiCode ? "**" : ""} - ${p.name}` }))} 
+                          options={(() => {
+                            const filtered = programs
+                              .filter((p: any) => p.isMultiCode)
+                              .map((p: any) => {
+                                const deptPrefix = (p.departmentCode ?? '').split('-')[0]
+                                return { value: String(p.id), label: `${deptPrefix}-${p.code} - ${p.name}` }
+                              });
+                              
+                            if (sub.studyProgram && !filtered.some((o) => o.value === sub.studyProgram)) {
+                              if (sub.programCode || sub.programName) {
+                                const deptPrefix = (sub.departmentCode ?? '').split('-')[0];
+                                const prefix = deptPrefix ? `${deptPrefix}-` : '';
+                                filtered.unshift({ value: sub.studyProgram, label: `${prefix}${sub.programCode ?? ''} - ${sub.programName ?? ''}` });
+                              }
+                            }
+                            return filtered;
+                          })()}
                           onChange={(v) => updateSubRow(parent.id, sub.id, { studyProgram: v })} 
                           onBlur={() => {}} 
                           className={cn("h-9 text-[11px]", isLocked && "bg-[#F2F4F7] cursor-not-allowed")} 
@@ -796,16 +847,38 @@ export function PersonalTimeStudyEntryForm({
                           value={sub.serviceActivity} 
                           placeholder="Select Activity Code" 
                           disabled={isLocked || !sub.studyProgram} 
-                          options={(() => { if (!sub.studyProgram) return []; const allowed = getActivitiesForProgram(sub.studyProgram); return activities.filter((a) => allowed.has(String(a.id))).map((a) => ({ value: String(a.id), label: `${a.code} - ${a.name}` })); })()} 
+                          options={(() => {
+                            if (!sub.studyProgram) return [];
+                            const allowed = getActivitiesForProgram(sub.studyProgram);
+                            const filtered = activities
+                              .filter((a: any) => allowed.has(String(a.id)))
+                              .map((a: any) => ({ value: String(a.id), label: `${a.code} - ${a.name}` }));
+                            if (sub.serviceActivity && !filtered.some((o) => o.value === sub.serviceActivity)) {
+                              const fallback = activities.find((a: any) => String(a.id) === sub.serviceActivity) as any;
+                              if (fallback) {
+                                filtered.unshift({ value: String(fallback.id), label: `${fallback.code} - ${fallback.name}` });
+                              } else if (sub.activityCode || sub.activityName) {
+                                filtered.unshift({ value: sub.serviceActivity, label: `${sub.activityCode ?? ''} - ${sub.activityName ?? ''}` });
+                              }
+                            }
+                            return filtered;
+                          })()}
                           onChange={(v) => updateSubRow(parent.id, sub.id, { serviceActivity: v })} 
                           onBlur={() => {}} 
                           className={cn("h-9 text-[11px]", (isLocked || !sub.studyProgram) && "bg-[#F2F4F7] cursor-not-allowed")} 
                         />
                       </div>
-                      <TimePicker24h label="End" value={sub.end} disabled={isLocked || !sub.start} onChange={(v) => updateSubRow(parent.id, sub.id, { end: v })} />
                       <div className="w-[60px] space-y-1">
                         <Label className="text-[11px] text-[#6C5DD3] font-medium">Min. <RequiredMark /></Label>
-                        <TitleCaseInput readOnly value={computeDurationMinutes(sub.start, sub.end)} placeholder="—" className="h-9 bg-[#F2F4F7] text-[11px] cursor-not-allowed" />
+                        <TitleCaseInput
+                          type="number"
+                          min="0"
+                          value={sub.totalMin}
+                          readOnly={isLocked}
+                          placeholder="0"
+                          className={cn("h-9 text-[11px]", isLocked && "bg-[#F2F4F7] cursor-not-allowed")}
+                          onChange={(e) => updateSubRow(parent.id, sub.id, { totalMin: e.target.value })}
+                        />
                       </div>
                       <div className="flex-1 space-y-1">
                           <div className="flex items-center gap-2">
