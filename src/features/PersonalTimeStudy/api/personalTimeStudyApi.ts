@@ -120,6 +120,12 @@ function buildLeaveRecords(
     const program = allPrograms.find((p: any) => String(p.id) === entry.programCode) as any
     const activity = allActivities.find((a: any) => String(a.id) === entry.activityCode) as any
 
+    const normalizeTime = (t: string) => {
+      if (!t) return "00:00:00"
+      if (t.length === 5) return `${t}:00`
+      return t
+    }
+
     return {
       userId,
       programid: entry.programCode,
@@ -130,8 +136,8 @@ function buildLeaveRecords(
       activityname: activity?.name ?? entry.activityCode,
       startdt: entry.date,
       enddt: entry.date,
-      starttime: entry.startTime,
-      endtime: entry.endTime,
+      starttime: normalizeTime(entry.startTime),
+      endtime: normalizeTime(entry.endTime),
       leaveTotalTime: parseInt(entry.totalMinApplied, 10) || 0,
       requestcomment: entry.comment || undefined,
       status: status as any,

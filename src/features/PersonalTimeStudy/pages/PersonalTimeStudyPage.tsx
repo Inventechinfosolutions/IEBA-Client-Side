@@ -133,7 +133,7 @@ export function PersonalTimeStudyPage() {
         weekMap[weekKey] = { totalMinutes: 0, targetMinutes: 0, days: [] }
       }
 
-      weekMap[weekKey].totalMinutes += d.minutes ?? 0
+      weekMap[weekKey].totalMinutes += (d.minutes ?? 0) + (d.leaveMinutes ?? 0)
       weekMap[weekKey].targetMinutes += d.allocatedMinutes ?? 0
       weekMap[weekKey].days.push(d.status)
     }

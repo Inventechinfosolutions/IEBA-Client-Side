@@ -201,15 +201,17 @@ export function TimeStudyMGTPage() {
               key={`${selectedUserId}-${selectedDate.toISOString()}`}
               dateStr={selectedDate.toISOString().split("T")[0]}
               userId={selectedUserId}
-              username={selectedEmployee ? `${selectedEmployee.firstName} ${selectedEmployee.lastName}` : ""}
+              username={selectedEmployee?.name || (selectedEmployee ? `${selectedEmployee.firstName} ${selectedEmployee.lastName}` : "")}
               initialRecords={dayDetail?.timeStudyRecords}
               dropdownData={dropdownData}
+              leaveRecords={dayDetail?.leaveRecords}
               readonly={true}
               allocatedTotal={allocatedTotal}
               actualTotal={actualTotal}
               balanceTotal={balanceTotal}
               actualMultiTotal={actualMultiTotal}
               multiBalanceTotal={multiBalanceTotal}
+              showLeaveBanner={true}
             />
           </div>
         )}

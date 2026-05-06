@@ -64,7 +64,7 @@ export function useTimeStudyMGT() {
     if (!search.trim()) return employees
     const q = search.toLowerCase()
     return employees.filter(e => {
-      const parts = [e.employee, e.firstName, e.lastName].filter(Boolean)
+      const parts = [e.employee, e.firstName, e.lastName, e.name].filter(Boolean)
       const name = parts.join(" ").toLowerCase()
       return name.includes(q)
     })
@@ -95,7 +95,7 @@ export function useTimeStudyMGT() {
       if (!weekMap[weekKey]) {
         weekMap[weekKey] = { totalMinutes: 0, status: "notsubmitted", days: [] }
       }
-      weekMap[weekKey].totalMinutes += d.minutes ?? 0
+      weekMap[weekKey].totalMinutes += (d.minutes ?? 0) + (d.leaveMinutes ?? 0)
       weekMap[weekKey].days.push(d.status)
     }
 

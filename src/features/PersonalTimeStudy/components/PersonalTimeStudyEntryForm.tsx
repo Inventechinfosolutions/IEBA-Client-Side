@@ -57,6 +57,7 @@ export type TimeEntryParentRow = {
   activityCode?: string
   activityName?: string
   departmentCode?: string
+  isLeave?: boolean
 }
 
 export type TimeEntryRow = TimeEntryParentRow
@@ -132,6 +133,7 @@ type PersonalTimeStudyEntryFormProps = {
   actualMultiTotal?: number
   multiBalanceTotal?: number
   hideSummaryHeader?: boolean
+  showLeaveBanner?: boolean
   /** Leave records for the selected date — used for overlap validation */
   leaveRecords?: Array<{
     starttime: string
@@ -139,6 +141,12 @@ type PersonalTimeStudyEntryFormProps = {
     status: string
     programcode?: string
     activitycode?: string
+    programid?: string | number
+    activityid?: string | number
+    programname?: string
+    activityname?: string
+    name?: string
+    employeeName?: string
   }>
 }
 
@@ -148,12 +156,14 @@ function TimePicker24h({
   label,
   required = true,
   disabled = false,
+  isLeave = false,
 }: {
   value: string
   onChange: (v: string) => void
   label: string
   required?: boolean
   disabled?: boolean
+  isLeave?: boolean
 }) {
   const [open, setOpen] = useState(false)
   return (
@@ -170,7 +180,8 @@ function TimePicker24h({
               placeholder="--:--"
               className={cn(
                 "h-10 pr-8 text-[11px] font-normal rounded-[6px] text-[#344054] bg-white",
-                disabled && "bg-[#F2F4F7] cursor-not-allowed"
+                disabled && "bg-[#F2F4F7] cursor-not-allowed",
+                isLeave && "border-yellow-400"
               )}
               onClick={() => !disabled && setOpen(true)}
             />
@@ -193,6 +204,7 @@ function SupportingDocField({
   onAdd,
   onDelete,
   onDownload,
+  isLeave = false,
 }: {
   parentId: string
   docs: Array<{ name: string; url: string; file?: File; docId?: number }>
@@ -201,6 +213,7 @@ function SupportingDocField({
   onAdd: (parentId: string, files: FileList) => void
   onDelete: (parentId: string, name: string) => void
   onDownload: (parentId: string, doc: { name: string; url: string; file?: File; docId?: number }) => void
+  isLeave?: boolean
 }) {
   const [open, setOpen] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
@@ -212,7 +225,8 @@ function SupportingDocField({
       <Label className="text-[11px] text-muted-foreground">Supporting doc</Label>
       <input ref={fileRef} type="file" className="hidden" multiple onChange={(e) => { if (e.target.files?.length) { onAdd(parentId, e.target.files); e.target.value = ""; } }} />
       <div className={cn(
-        "flex h-10 w-full items-center rounded-[6px] border border-input text-[11px] overflow-hidden bg-white"
+        "flex h-10 w-full items-center rounded-[6px] border border-input text-[11px] overflow-hidden bg-white",
+        isLeave && "border-yellow-400"
       )}>
         <button type="button" className="flex flex-1 min-w-0 items-center px-2 overflow-hidden" onClick={() => setOpen((v) => !v)}>
           <span className="truncate text-foreground flex-1">{pillLabel}</span>
@@ -274,6 +288,7 @@ export function PersonalTimeStudyEntryForm({
   actualMultiTotal,
   multiBalanceTotal,
   hideSummaryHeader = false,
+  showLeaveBanner = false,
   leaveRecords,
   className,
 }: PersonalTimeStudyEntryFormProps) {
@@ -283,24 +298,18 @@ export function PersonalTimeStudyEntryForm({
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false)
   const [parents, setParents] = useState<TimeEntryParentRow[]>([createParent()])
   const [prevInitialRecords, setPrevInitialRecords] = useState<any[] | undefined>(undefined)
+  const [prevLeaveRecords, setPrevLeaveRecords] = useState<any[] | undefined>(undefined)
 
   const moveSaveSubmitToTop = useMemo(() => {
     if (!dropdownData || dropdownData.length === 0) return false
     return dropdownData.every((d: any) => !!d.moveSaveSubmitToTop)
   }, [dropdownData])
 
-  if (initialRecords !== prevInitialRecords) {
+  if (initialRecords !== prevInitialRecords || leaveRecords !== prevLeaveRecords) {
     setPrevInitialRecords(initialRecords)
+    setPrevLeaveRecords(leaveRecords)
     const syncRecordsToState = () => {
-      if (!initialRecords || initialRecords.length === 0) {
-        setParents([createParent()])
-        return
-      }
-      const filtered = initialRecords.filter((r) => r.date?.split("T")[0] === dateStr)
-      if (filtered.length === 0) {
-        setParents([createParent()])
-        return
-      }
+      const filtered = (initialRecords ?? []).filter((r) => r.date?.split("T")[0] === dateStr)
       const parentMap = new Map<number, TimeEntryParentRow>()
       filtered.forEach((rec) => {
         if (!rec.parentId) {
@@ -347,7 +356,42 @@ export function PersonalTimeStudyEntryForm({
         if (!b.start) return -1
         return b.start.localeCompare(a.start)
       })
-      setParents(sorted.length > 0 ? sorted : [createParent()])
+
+      const leaveRows: TimeEntryParentRow[] = []
+      if (leaveRecords) {
+        leaveRecords.forEach((leave) => {
+          if (leave.status?.toLowerCase() === "approved") {
+            const lStart = (leave.starttime ?? "").split(":").slice(0, 2).join(":")
+            const lEnd   = (leave.endtime ?? "").split(":").slice(0, 2).join(":")
+            const existing = sorted.find(
+              (rec) => rec.start === lStart && rec.end === lEnd && rec.tsProgram === String(leave.programid ?? "")
+            )
+            if (existing) {
+              existing.isLeave = true
+            } else {
+              leaveRows.push({
+                id: newId(),
+                start: lStart,
+                end: lEnd,
+                tsProgram: String(leave.programid ?? ""),
+                serviceActivity: String(leave.activityid ?? ""),
+                description: "",
+                supportingDocLabel: "",
+                supportingDocs: [],
+                subRows: [],
+                programCode: leave.programcode,
+                programName: leave.programname,
+                activityCode: leave.activitycode,
+                activityName: leave.activityname,
+                isLeave: true,
+              })
+            }
+          }
+        })
+      }
+
+      const combined = [...sorted, ...leaveRows]
+      setParents(combined.length > 0 ? combined : [createParent()])
     }
     syncRecordsToState()
   }
@@ -360,6 +404,10 @@ export function PersonalTimeStudyEntryForm({
       ["submitted", "approved"].includes(rec.status?.toLowerCase())
     )
   }, [initialRecords, dateStr, readonly])
+
+  const allIsLeave = useMemo(() => {
+    return parents.length > 0 && parents.every(p => p.isLeave)
+  }, [parents])
 
   const programs = useMemo(() => {
     const list = dropdownData?.flatMap((d) => d.programs.map((p: any) => ({ ...p, departmentCode: d.departmentCode }))) ?? []
@@ -503,12 +551,15 @@ export function PersonalTimeStudyEntryForm({
   const canDeleteParent = (parentId: string) => {
     if (isLocked) return false
     const parent = parents.find((p) => p.id === parentId)
+    if (parent?.isLeave) return false
     return parents.length > 1 || !!parent?.dbId
   }
 
   const mapToPayload = (): any[] => {
     const deptId = dropdownData?.[0]?.departmentId
-    return parents.map((p) => ({
+    return parents
+      .filter((p) => !(p.isLeave && !p.dbId))
+      .map((p) => ({
       id: p.dbId,
       userId,
       username,
@@ -540,8 +591,8 @@ export function PersonalTimeStudyEntryForm({
 
   const validateEntries = () => {
     for (const p of parents) {
-      if (!p.start || !p.end || !p.tsProgram || !p.serviceActivity || !p.description?.trim()) {
-        toast.error("Please fill all the fields")
+      if (!p.start || !p.end || !p.tsProgram || !p.serviceActivity) {
+        toast.error("Please fill all the required fields")
         return false
       }
 
@@ -549,8 +600,8 @@ export function PersonalTimeStudyEntryForm({
         const parentMin = Number(computeDurationMinutes(p.start, p.end)) || 0
         let subTotalMin = 0
         for (const s of p.subRows) {
-          if (!s.totalMin || !s.studyProgram || !s.serviceActivity || !s.description?.trim()) {
-            toast.error("Please fill all the fields in sub-rows")
+          if (!s.totalMin || !s.studyProgram || !s.serviceActivity) {
+            toast.error("Please fill all the required fields in sub-rows")
             return false
           }
           subTotalMin += Number(s.totalMin) || 0
@@ -563,7 +614,7 @@ export function PersonalTimeStudyEntryForm({
       }
 
       // ── Leave-overlap check (additive) ──────────────────────────────
-      if (leaveRecords && leaveRecords.length > 0) {
+      if (!p.isLeave && leaveRecords && leaveRecords.length > 0) {
         const BLOCKING_STATUSES = ["draft", "requested", "approved"]
         const parseT = (t: string): number | null => {
           if (!t) return null
@@ -709,6 +760,12 @@ export function PersonalTimeStudyEntryForm({
             </div>
           )}
 
+          {showLeaveBanner && leaveRecords && leaveRecords.filter(l => l.status?.toLowerCase() === "approved").map((leave, idx) => (
+            <div key={idx} className="mt-5 mb-1 mx-auto max-w-max rounded-[6px] bg-[#E2E8F0]/50 px-4 py-1.5 text-[13px] text-gray-600 italic text-center border border-[#CBD5E1]">
+               {leave.name || leave.employeeName || username} applied leave in this date : <span className="not-italic font-medium text-gray-800">({dateStr})</span> from : <span className="not-italic font-medium text-gray-800">({leave.starttime})</span> To : <span className="not-italic font-medium text-gray-800">({leave.endtime})</span>.
+            </div>
+          ))}
+
           {/* Bottom Row: Title and Button */}
           <div className="flex items-center justify-between">
             <h3 className="text-[14px] text-[#6C5DD3] font-semibold">Time Entries</h3>
@@ -716,15 +773,15 @@ export function PersonalTimeStudyEntryForm({
               {!readonly && moveSaveSubmitToTop && (
                 <div className="flex items-center gap-2 mr-4">
                   <Button 
-                    disabled={isLocked}
-                    className={cn("h-9 px-4 bg-[#6C5DD3] hover:bg-[#5B4DBF] text-[12px]", isLocked && "cursor-not-allowed")} 
+                    disabled={isLocked || allIsLeave}
+                    className={cn("h-9 px-4 bg-[#6C5DD3] hover:bg-[#5B4DBF] text-[12px]", (isLocked || allIsLeave) && "cursor-not-allowed")} 
                     onClick={handleSave}
                   >
                     Save
                   </Button>
                   <Button 
-                    disabled={isLocked}
-                    className={cn("h-9 px-4 bg-green-600 hover:bg-green-700 text-white text-[12px]", isLocked && "cursor-not-allowed")} 
+                    disabled={isLocked || allIsLeave}
+                    className={cn("h-9 px-4 bg-green-600 hover:bg-green-700 text-white text-[12px]", (isLocked || allIsLeave) && "cursor-not-allowed")} 
                     onClick={() => setShowSubmitConfirm(true)}
                   >
                     Submit
@@ -748,16 +805,17 @@ export function PersonalTimeStudyEntryForm({
       <div className="flex flex-col gap-3">
         {parents.map((parent) => {
           const totalDisplay = computeDurationMinutes(parent.start, parent.end)
+          const isLeaveRow = parent.isLeave
           return (
-            <div key={parent.id} className="rounded-md bg-card/50 p-2 border border-border/50">
-              <div className={parentFieldRowClass}>
-                <TimePicker24h label="Start" value={parent.start} disabled={isLocked} onChange={(v) => updateParent(parent.id, { start: v, end: addMinutesToTime(v, 15) })} />
+            <div key={parent.id} className={cn("rounded-md", !isLeaveRow && "bg-card/50 p-2 border border-border/50")}>
+              <div className={cn(parentFieldRowClass, isLeaveRow && "p-2")}>
+                <TimePicker24h label="Start" value={parent.start} disabled={isLocked || isLeaveRow} isLeave={isLeaveRow} onChange={(v) => updateParent(parent.id, { start: v, end: addMinutesToTime(v, 15) })} />
                 <div className="flex-1 space-y-0.5">
                   <Label className="text-[11px] text-[#6C5DD3] font-medium">TS Program <RequiredMark /></Label>
                   <SingleSelectSearchDropdown 
                     value={parent.tsProgram} 
                     placeholder="Select program" 
-                    disabled={isLocked} 
+                    disabled={isLocked || isLeaveRow} 
                     options={(() => {
                       const filtered = programs
                         .filter((p: any) => !p.isMultiCode)
@@ -777,7 +835,7 @@ export function PersonalTimeStudyEntryForm({
                     })()}
                     onChange={(v) => updateParent(parent.id, { tsProgram: v })} 
                     onBlur={() => {}} 
-                    className={cn("h-10 text-[11px]", isLocked && "bg-[#F2F4F7] cursor-not-allowed")} 
+                    className={cn("h-10 text-[11px]", (isLocked || isLeaveRow) && "bg-[#F2F4F7] cursor-not-allowed", isLeaveRow && "border-yellow-400")} 
                   />
                 </div>
                 <div className="flex-1 space-y-0.5">
@@ -785,7 +843,7 @@ export function PersonalTimeStudyEntryForm({
                   <SingleSelectSearchDropdown 
                     value={parent.serviceActivity} 
                     placeholder="Select Activity Code" 
-                    disabled={isLocked || !parent.tsProgram} 
+                    disabled={isLocked || isLeaveRow || !parent.tsProgram} 
                     options={(() => {
                       if (!parent.tsProgram) return [];
                       const allowed = getActivitiesForProgram(parent.tsProgram);
@@ -804,29 +862,30 @@ export function PersonalTimeStudyEntryForm({
                     })()}
                     onChange={(v) => updateParent(parent.id, { serviceActivity: v })} 
                     onBlur={() => {}} 
-                    className={cn("h-10 text-[11px]", (isLocked || !parent.tsProgram) && "bg-[#F2F4F7] cursor-not-allowed")} 
+                    className={cn("h-10 text-[11px]", (isLocked || isLeaveRow || !parent.tsProgram) && "bg-[#F2F4F7] cursor-not-allowed", isLeaveRow && "border-yellow-400")} 
                   />
                 </div>
-                <TimePicker24h label="End" value={parent.end} disabled={isLocked || !parent.start} onChange={(v) => updateParent(parent.id, { end: v })} />
+                <TimePicker24h label="End" value={parent.end} disabled={isLocked || isLeaveRow || !parent.start} isLeave={isLeaveRow} onChange={(v) => updateParent(parent.id, { end: v })} />
                 <div className="w-[60px] space-y-0.5">
                   <Label className="text-[11px] text-muted-foreground">Min. <RequiredMark /></Label>
-                  <TitleCaseInput readOnly value={totalDisplay} placeholder="—" className="h-10 bg-[#F2F4F7] text-[11px] cursor-not-allowed" />
+                  <TitleCaseInput readOnly value={totalDisplay} placeholder="—" className={cn("h-10 bg-[#F2F4F7] text-[11px] cursor-not-allowed", isLeaveRow && "border-yellow-400")} />
                 </div>
                 <div className="flex-[1.5] space-y-0.5">
-                  <Label className="text-[11px] text-muted-foreground">Notes <RequiredMark /></Label>
+                  <Label className="text-[11px] text-muted-foreground">Notes </Label>
                   <TitleCaseInput 
                     value={parent.description} 
-                    readOnly={isLocked}
+                    readOnly={isLocked || isLeaveRow}
                     onChange={(e) => updateParent(parent.id, { description: e.target.value })} 
                     placeholder="Notes" 
-                    className={cn("h-10 text-[11px] text-[#344054] font-normal", isLocked && "bg-[#F2F4F7] cursor-not-allowed")} 
+                    className={cn("h-10 text-[11px] text-[#344054] font-normal", (isLocked || isLeaveRow) && "bg-[#F2F4F7] cursor-not-allowed", isLeaveRow && "border-yellow-400")} 
                   />
                 </div>
                 <SupportingDocField 
                   parentId={parent.id} 
                   docs={parent.supportingDocs} 
                   uploading={false} 
-                  disabled={isLocked} 
+                  disabled={isLocked || isLeaveRow} 
+                  isLeave={isLeaveRow}
                   onAdd={handleAddDocs} 
                   onDelete={handleDeleteDoc} 
                   onDownload={handleDownloadDoc} 
@@ -843,7 +902,7 @@ export function PersonalTimeStudyEntryForm({
                       <Trash2 className="size-4" />
                     </Button>
                   )}
-                  {!readonly && (
+                  {!readonly && !isLeaveRow && (
                     <Button 
                       size="icon" 
                       variant="outline" 
@@ -930,7 +989,7 @@ export function PersonalTimeStudyEntryForm({
                       <div className="flex-1 space-y-1">
                           <div className="flex items-center gap-2">
                             <Label className="text-[11px] text-muted-foreground whitespace-nowrap">
-                              Notes <RequiredMark />
+                              Notes
                             </Label>
                           </div>
                         <TitleCaseInput 
@@ -966,15 +1025,15 @@ export function PersonalTimeStudyEntryForm({
       {!readonly && !moveSaveSubmitToTop && (
         <div className="mt-4 flex justify-end gap-2">
           <Button 
-            disabled={isLocked} 
-            className={cn("h-10 px-8 bg-[#6C5DD3] hover:bg-[#5B4DBF]", isLocked && "cursor-not-allowed")} 
+            disabled={isLocked || allIsLeave} 
+            className={cn("h-10 px-8 bg-[#6C5DD3] hover:bg-[#5B4DBF]", (isLocked || allIsLeave) && "cursor-not-allowed")} 
             onClick={handleSave}
           >
             Save
           </Button>
           <Button 
-            disabled={isLocked} 
-            className={cn("h-10 px-8 bg-green-600 hover:bg-green-700 text-white", isLocked && "cursor-not-allowed")} 
+            disabled={isLocked || allIsLeave} 
+            className={cn("h-10 px-8 bg-green-600 hover:bg-green-700 text-white", (isLocked || allIsLeave) && "cursor-not-allowed")} 
             onClick={() => setShowSubmitConfirm(true)}
           >
             Submit
