@@ -173,10 +173,17 @@ export function mergeUserDetailsIntoFormValues(
     assignedMultiCodes: multiJoined || previous.assignedMultiCodes,
     roleAssignments: roleAssignmentsFromDetails(details),
     securityAssignedSnapshots: securitySnapshotsFromDepartmentRoles(details),
+    supervisorApportioning: details.supervisorApportioning ?? previous.supervisorApportioning,
     active,
     supervisorPrimary: details.primarySupervisor?.name?.trim() ?? previous.supervisorPrimary,
     supervisorSecondary: details.backupSupervisor?.name?.trim() ?? previous.supervisorSecondary,
     supervisorPrimaryId: details.primarySupervisor?.id?.trim() ?? previous.supervisorPrimaryId,
     supervisorSecondaryId: details.backupSupervisor?.id?.trim() ?? previous.supervisorSecondaryId,
+    apportioningAllocations: (details.departmentsRoles ?? []).reduce((acc, dr) => {
+      if (dr.apportioning != null) {
+        acc[String(dr.departmentId)] = String(dr.apportioning)
+      }
+      return acc
+    }, {} as Record<string, string>),
   }
 }
