@@ -43,7 +43,7 @@ export function PersonalTimeStudyLeaveCard({
   onOpen,
   dateStr = "",
   month = 1,
-  year = new Date().getFullYear(),
+  year = (() => { const _n = new Date(); return _n.getFullYear() })(),
 }: PersonalTimeStudyLeaveCardProps) {
   const [leaveDialogOpen, setLeaveDialogOpen] = useState(false)
   const { user } = useAuth()
@@ -208,6 +208,7 @@ export function PersonalTimeStudyLeaveCard({
         leaves={filteredLeaves}
         onEdit={handleEdit}
         onCancel={handleWithdraw}
+        dropdownData={dropdownData}
       />
     </Card>
   )

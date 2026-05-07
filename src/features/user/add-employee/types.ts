@@ -80,6 +80,11 @@ export type AddEmployeeSecurityRoleCatalogItem = {
 /** POST /userdepartmentrole/assign/roles and …/unassign/roles body (per department). */
 export type UserDepartmentRoleRefPayload = { id: string }
 
+export type ApportioningAllocation = {
+  id: number
+  allocation: number
+}
+
 export type UserDepartmentRoleDepartmentBlockPayload = {
   id: number
   roles: UserDepartmentRoleRefPayload[]
@@ -88,6 +93,8 @@ export type UserDepartmentRoleDepartmentBlockPayload = {
 export type UserDepartmentRoleDepartmentsBody = {
   userId: string
   departments: UserDepartmentRoleDepartmentBlockPayload[]
+  apportioningRequired?: boolean
+  apportioningAllocation?: ApportioningAllocation[]
 }
 
 export type AddEmployeeDepartmentRoleListItem = {

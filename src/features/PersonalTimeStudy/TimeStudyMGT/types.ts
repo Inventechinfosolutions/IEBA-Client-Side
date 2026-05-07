@@ -4,6 +4,7 @@ export type MgtEmployeeRow = {
   employee: string
   firstName?: string
   lastName?: string
+  name?: string
   department?: string
 }
 

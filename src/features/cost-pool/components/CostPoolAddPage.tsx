@@ -393,7 +393,9 @@ export function CostPoolAddPage({
                     </ScrollArea>
                   </div>
                 ) : (
-                  <div className="mt-3 h-[339px]" />
+                  <div className="mt-3 flex h-[339px] flex-col items-center justify-center space-y-3 grayscale opacity-80">
+                    <img src={tableEmptyIcon} alt="No data" className="size-25 object-contain" />
+                  </div>
                 )}
               </div>
             </div>
@@ -539,7 +541,9 @@ export function CostPoolAddPage({
                     </ScrollArea>
                   </div>
                 ) : (
-                  <div className="mt-3 h-[339px]" />
+                  <div className="mt-3 flex h-[339px] flex-col items-center justify-center space-y-3 grayscale opacity-80">
+                    <img src={tableEmptyIcon} alt="No data" className="size-25 object-contain" />
+                  </div>
                 )}
               </div>
             </div>
@@ -582,12 +586,14 @@ export function CostPoolAddPage({
                   />
                 </div>
 
-                <ScrollArea className="h-[280px]">
-                  {usersLoading && hasDepartment ? (
+                {usersLoading && hasDepartment ? (
+                  <ScrollArea className="h-[280px]">
                     <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
                       Loading employees…
                     </div>
-                  ) : hasDepartment && filteredUnassignedUsers.length > 0 ? (
+                  </ScrollArea>
+                ) : hasDepartment && filteredUnassignedUsers.length > 0 ? (
+                  <ScrollArea className="h-[280px]">
                     <div className="space-y-1">
                       {filteredUnassignedUsers.map((u) => {
                         const checked = selectedUnassignedUserIds.includes(u.userId)
@@ -622,12 +628,12 @@ export function CostPoolAddPage({
                         )
                       })}
                     </div>
-                  ) : (
-                    <div className="flex min-h-[280px] flex-col items-center justify-center space-y-3">
-                      <img src={tableEmptyIcon} alt="No data" className="size-20 object-contain" />
-                    </div>
-                  )}
-                </ScrollArea>
+                  </ScrollArea>
+                ) : (
+                  <div className="flex h-[280px] flex-col items-center justify-center space-y-3 grayscale opacity-80">
+                    <img src={tableEmptyIcon} alt="No data" className="size-25 object-contain" />
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -684,8 +690,8 @@ export function CostPoolAddPage({
                   />
                 </div>
 
-                <ScrollArea className="h-[280px]">
-                  {hasDepartment && filteredAssignedUsers.length > 0 ? (
+                {hasDepartment && filteredAssignedUsers.length > 0 ? (
+                  <ScrollArea className="h-[280px]">
                     <div className="space-y-1">
                       {filteredAssignedUsers.map((u) => {
                         const checked = selectedAssignedUserIds.includes(u.userId)
@@ -720,12 +726,12 @@ export function CostPoolAddPage({
                         )
                       })}
                     </div>
-                  ) : (
-                    <div className="flex min-h-[280px] flex-col items-center justify-center space-y-3">
-                      <img src={tableEmptyIcon} alt="No data" className="size-22 object-contain" />
-                    </div>
-                  )}
-                </ScrollArea>
+                  </ScrollArea>
+                ) : (
+                  <div className="flex h-[280px] flex-col items-center justify-center space-y-3 grayscale opacity-80">
+                    <img src={tableEmptyIcon} alt="No data" className="size-25 object-contain" />
+                  </div>
+                )}
               </div>
             </div>
           </div>

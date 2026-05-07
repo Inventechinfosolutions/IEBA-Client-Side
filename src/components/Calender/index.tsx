@@ -148,10 +148,10 @@ const AppCalender = ({
   className,
   ...divProps
 }: AppCalenderProps) => {
-  const [selectedTimezone] = useState("America/Los_Angeles")
+  const [selectedTimezone] = useState(() => Intl.DateTimeFormat().resolvedOptions().timeZone)
   const [locale] = useState("en-GB")
   const [selectionMode] = useState<SelectionMode>("day")
-  const [internalCurrentDate, setInternalCurrentDate] = useState(() => getNowInTimezone('America/Los_Angeles', locale));
+  const [internalCurrentDate, setInternalCurrentDate] = useState(() => getNowInTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone, "en-GB"));
   const currentDate = propsCurrentMonthDate ?? internalCurrentDate;
 
   const [internalSelectedDate, setInternalSelectedDate] = useState<Date | null>(null);

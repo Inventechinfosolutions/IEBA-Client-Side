@@ -26,15 +26,13 @@ export function useTimeStudyMGT() {
   const [search, setSearch]                           = useState("")
   const [selectedUserId, setSelectedUserId]           = useState<string | null>(null)
   const [selectedEmployee, setSelectedEmployee]       = useState<MgtEmployeeRow | null>(null)
-  const [currentDate, setCurrentDate]                 = useState(() => {
+  const [currentDate, setCurrentDate] = useState(() => {
     const now = new Date()
-    const laDate = new Date(now.toLocaleString("en-US", { timeZone: "America/Los_Angeles" }))
-    return new Date(Date.UTC(laDate.getFullYear(), laDate.getMonth(), 1))
+    return new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1))
   })
-  const [selectedDate, setSelectedDate]               = useState<Date | null>(() => {
+  const [selectedDate, setSelectedDate] = useState<Date | null>(() => {
     const now = new Date()
-    const laDate = new Date(now.toLocaleString("en-US", { timeZone: "America/Los_Angeles" }))
-    return new Date(Date.UTC(laDate.getFullYear(), laDate.getMonth(), laDate.getDate()))
+    return new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()))
   })
 
   const month = currentDate.getUTCMonth() + 1
@@ -66,7 +64,7 @@ export function useTimeStudyMGT() {
     if (!search.trim()) return employees
     const q = search.toLowerCase()
     return employees.filter(e => {
-      const parts = [e.employee, e.firstName, e.lastName].filter(Boolean)
+      const parts = [e.employee, e.firstName, e.lastName, e.name].filter(Boolean)
       const name = parts.join(" ").toLowerCase()
       return name.includes(q)
     })
@@ -97,7 +95,7 @@ export function useTimeStudyMGT() {
       if (!weekMap[weekKey]) {
         weekMap[weekKey] = { totalMinutes: 0, status: "notsubmitted", days: [] }
       }
-      weekMap[weekKey].totalMinutes += d.minutes ?? 0
+      weekMap[weekKey].totalMinutes += (d.minutes ?? 0) + (d.leaveMinutes ?? 0)
       weekMap[weekKey].days.push(d.status)
     }
 
@@ -184,8 +182,7 @@ export function useTimeStudyMGT() {
     
     // Reset to today's date (LA time) so data is always fetched immediately for the new user
     const now = new Date()
-    const laDate = new Date(now.toLocaleString("en-US", { timeZone: "America/Los_Angeles" }))
-    const today = new Date(Date.UTC(laDate.getUTCFullYear(), laDate.getUTCMonth(), laDate.getUTCDate()))
+    const today = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()))
     setSelectedDate(today)
   }
 
@@ -194,7 +191,7 @@ export function useTimeStudyMGT() {
     setSelectedEmployee(null)
     
     const now = new Date()
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const today = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()))
     setSelectedDate(today)
     setCurrentDate(today)
   }

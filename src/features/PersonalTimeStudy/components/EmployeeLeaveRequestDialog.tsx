@@ -191,7 +191,7 @@ export function EmployeeLeaveRequestDialog({
   const isApproved = editingStatus?.toLowerCase() === "approved";
 
   const programs = useMemo(() => {
-    const list = dropdownData?.flatMap((d: any) => d.programs) ?? []
+    const list = dropdownData?.flatMap((d: any) => d.programs.map((p: any) => ({ ...p, departmentCode: d.departmentCode }))) ?? []
     const unique = Array.from(new Map(list.map((p: any) => [p.id, p])).values())
     return unique
   }, [dropdownData])
@@ -261,6 +261,26 @@ export function EmployeeLeaveRequestDialog({
 
   const formEntries = form.watch("entries")
 
+  const hasExceeded = useMemo(() => {
+    return formEntries.some((entry, index) => {
+      const currentTotal = Number(entry.totalMinApplied || 0)
+
+      // 1. Check against physical time difference
+      if (entry.startTime && entry.endTime) {
+        const diff = calculateMinutesDiff(entry.startTime, entry.endTime)
+        if (currentTotal > diff) return true
+      }
+
+      // 2. Check against original approved amount
+      if (isApproved && initialValues?.entries) {
+        const originalTotal = Number(initialValues.entries[index]?.totalMinApplied || 0)
+        if (originalTotal > 0 && currentTotal > originalTotal) return true
+      }
+
+      return false
+    })
+  }, [formEntries, isApproved, initialValues])
+
   const resetForm = useCallback(() => {
     form.reset({ entries: [createEmptyRow()] })
   }, [form])
@@ -285,35 +305,68 @@ export function EmployeeLeaveRequestDialog({
     [onOpenChange, resetForm]
   )
 
-  const handleSave = form.handleSubmit(
-    async (data) => {
-      await onSave?.(data)
-      toast.success("Leave request saved")
-      handleClose(false)
-    },
-    () => {
-      const err =
-        form.formState.errors.entries?.root?.message ||
-        form.formState.errors.entries?.[0]?.date?.message ||
-        "Please fix validation errors"
-      toast.error(String(err))
-    }
-  )
+  const validateManualExceeds = () => {
+    const entries = form.getValues("entries")
+    for (let i = 0; i < entries.length; i++) {
+      const entry = entries[i]
+      const currentTotal = Number(entry.totalMinApplied || 0)
 
-  const handleSubmitFinal = form.handleSubmit(
-    async (data) => {
-      await onSubmit?.(data)
-      toast.success("Leave request submitted")
-      handleClose(false)
-    },
-    () => {
-      const err =
-        form.formState.errors.entries?.root?.message ||
-        form.formState.errors.entries?.[0]?.date?.message ||
-        "Please fix validation errors"
-      toast.error(String(err))
+      if (entry.startTime && entry.endTime) {
+        const diff = calculateMinutesDiff(entry.startTime, entry.endTime)
+        if (currentTotal > diff) return true
+      }
+
+      if (isApproved && initialValues?.entries) {
+        const originalTotal = Number(initialValues.entries[i]?.totalMinApplied || 0)
+        if (originalTotal > 0 && currentTotal > originalTotal) return true
+      }
     }
-  )
+    return false
+  }
+
+  const handleSave = async () => {
+    if (validateManualExceeds()) {
+      toast.error("Total minutes cannot exceed the maximum allowed duration.")
+      return
+    }
+    
+    await form.handleSubmit(
+      async (data) => {
+        await onSave?.(data)
+        toast.success("Leave request saved")
+        handleClose(false)
+      },
+      () => {
+        const err =
+          form.formState.errors.entries?.root?.message ||
+          form.formState.errors.entries?.[0]?.date?.message ||
+          "Please fix validation errors"
+        toast.error(String(err))
+      }
+    )()
+  }
+
+  const handleSubmitFinal = async () => {
+    if (validateManualExceeds()) {
+      toast.error("Total minutes cannot exceed the maximum allowed duration.")
+      return
+    }
+
+    await form.handleSubmit(
+      async (data) => {
+        await onSubmit?.(data)
+        toast.success("Leave request submitted")
+        handleClose(false)
+      },
+      () => {
+        const err =
+          form.formState.errors.entries?.root?.message ||
+          form.formState.errors.entries?.[0]?.date?.message ||
+          "Please fix validation errors"
+        toast.error(String(err))
+      }
+    )()
+  }
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -440,10 +493,13 @@ export function EmployeeLeaveRequestDialog({
                           <SingleSelectSearchDropdown
                             value={f.value === EMPTY ? "" : f.value}
                             placeholder="Select..."
-                            options={programs.map((p: any) => ({
-                              value: String(p.id),
-                              label: `${p.code} - ${p.name}`,
-                            }))}
+                            options={programs.map((p: any) => {
+                              const deptPrefix = (p.departmentCode ?? '').split('-')[0]
+                              return {
+                                value: String(p.id),
+                                label: `${deptPrefix}-${p.code} - ${p.name}`,
+                              }
+                            })}
                             onChange={(v) => {
                               f.onChange(v || EMPTY)
                               // Reset activity when program changes
@@ -506,7 +562,15 @@ export function EmployeeLeaveRequestDialog({
                       render={({ field: f, fieldState }) => {
                         const originalTotal = Number(initialValues?.entries?.[index]?.totalMinApplied || 0)
                         const currentTotal = Number(f.value || 0)
+                        
                         const exceedsOriginal = isApproved && originalTotal > 0 && currentTotal > originalTotal
+
+                        const startTime = formEntries?.[index]?.startTime
+                        const endTime = formEntries?.[index]?.endTime
+                        const diff = (startTime && endTime) ? calculateMinutesDiff(startTime, endTime) : 0
+                        const exceedsCalculated = diff > 0 && currentTotal > diff
+                        
+                        const isErrorState = exceedsOriginal || exceedsCalculated
 
                         return (
                           <>
@@ -516,7 +580,7 @@ export function EmployeeLeaveRequestDialog({
                               className={cn(
                                 "h-10 text-sm tabular-nums rounded-[6px]",
                                 isApproved && "cursor-not-allowed bg-muted !opacity-100 !text-foreground",
-                                exceedsOriginal && "border-destructive text-destructive focus-visible:ring-destructive"
+                                isErrorState && "border-destructive text-destructive focus-visible:ring-destructive"
                               )}
                               disabled={isApproved}
                               placeholder="0"
@@ -525,6 +589,8 @@ export function EmployeeLeaveRequestDialog({
                             />
                             {fieldState.error?.message ? (
                               <p className="text-xs text-destructive">{fieldState.error.message}</p>
+                            ) : exceedsCalculated ? (
+                              <p className="text-[11px] text-destructive leading-tight">Max allowed is {diff} min</p>
                             ) : exceedsOriginal ? (
                               <p className="text-[11px] text-destructive leading-tight">Exceeds {originalTotal} min</p>
                             ) : null}
@@ -592,18 +658,24 @@ export function EmployeeLeaveRequestDialog({
               <Button
                 type="button"
                 variant="default"
-                disabled={form.formState.isSubmitting}
+                disabled={form.formState.isSubmitting || hasExceeded}
                 onClick={() => void handleSave()}
-                className="h-10 rounded-[6px] bg-[#6C5DD3] hover:bg-[#6C5DD3]/90 px-8 text-white"
+                className={cn(
+                  "h-10 rounded-[6px] px-8 text-white transition-opacity",
+                  (form.formState.isSubmitting || hasExceeded) ? "bg-[#6C5DD3] opacity-50 cursor-not-allowed pointer-events-none" : "bg-[#6C5DD3] hover:bg-[#6C5DD3]/90"
+                )}
               >
                 Save
               </Button>
             )}
             <Button
               type="button"
-              disabled={form.formState.isSubmitting}
+              disabled={form.formState.isSubmitting || hasExceeded}
               onClick={() => void handleSubmitFinal()}
-              className="h-10 rounded-[6px] bg-[#6C5DD3] hover:bg-[#6C5DD3]/90 px-8 text-white"
+              className={cn(
+                "h-10 rounded-[6px] px-8 text-white transition-opacity",
+                (form.formState.isSubmitting || hasExceeded) ? "bg-[#6C5DD3] opacity-50 cursor-not-allowed pointer-events-none" : "bg-[#6C5DD3] hover:bg-[#6C5DD3]/90"
+              )}
             >
               Submit
             </Button>

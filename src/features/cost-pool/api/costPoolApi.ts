@@ -185,7 +185,7 @@ function summaryActivityDepartmentId(s: CostPoolActivitySummaryResDto | Record<s
   )
 }
 
-function summaryToPickRow(s: CostPoolActivitySummaryResDto | Record<string, unknown>): CostPoolActivityPickRow {
+export function summaryToPickRow(s: CostPoolActivitySummaryResDto | Record<string, unknown>): CostPoolActivityPickRow {
   const o = s as Record<string, unknown>
   const activityDepartmentId = summaryActivityDepartmentId(s)
   const code = typeof o.code === "string" ? o.code.trim() : ""

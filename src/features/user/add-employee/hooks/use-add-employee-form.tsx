@@ -177,8 +177,8 @@ export function useAddEmployeeForm({ mode, initialValues, onSave }: UseAddEmploy
         }
       }
 
-      // Security / Time Study: Save does not call the API (add + edit); transfers persist via their own mutations.
-      if (tabWhenSaving === "security" || tabWhenSaving === "timeStudy") {
+      // Security / Time Study: Save calls onSave to allow the parent to persist state if needed.
+      if (tabWhenSaving === "timeStudy") {
         return
       }
 

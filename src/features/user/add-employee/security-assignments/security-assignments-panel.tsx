@@ -2,6 +2,7 @@ import { useMemo, useState } from "react"
 import { Controller, useFormContext } from "react-hook-form"
 import { toast } from "sonner"
 
+import { Check, X } from "lucide-react"
 import { queryClient } from "@/main"
 import { TransferListMoveButton } from "@/components/ui/transfer-list-move-button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -16,6 +17,7 @@ import type {
 
 import { addEmployeeTransferSuccessToastOptions } from "../schemas"
 import { useAssignUserDepartmentRoles, useUnassignUserDepartmentRoles } from "../mutations/user-department-role-transfer"
+import { useGetDepartments } from "@/features/department/queries/getDepartments"
 import { addEmployeeLookupKeys, departmentRolesUnassignedCacheUserKey } from "../keys"
 import { useGetDepartmentRolesUnassigned } from "../queries/get-add-employee"
 import {
@@ -23,6 +25,8 @@ import {
   departmentIdFromSecurityCatalogItemId,
   roleRefIdFromSecurityCatalogItemId,
 } from "../utility/buildUserDepartmentRoleDepartmentsPayload"
+import statusCheck from "@/assets/status-check.png"
+import statusCross from "@/assets/status-cross.png"
 import { RoleTransferPanel } from "./role-transfer-panel"
 
 function normalizeDeptRolePart(s: string): string {
@@ -97,6 +101,35 @@ export function SecurityAssignmentsPanel({
     if (!isRestrictedNonSuperAdmin || !user?.departmentRoles) return null
     return new Set(user.departmentRoles.map(dr => dr.departmentName))
   }, [isRestrictedNonSuperAdmin, user?.departmentRoles])
+
+  /**
+   * Fetch all active departments to check their settings (apportioning, autoApportioning).
+   * This is used to enable/disable the "Supervisor Apportioning" checkbox.
+   */
+  const departmentsQuery = useGetDepartments({
+    status: "active",
+    page: 1,
+    limit: 1000,
+  })
+
+  const isApportioningEnabled = useMemo(() => {
+    if (!departmentsQuery.data?.items || securitySnapshots.length === 0) return false
+    
+    // Check if "Time Study Supervisor" role is assigned
+    const hasTimeStudySupervisorRole = securitySnapshots.some(s => s.name.trim() === "Time Study Supervisor")
+    if (!hasTimeStudySupervisorRole) return false
+
+    // Get unique department IDs from assigned snapshots
+    const assignedDeptIds = new Set(securitySnapshots.map(s => String(s.departmentId)))
+    
+    // Check if any of those departments has both settings enabled
+    return departmentsQuery.data.items.some(dept => 
+      assignedDeptIds.has(String(dept.id)) && 
+      dept.settings.apportioning && 
+      dept.settings.autoApportioning
+    )
+  }, [departmentsQuery.data?.items, securitySnapshots])
+
 
   /**
    * Unassigned API (with `userId` in edit) returns server “still unassigned” rows; we also remove anything
@@ -213,8 +246,23 @@ export function SecurityAssignmentsPanel({
       return
     }
 
+    // 3. Time Study Supervisor selects User
+    if (roleName === "Time Study Supervisor") {
+      const peerIds = list
+        .filter((i) => i.department === item.department && i.name.trim() === "User")
+        .map((i) => i.id)
+
+      if (isSelecting) {
+        setToggled((prev) => [...new Set([...prev, ...peerIds, id])])
+      } else {
+        setToggled((prev) => prev.filter((x) => x !== id && !peerIds.includes(x)))
+      }
+      return
+    }
+
     // Default toggle
     setToggled((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
+
   }
 
   const toggleAllUnassigned = () => {
@@ -261,11 +309,23 @@ export function SecurityAssignmentsPanel({
     if (departments.length === 0) {
       toast.error("Could not assign: invalid role selection.")
       return
-    }
+    } 
 
     if (canPersistTransfers) {
+      const apportioningAllocation = Object.entries(getValues("apportioningAllocations") ?? {}).map(
+        ([id, val]) => ({
+          id: Number(id),
+          allocation: parseFloat(val) || 0,
+        }),
+      )
+
       try {
-        await assignMutation.mutateAsync({ userId: securityUserId, departments })
+        await assignMutation.mutateAsync({
+          userId: securityUserId,
+          departments,
+          apportioningRequired: getValues("supervisorApportioning"),
+          apportioningAllocation,
+        })
         toast.success("Roles assigned.", addEmployeeTransferSuccessToastOptions)
       } catch (e) {
         toast.error(e instanceof Error ? e.message : "Assign failed")
@@ -310,6 +370,34 @@ export function SecurityAssignmentsPanel({
       return
     }
 
+    // 1. Guard: If apportioning is active, ensure remaining departments will sum to 100%
+    if (watch("supervisorApportioning")) {
+      const removedDeptIds = new Set(
+        toRemoveItems
+          .map((i) => departmentIdFromSecurityCatalogItemId(i.id))
+          .filter((id): id is number => id != null),
+      )
+      const remainingSnaps = securitySnapshots.filter((s) => !removedDeptIds.has(s.departmentId))
+
+      // Only check if there are still departments left after removal
+      if (remainingSnaps.length > 0) {
+        const currentAllocations = getValues("apportioningAllocations") || {}
+        
+        // Get unique department IDs from the remaining snapshots
+        const uniqueRemainingDeptIds = [...new Set(remainingSnaps.map(s => String(s.departmentId)))]
+        
+        const remainingTotal = uniqueRemainingDeptIds.reduce(
+          (sum, deptId) => sum + (parseFloat(currentAllocations[deptId]) || 0),
+          0,
+        )
+
+        if (remainingTotal !== 100) {
+          toast.error("allocation percentage should be 100% after removal")
+          return
+        }
+      }
+    }
+
     if (canPersistTransfers) {
       const invalid = toRemoveItems.some(
         (i) =>
@@ -327,7 +415,19 @@ export function SecurityAssignmentsPanel({
         return
       }
       try {
-        await unassignMutation.mutateAsync({ userId: securityUserId, departments })
+        const apportioningAllocation = Object.entries(getValues("apportioningAllocations") ?? {}).map(
+          ([id, val]) => ({
+            id: Number(id),
+            allocation: parseFloat(val) || 0,
+          }),
+        )
+
+        await unassignMutation.mutateAsync({
+          userId: securityUserId,
+          departments,
+          apportioningRequired: getValues("supervisorApportioning"),
+          apportioningAllocation,
+        })
         mergeRowsIntoRolesUnassignedCache(rolesUnassignedQueryKey, toRemoveItems)
         toast.success("Roles unassigned.", addEmployeeTransferSuccessToastOptions)
       } catch (e) {
@@ -338,13 +438,26 @@ export function SecurityAssignmentsPanel({
 
     if (isAddMode) {
       const removeIds = new Set(toRemoveItems.map((i) => i.id))
+      const removedDeptIds = new Set(
+        toRemoveItems
+          .map((i) => departmentIdFromSecurityCatalogItemId(i.id))
+          .filter((id): id is number => id != null)
+          .map(String),
+      )
+
       const prev = getValues("securityAssignedSnapshots") ?? []
       const nextSnaps = prev.filter((s) => !removeIds.has(s.id))
+
+      // Clear stale allocations
+      const currentAllocations = { ...getValues("apportioningAllocations") }
+      removedDeptIds.forEach((id) => delete currentAllocations[id])
+
       setValue("securityAssignedSnapshots", nextSnaps, {
         shouldDirty: true,
         shouldTouch: true,
         shouldValidate: true,
       })
+      setValue("apportioningAllocations", currentAllocations, { shouldDirty: true })
       setValue(
         "roleAssignments",
         [...new Set(nextSnaps.map((s) => s.name.trim()).filter(Boolean))],
@@ -357,12 +470,25 @@ export function SecurityAssignmentsPanel({
     const prevSnaps = getValues("securityAssignedSnapshots") ?? []
     if (prevSnaps.length > 0) {
       const removeIds = new Set(toRemoveItems.map((i) => i.id))
+      const removedDeptIds = new Set(
+        toRemoveItems
+          .map((i) => departmentIdFromSecurityCatalogItemId(i.id))
+          .filter((id): id is number => id != null)
+          .map(String),
+      )
+
       const nextSnaps = prevSnaps.filter((s) => !removeIds.has(s.id))
+
+      // Clear stale allocations
+      const currentAllocations = { ...getValues("apportioningAllocations") }
+      removedDeptIds.forEach((id) => delete currentAllocations[id])
+
       setValue("securityAssignedSnapshots", nextSnaps, {
         shouldDirty: true,
         shouldTouch: true,
         shouldValidate: true,
       })
+      setValue("apportioningAllocations", currentAllocations, { shouldDirty: true })
       setValue(
         "roleAssignments",
         [...new Set(nextSnaps.map((s) => s.name.trim()).filter(Boolean))],
@@ -417,15 +543,15 @@ export function SecurityAssignmentsPanel({
         </div>
 
         <div className="flex items-center gap-5 pr-1 pt-2">
-          <label className="flex cursor-not-allowed items-center gap-2 text-[11px] select-none text-[#9ca3af]">
+          <label className={`flex items-center gap-2 text-[11px] select-none ${isApportioningEnabled ? "cursor-pointer text-[#111827]" : "cursor-not-allowed text-[#9ca3af]"}`}>
             <Controller
               name="supervisorApportioning"
               control={control}
               render={({ field }) => (
                 <Checkbox
-                  checked={field.value}
+                  checked={isApportioningEnabled ? field.value : false}
                   onCheckedChange={(checked) => field.onChange(checked === true)}
-                  disabled
+                  disabled={!isApportioningEnabled}
                   className="size-4 rounded-[3px] border-[#c2c6d1] data-[state=checked]:border-(--primary) data-[state=checked]:bg-(--primary) disabled:cursor-not-allowed disabled:bg-[#f3f4f6] disabled:border-[#e5e7eb] disabled:opacity-100"
                 />
               )}
@@ -486,6 +612,95 @@ export function SecurityAssignmentsPanel({
           onToggleDepartmentGroup={toggleDepartmentGroupA}
         />
       </div>
+
+      {watch("supervisorApportioning") && isApportioningEnabled && (
+        <div className="mt-8 overflow-hidden rounded-[10px] border border-[#e5e7eb] bg-white shadow-[0_4px_20px_rgba(0,0,0,0.05)] transition-all duration-300">
+          <table className="w-full text-left text-[12px] border-collapse">
+            <thead>
+              <tr className="bg-(--primary) text-white">
+                <th className="px-5 py-2.5 text-[10.5px] font-semibold uppercase tracking-wider">Department Name</th>
+                <th className="px-5 py-2.5 text-[10.5px] font-semibold text-center uppercase tracking-wider">Apportioning</th>
+                <th className="px-5 py-2.5 text-[10.5px] font-semibold text-center uppercase tracking-wider">Percentage of allocation</th>
+                <th className="px-5 py-2.5 text-[10.5px] font-semibold text-center uppercase tracking-wider">Auto Apportioning</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(() => {
+                const assignedDepts = Array.from(new Set(securitySnapshots.map(s => s.departmentId)))
+                  .map(id => {
+                    const snap = securitySnapshots.find(s => s.departmentId === id)
+                    const deptInfo = departmentsQuery.data?.items.find(d => String(d.id) === String(id))
+                    return {
+                      id: String(id),
+                      name: snap?.department ?? deptInfo?.name ?? `Dept ${id}`,
+                      apportioning: deptInfo?.settings.apportioning ?? false,
+                      autoApportioning: deptInfo?.settings.autoApportioning ?? false,
+                    }
+                  })
+                  .filter(dept => dept.apportioning)
+
+                if (assignedDepts.length === 0) {
+                  return (
+                    <tr>
+                      <td colSpan={4} className="px-4 py-12 text-center text-[#9ca3af] bg-[#f9fafb]">
+                        <p className="text-[13px]">No departments assigned yet.</p>
+                        <p className="mt-1 text-[11px]">Assign departments to manage apportioning allocations.</p>
+                      </td>
+                    </tr>
+                  )
+                }
+
+                return assignedDepts.map((dept) => (
+                  <tr key={dept.id} className="border-t border-[#f1f2f6] hover:bg-[#f8fafc] transition-colors duration-200">
+                    <td className="px-5 py-4 font-medium text-[#111827]">{dept.name}</td>
+                    <td className="px-5 py-4 text-center">
+                      <div className="flex justify-center items-center">
+                        {dept.apportioning ? (
+                          <img src={statusCheck} alt="Checked" className="size-5 object-contain" />
+                        ) : (
+                          <img src={statusCross} alt="Unchecked" className="size-5 object-contain" />
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-5 py-4 text-center">
+                      <div className="flex justify-center">
+                        <Controller
+                          name={`apportioningAllocations.${dept.id}`}
+                          control={control}
+                          render={({ field }) => (
+                        <div className="flex justify-center">
+                          <input
+                            {...field}
+                            type="text"
+                            value={field.value ?? ""}
+                            placeholder=""
+                            className="h-8 w-20 rounded-[4px] border border-[#cbd5e1] bg-white px-2 text-center text-[12px] font-medium text-[#111827] outline-none transition-all focus:border-(--primary) focus:ring-1 focus:ring-(--primary)"
+                            onChange={(e) => {
+                              const val = e.target.value.replace(/[^0-9.]/g, "")
+                              field.onChange(val)
+                            }}
+                          />
+                        </div>
+                          )}
+                        />
+                      </div>
+                    </td>
+                    <td className="px-5 py-4 text-center">
+                      <div className="flex justify-center items-center">
+                        {dept.autoApportioning ? (
+                          <img src={statusCheck} alt="Checked" className="size-5 object-contain" />
+                        ) : (
+                          <img src={statusCross} alt="Unchecked" className="size-5 object-contain" />
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              })()}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   )
 }

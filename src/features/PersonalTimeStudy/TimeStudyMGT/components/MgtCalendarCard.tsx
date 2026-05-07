@@ -53,7 +53,8 @@ export function MgtCalendarCard({
   const weeks: (Date | null)[][] = []
   for (let i = 0; i < cells.length; i += 7) weeks.push(cells.slice(i, i + 7))
 
-  const todayStr = new Date().toISOString().split("T")[0]
+  const _now = new Date()
+  const todayStr = new Date(Date.UTC(_now.getFullYear(), _now.getMonth(), _now.getDate())).toISOString().split("T")[0]
 
   return (
     <div className="rounded-[6px] bg-white p-4 shadow-[0_4px_16px_rgba(16,24,40,0.12)]">
