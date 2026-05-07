@@ -78,7 +78,7 @@ export async function fetchPayrollFilterOptions(): Promise<PayrollFilterOptionsR
 
   const departments = deptRes.items.map((d) => ({
     value: String(d.id),
-    label: d.name,
+    label: `${d.code} (${d.name})`,
     metadata: { code: d.code },
   }))
 

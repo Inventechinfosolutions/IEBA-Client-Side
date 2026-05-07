@@ -34,7 +34,7 @@ import { getUserDetails } from "@/features/auth/api/getUserDetails"
 
 import {
   detailToUpsertFormValues,
-  mergeDetailActivitiesToPickRows,
+  summaryToPickRow,
 } from "../api/costPoolApi"
 import { CostPoolAddPage } from "./CostPoolAddPage"
 import { useCreateCostPool } from "../mutations/createCostPool"
@@ -286,10 +286,26 @@ function CostPoolEditDialogContent({
       : rawOptions.map(opt => ({ ...opt, id: String(opt.id) }))
   }, [departmentsQuery.data, userDetails, user, isSuperAdmin])
 
+  const activityPicklist = useCostPoolActivityPicklistQuery(Number(detailQuery.data?.departmentId || 0), {
+    enabled: !!detailQuery.data?.departmentId,
+  })
+
   const activityRows = useMemo(() => {
     if (!detailQuery.data) return []
-    return mergeDetailActivitiesToPickRows(detailQuery.data)
-  }, [detailQuery.data])
+    
+    // Start with currently assigned activities from the detail
+    const assigned = (detailQuery.data.assignedActivities ?? []).map(summaryToPickRow)
+    // Add truly unassigned activities from the picklist (excludes activities in other pools)
+    const unassigned = activityPicklist.data ?? []
+    
+    const map = new Map<number, CostPoolActivityPickRow>()
+    for (const r of [...assigned, ...unassigned]) {
+      if (r.activityDepartmentId > 0) {
+        map.set(r.activityDepartmentId, r)
+      }
+    }
+    return Array.from(map.values())
+  }, [detailQuery.data, activityPicklist.data])
 
   const userPicklist = useCostPoolUserPicklistQuery(Number(detailQuery.data?.departmentId || 0), {
     enabled: !!detailQuery.data?.departmentId,
@@ -340,7 +356,7 @@ function CostPoolEditDialogContent({
       costPoolId={costPoolId}
       detail={detailQuery.data}
       activityRows={activityRows}
-      activitiesLoading={detailQuery.isFetching}
+      activitiesLoading={detailQuery.isFetching || activityPicklist.isLoading}
       userRows={userRows}
       usersLoading={userPicklist.isLoading || detailQuery.isFetching}
       allowUserOrCostpoolDirect={allowUserOrCostpoolDirect}

@@ -80,10 +80,8 @@ export function PersonalTimeStudyPage() {
 
   // 1. Date state
   const [selectedDate, setSelectedDate] = useState<Date>(() => {
-    // Dynamically calculate "Today" in LA time
     const now = new Date()
-    const laDate = new Date(now.toLocaleString("en-US", { timeZone: "America/Los_Angeles" }))
-    return new Date(Date.UTC(laDate.getFullYear(), laDate.getMonth(), laDate.getDate()))
+    return new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()))
   })
 
   // Separate viewport state for the calendar (to avoid changing selection on month navigation)
@@ -135,7 +133,7 @@ export function PersonalTimeStudyPage() {
         weekMap[weekKey] = { totalMinutes: 0, targetMinutes: 0, days: [] }
       }
 
-      weekMap[weekKey].totalMinutes += d.minutes ?? 0
+      weekMap[weekKey].totalMinutes += (d.minutes ?? 0) + (d.leaveMinutes ?? 0)
       weekMap[weekKey].targetMinutes += d.allocatedMinutes ?? 0
       weekMap[weekKey].days.push(d.status)
     }
@@ -394,6 +392,7 @@ export function PersonalTimeStudyPage() {
                     dateStr={dateStr}
                     initialRecords={dayQuery.data?.timeStudyRecords}
                     dropdownData={dropdownQuery.data}
+                    leaveRecords={dayQuery.data?.leaveRecords}
                     onSave={(records) => submitMutation.mutate({ records, mode: "save" })}
                     onSubmit={(records) => submitMutation.mutate({ records, mode: "submit" })}
                     onDelete={(id) => deleteMutation.mutate(id)}

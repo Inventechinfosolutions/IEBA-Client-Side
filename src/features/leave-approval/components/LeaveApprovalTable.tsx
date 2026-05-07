@@ -210,19 +210,19 @@ export function LeaveApprovalTable({
                   {row.endtime}
                 </TableCell>
                 <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-center text-[12px] leading-[1.15rem] text-[#111827] whitespace-normal break-words">
-                  {row.programcode}
+                  {row.programcode} - {row.programname}
                 </TableCell>
                 <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-center text-[12px] text-[#111827]">
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <div className="mx-auto max-w-full cursor-default overflow-hidden text-ellipsis whitespace-nowrap">
-                          {row.activitycode}
+                          {row.activitycode} - {row.activityname}
                         </div>
                       </TooltipTrigger>
                       <TooltipContent side="top" sideOffset={6} collisionPadding={12} className="px-3 py-2">
                         <div className="max-w-[320px] whitespace-normal break-words">
-                          {row.activitycode}
+                          {row.activitycode} - {row.activityname}
                         </div>
                       </TooltipContent>
                     </Tooltip>
