@@ -7,16 +7,16 @@ import { toast } from "sonner"
 import { usePermissions } from "@/hooks/usePermissions"
 
 import { MasterCodePagination } from "@/features/master-code/components/MasterCodePagination"
-import { BudgetUnitTable } from "../components/budget-unit-table"
-import { ProgramActivityRelationForm } from "../components/program-activity-relation/program-activity-relation-form"
-import { ProgramFormModal } from "../components/program-form-modal"
-import { ProgramTabs } from "../components/program-tabs"
-import { TimeStudyProgramTable } from "../components/time-study-program-table"
-import { ProgramToolbar } from "../components/program-toolbar"
+import { BudgetUnitTable } from "../components/BudgetUnitTable"
+import { ProgramActivityRelationForm } from "../components/program-activity-relation/ProgramActivityRelationForm"
+import { ProgramFormModal } from "../components/ProgramFormModal"
+import { ProgramTabs } from "../components/ProgramTabs"
+import { TimeStudyProgramTable } from "../components/TimeStudyProgramTable"
+import { ProgramToolbar } from "../components/ProgramToolbar"
 import { UserProgramHistoryTable } from "../components/UserProgramHistoryTable"
-import { useProgramModule } from "../hooks/use-program-module"
+import { useProgramModule } from "../hooks/useProgramModule"
 import { apiGetProgramRowById, apiCheckActiveSubPrograms, apiCheckActiveBudgetSubPrograms } from "../api"
-import { useGetProgramFormOptions } from "../queries/get-program-form-options"
+import { useGetProgramFormOptions } from "../queries/getProgramFormOptions"
 import { programFormSchema } from "../schemas"
 import type {
   BudgetUnitTableHandle,
@@ -155,6 +155,7 @@ export function ProgramPage() {
   const tsTableRefInner = useRef<TimeStudyProgramTableHandle | null>(null)
   const [activeChildrenFlags, setActiveChildrenFlags] = useState({ one: false, two: false, parentActive: undefined as boolean | undefined })
   const [showHistory, setShowHistory] = useState(false)
+  const [historySearch, setHistorySearch] = useState("")
 
   const isSubProgramQuickAdd = modalMode === "add" && Boolean(selectedProgramForSubAdd)
 
@@ -344,11 +345,16 @@ export function ProgramPage() {
     setExpandedProgramGroups({})
     setExpandedPrograms({})
     setShowHistory(false)
+    setHistorySearch("")
   }
 
   const handleSearchChange = (value: string) => {
-    setSearch(value)
-    setPage(1)
+    if (showHistory) {
+      setHistorySearch(value)
+    } else {
+      setSearch(value)
+      setPage(1)
+    }
   }
 
   const handleAddProgram = () => {
@@ -493,14 +499,19 @@ export function ProgramPage() {
         {activeTab !== "Program Activity Relation" ? (
           <ProgramToolbar
             activeTabLabel={activeTab}
-            searchValue={search}
+            searchValue={showHistory ? historySearch : search}
             inactiveOnly={inactiveOnly}
             onSearchChange={handleSearchChange}
             onToggleInactiveOnly={() => setInactiveOnly((prev) => !prev)}
             onAddProgram={handleAddProgram}
             hideAdd={isRestrictedRole}
             showHistory={showHistory}
-            onToggleHistory={() => setShowHistory((prev) => !prev)}
+            onToggleHistory={() => {
+              setShowHistory((prev) => {
+                if (prev) setHistorySearch("")
+                return !prev
+              })
+            }}
           />
         ) : null}
         {activeTab === "Program Activity Relation" ? (
@@ -517,7 +528,7 @@ export function ProgramPage() {
               {showHistory ? (
                 <UserProgramHistoryTable
                   userId=""
-                  programCode=""
+                  programCode={historySearch}
                   programName="All Programs"
                 />
               ) : activeTab === "Budget Units" ? (

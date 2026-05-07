@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 import { api } from "@/lib/api"
 import { programKeys } from "../keys"
+import type { ApiEnvelope } from "../types"
 
 export type UserProgramHistoryRecord = {
   createdBy: string
@@ -14,6 +15,7 @@ export type UserProgramHistoryRecord = {
   programName: string | null
   effectiveFrom: string
   effectiveTo: string | null
+  userName: string | null
   assignmentType: "normal" | "jobpoolautoassign"
   jobpoolId: number | null
   assignedBy: string | null
@@ -50,10 +52,10 @@ export function useUserProgramHistoryQuery(params: {
       if (programCode) searchParams.set("programCode", programCode)
       if (userId) searchParams.set("userId", userId)
 
-      const res = await api.get<UserProgramHistoryResponse>(
+      const res = await api.get<ApiEnvelope<UserProgramHistoryResponse>>(
         `/userprogramassignment/history?${searchParams.toString()}`
       )
-      return res
+      return res?.data ?? (res as unknown as UserProgramHistoryResponse)
     },
     staleTime: 0,
   })

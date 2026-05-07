@@ -1,4 +1,4 @@
-import { Check, History, Plus } from "lucide-react"
+import { ArrowLeft, Check, History, Plus } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { TitleCaseInput } from "@/components/ui/title-case-input"
@@ -11,7 +11,8 @@ function getAddLabel(activeTabLabel: string) {
   return "Add Program Activity Relation"
 }
 
-function getSearchPlaceholder(activeTabLabel: string) {
+function getSearchPlaceholder(activeTabLabel: string, showHistory: boolean) {
+  if (showHistory) return "Search Program Code"
   if (activeTabLabel === "Time Study programs") return "Search Here"
   if (activeTabLabel === "Budget Units") return "Search BU Code"
   return "Search here"
@@ -43,7 +44,7 @@ export function ProgramToolbar({
       <TitleCaseInput
         value={searchValue}
         onChange={(event) => onSearchChange(event.target.value)}
-        placeholder={getSearchPlaceholder(activeTabLabel)}
+        placeholder={getSearchPlaceholder(activeTabLabel, showHistory)}
         className="h-[41px] w-[270px] rounded-[10px] border border-[#d0d5df] bg-white px-3.5 text-[11px] text-[#111827] shadow-[0_4px_10px_rgba(15,23,42,0.08)] placeholder:text-[10px] placeholder:text-[#a7afbf] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
       />
       <div className="flex items-center gap-2">
@@ -57,8 +58,17 @@ export function ProgramToolbar({
             }`}
             onClick={onToggleHistory}
           >
-            <History className="size-3.5" />
-            History
+            {showHistory ? (
+              <>
+                <ArrowLeft className="size-3.5 animate-back-bounce" />
+                {activeTabLabel === "Budget Units" ? "Back to Budget Units" : "Back to Program Table"}
+              </>
+            ) : (
+              <>
+                <History className="size-3.5" />
+                History
+              </>
+            )}
           </Button>
         )}
         <Button

@@ -12,13 +12,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { BudgetUnitsForm } from "./budget-units-form"
-import { TimeStudyProgramForm } from "./time-study-program-form"
+import { BudgetUnitsForm } from "./BudgetUnitsForm"
+import { TimeStudyProgramForm } from "./TimeStudyProgramForm"
 import {
   useGetProgramFormOptions,
   useGetActivePrimaryTimeStudyPrograms,
   useGetActiveSecondaryTimeStudyPrograms,
-} from "../queries/get-program-form-options"
+} from "../queries/getProgramFormOptions"
 import { programFormSchema, timeStudyProgramFormSchema } from "../schemas"
 import type {
   ProgramFormModalHandle,
