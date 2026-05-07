@@ -712,6 +712,7 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                                 <div className="grid grid-cols-1 gap-3 py-4 min-h-[300px]">
                                     {DEPARTMENT_SETTINGS_ROWS
                                         .filter(s => s.key !== 'allowMultiCodes' || canUpdateDepartment)
+                                        .filter(s => s.key !== 'autoApportioning' || settings.apportioning)
                                         .map((setting) => (
                                         <div key={setting.key} className="space-y-1">
                                             <div className="flex items-center gap-3">
@@ -719,13 +720,13 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                                                     id={setting.key}
                                                     checked={!!settings[setting.key as keyof typeof settings]}
                                                     disabled={
-                                                        setting.key === "removeAutoFillEndTime" &&
-                                                        settings.removeStartEndTime
+                                                        (setting.key === "removeAutoFillEndTime" && settings.removeStartEndTime) ||
+                                                        (setting.key === "autoApportioning" && settings.apportioning)
                                                     }
                                                     onCheckedChange={(val) => {
                                                         if (
-                                                            setting.key === "removeAutoFillEndTime" &&
-                                                            settings.removeStartEndTime
+                                                            (setting.key === "removeAutoFillEndTime" && settings.removeStartEndTime) ||
+                                                            (setting.key === "autoApportioning" && settings.apportioning)
                                                         ) {
                                                             return
                                                         }
@@ -733,20 +734,25 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                                                         const fieldPath =
                                                             `settings.${setting.key}` as Path<DepartmentUpsertValues>
                                                         setValue(fieldPath, isChecked)
-                                                        if (setting.key === "apportioning" && isChecked) {
-                                                            setValue("settings.autoApportioning", true)
+                                                        if (setting.key === "apportioning") {
+                                                            setValue("settings.autoApportioning", isChecked)
                                                         }
                                                         if (setting.key === "removeStartEndTime" && isChecked) {
                                                             setValue("settings.removeAutoFillEndTime", false)
                                                         }
                                                     }}
-                                                    className="h-[18px] w-[18px] data-[state=checked]:bg-[#6C5DD3] data-[state=checked]:border-[#6C5DD3] disabled:cursor-not-allowed disabled:opacity-50"
+                                                    className={`h-[18px] w-[18px] data-[state=checked]:bg-[#6C5DD3] data-[state=checked]:border-[#6C5DD3] disabled:opacity-50 ${
+                                                        (setting.key === "removeAutoFillEndTime" && settings.removeStartEndTime) ||
+                                                        (setting.key === "autoApportioning" && settings.apportioning)
+                                                            ? "cursor-not-allowed"
+                                                            : ""
+                                                    }`}
                                                 />
                                                 <Label
                                                     htmlFor={setting.key}
                                                     className={`text-[14px] font-[400] text-[#374151] ${
-                                                        setting.key === "removeAutoFillEndTime" &&
-                                                        settings.removeStartEndTime
+                                                        ((setting.key === "removeAutoFillEndTime" && settings.removeStartEndTime) ||
+                                                        (setting.key === "autoApportioning" && settings.apportioning))
                                                             ? "cursor-not-allowed opacity-60"
                                                             : ""
                                                     }`}

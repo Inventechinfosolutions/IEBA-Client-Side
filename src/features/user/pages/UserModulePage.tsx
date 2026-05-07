@@ -14,6 +14,7 @@ import { UserTable } from "../components/UserTable"
 import { UserToolbar } from "../components/UserToolbar"
 import { usePermissions } from "@/hooks/usePermissions"
 import { assignUserDepartmentRoles, fetchDepartmentRolesCatalog, apiUploadUserDocument } from "../add-employee/api"
+import { buildUserDepartmentRoleDepartmentsPayload } from "../add-employee/utility/buildUserDepartmentRoleDepartmentsPayload"
 import { parseMultiSelectStoredValues } from "@/components/ui/multi-select-dropdown"
 import { apiGetUserDetails } from "../api"
 import { useUserModule } from "../hooks/useUserModule"
@@ -69,6 +70,7 @@ const emptyFormValues: UserModuleFormValues = {
   assignedMultiCodes: "",
   copyUser: false,
   copyUserId: "",
+  apportioningAllocations: {},
 }
 
 export function UserModulePage() {
@@ -358,10 +360,50 @@ export function UserModulePage() {
 
   const handleSaveForm = async ({
     values,
-    sourceTab: _sourceTab,
+    sourceTab,
   }: AddEmployeeSavePayload): Promise<AddEmployeeSaveSync | void> => {
+    // 1. Validation for Supervisor Apportioning Total Percentage (must be exactly 100%)
+    if (sourceTab === "security" && values.supervisorApportioning) {
+      const assignedDeptIds = new Set(
+        (values.securityAssignedSnapshots ?? []).map((s) => String(s.departmentId)),
+      )
+      const allocations = Object.entries(values.apportioningAllocations ?? {})
+        .filter(([id]) => assignedDeptIds.has(id))
+        .map(([, val]) => parseFloat(val) || 0)
+
+      const total = allocations.reduce((sum, val) => sum + val, 0)
+
+      if (total > 100) {
+        toast.error("allocation percentage should not exceed more than 100%")
+        return
+      }
+      if (total < 100) {
+        toast.error("allocation percentage should not be less than 100%")
+        return
+      }
+    }
+
     try {
       if (formMode === "edit" && selectedRow) {
+        if (sourceTab === "security") {
+          const departments = buildUserDepartmentRoleDepartmentsPayload(
+            values.securityAssignedSnapshots ?? [],
+          )
+          const apportioningAllocation = Object.entries(values.apportioningAllocations ?? {}).map(
+            ([id, val]) => ({
+              id: Number(id),
+              allocation: parseFloat(val) || 0,
+            }),
+          )
+
+          await assignUserDepartmentRoles({
+            userId: selectedRow.id,
+            departments,
+            apportioningRequired: values.supervisorApportioning,
+            apportioningAllocation,
+          })
+        }
+
         await userModule.updateRowAsync({ id: selectedRow.id, values })
         toast.success("User Saved Successfully", successToastOptions)
         void queryClient.invalidateQueries({ queryKey: userModuleKeys.detail(selectedRow.id) })
@@ -375,6 +417,24 @@ export function UserModulePage() {
       }
 
       if (draftUserId) {
+        if (sourceTab === "security") {
+          const departments = buildUserDepartmentRoleDepartmentsPayload(
+            values.securityAssignedSnapshots ?? [],
+          )
+          const apportioningAllocation = Object.entries(values.apportioningAllocations ?? {}).map(
+            ([id, val]) => ({
+              id: Number(id),
+              allocation: parseFloat(val) || 0,
+            }),
+          )
+
+          await assignUserDepartmentRoles({
+            userId: draftUserId,
+            departments,
+            apportioningRequired: values.supervisorApportioning,
+            apportioningAllocation,
+          })
+        }
         await userModule.updateRowAsync({ id: draftUserId, values })
         toast.success("Employee saved successfully", successToastOptions)
         void queryClient.invalidateQueries({ queryKey: userModuleKeys.detail(draftUserId) })
@@ -389,6 +449,10 @@ export function UserModulePage() {
 
       const created = await userModule.createRowAsync({ values })
       setDraftUserId(created.id)
+      toast.success(
+        "Employee details saved. You can go to the next tab without saving again.",
+        successToastOptions,
+      )
 
       if (values.jobDutyFile) {
         try {

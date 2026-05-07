@@ -159,6 +159,8 @@ export type CreateUserRequestDto = {
   claimingUnit?: string
   assignedMultiCodes?: string[]
   contacts?: Array<{ phone?: string; countryCode?: string }>
+  supervisorApportioning?: boolean
+  apportioningAllocations?: Array<{ departmentId: number; apportioning: number }>
 }
 
 /** Matches backend `EmergencyContactUpsertReqDto` on PUT /users/:id (`""` = none, same as other empty strings). */
@@ -192,6 +194,8 @@ export type UpdateUserRequestDto = {
   contacts?: UserContactItemPayload[]
   jobClassificationIds?: number[]
   emergencyContact?: EmergencyContactUpsertDto
+  supervisorApportioning?: boolean
+  apportioningAllocations?: Array<{ departmentId: number; apportioning: number }>
 }
 
 export type CreateUserResponseDto = {
@@ -208,6 +212,8 @@ export type UserDetailsDepartmentRoleDto = {
   department: { id: number; name: string }
   role: { id: number; name: string }
   permissions: string[]
+  apportioningRequired?: boolean
+  apportioning?: number
 }
 
 /** GET /users/:id/details payload (subset used by the Add Employee form). */
@@ -265,6 +271,7 @@ export type UserDetailsDto = {
     fileName: string
     status: string
   }>
+  supervisorApportioning: boolean
 }
 
 export type UserModuleListResponse = {

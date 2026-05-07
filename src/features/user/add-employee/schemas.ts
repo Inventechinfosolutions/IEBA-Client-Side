@@ -143,6 +143,8 @@ const userModuleFormFieldsSchema = z.object({
   copyUser: z.boolean().optional().default(false),
   copyUserId: z.string().trim().optional(),
   jobDutyFile: z.custom<File | null>().optional(),
+  /** Map of departmentId -> percentage string for Supervisor Apportioning table. */
+  apportioningAllocations: z.record(z.string(), z.string()).optional().default({}),
 })
 
 const passwordMatchRefine = {
