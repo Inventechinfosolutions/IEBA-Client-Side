@@ -111,7 +111,7 @@ export function UserModulePage() {
   const [showForm, setShowForm] = useState(false)
   const [formMode, setFormMode] = useState<UserModuleFormMode>("add")
 
-  const { isSuperAdmin, assignedDepartmentIds } = usePermissions()
+  const { isSuperAdmin, isDepartmentAdmin, isTimeStudySupervisor, assignedDepartmentIds } = usePermissions()
 
   // Only SuperAdmin needs the full department list from the API.
   // All other roles use their assigned departments from the auth context.
@@ -275,6 +275,19 @@ export function UserModulePage() {
 
     return Array.from(uniqueNames)
   }, [searchTerm, userModule.rows])
+
+  const filteredRows = useMemo(() => {
+    let currentRows = userModule.rows;
+    // Apply supervisor filter on user table
+    const isOnlySupervisor = isTimeStudySupervisor && !isSuperAdmin && !isDepartmentAdmin;
+    if (isOnlySupervisor && user?.id) {
+      currentRows = currentRows.filter(
+        (r) => r.supervisorPrimaryId === user.id || r.supervisorSecondaryId === user.id
+      );
+    }
+    return currentRows;
+  }, [userModule.rows, isTimeStudySupervisor, isSuperAdmin, isDepartmentAdmin, user?.id]);
+
 
   const handleAddEmployee = () => {
     setFormMode("add")
@@ -601,7 +614,7 @@ export function UserModulePage() {
           <div className="rounded-[8px] bg-white p-3">
             <div className="mb-5">
               <UserTable
-                rows={userModule.rows}
+                rows={filteredRows}
                 isLoading={isTableLoading}
                 onEditRow={handleEditRow}
                 onSwitchUser={isGlobalAdmin && !mimicSession ? handleSwitchUser : undefined}
