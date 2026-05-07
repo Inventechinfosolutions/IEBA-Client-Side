@@ -211,7 +211,8 @@ export function UserModulePage() {
         (selectedRow.loginId ?? selectedRow.emailAddress ?? "").trim(),
       jobClassificationIds: [],
       jobDutyStatement: "",
-      claimingUnit: selectedRow.claimingUnit ?? selectedRow.department,
+      apportioningAllocations: {},
+      claimingUnit: selectedRow.claimingUnit ?? selectedRow.department ?? "",
       spmp: selectedRow.spmp,
       multilingual: selectedRow.multilingual ?? false,
       allowMultiCodes:
@@ -362,6 +363,7 @@ export function UserModulePage() {
     values,
     sourceTab,
   }: AddEmployeeSavePayload): Promise<AddEmployeeSaveSync | void> => {
+
     // 1. Validation for Supervisor Apportioning Total Percentage (must be exactly 100%)
     if (sourceTab === "security" && values.supervisorApportioning) {
       const assignedDeptIds = new Set(
@@ -369,16 +371,16 @@ export function UserModulePage() {
       )
       const allocations = Object.entries(values.apportioningAllocations ?? {})
         .filter(([id]) => assignedDeptIds.has(id))
-        .map(([, val]) => parseFloat(val) || 0)
+        .map(([, val]) => parseFloat(val ?? "") || 0)
 
       const total = allocations.reduce((sum, val) => sum + val, 0)
 
       if (total > 100) {
-        toast.error("allocation percentage should not exceed more than 100%")
+        toast.error("Allocation percentage should not exceed 100%")
         return
       }
       if (total < 100) {
-        toast.error("allocation percentage should not be less than 100%")
+        toast.error("Allocation percentage must be exactly 100%")
         return
       }
     }
@@ -389,12 +391,12 @@ export function UserModulePage() {
           const departments = buildUserDepartmentRoleDepartmentsPayload(
             values.securityAssignedSnapshots ?? [],
           )
-          const apportioningAllocation = Object.entries(values.apportioningAllocations ?? {}).map(
-            ([id, val]) => ({
-              id: Number(id),
-              allocation: parseFloat(val) || 0,
-            }),
-          )
+          const apportioningAllocation = values.supervisorApportioning
+            ? Object.entries(values.apportioningAllocations ?? {}).map(([id, val]) => ({
+                id: Number(id),
+                allocation: parseFloat(val ?? "") || 0,
+              }))
+            : []
 
           await assignUserDepartmentRoles({
             userId: selectedRow.id,
@@ -421,12 +423,12 @@ export function UserModulePage() {
           const departments = buildUserDepartmentRoleDepartmentsPayload(
             values.securityAssignedSnapshots ?? [],
           )
-          const apportioningAllocation = Object.entries(values.apportioningAllocations ?? {}).map(
-            ([id, val]) => ({
-              id: Number(id),
-              allocation: parseFloat(val) || 0,
-            }),
-          )
+          const apportioningAllocation = values.supervisorApportioning
+            ? Object.entries(values.apportioningAllocations ?? {}).map(([id, val]) => ({
+                id: Number(id),
+                allocation: parseFloat(val ?? "") || 0,
+              }))
+            : []
 
           await assignUserDepartmentRoles({
             userId: draftUserId,
