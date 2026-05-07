@@ -8,7 +8,7 @@ import { TitleCaseInput } from "@/components/ui/title-case-input"
 import { TransferListMoveButton } from "@/components/ui/transfer-list-move-button"
 import { cn } from "@/lib/utils"
 import { programActivityRelationKeys } from "../../keys"
-import { useGetProgramFormOptions } from "../../queries/get-program-form-options"
+import { useGetProgramFormOptions } from "../../queries/getProgramFormOptions"
 import {
   assignedIdsFromProgramActivityRelationPayload,
   filterProgramActivityRelationItems,
@@ -16,13 +16,13 @@ import {
   useProgramActivityRelationActivitiesQuery,
   useProgramActivityRelationMutations,
   useProgramActivityRelationTimeStudyProgramsQuery,
-} from "../../queries/program-activity-relation"
+} from "../../queries/programActivityRelation"
 import type {
   ProgramActivityRelationFormProps,
   TimeStudyProgramOption,
   TransferItem,
 } from "../../types"
-import { TransferPanel } from "./transfer-panel"
+import { TransferPanel } from "./TransferPanel"
 
 export function ProgramActivityRelationForm({ form, departmentIds }: ProgramActivityRelationFormProps) {
 

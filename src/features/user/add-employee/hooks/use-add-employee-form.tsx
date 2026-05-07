@@ -107,13 +107,20 @@ export function useAddEmployeeForm({ mode, initialValues, onSave }: UseAddEmploy
 
   const showInvalidToast = (formErrors: FieldErrors<UserModuleFormValues>) => {
     const fieldOrder = getValidationOrder()
-    const firstInvalidField = fieldOrder.find((field) => Boolean(formErrors[field]))
+    const firstInvalidFieldInOrder = fieldOrder.find((field) => Boolean(formErrors[field]))
+    const firstInvalidField = firstInvalidFieldInOrder || Object.keys(formErrors)[0] as keyof UserModuleFormValues
+    
     if (!firstInvalidField) return
     if (!isEditMode && firstInvalidField === "password" && touchedFields.password) return
 
     const firstMessage = getErrorMessage(formErrors[firstInvalidField])
     if (!firstMessage) return
-    toast.error(firstMessage, {
+    
+    const displayMessage = firstMessage === "Invalid input: expected string, received undefined"
+      ? `Field "${String(firstInvalidField)}" is missing or invalid`
+      : firstMessage;
+
+    toast.error(displayMessage, {
       position: "top-center",
       icon: (
         <span className="inline-flex size-4 items-center justify-center rounded-full bg-[#ef4444] text-white">

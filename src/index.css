@@ -379,3 +379,16 @@
 .ieba-scrollbar::-webkit-scrollbar-thumb:hover {
   background: #d1d5db;
 }
+
+@keyframes back-bounce {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(-4px);
+  }
+}
+
+.animate-back-bounce {
+  animation: back-bounce 1s ease-in-out infinite;
+}

@@ -312,19 +312,12 @@ export function SecurityAssignmentsPanel({
     } 
 
     if (canPersistTransfers) {
-      const apportioningAllocation = Object.entries(getValues("apportioningAllocations") ?? {}).map(
-        ([id, val]) => ({
-          id: Number(id),
-          allocation: parseFloat(val) || 0,
-        }),
-      )
-
       try {
         await assignMutation.mutateAsync({
           userId: securityUserId,
           departments,
           apportioningRequired: getValues("supervisorApportioning"),
-          apportioningAllocation,
+          apportioningAllocation: [], // Role assignment only - do not update percentages
         })
         toast.success("Roles assigned.", addEmployeeTransferSuccessToastOptions)
       } catch (e) {
@@ -370,31 +363,49 @@ export function SecurityAssignmentsPanel({
       return
     }
 
-    // 1. Guard: If apportioning is active, ensure remaining departments will sum to 100%
-    if (watch("supervisorApportioning")) {
-      const removedDeptIds = new Set(
-        toRemoveItems
-          .map((i) => departmentIdFromSecurityCatalogItemId(i.id))
-          .filter((id): id is number => id != null),
-      )
-      const remainingSnaps = securitySnapshots.filter((s) => !removedDeptIds.has(s.departmentId))
+    let dbSupervisorDepts = new Set<number>()
 
-      // Only check if there are still departments left after removal
-      if (remainingSnaps.length > 0) {
-        const currentAllocations = getValues("apportioningAllocations") || {}
+    // 1. Guard: Only allow unassign if the department's allocation is 0 or null IN THE DATABASE
+    if (watch("supervisorApportioning") && !isAddMode && securityUserId) {
+      try {
+        const { apiGetUserDetails } = await import("../../api")
+        const details = await apiGetUserDetails(securityUserId)
         
-        // Get unique department IDs from the remaining snapshots
-        const uniqueRemainingDeptIds = [...new Set(remainingSnaps.map(s => String(s.departmentId)))]
-        
-        const remainingTotal = uniqueRemainingDeptIds.reduce(
-          (sum, deptId) => sum + (parseFloat(currentAllocations[deptId]) || 0),
-          0,
+        // Count how many UNIQUE departments have a Supervisor role in the database
+        dbSupervisorDepts = new Set(
+          details.departmentsRoles
+            ?.filter(dr => dr.role?.name?.trim() === "Time Study Supervisor")
+            .map(dr => dr.departmentId)
         )
 
-        if (remainingTotal !== 100) {
-          toast.error("allocation percentage should be 100% after removal")
+        const hasActiveSupervisorAllocation = toRemoveItems.some((i) => {
+          // Only check if we are specifically trying to unassign the Supervisor role
+          if (i.name.trim() !== "Time Study Supervisor") return false
+
+          const deptId = departmentIdFromSecurityCatalogItemId(i.id)
+          if (deptId == null) return false
+          
+          // Exception: If this is the ONLY supervisor department, allow unassigning it
+          // regardless of the current database percentage.
+          if (dbSupervisorDepts.size <= 1) return false
+
+          // Otherwise, if they have multiple departments, they must set this one to 0 first
+          const deptRoles = details.departmentsRoles?.filter(dr => dr.departmentId === deptId)
+          const hasAllocation = deptRoles?.some(dr => (dr.apportioning ?? 0) > 0)
+          
+          return hasAllocation
+        })
+
+        if (hasActiveSupervisorAllocation) {
+          toast.error("Cannot unassign Supervisor. You must Save the 0% allocation to the server first.")
           return
         }
+      } catch (err) {
+        console.error("Failed to verify database allocations:", err)
+        // Fallback to local check if API fails, or block for safety? 
+        // Blocking is safer for business rules.
+        toast.error("Could not verify department status. Please try again.")
+        return
       }
     }
 
@@ -415,18 +426,17 @@ export function SecurityAssignmentsPanel({
         return
       }
       try {
-        const apportioningAllocation = Object.entries(getValues("apportioningAllocations") ?? {}).map(
-          ([id, val]) => ({
-            id: Number(id),
-            allocation: parseFloat(val) || 0,
-          }),
-        )
+        // If unassigning the last supervisor department, force apportioningRequired to false
+        const isRemovingSupervisorRole = toRemoveItems.some(i => i.name.trim() === "Time Study Supervisor");
+        const willHaveNoSupervisorDepts = 
+          dbSupervisorDepts.size === 0 || 
+          (dbSupervisorDepts.size === 1 && isRemovingSupervisorRole);
 
         await unassignMutation.mutateAsync({
           userId: securityUserId,
           departments,
-          apportioningRequired: getValues("supervisorApportioning"),
-          apportioningAllocation,
+          apportioningRequired: willHaveNoSupervisorDepts ? false : getValues("supervisorApportioning"),
+          apportioningAllocation: [], // Role assignment only - do not update percentages
         })
         mergeRowsIntoRolesUnassignedCache(rolesUnassignedQueryKey, toRemoveItems)
         toast.success("Roles unassigned.", addEmployeeTransferSuccessToastOptions)
@@ -626,7 +636,14 @@ export function SecurityAssignmentsPanel({
             </thead>
             <tbody>
               {(() => {
-                const assignedDepts = Array.from(new Set(securitySnapshots.map(s => s.departmentId)))
+                const supervisorRoleName = "Time Study Supervisor"
+                const deptsWithSupervisor = new Set(
+                  securitySnapshots
+                    .filter(s => s.name.trim() === supervisorRoleName)
+                    .map(s => s.departmentId)
+                )
+
+                const assignedDepts = Array.from(deptsWithSupervisor)
                   .map(id => {
                     const snap = securitySnapshots.find(s => s.departmentId === id)
                     const deptInfo = departmentsQuery.data?.items.find(d => String(d.id) === String(id))

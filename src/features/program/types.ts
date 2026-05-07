@@ -237,6 +237,8 @@ export type ProgramToolbarProps = {
   onToggleInactiveOnly: () => void
   onAddProgram: () => void
   hideAdd?: boolean
+  showHistory?: boolean
+  onToggleHistory?: () => void
 }
 
 export type TimeStudyProgramFormProps = {
