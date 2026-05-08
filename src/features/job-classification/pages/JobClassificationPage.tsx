@@ -34,7 +34,7 @@ export function JobClassificationPage() {
   const { rows, totalItems, isLoading, isCreating, isUpdating, createJobClassificationAsync, updateJobClassificationAsync } =
     useJobClassificationModule({ page, pageSize, search, inactiveOnly })
 
-  const { data: editingRecord } = useGetJobClassificationById(
+  const { data: editingRecord, isFetching: isFetchingDetail } = useGetJobClassificationById(
     modalMode === "edit" && editingId ? editingId : null,
   )
 
@@ -68,6 +68,7 @@ export function JobClassificationPage() {
     } else {
       await createJobClassificationAsync({ values })
     }
+    setModalOpen(false)
     setPage(1)
   }
 
@@ -121,6 +122,7 @@ export function JobClassificationPage() {
         mode={modalMode}
         initialValues={initialValues}
         isSubmitting={isCreating || isUpdating}
+        isLoadingDetails={isFetchingDetail}
         onOpenChange={setModalOpen}
         onSave={handleSave}
       />
