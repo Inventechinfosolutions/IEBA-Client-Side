@@ -80,10 +80,14 @@ export function PersonalTimeStudyApportioningPanel({
   // Compute remaining minutes per department
   const departmentRows = useMemo(() => {
     if (!apportioningConfig) return []
-    return apportioningConfig.departments.map((dept) => ({
-      ...dept,
-      remainingMinutes: dept.allowedMinutes - supervisorOwnMinutesToday,
-    }))
+    return apportioningConfig.departments.map((dept) => {
+      // Split the supervisor's total worked time proportionally based on this department's percentage
+      const consumedMinutes = Math.round((supervisorOwnMinutesToday * dept.apportioningPercent) / 100)
+      return {
+        ...dept,
+        remainingMinutes: dept.allowedMinutes - consumedMinutes,
+      }
+    })
   }, [apportioningConfig, supervisorOwnMinutesToday])
 
   // Build flat program list (all programs from dropdownData, deduplicated by id)
