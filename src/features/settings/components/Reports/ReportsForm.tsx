@@ -1,5 +1,5 @@
 import { Controller, useFormContext } from "react-hook-form"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Search } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -17,6 +17,7 @@ import { SettingsFormSaveSection } from "@/features/settings/enums/setting.enum"
 import type { SettingsFormValues } from "@/features/settings/types"
 import { useActivityOptions } from "@/features/settings/queries/getActivityOptions"
 import { useReportOptions } from "@/features/settings/queries/getReportOptions"
+import { useProgramOptions } from "@/features/settings/queries/getProgramOptions"
 import tableEmptyIcon from "@/assets/icons/table-empty.png"
 
 const labelClassName = "mb-2 block text-[12px] font-normal text-[#2a2f3a]"
@@ -26,15 +27,30 @@ const activityMultiSelectClassName =
   "!min-h-[38px] !h-[38px] !w-[600px] !max-w-[600px] !rounded-[8px] !border-[#d6d7dc] !px-[11px] !py-0 !pr-9 !text-[12px] !font-normal !leading-normal overflow-hidden"
 
 export function ReportsForm() {
-  const { control, watch } = useFormContext<SettingsFormValues>()
+  const { control, watch, setValue } = useFormContext<SettingsFormValues>()
   const { data: reportOptions = [], isPending: reportsOptionsPending } = useReportOptions()
   const { data: activityOptions = [], isPending: activityOptionsPending } = useActivityOptions()
+  // Trigger program options fetch as requested
+  useProgramOptions()
 
   const selectedCodes = watch("reports.selectedActivityCodes")
   const [isTableSearchOpen, setIsTableSearchOpen] = useState(false)
   const [tableSearchDraft, setTableSearchDraft] = useState("")
   const [tableSearchValue, setTableSearchValue] = useState("")
   const reportKeyValue = watch("reports.reportKey")
+
+  // Auto-populate form when report selection changes
+  useEffect(() => {
+    if (!reportKeyValue || reportOptions.length === 0) return
+    const report = reportOptions.find((r) => r.key === reportKeyValue)
+    if (report) {
+      const mode = report.type === "included" ? "include" : "exclude"
+      const codes = (report.reportdata ?? "").split(",").filter(Boolean)
+      
+      setValue("reports.exclusionMode", mode)
+      setValue("reports.selectedActivityCodes", codes)
+    }
+  }, [reportKeyValue, reportOptions, setValue])
   const exclusionMode = watch("reports.exclusionMode")
   const isActivitiesFieldDisabled =
     !reportKeyValue || activityOptions.length === 0 || activityOptionsPending

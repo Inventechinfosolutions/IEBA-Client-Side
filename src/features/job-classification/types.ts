@@ -78,6 +78,7 @@ export type JobClassificationFormModalProps = {
   mode: JobClassificationFormMode
   initialValues: JobClassificationFormValues
   isSubmitting?: boolean
+  isLoadingDetails?: boolean
   onOpenChange: (open: boolean) => void
   onSave: (values: JobClassificationFormValues) => void
 }

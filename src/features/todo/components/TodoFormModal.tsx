@@ -4,6 +4,7 @@ import { Check, Loader2 } from "lucide-react"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
+import { Spinner } from "@/components/ui/spinner"
 import {
   Dialog,
   DialogContent,
@@ -75,112 +76,120 @@ export function TodoFormModal({
             {mode === "edit" ? "Edit To Do" : "Add To Do"}
           </DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="px-12 pb-12 pt-1">
+        <form onSubmit={handleSubmit} className="relative px-12 pb-12 pt-1">
+          {isSubmitting && (
+            <div className="absolute inset-0 z-50 flex items-center justify-center rounded-b-[4px] bg-white/60">
+              <Spinner className="text-[#6C5DD3]" />
+            </div>
+          )}
           <TitleCaseInput type="hidden" {...form.register("status")} />
-          <div className="space-y-8">
-            {isEditMode && isFetching ? (
-              <div className="flex h-[150px] items-center justify-center">
-                <Loader2 className="size-8 animate-spin text-[#6C5DD3]" />
-              </div>
-            ) : isEditMode ? (
-              <div className="grid grid-cols-[minmax(0,1fr)_270px] items-start gap-10">
+          
+          {isEditMode && isFetching && !serverData ? (
+            <div className="flex h-[300px] items-center justify-center">
+              <Spinner className="text-[#6C5DD3]" />
+            </div>
+          ) : (
+            <>
+              <div className="space-y-8">
+                {isEditMode ? (
+                  <div className="grid grid-cols-[minmax(0,1fr)_270px] items-start gap-10">
+                    <div>
+                      <label className="mb-1 block text-[12px] text-[#111827]">
+                        *Title
+                      </label>
+                      <TitleCaseInput
+                        {...form.register("title")}
+                        disabled={isEditMode}
+                        placeholder="Enter To Do Title"
+                        className="h-[46px] w-[300px] rounded-[8px] border-[#dfe3ee] text-[12px] placeholder:text-[12px] placeholder:text-gray-400 disabled:pointer-events-auto disabled:cursor-not-allowed disabled:border-[0.8px]! disabled:border-[#cfd4dd]! disabled:bg-[#d2d4d9]/20! disabled:text-black! disabled:opacity-100 focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-2 block text-[12px] text-[#111827]">*Status</label>
+                      <div className="flex h-[46px] items-center gap-4">
+                        {TODO_STATUS_OPTIONS.map((statusOption) => {
+                          const isDisabledOption =
+                            statusOption === "new" && isNewStatusDisabled
+
+                          return (
+                          <label
+                            key={statusOption}
+                            className={`inline-flex items-center gap-2 text-[12px] ${
+                              isDisabledOption
+                                ? "cursor-not-allowed text-[#b8bec9]"
+                                : "cursor-pointer text-[#111827]"
+                            }`}
+                          >
+                            <TitleCaseInput
+                              type="radio"
+                              value={statusOption}
+                              checked={selectedStatus === statusOption}
+                              disabled={isDisabledOption}
+                              onChange={() => {
+                                if (isDisabledOption) return
+                                form.setValue("status", statusOption, { shouldValidate: true })
+                              }}
+                              className="sr-only"
+                            />
+                            <span
+                              className={`inline-flex size-[16px] items-center justify-center rounded-full ${
+                                isDisabledOption
+                                  ? "border-8 border-[#d7dbe4]"
+                                  : selectedStatus === statusOption
+                                    ? "border-[5px] border-[#6c5dd3]"
+                                    : "border-2 border-[#c9ced9]"
+                              }`}
+                              aria-hidden="true"
+                            />
+                            <span>{TODO_STATUS_LABEL[statusOption]}</span>
+                          </label>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <label className="mb-1 block text-[12px] text-[#111827]">
+                      *Title
+                    </label>
+                    <TitleCaseInput
+                      {...form.register("title")}
+                      placeholder="Enter To Do Title"
+                      className="h-[46px] w-[282px] rounded-[8px] border-[#dfe3ee] text-[12px] placeholder:text-[12px] placeholder:text-gray-400 focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
+                    />
+                  </div>
+                )}
                 <div>
                   <label className="mb-1 block text-[12px] text-[#111827]">
-                    *Title
+                    *Description
                   </label>
-                  <TitleCaseInput
-                    {...form.register("title")}
-                    disabled={isEditMode}
-                    placeholder="Enter To Do Title"
-                    className="h-[46px] w-[300px] rounded-[8px] border-[#dfe3ee] text-[12px] placeholder:text-[12px] placeholder:text-gray-400 disabled:pointer-events-auto disabled:cursor-not-allowed disabled:border-[0.8px]! disabled:border-[#cfd4dd]! disabled:bg-[#d2d4d9]/20! disabled:text-black! disabled:opacity-100 focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
+                  <Textarea
+                    {...form.register("description")}
+                    disabled={isDescriptionDisabled}
+                    placeholder="Enter To Do Description"
+                    className="min-h-[86px] whitespace-pre-wrap break-all rounded-[8px] border-[#dfe3ee] text-[12px] placeholder:text-[12px] placeholder:text-gray-400 disabled:pointer-events-auto disabled:cursor-not-allowed disabled:border-[0.8px]! disabled:border-[#cfd4dd]! disabled:bg-[#d2d4d9]/20! disabled:text-black! disabled:opacity-100 focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
                   />
                 </div>
-                <div>
-                  <label className="mb-2 block text-[12px] text-[#111827]">*Status</label>
-                  <div className="flex h-[46px] items-center gap-4">
-                    {TODO_STATUS_OPTIONS.map((statusOption) => {
-                      const isDisabledOption =
-                        statusOption === "new" && isNewStatusDisabled
-
-                      return (
-                      <label
-                        key={statusOption}
-                        className={`inline-flex items-center gap-2 text-[12px] ${
-                          isDisabledOption
-                            ? "cursor-not-allowed text-[#b8bec9]"
-                            : "cursor-pointer text-[#111827]"
-                        }`}
-                      >
-                        <TitleCaseInput
-                          type="radio"
-                          value={statusOption}
-                          checked={selectedStatus === statusOption}
-                          disabled={isDisabledOption}
-                          onChange={() => {
-                            if (isDisabledOption) return
-                            form.setValue("status", statusOption, { shouldValidate: true })
-                          }}
-                          className="sr-only"
-                        />
-                        <span
-                          className={`inline-flex size-[16px] items-center justify-center rounded-full ${
-                            isDisabledOption
-                              ? "border-8 border-[#d7dbe4]"
-                              : selectedStatus === statusOption
-                                ? "border-[5px] border-[#6c5dd3]"
-                                : "border-2 border-[#c9ced9]"
-                          }`}
-                          aria-hidden="true"
-                        />
-                        <span>{TODO_STATUS_LABEL[statusOption]}</span>
-                      </label>
-                      )
-                    })}
-                  </div>
-                </div>
               </div>
-            ) : (
-              <div>
-                <label className="mb-1 block text-[12px] text-[#111827]">
-                  *Title
-                </label>
-                <TitleCaseInput
-                  {...form.register("title")}
-                  placeholder="Enter To Do Title"
-                  className="h-[46px] w-[282px] rounded-[8px] border-[#dfe3ee] text-[12px] placeholder:text-[12px] placeholder:text-gray-400 focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
-                />
+              <div className="mt-8 flex items-center justify-end gap-5">
+                <Button
+                  type="submit"
+                  disabled={isSubmitting || (isEditMode && isFetching)}
+                  className="h-[52px] min-w-[98px] cursor-pointer rounded-[10px] bg-[#6C5DD3] px-7 text-[14px] text-white hover:bg-[#6C5DD3]"
+                >
+                  Save
+                </Button>
+                <Button
+                  type="button"
+                  onClick={() => onOpenChange(false)}
+                  className="h-[52px] min-w-[98px] cursor-pointer rounded-[10px] bg-[#d2d4d9] px-7 text-[14px] text-[#111827] hover:bg-[#d2d4d9]"
+                >
+                  Exit
+                </Button>
               </div>
-            )}
-            {!(isEditMode && isFetching) && (
-              <div>
-                <label className="mb-1 block text-[12px] text-[#111827]">
-                  *Description
-                </label>
-                <Textarea
-                  {...form.register("description")}
-                  disabled={isDescriptionDisabled}
-                  placeholder="Enter To Do Description"
-                  className="min-h-[86px] whitespace-pre-wrap break-all rounded-[8px] border-[#dfe3ee] text-[12px] placeholder:text-[12px] placeholder:text-gray-400 disabled:pointer-events-auto disabled:cursor-not-allowed disabled:border-[0.8px]! disabled:border-[#cfd4dd]! disabled:bg-[#d2d4d9]/20! disabled:text-black! disabled:opacity-100 focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
-                />
-              </div>
-            )}
-          </div>
-          <div className="mt-8 flex items-center justify-end gap-5">
-            <Button
-              type="submit"
-              disabled={isSubmitting || (isEditMode && isFetching)}
-              className="h-[52px] min-w-[98px] cursor-pointer rounded-[10px] bg-[#6C5DD3] px-7 text-[14px] text-white hover:bg-[#6C5DD3]"
-            >
-              {isSubmitting ? "Saving..." : "Save"}
-            </Button>
-            <Button
-              type="button"
-              onClick={() => onOpenChange(false)}
-              className="h-[52px] min-w-[98px] cursor-pointer rounded-[10px] bg-[#d2d4d9] px-7 text-[14px] text-[#111827] hover:bg-[#d2d4d9]"
-            >
-              Exit
-            </Button>
-          </div>
+            </>
+          )}
         </form>
       </DialogContent>
     </Dialog>

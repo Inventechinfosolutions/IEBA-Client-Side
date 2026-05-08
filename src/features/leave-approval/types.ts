@@ -248,6 +248,7 @@ export type LeaveApprovalCommentsModalProps = {
   title?: string
   mode?: "comments" | "reject" | "approve" | "requested"
   initialValues: LeaveApprovalCommentsModalValues
+  isSubmitting?: boolean
   onOpenChange: (open: boolean) => void
   onSave: (
     values: LeaveApprovalCommentsModalValues,

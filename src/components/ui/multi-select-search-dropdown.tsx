@@ -212,7 +212,7 @@ export function MultiSelectSearchDropdown({
       <PopoverContent
         align="start"
         side="bottom"
-        avoidCollisions={false}
+        avoidCollisions={true}
         sideOffset={6}
         onOpenAutoFocus={(e) => e.preventDefault()}
         onCloseAutoFocus={(e) => e.preventDefault()}

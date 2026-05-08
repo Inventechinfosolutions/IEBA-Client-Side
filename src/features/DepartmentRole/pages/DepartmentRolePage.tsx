@@ -401,6 +401,18 @@ export function DepartmentRolePage() {
         </>
       )}
 
+      <DepartmenRoleTable
+        data={data}
+        pagination={pagination}
+        onPageChange={onPageChange}
+        onPageSizeChange={onPageSizeChange}
+        isLoading={isLoading}
+        isSaving={updateChildStatus.isPending}
+        onOptionAction={handleOptionAction}
+        onView={handleView}
+        onEdit={handleEdit}
+        onToggleChildStatus={handleToggleChildStatus}
+      />
       <DepartmentRoleAdd
         key={addDialogKey}
         open={addOpen}

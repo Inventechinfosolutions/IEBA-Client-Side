@@ -6,6 +6,8 @@ import { useForm } from "react-hook-form"
 import { useMemo, useRef, useState } from "react"
 import { toast } from "sonner"
 
+import { Spinner } from "@/components/ui/spinner"
+
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
@@ -113,6 +115,7 @@ function mapCountyActivityRowToFormValues(row: CountyActivityCodeRow): CountyAct
     docRequired: row.docRequired,
     multipleJobPools: row.multipleJobPools,
     department: row.department,
+    apportioning: row.apportioning,
   }
 }
 
@@ -354,6 +357,7 @@ export function CountyActivityCodeTable({
         docRequired: activity.docrequired,
         multipleJobPools: activity.isActivityAssignableToMultipleJobPools,
         department: editDeptNames.join(", "),
+        apportioning: activity.apportioning,
       }
     }
 
@@ -372,6 +376,7 @@ export function CountyActivityCodeTable({
       multipleJobPools: activity.isActivityAssignableToMultipleJobPools,
       department:
         editDeptNames.length > 0 ? editDeptNames.join(", ") : rowToEdit.department,
+      apportioning: activity.apportioning,
     }
   }, [
     editOpen,
@@ -1074,256 +1079,147 @@ export function CountyActivityCodeTable({
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              Array.from({ length: pagination.pageSize }, (_, rowIndex) => (
-                <TableRow
-                  key={`skeleton-${rowIndex}`}
-                  className="border-b border-[#E5E7EB]"
-                >
-                  <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
-                    <Skeleton className="h-4 w-[90%]" />
-                  </TableCell>
-                  <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] leading-[1.4] whitespace-normal break-words font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
-                    <Skeleton className="h-4 w-[95%]" />
-                  </TableCell>
-                  <TableCell className="min-w-0 max-w-0 border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
-                    <Skeleton className="h-4 w-[100%]" />
-                  </TableCell>
-                  <TableCell className="min-w-0 border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
-                    <Skeleton className="h-4 w-[70%]" />
-                  </TableCell>
-                  <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
-                    <Skeleton className="h-4 w-[80%]" />
-                  </TableCell>
-                  <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
-                    <Skeleton className="h-4 w-[60%]" />
-                  </TableCell>
-                  <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-center text-[13px] text-[#C4C4C4]">
-                    <Skeleton className="mx-auto h-4 w-4" />
-                  </TableCell>
-                  <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-center text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
-                    <Skeleton className="mx-auto h-4 w-[40%]" />
-                  </TableCell>
-                  <TableCell className="border-r border-[#E5E7EB] px-[8px] py-[5px] align-top text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
-                    <Skeleton className="mx-auto h-4 w-[70%]" />
-                  </TableCell>
-                  <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-center">
-                    <Skeleton className="mx-auto h-4 w-4" />
-                  </TableCell>
-                  <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-center text-[#C4C4C4]">
-                    <Skeleton className="mx-auto h-4 w-4" />
-                  </TableCell>
-                  <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-center text-[#C4C4C4]">
-                    <Skeleton className="mx-auto h-4 w-4" />
-                  </TableCell>
-                  <TableCell className="px-[14px] py-[5px] align-top text-center">
-                    <Skeleton className="mx-auto h-6 w-6" />
-                  </TableCell>
-                </TableRow>
-              ))
-            ) : rows.length === 0 ? (
-              <TableRow>
+              <TableRow className="hover:bg-transparent text-center">
                 <TableCell
                   colSpan={canUpdateCountyActivity ? 13 : 12}
-                  className="h-20 text-center text-sm text-muted-foreground"
+                  className="h-40 p-0"
                 >
-                  No county activity codes found.
+                  <div className="flex h-full w-full items-center justify-center">
+                    <Spinner className="text-[#6C5DD3]" />
+                  </div>
                 </TableCell>
               </TableRow>
             ) : (
-              sortedRows.flatMap((row) => {
-                const children = subRowsByParentId[row.id] ?? []
-                const isExpanded = Boolean(expandedRowIds[row.id])
-                const hasChildren = children.length > 0
-
-                const countyActivityPrimaryTableRow = (
-                  <TableRow key={row.id} className="border-b border-[#E5E7EB]">
-                    <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0] whitespace-normal break-all">
-                      <button
-                        type="button"
-                        className={`mr-1 inline-flex size-5 shrink-0 items-center justify-center rounded-[6px] align-middle ${
-                          hasChildren ? "text-[#6C5DD3] hover:bg-[#6C5DD3]/10" : "opacity-0"
-                        }`}
-                        aria-label={isExpanded ? "Collapse" : "Expand"}
-                        onClick={() => {
-                          if (!hasChildren) return
-                          setExpandedRowIds((prev) => ({
-                            ...prev,
-                            [row.id]: !prev[row.id],
-                          }))
-                        }}
-                      >
-                        {hasChildren ? (
-                          isExpanded ? (
-                            <ChevronDown className="size-4" />
-                          ) : (
-                            <ChevronRight className="size-4" />
-                          )
-                        ) : null}
-                      </button>
-                      {row.countyActivityCode}
+              <>
+                {/* Skeletons visible for first 200ms then collapse */}
+                {Array.from({ length: pagination.pageSize }, (_, rowIndex) => (
+                  <TableRow
+                    key={`skeleton-${rowIndex}`}
+                    className="ieba-skeleton-row border-b border-[#E5E7EB]"
+                  >
+                    <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
+                      <Skeleton className="h-4 w-[90%]" />
                     </TableCell>
-                  <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] leading-[1.4] whitespace-normal break-words font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
-                    {row.countyActivityName}
-                  </TableCell>
-                  <CountyActivityDescriptionTableCell description={row.description} />
-                  <TableCell className="min-w-0 border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] leading-[1.4] whitespace-normal break-words font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
-                    <CountyActivityDepartmentStackCell label={getCountyActivityCodeRowDepartmentLabel(row)} />
-                  </TableCell>
-                  <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
-                    {row.masterCodeType}
-                  </TableCell>
-                  <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
-                    {row.catalogActivityCode || "—"}
-                  </TableCell>
-                  <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-center text-[13px] text-[#C4C4C4]">
-                    {row.spmp ? (
-                      <img
-                        src={statusCheckImg}
-                        alt="Yes"
-                        className="mx-auto h-4 w-4 object-contain"
-                      />
-                    ) : (
-                      <img
-                        src={statusCrossImg}
-                        alt="No"
-                        className="mx-auto h-4 w-4 object-contain"
-                      />
-                    )}
-                  </TableCell>
-                  <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-center text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
-                    {row.match}
-                  </TableCell>
-                  <TableCell className="border-r border-[#E5E7EB] px-[8px] py-[5px] align-top text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
-                    <span className="block w-full text-center">
-                      {row.percentage.toFixed(2)}
-                    </span>
-                  </TableCell>
-                  <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-center">
-                    {row.active ? (
-                      <img
-                        src={statusCheckImg}
-                        alt="active"
-                        className="mx-auto h-4 w-4 object-contain"
-                      />
-                    ) : (
-                      <img
-                        src={statusCrossImg}
-                        alt="inactive"
-                        className="mx-auto h-4 w-4 object-contain"
-                      />
-                    )}
-                  </TableCell>
-                  <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-center text-[#C4C4C4]">
-                    {row.leaveCode ? (
-                      <img
-                        src={statusCheckImg}
-                        alt="leave code"
-                        className="mx-auto h-4 w-4 object-contain"
-                      />
-                    ) : (
-                      <img
-                        src={statusCrossImg}
-                        alt="No"
-                        className="mx-auto h-4 w-4 object-contain"
-                      />
-                    )}
-                  </TableCell>
-                  <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-center text-[#C4C4C4]">
-                    {row.multipleJobPools ? (
-                      <img
-                        src={statusCheckImg}
-                        alt="multiple job pools"
-                        className="mx-auto h-4 w-4 object-contain"
-                      />
-                    ) : (
-                      <img
-                        src={statusCrossImg}
-                        alt="No"
-                        className="mx-auto h-4 w-4 object-contain"
-                      />
-                    )}
-                  </TableCell>
-                  {canUpdateCountyActivity && (
+                    <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] leading-[1.4] whitespace-normal break-words font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
+                      <Skeleton className="h-4 w-[95%]" />
+                    </TableCell>
+                    <TableCell className="min-w-0 max-w-0 border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
+                      <Skeleton className="h-4 w-[100%]" />
+                    </TableCell>
+                    <TableCell className="min-w-0 border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
+                      <Skeleton className="h-4 w-[70%]" />
+                    </TableCell>
+                    <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
+                      <Skeleton className="h-4 w-[80%]" />
+                    </TableCell>
+                    <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
+                      <Skeleton className="h-4 w-[60%]" />
+                    </TableCell>
+                    <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-center text-[13px] text-[#C4C4C4]">
+                      <Skeleton className="mx-auto h-4 w-4" />
+                    </TableCell>
+                    <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-center text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
+                      <Skeleton className="mx-auto h-4 w-[40%]" />
+                    </TableCell>
+                    <TableCell className="border-r border-[#E5E7EB] px-[8px] py-[5px] align-top text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
+                      <Skeleton className="mx-auto h-4 w-[70%]" />
+                    </TableCell>
+                    <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-center">
+                      <Skeleton className="mx-auto h-4 w-4" />
+                    </TableCell>
+                    <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-center text-[#C4C4C4]">
+                      <Skeleton className="mx-auto h-4 w-4" />
+                    </TableCell>
+                    <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-center text-[#C4C4C4]">
+                      <Skeleton className="mx-auto h-4 w-4" />
+                    </TableCell>
                     <TableCell className="px-[14px] py-[5px] align-top text-center">
-                      <Button
-                        type="button"
-                        size="icon"
-                        variant="ghost"
-                        className="text-[#6C5DD3] hover:bg-[#6C5DD3]/10"
-                        onClick={() => {
-                          setRowToEdit(row)
-                          setEditOpen(true)
-                        }}
-                      >
-                        <img
-                          src={editIconImg}
-                          alt="Edit"
-                          className="h-4 w-4 object-contain"
-                        />
-                      </Button>
+                      <Skeleton className="mx-auto h-6 w-6" />
                     </TableCell>
-                  )}
                   </TableRow>
-                )
+                ))}
 
-                const countyActivitySubTableRows = isExpanded
-                  ? children.map((child) => (
-                      <TableRow
-                        key={child.id}
-                        className="border-b border-[#E5E7EB] bg-[#F6F5FF]"
-                      >
+                {/* Data rows appearing after 200ms */}
+                {rows.length === 0 ? (
+                  <TableRow className="ieba-data-row">
+                    <TableCell
+                      colSpan={canUpdateCountyActivity ? 13 : 12}
+                      className="h-20 text-center text-sm text-muted-foreground"
+                    >
+                      No county activity codes found.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  sortedRows.flatMap((row) => {
+                    const children = subRowsByParentId[row.id] ?? []
+                    const isExpanded = Boolean(expandedRowIds[row.id])
+                    const hasChildren = children.length > 0
+
+                    const countyActivityPrimaryTableRow = (
+                      <TableRow key={row.id} className="ieba-data-row border-b border-[#E5E7EB]">
                         <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0] whitespace-normal break-all">
-                          <span className="ml-7">{child.countyActivityCode}</span>
+                          <button
+                            type="button"
+                            className={`mr-1 inline-flex size-5 shrink-0 items-center justify-center rounded-[6px] align-middle ${
+                              hasChildren ? "text-[#6C5DD3] hover:bg-[#6C5DD3]/10" : "opacity-0"
+                            }`}
+                            aria-label={isExpanded ? "Collapse" : "Expand"}
+                            onClick={() => {
+                              if (!hasChildren) return
+                              setExpandedRowIds((prev) => ({
+                                ...prev,
+                                [row.id]: !prev[row.id],
+                              }))
+                            }}
+                          >
+                            {hasChildren ? (
+                              isExpanded ? (
+                                <ChevronDown className="size-4" />
+                              ) : (
+                                <ChevronRight className="size-4" />
+                              )
+                            ) : null}
+                          </button>
+                          {row.countyActivityCode}
                         </TableCell>
                         <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] leading-[1.4] whitespace-normal break-words font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
-                          {child.countyActivityName}
+                          {row.countyActivityName}
                         </TableCell>
-                        <CountyActivityDescriptionTableCell description={child.description} />
+                        <CountyActivityDescriptionTableCell description={row.description} />
                         <TableCell className="min-w-0 border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] leading-[1.4] whitespace-normal break-words font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
-                          <CountyActivityDepartmentStackCell
-                            label={
-                              child.rowType === CountyActivityGridRowType.SUB
-                                ? ""
-                                : getCountyActivityCodeRowDepartmentLabel(child)
-                            }
-                          />
+                          <CountyActivityDepartmentStackCell label={getCountyActivityCodeRowDepartmentLabel(row)} />
                         </TableCell>
                         <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
-                          {child.rowType === CountyActivityGridRowType.SUB
-                            ? ""
-                            : child.masterCodeType}
+                          {row.masterCodeType}
                         </TableCell>
                         <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
-                          {child.rowType === CountyActivityGridRowType.SUB
-                            ? ""
-                            : child.catalogActivityCode || "—"}
+                          {row.catalogActivityCode || "—"}
                         </TableCell>
                         <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-center text-[13px] text-[#C4C4C4]">
-                          {/* Sub rows have no master code — SPMP is always N/cross */}
-                          <img
-                            src={statusCrossImg}
-                            alt="No"
-                            className="mx-auto h-4 w-4 object-contain"
-                          />
+                          {row.spmp ? (
+                            <img
+                              src={statusCheckImg}
+                              alt="Yes"
+                              className="mx-auto h-4 w-4 object-contain"
+                            />
+                          ) : (
+                            <img
+                              src={statusCrossImg}
+                              alt="No"
+                              className="mx-auto h-4 w-4 object-contain"
+                            />
+                          )}
                         </TableCell>
-                        <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-center text-[13px] text-[#C4C4C4]">
-                          {/* Sub rows have no master code — Match is always N/cross */}
-                          <img
-                            src={statusCrossImg}
-                            alt="No"
-                            className="mx-auto h-4 w-4 object-contain"
-                          />
+                        <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-center text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
+                          {row.match}
                         </TableCell>
-                        <TableCell className="border-r border-[#E5E7EB] px-[8px] py-[5px] align-middle text-center text-[13px] text-[#C4C4C4]">
-                          {/* Sub rows have no master code — % is always N/cross */}
-                          <img
-                            src={statusCrossImg}
-                            alt="No"
-                            className="mx-auto h-4 w-4 object-contain"
-                          />
+                        <TableCell className="border-r border-[#E5E7EB] px-[8px] py-[5px] align-top text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
+                          <span className="block w-full text-center">
+                            {row.percentage.toFixed(2)}
+                          </span>
                         </TableCell>
                         <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-center">
-                          {child.active ? (
+                          {row.active ? (
                             <img
                               src={statusCheckImg}
                               alt="active"
@@ -1338,7 +1234,7 @@ export function CountyActivityCodeTable({
                           )}
                         </TableCell>
                         <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-center text-[#C4C4C4]">
-                          {child.leaveCode ? (
+                          {row.leaveCode ? (
                             <img
                               src={statusCheckImg}
                               alt="leave code"
@@ -1353,7 +1249,7 @@ export function CountyActivityCodeTable({
                           )}
                         </TableCell>
                         <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-center text-[#C4C4C4]">
-                          {child.multipleJobPools ? (
+                          {row.multipleJobPools ? (
                             <img
                               src={statusCheckImg}
                               alt="multiple job pools"
@@ -1375,7 +1271,7 @@ export function CountyActivityCodeTable({
                               variant="ghost"
                               className="text-[#6C5DD3] hover:bg-[#6C5DD3]/10"
                               onClick={() => {
-                                setRowToEdit(child)
+                                setRowToEdit(row)
                                 setEditOpen(true)
                               }}
                             >
@@ -1388,11 +1284,137 @@ export function CountyActivityCodeTable({
                           </TableCell>
                         )}
                       </TableRow>
-                    ))
-                  : []
+                    )
 
-                return [countyActivityPrimaryTableRow, ...countyActivitySubTableRows]
-              })
+                    const countyActivitySubTableRows = isExpanded
+                      ? children.map((child) => (
+                          <TableRow
+                            key={child.id}
+                            className="ieba-data-row border-b border-[#E5E7EB] bg-[#F6F5FF]"
+                          >
+                            <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0] whitespace-normal break-all">
+                              <span className="ml-7">{child.countyActivityCode}</span>
+                            </TableCell>
+                            <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] leading-[1.4] whitespace-normal break-words font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
+                              {child.countyActivityName}
+                            </TableCell>
+                            <CountyActivityDescriptionTableCell description={child.description} />
+                            <TableCell className="min-w-0 border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] leading-[1.4] whitespace-normal break-words font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
+                              <CountyActivityDepartmentStackCell
+                                label={
+                                  child.rowType === CountyActivityGridRowType.SUB
+                                    ? ""
+                                    : getCountyActivityCodeRowDepartmentLabel(child)
+                                }
+                              />
+                            </TableCell>
+                            <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
+                              {child.rowType === CountyActivityGridRowType.SUB
+                                ? ""
+                                : child.masterCodeType}
+                            </TableCell>
+                            <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
+                              {child.rowType === CountyActivityGridRowType.SUB
+                                ? ""
+                                : child.catalogActivityCode || "—"}
+                            </TableCell>
+                            <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-center text-[13px] text-[#C4C4C4]">
+                              {/* Sub rows have no master code — SPMP is always N/cross */}
+                              <img
+                                src={statusCrossImg}
+                                alt="No"
+                                className="mx-auto h-4 w-4 object-contain"
+                              />
+                            </TableCell>
+                            <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-center text-[13px] text-[#C4C4C4]">
+                              {/* Sub rows have no master code — Match is always N/cross */}
+                              <img
+                                src={statusCrossImg}
+                                alt="No"
+                                className="mx-auto h-4 w-4 object-contain"
+                              />
+                            </TableCell>
+                            <TableCell className="border-r border-[#E5E7EB] px-[8px] py-[5px] align-middle text-center text-[13px] text-[#C4C4C4]">
+                              {/* Sub rows have no master code — % is always N/cross */}
+                              <img
+                                src={statusCrossImg}
+                                alt="No"
+                                className="mx-auto h-4 w-4 object-contain"
+                              />
+                            </TableCell>
+                            <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-center">
+                              {child.active ? (
+                                <img
+                                  src={statusCheckImg}
+                                  alt="active"
+                                  className="mx-auto h-4 w-4 object-contain"
+                                />
+                              ) : (
+                                <img
+                                  src={statusCrossImg}
+                                  alt="inactive"
+                                  className="mx-auto h-4 w-4 object-contain"
+                                />
+                              )}
+                            </TableCell>
+                            <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-center text-[#C4C4C4]">
+                              {child.leaveCode ? (
+                                <img
+                                  src={statusCheckImg}
+                                  alt="leave code"
+                                  className="mx-auto h-4 w-4 object-contain"
+                                />
+                              ) : (
+                                <img
+                                  src={statusCrossImg}
+                                  alt="No"
+                                  className="mx-auto h-4 w-4 object-contain"
+                                />
+                              )}
+                            </TableCell>
+                            <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-center text-[#C4C4C4]">
+                              {child.multipleJobPools ? (
+                                <img
+                                  src={statusCheckImg}
+                                  alt="multiple job pools"
+                                  className="mx-auto h-4 w-4 object-contain"
+                                />
+                              ) : (
+                                <img
+                                  src={statusCrossImg}
+                                  alt="No"
+                                  className="mx-auto h-4 w-4 object-contain"
+                                />
+                              )}
+                            </TableCell>
+                            {canUpdateCountyActivity && (
+                              <TableCell className="px-[14px] py-[5px] align-top text-center">
+                                <Button
+                                  type="button"
+                                  size="icon"
+                                  variant="ghost"
+                                  className="text-[#6C5DD3] hover:bg-[#6C5DD3]/10"
+                                  onClick={() => {
+                                    setRowToEdit(child)
+                                    setEditOpen(true)
+                                  }}
+                                >
+                                  <img
+                                    src={editIconImg}
+                                    alt="Edit"
+                                    className="h-4 w-4 object-contain"
+                                  />
+                                </Button>
+                              </TableCell>
+                            )}
+                          </TableRow>
+                        ))
+                      : []
+
+                    return [countyActivityPrimaryTableRow, ...countyActivitySubTableRows]
+                  })
+                )}
+              </>
             )}
           </TableBody>
         </Table>
@@ -1453,6 +1475,8 @@ export function CountyActivityCodeTable({
               setCurrentPrimaryId(id)
             }}
             onClose={() => setAddOpen(false)}
+            isSubmitting={createCountyActivityCode.isPending}
+            isEditSourceLoading={addTab === CountyActivityGridRowType.SUB && addSubParentDetailQuery.isPending}
           />
         </DialogContent>
       </Dialog>
@@ -1463,17 +1487,11 @@ export function CountyActivityCodeTable({
           className="max-h-[85vh] w-[1120px] max-w-[calc(100vw-2rem)] overflow-y-auto border-0 bg-transparent p-0 shadow-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
           overlayClassName="bg-black/50"
         >
-          {editDetailQuery.isError && editOpen ? (
-            <div
-              role="alert"
-              className="mb-3 rounded-[10px] border border-destructive/40 bg-destructive/10 px-4 py-3 text-[14px] text-destructive"
-            >
-              {editDetailQuery.error instanceof Error
-                ? editDetailQuery.error.message
-                : "Could not load activity for edit."}
+          {editDetailQuery.isPending && editOpen ? (
+            <div className="flex h-[500px] w-full items-center justify-center rounded-[10px] bg-white">
+              <Spinner className="text-[#6C5DD3]" />
             </div>
-          ) : null}
-          {rowToEdit ? (
+          ) : rowToEdit ? (
             <CountyActivityCodeAddPage
               key={rowToEdit.id}
               mode={CountyActivityAddPageMode.EDIT}
@@ -1500,9 +1518,9 @@ export function CountyActivityCodeTable({
               masterCodeOptions={editMasterCodeOptions}
               isMasterCodeOptionsLoading={editMasterCodesQuery.isPending}
               isEditSourceLoading={
-                // Only show the full-page loader for primary rows while the per-type codes are hydrating.
-                rowToEdit?.rowType === CountyActivityGridRowType.PRIMARY &&
-                editMasterCodesQuery.isPending
+                editDetailQuery.isPending ||
+                (rowToEdit?.rowType === CountyActivityGridRowType.PRIMARY &&
+                  editMasterCodesQuery.isPending)
               }
               departmentNames={departmentNames}
               onSelectedPrimaryIdChange={(id) => {
@@ -1528,6 +1546,7 @@ export function CountyActivityCodeTable({
                 setEditOpen(false)
                 setRowToEdit(null)
               }}
+              isSubmitting={updateCountyActivityCode.isPending}
             />
           ) : null}
         </DialogContent>

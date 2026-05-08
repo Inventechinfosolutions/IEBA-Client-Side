@@ -5,6 +5,7 @@ import { Controller, useForm } from "react-hook-form"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
+import { Spinner } from "@/components/ui/spinner"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
   Dialog,
@@ -23,6 +24,7 @@ export function JobClassificationFormModal({
   mode,
   initialValues,
   isSubmitting,
+  isLoadingDetails = false,
   onOpenChange,
   onSave,
 }: JobClassificationFormModalProps) {
@@ -144,7 +146,6 @@ export function JobClassificationFormModal({
             "!w-fit !max-w-[340px] !min-h-[35px] !rounded-[8px] !border-0 !px-3 !py-2 !text-[12px] !shadow-[0_8px_22px_rgba(17,24,39,0.18)]",
         }
       )
-      closeModal()
     },
     (formErrors) => {
       const firstInvalidField = fieldOrder.find((field) => Boolean(formErrors[field]))
@@ -183,7 +184,12 @@ export function JobClassificationFormModal({
         overlayClassName="bg-black/40"
         className="left-1/2 top-[8%] w-[880px] max-w-[calc(100vw-40px)] -translate-x-1/2 translate-y-0 gap-0 overflow-hidden rounded-[4px] border border-[#f4f6fb] bg-white p-0 text-[#0f172a] subpixel-antialiased shadow-[0_6px_18px_rgba(22,29,45,0.12)]"
       >
-        <form onSubmit={handleSave} className="select-none bg-white px-11 pb-8 pt-7">
+        <form onSubmit={handleSave} className="relative select-none bg-white px-11 pb-8 pt-7">
+          {(isSubmitting || isLoadingDetails) && (
+            <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/60">
+              <Spinner className="text-[#6C5DD3]" />
+            </div>
+          )}
           <DialogHeader className="relative items-center pb-8">
             <DialogTitle className="text-[22px] font-semibold text-[#111827]">
               {title}
@@ -280,7 +286,7 @@ export function JobClassificationFormModal({
               disabled={isSubmitting}
               className="h-[50px] min-w-[100px] cursor-pointer rounded-[10px] bg-[#6C5DD3] px-6 text-[14px] font-medium text-white hover:bg-[#6C5DD3] disabled:opacity-50"
             >
-              {isSubmitting ? "Saving…" : "Save"}
+              Save
             </Button>
             <Button
               type="button"

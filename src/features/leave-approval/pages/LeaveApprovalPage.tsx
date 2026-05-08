@@ -111,7 +111,7 @@ export function LeaveApprovalPage() {
         </div>
         <LeaveApprovalTable
           rows={leaveModule.rows}
-          isLoading={isTableLoading}
+          isLoading={isTableLoading || updateMutation.isPending}
           sort={sort}
           onToggleSort={(key) => {
             setPage(1)
@@ -144,6 +144,7 @@ export function LeaveApprovalPage() {
         initialValues={{
           commentText: "",
         }}
+        isSubmitting={updateMutation.isPending}
         onSave={(values, action) => {
           const id = commentsModalRowId
           if (!id) return
@@ -176,10 +177,10 @@ export function LeaveApprovalPage() {
                     </span>
                   ),
                 })
+                setCommentsModalOpen(false)
               },
             },
           )
-          setCommentsModalOpen(false)
         }}
       />
     </section>

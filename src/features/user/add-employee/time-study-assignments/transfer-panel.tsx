@@ -1,3 +1,4 @@
+
 import { Check, Search } from "lucide-react"
 import {
   Tooltip,
@@ -11,6 +12,7 @@ import { TitleCaseInput } from "@/components/ui/title-case-input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 
 import type { AddEmployeeTimeStudyTransferPanelProps } from "../types"
+import { Spinner } from "@/components/ui/spinner"
 
 export function TransferPanel({
   title,
@@ -21,6 +23,7 @@ export function TransferPanel({
   searchValue,
   onSearchChange,
   selectedDept,
+  isLoading = false,
 }: AddEmployeeTimeStudyTransferPanelProps) {
   const allSelected = items.length > 0 && items.every((item) => selectedIds.includes(item.id))
 
@@ -55,7 +58,12 @@ export function TransferPanel({
         </div>
       </div>
 
-      <ScrollArea className="h-[220px] py-2 px-2">
+      <ScrollArea className="relative h-[220px] py-2 px-2">
+        {isLoading && (
+          <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/60">
+            <Spinner className="text-[#6C5DD3]" />
+          </div>
+        )}
         {items.length > 0 ? (
           <div className="flex flex-col">
             {/* Dept header row + toggle-all checkbox */}

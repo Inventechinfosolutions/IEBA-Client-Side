@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { Spinner } from "@/components/ui/spinner"
 
 import tableEmptyIcon from "@/assets/icons/table-empty.png"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -27,7 +28,7 @@ export function UserProgramHistoryTable({
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
 
-  const { data, isLoading } = useUserProgramHistoryQuery({
+  const { data, isLoading, isFetching } = useUserProgramHistoryQuery({
     page,
     limit: pageSize,
     programCode,
@@ -69,7 +70,12 @@ export function UserProgramHistoryTable({
       </div>
 
       <div className="overflow-hidden rounded-[4px] border border-[#e6e7ef]">
-        <div className="overflow-x-auto">
+        <div className="relative min-h-[300px] overflow-x-auto">
+          {(isLoading || isFetching) && (
+            <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/60">
+              <Spinner className="text-[#6C5DD3]" />
+            </div>
+          )}
           <Table className="w-full table-fixed">
             <colgroup>
               <col style={{ width: "150px" }} />

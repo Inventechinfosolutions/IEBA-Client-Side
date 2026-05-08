@@ -1,5 +1,6 @@
 import { Check } from "lucide-react"
 import { toast } from "sonner"
+import { useState } from "react"
 
 import { MasterCodeFormModal } from "../components/MasterCodeFormModal"
 import { MasterCodePagination } from "../components/MasterCodePagination"
@@ -10,6 +11,7 @@ import { useMasterCodeUI } from "../hooks/useMasterCodeUi"
 import { useMasterCodes } from "../hooks/useMasterCode"
 import type { MasterCodeFormValues } from "../types"
 import { usePermissions } from "@/hooks/usePermissions"
+import { Spinner } from "@/components/ui/spinner"
 
 export function MasterCodePage() {
   const { isSuperAdmin, canAdd, canUpdate, canView } = usePermissions()
@@ -34,6 +36,7 @@ export function MasterCodePage() {
 
   // 1. UI State Controller
   const ui = useMasterCodeUI()
+  const [isSaving, setIsSaving] = useState(false)
 
   // 2. Data Fetching & Mutations
   const masterCodes = useMasterCodes({
@@ -59,13 +62,17 @@ export function MasterCodePage() {
   // 4. Action Handlers
   const handleSaveForm = (values: MasterCodeFormValues) => {
     if (!ui.activeTab) return
+    setIsSaving(true)
     if (ui.modalMode === "edit" && ui.selectedRow) {
       masterCodes.updateMasterCode(
         { id: ui.selectedRow.id, codeType: ui.activeTab, values },
         {
-          onSuccess: () =>
-            toast.success(`${ui.activeTab} updated successfully`, successToastOptions),
+          onSuccess: () => {
+            toast.success(`${ui.activeTab} updated successfully`, successToastOptions)
+            ui.setModalOpen(false)
+          },
           onError: (error: Error) => toast.error(error.message),
+          onSettled: () => setIsSaving(false),
         }
       )
       return
@@ -74,9 +81,12 @@ export function MasterCodePage() {
     masterCodes.createMasterCode(
       { codeType: ui.activeTab, values },
       {
-        onSuccess: () =>
-          toast.success(`${ui.activeTab} created successfully`, successToastOptions),
+        onSuccess: () => {
+          toast.success(`${ui.activeTab} created successfully`, successToastOptions)
+          ui.setModalOpen(false)
+        },
         onError: (error: Error) => toast.error(error.message),
+        onSettled: () => setIsSaving(false),
       }
     )
   }
@@ -106,6 +116,11 @@ export function MasterCodePage() {
         "--primary": "#6C5DD3",
       } as React.CSSProperties}
     >
+      {ui.isTabLoading && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-white/60">
+          <Spinner className="text-[#6C5DD3]" />
+        </div>
+      )}
       <div className="-mx-5 -mt-5 md:-mx-6 md:-mt-6">
         <MasterCodeTabs
           tabs={ui.tabs}
@@ -149,6 +164,7 @@ export function MasterCodePage() {
         selectedRowId={ui.selectedRow?.id}
         onOpenChange={ui.setModalOpen}
         onSave={handleSaveForm}
+        isSubmitting={isSaving}
       />
     </section>
   )

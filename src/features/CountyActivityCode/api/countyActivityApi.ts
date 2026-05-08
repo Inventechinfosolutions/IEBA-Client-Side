@@ -56,13 +56,30 @@ export async function apiGetCountyActivityById(id: number): Promise<ApiActivityR
 export async function apiGetCountyActivityForEdit(id: number): Promise<CountyActivityEditPayload> {
   const activity = await apiGetCountyActivityById(id)
   let names: string[] = []
+  let apportioning = activity.apportioning ?? false
+
+  if (activity.activityDepartments != null && activity.activityDepartments.length > 0) {
+    const firstAd = activity.activityDepartments[0]
+    apportioning = firstAd.apportioning || (firstAd.department?.apportioning ?? false)
+  }
+
   if (activity.departments != null && activity.departments.length > 0) {
     names = sortDepartmentNameList(activity.departments.map((d) => d.name))
+    if (activity.activityDepartments == null || activity.activityDepartments.length === 0) {
+      const firstDept = activity.departments.find((d: any) => d.apportioning !== undefined) as any
+      if (firstDept) apportioning = firstDept.apportioning
+    }
   } else {
     const links = await fetchCountyActivityDepartmentLinks(id)
     names = sortDepartmentNameList(links.map((l) => l.name))
+    if ((activity.activityDepartments == null || activity.activityDepartments.length === 0) && links.length > 0) {
+      apportioning = links[0].apportioning
+    }
   }
-  return { activity, departmentNames: names }
+  return { 
+    activity: { ...activity, apportioning }, 
+    departmentNames: names 
+  }
 }
 
 function parseCountyActivityDepartmentListPage(raw: unknown): ActivityDepartmentPageResult {
@@ -269,6 +286,12 @@ export function buildCountyActivityCodeRowsFromHierarchy(
       leaveCode: node.leavecode,
       docRequired: node.docrequired,
       multipleJobPools: node.isActivityAssignableToMultipleJobPools,
+      apportioning:
+        node.activityDepartments?.[0]?.apportioning ||
+        node.activityDepartments?.[0]?.department?.apportioning ||
+        node.apportioning || 
+        (node.departments?.[0] as any)?.apportioning || 
+        false,
       rowType,
       parentId,
     })
@@ -325,6 +348,12 @@ export function mapCountyActivityListItemToGridRow(
     leaveCode: dto.leavecode,
     docRequired: dto.docrequired,
     multipleJobPools: dto.isActivityAssignableToMultipleJobPools,
+    apportioning:
+      dto.activityDepartments?.[0]?.apportioning ||
+      dto.activityDepartments?.[0]?.department?.apportioning ||
+      dto.apportioning || 
+      (dto.departments?.[0] as any)?.apportioning || 
+      false,
     rowType: isPrimary ? CountyActivityGridRowType.PRIMARY : CountyActivityGridRowType.SUB,
     parentId:
       dto.parentId != null && dto.parentId !== undefined ? String(dto.parentId) : null,
@@ -376,6 +405,7 @@ export function buildCountyActivityPrimaryGridRowAfterCreate(
     leaveCode: v.leaveCode,
     docRequired: v.docRequired,
     multipleJobPools: v.multipleJobPools,
+    apportioning: v.apportioning,
     rowType: CountyActivityGridRowType.PRIMARY,
     parentId: null,
   }
@@ -424,6 +454,7 @@ export function buildCountyActivitySubGridRowAfterCreate(
     leaveCode: v.leaveCode,
     docRequired: v.docRequired,
     multipleJobPools: v.multipleJobPools,
+    apportioning: v.apportioning,
     rowType: CountyActivityGridRowType.SUB,
     parentId: pid,
   }
@@ -444,6 +475,7 @@ export function mergeCountyActivityDtoAfterUpdate(
     docrequired: v.docRequired,
     status,
     isActivityAssignableToMultipleJobPools: v.multipleJobPools,
+    apportioning: v.apportioning,
   }
   if (
     input.rowType === CountyActivityGridRowType.PRIMARY &&
@@ -505,6 +537,7 @@ export function buildCountyActivityGridRowAfterUpdate(
     leaveCode: v.leaveCode,
     docRequired: v.docRequired,
     multipleJobPools: v.multipleJobPools,
+    apportioning: v.apportioning,
   }
 }
 
@@ -654,6 +687,7 @@ export async function apiPostCountyActivity(
       docrequired: values.docRequired,
       status,
       isActivityAssignableToMultipleJobPools: values.multipleJobPools,
+      apportioning: values.apportioning,
     }
     // Department links use `POST /activity-departments` (separate table). Nested `departments` on
     // `POST /activities` is often not transformed by the API, which yields undefined `departmentId`
@@ -672,7 +706,7 @@ export async function apiPostCountyActivity(
       type: ApiActivityTypeEnum.PRIMARY,
       leavecode: values.leaveCode,
       parentActivityId: null,
-      apportioning: false,
+      apportioning: values.apportioning,
     })
 
     return data
@@ -693,6 +727,7 @@ export async function apiPostCountyActivity(
     docrequired: values.docRequired,
     status,
     isActivityAssignableToMultipleJobPools: values.multipleJobPools,
+    apportioning: values.apportioning,
   }
 
   const raw = await api.post<unknown>("/activities", body)
@@ -722,6 +757,7 @@ export async function apiPutCountyActivity(input: UpdateCountyActivityApiInput):
     docrequired: values.docRequired,
     status,
     isActivityAssignableToMultipleJobPools: values.multipleJobPools,
+    apportioning: values.apportioning,
   }
 
   if (rowType === CountyActivityGridRowType.PRIMARY && masterCatalog?.code?.trim() && masterCatalog.type?.trim()) {
@@ -744,7 +780,7 @@ export async function apiPutCountyActivity(input: UpdateCountyActivityApiInput):
       type: ApiActivityTypeEnum.PRIMARY,
       leavecode: values.leaveCode,
       parentActivityId: null,
-      apportioning: false,
+      apportioning: values.apportioning,
     })
   }
 }

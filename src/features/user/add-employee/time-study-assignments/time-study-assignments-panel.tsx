@@ -6,6 +6,7 @@ import { toast } from "sonner"
 
 import { SingleSelectDropdown } from "@/components/ui/dropdown"
 import { Button } from "@/components/ui/button"
+import { Spinner } from "@/components/ui/spinner"
 import { TitleCaseInput } from "@/components/ui/title-case-input"
 import { TransferListMoveButton } from "@/components/ui/transfer-list-move-button"
 
@@ -839,7 +840,12 @@ export function TimeStudyAssignmentsPanel({
   }
 
   return (
-    <div className="pt-2">
+    <div className="relative pt-2">
+      {(tsCatalogRefetchBusy || tsTransferBusy) && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center rounded-[8px] bg-white/60">
+          <Spinner className="text-[#6C5DD3]" />
+        </div>
+      )}
       <p className="mb-4 select-none text-[12px] font-semibold uppercase text-[#111827]">
         {employeeName}
       </p>

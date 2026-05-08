@@ -140,9 +140,23 @@ async function updateSettings(
       const reportData = (input.values.reports?.selectedActivityCodes ?? []).join(",")
       const inclusionMode = input.values.reports?.exclusionMode === "include" ? "included" : "excluded"
       
+      // Parse existing criteria or use default
+      let reportCriteria = { monthly: false, showProgramSelect: false, multipleEmployees: true }
+      if (selectedReport.criteria) {
+        try {
+          reportCriteria = { ...reportCriteria, ...JSON.parse(selectedReport.criteria) }
+        } catch (e) {
+          console.error("Failed to parse report criteria:", e)
+        }
+      }
+
       await api.put(`/report/${selectedReport.id}`, {
+        name: selectedReport.label.replace(new RegExp(`^${selectedReport.key}\\s*`), ""),
+        filename: selectedReport.filename,
+        path: selectedReport.path,
         type: inclusionMode,
         reportdata: reportData,
+        status: selectedReport.status ?? "active",
       })
     }
   }

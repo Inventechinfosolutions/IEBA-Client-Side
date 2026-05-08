@@ -1,5 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { X } from "lucide-react"
+import { Spinner } from "@/components/ui/spinner"
 import { forwardRef, useImperativeHandle, useState } from "react"
 import { useForm, type FieldErrors, type FieldValues } from "react-hook-form"
 import { toast } from "sonner"
@@ -27,6 +28,7 @@ import type {
   ProgramFormValues,
 } from "../types"
 
+
 export const ProgramFormModal = forwardRef<ProgramFormModalHandle, ProgramFormModalProps>(function ProgramFormModal({
   open,
   mode,
@@ -35,6 +37,7 @@ export const ProgramFormModal = forwardRef<ProgramFormModalHandle, ProgramFormMo
   lockSectionTabs = false,
   contextTab,
   isSubmitting = false,
+  isLoading = false,
   onOpenChange,
   onSave,
   departmentIds,
@@ -227,6 +230,18 @@ export const ProgramFormModal = forwardRef<ProgramFormModalHandle, ProgramFormMo
           pendingSection ? "border-transparent" : "border-[#f4f6fb]"
         }`}
       >
+        <div className="relative">
+          {isSubmitting && (
+            <div className="absolute inset-0 z-[100] flex items-center justify-center bg-white/60">
+              <Spinner className="text-[#6C5DD3]" />
+            </div>
+          )}
+          {(formOptionsQuery.isFetching || isLoading) ? (
+            <div className="flex h-[400px] items-center justify-center">
+              <Spinner className="text-[#6C5DD3]" />
+            </div>
+          ) : (
+            <>
         {!hideSectionTabs ? (
           <div className="grid grid-cols-3 bg-white p-px">
             {sections.map((section) => (
@@ -323,6 +338,7 @@ export const ProgramFormModal = forwardRef<ProgramFormModalHandle, ProgramFormMo
             </Button>
             <Button
               type="button"
+              disabled={isSubmitting}
               onClick={() => onOpenChange(false)}
               className="h-[44px] min-w-[111px] cursor-pointer rounded-[10px] bg-[#d2d4d9] px-6 text-[15px] font-medium text-[#111827] hover:bg-[#d2d4d9]"
             >
@@ -330,6 +346,9 @@ export const ProgramFormModal = forwardRef<ProgramFormModalHandle, ProgramFormMo
             </Button>
           </div>
         </form>
+        </>
+        )}
+        </div>
         {pendingSection ? (
           <div className="absolute inset-0 z-20 flex items-start justify-center bg-black/25 pt-[70px]">
             <div className="w-[528px] rounded-[4px] bg-white px-6 py-5 shadow-[0_10px_24px_rgba(17,24,39,0.2)]">

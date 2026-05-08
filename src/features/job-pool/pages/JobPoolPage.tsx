@@ -62,7 +62,7 @@ export function JobPoolPage() {
     updateJobPoolAsync,
   } = useJobPoolModule({ page, pageSize, search, inactiveOnly, departmentId: deptFilter })
 
-  const { data: fetchedJobPool } = useGetJobPoolById(
+  const { data: fetchedJobPool, isFetching: isFetchingDetail } = useGetJobPoolById(
     modalMode === "edit" && modalOpen && selectedRow ? selectedRow.id : undefined
   )
 
@@ -178,6 +178,7 @@ export function JobPoolPage() {
         mode={modalMode}
         initialValues={initialValues}
         isSubmitting={isCreating || isUpdating}
+        isLoadingDetails={isFetchingDetail}
         onOpenChange={setModalOpen}
         onSave={handleSave}
       />

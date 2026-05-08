@@ -127,7 +127,7 @@ export function SingleSelectDropdown({
       <DropdownMenuContent
         align="start"
         side="bottom"
-        avoidCollisions={false}
+        avoidCollisions={true}
         sideOffset={6}
         className={cn(
           "z-90 min-w-[8rem] w-(--radix-dropdown-menu-trigger-width) overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md animate-in fade-in-80 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",

@@ -28,7 +28,7 @@ export function FteAllocationPage() {
     null
   )
 
-  const { data: fiscalYears = [] } = useGetFiscalYears()
+  const { data: fiscalYears = [], isLoading: fiscalYearsLoading } = useGetFiscalYears()
 
   // Reactively select the most recent fiscal year if none is selected yet (zero useEffects!)
   const activeFiscalYearId = filters.fiscalYearId || fiscalYears[0]?.id || ""
@@ -115,7 +115,7 @@ export function FteAllocationPage() {
           <EmployeesTable
             employees={employees}
             selectedEmployeeId={selectedEmployeeId}
-            isLoading={employeesLoading}
+            isLoading={employeesLoading || fiscalYearsLoading}
             filters={filters}
             onInactiveChange={(inactive) =>
               setFilters((prev) => ({ ...prev, inactive }))
@@ -131,6 +131,7 @@ export function FteAllocationPage() {
           programs={programs}
           selectedEmployeeId={selectedEmployeeId}
           isLoading={programsLoading}
+          isSaving={updateMutation.isPending}
           onUpdate={handleUpdate}
         />
       </div>

@@ -45,6 +45,7 @@ export type CountyActivityCodeRow = {
   leaveCode: boolean
   docRequired: boolean
   multipleJobPools: boolean
+  apportioning: boolean
   rowType: CountyActivityGridRowType
   parentId?: string | null
 }
@@ -69,9 +70,11 @@ export type ApiActivityResDto = {
   docrequired: boolean
   status: string
   isActivityAssignableToMultipleJobPools: boolean
+  apportioning: boolean
   parentId?: number | null
   /** Present when API hydrates links (join to `department` master). */
   departments?: ApiActivityNestedDepartmentResDto[]
+  activityDepartments?: ApiActivityDepartmentResDto[]
 }
 
 export type ApiActivityTreeResDto = ApiActivityResDto & {
@@ -140,6 +143,9 @@ export type ApiActivityDepartmentResDto = {
   leavecode: boolean
   parentId?: number | null
   apportioning: boolean
+  department?: {
+    apportioning: boolean
+  }
 }
 
 export type CountyActivityEditPayload = {
@@ -285,6 +291,7 @@ export type CountyActivityCodeAddPageProps = {
   isEditSourceLoading?: boolean
   /** Sub add flow: loaded primary activity (seeds master / department on save). */
   subParentActivityDetail?: CountyActivityEditPayload | null
+  isSubmitting?: boolean
 }
 
 export type CountyActivityCodeTableProps = {
