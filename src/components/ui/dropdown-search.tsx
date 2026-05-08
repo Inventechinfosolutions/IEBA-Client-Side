@@ -168,7 +168,7 @@ export function SingleSelectSearchDropdown({
       <PopoverContent
         align="start"
         side="bottom"
-        avoidCollisions={false}
+        avoidCollisions={true}
         sideOffset={6}
         // Prevent popover from stealing focus away from the input
         onOpenAutoFocus={(e) => e.preventDefault()}
