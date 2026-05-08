@@ -152,7 +152,7 @@ export function MultiSelectDropdown({
       <DropdownMenuContent
         align="start"
         side="bottom"
-        avoidCollisions={false}
+        avoidCollisions={true}
         sideOffset={6}
         className={cn(
           "z-90 w-(--radix-dropdown-menu-trigger-width) p-0",

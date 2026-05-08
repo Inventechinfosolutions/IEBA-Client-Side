@@ -372,21 +372,30 @@ export function SecurityAssignmentsPanel({
         const { apiGetUserDetails } = await import("../../api")
         const details = await apiGetUserDetails(securityUserId)
         
-        // Count how many UNIQUE departments have a Supervisor role in the database
-        dbSupervisorDepts = new Set(
-          details.departmentsRoles
-            ?.filter(dr => dr.role?.name?.trim() === "Time Study Supervisor")
-            .map(dr => dr.departmentId)
-        )
+        const supervisorDbRoles = details.departmentsRoles?.filter(dr => dr.role?.name?.trim() === "Time Study Supervisor") || [];
+        dbSupervisorDepts = new Set(supervisorDbRoles.map(dr => dr.departmentId));
 
-        const hasActiveSupervisorAllocation = toRemoveItems.some((i) => {
+        const supervisorItemsRemoving = toRemoveItems.filter(i => i.name.trim() === "Time Study Supervisor");
+        const deptsRemovingIds = new Set(
+          supervisorItemsRemoving
+            .map(i => departmentIdFromSecurityCatalogItemId(i.id))
+            .filter((id): id is number => id != null)
+        );
+
+        // If removing ALL supervisor roles at once, allow it!
+        const isRemovingAllSupervisorRoles = deptsRemovingIds.size === dbSupervisorDepts.size && dbSupervisorDepts.size > 0;
+
+        const failingItem = toRemoveItems.find((i) => {
           // Only check if we are specifically trying to unassign the Supervisor role
           if (i.name.trim() !== "Time Study Supervisor") return false
 
           const deptId = departmentIdFromSecurityCatalogItemId(i.id)
           if (deptId == null) return false
           
-          // Exception: If this is the ONLY supervisor department, allow unassigning it
+          // Exception 1: If removing ALL supervisor roles, allow it!
+          if (isRemovingAllSupervisorRoles) return false
+
+          // Exception 2: If this is the ONLY supervisor department, allow unassigning it
           // regardless of the current database percentage.
           if (dbSupervisorDepts.size <= 1) return false
 
@@ -397,8 +406,37 @@ export function SecurityAssignmentsPanel({
           return hasAllocation
         })
 
-        if (hasActiveSupervisorAllocation) {
-          toast.error("Cannot unassign Supervisor. You must Save the 0% allocation to the server first.")
+        if (failingItem) {
+          // Find departments that are staying
+          const deptsStaying = supervisorDbRoles.filter(dr => !deptsRemovingIds.has(dr.departmentId));
+          
+          const deptId = departmentIdFromSecurityCatalogItemId(failingItem.id);
+          const allRolesForThisDeptInDb = details.departmentsRoles?.filter(dr => dr.departmentId === deptId) || [];
+          const rolesBeingRemovedForThisDept = toRemoveItems.filter(i => departmentIdFromSecurityCatalogItemId(i.id) === deptId);
+          
+          // Check if user is removing ALL roles they have in this department
+          const isRemovingFullDepartment = allRolesForThisDeptInDb.length > 0 && 
+            allRolesForThisDeptInDb.every(dbRole => 
+              rolesBeingRemovedForThisDept.some(removingItem => {
+                const removingRoleId = roleRefIdFromSecurityCatalogItemId(removingItem.id);
+                return Number(removingRoleId) === Number(dbRole.roleId);
+              })
+            );
+
+          let message = "";
+          const stayingDeptName = deptsStaying.length === 1 ? (deptsStaying[0].department?.name || "the remaining department") : "";
+
+          if (isRemovingFullDepartment) {
+            message = `Cannot unassign ${failingItem.department} department.`;
+          } else {
+            message = `Cannot unassign ${failingItem.name} role from ${failingItem.department}.`;
+          }
+
+          if (deptsStaying.length === 1) {
+            toast.error(`${message} Please make ${stayingDeptName} apportioning 100% and try again.`)
+          } else {
+            toast.error(`${message} Please update your allocations among remaining departments first.`)
+          }
           return
         }
       } catch (err) {
