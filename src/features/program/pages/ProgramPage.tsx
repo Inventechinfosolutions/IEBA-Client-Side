@@ -492,9 +492,11 @@ export function ProgramPage() {
         "--primary": "#6C5DD3",
       } as React.CSSProperties}
     >
-      <div className="-mx-5 -mt-5 md:-mx-6 md:-mt-6">
-        <ProgramTabs tabs={filteredTabs} activeTab={activeTab} onChange={handleTabChange} />
-      </div>
+      {!showHistory && (
+        <div className="-mx-5 -mt-5 md:-mx-6 md:-mt-6">
+          <ProgramTabs tabs={filteredTabs} activeTab={activeTab} onChange={handleTabChange} />
+        </div>
+      )}
       <div className="mt-5">
         {activeTab !== "Program Activity Relation" ? (
           <ProgramToolbar

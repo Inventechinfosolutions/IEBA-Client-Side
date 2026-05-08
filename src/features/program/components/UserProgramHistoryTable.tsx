@@ -63,9 +63,7 @@ export function UserProgramHistoryTable({
       <div className="flex items-center justify-between">
         <div className="flex flex-col gap-1">
           <h3 className="text-[14px] font-bold text-[#111827]">
-            {programName 
-              ? `Assignment History: ${programName}${programCode ? ` (${programCode})` : ""}` 
-              : "Assignment History Log"}
+            Program Assignment History
           </h3>
           {userId && <p className="text-[11px] text-[#555f76]">User ID: {userId}</p>}
         </div>

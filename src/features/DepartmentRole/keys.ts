@@ -8,4 +8,7 @@ export const departmentRoleKeys = {
   details: () => [...departmentRoleKeys.all, "detail"] as const,
   detail: (id: string) => [...departmentRoleKeys.details(), id] as const,
   catalog: () => [...departmentRoleKeys.all, "permissions", "catalog"] as const,
+  /** `GET /users/department-role-history` — paginated department role history log. */
+  history: (params: { page: number; limit: number; departmentCode: string; departmentName: string; roleName: string }) =>
+    [...departmentRoleKeys.all, "department-role-history", params] as const,
 }
