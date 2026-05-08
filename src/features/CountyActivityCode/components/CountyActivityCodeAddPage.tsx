@@ -2,6 +2,7 @@ import { ChevronLeft, ChevronRight, SearchIcon } from "lucide-react"
 import { useMemo, useState } from "react"
 import { flushSync } from "react-dom"
 import { toast } from "sonner"
+import { Spinner } from "@/components/ui/spinner"
 
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -98,6 +99,7 @@ export function CountyActivityCodeAddPage({
   readOnlyPrimaryPicker = false,
   isEditSourceLoading = false,
   subParentActivityDetail = null,
+  isSubmitting = false,
 }: CountyActivityCodeAddPageProps) {
   const [uncontrolledTab, setUncontrolledTab] = useState<CountyActivityGridRowType>(
     CountyActivityGridRowType.PRIMARY,
@@ -310,11 +312,11 @@ export function CountyActivityCodeAddPage({
         }}
         className="relative space-y-4 p-6"
       >
-        {mode === CountyActivityAddPageMode.EDIT && isEditSourceLoading ? (
-          <div className="absolute inset-0 z-10 flex min-h-[240px] items-center justify-center rounded-[10px] bg-white/85 text-[16px] text-[#6C5DD3]">
-            Loading activity…
+        {isSubmitting && (
+          <div className="absolute inset-0 z-50 flex items-center justify-center rounded-b-[10px] bg-white/60">
+            <Spinner className="text-[#6C5DD3]" />
           </div>
-        ) : null}
+        )}
         <div
           className={
             mode === CountyActivityAddPageMode.EDIT && isEditSourceLoading
@@ -693,7 +695,7 @@ export function CountyActivityCodeAddPage({
             <div className="flex items-center gap-2">
               <Button
                 type="submit"
-                disabled={mode === CountyActivityAddPageMode.EDIT && isEditSourceLoading}
+                disabled={isSubmitting || (mode === CountyActivityAddPageMode.EDIT && isEditSourceLoading)}
                 className="h-[45px] rounded-[14px] bg-[#6C5DD3] px-[25px] text-[16px] font-normal text-white hover:bg-[#5B4DC5]"
               >
                 Save

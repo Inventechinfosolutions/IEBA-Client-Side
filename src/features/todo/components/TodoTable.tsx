@@ -1,5 +1,7 @@
 import { Triangle } from "lucide-react"
-import { useState } from "react"
+import { useState, useMemo } from "react"
+
+import { Spinner } from "@/components/ui/spinner"
 
 import { Button } from "@/components/ui/button"
 import tableEmptyIcon from "@/assets/icons/table-empty.png"
@@ -126,88 +128,106 @@ export function TodoTable({
             </TableHead>
           </TableRow>
         </TableHeader>
-        <TableBody>
+        <TableBody className="relative">
           {isLoading ? (
-            Array.from({ length: 6 }).map((_, idx) => (
-              <TableRow key={`todo-loading-${idx}`} className="h-[35px] border-[#e9ecf3] hover:bg-transparent">
-                <TableCell className="h-[35px] w-[160px] border-r border-[#eff0f5] bg-[#FAFAFA] px-3 py-1 align-middle">
-                  <div className="h-4 w-full animate-pulse rounded bg-[#f0f2f8]" />
-                </TableCell>
-                <TableCell className="h-[35px] w-[360px] border-r border-[#eff0f5] px-3 py-1 align-middle">
-                  <div className="h-4 w-full animate-pulse rounded bg-[#f0f2f8]" />
-                </TableCell>
-                <TableCell className="h-[35px] w-[160px] border-r border-[#eff0f5] px-3 py-1 align-middle">
-                  <div className="h-4 w-full animate-pulse rounded bg-[#f0f2f8]" />
-                </TableCell>
-                <TableCell className="h-[35px] w-[160px] border-r border-[#eff0f5] px-3 py-1 align-middle">
-                  <div className="h-4 w-full animate-pulse rounded bg-[#f0f2f8]" />
-                </TableCell>
-                <TableCell className="h-[35px] w-[120px] border-r border-[#eff0f5] px-3 py-1 align-middle">
-                  <div className="h-4 w-full animate-pulse rounded bg-[#f0f2f8]" />
-                </TableCell>
-                <TableCell className="h-[35px] w-[120px] px-2 py-1 align-middle">
-                  <div className="h-4 w-full animate-pulse rounded bg-[#f0f2f8]" />
-                </TableCell>
-              </TableRow>
-            ))
-          ) : rows.length === 0 ? (
             <TableRow className="border-b-0 hover:bg-transparent">
-              <TableCell colSpan={6} className="h-[250px] p-0">
-                <div className="h-full">
-                  <div className="flex h-[126px] items-center justify-center border-b border-[#eff0f5]">
-                    <img
-                      src={tableEmptyIcon}
-                      alt="No data"
-                      className="h-24 w-32 object-contain"
-                    />
-                  </div>
-                  <div className="h-[94px]" />
+              <TableCell colSpan={6} className="h-40 p-0">
+                <div className="flex h-full w-full items-center justify-center">
+                  <Spinner className="text-[#6C5DD3]" />
                 </div>
               </TableCell>
             </TableRow>
           ) : (
             <>
-              {rows.map((row) => (
-                <TableRow key={row.id} className="h-[35px] border-[#e9ecf3] hover:bg-[#FAFAFA]">
-                  <TableCell className="h-[35px] w-[160px] border-r border-[#eff0f5] bg-[#FAFAFA] px-3 py-1 align-middle text-[12px] leading-[14px] text-[#111827] whitespace-normal wrap-break-word">
-                    {row.title}
+              {/* Skeletons visible for first 200ms then collapse */}
+              {Array.from({ length: 6 }).map((_, idx) => (
+                <TableRow
+                  key={`todo-skeleton-${idx}`}
+                  className="ieba-skeleton-row h-[35px] border-[#e9ecf3] hover:bg-transparent"
+                >
+                  <TableCell className="h-[35px] w-[160px] border-r border-[#eff0f5] bg-[#FAFAFA] px-3 py-1 align-middle">
+                    <div className="h-4 w-full animate-pulse rounded bg-[#f0f2f8]" />
                   </TableCell>
-                  <TableCell className="h-[35px] w-[360px] max-w-[360px] border-r border-[#eff0f5] px-3 py-1 align-middle text-[12px] leading-[14px] text-[#111827] whitespace-normal wrap-break-word">
-                    {row.description || "-"}
+                  <TableCell className="h-[35px] w-[360px] border-r border-[#eff0f5] px-3 py-1 align-middle">
+                    <div className="h-4 w-full animate-pulse rounded bg-[#f0f2f8]" />
                   </TableCell>
-                  <TableCell className="h-[35px] w-[160px] border-r border-[#eff0f5] px-3 py-1 align-middle text-center text-[12px] leading-[14px] text-[#111827]">
-                    {row.createdDate || "-"}
+                  <TableCell className="h-[35px] w-[160px] border-r border-[#eff0f5] px-3 py-1 align-middle">
+                    <div className="h-4 w-full animate-pulse rounded bg-[#f0f2f8]" />
                   </TableCell>
-                  <TableCell className="h-[35px] w-[160px] border-r border-[#eff0f5] px-3 py-1 align-middle text-center text-[12px] leading-[14px] text-[#111827]">
-                    {row.completedDate || "-"}
+                  <TableCell className="h-[35px] w-[160px] border-r border-[#eff0f5] px-3 py-1 align-middle">
+                    <div className="h-4 w-full animate-pulse rounded bg-[#f0f2f8]" />
                   </TableCell>
-                  <TableCell className="h-[35px] w-[120px] border-r border-[#eff0f5] px-3 py-1 align-middle text-center">
-                    <span
-                      className={`inline-flex h-[20px] min-w-[53px] items-center justify-center rounded-[8px] border px-1.5 text-center text-[11px] ${getStatusPillClasses(
-                        row.status
-                      )}`}
-                    >
-                      {TODO_STATUS_LABEL[row.status]}
-                    </span>
+                  <TableCell className="h-[35px] w-[120px] border-r border-[#eff0f5] px-3 py-1 align-middle">
+                    <div className="h-4 w-full animate-pulse rounded bg-[#f0f2f8]" />
                   </TableCell>
-                  <TableCell className="h-[35px] w-[120px] px-2 py-1 align-middle text-center">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => onEditRow(row)}
-                      className="size-7 cursor-pointer rounded-[6px] text-[#6b7280] hover:bg-[#f7f8fc]"
-                    >
-                      <img
-                        src={tableEditIcon}
-                        alt=""
-                        aria-hidden="true"
-                        className="size-[14.5px] object-contain"
-                      />
-                    </Button>
+                  <TableCell className="h-[35px] w-[120px] px-2 py-1 align-middle">
+                    <div className="h-4 w-full animate-pulse rounded bg-[#f0f2f8]" />
                   </TableCell>
                 </TableRow>
               ))}
+
+              {/* Data rows appearing after 200ms */}
+              {rows.length === 0 ? (
+                <TableRow className="ieba-data-row border-b-0 hover:bg-transparent">
+                  <TableCell colSpan={6} className="h-[250px] p-0">
+                    <div className="h-full">
+                      <div className="flex h-[126px] items-center justify-center border-b border-[#eff0f5]">
+                        <img
+                          src={tableEmptyIcon}
+                          alt="No data"
+                          className="h-24 w-32 object-contain"
+                        />
+                      </div>
+                      <div className="h-[94px]" />
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                rows.map((row) => (
+                  <TableRow
+                    key={row.id}
+                    className="ieba-data-row h-[35px] border-[#e9ecf3] hover:bg-[#FAFAFA]"
+                  >
+                    <TableCell className="h-[35px] w-[160px] border-r border-[#eff0f5] bg-[#FAFAFA] px-3 py-1 align-middle text-[12px] leading-[14px] text-[#111827] whitespace-normal wrap-break-word">
+                      {row.title}
+                    </TableCell>
+                    <TableCell className="h-[35px] w-[360px] max-w-[360px] border-r border-[#eff0f5] px-3 py-1 align-middle text-[12px] leading-[14px] text-[#111827] whitespace-normal wrap-break-word">
+                      {row.description || "-"}
+                    </TableCell>
+                    <TableCell className="h-[35px] w-[160px] border-r border-[#eff0f5] px-3 py-1 align-middle text-center text-[12px] leading-[14px] text-[#111827]">
+                      {row.createdDate || "-"}
+                    </TableCell>
+                    <TableCell className="h-[35px] w-[160px] border-r border-[#eff0f5] px-3 py-1 align-middle text-center text-[12px] leading-[14px] text-[#111827]">
+                      {row.completedDate || "-"}
+                    </TableCell>
+                    <TableCell className="h-[35px] w-[120px] border-r border-[#eff0f5] px-3 py-1 align-middle text-center">
+                      <span
+                        className={`inline-flex h-[20px] min-w-[53px] items-center justify-center rounded-[8px] border px-1.5 text-center text-[11px] ${getStatusPillClasses(
+                          row.status
+                        )}`}
+                      >
+                        {TODO_STATUS_LABEL[row.status]}
+                      </span>
+                    </TableCell>
+                    <TableCell className="h-[35px] w-[120px] px-2 py-1 align-middle text-center">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => onEditRow(row)}
+                        className="size-7 cursor-pointer rounded-[6px] text-[#6b7280] hover:bg-[#f7f8fc]"
+                      >
+                        <img
+                          src={tableEditIcon}
+                          alt=""
+                          aria-hidden="true"
+                          className="size-[14.5px] object-contain"
+                        />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </>
           )}
           <TableRow className="h-[120px] hover:bg-transparent">

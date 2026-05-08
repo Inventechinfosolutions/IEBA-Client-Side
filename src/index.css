@@ -381,9 +381,12 @@
 }
 
 @keyframes back-bounce {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translateX(0);
   }
+
   50% {
     transform: translateX(-4px);
   }
@@ -391,4 +394,47 @@
 
 .animate-back-bounce {
   animation: back-bounce 1s ease-in-out infinite;
+}
+
+/* Global Loading Sequential Animations (Spinner -> Skeleton -> Data) */
+@keyframes ieba-collapse {
+  0% {
+    opacity: 1;
+    height: 35px;
+  }
+
+  99% {
+    opacity: 0;
+    height: 35px;
+  }
+
+  100% {
+    opacity: 0;
+    height: 0;
+    visibility: hidden;
+    display: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    overflow: hidden;
+  }
+}
+
+@keyframes ieba-fade-in {
+  0% {
+    opacity: 0;
+  }
+
+  100% {
+    opacity: 1;
+  }
+}
+
+.ieba-skeleton-row {
+  animation: ieba-collapse 0s forwards 200ms;
+}
+
+.ieba-data-row {
+  opacity: 0;
+  animation: ieba-fade-in 100ms forwards 200ms;
 }

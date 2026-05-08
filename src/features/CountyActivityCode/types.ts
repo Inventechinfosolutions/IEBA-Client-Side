@@ -285,6 +285,7 @@ export type CountyActivityCodeAddPageProps = {
   isEditSourceLoading?: boolean
   /** Sub add flow: loaded primary activity (seeds master / department on save). */
   subParentActivityDetail?: CountyActivityEditPayload | null
+  isSubmitting?: boolean
 }
 
 export type CountyActivityCodeTableProps = {
