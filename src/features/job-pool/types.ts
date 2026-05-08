@@ -86,6 +86,7 @@ export type JobPoolFormModalProps = {
   mode: JobPoolFormMode
   initialValues: JobPoolFormValues
   isSubmitting?: boolean
+  isLoadingDetails?: boolean
   onOpenChange: (open: boolean) => void
   onSave: (values: JobPoolFormValues) => void
 }
