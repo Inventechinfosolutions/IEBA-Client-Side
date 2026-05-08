@@ -7,6 +7,7 @@ import {
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Button } from "@/components/ui/button"
+import { Spinner } from "@/components/ui/spinner"
 import { Skeleton } from "@/components/ui/skeleton"
 import type { DepartmentRoleViewProps } from "../types"
 import { cn } from "@/lib/utils"
@@ -60,7 +61,12 @@ export function DepartmentRoleView({
           </div>
         </DialogHeader>
 
-        <div className="flex min-h-0 flex-1 flex-col pt-4">
+        <div className="relative flex min-h-0 flex-1 flex-col pt-4">
+          {isLoading && (
+            <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/60">
+              <Spinner className="text-[#6C5DD3]" />
+            </div>
+          )}
           <div className="grid w-full grid-cols-2 gap-6 pb-4">
             <div className="min-w-0 space-y-2">
               <Label className="text-black">Department</Label>

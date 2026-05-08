@@ -310,6 +310,7 @@ export function DepartmentRolePage() {
         onPageChange={onPageChange}
         onPageSizeChange={onPageSizeChange}
         isLoading={isLoading}
+        isSaving={updateChildStatus.isPending}
         onOptionAction={handleOptionAction}
         onView={handleView}
         onEdit={handleEdit}

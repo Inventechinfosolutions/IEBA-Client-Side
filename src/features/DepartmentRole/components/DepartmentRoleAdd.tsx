@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { Loader2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import { Spinner } from "@/components/ui/spinner"
 import { Checkbox } from "@/components/ui/checkbox"
 import { TransferListMoveButton } from "@/components/ui/transfer-list-move-button"
 import {
@@ -450,13 +451,15 @@ export function DepartmentRoleAdd({
           </div>
         ) : showEditLoading ? (
           <div className="flex min-h-[400px] flex-1 items-center justify-center">
-            <Loader2
-              className="size-10 animate-spin text-[rgb(108,93,211)]"
-              aria-label="Loading role"
-            />
+            <Spinner className="text-[rgb(108,93,211)]" />
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+          <form onSubmit={handleSubmit} className="relative flex min-h-0 flex-1 flex-col">
+            {isSubmitting && (
+              <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/60">
+                <Spinner className="text-[rgb(108,93,211)]" />
+              </div>
+            )}
             <div className="space-y-4 pt-10 pb-2 pr-1">
               <div className="grid grid-cols-[1fr_auto_1fr] gap-2 px-1">
                 <div className="min-w-0 space-y-2">
@@ -575,7 +578,7 @@ export function DepartmentRoleAdd({
                   disabled={submitDisabled}
                   className="min-h-[50px] min-w-[98px] bg-[rgb(108,93,211)] px-5 py-2.5 text-white hover:bg-[rgb(108,93,211)]/90"
                 >
-                  {isSubmitting ? "Saving..." : "Save"}
+                  Save
                 </Button>
               </div>
             </div>
