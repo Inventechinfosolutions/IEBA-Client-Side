@@ -18,6 +18,9 @@ export type ReportOption = {
   criteria?: string | null;
   type?: string;
   reportdata?: string | null;
+  filename?: string | null;
+  path?: string | null;
+  status?: string | null;
 }
 export type ActivityOption = { code: string; label: string }
 
