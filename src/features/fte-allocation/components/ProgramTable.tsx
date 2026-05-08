@@ -2,6 +2,7 @@ import { useForm, useFieldArray } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 
 import { Button } from "@/components/ui/button"
+import { Spinner } from "@/components/ui/spinner"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   Table,
@@ -49,6 +50,7 @@ export function ProgramTable({
   programs,
   selectedEmployeeId,
   isLoading = false,
+  isSaving = false,
   onUpdate,
 }: ProgramTableProps) {
   const form = useForm<ProgramsUpdateFormValues>({
@@ -107,7 +109,12 @@ export function ProgramTable({
       </div>
 
       {/* ── Programs table (3 columns only) ───────────────────────────────── */}
-      <div className="overflow-hidden rounded-[8px] border border-[#E5E7EB] bg-white [&_[data-slot=table-container]]:max-h-[400px] [&_[data-slot=table-container]]:overflow-y-auto [&_[data-slot=table-container]]:program-table-scroll [&_[data-slot=table-container]]:scrollbar-auto">
+      <div className="relative overflow-hidden rounded-[8px] border border-[#E5E7EB] bg-white [&_[data-slot=table-container]]:max-h-[400px] [&_[data-slot=table-container]]:overflow-y-auto [&_[data-slot=table-container]]:program-table-scroll [&_[data-slot=table-container]]:scrollbar-auto">
+        {isSaving && (
+          <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/60">
+            <Spinner className="text-[#6C5DD3]" />
+          </div>
+        )}
         <Table className="w-full border-collapse table-fixed">
           <TableHeader className="sticky top-0 z-20 bg-[#6C5DD3]">
             <TableRow className="bg-[#6C5DD3] hover:bg-[#6C5DD3] border-none">
@@ -209,7 +216,7 @@ export function ProgramTable({
         <Button
           type="button"
           onClick={form.handleSubmit((values) => onUpdate(values))}
-          disabled={!selectedEmployeeId}
+          disabled={!selectedEmployeeId || isSaving}
           className="h-[44px] min-w-[120px] rounded-[10px] bg-[#6C5DD3] px-8 text-[14px] font-[400] text-white hover:bg-[#5B4DC5] disabled:opacity-50"
         >
           Update

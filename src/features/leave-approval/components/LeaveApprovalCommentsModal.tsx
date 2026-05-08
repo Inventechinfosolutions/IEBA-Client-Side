@@ -11,6 +11,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
+import { Spinner } from "@/components/ui/spinner"
 import type { LeaveApprovalCommentsModalProps, LeaveApprovalCommentsModalValues } from "../types"
 
 const commentsSchema = z.object({
@@ -22,6 +23,7 @@ export function LeaveApprovalCommentsModal({
   title = "Comments",
   mode = "comments",
   initialValues,
+  isSubmitting = false,
   onOpenChange,
   onSave,
 }: LeaveApprovalCommentsModalProps) {
@@ -41,6 +43,11 @@ export function LeaveApprovalCommentsModal({
         overlayClassName="bg-black/30"
         className="top-[24%] max-w-[560px] rounded-[6px] border border-[#e6e8ef] bg-white p-6 text-[14px]"
       >
+        {isSubmitting && (
+          <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/60">
+            <Spinner className="text-[#6C5DD3]" />
+          </div>
+        )}
         <DialogHeader className="space-y-0">
           <DialogTitle className="text-left !text-[14px] font-semibold leading-normal tracking-normal text-[#111827]">
             {title}
@@ -58,6 +65,7 @@ export function LeaveApprovalCommentsModal({
             <Button
               type="button"
               onClick={() => onOpenChange(false)}
+              disabled={isSubmitting}
               className="h-[44px] min-w-[96px] cursor-pointer rounded-[6px] bg-[#d9d9d9] px-6 !text-[12px] font-medium text-[#111827] hover:bg-[#d9d9d9]"
             >
               Cancel
@@ -67,6 +75,7 @@ export function LeaveApprovalCommentsModal({
                 <Button
                   type="button"
                   onClick={handleReject}
+                  disabled={isSubmitting}
                   className="h-[44px] min-w-[96px] cursor-pointer rounded-[6px] bg-[#ef4444] px-6 !text-[12px] font-medium text-white hover:bg-[#ef4444]"
                 >
                   Reject
@@ -74,6 +83,7 @@ export function LeaveApprovalCommentsModal({
                 <Button
                   type="button"
                   onClick={handleApprove}
+                  disabled={isSubmitting}
                   className="h-[44px] min-w-[96px] cursor-pointer rounded-[6px] bg-[#22c55e] px-6 !text-[12px] font-medium text-white hover:bg-[#22c55e]"
                 >
                   Approve
@@ -82,6 +92,7 @@ export function LeaveApprovalCommentsModal({
             ) : (
               <Button
                 type="submit"
+                disabled={isSubmitting}
                 className="h-[44px] min-w-[84px] cursor-pointer rounded-[6px] bg-[var(--primary)] px-7 !text-[12px] font-medium text-white hover:bg-[var(--primary)]"
               >
                 OK

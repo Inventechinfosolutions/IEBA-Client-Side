@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { HelpCircle, CheckCircle2, X, Search, ChevronDown, Check } from "lucide-react"
+import { Spinner } from "@/components/ui/spinner"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { toast } from "sonner"
 import { usePermissions } from "@/hooks/usePermissions"
@@ -171,6 +172,7 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
 
     const createDeptMutation = useCreateDepartment()
     const updateDeptMutation = useUpdateDepartment()
+    const isSubmitting = createDeptMutation.isPending || updateDeptMutation.isPending
 
     const {
         register,
@@ -400,8 +402,18 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                         {id ? "Edit Department" : "Add Department"}
                     </DialogTitle>
                 </DialogHeader>
-
-                <form onSubmit={handleSubmit(onSubmit)}>
+                <div className="relative">
+                    {isSubmitting && (
+                        <div className="absolute inset-0 z-[100] flex items-center justify-center rounded-b-[12px] bg-white/60">
+                            <Spinner className="text-[#6C5DD3]" />
+                        </div>
+                    )}
+                    {((id && (departmentQuery.isFetching || !existingDept)) || usersQuery.isFetching || masterCodesQuery.isFetching) ? (
+                        <div className="flex h-[400px] items-center justify-center">
+                            <Spinner className="text-[#6C5DD3]" />
+                        </div>
+                    ) : (
+                        <form onSubmit={handleSubmit(onSubmit)}>
                     <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
                         <div className="px-6 py-4">
                             <TabsList className="grid !h-[62px] w-full grid-cols-2 items-stretch gap-0 overflow-hidden rounded-[6px] border border-[#E5E7EB] bg-white p-0">
@@ -678,6 +690,7 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                                 <div className="flex justify-end gap-4 pt-8">
                                     <Button
                                         type="button"
+                                        disabled={isSubmitting}
                                         onClick={() => {
                                             if (detailsTab === "address") onAddressSave()
                                             else onContactSave()
@@ -866,6 +879,7 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                                 <div className="flex justify-end gap-4 pt-10">
                                     <Button
                                         type="button"
+                                        disabled={isSubmitting}
                                         onClick={async () => {
                                             const isValid = await trigger([
                                                 "code", "name", "address.street", "address.city", "address.state", "address.zip"
@@ -887,6 +901,7 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                                     </Button>
                                     <Button
                                         type="button"
+                                        disabled={isSubmitting}
                                         onClick={handleExit}
                                         className="w-[140px] h-[50px] bg-[#E5E7EB] hover:bg-[#D1D5DB] text-[#374151] rounded-[8px] text-[16px] font-[500]"
                                     >
@@ -897,6 +912,8 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                         </TabsContent>
                     </Tabs>
                 </form>
+                )}
+                </div>
             </DialogContent>
         </Dialog>
         <Dialog open={showCreateConfirm} onOpenChange={setShowCreateConfirm}>
@@ -919,6 +936,7 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                     </Button>
                     <Button
                         type="button"
+                        disabled={isSubmitting}
                         onClick={handleActualSave}
                         className="w-[100px] h-[40px] bg-[#6C5DD3] hover:bg-[#5B4DC5] text-white rounded-[8px]"
                     >

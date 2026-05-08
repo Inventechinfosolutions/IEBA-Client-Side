@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react"
 import { useLocation, useNavigate } from "react-router-dom"
 import { useQuery } from "@tanstack/react-query"
-import { Check, Loader2, X } from "lucide-react"
+import { Check, X } from "lucide-react"
+import { Spinner } from "@/components/ui/spinner"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -146,6 +147,7 @@ export function UserModulePage() {
   }
   const [selectedRow, setSelectedRow] = useState<UserModuleRow | null>(null)
   const [formSessionId, setFormSessionId] = useState(0)
+  const [isSaving, setIsSaving] = useState(false)
   /** After first successful create in the add wizard, further saves use PUT /users/:id. */
   const [draftUserId, setDraftUserId] = useState<string | null>(null)
 
@@ -376,6 +378,7 @@ export function UserModulePage() {
     values,
     sourceTab,
   }: AddEmployeeSavePayload): Promise<AddEmployeeSaveSync | void> => {
+    setIsSaving(true)
 
     // 1. Validation for Supervisor Apportioning Total Percentage (must be exactly 100%)
     if (sourceTab === "security" && values.supervisorApportioning) {
@@ -527,6 +530,8 @@ export function UserModulePage() {
       const message = error instanceof Error ? error.message : "Save failed"
       toast.error(message)
       throw error
+    } finally {
+      setIsSaving(false)
     }
   }
 
@@ -541,9 +546,8 @@ export function UserModulePage() {
     >
       {showForm ? (
         shouldFetchEditDetails && editUserDetailsQuery.isPending ? (
-          <div className="flex min-h-[320px] flex-col items-center justify-center gap-4 rounded-[8px] border border-[#d8dce8] bg-white">
-            <Loader2 className="size-10 animate-spin text-[#6C5DD3]" aria-hidden />
-            <p className="text-[13px] text-[#374151]">Loading user details…</p>
+          <div className="flex min-h-[320px] items-center justify-center rounded-[8px] border border-[#d8dce8] bg-white">
+            <Spinner className="text-[#6C5DD3]" />
           </div>
         ) : shouldFetchEditDetails && editUserDetailsQuery.isError ? (
           <div className="flex min-h-[320px] flex-col items-center justify-center gap-4 rounded-[8px] border border-[#d8dce8] bg-white px-6 text-center">
@@ -586,6 +590,7 @@ export function UserModulePage() {
               void queryClient.invalidateQueries({ queryKey: userModuleKeys.lists() })
             }}
             onSave={handleSaveForm}
+            isSubmitting={isSaving || userModule.isCreating || userModule.isUpdating}
           />
         ) : null
       ) : (

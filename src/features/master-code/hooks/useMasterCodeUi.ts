@@ -23,6 +23,7 @@ export function useMasterCodeUI() {
   const [selectedTab, setSelectedTab] = useState<MasterCodeTab | null>(null)
   const [inactiveOnly, setInactiveOnly] = useState(false)
   const [allowMultiCodesLocal, setAllowMultiCodesLocal] = useState(true)
+  const [isTabLoading, setIsTabLoading] = useState(false)
   const [pageByTab, setPageByTab] = useState<Record<string, number>>({})
   const [pageSize, setPageSize] = useState(10)
   
@@ -41,7 +42,9 @@ export function useMasterCodeUI() {
   const currentPage = pageByTab[activeTab] ?? 1
 
   const handleTabChange = useCallback((nextTab: MasterCodeTab) => {
+    setIsTabLoading(true)
     setSelectedTab(nextTab)
+    setTimeout(() => setIsTabLoading(false), 400)
   }, [])
 
   const handlePageChange = useCallback((nextPage: number) => {
@@ -106,6 +109,7 @@ export function useMasterCodeUI() {
     toggleInactiveOnly,
     toggleLocalMultiCodes,
     handleTabChange,
+    isTabLoading,
     
     // Pagination
     currentPage,

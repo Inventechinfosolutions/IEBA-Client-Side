@@ -76,6 +76,7 @@ export type ProgramTableProps = {
   programs: ProgramRow[]
   selectedEmployeeId: string | null
   isLoading?: boolean
+  isSaving?: boolean
   onUpdate: (values: ProgramsUpdateFormValues) => void | Promise<void>
 }
 

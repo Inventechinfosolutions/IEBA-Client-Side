@@ -108,6 +108,7 @@ export type DepartmenRoleTableProps = {
   onToggleChildStatus?: (childId: string, active: boolean) => void
   onOptionAction?: (id: string, action: string) => void
   isLoading?: boolean
+  isSaving?: boolean
 }
 
 export type DepartmentRoleAddProps = {

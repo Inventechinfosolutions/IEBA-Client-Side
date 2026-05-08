@@ -1,9 +1,11 @@
 import { FormProvider } from "react-hook-form"
+import { useState } from "react"
 
 import { Button } from "@/components/ui/button"
+import { Spinner } from "@/components/ui/spinner"
 
 import { useAddEmployeeForm } from "../hooks/use-add-employee-form"
-import type { AddEmployeeFormPanelProps } from "../types"
+import type { AddEmployeeFormPanelProps, AddEmployeeFormTab } from "../types"
 
 import { EmployeeLoginDetailsSection } from "../employee-login-details/employee-login-details-section"
 import { SecurityAssignmentsPanel } from "../security-assignments/security-assignments-panel"
@@ -17,6 +19,7 @@ export function EmployeePanel({
   securityContextUserId,
   onCancel,
   onSave,
+  isSubmitting,
 }: AddEmployeeFormPanelProps) {
   const {
     isEditMode,
@@ -32,9 +35,28 @@ export function EmployeePanel({
     onAddModeSecurityTransferSucceeded,
   } = useAddEmployeeForm({ mode, initialValues, onSave })
 
+  const [isTabLoading, setIsTabLoading] = useState(false)
+
+  const onTabChange = (tab: AddEmployeeFormTab) => {
+    setIsTabLoading(true)
+    handleTabChange(tab)
+    setTimeout(() => setIsTabLoading(false), 400)
+  }
+
+  const onNextClick = async () => {
+    setIsTabLoading(true)
+    await handleNext()
+    setTimeout(() => setIsTabLoading(false), 400)
+  }
+
   return (
     <FormProvider {...methods}>
-      <form onSubmit={handleSave} className="rounded-[8px] border border-[#d8dce8] bg-white">
+      <form onSubmit={handleSave} className="relative rounded-[8px] border border-[#d8dce8] bg-white">
+        {(isSubmitting || isTabLoading) && (
+          <div className="absolute inset-0 z-50 flex items-center justify-center rounded-[8px] bg-white/60">
+            <Spinner className="text-[#6C5DD3]" />
+          </div>
+        )}
         {isEditMode ? (
           <>
             <input type="hidden" {...register("password")} />
@@ -44,7 +66,7 @@ export function EmployeePanel({
 
         <UserFormTabs
           activeTab={activeTab}
-          onTabChange={handleTabChange}
+          onTabChange={onTabChange}
           disabledTabs={disabledTabs}
         />
 
@@ -80,6 +102,7 @@ export function EmployeePanel({
             {activeTab !== "timeStudy" ? (
               <Button
                 type="submit"
+                disabled={isSubmitting}
                 className="h-9 min-w-[72px] cursor-pointer rounded-[8px] bg-[#6C5DD3] px-5 text-[12px] text-white hover:bg-[#6C5DD3]"
               >
                 Save
@@ -88,7 +111,8 @@ export function EmployeePanel({
             {!isLastTab && !(isEditMode && activeTab === "employee") ? (
               <Button
                 type="button"
-                onClick={handleNext}
+                onClick={onNextClick}
+                disabled={isSubmitting}
                 className="h-9 min-w-[72px] cursor-pointer rounded-[8px] bg-[#6C5DD3] px-5 text-[12px] text-white hover:bg-[#6C5DD3]"
               >
                 Next
@@ -98,6 +122,7 @@ export function EmployeePanel({
               <Button
                 type="button"
                 onClick={handlePasswordReset}
+                disabled={isSubmitting}
                 className="h-9 min-w-[120px] cursor-pointer rounded-[8px] bg-[#6C5DD3] px-5 text-[12px] text-white hover:bg-[#6C5DD3]"
               >
                 Password Reset
@@ -106,6 +131,7 @@ export function EmployeePanel({
             <Button
               type="button"
               onClick={onCancel}
+              disabled={isSubmitting}
               className="h-9 min-w-[72px] cursor-pointer rounded-[8px] bg-[#d2d4d9] px-5 text-[12px] text-[#111827] hover:bg-[#d2d4d9]"
             >
               Exit

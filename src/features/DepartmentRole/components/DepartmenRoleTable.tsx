@@ -10,6 +10,7 @@ import {
 } from "lucide-react"
 
 import { Checkbox } from "@/components/ui/checkbox"
+import { Spinner } from "@/components/ui/spinner"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -44,6 +45,7 @@ export function DepartmenRoleTable({
   onToggleChildStatus,
   onOptionAction,
   isLoading = false,
+  isSaving = false,
 }: DepartmenRoleTableProps) {
   const { isSuperAdmin } = usePermissions()
   const canAddRole = isSuperAdmin
@@ -63,7 +65,12 @@ export function DepartmenRoleTable({
   const rows = data
 
   return (
-    <div className="min-h-[360px] overflow-hidden rounded-[10px] border-[0.5px] border-[rgb(218,218,218)] bg-[rgb(255,255,255)]">
+    <div className="relative min-h-[360px] overflow-hidden rounded-[10px] border-[0.5px] border-[rgb(218,218,218)] bg-[rgb(255,255,255)]">
+      {isSaving && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/60">
+          <Spinner className="text-[#6C5DD3]" />
+        </div>
+      )}
       <Table className="w-full border-collapse rounded-[15px]">
         <TableHeader>
           <TableRow className="border-0 border-b-0 bg-[#6C5DD3] hover:bg-[#6C5DD3]">

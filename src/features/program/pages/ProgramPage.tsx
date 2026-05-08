@@ -581,6 +581,7 @@ export function ProgramPage() {
         lockSectionTabs={shouldLockModalSectionTabs}
         contextTab={activeTab}
         isSubmitting={programModule.isCreating || programModule.isUpdating}
+        isLoading={isEditDetailLoading}
         onOpenChange={setModalOpen}
         onSave={handleSaveForm}
         departmentIds={assignedDepartmentIds}

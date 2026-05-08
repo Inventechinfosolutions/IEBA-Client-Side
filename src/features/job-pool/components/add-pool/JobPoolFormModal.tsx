@@ -9,6 +9,7 @@ import {
   Dialog,
   DialogContent,
 } from "@/components/ui/dialog"
+import { Spinner } from "@/components/ui/spinner"
 import { TitleCaseInput } from "@/components/ui/title-case-input"
 import { useGetDepartments } from "@/features/department/queries/getDepartments"
 import { usePermissions } from "@/hooks/usePermissions"
@@ -26,6 +27,7 @@ export function JobPoolFormModal({
   mode,
   initialValues,
   isSubmitting,
+  isLoadingDetails = false,
   onOpenChange,
   onSave,
 }: JobPoolFormModalProps) {
@@ -81,8 +83,13 @@ export function JobPoolFormModal({
       >
         <form 
           onSubmit={form.handleSubmit(onSave)} 
-          className="h-full flex flex-col"
+          className="relative h-full flex flex-col"
         >
+          {(isSubmitting || isLoadingDetails) && (
+            <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/60">
+              <Spinner className="text-[#6C5DD3]" />
+            </div>
+          )}
           {/* Header Section */}
           <div className="flex flex-col border-b border-[#F3F4F6]">
             <div className="relative flex items-center justify-center px-8 py-6">
@@ -250,7 +257,7 @@ export function JobPoolFormModal({
               disabled={isSubmitting}
               className="h-11 min-w-[100px] cursor-pointer rounded-[8px] bg-[#6C5DD3] text-white hover:bg-[#5B4DC5] disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {isSubmitting ? "Saving..." : "Save"}
+              Save
             </Button>
             <Button
               type="button"

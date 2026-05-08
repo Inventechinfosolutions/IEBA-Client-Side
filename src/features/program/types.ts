@@ -202,6 +202,7 @@ export type ProgramFormModalProps = {
   lockSectionTabs?: boolean
   contextTab: ProgramTab
   isSubmitting?: boolean
+  isLoading?: boolean
   onOpenChange: (open: boolean) => void
   onSave: (values: ProgramFormValues) => void
   departmentIds?: number[]
