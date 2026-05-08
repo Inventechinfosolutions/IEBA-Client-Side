@@ -680,6 +680,13 @@ export function CountyActivityCodeAddPage({
                 />
                 <span>Documents Required?</span>
               </label>
+              <label className="flex items-center gap-2 text-[14px] text-[#1F2937]">
+                <Checkbox
+                  checked={form.watch("apportioning")}
+                  onCheckedChange={(checked) => form.setValue("apportioning", checked === true)}
+                />
+                <span>Apportioning?</span>
+              </label>
               <label className="flex items-center gap-2 text-[14px] text-[#A1A1AA]">
                 <Checkbox
                   checked={form.watch("multipleJobPools")}
