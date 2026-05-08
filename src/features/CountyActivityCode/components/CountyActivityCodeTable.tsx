@@ -112,6 +112,7 @@ function mapCountyActivityRowToFormValues(row: CountyActivityCodeRow): CountyAct
     docRequired: row.docRequired,
     multipleJobPools: row.multipleJobPools,
     department: row.department,
+    apportioning: row.apportioning,
   }
 }
 
@@ -349,6 +350,7 @@ export function CountyActivityCodeTable({
         docRequired: activity.docrequired,
         multipleJobPools: activity.isActivityAssignableToMultipleJobPools,
         department: editDeptNames.join(", "),
+        apportioning: activity.apportioning,
       }
     }
 
@@ -367,6 +369,7 @@ export function CountyActivityCodeTable({
       multipleJobPools: activity.isActivityAssignableToMultipleJobPools,
       department:
         editDeptNames.length > 0 ? editDeptNames.join(", ") : rowToEdit.department,
+      apportioning: activity.apportioning,
     }
   }, [
     editOpen,
