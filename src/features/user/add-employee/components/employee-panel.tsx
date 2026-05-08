@@ -1,6 +1,7 @@
 import { FormProvider } from "react-hook-form"
 
 import { Button } from "@/components/ui/button"
+import { Spinner } from "@/components/ui/spinner"
 
 import { useAddEmployeeForm } from "../hooks/use-add-employee-form"
 import type { AddEmployeeFormPanelProps } from "../types"
@@ -17,6 +18,7 @@ export function EmployeePanel({
   securityContextUserId,
   onCancel,
   onSave,
+  isSubmitting,
 }: AddEmployeeFormPanelProps) {
   const {
     isEditMode,
@@ -34,7 +36,12 @@ export function EmployeePanel({
 
   return (
     <FormProvider {...methods}>
-      <form onSubmit={handleSave} className="rounded-[8px] border border-[#d8dce8] bg-white">
+      <form onSubmit={handleSave} className="relative rounded-[8px] border border-[#d8dce8] bg-white">
+        {isSubmitting && (
+          <div className="absolute inset-0 z-50 flex items-center justify-center rounded-[8px] bg-white/60">
+            <Spinner className="text-[#6C5DD3]" />
+          </div>
+        )}
         {isEditMode ? (
           <>
             <input type="hidden" {...register("password")} />
@@ -80,6 +87,7 @@ export function EmployeePanel({
             {activeTab !== "timeStudy" ? (
               <Button
                 type="submit"
+                disabled={isSubmitting}
                 className="h-9 min-w-[72px] cursor-pointer rounded-[8px] bg-[#6C5DD3] px-5 text-[12px] text-white hover:bg-[#6C5DD3]"
               >
                 Save
@@ -89,6 +97,7 @@ export function EmployeePanel({
               <Button
                 type="button"
                 onClick={handleNext}
+                disabled={isSubmitting}
                 className="h-9 min-w-[72px] cursor-pointer rounded-[8px] bg-[#6C5DD3] px-5 text-[12px] text-white hover:bg-[#6C5DD3]"
               >
                 Next
@@ -98,6 +107,7 @@ export function EmployeePanel({
               <Button
                 type="button"
                 onClick={handlePasswordReset}
+                disabled={isSubmitting}
                 className="h-9 min-w-[120px] cursor-pointer rounded-[8px] bg-[#6C5DD3] px-5 text-[12px] text-white hover:bg-[#6C5DD3]"
               >
                 Password Reset
@@ -106,6 +116,7 @@ export function EmployeePanel({
             <Button
               type="button"
               onClick={onCancel}
+              disabled={isSubmitting}
               className="h-9 min-w-[72px] cursor-pointer rounded-[8px] bg-[#d2d4d9] px-5 text-[12px] text-[#111827] hover:bg-[#d2d4d9]"
             >
               Exit

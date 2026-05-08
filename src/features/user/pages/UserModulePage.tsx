@@ -586,6 +586,7 @@ export function UserModulePage() {
               void queryClient.invalidateQueries({ queryKey: userModuleKeys.lists() })
             }}
             onSave={handleSaveForm}
+            isSubmitting={userModule.isCreating || userModule.isUpdating}
           />
         ) : null
       ) : (

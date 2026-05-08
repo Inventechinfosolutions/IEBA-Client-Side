@@ -259,6 +259,7 @@ export type AddEmployeeFormPanelProps = {
   securityContextUserId?: string | null
   onCancel: () => void
   onSave: (payload: AddEmployeeSavePayload) => void | Promise<AddEmployeeSaveSync | void>
+  isSubmitting?: boolean
 }
 
 export type UserFormPanelProps = AddEmployeeFormPanelProps
