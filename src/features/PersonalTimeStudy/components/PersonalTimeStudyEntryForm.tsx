@@ -765,16 +765,16 @@ export function PersonalTimeStudyEntryForm({
                 <span className="font-semibold text-[#6C5DD3]">{allocatedTotal || 0}</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <span className="text-gray-700">Time Study Minutes:</span>
+                <span className="text-gray-700">Entered TS Minutes:</span>
                 <span className="font-semibold text-[#6C5DD3]">{actualTotal || 0}</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <span className="text-gray-700">Total MAA Minutes:</span>
-                <span className="font-semibold text-[#6C5DD3]">{actualMultiTotal || 0}</span>
+                <span className="text-gray-700">TS Balance:</span>
+                <span className="font-semibold text-[#6C5DD3]">{balanceTotal || 0}</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <span className="text-gray-700">Time Study Balance:</span>
-                <span className="font-semibold text-[#6C5DD3]">{balanceTotal || 0}</span>
+                <span className="text-gray-700">Entered MAA Minutes:</span>
+                <span className="font-semibold text-[#6C5DD3]">{actualMultiTotal || 0}</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <span className="text-gray-700">MAA Balance:</span>

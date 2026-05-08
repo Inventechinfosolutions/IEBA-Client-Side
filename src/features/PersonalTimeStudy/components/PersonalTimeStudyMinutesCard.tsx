@@ -36,24 +36,24 @@ export function PersonalTimeStudyMinutesCard({
           </span>
         </div>
         <div className="flex items-center justify-end gap-2 text-[14px]">
-          <span className="font-semibold text-black">Time Study Minutes:</span>
+          <span className="font-semibold text-black">Entered TS Minutes:</span>
           <span className="font-semibold tabular-nums text-[#6C5DD3]">
             {actualMinutes}
           </span>
         </div>
         <div className="flex items-center justify-end gap-2 text-[14px]">
-          <span className="font-semibold text-black">Total MAA Minutes:</span>
+          <span className="font-semibold text-black">TS Balance:</span>
           <span className="font-semibold tabular-nums text-[#6C5DD3]">
-            {totalMAAMinutes}
+            {balanceMinutes}
           </span>
         </div>
 
         <hr className="border-border/60" />
 
         <div className="flex items-center justify-end gap-2 text-[14px]">
-          <span className="font-semibold text-black">Time Study Balance:</span>
+          <span className="font-semibold text-black">Entered MAA Minutes:</span>
           <span className="font-semibold tabular-nums text-[#6C5DD3]">
-            {balanceMinutes}
+            {totalMAAMinutes}
           </span>
         </div>
         <div className="flex items-center justify-end gap-2 text-[14px]">
