@@ -1,5 +1,6 @@
 import { Check } from "lucide-react"
 import { useMemo } from "react"
+import { Spinner } from "@/components/ui/spinner"
 
 import tableEmptyIcon from "@/assets/icons/table-empty.png"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -16,6 +17,7 @@ export function RoleTransferPanel({
   onToggleItem,
   onToggleAll,
   onToggleDepartmentGroup,
+  isLoading = false,
 }: AddEmployeeSecurityRolePanelProps) {
   const groups = useMemo(() => {
     const map = new Map<string, AddEmployeeSecurityRoleItem[]>()
@@ -84,7 +86,12 @@ export function RoleTransferPanel({
         </div>
       </div>
 
-      <ScrollArea className="h-[330px] py-2 px-2 ">
+      <ScrollArea className="relative h-[330px] py-2 px-2 ">
+        {isLoading && (
+          <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/60">
+            <Spinner className="text-[#6C5DD3]" />
+          </div>
+        )}
         {items.length > 0 ? (
           <div className="flex flex-col">
             {groups.map((group) => {

@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react"
+import { Spinner } from "@/components/ui/spinner"
 import { Controller, useFormContext } from "react-hook-form"
 import { toast } from "sonner"
 
@@ -588,7 +589,12 @@ export function SecurityAssignmentsPanel({
         </div>
       </div>
 
-      <div className="mt-3 grid grid-cols-[1fr_60px_1fr] items-center gap-4">
+      <div className="relative mt-3 grid grid-cols-[1fr_60px_1fr] items-center gap-4">
+        {(unassignedQuery.isLoading || transferBusy) && (
+          <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/60">
+            <Spinner className="text-[#6C5DD3]" />
+          </div>
+        )}
         <RoleTransferPanel
           title="Select Department(Unassigned)"
           items={unassignedItems}

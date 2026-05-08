@@ -296,6 +296,7 @@ export type AddEmployeeSecurityRolePanelProps = {
   onToggleItem: (id: string) => void
   onToggleAll: () => void
   onToggleDepartmentGroup?: (idsToAdd: string[], idsToRemove: string[]) => void
+  isLoading?: boolean
 }
 
 /** Program or activity row in Time Study transfer panels (with optional code for display). */
@@ -319,6 +320,7 @@ export type AddEmployeeTimeStudyTransferPanelProps = {
   searchValue: string
   onSearchChange: (value: string) => void
   selectedDept: string
+  isLoading?: boolean
 }
 
 export type TimeStudyPlacementOverride = "assigned" | "unassigned"

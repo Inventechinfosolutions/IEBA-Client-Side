@@ -1,10 +1,11 @@
 import { FormProvider } from "react-hook-form"
+import { useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
 
 import { useAddEmployeeForm } from "../hooks/use-add-employee-form"
-import type { AddEmployeeFormPanelProps } from "../types"
+import type { AddEmployeeFormPanelProps, AddEmployeeFormTab } from "../types"
 
 import { EmployeeLoginDetailsSection } from "../employee-login-details/employee-login-details-section"
 import { SecurityAssignmentsPanel } from "../security-assignments/security-assignments-panel"
@@ -34,10 +35,24 @@ export function EmployeePanel({
     onAddModeSecurityTransferSucceeded,
   } = useAddEmployeeForm({ mode, initialValues, onSave })
 
+  const [isTabLoading, setIsTabLoading] = useState(false)
+
+  const onTabChange = (tab: AddEmployeeFormTab) => {
+    setIsTabLoading(true)
+    handleTabChange(tab)
+    setTimeout(() => setIsTabLoading(false), 400)
+  }
+
+  const onNextClick = async () => {
+    setIsTabLoading(true)
+    await handleNext()
+    setTimeout(() => setIsTabLoading(false), 400)
+  }
+
   return (
     <FormProvider {...methods}>
       <form onSubmit={handleSave} className="relative rounded-[8px] border border-[#d8dce8] bg-white">
-        {isSubmitting && (
+        {(isSubmitting || isTabLoading) && (
           <div className="absolute inset-0 z-50 flex items-center justify-center rounded-[8px] bg-white/60">
             <Spinner className="text-[#6C5DD3]" />
           </div>
@@ -51,7 +66,7 @@ export function EmployeePanel({
 
         <UserFormTabs
           activeTab={activeTab}
-          onTabChange={handleTabChange}
+          onTabChange={onTabChange}
           disabledTabs={disabledTabs}
         />
 
@@ -96,7 +111,7 @@ export function EmployeePanel({
             {!isLastTab && !(isEditMode && activeTab === "employee") ? (
               <Button
                 type="button"
-                onClick={handleNext}
+                onClick={onNextClick}
                 disabled={isSubmitting}
                 className="h-9 min-w-[72px] cursor-pointer rounded-[8px] bg-[#6C5DD3] px-5 text-[12px] text-white hover:bg-[#6C5DD3]"
               >
