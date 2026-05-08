@@ -106,6 +106,7 @@ export type MasterCodeFormModalProps = {
   selectedRowId?: string
   onOpenChange: (open: boolean) => void
   onSave: (values: MasterCodeFormValues) => void
+  isSubmitting?: boolean
 }
 
 export type MasterCodeTableProps = {

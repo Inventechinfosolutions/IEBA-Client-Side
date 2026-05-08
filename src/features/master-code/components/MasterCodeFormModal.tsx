@@ -13,6 +13,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { TitleCaseInput } from "@/components/ui/title-case-input"
+import { Spinner } from "@/components/ui/spinner"
 import { masterCodeFormSchema } from "@/features/master-code/schemas"
 import { MasterCodeTypeEnum } from "../enums/masterCodeType"
 import { useGetMasterCodeById } from "../queries/getMasterCodes"
@@ -31,6 +32,7 @@ export function MasterCodeFormModal({
   selectedRowId,
   onOpenChange,
   onSave,
+  isSubmitting,
 }: MasterCodeFormModalProps) {
   const descriptionEditorRef = useRef<HTMLDivElement | null>(null)
   const showPercentAndMatch =
@@ -174,7 +176,6 @@ export function MasterCodeFormModal({
   const handleSave = handleSubmit(
     (values) => {
       onSave(values)
-      closeModal()
     },
     (formErrors: MasterCodeFormFieldErrors) => {
       const firstInvalidField = fieldOrder.find((field) => Boolean(formErrors[field]))
@@ -215,9 +216,9 @@ export function MasterCodeFormModal({
         className="left-1/2 top-[8%] w-[749px] max-w-[calc(100vw-40px)] -translate-x-1/2 translate-y-0 gap-0 overflow-hidden rounded-[4px] border border-[#f4f6fb] bg-white p-0 text-[#0f172a] subpixel-antialiased shadow-[0_6px_18px_rgba(22,29,45,0.12)]"
       >
         <form onSubmit={handleSave} className="relative select-none bg-white px-7 pb-8 pt-7">
-          {isDetailLoading && (
+          {(isDetailLoading || isSubmitting) && (
             <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/60 backdrop-blur-[1px]">
-              <div className="size-8 animate-spin rounded-full border-4 border-[#6C5DD3] border-t-transparent" />
+              <Spinner className="text-[#6C5DD3]" />
             </div>
           )}
           <DialogHeader className="relative items-center pb-5">
