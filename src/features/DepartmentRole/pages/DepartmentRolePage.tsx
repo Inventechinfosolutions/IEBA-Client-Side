@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from "react"
 import { toast } from "sonner"
-import { Check } from "lucide-react"
+import { ArrowLeft, Check, History } from "lucide-react"
 
 import { useDepartmentRoles } from "../hooks/useDepartmentRoles"
 import { DepartmenRoleTable } from "../components/DepartmenRoleTable"
@@ -11,7 +11,9 @@ import { useAssignDepartmentRolePermissions } from "../mutations/assignDepartmen
 import { useUnassignDepartmentRolePermissions } from "../mutations/unassignDepartmentRolePermissions"
 import { useUpdateDepartmentRoleChildStatus } from "../mutations/updateDepartmentRoleChildStatus"
 import { useUpdateDepartmentRoleChild } from "../mutations/updateDepartmentRoleChild"
+import { DepartmentRoleHistoryTable } from "../components/DepartmentRoleHistoryTable"
 import { useGetDepartments } from "@/features/department/queries/getDepartments"
+import { TitleCaseInput } from "@/components/ui/title-case-input"
 
 import { useDepartmentRoleDetailQuery } from "../queries/getDepartmentRoleById"
 import type {
@@ -43,6 +45,10 @@ export function DepartmentRolePage() {
   const [addMode, setAddMode] = useState<"create" | "edit">("create")
   const [viewOpen, setViewOpen] = useState(false)
   const [viewRoleId, setViewRoleId] = useState<string | null>(null)
+  const [showHistory, setShowHistory] = useState(false)
+  const [historyDeptName, setHistoryDeptName] = useState("")
+  const [historyDeptCode, setHistoryDeptCode] = useState("")
+  const [historyRoleName, setHistoryRoleName] = useState("")
 
   const {
     data,
@@ -302,19 +308,99 @@ export function DepartmentRolePage() {
   )
 
 
+  const handleSearchChange = (value: string) => {
+    setHistoryDeptName(value)
+  }
+
   return (
     <div className="space-y-6">
-      <DepartmenRoleTable
-        data={data}
-        pagination={pagination}
-        onPageChange={onPageChange}
-        onPageSizeChange={onPageSizeChange}
-        isLoading={isLoading}
-        onOptionAction={handleOptionAction}
-        onView={handleView}
-        onEdit={handleEdit}
-        onToggleChildStatus={handleToggleChildStatus}
-      />
+      {/* Toolbar */}
+      <div className="flex items-center justify-between gap-3">
+        {showHistory ? (
+          <div className="flex flex-1 items-center gap-2">
+            <TitleCaseInput
+              placeholder="Search Department Name"
+              value={historyDeptName}
+              onChange={(e) => setHistoryDeptName(e.target.value)}
+              className="h-12 w-[220px] rounded-[10px] border border-[#D9D9D9] bg-white px-3.5 text-[11px] text-[#111827] shadow-[0_4px_10px_rgba(15,23,42,0.08)] placeholder:text-[10px] placeholder:text-[#9CA3AF] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
+            />
+            <TitleCaseInput
+              placeholder="Search Department Code"
+              value={historyDeptCode}
+              onChange={(e) => setHistoryDeptCode(e.target.value)}
+              className="h-12 w-[180px] rounded-[10px] border border-[#D9D9D9] bg-white px-3.5 text-[11px] text-[#111827] shadow-[0_4px_10px_rgba(15,23,42,0.08)] placeholder:text-[10px] placeholder:text-[#9CA3AF] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
+            />
+            <TitleCaseInput
+              placeholder="Search Role Name"
+              value={historyRoleName}
+              onChange={(e) => setHistoryRoleName(e.target.value)}
+              className="h-12 w-[180px] rounded-[10px] border border-[#D9D9D9] bg-white px-3.5 text-[11px] text-[#111827] shadow-[0_4px_10px_rgba(15,23,42,0.08)] placeholder:text-[10px] placeholder:text-[#9CA3AF] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
+            />
+          </div>
+        ) : (
+          <TitleCaseInput
+            placeholder="Search here"
+            value={historyDeptName}
+            onChange={(e) => handleSearchChange(e.target.value)}
+            className="h-12 w-[270px] rounded-[10px] border border-[#D9D9D9] bg-white px-3.5 text-[11px] text-[#111827] shadow-[0_4px_10px_rgba(15,23,42,0.08)] placeholder:text-[10px] placeholder:text-[#9CA3AF] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
+          />
+        )}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            className={`flex h-12 items-center gap-2 rounded-[10px] px-4 text-[14px] font-normal transition-colors ${
+              showHistory
+                ? "bg-[#6C5DD3] text-white"
+                : "border border-[#6C5DD3] bg-white text-[#6C5DD3] hover:bg-[#F3F0FF]"
+            }`}
+            onClick={() => {
+              setShowHistory((prev) => {
+                if (prev) {
+                  setHistoryDeptName("")
+                  setHistoryDeptCode("")
+                  setHistoryRoleName("")
+                }
+                return !prev
+              })
+            }}
+          >
+            {showHistory ? (
+              <>
+                <ArrowLeft className="size-4 animate-back-bounce" />
+                Back to Department Role
+              </>
+            ) : (
+              <>
+                <History className="size-4" />
+                History
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+
+      {showHistory ? (
+        <DepartmentRoleHistoryTable
+          departmentName={historyDeptName}
+          departmentCode={historyDeptCode}
+          roleName={historyRoleName}
+        />
+      ) : (
+        <>
+          <DepartmenRoleTable
+            data={data}
+            pagination={pagination}
+            onPageChange={onPageChange}
+            onPageSizeChange={onPageSizeChange}
+            isLoading={isLoading}
+            onOptionAction={handleOptionAction}
+            onView={handleView}
+            onEdit={handleEdit}
+            onToggleChildStatus={handleToggleChildStatus}
+          />
+        </>
+      )}
+
       <DepartmentRoleAdd
         key={addDialogKey}
         open={addOpen}

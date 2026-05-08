@@ -1,4 +1,4 @@
-import { Check, Plus } from "lucide-react"
+import { ArrowLeft, Check, History, Plus } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { TitleCaseInput } from "@/components/ui/title-case-input"
@@ -11,7 +11,9 @@ export function JobPoolToolbar({
   onSearchChange,
   onToggleInactiveOnly,
   onAdd,
-}: JobPoolToolbarProps) {
+  showHistory,
+  onToggleHistory,
+}: JobPoolToolbarProps & { showHistory: boolean; onToggleHistory: () => void }) {
   const { canAdd } = usePermissions()
   const canAddJobPool = canAdd("jobpool")
   return (
@@ -19,23 +21,48 @@ export function JobPoolToolbar({
       <TitleCaseInput
         value={searchValue}
         onChange={(e) => onSearchChange(e.target.value)}
-        placeholder="Search here"
+        placeholder={showHistory ? "Search Assignment Kind" : "Search here"}
         className="h-[50px] w-[270px] rounded-[10px] border border-[#d0d5df] bg-white px-3.5 text-[11px] text-[#111827] shadow-[0_4px_10px_rgba(15,23,42,0.08)] placeholder:text-[10px] placeholder:text-[#a7afbf] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
       />
       <div className="flex items-center gap-2">
         <Button
           type="button"
-          className="h-11 cursor-pointer gap-2 rounded-[10px] bg-[#6C5DD3] px-3 text-[12px] font-semibold text-white shadow-[0_1px_0_rgba(0,0,0,0.05)] hover:bg-[#6C5DD3]"
-          onClick={onToggleInactiveOnly}
+          className={`h-11 cursor-pointer gap-2 rounded-[10px] px-3 text-[12px] font-semibold shadow-[0_1px_0_rgba(0,0,0,0.05)] transition-colors ${
+            showHistory
+              ? "bg-[#6C5DD3] text-white hover:bg-[#6C5DD3]"
+              : "border border-[#6C5DD3] bg-white text-[#6C5DD3] hover:bg-[#F3F0FF]"
+          }`}
+          onClick={onToggleHistory}
         >
-          {inactiveOnly ? (
-            <Check className="size-[11px] stroke-3 text-white" />
+          {showHistory ? (
+            <>
+              <ArrowLeft className="size-3.5 animate-back-bounce" />
+              Back to Job Pool
+            </>
           ) : (
-            <span className="size-[11px] rounded-[2px] bg-white" />
+            <>
+              <History className="size-3.5" />
+              History
+            </>
           )}
-          Inactive
         </Button>
-        {canAddJobPool && (
+
+        {!showHistory && (
+          <Button
+            type="button"
+            className="h-11 cursor-pointer gap-2 rounded-[10px] bg-[#6C5DD3] px-3 text-[12px] font-semibold text-white shadow-[0_1px_0_rgba(0,0,0,0.05)] hover:bg-[#6C5DD3]"
+            onClick={onToggleInactiveOnly}
+          >
+            {inactiveOnly ? (
+              <Check className="size-[11px] stroke-3 text-white" />
+            ) : (
+              <span className="size-[11px] rounded-[2px] bg-white" />
+            )}
+            Inactive
+          </Button>
+        )}
+
+        {!showHistory && canAddJobPool && (
           <Button
             type="button"
             className="h-11 cursor-pointer gap-1 rounded-[10px] bg-[#6C5DD3] px-3 text-[12px] font-semibold text-white shadow-[0_1px_0_rgba(0,0,0,0.05)] hover:bg-[#6C5DD3]"

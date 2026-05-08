@@ -7,6 +7,7 @@ import { MasterCodePagination } from "@/features/master-code/components/MasterCo
 import { JobPoolFormModal } from "../components/add-pool/JobPoolFormModal"
 import { JobPoolTable } from "../components/JobPoolTable"
 import { JobPoolToolbar } from "../components/JobPoolToolbar"
+import { JobPoolHistoryTable } from "../components/JobPoolHistoryTable"
 import { useJobPoolModule } from "../hooks/useJobPoolModule"
 import { useGetJobPoolById } from "../queries/getJobPoolById"
 import type {
@@ -41,10 +42,12 @@ export function JobPoolPage() {
   const [page, setPage]               = useState(1)
   const [pageSize, setPageSize]       = useState(10)
   const [search, setSearch]           = useState("")
+  const [historySearch, setHistorySearch] = useState("")
   const [inactiveOnly, setInactiveOnly] = useState(false)
   const [modalOpen, setModalOpen]     = useState(false)
   const [modalMode, setModalMode]     = useState<JobPoolFormMode>("add")
   const [selectedRow, setSelectedRow] = useState<JobPoolRow | null>(null)
+  const [showHistory, setShowHistory] = useState(false)
 
   const { isDepartmentAdmin, assignedDepartmentIds } = usePermissions()
   const deptFilter = isDepartmentAdmin ? assignedDepartmentIds.join(",") : undefined
@@ -64,8 +67,12 @@ export function JobPoolPage() {
   )
 
   function handleSearchChange(value: string) {
-    setSearch(value)
-    setPage(1)
+    if (showHistory) {
+      setHistorySearch(value)
+    } else {
+      setSearch(value)
+      setPage(1)
+    }
   }
 
   function handleToggleInactiveOnly() {
@@ -125,29 +132,44 @@ export function JobPoolPage() {
     >
       <div className="mt-1">
         <JobPoolToolbar
-          searchValue={search}
+          searchValue={showHistory ? historySearch : search}
           inactiveOnly={inactiveOnly}
           onSearchChange={handleSearchChange}
           onToggleInactiveOnly={handleToggleInactiveOnly}
           onAdd={handleAdd}
-        />
-        <div className="mt-[25px] mb-5">
-          <JobPoolTable
-            rows={rows}
-            isLoading={isLoading}
-            onEditRow={handleEditRow}
-          />
-        </div>
-        <MasterCodePagination
-          totalItems={totalItems}
-          currentPage={page}
-          pageSize={pageSize}
-          onPageChange={setPage}
-          onPageSizeChange={(newSize) => {
-            setPageSize(newSize)
-            setPage(1)
+          showHistory={showHistory}
+          onToggleHistory={() => {
+            setShowHistory((prev) => {
+              if (prev) setHistorySearch("")
+              return !prev
+            })
           }}
         />
+        {showHistory ? (
+          <div className="mt-[25px]">
+            <JobPoolHistoryTable assignmentKind={historySearch} />
+          </div>
+        ) : (
+          <>
+            <div className="mt-[25px] mb-5">
+              <JobPoolTable
+                rows={rows}
+                isLoading={isLoading}
+                onEditRow={handleEditRow}
+              />
+            </div>
+            <MasterCodePagination
+              totalItems={totalItems}
+              currentPage={page}
+              pageSize={pageSize}
+              onPageChange={setPage}
+              onPageSizeChange={(newSize) => {
+                setPageSize(newSize)
+                setPage(1)
+              }}
+            />
+          </>
+        )}
       </div>
 
       <JobPoolFormModal

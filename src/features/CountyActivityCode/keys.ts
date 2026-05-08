@@ -33,4 +33,7 @@ export const countyActivityCodeKeys = {
    * Same cache entry as {@link masterCodeKeys.detail} — `GET /activity-codes/:id` for “Copy code” on add primary.
    */
   masterActivityCodeDetail: (id: string) => masterCodeKeys.detail(id),
+  /** `GET /users/activity-history` — paginated activity history log. */
+  history: (params: { page: number; limit: number; activityCode: string; activityName: string }) =>
+    [...countyActivityCodeKeys.all, "activity-history", params] as const,
 }

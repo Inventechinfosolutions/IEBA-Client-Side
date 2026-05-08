@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useQuery } from "@tanstack/react-query"
-import { PlusIcon, SearchIcon } from "lucide-react"
+import { ArrowLeft, History, PlusIcon, SearchIcon } from "lucide-react"
 import { useMemo, useState } from "react"
 import { useForm } from "react-hook-form"
 import { useNavigate } from "react-router-dom"
@@ -41,6 +41,7 @@ import { useCreateCostPool } from "../mutations/createCostPool"
 import { useUpdateCostPool } from "../mutations/updateCostPool"
 import { useCostPoolActivityPicklistQuery } from "../queries/getCostPoolActivityPicklist"
 import { useCostPoolUserPicklistQuery } from "../queries/getCostPoolUserPicklist"
+import { CostPoolHistoryTable } from "./CostPoolHistoryTable"
 import { useCostPoolDetailQuery } from "../queries/getCostPoolDetail"
 import {
   costPoolFilterDefaultValues,
@@ -394,6 +395,10 @@ export function CostPoolTable({
   const showInactive = filterForm.watch("inactive")
   const searchValue = filterForm.watch("search")
 
+  const [showHistory, setShowHistory] = useState(false)
+  const [historyActivityCode, setHistoryActivityCode] = useState("")
+  const [historyAssignmentKind, setHistoryAssignmentKind] = useState("")
+
   const [addOpen, setAddOpen] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
   const [rowToEdit, setRowToEdit] = useState<CostPoolRow | null>(null)
@@ -451,42 +456,93 @@ export function CostPoolTable({
   return (
     <div className="space-y-4 rounded-[10px] border border-[#E5E7EB] bg-white p-4">
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-[8px] p-3">
-        <div className="w-full max-w-[300px]">
-          <form onSubmit={(event) => event.preventDefault()} className="relative">
-            <SearchIcon className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#9CA3AF]" />
+        {showHistory ? (
+          <div className="flex flex-1 items-center gap-2">
             <TitleCaseInput
-              placeholder="Search here"
-              className="h-12 rounded-[8px] border border-[#D9D9D9] bg-white pl-9 text-[16px] text-[#1F2937] placeholder:text-[#9CA3AF]"
-              {...filterForm.register("search")}
-              value={searchValue}
-              onChange={(event) => {
-                filterForm.setValue("search", event.target.value)
-                onSearchChange(event.target.value)
-                onPageChange(1)
-              }}
+              placeholder="Search Activity Code"
+              value={historyActivityCode}
+              onChange={(e) => setHistoryActivityCode(e.target.value)}
+              className="h-12 w-[220px] rounded-[10px] border border-[#D9D9D9] bg-white px-3.5 text-[11px] text-[#111827] shadow-[0_4px_10px_rgba(15,23,42,0.08)] placeholder:text-[10px] placeholder:text-[#9CA3AF] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
             />
-          </form>
-        </div>
+            <TitleCaseInput
+              placeholder="Search Assignment Kind"
+              value={historyAssignmentKind}
+              onChange={(e) => setHistoryAssignmentKind(e.target.value)}
+              className="h-12 w-[220px] rounded-[10px] border border-[#D9D9D9] bg-white px-3.5 text-[11px] text-[#111827] shadow-[0_4px_10px_rgba(15,23,42,0.08)] placeholder:text-[10px] placeholder:text-[#9CA3AF] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
+            />
+          </div>
+        ) : (
+          <div className="w-full max-w-[300px]">
+            <form onSubmit={(event) => event.preventDefault()} className="relative">
+              <SearchIcon className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#9CA3AF]" />
+              <TitleCaseInput
+                placeholder="Search here"
+                className="h-12 rounded-[8px] border border-[#D9D9D9] bg-white pl-9 text-[16px] text-[#1F2937] placeholder:text-[#9CA3AF]"
+                {...filterForm.register("search")}
+                value={searchValue}
+                onChange={(event) => {
+                  filterForm.setValue("search", event.target.value)
+                  onSearchChange(event.target.value)
+                  onPageChange(1)
+                }}
+              />
+            </form>
+          </div>
+        )}
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 ml-auto">
           <button
             type="button"
-            className="flex h-12 items-center gap-2 rounded-[12px] bg-[#6C5DD3] px-4 text-white"
+            className={`flex h-12 items-center gap-2 rounded-[12px] px-4 text-[14px] font-normal transition-colors ${
+              showHistory
+                ? "bg-[#6C5DD3] text-white"
+                : "border border-[#6C5DD3] bg-white text-[#6C5DD3] hover:bg-[#F3F0FF]"
+            }`}
             onClick={() => {
-              const nextValue = !showInactive
-              filterForm.setValue("inactive", nextValue)
-              onInactiveChange(nextValue)
-              onPageChange(1)
+              setShowHistory((prev) => {
+                if (prev) {
+                  filterForm.setValue("search", "")
+                  onSearchChange("")
+                  setHistoryActivityCode("")
+                  setHistoryAssignmentKind("")
+                }
+                return !prev
+              })
             }}
           >
-            <Checkbox
-              checked={showInactive}
-              className="size-5 rounded-[6px] border-white bg-white data-[state=checked]:border-white data-[state=checked]:bg-[#6C5DD3] data-[state=checked]:text-white"
-            />
-            <span className="text-[14px] font-normal">Inactive</span>
+            {showHistory ? (
+              <>
+                <ArrowLeft className="size-4 animate-back-bounce" />
+                Back to Cost Pool
+              </>
+            ) : (
+              <>
+                <History className="size-4" />
+                History
+              </>
+            )}
           </button>
 
-          {canAddCostPool && (
+          {!showHistory && (
+            <button
+              type="button"
+              className="flex h-12 items-center gap-2 rounded-[12px] bg-[#6C5DD3] px-4 text-white"
+              onClick={() => {
+                const nextValue = !showInactive
+                filterForm.setValue("inactive", nextValue)
+                onInactiveChange(nextValue)
+                onPageChange(1)
+              }}
+            >
+              <Checkbox
+                checked={showInactive}
+                className="size-5 rounded-[6px] border-white bg-white data-[state=checked]:border-white data-[state=checked]:bg-[#6C5DD3] data-[state=checked]:text-white"
+              />
+              <span className="text-[14px] font-normal">Inactive</span>
+            </button>
+          )}
+
+          {!showHistory && canAddCostPool && (
             <Button
               type="button"
               onClick={() => setAddOpen(true)}
@@ -499,7 +555,14 @@ export function CostPoolTable({
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-[8px] border border-[#E5E7EB]">
+      {showHistory && (
+        <CostPoolHistoryTable
+          activityCode={historyActivityCode}
+          assignmentKind={historyAssignmentKind}
+        />
+      )}
+
+      <div className={`overflow-hidden rounded-[8px] border border-[#E5E7EB] ${showHistory ? "hidden" : ""}`}>
         <Table className="w-full table-fixed border-collapse">
           <colgroup>
             <col className="w-[33%]" />
@@ -661,15 +724,17 @@ export function CostPoolTable({
             )}
           </TableBody>
         </Table>
-      </div>      <div className="mt-4">
-        <MasterCodePagination
-          totalItems={totalItems}
-          currentPage={pagination.page}
-          pageSize={pagination.pageSize}
-          onPageChange={onPageChange}
-          onPageSizeChange={onPageSizeChange}
-        />
-      </div>
+      </div>      {!showHistory && (
+        <div className="mt-4">
+          <MasterCodePagination
+            totalItems={totalItems}
+            currentPage={pagination.page}
+            pageSize={pagination.pageSize}
+            onPageChange={onPageChange}
+            onPageSizeChange={onPageSizeChange}
+          />
+        </div>
+      )}
 
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
         <DialogContent

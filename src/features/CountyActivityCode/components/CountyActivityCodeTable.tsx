@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod"
-import { ChevronDown, ChevronRight, OctagonXIcon, PlusIcon, SearchIcon } from "lucide-react"
+import { ArrowLeft, ChevronDown, ChevronRight, History, OctagonXIcon, PlusIcon, SearchIcon } from "lucide-react"
 
 import { useQueryClient } from "@tanstack/react-query"
 import { useForm } from "react-hook-form"
@@ -36,6 +36,7 @@ import {
   countyActivityAddDefaultValues,
 } from "../schemas"
 import { CountyActivityCodeAddPage } from "./CountyActivityCodeAddPage"
+import { CountyActivityHistoryTable } from "./CountyActivityHistoryTable"
 import {
   CountyActivityAddPageMode,
   CountyActivityGridRowType,
@@ -208,6 +209,10 @@ export function CountyActivityCodeTable({
   const showInactive = filterForm.watch("inactive")
   const searchValue = filterForm.watch("search")
 
+
+  const [showHistory, setShowHistory] = useState(false)
+  const [historyActivityCode, setHistoryActivityCode] = useState("")
+  const [historyActivityName, setHistoryActivityName] = useState("")
 
   const [addOpen, setAddOpen] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
@@ -815,50 +820,103 @@ export function CountyActivityCodeTable({
   return (
     <div className="space-y-4 rounded-[12px] border border-[#E5E7EB] bg-white p-4">
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-[10px] p-3">
-        <div className="w-full max-w-[300px]">
-          <form
-            onSubmit={(event) => event.preventDefault()}
-            className="relative"
-          >
-            <SearchIcon className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#9CA3AF]" />
+        {showHistory ? (
+          <div className="flex flex-1 items-center gap-2">
             <TitleCaseInput
-              placeholder="Search here"
-              className="h-12 rounded-[10px] border border-[#D9D9D9] bg-white pl-9 text-[16px] text-[#1F2937] placeholder:text-[#9CA3AF]"
-              {...filterForm.register("search")}
-              value={searchValue}
-              onChange={(event) => {
-                const next = event.target.value
-                filterForm.setValue("search", next)
-                if (searchDebounceTimerRef.current !== null) {
-                  window.clearTimeout(searchDebounceTimerRef.current)
-                }
-                searchDebounceTimerRef.current = window.setTimeout(() => {
-                  searchDebounceTimerRef.current = null
-                  onSearchChange(next)
-                  onPageChange(1)
-                }, COUNTY_ACTIVITY_SEARCH_DEBOUNCE_MS)
-              }}
+              placeholder="Search County Activity Code"
+              value={historyActivityCode}
+              onChange={(e) => setHistoryActivityCode(e.target.value)}
+              className="h-12 w-[220px] rounded-[10px] border border-[#D9D9D9] bg-white px-3.5 text-[11px] text-[#111827] shadow-[0_4px_10px_rgba(15,23,42,0.08)] placeholder:text-[10px] placeholder:text-[#9CA3AF] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
             />
-          </form>
-        </div>
-        <div className="flex items-center gap-3">
+            <TitleCaseInput
+              placeholder="Search County Activity Name"
+              value={historyActivityName}
+              onChange={(e) => setHistoryActivityName(e.target.value)}
+              className="h-12 w-[250px] rounded-[10px] border border-[#D9D9D9] bg-white px-3.5 text-[11px] text-[#111827] shadow-[0_4px_10px_rgba(15,23,42,0.08)] placeholder:text-[10px] placeholder:text-[#9CA3AF] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
+            />
+          </div>
+        ) : (
+          <div className="w-full max-w-[300px]">
+            <form
+              onSubmit={(event) => event.preventDefault()}
+              className="relative"
+            >
+              <SearchIcon className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#9CA3AF]" />
+              <TitleCaseInput
+                placeholder="Search here"
+                className="h-12 rounded-[10px] border border-[#D9D9D9] bg-white pl-9 text-[16px] text-[#1F2937] placeholder:text-[#9CA3AF]"
+                {...filterForm.register("search")}
+                value={searchValue}
+                onChange={(event) => {
+                  const next = event.target.value
+                  filterForm.setValue("search", next)
+                  if (searchDebounceTimerRef.current !== null) {
+                    window.clearTimeout(searchDebounceTimerRef.current)
+                  }
+                  searchDebounceTimerRef.current = window.setTimeout(() => {
+                    searchDebounceTimerRef.current = null
+                    onSearchChange(next)
+                    onPageChange(1)
+                  }, COUNTY_ACTIVITY_SEARCH_DEBOUNCE_MS)
+                }}
+              />
+            </form>
+          </div>
+        )}
+        <div className="flex items-center gap-3 ml-auto">
+          {/* History toggle button */}
           <button
             type="button"
-            className="flex h-12 items-center gap-2 rounded-[10px] bg-[#6C5DD3] px-4 text-white"
+            className={`flex h-12 items-center gap-2 rounded-[10px] px-4 text-[14px] font-normal transition-colors ${
+              showHistory
+                ? "bg-[#6C5DD3] text-white"
+                : "border border-[#6C5DD3] bg-white text-[#6C5DD3] hover:bg-[#F3F0FF]"
+            }`}
             onClick={() => {
-              const nextValue = !showInactive
-              filterForm.setValue("inactive", nextValue)
-              onInactiveChange(nextValue)
-              onPageChange(1)
+              setShowHistory((prev) => {
+                if (prev) {
+                  filterForm.setValue("search", "")
+                  onSearchChange("")
+                  setHistoryActivityCode("")
+                  setHistoryActivityName("")
+                }
+                return !prev
+              })
             }}
           >
-            <Checkbox
-              checked={showInactive}
-              className="size-5 rounded-[6px] border-white bg-white data-[state=checked]:border-white data-[state=checked]:bg-[#6C5DD3] data-[state=checked]:text-white"
-            />
-            <span className="text-[14px] font-normal">Inactive</span>
+            {showHistory ? (
+              <>
+                <ArrowLeft className="size-4 animate-back-bounce" />
+                Back to County Activity
+              </>
+            ) : (
+              <>
+                <History className="size-4" />
+                History
+              </>
+            )}
           </button>
-          {canAddCountyActivity && (
+
+          {/* Inactive toggle — hidden while in history view */}
+          {!showHistory && (
+            <button
+              type="button"
+              className="flex h-12 items-center gap-2 rounded-[10px] bg-[#6C5DD3] px-4 text-white"
+              onClick={() => {
+                const nextValue = !showInactive
+                filterForm.setValue("inactive", nextValue)
+                onInactiveChange(nextValue)
+                onPageChange(1)
+              }}
+            >
+              <Checkbox
+                checked={showInactive}
+                className="size-5 rounded-[6px] border-white bg-white data-[state=checked]:border-white data-[state=checked]:bg-[#6C5DD3] data-[state=checked]:text-white"
+              />
+              <span className="text-[14px] font-normal">Inactive</span>
+            </button>
+          )}
+          {!showHistory && canAddCountyActivity && (
             <Button
               type="button"
               onClick={() => {
@@ -881,7 +939,15 @@ export function CountyActivityCodeTable({
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-[10px] border border-[#E5E7EB]">
+      {/* History view — replaces the main table when active */}
+      {showHistory && (
+        <CountyActivityHistoryTable
+          countyActivityCode={historyActivityCode}
+          countyActivityName={historyActivityName}
+        />
+      )}
+
+      <div className={`overflow-hidden rounded-[10px] border border-[#E5E7EB] ${showHistory ? "hidden" : ""}`}>
         <Table className="w-full table-fixed border-collapse">
           <colgroup>
             <col className={canUpdateCountyActivity ? "w-[11%]" : "w-[12%]"} /> {/* Code */}
@@ -1332,15 +1398,17 @@ export function CountyActivityCodeTable({
         </Table>
       </div>
 
-      <div className="mt-4">
-        <MasterCodePagination
-          totalItems={totalItems}
-          currentPage={pagination.page}
-          pageSize={pagination.pageSize}
-          onPageChange={onPageChange}
-          onPageSizeChange={onPageSizeChange}
-        />
-      </div>
+      {!showHistory && (
+        <div className="mt-4">
+          <MasterCodePagination
+            totalItems={totalItems}
+            currentPage={pagination.page}
+            pageSize={pagination.pageSize}
+            onPageChange={onPageChange}
+            onPageSizeChange={onPageSizeChange}
+          />
+        </div>
+      )}
 
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
         <DialogContent

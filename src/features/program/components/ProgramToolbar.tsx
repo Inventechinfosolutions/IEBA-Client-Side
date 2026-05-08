@@ -61,7 +61,7 @@ export function ProgramToolbar({
             {showHistory ? (
               <>
                 <ArrowLeft className="size-3.5 animate-back-bounce" />
-                {activeTabLabel === "Budget Units" ? "Back to Budget Units" : "Back to Program Table"}
+                {activeTabLabel === "Budget Units" ? "Back to Budget Units" : "Back to Programs"}
               </>
             ) : (
               <>
@@ -71,19 +71,21 @@ export function ProgramToolbar({
             )}
           </Button>
         )}
-        <Button
-          type="button"
-          className="h-9 cursor-pointer gap-2 rounded-[12px] bg-[#6C5DD3] px-3 text-[12px] font-semibold text-white shadow-[0_1px_0_rgba(0,0,0,0.05)] hover:bg-[#6C5DD3]"
-          onClick={onToggleInactiveOnly}
-        >
-          {inactiveOnly ? (
-            <Check className="size-[11px] stroke-3 text-white" />
-          ) : (
-            <span className="size-[11px] rounded-[2px] bg-white" />
-          )}
-          Inactive
-        </Button>
-        {showAdd && (
+        {!showHistory && (
+          <Button
+            type="button"
+            className="h-9 cursor-pointer gap-2 rounded-[12px] bg-[#6C5DD3] px-3 text-[12px] font-semibold text-white shadow-[0_1px_0_rgba(0,0,0,0.05)] hover:bg-[#6C5DD3]"
+            onClick={onToggleInactiveOnly}
+          >
+            {inactiveOnly ? (
+              <Check className="size-[11px] stroke-3 text-white" />
+            ) : (
+              <span className="size-[11px] rounded-[2px] bg-white" />
+            )}
+            Inactive
+          </Button>
+        )}
+        {!showHistory && showAdd && (
           <Button
             type="button"
             className="h-9 cursor-pointer gap-1 rounded-[12px] bg-[#6C5DD3] px-3 text-[12px] font-semibold text-white shadow-[0_1px_0_rgba(0,0,0,0.05)] hover:bg-[#6C5DD3]"

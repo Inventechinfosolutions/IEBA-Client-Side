@@ -1,4 +1,6 @@
+import { useState } from "react"
 import { useAuth } from "@/contexts/AuthContext"
+import { ArrowLeft, History } from "lucide-react"
 
 import { PersonalTimeStudyCard } from "../components/PersonalTimeStudyCard"
 import { PersonalLeaveCard } from "../components/PersonalLeaveCard"
@@ -11,6 +13,8 @@ import { ReportsCard } from "../components/ReportsCard"
 import { StaffStatsCard } from "../components/StaffStatsCard"
 import { UserDashboard } from "../components/UserDashboard"
 import { useMimicSession } from "@/features/user/user-mimic"
+import { AuditHistoryTable } from "../components/AuditHistoryTable"
+import { TitleCaseInput } from "@/components/ui/title-case-input"
 
 import {
   usePersonalTimeStudy,
@@ -58,6 +62,8 @@ function isDepartmentAdminLikeRole(normalizedRoleName: string): boolean {
 }
 
 export function DashboardPage() {
+  const [showAuditHistory, setShowAuditHistory] = useState(false)
+  const [auditSearch, setAuditSearch] = useState("")
   const { user } = useAuth()
   const { data: mimicSession } = useMimicSession()
   const userId = user?.id ?? ""
@@ -224,10 +230,58 @@ export function DashboardPage() {
 
   return (
     <div className="flex flex-col gap-4 w-full min-h-0">
-      <div
-        className="grid gap-4 h-[250px]"
-        style={{ gridTemplateColumns: "0.86fr 0.7fr 1.24fr 1.2fr" }}
-      >
+      {/* Header / Toolbar */}
+      {isSuperAdmin && (
+        <div className="flex items-center justify-between mb-2 gap-3">
+          {showAuditHistory ? (
+            <TitleCaseInput
+              placeholder="Search Entity Name"
+              value={auditSearch}
+              onChange={(e) => setAuditSearch(e.target.value)}
+              className="h-10 w-[270px] rounded-[10px] border border-[#D9D9D9] bg-white px-3.5 text-[11px] text-[#111827] shadow-[0_4px_10px_rgba(15,23,42,0.08)] placeholder:text-[10px] placeholder:text-[#a7afbf] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
+            />
+          ) : (
+            <div className="flex-1" />
+          )}
+          <button
+            type="button"
+            className={`flex h-10 items-center gap-2 rounded-[8px] px-4 text-[13px] font-medium transition-colors ${
+              showAuditHistory
+                ? "bg-[#6C5DD3] text-white"
+                : "border border-[#6C5DD3] bg-white text-[#6C5DD3] hover:bg-[#F3F0FF]"
+            }`}
+            onClick={() => {
+              setShowAuditHistory((prev) => {
+                if (prev) setAuditSearch("")
+                return !prev
+              })
+            }}
+          >
+            {showAuditHistory ? (
+              <>
+                <ArrowLeft className="size-4 animate-back-bounce" />
+                Back to Dashboard
+              </>
+            ) : (
+              <>
+                <History className="size-4" />
+                Audit History
+              </>
+            )}
+          </button>
+        </div>
+      )}
+
+      {showAuditHistory ? (
+        <div className="bg-white p-6 rounded-[10px] border border-[#e6e7ef] shadow-[0_2px_10px_rgba(0,0,0,0.03)]">
+          <AuditHistoryTable entityName={auditSearch} />
+        </div>
+      ) : (
+        <>
+          <div
+            className="grid gap-4 h-[250px]"
+            style={{ gridTemplateColumns: "0.86fr 0.7fr 1.24fr 1.2fr" }}
+          >
 
         <div className="h-full overflow-hidden">
           <PersonalTimeStudyCard
@@ -322,7 +376,9 @@ export function DashboardPage() {
           />
         )}
       </div>
-    </div>
-  )
+    </>
+  )}
+</div>
+)
 }
 
