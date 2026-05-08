@@ -3,6 +3,7 @@ import { useForm } from "react-hook-form"
 import { useMemo, useState } from "react"
 
 import { Checkbox } from "@/components/ui/checkbox"
+import { Spinner } from "@/components/ui/spinner"
 import { Skeleton } from "@/components/ui/skeleton"
 
 import { fteFilterDefaultValues, fteFilterFormSchema } from "../schemas"
@@ -136,7 +137,12 @@ export function EmployeesTable({
       </div>
 
       {/* Employee list */}
-      <div className="h-[546px] overflow-y-auto">
+      <div className="relative h-[546px] overflow-y-auto">
+        {isLoading && (
+          <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/60">
+            <Spinner className="text-[#6C5DD3]" />
+          </div>
+        )}
         {isLoading ? (
           Array.from({ length: 10 }).map((_, i) => (
             <div key={i} className="border-b border-[#E5E7EB] p-[12px]">
