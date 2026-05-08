@@ -15,6 +15,7 @@ import { useGetPersonalMonthLegend } from "../queries/getPersonalMonthLegend"
 import { useGetPersonalDayDetail } from "../queries/getPersonalDayDetail"
 import { useGetPersonalDropdowns } from "../queries/getPersonalDropdowns"
 import { useGetTimeEntrySummary } from "../queries/getTimeEntrySummary"
+import { useGetUserApportioningConfig } from "../queries/getUserApportioningConfig"
 import { useSavePersonalNotes } from "../mutation/updatePersonalNotes"
 import { useSubmitPersonalTimeRecords } from "../mutation/createPersonalTimeRecords"
 import { useDeletePersonalTimeRecord } from "../mutation/deletePersonalTimeRecord"
@@ -114,6 +115,9 @@ export function PersonalTimeStudyPage() {
 
   // 5. Fetch Time Entry Summary (MAA etc)
   const summaryQuery = useGetTimeEntrySummary(userId, dateStr, undefined, activeTab === "personal")
+
+  // -- Personal Time Study: apportioning config for supervisor panel (read-only) --
+  const apportioningConfigQuery = useGetUserApportioningConfig(userId, activeTab === "personal")
 
   // 5. Calendar day & week summaries
   const { dayStatuses, weekSummaries } = useMemo(() => {
@@ -389,8 +393,7 @@ export function PersonalTimeStudyPage() {
               <div className="mt-6 mb-4">
                 <PersonalTimeStudyEntryForm
                     key={dateStr}
-                    dateStr={dateStr}
-                    initialRecords={dayQuery.data?.timeStudyRecords}
+                    dateStr={dateStr}                    initialRecords={dayQuery.data?.timeStudyRecords}
                     dropdownData={dropdownQuery.data}
                     leaveRecords={dayQuery.data?.leaveRecords}
                     onSave={(records) => submitMutation.mutate({ records, mode: "save" })}
@@ -402,6 +405,7 @@ export function PersonalTimeStudyPage() {
                     actualMultiTotal={summaryQuery.data?.actualmultiactivitytime}
                     multiBalanceTotal={summaryQuery.data?.actualmultiactivityTimebalance}
                     hideSummaryHeader={true}
+                    apportioningConfig={apportioningConfigQuery.data ?? null}
                   />
               </div>
             </>

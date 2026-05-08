@@ -1,5 +1,7 @@
 import { ChevronDown, Clock, Eye, Plus, Trash2 } from "lucide-react"
 import { useCallback, useMemo, useRef, useState } from "react"
+import { PersonalTimeStudyApportioningPanel } from "./PersonalTimeStudyApportioningPanel"
+import type { SupervisorApportioningConfig } from "../queries/getUserApportioningConfig"
 import { useGetProgramActivityRelations } from "../queries/getProgramActivityRelations"
 
 import { Button } from "@/components/ui/button"
@@ -148,6 +150,7 @@ type PersonalTimeStudyEntryFormProps = {
     name?: string
     employeeName?: string
   }>
+  apportioningConfig?: SupervisorApportioningConfig | null
 }
 
 function TimePicker24h({
@@ -291,6 +294,7 @@ export function PersonalTimeStudyEntryForm({
   showLeaveBanner = false,
   leaveRecords,
   className,
+  apportioningConfig,
 }: PersonalTimeStudyEntryFormProps) {
   const { user } = useAuth()
   const userId = propsUserId || user?.id || ""
@@ -858,7 +862,13 @@ export function PersonalTimeStudyEntryForm({
                       }
                       return filtered;
                     })()}
-                    onChange={(v) => updateParent(parent.id, { tsProgram: v })} 
+                    onChange={(v) => {
+                      if (v !== parent.tsProgram) {
+                        updateParent(parent.id, { tsProgram: v, serviceActivity: '' });
+                      } else {
+                        updateParent(parent.id, { tsProgram: v });
+                      }
+                    }} 
                     onBlur={() => {}} 
                     className={cn("h-10 text-[11px]", (isLocked || isLeaveRow) && "bg-[#F2F4F7] cursor-not-allowed", isLeaveRow && "border-yellow-400")} 
                   />
@@ -973,7 +983,13 @@ export function PersonalTimeStudyEntryForm({
                             }
                             return filtered;
                           })()}
-                          onChange={(v) => updateSubRow(parent.id, sub.id, { studyProgram: v })} 
+                          onChange={(v) => {
+                            if (v !== sub.studyProgram) {
+                              updateSubRow(parent.id, sub.id, { studyProgram: v, serviceActivity: '' });
+                            } else {
+                              updateSubRow(parent.id, sub.id, { studyProgram: v });
+                            }
+                          }} 
                           onBlur={() => {}} 
                           className={cn("h-9 text-[11px]", isLocked && "bg-[#F2F4F7] cursor-not-allowed")} 
                         />
@@ -1058,6 +1074,17 @@ export function PersonalTimeStudyEntryForm({
           )
         })}
       </div>
+      {apportioningConfig?.apportioningRequired && (
+        <PersonalTimeStudyApportioningPanel
+          apportioningConfig={apportioningConfig}
+          supervisorOwnMinutesToday={parents.reduce((sum, p) => {
+            // Only count non-leave, non-empty parent rows
+            if (p.isLeave) return sum
+            const mins = Number(computeDurationMinutes(p.start, p.end)) || 0
+            return sum + mins
+          }, 0)}
+        />
+      )}
 
       {!readonly && !moveSaveSubmitToTop && (
         <div className="mt-4 flex justify-end gap-2">
