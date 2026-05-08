@@ -6,8 +6,8 @@ import type { ActivityOption } from "@/features/settings/types"
 
 async function fetchActivityOptions(): Promise<ActivityOption[]> {
   try {
-    const res = await api.get<any>("/activity-codes?limit=1000&status=active")
-    const items = res.data?.data ?? []
+    const res = await api.get<any>("/activity-codes?method=listallcountyactivities&limit=200")
+    const items = res.data?.data?.items ?? res.data?.data ?? res.data ?? []
     
     // Deduplicate by code since activity codes can have multiple types
     const uniqueMap = new Map<string, ActivityOption>()
