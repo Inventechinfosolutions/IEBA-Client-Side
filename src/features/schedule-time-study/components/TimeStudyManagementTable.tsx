@@ -1,17 +1,20 @@
 import dayjs from "dayjs"
 import { zodResolver } from "@hookform/resolvers/zod"
 
-import { AlertCircle, Check, Inbox, Trash2 } from "lucide-react"
+import { AlertCircle, Check, Trash2 } from "lucide-react"
 import type { FormEvent } from "react"
 import { useMemo, useState } from "react"
 import { useForm, useWatch } from "react-hook-form"
 import { toast } from "sonner"
 
 import editIconImg from "@/assets/edit-icon.png"
+import tableEmptyIcon from "@/assets/icons/table-empty.png"
 import { Button } from "@/components/ui/button"
 import { TitleCaseInput } from "@/components/ui/title-case-input"
 import { Label } from "@/components/ui/label"
 import { Skeleton } from "@/components/ui/skeleton"
+import { SingleSelectDropdown } from "@/components/ui/dropdown"
+import { Spinner } from "@/components/ui/spinner"
 import {
   Pagination,
   PaginationContent,
@@ -20,13 +23,6 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import {
   Table,
   TableBody,
@@ -130,6 +126,7 @@ export function ScheduleTimeStudyTable() {
     <ScheduleTimeStudyTableLoaded
       departments={departments}
       fiscalYearOptions={fiscalYearOptions}
+      isDepartmentsFetching={departmentsQuery.isFetching}
     />
   )
 }
@@ -137,7 +134,8 @@ export function ScheduleTimeStudyTable() {
 function ScheduleTimeStudyTableLoaded({
   departments,
   fiscalYearOptions,
-}: ScheduleTimeStudyTableLoadedProps) {
+  isDepartmentsFetching = false,
+}: ScheduleTimeStudyTableLoadedProps & { isDepartmentsFetching?: boolean }) {
   const { isSuperAdmin, assignedDepartmentIds } = usePermissions()
   const filteredDepartments = useMemo(() => {
     if (isSuperAdmin) return departments
@@ -174,7 +172,7 @@ function ScheduleTimeStudyTableLoaded({
   const shouldLoadPeriods =
     hasSelectedDepartment &&
     (activeTab === "time-study-period-management" || activeTab === "scheduled-time-study")
-  const { rows, isLoading } = useScheduleTimeStudyPeriods(
+  const { rows, isLoading, isFetching } = useScheduleTimeStudyPeriods(
     departmentId,
     selectedStudyYear,
     shouldLoadPeriods,
@@ -191,28 +189,15 @@ function ScheduleTimeStudyTableLoaded({
     <section className="font-roboto *:font-roboto min-h-[743px] space-y-5 rounded-[10px] border border-[#E5E7EB] bg-white p-6">
       <div className="space-y-2">
         <Label className="text-[14px] font-normal text-[#1F2937]">Select Department</Label>
-        <Select
-          value={selectedDepartment || undefined}
-          onValueChange={(value) => form.setValue("department", value, { shouldValidate: true })}
-        >
-          <SelectTrigger className="h-12 w-[190px] rounded-[10px] border-[#D1D5DB] px-[14px] text-[14px] text-[#111827] shadow-none focus:ring-0 [&_[data-slot=select-value]]:text-[#111827] [&_[data-slot=select-value]]:text-[14px] [&_[data-slot=select-value]]:font-normal">
-            <SelectValue placeholder="Select department" />
-          </SelectTrigger>
-          <SelectContent
-            position="popper"
-            side="bottom"
-            avoidCollisions={false}
-            sideOffset={8}
-            align="start"
-            className="max-h-[280px] rounded-[14px] border-[#E5E7EB] p-1"
-          >
-            {filteredDepartments.map((dept) => (
-              <SelectItem key={dept.id} value={String(dept.id)}>
-                {dept.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <SingleSelectDropdown
+          value={selectedDepartment || ""}
+          onChange={(value) => form.setValue("department", value, { shouldValidate: true })}
+          onBlur={() => {}}
+          options={filteredDepartments.map((dept) => ({ value: String(dept.id), label: dept.name }))}
+          placeholder="Select department"
+          className="h-10 w-[190px] rounded-[10px] border-[#D1D5DB] px-[14px] text-[14px] text-[#111827] focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+          isLoading={isDepartmentsFetching}
+        />
         {form.formState.errors.department ? (
           <p className="text-xs text-destructive">{form.formState.errors.department.message}</p>
         ) : null}
@@ -243,11 +228,11 @@ function ScheduleTimeStudyTableLoaded({
             Time Study Period MGMT
           </h3>
 
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="mt-6 space-y-1">
-              <Select
+          <div className="flex items-center justify-between gap-3">
+            <div className="space-y-1">
+              <SingleSelectDropdown
                 value={selectedStudyYear}
-                onValueChange={(value) => {
+                onChange={(value) => {
                   form.setValue("studyYear", value, { shouldValidate: true })
                   if (departmentId) {
                     void fetchScheduleTimeStudyPeriodRows({
@@ -260,38 +245,11 @@ function ScheduleTimeStudyTableLoaded({
                     })
                   }
                 }}
-              >
-                <SelectTrigger className="h-[54px] w-[170px] rounded-[10px] border-[#D1D5DB] px-[12px] text-[14px] font-normal text-[#111827] shadow-none focus:ring-0 [&_[data-slot=select-value]]:text-[14px]">
-                  <SelectValue placeholder="Select year" />
-                </SelectTrigger>
-                <SelectContent
-                  position="popper"
-                  side="bottom"
-                  avoidCollisions={false}
-                  sideOffset={12}
-                  align="start"
-                  className="w-[180px] rounded-[10px] border border-[#E5E7EB] bg-white p-1 shadow-[0_4px_16px_#00000014]"
-                >
-                  {fiscalYearOptions.length === 0 ? (
-                    <div className="px-4 py-3 text-[13px] text-muted-foreground">
-                      No fiscal years returned from settings.
-                    </div>
-                  ) : (
-                    fiscalYearOptions.map((fy) => (
-                      <SelectItem
-                        key={fy.id}
-                        value={fy.id}
-                        className={cn(
-                          "h-[42px] rounded-[8px] px-5 pr-5 text-[14px] font-normal text-[#111827] focus:bg-[#F3F4F6] [&>span:first-child]:hidden",
-                          selectedStudyYear === fy.id && "bg-[#F3F4F6]"
-                        )}
-                      >
-                        {fy.label}
-                      </SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
+                onBlur={() => {}}
+                options={fiscalYearOptions.map((fy) => ({ value: fy.id, label: fy.label }))}
+                placeholder="Select year"
+                className="h-10 w-[170px] rounded-[10px] border-[#D1D5DB] px-[12px] text-[14px] font-normal text-[#111827] focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+              />
               {form.formState.errors.studyYear ? (
                 <p className="text-xs text-destructive">{form.formState.errors.studyYear.message}</p>
               ) : null}
@@ -299,9 +257,9 @@ function ScheduleTimeStudyTableLoaded({
 
             <form
               onSubmit={(event: FormEvent<HTMLFormElement>) => event.preventDefault()}
-              className="flex flex-wrap items-start gap-3"
+              className="flex items-center gap-5"
             >
-              <div className="w-full sm:w-[297px]">
+              <div className="w-full sm:w-[220px]">
                 <TitleCaseInput
                   id="schedule-time-study-file"
                   type="file"
@@ -313,9 +271,9 @@ function ScheduleTimeStudyTableLoaded({
                 />
                 <label
                   htmlFor="schedule-time-study-file"
-                  className="flex h-[69px] w-full cursor-pointer items-center rounded-[14px] border border-[#C8CDD6] bg-white px-[24px] py-[19px] transition-colors hover:border-[#6C5DD3] focus-within:border-[#6C5DD3]"
+                  className="flex h-10 w-full cursor-pointer items-center rounded-[6px] border border-[#C8CDD6] bg-white px-[10px] py-[6px] transition-colors hover:border-[#6C5DD3] focus-within:border-[#6C5DD3]"
                 >
-                  <span className="mr-1 inline-flex h-7 min-w-[91px] items-center justify-center rounded-[3px] border border-[#757575] bg-[#F5F5F5] px-[6px] text-[15px] leading-none font-normal text-black">
+                  <span className="mr-1 inline-flex h-7 min-w-[91px] whitespace-nowrap items-center justify-center rounded-[3px] border border-[#757575] bg-[#F5F5F5] px-[6px] text-[15px] leading-none font-normal text-black">
                     Choose File
                   </span>
                   <span className="truncate text-[15px] leading-none font-normal text-black">
@@ -330,7 +288,7 @@ function ScheduleTimeStudyTableLoaded({
               </div>
               <Button
                 type="button"
-                className="h-10 w-[180px] rounded-[12px] bg-[#6C5DD3] px-[15px] text-[14px] font-normal text-white hover:bg-[#5D4FC4]"
+                className="h-10 w-[180px] rounded-[6px] bg-[#6C5DD3] px-[15px] text-[14px] font-normal text-white hover:bg-[#5D4FC4]"
                 onClick={() => {
                   setEditingPeriodRow(null)
                   setPeriodsFormMountKey((k) => k + 1)
@@ -342,7 +300,12 @@ function ScheduleTimeStudyTableLoaded({
             </form>
           </div>
 
-          <div className="overflow-hidden rounded-[10px] border border-[#E5E7EB]">
+          <div className="relative overflow-hidden rounded-[10px] border border-[#E5E7EB]">
+            {isFetching && (
+              <div className="absolute top-[60px] inset-x-0 bottom-0 flex items-center justify-center bg-white/50 z-[50]">
+                <Spinner className="text-[#6C5DD3]" />
+              </div>
+            )}
             <Table className="w-full table-fixed">
               <colgroup>
                 <col className="w-[20%]" />
@@ -409,8 +372,7 @@ function ScheduleTimeStudyTableLoaded({
                   <TableRow>
                     <TableCell colSpan={8} className="h-[145px] bg-white text-center">
                       <div className="flex flex-col items-center justify-center gap-2 text-[#9CA3AF]">
-                        <Inbox className="size-10 text-[#D1D5DB]" />
-                        <span className="text-[14px]">No data</span>
+                        <img src={tableEmptyIcon} alt="" className="size-[80px] object-contain" />
                       </div>
                     </TableCell>
                   </TableRow>

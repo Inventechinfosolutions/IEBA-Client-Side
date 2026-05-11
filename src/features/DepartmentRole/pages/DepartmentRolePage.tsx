@@ -386,33 +386,19 @@ export function DepartmentRolePage() {
           roleName={historyRoleName}
         />
       ) : (
-        <>
-          <DepartmenRoleTable
-            data={data}
-            pagination={pagination}
-            onPageChange={onPageChange}
-            onPageSizeChange={onPageSizeChange}
-            isLoading={isLoading}
-            onOptionAction={handleOptionAction}
-            onView={handleView}
-            onEdit={handleEdit}
-            onToggleChildStatus={handleToggleChildStatus}
-          />
-        </>
+        <DepartmenRoleTable
+          data={data}
+          pagination={pagination}
+          onPageChange={onPageChange}
+          onPageSizeChange={onPageSizeChange}
+          isLoading={isLoading}
+          isSaving={updateChildStatus.isPending}
+          onOptionAction={handleOptionAction}
+          onView={handleView}
+          onEdit={handleEdit}
+          onToggleChildStatus={handleToggleChildStatus}
+        />
       )}
-
-      <DepartmenRoleTable
-        data={data}
-        pagination={pagination}
-        onPageChange={onPageChange}
-        onPageSizeChange={onPageSizeChange}
-        isLoading={isLoading}
-        isSaving={updateChildStatus.isPending}
-        onOptionAction={handleOptionAction}
-        onView={handleView}
-        onEdit={handleEdit}
-        onToggleChildStatus={handleToggleChildStatus}
-      />
       <DepartmentRoleAdd
         key={addDialogKey}
         open={addOpen}

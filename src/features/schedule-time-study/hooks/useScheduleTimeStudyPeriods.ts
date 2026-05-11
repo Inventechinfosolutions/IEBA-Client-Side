@@ -14,5 +14,6 @@ export function useScheduleTimeStudyPeriods(
   return {
     rows,
     isLoading: query.isLoading,
+    isFetching: query.isFetching,
   }
 }
