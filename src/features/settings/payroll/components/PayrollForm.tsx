@@ -23,6 +23,7 @@ import { ChevronDown, ChevronUp } from "lucide-react"
 import { Controller, useFieldArray, useFormContext } from "react-hook-form"
 
 import { Button } from "@/components/ui/button"
+import { Spinner } from "@/components/ui/spinner"
 import { SingleSelectDropdown } from "@/components/ui/dropdown"
 import { TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import {
@@ -113,13 +114,13 @@ function SortablePayrollRow({ row, storageIndex, updateRow, isSortingActive }: S
       <TableCell className="w-[44%] border-r border-[#eef0f5] bg-[#FAFAFA] py-1 text-left text-[12px] text-[#111827]">
         <div className="flex items-center gap-2 px-2">
           {!isSortingActive ? (
-            <span 
+            <span
               className="flex items-center justify-center min-w-[20px]"
             >
               <SixDotsIcon />
             </span>
           ) : (
-             <span className="w-[20px]" />
+            <span className="w-[20px]" />
           )}
           <span className="select-none pointer-events-none whitespace-normal break-words">{row.label}</span>
         </div>
@@ -148,7 +149,7 @@ function SortablePayrollRow({ row, storageIndex, updateRow, isSortingActive }: S
   )
 }
 
-export function PayrollForm() {
+export function PayrollForm({ isSaving = false }: { isSaving?: boolean }) {
   const { control, getValues, watch } = useFormContext<SettingsFormValues>()
   const { update, replace } = useFieldArray({ control, name: "payroll.columns" })
 
@@ -272,9 +273,9 @@ export function PayrollForm() {
               className="min-h-0 overflow-y-scroll overflow-x-hidden bg-white [scrollbar-gutter:stable]"
               style={{ maxHeight: `${PAYROLL_TABLE_SCROLL_MAX_HEIGHT_PX}px` }}
             >
-              <DndContext 
-                sensors={sensors} 
-                collisionDetection={closestCorners} 
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCorners}
                 onDragStart={onDragStart}
                 onDragEnd={onDragEnd}
                 modifiers={[restrictToVerticalAxis]}
@@ -311,10 +312,10 @@ export function PayrollForm() {
                             <span className="font-medium">{activeRow.label}</span>
                           </td>
                           <td className="w-[28%] border-r border-[#eef0f5] py-1 text-center">
-                             <input type="checkbox" checked={activeRow.enabled} readOnly className="size-4" />
+                            <input type="checkbox" checked={activeRow.enabled} readOnly className="size-4" />
                           </td>
                           <td className="w-[28%] py-1 text-center">
-                             <input type="checkbox" checked={activeRow.editable} readOnly className="size-4" />
+                            <input type="checkbox" checked={activeRow.editable} readOnly className="size-4" />
                           </td>
                         </tr>
                       </tbody>
@@ -353,9 +354,10 @@ export function PayrollForm() {
         <Button
           type="submit"
           data-settings-section={SettingsFormSaveSection.Payroll}
+          disabled={isSaving}
           className="h-[44px] min-w-[120px] rounded-[8px] bg-[var(--primary)] px-8 text-[12px] font-medium text-white hover:bg-[var(--primary)] cursor-pointer disabled:cursor-not-allowed disabled:opacity-70"
         >
-          Save
+          {isSaving ? <Spinner className="text-white" /> : "Save"}
         </Button>
       </div>
     </div>

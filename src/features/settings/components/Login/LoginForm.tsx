@@ -2,6 +2,7 @@ import { Controller, useFormContext } from "react-hook-form"
 import { ChevronDown, ChevronUp } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import { Spinner } from "@/components/ui/spinner"
 import { Checkbox } from "@/components/ui/checkbox"
 import { TitleCaseInput } from "@/components/ui/title-case-input"
 import { SettingsFormSaveSection } from "@/features/settings/enums/setting.enum"
@@ -22,7 +23,7 @@ const otpStepButtonClassName =
 const otpAddonClassName =
   "flex w-[80px] items-center justify-center border-l border-[#d6d7dc] bg-white text-[12px] font-normal text-[#111827]"
 
-export function LoginForm() {
+export function LoginForm({ isSaving = false }: { isSaving?: boolean }) {
   const { control, register, getValues, setValue } = useFormContext<SettingsFormValues>()
   const { isSuperAdmin } = usePermissions()
   const readOnly = !isSuperAdmin
@@ -106,9 +107,10 @@ export function LoginForm() {
             <Button
               type="submit"
               data-settings-section={SettingsFormSaveSection.Login}
+              disabled={isSaving}
               className="h-[44px] w-[88px] cursor-pointer rounded-[10px] bg-[var(--primary)] px-0 py-2 text-[14px] font-medium text-white hover:bg-[var(--primary)]"
             >
-              Save
+              {isSaving ? <Spinner className="text-white" /> : "Save"}
             </Button>
           </div>
         )}
