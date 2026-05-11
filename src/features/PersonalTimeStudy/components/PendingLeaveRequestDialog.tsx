@@ -30,6 +30,7 @@ import { MoreVertical, Edit2, X, MessageCircleMore } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { UserLeaveDaySnapshotResDto } from "../types"
 import emptyIcon from "@/assets/icons/table-empty.png"
+import { Spinner } from "@/components/ui/spinner"
 
 type PendingLeaveRequestDialogProps = {
   open: boolean
@@ -39,6 +40,7 @@ type PendingLeaveRequestDialogProps = {
   onEdit: (leave: UserLeaveDaySnapshotResDto) => void
   onCancel: (leave: UserLeaveDaySnapshotResDto) => void
   dropdownData?: any[]
+  isLoading?: boolean
 }
 
 export function PendingLeaveRequestDialog({
@@ -49,6 +51,7 @@ export function PendingLeaveRequestDialog({
   onEdit,
   onCancel,
   dropdownData,
+  isLoading = false,
 }: PendingLeaveRequestDialogProps) {
   const isRejected = title.toLowerCase().includes("rejected")
 
@@ -139,7 +142,15 @@ export function PendingLeaveRequestDialog({
                   {!isRejected && <col style={{ width: "8%" }} />}
                 </colgroup>
                 <TableBody>
-                  {leaves.length === 0 ? (
+                  {isLoading ? (
+                    <TableRow>
+                      <TableCell colSpan={isRejected ? 9 : 10} className="h-32 text-center border-b-0 bg-white">
+                        <div className="flex flex-col items-center justify-center">
+                          <Spinner className="size-8 text-[#6C5DD3]" />
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ) : leaves.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={isRejected ? 9 : 10} className="h-32 text-center text-muted-foreground border-b-0 bg-white">
                         <div className="flex flex-col items-center justify-center gap-4">

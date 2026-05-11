@@ -30,6 +30,8 @@ type PersonalTimeStudyLeaveCardProps = {
   dateStr?: string
   month?: number
   year?: number
+  isLoading?: boolean
+  isDropdownLoading?: boolean
 }
 
 export function PersonalTimeStudyLeaveCard({
@@ -44,6 +46,8 @@ export function PersonalTimeStudyLeaveCard({
   dateStr = "",
   month = 1,
   year = (() => { const _n = new Date(); return _n.getFullYear() })(),
+  isLoading = false,
+  isDropdownLoading = false,
 }: PersonalTimeStudyLeaveCardProps) {
   const [leaveDialogOpen, setLeaveDialogOpen] = useState(false)
   const { user } = useAuth()
@@ -57,6 +61,7 @@ export function PersonalTimeStudyLeaveCard({
   const [listDialogOpen, setListDialogOpen] = useState(false)
   const [selectedStatus, setSelectedStatus] = useState<"approved" | "open" | "rejected" | null>(null)
   const [editingLeave, setEditingLeave] = useState<UserLeaveDaySnapshotResDto | null>(null)
+  const [isFetchingDetail, setIsFetchingDetail] = useState(false)
 
   const { filteredLeaves, listTitle } = useMemo(() => {
     if (!selectedStatus) return { filteredLeaves: [], listTitle: "" }
@@ -88,13 +93,17 @@ export function PersonalTimeStudyLeaveCard({
   }
 
   const handleEdit = async (leave: UserLeaveDaySnapshotResDto) => {
+    setEditingLeave(leave)
+    setListDialogOpen(false)
+    setLeaveDialogOpen(true)
+    setIsFetchingDetail(true)
     try {
       const fullLeave = await apiGetUserLeaveById(leave.id)
       setEditingLeave(fullLeave)
-      setListDialogOpen(false)
-      setLeaveDialogOpen(true)
     } catch (e) {
       console.error("Failed to fetch leave details", e)
+    } finally {
+      setIsFetchingDetail(false)
     }
   }
 
@@ -106,17 +115,20 @@ export function PersonalTimeStudyLeaveCard({
   // editingLeave can be the full UserLeave entity (from API) or a snapshot — handle both
   const editingStatus = (editingLeave as any)?.status ?? null
 
-  const initialValues: EmployeeLeaveRequestFormValues | undefined = editingLeave ? {
-    entries: [{
-      date: (editingLeave as any).startdt ?? "",
-      startTime: ((editingLeave as any).starttime || "").slice(0, 5),
-      endTime: ((editingLeave as any).endtime || "").slice(0, 5),
-      programCode: String((editingLeave as any).programid ?? ""),
-      activityCode: String((editingLeave as any).activityid ?? ""),
-      totalMinApplied: String((editingLeave as any).leaveTotalTime ?? "0"),
-      comment: (editingLeave as any).requestcomment || "",
-    }]
-  } : undefined
+  const initialValues: EmployeeLeaveRequestFormValues | undefined = useMemo(() => {
+    if (!editingLeave) return undefined
+    return {
+      entries: [{
+        date: (editingLeave as any).startdt ?? "",
+        startTime: ((editingLeave as any).starttime || "").slice(0, 5),
+        endTime: ((editingLeave as any).endtime || "").slice(0, 5),
+        programCode: String((editingLeave as any).programid ?? ""),
+        activityCode: String((editingLeave as any).activityid ?? ""),
+        totalMinApplied: String((editingLeave as any).leaveTotalTime ?? "0"),
+        comment: (editingLeave as any).requestcomment || "",
+      }]
+    }
+  }, [editingLeave])
 
   return (
     <Card
@@ -184,6 +196,7 @@ export function PersonalTimeStudyLeaveCard({
         initialValues={initialValues}
         editingStatus={editingStatus}
         dropdownData={dropdownData}
+        editingLeave={editingLeave}
         onSave={async (values) => { 
           if (editingLeave) {
             await updateMutation.mutateAsync({ id: (editingLeave as any).id, values, userId, dropdownData, status: "draft" })
@@ -199,6 +212,10 @@ export function PersonalTimeStudyLeaveCard({
             await submitMutation.mutateAsync({ values, userId, dropdownData }) 
           }
         }}
+        isSaving={saveMutation.isPending || (updateMutation.isPending && (editingStatus?.toLowerCase() !== "approved" && editingStatus?.toLowerCase() !== "requested"))}
+        isSubmitting={submitMutation.isPending || (updateMutation.isPending && (editingStatus?.toLowerCase() === "approved" || editingStatus?.toLowerCase() === "requested"))}
+        isDropdownLoading={isDropdownLoading}
+        isFetching={isFetchingDetail}
       />
 
       <PendingLeaveRequestDialog
@@ -209,6 +226,7 @@ export function PersonalTimeStudyLeaveCard({
         onEdit={handleEdit}
         onCancel={handleWithdraw}
         dropdownData={dropdownData}
+        isLoading={isLoading || withdrawMutation.isPending}
       />
     </Card>
   )

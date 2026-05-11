@@ -15,6 +15,7 @@ import { TimePickerDropdown } from "@/components/ui/time-picker"
 import { useAuth } from "@/contexts/AuthContext"
 import { API_BASE_URL } from "@/lib/config"
 import { apiDownloadSupportingDoc, apiDeleteSupportingDoc } from "../api/personalTimeStudyApi"
+import { Spinner } from "@/components/ui/spinner"
 
 /** Inline required-field asterisk — available to all components in this module. */
 function RequiredMark() {
@@ -155,6 +156,7 @@ type PersonalTimeStudyEntryFormProps = {
     employeeName?: string
   }>
   apportioningConfig?: SupervisorApportioningConfig | null
+  isLoading?: boolean
 }
 
 function TimePicker24h({
@@ -299,6 +301,7 @@ export function PersonalTimeStudyEntryForm({
   leaveRecords,
   className,
   apportioningConfig,
+  isLoading = false,
 }: PersonalTimeStudyEntryFormProps) {
   const { user } = useAuth()
   const userId = propsUserId || user?.id || ""
@@ -766,7 +769,12 @@ export function PersonalTimeStudyEntryForm({
   }
 
   return (
-    <section className={cn("w-full rounded-[6px] border-0 bg-white p-4 shadow-[0_4px_16px_rgba(16,24,40,0.12)]", className)}>
+    <section className={cn("relative w-full rounded-[6px] border-0 bg-white p-4 shadow-[0_4px_16px_rgba(16,24,40,0.12)]", className)}>
+      {isLoading && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/60 backdrop-blur-[1px] rounded-[6px]">
+          <Spinner className="text-[#6C5DD3]" />
+        </div>
+      )}
         <div className="mb-6 flex flex-col gap-2">
           {/* Top Row: Metrics aligned right */}
           {!hideSummaryHeader && (
