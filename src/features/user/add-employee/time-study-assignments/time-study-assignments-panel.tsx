@@ -191,11 +191,6 @@ export function TimeStudyAssignmentsPanel({
 }: TimeStudyAssignmentsPanelProps) {
   const userIdForTs = (timeStudyContextUserId ?? "").trim()
 
-  // Reset all local states when switching users
-  useMemo(() => {
-    // This runs during render when userIdForTs changes, effectively resetting for the new user
-    // without waiting for a useEffect.
-  }, [userIdForTs])
 
   const isEditTimeStudyWithUserBundle = mode === "edit" && Boolean(userIdForTs)
   const canPersistTsTransfers = userIdForTs.length > 0
@@ -309,6 +304,27 @@ export function TimeStudyAssignmentsPanel({
   const [toggledActivitiesU, setToggledActivitiesU] = useState<string[]>([])
   const [toggledActivitiesA, setToggledActivitiesA] = useState<string[]>([])
   const [isSavingTsMinDay, setIsSavingTsMinDay] = useState(false)
+
+  // Reset all local states when switching users or when a new user is created
+  useMemo(() => {
+    setAssignedProgramIdsAddMode([])
+    setAssignedActivityIdsAddMode([])
+    setProgramPlacementOverridesEditMode({})
+    setActivityPlacementOverridesEditMode({})
+    setToggledProgramsU([])
+    setToggledProgramsA([])
+    setToggledActivitiesU([])
+    setToggledActivitiesA([])
+  }, [userIdForTs])
+
+  // Clear manual overrides once the query successfully refetches fresh data from the server.
+  // This ensures the UI "syncs" back to the actual database state (including cascading changes).
+  useMemo(() => {
+    if (userProgramsActivitiesQuery.isSuccess && !userProgramsActivitiesQuery.isFetching) {
+      setProgramPlacementOverridesEditMode({})
+      setActivityPlacementOverridesEditMode({})
+    }
+  }, [userProgramsActivitiesQuery.dataUpdatedAt, userProgramsActivitiesQuery.isFetching])
 
   const handleSaveTsMinDay = async () => {
     const userId = userIdForTs.trim()
