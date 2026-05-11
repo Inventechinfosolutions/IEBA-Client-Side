@@ -12,6 +12,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Checkbox } from "@/components/ui/checkbox"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Spinner } from "@/components/ui/spinner"
 import {
   Select,
   SelectContent,
@@ -247,6 +248,12 @@ export function ParticipantsListForm({
         <DialogTitle className="text-center text-[17px] font-medium text-[#6C5DD3]">
           {editingRow ? "Edit Participant Group" : "Create Participant Group"}
         </DialogTitle>
+
+        {(groupDetailsQuery.isLoading && editingRow || createGroup.isPending || updateGroup.isPending) && (
+          <div className="absolute inset-0 z-50 flex items-center justify-center rounded-[6px] bg-white/60">
+            <Spinner className="text-[#6C5DD3]" />
+          </div>
+        )}
 
         <form onSubmit={onSubmit} className="space-y-5">
           <div className="mx-auto mt-4 flex w-fit items-end justify-center gap-5">
@@ -566,9 +573,10 @@ export function ParticipantsListForm({
           <div className="flex justify-end gap-3">
             <Button
               type="submit"
+              disabled={createGroup.isPending || updateGroup.isPending}
               className="h-10 w-[86px] rounded-[6px] bg-[#6C5DD3] text-[14px] font-medium text-white hover:bg-[#5D4FC4]"
             >
-              Save
+              {createGroup.isPending || updateGroup.isPending ? <Spinner className="size-4 text-white" /> : "Save"}
             </Button>
             <Button
               type="button"

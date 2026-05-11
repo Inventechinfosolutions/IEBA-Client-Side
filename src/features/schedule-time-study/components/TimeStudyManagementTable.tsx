@@ -435,7 +435,7 @@ function ScheduleTimeStudyTableLoaded({
                               </button>
                               <button
                                 type="button"
-                                className="text-[#DC2626] disabled:cursor-not-allowed disabled:opacity-40"
+                                className="flex size-4 items-center justify-center text-[#DC2626] disabled:cursor-not-allowed disabled:opacity-40"
                                 disabled={deletePayPeriod.isPending}
                                 onClick={() => {
                                   const id = Number(row.id)
@@ -455,7 +455,11 @@ function ScheduleTimeStudyTableLoaded({
                                     })
                                 }}
                               >
-                                <Trash2 className="size-3.5" />
+                                {deletePayPeriod.isPending ? (
+                                  <Spinner className="size-3.5 text-[#DC2626]" />
+                                ) : (
+                                  <Trash2 className="size-3.5" />
+                                )}
                               </button>
                             </>
                           )}

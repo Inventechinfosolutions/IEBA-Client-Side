@@ -219,10 +219,12 @@ export function ScheduledTimeStudyTable({
                               // Error toast handled at higher-level API wrapper patterns elsewhere; keep silent here.
                             }
                           }}
-                          className="disabled:cursor-not-allowed disabled:opacity-60"
+                          className="flex h-5 w-5 items-center justify-center disabled:cursor-not-allowed disabled:opacity-60"
                           aria-label="Delete scheduled row"
                         >
-                          {row.statusRaw === SchedulePayPeriodGroupStatus.DRAFT ? (
+                          {deleteRow.isPending ? (
+                            <Spinner className="size-3.5 text-[#DC2626]" />
+                          ) : row.statusRaw === SchedulePayPeriodGroupStatus.DRAFT ? (
                             <Trash2 className="h-4 w-4 text-[#DC2626]" />
                           ) : (
                             <img src={statusCrossImg} alt="Delete" className="h-4 w-4 object-contain" />
