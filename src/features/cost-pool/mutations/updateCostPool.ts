@@ -50,7 +50,7 @@ export function useUpdateCostPool() {
         users: values.assignedUserIds,
       })
 
-      toast.success(res.message || "Cost pool updated successfully")
+      toast.success("Cost pool updated successfully")
 
       return costPool
     },
