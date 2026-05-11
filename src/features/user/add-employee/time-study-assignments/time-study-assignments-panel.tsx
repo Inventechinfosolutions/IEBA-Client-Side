@@ -349,8 +349,26 @@ export function TimeStudyAssignmentsPanel({
    */
   const selectedEditDeptId = useMemo(() => {
     if (isAddMode) return ""
-    return timeStudyDeptEditMode.trim()
-  }, [isAddMode, timeStudyDeptEditMode])
+    const explicit = timeStudyDeptEditMode.trim()
+    if (explicit) return explicit
+
+    // Auto-select if there is exactly one department with existing TS assignments
+    if (departmentSelectOptionsFromUserBundle.length === 1) {
+      return departmentSelectOptionsFromUserBundle[0].value
+    }
+
+    // Fallback: auto-select if there is exactly one department assigned in Security tab
+    if (departmentSelectOptionsForEditMode.length === 1) {
+      return departmentSelectOptionsForEditMode[0].value
+    }
+
+    return ""
+  }, [
+    isAddMode,
+    timeStudyDeptEditMode,
+    departmentSelectOptionsFromUserBundle,
+    departmentSelectOptionsForEditMode,
+  ])
 
   const selectedBundle = useMemo((): UserProgramsActivitiesDepartmentBundle | undefined => {
     if (!selectedEditDeptId) return undefined
