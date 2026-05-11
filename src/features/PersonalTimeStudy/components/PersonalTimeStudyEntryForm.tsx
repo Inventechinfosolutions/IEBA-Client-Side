@@ -41,6 +41,8 @@ export type TimeEntrySubRow = {
   activityCode?: string
   activityName?: string
   departmentCode?: string
+  status?: string
+  recordType?: string
 }
 
 export type TimeEntryParentRow = {
@@ -60,6 +62,8 @@ export type TimeEntryParentRow = {
   activityName?: string
   departmentCode?: string
   isLeave?: boolean
+  status?: string
+  recordType?: string
 }
 
 export type TimeEntryRow = TimeEntryParentRow
@@ -360,7 +364,11 @@ export function PersonalTimeStudyEntryForm({
               activityCode: m.activitycode,
               activityName: m.activityname,
               departmentCode: m.departmentcode,
+              status: m.status,
+              recordType: m.recordType,
             })),
+            status: rec.status,
+            recordType: rec.recordType,
           }
           parentMap.set(rec.id, parentRow)
         }
@@ -578,7 +586,7 @@ export function PersonalTimeStudyEntryForm({
     return parents.length > 1 || !!parent?.dbId
   }
 
-  const mapToPayload = (): any[] => {
+  const mapToPayload = (overrideStatus?: string): any[] => {
     const deptId = dropdownData?.[0]?.departmentId
     return parents
       .filter((p) => !(p.isLeave && !p.dbId))
@@ -595,6 +603,8 @@ export function PersonalTimeStudyEntryForm({
       description: p.description,
       departmentId: deptId,
       supportingDocs: p.supportingDocs,
+      status: overrideStatus || p.status || "draft",
+      recordType: p.recordType || "NORMAL",
       multiCodeRecords: p.subRows.map((s) => {
         const subDeptId = dropdownData?.find((d) => d.programs.some((pr: any) => String(pr.id) === s.studyProgram))?.departmentId
         return {
@@ -607,6 +617,7 @@ export function PersonalTimeStudyEntryForm({
           starttime: s.start,
           endtime: s.end,
           recordType: "MULTI_CODE",
+          status: overrideStatus || s.status || p.status || "draft",
         }
       }),
     }))
@@ -679,14 +690,14 @@ export function PersonalTimeStudyEntryForm({
 
   const handleSave = () => {
     if (!validateEntries()) return
-    const payload = mapToPayload()
+    const payload = mapToPayload("draft")
     if (payload.length === 0) { toast.error("Please add at least one time entry"); return; }
     onSave?.(payload)
   }
 
   const handleSubmitInternal = () => {
     if (!validateEntries()) return
-    const payload = mapToPayload()
+    const payload = mapToPayload("submitted")
     if (payload.length === 0) { toast.error("Please add at least one time entry"); return; }
     onSubmit?.(payload)
   }
