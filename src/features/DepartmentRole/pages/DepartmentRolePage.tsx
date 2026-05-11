@@ -46,6 +46,7 @@ export function DepartmentRolePage() {
   const [viewOpen, setViewOpen] = useState(false)
   const [viewRoleId, setViewRoleId] = useState<string | null>(null)
   const [showHistory, setShowHistory] = useState(false)
+  const [listSearchQuery, setListSearchQuery] = useState("")
   const [historyDeptName, setHistoryDeptName] = useState("")
   const [historyDeptCode, setHistoryDeptCode] = useState("")
   const [historyRoleName, setHistoryRoleName] = useState("")
@@ -308,10 +309,6 @@ export function DepartmentRolePage() {
   )
 
 
-  const handleSearchChange = (value: string) => {
-    setHistoryDeptName(value)
-  }
-
   return (
     <div className="space-y-6">
       {/* Toolbar */}
@@ -340,8 +337,8 @@ export function DepartmentRolePage() {
         ) : (
           <TitleCaseInput
             placeholder="Search here"
-            value={historyDeptName}
-            onChange={(e) => handleSearchChange(e.target.value)}
+            value={listSearchQuery}
+            onChange={(e) => setListSearchQuery(e.target.value)}
             className="h-12 w-[270px] rounded-[10px] border border-[#D9D9D9] bg-white px-3.5 text-[11px] text-[#111827] shadow-[0_4px_10px_rgba(15,23,42,0.08)] placeholder:text-[10px] placeholder:text-[#9CA3AF] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
           />
         )}

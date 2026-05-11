@@ -1,12 +1,14 @@
-import { useMemo, useState } from "react"
+import { lazy, Suspense, useMemo, useState } from "react"
 import { Spinner } from "@/components/ui/spinner"
 import { Controller, useFormContext } from "react-hook-form"
 import { toast } from "sonner"
 
-import { Check, X } from "lucide-react"
+import { ArrowLeft, History } from "lucide-react"
 import { queryClient } from "@/main"
 import { TransferListMoveButton } from "@/components/ui/transfer-list-move-button"
+import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
+import { TitleCaseInput } from "@/components/ui/title-case-input"
 import { usePermissions } from "@/hooks/usePermissions"
 
 import type {
@@ -29,6 +31,13 @@ import {
 import statusCheck from "@/assets/status-check.png"
 import statusCross from "@/assets/status-cross.png"
 import { RoleTransferPanel } from "./role-transfer-panel"
+import { DEPARTMENT_ROLE_USER_ASSIGNMENT_HISTORY_KIND } from "@/features/DepartmentRole/queries/departmentRoleHistory"
+
+const DepartmentRoleHistoryTable = lazy(() =>
+  import("@/features/DepartmentRole/components/DepartmentRoleHistoryTable").then((m) => ({
+    default: m.DepartmentRoleHistoryTable,
+  }))
+)
 
 function normalizeDeptRolePart(s: string): string {
   return s.trim().toLowerCase().replace(/\s+/g, " ")
@@ -207,6 +216,9 @@ export function SecurityAssignmentsPanel({
 
   const [toggledU, setToggledU] = useState<string[]>([])
   const [toggledA, setToggledA] = useState<string[]>([])
+  const [showSecurityDeptRoleHistory, setShowSecurityDeptRoleHistory] = useState(false)
+  const [securityDeptRoleHistoryDeptName, setSecurityDeptRoleHistoryDeptName] = useState("")
+  const [securityDeptRoleHistoryRoleName, setSecurityDeptRoleHistoryRoleName] = useState("")
 
   const toggle = (id: string, isAssigned: boolean) => {
     const list = isAssigned ? assignedItems : unassignedItems
@@ -556,8 +568,85 @@ export function SecurityAssignmentsPanel({
   const fullName = `${firstName ?? ""} ${lastName ?? ""}`.trim()
 
   return (
-    <div className="pt-1">
-      <div className="mb-3 flex items-start justify-between">
+    <div className="relative min-w-0 pt-1">
+      {showSecurityDeptRoleHistory && canPersistTransfers ? (
+        <>
+          <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
+            {isAddMode ? (
+              <div className="flex items-center gap-4">
+                <label className="flex cursor-not-allowed items-center gap-2 text-[11px] select-none text-[#9ca3af]">
+                  <Controller
+                    name="copyUser"
+                    control={control}
+                    render={({ field }) => (
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={(checked) => field.onChange(checked === true)}
+                        disabled
+                        className="size-4 rounded-[3px] border-[#c2c6d1] data-[state=checked]:border-(--primary) data-[state=checked]:bg-(--primary) disabled:cursor-not-allowed disabled:bg-[#f3f4f6] disabled:border-[#e5e7eb] disabled:opacity-100"
+                      />
+                    )}
+                  />
+                  Copy User
+                </label>
+                <input
+                  type="text"
+                  readOnly
+                  disabled
+                  className="h-10 w-[280px] rounded-[10px] border border-[#e5e7eb] bg-[#f3f4f6] px-3 text-[11px] outline-none transition-colors cursor-not-allowed text-[#9ca3af]"
+                />
+              </div>
+            ) : (
+              <p className="text-[12px] font-semibold uppercase text-[#111827]">{fullName}</p>
+            )}
+          </div>
+
+          <div className="mb-4 flex flex-wrap items-center gap-3">
+            <Button
+              type="button"
+              className="h-9 cursor-pointer gap-2 rounded-[12px] border border-[#E5E7EB] bg-white px-3 text-[12px] font-semibold text-[#6C5DD3] shadow-[0_1px_0_rgba(0,0,0,0.05)] hover:border-[#6C5DD3] hover:bg-[#F3F0FF]"
+              onClick={() => {
+                setShowSecurityDeptRoleHistory(false)
+                setSecurityDeptRoleHistoryDeptName("")
+                setSecurityDeptRoleHistoryRoleName("")
+              }}
+            >
+              <ArrowLeft className="size-3.5" />
+              Back to Security
+            </Button>
+            <TitleCaseInput
+              placeholder="Search Department Name"
+              value={securityDeptRoleHistoryDeptName}
+              onChange={(e) => setSecurityDeptRoleHistoryDeptName(e.target.value)}
+              className="h-[41px] w-[220px] rounded-[10px] border border-[#d0d5df] bg-white px-3.5 text-[11px] text-[#111827] shadow-[0_4px_10px_rgba(15,23,42,0.08)] placeholder:text-[10px] placeholder:text-[#a7afbf] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
+            />
+            <TitleCaseInput
+              placeholder="Search Role Name"
+              value={securityDeptRoleHistoryRoleName}
+              onChange={(e) => setSecurityDeptRoleHistoryRoleName(e.target.value)}
+              className="h-[41px] w-[200px] rounded-[10px] border border-[#d0d5df] bg-white px-3.5 text-[11px] text-[#111827] shadow-[0_4px_10px_rgba(15,23,42,0.08)] placeholder:text-[10px] placeholder:text-[#a7afbf] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
+            />
+          </div>
+
+          <Suspense
+            fallback={
+              <div className="flex min-h-[240px] items-center justify-center rounded-[10px] border border-[#E5E7EB] bg-white">
+                <Spinner className="text-[#6C5DD3]" />
+              </div>
+            }
+          >
+            <DepartmentRoleHistoryTable
+              userId={securityUserId}
+              departmentName={securityDeptRoleHistoryDeptName}
+              roleName={securityDeptRoleHistoryRoleName}
+              historyKind={DEPARTMENT_ROLE_USER_ASSIGNMENT_HISTORY_KIND}
+              columnLayout="assignment"
+            />
+          </Suspense>
+        </>
+      ) : (
+        <>
+      <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex items-center gap-4">
           {isAddMode ? (
             <>
@@ -591,7 +680,7 @@ export function SecurityAssignmentsPanel({
           )}
         </div>
 
-        <div className="flex items-center gap-5 pr-1 pt-2">
+        <div className="flex min-w-0 flex-wrap items-center gap-3 sm:justify-end sm:gap-5 sm:pr-1 sm:pt-2">
           <label className={`flex items-center gap-2 text-[11px] select-none ${isApportioningEnabled ? "cursor-pointer text-[#111827]" : "cursor-not-allowed text-[#9ca3af]"}`}>
             <Controller
               name="supervisorApportioning"
@@ -624,6 +713,17 @@ export function SecurityAssignmentsPanel({
               Client Admin
             </label>
           )}
+
+          {canPersistTransfers ? (
+            <Button
+              type="button"
+              className="inline-flex h-auto min-h-9 shrink cursor-pointer items-center gap-2 whitespace-normal rounded-[12px] border border-[#E5E7EB] bg-white px-3 py-2 text-[11px] font-semibold leading-snug text-[#6C5DD3] shadow-[0_1px_0_rgba(0,0,0,0.05)] hover:border-[#6C5DD3] hover:bg-[#F3F0FF] sm:text-[12px]"
+              onClick={() => setShowSecurityDeptRoleHistory(true)}
+            >
+              <History className="size-3.5 shrink-0" />
+              Department Role History
+            </Button>
+          ) : null}
         </div>
       </div>
 
@@ -761,6 +861,8 @@ export function SecurityAssignmentsPanel({
             </tbody>
           </table>
         </div>
+      )}
+        </>
       )}
     </div>
   )

@@ -69,6 +69,7 @@ import {
   useGetCountyActivityMasterCodes,
   useGetMasterActivityCatalog,
 } from "../queries/getCountyActivityCodes"
+import { ACTIVITY_DEFINITION_HISTORY_KIND } from "../queries/activityHistory"
 import { apiPutCountyActivity, parseMasterCodeDisplay } from "../api/countyActivityApi"
 
 import { usePermissions } from "@/hooks/usePermissions"
@@ -826,19 +827,21 @@ export function CountyActivityCodeTable({
     <div className="space-y-4 rounded-[12px] border border-[#E5E7EB] bg-white p-4">
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-[10px] p-3">
         {showHistory ? (
-          <div className="flex flex-1 items-center gap-2">
-            <TitleCaseInput
-              placeholder="Search County Activity Code"
-              value={historyActivityCode}
-              onChange={(e) => setHistoryActivityCode(e.target.value)}
-              className="h-12 w-[220px] rounded-[10px] border border-[#D9D9D9] bg-white px-3.5 text-[11px] text-[#111827] shadow-[0_4px_10px_rgba(15,23,42,0.08)] placeholder:text-[10px] placeholder:text-[#9CA3AF] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
-            />
-            <TitleCaseInput
-              placeholder="Search County Activity Name"
-              value={historyActivityName}
-              onChange={(e) => setHistoryActivityName(e.target.value)}
-              className="h-12 w-[250px] rounded-[10px] border border-[#D9D9D9] bg-white px-3.5 text-[11px] text-[#111827] shadow-[0_4px_10px_rgba(15,23,42,0.08)] placeholder:text-[10px] placeholder:text-[#9CA3AF] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
-            />
+          <div className="flex flex-1 flex-col gap-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <TitleCaseInput
+                placeholder="Search County Activity Code"
+                value={historyActivityCode}
+                onChange={(e) => setHistoryActivityCode(e.target.value)}
+                className="h-12 w-[220px] rounded-[10px] border border-[#D9D9D9] bg-white px-3.5 text-[11px] text-[#111827] shadow-[0_4px_10px_rgba(15,23,42,0.08)] placeholder:text-[10px] placeholder:text-[#9CA3AF] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
+              />
+              <TitleCaseInput
+                placeholder="Search County Activity Name"
+                value={historyActivityName}
+                onChange={(e) => setHistoryActivityName(e.target.value)}
+                className="h-12 w-[250px] rounded-[10px] border border-[#D9D9D9] bg-white px-3.5 text-[11px] text-[#111827] shadow-[0_4px_10px_rgba(15,23,42,0.08)] placeholder:text-[10px] placeholder:text-[#9CA3AF] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
+              />
+            </div>
           </div>
         ) : (
           <div className="w-full max-w-[300px]">
@@ -944,12 +947,15 @@ export function CountyActivityCodeTable({
         </div>
       </div>
 
-      {/* History view — replaces the main table when active */}
+      {/* History — activity_definition on /users/activity-history */}
       {showHistory && (
-        <CountyActivityHistoryTable
-          countyActivityCode={historyActivityCode}
-          countyActivityName={historyActivityName}
-        />
+        <div className="space-y-4">
+          <CountyActivityHistoryTable
+            countyActivityCode={historyActivityCode}
+            countyActivityName={historyActivityName}
+            historyKind={ACTIVITY_DEFINITION_HISTORY_KIND}
+          />
+        </div>
       )}
 
       <div className={`overflow-hidden rounded-[10px] border border-[#E5E7EB] ${showHistory ? "hidden" : ""}`}>

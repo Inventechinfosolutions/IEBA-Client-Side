@@ -1,5 +1,6 @@
 
-import { useMemo, useState } from "react"
+import { lazy, Suspense, useMemo, useState } from "react"
+import { ArrowLeft, ClipboardList, History } from "lucide-react"
 import { useQueries } from "@tanstack/react-query"
 import { useFormContext } from "react-hook-form"
 import { toast } from "sonner"
@@ -35,8 +36,23 @@ import {
   useGetUserProgramsAndActivities,
 } from "../queries/get-add-employee"
 import { apiGetProgramActivityRelationActivities } from "@/features/program/api"
+import { USER_ASSIGNMENT_HISTORY_KIND } from "@/features/program/queries/userProgramHistory"
 
 import { TransferPanel } from "./transfer-panel"
+
+const UserProgramHistoryTable = lazy(() =>
+  import("@/features/program/components/UserProgramHistoryTable").then((m) => ({
+    default: m.UserProgramHistoryTable,
+  }))
+)
+
+const CountyActivityHistoryTable = lazy(() =>
+  import("@/features/CountyActivityCode/components/CountyActivityHistoryTable").then((m) => ({
+    default: m.CountyActivityHistoryTable,
+  }))
+)
+
+type TsHistoryView = "program" | "activity"
 
 function filterBySearch(items: AddEmployeeTimeStudyTransferItem[], search: string) {
   const q = search.trim().toLowerCase()
@@ -191,12 +207,6 @@ export function TimeStudyAssignmentsPanel({
 }: TimeStudyAssignmentsPanelProps) {
   const userIdForTs = (timeStudyContextUserId ?? "").trim()
 
-  // Reset all local states when switching users
-  useMemo(() => {
-    // This runs during render when userIdForTs changes, effectively resetting for the new user
-    // without waiting for a useEffect.
-  }, [userIdForTs])
-
   const isEditTimeStudyWithUserBundle = mode === "edit" && Boolean(userIdForTs)
   const canPersistTsTransfers = userIdForTs.length > 0
 
@@ -309,6 +319,12 @@ export function TimeStudyAssignmentsPanel({
   const [toggledActivitiesU, setToggledActivitiesU] = useState<string[]>([])
   const [toggledActivitiesA, setToggledActivitiesA] = useState<string[]>([])
   const [isSavingTsMinDay, setIsSavingTsMinDay] = useState(false)
+  const [tsHistoryView, setTsHistoryView] = useState<TsHistoryView | null>(null)
+  const [tsHistoryProgramSearch, setTsHistoryProgramSearch] = useState("")
+  const [tsHistoryActivityCode, setTsHistoryActivityCode] = useState("")
+  const [tsHistoryActivityName, setTsHistoryActivityName] = useState("")
+
+  const canShowTsHistory = userIdForTs.length > 0
 
   const handleSaveTsMinDay = async () => {
     const userId = userIdForTs.trim()
@@ -840,7 +856,7 @@ export function TimeStudyAssignmentsPanel({
   }
 
   return (
-    <div className="relative pt-2">
+    <div className="relative min-w-0 pt-2">
       {(tsCatalogRefetchBusy || tsTransferBusy) && (
         <div className="absolute inset-0 z-50 flex items-center justify-center rounded-[8px] bg-white/60">
           <Spinner className="text-[#6C5DD3]" />
@@ -858,176 +874,266 @@ export function TimeStudyAssignmentsPanel({
         </p>
       ) : null}
 
-      <div className="flex items-end justify-between gap-6">
-        <div className="w-full max-w-[306px]">
-          {isAddMode ? (
-            <div>
-              <p className="mb-1 block select-none text-[11px] font-medium text-[#2a2f3a]">Department</p>
-              <SingleSelectDropdown
-                value={timeStudyDeptAddMode}
-                onChange={(value) => {
-                  setTimeStudyDeptAddMode(value)
-                  setToggledProgramsU([])
-                  setToggledProgramsA([])
-                  setToggledActivitiesU([])
-                  setToggledActivitiesA([])
-                  setSearchProgramsU("")
-                  setSearchProgramsA("")
-                  setSearchActivitiesU("")
-                  setSearchActivitiesA("")
-                  setValue("claimingUnit", value, {
-                    shouldDirty: true,
-                    shouldTouch: true,
-                    shouldValidate: true,
-                  })
-                }}
-                onBlur={() => {}}
-                options={departmentSelectOptionsFromMaster}
-                placeholder={
-                  departmentSelectOptionsFromMaster.length === 0 ? "No assigned departments" : "Select department"
-                }
-                isLoading={addModeDepartmentDropdownLoading}
-                contentClassName="max-h-[180px]"
-                className="min-h-[46px] rounded-[7px] border-[#c6cedd] text-[11px] leading-[14px]"
-                itemButtonClassName="rounded-[4px] px-2.5 py-1.5"
-                itemLabelClassName="text-[11px] leading-[16px]"
+      {tsHistoryView != null ? (
+        <>
+          <div className="mb-4 flex flex-wrap items-center gap-3">
+            <Button
+              type="button"
+              className="h-9 cursor-pointer gap-2 rounded-[12px] border border-[#E5E7EB] bg-white px-3 text-[12px] font-semibold text-[#6C5DD3] shadow-[0_1px_0_rgba(0,0,0,0.05)] hover:border-[#6C5DD3] hover:bg-[#F3F0FF]"
+              onClick={() => {
+                setTsHistoryView(null)
+                setTsHistoryProgramSearch("")
+                setTsHistoryActivityCode("")
+                setTsHistoryActivityName("")
+              }}
+            >
+              <ArrowLeft className="size-3.5" />
+              Back to assignments
+            </Button>
+            {tsHistoryView === "program" ? (
+              <TitleCaseInput
+                value={tsHistoryProgramSearch}
+                onChange={(e) => setTsHistoryProgramSearch(e.target.value)}
+                placeholder="Search Program Code"
+                className="h-[41px] w-[270px] rounded-[10px] border border-[#d0d5df] bg-white px-3.5 text-[11px] text-[#111827] shadow-[0_4px_10px_rgba(15,23,42,0.08)] placeholder:text-[10px] placeholder:text-[#a7afbf] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
               />
-            </div>
-          ) : (
-            <div>
-              <p className="mb-1 block select-none text-[11px] font-medium text-[#2a2f3a]">Department</p>
-              <SingleSelectDropdown
-                value={selectedEditDeptId}
-                onChange={(value) => {
-                  setTimeStudyDeptEditMode(value)
-                  setToggledProgramsU([])
-                  setToggledProgramsA([])
-                  setToggledActivitiesU([])
-                  setToggledActivitiesA([])
-                  setSearchProgramsU("")
-                  setSearchProgramsA("")
-                  setSearchActivitiesU("")
-                  setSearchActivitiesA("")
-                  void programsQuery.refetch()
-                }}
-                onBlur={() => {}}
-                options={departmentSelectOptionsForEditMode}
-                placeholder={
-                  departmentSelectOptionsForEditMode.length === 0
-                    ? "No assigned departments"
-                    : "Select department"
-                }
-                isLoading={editModeDepartmentDropdownLoading}
-                contentClassName="max-h-[180px]"
-                className="min-h-[46px] rounded-[7px] border-[#c6cedd] text-[11px] leading-[14px]"
-                itemButtonClassName="rounded-[4px] px-2.5 py-1.5"
-                itemLabelClassName="text-[11px] leading-[16px]"
-              />
-            </div>
-          )}
-        </div>
-
-        <div className="flex items-center gap-4">
-          <div className="flex flex-col gap-1">
-            <label className="select-none text-[11px] font-medium text-[#2a2f3a]">TS Minutes/Day</label>
-            <div className="flex items-center gap-3">
-              <div className="flex h-[46px] items-center rounded-[7px] border border-[#d2d8e3] bg-white px-3">
+            ) : (
+              <>
                 <TitleCaseInput
-                  {...register("tsMinDay")}
-                  className="h-auto w-[70px] border-0 bg-transparent p-0 text-[12px] text-[#111827] shadow-none focus-visible:ring-0"
+                  value={tsHistoryActivityCode}
+                  onChange={(e) => setTsHistoryActivityCode(e.target.value)}
+                  placeholder="Search Activity Code"
+                  className="h-[41px] w-[220px] rounded-[10px] border border-[#d0d5df] bg-white px-3.5 text-[11px] text-[#111827] shadow-[0_4px_10px_rgba(15,23,42,0.08)] placeholder:text-[10px] placeholder:text-[#a7afbf] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
                 />
-                <span className="ml-6 select-none text-[11px] text-[#2a2f3a]">Min/Day</span>
+                <TitleCaseInput
+                  value={tsHistoryActivityName}
+                  onChange={(e) => setTsHistoryActivityName(e.target.value)}
+                  placeholder="Search Activity Name"
+                  className="h-[41px] w-[250px] rounded-[10px] border border-[#d0d5df] bg-white px-3.5 text-[11px] text-[#111827] shadow-[0_4px_10px_rgba(15,23,42,0.08)] placeholder:text-[10px] placeholder:text-[#a7afbf] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
+                />
+              </>
+            )}
+          </div>
+          <Suspense
+            fallback={
+              <div className="relative flex min-h-[240px] items-center justify-center rounded-[10px] border border-[#E5E7EB] bg-white">
+                <Spinner className="text-[#6C5DD3]" />
               </div>
-              <Button
-                type="button"
-                onClick={handleSaveTsMinDay}
-                disabled={!canPersistTsTransfers || isSavingTsMinDay}
-                className="h-[46px] rounded-[7px] bg-[#6C5DD3] px-5 text-[12px] font-medium text-white hover:bg-[#6C5DD3] disabled:opacity-50"
-              >
-                {isSavingTsMinDay ? "Saving..." : "Save"}
-              </Button>
+            }
+          >
+            {tsHistoryView === "program" ? (
+              <UserProgramHistoryTable
+                userId={userIdForTs}
+                programCode={tsHistoryProgramSearch}
+                historyKind={USER_ASSIGNMENT_HISTORY_KIND}
+              />
+            ) : (
+              <CountyActivityHistoryTable
+                countyActivityCode={tsHistoryActivityCode}
+                countyActivityName={tsHistoryActivityName}
+                userId={userIdForTs}
+                historyKind={USER_ASSIGNMENT_HISTORY_KIND}
+                columnLayout="assignment"
+              />
+            )}
+          </Suspense>
+        </>
+      ) : (
+        <>
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between lg:gap-6">
+            <div className="w-full max-w-[306px] shrink-0">
+              {isAddMode ? (
+                <div>
+                  <p className="mb-1 block select-none text-[11px] font-medium text-[#2a2f3a]">Department</p>
+                  <SingleSelectDropdown
+                    value={timeStudyDeptAddMode}
+                    onChange={(value) => {
+                      setTimeStudyDeptAddMode(value)
+                      setToggledProgramsU([])
+                      setToggledProgramsA([])
+                      setToggledActivitiesU([])
+                      setToggledActivitiesA([])
+                      setSearchProgramsU("")
+                      setSearchProgramsA("")
+                      setSearchActivitiesU("")
+                      setSearchActivitiesA("")
+                      setValue("claimingUnit", value, {
+                        shouldDirty: true,
+                        shouldTouch: true,
+                        shouldValidate: true,
+                      })
+                    }}
+                    onBlur={() => {}}
+                    options={departmentSelectOptionsFromMaster}
+                    placeholder={
+                      departmentSelectOptionsFromMaster.length === 0
+                        ? "No assigned departments"
+                        : "Select department"
+                    }
+                    isLoading={addModeDepartmentDropdownLoading}
+                    contentClassName="max-h-[180px]"
+                    className="min-h-[46px] rounded-[7px] border-[#c6cedd] text-[11px] leading-[14px]"
+                    itemButtonClassName="rounded-[4px] px-2.5 py-1.5"
+                    itemLabelClassName="text-[11px] leading-[16px]"
+                  />
+                </div>
+              ) : (
+                <div>
+                  <p className="mb-1 block select-none text-[11px] font-medium text-[#2a2f3a]">Department</p>
+                  <SingleSelectDropdown
+                    value={selectedEditDeptId}
+                    onChange={(value) => {
+                      setTimeStudyDeptEditMode(value)
+                      setToggledProgramsU([])
+                      setToggledProgramsA([])
+                      setToggledActivitiesU([])
+                      setToggledActivitiesA([])
+                      setSearchProgramsU("")
+                      setSearchProgramsA("")
+                      setSearchActivitiesU("")
+                      setSearchActivitiesA("")
+                      void programsQuery.refetch()
+                    }}
+                    onBlur={() => {}}
+                    options={departmentSelectOptionsForEditMode}
+                    placeholder={
+                      departmentSelectOptionsForEditMode.length === 0
+                        ? "No assigned departments"
+                        : "Select department"
+                    }
+                    isLoading={editModeDepartmentDropdownLoading}
+                    contentClassName="max-h-[180px]"
+                    className="min-h-[46px] rounded-[7px] border-[#c6cedd] text-[11px] leading-[14px]"
+                    itemButtonClassName="rounded-[4px] px-2.5 py-1.5"
+                    itemLabelClassName="text-[11px] leading-[16px]"
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className="flex min-w-0 w-full flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:gap-x-4 sm:gap-y-3 lg:flex-1 lg:justify-end">
+              <div className="flex w-full shrink-0 flex-col gap-1 sm:w-auto">
+                <label className="select-none text-[11px] font-medium text-[#2a2f3a]">TS Minutes/Day</label>
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="flex h-[46px] items-center rounded-[7px] border border-[#d2d8e3] bg-white px-3">
+                    <TitleCaseInput
+                      {...register("tsMinDay")}
+                      className="h-auto w-[70px] border-0 bg-transparent p-0 text-[12px] text-[#111827] shadow-none focus-visible:ring-0"
+                    />
+                    <span className="ml-6 select-none text-[11px] text-[#2a2f3a]">Min/Day</span>
+                  </div>
+                  <Button
+                    type="button"
+                    onClick={handleSaveTsMinDay}
+                    disabled={!canPersistTsTransfers || isSavingTsMinDay}
+                    className="h-[46px] rounded-[7px] bg-[#6C5DD3] px-5 text-[12px] font-medium text-white hover:bg-[#6C5DD3] disabled:opacity-50"
+                  >
+                    {isSavingTsMinDay ? "Saving..." : "Save"}
+                  </Button>
+                </div>
+              </div>
+              {canShowTsHistory ? (
+                <div className="flex w-full min-w-0 flex-wrap content-end gap-2 sm:w-auto sm:max-w-full sm:justify-end">
+                  <Button
+                    type="button"
+                    className="inline-flex h-auto min-h-9 shrink cursor-pointer items-start gap-2 whitespace-normal rounded-[12px] border border-[#E5E7EB] bg-white px-3 py-2 text-left text-[11px] font-semibold leading-snug text-[#6C5DD3] shadow-[0_1px_0_rgba(0,0,0,0.05)] hover:border-[#6C5DD3] hover:bg-[#F3F0FF] sm:text-[12px]"
+                    onClick={() => setTsHistoryView("program")}
+                  >
+                    <History className="mt-0.5 size-3.5 shrink-0" />
+                    <span>User Program History</span>
+                  </Button>
+                  <Button
+                    type="button"
+                    className="inline-flex h-auto min-h-9 shrink cursor-pointer items-start gap-2 whitespace-normal rounded-[12px] border border-[#E5E7EB] bg-white px-3 py-2 text-left text-[11px] font-semibold leading-snug text-[#6C5DD3] shadow-[0_1px_0_rgba(0,0,0,0.05)] hover:border-[#6C5DD3] hover:bg-[#F3F0FF] sm:text-[12px]"
+                    onClick={() => setTsHistoryView("activity")}
+                  >
+                    <ClipboardList className="mt-0.5 size-3.5 shrink-0" />
+                    <span>User Activity History</span>
+                  </Button>
+                </div>
+              ) : null}
             </div>
           </div>
-        </div>
-      </div>
 
-      <div className="mt-6 grid grid-cols-[1fr_60px_1fr] items-center gap-4">
-        <TransferPanel
-          title="Select TS Programs(Unassigned)"
-          items={filteredProgramsU}
-          selectedIds={toggledProgramsU}
-          onToggleItem={(id) => setToggledProgramsU((prev) => toggleList(prev, id))}
-          onToggleAll={toggleAllProgramsU}
-          searchValue={searchProgramsU}
-          onSearchChange={setSearchProgramsU}
-          selectedDept={selectedDept}
-        />
+          <div className="mt-6 grid grid-cols-[1fr_60px_1fr] items-center gap-4">
+            <TransferPanel
+              title="Select TS Programs(Unassigned)"
+              items={filteredProgramsU}
+              selectedIds={toggledProgramsU}
+              onToggleItem={(id) => setToggledProgramsU((prev) => toggleList(prev, id))}
+              onToggleAll={toggleAllProgramsU}
+              searchValue={searchProgramsU}
+              onSearchChange={setSearchProgramsU}
+              selectedDept={selectedDept}
+            />
 
-        <div className="flex flex-col gap-3 pt-10">
-          <TransferListMoveButton
-            direction="forward"
-            onClick={() => void moveSelectedProgramsToAssignedColumn()}
-            disabled={toggledProgramsU.length === 0 || tsTransferBusy || tsCatalogRefetchBusy}
-            aria-label="Move selected programs to assigned"
-          />
-          <TransferListMoveButton
-            direction="back"
-            onClick={() => void moveSelectedProgramsToUnassignedColumn()}
-            disabled={toggledProgramsA.length === 0 || tsTransferBusy || tsCatalogRefetchBusy}
-            aria-label="Move selected programs to unassigned"
-          />
-        </div>
+            <div className="flex flex-col gap-3 pt-10">
+              <TransferListMoveButton
+                direction="forward"
+                onClick={() => void moveSelectedProgramsToAssignedColumn()}
+                disabled={toggledProgramsU.length === 0 || tsTransferBusy || tsCatalogRefetchBusy}
+                aria-label="Move selected programs to assigned"
+              />
+              <TransferListMoveButton
+                direction="back"
+                onClick={() => void moveSelectedProgramsToUnassignedColumn()}
+                disabled={toggledProgramsA.length === 0 || tsTransferBusy || tsCatalogRefetchBusy}
+                aria-label="Move selected programs to unassigned"
+              />
+            </div>
 
-        <TransferPanel
-          title="Select TS Programs(Assigned)"
-          items={filteredProgramsA}
-          selectedIds={toggledProgramsA}
-          onToggleItem={(id) => setToggledProgramsA((prev) => toggleList(prev, id))}
-          onToggleAll={toggleAllProgramsA}
-          searchValue={searchProgramsA}
-          onSearchChange={setSearchProgramsA}
-          selectedDept={selectedDept}
-        />
-      </div>
+            <TransferPanel
+              title="Select TS Programs(Assigned)"
+              items={filteredProgramsA}
+              selectedIds={toggledProgramsA}
+              onToggleItem={(id) => setToggledProgramsA((prev) => toggleList(prev, id))}
+              onToggleAll={toggleAllProgramsA}
+              searchValue={searchProgramsA}
+              onSearchChange={setSearchProgramsA}
+              selectedDept={selectedDept}
+            />
+          </div>
 
-      <div className="mt-4 grid grid-cols-[1fr_60px_1fr] items-center gap-4">
-        <TransferPanel
-          title="Select Activities(Unassigned)"
-          items={filteredActivitiesU}
-          selectedIds={toggledActivitiesU}
-          onToggleItem={(id) => setToggledActivitiesU((prev) => toggleList(prev, id))}
-          onToggleAll={toggleAllActivitiesU}
-          searchValue={searchActivitiesU}
-          onSearchChange={setSearchActivitiesU}
-          selectedDept={selectedDept}
-        />
+          <div className="mt-4 grid grid-cols-[1fr_60px_1fr] items-center gap-4">
+            <TransferPanel
+              title="Select Activities(Unassigned)"
+              items={filteredActivitiesU}
+              selectedIds={toggledActivitiesU}
+              onToggleItem={(id) => setToggledActivitiesU((prev) => toggleList(prev, id))}
+              onToggleAll={toggleAllActivitiesU}
+              searchValue={searchActivitiesU}
+              onSearchChange={setSearchActivitiesU}
+              selectedDept={selectedDept}
+            />
 
-        <div className="flex flex-col gap-3 pt-10">
-          <TransferListMoveButton
-            direction="forward"
-            onClick={() => void moveSelectedActivitiesToAssignedColumn()}
-            disabled={toggledActivitiesU.length === 0 || tsTransferBusy || tsCatalogRefetchBusy}
-            aria-label="Move selected activities to assigned"
-          />
-          <TransferListMoveButton
-            direction="back"
-            onClick={() => void moveSelectedActivitiesToUnassignedColumn()}
-            disabled={toggledActivitiesA.length === 0 || tsTransferBusy || tsCatalogRefetchBusy}
-            aria-label="Move selected activities to unassigned"
-          />
-        </div>
+            <div className="flex flex-col gap-3 pt-10">
+              <TransferListMoveButton
+                direction="forward"
+                onClick={() => void moveSelectedActivitiesToAssignedColumn()}
+                disabled={toggledActivitiesU.length === 0 || tsTransferBusy || tsCatalogRefetchBusy}
+                aria-label="Move selected activities to assigned"
+              />
+              <TransferListMoveButton
+                direction="back"
+                onClick={() => void moveSelectedActivitiesToUnassignedColumn()}
+                disabled={toggledActivitiesA.length === 0 || tsTransferBusy || tsCatalogRefetchBusy}
+                aria-label="Move selected activities to unassigned"
+              />
+            </div>
 
-        <TransferPanel
-          title="Select Activities(Assigned)"
-          items={filteredActivitiesA}
-          selectedIds={toggledActivitiesA}
-          onToggleItem={(id) => setToggledActivitiesA((prev) => toggleList(prev, id))}
-          onToggleAll={toggleAllActivitiesA}
-          searchValue={searchActivitiesA}
-          onSearchChange={setSearchActivitiesA}
-          selectedDept={selectedDept}
-        />
-      </div>
+            <TransferPanel
+              title="Select Activities(Assigned)"
+              items={filteredActivitiesA}
+              selectedIds={toggledActivitiesA}
+              onToggleItem={(id) => setToggledActivitiesA((prev) => toggleList(prev, id))}
+              onToggleAll={toggleAllActivitiesA}
+              searchValue={searchActivitiesA}
+              onSearchChange={setSearchActivitiesA}
+              selectedDept={selectedDept}
+            />
+          </div>
+        </>
+      )}
     </div>
   )
 }
