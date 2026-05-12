@@ -1,7 +1,7 @@
 import { useMutation } from "@tanstack/react-query"
 import { useRef } from "react"
 
-import { apiPostDownloadReport } from "../api"
+import { apiPostDownloadReport } from "../api/reports"
 import type { ReportRunPayload } from "../types"
 
 async function downloadReport(payload: ReportRunPayload, signal: AbortSignal) {
