@@ -15,13 +15,6 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination"
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import {
   Table,
   TableBody,
   TableCell,
@@ -30,7 +23,10 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Spinner } from "@/components/ui/spinner"
+import { SingleSelectDropdown } from "@/components/ui/dropdown"
 
+import tableEmptyIcon from "@/assets/icons/table-empty.png"
 import { useDeleteRmtsGroup } from "../mutations/deleteRmtsGroup"
 import { formatRmtsGroupMutationError } from "../utils/rmtsGroupMutationMessages"
 import { useGetRmtsGroups } from "../queries/getRmtsGroups"
@@ -116,25 +112,14 @@ export function ParticipantsListTable({
       <h3 className="text-[20px] font-normal leading-none text-[#6C5DD3]">Participant List</h3>
 
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <Select value={studyYear} onValueChange={onStudyYearChange}>
-          <SelectTrigger className="h-12 w-[150px] rounded-[10px] border-[#D1D5DB] px-[11px] text-[14px] text-[#111827]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent
-            position="popper"
-            side="bottom"
-            avoidCollisions={false}
-            sideOffset={10}
-            align="start"
-            className="w-[150px] rounded-[10px] border border-[#E5E7EB] p-1"
-          >
-            {fiscalYearOptions.map((fy) => (
-              <SelectItem key={fy.id} value={fy.id}>
-                {fy.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <SingleSelectDropdown
+          value={studyYear}
+          onChange={onStudyYearChange}
+          onBlur={() => {}}
+          options={fiscalYearOptions.map((fy) => ({ value: fy.id, label: fy.label }))}
+          placeholder="Select year"
+          className="h-10 w-[170px] rounded-[10px] border-[#D1D5DB] px-[12px] text-[14px] font-normal text-[#111827] focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+        />
 
         <Button
           type="button"
@@ -145,7 +130,12 @@ export function ParticipantsListTable({
         </Button>
       </div>
 
-      <div className="overflow-hidden rounded-[10px] border border-[#E5E7EB]">
+      <div className="relative overflow-hidden rounded-[10px] border border-[#E5E7EB]">
+        {participantsQuery.isFetching && (
+          <div className="absolute top-[60px] inset-x-0 bottom-0 flex items-center justify-center bg-white/50 z-[50]">
+            <Spinner className="text-[#6C5DD3]" />
+          </div>
+        )}
         <Table className="w-full table-fixed">
           <colgroup>
             <col className="w-[39%]" />
@@ -190,7 +180,15 @@ export function ParticipantsListTable({
                     </TableCell>
                   </TableRow>
                 ))
-              : rows.map((row) => (
+              : rows.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="h-[145px] bg-white text-center">
+                      <div className="flex flex-col items-center justify-center gap-2 text-[#9CA3AF]">
+                        <img src={tableEmptyIcon} alt="" className="size-[80px] object-contain" />
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : rows.map((row) => (
                   <TableRow key={row.id} className="h-[44px] border-[#EDEDED]">
                     <TableCell className="border-r border-[#E5E7EB] px-4 py-2 text-[13px] text-[#111827]">
                       {row.groupName}

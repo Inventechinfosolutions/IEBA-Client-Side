@@ -15,6 +15,7 @@ import { TimePickerDropdown } from "@/components/ui/time-picker"
 import { useAuth } from "@/contexts/AuthContext"
 import { API_BASE_URL } from "@/lib/config"
 import { apiDownloadSupportingDoc, apiDeleteSupportingDoc } from "../api/personalTimeStudyApi"
+import { Spinner } from "@/components/ui/spinner"
 
 /** Inline required-field asterisk — available to all components in this module. */
 function RequiredMark() {
@@ -41,6 +42,8 @@ export type TimeEntrySubRow = {
   activityCode?: string
   activityName?: string
   departmentCode?: string
+  status?: string
+  recordType?: string
 }
 
 export type TimeEntryParentRow = {
@@ -60,6 +63,8 @@ export type TimeEntryParentRow = {
   activityName?: string
   departmentCode?: string
   isLeave?: boolean
+  status?: string
+  recordType?: string
 }
 
 export type TimeEntryRow = TimeEntryParentRow
@@ -151,6 +156,7 @@ type PersonalTimeStudyEntryFormProps = {
     employeeName?: string
   }>
   apportioningConfig?: SupervisorApportioningConfig | null
+  isLoading?: boolean
 }
 
 function TimePicker24h({
@@ -295,6 +301,7 @@ export function PersonalTimeStudyEntryForm({
   leaveRecords,
   className,
   apportioningConfig,
+  isLoading = false,
 }: PersonalTimeStudyEntryFormProps) {
   const { user } = useAuth()
   const userId = propsUserId || user?.id || ""
@@ -360,7 +367,11 @@ export function PersonalTimeStudyEntryForm({
               activityCode: m.activitycode,
               activityName: m.activityname,
               departmentCode: m.departmentcode,
+              status: m.status,
+              recordType: m.recordType,
             })),
+            status: rec.status,
+            recordType: rec.recordType,
           }
           parentMap.set(rec.id, parentRow)
         }
@@ -578,7 +589,7 @@ export function PersonalTimeStudyEntryForm({
     return parents.length > 1 || !!parent?.dbId
   }
 
-  const mapToPayload = (): any[] => {
+  const mapToPayload = (overrideStatus?: string): any[] => {
     const deptId = dropdownData?.[0]?.departmentId
     return parents
       .filter((p) => !(p.isLeave && !p.dbId))
@@ -595,6 +606,8 @@ export function PersonalTimeStudyEntryForm({
       description: p.description,
       departmentId: deptId,
       supportingDocs: p.supportingDocs,
+      status: overrideStatus || p.status || "draft",
+      recordType: p.recordType || "NORMAL",
       multiCodeRecords: p.subRows.map((s) => {
         const subDeptId = dropdownData?.find((d) => d.programs.some((pr: any) => String(pr.id) === s.studyProgram))?.departmentId
         return {
@@ -607,6 +620,7 @@ export function PersonalTimeStudyEntryForm({
           starttime: s.start,
           endtime: s.end,
           recordType: "MULTI_CODE",
+          status: overrideStatus || s.status || p.status || "draft",
         }
       }),
     }))
@@ -679,14 +693,14 @@ export function PersonalTimeStudyEntryForm({
 
   const handleSave = () => {
     if (!validateEntries()) return
-    const payload = mapToPayload()
+    const payload = mapToPayload("draft")
     if (payload.length === 0) { toast.error("Please add at least one time entry"); return; }
     onSave?.(payload)
   }
 
   const handleSubmitInternal = () => {
     if (!validateEntries()) return
-    const payload = mapToPayload()
+    const payload = mapToPayload("submitted")
     if (payload.length === 0) { toast.error("Please add at least one time entry"); return; }
     onSubmit?.(payload)
   }
@@ -755,7 +769,12 @@ export function PersonalTimeStudyEntryForm({
   }
 
   return (
-    <section className={cn("w-full rounded-[6px] border-0 bg-white p-4 shadow-[0_4px_16px_rgba(16,24,40,0.12)]", className)}>
+    <section className={cn("relative w-full rounded-[6px] border-0 bg-white p-4 shadow-[0_4px_16px_rgba(16,24,40,0.12)]", className)}>
+      {isLoading && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/60 backdrop-blur-[1px] rounded-[6px]">
+          <Spinner className="text-[#6C5DD3]" />
+        </div>
+      )}
         <div className="mb-6 flex flex-col gap-2">
           {/* Top Row: Metrics aligned right */}
           {!hideSummaryHeader && (

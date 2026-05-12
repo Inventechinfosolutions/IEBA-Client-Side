@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { SingleSelectDropdown, type SingleSelectOption } from "@/components/ui/dropdown"
 import { Label } from "@/components/ui/label"
+import { Spinner } from "@/components/ui/spinner"
 
 import { payrollUploadFormSchema } from "../schemas"
 import { PayrollFrequency, PAYROLL_FREQUENCY_OPTIONS } from "../enums/payrollFrequency"
@@ -34,6 +35,7 @@ export function PayrollUploadSection({
 }: PayrollUploadSectionProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [isDownloadingTemplate, setIsDownloadingTemplate] = useState(false)
 
   const form = useForm<PayrollUploadFormValues>({
     resolver: zodResolver(payrollUploadFormSchema),
@@ -56,8 +58,13 @@ export function PayrollUploadSection({
   }
 
   const handleDownloadTemplateClick = async () => {
-    const blob = await downloadPayrollTemplate()
-    triggerBrowserDownloadBlob("payroll-upload-template.xlsx", blob)
+    setIsDownloadingTemplate(true)
+    try {
+      const blob = await downloadPayrollTemplate()
+      triggerBrowserDownloadBlob("payroll-upload-template.xlsx", blob)
+    } finally {
+      setIsDownloadingTemplate(false)
+    }
   }
 
   const submitUpload = form.handleSubmit((values) => {
@@ -66,6 +73,11 @@ export function PayrollUploadSection({
 
   return (
     <div className="min-w-0 max-w-full">
+      {(isUploading || isDownloadingTemplate) && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-white/60">
+          <Spinner className="text-[#6C5DD3]" />
+        </div>
+      )}
       <Card
         className={`min-w-0 max-w-full gap-0 overflow-visible rounded-[8px] border-0 bg-white py-0 ring-0 ${sectionCardShadowClass}`}
       >

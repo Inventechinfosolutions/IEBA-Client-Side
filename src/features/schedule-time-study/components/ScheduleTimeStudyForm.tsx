@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Spinner } from "@/components/ui/spinner"
 import {
   Select,
   SelectContent,
@@ -242,6 +243,12 @@ export function ScheduleTimeStudyForm({
           <DialogTitle className="text-center text-[20px] font-normal text-black">
             Create Schedule Time Study
           </DialogTitle>
+
+          {(createBatch.isPending || deleteScheduledRow.isPending) && (
+            <div className="absolute inset-0 z-50 flex items-center justify-center rounded-[8px] bg-white/60">
+              <Spinner className=" text-[#6C5DD3]" />
+            </div>
+          )}
 
           <form onSubmit={(e) => e.preventDefault()} className="space-y-5">
             <div className="flex items-end justify-between">
@@ -509,7 +516,7 @@ export function ScheduleTimeStudyForm({
                 disabled={createBatch.isPending || deleteScheduledRow.isPending}
                 onClick={() => void handleSubmitWithStatus(SchedulePayPeriodGroupStatus.PUBLISHED)()}
               >
-                Submit
+                {createBatch.isPending || deleteScheduledRow.isPending ? <Spinner className="size-4 text-white" /> : "Submit"}
               </Button>
               <Button
                 type="button"
@@ -517,7 +524,7 @@ export function ScheduleTimeStudyForm({
                 disabled={createBatch.isPending || deleteScheduledRow.isPending}
                 onClick={() => void handleSubmitWithStatus(SchedulePayPeriodGroupStatus.DRAFT)()}
               >
-                Save
+                {createBatch.isPending || deleteScheduledRow.isPending ? <Spinner className="size-4 text-white" /> : "Save"}
               </Button>
               <Button
                 type="button"

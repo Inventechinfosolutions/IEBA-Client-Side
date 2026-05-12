@@ -17,8 +17,9 @@ import { TitleCaseInput } from "@/components/ui/title-case-input"
 import { SingleSelectSearchDropdown } from "@/components/ui/dropdown-search"
 import { TimePickerDropdown } from "@/components/ui/time-picker"
 import { Clock } from "lucide-react"
+import { Spinner } from "@/components/ui/spinner"
 
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Popover, PopoverContent, PopoverAnchor } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
 
 
@@ -56,6 +57,11 @@ export type EmployeeLeaveRequestDialogProps = {
   dropdownData?: any[]
   title?: string
   editingStatus?: string | null
+  isSaving?: boolean
+  isSubmitting?: boolean
+  isDropdownLoading?: boolean
+  isFetching?: boolean
+  editingLeave?: any
 }
 
 const getHeaderGridClass = (isEditing: boolean) =>
@@ -87,33 +93,25 @@ function TimePicker24h({
 }) {
   const [open, setOpen] = useState(false)
 
+  const openMenu = () => {
+    if (!disabled) setOpen(true)
+  }
+
   return (
     <div className={cn("flex flex-col gap-1 w-full shrink-0", className)}>
-      <Popover open={open} onOpenChange={(val) => !disabled && setOpen(val)}>
+      <Popover modal={false} open={open} onOpenChange={(val) => !disabled && setOpen(val)}>
         <div className="relative">
-          <PopoverTrigger asChild>
+          <PopoverAnchor asChild>
             <div 
               className={cn("relative cursor-pointer", disabled && "cursor-not-allowed")} 
-              onClick={(e) => {
-                if (disabled) {
-                  e.preventDefault()
-                  return
-                }
-                setOpen(true)
-              }}
+              onClick={openMenu}
             >
               <TitleCaseInput
                 value={value}
                 disabled={disabled}
                 placeholder="--:--"
                 onChange={(e) => onChange(e.target.value)}
-                onFocus={(e) => {
-                  if (disabled) {
-                    e.preventDefault()
-                    return
-                  }
-                  setOpen(true)
-                }}
+                onFocus={openMenu}
                 className={cn(
                   "h-10 pr-8 text-sm font-normal rounded-[6px] cursor-pointer w-full",
                   disabled && "cursor-not-allowed bg-muted !text-foreground pointer-events-none !opacity-100"
@@ -121,7 +119,7 @@ function TimePicker24h({
               />
               <Clock className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 opacity-50" />
             </div>
-          </PopoverTrigger>
+          </PopoverAnchor>
           <PopoverContent
             className="p-0"
             align="start"
@@ -185,6 +183,11 @@ export function EmployeeLeaveRequestDialog({
   initialValues,
   title,
   editingStatus,
+  isSaving = false,
+  isSubmitting = false,
+  isDropdownLoading = false,
+  isFetching = false,
+  editingLeave,
 }: EmployeeLeaveRequestDialogProps) {
 
   const isEditing = !!initialValues;
@@ -253,6 +256,14 @@ export function EmployeeLeaveRequestDialog({
       entries: [createEmptyRow()],
     },
   })
+
+  const [prevInitialValues, setPrevInitialValues] = useState(initialValues)
+  if (initialValues !== prevInitialValues) {
+    setPrevInitialValues(initialValues)
+    if (initialValues) {
+      form.reset(initialValues)
+    }
+  }
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
@@ -378,6 +389,11 @@ export function EmployeeLeaveRequestDialog({
           className
         )}
       >
+        {(isFetching || isSaving || isSubmitting) && (
+          <div className="absolute inset-0 z-60 flex flex-col items-center justify-center bg-white/60 backdrop-blur-[1px]">
+            <Spinner className="text-[#6C5DD3]" />
+          </div>
+        )}
         <DialogHeader className="shrink-0 border-b border-border px-6 py-4">
           <DialogTitle className="text-center text-lg font-semibold">
             {title || "Employee Leave Request"}
@@ -492,14 +508,31 @@ export function EmployeeLeaveRequestDialog({
                         <>
                           <SingleSelectSearchDropdown
                             value={f.value === EMPTY ? "" : f.value}
-                            placeholder="Select..."
-                            options={programs.map((p: any) => {
-                              const deptPrefix = (p.departmentCode ?? '').split('-')[0]
-                              return {
-                                value: String(p.id),
-                                label: `${deptPrefix}-${p.code} - ${p.name}`,
+                            isLoading={isDropdownLoading}
+                            options={(() => {
+                              const opts = programs.map((p: any) => {
+                                const deptPrefix = (p.departmentCode ?? "").split("-")[0]
+                                return {
+                                  value: String(p.id),
+                                  label: `${deptPrefix}-${p.code} - ${p.name}`,
+                                }
+                              })
+                              
+                              const currentVal = f.value === EMPTY ? "" : f.value
+                              if (currentVal && !opts.some(o => o.value === currentVal) && editingLeave) {
+                                if (String(editingLeave.programid) === currentVal) {
+                                  const deptPrefix = (editingLeave.departmentcode ?? "").split("-")[0]
+                                  opts.push({
+                                    value: currentVal,
+                                    label: deptPrefix 
+                                      ? `${deptPrefix}-${editingLeave.programcode} - ${editingLeave.programname}`
+                                      : `${editingLeave.programcode} - ${editingLeave.programname}`,
+                                  })
+                                }
                               }
-                            })}
+                              return opts
+                            })()}
+                            placeholder="Select..."
                             onChange={(v) => {
                               f.onChange(v || EMPTY)
                               // Reset activity when program changes
@@ -527,18 +560,35 @@ export function EmployeeLeaveRequestDialog({
                             const programId = formEntries?.[index]?.programCode
                             const hasProgram = programId && programId !== EMPTY
                             const allowedIds = hasProgram ? getActivitiesForProgram(programId) : new Set<string>()
-                            const options = hasProgram 
-                              ? activities.filter((a) => allowedIds.has(String(a.id))).map((a: any) => ({
-                                  value: String(a.id),
-                                  label: `${a.code} - ${a.name}`,
-                                }))
-                              : []
+                            const options = (() => {
+                              const opts = hasProgram 
+                                ? activities.filter((a) => allowedIds.has(String(a.id))).map((a: any) => ({
+                                    value: String(a.id),
+                                    label: `${a.code} - ${a.name}`,
+                                  }))
+                                : []
+                                
+                              const currentVal = f.value === EMPTY ? "" : f.value
+                              if (currentVal && !opts.some(o => o.value === currentVal) && editingLeave) {
+                                if (String(editingLeave.activityid) === currentVal) {
+                                  opts.push({
+                                    value: currentVal,
+                                    label: `${editingLeave.activitycode} - ${editingLeave.activityname}`,
+                                  })
+                                }
+                              }
+                              return opts
+                            })()
+
+                            const queryIndex = programQueries.findIndex((pq) => String(pq.programId) === programId)
+                            const isActivityLoading = queryIndex !== -1 && programActivityQueryResults[queryIndex]?.isFetching
 
                             return (
                               <SingleSelectSearchDropdown
                                 value={f.value === EMPTY ? "" : f.value}
                                 placeholder="Select Activity Code"
                                 disabled={!hasProgram}
+                                isLoading={isActivityLoading}
                                 options={options}
                                 onChange={(v) => f.onChange(v || EMPTY)}
                                 onBlur={f.onBlur}
@@ -658,26 +708,28 @@ export function EmployeeLeaveRequestDialog({
               <Button
                 type="button"
                 variant="default"
-                disabled={form.formState.isSubmitting || hasExceeded}
+                disabled={form.formState.isSubmitting || isSaving || isSubmitting || hasExceeded}
                 onClick={() => void handleSave()}
                 className={cn(
                   "h-10 rounded-[6px] px-8 text-white transition-opacity",
-                  (form.formState.isSubmitting || hasExceeded) ? "bg-[#6C5DD3] opacity-50 cursor-not-allowed pointer-events-none" : "bg-[#6C5DD3] hover:bg-[#6C5DD3]/90"
+                  (form.formState.isSubmitting || isSaving || isSubmitting || hasExceeded) ? "bg-[#6C5DD3] opacity-50 cursor-not-allowed pointer-events-none" : "bg-[#6C5DD3] hover:bg-[#6C5DD3]/90"
                 )}
               >
                 Save
+                {isSaving && <Spinner className="ml-2 size-4 border-white" />}
               </Button>
             )}
             <Button
               type="button"
-              disabled={form.formState.isSubmitting || hasExceeded}
+              disabled={form.formState.isSubmitting || isSaving || isSubmitting || hasExceeded}
               onClick={() => void handleSubmitFinal()}
               className={cn(
                 "h-10 rounded-[6px] px-8 text-white transition-opacity",
-                (form.formState.isSubmitting || hasExceeded) ? "bg-[#6C5DD3] opacity-50 cursor-not-allowed pointer-events-none" : "bg-[#6C5DD3] hover:bg-[#6C5DD3]/90"
+                (form.formState.isSubmitting || isSaving || isSubmitting || hasExceeded) ? "bg-[#6C5DD3] opacity-50 cursor-not-allowed pointer-events-none" : "bg-[#6C5DD3] hover:bg-[#6C5DD3]/90"
               )}
             >
               Submit
+              {isSubmitting && <Spinner className="ml-2 size-4 border-white" />}
             </Button>
             <Button
               type="button"

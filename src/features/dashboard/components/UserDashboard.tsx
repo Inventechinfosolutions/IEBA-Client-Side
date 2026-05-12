@@ -67,7 +67,7 @@ export function UserDashboard() {
     departmentId,
     roleId,
   })
-  const selfLeave = useSelfLeave()
+  const selfLeave = useSelfLeave(userId)
   const todos = useTodos(userId)
   const reports = useReportsByRole({ departmentId, roleId })
   const holidays = useHolidays()

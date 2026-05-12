@@ -371,6 +371,8 @@ export function PersonalTimeStudyPage() {
                       dateStr={dateStr}
                       month={month}
                       year={year}
+                      isLoading={monthQuery.isLoading}
+                      isDropdownLoading={dropdownQuery.isFetching}
                     />
                     <PersonalTimeStudyMinutesCard
                       className="min-h-0 sm:col-span-2 lg:col-span-1"
@@ -385,6 +387,7 @@ export function PersonalTimeStudyPage() {
                     value={localNotes}
                     onChange={setLocalNotes}
                     onSave={() => notesMutation.mutate(localNotes)}
+                    isSaving={notesMutation.isPending}
                     className="min-h-0"
                   />
                 </div>
@@ -393,7 +396,8 @@ export function PersonalTimeStudyPage() {
               <div className="mt-6 mb-4">
                 <PersonalTimeStudyEntryForm
                     key={dateStr}
-                    dateStr={dateStr}                    initialRecords={dayQuery.data?.timeStudyRecords}
+                    dateStr={dateStr}
+                    initialRecords={dayQuery.data?.timeStudyRecords}
                     dropdownData={dropdownQuery.data}
                     leaveRecords={dayQuery.data?.leaveRecords}
                     onSave={(records) => submitMutation.mutate({ records, mode: "save" })}
@@ -406,6 +410,7 @@ export function PersonalTimeStudyPage() {
                     multiBalanceTotal={summaryQuery.data?.actualmultiactivityTimebalance}
                     hideSummaryHeader={true}
                     apportioningConfig={apportioningConfigQuery.data ?? null}
+                    isLoading={dayQuery.isFetching || submitMutation.isPending || deleteMutation.isPending}
                   />
               </div>
             </>

@@ -191,11 +191,6 @@ export function TimeStudyAssignmentsPanel({
 }: TimeStudyAssignmentsPanelProps) {
   const userIdForTs = (timeStudyContextUserId ?? "").trim()
 
-  // Reset all local states when switching users
-  useMemo(() => {
-    // This runs during render when userIdForTs changes, effectively resetting for the new user
-    // without waiting for a useEffect.
-  }, [userIdForTs])
 
   const isEditTimeStudyWithUserBundle = mode === "edit" && Boolean(userIdForTs)
   const canPersistTsTransfers = userIdForTs.length > 0
@@ -310,6 +305,27 @@ export function TimeStudyAssignmentsPanel({
   const [toggledActivitiesA, setToggledActivitiesA] = useState<string[]>([])
   const [isSavingTsMinDay, setIsSavingTsMinDay] = useState(false)
 
+  // Reset all local states when switching users or when a new user is created
+  useMemo(() => {
+    setAssignedProgramIdsAddMode([])
+    setAssignedActivityIdsAddMode([])
+    setProgramPlacementOverridesEditMode({})
+    setActivityPlacementOverridesEditMode({})
+    setToggledProgramsU([])
+    setToggledProgramsA([])
+    setToggledActivitiesU([])
+    setToggledActivitiesA([])
+  }, [userIdForTs])
+
+  // Clear manual overrides once the query successfully refetches fresh data from the server.
+  // This ensures the UI "syncs" back to the actual database state (including cascading changes).
+  useMemo(() => {
+    if (userProgramsActivitiesQuery.isSuccess && !userProgramsActivitiesQuery.isFetching) {
+      setProgramPlacementOverridesEditMode({})
+      setActivityPlacementOverridesEditMode({})
+    }
+  }, [userProgramsActivitiesQuery.dataUpdatedAt, userProgramsActivitiesQuery.isFetching])
+
   const handleSaveTsMinDay = async () => {
     const userId = userIdForTs.trim()
     if (!userId) {
@@ -349,8 +365,26 @@ export function TimeStudyAssignmentsPanel({
    */
   const selectedEditDeptId = useMemo(() => {
     if (isAddMode) return ""
-    return timeStudyDeptEditMode.trim()
-  }, [isAddMode, timeStudyDeptEditMode])
+    const explicit = timeStudyDeptEditMode.trim()
+    if (explicit) return explicit
+
+    // Auto-select if there is exactly one department with existing TS assignments
+    if (departmentSelectOptionsFromUserBundle.length === 1) {
+      return departmentSelectOptionsFromUserBundle[0].value
+    }
+
+    // Fallback: auto-select if there is exactly one department assigned in Security tab
+    if (departmentSelectOptionsForEditMode.length === 1) {
+      return departmentSelectOptionsForEditMode[0].value
+    }
+
+    return ""
+  }, [
+    isAddMode,
+    timeStudyDeptEditMode,
+    departmentSelectOptionsFromUserBundle,
+    departmentSelectOptionsForEditMode,
+  ])
 
   const selectedBundle = useMemo((): UserProgramsActivitiesDepartmentBundle | undefined => {
     if (!selectedEditDeptId) return undefined
