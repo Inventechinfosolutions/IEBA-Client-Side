@@ -9,6 +9,7 @@ import { useAuth } from "@/contexts/AuthContext"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { SingleSelectDropdown } from "@/components/ui/dropdown"
+import { Spinner } from "@/components/ui/spinner"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -186,9 +187,12 @@ function ReportEmployeeMultiSelect({
   maxVisibleItems = 3,
   className,
   emptyListMessage = "No options available",
-}: ReportEmployeeMultiSelectProps) {
+  isLoading = false,
+}: ReportEmployeeMultiSelectProps & { isLoading?: boolean }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
+
+  const disabledEffective = disabled || isLoading
 
   const selectedValues = useMemo(() => parseMultiSelectStoredValues(value), [value])
   const filteredOptions = useMemo(() => {
@@ -245,15 +249,15 @@ function ReportEmployeeMultiSelect({
 
   return (
     <DropdownMenu modal={false} open={menuOpen} onOpenChange={handleOpenChange}>
-      <DropdownMenuTrigger asChild disabled={disabled}>
+      <DropdownMenuTrigger asChild disabled={disabledEffective}>
         <div
           role="button"
-          tabIndex={disabled ? -1 : 0}
+          tabIndex={disabledEffective ? -1 : 0}
           aria-label={placeholder}
-          aria-disabled={disabled}
+          aria-disabled={disabledEffective}
           onBlur={onBlur}
           onKeyDown={(e) => {
-            if (disabled) return
+            if (disabledEffective) return
             if (e.key === "Enter" || e.key === " ") {
               e.preventDefault()
               setMenuOpen((o) => !o)
@@ -263,12 +267,14 @@ function ReportEmployeeMultiSelect({
             "relative z-10 flex w-full min-w-0 cursor-pointer flex-nowrap items-center gap-2 overflow-hidden rounded-[7px] border border-[#c6cedd] bg-white px-3 py-0 text-left shadow-none outline-none",
             "text-[14px] font-normal leading-[20px] text-[#111827]",
             "focus-visible:border-[#3b82f6] focus-visible:ring-1 focus-visible:ring-[#3b82f640]",
-            disabled && "cursor-not-allowed bg-[#f2f2f2] opacity-100",
+            disabledEffective && "cursor-not-allowed bg-[#f2f2f2] opacity-100",
             className,
           )}
         >
           <div className="flex min-h-0 min-w-0 flex-1 flex-nowrap items-center gap-1.5 overflow-hidden">
-            {selectedItems.length === 0 ? (
+            {isLoading ? (
+              <span className="min-w-0 flex-1 truncate text-[14px] text-[#9ca3af]">Loading...</span>
+            ) : selectedItems.length === 0 ? (
               <span className="min-w-0 flex-1 truncate text-[14px] text-[#9ca3af]">{placeholder}</span>
             ) : (
               <>
@@ -311,7 +317,9 @@ function ReportEmployeeMultiSelect({
             )}
           </div>
           <div className="flex shrink-0 items-center">
-            {hasSelection ? (
+            {isLoading ? (
+              <Spinner className="size-4 text-[#6C5DD3]" />
+            ) : hasSelection ? (
               <span
                 role="button"
                 tabIndex={disabled ? -1 : 0}
@@ -439,7 +447,8 @@ function ReportSecondaryPickBlock({
   emptyListMessage,
   maxVisibleChips = 2,
   onValuesChange,
-}: ReportSecondaryPickBlockProps) {
+  isLoading = false,
+}: ReportSecondaryPickBlockProps & { isLoading?: boolean }) {
   /* Padding on the positioned parent skewed `top-full`; keep pb on this outer wrapper only (pb-16 clears bar + mt-3). */
   return (
     <div className="w-full min-w-0 max-w-full pb-16">
@@ -494,6 +503,7 @@ function ReportSecondaryPickBlock({
                 maxVisibleItems={maxVisibleChips}
                 className={employeeMultiSelectClassName}
                 emptyListMessage={emptyListMessage}
+                isLoading={isLoading}
               />
             )}
           />
@@ -691,15 +701,15 @@ export function ReportForm({ module }: ReportFormProps) {
   const showMasterCodes = isTrue(currentReportItem?.criteria?.showmasterCodes)
   
   const shouldFetchMaaEmployees = isMaaReport && !!departmentId && !showMasterCodes
-  const { data: maaEmployeesData } = useGetMaaEmployees(activityIdsArr, departmentId, shouldFetchMaaEmployees)
-  const { data: costPoolUsersData } = useGetCostPoolUsers(
+  const { data: maaEmployeesData, isFetching: isMaaEmployeesFetching } = useGetMaaEmployees(activityIdsArr, departmentId, shouldFetchMaaEmployees)
+  const { data: costPoolUsersData, isFetching: isCostPoolUsersFetching } = useGetCostPoolUsers(
     costPoolIdsArr,
     user?.id ?? "",
     employeeStatusArr,
     shouldFetchCostPoolUsers,
   )
   const shouldFetchDepartmentUsers = !!departmentId && (!isMaaReport || showMasterCodes) && !shouldShowCostPool
-  const { data: departmentUsersData } = useGetUsersUnderDepartment(
+  const { data: departmentUsersData, isFetching: isDeptUsersFetching } = useGetUsersUnderDepartment(
     departmentId, 
     user?.id ?? "", 
     showMasterCodes ? masterCode : undefined,
@@ -761,7 +771,7 @@ export function ReportForm({ module }: ReportFormProps) {
   }, [currentReportItem, employeeIds])
 
   const { data: fiscalYearsData } = useListFiscalYears()
-  const { data: departmentsData } = useGetDepartments({ 
+  const { data: departmentsData, isLoading: isDeptsLoading } = useGetDepartments({ 
     status: "active", 
     page: 1, 
     limit: 100,
@@ -835,6 +845,11 @@ export function ReportForm({ module }: ReportFormProps) {
     }
     return []
   }, [shouldFetchCostPoolUsers, costPoolUsersData, departmentId, departmentUsersData, reportKey, maaEmployeesData])
+
+  const isEmployeeLoading = 
+    (shouldFetchCostPoolUsers && isCostPoolUsersFetching) ||
+    (!!departmentId && isDeptUsersFetching) ||
+    ((reportKey.includes("MAA") || reportKey.includes("TCM")) && isMaaEmployeesFetching);
 
   const activityOptions = useMemo(() => {
     if (activitiesByDepartmentData) {
@@ -1450,6 +1465,7 @@ const ReportFiltersBody = ({
                     options={departmentOptions}
                     placeholder="Select Department"
                     className={departmentSelectTrigger}
+                    isLoading={isDeptsLoading}
                     contentClassName="max-h-[220px]"
                     itemButtonClassName="rounded-[6px] px-3 py-2"
                     itemLabelClassName="!text-[14px] !font-normal"
@@ -1562,6 +1578,26 @@ const ReportFiltersBody = ({
                   ),
                 },
                   {
+                    id: "employee",
+                    show: isTrue(criteria.multipleEmployees),
+                    order: costPoolFirst ? 2 : 1,
+                    render: () => (
+                      <ReportSecondaryPickBlock
+                        control={control}
+                        title="Employee"
+                        activeLabel="Active Employee"
+                        inactiveLabel="Inactive Employee"
+                        activeField="includeActiveEmployees"
+                        inactiveField="includeInactiveEmployees"
+                        idsField="employeeIds"
+                        options={employeeOptions}
+                        placeholder="Select Employee"
+                        emptyListMessage="No employees available"
+                        isLoading={isEmployeeLoading}
+                      />
+                    ),
+                  },
+                  {
                     id: "program",
                     show: isTrue(criteria.showProgramSelect),
                     order: 2,
@@ -1645,6 +1681,7 @@ const ReportFiltersBody = ({
                 placeholder="Select Employee"
                 emptyListMessage="No employees available"
                 onValuesChange={() => setValue("activityIds", "")}
+                isLoading={isEmployeeLoading}
               />
             </div>
           )}

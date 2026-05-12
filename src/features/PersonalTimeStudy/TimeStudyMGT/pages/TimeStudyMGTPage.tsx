@@ -26,6 +26,7 @@ export function TimeStudyMGTPage() {
     selectEmployee,
     actualMultiTotal,
     multiBalanceTotal,
+    isDayDetailLoading,
   } = useTimeStudyMGT()
 
   const { mutate: notifyUser } = useActionUserTimeRecord()
@@ -212,6 +213,7 @@ export function TimeStudyMGTPage() {
               actualMultiTotal={actualMultiTotal}
               multiBalanceTotal={multiBalanceTotal}
               showLeaveBanner={true}
+              isLoading={isDayDetailLoading}
             />
           </div>
         )}

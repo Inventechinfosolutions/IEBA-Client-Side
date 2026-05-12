@@ -1,5 +1,6 @@
 import type { CSSProperties } from "react"
 import { Trash2 } from "lucide-react"
+import { Spinner } from "@/components/ui/spinner"
 
 import { TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { cn } from "@/lib/utils"
@@ -45,8 +46,11 @@ export function FiscalYearTable({
     <>
       {isLoading ? (
         <TableRow className={`${holidayTableBodyRowClassName} border-b border-[#e9ecf3] hover:bg-white`}>
-          <TableCell colSpan={4} className="border-0 px-3 py-3 text-center text-[12px] text-[#6b7280]">
-            Loading holidays…
+          <TableCell colSpan={4} className="border-0 px-3 py-3 text-center">
+            <div className="flex items-center justify-center gap-2">
+              <Spinner className=" text-[#6C5DD3]" />
+              <span className="text-[12px] text-[#6b7280]">Loading holidays…</span>
+            </div>
           </TableCell>
         </TableRow>
       ) : holidays.length === 0 ? (

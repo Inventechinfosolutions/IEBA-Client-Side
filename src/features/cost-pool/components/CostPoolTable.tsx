@@ -11,6 +11,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog"
 import { TitleCaseInput } from "@/components/ui/title-case-input"
 import { MasterCodePagination } from "@/features/master-code/components/MasterCodePagination"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Spinner } from "@/components/ui/spinner"
 import {
   Table,
   TableBody,
@@ -167,6 +168,7 @@ function CostPoolCreateDialogContent({
       userRows={userRows}
       usersLoading={userPicklist.isPending && departmentId > 0}
       allowUserOrCostpoolDirect={allowUserOrCostpoolDirect}
+      isSubmitting={createMutation.isPending}
     />
   )
 }
@@ -187,6 +189,7 @@ function CostPoolEditFormBody({
   onClose,
   onUpdated,
   allowUserOrCostpoolDirect,
+  isLoadingDetails,
 }: {
   costPoolId: number
   detail: CostPoolDetailResDto
@@ -199,6 +202,7 @@ function CostPoolEditFormBody({
   onClose: () => void
   onUpdated: () => void
   allowUserOrCostpoolDirect: boolean
+  isLoadingDetails?: boolean
 }) {
   const form = useForm<CostPoolUpsertFormValues>({
     resolver: zodResolver(costPoolUpsertFormSchema),
@@ -232,6 +236,8 @@ function CostPoolEditFormBody({
       userRows={userRows}
       usersLoading={usersLoading}
       allowUserOrCostpoolDirect={allowUserOrCostpoolDirect}
+      isSubmitting={updateMutation.isPending}
+      isLoadingDetails={isLoadingDetails}
     />
   )
 }
@@ -345,8 +351,8 @@ function CostPoolEditDialogContent({
 
   if (!detailQuery.data) {
     return (
-      <div className="flex min-h-[240px] w-full max-w-[1150px] items-center justify-center rounded-[10px] bg-white p-8 shadow-[0_0_20px_0_#0000001a]">
-        <span className="text-sm text-muted-foreground">Loading cost pool…</span>
+      <div className="relative flex min-h-[400px] w-full max-w-[1150px] items-center justify-center rounded-[10px] bg-white p-8 shadow-[0_0_20px_0_#0000001a]">
+        <Spinner className="text-[#6C5DD3]" />
       </div>
     )
   }
@@ -361,6 +367,7 @@ function CostPoolEditDialogContent({
       userRows={userRows}
       usersLoading={userPicklist.isLoading || detailQuery.isFetching}
       allowUserOrCostpoolDirect={allowUserOrCostpoolDirect}
+      isLoadingDetails={detailQuery.isFetching}
       departmentOptions={departmentOptions}
       departmentsLoading={departmentsQuery.isPending || isDetailsLoading}
       onClose={onClose}

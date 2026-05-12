@@ -197,7 +197,7 @@ export function useGetUserProgramsAndActivities(
       return await fetchUserProgramsAndActivities(id)
     },
     enabled: Boolean(id) && enabled,
-    staleTime: 30_000,
+    staleTime: 0,
     retry: 1,
   })
 }

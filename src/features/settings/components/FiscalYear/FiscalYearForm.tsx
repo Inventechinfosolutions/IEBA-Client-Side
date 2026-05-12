@@ -4,6 +4,7 @@ import { CalendarDays, Check, ChevronLeft, ChevronRight, Plus, X } from "lucide-
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
+import { Spinner } from "@/components/ui/spinner"
 import { TitleCaseInput } from "@/components/ui/title-case-input"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Calendar } from "@/components/ui/calendar"
@@ -260,7 +261,7 @@ function MonthYearPicker({ value, onChange, useMonthEnd }: MonthYearPickerProps)
   )
 }
 
-export function FiscalYearForm() {
+export function FiscalYearForm({ isSaving = false }: { isSaving?: boolean }) {
   const { control, watch, setValue, getValues, trigger } = useFormContext<SettingsFormValues>()
   const { fiscalYears, setSelectedFiscalYearId, isFiscalYearsPending } = useSettingsFiscalYearUi()
 
@@ -270,6 +271,7 @@ export function FiscalYearForm() {
   const deleteHolidayMutation = useDeleteHoliday()
 
   const [isHolidayDialogOpen, setIsHolidayDialogOpen] = useState(false)
+  const [isModalDataLoading, setIsModalDataLoading] = useState(false)
   const [editingHolidayId, setEditingHolidayId] = useState<number | null>(null)
   const [holidayDraft, setHolidayDraft] = useState<HolidayDraft>({
     date: "",
@@ -360,6 +362,8 @@ export function FiscalYearForm() {
     setEditingHolidayId(null)
     setHolidayDraft({ date: defaultDate, holiday: "", optional: false })
     setIsHolidayDialogOpen(true)
+    setIsModalDataLoading(true)
+    setTimeout(() => setIsModalDataLoading(false), 300)
   }
 
   const handleOpenEditHolidayDialog = (row: SettingsHolidayCalendarRow) => {
@@ -370,6 +374,8 @@ export function FiscalYearForm() {
       optional: Boolean(row.optional),
     })
     setIsHolidayDialogOpen(true)
+    setIsModalDataLoading(true)
+    setTimeout(() => setIsModalDataLoading(false), 400)
   }
 
   const handleSubmitHolidayDialog = () => {
@@ -478,10 +484,10 @@ export function FiscalYearForm() {
         <Button
           type="button"
           onClick={handleSaveFiscalYearRange}
-          disabled={upsertFiscalYearMutation.isPending}
+          disabled={upsertFiscalYearMutation.isPending || isSaving}
           className="mb-2 h-[30px] min-w-[150px] shrink-0 cursor-pointer rounded-[6px] bg-[var(--primary)] px-3 text-[12px] font-medium text-white hover:bg-[var(--primary)] disabled:opacity-60"
         >
-          Add/Edit Fiscal Year
+          {upsertFiscalYearMutation.isPending ? <Spinner className=" text-white" /> : "Add/Edit Fiscal Year"}
         </Button>
       </div>
 
@@ -547,8 +553,12 @@ export function FiscalYearForm() {
           disabled={addHolidayMutation.isPending || !rangeParams}
           className="ml-auto h-[38px] shrink-0 cursor-pointer gap-1.5 rounded-[8px] bg-[var(--primary)] px-3 text-[12px] font-medium text-white hover:bg-[var(--primary)] disabled:opacity-60"
         >
-          <Plus className="size-3.5" />
-          Add Holiday
+          {addHolidayMutation.isPending ? <Spinner className="text-white" /> : (
+            <>
+              <Plus className="size-3.5" />
+              Add Holiday
+            </>
+          )}
         </Button>
       </div>
 
@@ -563,6 +573,12 @@ export function FiscalYearForm() {
               {editingHolidayId === null ? "Add Holiday" : "Edit Holiday"}
             </DialogTitle>
           </DialogHeader>
+
+          {(addHolidayMutation.isPending || updateHolidayMutation.isPending || isModalDataLoading) && (
+            <div className="absolute inset-0 z-50 flex items-center justify-center rounded-[6px] bg-white/60">
+              <Spinner className="text-[#6C5DD3]" />
+            </div>
+          )}
 
           <div className="mt-6 grid grid-cols-2 gap-8 text-[14px]">
             <div className="space-y-2">
@@ -616,7 +632,11 @@ export function FiscalYearForm() {
               disabled={addHolidayMutation.isPending || updateHolidayMutation.isPending}
               className="h-[44px] min-w-[70px] rounded-[6px] bg-[var(--primary)] px-6 !text-[14px] font-medium text-white hover:bg-[var(--primary)] disabled:opacity-60"
             >
-              OK
+              {addHolidayMutation.isPending || updateHolidayMutation.isPending ? (
+                <Spinner className="text-white" />
+              ) : (
+                "OK"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -624,7 +644,7 @@ export function FiscalYearForm() {
 
       <FiscalYearTable
         holidays={holidays}
-        isLoading={holidaysQuery.isPending}
+        isLoading={holidaysQuery.isPending || deleteHolidayMutation.isPending}
         onEditRow={handleOpenEditHolidayDialog}
         onRemoveRow={handleDeleteHoliday}
       />

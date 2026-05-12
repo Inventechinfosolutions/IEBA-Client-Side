@@ -11,6 +11,7 @@ import {
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { TitleCaseInput } from "@/components/ui/title-case-input"
 import { Switch } from "@/components/ui/switch"
+import { Spinner } from "@/components/ui/spinner"
 import { Table, TableBody, TableCell, TableHeader, TableRow } from "@/components/ui/table"
 import { cn } from "@/lib/utils"
 import { SettingsFormSaveSection } from "@/features/settings/enums/setting.enum"
@@ -26,7 +27,7 @@ const selectTriggerClassName =
 const activityMultiSelectClassName =
   "!min-h-[38px] !h-[38px] !w-[600px] !max-w-[600px] !rounded-[8px] !border-[#d6d7dc] !px-[11px] !py-0 !pr-9 !text-[12px] !font-normal !leading-normal overflow-hidden"
 
-export function ReportsForm() {
+export function ReportsForm({ isSaving = false }: { isSaving?: boolean }) {
   const { control, watch, setValue } = useFormContext<SettingsFormValues>()
   const { data: reportOptions = [], isPending: reportsOptionsPending } = useReportOptions()
   const { data: activityOptions = [], isPending: activityOptionsPending } = useActivityOptions()
@@ -228,7 +229,15 @@ export function ReportsForm() {
               <TableRow className="border-b-0" />
             </TableHeader>
             <TableBody className="bg-white">
-              {selectedActivities.length === 0 ? (
+              {(activityOptionsPending || isSaving) ? (
+                <TableRow className="hover:bg-white">
+                  <TableCell className="h-[160px] p-0">
+                    <div className="flex h-full items-center justify-center">
+                      <Spinner className="text-[#6C5DD3]" />
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : selectedActivities.length === 0 ? (
                 <TableRow className="hover:bg-white">
                   <TableCell className="h-[160px] p-0">
                     <div className="flex h-full flex-col items-center justify-center gap-2">
@@ -275,9 +284,10 @@ export function ReportsForm() {
         <Button
           type="submit"
           data-settings-section={SettingsFormSaveSection.Reports}
+          disabled={isSaving}
           className="h-[44px] w-[88px] cursor-pointer rounded-[10px] bg-[var(--primary)] px-0 py-2 text-[14px] font-medium text-white hover:bg-[var(--primary)]"
         >
-          Save
+          {isSaving ? <Spinner className="text-white" /> : "Save"}
         </Button>
       </div>
     </div>

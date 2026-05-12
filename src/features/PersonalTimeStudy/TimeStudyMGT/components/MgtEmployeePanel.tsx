@@ -6,6 +6,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { Spinner } from "@/components/ui/spinner"
 
 type MgtEmployeePanelProps = {
   search: string
@@ -134,7 +135,7 @@ export function MgtEmployeePanel({
       <div className="overflow-y-auto divide-y divide-gray-200 h-[430px]">
         {isLoading ? (
           <div className="flex h-full items-center justify-center">
-            <div className="size-8 animate-spin rounded-full border-4 border-[#6C5DD3] border-t-transparent" />
+            <Spinner className="size-8 text-[#6C5DD3]" />
           </div>
         ) : employees.length === 0 ? (
           <div className="flex h-full items-center justify-center">

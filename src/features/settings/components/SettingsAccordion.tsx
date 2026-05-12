@@ -1,3 +1,5 @@
+import { useState } from "react"
+import { Spinner } from "@/components/ui/spinner"
 import { ChevronDown, ChevronLeft } from "lucide-react"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { cn } from "@/lib/utils"
@@ -20,13 +22,25 @@ export function SettingsAccordion({
   openSection: string | undefined
   onOpenSectionChange: (next: string | undefined) => void
 }) {
+  const [loadingSection, setLoadingSection] = useState<string | null>(null)
+
+  const handleValueChange = (next: string) => {
+    const section = next || undefined
+    onOpenSectionChange(section)
+
+    if (section) {
+      setLoadingSection(section)
+      setTimeout(() => setLoadingSection(null), 400)
+    }
+  }
+
   return (
     <div className="rounded-[8px] bg-white">
       <Accordion
         type="single"
         collapsible
         value={openSection}
-        onValueChange={(next) => onOpenSectionChange(next || undefined)}
+        onValueChange={handleValueChange}
       >
         {SETTINGS_ACCORDION_SECTIONS.map((section) => (
           <AccordionItem
@@ -57,21 +71,29 @@ export function SettingsAccordion({
                 </span>
               </div>
             </AccordionTrigger>
-            <AccordionContent className="px-0.5pb-2 pt-2">
-              {section === "County" ? (
-                <CountyForm isSaving={isSaving} />
-              ) : section === "Auto Generate Code" ? (
-                <AutoGenerateCodeForm />
-              ) : section === "Payroll" ? (
-                <PayrollForm />
-              ) : section === "Fiscal Year" ? (
-                <FiscalYearForm />
-              ) : section === "Reports" ? (
-                <ReportsForm />
-              ) : section === "General" ? (
-                <GeneralForm />
+            <AccordionContent className="px-0.5 pb-2 pt-2">
+              {loadingSection === section ? (
+                <div className="flex h-[120px] items-center justify-center">
+                  <Spinner className="text-[#6C5DD3]" />
+                </div>
               ) : (
-                <LoginForm />
+                <>
+                  {section === "County" ? (
+                    <CountyForm isSaving={isSaving} />
+                  ) : section === "Auto Generate Code" ? (
+                    <AutoGenerateCodeForm isSaving={isSaving} />
+                  ) : section === "Payroll" ? (
+                    <PayrollForm isSaving={isSaving} />
+                  ) : section === "Fiscal Year" ? (
+                    <FiscalYearForm isSaving={isSaving} />
+                  ) : section === "Reports" ? (
+                    <ReportsForm isSaving={isSaving} />
+                  ) : section === "General" ? (
+                    <GeneralForm isSaving={isSaving} />
+                  ) : (
+                    <LoginForm isSaving={isSaving} />
+                  )}
+                </>
               )}
             </AccordionContent>
           </AccordionItem>

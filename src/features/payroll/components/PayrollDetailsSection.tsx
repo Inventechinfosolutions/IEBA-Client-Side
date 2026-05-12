@@ -327,7 +327,8 @@ export function PayrollDetailsSection({
                   onBlur={field.onBlur}
                   options={employeeOptions}
                   placeholder="Employee"
-                  disabled={isOptionsLoading || isUsersLoading}
+                  disabled={isOptionsLoading}
+                  isLoading={isUsersLoading}
                   maxVisibleItems={2}
                   className="min-h-[46px] w-full rounded-[6px] border-[#d6d7dc] text-[14px]"
                 />

@@ -23,6 +23,7 @@ import { useUpdateRmtsPayPeriod } from "../mutations/updateRmtsPayPeriod"
 import { useGetRmtsPayPeriodById } from "../queries/getRmtsPayPeriodById"
 import { fetchScheduleTimeStudyHolidayListByDateRange } from "../queries/getHolidayListByDateRange"
 import { fetchScheduleTimeStudyPeriodRows } from "../queries/getRmtsPayPeriods"
+import { Spinner } from "@/components/ui/spinner"
 import {
   timeStudyPeriodsDefaultValues,
   timeStudyPeriodsFormSchema,
@@ -184,7 +185,7 @@ export function TimeStudyPeriodsForm({
     return Number.isFinite(n) && n > 0 ? n : null
   }, [editingRow])
 
-  useGetRmtsPayPeriodById({
+  const periodDetailQuery = useGetRmtsPayPeriodById({
     id: editingPayPeriodIdForQuery,
     enabled: open && editingPayPeriodIdForQuery != null,
   })
@@ -423,13 +424,22 @@ export function TimeStudyPeriodsForm({
           {editingRow ? "Edit Time Study Period" : "Create Time Study Periods"}
         </DialogTitle>
 
+        {(periodDetailQuery.isLoading && editingRow || createPayPeriod.isPending || updatePayPeriod.isPending) && (
+          <div className="absolute inset-0 z-50 flex items-center justify-center rounded-[12px] bg-white/60">
+            <Spinner className= "text-[#6C5DD3]" />
+          </div>
+        )}
+
         <form onSubmit={onSubmit} className="space-y-6">
           <div className="rounded-[10px] border border-[#E5E7EB] p-3">
             <div className="mb-3 flex flex-wrap items-center justify-end gap-4 text-[16px] text-black">
               {isHolidayFetchPending ? (
-                <span className="text-[13px] font-normal text-muted-foreground">
-                  Loading holidays…
-                </span>
+                <div className="flex items-center gap-2">
+                  <Spinner className="size-3 text-[#6C5DD3]" />
+                  <span className="text-[13px] font-normal text-muted-foreground">
+                    Loading holidays…
+                  </span>
+                </div>
               ) : null}
               <span>Total: {allocable || "0"}</span>
               <span>{nonAllocable || "0"}</span>
@@ -636,9 +646,10 @@ export function TimeStudyPeriodsForm({
           <div className="flex justify-end gap-4">
             <Button
               type="submit"
+              disabled={createPayPeriod.isPending || updatePayPeriod.isPending}
               className="h-[54px] w-[101px] rounded-[14px] bg-[#6C5DD3] text-[14px] font-medium text-white hover:bg-[#5D4FC4]"
             >
-              Save
+              {createPayPeriod.isPending || updatePayPeriod.isPending ? <Spinner className="size-4 text-white" /> : "Save"}
             </Button>
             <Button
               type="button"

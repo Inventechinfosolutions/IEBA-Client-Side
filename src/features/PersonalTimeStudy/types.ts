@@ -35,6 +35,33 @@ export type TimeStudyRecordResDto = {
   createdAt: string
   updatedAt: string
   supportingDocs?: Array<{ fileName: string; url?: string }>
+  subRows?: Array<{
+    id?: number | string
+    programid?: string
+    programcode?: string
+    programname?: string
+    activityid?: string
+    activitycode?: string
+    activityname?: string
+    totalmin?: number | string
+    totalMin?: number | string
+    description?: string
+    status?: string
+  }>
+  multiCodeRecords?: Array<{
+    id?: number | string
+    programid?: string
+    programcode?: string
+    programname?: string
+    activityid?: string
+    activitycode?: string
+    activityname?: string
+    activitytime?: number | string
+    totalmin?: number | string
+    description?: string
+    status?: string
+    notes?: string
+  }>
 }
 
 /** Legend data for a single day in the calendar. */

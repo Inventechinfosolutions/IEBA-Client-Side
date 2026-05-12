@@ -2,6 +2,7 @@ import { useFormContext } from "react-hook-form"
 import { ChevronDown, ChevronUp } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import { Spinner } from "@/components/ui/spinner"
 import { TitleCaseInput } from "@/components/ui/title-case-input"
 import { SettingsFormSaveSection } from "@/features/settings/enums/setting.enum"
 import type { SettingsFormValues } from "@/features/settings/types"
@@ -27,7 +28,7 @@ const minutesAddonClassName =
  * - TanStack Query for saving (useUpdateInactivityTime).
  * - Zod validation via useFormContext.
  */
-export function GeneralForm() {
+export function GeneralForm({ isSaving = false }: { isSaving?: boolean }) {
   const { register, getValues, setValue } = useFormContext<SettingsFormValues>()
 
   const stepMinutesAction = (delta: 1 | -1) => {
@@ -93,9 +94,10 @@ export function GeneralForm() {
           <Button
             type="submit"
             data-settings-section={SettingsFormSaveSection.General}
+            disabled={isSaving}
             className="h-[44px] w-[88px] cursor-pointer rounded-[10px] bg-[var(--primary)] px-0 py-2 text-[14px] font-medium text-white hover:bg-[var(--primary)]"
           >
-            Save
+            {isSaving ? <Spinner className="text-white" /> : "Save"}
           </Button>
         </div>
       </div>

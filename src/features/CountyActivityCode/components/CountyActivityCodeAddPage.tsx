@@ -14,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { SingleSelectDropdown } from "@/components/ui/dropdown"
 import { useGetActivityCodeById } from "@/features/master-code/queries/getMasterCodes"
 
 import {
@@ -406,39 +407,23 @@ export function CountyActivityCodeAddPage({
               </div>
               <div className="min-w-0 overflow-hidden space-y-1">
                 <label className="text-[14px] font-normal text-[#1F2937]">Code</label>
-                <Select
+                <SingleSelectDropdown
                   value={
                     form.watch("masterCode") > 0 ? String(form.watch("masterCode")) : ""
                   }
-                  onValueChange={(value) => form.setValue("masterCode", Number(value))}
-                  disabled={isMasterCodeOptionsLoading || masterCodeOptions.length === 0}
-                >
-                  <SelectTrigger className="data-[size=default]:h-[48px] data-[size=sm]:h-[48px] h-[48px] w-full max-w-full min-w-0 rounded-[10px] border-[#D9D9D9] [&_[data-slot=select-value]]:line-clamp-none [&_[data-slot=select-value]]:block [&_[data-slot=select-value]]:min-w-0 [&_[data-slot=select-value]]:flex-1 [&_[data-slot=select-value]]:overflow-hidden [&_[data-slot=select-value]]:text-ellipsis [&_[data-slot=select-value]]:whitespace-nowrap [&_[data-slot=select-value]]:text-left">
-                    <SelectValue
-                      placeholder={
-                        isMasterCodeOptionsLoading
-                          ? "Loading codes…"
-                          : masterCodeOptions.length === 0
-                            ? "No codes for this type"
-                            : "Select code"
-                      }
-                    />
-                  </SelectTrigger>
-                  <SelectContent
-                    position="popper"
-                    side="bottom"
-                    align="start"
-                    sideOffset={1}
-                    avoidCollisions={false}
-                    className="w-(--radix-select-trigger-width) max-h-[280px] [&_[data-slot=select-scroll-up-button]]:hidden [&_[data-slot=select-scroll-down-button]]:hidden"
-                  >
-                    {masterCodeOptions.map((item) => (
-                      <SelectItem key={item.value} value={String(item.value)}>
-                        {item.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  onChange={(value) => form.setValue("masterCode", Number(value))}
+                  onBlur={() => {}}
+                  options={masterCodeOptions.map((item) => ({
+                    value: String(item.value),
+                    label: item.label,
+                  }))}
+                  placeholder="Select code"
+                  isLoading={isMasterCodeOptionsLoading}
+                  loadingLabel="Loading codes…"
+                  disabled={!isMasterCodeOptionsLoading && masterCodeOptions.length === 0}
+                  className="h-[48px] rounded-[10px] border-[#D9D9D9] text-[14px]"
+                  contentClassName="z-[200]"
+                />
               </div>
               <div className="min-w-0 space-y-1">
                 <label className="text-[14px] font-normal text-[#1F2937]">

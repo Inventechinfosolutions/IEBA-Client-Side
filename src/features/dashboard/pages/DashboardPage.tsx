@@ -147,7 +147,7 @@ export function DashboardPage() {
     enabled: canViewAdminLayout,
   })
 
-  const selfLeave = useSelfLeave()
+  const selfLeave = useSelfLeave(userId)
   const staffLeave = useStaffLeave({ 
     userId: userId,
     enabled: canViewAdminLayout 

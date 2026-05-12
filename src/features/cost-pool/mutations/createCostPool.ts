@@ -30,15 +30,14 @@ export function useCreateCostPool() {
       })
 
       if (values.assignedUserIds.length > 0) {
-        const res = await createUsersOnCostPool({
+        await createUsersOnCostPool({
           costPoolId: costPool.id,
           departmentId: values.departmentId,
           users: values.assignedUserIds,
         })
-        toast.success(res.message || "Cost pool created successfully")
-      } else {
-        toast.success("Cost pool created successfully")
       }
+      
+      toast.success("Cost pool created successfully")
 
       return costPool
     },
