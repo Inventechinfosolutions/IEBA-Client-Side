@@ -167,8 +167,13 @@ async function updateSettings(
     
     await Promise.all([
       api.put(`/setting/TWO_FA_ENABLED`, { value: String(twoFactorAuth) }),
-      api.put(`/setting/OTP_VALIDATION_TIMEOUT`, { value: String(otpTimer) })
+      api.put(`/setting/OTP_VALIDATION_TIMEOUT`, { value: String(otpTimer) }),
     ])
+  }
+
+  if (input.submitterSection === SettingsFormSaveSection.General) {
+    const minutes = input.values.general?.screenInactivityTimeMinutes ?? 120
+    await api.put(`/setting/SCREEN_INACTIVITY_TIME_IN_MIN`, { value: String(minutes) })
   }
 
   if (input.submitterSection === SettingsFormSaveSection.Payroll) {
@@ -223,10 +228,14 @@ async function updateSettings(
 
     const payrollByChanged = prev ? prev.payrollBy !== payrollPayload.payrollBy : true
 
-    await updatePayrollSettings({
-      payrollBy: payrollByChanged ? payrollPayload.payrollBy : undefined,
-      columns: changedColumns.length > 0 ? changedColumns : undefined,
-    })
+    // Ensure spinner is visible for at least a brief moment for UX consistency
+    await Promise.all([
+      updatePayrollSettings({
+        payrollBy: payrollByChanged ? payrollPayload.payrollBy : undefined,
+        columns: changedColumns.length > 0 ? changedColumns : undefined,
+      }),
+      new Promise((resolve) => setTimeout(resolve, 400)),
+    ])
   }
 
   const next: SettingsModel = {

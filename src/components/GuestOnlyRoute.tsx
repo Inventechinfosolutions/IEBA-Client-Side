@@ -1,5 +1,6 @@
 import { Navigate } from "react-router-dom"
 import { useAuth } from "@/contexts/AuthContext"
+import { Spinner } from "@/components/ui/spinner"
 
 type GuestOnlyRouteProps = {
   children: React.ReactNode
@@ -11,7 +12,7 @@ export function GuestOnlyRoute({ children }: GuestOnlyRouteProps) {
   if (isInitialLoading) {
     return (
       <div className="flex min-h-svh items-center justify-center">
-        <div className="text-muted-foreground">Loading…</div>
+        <Spinner className="size-8 text-primary" />
       </div>
     )
   }

@@ -19,6 +19,7 @@ import type { SettingsFormInnerProps, SettingsFormValues } from "@/features/sett
 import { mapCountyClientDetailToCountySettings } from "@/features/settings/components/Country/countyClientFormMap"
 import { SettingsAccordion } from "@/features/settings/components/SettingsAccordion"
 import { useGetCountyClient } from "@/features/settings/queries/getCountyClient"
+import { Spinner } from "@/components/ui/spinner"
 
 function showSettingsFormErrorToast(message: string) {
   toast.error(message, {
@@ -125,8 +126,8 @@ export function SettingsForm() {
 
   if (isLoading || !settings) {
     return (
-      <div className="rounded-[8px] border border-[#e8e9ef] bg-white p-4 text-[12px] text-[#6b7280]">
-        Loading...
+      <div className="flex items-center justify-center rounded-[8px] border border-[#e8e9ef] bg-white p-8">
+        <Spinner className="text-[#6C5DD3]" />
       </div>
     )
   }

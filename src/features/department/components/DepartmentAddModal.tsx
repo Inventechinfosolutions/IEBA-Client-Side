@@ -620,8 +620,8 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                                                         </SelectTrigger>
                                                         <SelectContent position="popper" sideOffset={8} className="w-[var(--radix-select-trigger-width)] bg-white rounded-[8px] shadow-[0_4px_16px_#00000024] p-1 border-[#E5E7EB] z-50">
                                                             {usersQuery.isLoading && (
-                                                                <div className="px-3 py-2 text-[13px] text-[#6B7280]">
-                                                                    Loading...
+                                                                <div className="flex items-center justify-center px-3 py-2">
+                                                                    <Spinner className="size-4 text-[#6C5DD3]" />
                                                                 </div>
                                                             )}
                                                             {usersQuery.isError && (
@@ -831,8 +831,8 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                                                                         </div>
                                                                     )}
                                                                     {isLoadingMasterCodes && (
-                                                                        <div className="px-3 py-2 text-[13px] text-[#6B7280]">
-                                                                            Loading...
+                                                                        <div className="flex items-center justify-center px-3 py-2">
+                                                                            <Spinner className="size-4 text-[#6C5DD3]" />
                                                                         </div>
                                                                     )}
                                                                     {!isLoadingMasterCodes && !masterCodesQuery.isError && masterCodeOptions.length === 0 && (
