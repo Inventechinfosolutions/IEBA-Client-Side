@@ -1,15 +1,15 @@
 import { useQuery } from "@tanstack/react-query"
-import { 
-  apiGetMaaEmployees, 
-  apiGetCostPoolUsers, 
+import {
+  apiGetMaaEmployees,
+  apiGetCostPoolUsers,
   apiGetMaaTcmActivityDepartments,
   apiGetListAllPrograms,
   apiGetUsersUnderDepartment,
   apiGetActivitiesByDepartmentAndUsers,
   apiGetCostPoolsByDepartment,
   apiGetTimeStudyProgramsForUsers,
-  apiGetRmtsPayPeriods
-} from "../api"
+  apiGetRmtsPayPeriods,
+} from "../api/reports"
 import { reportKeys } from "../keys"
 
 export function useGetMaaEmployees(activityTypes: string[], departmentId?: string, enabled = true) {

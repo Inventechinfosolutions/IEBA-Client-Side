@@ -18,7 +18,7 @@ import { parseMultiSelectStoredValues } from "@/components/ui/multi-select-dropd
 import { TitleCaseInput } from "@/components/ui/title-case-input"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { cn } from "@/lib/utils"
+import { cn, sortSelectOptionsByLabel } from "@/lib/utils"
 import { 
   useGetCostPoolUsers, 
   useGetMaaEmployees,
@@ -159,17 +159,17 @@ function mapIdNameRowsToSelectOptions(
   rows: readonly { id: string | number; name?: string; label?: string; code?: string }[],
 ): ReportSelectOption[] {
   const seen = new Set<string>()
-  return [...rows]
-    .map((row) => ({ 
-      value: String(row.id), 
-      label: row.label ?? row.name ?? String(row.id) 
+  const opts = [...rows]
+    .map((row) => ({
+      value: String(row.id),
+      label: row.label ?? row.name ?? String(row.id),
     }))
     .filter((opt) => {
       if (seen.has(opt.value)) return false
       seen.add(opt.value)
       return true
     })
-    .sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: "base" }))
+  return sortSelectOptionsByLabel(opts)
 }
 
 function serializeEmployeeIdsField(values: readonly string[]): string {
@@ -718,12 +718,12 @@ export function ReportForm({ module }: ReportFormProps) {
     return m ? `${m[2]}-${m[3]}-${m[1]}` : actualDateTo
   }, [actualDateTo])
 
-  const hasScheduledDateRange = selectMonthBy !== "scheduled" || (!!activityStartDate && !!activityEndDate)
+  const hasActivityDateRange = !!activityStartDate && !!activityEndDate
   const shouldFetchActivities =
     currentReportItem?.criteria?.showActivitySelect === true &&
     !!departmentId &&
     employeeIds.length > 0 &&
-    hasScheduledDateRange
+    hasActivityDateRange
   const { data: activitiesByDepartmentData } = useGetActivitiesByDepartmentAndUsers(
     departmentId,
     employeeIds,
@@ -748,7 +748,10 @@ export function ReportForm({ module }: ReportFormProps) {
   } = module
 
   const reportOptions = useMemo(
-    () => module.catalogItems.map((item) => ({ value: item.key, label: item.label })),
+    () =>
+      sortSelectOptionsByLabel(
+        module.catalogItems.map((item) => ({ value: item.key, label: item.label })),
+      ),
     [module.catalogItems],
   )
 
@@ -796,11 +799,14 @@ export function ReportForm({ module }: ReportFormProps) {
   )
 
   const timeStudyPeriodOptions = useMemo(() => {
-    return rmtsPayPeriodsData ?? []
+    return sortSelectOptionsByLabel(rmtsPayPeriodsData ?? [])
   }, [rmtsPayPeriodsData])
 
   const fiscalYearOptions = useMemo(
-    () => (fiscalYearsData ? fiscalYearsData.map((fy) => ({ value: fy.id, label: fy.id })) : []),
+    () =>
+      fiscalYearsData
+        ? sortSelectOptionsByLabel(fiscalYearsData.map((fy) => ({ value: fy.id, label: fy.id })))
+        : [],
     [fiscalYearsData],
   )
 
@@ -818,51 +824,37 @@ export function ReportForm({ module }: ReportFormProps) {
   }, [departmentsData, reportKey])
 
   const employeeOptions = useMemo(() => {
-    // 1️⃣ Cost‑pool users take precedence when cost‑pool IDs are selected.
     if (shouldFetchCostPoolUsers && costPoolUsersData) {
-      return costPoolUsersData;
+      return sortSelectOptionsByLabel(costPoolUsersData)
     }
-    // 2️⃣ If a department is selected, use its users.
     if (departmentId && departmentUsersData) {
-      return departmentUsersData;
+      return sortSelectOptionsByLabel(departmentUsersData)
     }
-    // 3️⃣ MAA/TCM specific employee list.
     if ((reportKey.includes("MAA") || reportKey.includes("TCM")) && maaEmployeesData) {
-      return maaEmployeesData;
+      return sortSelectOptionsByLabel(maaEmployeesData)
     }
-    // 4️⃣ For DSSRPT3/DSSRPT4 reports, cost‑pool users are already handled above.
-    // 5️⃣ Fallback – empty list.
-    return [];
-  }, [shouldFetchCostPoolUsers, costPoolUsersData, departmentId, departmentUsersData, reportKey, maaEmployeesData]);
+    return []
+  }, [shouldFetchCostPoolUsers, costPoolUsersData, departmentId, departmentUsersData, reportKey, maaEmployeesData])
 
   const activityOptions = useMemo(() => {
     if (activitiesByDepartmentData) {
-      return activitiesByDepartmentData
+      return sortSelectOptionsByLabel(activitiesByDepartmentData)
     }
     return []
-  }, [
-    activitiesByDepartmentData,
-  ])
+  }, [activitiesByDepartmentData])
 
   const costPoolOptions = useMemo(() => {
     if (costPoolsByDepartmentData) {
-      return costPoolsByDepartmentData
+      return sortSelectOptionsByLabel(costPoolsByDepartmentData)
     }
-    // costPoolsData from useCostPoolListQuery returns { data, meta }
     return costPoolsData?.data ? mapIdNameRowsToSelectOptions(costPoolsData.data) : []
   }, [costPoolsByDepartmentData, costPoolsData])
 
   const programOptions = useMemo(() => {
-    const all = allProgramsData ?? []
-    const specific = userSpecificPrograms ?? []
-    
     if (shouldFilterProgramsByUser) {
-      // Prioritize user-specific but keep others for label resolution
-      const specificIds = new Set(specific.map(o => o.value))
-      const others = all.filter(o => !specificIds.has(o.value))
-      return [...specific, ...others]
+      return sortSelectOptionsByLabel(userSpecificPrograms ?? [])
     }
-    return all
+    return sortSelectOptionsByLabel(allProgramsData ?? [])
   }, [allProgramsData, userSpecificPrograms, shouldFilterProgramsByUser])
 
 
@@ -1546,25 +1538,29 @@ const ReportFiltersBody = ({
                 const { criteria } = currentReportItem
                 const costPoolFirst = isTrue(criteria.showCostPoolSelect) || isTrue(criteria.showCostPool)
                 const filterBlocks = [
-                  {
-                    id: "employee",
-                    show: isTrue(criteria.multipleEmployees),
-                    order: costPoolFirst ? 2 : 1,
-                    render: () => (
-                      <ReportSecondaryPickBlock
-                        control={control}
-                        title="Employee"
-                        activeLabel="Active Employee"
-                        inactiveLabel="Inactive Employee"
-                        activeField="includeActiveEmployees"
-                        inactiveField="includeInactiveEmployees"
-                        idsField="employeeIds"
-                        options={employeeOptions}
-                        placeholder="Select Employee"
-                        emptyListMessage="No employees available"
-                      />
-                    ),
-                  },
+              {
+                  id: "employee",
+                  show: isTrue(criteria.multipleEmployees),
+                  order: costPoolFirst ? 2 : 1,
+                  render: () => (
+                    <ReportSecondaryPickBlock
+                      control={control}
+                      title="Employee"
+                      activeLabel="Active Employee"
+                      inactiveLabel="Inactive Employee"
+                      activeField="includeActiveEmployees"
+                      inactiveField="includeInactiveEmployees"
+                      idsField="employeeIds"
+                      options={employeeOptions}
+                      placeholder="Select Employee"
+                      emptyListMessage="No employees available"
+                      onValuesChange={() => {
+                        setValue("activityIds", "")
+                        setValue("programIds", "")
+                      }}
+                    />
+                  ),
+                },
                   {
                     id: "program",
                     show: isTrue(criteria.showProgramSelect),
@@ -1603,25 +1599,30 @@ const ReportFiltersBody = ({
                       />
                     ),
                   },
-                  {
-                    id: "costPool",
-                    show: isTrue(criteria.showCostPoolSelect) || isTrue(criteria.showCostPool),
-                    order: costPoolFirst ? 1 : 4,
-                    render: () => (
-                      <ReportSecondaryPickBlock
-                        control={control}
-                        title="Cost Pool"
-                        activeLabel="Active Cost Pool"
-                        inactiveLabel="Inactive Cost Pool"
-                        activeField="includeActiveCostPools"
-                        inactiveField="includeInactiveCostPools"
-                        idsField="costPoolIds"
-                        options={costPoolOptions}
-                        placeholder="Select Cost Pool"
-                        emptyListMessage="No cost pools available"
-                      />
-                    ),
-                  },
+                {
+                  id: "costPool",
+                  show: isTrue(criteria.showCostPoolSelect) || isTrue(criteria.showCostPool),
+                  order: costPoolFirst ? 1 : 4,
+                  render: () => (
+                    <ReportSecondaryPickBlock
+                      control={control}
+                      title="Cost Pool"
+                      activeLabel="Active Cost Pool"
+                      inactiveLabel="Inactive Cost Pool"
+                      activeField="includeActiveCostPools"
+                      inactiveField="includeInactiveCostPools"
+                      idsField="costPoolIds"
+                      options={costPoolOptions}
+                      placeholder="Select Cost Pool"
+                      emptyListMessage="No cost pools available"
+                      onValuesChange={() => {
+                        setValue("employeeIds", "")
+                        setValue("activityIds", "")
+                        setValue("programIds", "")
+                      }}
+                    />
+                  ),
+                },
                 ]
 
                 return filterBlocks

@@ -14,14 +14,21 @@ export function toTitleCase(value: string): string {
   if (!value) return ""
   return value.replace(/\b\w/g, (char) => char.toUpperCase())
 }
+/** Case- and numeric-aware sort for `{ value, label }` dropdown rows. */
+export function sortSelectOptionsByLabel<T extends { label: string }>(options: readonly T[]): T[] {
+  return [...options].sort((a, b) =>
+    a.label.localeCompare(b.label, undefined, { sensitivity: "base", numeric: true }),
+  )
+}
+
 /** Converts ID/Name rows to select options. */
 export function mapIdNameRowsToSelectOptions<T extends { id: string | number; name?: string; label?: string; code?: string }>(
   rows: readonly T[],
 ) {
-  return [...rows]
-    .map((row) => ({ 
-      value: String(row.id), 
-      label: row.label ?? row.name ?? String(row.id) 
-    }))
-    .sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: "base" }))
+  return sortSelectOptionsByLabel(
+    [...rows].map((row) => ({
+      value: String(row.id),
+      label: row.label ?? row.name ?? String(row.id),
+    })),
+  )
 }
