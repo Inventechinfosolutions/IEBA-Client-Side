@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react"
 import { useAuth } from "@/contexts/AuthContext"
-import { usePersonalTimeStudy, useSelfLeave, useTodos, useReportsByRole, useHolidays, useTimeRecordRequests } from "../queries/dashboardQueries"
+import { useSelfLeave, useTodos, useReportsByRole, useHolidays, useDashboardOverview } from "../queries/dashboardQueries"
 import { PersonalTimeStudyCard } from "../components/PersonalTimeStudyCard"
 import { PersonalLeaveCard } from "../components/PersonalLeaveCard"
 import { ReportsCard } from "../components/ReportsCard"
@@ -54,26 +54,19 @@ export function UserDashboard() {
   const departmentId = currentDeptRole?.departmentId
   const roleId = currentDeptRole?.roleId
 
-  const personalTS = usePersonalTimeStudy({
+  const overview = useDashboardOverview({ 
     userId,
-    payrollType,
-    reqMins: 480,
-    departmentId,
-    roleId,
-  })
-  const timeRecordRequests = useTimeRecordRequests({
-    userId,
-    payrollType,
-    departmentId,
-    roleId,
+    departmentId, 
+    roleId, 
+    enabled: true 
   })
   const selfLeave = useSelfLeave(userId)
   const todos = useTodos(userId)
   const reports = useReportsByRole({ departmentId, roleId })
   const holidays = useHolidays()
 
-  const tsApproved = personalTS.data?.approved ?? 0
-  const tsSubmitted = personalTS.data?.submitted ?? 0
+  const tsApproved = overview.data?.timeStudyRecordByUserStatusCounts?.find((s: any) => s.status === 'approved')?.count ?? 0
+  const tsSubmitted = overview.data?.timeStudyRecordByUserStatusCounts?.find((s: any) => s.status === 'submitted')?.count ?? 0
 
   const selfLeaveTotal = selfLeave.data?.total ?? 0
   const selfLeaveApproved = selfLeave.data?.approved ?? 0
@@ -86,9 +79,9 @@ export function UserDashboard() {
   const todoItems = todos.data ?? []
   const reportsData = reports.data ?? []
 
-  const trApproved = timeRecordRequests.data?.approved ?? 0
-  const trPending = timeRecordRequests.data?.pendingApproval ?? 0
-  const trNotSubmitted = timeRecordRequests.data?.notSubmitted ?? 0
+  const trApproved = tsApproved
+  const trPending = tsSubmitted
+  const trNotSubmitted = overview.data?.timeStudyRecordByUserStatusCounts?.find((s: any) => s.status === 'draft')?.count ?? 0
 
   // Calendar State & Logic
   const [selectedDate, setSelectedDate] = useState<Date>(() => {
@@ -259,7 +252,7 @@ export function UserDashboard() {
                   totalSubmitted={tsSubmitted}
                   percent="0 %"
                   periodLabel="Bi Weekly"
-                  isLoading={personalTS.isLoading}
+                  isLoading={overview.isLoading}
                   noBlur={true}
                 />
               </div>
@@ -277,23 +270,12 @@ export function UserDashboard() {
             </div>
 
 
+
             <div className="grid grid-cols-12 gap-4 h-[180px] min-h-0">
               <div className="col-span-12 h-full min-h-0 overflow-hidden">
                 <ReportsCard reports={reportsData} isLoading={reports.isLoading} />
               </div>
             </div>
-
-
-            {(trApproved > 0 || trPending > 0) && (
-              <div className="h-[180px]">
-                <TimeStudyStatusCard
-                  approved={trApproved}
-                  pendingApproval={trPending}
-                  notSubmitted={trNotSubmitted}
-                  isLoading={timeRecordRequests.isLoading}
-                />
-              </div>
-            )}
           </div>
 
 

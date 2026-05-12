@@ -244,6 +244,8 @@ export interface DashboardOverview {
   totalTimeStudyProgramCount: number
   totalActivityCount: number
   totalActivityDepartmentCount: number
+  timeStudyRecordStatusCounts?: Array<{ status: string; count: number }>
+  timeStudyRecordByUserStatusCounts?: Array<{ status: string; count: number }>
 }
 
 export interface ApiEnvelope<T> {
