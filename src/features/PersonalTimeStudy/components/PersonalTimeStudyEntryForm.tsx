@@ -156,6 +156,8 @@ type PersonalTimeStudyEntryFormProps = {
     employeeName?: string
   }>
   apportioningConfig?: SupervisorApportioningConfig | null
+  /** Pre-calculated apportioning records from backend (apportioning=true TSRs). Used when autoApportioning=true. */
+  apportioningRecords?: any[]
   isLoading?: boolean
 }
 
@@ -301,6 +303,7 @@ export function PersonalTimeStudyEntryForm({
   leaveRecords,
   className,
   apportioningConfig,
+  apportioningRecords,
   isLoading = false,
 }: PersonalTimeStudyEntryFormProps) {
   const { user } = useAuth()
@@ -330,7 +333,9 @@ export function PersonalTimeStudyEntryForm({
     setPrevInitialRecords(initialRecords)
     setPrevLeaveRecords(leaveRecords)
     const syncRecordsToState = () => {
-      const filtered = (initialRecords ?? []).filter((r) => r.date?.split("T")[0] === dateStr)
+      const filtered = (initialRecords ?? []).filter(
+        (r) => r.date?.split("T")[0] === dateStr && r.apportioning !== true
+      )
       const parentMap = new Map<number, TimeEntryParentRow>()
       filtered.forEach((rec) => {
         if (!rec.parentId) {
@@ -424,8 +429,11 @@ export function PersonalTimeStudyEntryForm({
   const isLocked = useMemo(() => {
     if (readonly) return true
     if (!initialRecords) return false
+    // Exclude apportioning records (apportioning=true) — they are backend-owned and always
+    // status=approved, so they must NOT cause the personal Time Entry form to lock.
     return initialRecords.some(rec => 
       rec.date?.split("T")[0] === dateStr &&
+      rec.apportioning !== true &&
       ["submitted", "approved"].includes(rec.status?.toLowerCase())
     )
   }, [initialRecords, dateStr, readonly])
@@ -1097,11 +1105,12 @@ export function PersonalTimeStudyEntryForm({
         <PersonalTimeStudyApportioningPanel
           apportioningConfig={apportioningConfig}
           supervisorOwnMinutesToday={parents.reduce((sum, p) => {
-            // Only count non-leave, non-empty parent rows
             if (p.isLeave) return sum
             const mins = Number(computeDurationMinutes(p.start, p.end)) || 0
             return sum + mins
           }, 0)}
+          dropdownData={dropdownData}
+          apportioningRecords={apportioningRecords?.filter(r => r.date === dateStr) || []}
         />
       )}
 

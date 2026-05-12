@@ -119,6 +119,7 @@ export function PersonalTimeStudyPage() {
   // -- Personal Time Study: apportioning config for supervisor panel (read-only) --
   const apportioningConfigQuery = useGetUserApportioningConfig(userId, activeTab === "personal")
 
+
   // 5. Calendar day & week summaries
   const { dayStatuses, weekSummaries } = useMemo(() => {
     const dayMap: Record<string, { status: string; color?: string; hasNotes?: boolean; noteText?: string }> = {}
@@ -410,6 +411,7 @@ export function PersonalTimeStudyPage() {
                     multiBalanceTotal={summaryQuery.data?.actualmultiactivityTimebalance}
                     hideSummaryHeader={true}
                     apportioningConfig={apportioningConfigQuery.data ?? null}
+                    apportioningRecords={dayQuery.data?.timeStudyRecords?.filter((r: any) => r.apportioning === true) || []}
                     isLoading={dayQuery.isFetching || submitMutation.isPending || deleteMutation.isPending}
                   />
               </div>

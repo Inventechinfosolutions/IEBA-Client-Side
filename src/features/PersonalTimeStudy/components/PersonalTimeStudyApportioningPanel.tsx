@@ -10,7 +10,11 @@ export type ApportioningPanelProps = {
   apportioningConfig: SupervisorApportioningConfig | null | undefined
   supervisorOwnMinutesToday: number
   dropdownData?: any[]
+  /** Saved apportioning TSRs from backend (apportioning=true). Pre-fills rows when autoApportioning=true. */
+  apportioningRecords?: any[]
 }
+
+/** Row state keyed by a unique string — `rec_${record.id}` for auto rows, `dept_${deptId}` for manual rows. */
 type ApportioningRowState = {
   selectedProgram: string
   selectedActivity: string
@@ -53,12 +57,26 @@ function RemainingTimeDisplay({ minutes }: { minutes: number }) {
     </div>
   )
 }
+
+/** Read-only text field shown in place of a dropdown when the row is backend-owned. */
+function ReadOnlyField({ label }: { label: string }) {
+  return (
+    <div
+      aria-readonly="true"
+      title="Set automatically by the system — cannot be changed"
+      className="flex h-10 w-full items-center rounded-[6px] border border-input bg-[#F2F4F7] px-3 text-[11px] text-[#344054] cursor-not-allowed select-none truncate"
+    >
+      {label || <span className="text-muted-foreground italic">Not Assigned</span>}
+    </div>
+  )
+}
+
 export function PersonalTimeStudyApportioningPanel({
   apportioningConfig,
   supervisorOwnMinutesToday,
   dropdownData,
+  apportioningRecords,
 }: ApportioningPanelProps) {
-  // Guard: only render for supervisors with active apportioning departments
   const shouldRender = useMemo(
     () =>
       !!apportioningConfig &&
@@ -67,59 +85,141 @@ export function PersonalTimeStudyApportioningPanel({
     [apportioningConfig],
   )
 
-  // Per-department row selection state (program + activity per dept)
-  const [rowStates, setRowStates] = useState<Record<number, ApportioningRowState>>(() =>
-    Object.fromEntries(
-      (apportioningConfig?.departments ?? []).map((d) => [
-        d.departmentId,
-        { selectedProgram: "", selectedActivity: "" },
-      ]),
-    ),
-  )
-
-  // Compute remaining minutes per department
-  const departmentRows = useMemo(() => {
-    if (!apportioningConfig) return []
-    return apportioningConfig.departments.map((dept) => {
-      // Split the supervisor's total worked time proportionally based on this department's percentage
-      const consumedMinutes = Math.round((supervisorOwnMinutesToday * dept.apportioningPercent) / 100)
-      return {
-        ...dept,
-        remainingMinutes: dept.allowedMinutes - consumedMinutes,
-      }
-    })
-  }, [apportioningConfig, supervisorOwnMinutesToday])
-
-  // Build flat program list (all programs from dropdownData, deduplicated by id)
+  // ── Build flat program / activity lists from dropdownData ──────────────────
   const allPrograms = useMemo(() => {
-    const list =
-      dropdownData?.flatMap((d: any) =>
-        (d.programs ?? []).map((p: any) => ({ ...p, departmentCode: d.departmentCode })),
-      ) ?? []
+    // Apportioning dropdowns should ONLY show programs from the actual reportee/supervising data (apportioningRecords)
+    const list = (apportioningRecords || []).map((r) => ({
+      id: String(r.programid),
+      programCode: r.programcode,
+      programName: r.programname,
+      departmentCode: r.departmentcode,
+    }))
     return Array.from(new Map(list.map((p: any) => [p.id, p])).values()) as any[]
-  }, [dropdownData])
+  }, [apportioningRecords])
 
-  // Build flat activity list (all activities, deduplicated by id)
   const allActivities = useMemo(() => {
-    const list =
-      dropdownData?.flatMap((d: any) =>
-        (d.activities ?? []).map((a: any) => ({ ...a, departmentCode: d.departmentCode })),
-      ) ?? []
+    // Apportioning dropdowns should ONLY show activities from the actual reportee/supervising data (apportioningRecords)
+    const list = (apportioningRecords || []).map((r) => ({
+      id: String(r.activityid),
+      activityCode: r.activitycode,
+      activityName: r.activityname,
+      departmentCode: r.departmentcode,
+    }))
     return Array.from(new Map(list.map((a: any) => [a.id, a])).values()) as any[]
-  }, [dropdownData])
+  }, [apportioningRecords])
 
-  // Handlers for row-level changes
-  const handleProgramChange = (deptId: number, value: string) => {
+  // ── Build the flat list of display rows ───────────────────────────────────
+  /**
+   * For autoApportioning depts: one row PER backend record (may be > 1 per dept).
+   * For manual depts:           one row per dept.
+   */
+  const displayRows = useMemo(() => {
+    if (!apportioningConfig) return []
+    const rows: Array<{
+      rowKey: string
+      deptId: number
+      deptName: string
+      deptCode: string
+      autoApportioning: boolean
+      apportioningPercent: number
+      allowedMinutes: number
+      /** For autoApportioning rows, the backend record driving this row */
+      backendRecord?: any
+    }> = []
+
+    // 1. First, process all departments from the active config
+    const processedDeptIds = new Set<number>()
+
+    for (const dept of apportioningConfig.departments) {
+      processedDeptIds.add(dept.departmentId)
+
+      const deptRecords = (apportioningRecords || []).filter(
+        (r) => Number(r.departmentId) === dept.departmentId,
+      )
+
+      if (dept.autoApportioning && deptRecords.length > 0) {
+        deptRecords.forEach((rec) => {
+          rows.push({
+            rowKey: `rec_${rec.id}`,
+            deptId: dept.departmentId,
+            deptName: dept.departmentName,
+            deptCode: rec.departmentcode ?? "",
+            autoApportioning: true,
+            apportioningPercent: dept.apportioningPercent,
+            allowedMinutes: dept.allowedMinutes,
+            backendRecord: rec,
+          })
+        })
+      } else {
+        // Manual or no backend records yet for this config-dept
+        rows.push({
+          rowKey: `dept_${dept.departmentId}`,
+          deptId: dept.departmentId,
+          deptName: dept.departmentName,
+          deptCode: "",
+          autoApportioning: dept.autoApportioning,
+          apportioningPercent: dept.apportioningPercent,
+          allowedMinutes: dept.allowedMinutes,
+        })
+      }
+    }
+
+    // 2. Add any records for departments NOT in the config (fallback)
+    const extraRecords = (apportioningRecords || []).filter(
+      (r) => !processedDeptIds.has(Number(r.departmentId))
+    )
+
+    extraRecords.forEach((rec) => {
+      rows.push({
+        rowKey: `rec_${rec.id}`,
+        deptId: Number(rec.departmentId),
+        deptName: rec.departmentname || `Dept ${rec.departmentId}`,
+        deptCode: rec.departmentcode ?? "",
+        autoApportioning: true, // If it's a saved record, treat as auto-apportioned/read-only
+        apportioningPercent: 0,
+        allowedMinutes: 0,
+        backendRecord: rec,
+      })
+    })
+
+    return rows
+  }, [apportioningConfig, apportioningRecords])
+
+  // ── Row selection state (UI-only) ─────────────────────────────────────────
+  const [rowStates, setRowStates] = useState<Record<string, ApportioningRowState>>({})
+
+  // Pre-fill from backend records whenever records or dropdown data change
+  useMemo(() => {
+    setRowStates(() => {
+      const next: Record<string, ApportioningRowState> = {}
+      for (const row of displayRows) {
+        if (row.backendRecord) {
+          const rec = row.backendRecord
+          next[row.rowKey] = {
+            selectedProgram: rec.programid ? String(rec.programid) : "",
+            selectedActivity: rec.activityid ? String(rec.activityid) : "",
+          }
+        } else {
+          next[row.rowKey] = { selectedProgram: "", selectedActivity: "" }
+        }
+      }
+      return next
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [displayRows])
+
+  // ── Handlers ──────────────────────────────────────────────────────────────
+  const handleProgramChange = (rowKey: string, value: string) => {
     setRowStates((prev) => ({
       ...prev,
-      [deptId]: { selectedProgram: value, selectedActivity: "" }, // reset activity on program change
+      [rowKey]: { selectedProgram: value, selectedActivity: "" },
     }))
   }
 
-  const handleActivityChange = (deptId: number, value: string) => {
+  const handleActivityChange = (rowKey: string, value: string) => {
     setRowStates((prev) => ({
       ...prev,
-      [deptId]: { ...prev[deptId], selectedActivity: value },
+      [rowKey]: { ...prev[rowKey], selectedActivity: value },
     }))
   }
 
@@ -131,11 +231,9 @@ export function PersonalTimeStudyApportioningPanel({
       <h4 className="mb-3 text-[13px] font-semibold text-[#6C5DD3]">Apportioning</h4>
 
       {/* Column headers */}
-      <div className="mb-0 grid grid-cols-[110px_150px_1fr_1fr_110px] items-end gap-2">
+      <div className="mb-1 grid grid-cols-[110px_150px_1fr_1fr_110px] items-end gap-2">
         <span className="text-[11px] font-medium text-muted-foreground">Department</span>
-        <span className="text-[11px] font-medium text-muted-foreground">
-          Auto Apportioning<span className="text-destructive"></span>
-        </span>
+        <span className="text-[11px] font-medium text-muted-foreground">Auto Apportioning</span>
         <span className="text-[11px] font-medium text-[#6C5DD3]">
           Program <span className="text-destructive">*</span>
         </span>
@@ -145,15 +243,13 @@ export function PersonalTimeStudyApportioningPanel({
         <span className="text-[11px] font-medium text-muted-foreground">Remaining Time (Min.)</span>
       </div>
 
-      {/* Department rows */}
+      {/* Rows */}
       <div className="flex flex-col gap-3">
-        {departmentRows.map((dept) => {
-          const rowState = rowStates[dept.departmentId] ?? {
-            selectedProgram: "",
-            selectedActivity: "",
-          }
+        {displayRows.map((row) => {
+          const rowState = rowStates[row.rowKey] ?? { selectedProgram: "", selectedActivity: "" }
+          const rec = row.backendRecord
 
-          // Programs available for this row (non-multicode)
+          // Program options — non-multicode, formatted as dept-code - name
           const programOptions = allPrograms
             .filter((p: any) => !p.isMultiCode)
             .map((p: any) => {
@@ -161,57 +257,110 @@ export function PersonalTimeStudyApportioningPanel({
               return { value: String(p.id), label: `${deptPrefix}-${p.code} - ${p.name}` }
             })
 
-          // Activities available for the selected program in this row
+          // If current value not in list (e.g. loaded from record), inject fallback option
+          if (
+            rowState.selectedProgram &&
+            !programOptions.some((o) => o.value === rowState.selectedProgram)
+          ) {
+            if (rec?.programcode || rec?.programname) {
+              const deptPrefix = (row.deptCode ?? "").split("-")[0]
+              programOptions.unshift({
+                value: rowState.selectedProgram,
+                label: `${deptPrefix}-${rec.programcode ?? ""} - ${rec.programname ?? ""}`,
+              })
+            }
+          }
+
+          // Activity options — filtered to selected program
           const activityOptions = rowState.selectedProgram
             ? allActivities.map((a: any) => ({
-                value: String(a.id),
-                label: `${a.code} - ${a.name}`,
-              }))
+              value: String(a.id),
+              label: `${a.code} - ${a.name}`,
+            }))
             : []
+
+          // Inject fallback for activity too
+          if (
+            rowState.selectedActivity &&
+            !activityOptions.some((o) => o.value === rowState.selectedActivity)
+          ) {
+            if (rec?.activitycode || rec?.activityname) {
+              activityOptions.unshift({
+                value: rowState.selectedActivity,
+                label: `${rec.activitycode ?? ""} - ${rec.activityname ?? ""}`,
+              })
+            }
+          }
+
+          // Remaining minutes: strictly from backend record for auto-apportioning.
+          // Only show calculated split for MANUAL rows that don't have a record yet.
+          const remainingMinutes = rec
+            ? Number(rec.activitytime) || 0
+            : row.autoApportioning
+              ? 0
+              : Math.round((supervisorOwnMinutesToday * row.apportioningPercent) / 100)
 
           return (
             <div
-              key={dept.departmentId}
+              key={row.rowKey}
               className="grid grid-cols-[110px_150px_1fr_1fr_110px] items-end gap-2"
             >
               {/* Department name */}
               <span className="text-[12px] font-medium text-[#344054] leading-snug pb-2">
-                {dept.departmentName}
+                {row.deptName}
               </span>
 
-              {/* Auto Apportioning toggle — READ-ONLY (locked from dept settings) */}
+              {/* Auto Apportioning toggle — READ-ONLY */}
               <div className="flex h-10 items-center">
-                <ReadOnlyAutoToggle checked={dept.autoApportioning} />
+                <ReadOnlyAutoToggle checked={row.autoApportioning} />
               </div>
 
-              {/* Program — interactive dropdown */}
-              <SingleSelectSearchDropdown
-                value={rowState.selectedProgram}
-                placeholder="Not Assign"
-                options={programOptions}
-                onChange={(v) => handleProgramChange(dept.departmentId, v)}
-                onBlur={() => {}}
-                className="h-10 text-[11px]"
-              />
+              {/* Program — read-only when auto-apportioning is ON or a record exists */}
+              {rec || row.autoApportioning ? (
+                <ReadOnlyField
+                  label={
+                    rec && (rec.programcode || rec.programname)
+                      ? `${(row.deptCode ?? "").split("-")[0]}-${rec.programcode ?? ""} - ${rec.programname ?? ""}`
+                      : "No Data"
+                  }
+                />
+              ) : (
+                <SingleSelectSearchDropdown
+                  value={rowState.selectedProgram}
+                  placeholder="Not Assign"
+                  options={programOptions}
+                  onChange={(v) => handleProgramChange(row.rowKey, v)}
+                  onBlur={() => { }}
+                  className="h-10 text-[11px]"
+                />
+              )}
 
-              {/* Service / Activity — interactive dropdown */}
-              <SingleSelectSearchDropdown
-                value={rowState.selectedActivity}
-                placeholder="Not Assign"
-                disabled={!rowState.selectedProgram}
-                options={activityOptions}
-                onChange={(v) => handleActivityChange(dept.departmentId, v)}
-                onBlur={() => {}}
-                className={cn(
-                  "h-10 text-[11px]",
-                  !rowState.selectedProgram && "bg-[#F2F4F7] cursor-not-allowed",
-                )}
-              />
+              {/* Service / Activity — read-only when auto-apportioning is ON or a record exists */}
+              {rec || row.autoApportioning ? (
+                <ReadOnlyField
+                  label={
+                    rec && (rec.activitycode || rec.activityname)
+                      ? `${rec.activitycode ?? ""} - ${rec.activityname ?? ""}`
+                      : "No Data"
+                  }
+                />
+              ) : (
+                <SingleSelectSearchDropdown
+                  value={rowState.selectedActivity}
+                  placeholder="Not Assign"
+                  disabled={!rowState.selectedProgram}
+                  options={activityOptions}
+                  onChange={(v) => handleActivityChange(row.rowKey, v)}
+                  onBlur={() => { }}
+                  className={cn(
+                    "h-10 text-[11px]",
+                    !rowState.selectedProgram && "bg-[#F2F4F7] cursor-not-allowed",
+                  )}
+                />
+              )}
 
-              {/* Remaining Time (Min.) — read-only computed */}
-              <div className="flex flex-col gap-1">
-                <RemainingTimeDisplay minutes={dept.remainingMinutes} />
-              </div>
+              {/* Remaining Time (Min.) — read-only */}
+              <RemainingTimeDisplay minutes={remainingMinutes} />
             </div>
           )
         })}

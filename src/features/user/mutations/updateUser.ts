@@ -51,6 +51,7 @@ function mapUpdateInput(input: UpdateUserModuleInput): UpdateUserRequestDto {
     contacts: contactsPayloadForUpdate(input.values.phone),
     primarySupervisorId: (input.values.supervisorPrimaryId ?? "").trim(),
     backupSupervisorId: (input.values.supervisorSecondaryId ?? "").trim(),
+    supervisorApportioning: input.values.supervisorApportioning,
   }
 }
 
