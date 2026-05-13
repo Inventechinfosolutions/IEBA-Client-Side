@@ -99,7 +99,7 @@ export function nextMonthRangeFromPrevious(
   const end = parseMmDdYyyy(prevEndMmDdYyyy) ?? parseMmDdYyyy(prevStartMmDdYyyy)
   if (!end) return null
   const start = end.add(1, "month").startOf("month")
-  return { startDate: toMmDdYyyy(start), endDate: toMmDdYyyy(start.endOf("month")) }
+  return { startDate: toMmDdYyyy(start), endDate: toIsoYyyyMmDd(start.endOf("month")) }
 }
 
 /** Inclusive weekday count (Mon–Fri) between start and end, in local time. */

@@ -18,7 +18,7 @@ import { useGetTimeEntrySummary } from "../../PersonalTimeStudy/queries/getTimeE
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 import tableEmptyIcon from "@/assets/icons/table-empty.png"
-import { toIsoYmdFromDate, todayLocal } from "@/features/schedule-time-study/utils/dates"
+import { toIsoYmdFromDate, todayLocal } from "@/lib/dates"
 
 function getWeekStartKey(dateStr: string): string {
   const [y, m, d] = dateStr.split('-').map(Number)

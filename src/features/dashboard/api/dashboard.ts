@@ -13,7 +13,7 @@ import type {
   TodoListResult,
 } from "../types"
 import { PayrollPeriod, TimeStudyStatus, DashboardQueryType } from "../enums/dashboard.enum"
-import { toIsoYmdFromDate } from "@/features/schedule-time-study/utils/dates"
+import { toIsoYmdFromDate } from "@/lib/dates"
 
 
 

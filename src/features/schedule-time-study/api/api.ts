@@ -19,7 +19,7 @@ import type {
   UpdateRmtsGroupPayload,
   UpdateRmtsPayPeriodPayload,
 } from "../types"
-import { compareMmDdYyyy, parseFlexibleToMmDdYyyy } from "../utils/dates"
+import { compareMmDdYyyy, parseFlexibleToMmDdYyyy } from "@/lib/dates"
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object"

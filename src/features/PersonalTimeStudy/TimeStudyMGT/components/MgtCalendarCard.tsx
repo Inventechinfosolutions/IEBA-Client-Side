@@ -11,7 +11,7 @@
  */
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react"
 import type { MgtDayStatusMap, MgtWeekSummary } from "../types"
-import { toIsoYmdFromDate } from "@/features/schedule-time-study/utils/dates"
+import { toIsoYmdFromDate } from "@/lib/dates"
 
 
 
