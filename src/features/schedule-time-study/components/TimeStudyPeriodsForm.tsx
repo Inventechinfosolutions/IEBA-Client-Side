@@ -51,7 +51,7 @@ import {
   isStartOnOrBeforeEnd,
   normalizeDateInputValue,
   toDateInputValue,
-} from "../utils/dates"
+} from "@/lib/dates"
 
 const payPeriodUpdateSuccessToastOptions = {
   position: "top-center" as const,

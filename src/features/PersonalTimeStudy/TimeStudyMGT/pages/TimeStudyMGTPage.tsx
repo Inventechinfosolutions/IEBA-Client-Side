@@ -1,5 +1,5 @@
 import { useTimeStudyMGT } from "../hooks/useTimeStudyMGT"
-import { toIsoYmdFromDate } from "@/features/schedule-time-study/utils/dates"
+import { toIsoYmdFromDate } from "@/lib/dates"
 import { MgtEmployeePanel } from "../components/MgtEmployeePanel"
 import { MgtLegendCard } from "../components/MgtLegendCard"
 import { PersonalTimeStudyCalendarCard } from "../../components/PersonalTimeStudyCalendarCard"

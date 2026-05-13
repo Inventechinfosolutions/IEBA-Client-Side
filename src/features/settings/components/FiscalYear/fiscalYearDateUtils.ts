@@ -1,4 +1,4 @@
-import { parseIsoYyyyMmDd, toMmDdYyyy } from "@/features/schedule-time-study/utils/dates"
+import { parseIsoYyyyMmDd, toMmDdYyyy } from "@/lib/dates"
 
 /** Normalize API fiscal date to `YYYY-MM-DD` for inputs and `<input type="date">`. */
 export function normalizeFiscalDateToIso(value: string): string {

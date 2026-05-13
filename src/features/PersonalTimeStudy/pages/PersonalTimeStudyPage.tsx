@@ -21,7 +21,7 @@ import { useSubmitPersonalTimeRecords } from "../mutation/createPersonalTimeReco
 import { useDeletePersonalTimeRecord } from "../mutation/deletePersonalTimeRecord"
 import type { WeekSummaryRow } from "../components/PersonalTimeStudyWeekSummary"
 import { TimeStudyMGTPage } from "../TimeStudyMGT"
-import { toIsoYmdFromDate, todayLocal } from "@/features/schedule-time-study/utils/dates"
+import { toIsoYmdFromDate, todayLocal } from "@/lib/dates"
 
 type ActiveTab = "personal" | "mgt"
 

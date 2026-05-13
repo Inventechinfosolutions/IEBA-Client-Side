@@ -15,7 +15,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 
-import { toIsoYmdFromDate } from "@/features/schedule-time-study/utils/dates"
+import { toIsoYmdFromDate } from "@/lib/dates"
 import "./index.styles.css"
 
 type SelectionMode = 'day' | 'week';

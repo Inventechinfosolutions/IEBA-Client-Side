@@ -9,7 +9,7 @@ import type {
   ScheduledTimeStudyRowEnriched,
   ScheduleTimeStudyPeriodRow,
 } from "../types"
-import { normalizeDateInputValue } from "./dates"
+import { normalizeDateInputValue } from "@/lib/dates"
 
 function resolveRmtsPayPeriodIsUsed(dto: RmtsPayPeriodApiDto): boolean {
   return dto.isUsed === true || dto.is_used === true

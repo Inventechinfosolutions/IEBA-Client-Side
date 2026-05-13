@@ -4,7 +4,7 @@ import { useGetMGTMonthLegend } from "../queries/getMGTMonthLegend"
 import { useGetMGTDayDetail } from "../queries/getMGTDayDetail"
 import { useGetMGTDropdowns } from "../queries/getMGTDropdowns"
 import { useGetTimeEntrySummary } from "../../queries/getTimeEntrySummary"
-import { toIsoYmdFromDate, todayLocal } from "@/features/schedule-time-study/utils/dates"
+import { toIsoYmdFromDate, todayLocal } from "@/lib/dates"
 import { usePermissions } from "@/hooks/usePermissions"
 import type { MgtEmployeeRow, MgtDayStatusMap, MgtWeekSummary } from "../types"
 
