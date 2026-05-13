@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState } from "react"
+import { useAuth } from "@/contexts/AuthContext"
 import {
   MASTER_CODE_TYPE_TAB_ORDER,
   type MasterCodeFormMode,
@@ -6,6 +7,10 @@ import {
   type MasterCodeRow,
   type MasterCodeTab,
 } from "../types"
+import { MasterCodeTypeEnum } from "../enums/masterCodeType"
+
+/** Counties that are allowed to see the CDSS master-code tab. */
+const CDSS_ENABLED_COUNTIES = new Set<string>(["TUOLUMNE"])
 
 const emptyFormValues: MasterCodeFormValues = {
   code: "",
@@ -19,7 +24,15 @@ const emptyFormValues: MasterCodeFormValues = {
 }
 
 export function useMasterCodeUI() {
-  const tabs = MASTER_CODE_TYPE_TAB_ORDER
+  const { user } = useAuth()
+  const countyName = (user?.countyName ?? "").trim().toUpperCase()
+  const tabs = useMemo<MasterCodeTab[]>(
+    () =>
+      CDSS_ENABLED_COUNTIES.has(countyName)
+        ? MASTER_CODE_TYPE_TAB_ORDER
+        : MASTER_CODE_TYPE_TAB_ORDER.filter((t) => t !== MasterCodeTypeEnum.CDSS),
+    [countyName],
+  )
   const [selectedTab, setSelectedTab] = useState<MasterCodeTab | null>(null)
   const [inactiveOnly, setInactiveOnly] = useState(false)
   const [allowMultiCodesLocal, setAllowMultiCodesLocal] = useState(true)
