@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useCallback } from "react"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { cn } from "@/lib/utils"
 
@@ -27,11 +27,25 @@ export function TimePickerDropdown({
   minuteStep = 1,
 }: TimePickerDropdownProps) {
   const [localTime, setLocalTime] = useState(value || "00:00")
+  const [prevValue, setPrevValue] = useState(value)
 
-  // Sync local state if external value changes (e.g. when popover reopens)
-  useEffect(() => {
+  // Sync local state if external value changes without using useEffect
+  if (value !== prevValue) {
+    setPrevValue(value)
     setLocalTime(value || "00:00")
-  }, [value])
+  }
+
+  // Use a callback ref to scroll selected items into view when the component renders
+  const scrollRef = useCallback((node: HTMLDivElement | null) => {
+    if (node) {
+      // Use a microtask/timeout to ensure the DOM is ready for scrollIntoView
+      setTimeout(() => {
+        node.querySelectorAll('[data-selected="true"]').forEach((el) => {
+          el.scrollIntoView({ block: "start", behavior: "auto" })
+        })
+      }, 0)
+    }
+  }, [])
 
   const parts = localTime.split(":")
   const h = parts[0] ?? ""
@@ -45,7 +59,8 @@ export function TimePickerDropdown({
   }
 
   return (
-    <div 
+    <div
+      ref={scrollRef}
       className={cn("flex flex-col w-[120px] bg-white overflow-hidden rounded-md", className)}
       onWheel={(e) => e.stopPropagation()}
       onTouchMove={(e) => e.stopPropagation()}
@@ -53,7 +68,7 @@ export function TimePickerDropdown({
       <div className="flex h-[200px] divide-x divide-gray-100">
         {/* Hours column */}
         <ScrollArea className="flex-1">
-          <div className="flex flex-col p-1.5 gap-0.5">
+          <div className="flex flex-col p-1.5 pb-[170px] gap-0.5">
             {HOURS.map((hour) => (
               <button
                 key={hour}
@@ -73,7 +88,7 @@ export function TimePickerDropdown({
 
         {/* Minutes column */}
         <ScrollArea className="flex-1">
-          <div className="flex flex-col p-1.5 gap-0.5">
+          <div className="flex flex-col p-1.5 pb-[170px] gap-0.5">
             {filteredMinutes.map((minute) => (
               <button
                 key={minute}

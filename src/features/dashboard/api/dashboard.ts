@@ -13,6 +13,7 @@ import type {
   TodoListResult,
 } from "../types"
 import { PayrollPeriod, TimeStudyStatus, DashboardQueryType } from "../enums/dashboard.enum"
+import { toIsoYmdFromDate } from "@/features/schedule-time-study/utils/dates"
 
 
 
@@ -20,8 +21,8 @@ function getStartEndOfMonth(date = new Date()): { startDate: string; endDate: st
   const start = new Date(date.getFullYear(), date.getMonth(), 1)
   const end = new Date(date.getFullYear(), date.getMonth() + 1, 0)
   return {
-    startDate: start.toISOString().slice(0, 10),
-    endDate: end.toISOString().slice(0, 10),
+    startDate: toIsoYmdFromDate(start),
+    endDate: toIsoYmdFromDate(end),
   }
 }
 
@@ -33,8 +34,8 @@ function getStartEndOfWeek(date = new Date()): { startDate: string; endDate: str
   const end = new Date(start)
   end.setDate(start.getDate() + 6)
   return {
-    startDate: new Date(start).toISOString().slice(0, 10),
-    endDate: new Date(end).toISOString().slice(0, 10),
+    startDate: toIsoYmdFromDate(start),
+    endDate: toIsoYmdFromDate(end),
   }
 }
 
@@ -43,7 +44,7 @@ function getStartEndOfBiweek(date = new Date()): { startDate: string; endDate: s
   const start = new Date(startDate)
   const end = new Date(start)
   end.setDate(start.getDate() + 13)
-  return { startDate, endDate: end.toISOString().slice(0, 10) }
+  return { startDate, endDate: toIsoYmdFromDate(end) }
 }
 
 function getStartEndSemimonthly(date = new Date()): { startDate: string; endDate: string } {
@@ -53,11 +54,11 @@ function getStartEndSemimonthly(date = new Date()): { startDate: string; endDate
   if (day <= 15) {
     const start = new Date(year, month, 1)
     const end = new Date(year, month, 15)
-    return { startDate: start.toISOString().slice(0, 10), endDate: end.toISOString().slice(0, 10) }
+    return { startDate: toIsoYmdFromDate(start), endDate: toIsoYmdFromDate(end) }
   } else {
     const start = new Date(year, month, 16)
     const end = new Date(year, month + 1, 0)
-    return { startDate: start.toISOString().slice(0, 10), endDate: end.toISOString().slice(0, 10) }
+    return { startDate: toIsoYmdFromDate(start), endDate: toIsoYmdFromDate(end) }
   }
 }
 
