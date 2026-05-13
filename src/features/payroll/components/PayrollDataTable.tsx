@@ -144,7 +144,7 @@ export function PayrollDataTable({ rows, isLoading, columns, onEditRow, showEdit
   return (
     <div className={cn(tableScrollClass, payrollTableCardClass, "relative")}>
       {isLoading && (
-        <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/40">
+        <div className="absolute inset-x-0 bottom-0 top-[44px] z-20 flex items-center justify-center bg-white/40 backdrop-blur-[1px]">
           <Spinner className="text-[#6C5DD3]" />
         </div>
       )}
@@ -167,9 +167,6 @@ export function PayrollDataTable({ rows, isLoading, columns, onEditRow, showEdit
                         isLastCol ? "border-r-0" : "border-r border-[#eff0f5]",
                       )}
                     >
-                      {rowIndex === 0 && colIndex === 0 ? (
-                        <span className="sr-only">Loading payroll data</span>
-                      ) : null}
                       <Skeleton className={payrollSkeletonBarClass(colIndex, rowIndex)} aria-hidden />
                     </TableCell>
                   )

@@ -112,6 +112,7 @@ export function PayrollPage() {
       deleteMutation.mutate({ params, rowIds: ids }, {
         onSuccess: () => {
           toast.success("Displayed payroll rows deleted successfully.")
+          void rowsModule.refetch()
         },
       })
     },
@@ -153,7 +154,7 @@ export function PayrollPage() {
       toast.success("Payroll row updated successfully.")
       // Refresh table data and keep modal open.
       const result = await rowsModule.refetch()
-      const refreshed = (result.data ?? []) as readonly PayrollManagementRow[]
+      const refreshed = (result.data?.items ?? []) as readonly PayrollManagementRow[]
       const updatedRow =
         refreshed.find((r) => {
           const rr = r as unknown as Record<string, unknown>
@@ -183,8 +184,8 @@ export function PayrollPage() {
       className="font-roboto *:font-roboto box-border w-full min-w-0 max-w-full overflow-x-hidden"
       style={{ "--primary": "#6C5DD3" } as React.CSSProperties}
     >
-      {isDownloadingRows && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-white/60">
+      {(isDownloadingRows || deleteMutation.isPending) && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-white/60 backdrop-blur-[1px]">
           <Spinner className="text-[#6C5DD3]" />
         </div>
       )}

@@ -39,6 +39,14 @@ const HEADERS = [
 function formatDate(dateStr: string | null | undefined): string {
   if (!dateStr) return "—"
   try {
+    // Safely parse YYYY-MM-DD to avoid UTC shift
+    const parts = dateStr.split("-")
+    if (parts.length === 3) {
+      const y = parseInt(parts[0], 10)
+      const m = parseInt(parts[1], 10) - 1
+      const d = parseInt(parts[2], 10)
+      return new Date(y, m, d).toLocaleDateString()
+    }
     return new Date(dateStr).toLocaleDateString()
   } catch {
     return dateStr

@@ -51,6 +51,7 @@ function mapCreateInput(input: CreateUserModuleInput): CreateUserRequestDto {
     assignedMultiCodes: toAssignedMultiCodes(input.values.assignedMultiCodes),
     ...(locationId != null ? { locationId } : {}),
     ...(contacts ? { contacts } : {}),
+    supervisorApportioning: input.values.supervisorApportioning,
   }
 }
 

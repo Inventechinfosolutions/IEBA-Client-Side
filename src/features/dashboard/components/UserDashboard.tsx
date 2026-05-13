@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react"
 import { useAuth } from "@/contexts/AuthContext"
-import { usePersonalTimeStudy, useSelfLeave, useTodos, useReportsByRole, useHolidays, useTimeRecordRequests } from "../queries/dashboardQueries"
+import { useSelfLeave, useTodos, useReportsByRole, useHolidays, useDashboardOverview } from "../queries/dashboardQueries"
 import { PersonalTimeStudyCard } from "../components/PersonalTimeStudyCard"
 import { PersonalLeaveCard } from "../components/PersonalLeaveCard"
 import { ReportsCard } from "../components/ReportsCard"
@@ -18,16 +18,15 @@ import { useGetTimeEntrySummary } from "../../PersonalTimeStudy/queries/getTimeE
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 import tableEmptyIcon from "@/assets/icons/table-empty.png"
+import { toIsoYmdFromDate, todayLocal } from "@/features/schedule-time-study/utils/dates"
 
 function getWeekStartKey(dateStr: string): string {
-  const date = new Date(dateStr + 'T12:00:00Z')
-  const day = date.getUTCDay()
-  const diff = date.getUTCDate() - day
-  const sunday = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), diff))
-  const y = sunday.getUTCFullYear()
-  const m = String(sunday.getUTCMonth() + 1).padStart(2, '0')
-  const d = String(sunday.getUTCDate()).padStart(2, '0')
-  return `${y}-${m}-${d}`
+  const [y, m, d] = dateStr.split('-').map(Number)
+  const date = new Date(y, m - 1, d)
+  const day = date.getDay()
+  const diff = date.getDate() - day
+  const sunday = new Date(date.getFullYear(), date.getMonth(), diff)
+  return toIsoYmdFromDate(sunday)
 }
 
 function getWeeklyStatus(days: string[], totalMinutes: number, targetMinutes: number): string {
@@ -54,26 +53,19 @@ export function UserDashboard() {
   const departmentId = currentDeptRole?.departmentId
   const roleId = currentDeptRole?.roleId
 
-  const personalTS = usePersonalTimeStudy({
+  const overview = useDashboardOverview({ 
     userId,
-    payrollType,
-    reqMins: 480,
-    departmentId,
-    roleId,
-  })
-  const timeRecordRequests = useTimeRecordRequests({
-    userId,
-    payrollType,
-    departmentId,
-    roleId,
+    departmentId, 
+    roleId, 
+    enabled: true 
   })
   const selfLeave = useSelfLeave(userId)
   const todos = useTodos(userId)
   const reports = useReportsByRole({ departmentId, roleId })
   const holidays = useHolidays()
 
-  const tsApproved = personalTS.data?.approved ?? 0
-  const tsSubmitted = personalTS.data?.submitted ?? 0
+  const tsApproved = overview.data?.timeStudyRecordByUserStatusCounts?.find((s: any) => s.status === 'approved')?.count ?? 0
+  const tsSubmitted = overview.data?.timeStudyRecordByUserStatusCounts?.find((s: any) => s.status === 'submitted')?.count ?? 0
 
   const selfLeaveTotal = selfLeave.data?.total ?? 0
   const selfLeaveApproved = selfLeave.data?.approved ?? 0
@@ -86,15 +78,12 @@ export function UserDashboard() {
   const todoItems = todos.data ?? []
   const reportsData = reports.data ?? []
 
-  const trApproved = timeRecordRequests.data?.approved ?? 0
-  const trPending = timeRecordRequests.data?.pendingApproval ?? 0
-  const trNotSubmitted = timeRecordRequests.data?.notSubmitted ?? 0
+  const trApproved = tsApproved
+  const trPending = tsSubmitted
+  const trNotSubmitted = overview.data?.timeStudyRecordByUserStatusCounts?.find((s: any) => s.status === 'draft')?.count ?? 0
 
   // Calendar State & Logic
-  const [selectedDate, setSelectedDate] = useState<Date>(() => {
-    const now = new Date()
-    return new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()))
-  })
+  const [selectedDate, setSelectedDate] = useState<Date>(todayLocal)
   const [viewportDate, setViewportDate] = useState<Date>(selectedDate)
   const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({})
 
@@ -102,17 +91,17 @@ export function UserDashboard() {
     setExpandedRows(prev => ({ ...prev, [id]: !prev[id] }))
   }
 
-  const dateStr = selectedDate.toISOString().split("T")[0]
-  const month = viewportDate.getUTCMonth() + 1
-  const year = viewportDate.getUTCFullYear()
+  const dateStr = toIsoYmdFromDate(selectedDate)
+  const month = viewportDate.getMonth() + 1
+  const year = viewportDate.getFullYear()
 
   const handleMonthChange = (newViewport: Date) => {
     setViewportDate(newViewport)
     if (
-      selectedDate.getUTCMonth() !== newViewport.getUTCMonth() ||
-      selectedDate.getUTCFullYear() !== newViewport.getUTCFullYear()
+      selectedDate.getMonth() !== newViewport.getMonth() ||
+      selectedDate.getFullYear() !== newViewport.getFullYear()
     ) {
-      const firstOfMonth = new Date(Date.UTC(newViewport.getUTCFullYear(), newViewport.getUTCMonth(), 1))
+      const firstOfMonth = new Date(newViewport.getFullYear(), newViewport.getMonth(), 1)
       setSelectedDate(firstOfMonth)
     }
   }
@@ -259,7 +248,7 @@ export function UserDashboard() {
                   totalSubmitted={tsSubmitted}
                   percent="0 %"
                   periodLabel="Bi Weekly"
-                  isLoading={personalTS.isLoading}
+                  isLoading={overview.isLoading}
                   noBlur={true}
                 />
               </div>
@@ -277,23 +266,12 @@ export function UserDashboard() {
             </div>
 
 
+
             <div className="grid grid-cols-12 gap-4 h-[180px] min-h-0">
               <div className="col-span-12 h-full min-h-0 overflow-hidden">
                 <ReportsCard reports={reportsData} isLoading={reports.isLoading} />
               </div>
             </div>
-
-
-            {(trApproved > 0 || trPending > 0) && (
-              <div className="h-[180px]">
-                <TimeStudyStatusCard
-                  approved={trApproved}
-                  pendingApproval={trPending}
-                  notSubmitted={trNotSubmitted}
-                  isLoading={timeRecordRequests.isLoading}
-                />
-              </div>
-            )}
           </div>
 
 

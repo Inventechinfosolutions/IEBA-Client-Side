@@ -15,6 +15,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 
+import { toIsoYmdFromDate } from "@/features/schedule-time-study/utils/dates"
 import "./index.styles.css"
 
 type SelectionMode = 'day' | 'week';
@@ -95,42 +96,28 @@ const weekSummaryDotColors: Record<DateStatus, string> = {
   [DateStatus.WEEKEND]: '#f1f5f9',
 };;
 
-/** Build lookup key for `weekSummaries` from the first day of a calendar row (UTC). */
+/** Build lookup key for `weekSummaries` from the first day of a calendar row. */
 export function formatWeekStartUtcKey(date: Date): string {
-  const y = date.getUTCFullYear()
-  const m = String(date.getUTCMonth() + 1).padStart(2, '0')
-  const d = String(date.getUTCDate()).padStart(2, '0')
-  return `${y}-${m}-${d}`
+  return toIsoYmdFromDate(date)
 }
 
-function getNowInTimezone(timezone: string, locale: string) {
+function getNowInTimezone(_timezone: string, _locale: string) {
   const now = new Date();
-  const parts = new Intl.DateTimeFormat(locale, {
-    year: 'numeric', month: 'numeric', day: 'numeric', timeZone: timezone
-  }).formatToParts(now);
-  const year = parseInt(parts.find(p => p.type === 'year')?.value || '0');
-  const month = parseInt(parts.find(p => p.type === 'month')?.value || '0') - 1;
-  const day = parseInt(parts.find(p => p.type === 'day')?.value || '0');
-  return new Date(Date.UTC(year, month, day));
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate());
 }
 
-function getStartOfCalendarGrid(date: Date, timezone: string, locale: string) {
-  const midDate = new Date(date);
-  midDate.setUTCHours(12);
-  const parts = new Intl.DateTimeFormat(locale, {
-    year: 'numeric', month: 'numeric', day: 'numeric', timeZone: timezone
-  }).formatToParts(midDate);
-  const year = parseInt(parts.find(p => p.type === 'year')?.value || '0');
-  const month = parseInt(parts.find(p => p.type === 'month')?.value || '0') - 1;
-  const firstOfMonth = new Date(Date.UTC(year, month, 1));
+function getStartOfCalendarGrid(date: Date, _timezone: string, locale: string) {
+  const year = date.getFullYear();
+  const month = date.getMonth();
+  const firstOfMonth = new Date(year, month, 1);
 
   // Get first day of week based on locale
   const firstDayOfWeek = new Intl.DateTimeFormat(locale).resolvedOptions().weekday === 'monday' ? 1 : 0;
 
-  let startOffset = firstOfMonth.getUTCDay() - firstDayOfWeek;
+  let startOffset = firstOfMonth.getDay() - firstDayOfWeek;
   if (startOffset < 0) startOffset += 7;
 
-  const startDate = new Date(Date.UTC(year, month, 1 - startOffset));
+  const startDate = new Date(year, month, 1 - startOffset);
   return startDate;
 }
 
@@ -162,7 +149,7 @@ const AppCalender = ({
   const [showYearSelect, setShowYearSelect] = useState(false);
 
   const months = Array.from({ length: 12 }, (_, i) =>
-    new Date(Date.UTC(2000, i, 1, 12)).toLocaleString(locale, { month: 'long', timeZone: selectedTimezone })
+    new Date(2000, i, 1).toLocaleString(locale, { month: 'long' })
   );
   const years = Array.from({ length: 21 }, (_, i) => {
     const date = new Date();
@@ -176,7 +163,7 @@ const AppCalender = ({
 
   // Get days of week based on locale
   const daysOfWeek = Array.from({ length: 7 }, (_, i) => {
-    const date = new Date(Date.UTC(2021, 0, 3 + i)); // Start with a Sunday
+    const date = new Date(2021, 0, 3 + i); // Start with a Sunday
     return date.toLocaleString(locale, { weekday: 'short' });
   });
 
@@ -189,7 +176,7 @@ const AppCalender = ({
 
   const getDateInfo = useCallback((date: Date): { status: DateStatus; color?: string; hasNotes?: boolean; noteText?: string } => {
     if (dayStatuses) {
-      const key = date.toISOString().split('T')[0]
+      const key = toIsoYmdFromDate(date)
       const info = dayStatuses[key]
       if (info) {
         return {
@@ -210,7 +197,7 @@ const AppCalender = ({
 
     let currentWeek: CalendarDay[] = [];
     for (let i = 0; i < 42; i++) {
-      const date = new Date(Date.UTC(startDate.getUTCFullYear(), startDate.getUTCMonth(), startDate.getUTCDate() + i));
+      const date = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate() + i);
 
       const isSelected = selectionMode === 'day' && selectedDate
         ? date.getTime() === selectedDate.getTime()
@@ -224,9 +211,9 @@ const AppCalender = ({
 
       currentWeek.push({
         date,
-        day: date.getUTCDate(),
-        weekDay: rotatedDays[date.getUTCDay()],
-        isCurrentMonth: date.getUTCMonth() === currentDate.getUTCMonth(),
+        day: date.getDate(),
+        weekDay: rotatedDays[date.getDay()],
+        isCurrentMonth: date.getMonth() === currentDate.getMonth(),
         isSelected,
         isToday,
         isWeekSelected,
@@ -243,8 +230,8 @@ const AppCalender = ({
 
   const handleDayClick = (date: Date) => {
     // Auto-navigate if clicking a day from a different month
-    if (date.getUTCMonth() !== currentDate.getUTCMonth()) {
-      handleMonthChange(new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1)))
+    if (date.getMonth() !== currentDate.getMonth()) {
+      handleMonthChange(new Date(date.getFullYear(), date.getMonth(), 1))
     }
 
     if (selectionMode === 'day') {
@@ -256,21 +243,21 @@ const AppCalender = ({
       setSelectedWeekDates([]);
     } else {
       const firstDayOfWeek = new Intl.DateTimeFormat(locale).resolvedOptions().weekday === 'monday' ? 1 : 0;
-      let dayOfWeek = date.getUTCDay() - firstDayOfWeek;
+      let dayOfWeek = date.getDay() - firstDayOfWeek;
       if (dayOfWeek < 0) dayOfWeek += 7;
-
-      const weekStart = new Date(Date.UTC(
-        date.getUTCFullYear(),
-        date.getUTCMonth(),
-        date.getUTCDate() - dayOfWeek
-      ));
+  
+      const weekStart = new Date(
+        date.getFullYear(),
+        date.getMonth(),
+        date.getDate() - dayOfWeek
+      );
 
       const week = Array.from({ length: 7 }, (_, i) => {
-        return new Date(Date.UTC(
-          weekStart.getUTCFullYear(),
-          weekStart.getUTCMonth(),
-          weekStart.getUTCDate() + i
-        ));
+        return new Date(
+          weekStart.getFullYear(),
+          weekStart.getMonth(),
+          weekStart.getDate() + i
+        );
       });
       setSelectedWeekDates(week);
       if (onDateSelect) {
@@ -341,7 +328,7 @@ const AppCalender = ({
             {/* Calendar Header */}
             <div className="calendar-header">
               <button
-                onClick={() => handleMonthChange(new Date(Date.UTC(currentDate.getUTCFullYear(), currentDate.getUTCMonth() - 1)))}
+                onClick={() => handleMonthChange(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1))}
                 className="p-2 rounded-full bg-[#6C5DD3] text-primary-foreground border-none cursor-pointer transition-all duration-200 ease-in-out hover:bg-[#6C5DD3]/90 focus:outline-none focus:ring-2 focus:ring-[#6C5DD3] focus:ring-opacity-50"
               >
                 ‹
@@ -349,23 +336,15 @@ const AppCalender = ({
 
               <div className="text-2xl font-semibold text-foreground">
                 <Button variant="ghost" onClick={() => setShowMonthSelect(!showMonthSelect)}>
-                  {(() => {
-                    const d = new Date(currentDate)
-                    d.setUTCHours(12)
-                    return d.toLocaleString(locale, { month: 'long', timeZone: selectedTimezone })
-                  })()}
+                  {currentDate.toLocaleString(locale, { month: 'long' })}
                 </Button>{' '}
                 <Button variant="ghost" onClick={() => setShowYearSelect(!showYearSelect)}>
-                  {(() => {
-                    const d = new Date(currentDate)
-                    d.setUTCHours(12)
-                    return d.toLocaleString(locale, { year: 'numeric', timeZone: selectedTimezone })
-                  })()}
+                  {currentDate.toLocaleString(locale, { year: 'numeric' })}
                 </Button>
               </div>
 
               <button
-                onClick={() => handleMonthChange(new Date(Date.UTC(currentDate.getUTCFullYear(), currentDate.getUTCMonth() + 1)))}
+                onClick={() => handleMonthChange(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1))}
                 className="p-2 rounded-full bg-[#6C5DD3] text-primary-foreground border-none cursor-pointer transition-all duration-200 ease-in-out hover:bg-[#6C5DD3]/90 focus:outline-none focus:ring-2 focus:ring-[#6C5DD3] focus:ring-opacity-50"
               >
                 ›
@@ -378,11 +357,8 @@ const AppCalender = ({
                   <div
                     key={month}
                     onClick={() => {
-                      const parts = new Intl.DateTimeFormat(locale, {
-                        year: 'numeric', month: 'numeric', day: 'numeric', timeZone: selectedTimezone
-                      }).formatToParts(currentDate);
-                      const year = parseInt(parts.find(p => p.type === 'year')?.value || '0');
-                      const newDate = new Date(Date.UTC(year, monthIndex, 1));
+                      const year = currentDate.getFullYear();
+                      const newDate = new Date(year, monthIndex, 1);
                       handleMonthChange(newDate);
                       setShowMonthSelect(false);
                     }}
@@ -400,12 +376,9 @@ const AppCalender = ({
                   <div
                     key={year}
                     onClick={() => {
-                      const parts = new Intl.DateTimeFormat(locale, {
-                        year: 'numeric', month: 'numeric', day: 'numeric', timeZone: selectedTimezone
-                      }).formatToParts(currentDate);
-                      const month = parseInt(parts.find(p => p.type === 'month')?.value || '0') - 1;
-                      const day = parseInt(parts.find(p => p.type === 'day')?.value || '0');
-                      const newDate = new Date(Date.UTC(year, month, day));
+                      const month = currentDate.getMonth();
+                      const day = currentDate.getDate();
+                      const newDate = new Date(year, month, day);
                       handleMonthChange(newDate);
                       setShowYearSelect(false);
                     }}

@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react"
+import { Spinner } from "@/components/ui/spinner"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -105,7 +106,12 @@ export function EditPayrollDataDialog({
       onOpenChange(next)
       if (!next) setValues({})
     }}>
-      <DialogContent className="max-w-4xl p-4 sm:p-6">
+      <DialogContent className="max-w-4xl overflow-hidden p-4 sm:p-6">
+        {(isSaving || !row) && (
+          <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/60 backdrop-blur-[1px]">
+            <Spinner className="text-[#6C5DD3]" />
+          </div>
+        )}
         <DialogHeader>
           <DialogTitle className="text-[16px]">Edit Payroll Data</DialogTitle>
         </DialogHeader>
