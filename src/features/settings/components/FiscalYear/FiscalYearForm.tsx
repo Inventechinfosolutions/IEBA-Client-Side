@@ -358,7 +358,17 @@ export function FiscalYearForm({ isSaving = false }: { isSaving?: boolean }) {
   }
 
   const handleOpenCreateHolidayDialog = () => {
-    const defaultDate = fiscalYearEndMonth || fiscalYearStartMonth || ""
+    const today = new Date()
+    const todayIso = toIsoYmdFromDate(today)
+    const startIso = String(fiscalYearStartMonth ?? "").trim()
+    const endIso = String(fiscalYearEndMonth ?? "").trim()
+
+    let defaultDate = fiscalYearEndMonth || fiscalYearStartMonth || ""
+
+    if (isIsoYmdInRange(todayIso, startIso, endIso)) {
+      defaultDate = todayIso
+    }
+
     setEditingHolidayId(null)
     setHolidayDraft({ date: defaultDate, holiday: "", optional: false })
     setIsHolidayDialogOpen(true)
