@@ -1554,29 +1554,6 @@ const ReportFiltersBody = ({
                 const { criteria } = currentReportItem
                 const costPoolFirst = isTrue(criteria.showCostPoolSelect) || isTrue(criteria.showCostPool)
                 const filterBlocks = [
-              {
-                  id: "employee",
-                  show: isTrue(criteria.multipleEmployees),
-                  order: costPoolFirst ? 2 : 1,
-                  render: () => (
-                    <ReportSecondaryPickBlock
-                      control={control}
-                      title="Employee"
-                      activeLabel="Active Employee"
-                      inactiveLabel="Inactive Employee"
-                      activeField="includeActiveEmployees"
-                      inactiveField="includeInactiveEmployees"
-                      idsField="employeeIds"
-                      options={employeeOptions}
-                      placeholder="Select Employee"
-                      emptyListMessage="No employees available"
-                      onValuesChange={() => {
-                        setValue("activityIds", "")
-                        setValue("programIds", "")
-                      }}
-                    />
-                  ),
-                },
                   {
                     id: "employee",
                     show: isTrue(criteria.multipleEmployees),
@@ -1594,6 +1571,10 @@ const ReportFiltersBody = ({
                         placeholder="Select Employee"
                         emptyListMessage="No employees available"
                         isLoading={isEmployeeLoading}
+                        onValuesChange={() => {
+                          setValue("activityIds", "")
+                          setValue("programIds", "")
+                        }}
                       />
                     ),
                   },
