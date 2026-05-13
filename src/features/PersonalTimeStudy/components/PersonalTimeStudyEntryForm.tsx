@@ -1,7 +1,5 @@
-import { ChevronDown, Clock, Eye, Plus, Trash2 } from "lucide-react"
+import { ChevronDown, Clock, Eye, Plus, Trash2, Check } from "lucide-react"
 import { useCallback, useMemo, useRef, useState } from "react"
-import { PersonalTimeStudyApportioningPanel } from "./PersonalTimeStudyApportioningPanel"
-import type { SupervisorApportioningConfig } from "../queries/getUserApportioningConfig"
 import { useGetProgramActivityRelations } from "../queries/getProgramActivityRelations"
 
 import { Button } from "@/components/ui/button"
@@ -16,6 +14,9 @@ import { useAuth } from "@/contexts/AuthContext"
 import { API_BASE_URL } from "@/lib/config"
 import { apiDownloadSupportingDoc, apiDeleteSupportingDoc } from "../api/personalTimeStudyApi"
 import { Spinner } from "@/components/ui/spinner"
+import { useQuery } from "@tanstack/react-query"
+import { userModuleKeys } from "@/features/user/keys"
+import { apiGetUserDetails } from "@/features/user/api"
 
 /** Inline required-field asterisk — available to all components in this module. */
 function RequiredMark() {
@@ -155,9 +156,7 @@ type PersonalTimeStudyEntryFormProps = {
     name?: string
     employeeName?: string
   }>
-  apportioningConfig?: SupervisorApportioningConfig | null
-  /** Pre-calculated apportioning records from backend (apportioning=true TSRs). Used when autoApportioning=true. */
-  apportioningRecords?: any[]
+  isApportioningUser?: boolean
   isLoading?: boolean
 }
 
@@ -302,13 +301,30 @@ export function PersonalTimeStudyEntryForm({
   showLeaveBanner = false,
   leaveRecords,
   className,
-  apportioningConfig,
-  apportioningRecords,
+  isApportioningUser = false,
   isLoading = false,
 }: PersonalTimeStudyEntryFormProps) {
   const { user } = useAuth()
   const userId = propsUserId || user?.id || ""
   const username = propsUsername || user?.name || ""
+
+  // Fetch User Details to check Apportioning status if not explicitly passed as true
+  const userDetailsQuery = useQuery({
+    queryKey: userModuleKeys.detail(userId),
+    queryFn: () => apiGetUserDetails(userId),
+    enabled: !!userId,
+  })
+
+  const effectiveIsApportioningUser = useMemo(() => {
+    if (isApportioningUser) return true
+    if (!userDetailsQuery.data) return false
+    const details = userDetailsQuery.data
+    return details.supervisorApportioning === true || 
+           (details.departmentsRoles ?? []).some(dr => dr.apportioningRequired === true)
+  }, [isApportioningUser, userDetailsQuery.data])
+
+  const effectiveIsLoading = isLoading || userDetailsQuery.isLoading
+
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false)
   const [parents, setParents] = useState<TimeEntryParentRow[]>([createParent()])
   const [prevInitialRecords, setPrevInitialRecords] = useState<any[] | undefined>(undefined)
@@ -429,11 +445,8 @@ export function PersonalTimeStudyEntryForm({
   const isLocked = useMemo(() => {
     if (readonly) return true
     if (!initialRecords) return false
-    // Exclude apportioning records (apportioning=true) — they are backend-owned and always
-    // status=approved, so they must NOT cause the personal Time Entry form to lock.
     return initialRecords.some(rec =>
       rec.date?.split("T")[0] === dateStr &&
-      rec.apportioning !== true &&
       ["submitted", "approved"].includes(rec.status?.toLowerCase())
     )
   }, [initialRecords, dateStr, readonly])
@@ -777,7 +790,7 @@ export function PersonalTimeStudyEntryForm({
 
   return (
     <section className={cn("relative w-full rounded-[6px] border-0 bg-white p-4 shadow-[0_4px_16px_rgba(16,24,40,0.12)]", className)}>
-      {isLoading && (
+      {effectiveIsLoading && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/60 backdrop-blur-[1px] rounded-[6px]">
           <Spinner className="text-[#6C5DD3]" />
         </div>
@@ -819,8 +832,16 @@ export function PersonalTimeStudyEntryForm({
         <div className="flex items-center justify-between">
           <h3 className="text-[14px] text-[#6C5DD3] font-semibold">Time Entries</h3>
           <div className="flex items-center gap-3">
+            {effectiveIsApportioningUser && !readonly && (
+              <div className="flex items-center gap-2 mr-2">
+                <div className="flex size-4 items-center justify-center rounded-[4px] bg-[#6C5DD3]/50 cursor-not-allowed">
+                  <Check className="size-2.5 text-white stroke-[4]" />
+                </div>
+                <span className="text-[13px] text-gray-500 font-medium">Apportioning</span>
+              </div>
+            )}
             {!readonly && moveSaveSubmitToTop && (
-              <div className="flex items-center gap-2 mr-4">
+              <div className="flex items-center gap-2 mr-2">
                 <Button
                   disabled={isLocked || allIsLeave}
                   className={cn("h-9 px-4 bg-[#6C5DD3] hover:bg-[#5B4DBF] text-[12px]", (isLocked || allIsLeave) && "cursor-not-allowed")}
@@ -1100,18 +1121,6 @@ export function PersonalTimeStudyEntryForm({
           )
         })}
       </div>
-      {apportioningConfig?.apportioningRequired && (
-        <PersonalTimeStudyApportioningPanel
-          apportioningConfig={apportioningConfig}
-          supervisorOwnMinutesToday={parents.reduce((sum, p) => {
-            if (p.isLeave) return sum
-            const mins = Number(computeDurationMinutes(p.start, p.end)) || 0
-            return sum + mins
-          }, 0)}
-          dropdownData={dropdownData}
-          apportioningRecords={apportioningRecords?.filter(r => r.date === dateStr) || []}
-        />
-      )}
 
       {!readonly && !moveSaveSubmitToTop && (
         <div className="mt-4 flex justify-end gap-2">
