@@ -7,3 +7,6 @@ export function ScheduleTimeStudyPage() {
     </div>
   )
 }
+
+export default ScheduleTimeStudyPage
+

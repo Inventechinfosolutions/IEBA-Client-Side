@@ -1,7 +1,7 @@
 import { Triangle } from "lucide-react"
 import { useState, useMemo } from "react"
 
-import { Spinner } from "@/components/ui/spinner"
+
 
 import { Button } from "@/components/ui/button"
 import tableEmptyIcon from "@/assets/icons/table-empty.png"
@@ -130,16 +130,8 @@ export function TodoTable({
         </TableHeader>
         <TableBody className="relative">
           {isLoading ? (
-            <TableRow className="border-b-0 hover:bg-transparent">
-              <TableCell colSpan={6} className="h-40 p-0">
-                <div className="flex h-full w-full items-center justify-center">
-                  <Spinner className="text-[#6C5DD3]" />
-                </div>
-              </TableCell>
-            </TableRow>
-          ) : (
             <>
-              {/* Skeletons visible for first 200ms then collapse */}
+              {/* Skeletons visible while loading */}
               {Array.from({ length: 6 }).map((_, idx) => (
                 <TableRow
                   key={`todo-skeleton-${idx}`}
@@ -165,7 +157,9 @@ export function TodoTable({
                   </TableCell>
                 </TableRow>
               ))}
-
+            </>
+          ) : (
+            <>
               {/* Data rows appearing after 200ms */}
               {rows.length === 0 ? (
                 <TableRow className="ieba-data-row border-b-0 hover:bg-transparent">

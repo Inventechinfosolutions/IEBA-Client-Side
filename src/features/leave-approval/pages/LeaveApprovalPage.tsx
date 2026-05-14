@@ -187,3 +187,6 @@ export function LeaveApprovalPage() {
   )
 }
 
+
+export default LeaveApprovalPage
+

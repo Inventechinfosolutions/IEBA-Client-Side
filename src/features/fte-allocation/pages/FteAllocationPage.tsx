@@ -139,3 +139,6 @@ export function FteAllocationPage() {
   )
 }
 
+
+export default FteAllocationPage
+

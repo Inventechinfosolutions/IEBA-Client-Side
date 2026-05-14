@@ -433,3 +433,6 @@ export function DepartmentRolePage() {
     </div>
   )
 }
+
+export default DepartmentRolePage
+

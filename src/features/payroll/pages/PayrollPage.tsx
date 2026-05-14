@@ -269,3 +269,6 @@ export function PayrollPage() {
     </section>
   )
 }
+
+export default PayrollPage
+
