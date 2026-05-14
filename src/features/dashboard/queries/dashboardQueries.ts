@@ -95,10 +95,10 @@ export function useTimeRecordRequests(params: {
 }
 
 
-export function useSelfLeave() {
+export function useSelfLeave(userId?: string | number) {
   return useQuery({
-    queryKey: [...dashboardKeys.leaveDetails("self")],
-    queryFn: () => getLeaveDetails(),
+    queryKey: [...dashboardKeys.leaveDetails("self"), { userId }],
+    queryFn: () => getLeaveDetails(userId, "personal"),
     select(data: LeaveAggregateResult): SelfLeaveStats {
       let requested = 0
       let approved = 0
@@ -114,8 +114,8 @@ export function useSelfLeave() {
         
         console.log('Processing self leave status:', status, 'count:', count)
         
-        if (status === LeaveStatus.Requested || status === 'requested') {
-          requested = count
+        if (status === LeaveStatus.Requested || status === 'requested' || status === 'draft') {
+          requested += count
         } else if (
           status === LeaveStatus.Approved ||
           status === 'approved' ||
@@ -155,8 +155,8 @@ export function useStaffLeave(options?: {
         
         console.log('Processing status:', status, 'count:', count)
         
-        if (status === LeaveStatus.Requested || status === 'requested') {
-          requested = count
+        if (status === LeaveStatus.Requested || status === 'requested' || status === 'draft') {
+          requested += count
         } else if (status === LeaveStatus.Approved || status === 'approved' || status === LeaveStatus.LeaveApproved) {
           approved = count
         } else if (status === LeaveStatus.Rejected || status === 'rejected') {

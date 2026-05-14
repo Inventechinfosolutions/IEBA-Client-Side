@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { toast } from "sonner"
 
 import { api } from "@/lib/api"
 
@@ -200,8 +201,14 @@ export function useProgramActivityRelationMutations({
         activityIds: ids.map((id) => Number(id)),
       })
     },
-    onSuccess: invalidateActivities,
-    onError: invalidateActivities,
+    onSuccess: () => {
+      toast.success("Activities assigned successfully")
+      invalidateActivities()
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "Failed to assign activities")
+      invalidateActivities()
+    },
   })
 
   const unassignMutation = useMutation({
@@ -213,8 +220,14 @@ export function useProgramActivityRelationMutations({
         activityIds: ids.map((id) => Number(id)),
       })
     },
-    onSuccess: invalidateActivities,
-    onError: invalidateActivities,
+    onSuccess: () => {
+      toast.success("Activities unassigned successfully")
+      invalidateActivities()
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "Failed to unassign activities")
+      invalidateActivities()
+    },
   })
 
   const applyOptimisticTransfer = (idsToTransfer: string[], toAssigned: boolean) => {

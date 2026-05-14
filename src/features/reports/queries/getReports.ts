@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query"
 
-import { apiGetReportCatalog } from "../api"
+import { apiGetReportCatalog } from "../api/reports"
 import { reportKeys } from "../keys"
 
 export function useGetReportCatalog() {

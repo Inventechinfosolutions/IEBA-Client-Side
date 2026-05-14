@@ -16,8 +16,8 @@ export function useDeletePayrollRows() {
       await Promise.all(rowIds.map((id) => deletePayrollRow(id)))
       return { ok: true as const }
     },
-    onSuccess: (_data, input: DeleteDisplayedRowsInput) => {
-      queryClient.setQueryData(payrollKeys.rows(input.params), [])
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: payrollKeys.lists() })
     },
   })
 }

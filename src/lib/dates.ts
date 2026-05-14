@@ -99,7 +99,7 @@ export function nextMonthRangeFromPrevious(
   const end = parseMmDdYyyy(prevEndMmDdYyyy) ?? parseMmDdYyyy(prevStartMmDdYyyy)
   if (!end) return null
   const start = end.add(1, "month").startOf("month")
-  return { startDate: toMmDdYyyy(start), endDate: toMmDdYyyy(start.endOf("month")) }
+  return { startDate: toMmDdYyyy(start), endDate: toIsoYyyyMmDd(start.endOf("month")) }
 }
 
 /** Inclusive weekday count (Mon–Fri) between start and end, in local time. */
@@ -118,4 +118,16 @@ export function countWeekdaysInclusive(startMmDdYyyy: string, endMmDdYyyy: strin
   }
   return count
 }
+/** Format a Date object to `YYYY-MM-DD` using local time (no UTC shift). */
+export function toIsoYmdFromDate(date: Date): string {
+  const y = date.getFullYear()
+  const mo = String(date.getMonth() + 1).padStart(2, "0")
+  const d = String(date.getDate()).padStart(2, "0")
+  return `${y}-${mo}-${d}`
+}
 
+/** Get today's date at local midnight. */
+export function todayLocal(): Date {
+  const now = new Date()
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate())
+}

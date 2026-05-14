@@ -14,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Spinner } from "@/components/ui/spinner"
 
 import { CostPoolUpsertMode } from "../enums/cost-pool.enum"
 import type { CostPoolAddPageProps, CostPoolVisualCheckboxProps } from "../types"
@@ -58,7 +59,8 @@ export function CostPoolAddPage({
   activitiesLoading = false,
   userRows,
   usersLoading = false,
-
+  isSubmitting = false,
+  isLoadingDetails = false,
 }: CostPoolAddPageProps) {
   const [unassignedSearch, setUnassignedSearch] = useState("")
   const [assignedSearch, setAssignedSearch] = useState("")
@@ -174,7 +176,12 @@ export function CostPoolAddPage({
   }
 
   return (
-    <div className="w-[1150px] max-w-[calc(100vw-2rem)] rounded-[10px] bg-white px-11 py-7 shadow-[0_0_20px_0_#0000001a]">
+    <div className="relative w-[1150px] max-w-[calc(100vw-2rem)] rounded-[10px] bg-white px-11 py-7 shadow-[0_0_20px_0_#0000001a]">
+      {(isSubmitting || isLoadingDetails) && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/60">
+          <Spinner className="text-[#6C5DD3]" />
+        </div>
+      )}
       <div className="space-y-3">
         <h2 className="text-center text-[25px] text-[#111827]">
           {mode === CostPoolUpsertMode.EDIT ? "Edit Cost Pool" : "Add Cost Pool"}
@@ -741,6 +748,7 @@ export function CostPoolAddPage({
         <div className="flex items-center justify-end gap-3 pt-2">
           <Button
             type="submit"
+            disabled={isSubmitting}
             className="h-10 rounded-[10px] bg-[#6C5DD3] px-6 text-white hover:bg-[#5B4DC5]"
           >
             Save
@@ -748,6 +756,7 @@ export function CostPoolAddPage({
           <Button
             type="button"
             variant="secondary"
+            disabled={isSubmitting}
             className="h-10 rounded-[10px] px-6"
             onClick={onClose}
           >

@@ -15,13 +15,6 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination"
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import {
   Table,
   TableBody,
   TableCell,
@@ -30,7 +23,10 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Spinner } from "@/components/ui/spinner"
+import { SingleSelectDropdown } from "@/components/ui/dropdown"
 
+import tableEmptyIcon from "@/assets/icons/table-empty.png"
 import { useGetRmtsGroups } from "../queries/getRmtsGroups"
 import { useGetRmtsPpGroupListEnriched } from "../queries/getRmtsPpGroupListEnriched"
 import { useDeleteRmtsPpGroupList } from "../mutations/deleteRmtsPpGroupList"
@@ -84,25 +80,14 @@ export function ScheduledTimeStudyTable({
   return (
     <>
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <Select value={selectedStudyYear} onValueChange={onStudyYearChange}>
-          <SelectTrigger className="h-[46px] w-[170px] rounded-[10px] border-[#D1D5DB] px-[12px] text-[14px] font-normal text-[#111827] shadow-none focus:ring-0 [&_[data-slot=select-value]]:text-[14px]">
-            <SelectValue placeholder="Select year" />
-          </SelectTrigger>
-          <SelectContent
-            position="popper"
-            side="bottom"
-            avoidCollisions={false}
-            sideOffset={10}
-            align="start"
-            className="w-[180px] rounded-[10px] border border-[#E5E7EB] bg-white p-1 shadow-[0_4px_16px_#00000014]"
-          >
-            {fiscalYearOptions.map((fy) => (
-              <SelectItem key={fy.id} value={fy.id}>
-                {fy.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <SingleSelectDropdown
+          value={selectedStudyYear}
+          onChange={onStudyYearChange}
+          onBlur={() => {}}
+          options={fiscalYearOptions.map((fy) => ({ value: fy.id, label: fy.label }))}
+          placeholder="Select year"
+          className="h-10 w-[170px] rounded-[10px] border-[#D1D5DB] px-[12px] text-[14px] font-normal text-[#111827] focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+        />
 
         {canAddSchedule && (
           <Button
@@ -119,7 +104,12 @@ export function ScheduledTimeStudyTable({
         )}
       </div>
 
-      <div className="overflow-hidden rounded-[10px] border border-[#E5E7EB]">
+      <div className="relative overflow-hidden rounded-[10px] border border-[#E5E7EB]">
+        {scheduledQuery.isFetching && (
+          <div className="absolute top-[60px] inset-x-0 bottom-0 flex items-center justify-center bg-white/50 z-[50]">
+            <Spinner className="text-[#6C5DD3]" />
+          </div>
+        )}
         <Table className="w-full table-fixed">
           <colgroup>
             <col className="w-[20%]" />
@@ -169,7 +159,15 @@ export function ScheduledTimeStudyTable({
                     </TableCell>
                   </TableRow>
                 ))
-              : scheduledRows.map((row) => (
+              : scheduledRows.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="h-[145px] bg-white text-center">
+                      <div className="flex flex-col items-center justify-center gap-2 text-[#9CA3AF]">
+                        <img src={tableEmptyIcon} alt="" className="size-[80px] object-contain" />
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : scheduledRows.map((row) => (
                   <TableRow key={row.id} className="h-[44px] border-[#EDEDED] hover:bg-[#fafafa]">
                     <TableCell className="border-r border-[#E5E7EB] px-4 py-2 text-[13px] text-[#111827] break-words">
                       {row.timeStudyPeriod}
@@ -221,10 +219,12 @@ export function ScheduledTimeStudyTable({
                               // Error toast handled at higher-level API wrapper patterns elsewhere; keep silent here.
                             }
                           }}
-                          className="disabled:cursor-not-allowed disabled:opacity-60"
+                          className="flex h-5 w-5 items-center justify-center disabled:cursor-not-allowed disabled:opacity-60"
                           aria-label="Delete scheduled row"
                         >
-                          {row.statusRaw === SchedulePayPeriodGroupStatus.DRAFT ? (
+                          {deleteRow.isPending ? (
+                            <Spinner className="size-3.5 text-[#DC2626]" />
+                          ) : row.statusRaw === SchedulePayPeriodGroupStatus.DRAFT ? (
                             <Trash2 className="h-4 w-4 text-[#DC2626]" />
                           ) : (
                             <img src={statusCrossImg} alt="Delete" className="h-4 w-4 object-contain" />

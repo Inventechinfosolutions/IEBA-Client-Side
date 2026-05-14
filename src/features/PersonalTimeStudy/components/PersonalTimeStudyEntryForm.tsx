@@ -15,6 +15,7 @@ import { TimePickerDropdown } from "@/components/ui/time-picker"
 import { useAuth } from "@/contexts/AuthContext"
 import { API_BASE_URL } from "@/lib/config"
 import { apiDownloadSupportingDoc, apiDeleteSupportingDoc } from "../api/personalTimeStudyApi"
+import { Spinner } from "@/components/ui/spinner"
 
 /** Inline required-field asterisk — available to all components in this module. */
 function RequiredMark() {
@@ -41,6 +42,8 @@ export type TimeEntrySubRow = {
   activityCode?: string
   activityName?: string
   departmentCode?: string
+  status?: string
+  recordType?: string
 }
 
 export type TimeEntryParentRow = {
@@ -60,6 +63,8 @@ export type TimeEntryParentRow = {
   activityName?: string
   departmentCode?: string
   isLeave?: boolean
+  status?: string
+  recordType?: string
 }
 
 export type TimeEntryRow = TimeEntryParentRow
@@ -151,6 +156,9 @@ type PersonalTimeStudyEntryFormProps = {
     employeeName?: string
   }>
   apportioningConfig?: SupervisorApportioningConfig | null
+  /** Pre-calculated apportioning records from backend (apportioning=true TSRs). Used when autoApportioning=true. */
+  apportioningRecords?: any[]
+  isLoading?: boolean
 }
 
 function TimePicker24h({
@@ -295,6 +303,8 @@ export function PersonalTimeStudyEntryForm({
   leaveRecords,
   className,
   apportioningConfig,
+  apportioningRecords,
+  isLoading = false,
 }: PersonalTimeStudyEntryFormProps) {
   const { user } = useAuth()
   const userId = propsUserId || user?.id || ""
@@ -323,7 +333,9 @@ export function PersonalTimeStudyEntryForm({
     setPrevInitialRecords(initialRecords)
     setPrevLeaveRecords(leaveRecords)
     const syncRecordsToState = () => {
-      const filtered = (initialRecords ?? []).filter((r) => r.date?.split("T")[0] === dateStr)
+      const filtered = (initialRecords ?? []).filter(
+        (r) => r.date?.split("T")[0] === dateStr && r.apportioning !== true
+      )
       const parentMap = new Map<number, TimeEntryParentRow>()
       filtered.forEach((rec) => {
         if (!rec.parentId) {
@@ -360,7 +372,11 @@ export function PersonalTimeStudyEntryForm({
               activityCode: m.activitycode,
               activityName: m.activityname,
               departmentCode: m.departmentcode,
+              status: m.status,
+              recordType: m.recordType,
             })),
+            status: rec.status,
+            recordType: rec.recordType,
           }
           parentMap.set(rec.id, parentRow)
         }
@@ -376,7 +392,7 @@ export function PersonalTimeStudyEntryForm({
         leaveRecords.forEach((leave) => {
           if (leave.status?.toLowerCase() === "approved") {
             const lStart = (leave.starttime ?? "").split(":").slice(0, 2).join(":")
-            const lEnd   = (leave.endtime ?? "").split(":").slice(0, 2).join(":")
+            const lEnd = (leave.endtime ?? "").split(":").slice(0, 2).join(":")
             const existing = sorted.find(
               (rec) => rec.start === lStart && rec.end === lEnd && rec.tsProgram === String(leave.programid ?? "")
             )
@@ -413,8 +429,11 @@ export function PersonalTimeStudyEntryForm({
   const isLocked = useMemo(() => {
     if (readonly) return true
     if (!initialRecords) return false
-    return initialRecords.some(rec => 
+    // Exclude apportioning records (apportioning=true) — they are backend-owned and always
+    // status=approved, so they must NOT cause the personal Time Entry form to lock.
+    return initialRecords.some(rec =>
       rec.date?.split("T")[0] === dateStr &&
+      rec.apportioning !== true &&
       ["submitted", "approved"].includes(rec.status?.toLowerCase())
     )
   }, [initialRecords, dateStr, readonly])
@@ -476,7 +495,7 @@ export function PersonalTimeStudyEntryForm({
     setParents((prev) => prev.map((p) => {
       if (p.id !== id) return p
       const updatedP = { ...p, ...patch }
-      
+
       // Auto-fill logic
       if (patch.start !== undefined && !formSettings?.removeAutoFillEndTime) {
         updatedP.end = addMinutesToTime(patch.start, 15)
@@ -488,7 +507,7 @@ export function PersonalTimeStudyEntryForm({
           const subTotalMin = updatedP.subRows.reduce((sum, s) => sum + (Number(computeDurationMinutes(s.start, s.end)) || 0), 0)
           if (subTotalMin > parentMin) {
             toast.error(`Parent total is ${parentMin} mins . Child total should not exceed the parent time.`, { id: `val-${id}` })
-            updatedP.end = "" 
+            updatedP.end = ""
           }
         }
       }
@@ -501,27 +520,27 @@ export function PersonalTimeStudyEntryForm({
     setParents((prev) =>
       prev.map((p) => {
         if (p.id !== parentId) return p
-        
+
         const newSubRows = p.subRows.map((s) => {
           if (s.id !== subRowId) return s
           const updated = { ...s, ...updates }
-          
+
           if (updates.start || updates.end) {
             updated.totalMin = String(computeDurationMinutes(updated.start, updated.end))
           } else if (updates.totalMin !== undefined) {
             // If totalMin is updated manually, try to move end time
             const mins = Number(updates.totalMin) || 0
             if (!formSettings?.removeAutoFillEndTime) {
-               updated.end = addMinutesToTime(updated.start, mins)
+              updated.end = addMinutesToTime(updated.start, mins)
             }
           }
           return updated
         })
-        
+
         if (updates.end || updates.start || updates.totalMin) {
           const parentMinutes = Number(computeDurationMinutes(p.start, p.end)) || 0
           const subTotalMinutes = newSubRows.reduce((acc, s) => acc + (Number(s.totalMin) || 0), 0)
-          
+
           if (subTotalMinutes > parentMinutes) {
             toast.error(`Parent total is ${parentMinutes} mins. Child total should not exceed the parent time.`)
             return p // Reject change
@@ -539,7 +558,7 @@ export function PersonalTimeStudyEntryForm({
     if (topParent) {
       newP.start = topParent.end || ""
       if (newP.start && !formSettings?.removeAutoFillEndTime) {
-         newP.end = addMinutesToTime(newP.start, 15)
+        newP.end = addMinutesToTime(newP.start, 15)
       }
     }
     setParents((prev) => [newP, ...prev])
@@ -560,9 +579,9 @@ export function PersonalTimeStudyEntryForm({
   const addSubRow = useCallback((parentId: string) => {
     setParents((prev) => prev.map((p) => {
       if (p.id !== parentId) return p
-      return { 
-        ...p, 
-        subRows: [...p.subRows, createSubRow()] 
+      return {
+        ...p,
+        subRows: [...p.subRows, createSubRow()]
       }
     }))
   }, [])
@@ -578,38 +597,41 @@ export function PersonalTimeStudyEntryForm({
     return parents.length > 1 || !!parent?.dbId
   }
 
-  const mapToPayload = (): any[] => {
+  const mapToPayload = (overrideStatus?: string): any[] => {
     const deptId = dropdownData?.[0]?.departmentId
     return parents
       .filter((p) => !(p.isLeave && !p.dbId))
       .map((p) => ({
-      id: p.dbId,
-      userId,
-      username,
-      date: dateStr,
-      starttime: p.start,
-      endtime: p.end,
-      activitytime: Number(computeDurationMinutes(p.start, p.end)) || 0,
-      programid: p.tsProgram,
-      activityid: p.serviceActivity,
-      description: p.description,
-      departmentId: deptId,
-      supportingDocs: p.supportingDocs,
-      multiCodeRecords: p.subRows.map((s) => {
-        const subDeptId = dropdownData?.find((d) => d.programs.some((pr: any) => String(pr.id) === s.studyProgram))?.departmentId
-        return {
-          id: s.dbId,
-          programid: s.studyProgram,
-          activityid: s.serviceActivity,
-          activitytime: Number(s.totalMin) || Number(computeDurationMinutes(s.start, s.end)) || 0,
-          description: s.description,
-          departmentId: subDeptId,
-          starttime: s.start,
-          endtime: s.end,
-          recordType: "MULTI_CODE",
-        }
-      }),
-    }))
+        id: p.dbId,
+        userId,
+        username,
+        date: dateStr,
+        starttime: p.start,
+        endtime: p.end,
+        activitytime: Number(computeDurationMinutes(p.start, p.end)) || 0,
+        programid: p.tsProgram,
+        activityid: p.serviceActivity,
+        description: p.description,
+        departmentId: deptId,
+        supportingDocs: p.supportingDocs,
+        status: overrideStatus || p.status || "draft",
+        recordType: p.recordType || "NORMAL",
+        multiCodeRecords: p.subRows.map((s) => {
+          const subDeptId = dropdownData?.find((d) => d.programs.some((pr: any) => String(pr.id) === s.studyProgram))?.departmentId
+          return {
+            id: s.dbId,
+            programid: s.studyProgram,
+            activityid: s.serviceActivity,
+            activitytime: Number(s.totalMin) || Number(computeDurationMinutes(s.start, s.end)) || 0,
+            description: s.description,
+            departmentId: subDeptId,
+            starttime: s.start,
+            endtime: s.end,
+            recordType: "MULTI_CODE",
+            status: overrideStatus || s.status || p.status || "draft",
+          }
+        }),
+      }))
   }
 
   const validateEntries = () => {
@@ -650,21 +672,20 @@ export function PersonalTimeStudyEntryForm({
           return h * 60 + m
         }
         const entryStart = parseT(p.start)
-        const entryEnd   = parseT(p.end)
+        const entryEnd = parseT(p.end)
         if (entryStart !== null && entryEnd !== null) {
           for (const leave of leaveRecords) {
             const status = (leave.status ?? "").toLowerCase()
             if (!BLOCKING_STATUSES.includes(status)) continue
             const leaveStart = parseT(leave.starttime)
-            const leaveEnd   = parseT(leave.endtime)
+            const leaveEnd = parseT(leave.endtime)
             if (leaveStart === null || leaveEnd === null) continue
             // Ranges overlap when: entryStart < leaveEnd AND leaveStart < entryEnd
             if (entryStart < leaveEnd && leaveStart < entryEnd) {
               const fmt = (mins: number) =>
                 `${String(Math.floor(mins / 60)).padStart(2, "0")}:${String(mins % 60).padStart(2, "0")}`
               toast.error(
-                `Time entry (${fmt(entryStart)}–${fmt(entryEnd)}) overlaps with a ${
-                  status.charAt(0).toUpperCase() + status.slice(1)
+                `Time entry (${fmt(entryStart)}–${fmt(entryEnd)}) overlaps with a ${status.charAt(0).toUpperCase() + status.slice(1)
                 } leave request (${fmt(leaveStart)}–${fmt(leaveEnd)}). Please adjust the entry time.`
               )
               return false
@@ -679,14 +700,14 @@ export function PersonalTimeStudyEntryForm({
 
   const handleSave = () => {
     if (!validateEntries()) return
-    const payload = mapToPayload()
+    const payload = mapToPayload("draft")
     if (payload.length === 0) { toast.error("Please add at least one time entry"); return; }
     onSave?.(payload)
   }
 
   const handleSubmitInternal = () => {
     if (!validateEntries()) return
-    const payload = mapToPayload()
+    const payload = mapToPayload("submitted")
     if (payload.length === 0) { toast.error("Please add at least one time entry"); return; }
     onSubmit?.(payload)
   }
@@ -694,15 +715,15 @@ export function PersonalTimeStudyEntryForm({
   const handleAddDocs = (parentId: string, files: FileList) => {
     const fileArray = Array.from(files)
     const parentRow = parents.find((p) => p.id === parentId)
-    
-    const newDocs = fileArray.map((f) => ({ 
-      name: f.name, 
+
+    const newDocs = fileArray.map((f) => ({
+      name: f.name,
       url: URL.createObjectURL(f),
       file: f
     }))
-    
-    updateParent(parentId, { 
-      supportingDocs: [...(parentRow?.supportingDocs ?? []), ...newDocs] 
+
+    updateParent(parentId, {
+      supportingDocs: [...(parentRow?.supportingDocs ?? []), ...newDocs]
     })
   }
 
@@ -718,7 +739,7 @@ export function PersonalTimeStudyEntryForm({
         if (!removed.file && removed.docId) {
           const parentDbId = parent.dbId
           if (parentDbId) {
-            apiDeleteSupportingDoc(parentDbId, removed.docId).catch(() => {})
+            apiDeleteSupportingDoc(parentDbId, removed.docId).catch(() => { })
           }
         }
       }
@@ -755,75 +776,80 @@ export function PersonalTimeStudyEntryForm({
   }
 
   return (
-    <section className={cn("w-full rounded-[6px] border-0 bg-white p-4 shadow-[0_4px_16px_rgba(16,24,40,0.12)]", className)}>
-        <div className="mb-6 flex flex-col gap-2">
-          {/* Top Row: Metrics aligned right */}
-          {!hideSummaryHeader && (
-            <div className="flex flex-wrap items-center justify-end gap-x-6 gap-y-2 text-[14px]">
-              <div className="flex items-center gap-1.5">
-                <span className="text-gray-700">Allocated TS Minutes:</span>
-                <span className="font-semibold text-[#6C5DD3]">{allocatedTotal || 0}</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-gray-700">Entered TS Minutes:</span>
-                <span className="font-semibold text-[#6C5DD3]">{actualTotal || 0}</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-gray-700">TS Balance:</span>
-                <span className="font-semibold text-[#6C5DD3]">{balanceTotal || 0}</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-gray-700">Entered MAA Minutes:</span>
-                <span className="font-semibold text-[#6C5DD3]">{actualMultiTotal || 0}</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-gray-700">MAA Balance:</span>
-                <span className="font-semibold text-[#6C5DD3]">{multiBalanceTotal || 0}</span>
-              </div>
+    <section className={cn("relative w-full rounded-[6px] border-0 bg-white p-4 shadow-[0_4px_16px_rgba(16,24,40,0.12)]", className)}>
+      {isLoading && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/60 backdrop-blur-[1px] rounded-[6px]">
+          <Spinner className="text-[#6C5DD3]" />
+        </div>
+      )}
+      <div className="mb-6 flex flex-col gap-2">
+        {/* Top Row: Metrics aligned right */}
+        {!hideSummaryHeader && (
+          <div className="flex flex-wrap items-center justify-end gap-x-6 gap-y-2 text-[14px]">
+            <div className="flex items-center gap-1.5">
+              <span className="text-gray-700">Allocated TS Minutes:</span>
+              <span className="font-semibold text-[#6C5DD3]">{allocatedTotal || 0}</span>
             </div>
-          )}
-
-          {showLeaveBanner && leaveRecords && leaveRecords.filter(l => l.status?.toLowerCase() === "approved").map((leave, idx) => (
-            <div key={idx} className="mt-5 mb-1 mx-auto max-w-max rounded-[6px] bg-[#E2E8F0]/50 px-4 py-1.5 text-[13px] text-gray-600 italic text-center border border-[#CBD5E1]">
-               {leave.name || leave.employeeName || username} applied leave in this date : <span className="not-italic font-medium text-gray-800">({dateStr})</span> from : <span className="not-italic font-medium text-gray-800">({leave.starttime})</span> To : <span className="not-italic font-medium text-gray-800">({leave.endtime})</span>.
+            <div className="flex items-center gap-1.5">
+              <span className="text-gray-700">Entered TS Minutes:</span>
+              <span className="font-semibold text-[#6C5DD3]">{actualTotal || 0}</span>
             </div>
-          ))}
-
-          {/* Bottom Row: Title and Button */}
-          <div className="flex items-center justify-between">
-            <h3 className="text-[14px] text-[#6C5DD3] font-semibold">Time Entries</h3>
-            <div className="flex items-center gap-3">
-              {!readonly && moveSaveSubmitToTop && (
-                <div className="flex items-center gap-2 mr-4">
-                  <Button 
-                    disabled={isLocked || allIsLeave}
-                    className={cn("h-9 px-4 bg-[#6C5DD3] hover:bg-[#5B4DBF] text-[12px]", (isLocked || allIsLeave) && "cursor-not-allowed")} 
-                    onClick={handleSave}
-                  >
-                    Save
-                  </Button>
-                  <Button 
-                    disabled={isLocked || allIsLeave}
-                    className={cn("h-9 px-4 bg-green-600 hover:bg-green-700 text-white text-[12px]", (isLocked || allIsLeave) && "cursor-not-allowed")} 
-                    onClick={() => setShowSubmitConfirm(true)}
-                  >
-                    Submit
-                  </Button>
-                </div>
-              )}
-              {!readonly && (
-                <Button 
-                  size="icon" 
-                  disabled={isLocked} 
-                  className={cn("size-9 bg-[#6C5DD3] hover:bg-[#6C5DD3]/90", isLocked && "cursor-not-allowed")} 
-                  onClick={addParentAtTop}
-                >
-                  <Plus className="size-4" />
-                </Button>
-              )}
+            <div className="flex items-center gap-1.5">
+              <span className="text-gray-700">TS Balance:</span>
+              <span className="font-semibold text-[#6C5DD3]">{balanceTotal || 0}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="text-gray-700">Entered MAA Minutes:</span>
+              <span className="font-semibold text-[#6C5DD3]">{actualMultiTotal || 0}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="text-gray-700">MAA Balance:</span>
+              <span className="font-semibold text-[#6C5DD3]">{multiBalanceTotal || 0}</span>
             </div>
           </div>
+        )}
+
+        {showLeaveBanner && leaveRecords && leaveRecords.filter(l => l.status?.toLowerCase() === "approved").map((leave, idx) => (
+          <div key={idx} className="mt-5 mb-1 mx-auto max-w-max rounded-[6px] bg-[#E2E8F0]/50 px-4 py-1.5 text-[13px] text-gray-600 italic text-center border border-[#CBD5E1]">
+            {leave.name || leave.employeeName || username} applied leave in this date : <span className="not-italic font-medium text-gray-800">({dateStr})</span> from : <span className="not-italic font-medium text-gray-800">({leave.starttime})</span> To : <span className="not-italic font-medium text-gray-800">({leave.endtime})</span>.
+          </div>
+        ))}
+
+        {/* Bottom Row: Title and Button */}
+        <div className="flex items-center justify-between">
+          <h3 className="text-[14px] text-[#6C5DD3] font-semibold">Time Entries</h3>
+          <div className="flex items-center gap-3">
+            {!readonly && moveSaveSubmitToTop && (
+              <div className="flex items-center gap-2 mr-4">
+                <Button
+                  disabled={isLocked || allIsLeave}
+                  className={cn("h-9 px-4 bg-[#6C5DD3] hover:bg-[#5B4DBF] text-[12px]", (isLocked || allIsLeave) && "cursor-not-allowed")}
+                  onClick={handleSave}
+                >
+                  Save
+                </Button>
+                <Button
+                  disabled={isLocked || allIsLeave}
+                  className={cn("h-9 px-4 bg-green-600 hover:bg-green-700 text-white text-[12px]", (isLocked || allIsLeave) && "cursor-not-allowed")}
+                  onClick={() => setShowSubmitConfirm(true)}
+                >
+                  Submit
+                </Button>
+              </div>
+            )}
+            {!readonly && (
+              <Button
+                size="icon"
+                disabled={isLocked}
+                className={cn("size-9 bg-[#6C5DD3] hover:bg-[#6C5DD3]/90", isLocked && "cursor-not-allowed")}
+                onClick={addParentAtTop}
+              >
+                <Plus className="size-4" />
+              </Button>
+            )}
+          </div>
         </div>
+      </div>
 
       <div className="flex flex-col gap-3">
         {parents.map((parent) => {
@@ -837,14 +863,14 @@ export function PersonalTimeStudyEntryForm({
             <div key={parent.id} className={cn("rounded-md", !isLeaveRow && "bg-card/50 p-2 border border-border/50")}>
               <div className={cn(parentFieldRowClass, isLeaveRow && "p-2")}>
                 {!hideTime && (
-                   <TimePicker24h label="Start" value={parent.start} disabled={isLocked || isLeaveRow} isLeave={isLeaveRow} onChange={(v) => updateParent(parent.id, { start: v })} />
+                  <TimePicker24h label="Start" value={parent.start} disabled={isLocked || isLeaveRow} isLeave={isLeaveRow} onChange={(v) => updateParent(parent.id, { start: v })} />
                 )}
                 <div className="flex-1 space-y-0.5">
                   <Label className="text-[11px] text-[#6C5DD3] font-medium">TS Program <RequiredMark /></Label>
-                  <SingleSelectSearchDropdown 
-                    value={parent.tsProgram} 
-                    placeholder="Select program" 
-                    disabled={isLocked || isLeaveRow} 
+                  <SingleSelectSearchDropdown
+                    value={parent.tsProgram}
+                    placeholder="Select program"
+                    disabled={isLocked || isLeaveRow}
                     options={(() => {
                       const filtered = programs
                         .filter((p: any) => !p.isMultiCode)
@@ -852,7 +878,7 @@ export function PersonalTimeStudyEntryForm({
                           const deptPrefix = (p.departmentCode ?? '').split('-')[0]
                           return { value: String(p.id), label: `${deptPrefix}-${p.code} - ${p.name}` }
                         });
-                      
+
                       if (parent.tsProgram && !filtered.some((o) => o.value === parent.tsProgram)) {
                         if (parent.programCode || parent.programName) {
                           const deptPrefix = (parent.departmentCode ?? '').split('-')[0];
@@ -868,17 +894,17 @@ export function PersonalTimeStudyEntryForm({
                       } else {
                         updateParent(parent.id, { tsProgram: v });
                       }
-                    }} 
-                    onBlur={() => {}} 
-                    className={cn("h-10 text-[11px]", (isLocked || isLeaveRow) && "bg-[#F2F4F7] cursor-not-allowed", isLeaveRow && "border-yellow-400")} 
+                    }}
+                    onBlur={() => { }}
+                    className={cn("h-10 text-[11px]", (isLocked || isLeaveRow) && "bg-[#F2F4F7] cursor-not-allowed", isLeaveRow && "border-yellow-400")}
                   />
                 </div>
                 <div className="flex-1 space-y-0.5">
                   <Label className="text-[11px] text-[#6C5DD3] font-medium">Service / Activity Code <RequiredMark /></Label>
-                  <SingleSelectSearchDropdown 
-                    value={parent.serviceActivity} 
-                    placeholder="Select Activity Code" 
-                    disabled={isLocked || isLeaveRow || !parent.tsProgram} 
+                  <SingleSelectSearchDropdown
+                    value={parent.serviceActivity}
+                    placeholder="Select Activity Code"
+                    disabled={isLocked || isLeaveRow || !parent.tsProgram}
                     options={(() => {
                       if (!parent.tsProgram) return [];
                       const allowed = getActivitiesForProgram(parent.tsProgram);
@@ -895,13 +921,13 @@ export function PersonalTimeStudyEntryForm({
                       }
                       return filtered;
                     })()}
-                    onChange={(v) => updateParent(parent.id, { serviceActivity: v })} 
-                    onBlur={() => {}} 
-                    className={cn("h-10 text-[11px]", (isLocked || isLeaveRow || !parent.tsProgram) && "bg-[#F2F4F7] cursor-not-allowed", isLeaveRow && "border-yellow-400")} 
+                    onChange={(v) => updateParent(parent.id, { serviceActivity: v })}
+                    onBlur={() => { }}
+                    className={cn("h-10 text-[11px]", (isLocked || isLeaveRow || !parent.tsProgram) && "bg-[#F2F4F7] cursor-not-allowed", isLeaveRow && "border-yellow-400")}
                   />
                 </div>
                 {!hideTime && (
-                   <TimePicker24h label="End" value={parent.end} disabled={isLocked || isLeaveRow || !parent.start} isLeave={isLeaveRow} onChange={(v) => updateParent(parent.id, { end: v })} />
+                  <TimePicker24h label="End" value={parent.end} disabled={isLocked || isLeaveRow || !parent.start} isLeave={isLeaveRow} onChange={(v) => updateParent(parent.id, { end: v })} />
                 )}
                 <div className="w-[60px] space-y-0.5">
                   <Label className="text-[11px] text-muted-foreground">Min. <RequiredMark /></Label>
@@ -910,45 +936,45 @@ export function PersonalTimeStudyEntryForm({
                 {!hideNotes && (
                   <div className="flex-[1.5] space-y-0.5">
                     <Label className="text-[11px] text-muted-foreground">Notes </Label>
-                    <TitleCaseInput 
-                      value={parent.description} 
+                    <TitleCaseInput
+                      value={parent.description}
                       readOnly={isLocked || isLeaveRow}
-                      onChange={(e) => updateParent(parent.id, { description: e.target.value })} 
-                      placeholder="Notes" 
-                      className={cn("h-10 text-[11px] text-[#344054] font-normal", (isLocked || isLeaveRow) && "bg-[#F2F4F7] cursor-not-allowed", isLeaveRow && "border-yellow-400")} 
+                      onChange={(e) => updateParent(parent.id, { description: e.target.value })}
+                      placeholder="Notes"
+                      className={cn("h-10 text-[11px] text-[#344054] font-normal", (isLocked || isLeaveRow) && "bg-[#F2F4F7] cursor-not-allowed", isLeaveRow && "border-yellow-400")}
                     />
                   </div>
                 )}
                 {!hideDocs && (
-                  <SupportingDocField 
-                    parentId={parent.id} 
-                    docs={parent.supportingDocs} 
-                    uploading={false} 
-                    disabled={isLocked || isLeaveRow} 
+                  <SupportingDocField
+                    parentId={parent.id}
+                    docs={parent.supportingDocs}
+                    uploading={false}
+                    disabled={isLocked || isLeaveRow}
                     isLeave={isLeaveRow}
-                    onAdd={handleAddDocs} 
-                    onDelete={handleDeleteDoc} 
-                    onDownload={handleDownloadDoc} 
+                    onAdd={handleAddDocs}
+                    onDelete={handleDeleteDoc}
+                    onDownload={handleDownloadDoc}
                   />
                 )}
                 <div className="flex items-end gap-1 pb-0.5">
                   {!readonly && canDeleteParent(parent.id) && (
-                    <Button 
-                      size="icon" 
-                      variant="ghost" 
-                      disabled={isLocked} 
-                      className={cn("size-10 text-destructive hover:bg-destructive/10", isLocked && "cursor-not-allowed")} 
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      disabled={isLocked}
+                      className={cn("size-10 text-destructive hover:bg-destructive/10", isLocked && "cursor-not-allowed")}
                       onClick={() => removeParent(parent.id)}
                     >
                       <Trash2 className="size-4" />
                     </Button>
                   )}
                   {!readonly && !isLeaveRow && (
-                    <Button 
-                      size="icon" 
-                      variant="outline" 
-                      disabled={isLocked} 
-                      className={cn("size-10 border-[#6C5DD3] text-[#6C5DD3] hover:bg-[#6C5DD3]/10", isLocked && "cursor-not-allowed")} 
+                    <Button
+                      size="icon"
+                      variant="outline"
+                      disabled={isLocked}
+                      className={cn("size-10 border-[#6C5DD3] text-[#6C5DD3] hover:bg-[#6C5DD3]/10", isLocked && "cursor-not-allowed")}
                       onClick={() => addSubRow(parent.id)}
                     >
                       <Plus className="size-4" />
@@ -962,10 +988,10 @@ export function PersonalTimeStudyEntryForm({
                     <div key={sub.id} className={parentFieldRowClass}>
                       <div className="flex-1 space-y-1">
                         <Label className="text-[11px] text-muted-foreground">Program <RequiredMark /></Label>
-                        <SingleSelectSearchDropdown 
-                          value={sub.studyProgram} 
-                          placeholder="Select program" 
-                          disabled={isLocked} 
+                        <SingleSelectSearchDropdown
+                          value={sub.studyProgram}
+                          placeholder="Select program"
+                          disabled={isLocked}
                           options={(() => {
                             const filtered = programs
                               .filter((p: any) => p.isMultiCode)
@@ -973,7 +999,7 @@ export function PersonalTimeStudyEntryForm({
                                 const deptPrefix = (p.departmentCode ?? '').split('-')[0]
                                 return { value: String(p.id), label: `${deptPrefix}-${p.code} - ${p.name}` }
                               });
-                              
+
                             if (sub.studyProgram && !filtered.some((o) => o.value === sub.studyProgram)) {
                               if (sub.programCode || sub.programName) {
                                 const deptPrefix = (sub.departmentCode ?? '').split('-')[0];
@@ -989,17 +1015,17 @@ export function PersonalTimeStudyEntryForm({
                             } else {
                               updateSubRow(parent.id, sub.id, { studyProgram: v });
                             }
-                          }} 
-                          onBlur={() => {}} 
-                          className={cn("h-9 text-[11px]", isLocked && "bg-[#F2F4F7] cursor-not-allowed")} 
+                          }}
+                          onBlur={() => { }}
+                          className={cn("h-9 text-[11px]", isLocked && "bg-[#F2F4F7] cursor-not-allowed")}
                         />
                       </div>
                       <div className="flex-1 space-y-1">
                         <Label className="text-[11px] text-muted-foreground">Activity Code <RequiredMark /></Label>
-                        <SingleSelectSearchDropdown 
-                          value={sub.serviceActivity} 
-                          placeholder="Select Activity Code" 
-                          disabled={isLocked || !sub.studyProgram} 
+                        <SingleSelectSearchDropdown
+                          value={sub.serviceActivity}
+                          placeholder="Select Activity Code"
+                          disabled={isLocked || !sub.studyProgram}
                           options={(() => {
                             if (!sub.studyProgram) return [];
                             const allowed = getActivitiesForProgram(sub.studyProgram);
@@ -1016,9 +1042,9 @@ export function PersonalTimeStudyEntryForm({
                             }
                             return filtered;
                           })()}
-                          onChange={(v) => updateSubRow(parent.id, sub.id, { serviceActivity: v })} 
-                          onBlur={() => {}} 
-                          className={cn("h-9 text-[11px]", (isLocked || !sub.studyProgram) && "bg-[#F2F4F7] cursor-not-allowed")} 
+                          onChange={(v) => updateSubRow(parent.id, sub.id, { serviceActivity: v })}
+                          onBlur={() => { }}
+                          className={cn("h-9 text-[11px]", (isLocked || !sub.studyProgram) && "bg-[#F2F4F7] cursor-not-allowed")}
                         />
                       </div>
                       <div className="w-[60px] space-y-1">
@@ -1038,28 +1064,28 @@ export function PersonalTimeStudyEntryForm({
                         if (hideSubNotes) return null
                         return (
                           <div className="flex-1 space-y-1">
-                              <div className="flex items-center gap-2">
-                                <Label className="text-[11px] text-muted-foreground whitespace-nowrap">
-                                  Notes
-                                </Label>
-                              </div>
-                            <TitleCaseInput 
-                              value={sub.description} 
+                            <div className="flex items-center gap-2">
+                              <Label className="text-[11px] text-muted-foreground whitespace-nowrap">
+                                Notes
+                              </Label>
+                            </div>
+                            <TitleCaseInput
+                              value={sub.description}
                               readOnly={isLocked}
-                              onChange={(e) => updateSubRow(parent.id, sub.id, { description: e.target.value })} 
-                              placeholder="Notes" 
-                              className={cn("h-9 text-[11px] text-[#344054] font-normal", isLocked && "bg-[#F2F4F7] cursor-not-allowed")} 
+                              onChange={(e) => updateSubRow(parent.id, sub.id, { description: e.target.value })}
+                              placeholder="Notes"
+                              className={cn("h-9 text-[11px] text-[#344054] font-normal", isLocked && "bg-[#F2F4F7] cursor-not-allowed")}
                             />
                           </div>
                         )
                       })()}
                       <div className="flex items-end pb-0.5">
                         {!readonly && (
-                          <Button 
-                            size="icon" 
-                            variant="ghost" 
-                            disabled={isLocked} 
-                            className={cn("size-9 text-destructive hover:bg-destructive/10", isLocked && "cursor-not-allowed")} 
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            disabled={isLocked}
+                            className={cn("size-9 text-destructive hover:bg-destructive/10", isLocked && "cursor-not-allowed")}
                             onClick={() => removeSubRow(parent.id, sub.id)}
                           >
                             <Trash2 className="size-4" />
@@ -1078,26 +1104,27 @@ export function PersonalTimeStudyEntryForm({
         <PersonalTimeStudyApportioningPanel
           apportioningConfig={apportioningConfig}
           supervisorOwnMinutesToday={parents.reduce((sum, p) => {
-            // Only count non-leave, non-empty parent rows
             if (p.isLeave) return sum
             const mins = Number(computeDurationMinutes(p.start, p.end)) || 0
             return sum + mins
           }, 0)}
+          dropdownData={dropdownData}
+          apportioningRecords={apportioningRecords?.filter(r => r.date === dateStr) || []}
         />
       )}
 
       {!readonly && !moveSaveSubmitToTop && (
         <div className="mt-4 flex justify-end gap-2">
-          <Button 
-            disabled={isLocked || allIsLeave} 
-            className={cn("h-10 px-8 bg-[#6C5DD3] hover:bg-[#5B4DBF]", (isLocked || allIsLeave) && "cursor-not-allowed")} 
+          <Button
+            disabled={isLocked || allIsLeave}
+            className={cn("h-10 px-8 bg-[#6C5DD3] hover:bg-[#5B4DBF]", (isLocked || allIsLeave) && "cursor-not-allowed")}
             onClick={handleSave}
           >
             Save
           </Button>
-          <Button 
-            disabled={isLocked || allIsLeave} 
-            className={cn("h-10 px-8 bg-green-600 hover:bg-green-700 text-white", (isLocked || allIsLeave) && "cursor-not-allowed")} 
+          <Button
+            disabled={isLocked || allIsLeave}
+            className={cn("h-10 px-8 bg-green-600 hover:bg-green-700 text-white", (isLocked || allIsLeave) && "cursor-not-allowed")}
             onClick={() => setShowSubmitConfirm(true)}
           >
             Submit

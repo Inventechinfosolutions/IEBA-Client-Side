@@ -2,6 +2,7 @@ import { useRef, useState } from "react"
 import { SearchIcon } from "lucide-react"
 
 import tableEmptyIcon from "@/assets/icons/table-empty.png"
+import { Spinner } from "@/components/ui/spinner"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   Table,
@@ -38,6 +39,14 @@ const HEADERS = [
 function formatDate(dateStr: string | null | undefined): string {
   if (!dateStr) return "—"
   try {
+    // Safely parse YYYY-MM-DD to avoid UTC shift
+    const parts = dateStr.split("-")
+    if (parts.length === 3) {
+      const y = parseInt(parts[0], 10)
+      const m = parseInt(parts[1], 10) - 1
+      const d = parseInt(parts[2], 10)
+      return new Date(y, m, d).toLocaleDateString()
+    }
     return new Date(dateStr).toLocaleDateString()
   } catch {
     return dateStr
@@ -51,12 +60,14 @@ export function CostPoolHistoryTable({
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
 
-  const { data, isLoading } = useCostPoolHistoryQuery({
+  const { data, isLoading, isFetching } = useCostPoolHistoryQuery({
     page,
     limit: pageSize,
     activityCode: activityCode,
     assignmentKind: assignmentKind,
   })
+
+  const isDataLoading = isLoading || isFetching
 
   const historyData: CostPoolHistoryRecord[] = Array.isArray(data?.data) ? data.data : []
   const totalItems = data?.meta?.totalItems ?? 0
@@ -70,7 +81,12 @@ export function CostPoolHistoryTable({
     <div className="flex flex-col gap-4 pt-3">
 
       {/* Table */}
-      <div className="overflow-hidden rounded-[10px] border border-[#E5E7EB]">
+      <div className="relative overflow-hidden rounded-[10px] border border-[#E5E7EB]">
+        {isDataLoading && (
+          <div className="absolute inset-x-0 bottom-0 top-[48px] z-50 flex items-center justify-center bg-white/60">
+            <Spinner className="text-[#6C5DD3]" />
+          </div>
+        )}
         <div className="overflow-x-auto">
           <Table className="w-full table-fixed border-collapse">
             <colgroup>
@@ -96,7 +112,7 @@ export function CostPoolHistoryTable({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading
+              {isDataLoading && historyData.length === 0
                 ? skeletonRows.map((rowId) => (
                     <TableRow
                       key={rowId}
@@ -142,7 +158,7 @@ export function CostPoolHistoryTable({
                     </TableRow>
                   ))}
 
-              {!isLoading && historyData.length === 0 && (
+              {!isDataLoading && historyData.length === 0 && (
                 <TableRow className="h-[210px] hover:bg-transparent">
                   <TableCell colSpan={HEADERS.length} className="text-center">
                     <img
@@ -159,7 +175,7 @@ export function CostPoolHistoryTable({
       </div>
 
       {/* Pagination */}
-      {!isLoading && totalItems > 0 && (
+      {!isDataLoading && totalItems > 0 && (
         <MasterCodePagination
           totalItems={totalItems}
           currentPage={page}

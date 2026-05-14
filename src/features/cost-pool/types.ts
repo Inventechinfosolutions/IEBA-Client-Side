@@ -204,6 +204,8 @@ export type CostPoolUpsertDialogProps = {
   userRows: CostPoolUserPickRow[]
   usersLoading?: boolean
   allowUserOrCostpoolDirect?: boolean
+  isSubmitting?: boolean
+  isLoadingDetails?: boolean
 }
 
 export type CostPoolAddPageProps = CostPoolUpsertDialogProps

@@ -47,21 +47,21 @@ function StatusRow({
 }: StatusRowProps) {
   return (
     <div
-      className="grid items-center gap-2"
-      style={{ gridTemplateColumns: "40px 1fr 28px 96px" }}
+      className="grid items-center gap-3"
+      style={{ gridTemplateColumns: "40px 1fr 96px" }}
     >
       {/* Image icon */}
       <img src={icon} alt={label} className="h-10 w-10 shrink-0 object-contain" />
 
-      {/* Label */}
-      <span className="text-sm font-medium text-[#374151]">{label}</span>
-
-      {/* Count */}
-      {loading ? (
-        <div className="h-4 w-5 animate-pulse rounded bg-[#e5e7eb]" />
-      ) : (
-        <span className="text-sm font-bold text-[#1a1a2e] text-center">{count}</span>
-      )}
+      {/* Label & Count Container */}
+      <div className="flex items-center gap-3 min-w-0">
+        <span className="text-sm font-medium text-[#374151] truncate">{label}</span>
+        {loading ? (
+          <div className="h-4 w-5 animate-pulse rounded bg-[#e5e7eb]" />
+        ) : (
+          <span className="text-sm font-bold text-[#1a1a2e]">{count}</span>
+        )}
+      </div>
 
       {/* Button */}
       <button

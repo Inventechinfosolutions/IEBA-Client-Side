@@ -1,4 +1,5 @@
 import { useTimeStudyMGT } from "../hooks/useTimeStudyMGT"
+import { toIsoYmdFromDate } from "@/lib/dates"
 import { MgtEmployeePanel } from "../components/MgtEmployeePanel"
 import { MgtLegendCard } from "../components/MgtLegendCard"
 import { PersonalTimeStudyCalendarCard } from "../../components/PersonalTimeStudyCalendarCard"
@@ -26,6 +27,7 @@ export function TimeStudyMGTPage() {
     selectEmployee,
     actualMultiTotal,
     multiBalanceTotal,
+    isDayDetailLoading,
   } = useTimeStudyMGT()
 
   const { mutate: notifyUser } = useActionUserTimeRecord()
@@ -105,8 +107,8 @@ export function TimeStudyMGTPage() {
                 
                 const handleAction = (action: string) => {
                   if (!selectedUserId) return
-                  const startDate = dates[0].toISOString().split('T')[0]
-                  const endDate = dates[dates.length - 1].toISOString().split('T')[0]
+                  const startDate = toIsoYmdFromDate(dates[0])
+                  const endDate = toIsoYmdFromDate(dates[dates.length - 1])
                   notifyUser({ userId: selectedUserId, startDate, endDate, status: action })
                 }
 
@@ -198,8 +200,8 @@ export function TimeStudyMGTPage() {
         {selectedUserId && selectedDate && (
           <div className="mt-4 mb-4">
             <PersonalTimeStudyEntryForm
-              key={`${selectedUserId}-${selectedDate.toISOString()}`}
-              dateStr={selectedDate.toISOString().split("T")[0]}
+              key={`${selectedUserId}-${toIsoYmdFromDate(selectedDate)}`}
+              dateStr={toIsoYmdFromDate(selectedDate)}
               userId={selectedUserId}
               username={selectedEmployee?.name || (selectedEmployee ? `${selectedEmployee.firstName} ${selectedEmployee.lastName}` : "")}
               initialRecords={dayDetail?.timeStudyRecords}
@@ -212,6 +214,7 @@ export function TimeStudyMGTPage() {
               actualMultiTotal={actualMultiTotal}
               multiBalanceTotal={multiBalanceTotal}
               showLeaveBanner={true}
+              isLoading={isDayDetailLoading}
             />
           </div>
         )}

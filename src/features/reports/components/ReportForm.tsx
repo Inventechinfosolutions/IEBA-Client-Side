@@ -9,6 +9,7 @@ import { useAuth } from "@/contexts/AuthContext"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { SingleSelectDropdown } from "@/components/ui/dropdown"
+import { Spinner } from "@/components/ui/spinner"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,7 +19,7 @@ import { parseMultiSelectStoredValues } from "@/components/ui/multi-select-dropd
 import { TitleCaseInput } from "@/components/ui/title-case-input"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { cn } from "@/lib/utils"
+import { cn, sortSelectOptionsByLabel } from "@/lib/utils"
 import { 
   useGetCostPoolUsers, 
   useGetMaaEmployees,
@@ -159,17 +160,17 @@ function mapIdNameRowsToSelectOptions(
   rows: readonly { id: string | number; name?: string; label?: string; code?: string }[],
 ): ReportSelectOption[] {
   const seen = new Set<string>()
-  return [...rows]
-    .map((row) => ({ 
-      value: String(row.id), 
-      label: row.label ?? row.name ?? String(row.id) 
+  const opts = [...rows]
+    .map((row) => ({
+      value: String(row.id),
+      label: row.label ?? row.name ?? String(row.id),
     }))
     .filter((opt) => {
       if (seen.has(opt.value)) return false
       seen.add(opt.value)
       return true
     })
-    .sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: "base" }))
+  return sortSelectOptionsByLabel(opts)
 }
 
 function serializeEmployeeIdsField(values: readonly string[]): string {
@@ -186,9 +187,12 @@ function ReportEmployeeMultiSelect({
   maxVisibleItems = 3,
   className,
   emptyListMessage = "No options available",
-}: ReportEmployeeMultiSelectProps) {
+  isLoading = false,
+}: ReportEmployeeMultiSelectProps & { isLoading?: boolean }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
+
+  const disabledEffective = disabled || isLoading
 
   const selectedValues = useMemo(() => parseMultiSelectStoredValues(value), [value])
   const filteredOptions = useMemo(() => {
@@ -245,15 +249,15 @@ function ReportEmployeeMultiSelect({
 
   return (
     <DropdownMenu modal={false} open={menuOpen} onOpenChange={handleOpenChange}>
-      <DropdownMenuTrigger asChild disabled={disabled}>
+      <DropdownMenuTrigger asChild disabled={disabledEffective}>
         <div
           role="button"
-          tabIndex={disabled ? -1 : 0}
+          tabIndex={disabledEffective ? -1 : 0}
           aria-label={placeholder}
-          aria-disabled={disabled}
+          aria-disabled={disabledEffective}
           onBlur={onBlur}
           onKeyDown={(e) => {
-            if (disabled) return
+            if (disabledEffective) return
             if (e.key === "Enter" || e.key === " ") {
               e.preventDefault()
               setMenuOpen((o) => !o)
@@ -263,12 +267,14 @@ function ReportEmployeeMultiSelect({
             "relative z-10 flex w-full min-w-0 cursor-pointer flex-nowrap items-center gap-2 overflow-hidden rounded-[7px] border border-[#c6cedd] bg-white px-3 py-0 text-left shadow-none outline-none",
             "text-[14px] font-normal leading-[20px] text-[#111827]",
             "focus-visible:border-[#3b82f6] focus-visible:ring-1 focus-visible:ring-[#3b82f640]",
-            disabled && "cursor-not-allowed bg-[#f2f2f2] opacity-100",
+            disabledEffective && "cursor-not-allowed bg-[#f2f2f2] opacity-100",
             className,
           )}
         >
           <div className="flex min-h-0 min-w-0 flex-1 flex-nowrap items-center gap-1.5 overflow-hidden">
-            {selectedItems.length === 0 ? (
+            {isLoading ? (
+              <span className="min-w-0 flex-1 truncate text-[14px] text-[#9ca3af]">Loading...</span>
+            ) : selectedItems.length === 0 ? (
               <span className="min-w-0 flex-1 truncate text-[14px] text-[#9ca3af]">{placeholder}</span>
             ) : (
               <>
@@ -311,7 +317,9 @@ function ReportEmployeeMultiSelect({
             )}
           </div>
           <div className="flex shrink-0 items-center">
-            {hasSelection ? (
+            {isLoading ? (
+              <Spinner className="size-4 text-[#6C5DD3]" />
+            ) : hasSelection ? (
               <span
                 role="button"
                 tabIndex={disabled ? -1 : 0}
@@ -439,7 +447,8 @@ function ReportSecondaryPickBlock({
   emptyListMessage,
   maxVisibleChips = 2,
   onValuesChange,
-}: ReportSecondaryPickBlockProps) {
+  isLoading = false,
+}: ReportSecondaryPickBlockProps & { isLoading?: boolean }) {
   /* Padding on the positioned parent skewed `top-full`; keep pb on this outer wrapper only (pb-16 clears bar + mt-3). */
   return (
     <div className="w-full min-w-0 max-w-full pb-16">
@@ -494,6 +503,7 @@ function ReportSecondaryPickBlock({
                 maxVisibleItems={maxVisibleChips}
                 className={employeeMultiSelectClassName}
                 emptyListMessage={emptyListMessage}
+                isLoading={isLoading}
               />
             )}
           />
@@ -691,15 +701,15 @@ export function ReportForm({ module }: ReportFormProps) {
   const showMasterCodes = isTrue(currentReportItem?.criteria?.showmasterCodes)
   
   const shouldFetchMaaEmployees = isMaaReport && !!departmentId && !showMasterCodes
-  const { data: maaEmployeesData } = useGetMaaEmployees(activityIdsArr, departmentId, shouldFetchMaaEmployees)
-  const { data: costPoolUsersData } = useGetCostPoolUsers(
+  const { data: maaEmployeesData, isFetching: isMaaEmployeesFetching } = useGetMaaEmployees(activityIdsArr, departmentId, shouldFetchMaaEmployees)
+  const { data: costPoolUsersData, isFetching: isCostPoolUsersFetching } = useGetCostPoolUsers(
     costPoolIdsArr,
     user?.id ?? "",
     employeeStatusArr,
     shouldFetchCostPoolUsers,
   )
   const shouldFetchDepartmentUsers = !!departmentId && (!isMaaReport || showMasterCodes) && !shouldShowCostPool
-  const { data: departmentUsersData } = useGetUsersUnderDepartment(
+  const { data: departmentUsersData, isFetching: isDeptUsersFetching } = useGetUsersUnderDepartment(
     departmentId, 
     user?.id ?? "", 
     showMasterCodes ? masterCode : undefined,
@@ -718,12 +728,12 @@ export function ReportForm({ module }: ReportFormProps) {
     return m ? `${m[2]}-${m[3]}-${m[1]}` : actualDateTo
   }, [actualDateTo])
 
-  const hasScheduledDateRange = selectMonthBy !== "scheduled" || (!!activityStartDate && !!activityEndDate)
+  const hasActivityDateRange = !!activityStartDate && !!activityEndDate
   const shouldFetchActivities =
     currentReportItem?.criteria?.showActivitySelect === true &&
     !!departmentId &&
     employeeIds.length > 0 &&
-    hasScheduledDateRange
+    hasActivityDateRange
   const { data: activitiesByDepartmentData } = useGetActivitiesByDepartmentAndUsers(
     departmentId,
     employeeIds,
@@ -748,7 +758,10 @@ export function ReportForm({ module }: ReportFormProps) {
   } = module
 
   const reportOptions = useMemo(
-    () => module.catalogItems.map((item) => ({ value: item.key, label: item.label })),
+    () =>
+      sortSelectOptionsByLabel(
+        module.catalogItems.map((item) => ({ value: item.key, label: item.label })),
+      ),
     [module.catalogItems],
   )
 
@@ -758,7 +771,7 @@ export function ReportForm({ module }: ReportFormProps) {
   }, [currentReportItem, employeeIds])
 
   const { data: fiscalYearsData } = useListFiscalYears()
-  const { data: departmentsData } = useGetDepartments({ 
+  const { data: departmentsData, isLoading: isDeptsLoading } = useGetDepartments({ 
     status: "active", 
     page: 1, 
     limit: 100,
@@ -796,11 +809,14 @@ export function ReportForm({ module }: ReportFormProps) {
   )
 
   const timeStudyPeriodOptions = useMemo(() => {
-    return rmtsPayPeriodsData ?? []
+    return sortSelectOptionsByLabel(rmtsPayPeriodsData ?? [])
   }, [rmtsPayPeriodsData])
 
   const fiscalYearOptions = useMemo(
-    () => (fiscalYearsData ? fiscalYearsData.map((fy) => ({ value: fy.id, label: fy.id })) : []),
+    () =>
+      fiscalYearsData
+        ? sortSelectOptionsByLabel(fiscalYearsData.map((fy) => ({ value: fy.id, label: fy.id })))
+        : [],
     [fiscalYearsData],
   )
 
@@ -818,51 +834,42 @@ export function ReportForm({ module }: ReportFormProps) {
   }, [departmentsData, reportKey])
 
   const employeeOptions = useMemo(() => {
-    // 1️⃣ Cost‑pool users take precedence when cost‑pool IDs are selected.
     if (shouldFetchCostPoolUsers && costPoolUsersData) {
-      return costPoolUsersData;
+      return sortSelectOptionsByLabel(costPoolUsersData)
     }
-    // 2️⃣ If a department is selected, use its users.
     if (departmentId && departmentUsersData) {
-      return departmentUsersData;
+      return sortSelectOptionsByLabel(departmentUsersData)
     }
-    // 3️⃣ MAA/TCM specific employee list.
     if ((reportKey.includes("MAA") || reportKey.includes("TCM")) && maaEmployeesData) {
-      return maaEmployeesData;
+      return sortSelectOptionsByLabel(maaEmployeesData)
     }
-    // 4️⃣ For DSSRPT3/DSSRPT4 reports, cost‑pool users are already handled above.
-    // 5️⃣ Fallback – empty list.
-    return [];
-  }, [shouldFetchCostPoolUsers, costPoolUsersData, departmentId, departmentUsersData, reportKey, maaEmployeesData]);
+    return []
+  }, [shouldFetchCostPoolUsers, costPoolUsersData, departmentId, departmentUsersData, reportKey, maaEmployeesData])
+
+  const isEmployeeLoading = 
+    (shouldFetchCostPoolUsers && isCostPoolUsersFetching) ||
+    (!!departmentId && isDeptUsersFetching) ||
+    ((reportKey.includes("MAA") || reportKey.includes("TCM")) && isMaaEmployeesFetching);
 
   const activityOptions = useMemo(() => {
     if (activitiesByDepartmentData) {
-      return activitiesByDepartmentData
+      return sortSelectOptionsByLabel(activitiesByDepartmentData)
     }
     return []
-  }, [
-    activitiesByDepartmentData,
-  ])
+  }, [activitiesByDepartmentData])
 
   const costPoolOptions = useMemo(() => {
     if (costPoolsByDepartmentData) {
-      return costPoolsByDepartmentData
+      return sortSelectOptionsByLabel(costPoolsByDepartmentData)
     }
-    // costPoolsData from useCostPoolListQuery returns { data, meta }
     return costPoolsData?.data ? mapIdNameRowsToSelectOptions(costPoolsData.data) : []
   }, [costPoolsByDepartmentData, costPoolsData])
 
   const programOptions = useMemo(() => {
-    const all = allProgramsData ?? []
-    const specific = userSpecificPrograms ?? []
-    
     if (shouldFilterProgramsByUser) {
-      // Prioritize user-specific but keep others for label resolution
-      const specificIds = new Set(specific.map(o => o.value))
-      const others = all.filter(o => !specificIds.has(o.value))
-      return [...specific, ...others]
+      return sortSelectOptionsByLabel(userSpecificPrograms ?? [])
     }
-    return all
+    return sortSelectOptionsByLabel(allProgramsData ?? [])
   }, [allProgramsData, userSpecificPrograms, shouldFilterProgramsByUser])
 
 
@@ -1458,6 +1465,7 @@ const ReportFiltersBody = ({
                     options={departmentOptions}
                     placeholder="Select Department"
                     className={departmentSelectTrigger}
+                    isLoading={isDeptsLoading}
                     contentClassName="max-h-[220px]"
                     itemButtonClassName="rounded-[6px] px-3 py-2"
                     itemLabelClassName="!text-[14px] !font-normal"
@@ -1562,6 +1570,11 @@ const ReportFiltersBody = ({
                         options={employeeOptions}
                         placeholder="Select Employee"
                         emptyListMessage="No employees available"
+                        isLoading={isEmployeeLoading}
+                        onValuesChange={() => {
+                          setValue("activityIds", "")
+                          setValue("programIds", "")
+                        }}
                       />
                     ),
                   },
@@ -1603,25 +1616,30 @@ const ReportFiltersBody = ({
                       />
                     ),
                   },
-                  {
-                    id: "costPool",
-                    show: isTrue(criteria.showCostPoolSelect) || isTrue(criteria.showCostPool),
-                    order: costPoolFirst ? 1 : 4,
-                    render: () => (
-                      <ReportSecondaryPickBlock
-                        control={control}
-                        title="Cost Pool"
-                        activeLabel="Active Cost Pool"
-                        inactiveLabel="Inactive Cost Pool"
-                        activeField="includeActiveCostPools"
-                        inactiveField="includeInactiveCostPools"
-                        idsField="costPoolIds"
-                        options={costPoolOptions}
-                        placeholder="Select Cost Pool"
-                        emptyListMessage="No cost pools available"
-                      />
-                    ),
-                  },
+                {
+                  id: "costPool",
+                  show: isTrue(criteria.showCostPoolSelect) || isTrue(criteria.showCostPool),
+                  order: costPoolFirst ? 1 : 4,
+                  render: () => (
+                    <ReportSecondaryPickBlock
+                      control={control}
+                      title="Cost Pool"
+                      activeLabel="Active Cost Pool"
+                      inactiveLabel="Inactive Cost Pool"
+                      activeField="includeActiveCostPools"
+                      inactiveField="includeInactiveCostPools"
+                      idsField="costPoolIds"
+                      options={costPoolOptions}
+                      placeholder="Select Cost Pool"
+                      emptyListMessage="No cost pools available"
+                      onValuesChange={() => {
+                        setValue("employeeIds", "")
+                        setValue("activityIds", "")
+                        setValue("programIds", "")
+                      }}
+                    />
+                  ),
+                },
                 ]
 
                 return filterBlocks
@@ -1644,6 +1662,7 @@ const ReportFiltersBody = ({
                 placeholder="Select Employee"
                 emptyListMessage="No employees available"
                 onValuesChange={() => setValue("activityIds", "")}
+                isLoading={isEmployeeLoading}
               />
             </div>
           )}

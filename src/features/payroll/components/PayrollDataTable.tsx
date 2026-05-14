@@ -3,6 +3,7 @@ import tableEditIcon from "@/assets/icons/table-edit.png"
 import { Skeleton } from "@/components/ui/skeleton"
 import { TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { cn } from "@/lib/utils"
+import { Spinner } from "@/components/ui/spinner"
 
 import type { PayrollDataTableProps, PayrollManagementRow } from "../types"
 
@@ -141,7 +142,12 @@ export function PayrollDataTable({ rows, isLoading, columns, onEditRow, showEdit
   }
 
   return (
-    <div className={cn(tableScrollClass, payrollTableCardClass)}>
+    <div className={cn(tableScrollClass, payrollTableCardClass, "relative")}>
+      {isLoading && (
+        <div className="absolute inset-x-0 bottom-0 top-[44px] z-20 flex items-center justify-center bg-white/40 backdrop-blur-[1px]">
+          <Spinner className="text-[#6C5DD3]" />
+        </div>
+      )}
       <table className="w-max min-w-full border-collapse text-left text-[12px]">
         <PayrollHeaderRow columns={derivedColumns} />
         <TableBody aria-busy={isLoading}>
@@ -161,9 +167,6 @@ export function PayrollDataTable({ rows, isLoading, columns, onEditRow, showEdit
                         isLastCol ? "border-r-0" : "border-r border-[#eff0f5]",
                       )}
                     >
-                      {rowIndex === 0 && colIndex === 0 ? (
-                        <span className="sr-only">Loading payroll data</span>
-                      ) : null}
                       <Skeleton className={payrollSkeletonBarClass(colIndex, rowIndex)} aria-hidden />
                     </TableCell>
                   )

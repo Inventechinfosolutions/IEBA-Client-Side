@@ -4,6 +4,7 @@ import { useGetMGTMonthLegend } from "../queries/getMGTMonthLegend"
 import { useGetMGTDayDetail } from "../queries/getMGTDayDetail"
 import { useGetMGTDropdowns } from "../queries/getMGTDropdowns"
 import { useGetTimeEntrySummary } from "../../queries/getTimeEntrySummary"
+import { toIsoYmdFromDate, todayLocal } from "@/lib/dates"
 import { usePermissions } from "@/hooks/usePermissions"
 import type { MgtEmployeeRow, MgtDayStatusMap, MgtWeekSummary } from "../types"
 
@@ -11,11 +12,12 @@ import type { MgtEmployeeRow, MgtDayStatusMap, MgtWeekSummary } from "../types"
  * Helper to get the start of the week (Sunday) for a given YYYY-MM-DD date string.
  */
 function getWeekStartKey(dateStr: string): string {
-  const date = new Date(dateStr + 'T12:00:00Z') // Use midday UTC to avoid TZ issues
-  const day = date.getUTCDay()
-  const diff = date.getUTCDate() - day
-  const sunday = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), diff))
-  return sunday.toISOString().split('T')[0]
+  const [y, m, d] = dateStr.split('-').map(Number)
+  const date = new Date(y, m - 1, d)
+  const day = date.getDay()
+  const diff = date.getDate() - day
+  const sunday = new Date(date.getFullYear(), date.getMonth(), diff)
+  return toIsoYmdFromDate(sunday)
 }
 
 /**
@@ -28,15 +30,12 @@ export function useTimeStudyMGT() {
   const [selectedEmployee, setSelectedEmployee]       = useState<MgtEmployeeRow | null>(null)
   const [currentDate, setCurrentDate] = useState(() => {
     const now = new Date()
-    return new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1))
+    return new Date(now.getFullYear(), now.getMonth(), 1)
   })
-  const [selectedDate, setSelectedDate] = useState<Date | null>(() => {
-    const now = new Date()
-    return new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()))
-  })
+  const [selectedDate, setSelectedDate] = useState<Date | null>(todayLocal)
 
-  const month = currentDate.getUTCMonth() + 1
-  const year  = currentDate.getUTCFullYear()
+  const month = currentDate.getMonth() + 1
+  const year  = currentDate.getFullYear()
 
   const { isSuperAdmin, assignedDepartmentIds } = usePermissions()
 
@@ -45,9 +44,7 @@ export function useTimeStudyMGT() {
   const employeeListQuery = useGetMGTEmployeeList(search || undefined, deptFilter)
   const monthLegendQuery  = useGetMGTMonthLegend(selectedUserId, month, year)
 
-  const dateStr = selectedDate ? 
-    `${selectedDate.getUTCFullYear()}-${String(selectedDate.getUTCMonth() + 1).padStart(2, '0')}-${String(selectedDate.getUTCDate()).padStart(2, '0')}` 
-    : null
+  const dateStr = selectedDate ? toIsoYmdFromDate(selectedDate) : null
   const dayDetailQuery = useGetMGTDayDetail(
     selectedUserId,
     dateStr,
@@ -181,8 +178,7 @@ export function useTimeStudyMGT() {
     setSelectedEmployee(employee)
     
     // Reset to today's date (LA time) so data is always fetched immediately for the new user
-    const now = new Date()
-    const today = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()))
+    const today = todayLocal()
     setSelectedDate(today)
   }
 
@@ -190,10 +186,9 @@ export function useTimeStudyMGT() {
     setSelectedUserId(null)
     setSelectedEmployee(null)
     
-    const now = new Date()
-    const today = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()))
+    const today = todayLocal()
     setSelectedDate(today)
-    setCurrentDate(today)
+    setCurrentDate(new Date(today.getFullYear(), today.getMonth(), 1))
   }
 
   return {

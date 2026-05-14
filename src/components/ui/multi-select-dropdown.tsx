@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
 import tableEmptyIcon from "@/assets/icons/table-empty.png"
+import { Spinner } from "@/components/ui/spinner"
 
 export type MultiSelectOption = {
   value: string
@@ -146,7 +147,11 @@ export function MultiSelectDropdown({
               </>
             )}
           </div>
-          <ChevronDown className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-[#6b7280]" />
+          {isLoading ? (
+            <Spinner className="absolute right-3 top-1/2 size-4 -translate-y-1/2 text-[#6C5DD3]" />
+          ) : (
+            <ChevronDown className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-[#6b7280]" />
+          )}
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent

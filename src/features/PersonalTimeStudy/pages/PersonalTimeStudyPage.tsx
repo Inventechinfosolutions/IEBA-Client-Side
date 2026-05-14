@@ -21,18 +21,17 @@ import { useSubmitPersonalTimeRecords } from "../mutation/createPersonalTimeReco
 import { useDeletePersonalTimeRecord } from "../mutation/deletePersonalTimeRecord"
 import type { WeekSummaryRow } from "../components/PersonalTimeStudyWeekSummary"
 import { TimeStudyMGTPage } from "../TimeStudyMGT"
+import { toIsoYmdFromDate, todayLocal } from "@/lib/dates"
 
 type ActiveTab = "personal" | "mgt"
 
 function getWeekStartKey(dateStr: string): string {
-  const date = new Date(dateStr + 'T12:00:00Z')
-  const day = date.getUTCDay()
-  const diff = date.getUTCDate() - day
-  const sunday = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), diff))
-  const y = sunday.getUTCFullYear()
-  const m = String(sunday.getUTCMonth() + 1).padStart(2, '0')
-  const d = String(sunday.getUTCDate()).padStart(2, '0')
-  return `${y}-${m}-${d}`
+  const [y, m, d] = dateStr.split('-').map(Number)
+  const date = new Date(y, m - 1, d)
+  const day = date.getDay()
+  const diff = date.getDate() - day
+  const sunday = new Date(date.getFullYear(), date.getMonth(), diff)
+  return toIsoYmdFromDate(sunday)
 }
 
 /**
@@ -80,26 +79,23 @@ export function PersonalTimeStudyPage() {
   const [activeTab, setActiveTab] = useState<ActiveTab>("personal")
 
   // 1. Date state
-  const [selectedDate, setSelectedDate] = useState<Date>(() => {
-    const now = new Date()
-    return new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()))
-  })
+  const [selectedDate, setSelectedDate] = useState<Date>(todayLocal)
 
   // Separate viewport state for the calendar (to avoid changing selection on month navigation)
   const [viewportDate, setViewportDate] = useState<Date>(selectedDate)
 
-  const dateStr = selectedDate.toISOString().split("T")[0]
-  const month = viewportDate.getUTCMonth() + 1
-  const year = viewportDate.getUTCFullYear()
+  const dateStr = toIsoYmdFromDate(selectedDate)
+  const month = viewportDate.getMonth() + 1
+  const year = viewportDate.getFullYear()
 
   const handleMonthChange = (newViewport: Date) => {
     setViewportDate(newViewport)
     // Auto-select the 1st of the new month if current selection is in a different month/year
     if (
-      selectedDate.getUTCMonth() !== newViewport.getUTCMonth() ||
-      selectedDate.getUTCFullYear() !== newViewport.getUTCFullYear()
+      selectedDate.getMonth() !== newViewport.getMonth() ||
+      selectedDate.getFullYear() !== newViewport.getFullYear()
     ) {
-      const firstOfMonth = new Date(Date.UTC(newViewport.getUTCFullYear(), newViewport.getUTCMonth(), 1))
+      const firstOfMonth = new Date(newViewport.getFullYear(), newViewport.getMonth(), 1)
       setSelectedDate(firstOfMonth)
     }
   }
@@ -108,7 +104,7 @@ export function PersonalTimeStudyPage() {
   const monthQuery = useGetPersonalMonthLegend(userId, month, year, activeTab === "personal")
 
   // 3. Fetch Day Detail
-  const dayQuery = useGetPersonalDayDetail(userId, dateStr, selectedDate.getUTCMonth() + 1, selectedDate.getUTCFullYear(), activeTab === "personal")
+  const dayQuery = useGetPersonalDayDetail(userId, dateStr, selectedDate.getMonth() + 1, selectedDate.getFullYear(), activeTab === "personal")
 
   // 4. Fetch user & dropdown data
   const dropdownQuery = useGetPersonalDropdowns(userId, activeTab === "personal")
@@ -118,6 +114,7 @@ export function PersonalTimeStudyPage() {
 
   // -- Personal Time Study: apportioning config for supervisor panel (read-only) --
   const apportioningConfigQuery = useGetUserApportioningConfig(userId, activeTab === "personal")
+
 
   // 5. Calendar day & week summaries
   const { dayStatuses, weekSummaries } = useMemo(() => {
@@ -371,6 +368,8 @@ export function PersonalTimeStudyPage() {
                       dateStr={dateStr}
                       month={month}
                       year={year}
+                      isLoading={monthQuery.isLoading}
+                      isDropdownLoading={dropdownQuery.isFetching}
                     />
                     <PersonalTimeStudyMinutesCard
                       className="min-h-0 sm:col-span-2 lg:col-span-1"
@@ -385,6 +384,7 @@ export function PersonalTimeStudyPage() {
                     value={localNotes}
                     onChange={setLocalNotes}
                     onSave={() => notesMutation.mutate(localNotes)}
+                    isSaving={notesMutation.isPending}
                     className="min-h-0"
                   />
                 </div>
@@ -393,7 +393,8 @@ export function PersonalTimeStudyPage() {
               <div className="mt-6 mb-4">
                 <PersonalTimeStudyEntryForm
                     key={dateStr}
-                    dateStr={dateStr}                    initialRecords={dayQuery.data?.timeStudyRecords}
+                    dateStr={dateStr}
+                    initialRecords={dayQuery.data?.timeStudyRecords}
                     dropdownData={dropdownQuery.data}
                     leaveRecords={dayQuery.data?.leaveRecords}
                     onSave={(records) => submitMutation.mutate({ records, mode: "save" })}
@@ -406,6 +407,8 @@ export function PersonalTimeStudyPage() {
                     multiBalanceTotal={summaryQuery.data?.actualmultiactivityTimebalance}
                     hideSummaryHeader={true}
                     apportioningConfig={apportioningConfigQuery.data ?? null}
+                    apportioningRecords={dayQuery.data?.timeStudyRecords?.filter((r: any) => r.apportioning === true) || []}
+                    isLoading={dayQuery.isFetching || submitMutation.isPending || deleteMutation.isPending}
                   />
               </div>
             </>

@@ -16,6 +16,7 @@ import { usePayrollSettings } from "@/features/settings/payroll"
 import { cn } from "@/lib/utils"
 import { updatePayrollRow } from "../api/payrollApi"
 import { MasterCodePagination } from "@/features/master-code/components/MasterCodePagination"
+import { Spinner } from "@/components/ui/spinner"
 
 function mapSettingsPayrollByToPayrollType(payrollBy?: string): PayrollFrequencyType {
   const low = (payrollBy ?? "").toLowerCase().replace(/[^a-z]/g, "")
@@ -65,6 +66,7 @@ export function PayrollPage() {
 
   const [editRow, setEditRow] = useState<PayrollManagementRow | null>(null)
   const [editOpen, setEditOpen] = useState(false)
+  const [isDownloadingRows, setIsDownloadingRows] = useState(false)
   const [isSavingEdit, setIsSavingEdit] = useState(false)
   const [editDialogKey, setEditDialogKey] = useState(0)
 
@@ -87,8 +89,13 @@ export function PayrollPage() {
   )
 
   const handleDownloadCurrentRows = useCallback(async () => {
-    const blob = await buildPayrollRowsXlsxBlob(enabledColumnLabels, rowsModule.rows)
-    triggerBrowserDownloadBlob("payroll-details-export.xlsx", blob)
+    setIsDownloadingRows(true)
+    try {
+      const blob = await buildPayrollRowsXlsxBlob(enabledColumnLabels, rowsModule.rows)
+      triggerBrowserDownloadBlob("payroll-details-export.xlsx", blob)
+    } finally {
+      setIsDownloadingRows(false)
+    }
   }, [enabledColumnLabels, rowsModule.rows])
 
   const handleDelete = useCallback(
@@ -105,6 +112,7 @@ export function PayrollPage() {
       deleteMutation.mutate({ params, rowIds: ids }, {
         onSuccess: () => {
           toast.success("Displayed payroll rows deleted successfully.")
+          void rowsModule.refetch()
         },
       })
     },
@@ -146,7 +154,7 @@ export function PayrollPage() {
       toast.success("Payroll row updated successfully.")
       // Refresh table data and keep modal open.
       const result = await rowsModule.refetch()
-      const refreshed = (result.data ?? []) as readonly PayrollManagementRow[]
+      const refreshed = (result.data?.items ?? []) as readonly PayrollManagementRow[]
       const updatedRow =
         refreshed.find((r) => {
           const rr = r as unknown as Record<string, unknown>
@@ -176,6 +184,11 @@ export function PayrollPage() {
       className="font-roboto *:font-roboto box-border w-full min-w-0 max-w-full overflow-x-hidden"
       style={{ "--primary": "#6C5DD3" } as React.CSSProperties}
     >
+      {(isDownloadingRows || deleteMutation.isPending) && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-white/60 backdrop-blur-[1px]">
+          <Spinner className="text-[#6C5DD3]" />
+        </div>
+      )}
       <div className="box-border w-full min-w-0 max-w-full px-3 py-3">
         <div
           className={cn(

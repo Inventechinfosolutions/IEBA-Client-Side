@@ -16,7 +16,20 @@ function normalizeStatus(status: unknown): TodoStatusEnum {
 
 function formatDateLabel(value: unknown): string {
   if (value == null || value === "") return ""
-  const date = value instanceof Date ? value : new Date(String(value))
+  let date: Date
+  if (value instanceof Date) {
+    date = value
+  } else {
+    const s = String(value)
+    const parts = s.split("-")
+    if (parts.length === 3 && !s.includes("T")) {
+      // It's a YYYY-MM-DD string, parse as local midnight
+      date = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10))
+    } else {
+      date = new Date(s)
+    }
+  }
+
   if (Number.isNaN(date.getTime())) return ""
   return new Intl.DateTimeFormat("en-US", {
     month: "long",

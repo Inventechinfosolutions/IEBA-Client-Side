@@ -17,8 +17,6 @@ import { AuditHistoryTable } from "../components/AuditHistoryTable"
 import { TitleCaseInput } from "@/components/ui/title-case-input"
 
 import {
-  usePersonalTimeStudy,
-  useTimeRecordRequests,
   useSelfLeave,
   useStaffLeave,
   useTodos,
@@ -130,24 +128,7 @@ export function DashboardPage() {
   const departmentId = currentDeptRole?.departmentId
   const roleId = currentDeptRole?.roleId
 
-  const personalTS = usePersonalTimeStudy({
-    userId,
-    payrollType,
-    reqMins: 480,
-    departmentId,
-    roleId,
-    enabled: canViewAdminLayout,
-  })
-
-  const timeRecordRequests = useTimeRecordRequests({ 
-    userId, 
-    payrollType, 
-    departmentId, 
-    roleId,
-    enabled: canViewAdminLayout,
-  })
-
-  const selfLeave = useSelfLeave()
+  const selfLeave = useSelfLeave(userId)
   const staffLeave = useStaffLeave({ 
     userId: userId,
     enabled: canViewAdminLayout 
@@ -155,7 +136,7 @@ export function DashboardPage() {
   const todos = useTodos(userId)
   const holidays = useHolidays()
   const overview = useDashboardOverview({ 
-    userId: isSuperAdminLikeDashboard ? undefined : userId,
+    userId,
     departmentId: isSuperAdminLikeDashboard ? undefined : departmentId, 
     roleId: isSuperAdminLikeDashboard ? undefined : roleId, 
     enabled: canViewAdminLayout 
@@ -198,14 +179,22 @@ export function DashboardPage() {
   const userCountVal = overviewUserCount ?? dashboardUserCount.data ?? 0
   const activeUsersVal = overviewActiveUserCount
 
-  const tsApproved = personalTS.data?.approved ?? 0
-  const tsSubmitted = personalTS.data?.submitted ?? 0
+  const tsApproved = overview.data?.timeStudyRecordByUserStatusCounts?.find((s: any) => s.status === 'approved')?.count ?? 0
+  const tsSubmitted = overview.data?.timeStudyRecordByUserStatusCounts?.find((s: any) => s.status === 'submitted')?.count ?? 0
   const tsReqMins = 480 * 22
   const tsPercent = tsReqMins > 0 ? ((tsApproved / tsReqMins) * 100).toFixed(2) : "0.00"
 
-  const trApproved = timeRecordRequests.data?.approved ?? 0
-  const trPending = timeRecordRequests.data?.pendingApproval ?? 0
-  const trNotSubmitted = timeRecordRequests.data?.notSubmitted ?? 0
+  const trApproved = isSuperAdminLikeDashboard
+    ? (overview.data?.timeStudyRecordStatusCounts?.find((s: any) => s.status === 'approved')?.count ?? 0)
+    : tsApproved
+
+  const trPending = isSuperAdminLikeDashboard
+    ? (overview.data?.timeStudyRecordStatusCounts?.find((s: any) => s.status === 'submitted')?.count ?? 0)
+    : tsSubmitted
+
+  const trNotSubmitted = isSuperAdminLikeDashboard
+    ? (overview.data?.timeStudyRecordStatusCounts?.find((s: any) => s.status === 'draft')?.count ?? 0)
+    : (overview.data?.timeStudyRecordByUserStatusCounts?.find((s: any) => s.status === 'draft')?.count ?? 0)
 
   const selfLeaveTotal = selfLeave.data?.total ?? 0
   const selfLeaveApproved = selfLeave.data?.approved ?? 0
@@ -289,7 +278,7 @@ export function DashboardPage() {
             totalSubmitted={tsSubmitted}
             percent={tsPercent}
             periodLabel={periodLabel}
-            isLoading={personalTS.isLoading}
+            isLoading={overview.isLoading}
           />
         </div>
 
@@ -312,7 +301,7 @@ export function DashboardPage() {
             approved={trApproved}
             pendingApproval={trPending}
             notSubmitted={trNotSubmitted}
-            isLoading={timeRecordRequests.isLoading}
+            isLoading={overview.isLoading}
           />
         </div>
 

@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
 import tableEmptyIcon from "@/assets/icons/table-empty.png"
+import { Spinner } from "@/components/ui/spinner"
 
 export type SingleSelectOption = {
   value: string
@@ -157,8 +158,10 @@ export function SingleSelectSearchDropdown({
               disabledEffective && "cursor-not-allowed",
             )}
           />
-          {open ? (
-            <Search className="pointer-events-none absolute right-3 top-1/2 size-3 -translate-y-1/2 text-[#6b7280]" />
+          {isLoading ? (
+            <Spinner className="absolute right-3 top-1/2 size-4 -translate-y-1/2 text-[#6C5DD3]" />
+          ) : open ? (
+            <Search className="pointer-events-none absolute right-3 top-1/2 size-3.5 -translate-y-1/2 text-[#6b7280]" />
           ) : (
             <ChevronDown className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-[#6b7280]" />
           )}

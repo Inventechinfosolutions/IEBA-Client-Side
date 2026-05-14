@@ -12,6 +12,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { TitleCaseInput } from "@/components/ui/title-case-input"
+import { Spinner } from "@/components/ui/spinner"
 import { MasterCodePagination } from "@/features/master-code/components/MasterCodePagination"
 
 import {
@@ -56,11 +57,12 @@ export function AuditHistoryTable({
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
 
-  const { data, isLoading } = useAuditHistoryQuery({
+  const { data, isLoading, isFetching } = useAuditHistoryQuery({
     page,
     limit: pageSize,
     entityName: entityName,
   })
+  const isDataLoading = isLoading || isFetching
 
   const historyData: AuditHistoryRecord[] = Array.isArray(data?.data) ? data.data : []
   const totalItems = data?.meta?.totalItems ?? 0
@@ -74,7 +76,12 @@ export function AuditHistoryTable({
     <div className="flex flex-col gap-4 pt-3">
 
       {/* Table */}
-      <div className="overflow-hidden rounded-[10px] border border-[#E5E7EB]">
+      <div className="relative overflow-hidden rounded-[10px] border border-[#E5E7EB]">
+        {isDataLoading && (
+          <div className="absolute inset-x-0 bottom-0 top-[48px] z-50 flex items-center justify-center bg-white/60">
+            <Spinner className="text-[#6C5DD3]" />
+          </div>
+        )}
         <div className="overflow-x-auto">
           <Table className="w-full table-fixed border-collapse">
             <colgroup>
@@ -163,7 +170,7 @@ export function AuditHistoryTable({
       </div>
 
       {/* Pagination */}
-      {!isLoading && totalItems > 0 && (
+      {!isDataLoading && totalItems > 0 && (
         <MasterCodePagination
           totalItems={totalItems}
           currentPage={page}

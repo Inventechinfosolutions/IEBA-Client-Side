@@ -11,6 +11,7 @@ import type { SettingsFormValues } from "@/features/settings/types"
 import { CountyAddressRow } from "@/features/settings/components/Country/CountyAddressRow"
 import { TimeSelectionUI } from "@/features/settings/components/TimeSelectionUI/TimeSelectionUI"
 import defaultCountyAvatar from "@/assets/county-avatar.png"
+import { Spinner } from "@/components/ui/spinner"
 import { ImageCropUploadDialog } from "@/features/Profile/components/ImageCropUploadDialog"
 import type { CountyFormProps, RequiredLabelProps } from "./types"
 import { parseLocationId } from "@/features/settings/components/Country/locationUtils"
@@ -85,7 +86,12 @@ export function CountyForm({ isSaving }: CountyFormProps) {
   }
 
   return (
-    <div className="bg-transparent px-3 py-3 sm:px-6">
+    <div className="relative bg-transparent px-3 py-3 sm:px-6">
+      {isSaving && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center rounded-[8px] bg-white/60">
+          <Spinner className="text-[#6C5DD3]" />
+        </div>
+      )}
       <div className="flex flex-col gap-6">
         {/* Logo first; all fields and address below */}
         <div className="w-full">
@@ -296,7 +302,7 @@ export function CountyForm({ isSaving }: CountyFormProps) {
                 disabled={isSaving}
                 className="h-[44px] w-[88px] cursor-pointer rounded-[10px] bg-[var(--primary)] px-0 py-2 text-[14px] font-medium text-white hover:bg-[var(--primary)] disabled:cursor-not-allowed"
               >
-                {isSaving ? "Saving..." : "Save"}
+                {isSaving ? <Spinner className="text-white" /> : "Save"}
               </Button>
             </div>
           </div>
