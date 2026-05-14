@@ -38,6 +38,8 @@ export type JobPoolRow = {
   departmentName?: string
   jobClassificationName?: { name: string; status: string }[]
   userprofiles?: { id: string; name?: string; firstName?: string; lastName?: string; status?: string }[]
+  assignedActivityDetails?: { id: string; name: string; code: string }[]
+  unassignedActivityDetails?: { id: string; name: string; code: string }[]
 }
 
 export type GetJobPoolsParams = {
@@ -89,6 +91,8 @@ export type JobPoolFormModalProps = {
   isLoadingDetails?: boolean
   onOpenChange: (open: boolean) => void
   onSave: (values: JobPoolFormValues) => void
+  assignedActivityDetails?: { id: string; name: string; code: string }[]
+  unassignedActivityDetails?: { id: string; name: string; code: string }[]
 }
 
 export type TransferPanelProps = {
@@ -110,5 +114,10 @@ export type TransferPanelProps = {
 export type JobPoolFormReturn = UseFormReturn<JobPoolFormValues>
 
 export type JobClassificationSectionProps = { form: JobPoolFormReturn; departmentName: string }
-export type ActivitySectionProps          = { form: JobPoolFormReturn; departmentName: string }
+export type ActivitySectionProps = { 
+  form: JobPoolFormReturn; 
+  departmentName: string;
+  assignedActivityDetails?: { id: string; name: string; code: string }[];
+  unassignedActivityDetails?: { id: string; name: string; code: string }[];
+}
 export type EmployeeSectionProps          = { form: JobPoolFormReturn; departmentName: string }

@@ -62,6 +62,8 @@ type JobPoolResDto = {
   users?: string[]
   jobClassificationDetails?: JobPoolJobClassificationResDto[]
   activityDetails?: JobPoolActivityResDto[]
+  assignedActivityDetails?: JobPoolActivityResDto[]
+  unassignedActivityDetails?: JobPoolActivityResDto[]
   userDetails?: JobPoolUserResDto[]
   department?: JobPoolDepartmentResDto
 }
@@ -133,6 +135,15 @@ function toJobPoolRow(dto: JobPoolResDto): JobPoolRow {
   const users = Array.isArray(dto.users) ? dto.users : []
   const userDetails = Array.isArray(dto.userDetails) ? dto.userDetails : []
 
+  // Assigned/unassigned activity details come from getById; map them if present
+  const assignedActivityDetails = Array.isArray(dto.assignedActivityDetails)
+    ? dto.assignedActivityDetails.map((a) => ({ id: String(a.id ?? ""), name: a.name ?? "", code: a.code ?? "" }))
+    : undefined
+
+  const unassignedActivityDetails = Array.isArray(dto.unassignedActivityDetails)
+    ? dto.unassignedActivityDetails.map((a) => ({ id: String(a.id ?? ""), name: a.name ?? "", code: a.code ?? "" }))
+    : undefined
+
   const userprofiles = userDetails.map((user) => ({
     id: user.id ?? "",
     name: user.name ?? undefined,
@@ -154,6 +165,8 @@ function toJobPoolRow(dto: JobPoolResDto): JobPoolRow {
     departmentName,
     jobClassificationName,
     userprofiles,
+    assignedActivityDetails,
+    unassignedActivityDetails,
   }
 }
 

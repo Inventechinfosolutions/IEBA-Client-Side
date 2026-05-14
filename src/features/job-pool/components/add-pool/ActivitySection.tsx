@@ -6,20 +6,27 @@ import type { TransferItem, ActivitySectionProps } from "../../types"
 
 import { useGetActivitiesByDepartment } from "../../../CountyActivityCode/queries/getCountyActivityCodes"
 
-export function ActivitySection({ form, departmentName }: ActivitySectionProps) {
+export function ActivitySection({ form, departmentName, assignedActivityDetails, unassignedActivityDetails }: ActivitySectionProps) {
   const selectedDept = form.watch("department")
+  
+  const shouldFetch = !assignedActivityDetails && !unassignedActivityDetails && selectedDept;
   const { data: activitiesData = [] } = useGetActivitiesByDepartment(
-    selectedDept ? Number(selectedDept) : null
+    shouldFetch ? Number(selectedDept) : null
   )
   
   const allActivities = useMemo(() => {
+    if (assignedActivityDetails || unassignedActivityDetails) {
+      const assigned = assignedActivityDetails || [];
+      const unassigned = unassignedActivityDetails || [];
+      return [...assigned, ...unassigned];
+    }
     if (!selectedDept) return []
     return activitiesData.map(a => ({ 
       id: String(a.id), 
       name: a.name,
       code: a.code 
     })) ?? []
-  }, [activitiesData, selectedDept])
+  }, [activitiesData, selectedDept, assignedActivityDetails, unassignedActivityDetails])
 
   const [searchU, setSearchU] = useState("")
   const [searchA, setSearchA] = useState("")

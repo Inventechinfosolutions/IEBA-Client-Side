@@ -181,6 +181,8 @@ export function JobPoolPage() {
         isLoadingDetails={isFetchingDetail}
         onOpenChange={setModalOpen}
         onSave={handleSave}
+        assignedActivityDetails={sourceRow?.assignedActivityDetails}
+        unassignedActivityDetails={sourceRow?.unassignedActivityDetails}
       />
     </section>
   )
