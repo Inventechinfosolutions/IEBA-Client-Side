@@ -923,9 +923,75 @@ export async function apiCheckActiveSubPrograms(row: ProgramRow): Promise<{ hasA
   return { hasActiveSubProgramOne, hasActiveSubProgramTwo }
 }
 
+/** True when the value already looks like our camelCase payload (arrays present). */
+function isCamelCaseActivityAssignmentsPayload(
+  value: unknown,
+): value is ProgramActivityRelationActivitiesPayload {
+  if (!value || typeof value !== "object") return false
+  const record = value as Record<string, unknown>
+  return (
+    Array.isArray(record.assignedActivities) || Array.isArray(record.unassignedActivities)
+  )
+}
+
+/**
+ * Reads assigned/unassigned activity arrays from one object layer, supporting both
+ * camelCase and snake_case keys (Nest / legacy gateways).
+ */
+function readActivityAssignmentsPayloadFromRecord(
+  value: unknown,
+): ProgramActivityRelationActivitiesPayload | undefined {
+  if (!value || typeof value !== "object") return undefined
+  const record = value as Record<string, unknown>
+  const assigned =
+    (record.assignedActivities ??
+      record.assigned_activities) as ProgramActivityRelationActivitiesPayload["assignedActivities"]
+  const unassigned =
+    (record.unassignedActivities ??
+      record.unassigned_activities) as ProgramActivityRelationActivitiesPayload["unassignedActivities"]
+  if (!Array.isArray(assigned) && !Array.isArray(unassigned)) return undefined
+  return {
+    assignedActivities: Array.isArray(assigned) ? assigned : undefined,
+    unassignedActivities: Array.isArray(unassigned) ? unassigned : undefined,
+  }
+}
+
+/** Parses a single nested object (e.g. one `data` layer) into a payload when possible. */
+function tryParseActivityAssignmentsPayloadFromLayer(
+  value: unknown,
+): ProgramActivityRelationActivitiesPayload | undefined {
+  if (!value || typeof value !== "object") return undefined
+  if (isCamelCaseActivityAssignmentsPayload(value)) {
+    return value
+  }
+  return readActivityAssignmentsPayloadFromRecord(value)
+}
+
+/**
+ * Normalizes raw HTTP JSON from `/timestudyprograms/new/activities`: the tree may sit at the
+ * root, under `data`, or under `data.data`, with camelCase or snake_case keys. Always returns
+ * `{ assignedActivities?, unassignedActivities? }` for downstream code.
+ */
+export function parseProgramActivityRelationActivitiesApiResponse(
+  raw: unknown,
+): ProgramActivityRelationActivitiesPayload {
+  if (raw == null || typeof raw !== "object") return {}
+  const envelope = raw as Record<string, unknown>
+  return (
+    tryParseActivityAssignmentsPayloadFromLayer(envelope) ??
+    tryParseActivityAssignmentsPayloadFromLayer(envelope.data) ??
+    (envelope.data && typeof envelope.data === "object"
+      ? tryParseActivityAssignmentsPayloadFromLayer(
+          (envelope.data as Record<string, unknown>).data,
+        )
+      : undefined) ??
+    {}
+  )
+}
+
 export async function apiGetProgramActivityRelationActivities(
   departmentId: number,
-  programId: number,
+  programId: number | string,
 ): Promise<ProgramActivityRelationActivitiesPayload> {
   const search = new URLSearchParams()
   search.set("departmentId", String(departmentId))
@@ -933,13 +999,8 @@ export async function apiGetProgramActivityRelationActivities(
   search.set("method", "activitiesAssignedToProgram")
   search.set("structured", "true")
 
-  const res = await api.get<{
-    success: boolean
-    message: string
-    data: ProgramActivityRelationActivitiesPayload
-    errorCode: string | null
-  }>(`/timestudyprograms/new/activities?${search.toString()}`)
+  const res = await api.get<unknown>(`/timestudyprograms/new/activities?${search.toString()}`)
 
-  return (res?.data ?? {}) as ProgramActivityRelationActivitiesPayload
+  return parseProgramActivityRelationActivitiesApiResponse(res)
 }
 

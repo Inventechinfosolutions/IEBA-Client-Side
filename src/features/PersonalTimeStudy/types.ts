@@ -1,4 +1,5 @@
 import type { TimeStudyLeaveType, TimeStudyRecordStatus, TimeStudyRecordType } from "./enums/PersonalTimeStudy.enum"
+import type { UserLeaveMultiCodeFragment } from "@/lib/groupUserLeaveRows"
 
 export * from "./enums/PersonalTimeStudy.enum"
 
@@ -108,6 +109,9 @@ export type UserLeaveDaySnapshotResDto = {
   status: string
   requestcomment?: string | null
   supervisorcomment?: string | null
+  parentId?: number | null
+  recordType?: string
+  multiCodeRecords?: UserLeaveMultiCodeFragment[]
 }
 
 /** Full detail for a selected day. */
