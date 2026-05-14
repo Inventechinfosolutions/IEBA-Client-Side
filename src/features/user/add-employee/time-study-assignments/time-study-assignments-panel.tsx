@@ -210,6 +210,7 @@ export function TimeStudyAssignmentsPanel({
 
   const isEditTimeStudyWithUserBundle = mode === "edit" && Boolean(userIdForTs)
   const canPersistTsTransfers = userIdForTs.length > 0
+  const canShowTsHistory = canPersistTsTransfers
 
   const assignProgramsMutation = useAssignUserProgramsTs()
   const unassignProgramsMutation = useUnassignUserProgramsTs()
@@ -321,6 +322,11 @@ export function TimeStudyAssignmentsPanel({
   const [toggledActivitiesA, setToggledActivitiesA] = useState<string[]>([])
   const [isSavingTsMinDay, setIsSavingTsMinDay] = useState(false)
 
+  const [tsHistoryView, setTsHistoryView] = useState<TsHistoryView | null>(null)
+  const [tsHistoryProgramSearch, setTsHistoryProgramSearch] = useState("")
+  const [tsHistoryActivityCode, setTsHistoryActivityCode] = useState("")
+  const [tsHistoryActivityName, setTsHistoryActivityName] = useState("")
+
   // Reset all local states when switching users or when a new user is created
   useMemo(() => {
     setAssignedProgramIdsAddMode([])
@@ -331,6 +337,10 @@ export function TimeStudyAssignmentsPanel({
     setToggledProgramsA([])
     setToggledActivitiesU([])
     setToggledActivitiesA([])
+    setTsHistoryView(null)
+    setTsHistoryProgramSearch("")
+    setTsHistoryActivityCode("")
+    setTsHistoryActivityName("")
   }, [userIdForTs])
 
   // Clear manual overrides once the query successfully refetches fresh data from the server.

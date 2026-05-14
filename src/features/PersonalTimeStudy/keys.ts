@@ -1,5 +1,7 @@
 export const personalTimeStudyKeys = {
   all: ["personalTimeStudy"] as const,
+  /** Placeholder master-code list — disabled until API exists. */
+  masterCodes: () => [...personalTimeStudyKeys.all, "masterCodes"] as const,
   lists: () => [...personalTimeStudyKeys.all, "list"] as const,
   list: (filters?: { search?: string }) =>
     [...personalTimeStudyKeys.lists(), filters] as const,

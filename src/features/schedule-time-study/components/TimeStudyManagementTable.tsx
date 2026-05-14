@@ -32,7 +32,6 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList } from "@/components/ui/tabs"
-import { cn } from "@/lib/utils"
 import { TimeStudyPeriodsForm } from "./TimeStudyPeriodsForm"
 import { ParticipantsListTable } from "./ParticipantsListTable"
 import { ScheduledTimeStudyTable } from "./ScheduleTimeStudyTable"

@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react"
 import { cn } from "@/lib/utils"
-import { Label } from "@/components/ui/label"
 import { SingleSelectSearchDropdown } from "@/components/ui/dropdown-search"
 import type { SupervisorApportioningConfig } from "../queries/getUserApportioningConfig"
 
@@ -74,7 +73,6 @@ function ReadOnlyField({ label }: { label: string }) {
 export function PersonalTimeStudyApportioningPanel({
   apportioningConfig,
   supervisorOwnMinutesToday,
-  dropdownData,
   apportioningRecords,
 }: ApportioningPanelProps) {
   const shouldRender = useMemo(

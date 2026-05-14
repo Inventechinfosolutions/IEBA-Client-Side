@@ -4,7 +4,7 @@ import { timeStudyMGTKeys } from "../keys"
 
 export function useGetMGTDropdowns(userId: string | null) {
   return useQuery({
-    queryKey: timeStudyMGTKeys.dropdowns(userId),
+    queryKey: timeStudyMGTKeys.dropdowns(userId ?? ""),
     queryFn: () => apiMgtGetUserProgramsAndActivities(userId!),
     enabled: !!userId,
     staleTime: 0,

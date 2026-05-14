@@ -5,12 +5,8 @@ import { PersonalTimeStudyCard } from "../components/PersonalTimeStudyCard"
 import { PersonalLeaveCard } from "../components/PersonalLeaveCard"
 import { ReportsCard } from "../components/ReportsCard"
 import { TodoCard } from "../components/TodoCard"
-import { TimeStudyStatusCard } from "../components/TimeStudyStatusCard"
 import { Card } from "@/components/ui/card"
-import { Lock, Check, X, XCircle, MessageCircle, Plus, Minus } from "lucide-react"
-import { PayrollPeriod } from "../enums/dashboard.enum"
-import { toast } from "sonner"
-import { createNotification } from "@/features/notification/api/notificationApi"
+import { Lock, Check, X, MessageCircle, Plus, Minus } from "lucide-react"
 import { PersonalTimeStudyCalendarCard } from "../../PersonalTimeStudy/components/PersonalTimeStudyCalendarCard"
 import { useGetPersonalMonthLegend } from "../../PersonalTimeStudy/queries/getPersonalMonthLegend"
 import { useGetPersonalDayDetail } from "../../PersonalTimeStudy/queries/getPersonalDayDetail"
@@ -46,7 +42,6 @@ function getWeeklyStatus(days: string[], totalMinutes: number, targetMinutes: nu
 export function UserDashboard() {
   const { user } = useAuth()
   const userId = user?.id ?? ""
-  const payrollType = PayrollPeriod.Biweekly // Correct enum value
 
   const deptRoles = user?.departmentRoles ?? []
   const currentDeptRole = deptRoles[0]
@@ -77,10 +72,6 @@ export function UserDashboard() {
 
   const todoItems = todos.data ?? []
   const reportsData = reports.data ?? []
-
-  const trApproved = tsApproved
-  const trPending = tsSubmitted
-  const trNotSubmitted = overview.data?.timeStudyRecordByUserStatusCounts?.find((s: any) => s.status === 'draft')?.count ?? 0
 
   // Calendar State & Logic
   const [selectedDate, setSelectedDate] = useState<Date>(todayLocal)

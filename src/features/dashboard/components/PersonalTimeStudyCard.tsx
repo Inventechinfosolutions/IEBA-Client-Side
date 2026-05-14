@@ -1,6 +1,17 @@
 import { Link } from "react-router-dom"
-import iconPersonalTimeStudy from "@/Assets/icon-personal-time-study.png"
+import { ClipboardList } from "lucide-react"
 import type { PersonalTimeStudyCardProps } from "../types"
+
+function PersonalTimeStudyCardIcon({ className }: { className?: string }) {
+  return (
+    <div
+      className={`flex shrink-0 items-center justify-center rounded-xl bg-[#6C5DD3]/10 ${className ?? ""}`}
+      aria-hidden
+    >
+      <ClipboardList className="text-[#6C5DD3]" strokeWidth={2} />
+    </div>
+  )
+}
 
 export function PersonalTimeStudyCard({
   totalApproved,
@@ -16,7 +27,7 @@ export function PersonalTimeStudyCard({
         <div className="relative flex h-full flex-col rounded-[15px] border border-[#E8EAF6] bg-white p-4 shadow-[0_4px_16px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_20px_rgba(108,93,211,0.08)] transition-all duration-300">
           {/* Header */}
           <div className="flex items-start gap-3 mb-3">
-            <img src={iconPersonalTimeStudy} alt="" className="h-9 w-9 shrink-0 object-contain rounded-xl" />
+            <PersonalTimeStudyCardIcon className="h-9 w-9 [&>svg]:h-[22px] [&>svg]:w-[22px]" />
             <h3 className="text-[16px] font-bold text-[#111827] leading-tight pt-1">Personal Time Study</h3>
           </div>
 
@@ -58,7 +69,7 @@ export function PersonalTimeStudyCard({
 
         {/* Header */}
         <div className="relative z-0 flex items-start gap-4 mb-6">
-          <img src={iconPersonalTimeStudy} alt="Time study icon" className="h-10 w-10 shrink-0 object-contain rounded-xl" />
+          <PersonalTimeStudyCardIcon className="h-10 w-10 [&>svg]:h-6 [&>svg]:w-6" />
           <span className="text-[15px] font-bold text-[#1a1a2e] leading-tight pt-1">
             Personal Time Study
           </span>

@@ -1,4 +1,4 @@
-
+import type { ReactNode } from "react"
 
 export interface TimeStudyStatusCount {
   status: string
@@ -191,7 +191,7 @@ export interface NavRowProps {
 }
 
 export interface StatusRowProps {
-  icon: string
+  icon: ReactNode
   label: string
   count: number
   actionLabel: string

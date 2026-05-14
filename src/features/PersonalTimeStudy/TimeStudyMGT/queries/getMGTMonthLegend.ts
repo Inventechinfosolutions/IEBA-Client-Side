@@ -4,7 +4,7 @@ import { timeStudyMGTKeys } from "../keys"
 
 export function useGetMGTMonthLegend(userId: string | null, month: number, year: number) {
   return useQuery({
-    queryKey: timeStudyMGTKeys.monthLegend(userId, month, year),
+    queryKey: timeStudyMGTKeys.monthLegend(userId ?? "", month, year),
     queryFn: () => apiMgtGetMonthLegend(userId!, month, year),
     enabled: !!userId,
     staleTime: 0,

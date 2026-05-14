@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom"
-import iconPersonalLeave from "@/Assets/icon-personal-leave.png"
+import { Umbrella } from "lucide-react"
 import type { PersonalLeaveCardProps, StatRowProps } from "../types"
 
 export function PersonalLeaveCard({
@@ -17,7 +17,12 @@ export function PersonalLeaveCard({
 
         {/* Header */}
         <div className="flex items-start gap-3 px-4 pt-4 pb-2">
-          <img src={iconPersonalLeave} alt="Leave icon" className="h-10 w-10 shrink-0 rounded-xl object-contain" />
+          <div
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#6C5DD3]/10"
+            aria-hidden
+          >
+            <Umbrella className="h-6 w-6 text-[#6C5DD3]" strokeWidth={2} />
+          </div>
           <span className="text-[16px] font-medium text-[#1a1a2e] leading-tight pt-1">
             Personal Leave Requests ({isLoading ? "–" : total})
           </span>

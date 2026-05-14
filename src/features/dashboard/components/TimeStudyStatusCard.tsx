@@ -1,8 +1,5 @@
 import { useNavigate } from "react-router-dom"
-import { Clock } from "lucide-react"
-import iconApproved from "@/Assets/icon-approved.png"
-import iconPending from "@/Assets/icon-pending.png"
-import iconNotSubmitted from "@/Assets/icon-not-submitted.png"
+import { CheckCircle2, CircleDashed, Clock } from "lucide-react"
 import type { TimeStudyStatusCardProps, StatusRowProps } from "../types"
 
 export function TimeStudyStatusCard({ approved, pendingApproval, notSubmitted, isLoading }: TimeStudyStatusCardProps) {
@@ -25,13 +22,34 @@ export function TimeStudyStatusCard({ approved, pendingApproval, notSubmitted, i
 
       <div className="flex flex-1 flex-col justify-around">
         {/* Row — Approved */}
-        <StatusRow icon={iconApproved} label="Approved" count={approved} actionLabel="View" onAction={handleAction} loading={isLoading} />
+        <StatusRow
+          icon={<CheckCircle2 className="h-10 w-10 text-emerald-600" strokeWidth={1.75} aria-hidden />}
+          label="Approved"
+          count={approved}
+          actionLabel="View"
+          onAction={handleAction}
+          loading={isLoading}
+        />
 
         {/* Row — Pending Approval */}
-        <StatusRow icon={iconPending} label="Pending Approval" count={pendingApproval} actionLabel="Approve" onAction={handleAction} loading={isLoading} />
+        <StatusRow
+          icon={<Clock className="h-10 w-10 text-amber-500" strokeWidth={1.75} aria-hidden />}
+          label="Pending Approval"
+          count={pendingApproval}
+          actionLabel="Approve"
+          onAction={handleAction}
+          loading={isLoading}
+        />
 
         {/* Row — Not Submitted */}
-        <StatusRow icon={iconNotSubmitted} label="Not Submitted" count={notSubmitted} actionLabel="Notify" onAction={handleAction} loading={isLoading} />
+        <StatusRow
+          icon={<CircleDashed className="h-10 w-10 text-slate-400" strokeWidth={1.75} aria-hidden />}
+          label="Not Submitted"
+          count={notSubmitted}
+          actionLabel="Notify"
+          onAction={handleAction}
+          loading={isLoading}
+        />
       </div>
     </div>
   )
@@ -50,8 +68,8 @@ function StatusRow({
       className="grid items-center gap-3"
       style={{ gridTemplateColumns: "40px 1fr 96px" }}
     >
-      {/* Image icon */}
-      <img src={icon} alt={label} className="h-10 w-10 shrink-0 object-contain" />
+      {/* Icon */}
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center">{icon}</div>
 
       {/* Label & Count Container */}
       <div className="flex items-center gap-3 min-w-0">

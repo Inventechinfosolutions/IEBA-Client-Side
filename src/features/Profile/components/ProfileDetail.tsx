@@ -8,12 +8,6 @@ import { useNavigate } from "react-router-dom"
 
 import profileAvatar from "@/assets/profile-avatar.png"
 import { Button } from "@/components/ui/button"
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
 import { TitleCaseInput } from "@/components/ui/title-case-input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -208,8 +202,6 @@ function ProfileDetailForm({
       toast.info("No job duty statement available")
     }
   }, [watch])
-
-  const jobDutyStatement = watch("onRecords.jobDutyStatement")
 
   return (
     <>
