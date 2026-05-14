@@ -364,6 +364,11 @@ export function PersonalTimeStudyPage() {
                       rejected={monthQuery.data?.leaveRecords?.filter(r => r.status?.toLowerCase() === "rejected").length ?? 0}
                       leaveRecords={monthQuery.data?.leaveRecords}
                       dropdownData={dropdownQuery.data}
+                      allowMultiCodes={
+                        apportioningConfigQuery.isPending && !apportioningConfigQuery.isFetched
+                          ? undefined
+                          : apportioningConfigQuery.data?.allowMultiCodes === true
+                      }
                       onOpen={() => dropdownQuery.refetch()}
                       dateStr={dateStr}
                       month={month}

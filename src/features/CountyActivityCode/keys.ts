@@ -34,6 +34,12 @@ export const countyActivityCodeKeys = {
    */
   masterActivityCodeDetail: (id: string) => masterCodeKeys.detail(id),
   /** `GET /users/activity-history` — paginated activity history log. */
-  history: (params: { page: number; limit: number; activityCode: string; activityName: string }) =>
-    [...countyActivityCodeKeys.all, "activity-history", params] as const,
+  history: (params: {
+    page: number
+    limit: number
+    activityCode: string
+    activityName: string
+    historyKind: string
+    userId: string
+  }) => [...countyActivityCodeKeys.all, "activity-history", params] as const,
 }

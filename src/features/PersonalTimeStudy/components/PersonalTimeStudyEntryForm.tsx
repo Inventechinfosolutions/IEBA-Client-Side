@@ -2,6 +2,7 @@ import { ChevronDown, Clock, Eye, Plus, Trash2 } from "lucide-react"
 import { useCallback, useMemo, useRef, useState } from "react"
 import { PersonalTimeStudyApportioningPanel } from "./PersonalTimeStudyApportioningPanel"
 import type { SupervisorApportioningConfig } from "../queries/getUserApportioningConfig"
+import { useGetPersonalMulticodeDropdowns } from "../queries/getPersonalDropdowns"
 import { useGetProgramActivityRelations } from "../queries/getProgramActivityRelations"
 
 import { Button } from "@/components/ui/button"
@@ -16,6 +17,8 @@ import { useAuth } from "@/contexts/AuthContext"
 import { API_BASE_URL } from "@/lib/config"
 import { apiDownloadSupportingDoc, apiDeleteSupportingDoc } from "../api/personalTimeStudyApi"
 import { Spinner } from "@/components/ui/spinner"
+import { normalizeMulticodeDropdownPayload } from "../utils/multicodeDropdownUtils"
+import { mergeProgramActivityRelationTransferItems } from "@/features/program/queries/programActivityRelation"
 
 /** Inline required-field asterisk — available to all components in this module. */
 function RequiredMark() {
@@ -452,44 +455,142 @@ export function PersonalTimeStudyEntryForm({
     return Array.from(new Map(list.map((a) => [a.id, a])).values())
   }, [dropdownData])
 
+  const allowMulticodeUi = apportioningConfig?.allowMultiCodes === true
+  const hasMulticodeSubRows = useMemo(() => parents.some((p) => p.subRows.length > 0), [parents])
+  const multicodeDropdownQuery = useGetPersonalMulticodeDropdowns(
+    userId,
+    allowMulticodeUi && Boolean(userId) && hasMulticodeSubRows,
+  )
+
+  const multicodeBundles = useMemo(
+    () => normalizeMulticodeDropdownPayload(multicodeDropdownQuery.data, dropdownData),
+    [multicodeDropdownQuery.data, dropdownData],
+  )
+
+  const multicodeListLoading = allowMulticodeUi && hasMulticodeSubRows && multicodeDropdownQuery.isFetching
+
+  /** Department for a program id — multicode bundle first when multi-code UI is enabled, then main dropdown. */
+  const resolveDepartmentIdForProgram = useCallback(
+    (programIdStr: string | undefined): number | undefined => {
+      const trimmed = programIdStr?.trim()
+      if (!trimmed) return undefined
+
+      const entityDepartmentId = (entity: any): number | undefined => {
+        if (!entity) return undefined
+        const raw = entity.departmentId ?? entity.department?.id
+        if (raw == null || raw === "") return undefined
+        const n = Number(raw)
+        if (!Number.isFinite(n) || n <= 0) return undefined
+        return n
+      }
+
+      const findDepartmentInBundles = (bundles: any[] | undefined): number | undefined => {
+        if (!bundles?.length) return undefined
+        for (const d of bundles) {
+          const pr = (d.programs ?? []).find((p: any) => String(p.id) === trimmed)
+          if (!pr) continue
+          const fromProgram = entityDepartmentId(pr)
+          if (fromProgram != null) return fromProgram
+          const fromBundle = entityDepartmentId(d)
+          if (fromBundle != null) return fromBundle
+        }
+        return undefined
+      }
+
+      if (allowMulticodeUi) {
+        const fromMc = findDepartmentInBundles(multicodeBundles.length ? multicodeBundles : undefined)
+        if (fromMc != null) return fromMc
+      }
+      return findDepartmentInBundles(dropdownData ?? undefined)
+    },
+    [allowMulticodeUi, multicodeBundles, dropdownData],
+  )
+
+  const subRowActivityCatalog = useMemo(() => {
+    if (!allowMulticodeUi || !multicodeBundles.length) return activities
+    const list = multicodeBundles.flatMap((d: any) =>
+      (d.activities ?? []).map((a: any) => ({ ...a, departmentCode: d.departmentCode })),
+    )
+    return Array.from(new Map(list.map((a: any) => [a.id, a])).values())
+  }, [allowMulticodeUi, multicodeBundles, activities])
+
+  const subRowProgramOptions = useMemo(() => {
+    const mapToOpts = (list: any[]) =>
+      list.map((p: any) => {
+        const deptPrefix = (p.departmentCode ?? "").split("-")[0]
+        return { value: String(p.id), label: `${deptPrefix}-${p.code} - ${p.name}` }
+      })
+    if (allowMulticodeUi && multicodeBundles.length) {
+      const list = multicodeBundles.flatMap((d: any) =>
+        (d.programs ?? []).map((p: any) => ({ ...p, departmentCode: d.departmentCode })),
+      )
+      const unique = Array.from(new Map(list.map((p: any) => [p.id, p])).values())
+      return mapToOpts(unique)
+    }
+    return mapToOpts(programs.filter((p: any) => p.isMultiCode))
+  }, [allowMulticodeUi, multicodeBundles, programs])
+
+  /**
+   * Only request activities for programs the user has actually chosen on a row
+   * (or that were loaded from existing records). Avoids one HTTP call per program
+   * in the bundle on initial page load.
+   */
   const programQueries = useMemo(() => {
-    const list: { departmentId: number; programId: number }[] = []
-    for (const bundle of dropdownData ?? []) {
-      const deptId = bundle.departmentId
-      if (!deptId) continue
-      for (const p of bundle.programs) {
-        list.push({ departmentId: deptId, programId: p.id })
+    const list: { departmentId: number; programId: string }[] = []
+    const seen = new Set<string>()
+
+    const pushPair = (programIdStr: string | undefined) => {
+      const trimmed = programIdStr?.trim()
+      if (!trimmed) return
+      const deptId = resolveDepartmentIdForProgram(trimmed)
+      if (deptId == null) return
+      const key = `${deptId}:${trimmed}`
+      if (seen.has(key)) return
+      seen.add(key)
+      list.push({ departmentId: deptId, programId: trimmed })
+    }
+
+    for (const parent of parents) {
+      pushPair(parent.tsProgram)
+      for (const sub of parent.subRows) {
+        pushPair(sub.studyProgram)
       }
     }
     return list
-  }, [dropdownData])
+  }, [parents, resolveDepartmentIdForProgram])
 
   const queriesEnabled = !readonly && !isLocked
   const programActivityQueryResults = useGetProgramActivityRelations(programQueries, queriesEnabled)
 
   const getActivitiesForProgram = useCallback((programId: string): Set<string> => {
-    const index = programQueries.findIndex((pq) => String(pq.programId) === programId)
+    const normalized = String(programId ?? "").trim()
+    if (!normalized) return new Set()
+    const deptId = resolveDepartmentIdForProgram(normalized)
+    const index = programQueries.findIndex(
+      (pq) => String(pq.programId).trim() === normalized && pq.departmentId === deptId,
+    )
     if (index === -1) return new Set()
     const result = programActivityQueryResults[index]
     if (!result?.data) return new Set()
-    const ids = new Set<string>()
-    const roots = result.data.assignedActivities
-    function traverse(node: any) {
-      if (!node) return
-      if (node.assigned) {
-        const idStr = String(node.key || "")
-        const id = idStr.split("-").pop()
-        if (id) ids.add(id)
-      }
-      if (Array.isArray(node.children)) node.children.forEach(traverse)
-    }
-    if (Array.isArray(roots)) {
-      for (const deptNode of roots) {
-        if (Array.isArray(deptNode.activity)) deptNode.activity.forEach(traverse)
-      }
-    }
-    return ids
-  }, [programQueries, programActivityQueryResults])
+    return new Set(
+      mergeProgramActivityRelationTransferItems(result.data)
+        .map((t) => t.id)
+        .filter(Boolean),
+    )
+  }, [resolveDepartmentIdForProgram, programQueries, programActivityQueryResults])
+
+  const isFetchingActivitiesForProgram = useCallback(
+    (programId: string | undefined) => {
+      const normalized = String(programId ?? "").trim()
+      if (!normalized) return false
+      const deptId = resolveDepartmentIdForProgram(normalized)
+      const index = programQueries.findIndex(
+        (pq) => String(pq.programId).trim() === normalized && pq.departmentId === deptId,
+      )
+      return index !== -1 && !!programActivityQueryResults[index]?.isFetching
+    },
+    [resolveDepartmentIdForProgram, programQueries, programActivityQueryResults],
+  )
 
   const updateParent = useCallback((id: string, patch: Partial<TimeEntryParentRow>) => {
     setParents((prev) => prev.map((p) => {
@@ -617,7 +718,7 @@ export function PersonalTimeStudyEntryForm({
         status: overrideStatus || p.status || "draft",
         recordType: p.recordType || "NORMAL",
         multiCodeRecords: p.subRows.map((s) => {
-          const subDeptId = dropdownData?.find((d) => d.programs.some((pr: any) => String(pr.id) === s.studyProgram))?.departmentId
+          const subDeptId = resolveDepartmentIdForProgram(s.studyProgram)
           return {
             id: s.dbId,
             programid: s.studyProgram,
@@ -969,13 +1070,14 @@ export function PersonalTimeStudyEntryForm({
                       <Trash2 className="size-4" />
                     </Button>
                   )}
-                  {!readonly && !isLeaveRow && (
+                  {!readonly && !isLeaveRow && apportioningConfig?.allowMultiCodes && (
                     <Button
                       size="icon"
                       variant="outline"
                       disabled={isLocked}
                       className={cn("size-10 border-[#6C5DD3] text-[#6C5DD3] hover:bg-[#6C5DD3]/10", isLocked && "cursor-not-allowed")}
                       onClick={() => addSubRow(parent.id)}
+                      aria-label="Add multi-code row"
                     >
                       <Plus className="size-4" />
                     </Button>
@@ -992,28 +1094,26 @@ export function PersonalTimeStudyEntryForm({
                           value={sub.studyProgram}
                           placeholder="Select program"
                           disabled={isLocked}
+                          isLoading={multicodeListLoading}
                           options={(() => {
-                            const filtered = programs
-                              .filter((p: any) => p.isMultiCode)
-                              .map((p: any) => {
-                                const deptPrefix = (p.departmentCode ?? '').split('-')[0]
-                                return { value: String(p.id), label: `${deptPrefix}-${p.code} - ${p.name}` }
-                              });
-
+                            const filtered = [...subRowProgramOptions]
                             if (sub.studyProgram && !filtered.some((o) => o.value === sub.studyProgram)) {
                               if (sub.programCode || sub.programName) {
-                                const deptPrefix = (sub.departmentCode ?? '').split('-')[0];
-                                const prefix = deptPrefix ? `${deptPrefix}-` : '';
-                                filtered.unshift({ value: sub.studyProgram, label: `${prefix}${sub.programCode ?? ''} - ${sub.programName ?? ''}` });
+                                const deptPrefix = (sub.departmentCode ?? "").split("-")[0]
+                                const prefix = deptPrefix ? `${deptPrefix}-` : ""
+                                filtered.unshift({
+                                  value: sub.studyProgram,
+                                  label: `${prefix}${sub.programCode ?? ""} - ${sub.programName ?? ""}`,
+                                })
                               }
                             }
-                            return filtered;
+                            return filtered
                           })()}
                           onChange={(v) => {
                             if (v !== sub.studyProgram) {
-                              updateSubRow(parent.id, sub.id, { studyProgram: v, serviceActivity: '' });
+                              updateSubRow(parent.id, sub.id, { studyProgram: v, serviceActivity: "" })
                             } else {
-                              updateSubRow(parent.id, sub.id, { studyProgram: v });
+                              updateSubRow(parent.id, sub.id, { studyProgram: v })
                             }
                           }}
                           onBlur={() => { }}
@@ -1026,21 +1126,25 @@ export function PersonalTimeStudyEntryForm({
                           value={sub.serviceActivity}
                           placeholder="Select Activity Code"
                           disabled={isLocked || !sub.studyProgram}
+                          isLoading={isFetchingActivitiesForProgram(sub.studyProgram)}
                           options={(() => {
-                            if (!sub.studyProgram) return [];
-                            const allowed = getActivitiesForProgram(sub.studyProgram);
-                            const filtered = activities
+                            if (!sub.studyProgram) return []
+                            const allowed = getActivitiesForProgram(sub.studyProgram)
+                            const filtered = subRowActivityCatalog
                               .filter((a: any) => allowed.has(String(a.id)))
-                              .map((a: any) => ({ value: String(a.id), label: `${a.code} - ${a.name}` }));
+                              .map((a: any) => ({ value: String(a.id), label: `${a.code} - ${a.name}` }))
                             if (sub.serviceActivity && !filtered.some((o) => o.value === sub.serviceActivity)) {
-                              const fallback = activities.find((a: any) => String(a.id) === sub.serviceActivity) as any;
+                              const fallback = subRowActivityCatalog.find((a: any) => String(a.id) === sub.serviceActivity) as any
                               if (fallback) {
-                                filtered.unshift({ value: String(fallback.id), label: `${fallback.code} - ${fallback.name}` });
+                                filtered.unshift({ value: String(fallback.id), label: `${fallback.code} - ${fallback.name}` })
                               } else if (sub.activityCode || sub.activityName) {
-                                filtered.unshift({ value: sub.serviceActivity, label: `${sub.activityCode ?? ''} - ${sub.activityName ?? ''}` });
+                                filtered.unshift({
+                                  value: sub.serviceActivity,
+                                  label: `${sub.activityCode ?? ""} - ${sub.activityName ?? ""}`,
+                                })
                               }
                             }
-                            return filtered;
+                            return filtered
                           })()}
                           onChange={(v) => updateSubRow(parent.id, sub.id, { serviceActivity: v })}
                           onBlur={() => { }}

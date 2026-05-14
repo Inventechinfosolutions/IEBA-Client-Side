@@ -1,8 +1,9 @@
-import { useState } from "react"
+import { Fragment, useMemo, useState } from "react"
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Check, ChevronDown, ChevronUp, MessageCircle, RotateCcw, X } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Check, ChevronDown, ChevronRight, ChevronUp, MessageCircle, RotateCcw, X } from "lucide-react"
 import {
   Tooltip,
   TooltipContent,
@@ -12,9 +13,40 @@ import {
 import tableEmptyIcon from "@/assets/icons/table-empty.png"
 import { LeaveApprovalStatus, leaveApprovalStatusLabel } from "../enums/leaveApprovalStatus"
 import type { LeaveApprovalStatusValue } from "../enums/leaveApprovalStatus"
-import type { LeaveApprovalSortKey, LeaveApprovalTableProps } from "../types"
+import type { LeaveApprovalRow, LeaveApprovalSortKey, LeaveApprovalTableProps } from "../types"
+import {
+  assignSyntheticParentIdsByTimeSlot,
+  groupUserLeaveRows,
+  type UserLeaveMultiCodeFragment,
+} from "@/lib/groupUserLeaveRows"
+import { cn } from "@/lib/utils"
+
+function syntheticListChild(
+  parent: LeaveApprovalRow,
+  mc: UserLeaveMultiCodeFragment,
+  index: number,
+): LeaveApprovalRow {
+  const id = mc.id ?? -(Math.abs(parent.id) * 10_000 + index + 1)
+  return {
+    ...parent,
+    id,
+    parentId: parent.id,
+    programid: mc.programid != null ? String(mc.programid) : parent.programid,
+    activityid: mc.activityid != null ? String(mc.activityid) : parent.activityid,
+    programcode: mc.programcode ?? parent.programcode,
+    programname: mc.programname ?? parent.programname,
+    activitycode: mc.activitycode ?? parent.activitycode,
+    activityname: mc.activityname ?? parent.activityname,
+    leaveTotalTime: mc.leaveTotalTime ?? parent.leaveTotalTime,
+    requestcomment:
+      mc.requestcomment !== undefined && mc.requestcomment !== null
+        ? mc.requestcomment
+        : parent.requestcomment,
+  }
+}
 
 const headers: { label: string; className?: string; sortKey?: LeaveApprovalSortKey }[] = [
+  { label: "", className: "w-[40px]" },
   { label: "Emp. Name", className: "w-[130px]", sortKey: "employeeName" },
   { label: "Start Date", className: "w-[110px]", sortKey: "startDate" },
   { label: "Time of Day", className: "w-[110px]" },
@@ -36,9 +68,19 @@ export function LeaveApprovalTable({
 }: LeaveApprovalTableProps) {
   const [isEmployeeTooltipOpen, setIsEmployeeTooltipOpen] = useState(false)
   const [isStartDateTooltipOpen, setIsStartDateTooltipOpen] = useState(false)
+  const [expandedByParentId, setExpandedByParentId] = useState<Record<number, boolean>>({})
+
+  const preparedRows = useMemo(() => assignSyntheticParentIdsByTimeSlot(rows), [rows])
+  const groupedRows = useMemo(
+    () => groupUserLeaveRows(preparedRows, { synthesizeChild: syntheticListChild }),
+    [preparedRows],
+  )
+
+  const toggleExpanded = (parentId: number) => {
+    setExpandedByParentId((prev) => ({ ...prev, [parentId]: !prev[parentId] }))
+  }
 
   const renderActionIcon = (status: LeaveApprovalStatusValue) => {
-    // Requested: dual approve/reject buttons below (this icon not used for that row).
     if (status === LeaveApprovalStatus.REQUESTED) {
       return (
         <span className="inline-flex size-6 items-center justify-center rounded-full bg-white">
@@ -47,11 +89,9 @@ export function LeaveApprovalTable({
       )
     }
 
-    // Show the *action* available (swap approved/rejected icons).
     if (status === LeaveApprovalStatus.APPROVED) return rejectIcon
     if (status === LeaveApprovalStatus.REJECTED) return approveIcon
 
-    // Withdraw: no action.
     return (
       <span className="inline-flex size-6 items-center justify-center rounded-full bg-white">
         <RotateCcw className="size-4 text-[#f59e0b]" aria-hidden />
@@ -97,7 +137,7 @@ export function LeaveApprovalTable({
                 index === headers.length - 1 ? "border-r-0" : "border-r border-white/50"
               return (
                 <TableHead
-                  key={h.label + (h.className ?? "")}
+                  key={`${h.label}-${h.sortKey ?? index}`}
                   className={`h-10 bg-[var(--primary)] p-[10px] text-center text-[12px] font-medium text-white ${dividerClass} ${h.className ?? ""}`}
                 >
                   {isSortable && key ? (
@@ -151,7 +191,7 @@ export function LeaveApprovalTable({
                             </span>
                           </button>
                         </TooltipTrigger>
-                      <TooltipContent side="top" sideOffset={6} collisionPadding={12} className="px-3 py-2">
+                        <TooltipContent side="top" sideOffset={6} collisionPadding={12} className="px-3 py-2">
                           {sort?.key !== key
                             ? "Click to sort ascending"
                             : sort.direction === "asc"
@@ -161,7 +201,9 @@ export function LeaveApprovalTable({
                       </Tooltip>
                     </TooltipProvider>
                   ) : (
-                    <div className="flex h-full w-full items-center justify-center">{h.label}</div>
+                    <div className="flex h-full w-full items-center justify-center">
+                      {h.label ? h.label : <span className="sr-only">Expand</span>}
+                    </div>
                   )}
                 </TableHead>
               )
@@ -174,7 +216,7 @@ export function LeaveApprovalTable({
             Array.from({ length: 6 }).map((_, idx) => (
               <TableRow key={`leave-approval-loading-${idx}`} className="h-11 border-[#e9ecf3] hover:bg-transparent">
                 {headers.map((h) => (
-                  <TableCell key={`loading-${idx}-${h.label}`} className="border-r border-[#eff0f5] px-3">
+                  <TableCell key={`loading-${idx}-${h.label}-${h.sortKey ?? ""}`} className="border-r border-[#eff0f5] px-3">
                     <Skeleton className="h-4 w-full rounded-[4px] bg-[#f0f2f8]" />
                   </TableCell>
                 ))}
@@ -195,139 +237,254 @@ export function LeaveApprovalTable({
               </TableCell>
             </TableRow>
           ) : (
-            rows.map((row) => (
-              <TableRow key={row.id} className="min-h-[44px] border-[#e9ecf3] hover:bg-[#fafafa]">
-                <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-center text-[12px] leading-[1.15rem] text-[#111827] whitespace-normal break-words">
-                  {`${row.user?.firstName ?? ""} ${row.user?.lastName ?? ""}`.trim() || row.userId}
-                </TableCell>
-                <TableCell className="border-r border-[#eff0f5] px-3 text-center text-[12px] text-[#111827]">
-                  {row.startdt}
-                </TableCell>
-                <TableCell className="border-r border-[#eff0f5] px-3 text-center text-[12px] text-[#111827]">
-                  {row.starttime}
-                </TableCell>
-                <TableCell className="border-r border-[#eff0f5] px-3 text-center text-[12px] text-[#111827]">
-                  {row.endtime}
-                </TableCell>
-                <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-center text-[12px] leading-[1.15rem] text-[#111827] whitespace-normal break-words">
-                  {row.programcode} - {row.programname}
-                </TableCell>
-                <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-center text-[12px] text-[#111827]">
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className="mx-auto max-w-full cursor-default overflow-hidden text-ellipsis whitespace-nowrap">
-                          {row.activitycode} - {row.activityname}
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent side="top" sideOffset={6} collisionPadding={12} className="px-3 py-2">
-                        <div className="max-w-[320px] whitespace-normal break-words">
-                          {row.activitycode} - {row.activityname}
-                        </div>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </TableCell>
-                <TableCell className="border-r border-[#eff0f5] px-3 text-center text-[12px] text-[#111827]">
-                  {row.leaveTotalTime}
-                </TableCell>
-                <TableCell className="border-r border-[#eff0f5] px-3 text-center text-[12px] text-[#111827]">
-                  {leaveApprovalStatusLabel[row.status]}
-                </TableCell>
-                <TableCell className="border-r border-[#eff0f5] px-3 text-center">
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
+            groupedRows.map(({ parent: row, children }) => {
+              const expanded = !!expandedByParentId[row.id]
+              const hasChildren = children.length > 0
+
+              const renderDataCells = (r: LeaveApprovalRow, isChild: boolean) => (
+                <>
+                  <TableCell
+                    className={cn(
+                      "align-top border-r border-[#eff0f5] px-3 py-2 text-center text-[12px] leading-[1.15rem] text-[#111827] whitespace-normal break-words",
+                      isChild && "bg-[#f8f7fc]/90",
+                    )}
+                  >
+                    {isChild ? (
+                      <>
+                        <span className="sr-only">Same employee as parent row</span>
                         <span
-                          className="inline-flex items-center justify-center"
-                          aria-label="Comments"
-                          data-leave-row-action="comments"
-                        >
-                          <span className="relative inline-flex size-5 items-center justify-center">
-                            <MessageCircle className="size-5 text-[#6c5dd3]" aria-hidden />
-                            <span className="pointer-events-none absolute inset-0 flex items-center justify-center gap-[2px]">
-                              <span className="size-[2.5px] rounded-full bg-[#6c5dd3]" />
-                              <span className="size-[2.5px] rounded-full bg-[#6c5dd3]" />
-                              <span className="size-[2.5px] rounded-full bg-[#6c5dd3]" />
-                            </span>
-                          </span>
-                        </span>
-                      </TooltipTrigger>
-                      <TooltipContent side="top" sideOffset={6} collisionPadding={12} className="px-3 py-2">
-                        <div className="max-w-[320px] whitespace-normal break-words">
-                          {row.requestcomment?.trim() ||
-                            row.supervisorcomment?.trim() ||
-                            "No comments"}
-                        </div>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </TableCell>
-                <TableCell className="px-3 text-center">
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        {row.status === LeaveApprovalStatus.WITHDRAW ? (
+                          className="inline-block min-h-[1rem] border-l-2 border-[#6C5DD3]/35 pl-2"
+                          aria-hidden
+                        />
+                      </>
+                    ) : (
+                      <span>
+                        {`${r.user?.firstName ?? ""} ${r.user?.lastName ?? ""}`.trim() || r.userId}
+                      </span>
+                    )}
+                  </TableCell>
+                  <TableCell
+                    className={cn(
+                      "border-r border-[#eff0f5] px-3 text-center text-[12px] text-[#111827]",
+                      isChild && "bg-[#f8f7fc]/90",
+                    )}
+                  >
+                    {isChild ? (
+                      <span className="sr-only">Same start date as parent row</span>
+                    ) : (
+                      r.startdt
+                    )}
+                  </TableCell>
+                  <TableCell
+                    className={cn(
+                      "border-r border-[#eff0f5] px-3 text-center text-[12px] text-[#111827]",
+                      isChild && "bg-[#f8f7fc]/90",
+                    )}
+                  >
+                    {isChild ? (
+                      <span className="sr-only">Same start time as parent row</span>
+                    ) : (
+                      r.starttime
+                    )}
+                  </TableCell>
+                  <TableCell
+                    className={cn(
+                      "border-r border-[#eff0f5] px-3 text-center text-[12px] text-[#111827]",
+                      isChild && "bg-[#f8f7fc]/90",
+                    )}
+                  >
+                    {isChild ? (
+                      <span className="sr-only">Same end time as parent row</span>
+                    ) : (
+                      r.endtime
+                    )}
+                  </TableCell>
+                  <TableCell
+                    className={cn(
+                      "align-top border-r border-[#eff0f5] px-3 py-2 text-center text-[12px] leading-[1.15rem] text-[#111827] whitespace-normal break-words",
+                      isChild && "bg-[#f8f7fc]/90",
+                    )}
+                  >
+                    {r.programcode} - {r.programname}
+                  </TableCell>
+                  <TableCell
+                    className={cn(
+                      "align-top border-r border-[#eff0f5] px-3 py-2 text-center text-[12px] text-[#111827]",
+                      isChild && "bg-[#f8f7fc]/90",
+                    )}
+                  >
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="mx-auto max-w-full cursor-default overflow-hidden text-ellipsis whitespace-nowrap">
+                            {r.activitycode} - {r.activityname}
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" sideOffset={6} collisionPadding={12} className="px-3 py-2">
+                          <div className="max-w-[320px] whitespace-normal break-words">
+                            {r.activitycode} - {r.activityname}
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </TableCell>
+                  <TableCell
+                    className={cn(
+                      "border-r border-[#eff0f5] px-3 text-center text-[12px] text-[#111827]",
+                      isChild && "bg-[#f8f7fc]/90",
+                    )}
+                  >
+                    {r.leaveTotalTime}
+                  </TableCell>
+                  <TableCell
+                    className={cn(
+                      "border-r border-[#eff0f5] px-3 text-center text-[12px] text-[#111827]",
+                      isChild && "bg-[#f8f7fc]/90",
+                    )}
+                  >
+                    {leaveApprovalStatusLabel[r.status]}
+                  </TableCell>
+                  <TableCell
+                    className={cn("border-r border-[#eff0f5] px-3 text-center", isChild && "bg-[#f8f7fc]/90")}
+                  >
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
                           <span
                             className="inline-flex items-center justify-center"
-                            aria-label="Withdraw"
-                            data-leave-row-action="status"
+                            aria-label="Comments"
+                            data-leave-row-action="comments"
                           >
-                            {renderActionIcon(row.status)}
+                            <span className="relative inline-flex size-5 items-center justify-center">
+                              <MessageCircle className="size-5 text-[#6c5dd3]" aria-hidden />
+                              <span className="pointer-events-none absolute inset-0 flex items-center justify-center gap-[2px]">
+                                <span className="size-[2.5px] rounded-full bg-[#6c5dd3]" />
+                                <span className="size-[2.5px] rounded-full bg-[#6c5dd3]" />
+                                <span className="size-[2.5px] rounded-full bg-[#6c5dd3]" />
+                              </span>
+                            </span>
                           </span>
-                        ) : row.status === LeaveApprovalStatus.REQUESTED ? (
-                          <div className="inline-flex items-center justify-center gap-2">
-                            <button
-                              type="button"
-                              className="inline-flex cursor-pointer items-center justify-center hover:opacity-90"
-                              aria-label="Approve"
-                              data-leave-row-action="approve"
-                              onClick={() => onOpenComments(row.id, "approve")}
-                            >
-                              {approveIcon}
-                            </button>
-                            <button
-                              type="button"
-                              className="inline-flex cursor-pointer items-center justify-center hover:opacity-90"
-                              aria-label="Reject"
-                              data-leave-row-action="reject"
-                              onClick={() => onOpenComments(row.id, "reject")}
-                            >
-                              {rejectIcon}
-                            </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" sideOffset={6} collisionPadding={12} className="px-3 py-2">
+                          <div className="max-w-[320px] whitespace-normal break-words">
+                            {r.requestcomment?.trim() ||
+                              r.supervisorcomment?.trim() ||
+                              "No comments"}
                           </div>
-                        ) : (
-                          <button
-                            type="button"
-                            className="inline-flex cursor-pointer items-center justify-center hover:opacity-90"
-                            aria-label="Action"
-                            data-leave-row-action="status"
-                            onClick={() => {
-                              onOpenComments(
-                                row.id,
-                                row.status === LeaveApprovalStatus.APPROVED ? "reject" : "approve",
-                              )
-                            }}
-                          >
-                            {renderActionIcon(row.status)}
-                          </button>
-                        )}
-                      </TooltipTrigger>
-                      <TooltipContent side="top" sideOffset={6} collisionPadding={12} className="px-3 py-2">
-                        <div className="max-w-[220px] whitespace-normal break-words">
-                          {actionTooltip(row.status)}
-                        </div>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </TableCell>
-              </TableRow>
-            ))
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </TableCell>
+                  <TableCell className={cn("px-3 text-center", isChild && "bg-[#f8f7fc]/90")}>
+                    {isChild ? (
+                      <span className="text-[11px] text-muted-foreground">—</span>
+                    ) : (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            {r.status === LeaveApprovalStatus.WITHDRAW ? (
+                              <span
+                                className="inline-flex items-center justify-center"
+                                aria-label="Withdraw"
+                                data-leave-row-action="status"
+                              >
+                                {renderActionIcon(r.status)}
+                              </span>
+                            ) : r.status === LeaveApprovalStatus.REQUESTED ? (
+                              <div className="inline-flex items-center justify-center gap-2">
+                                <button
+                                  type="button"
+                                  className="inline-flex cursor-pointer items-center justify-center hover:opacity-90"
+                                  aria-label="Approve"
+                                  data-leave-row-action="approve"
+                                  onClick={() => onOpenComments(r.id, "approve")}
+                                >
+                                  {approveIcon}
+                                </button>
+                                <button
+                                  type="button"
+                                  className="inline-flex cursor-pointer items-center justify-center hover:opacity-90"
+                                  aria-label="Reject"
+                                  data-leave-row-action="reject"
+                                  onClick={() => onOpenComments(r.id, "reject")}
+                                >
+                                  {rejectIcon}
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                type="button"
+                                className="inline-flex cursor-pointer items-center justify-center hover:opacity-90"
+                                aria-label="Action"
+                                data-leave-row-action="status"
+                                onClick={() => {
+                                  onOpenComments(
+                                    r.id,
+                                    r.status === LeaveApprovalStatus.APPROVED ? "reject" : "approve",
+                                  )
+                                }}
+                              >
+                                {renderActionIcon(r.status)}
+                              </button>
+                            )}
+                          </TooltipTrigger>
+                          <TooltipContent side="top" sideOffset={6} collisionPadding={12} className="px-3 py-2">
+                            <div className="max-w-[220px] whitespace-normal break-words">
+                              {actionTooltip(r.status)}
+                            </div>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
+                  </TableCell>
+                </>
+              )
+
+              return (
+                <Fragment key={row.id}>
+                  <TableRow className="min-h-[44px] border-[#e9ecf3] hover:bg-[#fafafa]">
+                    <TableCell className="border-r border-[#eff0f5] px-1 text-center align-middle">
+                      {hasChildren ? (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="size-8 shrink-0 text-[#6C5DD3] hover:bg-[#6C5DD3]/10"
+                          aria-expanded={expanded}
+                          aria-label={expanded ? "Hide multicode rows" : "Show multicode rows"}
+                          onClick={() => toggleExpanded(row.id)}
+                        >
+                          {expanded ? (
+                            <ChevronDown className="size-4" aria-hidden />
+                          ) : (
+                            <ChevronRight className="size-4" aria-hidden />
+                          )}
+                        </Button>
+                      ) : (
+                        <span className="inline-flex size-8 items-center justify-center" aria-hidden />
+                      )}
+                    </TableCell>
+                    {renderDataCells(row, false)}
+                  </TableRow>
+                  {expanded &&
+                    hasChildren &&
+                    children.map((child) => (
+                      <TableRow
+                        key={child.id}
+                        className="min-h-[40px] border-[#e9ecf3] hover:bg-[#f3f0fc]/80"
+                      >
+                        <TableCell className="border-r border-[#eff0f5] bg-[#f8f7fc]/90 px-1 text-center align-middle">
+                          <span className="inline-flex size-8 items-center justify-center" aria-hidden />
+                        </TableCell>
+                        {renderDataCells(child, true)}
+                      </TableRow>
+                    ))}
+                </Fragment>
+              )
+            })
           )}
         </TableBody>
       </Table>
     </div>
   )
 }
-
-

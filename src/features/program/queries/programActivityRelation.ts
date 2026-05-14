@@ -15,17 +15,63 @@ import type {
   TransferItem,
 } from "../types"
 
+function activityNumericId(node: ProgramActivityRelationActivityNode): string {
+  return String(String(node.key ?? "").split("-").at(-1) ?? "")
+}
+
+/**
+ * Collect selectable activity nodes from structured `assignedActivities` / `unassignedActivities`.
+ * Walks every root and every `activity[]` shell (not only `roots[0].activity[0]`), then DFS `children`,
+ * so leave + PTS match backend trees that nest under a different index than `[0][0]`.
+ */
 function collectActivityChildren(
   roots: ProgramActivityRelationActivityRoots | undefined,
 ): ProgramActivityRelationActivityNode[] {
   if (!Array.isArray(roots) || roots.length === 0) return []
-  const firstTree = roots[0]
-  const activityNode = firstTree?.activity?.[0]
-  return Array.isArray(activityNode?.children) ? activityNode.children : []
-}
+  const acc: ProgramActivityRelationActivityNode[] = []
+  const seenIds = new Set<string>()
 
-function activityNumericId(node: ProgramActivityRelationActivityNode): string {
-  return String(String(node.key ?? "").split("-").at(-1) ?? "")
+  const visit = (node: ProgramActivityRelationActivityNode | undefined) => {
+    if (!node || typeof node !== "object") return
+    const id = activityNumericId(node)
+    if (id && id !== "NaN" && !seenIds.has(id)) {
+      seenIds.add(id)
+      acc.push(node)
+    }
+    if (Array.isArray(node.children)) {
+      for (const ch of node.children) {
+        visit(ch)
+      }
+    }
+  }
+
+  for (const tree of roots) {
+    if (!tree || typeof tree !== "object") continue
+    const t = tree as Record<string, unknown>
+    const activityArr = (Array.isArray(t.activity)
+      ? t.activity
+      : Array.isArray(t.activities)
+        ? t.activities
+        : null) as ProgramActivityRelationActivityNode[] | null
+    if (Array.isArray(activityArr) && activityArr.length > 0) {
+      for (const shell of activityArr) {
+        if (!shell) continue
+        visit(shell as ProgramActivityRelationActivityNode)
+      }
+      continue
+    }
+    // Some responses omit the `activity` shell and return activity nodes as roots.
+    const asNode = tree as ProgramActivityRelationActivityNode
+    const keyStr = String(asNode.key ?? "")
+    const looksLikeCompositeActivityKey = keyStr.includes("-")
+    if (
+      looksLikeCompositeActivityKey ||
+      (Array.isArray(asNode.children) && asNode.children.length > 0)
+    ) {
+      visit(asNode)
+    }
+  }
+  return acc
 }
 
 function activityNodeToTransferItem(node: ProgramActivityRelationActivityNode): TransferItem {

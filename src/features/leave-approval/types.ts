@@ -1,5 +1,6 @@
 import { z } from "zod"
 
+import type { UserLeaveMultiCodeFragment } from "@/lib/groupUserLeaveRows"
 import { leaveApprovalFiltersSchema } from "./schemas"
 import type { LeaveApprovalStatusValue } from "./enums/leaveApprovalStatus"
 
@@ -70,6 +71,9 @@ export type UserLeaveListItemDto = {
   status: UserLeaveStatusDto
   user: UserLeavePersonNameDto
   supervisor?: UserLeavePersonNameDto
+  parentId?: number | null
+  recordType?: string
+  multiCodeRecords?: UserLeaveMultiCodeFragment[]
 }
 
 // --- Backend: `dto/response/user-leave.res.dto.ts` → `UserLeaveListResponseDto` (`items` + `meta`) ---
@@ -126,7 +130,27 @@ export type UserLeave = {
   supervisor?: { firstName: string; lastName: string }
 }
 
-// --- Backend: `dto/request/create-user-leave.req.dto.ts` ---
+// --- Backend: `UserLeaveRecordType` (same string values as time-study `NORMAL` / `MULTI_CODE`) ---
+export type UserLeaveRecordTypeDto = "NORMAL" | "MULTI_CODE"
+
+// --- Backend: `dto/request/create-user-leave.req.dto.ts` (+ optional `multiCodeRecords` for MULTI_CODE child rows) ---
+export type UserLeaveMultiCodeRecordRequestDto = {
+  userId?: string
+  programid?: string
+  activityid?: string
+  programcode: string
+  programname: string
+  activitycode: string
+  activityname: string
+  startdt: string
+  enddt: string
+  starttime: string
+  endtime: string
+  leaveTotalTime: number
+  requestcomment?: string
+  recordType: UserLeaveRecordTypeDto
+}
+
 export type CreateUserLeaveRequestDto = {
   id?: number
   userId?: string
@@ -143,6 +167,9 @@ export type CreateUserLeaveRequestDto = {
   leaveTotalTime: number
   requestcomment?: string
   status?: "requested" | "withdraw"
+  recordType: UserLeaveRecordTypeDto
+  /** Child rows for the same calendar slot; backend sets `parentId` after parent insert. */
+  multiCodeRecords?: UserLeaveMultiCodeRecordRequestDto[]
 }
 
 // --- Backend: `dto/request/submit-user-leave.req.dto.ts` ---

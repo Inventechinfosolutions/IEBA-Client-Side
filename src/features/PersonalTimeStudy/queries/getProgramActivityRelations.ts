@@ -5,7 +5,7 @@ import { apiGetProgramActivityRelationActivities } from "@/features/program/api"
  * Fetches program-activity relations (assigned activities) for multiple program-department pairs.
  */
 export function useGetProgramActivityRelations(
-  programQueries: { departmentId: number; programId: number }[],
+  programQueries: { departmentId: number; programId: string }[],
   enabled = true
 ) {
   return useQueries({
@@ -16,7 +16,11 @@ export function useGetProgramActivityRelations(
       gcTime: 0,
       refetchOnMount: true,
       refetchOnWindowFocus: true,
-      enabled: enabled && !!item.departmentId && !!item.programId,
+      enabled:
+        enabled &&
+        Number.isFinite(item.departmentId) &&
+        item.departmentId > 0 &&
+        String(item.programId ?? "").trim().length > 0,
     })),
   })
 }
