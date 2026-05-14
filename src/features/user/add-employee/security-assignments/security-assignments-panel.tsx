@@ -126,8 +126,7 @@ export function SecurityAssignmentsPanel({
     // Check if any of those departments has both settings enabled
     return departmentsQuery.data.items.some(dept => 
       assignedDeptIds.has(String(dept.id)) && 
-      dept.settings.apportioning && 
-      dept.settings.autoApportioning
+      dept.settings.apportioning
     )
   }, [departmentsQuery.data?.items, securitySnapshots])
 
