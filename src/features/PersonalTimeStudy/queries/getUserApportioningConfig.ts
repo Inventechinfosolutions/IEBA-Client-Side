@@ -16,8 +16,16 @@ export type SupervisorDeptApportioningConfig = {
 
 /** Full apportioning config for a supervisor user. */
 export type SupervisorApportioningConfig = {
-  /** True if ANY active department role has apportioningRequired=true. */
+  /**
+   * True when at least one department role has apportioning configured with a positive percent.
+   * Drives the read-only apportioning panel.
+   */
   apportioningRequired: boolean
+  /**
+   * From GET /users/:id/details `allowMultiCodes`. When true, Personal Time Study shows the
+   * per-row (+) control to add multi-code child rows.
+   */
+  allowMultiCodes: boolean
   /** The user's allocated time study minutes per day. */
   tsmins: number
   departments: SupervisorDeptApportioningConfig[]
@@ -55,8 +63,11 @@ export function useGetUserApportioningConfig(userId: string, enabled = true) {
         }
       })
 
+      const allowMultiCodes = details.allowMultiCodes === true
+
       return {
         apportioningRequired: apportioningDepts.length > 0,
+        allowMultiCodes,
         tsmins,
         departments,
       }

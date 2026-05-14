@@ -8,7 +8,11 @@ import type {
   UserMonthLegendResDto 
 } from "../types"
 import type { EmployeeLeaveRequestFormValues } from "../schema/PersonalTimeStudySchema"
-import type { UserLeave } from "../../leave-approval/types"
+import type {
+  CreateUserLeaveRequestDto,
+  UserLeave,
+  UserLeaveMultiCodeRecordRequestDto,
+} from "../../leave-approval/types"
 import { apiSubmitBulkUserLeaves, apiUpdateUserLeave as apiUpdateUserLeaveBase } from "../../leave-approval/api"
 
 export async function apiGetMonthLegend(params: {
@@ -88,6 +92,14 @@ export async function apiGetUserProgramsAndActivities(userId: string): Promise<a
   return res.data!
 }
 
+/** Multicode programs/activities for sub-rows when `allowMultiCodes` is enabled on the user profile. */
+export async function apiGetUserProgramsAndActivitiesMulticode(userId: string): Promise<any> {
+  const res = await api.get<ApiEnvelope<any>>(
+    `/timestudyprograms/user/programs-activities/multicode?userId=${encodeURIComponent(userId)}`,
+  )
+  return res.data!
+}
+
 /** Updates a single time study record by ID. */
 export async function apiUpdateTimeRecord(
   id: number,
@@ -106,42 +118,118 @@ export async function apiDeleteTimeRecord(id: number): Promise<void> {
   await api.delete(`/timestudyrecords/${id}`)
 }
 
+/** One logical leave: anchor row index + consecutive `multicodeChild` row indices (outline +). */
+export function partitionLeaveEntryIndexGroups(
+  entries: EmployeeLeaveRequestFormValues["entries"],
+): number[][] {
+  if (!entries.length) return []
+  const groups: number[][] = []
+  let i = 0
+  while (i < entries.length) {
+    const group: number[] = [i]
+    i++
+    while (i < entries.length && entries[i].multicodeChild === true) {
+      group.push(i)
+      i++
+    }
+    groups.push(group)
+  }
+  return groups
+}
+
+/** One logical leave: anchor row + consecutive `multicodeChild` rows (outline +). */
+function partitionLeaveEntryGroups(
+  entries: EmployeeLeaveRequestFormValues["entries"],
+): EmployeeLeaveRequestFormValues["entries"][] {
+  return partitionLeaveEntryIndexGroups(entries).map((idxs) => idxs.map((j) => entries[j]))
+}
+
+function normalizeLeaveTimeString(t: string): string {
+  if (!t) return "00:00:00"
+  if (t.length === 5) return `${t}:00`
+  return t
+}
+
+/** Builds a single leave row (parent or standalone) for create/update payloads. */
+function mapLeaveEntryToDto(
+  entry: EmployeeLeaveRequestFormValues["entries"][number],
+  userId: string,
+  allPrograms: any[],
+  allActivities: any[],
+  status: "draft" | "requested" | "approved",
+): CreateUserLeaveRequestDto {
+  const program = allPrograms.find((p: any) => String(p.id) === entry.programCode) as any
+  const activity = allActivities.find((a: any) => String(a.id) === entry.activityCode) as any
+
+  return {
+    userId,
+    programid: entry.programCode,
+    activityid: entry.activityCode,
+    programcode: program?.code ?? entry.programCode,
+    programname: program?.name ?? entry.programCode,
+    activitycode: activity?.code ?? entry.activityCode,
+    activityname: activity?.name ?? entry.activityCode,
+    startdt: entry.date,
+    enddt: entry.date,
+    starttime: normalizeLeaveTimeString(entry.startTime),
+    endtime: normalizeLeaveTimeString(entry.endTime),
+    leaveTotalTime: parseInt(entry.totalMinApplied, 10) || 0,
+    requestcomment: entry.comment || undefined,
+    status: status as any,
+    recordType: "NORMAL",
+  }
+}
+
+/** Builds `multiCodeRecords` for child rows (same date/times as parent; distinct program/activity/minutes). */
+function mapMulticodeChildToRecord(
+  child: EmployeeLeaveRequestFormValues["entries"][number],
+  userId: string,
+  parent: CreateUserLeaveRequestDto,
+  allPrograms: any[],
+  allActivities: any[],
+): UserLeaveMultiCodeRecordRequestDto {
+  const program = allPrograms.find((p: any) => String(p.id) === child.programCode) as any
+  const activity = allActivities.find((a: any) => String(a.id) === child.activityCode) as any
+
+  return {
+    userId,
+    programid: child.programCode,
+    activityid: child.activityCode,
+    programcode: program?.code ?? child.programCode,
+    programname: program?.name ?? child.programCode,
+    activitycode: activity?.code ?? child.activityCode,
+    activityname: activity?.name ?? child.activityCode,
+    startdt: parent.startdt,
+    enddt: parent.enddt,
+    starttime: parent.starttime,
+    endtime: parent.endtime,
+    leaveTotalTime: parseInt(child.totalMinApplied, 10) || 0,
+    requestcomment: child.comment || undefined,
+    recordType: "MULTI_CODE",
+  }
+}
+
 /** Builds leave request records from form values and dropdown data. */
 function buildLeaveRecords(
   values: EmployeeLeaveRequestFormValues,
   userId: string,
   dropdownData: any[] | undefined,
   status: "draft" | "requested" | "approved",
-) {
+): CreateUserLeaveRequestDto[] {
   const allPrograms = dropdownData?.flatMap((d: any) => d.programs) ?? []
   const allActivities = dropdownData?.flatMap((d: any) => d.activities) ?? []
 
-  return values.entries.map((entry) => {
-    const program = allPrograms.find((p: any) => String(p.id) === entry.programCode) as any
-    const activity = allActivities.find((a: any) => String(a.id) === entry.activityCode) as any
+  const groups = partitionLeaveEntryGroups(values.entries)
 
-    const normalizeTime = (t: string) => {
-      if (!t) return "00:00:00"
-      if (t.length === 5) return `${t}:00`
-      return t
-    }
+  return groups.map((group) => {
+    const parent = mapLeaveEntryToDto(group[0], userId, allPrograms, allActivities, status)
+    if (group.length === 1) return parent
 
-    return {
-      userId,
-      programid: entry.programCode,
-      activityid: entry.activityCode,
-      programcode: program?.code ?? entry.programCode,
-      programname: program?.name ?? entry.programCode,
-      activitycode: activity?.code ?? entry.activityCode,
-      activityname: activity?.name ?? entry.activityCode,
-      startdt: entry.date,
-      enddt: entry.date,
-      starttime: normalizeTime(entry.startTime),
-      endtime: normalizeTime(entry.endTime),
-      leaveTotalTime: parseInt(entry.totalMinApplied, 10) || 0,
-      requestcomment: entry.comment || undefined,
-      status: status as any,
-    }
+    const multiCodeRecords = group
+      .slice(1)
+      .map((child) => mapMulticodeChildToRecord(child, userId, parent, allPrograms, allActivities))
+
+    return { ...parent, multiCodeRecords }
   })
 }
 

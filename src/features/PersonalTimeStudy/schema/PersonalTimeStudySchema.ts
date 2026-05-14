@@ -48,6 +48,8 @@ export const employeeLeaveRequestRowSchema = z
       .refine((v) => /^\d+$/.test(v), "Enter whole minutes")
       .refine((v) => parseInt(v, 10) >= 0, "Minutes cannot be negative"),
     comment: z.string().trim(),
+    /** True when row was added via multi-code + (same date/times as row 0); drives program/activity lists. */
+    multicodeChild: z.boolean().optional(),
   })
   .superRefine((row, ctx) => {
     const startM = parseTimeToMinutes(row.startTime)

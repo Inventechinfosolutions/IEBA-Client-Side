@@ -26,6 +26,8 @@ type PersonalTimeStudyLeaveCardProps = {
   leaveRecords?: import("../types").UserLeaveDaySnapshotResDto[]
   className?: string
   dropdownData?: any[]
+  /** From user profile — enables multicode program/activity flow in leave dialog. */
+  allowMultiCodes?: boolean
   onOpen?: () => void
   dateStr?: string
   month?: number
@@ -42,6 +44,7 @@ export function PersonalTimeStudyLeaveCard({
   leaveRecords = [],
   className,
   dropdownData,
+  allowMultiCodes,
   onOpen,
   dateStr = "",
   month = 1,
@@ -196,20 +199,22 @@ export function PersonalTimeStudyLeaveCard({
         initialValues={initialValues}
         editingStatus={editingStatus}
         dropdownData={dropdownData}
+        userId={userId}
+        allowMultiCodes={allowMultiCodes}
         editingLeave={editingLeave}
-        onSave={async (values) => { 
+        onSave={async (values, lookupDropdown) => { 
           if (editingLeave) {
-            await updateMutation.mutateAsync({ id: (editingLeave as any).id, values, userId, dropdownData, status: "draft" })
+            await updateMutation.mutateAsync({ id: (editingLeave as any).id, values, userId, dropdownData: lookupDropdown ?? dropdownData, status: "draft" })
           } else {
-            await saveMutation.mutateAsync({ values, userId, dropdownData }) 
+            await saveMutation.mutateAsync({ values, userId, dropdownData: lookupDropdown ?? dropdownData }) 
           }
         }}
-        onSubmit={async (values) => { 
+        onSubmit={async (values, lookupDropdown) => { 
           if (editingLeave) {
             const targetStatus = editingStatus?.toLowerCase() === "approved" ? "approved" : "requested"
-            await updateMutation.mutateAsync({ id: (editingLeave as any).id, values, userId, dropdownData, status: targetStatus })
+            await updateMutation.mutateAsync({ id: (editingLeave as any).id, values, userId, dropdownData: lookupDropdown ?? dropdownData, status: targetStatus })
           } else {
-            await submitMutation.mutateAsync({ values, userId, dropdownData }) 
+            await submitMutation.mutateAsync({ values, userId, dropdownData: lookupDropdown ?? dropdownData }) 
           }
         }}
         isSaving={saveMutation.isPending || (updateMutation.isPending && (editingStatus?.toLowerCase() !== "approved" && editingStatus?.toLowerCase() !== "requested"))}
