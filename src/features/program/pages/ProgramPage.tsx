@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react"
+import { lazy, Suspense, useMemo, useRef, useState } from "react"
 import { Check } from "lucide-react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -7,13 +7,13 @@ import { toast } from "sonner"
 import { usePermissions } from "@/hooks/usePermissions"
 
 import { MasterCodePagination } from "@/features/master-code/components/MasterCodePagination"
+import { Spinner } from "@/components/ui/spinner"
 import { BudgetUnitTable } from "../components/BudgetUnitTable"
 import { ProgramActivityRelationForm } from "../components/program-activity-relation/ProgramActivityRelationForm"
 import { ProgramFormModal } from "../components/ProgramFormModal"
 import { ProgramTabs } from "../components/ProgramTabs"
 import { TimeStudyProgramTable } from "../components/TimeStudyProgramTable"
 import { ProgramToolbar } from "../components/ProgramToolbar"
-import { UserProgramHistoryTable } from "../components/UserProgramHistoryTable"
 import { useProgramModule } from "../hooks/useProgramModule"
 import { apiGetProgramRowById, apiCheckActiveSubPrograms, apiCheckActiveBudgetSubPrograms } from "../api"
 import { useGetProgramFormOptions } from "../queries/getProgramFormOptions"
@@ -28,6 +28,10 @@ import type {
   ProgramTab,
   TimeStudyProgramTableHandle,
 } from "../types"
+
+const UserProgramHistoryTable = lazy(() =>
+  import("../components/UserProgramHistoryTable").then((m) => ({ default: m.UserProgramHistoryTable }))
+)
 
 const tabs: ProgramTab[] = [
   "Budget Units",
@@ -508,12 +512,16 @@ export function ProgramPage() {
             onAddProgram={handleAddProgram}
             hideAdd={isRestrictedRole}
             showHistory={showHistory}
-            onToggleHistory={() => {
-              setShowHistory((prev) => {
-                if (prev) setHistorySearch("")
-                return !prev
-              })
-            }}
+            onToggleHistory={
+              activeTab === "Time Study programs"
+                ? () => {
+                    setShowHistory((prev) => {
+                      if (prev) setHistorySearch("")
+                      return !prev
+                    })
+                  }
+                : undefined
+            }
           />
         ) : null}
         {activeTab === "Program Activity Relation" ? (
@@ -527,12 +535,16 @@ export function ProgramPage() {
         {activeTab !== "Program Activity Relation" ? (
           <>
             <div className="mb-5">
-              {showHistory ? (
-                <UserProgramHistoryTable
-                  userId=""
-                  programCode={historySearch}
-                  programName="All Programs"
-                />
+              {showHistory && activeTab === "Time Study programs" ? (
+                <Suspense
+                  fallback={
+                    <div className="relative flex min-h-[300px] items-center justify-center rounded-[10px] border border-[#E5E7EB] bg-white">
+                      <Spinner className="text-[#6C5DD3]" />
+                    </div>
+                  }
+                >
+                  <UserProgramHistoryTable userId="" programCode={historySearch} />
+                </Suspense>
               ) : activeTab === "Budget Units" ? (
                 <BudgetUnitTable
                   ref={budgetUnitTableRef}
@@ -592,3 +604,6 @@ export function ProgramPage() {
     </section>
   )
 }
+
+export default ProgramPage
+

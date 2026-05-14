@@ -641,3 +641,6 @@ export function UserModulePage() {
     </section>
   )
 }
+
+export default UserModulePage
+

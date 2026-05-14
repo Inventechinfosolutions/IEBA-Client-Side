@@ -130,3 +130,6 @@ export function JobClassificationPage() {
   )
 }
 
+
+export default JobClassificationPage
+

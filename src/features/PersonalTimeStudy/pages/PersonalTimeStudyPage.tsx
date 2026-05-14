@@ -350,45 +350,40 @@ export function PersonalTimeStudyPage() {
                       />
                     </div>
 
-                    <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-2 lg:min-h-0">
-                      <div className="grid min-h-0 w-full grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                        <PersonalTimeStudyLegendCard className="min-h-0" />
-                        <PersonalTimeStudyLeaveCard
-                          className="min-h-0"
-                          leaveCount={
-                            (monthQuery.data?.leaveRecords?.filter(r => r.status?.toLowerCase() === "approved").length ?? 0) +
-                            (monthQuery.data?.leaveRecords?.filter(r => ["draft", "requested"].includes(r.status?.toLowerCase() ?? "")).length ?? 0) +
-                            (monthQuery.data?.leaveRecords?.filter(r => r.status?.toLowerCase() === "rejected").length ?? 0)
-                          }
-                          approved={monthQuery.data?.leaveRecords?.filter(r => r.status?.toLowerCase() === "approved").length ?? 0}
-                          open={monthQuery.data?.leaveRecords?.filter(r => ["draft", "requested"].includes(r.status?.toLowerCase() ?? "")).length ?? 0}
-                          rejected={monthQuery.data?.leaveRecords?.filter(r => r.status?.toLowerCase() === "rejected").length ?? 0}
-                          leaveRecords={monthQuery.data?.leaveRecords}
-                          dropdownData={dropdownQuery.data}
-                          onOpen={() => dropdownQuery.refetch()}
-                          dateStr={dateStr}
-                          month={month}
-                          year={year}
-                          isLoading={monthQuery.isLoading}
-                          isDropdownLoading={dropdownQuery.isFetching}
-                        />
-                        <PersonalTimeStudyMinutesCard
-                          className="min-h-0 sm:col-span-2 lg:col-span-1"
-                          allocatedMinutes={summaryQuery.data?.tsmins ?? 0}
-                          actualMinutes={summaryQuery.data?.actualnormalactivitytime ?? 0}
-                          balanceMinutes={summaryQuery.data?.actualnormalactivityTimebalance ?? 0}
-                          totalMAAMinutes={summaryQuery.data?.actualmultiactivitytime ?? 0}
-                        />
-                      </div>
-
-                      <PersonalTimeStudyNotesSection
-                        value={localNotes}
-                        onChange={setLocalNotes}
-                        onSave={() => notesMutation.mutate(localNotes)}
-                        isSaving={notesMutation.isPending}
-                        className="min-h-0"
-                      />
-                    </div>
+                <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-2 lg:min-h-0">
+                  <div className="grid min-h-0 w-full grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                    <PersonalTimeStudyLegendCard className="min-h-0" />
+                    <PersonalTimeStudyLeaveCard
+                      className="min-h-0"
+                      leaveCount={
+                        (monthQuery.data?.leaveRecords?.filter(r => r.status?.toLowerCase() === "approved").length ?? 0) +
+                        (monthQuery.data?.leaveRecords?.filter(r => ["draft", "requested"].includes(r.status?.toLowerCase() ?? "")).length ?? 0) +
+                        (monthQuery.data?.leaveRecords?.filter(r => r.status?.toLowerCase() === "rejected").length ?? 0)
+                      }
+                      approved={monthQuery.data?.leaveRecords?.filter(r => r.status?.toLowerCase() === "approved").length ?? 0}
+                      open={monthQuery.data?.leaveRecords?.filter(r => ["draft", "requested"].includes(r.status?.toLowerCase() ?? "")).length ?? 0}
+                      rejected={monthQuery.data?.leaveRecords?.filter(r => r.status?.toLowerCase() === "rejected").length ?? 0}
+                      leaveRecords={monthQuery.data?.leaveRecords}
+                      dropdownData={dropdownQuery.data}
+                      allowMultiCodes={
+                        apportioningConfigQuery.isPending && !apportioningConfigQuery.isFetched
+                          ? undefined
+                          : apportioningConfigQuery.data?.allowMultiCodes === true
+                      }
+                      onOpen={() => dropdownQuery.refetch()}
+                      dateStr={dateStr}
+                      month={month}
+                      year={year}
+                      isLoading={monthQuery.isLoading}
+                      isDropdownLoading={dropdownQuery.isFetching}
+                    />
+                    <PersonalTimeStudyMinutesCard
+                      className="min-h-0 sm:col-span-2 lg:col-span-1"
+                      allocatedMinutes={summaryQuery.data?.tsmins ?? 0}
+                      actualMinutes={summaryQuery.data?.actualnormalactivitytime ?? 0}
+                      balanceMinutes={summaryQuery.data?.actualnormalactivityTimebalance ?? 0}
+                      totalMAAMinutes={summaryQuery.data?.actualmultiactivitytime ?? 0}
+                    />
                   </div>
 
                   <div className="mt-6 mb-4">
@@ -425,3 +420,6 @@ export function PersonalTimeStudyPage() {
     </TooltipProvider>
   )
 }
+
+export default PersonalTimeStudyPage
+

@@ -169,3 +169,6 @@ export function MasterCodePage() {
     </section>
   )
 }
+
+export default MasterCodePage
+

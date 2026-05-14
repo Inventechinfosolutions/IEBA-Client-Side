@@ -15,6 +15,10 @@ export const personalTimeStudyKeys = {
   dropdowns: (userId: string) =>
     [...personalTimeStudyKeys.all, "dropdowns", userId] as const,
 
+  /** User programs and activities for multicode (MAA) sub-rows */
+  dropdownsMulticode: (userId: string) =>
+    [...personalTimeStudyKeys.all, "dropdowns-multicode", userId] as const,
+
   /** Placeholder — align with future `GET .../:id` for edit flows. */
   detail: (id: string) =>
     [...personalTimeStudyKeys.all, "detail", id] as const,

@@ -185,3 +185,6 @@ export function JobPoolPage() {
     </section>
   )
 }
+
+export default JobPoolPage
+

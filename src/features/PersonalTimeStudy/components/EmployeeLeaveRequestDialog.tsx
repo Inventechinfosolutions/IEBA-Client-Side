@@ -2,8 +2,10 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { Plus, Trash2 } from "lucide-react"
 import { useCallback, useMemo, useState } from "react"
 import { useGetProgramActivityRelations } from "../queries/getProgramActivityRelations"
+import { useGetPersonalMulticodeDropdowns } from "../queries/getPersonalDropdowns"
 import { Controller, useFieldArray, useForm } from "react-hook-form"
 import { toast } from "sonner"
+import { useAuth } from "@/contexts/AuthContext"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -13,6 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
 import { TitleCaseInput } from "@/components/ui/title-case-input"
 import { SingleSelectSearchDropdown } from "@/components/ui/dropdown-search"
 import { TimePickerDropdown } from "@/components/ui/time-picker"
@@ -28,8 +31,24 @@ import {
   employeeLeaveRequestFormSchema,
   type EmployeeLeaveRequestFormValues,
 } from "../schema/PersonalTimeStudySchema"
+import {
+  coerceProgramsActivitiesBundles,
+  findProgramDepartmentInBundles,
+  inferDepartmentIdForProgramSelection,
+  mergeDropdownDataForLeaveLookups,
+  normalizeMulticodeDropdownPayload,
+  pickDepartmentIdFromEntity,
+} from "../utils/multicodeDropdownUtils"
+import { mergeProgramActivityRelationTransferItems } from "@/features/program/queries/programActivityRelation"
+import { partitionLeaveEntryIndexGroups } from "../api/personalTimeStudyApi"
 
 const EMPTY = EMPLOYEE_LEAVE_EMPTY_SELECT_VALUE
+
+function RequiredMark() {
+  return <span className="text-destructive">*</span>
+}
+
+const leaveChildFieldRowClass = "flex flex-row items-end gap-2 flex-nowrap"
 
 
 
@@ -42,16 +61,32 @@ function createEmptyRow(): EmployeeLeaveRequestFormValues["entries"][number] {
     activityCode: EMPTY,
     totalMinApplied: "",
     comment: "",
+    multicodeChild: false,
+  }
+}
+
+function createMulticodeChildRow(
+  anchor: EmployeeLeaveRequestFormValues["entries"][number],
+): EmployeeLeaveRequestFormValues["entries"][number] {
+  return {
+    date: anchor.date ?? "",
+    startTime: anchor.startTime ?? "",
+    endTime: anchor.endTime ?? "",
+    programCode: EMPTY,
+    activityCode: EMPTY,
+    totalMinApplied: "",
+    comment: "",
+    multicodeChild: true,
   }
 }
 
 export type EmployeeLeaveRequestDialogProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
-  /** Persist draft — optional */
-  onSave?: (values: EmployeeLeaveRequestFormValues) => void | Promise<void>
+  /** Persist draft — optional; second arg is merged dropdown for API name resolution when multicode is used. */
+  onSave?: (values: EmployeeLeaveRequestFormValues, lookupDropdown?: any[]) => void | Promise<void>
   /** Final submit — optional */
-  onSubmit?: (values: EmployeeLeaveRequestFormValues) => void | Promise<void>
+  onSubmit?: (values: EmployeeLeaveRequestFormValues, lookupDropdown?: any[]) => void | Promise<void>
   initialValues?: EmployeeLeaveRequestFormValues
   className?: string
   dropdownData?: any[]
@@ -62,6 +97,10 @@ export type EmployeeLeaveRequestDialogProps = {
   isDropdownLoading?: boolean
   isFetching?: boolean
   editingLeave?: any
+  /** Logged-in user (multicode + activity queries). */
+  userId?: string
+  /** From user profile GET /users/:id/details `allowMultiCodes`. */
+  allowMultiCodes?: boolean
 }
 
 const getHeaderGridClass = (isEditing: boolean) =>
@@ -188,67 +227,37 @@ export function EmployeeLeaveRequestDialog({
   isDropdownLoading = false,
   isFetching = false,
   editingLeave,
+  userId: propsUserId,
+  allowMultiCodes,
 }: EmployeeLeaveRequestDialogProps) {
+
+  const { user } = useAuth()
+  const effectiveUserId = (propsUserId ?? user?.id ?? "").trim()
+  const allowMulticodeUi = allowMultiCodes === true
 
   const isEditing = !!initialValues;
   const isApproved = editingStatus?.toLowerCase() === "approved";
 
+  const dropdownBundles = useMemo(() => coerceProgramsActivitiesBundles(dropdownData), [dropdownData])
+
   const programs = useMemo(() => {
-    const list = dropdownData?.flatMap((d: any) => d.programs.map((p: any) => ({ ...p, departmentCode: d.departmentCode }))) ?? []
+    const list =
+      dropdownBundles.flatMap((d: any) =>
+        (d.programs ?? []).map((p: any) => ({
+          ...p,
+          departmentCode: d.departmentCode,
+          departmentId: p.departmentId ?? p.department?.id ?? d.departmentId ?? d.department?.id,
+        })),
+      ) ?? []
     const unique = Array.from(new Map(list.map((p: any) => [p.id, p])).values())
     return unique
-  }, [dropdownData])
+  }, [dropdownBundles])
 
   const activities = useMemo(() => {
-    const list = dropdownData?.flatMap((d: any) => d.activities) ?? []
+    const list = dropdownBundles.flatMap((d: any) => d.activities ?? []) ?? []
     const unique = Array.from(new Map(list.map((a: any) => [a.id, a])).values())
     return unique
-  }, [dropdownData])
-
-  const programQueries = useMemo(() => {
-    const list: { departmentId: number; programId: number }[] = []
-    for (const bundle of dropdownData ?? []) {
-      const deptId = bundle.departmentId
-      if (!deptId) continue
-      for (const p of bundle.programs) {
-        list.push({ departmentId: deptId, programId: p.id })
-      }
-    }
-    return list
-  }, [dropdownData])
-
-  const programActivityQueryResults = useGetProgramActivityRelations(programQueries)
-
-  const getActivitiesForProgram = useCallback((programId: string): Set<string> => {
-    const index = programQueries.findIndex((pq) => String(pq.programId) === programId)
-    if (index === -1) return new Set()
-    const result = programActivityQueryResults[index]
-    if (!result?.data) return new Set()
-
-    const ids = new Set<string>()
-    const roots = result.data.assignedActivities
-
-    function traverse(node: any) {
-      if (!node) return
-      if (node.assigned) {
-        const idStr = String(node.key || "")
-        const id = idStr.split("-").pop()
-        if (id) ids.add(id)
-      }
-      if (Array.isArray(node.children)) {
-        node.children.forEach(traverse)
-      }
-    }
-
-    if (Array.isArray(roots)) {
-      for (const deptNode of roots) {
-        if (Array.isArray(deptNode.activity)) {
-          deptNode.activity.forEach(traverse)
-        }
-      }
-    }
-    return ids
-  }, [programQueries, programActivityQueryResults])
+  }, [dropdownBundles])
 
   const form = useForm<EmployeeLeaveRequestFormValues>({
     resolver: zodResolver(employeeLeaveRequestFormSchema),
@@ -265,12 +274,225 @@ export function EmployeeLeaveRequestDialog({
     }
   }
 
-  const { fields, append, remove } = useFieldArray({
+  const { fields, append, remove, insert } = useFieldArray({
     control: form.control,
     name: "entries",
   })
 
   const formEntries = form.watch("entries")
+
+  const leaveEntryIndexGroups = useMemo(
+    () => partitionLeaveEntryIndexGroups(formEntries ?? []),
+    [formEntries],
+  )
+
+  /** True when a row has a program id that is not in the primary (non–multi-code) list — e.g. editing MAA leave. */
+  const needsMulticodeData = useMemo(() => {
+    if (!allowMulticodeUi || !formEntries?.length) return false
+    const primaryIds = new Set(
+      programs.filter((p: any) => !p.isMultiCode).map((p: any) => String(p.id)),
+    )
+    return formEntries.some((e) => {
+      const id = e.programCode && e.programCode !== EMPTY ? String(e.programCode).trim() : ""
+      if (!id) return false
+      return !primaryIds.has(id)
+    })
+  }, [allowMulticodeUi, formEntries, programs])
+
+  const hasMulticodeChildRow = useMemo(
+    () => (formEntries ?? []).some((e) => e.multicodeChild === true),
+    [formEntries],
+  )
+
+  const shouldFetchMulticode =
+    open &&
+    allowMulticodeUi &&
+    Boolean(effectiveUserId) &&
+    (needsMulticodeData || hasMulticodeChildRow)
+
+  const multicodeDropdownQuery = useGetPersonalMulticodeDropdowns(effectiveUserId, shouldFetchMulticode)
+  const multicodeBundles = useMemo(
+    () => normalizeMulticodeDropdownPayload(multicodeDropdownQuery.data, dropdownBundles),
+    [multicodeDropdownQuery.data, dropdownBundles],
+  )
+  const mergedLookupDropdown = useMemo(
+    () => mergeDropdownDataForLeaveLookups(dropdownBundles, multicodeDropdownQuery.data),
+    [dropdownBundles, multicodeDropdownQuery.data],
+  )
+
+  /** Main / merged bundles first so primary leave rows match PTS `departmentId`+`programId` pairs; multicode last. */
+  const resolveDepartmentIdForProgram = useCallback(
+    (programIdStr: string | undefined): number | undefined => {
+      const trimmed = programIdStr?.trim()
+      if (!trimmed) return undefined
+
+      let d =
+        findProgramDepartmentInBundles(dropdownBundles.length ? dropdownBundles : undefined, trimmed) ??
+        findProgramDepartmentInBundles(mergedLookupDropdown ?? undefined, trimmed)
+      if (d != null) return d
+
+      const flatProgram = programs.find((p: any) => String(p.id) === trimmed)
+      const fromFlat = pickDepartmentIdFromEntity(flatProgram)
+      if (fromFlat != null) return fromFlat
+
+      if (allowMulticodeUi && multicodeBundles.length) {
+        d = findProgramDepartmentInBundles(multicodeBundles, trimmed)
+        if (d != null) return d
+      }
+
+      const inferred =
+        inferDepartmentIdForProgramSelection(trimmed, dropdownBundles.length ? dropdownBundles : undefined) ??
+        inferDepartmentIdForProgramSelection(trimmed, mergedLookupDropdown ?? undefined) ??
+        (allowMulticodeUi && multicodeBundles.length
+          ? inferDepartmentIdForProgramSelection(trimmed, multicodeBundles)
+          : undefined)
+      if (inferred != null) return inferred
+
+      const roleDepts = (user?.departmentRoles ?? [])
+        .map((dr) => Number(dr.departmentId))
+        .filter((n) => Number.isFinite(n) && n > 0)
+      if (roleDepts.length === 1) return roleDepts[0]
+
+      return undefined
+    },
+    [allowMulticodeUi, dropdownBundles, mergedLookupDropdown, multicodeBundles, programs, user?.departmentRoles],
+  )
+
+  const formatLeaveProgramOption = useCallback((p: any) => {
+    const deptPrefix = (p.departmentCode ?? "").split("-")[0]
+    const codeStr = String(p.code ?? "")
+    const prefixed =
+      deptPrefix && codeStr.toLowerCase().startsWith(`${deptPrefix.toLowerCase()}-`)
+        ? codeStr
+        : deptPrefix
+          ? `${deptPrefix}-${codeStr}`
+          : codeStr
+    return { value: String(p.id), label: `${prefixed} - ${p.name}` }
+  }, [])
+
+  /** Primary rows: non–multi-code programs. Rows with `multicodeChild`: multicode program list (like PTS sub-rows). */
+  const getLeaveProgramOptions = useCallback(
+    (rowIndex: number) => {
+      const isMulticodeRow = formEntries?.[rowIndex]?.multicodeChild === true
+      if (allowMulticodeUi && isMulticodeRow) {
+        if (multicodeBundles.length) {
+          const list = multicodeBundles.flatMap((d: any) =>
+            (d.programs ?? []).map((pr: any) => ({ ...pr, departmentCode: d.departmentCode })),
+          )
+          const unique = Array.from(new Map(list.map((pr: any) => [pr.id, pr])).values())
+          if (unique.length) return unique.map(formatLeaveProgramOption)
+        }
+        return programs.filter((p: any) => p.isMultiCode).map(formatLeaveProgramOption)
+      }
+      return programs.filter((p: any) => !p.isMultiCode).map(formatLeaveProgramOption)
+    },
+    [allowMulticodeUi, formEntries, multicodeBundles, programs, formatLeaveProgramOption],
+  )
+
+  const leaveActivityCatalog = useMemo(() => {
+    const fromMc = multicodeBundles.flatMap((d: any) =>
+      (d.activities ?? []).map((a: any) => ({ ...a, departmentCode: d.departmentCode })),
+    )
+    const merged = [...fromMc, ...activities]
+    return Array.from(new Map(merged.map((a: any) => [a.id, a])).values())
+  }, [multicodeBundles, activities])
+
+  const getLeaveActivityCatalogForRow = useCallback(
+    (rowIndex: number) => {
+      const isMulticodeRow = formEntries?.[rowIndex]?.multicodeChild === true
+      const ready = multicodeBundles.length > 0
+      if (!ready) return activities
+      if (isMulticodeRow && allowMulticodeUi) return leaveActivityCatalog
+      if (!isMulticodeRow && needsMulticodeData) return leaveActivityCatalog
+      return activities
+    },
+    [activities, allowMulticodeUi, formEntries, leaveActivityCatalog, multicodeBundles.length, needsMulticodeData],
+  )
+
+  const multicodeProgramListLoading =
+    allowMulticodeUi &&
+    shouldFetchMulticode &&
+    multicodeDropdownQuery.isFetching &&
+    !multicodeBundles.some((b: any) => (b.programs ?? []).length > 0)
+
+  /**
+   * Only fetch assigned activities for programs selected on a leave row (dialog open).
+   */
+  const programQueries = useMemo(() => {
+    const list: { departmentId: number; programId: string }[] = []
+    const seen = new Set<string>()
+
+    const pushPair = (programIdStr: string | undefined) => {
+      if (!programIdStr || programIdStr === EMPTY) return
+      const trimmed = programIdStr.trim()
+      if (!trimmed) return
+      const deptId = resolveDepartmentIdForProgram(trimmed)
+      if (deptId == null) return
+      const key = `${deptId}:${trimmed}`
+      if (seen.has(key)) return
+      seen.add(key)
+      list.push({ departmentId: deptId, programId: trimmed })
+    }
+
+    for (const entry of formEntries ?? []) {
+      pushPair(entry.programCode)
+    }
+    return list
+  }, [formEntries, resolveDepartmentIdForProgram])
+
+  const programActivityQueryResults = useGetProgramActivityRelations(programQueries, open)
+
+  /** When structured activities parse to nothing (or query did not run), use same-dept bundle activities as PTS catalog. */
+  const getBundleActivitiesFallbackForProgram = useCallback(
+    (programIdStr: string | undefined): { id: string; name: string; code?: string }[] => {
+      const trimmed = String(programIdStr ?? "").trim()
+      if (!trimmed || trimmed === EMPTY) return []
+      for (const d of dropdownBundles) {
+        const hasProgram = (d.programs ?? []).some((p: any) => String(p.id) === trimmed)
+        if (!hasProgram) continue
+        const list = (d.activities ?? []) as { id?: unknown; name?: string; code?: string }[]
+        return list
+          .filter((a) => a.id != null && String(a.id).trim() !== "")
+          .map((a) => ({
+            id: String(a.id),
+            name: String(a.name ?? ""),
+            code: a.code != null ? String(a.code) : undefined,
+          }))
+      }
+      return []
+    },
+    [dropdownBundles],
+  )
+
+  /** Same tree walk as program admin + PTS sub-rows: do not rely on `node.assigned` (often absent). */
+  const getActivityTransferItemsForProgram = useCallback(
+    (programId: string) => {
+      const normalized = String(programId ?? "").trim()
+      if (!normalized || normalized === EMPTY) return []
+      const deptId = resolveDepartmentIdForProgram(normalized)
+      const index = programQueries.findIndex(
+        (pq) => String(pq.programId).trim() === normalized && pq.departmentId === deptId,
+      )
+      if (index === -1) return []
+      const result = programActivityQueryResults[index]
+      if (!result?.data) return []
+      return mergeProgramActivityRelationTransferItems(result.data)
+    },
+    [resolveDepartmentIdForProgram, programQueries, programActivityQueryResults],
+  )
+
+  const isFetchingActivitiesForProgram = useCallback(
+    (programId: string | undefined) => {
+      const normalized = String(programId ?? "").trim()
+      if (!normalized || normalized === EMPTY) return false
+      const deptId = resolveDepartmentIdForProgram(normalized)
+      const index = programQueries.findIndex(
+        (pq) => String(pq.programId).trim() === normalized && pq.departmentId === deptId,
+      )
+      return index !== -1 && !!programActivityQueryResults[index]?.isFetching
+    },
+    [resolveDepartmentIdForProgram, programQueries, programActivityQueryResults],
+  )
 
   const hasExceeded = useMemo(() => {
     return formEntries.some((entry, index) => {
@@ -296,6 +518,39 @@ export function EmployeeLeaveRequestDialog({
     form.reset({ entries: [createEmptyRow()] })
   }, [form])
 
+  const appendPrimaryLeaveRow = useCallback(() => {
+    append(createEmptyRow())
+  }, [append])
+
+  const appendMulticodeChildRowForParent = useCallback(
+    (parentAnchorIndex: number) => {
+      const entries = form.getValues("entries")
+      const anchor = entries[parentAnchorIndex] ?? createEmptyRow()
+      let insertAt = parentAnchorIndex + 1
+      while (insertAt < entries.length && entries[insertAt]?.multicodeChild === true) {
+        insertAt++
+      }
+      insert(insertAt, createMulticodeChildRow(anchor))
+    },
+    [form, insert],
+  )
+
+  const removeLeaveGroup = useCallback(
+    (parentIndex: number) => {
+      const entries = form.getValues("entries")
+      let count = 1
+      let j = parentIndex + 1
+      while (j < entries.length && entries[j]?.multicodeChild === true) {
+        count++
+        j++
+      }
+      for (let k = 0; k < count; k++) {
+        remove(parentIndex)
+      }
+    },
+    [form, remove],
+  )
+
   const updateDuration = useCallback((index: number, newStart: string, newEnd: string) => {
     if (newStart && newEnd) {
       const diff = calculateMinutesDiff(newStart, newEnd)
@@ -307,6 +562,42 @@ export function EmployeeLeaveRequestDialog({
       }
     }
   }, [form])
+
+  /** Copy this parent's date/times onto its consecutive multicode child rows. */
+  const syncMulticodeChildRowsFromParent = useCallback(
+    (parentRowIndex: number) => {
+      const entries = form.getValues("entries")
+      const anchor = entries[parentRowIndex]
+      if (!anchor || anchor.multicodeChild) return
+      let i = parentRowIndex + 1
+      while (i < entries.length && entries[i]?.multicodeChild === true) {
+        const row = entries[i]
+        if (
+          row.date === anchor.date &&
+          row.startTime === anchor.startTime &&
+          row.endTime === anchor.endTime
+        ) {
+          i++
+          continue
+        }
+        form.setValue(`entries.${i}.date`, anchor.date, { shouldValidate: true, shouldDirty: true })
+        form.setValue(`entries.${i}.startTime`, anchor.startTime, { shouldValidate: true, shouldDirty: true })
+        form.setValue(`entries.${i}.endTime`, anchor.endTime, { shouldValidate: true, shouldDirty: true })
+        updateDuration(i, anchor.startTime, anchor.endTime)
+        i++
+      }
+    },
+    [form, updateDuration],
+  )
+
+  const scheduleSyncMulticodeChildRowsFromParent = useCallback(
+    (parentRowIndex: number) => {
+      queueMicrotask(() => {
+        syncMulticodeChildRowsFromParent(parentRowIndex)
+      })
+    },
+    [syncMulticodeChildRowsFromParent],
+  )
 
   const handleClose = useCallback(
     (next: boolean) => {
@@ -343,7 +634,7 @@ export function EmployeeLeaveRequestDialog({
     
     await form.handleSubmit(
       async (data) => {
-        await onSave?.(data)
+        await onSave?.(data, mergedLookupDropdown ?? dropdownData)
         toast.success("Leave request saved")
         handleClose(false)
       },
@@ -365,7 +656,7 @@ export function EmployeeLeaveRequestDialog({
 
     await form.handleSubmit(
       async (data) => {
-        await onSubmit?.(data)
+        await onSubmit?.(data, mergedLookupDropdown ?? dropdownData)
         toast.success("Leave request submitted")
         handleClose(false)
       },
@@ -418,288 +709,573 @@ export function EmployeeLeaveRequestDialog({
               <span>Program Code</span>
               <span>Activity Code</span>
               <span>Total Min Applied</span>
-              <span>Comment</span>
+              <span>Comments</span>
               {!isEditing && <span className="sr-only">Row actions</span>}
             </div>
 
             <div className="divide-y divide-border">
-              {fields.map((field, index) => (
-                <div key={field.id} className={getRowGridClass(isEditing)}>
+              {leaveEntryIndexGroups.map((indices, groupIdx) => {
+                const parentIndex = indices[0]!
+                const childIndices = indices.slice(1)
+                const parentField = fields[parentIndex]
+                const isLastGroup = groupIdx === leaveEntryIndexGroups.length - 1
+                const canRemoveParent =
+                  !isEditing && !(parentIndex === 0 && leaveEntryIndexGroups.length === 1)
 
-                  {/* Date */}
-                  <div className="space-y-1">
-                    <Controller
-                      control={form.control}
-                      name={`entries.${index}.date`}
-                      render={({ field: f, fieldState }) => (
-                        <>
-                          <TitleCaseInput
-                            type="date"
-                            className="h-10 text-sm rounded-[6px]"
-                            {...f}
-                          />
-                          {fieldState.error?.message && (
-                            <p className="text-xs text-destructive">{fieldState.error.message}</p>
-                          )}
-                        </>
-                      )}
-                    />
-                  </div>
-
-                  {/* Start Time — reuses shared TimePicker24h */}
-                  <Controller
-                    control={form.control}
-                    name={`entries.${index}.startTime`}
-                    render={({ field: f, fieldState }) => (
+                return (
+                  <div key={parentField.id} className="py-3 first:pt-1">
+                    <div className={getRowGridClass(isEditing)}>
+                      {/* Date */}
                       <div className="space-y-1">
-                        <TimePicker24h
-                          value={f.value}
-                          disabled={isApproved}
-                          onChange={(v) => {
-                            f.onChange(v)
-                            
-                            // Auto-add 15 minutes for the end time
-                            const newEnd = addMinutesToTime(v, 15)
-                            form.setValue(`entries.${index}.endTime`, newEnd, {
-                              shouldValidate: true,
-                              shouldDirty: true,
-                            })
-                            
-                            // Calculate total duration using the new end time
-                            updateDuration(index, v, newEnd)
-                          }}
-                          className="w-full"
-                        />
-                        {fieldState.error?.message && (
-                          <p className="text-xs text-destructive">{fieldState.error.message}</p>
-                        )}
-                      </div>
-                    )}
-                  />
-
-                  {/* End Time — reuses shared TimePicker24h */}
-                  <Controller
-                    control={form.control}
-                    name={`entries.${index}.endTime`}
-                    render={({ field: f, fieldState }) => (
-                      <div className="space-y-1">
-                        <TimePicker24h
-                          value={f.value}
-                          onChange={(v) => {
-                            f.onChange(v)
-                            const currentStart = form.getValues(`entries.${index}.startTime`)
-                            updateDuration(index, currentStart, v)
-                          }}
-                          className="w-full"
-                        />
-                        {fieldState.error?.message && (
-                          <p className="text-xs text-destructive">{fieldState.error.message}</p>
-                        )}
-                      </div>
-                    )}
-                  />
-
-                  {/* Program Code — reuses shared SingleSelectSearchDropdown */}
-                  <div className="space-y-1">
-                    <Controller
-                      control={form.control}
-                      name={`entries.${index}.programCode`}
-                      render={({ field: f, fieldState }) => (
-                        <>
-                          <SingleSelectSearchDropdown
-                            value={f.value === EMPTY ? "" : f.value}
-                            isLoading={isDropdownLoading}
-                            options={(() => {
-                              const opts = programs.map((p: any) => {
-                                const deptPrefix = (p.departmentCode ?? "").split("-")[0]
-                                return {
-                                  value: String(p.id),
-                                  label: `${deptPrefix}-${p.code} - ${p.name}`,
-                                }
-                              })
-                              
-                              const currentVal = f.value === EMPTY ? "" : f.value
-                              if (currentVal && !opts.some(o => o.value === currentVal) && editingLeave) {
-                                if (String(editingLeave.programid) === currentVal) {
-                                  const deptPrefix = (editingLeave.departmentcode ?? "").split("-")[0]
-                                  opts.push({
-                                    value: currentVal,
-                                    label: deptPrefix 
-                                      ? `${deptPrefix}-${editingLeave.programcode} - ${editingLeave.programname}`
-                                      : `${editingLeave.programcode} - ${editingLeave.programname}`,
-                                  })
-                                }
-                              }
-                              return opts
-                            })()}
-                            placeholder="Select..."
-                            onChange={(v) => {
-                              f.onChange(v || EMPTY)
-                              // Reset activity when program changes
-                              form.setValue(`entries.${index}.activityCode`, EMPTY, { shouldValidate: false })
-                            }}
-                            onBlur={f.onBlur}
-                            className="h-10 min-h-0 rounded-[6px]"
-                          />
-                          {fieldState.error?.message && (
-                            <p className="text-xs text-destructive">{fieldState.error.message}</p>
+                        <Controller
+                          control={form.control}
+                          name={`entries.${parentIndex}.date`}
+                          render={({ field: f, fieldState }) => (
+                            <>
+                              <TitleCaseInput
+                                type="date"
+                                className="h-10 text-sm rounded-[6px]"
+                                name={f.name}
+                                value={f.value}
+                                ref={f.ref}
+                                onBlur={f.onBlur}
+                                onChange={(e) => {
+                                  f.onChange(e)
+                                  scheduleSyncMulticodeChildRowsFromParent(parentIndex)
+                                }}
+                              />
+                              {fieldState.error?.message && (
+                                <p className="text-xs text-destructive">{fieldState.error.message}</p>
+                              )}
+                            </>
                           )}
-                        </>
-                      )}
-                    />
-                  </div>
+                        />
+                      </div>
 
-                  {/* Activity Code — reuses shared SingleSelectSearchDropdown */}
-                  <div className="space-y-1">
-                    <Controller
-                      control={form.control}
-                      name={`entries.${index}.activityCode`}
-                      render={({ field: f, fieldState }) => (
-                        <>
-                          {(() => {
-                            const programId = formEntries?.[index]?.programCode
-                            const hasProgram = programId && programId !== EMPTY
-                            const allowedIds = hasProgram ? getActivitiesForProgram(programId) : new Set<string>()
-                            const options = (() => {
-                              const opts = hasProgram 
-                                ? activities.filter((a) => allowedIds.has(String(a.id))).map((a: any) => ({
-                                    value: String(a.id),
-                                    label: `${a.code} - ${a.name}`,
-                                  }))
-                                : []
-                                
-                              const currentVal = f.value === EMPTY ? "" : f.value
-                              if (currentVal && !opts.some(o => o.value === currentVal) && editingLeave) {
-                                if (String(editingLeave.activityid) === currentVal) {
-                                  opts.push({
-                                    value: currentVal,
-                                    label: `${editingLeave.activitycode} - ${editingLeave.activityname}`,
-                                  })
-                                }
-                              }
-                              return opts
-                            })()
+                      {/* Start Time */}
+                      <Controller
+                        control={form.control}
+                        name={`entries.${parentIndex}.startTime`}
+                        render={({ field: f, fieldState }) => (
+                          <div className="space-y-1">
+                            <TimePicker24h
+                              value={f.value}
+                              disabled={isApproved}
+                              onChange={(v) => {
+                                f.onChange(v)
+                                const newEnd = addMinutesToTime(v, 15)
+                                form.setValue(`entries.${parentIndex}.endTime`, newEnd, {
+                                  shouldValidate: true,
+                                  shouldDirty: true,
+                                })
+                                updateDuration(parentIndex, v, newEnd)
+                                scheduleSyncMulticodeChildRowsFromParent(parentIndex)
+                              }}
+                              className="w-full"
+                            />
+                            {fieldState.error?.message && (
+                              <p className="text-xs text-destructive">{fieldState.error.message}</p>
+                            )}
+                          </div>
+                        )}
+                      />
 
-                            const queryIndex = programQueries.findIndex((pq) => String(pq.programId) === programId)
-                            const isActivityLoading = queryIndex !== -1 && programActivityQueryResults[queryIndex]?.isFetching
+                      {/* End Time */}
+                      <Controller
+                        control={form.control}
+                        name={`entries.${parentIndex}.endTime`}
+                        render={({ field: f, fieldState }) => (
+                          <div className="space-y-1">
+                            <TimePicker24h
+                              value={f.value}
+                              onChange={(v) => {
+                                f.onChange(v)
+                                const currentStart = form.getValues(`entries.${parentIndex}.startTime`)
+                                updateDuration(parentIndex, currentStart, v)
+                                scheduleSyncMulticodeChildRowsFromParent(parentIndex)
+                              }}
+                              className="w-full"
+                            />
+                            {fieldState.error?.message && (
+                              <p className="text-xs text-destructive">{fieldState.error.message}</p>
+                            )}
+                          </div>
+                        )}
+                      />
 
-                            return (
+                      {/* Program Code */}
+                      <div className="space-y-1">
+                        <Controller
+                          control={form.control}
+                          name={`entries.${parentIndex}.programCode`}
+                          render={({ field: f, fieldState }) => (
+                            <>
                               <SingleSelectSearchDropdown
                                 value={f.value === EMPTY ? "" : f.value}
-                                placeholder="Select Activity Code"
-                                disabled={!hasProgram}
-                                isLoading={isActivityLoading}
-                                options={options}
-                                onChange={(v) => f.onChange(v || EMPTY)}
+                                isLoading={isDropdownLoading || multicodeProgramListLoading}
+                                options={(() => {
+                                  const opts = [...getLeaveProgramOptions(parentIndex)]
+                                  const currentVal = f.value === EMPTY ? "" : f.value
+                                  if (
+                                    currentVal &&
+                                    !opts.some((o) => o.value === currentVal) &&
+                                    editingLeave
+                                  ) {
+                                    if (String(editingLeave.programid) === currentVal) {
+                                      const deptPrefix = (editingLeave.departmentcode ?? "").split("-")[0]
+                                      opts.push({
+                                        value: currentVal,
+                                        label: deptPrefix
+                                          ? `${deptPrefix}-${editingLeave.programcode} - ${editingLeave.programname}`
+                                          : `${editingLeave.programcode} - ${editingLeave.programname}`,
+                                      })
+                                    }
+                                  }
+                                  return opts
+                                })()}
+                                placeholder="Select..."
+                                onChange={(v) => {
+                                  f.onChange(v || EMPTY)
+                                  form.setValue(`entries.${parentIndex}.activityCode`, EMPTY, {
+                                    shouldValidate: false,
+                                  })
+                                }}
                                 onBlur={f.onBlur}
-                                className="h-9 min-h-0 text-[13px] bg-white border-border/60"
+                                className="h-10 min-h-0 rounded-[6px]"
                               />
-                            )
-                          })()}
-                          {fieldState.error?.message && (
-                            <p className="text-xs text-destructive">{fieldState.error.message}</p>
-                          )}
-                        </>
-                      )}
-                    />
-                  </div>
-
-                  {/* Total Min Applied */}
-                  <div className="space-y-1">
-                    <Controller
-                      control={form.control}
-                      name={`entries.${index}.totalMinApplied`}
-                      render={({ field: f, fieldState }) => {
-                        const originalTotal = Number(initialValues?.entries?.[index]?.totalMinApplied || 0)
-                        const currentTotal = Number(f.value || 0)
-                        
-                        const exceedsOriginal = isApproved && originalTotal > 0 && currentTotal > originalTotal
-
-                        const startTime = formEntries?.[index]?.startTime
-                        const endTime = formEntries?.[index]?.endTime
-                        const diff = (startTime && endTime) ? calculateMinutesDiff(startTime, endTime) : 0
-                        const exceedsCalculated = diff > 0 && currentTotal > diff
-                        
-                        const isErrorState = exceedsOriginal || exceedsCalculated
-
-                        return (
-                          <>
-                            <TitleCaseInput
-                              type="text"
-                              inputMode="numeric"
-                              className={cn(
-                                "h-10 text-sm tabular-nums rounded-[6px]",
-                                isApproved && "cursor-not-allowed bg-muted !opacity-100 !text-foreground",
-                                isErrorState && "border-destructive text-destructive focus-visible:ring-destructive"
+                              {fieldState.error?.message && (
+                                <p className="text-xs text-destructive">{fieldState.error.message}</p>
                               )}
-                              disabled={isApproved}
-                              placeholder="0"
-                              autoComplete="off"
-                              {...f}
-                            />
-                            {fieldState.error?.message ? (
-                              <p className="text-xs text-destructive">{fieldState.error.message}</p>
-                            ) : exceedsCalculated ? (
-                              <p className="text-[11px] text-destructive leading-tight">Max allowed is {diff} min</p>
-                            ) : exceedsOriginal ? (
-                              <p className="text-[11px] text-destructive leading-tight">Exceeds {originalTotal} min</p>
-                            ) : null}
-                          </>
-                        )
-                      }}
-                    />
-                  </div>
-
-                  {/* Comment */}
-                  <div className="space-y-1">
-                    <Controller
-                      control={form.control}
-                      name={`entries.${index}.comment`}
-                      render={({ field: f, fieldState }) => (
-                        <>
-                          <TitleCaseInput
-                            className="h-10 text-sm rounded-[6px]"
-                            placeholder="Comment"
-                            {...f}
-                          />
-                          {fieldState.error?.message && (
-                            <p className="text-xs text-destructive">{fieldState.error.message}</p>
+                            </>
                           )}
-                        </>
-                      )}
-                    />
-                  </div>
+                        />
+                      </div>
 
-                  {/* Row action: add / remove */}
-                  {!isEditing && (
-                    <div className="flex items-end justify-center pb-0.5">
-                      {index === 0 ? (
-                        <Button
-                          type="button"
-                          size="icon"
-                          className="size-10 shrink-0 rounded-[6px] bg-[#6C5DD3] hover:bg-[#6C5DD3]/90"
-                          onClick={() => append(createEmptyRow())}
-                          aria-label="Add leave row"
-                        >
-                          <Plus className="size-4" />
-                        </Button>
-                      ) : (
-                        <Button
-                          type="button"
-                          size="icon"
-                          variant="destructive"
-                          className="size-10 shrink-0 rounded-[6px]"
-                          onClick={() => remove(index)}
-                          aria-label="Remove leave row"
-                        >
-                          <Trash2 className="size-4" />
-                        </Button>
+                      {/* Activity Code */}
+                      <div className="space-y-1">
+                        <Controller
+                          control={form.control}
+                          name={`entries.${parentIndex}.activityCode`}
+                          render={({ field: f, fieldState }) => (
+                            <>
+                              {(() => {
+                                const programIdRaw = formEntries?.[parentIndex]?.programCode
+                                const programId = String(programIdRaw ?? "").trim()
+                                const hasProgram = programId.length > 0 && programId !== EMPTY
+                                const catalog = getLeaveActivityCatalogForRow(parentIndex)
+                                const catalogById = new Map(
+                                  catalog.map((a: any) => [String(a.id), a] as const),
+                                )
+                                const isActivityLoading = isFetchingActivitiesForProgram(
+                                  !hasProgram ? undefined : programId,
+                                )
+                                const options = (() => {
+                                  if (!hasProgram) return []
+                                  let items = getActivityTransferItemsForProgram(programId)
+                                  if (items.length === 0 && !isActivityLoading) {
+                                    items = getBundleActivitiesFallbackForProgram(programId)
+                                  }
+                                  const opts = items.map((item) => {
+                                    const id = String(item.id)
+                                    const a = catalogById.get(id) as any
+                                    const label = a
+                                      ? `${a.code} - ${a.name}`
+                                      : item.code
+                                        ? `${item.code} - ${item.name}`
+                                        : item.name || id
+                                    return { value: id, label }
+                                  })
+                                  const currentVal = f.value === EMPTY ? "" : f.value
+                                  if (
+                                    currentVal &&
+                                    !opts.some((o) => o.value === currentVal) &&
+                                    editingLeave
+                                  ) {
+                                    if (String(editingLeave.activityid) === currentVal) {
+                                      opts.push({
+                                        value: currentVal,
+                                        label: `${editingLeave.activitycode} - ${editingLeave.activityname}`,
+                                      })
+                                    }
+                                  }
+                                  return opts
+                                })()
+
+                                return (
+                                  <SingleSelectSearchDropdown
+                                    value={f.value === EMPTY ? "" : f.value}
+                                    placeholder="Select Activity Code"
+                                    disabled={!hasProgram}
+                                    isLoading={isActivityLoading}
+                                    options={options}
+                                    onChange={(v) => f.onChange(v || EMPTY)}
+                                    onBlur={f.onBlur}
+                                    className="h-9 min-h-0 text-[13px] bg-white border-border/60"
+                                  />
+                                )
+                              })()}
+                              {fieldState.error?.message && (
+                                <p className="text-xs text-destructive">{fieldState.error.message}</p>
+                              )}
+                            </>
+                          )}
+                        />
+                      </div>
+
+                      {/* Total Min Applied */}
+                      <div className="space-y-1">
+                        <Controller
+                          control={form.control}
+                          name={`entries.${parentIndex}.totalMinApplied`}
+                          render={({ field: f, fieldState }) => {
+                            const originalTotal = Number(
+                              initialValues?.entries?.[parentIndex]?.totalMinApplied || 0,
+                            )
+                            const currentTotal = Number(f.value || 0)
+                            const exceedsOriginal =
+                              isApproved && originalTotal > 0 && currentTotal > originalTotal
+                            const startTime = formEntries?.[parentIndex]?.startTime
+                            const endTime = formEntries?.[parentIndex]?.endTime
+                            const diff =
+                              startTime && endTime ? calculateMinutesDiff(startTime, endTime) : 0
+                            const exceedsCalculated = diff > 0 && currentTotal > diff
+                            const isErrorState = exceedsOriginal || exceedsCalculated
+
+                            return (
+                              <>
+                                <TitleCaseInput
+                                  type="text"
+                                  inputMode="numeric"
+                                  className={cn(
+                                    "h-10 text-sm tabular-nums rounded-[6px]",
+                                    isApproved &&
+                                      "cursor-not-allowed bg-muted !opacity-100 !text-foreground",
+                                    isErrorState &&
+                                      "border-destructive text-destructive focus-visible:ring-destructive",
+                                  )}
+                                  disabled={isApproved}
+                                  placeholder="0"
+                                  autoComplete="off"
+                                  {...f}
+                                />
+                                {fieldState.error?.message ? (
+                                  <p className="text-xs text-destructive">{fieldState.error.message}</p>
+                                ) : exceedsCalculated ? (
+                                  <p className="text-[11px] text-destructive leading-tight">
+                                    Max allowed is {diff} min
+                                  </p>
+                                ) : exceedsOriginal ? (
+                                  <p className="text-[11px] text-destructive leading-tight">
+                                    Exceeds {originalTotal} min
+                                  </p>
+                                ) : null}
+                              </>
+                            )
+                          }}
+                        />
+                      </div>
+
+                      {/* Comments */}
+                      <div className="space-y-1">
+                        <Controller
+                          control={form.control}
+                          name={`entries.${parentIndex}.comment`}
+                          render={({ field: f, fieldState }) => (
+                            <>
+                              <TitleCaseInput
+                                className="h-10 text-sm rounded-[6px]"
+                                placeholder="Comments"
+                                {...f}
+                              />
+                              {fieldState.error?.message && (
+                                <p className="text-xs text-destructive">{fieldState.error.message}</p>
+                              )}
+                            </>
+                          )}
+                        />
+                      </div>
+
+                      {!isEditing && (
+                        <div className="flex items-end justify-center gap-1 pb-0.5">
+                          {isLastGroup && (
+                            <Button
+                              type="button"
+                              size="icon"
+                              className="size-10 shrink-0 rounded-[6px] bg-[#6C5DD3] hover:bg-[#6C5DD3]/90"
+                              onClick={() => appendPrimaryLeaveRow()}
+                              aria-label="Add another leave period"
+                            >
+                              <Plus className="size-4" />
+                            </Button>
+                          )}
+                          {allowMulticodeUi && (
+                            <Button
+                              type="button"
+                              size="icon"
+                              variant="outline"
+                              className="size-10 shrink-0 rounded-[6px] border-[#6C5DD3] text-[#6C5DD3] hover:bg-[#6C5DD3]/10"
+                              onClick={() => appendMulticodeChildRowForParent(parentIndex)}
+                              aria-label="Add multi-code row for this time"
+                            >
+                              <Plus className="size-4" />
+                            </Button>
+                          )}
+                          {canRemoveParent && (
+                            <Button
+                              type="button"
+                              size="icon"
+                              variant="destructive"
+                              className="size-10 shrink-0 rounded-[6px]"
+                              onClick={() => removeLeaveGroup(parentIndex)}
+                              aria-label="Remove this leave period"
+                            >
+                              <Trash2 className="size-4" />
+                            </Button>
+                          )}
+                        </div>
                       )}
                     </div>
-                  )}
 
-                </div>
-              ))}
+                    {childIndices.length > 0 && (
+                      <div className="mt-3 space-y-3 border-l-2 border-[#6C5DD3]/20 pl-4 ml-6 sm:ml-8">
+                        {childIndices.map((index) => (
+                          <div key={fields[index]!.id}>
+                            <div className="hidden" aria-hidden>
+                              <Controller
+                                control={form.control}
+                                name={`entries.${index}.date`}
+                                render={({ field: f }) => <input type="hidden" {...f} />}
+                              />
+                              <Controller
+                                control={form.control}
+                                name={`entries.${index}.startTime`}
+                                render={({ field: f }) => <input type="hidden" {...f} />}
+                              />
+                              <Controller
+                                control={form.control}
+                                name={`entries.${index}.endTime`}
+                                render={({ field: f }) => <input type="hidden" {...f} />}
+                              />
+                            </div>
+                            <div className={leaveChildFieldRowClass}>
+                              <div className="min-w-0 flex-1 space-y-1">
+                                <Label className="text-[11px] text-muted-foreground">
+                                  Program <RequiredMark />
+                                </Label>
+                                <Controller
+                                  control={form.control}
+                                  name={`entries.${index}.programCode`}
+                                  render={({ field: f, fieldState }) => (
+                                    <>
+                                      <SingleSelectSearchDropdown
+                                        value={f.value === EMPTY ? "" : f.value}
+                                        isLoading={isDropdownLoading || multicodeProgramListLoading}
+                                        options={(() => {
+                                          const opts = [...getLeaveProgramOptions(index)]
+                                          const currentVal = f.value === EMPTY ? "" : f.value
+                                          if (
+                                            currentVal &&
+                                            !opts.some((o) => o.value === currentVal) &&
+                                            editingLeave
+                                          ) {
+                                            if (String(editingLeave.programid) === currentVal) {
+                                              const deptPrefix = (editingLeave.departmentcode ?? "").split("-")[0]
+                                              opts.push({
+                                                value: currentVal,
+                                                label: deptPrefix
+                                                  ? `${deptPrefix}-${editingLeave.programcode} - ${editingLeave.programname}`
+                                                  : `${editingLeave.programcode} - ${editingLeave.programname}`,
+                                              })
+                                            }
+                                          }
+                                          return opts
+                                        })()}
+                                        placeholder="Select program"
+                                        onChange={(v) => {
+                                          f.onChange(v || EMPTY)
+                                          form.setValue(`entries.${index}.activityCode`, EMPTY, {
+                                            shouldValidate: false,
+                                          })
+                                        }}
+                                        onBlur={f.onBlur}
+                                        className="h-9 min-h-0 text-[11px] rounded-[6px]"
+                                      />
+                                      {fieldState.error?.message && (
+                                        <p className="text-xs text-destructive">{fieldState.error.message}</p>
+                                      )}
+                                    </>
+                                  )}
+                                />
+                              </div>
+                              <div className="min-w-0 flex-1 space-y-1">
+                                <Label className="text-[11px] text-muted-foreground">
+                                  Activity Code <RequiredMark />
+                                </Label>
+                                <Controller
+                                  control={form.control}
+                                  name={`entries.${index}.activityCode`}
+                                  render={({ field: f, fieldState }) => (
+                                    <>
+                                      {(() => {
+                                        const programIdRaw = formEntries?.[index]?.programCode
+                                        const programId = String(programIdRaw ?? "").trim()
+                                        const hasProgram = programId.length > 0 && programId !== EMPTY
+                                        const catalog = getLeaveActivityCatalogForRow(index)
+                                        const catalogById = new Map(
+                                          catalog.map((a: any) => [String(a.id), a] as const),
+                                        )
+                                        const isActivityLoading = isFetchingActivitiesForProgram(
+                                          !hasProgram ? undefined : programId,
+                                        )
+                                        const options = (() => {
+                                          if (!hasProgram) return []
+                                          let items = getActivityTransferItemsForProgram(programId)
+                                          if (items.length === 0 && !isActivityLoading) {
+                                            items = getBundleActivitiesFallbackForProgram(programId)
+                                          }
+                                          const opts = items.map((item) => {
+                                            const id = String(item.id)
+                                            const a = catalogById.get(id) as any
+                                            const label = a
+                                              ? `${a.code} - ${a.name}`
+                                              : item.code
+                                                ? `${item.code} - ${item.name}`
+                                                : item.name || id
+                                            return { value: id, label }
+                                          })
+                                          const currentVal = f.value === EMPTY ? "" : f.value
+                                          if (
+                                            currentVal &&
+                                            !opts.some((o) => o.value === currentVal) &&
+                                            editingLeave
+                                          ) {
+                                            if (String(editingLeave.activityid) === currentVal) {
+                                              opts.push({
+                                                value: currentVal,
+                                                label: `${editingLeave.activitycode} - ${editingLeave.activityname}`,
+                                              })
+                                            }
+                                          }
+                                          return opts
+                                        })()
+
+                                        return (
+                                          <SingleSelectSearchDropdown
+                                            value={f.value === EMPTY ? "" : f.value}
+                                            placeholder="Select Activity Code"
+                                            disabled={!hasProgram}
+                                            isLoading={isActivityLoading}
+                                            options={options}
+                                            onChange={(v) => f.onChange(v || EMPTY)}
+                                            onBlur={f.onBlur}
+                                            className="h-9 min-h-0 text-[11px] bg-white border-border/60"
+                                          />
+                                        )
+                                      })()}
+                                      {fieldState.error?.message && (
+                                        <p className="text-xs text-destructive">{fieldState.error.message}</p>
+                                      )}
+                                    </>
+                                  )}
+                                />
+                              </div>
+                              <div className="w-[72px] shrink-0 space-y-1">
+                                <Label className="text-[11px] font-medium text-[#6C5DD3]">
+                                  Min. <RequiredMark />
+                                </Label>
+                                <Controller
+                                  control={form.control}
+                                  name={`entries.${index}.totalMinApplied`}
+                                  render={({ field: f, fieldState }) => {
+                                    const originalTotal = Number(
+                                      initialValues?.entries?.[index]?.totalMinApplied || 0,
+                                    )
+                                    const currentTotal = Number(f.value || 0)
+                                    const exceedsOriginal =
+                                      isApproved && originalTotal > 0 && currentTotal > originalTotal
+                                    const startTime = formEntries?.[index]?.startTime
+                                    const endTime = formEntries?.[index]?.endTime
+                                    const diff =
+                                      startTime && endTime
+                                        ? calculateMinutesDiff(startTime, endTime)
+                                        : 0
+                                    const exceedsCalculated = diff > 0 && currentTotal > diff
+                                    const isErrorState = exceedsOriginal || exceedsCalculated
+
+                                    return (
+                                      <>
+                                        <TitleCaseInput
+                                          type="text"
+                                          inputMode="numeric"
+                                          className={cn(
+                                            "h-9 text-[11px] tabular-nums rounded-[6px]",
+                                            isApproved &&
+                                              "cursor-not-allowed bg-muted !opacity-100 !text-foreground",
+                                            isErrorState &&
+                                              "border-destructive text-destructive focus-visible:ring-destructive",
+                                          )}
+                                          disabled={isApproved}
+                                          placeholder="0"
+                                          autoComplete="off"
+                                          {...f}
+                                        />
+                                        {fieldState.error?.message ? (
+                                          <p className="text-xs text-destructive">{fieldState.error.message}</p>
+                                        ) : exceedsCalculated ? (
+                                          <p className="text-[10px] text-destructive leading-tight">
+                                            Max {diff} min
+                                          </p>
+                                        ) : exceedsOriginal ? (
+                                          <p className="text-[10px] text-destructive leading-tight">
+                                            Exceeds {originalTotal} min
+                                          </p>
+                                        ) : null}
+                                      </>
+                                    )
+                                  }}
+                                />
+                              </div>
+                              <div className="min-w-0 flex-1 space-y-1">
+                                <Label className="text-[11px] text-muted-foreground">Comments</Label>
+                                <Controller
+                                  control={form.control}
+                                  name={`entries.${index}.comment`}
+                                  render={({ field: f, fieldState }) => (
+                                    <>
+                                      <TitleCaseInput
+                                        className="h-9 text-[11px] rounded-[6px]"
+                                        placeholder="Comments"
+                                        {...f}
+                                      />
+                                      {fieldState.error?.message && (
+                                        <p className="text-xs text-destructive">{fieldState.error.message}</p>
+                                      )}
+                                    </>
+                                  )}
+                                />
+                              </div>
+                              {!isEditing && (
+                                <div className="flex shrink-0 items-end pb-0.5">
+                                  <Button
+                                    type="button"
+                                    size="icon"
+                                    variant="ghost"
+                                    className="size-9 shrink-0 text-destructive hover:bg-destructive/10"
+                                    onClick={() => remove(index)}
+                                    aria-label="Remove multi-code row"
+                                  >
+                                    <Trash2 className="size-4" />
+                                  </Button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
             </div>
           </div>
 

@@ -29,3 +29,6 @@ export function CostPoolPage() {
   )
 }
 
+
+export default CostPoolPage
+

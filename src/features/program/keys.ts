@@ -6,8 +6,14 @@ export const programKeys = {
   list: (params: GetProgramsParams) => [...programKeys.lists(), params] as const,
   details: () => [...programKeys.all, "detail"] as const,
   detail: (id: string) => [...programKeys.details(), id] as const,
-  history: (params: { page: number; limit: number; programCode: string; userId: string }) =>
-    [...programKeys.all, "user-assignment-history", params] as const,
+  history: (params: {
+    page: number
+    limit: number
+    programCode: string
+    userId: string
+    historyKind: string
+  }) =>
+    [...programKeys.all, "user-program-assignment-history", params] as const,
 }
 
 /** Program Activity Relation tab — dual-list queries (shared key shape for cache + mutations). */
