@@ -116,3 +116,6 @@ export function TodoPage() {
     </section>
   )
 }
+
+export default TodoPage
+

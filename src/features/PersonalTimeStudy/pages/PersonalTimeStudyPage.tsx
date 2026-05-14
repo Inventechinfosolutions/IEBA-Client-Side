@@ -426,3 +426,6 @@ export function PersonalTimeStudyPage() {
     </TooltipProvider>
   )
 }
+
+export default PersonalTimeStudyPage
+

@@ -70,3 +70,6 @@ export function CountyActivityCodePage() {
     </div>
   )
 }
+
+export default CountyActivityCodePage
+

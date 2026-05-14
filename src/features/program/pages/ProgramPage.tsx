@@ -592,3 +592,6 @@ export function ProgramPage() {
     </section>
   )
 }
+
+export default ProgramPage
+
