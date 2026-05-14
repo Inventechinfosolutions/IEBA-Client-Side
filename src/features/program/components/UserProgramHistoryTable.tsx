@@ -11,89 +11,106 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { useUserProgramHistoryQuery, type UserProgramHistoryRecord } from "../queries/userProgramHistory"
 import { MasterCodePagination } from "@/features/master-code/components/MasterCodePagination"
+import {
+  PROGRAM_DEFINITION_HISTORY_KIND,
+  USER_ASSIGNMENT_HISTORY_KIND,
+  useUserProgramHistoryQuery,
+  type UserProgramHistoryRecord,
+} from "../queries/userProgramHistory"
+import {
+  getProgramHistoryCreatedAtDisplay,
+  getProgramHistoryCreatedByDisplay,
+  getProgramHistoryEffectiveFromDisplay,
+  getProgramHistoryEffectiveToDisplay,
+  getProgramHistoryEventDisplay,
+  getProgramHistoryUpdatedAtDisplay,
+  getProgramHistoryUpdatedByDisplay,
+} from "../lib/userProgramHistoryDisplay"
 
 type UserProgramHistoryTableProps = {
   userId?: string
   programCode?: string
-  programName?: string
+  /** Defaults to `program_definition` for Time Study program definition history. */
+  historyKind?: string
+  /** Overrides the default heading for this `historyKind`. */
+  sectionTitle?: string
 }
+
+const DEFINITION_HEADERS = [
+  "Program Code",
+  "Program Name",
+  "Program Event",
+  "Created By Name",
+  "Created At",
+  "Updated By Name",
+  "Updated At",
+] as const
+
+const ASSIGNMENT_HEADERS = ["Program Code", "Program Name", "Effective From", "Effective To"] as const
+
+const COL_WIDTHS_DEFINITION = ["12%", "18%", "12%", "14%", "14%", "14%", "16%"] as const
+const COL_WIDTHS_ASSIGNMENT = ["18%", "32%", "25%", "25%"] as const
 
 export function UserProgramHistoryTable({
   userId = "",
   programCode = "",
-  programName = "",
+  historyKind = PROGRAM_DEFINITION_HISTORY_KIND,
+  sectionTitle,
 }: UserProgramHistoryTableProps) {
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
 
-  const { data, isLoading, isFetching } = useUserProgramHistoryQuery({
+  const isUserAssignmentHistory = historyKind === USER_ASSIGNMENT_HISTORY_KIND
+  const headers = isUserAssignmentHistory ? ASSIGNMENT_HEADERS : DEFINITION_HEADERS
+  const colWidths = isUserAssignmentHistory ? COL_WIDTHS_ASSIGNMENT : COL_WIDTHS_DEFINITION
+
+  const resolvedSectionTitle =
+    sectionTitle ??
+    (isUserAssignmentHistory ? "Time study assignment history" : "Program definition history")
+
+  const { data, isLoading } = useUserProgramHistoryQuery({
     page,
     limit: pageSize,
     programCode,
     userId,
+    historyKind,
   })
 
-  const historyData = Array.isArray(data?.data) ? data.data : []
+  const historyData: UserProgramHistoryRecord[] = Array.isArray(data?.data) ? data.data : []
   const totalItems = data?.meta?.totalItems ?? 0
 
-  const headers = [
-    "Program Code",
-    "Program Name",
-    "User Name",
-    "Effective From",
-    "Effective To",
-  ]
+  const skeletonRows = Array.from({ length: pageSize }, (_, i) => `history-skeleton-${i}`)
 
-  const skeletonRows = Array.from({ length: pageSize }, (_, index) => `history-skeleton-${index}`)
-
-  const formatDate = (dateStr: string | null) => {
-    if (!dateStr) return "-"
-    try {
-      const date = new Date(dateStr)
-      return date.toLocaleDateString()
-    } catch {
-      return dateStr
-    }
-  }
+  const leftAlignThroughIndex = isUserAssignmentHistory ? 1 : 2
 
   return (
     <div className="flex flex-col gap-4 pt-3">
       <div className="flex items-center justify-between">
-        <div className="flex flex-col gap-1">
-          <h3 className="text-[14px] font-bold text-[#111827]">
-            Program Assignment History
-          </h3>
-          {userId && <p className="text-[11px] text-[#555f76]">User ID: {userId}</p>}
-        </div>
+        <h3 className="text-[14px] font-bold text-[#111827]">{resolvedSectionTitle}</h3>
       </div>
 
-      <div className="overflow-hidden rounded-[4px] border border-[#e6e7ef]">
+      <div className="overflow-hidden rounded-[10px] border border-[#E5E7EB]">
         <div className="relative min-h-[300px] overflow-x-auto">
-          {(isLoading || isFetching) && (
+          {isLoading && (
             <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/60">
               <Spinner className="text-[#6C5DD3]" />
             </div>
           )}
-          <Table className="w-full table-fixed">
+          <Table className="w-full table-fixed border-collapse">
             <colgroup>
-              <col style={{ width: "150px" }} />
-              <col style={{ width: "auto" }} />
-              <col style={{ width: "180px" }} />
-              <col style={{ width: "160px" }} />
-              <col style={{ width: "160px" }} />
+              {colWidths.map((w, i) => (
+                <col key={`program-history-col-${i}`} style={{ width: w }} />
+              ))}
             </colgroup>
             <TableHeader className="sticky top-0 z-10 bg-[#6C5DD3] shadow-[0_1px_0_rgba(0,0,0,0.05)] [&_tr]:border-b-0">
               <TableRow className="hover:bg-transparent">
                 {headers.map((header, idx) => (
                   <TableHead
                     key={header}
-                    className={`h-10 bg-[#6C5DD3] px-3 text-[12px] font-medium text-white ${
-                      idx < 3 ? "text-left" : "text-center"
-                    } ${
-                      idx === headers.length - 1 ? "" : "border-r border-white/50"
-                    }`}
+                    className={`h-[48px] bg-[#6C5DD3] px-[14px] text-[14px] font-[500] text-white font-['Roboto',sans-serif] whitespace-normal wrap-break-word leading-snug ${
+                      idx <= leftAlignThroughIndex ? "text-left" : "text-center"
+                    } ${idx === headers.length - 1 ? "" : "border-r border-white/40"}`}
                   >
                     {header}
                   </TableHead>
@@ -103,28 +120,68 @@ export function UserProgramHistoryTable({
             <TableBody>
               {isLoading
                 ? skeletonRows.map((rowId) => (
-                    <TableRow key={rowId} className="h-10 border-b border-[#eff0f5] hover:bg-transparent">
+                    <TableRow
+                      key={rowId}
+                      className="h-10 border-b border-[#E5E7EB] hover:bg-transparent"
+                    >
                       {headers.map((_, i) => (
-                        <TableCell key={i} className={`border-r border-[#eff0f5] px-3 py-2 last:border-r-0 ${i < 3 ? "text-left" : "text-center"}`}>
-                          <Skeleton 
-                            className={`h-3 ${i < 3 ? "" : "mx-auto"} ${
-                              i === 1 ? "w-[85%]" : // Program Name (longer)
-                              i === 0 ? "w-[60%]" : // Program Code
-                              i === 2 ? "w-[75%]" : // User Name
-                              "w-[50%]"             // Dates
-                            }`} 
+                        <TableCell
+                          key={i}
+                          className={`border-r border-[#E5E7EB] px-[14px] py-[10px] text-[12px] last:border-r-0 ${
+                            i <= leftAlignThroughIndex ? "text-left" : "text-center"
+                          }`}
+                        >
+                          <Skeleton
+                            className={`h-3 ${i <= leftAlignThroughIndex ? "" : "mx-auto"} ${
+                              i === 1 ? "w-[85%]" : i === 0 ? "w-[60%]" : isUserAssignmentHistory ? "w-[55%]" : i === 2 ? "w-[75%]" : "w-[50%]"
+                            }`}
                           />
                         </TableCell>
                       ))}
                     </TableRow>
                   ))
-                : historyData.map((row: UserProgramHistoryRecord) => (
-                    <TableRow key={row.id} className="min-h-[40px] border-b border-[#eff0f5] hover:bg-[#fafafa]">
-                      <TableCell className="border-r border-[#eff0f5] px-3 py-2 text-[12px] text-[#232735] text-left whitespace-normal wrap-break-word">{row.programCode}</TableCell>
-                      <TableCell className="border-r border-[#eff0f5] px-3 py-2 text-[12px] text-[#232735] text-left whitespace-normal wrap-break-word">{row.programName}</TableCell>
-                      <TableCell className="border-r border-[#eff0f5] px-3 py-2 text-[12px] text-[#232735] text-left whitespace-normal wrap-break-word">{row.userName || row.userId}</TableCell>
-                      <TableCell className="border-r border-[#eff0f5] px-3 py-2 text-[12px] text-[#232735] text-center whitespace-normal wrap-break-word">{formatDate(row.effectiveFrom)}</TableCell>
-                      <TableCell className="border-r border-[#eff0f5] px-3 py-2 text-[12px] text-[#232735] last:border-r-0 text-center whitespace-normal wrap-break-word">{formatDate(row.effectiveTo)}</TableCell>
+                : historyData.map((row) => (
+                    <TableRow key={row.id} className="min-h-[40px] border-b border-[#E5E7EB] hover:bg-[#fafafa]">
+                      {isUserAssignmentHistory ? (
+                        <>
+                          <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[10px] text-left text-[12px] text-[#232735] whitespace-normal wrap-break-word">
+                            {row.programCode ?? "—"}
+                          </TableCell>
+                          <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[10px] text-left text-[12px] text-[#232735] whitespace-normal wrap-break-word">
+                            {row.programName ?? "—"}
+                          </TableCell>
+                          <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[10px] text-center text-[12px] text-[#232735] whitespace-normal wrap-break-word">
+                            {getProgramHistoryEffectiveFromDisplay(row)}
+                          </TableCell>
+                          <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[10px] text-center text-[12px] text-[#232735] last:border-r-0 whitespace-normal wrap-break-word">
+                            {getProgramHistoryEffectiveToDisplay(row)}
+                          </TableCell>
+                        </>
+                      ) : (
+                        <>
+                          <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[10px] text-left text-[12px] text-[#232735] whitespace-normal wrap-break-word">
+                            {row.programCode ?? "—"}
+                          </TableCell>
+                          <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[10px] text-left text-[12px] text-[#232735] whitespace-normal wrap-break-word">
+                            {row.programName ?? "—"}
+                          </TableCell>
+                          <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[10px] text-left text-[12px] text-[#232735] whitespace-normal wrap-break-word">
+                            {getProgramHistoryEventDisplay(row)}
+                          </TableCell>
+                          <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[10px] text-center text-[12px] text-[#232735] whitespace-normal wrap-break-word">
+                            {getProgramHistoryCreatedByDisplay(row)}
+                          </TableCell>
+                          <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[10px] text-center text-[12px] text-[#232735] whitespace-normal wrap-break-word">
+                            {getProgramHistoryCreatedAtDisplay(row)}
+                          </TableCell>
+                          <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[10px] text-center text-[12px] text-[#232735] whitespace-normal wrap-break-word">
+                            {getProgramHistoryUpdatedByDisplay(row)}
+                          </TableCell>
+                          <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[10px] text-center text-[12px] text-[#232735] last:border-r-0 whitespace-normal wrap-break-word">
+                            {getProgramHistoryUpdatedAtDisplay(row)}
+                          </TableCell>
+                        </>
+                      )}
                     </TableRow>
                   ))}
               {!isLoading && historyData.length === 0 ? (
