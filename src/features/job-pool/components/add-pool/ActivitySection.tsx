@@ -2,34 +2,67 @@ import type { Dispatch, SetStateAction } from "react"
 import { useState, useMemo } from "react"
 import { ChevronRight, ChevronLeft } from "lucide-react"
 import { TransferPanel } from "./TransferPanel"
+import { useQuery } from "@tanstack/react-query"
 import type { TransferItem, ActivitySectionProps } from "../../types"
+import { getJobPoolActivitiesByDepartment } from "../../api/jobpool"
 
-import { useGetActivitiesByDepartment } from "../../../CountyActivityCode/queries/getCountyActivityCodes"
-
-export function ActivitySection({ form, departmentName, assignedActivityDetails, unassignedActivityDetails }: ActivitySectionProps) {
+export function ActivitySection({ form, mode, departmentName, assignedActivityDetails, unassignedActivityDetails }: ActivitySectionProps) {
   const selectedDept = form.watch("department")
   
-  const shouldFetch = !assignedActivityDetails && !unassignedActivityDetails && selectedDept;
-  const { data: activitiesData = [] } = useGetActivitiesByDepartment(
-    shouldFetch ? Number(selectedDept) : null
-  )
-  
-  const allActivities = useMemo(() => {
-    if (assignedActivityDetails || unassignedActivityDetails) {
-      const assigned = assignedActivityDetails || [];
-      const unassigned = unassignedActivityDetails || [];
-      return [...assigned, ...unassigned];
-    }
-    if (!selectedDept) return []
-    return activitiesData.map(a => ({ 
-      id: String(a.id), 
-      name: a.name,
-      code: a.code 
-    })) ?? []
-  }, [activitiesData, selectedDept, assignedActivityDetails, unassignedActivityDetails])
-
   const [searchU, setSearchU] = useState("")
   const [searchA, setSearchA] = useState("")
+  const activeSearch = searchU || searchA || undefined
+
+  const shouldFetch = !!selectedDept && (mode === "add" || !!activeSearch);
+  
+  const { data: activitiesData = [] } = useQuery({
+    queryKey: ["jobPool", "activities-by-dept", selectedDept, activeSearch],
+    queryFn: () => getJobPoolActivitiesByDepartment(Number(selectedDept), activeSearch),
+    enabled: shouldFetch,
+    staleTime: 30_000,
+  })
+
+  // Maintain a catalog of all items we've seen so far
+  const [itemCatalog, setItemCatalog] = useState<Record<string, { id: string; name: string; code: string }>>({})
+
+  // Seed catalog with initial details from props
+  useMemo(() => {
+    const assigned = assignedActivityDetails || [];
+    const unassigned = unassignedActivityDetails || [];
+    if (assigned.length > 0 || unassigned.length > 0) {
+      setItemCatalog(prev => {
+        const next = { ...prev }
+        assigned.forEach(a => { next[String(a.id)] = { id: String(a.id), name: a.name, code: a.code } })
+        unassigned.forEach(a => { next[String(a.id)] = { id: String(a.id), name: a.name, code: a.code } })
+        return next
+      })
+    }
+  }, [assignedActivityDetails, unassignedActivityDetails])
+
+  // Merge API results into catalog
+  useMemo(() => {
+    if (activitiesData.length > 0) {
+      setItemCatalog(prev => {
+        const next = { ...prev }
+        activitiesData.forEach(a => {
+          next[String(a.id)] = { id: String(a.id), name: a.name, code: a.code }
+        })
+        return next
+      })
+    }
+  }, [activitiesData])
+  
+  const allActivities = useMemo(() => {
+    // We always use the catalog as the source of truth, 
+    // which contains both initial items and newly searched items.
+    return Object.values(itemCatalog).map(a => ({
+      id: a.id,
+      name: a.name,
+      code: a.code,
+      disabled: false
+    }))
+  }, [itemCatalog])
+
   const [toggledU, setToggledU] = useState<string[]>([])
   const [toggledA, setToggledA] = useState<string[]>([])
 

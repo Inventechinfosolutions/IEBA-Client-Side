@@ -14,6 +14,7 @@ import {
   type GetDepartmentsParams,
   type ToDepartmentUIOptions,
   type UpdateDepartmentReqDto,
+  type DepartmentAllQueryDto,
 } from "../types"
 
 /** When false, address is omitted from create/update department request bodies. */
@@ -285,6 +286,27 @@ export async function getAllDepartments(
 
   const items = list.map((x) => toDepartmentUI(x as DepartmentResDto, { includeAddress: true }))
   return { items, total: items.length }
+}
+
+export async function getDepartmentsAll(
+  params?: { status?: string; search?: string; sort?: string }
+): Promise<Department[]> {
+  const searchParams = new URLSearchParams()
+  if (params?.status) searchParams.set("status", params.status)
+  if (params?.search) searchParams.set("search", params.search)
+  if (params?.sort) searchParams.set("sort", params.sort)
+
+  const res = await api.get<DepartmentApiEnvelope<DepartmentResDto[]>>(
+    `/departments/all?${searchParams.toString()}`
+  )
+  
+  const envelope = (res?.data ?? res) as any
+  const payload = envelope?.data ?? envelope
+  const list = Array.isArray(payload) ? payload : []
+
+  return list.map((x: any) =>
+    toDepartmentUI(x as DepartmentResDto, { includeAddress: true })
+  )
 }
 
 export async function getDepartmentById(id: string): Promise<Department> {

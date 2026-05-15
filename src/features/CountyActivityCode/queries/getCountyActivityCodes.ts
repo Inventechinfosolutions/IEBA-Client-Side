@@ -81,19 +81,19 @@ export function useGetCountyActivityPagedList(params: CountyActivityPagedListPar
 
       const payload = needsAggregatedCatalog
         ? await apiGetCountyActivitiesCatalogAggregated({
-            search: search.length > 0 ? search : undefined,
-            status,
-            sort: "ASC",
-            departmentIds: departmentIds.length > 0 ? departmentIds : undefined,
-          })
+          search: search.length > 0 ? search : undefined,
+          status,
+          sort: "ASC",
+          departmentIds: departmentIds.length > 0 ? departmentIds : undefined,
+        })
         : await apiGetCountyActivitiesPage({
-            page: params.page,
-            limit: Math.min(params.pageSize, COUNTY_ACTIVITY_ACTIVITIES_API_MAX_LIMIT),
-            search: search.length > 0 ? search : undefined,
-            status,
-            sort: "ASC",
-            departmentIds: departmentIds.length > 0 ? departmentIds : undefined,
-          })
+          page: params.page,
+          limit: Math.min(params.pageSize, COUNTY_ACTIVITY_ACTIVITIES_API_MAX_LIMIT),
+          search: search.length > 0 ? search : undefined,
+          status,
+          sort: "ASC",
+          departmentIds: departmentIds.length > 0 ? departmentIds : undefined,
+        })
       const rows = mapCountyActivityListItemsToGridRows(payload.data, enrichment)
       return { rows, meta: payload.meta, raw: payload.data }
     },
