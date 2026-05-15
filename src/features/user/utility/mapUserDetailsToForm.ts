@@ -42,7 +42,7 @@ export function contactsPayloadForUpdate(phoneRaw: string | undefined): UserCont
   return []
 }
 
-/** Matches GET /departments/user/roles-unassigned item ids (`deptId-roleId`). */
+/** Matches Security catalog ids (`deptId-roleId`) from GET /departments/assignedDepartment/roles. */
 function securitySnapshotsFromDepartmentRoles(
   details: UserDetailsDto,
 ): UserModuleFormValues["securityAssignedSnapshots"] {

@@ -10,18 +10,16 @@ import {
   fetchAddEmployeeDepartments,
   fetchAddEmployeeJobClassifications,
   fetchAddEmployeeJobPools,
-  fetchAddEmployeeTimeStudyPrograms,
   fetchDepartmentRolesCatalog,
-  fetchDepartmentRolesUnassigned,
+  fetchSecurityDepartmentRoles,
   fetchListCountyActivity,
   fetchAddEmployeeLocations,
   fetchMulticodeMasterCodes,
   fetchSupervisorsByDepartmentIds,
   fetchUserProgramsAndActivities,
   fetchUserDetailsTab,
-  fetchDepartmentRolesForUser,
 } from "../api"
-import { addEmployeeLookupKeys, departmentRolesUnassignedCacheUserKey } from "../keys"
+import { addEmployeeLookupKeys } from "../keys"
 import type {
   AddEmployeeActivityCatalogRow,
   AddEmployeeActivityDepartmentRow,
@@ -32,8 +30,8 @@ import type {
   AddEmployeeLocationRow,
   AddEmployeeMasterCodeRow,
   AddEmployeeSecurityRoleCatalogItem,
+  SecurityDepartmentRolesQueryResult,
   AddEmployeeDepartmentSupervisorRow,
-  AddEmployeeTimeStudyProgramRow,
   UserProgramsActivitiesDepartmentBundle,
 } from "../types"
 
@@ -146,61 +144,94 @@ export function useGetDepartmentRolesCatalog() {
 }
 
 /**
- * Security tab only (panel mounts when that tab is active): GET /departments/user/roles-unassigned.
- * Add: `allowFetchWithoutUserId` true → omit `userId` until draft id exists.
- * Edit: requires non-empty `userId` (always sent as query param).
+ * Security tab: GET /departments/assignedDepartment/roles when `userId` is set.
+ * Add flow before draft id: falls back to department-roles catalog as all-unassigned.
  */
+export function useGetSecurityDepartmentRoles(
+  userId: string | null | undefined,
+  allowCatalogWithoutUserId: boolean,
+) {
+  const id = userId?.trim() ?? ""
+  const catalogQuery = useQuery({
+    queryKey: addEmployeeLookupKeys.departmentRolesCatalog(),
+    queryFn: async (): Promise<SecurityDepartmentRolesQueryResult> => ({
+      unassigned: await fetchDepartmentRolesCatalog(),
+      assignedSnapshots: [],
+    }),
+    enabled: allowCatalogWithoutUserId && !id,
+    retry: 1,
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+  })
+
+  const userRolesQuery = useQuery({
+    queryKey: addEmployeeLookupKeys.securityDepartmentRoles(id),
+    queryFn: async (): Promise<SecurityDepartmentRolesQueryResult> => {
+      return await fetchSecurityDepartmentRoles(id)
+    },
+    enabled: Boolean(id),
+    retry: 1,
+    staleTime: 0,
+    refetchOnWindowFocus: false,
+    refetchOnMount: true,
+  })
+
+  if (id) return userRolesQuery
+  return catalogQuery
+}
+
+/** @deprecated Use useGetSecurityDepartmentRoles */
 export function useGetDepartmentRolesUnassigned(
   userId: string | null | undefined,
   allowFetchWithoutUserId: boolean,
 ) {
-  const id = userId?.trim() ?? ""
-  const key = departmentRolesUnassignedCacheUserKey(userId, allowFetchWithoutUserId)
-  const enabled = Boolean(id) || allowFetchWithoutUserId
-  return useQuery({
-    queryKey: addEmployeeLookupKeys.departmentRolesUnassignedAdd(key),
-    queryFn: async (): Promise<AddEmployeeSecurityRoleCatalogItem[]> => {
-      return await fetchDepartmentRolesUnassigned(id ? { userId: id } : undefined)
-    },
-    enabled,
-    retry: 1,
-    /** Keep first successful GET; assign/unassign updates UI via form state + optional cache merge (no refetch). */
-    staleTime: Number.POSITIVE_INFINITY,
-    refetchOnWindowFocus: false,
-    refetchOnMount: false,
-  })
+  const query = useGetSecurityDepartmentRoles(userId, allowFetchWithoutUserId)
+  return {
+    ...query,
+    data: query.data?.unassigned,
+  }
 }
 
-export function useGetAddEmployeeTimeStudyPrograms(enabled = true) {
-  return useQuery({
-    queryKey: addEmployeeLookupKeys.timeStudyProgramsAssignments(),
-    queryFn: async (): Promise<AddEmployeeTimeStudyProgramRow[]> => {
-      return await fetchAddEmployeeTimeStudyPrograms()
-    },
-    enabled,
-    staleTime: Number.POSITIVE_INFINITY,
-    refetchOnWindowFocus: false,
-    refetchOnMount: false,
-  })
-}
-
-/**
- * Edit mode Time Study tab: GET /timestudyprograms/user/programs-activities?userId= (profile id).
- */
-export function useGetUserProgramsAndActivities(
+/** Time Study tab: department list (no `departmentId` query param). */
+export function useGetUserProgramsActivitiesDepartmentScope(
   userId: string | null | undefined,
   enabled: boolean,
 ) {
   const id = userId?.trim() ?? ""
   const key = id || "__none__"
   return useQuery({
-    queryKey: addEmployeeLookupKeys.userProgramsActivities(key),
+    queryKey: addEmployeeLookupKeys.userProgramsActivities(key, "__scope__"),
     queryFn: async (): Promise<UserProgramsActivitiesDepartmentBundle[]> => {
       return await fetchUserProgramsAndActivities(id)
     },
     enabled: Boolean(id) && enabled,
     staleTime: 0,
     retry: 1,
+    refetchOnWindowFocus: false,
+  })
+}
+
+/** Time Study tab: programs for one department (`departmentId` query param). */
+export function useGetUserProgramsAndActivities(
+  userId: string | null | undefined,
+  departmentId: number | null | undefined,
+  enabled: boolean,
+) {
+  const id = userId?.trim() ?? ""
+  const key = id || "__none__"
+  const dept =
+    departmentId != null && Number.isFinite(departmentId) && departmentId >= 1
+      ? departmentId
+      : null
+  return useQuery({
+    queryKey: addEmployeeLookupKeys.userProgramsActivities(key, dept != null ? String(dept) : "__none__"),
+    queryFn: async (): Promise<UserProgramsActivitiesDepartmentBundle[]> => {
+      return await fetchUserProgramsAndActivities(id, dept!)
+    },
+    enabled: Boolean(id) && enabled && dept != null,
+    staleTime: 0,
+    retry: 1,
+    refetchOnWindowFocus: false,
   })
 }
 
@@ -240,20 +271,23 @@ export function useGetSupervisorsByDepartments(departmentIds: number[], enabled:
 export function useGetUserDetailsTab(userId: string | null | undefined, method: string, enabled: boolean) {
   const id = userId?.trim() ?? ""
   return useQuery({
-    queryKey: [...addEmployeeLookupKeys.all, "userDetailsTab", id, method],
+    queryKey: addEmployeeLookupKeys.userDetailsTab(id, method),
     queryFn: async (): Promise<Record<string, unknown>> => {
       return await fetchUserDetailsTab(id, method)
     },
     enabled: Boolean(id) && enabled,
+    staleTime: method === "tab1" || method === "tab2" || method === "tab3" ? 0 : 60_000,
+    refetchOnMount: method === "tab1" || method === "tab2" || method === "tab3" ? true : undefined,
+    refetchOnWindowFocus: false,
   })
 }
 
 export function useGetDepartmentRolesForUser(userId: string | null | undefined, enabled: boolean) {
   const id = userId?.trim() ?? ""
   return useQuery({
-    queryKey: [...addEmployeeLookupKeys.all, "departmentRolesForUser", id],
-    queryFn: async (): Promise<any> => {
-      return await fetchDepartmentRolesForUser(id)
+    queryKey: addEmployeeLookupKeys.securityDepartmentRoles(id),
+    queryFn: async (): Promise<SecurityDepartmentRolesQueryResult> => {
+      return await fetchSecurityDepartmentRoles(id)
     },
     enabled: Boolean(id) && enabled,
   })

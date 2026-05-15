@@ -1,10 +1,11 @@
-import { lazy, Suspense, useMemo, useState } from "react"
+import { lazy, Suspense, useCallback, useMemo, useState } from "react"
 import { Spinner } from "@/components/ui/spinner"
 import { Controller, useFormContext } from "react-hook-form"
 import { toast } from "sonner"
 
 import { ArrowLeft, History } from "lucide-react"
 import { queryClient } from "@/main"
+import { fetchSecurityDepartmentRoles, fetchUserDetailsTab } from "../api"
 import { TransferListMoveButton } from "@/components/ui/transfer-list-move-button"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -12,7 +13,6 @@ import { TitleCaseInput } from "@/components/ui/title-case-input"
 import { usePermissions } from "@/hooks/usePermissions"
 
 import type {
-  AddEmployeeSecurityRoleCatalogItem,
   AddEmployeeSecurityRoleItem,
   SecurityAssignmentsPanelProps,
   UserModuleFormValues,
@@ -20,9 +20,16 @@ import type {
 
 import { addEmployeeTransferSuccessToastOptions } from "../schemas"
 import { useAssignUserDepartmentRoles, useUnassignUserDepartmentRoles } from "../mutations/user-department-role-transfer"
-import { useGetDepartments } from "@/features/department/queries/getDepartments"
-import { addEmployeeLookupKeys, departmentRolesUnassignedCacheUserKey } from "../keys"
-import { useGetDepartmentRolesUnassigned } from "../queries/get-add-employee"
+import { useGetAllDepartments } from "@/features/department/queries/getDepartments"
+import { addEmployeeLookupKeys } from "../keys"
+import { useGetSecurityDepartmentRoles, useGetUserDetailsTab } from "../queries/get-add-employee"
+import { securityRoleItemsFromSnapshots } from "../utility/parseSecurityDepartmentRoles"
+import { syncSecurityAssignmentsForm } from "../utility/syncSecurityAssignmentsForm"
+import {
+  apportioningFieldsFromTab2,
+  parseUserDetailsTab2,
+  syncSecurityTab2Form,
+} from "../utility/syncSecurityTab2Form"
 import {
   buildUserDepartmentRoleDepartmentsPayload,
   departmentIdFromSecurityCatalogItemId,
@@ -48,29 +55,6 @@ function departmentRolePairKey(department: string, roleName: string): string {
   return `${normalizeDeptRolePart(department)}|${normalizeDeptRolePart(roleName)}`
 }
 
-/** Extend cached GET /roles-unassigned so unassigned rows reappear without refetching. */
-function mergeRowsIntoRolesUnassignedCache(
-  queryKey: ReturnType<typeof addEmployeeLookupKeys.departmentRolesUnassignedAdd>,
-  rows: Pick<AddEmployeeSecurityRoleCatalogItem, "id" | "name" | "department">[],
-) {
-  queryClient.setQueryData<AddEmployeeSecurityRoleCatalogItem[]>(queryKey, (prev) => {
-    const base = prev ?? []
-    const seen = new Set(base.map((r) => r.id))
-    const merged = [...base]
-    for (const item of rows) {
-      if (item.id.startsWith("assigned:")) continue
-      if (seen.has(item.id)) continue
-      seen.add(item.id)
-      merged.push({
-        id: item.id,
-        name: item.name,
-        department: item.department,
-      })
-    }
-    return merged
-  })
-}
-
 function normalizeRoleId(role: string): string {
   return role.trim().toLowerCase().replace(/\s+/g, "-")
 }
@@ -82,27 +66,74 @@ export function SecurityAssignmentsPanel({
   allowUnassignedQueryWithoutUserId,
   onAddModeTransferSucceeded,
 }: SecurityAssignmentsPanelProps) {
-  const unassignedQuery = useGetDepartmentRolesUnassigned(
+  const securityRolesQuery = useGetSecurityDepartmentRoles(
     securityContextUserId,
     allowUnassignedQueryWithoutUserId,
   )
 
-  const rolesUnassignedQueryKey = addEmployeeLookupKeys.departmentRolesUnassignedAdd(
-    departmentRolesUnassignedCacheUserKey(securityContextUserId, allowUnassignedQueryWithoutUserId),
-  )
-
   const securityUserId = securityContextUserId?.trim() ?? ""
+  const tab2Query = useGetUserDetailsTab(securityUserId, "tab2", Boolean(securityUserId))
+  const tab2Data = useMemo(
+    () => (tab2Query.data ? parseUserDetailsTab2(tab2Query.data) : undefined),
+    [tab2Query.data],
+  )
   const canPersistTransfers = securityUserId.length > 0
   const assignMutation = useAssignUserDepartmentRoles()
   const unassignMutation = useUnassignUserDepartmentRoles()
   const transferBusy = assignMutation.isPending || unassignMutation.isPending
 
   const isAddMode = mode === "add"
-  const isEditMode = mode === "edit"
   
-  const { watch, control, setValue, getValues } = useFormContext<UserModuleFormValues>()
+  const {
+    watch,
+    control,
+    setValue,
+    getValues,
+    formState: { dirtyFields },
+  } = useFormContext<UserModuleFormValues>()
+
+  const refetchSecurityRolesAndSyncForm = useCallback(async () => {
+    if (!securityUserId) return
+    const [refreshed, tab2Raw] = await Promise.all([
+      queryClient.fetchQuery({
+        queryKey: addEmployeeLookupKeys.securityDepartmentRoles(securityUserId),
+        queryFn: () => fetchSecurityDepartmentRoles(securityUserId),
+        staleTime: 0,
+      }),
+      queryClient.fetchQuery({
+        queryKey: addEmployeeLookupKeys.userDetailsTab(securityUserId, "tab2"),
+        queryFn: () => fetchUserDetailsTab(securityUserId, "tab2"),
+        staleTime: 0,
+      }),
+    ])
+    syncSecurityAssignmentsForm(setValue, refreshed)
+    syncSecurityTab2Form(setValue, parseUserDetailsTab2(tab2Raw))
+  }, [securityUserId, setValue])
+
+  const tab2Apportioning = useMemo(
+    () => (tab2Data ? apportioningFieldsFromTab2(tab2Data) : null),
+    [tab2Data],
+  )
+
+  const formSupervisorApportioning = watch("supervisorApportioning")
+  const displaySupervisorApportioning = useMemo(() => {
+    if (dirtyFields.supervisorApportioning) return formSupervisorApportioning
+    return formSupervisorApportioning || (tab2Apportioning?.supervisorApportioning ?? false)
+  }, [dirtyFields.supervisorApportioning, formSupervisorApportioning, tab2Apportioning])
+
+  const securityRolesData =
+    securityUserId && securityRolesQuery.isSuccess ? securityRolesQuery.data : undefined
+
+  const formSecuritySnapshots = watch("securityAssignedSnapshots") ?? []
   const assignedRoles = watch("roleAssignments") ?? []
-  const securitySnapshots = watch("securityAssignedSnapshots") ?? []
+
+  /** Prefer GET /assignedDepartment/roles when loaded; form state for add-before-userId. */
+  const assignedSnapshots = useMemo(() => {
+    if (securityRolesData?.assignedSnapshots.length) {
+      return securityRolesData.assignedSnapshots
+    }
+    return formSecuritySnapshots
+  }, [securityRolesData, formSecuritySnapshots])
   
   const { isSuperAdmin, user } = usePermissions()
   // All non-super-admin roles are restricted to their assigned departments only
@@ -113,93 +144,65 @@ export function SecurityAssignmentsPanel({
     return new Set(user.departmentRoles.map(dr => dr.departmentName))
   }, [isRestrictedNonSuperAdmin, user?.departmentRoles])
 
-  /**
-   * Fetch all active departments to check their settings (apportioning, autoApportioning).
-   * This is used to enable/disable the "Supervisor Apportioning" checkbox.
-   */
-  const departmentsQuery = useGetDepartments({
-    status: "active",
-    page: 1,
-    limit: 1000,
-  }, {
-    enabled: securitySnapshots.length > 0
-  })
+  /** GET /departments/all — department settings for Supervisor Apportioning (no pagination). */
+  const departmentsQuery = useGetAllDepartments(
+    { status: "active", sort: "ASC" },
+    { enabled: assignedSnapshots.length > 0 },
+  )
 
   const isApportioningEnabled = useMemo(() => {
-    if (!departmentsQuery.data?.items || securitySnapshots.length === 0) return false
+    if (!departmentsQuery.data?.items || assignedSnapshots.length === 0) return false
     
     // Check if "Time Study Supervisor" role is assigned
-    const hasTimeStudySupervisorRole = securitySnapshots.some(s => s.name.trim() === "Time Study Supervisor")
+    const hasTimeStudySupervisorRole = assignedSnapshots.some(s => s.name.trim() === "Time Study Supervisor")
     if (!hasTimeStudySupervisorRole) return false
 
     // Get unique department IDs from assigned snapshots
-    const assignedDeptIds = new Set(securitySnapshots.map(s => String(s.departmentId)))
+    const assignedDeptIds = new Set(assignedSnapshots.map(s => String(s.departmentId)))
     
     // Check if any of those departments has both settings enabled
     return departmentsQuery.data.items.some(dept => 
       assignedDeptIds.has(String(dept.id)) && 
       dept.settings.apportioning
     )
-  }, [departmentsQuery.data?.items, securitySnapshots])
+  }, [departmentsQuery.data?.items, assignedSnapshots])
 
 
-  /**
-   * Unassigned API (with `userId` in edit) returns server “still unassigned” rows; we also remove anything
-   * already shown as assigned from user details (`securityAssignedSnapshots`: dept + role + catalog id).
-   */
+  /** Left column: `data.unassigned` → flat rows (`id` = `deptId-roleId`). */
   const unassignedItems = useMemo(() => {
-    if (!unassignedQuery.isSuccess || !unassignedQuery.data) return []
-    let data = unassignedQuery.data
+    if (!securityRolesQuery.isSuccess || !securityRolesQuery.data) return []
+    let data = securityRolesQuery.data.unassigned
 
     if (isRestrictedNonSuperAdmin && allowedDepartmentNames) {
-      data = data.filter(i => allowedDepartmentNames.has(i.department))
+      data = data.filter((i) => allowedDepartmentNames.has(i.department))
     }
 
-    const snapIds = new Set(securitySnapshots.map((s) => s.id))
-    const assignedPairKeys = new Set(
-      securitySnapshots.map((s) => departmentRolePairKey(s.department, s.name)),
-    )
-
-    const isAlreadyAssignedInDetails = (i: AddEmployeeSecurityRoleCatalogItem) => {
-      if (snapIds.has(i.id)) return true
-      if (
-        assignedPairKeys.size > 0 &&
-        assignedPairKeys.has(departmentRolePairKey(i.department, i.name))
-      ) {
+    if (!securityUserId) {
+      const snapIds = new Set(assignedSnapshots.map((s) => s.id))
+      const assignedPairKeys = new Set(
+        assignedSnapshots.map((s) => departmentRolePairKey(s.department, s.name)),
+      )
+      return data.filter((i) => {
+        if (snapIds.has(i.id)) return false
+        if (assignedPairKeys.has(departmentRolePairKey(i.department, i.name))) return false
         return true
-      }
-      return false
+      })
     }
 
-    if (isAddMode) {
-      return data.filter((i) => !isAlreadyAssignedInDetails(i))
-    }
-    if (isEditMode && securitySnapshots.length > 0) {
-      return data.filter((i) => !isAlreadyAssignedInDetails(i))
-    }
-    return data.filter((i) => !assignedRoles.includes(i.name))
+    return data
   }, [
-    unassignedQuery.data,
-    unassignedQuery.isSuccess,
-    assignedRoles,
-    isAddMode,
-    isEditMode,
-    securitySnapshots,
+    securityRolesQuery.data,
+    securityRolesQuery.isSuccess,
+    securityUserId,
+    assignedSnapshots,
     isRestrictedNonSuperAdmin,
     allowedDepartmentNames,
   ])
 
-  /**
-   * Assigned column: snapshots carry real department names (add wizard + edit after details merge).
-   * Fallback label "Assigned" only when we have role names but no dept–role pairs yet.
-   */
+  /** Right column: flat rows from `data.assigned`, grouped by department in RoleTransferPanel. */
   const assignedItems = useMemo((): AddEmployeeSecurityRoleItem[] => {
-    if (securitySnapshots.length > 0) {
-      return securitySnapshots.map((s) => ({
-        id: s.id,
-        name: s.name,
-        department: s.department,
-      }))
+    if (assignedSnapshots.length > 0) {
+      return securityRoleItemsFromSnapshots(assignedSnapshots)
     }
     const out: AddEmployeeSecurityRoleItem[] = []
     const seen = new Set<string>()
@@ -214,7 +217,7 @@ export function SecurityAssignmentsPanel({
       })
     }
     return out
-  }, [securitySnapshots, assignedRoles])
+  }, [assignedSnapshots, assignedRoles])
 
   const [toggledU, setToggledU] = useState<string[]>([])
   const [toggledA, setToggledA] = useState<string[]>([])
@@ -313,7 +316,7 @@ export function SecurityAssignmentsPanel({
 
   const transferToAssigned = async () => {
     if (toggledU.length === 0) return
-    const catalog = unassignedQuery.data ?? []
+    const catalog = securityRolesQuery.data?.unassigned ?? []
     const toAdd = catalog.filter((i) => toggledU.includes(i.id))
     if (toAdd.length === 0) {
       setToggledU([])
@@ -335,6 +338,12 @@ export function SecurityAssignmentsPanel({
           apportioningAllocation: [], // Role assignment only - do not update percentages
         })
         toast.success("Roles assigned.", addEmployeeTransferSuccessToastOptions)
+        await refetchSecurityRolesAndSyncForm()
+        setToggledU([])
+        if (isAddMode) {
+          onAddModeTransferSucceeded?.()
+        }
+        return
       } catch (e) {
         toast.error(e instanceof Error ? e.message : "Assign failed")
         return
@@ -381,12 +390,21 @@ export function SecurityAssignmentsPanel({
     let dbSupervisorDepts = new Set<number>()
 
     // 1. Guard: Only allow unassign if the department's allocation is 0 or null IN THE DATABASE
-    if (watch("supervisorApportioning") && !isAddMode && securityUserId) {
+    if (displaySupervisorApportioning && !isAddMode && securityUserId) {
       try {
-        const { apiGetUserDetails } = await import("../../api")
-        const details = await apiGetUserDetails(securityUserId)
-        
-        const supervisorDbRoles = details.departmentsRoles?.filter(dr => dr.role?.name?.trim() === "Time Study Supervisor") || [];
+        const tab2Raw =
+          tab2Data ??
+          parseUserDetailsTab2(
+            (await queryClient.fetchQuery({
+              queryKey: addEmployeeLookupKeys.userDetailsTab(securityUserId, "tab2"),
+              queryFn: () => fetchUserDetailsTab(securityUserId, "tab2"),
+              staleTime: 0,
+            })) as Record<string, unknown>,
+          )
+        const details = tab2Raw
+
+        const supervisorDbRoles =
+          details.departmentsRoles?.filter((dr) => dr.role?.name?.trim() === "Time Study Supervisor") ?? []
         dbSupervisorDepts = new Set(supervisorDbRoles.map(dr => dr.departmentId));
 
         const supervisorItemsRemoving = toRemoveItems.filter(i => i.name.trim() === "Time Study Supervisor");
@@ -414,8 +432,8 @@ export function SecurityAssignmentsPanel({
           if (dbSupervisorDepts.size <= 1) return false
 
           // Otherwise, if they have multiple departments, they must set this one to 0 first
-          const deptRoles = details.departmentsRoles?.filter(dr => dr.departmentId === deptId)
-          const hasAllocation = deptRoles?.some(dr => (dr.apportioning ?? 0) > 0)
+          const deptRoles = details.departmentsRoles?.filter((dr) => dr.departmentId === deptId)
+          const hasAllocation = deptRoles?.some((dr) => (dr.apportioning ?? 0) > 0)
           
           return hasAllocation
         })
@@ -425,7 +443,8 @@ export function SecurityAssignmentsPanel({
           const deptsStaying = supervisorDbRoles.filter(dr => !deptsRemovingIds.has(dr.departmentId));
           
           const deptId = departmentIdFromSecurityCatalogItemId(failingItem.id);
-          const allRolesForThisDeptInDb = details.departmentsRoles?.filter(dr => dr.departmentId === deptId) || [];
+          const allRolesForThisDeptInDb =
+            details.departmentsRoles?.filter((dr) => dr.departmentId === deptId) ?? []
           const rolesBeingRemovedForThisDept = toRemoveItems.filter(i => departmentIdFromSecurityCatalogItemId(i.id) === deptId);
           
           // Check if user is removing ALL roles they have in this department
@@ -491,8 +510,10 @@ export function SecurityAssignmentsPanel({
           apportioningRequired: willHaveNoSupervisorDepts ? false : getValues("supervisorApportioning"),
           apportioningAllocation: [], // Role assignment only - do not update percentages
         })
-        mergeRowsIntoRolesUnassignedCache(rolesUnassignedQueryKey, toRemoveItems)
         toast.success("Roles unassigned.", addEmployeeTransferSuccessToastOptions)
+        await refetchSecurityRolesAndSyncForm()
+        setToggledA([])
+        return
       } catch (e) {
         toast.error(e instanceof Error ? e.message : "Unassign failed")
         return
@@ -567,7 +588,10 @@ export function SecurityAssignmentsPanel({
 
   const firstName = watch("firstName")
   const lastName = watch("lastName")
-  const fullName = `${firstName ?? ""} ${lastName ?? ""}`.trim()
+  const fullName =
+    `${firstName ?? tab2Data?.firstName ?? ""} ${lastName ?? tab2Data?.lastName ?? ""}`.trim() ||
+    tab2Data?.name?.trim() ||
+    ""
 
   return (
     <div className="relative min-w-0 pt-1">
@@ -689,7 +713,13 @@ export function SecurityAssignmentsPanel({
               control={control}
               render={({ field }) => (
                 <Checkbox
-                  checked={isApportioningEnabled ? field.value : false}
+                  checked={
+                    isApportioningEnabled
+                      ? dirtyFields.supervisorApportioning
+                        ? field.value
+                        : field.value || (tab2Apportioning?.supervisorApportioning ?? false)
+                      : false
+                  }
                   onCheckedChange={(checked) => field.onChange(checked === true)}
                   disabled={!isApportioningEnabled}
                   className="size-4 rounded-[3px] border-[#c2c6d1] data-[state=checked]:border-(--primary) data-[state=checked]:bg-(--primary) disabled:cursor-not-allowed disabled:bg-[#f3f4f6] disabled:border-[#e5e7eb] disabled:opacity-100"
@@ -730,7 +760,9 @@ export function SecurityAssignmentsPanel({
       </div>
 
       <div className="relative mt-3 grid grid-cols-[1fr_60px_1fr] items-center gap-4">
-        {(unassignedQuery.isLoading || transferBusy) && (
+        {(securityRolesQuery.isLoading ||
+          (Boolean(securityUserId) && tab2Query.isLoading) ||
+          transferBusy) && (
           <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/60">
             <Spinner className="text-[#6C5DD3]" />
           </div>
@@ -769,7 +801,7 @@ export function SecurityAssignmentsPanel({
         />
       </div>
 
-      {watch("supervisorApportioning") && isApportioningEnabled && (
+      {displaySupervisorApportioning && isApportioningEnabled && (
         <div className="mt-8 overflow-hidden rounded-[10px] border border-[#e5e7eb] bg-white shadow-[0_4px_20px_rgba(0,0,0,0.05)] transition-all duration-300">
           <table className="w-full text-left text-[12px] border-collapse">
             <thead>
@@ -784,14 +816,14 @@ export function SecurityAssignmentsPanel({
               {(() => {
                 const supervisorRoleName = "Time Study Supervisor"
                 const deptsWithSupervisor = new Set(
-                  securitySnapshots
+                  assignedSnapshots
                     .filter(s => s.name.trim() === supervisorRoleName)
                     .map(s => s.departmentId)
                 )
 
                 const assignedDepts = Array.from(deptsWithSupervisor)
                   .map(id => {
-                    const snap = securitySnapshots.find(s => s.departmentId === id)
+                    const snap = assignedSnapshots.find(s => s.departmentId === id)
                     const deptInfo = departmentsQuery.data?.items.find(d => String(d.id) === String(id))
                     return {
                       id: String(id),
@@ -835,7 +867,11 @@ export function SecurityAssignmentsPanel({
                           <input
                             {...field}
                             type="text"
-                            value={field.value ?? ""}
+                            value={
+                              field.value ??
+                              tab2Apportioning?.apportioningAllocations?.[dept.id] ??
+                              ""
+                            }
                             placeholder=""
                             className="h-8 w-20 rounded-[4px] border border-[#cbd5e1] bg-white px-2 text-center text-[12px] font-medium text-[#111827] outline-none transition-all focus:border-(--primary) focus:ring-1 focus:ring-(--primary)"
                             onChange={(e) => {

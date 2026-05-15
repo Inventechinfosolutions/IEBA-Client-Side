@@ -1,11 +1,8 @@
 import { useMemo, useState } from "react"
 import { useLocation, useNavigate } from "react-router-dom"
-import { useQuery } from "@tanstack/react-query"
 import { Check, X } from "lucide-react"
-import { Spinner } from "@/components/ui/spinner"
 import { toast } from "sonner"
 
-import { Button } from "@/components/ui/button"
 import { MasterCodePagination } from "@/features/master-code/components/MasterCodePagination"
 import { queryClient } from "@/main"
 import { useAuth } from "@/contexts/AuthContext"
@@ -14,13 +11,21 @@ import { useGetDepartments } from "@/features/department/queries/getDepartments"
 import { UserTable } from "../components/UserTable"
 import { UserToolbar } from "../components/UserToolbar"
 import { usePermissions } from "@/hooks/usePermissions"
-import { assignUserDepartmentRoles, fetchDepartmentRolesCatalog, apiUploadUserDocument } from "../add-employee/api"
-import { buildUserDepartmentRoleDepartmentsPayload } from "../add-employee/utility/buildUserDepartmentRoleDepartmentsPayload"
+import {
+  assignUserDepartmentRoles,
+  fetchDepartmentRolesCatalog,
+  apiUploadUserDocument,
+} from "../add-employee/api"
+import { resolveAssignedSnapshotsForSecuritySave } from "../add-employee/utility/parseSecurityDepartmentRoles"
+import { persistSecurityApportioningOnSave } from "../add-employee/utility/persistSecurityApportioningOnSave"
+import {
+  invalidateUserTabCaches,
+  refetchFormAfterTabSave,
+} from "../add-employee/utility/refetchFormAfterTabSave"
 import { parseMultiSelectStoredValues } from "@/components/ui/multi-select-dropdown"
 import { apiGetUserDetails } from "../api"
 import { useUserModule } from "../hooks/useUserModule"
 import { userModuleKeys } from "../keys"
-import { mergeUserDetailsIntoFormValues } from "../utility/mapUserDetailsToForm"
 import { AddEmployeeFormPage } from "../add-employee"
 import {
   isGlobalAdminLogin,
@@ -179,9 +184,6 @@ export function UserModulePage() {
           : undefined),
   }, { enabled: !showForm })
   const isTableLoading = userModule.isLoading
-
-  const shouldFetchEditDetails =
-    showForm && formMode === "edit" && selectedRow != null
 
   /** Baseline from the list row (sparse); merged with GET /users/:id/details when editing. */
   const formValuesFromListRow = useMemo((): UserModuleFormValues | null => {
@@ -363,9 +365,12 @@ export function UserModulePage() {
 
     // 1. Validation for Supervisor Apportioning Total Percentage (must be exactly 100%)
     if (sourceTab === "security" && values.supervisorApportioning) {
-      const assignedDeptIds = new Set(
-        (values.securityAssignedSnapshots ?? []).map((s) => String(s.departmentId)),
-      )
+      const saveUserId =
+        formMode === "edit" && selectedRow ? selectedRow.id : draftUserId ?? ""
+      const snapshotsForSave = saveUserId
+        ? resolveAssignedSnapshotsForSecuritySave(saveUserId, values.securityAssignedSnapshots ?? [])
+        : (values.securityAssignedSnapshots ?? [])
+      const assignedDeptIds = new Set(snapshotsForSave.map((s) => String(s.departmentId)))
       const allocations = Object.entries(values.apportioningAllocations ?? {})
         .filter(([id]) => assignedDeptIds.has(id))
         .map(([, val]) => parseFloat(val ?? "") || 0)
@@ -385,64 +390,29 @@ export function UserModulePage() {
     try {
       if (formMode === "edit" && selectedRow) {
         if (sourceTab === "security") {
-          const departments = buildUserDepartmentRoleDepartmentsPayload(
-            values.securityAssignedSnapshots ?? [],
-          )
-          const apportioningAllocation = values.supervisorApportioning
-            ? Object.entries(values.apportioningAllocations ?? {}).map(([id, val]) => ({
-                id: Number(id),
-                allocation: parseFloat(val ?? "") || 0,
-              }))
-            : []
-
-          await assignUserDepartmentRoles({
-            userId: selectedRow.id,
-            departments,
-            apportioningRequired: values.supervisorApportioning,
-            apportioningAllocation,
-          })
+          await persistSecurityApportioningOnSave(selectedRow.id, values)
         }
 
         await userModule.updateRowAsync({ id: selectedRow.id, values })
         toast.success("User Saved Successfully", successToastOptions)
-        void queryClient.invalidateQueries({ queryKey: userModuleKeys.detail(selectedRow.id) })
-        const details = await queryClient.fetchQuery({
-          queryKey: userModuleKeys.detail(selectedRow.id),
-          queryFn: () => apiGetUserDetails(selectedRow.id),
-          staleTime: 0,
-        })
-        const merged = mergeUserDetailsIntoFormValues(details, values)
+        invalidateUserTabCaches(queryClient, selectedRow.id, sourceTab)
+        const merged = await refetchFormAfterTabSave(
+          queryClient,
+          selectedRow.id,
+          sourceTab,
+          values,
+        )
         return { formValues: merged }
       }
 
       if (draftUserId) {
         if (sourceTab === "security") {
-          const departments = buildUserDepartmentRoleDepartmentsPayload(
-            values.securityAssignedSnapshots ?? [],
-          )
-          const apportioningAllocation = values.supervisorApportioning
-            ? Object.entries(values.apportioningAllocations ?? {}).map(([id, val]) => ({
-                id: Number(id),
-                allocation: parseFloat(val ?? "") || 0,
-              }))
-            : []
-
-          await assignUserDepartmentRoles({
-            userId: draftUserId,
-            departments,
-            apportioningRequired: values.supervisorApportioning,
-            apportioningAllocation,
-          })
+          await persistSecurityApportioningOnSave(draftUserId, values)
         }
         await userModule.updateRowAsync({ id: draftUserId, values })
         toast.success("Employee saved successfully", successToastOptions)
-        void queryClient.invalidateQueries({ queryKey: userModuleKeys.detail(draftUserId) })
-        const details = await queryClient.fetchQuery({
-          queryKey: userModuleKeys.detail(draftUserId),
-          queryFn: () => apiGetUserDetails(draftUserId),
-          staleTime: 0,
-        })
-        const merged = mergeUserDetailsIntoFormValues(details, values)
+        invalidateUserTabCaches(queryClient, draftUserId, sourceTab)
+        const merged = await refetchFormAfterTabSave(queryClient, draftUserId, sourceTab, values)
         return { formValues: merged }
       }
 
@@ -499,13 +469,8 @@ export function UserModulePage() {
         "Employee details saved. You can go to the next tab without saving again.",
         successToastOptions
       )
-      void queryClient.invalidateQueries({ queryKey: userModuleKeys.detail(created.id) })
-      const details = await queryClient.fetchQuery({
-        queryKey: userModuleKeys.detail(created.id),
-        queryFn: () => apiGetUserDetails(created.id),
-        staleTime: 0,
-      })
-      const merged = mergeUserDetailsIntoFormValues(details, values)
+      invalidateUserTabCaches(queryClient, created.id, sourceTab)
+      const merged = await refetchFormAfterTabSave(queryClient, created.id, sourceTab, values)
       return { formValues: merged }
     } catch (error) {
       const message = error instanceof Error ? error.message : "Save failed"

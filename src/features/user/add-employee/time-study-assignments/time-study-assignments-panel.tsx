@@ -13,13 +13,14 @@ import { TransferListMoveButton } from "@/components/ui/transfer-list-move-butto
 
 import { addEmployeeTransferSuccessToastOptions } from "../schemas"
 import type {
-  AddEmployeeDepartmentOption,
   AddEmployeeTimeStudyTransferItem,
+  SecurityAssignedSnapshot,
   TimeStudyAssignmentsPanelProps,
   TimeStudyPlacementOverride,
   TimeStudyPlacementOverrideMap,
   UserModuleFormValues,
   UserProgramsActivitiesDepartmentBundle,
+  UserProgramsActivitiesProgramWithAssignments,
 } from "../types"
 
 import {
@@ -31,8 +32,7 @@ import {
 import { apiUpdateUser } from "../../api"
 import {
   useGetActivityDepartmentsForDepartment,
-  useGetAddEmployeeDepartments,
-  useGetAddEmployeeTimeStudyPrograms,
+  useGetUserProgramsActivitiesDepartmentScope,
   useGetUserProgramsAndActivities,
 } from "../queries/get-add-employee"
 import { apiGetProgramActivityRelationActivities } from "@/features/program/api"
@@ -69,24 +69,23 @@ function toggleList(prev: string[], id: string) {
   return prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
 }
 
-function parseDepartmentNumericId(row: AddEmployeeDepartmentOption): number | null {
-  const n = Number.parseInt(String(row.id).trim(), 10)
-  return Number.isFinite(n) && n >= 1 ? n : null
-}
+type DepartmentSelectOption = { value: string; label: string }
 
-/** Resolve department id for POST /users/new/assign/activity (matches claiming unit / dropdown name). */
-function departmentIdByClaimingUnitName(
-  departments: AddEmployeeDepartmentOption[] | undefined,
-  claimingUnitName: string,
-): number | null {
-  const target = claimingUnitName.trim().toLowerCase()
-  if (!target) return null
-  for (const d of departments ?? []) {
-    if (d.name.trim().toLowerCase() === target) {
-      return parseDepartmentNumericId(d)
+function departmentSelectOptionsFromSnapshots(
+  snapshots: ReadonlyArray<SecurityAssignedSnapshot>,
+): DepartmentSelectOption[] {
+  const map = new Map<string, DepartmentSelectOption>()
+  for (const snap of snapshots) {
+    if (snap.departmentId != null && snap.departmentId >= 1 && snap.department?.trim()) {
+      map.set(String(snap.departmentId), {
+        value: String(snap.departmentId),
+        label: snap.department.trim(),
+      })
     }
   }
-  return null
+  return Array.from(map.values()).sort((a, b) =>
+    a.label.localeCompare(b.label, undefined, { sensitivity: "base" }),
+  )
 }
 
 function parsePositiveIntIds(ids: string[]): number[] {
@@ -177,6 +176,67 @@ function filterTransferItemsByDepartment(
   return items.filter((row) => row.department === d)
 }
 
+function mapBundleProgramToTransferItem(
+  program: UserProgramsActivitiesProgramWithAssignments,
+  departmentName: string,
+  allProgramsInDepartment: UserProgramsActivitiesProgramWithAssignments[],
+): AddEmployeeTimeStudyTransferItem {
+  const byId = new Map(allProgramsInDepartment.map((p) => [p.id, p]))
+  const ancestors: { id: string; name: string; code?: string }[] = []
+  let parentId = program.parentId ?? null
+  let safety = 0
+  while (parentId != null && byId.has(parentId) && safety < 10) {
+    const parent = byId.get(parentId)!
+    ancestors.unshift({ id: String(parent.id), name: parent.name, code: parent.code })
+    parentId = parent.parentId ?? null
+    safety++
+  }
+  return {
+    id: String(program.id),
+    department: departmentName,
+    code: program.code,
+    name: program.name,
+    level: ancestors.length + 1,
+    parentId: program.parentId != null ? String(program.parentId) : undefined,
+    isMultiCode: program.isMultiCode,
+    ancestors,
+  }
+}
+
+function mapBundleProgramsToTransferItems(
+  programs: UserProgramsActivitiesProgramWithAssignments[],
+  departmentName: string,
+  allProgramsInDepartment: UserProgramsActivitiesProgramWithAssignments[],
+): AddEmployeeTimeStudyTransferItem[] {
+  const dept = departmentName.trim()
+  if (!dept) return []
+  return sortTransferItems(
+    programs.map((p) => mapBundleProgramToTransferItem(p, dept, allProgramsInDepartment)),
+  )
+}
+
+function collectBundleActivityTransferItems(
+  bundle: UserProgramsActivitiesDepartmentBundle,
+): AddEmployeeTimeStudyTransferItem[] {
+  const dept = bundle.departmentName.trim()
+  if (!dept) return []
+  const byId = new Map<string, AddEmployeeTimeStudyTransferItem>()
+  for (const program of bundle.programs.assigned) {
+    for (const activity of [...program.children.assigned, ...program.children.unassigned]) {
+      const id = String(activity.id)
+      if (!byId.has(id)) {
+        byId.set(id, {
+          id,
+          department: dept,
+          code: activity.code,
+          name: activity.name,
+        })
+      }
+    }
+  }
+  return sortTransferItems([...byId.values()])
+}
+
 /** Assigned column: global rows + bundle-only rows the user is considered assigned to. */
 function buildAssignedItemsForEditMode(
   globalRowsForDepartment: AddEmployeeTimeStudyTransferItem[],
@@ -208,7 +268,7 @@ export function TimeStudyAssignmentsPanel({
   const userIdForTs = (timeStudyContextUserId ?? "").trim()
 
 
-  const isEditTimeStudyWithUserBundle = mode === "edit" && Boolean(userIdForTs)
+  const hasUserTsBundle = Boolean(userIdForTs)
   const canPersistTsTransfers = userIdForTs.length > 0
 
   const assignProgramsMutation = useAssignUserProgramsTs()
@@ -221,9 +281,10 @@ export function TimeStudyAssignmentsPanel({
     assignActivitiesMutation.isPending ||
     unassignActivitiesMutation.isPending
 
-  const departmentsQuery = useGetAddEmployeeDepartments(true)
-  const programsQuery = useGetAddEmployeeTimeStudyPrograms(true)
-  const userProgramsActivitiesQuery = useGetUserProgramsAndActivities(userIdForTs, isEditTimeStudyWithUserBundle)
+  const tsDepartmentScopeQuery = useGetUserProgramsActivitiesDepartmentScope(
+    userIdForTs,
+    hasUserTsBundle,
+  )
 
   const { register, watch, setValue } = useFormContext<UserModuleFormValues>()
   const isAddMode = mode === "add"
@@ -231,77 +292,26 @@ export function TimeStudyAssignmentsPanel({
   const securityAssignedSnapshots = watch("securityAssignedSnapshots") ?? []
 
 
-  const departmentSelectOptionsFromMaster = useMemo(() => {
-    const map = new Map<string, { value: string; label: string }>()
-    for (const snap of securityAssignedSnapshots) {
-      if (snap.department && snap.department.trim()) {
-        const dName = snap.department.trim()
-        map.set(dName, { value: dName, label: dName })
-      }
+  /** Departments from GET …/programs-activities-with-assignments (scope, no departmentId). */
+  const departmentSelectOptions = useMemo((): DepartmentSelectOption[] => {
+    if (hasUserTsBundle) {
+      return (tsDepartmentScopeQuery.data ?? [])
+        .filter(
+          (b) =>
+            Number.isFinite(b.departmentId) &&
+            b.departmentId >= 1 &&
+            (b.departmentName ?? "").trim().length > 0,
+        )
+        .map((b) => ({
+          value: String(b.departmentId),
+          label: (b.departmentName ?? "").trim(),
+        }))
+        .sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: "base" }))
     }
-    return Array.from(map.values()).sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: "base" }))
-  }, [securityAssignedSnapshots])
+    return departmentSelectOptionsFromSnapshots(securityAssignedSnapshots)
+  }, [hasUserTsBundle, tsDepartmentScopeQuery.data, securityAssignedSnapshots])
 
-  /** Edit mode: departments from GET …/user/programs-activities when the user has TS assignments. */
-  const departmentSelectOptionsFromUserBundle = useMemo(() => {
-    const bundles = userProgramsActivitiesQuery.data ?? []
-    return bundles
-      .filter(
-        (b) =>
-          Number.isFinite(b.departmentId) &&
-          b.departmentId >= 1 &&
-          (b.departmentName ?? "").trim().length > 0,
-      )
-      .map((b) => ({
-        value: String(b.departmentId),
-        label: (b.departmentName ?? "").trim(),
-      }))
-      .sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: "base" }))
-  }, [userProgramsActivitiesQuery.data])
-
-  /**
-   * Edit mode filters by departments assigned in the Security panel.
-   */
-  const departmentSelectOptionsForEditMode = useMemo(() => {
-    const map = new Map<string, { value: string; label: string }>()
-    for (const snap of securityAssignedSnapshots) {
-      if (snap.departmentId && snap.department) {
-        map.set(String(snap.departmentId), {
-          value: String(snap.departmentId),
-          label: snap.department.trim(),
-        })
-      }
-    }
-    return Array.from(map.values()).sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: "base" }))
-  }, [securityAssignedSnapshots])
-
-  const globalProgramCatalog = useMemo<AddEmployeeTimeStudyTransferItem[]>(() => {
-    const rows = programsQuery.data ?? []
-    const rowMap = new Map(rows.map((r) => [r.id, r]))
-
-    return rows.map((p) => {
-      const ancestors: { id: string; name: string; code?: string }[] = []
-      let currId = p.parentId
-      let safety = 0
-      while (currId && currId !== "0" && rowMap.has(currId) && safety < 10) {
-        const parent = rowMap.get(currId)!
-        ancestors.unshift({ id: parent.id, name: parent.name, code: parent.code })
-        currId = parent.parentId
-        safety++
-      }
-
-      return {
-        id: p.id,
-        department: p.department,
-        code: p.code,
-        name: p.name,
-        level: ancestors.length + 1,
-        parentId: p.parentId,
-        isMultiCode: p.isMultiCode,
-        ancestors,
-      }
-    })
-  }, [programsQuery.data])
+  const fetchProgramsPerDepartment = departmentSelectOptions.length > 1
 
   const [searchProgramsU, setSearchProgramsU] = useState("")
   const [searchProgramsA, setSearchProgramsA] = useState("")
@@ -344,15 +354,6 @@ export function TimeStudyAssignmentsPanel({
     setTsHistoryActivityName("")
   }, [userIdForTs])
 
-  // Clear manual overrides once the query successfully refetches fresh data from the server.
-  // This ensures the UI "syncs" back to the actual database state (including cascading changes).
-  useMemo(() => {
-    if (userProgramsActivitiesQuery.isSuccess && !userProgramsActivitiesQuery.isFetching) {
-      setProgramPlacementOverridesEditMode({})
-      setActivityPlacementOverridesEditMode({})
-    }
-  }, [userProgramsActivitiesQuery.dataUpdatedAt, userProgramsActivitiesQuery.isFetching])
-
   const handleSaveTsMinDay = async () => {
     const userId = userIdForTs.trim()
     if (!userId) {
@@ -387,110 +388,138 @@ export function TimeStudyAssignmentsPanel({
   const [timeStudyDeptEditMode, setTimeStudyDeptEditMode] = useState("")
 
   /**
-   * Edit mode: explicit dropdown choice, or the first valid `departmentId` from GET …/user/programs-activities
-   * (response order) so the dropdown and lists initialize from the API without useEffect.
+   * One department → auto-select and use scope response for programs.
+   * Multiple → user picks department; GET with `departmentId` loads programs.
    */
   const selectedEditDeptId = useMemo(() => {
     if (isAddMode) return ""
     const explicit = timeStudyDeptEditMode.trim()
     if (explicit) return explicit
-
-    // Auto-select if there is exactly one department with existing TS assignments
-    if (departmentSelectOptionsFromUserBundle.length === 1) {
-      return departmentSelectOptionsFromUserBundle[0].value
-    }
-
-    // Fallback: auto-select if there is exactly one department assigned in Security tab
-    if (departmentSelectOptionsForEditMode.length === 1) {
-      return departmentSelectOptionsForEditMode[0].value
-    }
-
+    if (departmentSelectOptions.length === 1) return departmentSelectOptions[0].value
     return ""
+  }, [isAddMode, timeStudyDeptEditMode, departmentSelectOptions])
+
+  const selectedAddDeptId = useMemo(() => {
+    if (!isAddMode) return ""
+    const explicit = timeStudyDeptAddMode.trim()
+    if (explicit) return explicit
+    if (departmentSelectOptions.length === 1) return departmentSelectOptions[0].value
+    return ""
+  }, [isAddMode, timeStudyDeptAddMode, departmentSelectOptions])
+
+  const activeDepartmentId = isAddMode ? selectedAddDeptId : selectedEditDeptId
+
+  const programsDepartmentId = useMemo(() => {
+    if (!hasUserTsBundle || departmentSelectOptions.length === 0) return null
+    const pick =
+      departmentSelectOptions.length === 1
+        ? departmentSelectOptions[0].value
+        : activeDepartmentId
+    const n = Number.parseInt(pick, 10)
+    return Number.isFinite(n) && n >= 1 ? n : null
+  }, [hasUserTsBundle, departmentSelectOptions, activeDepartmentId])
+
+  const userProgramsActivitiesQuery = useGetUserProgramsAndActivities(
+    userIdForTs,
+    programsDepartmentId,
+    hasUserTsBundle && fetchProgramsPerDepartment && programsDepartmentId != null,
+  )
+
+  useMemo(() => {
+    const programsReady = fetchProgramsPerDepartment
+      ? userProgramsActivitiesQuery.isSuccess && !userProgramsActivitiesQuery.isFetching
+      : tsDepartmentScopeQuery.isSuccess && !tsDepartmentScopeQuery.isFetching
+    if (programsReady) {
+      setProgramPlacementOverridesEditMode({})
+      setActivityPlacementOverridesEditMode({})
+    }
   }, [
-    isAddMode,
-    timeStudyDeptEditMode,
-    departmentSelectOptionsFromUserBundle,
-    departmentSelectOptionsForEditMode,
+    fetchProgramsPerDepartment,
+    userProgramsActivitiesQuery.dataUpdatedAt,
+    userProgramsActivitiesQuery.isFetching,
+    userProgramsActivitiesQuery.isSuccess,
+    tsDepartmentScopeQuery.dataUpdatedAt,
+    tsDepartmentScopeQuery.isFetching,
+    tsDepartmentScopeQuery.isSuccess,
   ])
 
   const selectedBundle = useMemo((): UserProgramsActivitiesDepartmentBundle | undefined => {
-    if (!selectedEditDeptId) return undefined
-    return (userProgramsActivitiesQuery.data ?? []).find(
-      (b) => String(b.departmentId) === selectedEditDeptId,
+    if (!hasUserTsBundle || programsDepartmentId == null) return undefined
+    if (fetchProgramsPerDepartment) {
+      const list = userProgramsActivitiesQuery.data ?? []
+      return (
+        list.find((b) => b.departmentId === programsDepartmentId) ??
+        list[0]
+      )
+    }
+    return (tsDepartmentScopeQuery.data ?? []).find(
+      (b) => b.departmentId === programsDepartmentId,
     )
-  }, [userProgramsActivitiesQuery.data, selectedEditDeptId])
+  }, [
+    hasUserTsBundle,
+    programsDepartmentId,
+    fetchProgramsPerDepartment,
+    userProgramsActivitiesQuery.data,
+    tsDepartmentScopeQuery.data,
+  ])
+
+  const needsDepartmentSelection =
+    hasUserTsBundle && departmentSelectOptions.length > 1 && !activeDepartmentId
 
   const selectedDept = useMemo(() => {
-    if (isAddMode) return timeStudyDeptAddMode.trim()
     const fromBundle = selectedBundle?.departmentName.trim() ?? ""
     if (fromBundle) return fromBundle
-    const idStr = selectedEditDeptId.trim()
-    if (!idStr) return ""
-    for (const d of departmentsQuery.data ?? []) {
-      const n = parseDepartmentNumericId(d)
-      if (n != null && String(n) === idStr) {
-        return d.name.trim()
-      }
-    }
-    return ""
-  }, [isAddMode, timeStudyDeptAddMode, selectedBundle, selectedEditDeptId, departmentsQuery.data])
+    const raw = (isAddMode ? timeStudyDeptAddMode : activeDepartmentId).trim()
+    if (!raw) return ""
+    return departmentSelectOptions.find((o) => o.value === raw)?.label?.trim() ?? raw
+  }, [isAddMode, timeStudyDeptAddMode, selectedBundle, activeDepartmentId, departmentSelectOptions])
 
   const selectedDepartmentNumericId = useMemo(() => {
-    if (isAddMode) {
-      return departmentIdByClaimingUnitName(departmentsQuery.data, timeStudyDeptAddMode.trim())
-    }
     if (selectedBundle != null && Number.isFinite(selectedBundle.departmentId) && selectedBundle.departmentId >= 1) {
       return selectedBundle.departmentId
     }
-    const n = Number.parseInt(selectedEditDeptId.trim(), 10)
-    if (Number.isFinite(n) && n >= 1) return n
-    return null
-  }, [isAddMode, departmentsQuery.data, timeStudyDeptAddMode, selectedBundle, selectedEditDeptId])
+    if (programsDepartmentId != null) return programsDepartmentId
+    const n = Number.parseInt(activeDepartmentId.trim(), 10)
+    return Number.isFinite(n) && n >= 1 ? n : null
+  }, [selectedBundle, programsDepartmentId, activeDepartmentId])
 
-  const programCatalogForAddMode = globalProgramCatalog
-
-  const bundleProgramsForSelectedDepartment = useMemo(() => {
+  const allProgramsInSelectedBundle = useMemo(() => {
     if (!selectedBundle) return []
-    const dept = selectedBundle.departmentName.trim()
-    return selectedBundle.programs.map((p) => {
-      const globalProg = globalProgramCatalog.find((gp) => gp.id === String(p.id))
-      return {
-        id: String(p.id),
-        code: p.code,
-        name: p.name,
-        department: dept,
-        level: globalProg?.level,
-        parentId: globalProg?.parentId,
-        isMultiCode: p.isMultiCode,
-        ancestors: globalProg?.ancestors,
-      }
-    })
-  }, [selectedBundle, globalProgramCatalog])
-
-  const bundleActivitiesForSelectedDepartment = useMemo(() => {
-    if (!selectedBundle) return []
-    const dept = selectedBundle.departmentName.trim()
-    return selectedBundle.activities.map((a) => ({
-      id: String(a.id),
-      code: a.code,
-      name: a.name,
-      department: dept,
-    }))
+    return [...selectedBundle.programs.assigned, ...selectedBundle.programs.unassigned]
   }, [selectedBundle])
 
+  const programCatalogForUserBundle = useMemo(() => {
+    if (!selectedBundle) return []
+    return mapBundleProgramsToTransferItems(
+      allProgramsInSelectedBundle,
+      selectedBundle.departmentName,
+      allProgramsInSelectedBundle,
+    )
+  }, [selectedBundle, allProgramsInSelectedBundle])
+
   const bundleProgramIdsForSelectedDepartment = useMemo(
-    () => new Set(bundleProgramsForSelectedDepartment.map((p) => p.id)),
-    [bundleProgramsForSelectedDepartment],
+    () => new Set(selectedBundle?.programs.assigned.map((p) => String(p.id)) ?? []),
+    [selectedBundle],
   )
 
-  const bundleActivityIdsForSelectedDepartment = useMemo(
-    () => new Set(bundleActivitiesForSelectedDepartment.map((a) => a.id)),
-    [bundleActivitiesForSelectedDepartment],
+  const bundleActivityIdsForSelectedDepartment = useMemo(() => {
+    const ids = new Set<string>()
+    for (const program of selectedBundle?.programs.assigned ?? []) {
+      for (const activity of program.children.assigned) {
+        ids.add(String(activity.id))
+      }
+    }
+    return ids
+  }, [selectedBundle])
+
+  const activityCatalogForUserBundle = useMemo(
+    () => (selectedBundle ? collectBundleActivityTransferItems(selectedBundle) : []),
+    [selectedBundle],
   )
 
   const globalProgramsForSelectedDepartment = useMemo(
-    () => filterTransferItemsByDepartment(globalProgramCatalog, selectedDept),
-    [globalProgramCatalog, selectedDept],
+    () => filterTransferItemsByDepartment(programCatalogForUserBundle, selectedDept),
+    [programCatalogForUserBundle, selectedDept],
   )
 
 
@@ -517,13 +546,12 @@ export function TimeStudyAssignmentsPanel({
   )
 
   const deptProgramsAddMode = useMemo(
-    () => filterTransferItemsByDepartment(programCatalogForAddMode, selectedDept),
-    [programCatalogForAddMode, selectedDept],
+    () => filterTransferItemsByDepartment(programCatalogForUserBundle, selectedDept),
+    [programCatalogForUserBundle, selectedDept],
   )
 
-
   const programsUnassigned = useMemo(() => {
-    if (isEditTimeStudyWithUserBundle) {
+    if (hasUserTsBundle) {
       return buildUnassignedItemsForEditMode(
         globalProgramsForSelectedDepartment,
         programAssignedPredicateEditMode,
@@ -531,7 +559,7 @@ export function TimeStudyAssignmentsPanel({
     }
     return deptProgramsAddMode.filter((p) => !assignedProgramIdsAddMode.includes(p.id))
   }, [
-    isEditTimeStudyWithUserBundle,
+    hasUserTsBundle,
     globalProgramsForSelectedDepartment,
     programAssignedPredicateEditMode,
     deptProgramsAddMode,
@@ -539,18 +567,17 @@ export function TimeStudyAssignmentsPanel({
   ])
 
   const programsAssigned = useMemo(() => {
-    if (isEditTimeStudyWithUserBundle) {
+    if (hasUserTsBundle) {
       return buildAssignedItemsForEditMode(
         globalProgramsForSelectedDepartment,
-        bundleProgramsForSelectedDepartment,
+        [],
         programAssignedPredicateEditMode,
       )
     }
     return deptProgramsAddMode.filter((p) => assignedProgramIdsAddMode.includes(p.id))
   }, [
-    isEditTimeStudyWithUserBundle,
+    hasUserTsBundle,
     globalProgramsForSelectedDepartment,
-    bundleProgramsForSelectedDepartment,
     programAssignedPredicateEditMode,
     deptProgramsAddMode,
     assignedProgramIdsAddMode,
@@ -563,7 +590,7 @@ export function TimeStudyAssignmentsPanel({
    */
   const activityDepartmentsQuery = useGetActivityDepartmentsForDepartment(
     selectedDepartmentNumericId,
-    selectedDepartmentNumericId != null && programsAssigned.length > 0,
+    !hasUserTsBundle && selectedDepartmentNumericId != null && programsAssigned.length > 0,
   )
 
   /**
@@ -575,7 +602,7 @@ export function TimeStudyAssignmentsPanel({
   const programActivityQueryResults = useQueries({
     queries: programsAssigned.map((program) => ({
       queryKey: ["programActivityRelation", "activities", selectedDepartmentNumericId, program.id],
-      enabled: selectedDepartmentNumericId != null,
+      enabled: !hasUserTsBundle && selectedDepartmentNumericId != null,
       queryFn: () =>
         apiGetProgramActivityRelationActivities(
           selectedDepartmentNumericId!,
@@ -618,17 +645,16 @@ export function TimeStudyAssignmentsPanel({
   }, [programActivityQueryResults])
 
   /** ActivityDepartment link ids per selected department (not master GET /activities ids). */
-  const globalActivityCatalog = useMemo<AddEmployeeTimeStudyTransferItem[]>(() => {
+  const globalActivityCatalogFromDepartments = useMemo<AddEmployeeTimeStudyTransferItem[]>(() => {
     const deptLabel = selectedDept.trim()
     if (!deptLabel) return []
     const rows = activityDepartmentsQuery.data ?? []
-    // Only show activities whose master activityId is assigned to one of the user's programs
     const filtered =
       programsAssigned.length > 0 && programAssignedActivityIds.size > 0
         ? rows.filter((a) => isActiveActivityDepartmentStatus(a.status) && programAssignedActivityIds.has(String(a.id)))
         : []
     return filtered.map((a) => ({
-      id: String(a.id),        // ActivityDepartment ID — correct for POST /users/new/assign/activity
+      id: String(a.id),
       department: deptLabel,
       code: a.code,
       name: a.name,
@@ -636,32 +662,31 @@ export function TimeStudyAssignmentsPanel({
     }))
   }, [activityDepartmentsQuery.data, selectedDept, programsAssigned, programAssignedActivityIds, activityLevels])
 
-  const activityCatalogForAddMode = globalActivityCatalog
-
-  const globalActivitiesForSelectedDepartment = useMemo(
-    () => filterTransferItemsByDepartment(globalActivityCatalog, selectedDept),
-    [globalActivityCatalog, selectedDept],
-  )
+  const globalActivitiesForSelectedDepartment = useMemo(() => {
+    if (hasUserTsBundle) {
+      return filterTransferItemsByDepartment(activityCatalogForUserBundle, selectedDept)
+    }
+    return filterTransferItemsByDepartment(globalActivityCatalogFromDepartments, selectedDept)
+  }, [hasUserTsBundle, activityCatalogForUserBundle, globalActivityCatalogFromDepartments, selectedDept])
 
   const deptActivitiesAddMode = useMemo(() => {
     if (!selectedDept) return []
-    return filterTransferItemsByDepartment(activityCatalogForAddMode, selectedDept)
-  }, [activityCatalogForAddMode, selectedDept])
+    return globalActivitiesForSelectedDepartment
+  }, [globalActivitiesForSelectedDepartment, selectedDept])
 
-  /** Edit: after department change, block transfers until program list + department-scoped activities finish loading. */
   const tsCatalogRefetchBusy =
-    isEditTimeStudyWithUserBundle &&
-    (programsQuery.isFetching || activityDepartmentsQuery.isFetching)
+    hasUserTsBundle &&
+    (tsDepartmentScopeQuery.isFetching ||
+      (fetchProgramsPerDepartment && userProgramsActivitiesQuery.isFetching) ||
+      (Boolean(activeDepartmentId) && activityDepartmentsQuery.isFetching))
 
-  const addModeDepartmentDropdownLoading = departmentsQuery.isPending || departmentsQuery.isFetching
+  const addModeDepartmentDropdownLoading =
+    hasUserTsBundle && (tsDepartmentScopeQuery.isPending || tsDepartmentScopeQuery.isFetching)
   const editModeDepartmentDropdownLoading =
-    userProgramsActivitiesQuery.isPending ||
-    userProgramsActivitiesQuery.isFetching ||
-    (departmentSelectOptionsFromUserBundle.length === 0 &&
-      (departmentsQuery.isPending || departmentsQuery.isFetching))
+    tsDepartmentScopeQuery.isPending || tsDepartmentScopeQuery.isFetching
 
   const activitiesUnassigned = useMemo(() => {
-    if (isEditTimeStudyWithUserBundle) {
+    if (hasUserTsBundle) {
       return buildUnassignedItemsForEditMode(
         globalActivitiesForSelectedDepartment,
         activityAssignedPredicateEditMode,
@@ -669,7 +694,7 @@ export function TimeStudyAssignmentsPanel({
     }
     return deptActivitiesAddMode.filter((a) => !assignedActivityIdsAddMode.includes(a.id))
   }, [
-    isEditTimeStudyWithUserBundle,
+    hasUserTsBundle,
     globalActivitiesForSelectedDepartment,
     activityAssignedPredicateEditMode,
     deptActivitiesAddMode,
@@ -677,18 +702,17 @@ export function TimeStudyAssignmentsPanel({
   ])
 
   const activitiesAssigned = useMemo(() => {
-    if (isEditTimeStudyWithUserBundle) {
+    if (hasUserTsBundle) {
       return buildAssignedItemsForEditMode(
         globalActivitiesForSelectedDepartment,
-        bundleActivitiesForSelectedDepartment,
+        [],
         activityAssignedPredicateEditMode,
       )
     }
     return deptActivitiesAddMode.filter((a) => assignedActivityIdsAddMode.includes(a.id))
   }, [
-    isEditTimeStudyWithUserBundle,
+    hasUserTsBundle,
     globalActivitiesForSelectedDepartment,
-    bundleActivitiesForSelectedDepartment,
     activityAssignedPredicateEditMode,
     deptActivitiesAddMode,
     assignedActivityIdsAddMode,
@@ -729,7 +753,7 @@ export function TimeStudyAssignmentsPanel({
       }
     }
 
-    if (isEditTimeStudyWithUserBundle) {
+    if (hasUserTsBundle) {
       setProgramPlacementOverridesEditMode((prev) =>
         mergeTimeStudyPlacementOverrides(
           prev,
@@ -763,7 +787,7 @@ export function TimeStudyAssignmentsPanel({
       }
     }
 
-    if (isEditTimeStudyWithUserBundle) {
+    if (hasUserTsBundle) {
       setProgramPlacementOverridesEditMode((prev) =>
         mergeTimeStudyPlacementOverrides(
           prev,
@@ -805,7 +829,7 @@ export function TimeStudyAssignmentsPanel({
       }
     }
 
-    if (isEditTimeStudyWithUserBundle) {
+    if (hasUserTsBundle) {
       setActivityPlacementOverridesEditMode((prev) =>
         mergeTimeStudyPlacementOverrides(
           prev,
@@ -847,7 +871,7 @@ export function TimeStudyAssignmentsPanel({
       }
     }
 
-    if (isEditTimeStudyWithUserBundle) {
+    if (hasUserTsBundle) {
       setActivityPlacementOverridesEditMode((prev) =>
         mergeTimeStudyPlacementOverrides(
           prev,
@@ -911,11 +935,18 @@ export function TimeStudyAssignmentsPanel({
         {employeeName}
       </p>
 
-      {isEditTimeStudyWithUserBundle && userProgramsActivitiesQuery.isError ? (
+      {hasUserTsBundle &&
+      (tsDepartmentScopeQuery.isError || userProgramsActivitiesQuery.isError) ? (
         <p className="mb-3 text-[11px] text-red-500" role="alert">
-          {userProgramsActivitiesQuery.error instanceof Error
-            ? userProgramsActivitiesQuery.error.message
+          {(tsDepartmentScopeQuery.error ?? userProgramsActivitiesQuery.error) instanceof Error
+            ? (tsDepartmentScopeQuery.error ?? userProgramsActivitiesQuery.error)!.message
             : "Failed to load time study programs and activities for this user"}
+        </p>
+      ) : null}
+
+      {needsDepartmentSelection ? (
+        <p className="mb-3 text-[11px] text-[#6b7280]" role="status">
+          Select a department to load time study programs and activities for that department.
         </p>
       ) : null}
 
@@ -991,9 +1022,13 @@ export function TimeStudyAssignmentsPanel({
                 <div>
                   <p className="mb-1 block select-none text-[11px] font-medium text-[#2a2f3a]">Department</p>
                   <SingleSelectDropdown
-                    value={timeStudyDeptAddMode}
+                    value={selectedAddDeptId}
                     onChange={(value) => {
+                      const deptLabel =
+                        departmentSelectOptions.find((o) => o.value === value)?.label?.trim() ?? value
                       setTimeStudyDeptAddMode(value)
+                      setProgramPlacementOverridesEditMode({})
+                      setActivityPlacementOverridesEditMode({})
                       setToggledProgramsU([])
                       setToggledProgramsA([])
                       setToggledActivitiesU([])
@@ -1002,16 +1037,16 @@ export function TimeStudyAssignmentsPanel({
                       setSearchProgramsA("")
                       setSearchActivitiesU("")
                       setSearchActivitiesA("")
-                      setValue("claimingUnit", value, {
+                      setValue("claimingUnit", deptLabel, {
                         shouldDirty: true,
                         shouldTouch: true,
                         shouldValidate: true,
                       })
                     }}
                     onBlur={() => {}}
-                    options={departmentSelectOptionsFromMaster}
+                    options={departmentSelectOptions}
                     placeholder={
-                      departmentSelectOptionsFromMaster.length === 0
+                      departmentSelectOptions.length === 0
                         ? "No assigned departments"
                         : "Select department"
                     }
@@ -1029,6 +1064,8 @@ export function TimeStudyAssignmentsPanel({
                     value={selectedEditDeptId}
                     onChange={(value) => {
                       setTimeStudyDeptEditMode(value)
+                      setProgramPlacementOverridesEditMode({})
+                      setActivityPlacementOverridesEditMode({})
                       setToggledProgramsU([])
                       setToggledProgramsA([])
                       setToggledActivitiesU([])
@@ -1037,12 +1074,11 @@ export function TimeStudyAssignmentsPanel({
                       setSearchProgramsA("")
                       setSearchActivitiesU("")
                       setSearchActivitiesA("")
-                      void programsQuery.refetch()
                     }}
                     onBlur={() => {}}
-                    options={departmentSelectOptionsForEditMode}
+                    options={departmentSelectOptions}
                     placeholder={
-                      departmentSelectOptionsForEditMode.length === 0
+                      departmentSelectOptions.length === 0
                         ? "No assigned departments"
                         : "Select department"
                     }
@@ -1116,13 +1152,23 @@ export function TimeStudyAssignmentsPanel({
               <TransferListMoveButton
                 direction="forward"
                 onClick={() => void moveSelectedProgramsToAssignedColumn()}
-                disabled={toggledProgramsU.length === 0 || tsTransferBusy || tsCatalogRefetchBusy}
+                disabled={
+                  toggledProgramsU.length === 0 ||
+                  tsTransferBusy ||
+                  tsCatalogRefetchBusy ||
+                  needsDepartmentSelection
+                }
                 aria-label="Move selected programs to assigned"
               />
               <TransferListMoveButton
                 direction="back"
                 onClick={() => void moveSelectedProgramsToUnassignedColumn()}
-                disabled={toggledProgramsA.length === 0 || tsTransferBusy || tsCatalogRefetchBusy}
+                disabled={
+                  toggledProgramsA.length === 0 ||
+                  tsTransferBusy ||
+                  tsCatalogRefetchBusy ||
+                  needsDepartmentSelection
+                }
                 aria-label="Move selected programs to unassigned"
               />
             </div>
@@ -1155,13 +1201,23 @@ export function TimeStudyAssignmentsPanel({
               <TransferListMoveButton
                 direction="forward"
                 onClick={() => void moveSelectedActivitiesToAssignedColumn()}
-                disabled={toggledActivitiesU.length === 0 || tsTransferBusy || tsCatalogRefetchBusy}
+                disabled={
+                  toggledActivitiesU.length === 0 ||
+                  tsTransferBusy ||
+                  tsCatalogRefetchBusy ||
+                  needsDepartmentSelection
+                }
                 aria-label="Move selected activities to assigned"
               />
               <TransferListMoveButton
                 direction="back"
                 onClick={() => void moveSelectedActivitiesToUnassignedColumn()}
-                disabled={toggledActivitiesA.length === 0 || tsTransferBusy || tsCatalogRefetchBusy}
+                disabled={
+                  toggledActivitiesA.length === 0 ||
+                  tsTransferBusy ||
+                  tsCatalogRefetchBusy ||
+                  needsDepartmentSelection
+                }
                 aria-label="Move selected activities to unassigned"
               />
             </div>

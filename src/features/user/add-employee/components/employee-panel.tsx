@@ -33,7 +33,7 @@ export function EmployeePanel({
     handleTabChange,
     handlePasswordReset,
     onAddModeSecurityTransferSucceeded,
-  } = useAddEmployeeForm({ mode, initialValues, onSave })
+  } = useAddEmployeeForm({ mode, initialValues, securityContextUserId, onSave })
 
   const [isTabLoading, setIsTabLoading] = useState(false)
 
@@ -88,7 +88,10 @@ export function EmployeePanel({
             />
           ) : null}
           {activeTab === "supervisor" ? (
-            <SupervisorAssignmentsPanel mode={mode} />
+            <SupervisorAssignmentsPanel
+              mode={mode}
+              supervisorContextUserId={securityContextUserId ?? null}
+            />
           ) : null}
           {activeTab === "timeStudy" ? (
             <TimeStudyAssignmentsPanel

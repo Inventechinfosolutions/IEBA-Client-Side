@@ -7,11 +7,12 @@ export const addEmployeeLookupKeys = {
   activitiesCatalog: () => [...addEmployeeLookupKeys.all, "activities-catalog"] as const,
   departments: () => [...addEmployeeLookupKeys.all, "departments"] as const,
   departmentRolesCatalog: () => [...addEmployeeLookupKeys.all, "department-roles-catalog"] as const,
-  timeStudyProgramsAssignments: () =>
-    [...addEmployeeLookupKeys.all, "time-study-programs-assignments"] as const,
-  /** GET /timestudyprograms/user/programs-activities?userId= — edit mode Time Study tab. */
-  userProgramsActivities: (userKey: string) =>
-    [...addEmployeeLookupKeys.all, "user-programs-activities", userKey] as const,
+  /**
+   * GET /timestudyprogram/user/programs-activities-with-assignments
+   * `departmentKey` = `__scope__` (all departments) or numeric department id.
+   */
+  userProgramsActivities: (userKey: string, departmentKey = "__scope__") =>
+    [...addEmployeeLookupKeys.all, "user-programs-activities", userKey, departmentKey] as const,
   /** Master codes with allowMulticode (GET /master-codes, filtered client-side). */
   multicodeMasterCodes: () => [...addEmployeeLookupKeys.all, "multicode-master-codes"] as const,
   /** GET /activity-codes (active activity codes; county-activity equivalent). */
@@ -20,8 +21,15 @@ export const addEmployeeLookupKeys = {
   activityDepartmentsByDepartment: (departmentIdKey: string) =>
     [...addEmployeeLookupKeys.all, "activity-departments-by-department", departmentIdKey] as const,
   /**
-   * GET /departments/user/roles-unassigned — Security tab (add + edit).
-   * `userKey` is `__none__` when add flow omits userId, else trimmed user id.
+   * GET /departments/assignedDepartment/roles — Security tab (requires userId).
+   */
+  securityDepartmentRoles: (userId: string) =>
+    [...addEmployeeLookupKeys.all, "security-department-roles", userId] as const,
+  /** GET /users/:id/details/required?method=tab1|tab2|tab3 */
+  userDetailsTab: (userId: string, method: string) =>
+    [...addEmployeeLookupKeys.all, "user-details-tab", userId, method] as const,
+  /**
+   * @deprecated Use securityDepartmentRoles. Kept for cache invalidation compatibility during migration.
    */
   departmentRolesUnassignedAdd: (userKey: string) =>
     [...addEmployeeLookupKeys.all, "department-roles-unassigned-add", userKey] as const,

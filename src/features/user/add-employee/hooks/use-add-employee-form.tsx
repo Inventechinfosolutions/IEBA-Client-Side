@@ -24,6 +24,8 @@ import {
   userModuleFormSchema,
 } from "../schemas"
 import { addEmployeeTabFieldKeys, orderedAddEmployeeTabs } from "../constants/user-form-tabs"
+import { resolveSecurityRolesForSupervisorTab } from "../utility/parseSecurityDepartmentRoles"
+import { syncSecurityAssignmentsForm } from "../utility/syncSecurityAssignmentsForm"
 
 const initialTabSaved: Record<SaveGatedTab, boolean> = {
   employee: false,
@@ -55,7 +57,12 @@ function getErrorMessage(value: unknown): string | null {
 /**
  * React Hook Form instance, tab state, and handlers for the add/edit employee multi-step form.
  */
-export function useAddEmployeeForm({ mode, initialValues, onSave }: UseAddEmployeeFormParams) {
+export function useAddEmployeeForm({
+  mode,
+  initialValues,
+  securityContextUserId = null,
+  onSave,
+}: UseAddEmployeeFormParams) {
   const isEditMode = mode === "edit"
   const [activeTab, setActiveTab] = useState<AddEmployeeFormTab>("employee")
   const [tabSaved, setTabSaved] = useState<Record<SaveGatedTab, boolean>>(initialTabSaved)
@@ -80,11 +87,39 @@ export function useAddEmployeeForm({ mode, initialValues, onSave }: UseAddEmploy
     handleSubmit,
     reset,
     getValues,
+    setValue,
     setError,
     formState,
     formState: { touchedFields },
     trigger,
   } = methods
+
+  const ensureSupervisorTabAllowed = useCallback(async (): Promise<boolean> => {
+    const formSnapshots = getValues("securityAssignedSnapshots") ?? []
+    const roles = await resolveSecurityRolesForSupervisorTab(
+      securityContextUserId,
+      formSnapshots,
+    )
+    if (!roles?.assignedSnapshots.length) return false
+
+    if (formSnapshots.length === 0) {
+      syncSecurityAssignmentsForm(setValue, roles)
+    }
+    return true
+  }, [getValues, securityContextUserId, setValue])
+
+  const showSupervisorNeedsSecurityToast = useCallback(() => {
+    toast.warning(ADD_EMPLOYEE_SUPERVISOR_NEEDS_SECURITY_ASSIGNMENTS, {
+      position: "top-center",
+      icon: (
+        <span className="inline-flex size-4 shrink-0 items-center justify-center rounded-full bg-[#eab308] text-white">
+          <AlertTriangle className="size-3 stroke-[2.5]" />
+        </span>
+      ),
+      className: warningToastClassName,
+      classNames: warningToastInnerClassNames,
+    })
+  }, [])
 
   const activeTabIndex = orderedAddEmployeeTabs.indexOf(activeTab)
   const isLastTab = activeTabIndex === orderedAddEmployeeTabs.length - 1
@@ -258,18 +293,9 @@ export function useAddEmployeeForm({ mode, initialValues, onSave }: UseAddEmploy
     if (!isLastTab) {
       const nextTab = orderedAddEmployeeTabs[activeTabIndex + 1]
       if (nextTab === "supervisor") {
-        const snapshots = getValues("securityAssignedSnapshots") ?? []
-        if (snapshots.length === 0) {
-          toast.warning(ADD_EMPLOYEE_SUPERVISOR_NEEDS_SECURITY_ASSIGNMENTS, {
-            position: "top-center",
-            icon: (
-              <span className="inline-flex size-4 shrink-0 items-center justify-center rounded-full bg-[#eab308] text-white">
-                <AlertTriangle className="size-3 stroke-[2.5]" />
-              </span>
-            ),
-            className: warningToastClassName,
-            classNames: warningToastInnerClassNames,
-          })
+        const allowed = await ensureSupervisorTabAllowed()
+        if (!allowed) {
+          showSupervisorNeedsSecurityToast()
           return
         }
       }
@@ -302,20 +328,15 @@ export function useAddEmployeeForm({ mode, initialValues, onSave }: UseAddEmploy
   const handleTabChange = (tab: AddEmployeeFormTab) => {
     if (isEditMode) {
       if (tab === "supervisor") {
-        const snapshots = getValues("securityAssignedSnapshots") ?? []
-        if (snapshots.length === 0) {
-          toast.warning(ADD_EMPLOYEE_SUPERVISOR_NEEDS_SECURITY_ASSIGNMENTS, {
-            position: "top-center",
-            icon: (
-              <span className="inline-flex size-4 shrink-0 items-center justify-center rounded-full bg-[#eab308] text-white">
-                <AlertTriangle className="size-3 stroke-[2.5]" />
-              </span>
-            ),
-            className: warningToastClassName,
-            classNames: warningToastInnerClassNames,
-          })
-          return
-        }
+        void (async () => {
+          const allowed = await ensureSupervisorTabAllowed()
+          if (!allowed) {
+            showSupervisorNeedsSecurityToast()
+            return
+          }
+          setActiveTab(tab)
+        })()
+        return
       }
       setActiveTab(tab)
       return
