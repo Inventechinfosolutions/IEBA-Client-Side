@@ -1,3 +1,3 @@
-export function AutoGenerateCodeForm({ isSaving = false }: { isSaving?: boolean }) {
+export function AutoGenerateCodeForm() {
   return null
 }

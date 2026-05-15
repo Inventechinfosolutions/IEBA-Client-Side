@@ -75,6 +75,7 @@ export type ApiActivityResDto = {
   /** Present when API hydrates links (join to `department` master). */
   departments?: ApiActivityNestedDepartmentResDto[]
   activityDepartments?: ApiActivityDepartmentResDto[]
+  apportioningDepartments?: any[]
 }
 
 export type ApiActivityTreeResDto = ApiActivityResDto & {
@@ -151,6 +152,7 @@ export type ApiActivityDepartmentResDto = {
 export type CountyActivityEditPayload = {
   activity: ApiActivityResDto
   departmentNames: string[]
+  apportioningDepartments?: any[]
 }
 
 /** Context for merging copy-from-master and sub-primary defaults into the county activity add form before submit. */

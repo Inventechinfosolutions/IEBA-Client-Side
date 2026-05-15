@@ -6,18 +6,18 @@ export const timeStudyMGTKeys = {
     [...timeStudyMGTKeys.all, "employees", search ?? "", departmentId ?? ""] as const,
 
   /** Month legend for a specific user + month + year */
-  monthLegend: (userId: string, month: number, year: number) =>
-    [...timeStudyMGTKeys.all, "monthLegend", userId, month, year] as const,
+  monthLegend: (userId: string | null, month: number, year: number) =>
+    [...timeStudyMGTKeys.all, "monthLegend", userId ?? "", month, year] as const,
 
   /** Minute summary for a specific user + month + year */
-  minutesSummary: (userId: string, month: number, year: number) =>
-    [...timeStudyMGTKeys.all, "minutesSummary", userId, month, year] as const,
+  minutesSummary: (userId: string | null, month: number, year: number) =>
+    [...timeStudyMGTKeys.all, "minutesSummary", userId ?? "", month, year] as const,
 
   /** Day detail for a specific user + date */
-  dayDetail: (userId: string, date: string) =>
-    [...timeStudyMGTKeys.all, "dayDetail", userId, date] as const,
+  dayDetail: (userId: string | null, date: string | null) =>
+    [...timeStudyMGTKeys.all, "dayDetail", userId ?? "", date ?? ""] as const,
 
   /** Dropdowns for a specific user */
-  dropdowns: (userId: string) =>
-    [...timeStudyMGTKeys.all, "dropdowns", userId] as const,
+  dropdowns: (userId: string | null) =>
+    [...timeStudyMGTKeys.all, "dropdowns", userId ?? ""] as const,
 }

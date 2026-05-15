@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom"
-import iconPersonalLeave from "@/Assets/icon-personal-leave.png"
+import iconPersonalLeave from "@/assets/icon-personal-leave.png"
 import type { PersonalLeaveCardProps, StatRowProps } from "../types"
 
 export function PersonalLeaveCard({

@@ -78,7 +78,8 @@ export async function apiGetCountyActivityForEdit(id: number): Promise<CountyAct
   }
   return { 
     activity: { ...activity, apportioning }, 
-    departmentNames: names 
+    departmentNames: names,
+    apportioningDepartments: activity.apportioningDepartments || []
   }
 }
 

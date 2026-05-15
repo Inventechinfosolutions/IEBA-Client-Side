@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react"
 import { cn } from "@/lib/utils"
-import { Label } from "@/components/ui/label"
 import { SingleSelectSearchDropdown } from "@/components/ui/dropdown-search"
 import type { SupervisorApportioningConfig } from "../queries/getUserApportioningConfig"
 
@@ -9,7 +8,6 @@ import type { SupervisorApportioningConfig } from "../queries/getUserApportionin
 export type ApportioningPanelProps = {
   apportioningConfig: SupervisorApportioningConfig | null | undefined
   supervisorOwnMinutesToday: number
-  dropdownData?: any[]
   /** Saved apportioning TSRs from backend (apportioning=true). Pre-fills rows when autoApportioning=true. */
   apportioningRecords?: any[]
 }
@@ -74,7 +72,6 @@ function ReadOnlyField({ label }: { label: string }) {
 export function PersonalTimeStudyApportioningPanel({
   apportioningConfig,
   supervisorOwnMinutesToday,
-  dropdownData,
   apportioningRecords,
 }: ApportioningPanelProps) {
   const shouldRender = useMemo(

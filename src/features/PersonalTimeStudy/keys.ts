@@ -25,4 +25,8 @@ export const personalTimeStudyKeys = {
   /** Time entry summary (minutes, balances) for a specific user + date */
   timeEntrySummary: (userId: string, dateStr: string) =>
     [...personalTimeStudyKeys.all, "timeentry-summary", userId, dateStr] as const,
+
+  /** Master codes for Time Study */
+  masterCodes: () =>
+    [...personalTimeStudyKeys.all, "master-codes"] as const,
 }

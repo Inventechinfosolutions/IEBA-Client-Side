@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom"
-import iconPersonalTimeStudy from "@/Assets/icon-personal-time-study.png"
+import iconPersonalTimeStudy from "@/assets/icon-personal-time-study.png"
 import type { PersonalTimeStudyCardProps } from "../types"
 
 export function PersonalTimeStudyCard({

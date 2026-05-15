@@ -455,7 +455,7 @@ export function PersonalTimeStudyEntryForm({
     return Array.from(new Map(list.map((a) => [a.id, a])).values())
   }, [dropdownData])
 
-  const allowMulticodeUi = apportioningConfig?.allowMultiCodes === true
+  const allowMulticodeUi = false // apportioningConfig?.allowMultiCodes === true
   const hasMulticodeSubRows = useMemo(() => parents.some((p) => p.subRows.length > 0), [parents])
   const multicodeDropdownQuery = useGetPersonalMulticodeDropdowns(
     userId,
@@ -1070,7 +1070,7 @@ export function PersonalTimeStudyEntryForm({
                       <Trash2 className="size-4" />
                     </Button>
                   )}
-                  {!readonly && !isLeaveRow && apportioningConfig?.allowMultiCodes && (
+                  {!readonly && !isLeaveRow && false && (
                     <Button
                       size="icon"
                       variant="outline"
@@ -1212,7 +1212,6 @@ export function PersonalTimeStudyEntryForm({
             const mins = Number(computeDurationMinutes(p.start, p.end)) || 0
             return sum + mins
           }, 0)}
-          dropdownData={dropdownData}
           apportioningRecords={apportioningRecords?.filter(r => r.date === dateStr) || []}
         />
       )}

@@ -44,7 +44,7 @@ export function useUpdateCostPool() {
       }
 
       // Sync remaining/new users using PUT
-      const res = await updateUsersOnCostPool({
+      await updateUsersOnCostPool({
         costPoolId: id,
         departmentId: values.departmentId,
         users: values.assignedUserIds,
