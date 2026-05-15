@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { Controller, useFormContext } from "react-hook-form"
 import { Eye, EyeOff, Loader2, Trash2 } from "lucide-react"
+import { useQueryClient } from "@tanstack/react-query"
 
 import { Checkbox } from "@/components/ui/checkbox"
 import { TitleCaseInput } from "@/components/ui/title-case-input"
@@ -16,8 +17,10 @@ import {
   useGetAddEmployeeJobClassifications,
   useGetAddEmployeeLocations,
   useGetMulticodeMasterCodes,
+  useGetUserDetailsTab,
 } from "../queries/get-add-employee"
 import { useEmployeeLoginDetailsUi } from "../hooks/use-add-employee-form"
+import { addEmployeeLookupKeys } from "../keys"
 import { formatPhoneUs10Input } from "../schemas"
 
 
@@ -28,19 +31,23 @@ export function EmployeeLoginDetailsSection({
   isEditMode,
   userId,
 }: EmployeeLoginDetailsSectionProps) {
-  /** Edit mode: defer GET /jobclassification until the user opens the picker. */
+  /** Defer GET /jobclassification and /location until the user opens the picker. */
   const [jobClassificationMenuOpened, setJobClassificationMenuOpened] = useState(false)
   const [locationMenuOpened, setLocationMenuOpened] = useState(false)
+  const [masterCodesOpened, setMasterCodesOpened] = useState(false)
 
   const { isSuperAdmin, user } = usePermissions()
+  const queryClient = useQueryClient()
   // Show dept assignment for all non-super-admin roles (PayrollAdmin, TimeStudyAdmin, DeptAdmin, etc.)
   const showDeptAutoAssign = !isSuperAdmin
 
-  const jobClassificationsEnabled = !isEditMode || jobClassificationMenuOpened
-  const locationsEnabled = !isEditMode || locationMenuOpened
+  const jobClassificationsEnabled = jobClassificationMenuOpened
+  const locationsEnabled = locationMenuOpened
 
   const jobClassificationsQuery = useGetAddEmployeeJobClassifications(jobClassificationsEnabled)
   const locationsQuery = useGetAddEmployeeLocations(locationsEnabled)
+  const tabDetailsQuery = useGetUserDetailsTab(userId, "tab1", isEditMode)
+  const tabData = tabDetailsQuery.data as any
 
   const {
     selectedJobDutyFile,
@@ -63,8 +70,8 @@ export function EmployeeLoginDetailsSection({
   } = useFormContext<UserModuleFormValues>()
   const employeeName = `${watch("firstName") ?? ""} ${watch("lastName") ?? ""}`.trim()
   const allowMultiCodesEnabled = watch("allowMultiCodes") === true
-  /** Checkbox only (not multicode dropdown open). Add mode unchanged. */
-  const multicodeMasterCodesQuery = useGetMulticodeMasterCodes(allowMultiCodesEnabled)
+  /** Only fetch when dropdown is clicked */
+  const multicodeMasterCodesQuery = useGetMulticodeMasterCodes(allowMultiCodesEnabled && masterCodesOpened)
 
   const labelClassName = "mb-1 block select-none text-[11px] font-medium text-[#2a2f3a]"
   const passwordErrorClassName = "mt-1 text-[11px] text-[#ff0000]"
@@ -128,9 +135,9 @@ export function EmployeeLoginDetailsSection({
 
       <div className="grid grid-cols-3 gap-3">
         <div>
-          <label className={labelClassName}>*Employee #</label>
           <TitleCaseInput
             {...register("employeeNo")}
+            value={watch("employeeNo") || tabData?.employeeId || tabData?.employeeNo || ""}
             className={isEditMode ? employeeNoInputClassName : inputClassName}
             placeholder="Enter Employee #"
             readOnly={isEditMode}
@@ -191,7 +198,10 @@ export function EmployeeLoginDetailsSection({
                   }}
                   onBlur={field.onBlur}
                   onOpenChange={(open) => {
-                    if (open) setLocationMenuOpened(true)
+                    if (open) {
+                      setLocationMenuOpened(true)
+                      void queryClient.invalidateQueries({ queryKey: addEmployeeLookupKeys.locations() })
+                    }
                   }}
                   options={options}
                   placeholder="Select location"
@@ -220,6 +230,7 @@ export function EmployeeLoginDetailsSection({
             render={({ field }) => (
               <TitleCaseInput
                 {...field}
+                value={field.value || tabData?.firstName || ""}
                 className={inputClassName}
                 placeholder="First Name"
                 onChange={(e) => field.onChange(capitalize(e.target.value))}
@@ -235,6 +246,7 @@ export function EmployeeLoginDetailsSection({
             render={({ field }) => (
               <TitleCaseInput
                 {...field}
+                value={field.value || tabData?.lastName || ""}
                 className={inputClassName}
                 placeholder="Last Name"
                 onChange={(e) => field.onChange(capitalize(e.target.value))}
@@ -402,7 +414,10 @@ export function EmployeeLoginDetailsSection({
                   }}
                   onBlur={field.onBlur}
                   onOpenChange={(open) => {
-                    if (open) setJobClassificationMenuOpened(true)
+                    if (open) {
+                      setJobClassificationMenuOpened(true)
+                      void queryClient.invalidateQueries({ queryKey: addEmployeeLookupKeys.jobClassifications() })
+                    }
                   }}
                   options={options}
                   placeholder="Select job classification"
@@ -519,6 +534,10 @@ export function EmployeeLoginDetailsSection({
                           shouldTouch: true,
                           shouldValidate: true,
                         })
+                      } else {
+                        void queryClient.invalidateQueries({
+                          queryKey: addEmployeeLookupKeys.multicodeMasterCodes(),
+                        })
                       }
                     }}
                     className="size-3.5 cursor-pointer rounded-[3px] border-[#c2c6d1] data-[state=checked]:border-(--primary) data-[state=checked]:bg-(--primary)"
@@ -542,14 +561,16 @@ export function EmployeeLoginDetailsSection({
                       ...orphanTokens.map((t) => ({ value: t, label: t })),
                     ]
                     return (
-                      <MultiSelectDropdown
-                        value={field.value ?? ""}
-                        onChange={field.onChange}
-                        onBlur={field.onBlur}
-                        placeholder="Select MultiCodes"
-                        options={options}
-                        isLoading={multicodeMasterCodesQuery.isPending}
-                      />
+                      <div onClick={() => setMasterCodesOpened(true)}>
+                        <MultiSelectDropdown
+                          value={field.value ?? ""}
+                          onChange={field.onChange}
+                          onBlur={field.onBlur}
+                          placeholder="Select MultiCodes"
+                          options={options}
+                          isLoading={multicodeMasterCodesQuery.isFetching}
+                        />
+                      </div>
                     )
                   }}
                 />
@@ -567,14 +588,17 @@ export function EmployeeLoginDetailsSection({
               name="autoAssignedDepartments"
               control={control}
               render={({ field }) => {
+                let options: { label: string; value: string }[] = []
+                
                 const depMap = new Map<number, string>()
                 user?.departmentRoles?.forEach((dr) => {
                   if (dr.departmentId) depMap.set(dr.departmentId, dr.departmentName)
                 })
-                const options = Array.from(depMap.entries()).map(([id, name]) => ({
+                options = Array.from(depMap.entries()).map(([id, name]) => ({
                   label: name,
                   value: String(id),
                 }))
+                
                 return (
                   <MultiSelectDropdown
                     value={field.value ?? ""}

@@ -177,20 +177,11 @@ export function UserModulePage() {
       : (!isSuperAdmin && assignedDepartmentIds.length > 0
           ? assignedDepartmentIds.join(",")
           : undefined),
-  })
+  }, { enabled: !showForm })
   const isTableLoading = userModule.isLoading
 
   const shouldFetchEditDetails =
     showForm && formMode === "edit" && selectedRow != null
-
-  const editUserDetailsQuery = useQuery({
-    queryKey: userModuleKeys.detail(selectedRow?.id ?? ""),
-    queryFn: () => apiGetUserDetails(selectedRow!.id),
-    enabled: shouldFetchEditDetails,
-    staleTime: 0,
-    gcTime: 0,
-    retry: 1,
-  })
 
   /** Baseline from the list row (sparse); merged with GET /users/:id/details when editing. */
   const formValuesFromListRow = useMemo((): UserModuleFormValues | null => {
@@ -241,20 +232,10 @@ export function UserModulePage() {
   const formInitialValues = useMemo<UserModuleFormValues>(() => {
     if (formMode === "add") return emptyFormValues
     if (!formValuesFromListRow) return emptyFormValues
-    if (editUserDetailsQuery.data) {
-      return mergeUserDetailsIntoFormValues(
-        editUserDetailsQuery.data,
-        formValuesFromListRow,
-      )
-    }
     return formValuesFromListRow
-  }, [formMode, formValuesFromListRow, editUserDetailsQuery.data])
+  }, [formMode, formValuesFromListRow])
 
-  const editFormReady =
-    formMode !== "edit" ||
-    !selectedRow ||
-    editUserDetailsQuery.isSuccess ||
-    editUserDetailsQuery.isError
+
 
   /** Omit detail `dataUpdatedAt` so edit save + refetch does not remount the form (keeps active tab). */
   const addEmployeeFormKey =
@@ -545,54 +526,21 @@ export function UserModulePage() {
       } as React.CSSProperties}
     >
       {showForm ? (
-        shouldFetchEditDetails && editUserDetailsQuery.isPending ? (
-          <div className="flex min-h-[320px] items-center justify-center rounded-[8px] border border-[#d8dce8] bg-white">
-            <Spinner className="text-[#6C5DD3]" />
-          </div>
-        ) : shouldFetchEditDetails && editUserDetailsQuery.isError ? (
-          <div className="flex min-h-[320px] flex-col items-center justify-center gap-4 rounded-[8px] border border-[#d8dce8] bg-white px-6 text-center">
-            <p className="max-w-md text-[13px] text-[#374151]">
-              Could not load this user&apos;s full profile. Job classification and other fields need this
-              data before you can save.
-            </p>
-            <div className="flex flex-wrap items-center justify-center gap-2">
-              <Button
-                type="button"
-                className="h-9 rounded-[8px] bg-[#6C5DD3] px-4 text-[12px] text-white hover:bg-[#6C5DD3]"
-                onClick={() => void editUserDetailsQuery.refetch()}
-              >
-                Retry
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                className="h-9 rounded-[8px] px-4 text-[12px]"
-                onClick={() => {
-                  setShowForm(false)
-                  void queryClient.invalidateQueries({ queryKey: userModuleKeys.lists() })
-                }}
-              >
-                Back to list
-              </Button>
-            </div>
-          </div>
-        ) : editFormReady ? (
-          <AddEmployeeFormPage
-            key={addEmployeeFormKey}
-            mode={formMode}
-            initialValues={formInitialValues}
-            securityContextUserId={
-              formMode === "edit" && selectedRow ? selectedRow.id : draftUserId ?? null
-            }
-            onCancel={() => {
-              setDraftUserId(null)
-              setShowForm(false)
-              void queryClient.invalidateQueries({ queryKey: userModuleKeys.lists() })
-            }}
-            onSave={handleSaveForm}
-            isSubmitting={isSaving || userModule.isCreating || userModule.isUpdating}
-          />
-        ) : null
+        <AddEmployeeFormPage
+          key={addEmployeeFormKey}
+          mode={formMode}
+          initialValues={formInitialValues}
+          securityContextUserId={
+            formMode === "edit" && selectedRow ? selectedRow.id : draftUserId ?? null
+          }
+          onCancel={() => {
+            setDraftUserId(null)
+            setShowForm(false)
+            void queryClient.invalidateQueries({ queryKey: userModuleKeys.lists() })
+          }}
+          onSave={handleSaveForm}
+          isSubmitting={isSaving || userModule.isCreating || userModule.isUpdating}
+        />
       ) : (
         <div className="rounded-[10px] border border-[#e6e7ef] bg-gray-100 p-4 shadow-[0_2px_10px_rgba(0,0,0,0.03)] md:p-5">
           <UserToolbar

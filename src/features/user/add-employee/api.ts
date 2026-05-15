@@ -77,13 +77,10 @@ function normalizeLocationListRows(payload: unknown): AddEmployeeLocationRow[] {
  */
 export async function fetchAddEmployeeLocations(): Promise<AddEmployeeLocationRow[]> {
   const search = new URLSearchParams()
-  search.set("page", "1")
-  search.set("limit", "1000")
-  search.set("sort", "ASC")
   search.set("status", "active")
 
   const res = await api.get<ApiResponseDto<AddEmployeeLocationListPayload | AddEmployeeLocationRow[]>>(
-    `/location?${search.toString()}`
+    `/location/all?${search.toString()}`
   )
   const payload = unwrapSuccess(res, "Failed to load locations")
   return normalizeLocationListRows(payload).sort((a, b) =>
@@ -93,16 +90,13 @@ export async function fetchAddEmployeeLocations(): Promise<AddEmployeeLocationRo
 
 export async function fetchAddEmployeeJobClassifications(): Promise<AddEmployeeJobClassificationRow[]> {
   const search = new URLSearchParams()
-  search.set("page", "1")
-  search.set("limit", "1000")
-  search.set("sort", "ASC")
   search.set("status", "active")
 
-  const res = await api.get<ApiResponseDto<AddEmployeeJobClassificationListPayload>>(
-    `/jobclassification?${search.toString()}`
+  const res = await api.get<ApiResponseDto<AddEmployeeJobClassificationListPayload | AddEmployeeJobClassificationRow[]>>(
+    `/jobclassification/all?${search.toString()}`
   )
-  const payload = unwrapSuccess(res, "Failed to load job classifications")
-  return payload.data
+  const payload = unwrapSuccess(res, "Failed to load job classifications") as any
+  return Array.isArray(payload) ? payload : payload.data
 }
 
 function normalizeCountyActivityPayload(payload: unknown): AddEmployeeCountyActivityRow[] {
@@ -437,7 +431,7 @@ export async function fetchUserProgramsAndActivities(
   const search = new URLSearchParams()
   search.set("userId", uid)
   const res = await api.get<ApiResponseDto<unknown>>(
-    `/timestudyprograms/user/programs-activities?${search.toString()}`,
+    `/timestudyprograms/user/programs-activities-with-assignments?${search.toString()}`,
   )
   const payload = unwrapSuccess(res, "Failed to load user programs and activities")
   const list = Array.isArray(payload) ? payload : []
@@ -544,15 +538,11 @@ function normalizeMasterCodeRow(raw: unknown): AddEmployeeMasterCodeRow | null {
  * GET /master-codes?page=1&limit=100 (tenant list). Filters to active rows with allowMulticode true.
  */
 export async function fetchMulticodeMasterCodes(): Promise<AddEmployeeMasterCodeRow[]> {
-  const search = new URLSearchParams()
-  search.set("page", "1")
-  search.set("limit", "1000")
-
-  const res = await api.get<ApiResponseDto<AddEmployeeMasterCodeListPayload>>(
-    `/master-codes?${search.toString()}`
+  const res = await api.get<ApiResponseDto<AddEmployeeMasterCodeListPayload | AddEmployeeMasterCodeRow[]>>(
+    `/master-codes/all`
   )
-  const payload = unwrapSuccess(res, "Failed to load master codes")
-  const list = Array.isArray(payload.data) ? payload.data : []
+  const payload = unwrapSuccess(res, "Failed to load master codes") as any
+  const list = Array.isArray(payload) ? payload : (Array.isArray(payload.data) ? payload.data : [])
   const rows: AddEmployeeMasterCodeRow[] = []
 
   for (const raw of list) {
@@ -665,4 +655,14 @@ export async function apiUploadUserDocument(userId: string, docType: string, fil
 
   const res = await api.post<ApiResponseDto<any>>("/user-documents/upload", formData)
   return unwrapSuccess(res, "Failed to upload document")
+}
+
+export async function fetchUserDetailsTab(userId: string, method: string): Promise<Record<string, unknown>> {
+  const res = await api.get<ApiResponseDto<Record<string, unknown>>>(`/users/${userId}/details/required?method=${method}`)
+  return unwrapSuccess(res, `Failed to load user details for ${method}`)
+}
+
+export async function fetchDepartmentRolesForUser(userId: string): Promise<any> {
+  const res = await api.get<ApiResponseDto<any>>(`/departments/assignedDepartment/roles?userId=${userId}`)
+  return unwrapSuccess(res, "Failed to load department roles for user")
 }

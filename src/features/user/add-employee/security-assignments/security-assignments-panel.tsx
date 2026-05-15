@@ -99,6 +99,7 @@ export function SecurityAssignmentsPanel({
 
   const isAddMode = mode === "add"
   const isEditMode = mode === "edit"
+  
   const { watch, control, setValue, getValues } = useFormContext<UserModuleFormValues>()
   const assignedRoles = watch("roleAssignments") ?? []
   const securitySnapshots = watch("securityAssignedSnapshots") ?? []
@@ -120,6 +121,8 @@ export function SecurityAssignmentsPanel({
     status: "active",
     page: 1,
     limit: 1000,
+  }, {
+    enabled: securitySnapshots.length > 0
   })
 
   const isApportioningEnabled = useMemo(() => {

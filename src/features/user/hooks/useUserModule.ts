@@ -3,8 +3,8 @@ import { useCreateUserModuleRow } from "../mutations/createUser"
 import { useUpdateUserModuleRow } from "../mutations/updateUser"
 import { useGetUserModuleRows } from "../queries/getUsers"
 
-export function useUserModule(params: GetUserModuleParams) {
-  const listQuery = useGetUserModuleRows(params)
+export function useUserModule(params: GetUserModuleParams, options?: { enabled?: boolean }) {
+  const listQuery = useGetUserModuleRows(params, options)
   const createMutation = useCreateUserModuleRow()
   const updateMutation = useUpdateUserModuleRow()
 

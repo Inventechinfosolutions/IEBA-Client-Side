@@ -1,7 +1,5 @@
 import { ChevronDown, Clock, Eye, Plus, Trash2, Check } from "lucide-react"
 import { useCallback, useMemo, useRef, useState } from "react"
-import { PersonalTimeStudyApportioningPanel } from "./PersonalTimeStudyApportioningPanel"
-import type { SupervisorApportioningConfig } from "../queries/getUserApportioningConfig"
 import { useGetPersonalMulticodeDropdowns } from "../queries/getPersonalDropdowns"
 import { useGetProgramActivityRelations } from "../queries/getProgramActivityRelations"
 
@@ -163,8 +161,6 @@ type PersonalTimeStudyEntryFormProps = {
   }>
   isApportioningUser?: boolean
   isLoading?: boolean
-  apportioningConfig?: SupervisorApportioningConfig | null
-  apportioningRecords?: any[]
 }
 
 function TimePicker24h({
@@ -310,8 +306,6 @@ export function PersonalTimeStudyEntryForm({
   className,
   isApportioningUser = false,
   isLoading = false,
-  apportioningConfig = null,
-  apportioningRecords,
 }: PersonalTimeStudyEntryFormProps) {
   const { user } = useAuth()
   const userId = propsUserId || user?.id || ""
@@ -1231,17 +1225,7 @@ export function PersonalTimeStudyEntryForm({
           )
         })}
       </div>
-      {apportioningConfig?.apportioningRequired && (
-        <PersonalTimeStudyApportioningPanel
-          apportioningConfig={apportioningConfig}
-          supervisorOwnMinutesToday={parents.reduce((sum, p) => {
-            if (p.isLeave) return sum
-            const mins = Number(computeDurationMinutes(p.start, p.end)) || 0
-            return sum + mins
-          }, 0)}
-          apportioningRecords={apportioningRecords?.filter((r: { date?: string }) => r.date === dateStr) || []}
-        />
-      )}
+
 
       {!readonly && !moveSaveSubmitToTop && (
         <div className="mt-4 flex justify-end gap-2">
