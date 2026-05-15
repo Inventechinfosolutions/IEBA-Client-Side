@@ -161,6 +161,8 @@ type PersonalTimeStudyEntryFormProps = {
   }>
   isApportioningUser?: boolean
   isLoading?: boolean
+  onDropdownOpen?: () => void
+  isDropdownLoading?: boolean
 }
 
 function TimePicker24h({
@@ -306,6 +308,8 @@ export function PersonalTimeStudyEntryForm({
   className,
   isApportioningUser = false,
   isLoading = false,
+  onDropdownOpen,
+  isDropdownLoading = false,
 }: PersonalTimeStudyEntryFormProps) {
   const { user } = useAuth()
   const userId = propsUserId || user?.id || ""
@@ -989,37 +993,45 @@ export function PersonalTimeStudyEntryForm({
                 )}
                 <div className="flex-1 space-y-0.5">
                   <Label className="text-[11px] text-[#6C5DD3] font-medium">TS Program <RequiredMark /></Label>
-                  <SingleSelectSearchDropdown
-                    value={parent.tsProgram}
-                    placeholder="Select program"
-                    disabled={isLocked || isLeaveRow}
-                    options={(() => {
-                      const filtered = programs
-                        .filter((p: any) => !p.isMultiCode)
-                        .map((p: any) => {
-                          const deptPrefix = (p.departmentCode ?? '').split('-')[0]
-                          return { value: String(p.id), label: `${deptPrefix}-${p.code} - ${p.name}` }
-                        });
-
-                      if (parent.tsProgram && !filtered.some((o) => o.value === parent.tsProgram)) {
-                        if (parent.programCode || parent.programName) {
-                          const deptPrefix = (parent.departmentCode ?? '').split('-')[0];
-                          const prefix = deptPrefix ? `${deptPrefix}-` : '';
-                          filtered.unshift({ value: parent.tsProgram, label: `${prefix}${parent.programCode ?? ''} - ${parent.programName ?? ''}` });
+                  <div>
+                    <SingleSelectSearchDropdown
+                      value={parent.tsProgram}
+                      placeholder="Select program"
+                      disabled={isLocked || isLeaveRow}
+                      isLoading={isDropdownLoading}
+                      onOpenChange={(open) => {
+                        if (open) {
+                          onDropdownOpen?.();
                         }
-                      }
-                      return filtered;
-                    })()}
-                    onChange={(v) => {
-                      if (v !== parent.tsProgram) {
-                        updateParent(parent.id, { tsProgram: v, serviceActivity: '' });
-                      } else {
-                        updateParent(parent.id, { tsProgram: v });
-                      }
-                    }}
-                    onBlur={() => { }}
-                    className={cn("h-10 text-[11px]", (isLocked || isLeaveRow) && "bg-[#F2F4F7] cursor-not-allowed", isLeaveRow && "border-yellow-400")}
-                  />
+                      }}
+                      options={(() => {
+                        const filtered = programs
+                          .filter((p: any) => !p.isMultiCode)
+                          .map((p: any) => {
+                            const deptPrefix = (p.departmentCode ?? '').split('-')[0]
+                            return { value: String(p.id), label: `${deptPrefix}-${p.code} - ${p.name}` }
+                          });
+  
+                        if (parent.tsProgram && !filtered.some((o) => o.value === parent.tsProgram)) {
+                          if (parent.programCode || parent.programName) {
+                            const deptPrefix = (parent.departmentCode ?? '').split('-')[0];
+                            const prefix = deptPrefix ? `${deptPrefix}-` : '';
+                            filtered.unshift({ value: parent.tsProgram, label: `${prefix}${parent.programCode ?? ''} - ${parent.programName ?? ''}` });
+                          }
+                        }
+                        return filtered;
+                      })()}
+                      onChange={(v) => {
+                        if (v !== parent.tsProgram) {
+                          updateParent(parent.id, { tsProgram: v, serviceActivity: '' });
+                        } else {
+                          updateParent(parent.id, { tsProgram: v });
+                        }
+                      }}
+                      onBlur={() => { }}
+                      className={cn("h-10 text-[11px]", (isLocked || isLeaveRow) && "bg-[#F2F4F7] cursor-not-allowed", isLeaveRow && "border-yellow-400")}
+                    />
+                  </div>
                 </div>
                 <div className="flex-1 space-y-0.5">
                   <Label className="text-[11px] text-[#6C5DD3] font-medium">Service / Activity Code <RequiredMark /></Label>

@@ -70,6 +70,7 @@ export function SingleSelectSearchDropdown({
   // Tracks whether a list item mousedown is in progress.
   // onMouseDown sets this true → input's onBlur sees it and skips closing.
   const selectingRef = useRef(false)
+  const isOpenRef = useRef(false)
 
   const controlled = openControlled !== undefined
   const open = controlled ? openControlled : internalOpen
@@ -87,16 +88,19 @@ export function SingleSelectSearchDropdown({
     return options.filter((o) => o.label.toLowerCase().includes(q))
   }, [options, searchQuery])
 
-  const disabledEffective = disabled || isLoading
+  const disabledEffective = disabled || (isLoading && !open)
 
   const openMenu = () => {
     if (disabledEffective) return
-    if (!controlled) setInternalOpen(true)
-    onOpenChange?.(true)
-    // Input is the anchor — focus is already there
+    if (!isOpenRef.current) {
+      isOpenRef.current = true
+      if (!controlled) setInternalOpen(true)
+      onOpenChange?.(true)
+    }
   }
 
   const closeMenu = () => {
+    isOpenRef.current = false
     if (!controlled) setInternalOpen(false)
     onOpenChange?.(false)
     setSearchQuery("")

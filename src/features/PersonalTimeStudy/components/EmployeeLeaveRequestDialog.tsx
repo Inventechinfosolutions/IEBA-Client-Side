@@ -95,6 +95,7 @@ export type EmployeeLeaveRequestDialogProps = {
   isSaving?: boolean
   isSubmitting?: boolean
   isDropdownLoading?: boolean
+  onDropdownOpen?: () => void
   isFetching?: boolean
   editingLeave?: any
   /** Logged-in user (multicode + activity queries). */
@@ -225,6 +226,7 @@ export function EmployeeLeaveRequestDialog({
   isSaving = false,
   isSubmitting = false,
   isDropdownLoading = false,
+  onDropdownOpen,
   isFetching = false,
   editingLeave,
   userId: propsUserId,
@@ -813,6 +815,11 @@ export function EmployeeLeaveRequestDialog({
                               <SingleSelectSearchDropdown
                                 value={f.value === EMPTY ? "" : f.value}
                                 isLoading={isDropdownLoading || multicodeProgramListLoading}
+                                onOpenChange={(open) => {
+                                  if (open) {
+                                    onDropdownOpen?.();
+                                  }
+                                }}
                                 options={(() => {
                                   const opts = [...getLeaveProgramOptions(parentIndex)]
                                   const currentVal = f.value === EMPTY ? "" : f.value
