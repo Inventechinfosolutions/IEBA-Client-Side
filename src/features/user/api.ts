@@ -13,6 +13,8 @@ import type {
   UserModuleRow,
 } from "./types"
 
+
+
 /** Department rows with `roles: { id?, name }[]` (assigned / unassigned list payloads). */
 function getDepartmentRowsWithRolesFromPayload(payload: unknown): unknown[] {
   if (Array.isArray(payload)) return payload

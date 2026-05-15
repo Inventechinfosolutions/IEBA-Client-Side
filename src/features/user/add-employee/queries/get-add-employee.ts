@@ -18,6 +18,8 @@ import {
   fetchMulticodeMasterCodes,
   fetchSupervisorsByDepartmentIds,
   fetchUserProgramsAndActivities,
+  fetchUserDetailsTab,
+  fetchDepartmentRolesForUser,
 } from "../api"
 import { addEmployeeLookupKeys, departmentRolesUnassignedCacheUserKey } from "../keys"
 import type {
@@ -232,5 +234,27 @@ export function useGetSupervisorsByDepartments(departmentIds: number[], enabled:
     refetchOnMount: false,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
+  })
+}
+
+export function useGetUserDetailsTab(userId: string | null | undefined, method: string, enabled: boolean) {
+  const id = userId?.trim() ?? ""
+  return useQuery({
+    queryKey: [...addEmployeeLookupKeys.all, "userDetailsTab", id, method],
+    queryFn: async (): Promise<Record<string, unknown>> => {
+      return await fetchUserDetailsTab(id, method)
+    },
+    enabled: Boolean(id) && enabled,
+  })
+}
+
+export function useGetDepartmentRolesForUser(userId: string | null | undefined, enabled: boolean) {
+  const id = userId?.trim() ?? ""
+  return useQuery({
+    queryKey: [...addEmployeeLookupKeys.all, "departmentRolesForUser", id],
+    queryFn: async (): Promise<any> => {
+      return await fetchDepartmentRolesForUser(id)
+    },
+    enabled: Boolean(id) && enabled,
   })
 }
