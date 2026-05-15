@@ -252,30 +252,40 @@ export async function getDepartments(
   return { items, total }
 }
 
+/** GET /departments/all — full list, no pagination (optional status, sort, search). */
 export async function getAllDepartments(
-  params: GetAllDepartmentsParams,
+  params: GetAllDepartmentsParams = {},
 ): Promise<GetDepartmentsListResult> {
-  const limit = 100
-  let page = 1
-  let total: number | null = null
-  const items: Department[] = []
-
-  while (total == null || items.length < total) {
-    const res = await getDepartments({
-      page,
-      limit,
-      status: params.status,
-      sort: params.sort,
-    })
-    if (total == null) total = res.total
-    if (res.items.length === 0) break
-    items.push(...res.items)
-    page += 1
-    // Safety to avoid infinite loops if backend meta is wrong.
-    if (page > 10_000) break
+  const searchParams = new URLSearchParams()
+  if (params.sort) {
+    searchParams.set("sort", params.sort)
+  }
+  if (params.status) {
+    searchParams.set("status", params.status)
+  }
+  if (params.search?.trim()) {
+    searchParams.set("search", params.search.trim())
   }
 
-  return { items, total: total ?? items.length }
+  const qs = searchParams.toString()
+  const res = await api.get<DepartmentApiEnvelope<DepartmentListResponseDto | DepartmentResDto[]>>(
+    qs ? `/departments/all?${qs}` : "/departments/all",
+  )
+
+  const envelope = (res?.data ?? res) as unknown
+  const payload =
+    envelope !== null && typeof envelope === "object" && "data" in (envelope as object)
+      ? (envelope as { data: unknown }).data
+      : envelope
+
+  const list = Array.isArray(payload)
+    ? payload
+    : Array.isArray((payload as DepartmentListResponseDto | null)?.data)
+      ? (payload as DepartmentListResponseDto).data
+      : []
+
+  const items = list.map((x) => toDepartmentUI(x as DepartmentResDto, { includeAddress: true }))
+  return { items, total: items.length }
 }
 
 export async function getDepartmentsAll(

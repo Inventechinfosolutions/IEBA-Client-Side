@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useLayoutEffect, useState } from "react"
 import { Controller, useFormContext } from "react-hook-form"
 import { Eye, EyeOff, Loader2, Trash2 } from "lucide-react"
 import { useQueryClient } from "@tanstack/react-query"
@@ -22,6 +22,7 @@ import {
 import { useEmployeeLoginDetailsUi } from "../hooks/use-add-employee-form"
 import { addEmployeeLookupKeys } from "../keys"
 import { formatPhoneUs10Input } from "../schemas"
+import { syncTab1EmployeeLoginFields } from "../utility/refetchFormAfterTabSave"
 
 
 import { usePermissions } from "@/hooks/usePermissions"
@@ -66,8 +67,15 @@ export function EmployeeLoginDetailsSection({
     control,
     watch,
     setValue,
+    getValues,
     formState: { errors, touchedFields, dirtyFields },
   } = useFormContext<UserModuleFormValues>()
+
+  useLayoutEffect(() => {
+    if (!isEditMode || !tabData || typeof tabData !== "object") return
+    syncTab1EmployeeLoginFields(setValue, getValues, tabData as Record<string, unknown>)
+  }, [isEditMode, tabData, setValue, getValues])
+
   const employeeName = `${watch("firstName") ?? ""} ${watch("lastName") ?? ""}`.trim()
   const allowMultiCodesEnabled = watch("allowMultiCodes") === true
   /** Only fetch when dropdown is clicked */
@@ -155,8 +163,9 @@ export function EmployeeLoginDetailsSection({
             render={({ field }) => {
               const rows = locationsQuery.data ?? []
               const rowById = new Map(rows.map((r) => [r.id, r]))
-              const selectedId = field.value
-              const locationLabel = (watch("location") ?? "").trim()
+              const selectedId = field.value ?? tabData?.location?.id
+              const locationLabel =
+                (watch("location") ?? "").trim() || tabData?.location?.name?.trim() || ""
               const hasOrphanSelection =
                 selectedId != null &&
                 !rowById.has(selectedId) &&
@@ -387,9 +396,16 @@ export function EmployeeLoginDetailsSection({
             control={control}
             render={({ field }) => {
               const rows = jobClassificationsQuery.data ?? []
-              const selectedId = field.value?.[0]
+              const tabJobRows = (tabData?.jobClassifications ?? []) as Array<{
+                id: number
+                name: string
+              }>
+              const formIds = field.value ?? []
+              const selectedId = formIds[0]
               const rowById = new Map(rows.map((r) => [r.id, r]))
               const isOrphan = selectedId != null && !rowById.has(selectedId)
+              const tabJobName =
+                tabJobRows.find((j) => j.id === selectedId)?.name?.trim() ?? ""
 
               const options: SingleSelectOption[] = rows.map((j) => ({
                 value: String(j.id),
@@ -400,7 +416,7 @@ export function EmployeeLoginDetailsSection({
               if (isOrphan && selectedId != null) {
                 options.unshift({
                   value: String(selectedId),
-                  label: `Id ${selectedId}`,
+                  label: tabJobName || `Id ${selectedId}`,
                   key: `job-class-orphan-${selectedId}`,
                 })
               }

@@ -19,24 +19,23 @@ import type {
   AddEmployeeMasterCodeRow,
   AddEmployeeDepartmentSupervisorRow,
   AddEmployeeSecurityRoleCatalogItem,
-  AddEmployeeTimeStudyProgramRow,
   AssignUserActivitiesApiBody,
   AssignUserProgramsApiBody,
+  SecurityDepartmentRolesQueryResult,
   UserDepartmentRoleDepartmentsBody,
+  UserProgramsActivitiesActivityItem,
+  UserProgramsActivitiesAssignedSplit,
   UserProgramsActivitiesDepartmentBundle,
+  UserProgramsActivitiesProgramItem,
+  UserProgramsActivitiesProgramWithAssignments,
 } from "./types"
+import { parseSecurityDepartmentRolesResponse } from "./utility/parseSecurityDepartmentRoles"
 
 function unwrapSuccess<T>(res: ApiResponseDto<T>, failureMessage: string): T {
   if (!res?.success || res.data == null) {
     throw new Error(res?.message ?? failureMessage)
   }
   return res.data
-}
-
-function isActiveStatus(status: unknown): boolean {
-  if (typeof status === "boolean") return status
-  if (typeof status === "string") return status.toLowerCase() === "active"
-  return true
 }
 
 function isJobPoolRow(row: unknown): row is AddEmployeeJobPoolRow {
@@ -365,6 +364,94 @@ export async function fetchDepartmentRolesCatalog(): Promise<AddEmployeeSecurity
   return out
 }
 
+function parseUserProgramsActivitiesActivityItem(
+  raw: unknown,
+  fallbackDepartmentId: number,
+): UserProgramsActivitiesActivityItem | null {
+  if (raw === null || typeof raw !== "object") return null
+  const a = raw as Record<string, unknown>
+  const id = typeof a.id === "number" ? a.id : Number(a.id)
+  const name = typeof a.name === "string" ? a.name.trim() : ""
+  if (!Number.isFinite(id) || !name) return null
+  const code = typeof a.code === "string" ? a.code : ""
+  const aid = typeof a.departmentId === "number" ? a.departmentId : Number(a.departmentId)
+  return {
+    id,
+    code,
+    name,
+    departmentId: Number.isFinite(aid) ? aid : fallbackDepartmentId,
+  }
+}
+
+function parseUserProgramsActivitiesProgramItem(
+  raw: unknown,
+  fallbackDepartmentId: number,
+): UserProgramsActivitiesProgramItem | null {
+  if (raw === null || typeof raw !== "object") return null
+  const p = raw as Record<string, unknown>
+  const id = typeof p.id === "number" ? p.id : Number(p.id)
+  const name = typeof p.name === "string" ? p.name.trim() : ""
+  if (!Number.isFinite(id) || !name) return null
+  const code = typeof p.code === "string" ? p.code : ""
+  const pid = typeof p.departmentId === "number" ? p.departmentId : Number(p.departmentId)
+  const parentIdRaw = p.parentId
+  const parentId =
+    parentIdRaw === null || parentIdRaw === undefined
+      ? null
+      : typeof parentIdRaw === "number"
+        ? parentIdRaw
+        : Number(parentIdRaw)
+  return {
+    id,
+    code,
+    name,
+    departmentId: Number.isFinite(pid) ? pid : fallbackDepartmentId,
+    parentId: Number.isFinite(parentId) ? parentId : parentId === null ? null : undefined,
+    isMultiCode: p.isMultiCode === true,
+  }
+}
+
+function parseUserProgramsActivitiesAssignedSplit<T>(
+  raw: unknown,
+  parseItem: (item: unknown) => T | null,
+): UserProgramsActivitiesAssignedSplit<T> {
+  const assigned: T[] = []
+  const unassigned: T[] = []
+  if (raw === null || typeof raw !== "object") {
+    return { assigned, unassigned }
+  }
+  const split = raw as Record<string, unknown>
+  if (Array.isArray(split.assigned)) {
+    for (const item of split.assigned) {
+      const parsed = parseItem(item)
+      if (parsed) assigned.push(parsed)
+    }
+  }
+  if (Array.isArray(split.unassigned)) {
+    for (const item of split.unassigned) {
+      const parsed = parseItem(item)
+      if (parsed) unassigned.push(parsed)
+    }
+  }
+  return { assigned, unassigned }
+}
+
+function parseUserProgramsActivitiesProgramWithAssignments(
+  raw: unknown,
+  departmentId: number,
+): UserProgramsActivitiesProgramWithAssignments | null {
+  const program = parseUserProgramsActivitiesProgramItem(raw, departmentId)
+  if (!program) return null
+  const childrenRaw =
+    raw !== null && typeof raw === "object"
+      ? (raw as Record<string, unknown>).children
+      : undefined
+  const children = parseUserProgramsActivitiesAssignedSplit(childrenRaw, (item) =>
+    parseUserProgramsActivitiesActivityItem(item, departmentId),
+  )
+  return { ...program, children }
+}
+
 function parseUserProgramsActivitiesBundle(raw: unknown): UserProgramsActivitiesDepartmentBundle | null {
   if (raw === null || typeof raw !== "object") return null
   const b = raw as Record<string, unknown>
@@ -373,56 +460,20 @@ function parseUserProgramsActivitiesBundle(raw: unknown): UserProgramsActivities
   const departmentName = typeof b.departmentName === "string" ? b.departmentName.trim() : ""
   if (!Number.isFinite(departmentId) || !departmentName) return null
 
-  const programs: UserProgramsActivitiesDepartmentBundle["programs"] = []
-  const activities: UserProgramsActivitiesDepartmentBundle["activities"] = []
+  const programs = parseUserProgramsActivitiesAssignedSplit(b.programs, (item) =>
+    parseUserProgramsActivitiesProgramWithAssignments(item, departmentId),
+  )
 
-  if (Array.isArray(b.programs)) {
-    for (const pr of b.programs) {
-      if (pr === null || typeof pr !== "object") continue
-      const p = pr as Record<string, unknown>
-      const id = typeof p.id === "number" ? p.id : Number(p.id)
-      const name = typeof p.name === "string" ? p.name.trim() : ""
-      if (!Number.isFinite(id) || !name) continue
-      const code = typeof p.code === "string" ? p.code : ""
-      const pid = typeof p.departmentId === "number" ? p.departmentId : Number(p.departmentId)
-      const isMultiCode = p.isMultiCode === true
-      programs.push({
-        id,
-        code,
-        name,
-        departmentId: Number.isFinite(pid) ? pid : departmentId,
-        isMultiCode,
-      })
-    }
-  }
-
-  if (Array.isArray(b.activities)) {
-    for (const ar of b.activities) {
-      if (ar === null || typeof ar !== "object") continue
-      const a = ar as Record<string, unknown>
-      const id = typeof a.id === "number" ? a.id : Number(a.id)
-      const name = typeof a.name === "string" ? a.name.trim() : ""
-      if (!Number.isFinite(id) || !name) continue
-      const code = typeof a.code === "string" ? a.code : ""
-      const aid = typeof a.departmentId === "number" ? a.departmentId : Number(a.departmentId)
-      activities.push({
-        id,
-        code,
-        name,
-        departmentId: Number.isFinite(aid) ? aid : departmentId,
-      })
-    }
-  }
-
-  return { departmentId, departmentCode, departmentName, programs, activities }
+  return { departmentId, departmentCode, departmentName, programs }
 }
 
 /**
- * GET /timestudyprograms/user/programs-activities?userId= — programs and activities per department
- * from the user’s active department-role assignments (edit mode Time Study tab).
+ * GET /timestudyprogram/user/programs-activities-with-assignments
+ * Omit `departmentId` to list departments in scope; pass `departmentId` to load one department’s programs.
  */
 export async function fetchUserProgramsAndActivities(
   userId: string,
+  departmentId?: number,
 ): Promise<UserProgramsActivitiesDepartmentBundle[]> {
   const uid = userId.trim()
   if (!uid) {
@@ -430,8 +481,11 @@ export async function fetchUserProgramsAndActivities(
   }
   const search = new URLSearchParams()
   search.set("userId", uid)
+  if (departmentId != null && Number.isFinite(departmentId) && departmentId >= 1) {
+    search.set("departmentId", String(departmentId))
+  }
   const res = await api.get<ApiResponseDto<unknown>>(
-    `/timestudyprograms/user/programs-activities-with-assignments?${search.toString()}`,
+    `/timestudyprogram/user/programs-activities-with-assignments?${search.toString()}`,
   )
   const payload = unwrapSuccess(res, "Failed to load user programs and activities")
   const list = Array.isArray(payload) ? payload : []
@@ -440,85 +494,6 @@ export async function fetchUserProgramsAndActivities(
     const bundle = parseUserProgramsActivitiesBundle(row)
     if (bundle) out.push(bundle)
   }
-  return out
-}
-
-export async function fetchAddEmployeeTimeStudyPrograms(): Promise<AddEmployeeTimeStudyProgramRow[]> {
-  const out: AddEmployeeTimeStudyProgramRow[] = []
-  let page = 1
-  const limit = 1000
-  const maxPages = 20
-
-  while (page <= maxPages) {
-    const search = new URLSearchParams()
-    search.set("page", String(page))
-    search.set("limit", String(limit))
-    search.set("sort", "ASC")
-    search.set("status", "active")
-
-    const res = await api.get<ApiResponseDto<{ data: unknown[]; meta?: { hasNextPage?: boolean } }>>(
-      `/timestudyprograms?${search.toString()}`
-    )
-    const payload = unwrapSuccess(res, "Failed to load time study programs")
-    const list = Array.isArray(payload.data) ? payload.data : []
-
-    for (const raw of list) {
-      if (raw === null || typeof raw !== "object") continue
-      const p = raw as Record<string, unknown>
-      if (!isActiveStatus(p.status)) continue
-      const idRaw = p.id
-      const name = typeof p.name === "string" ? p.name.trim() : ""
-      if (!name) continue
-      const idStr =
-        typeof idRaw === "number" || typeof idRaw === "string" ? String(idRaw).trim() : ""
-      if (!idStr) continue
-      const code = typeof p.code === "string" ? p.code : ""
-      const deptRaw = p.department
-      const department =
-        deptRaw !== null &&
-        typeof deptRaw === "object" &&
-        typeof (deptRaw as { name?: unknown }).name === "string"
-          ? String((deptRaw as { name: string }).name).trim()
-          : ""
-      
-      const parentIdRaw = p.parentId
-      const parentId = typeof parentIdRaw === "number" || typeof parentIdRaw === "string" ? String(parentIdRaw).trim() : undefined
-      const isMultiCode = p.isMultiCode === true
-
-      out.push({
-        id: idStr,
-        code,
-        name,
-        department,
-        parentId,
-        isMultiCode,
-      })
-    }
-
-    if (!payload.meta?.hasNextPage) break
-    page += 1
-  }
-
-  // Calculate levels for the flat list
-  const parentIdMap = new Map<string, string>()
-  for (const row of out) {
-    if (row.parentId) {
-      parentIdMap.set(row.id, row.parentId)
-    }
-  }
-
-  for (const row of out) {
-    let level = 1
-    let curr = row.id
-    let safety = 0
-    while (parentIdMap.has(curr) && safety < 10) {
-      level++
-      curr = parentIdMap.get(curr)!
-      safety++
-    }
-    row.level = level
-  }
-
   return out
 }
 
@@ -662,7 +637,22 @@ export async function fetchUserDetailsTab(userId: string, method: string): Promi
   return unwrapSuccess(res, `Failed to load user details for ${method}`)
 }
 
-export async function fetchDepartmentRolesForUser(userId: string): Promise<any> {
-  const res = await api.get<ApiResponseDto<any>>(`/departments/assignedDepartment/roles?userId=${userId}`)
-  return unwrapSuccess(res, "Failed to load department roles for user")
+export async function fetchSecurityDepartmentRoles(
+  userId: string,
+): Promise<SecurityDepartmentRolesQueryResult> {
+  const search = new URLSearchParams()
+  search.set("userId", userId.trim())
+  search.set("sort", "ASC")
+  const res = await api.get<ApiResponseDto<unknown>>(
+    `/departments/assignedDepartment/roles?${search.toString()}`,
+  )
+  const payload = unwrapSuccess(res, "Failed to load department roles for user")
+  return parseSecurityDepartmentRolesResponse(payload)
+}
+
+/** @deprecated Use fetchSecurityDepartmentRoles */
+export async function fetchDepartmentRolesForUser(
+  userId: string,
+): Promise<SecurityDepartmentRolesQueryResult> {
+  return fetchSecurityDepartmentRoles(userId)
 }

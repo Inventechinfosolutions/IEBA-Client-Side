@@ -240,6 +240,7 @@ export type GetDepartmentsParams = {
 export type GetAllDepartmentsParams = {
   status?: DepartmentApiRecordStatus
   sort?: DepartmentApiListSortOrder
+  search?: string
 }
 
 export type GetDepartmentsListResult = {

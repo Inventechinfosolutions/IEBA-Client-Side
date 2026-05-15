@@ -1,5 +1,6 @@
 import { AlertCircle, CheckCircle2, XCircle } from "lucide-react"
 import { useState, useMemo } from "react"
+import { useQuery } from "@tanstack/react-query"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -14,7 +15,8 @@ import {
   useUpdatePersonalLeave, 
   useWithdrawPersonalLeave 
 } from "../mutation/createPersonalLeave"
-import { apiGetUserLeaveById } from "../api/personalTimeStudyApi"
+import { apiGetUserLeaveById, apiGetUserProgramsAndActivities } from "../api/personalTimeStudyApi"
+import { personalTimeStudyKeys } from "../keys"
 import type { UserLeaveDaySnapshotResDto } from "../types"
 import type { EmployeeLeaveRequestFormValues } from "../schema/PersonalTimeStudySchema"
 
@@ -29,6 +31,7 @@ type PersonalTimeStudyLeaveCardProps = {
   /** From user profile — enables multicode program/activity flow in leave dialog. */
   allowMultiCodes?: boolean
   onOpen?: () => void
+  onDropdownOpen?: () => void
   dateStr?: string
   month?: number
   year?: number
@@ -46,6 +49,7 @@ export function PersonalTimeStudyLeaveCard({
   dropdownData,
   allowMultiCodes,
   onOpen,
+  onDropdownOpen,
   dateStr = "",
   month = 1,
   year = (() => { const _n = new Date(); return _n.getFullYear() })(),
@@ -65,6 +69,17 @@ export function PersonalTimeStudyLeaveCard({
   const [selectedStatus, setSelectedStatus] = useState<"approved" | "open" | "rejected" | null>(null)
   const [editingLeave, setEditingLeave] = useState<UserLeaveDaySnapshotResDto | null>(null)
   const [isFetchingDetail, setIsFetchingDetail] = useState(false)
+
+  const [leaveDropdownOpened, setLeaveDropdownOpened] = useState(false)
+  const leaveDropdownQuery = useQuery({
+    queryKey: [...personalTimeStudyKeys.dropdowns(userId), "leave-modal"],
+    queryFn: () => apiGetUserProgramsAndActivities(userId),
+    enabled: !!userId && leaveDropdownOpened,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+  })
 
   const { filteredLeaves, listTitle } = useMemo(() => {
     if (!selectedStatus) return { filteredLeaves: [], listTitle: "" }
@@ -198,28 +213,35 @@ export function PersonalTimeStudyLeaveCard({
         title={editingLeave ? (editingStatus?.toLowerCase() === "approved" ? "Edit Approved Leave Request" : "Edit Employee Leave Request") : "Employee Leave Request"}
         initialValues={initialValues}
         editingStatus={editingStatus}
-        dropdownData={dropdownData}
+        dropdownData={leaveDropdownQuery.data}
         userId={userId}
         allowMultiCodes={allowMultiCodes}
+        onDropdownOpen={() => {
+          if (!leaveDropdownOpened) {
+            setLeaveDropdownOpened(true)
+          } else {
+            leaveDropdownQuery.refetch()
+          }
+        }}
         editingLeave={editingLeave}
         onSave={async (values, lookupDropdown) => { 
           if (editingLeave) {
-            await updateMutation.mutateAsync({ id: (editingLeave as any).id, values, userId, dropdownData: lookupDropdown ?? dropdownData, status: "draft" })
+            await updateMutation.mutateAsync({ id: (editingLeave as any).id, values, userId, dropdownData: lookupDropdown ?? leaveDropdownQuery.data, status: "draft" })
           } else {
-            await saveMutation.mutateAsync({ values, userId, dropdownData: lookupDropdown ?? dropdownData }) 
+            await saveMutation.mutateAsync({ values, userId, dropdownData: lookupDropdown ?? leaveDropdownQuery.data }) 
           }
         }}
         onSubmit={async (values, lookupDropdown) => { 
           if (editingLeave) {
             const targetStatus = editingStatus?.toLowerCase() === "approved" ? "approved" : "requested"
-            await updateMutation.mutateAsync({ id: (editingLeave as any).id, values, userId, dropdownData: lookupDropdown ?? dropdownData, status: targetStatus })
+            await updateMutation.mutateAsync({ id: (editingLeave as any).id, values, userId, dropdownData: lookupDropdown ?? leaveDropdownQuery.data, status: targetStatus })
           } else {
-            await submitMutation.mutateAsync({ values, userId, dropdownData: lookupDropdown ?? dropdownData }) 
+            await submitMutation.mutateAsync({ values, userId, dropdownData: lookupDropdown ?? leaveDropdownQuery.data }) 
           }
         }}
         isSaving={saveMutation.isPending || (updateMutation.isPending && (editingStatus?.toLowerCase() !== "approved" && editingStatus?.toLowerCase() !== "requested"))}
         isSubmitting={submitMutation.isPending || (updateMutation.isPending && (editingStatus?.toLowerCase() === "approved" || editingStatus?.toLowerCase() === "requested"))}
-        isDropdownLoading={isDropdownLoading}
+        isDropdownLoading={leaveDropdownQuery.isFetching}
         isFetching={isFetchingDetail}
       />
 

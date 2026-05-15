@@ -1,43 +1,34 @@
 import { useMemo, useState } from "react"
 import { Controller, useFormContext } from "react-hook-form"
 
+import { Spinner } from "@/components/ui/spinner"
 import tableEmptyIcon from "@/assets/icons/table-empty.png"
 import { SingleSelectDropdown } from "@/components/ui/dropdown"
 
-import { supervisorPickerDisplayName } from "../api"
 import type {
-  AddEmployeeDepartmentSupervisorRow,
   SupervisorMenuOpen,
   SupervisorPickerOption,
-  UserModuleFormMode,
+  SupervisorAssignmentsPanelProps,
   UserModuleFormValues,
 } from "../types"
 
+import { useGetUserDetailsTab } from "../queries/get-add-employee"
 import {
-  useGetAddEmployeeDepartments,
-  useGetSupervisorsByDepartments,
-} from "../queries/get-add-employee"
+  parseUserDetailsTab3,
+  type UserDetailsTab3Dto,
+} from "../utility/refetchFormAfterTabSave"
 
-function dedupeSupervisorRowsFromApi(rows: AddEmployeeDepartmentSupervisorRow[]): SupervisorPickerOption[] {
+function supervisorOptionsFromTab3(tab3: UserDetailsTab3Dto): SupervisorPickerOption[] {
   const byId = new Map<string, string>()
-  for (const r of rows) {
-    const id = r.id?.trim()
-    if (!id) continue
-    const label = supervisorPickerDisplayName(r).trim()
-    if (!label) continue
+  for (const row of tab3.supervisors ?? []) {
+    const id = row.id?.trim()
+    const label = row.name?.trim() || row.loginId?.trim() || ""
+    if (!id || !label) continue
     if (!byId.has(id)) byId.set(id, label)
   }
   return [...byId.entries()]
     .map(([id, label]) => ({ id, label }))
     .sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: "base" }))
-}
-
-/** Include supervisors from GET /details (form fields) when the dept-based list is empty or omits them. */
-function coerceDepartmentIdForSupervisorsApi(id: string | number): number | null {
-  if (typeof id === "number" && Number.isInteger(id) && id >= 1) return id
-  const n = typeof id === "string" ? Number.parseInt(id, 10) : Number.NaN
-  if (Number.isInteger(n) && n >= 1) return n
-  return null
 }
 
 function mergeSupervisorCatalog(
@@ -63,88 +54,73 @@ const supervisorEmptyListSlot = (
   </div>
 )
 
-/** UI tab: Supervisor Assignments */
-export function SupervisorAssignmentsPanel({ mode }: { mode: UserModuleFormMode }) {
+/** UI tab: Supervisor Assignments — GET /users/:id/details/required?method=tab3 only. */
+export function SupervisorAssignmentsPanel({
+  mode,
+  supervisorContextUserId = null,
+}: SupervisorAssignmentsPanelProps) {
   const isAddMode = mode === "add"
+  const supervisorUserId = supervisorContextUserId?.trim() ?? ""
+  const tab3Query = useGetUserDetailsTab(supervisorUserId, "tab3", Boolean(supervisorUserId))
+  const tab3Data = useMemo(
+    () => (tab3Query.data ? parseUserDetailsTab3(tab3Query.data) : undefined),
+    [tab3Query.data],
+  )
+
   const [menuOpen, setMenuOpen] = useState<SupervisorMenuOpen>(null)
   const { control, setValue, watch } = useFormContext<UserModuleFormValues>()
-  const employeeName = `${watch("firstName") ?? ""} ${watch("lastName") ?? ""}`.trim()
 
-  const snapshots = watch("securityAssignedSnapshots") ?? []
-  const snapshotDepartmentIds = useMemo(
-    () =>
-      [...new Set(snapshots.map((s) => s.departmentId))].filter(
-        (n): n is number => Number.isInteger(n) && n >= 1,
-      ),
-    [snapshots],
-  )
+  const firstName = watch("firstName")
+  const lastName = watch("lastName")
+  const employeeName =
+    `${firstName ?? tab3Data?.firstName ?? ""} ${lastName ?? tab3Data?.lastName ?? ""}`.trim() ||
+    tab3Data?.name?.trim() ||
+    ""
 
-  const departmentsCatalogQuery = useGetAddEmployeeDepartments()
-  const catalogDepartmentIds = useMemo(() => {
-    const rows = departmentsCatalogQuery.data ?? []
-    const ids = rows
-      .map((d) => coerceDepartmentIdForSupervisorsApi(d.id))
-      .filter((n): n is number => n != null)
-    return [...new Set(ids)]
-  }, [departmentsCatalogQuery.data])
+  const formPrimaryId = (watch("supervisorPrimaryId") ?? "").trim()
+  const formSecondaryId = (watch("supervisorSecondaryId") ?? "").trim()
+  const formPrimaryLabel = (watch("supervisorPrimary") ?? "").trim()
+  const formSecondaryLabel = (watch("supervisorSecondary") ?? "").trim()
 
-  /** Security snapshots drive the list when present; otherwise load supervisors across all departments (e.g. details with empty departmentsRoles). */
-  const departmentIdsForSupervisors = useMemo(() => {
-    if (snapshotDepartmentIds.length > 0) return snapshotDepartmentIds
-    return catalogDepartmentIds
-  }, [snapshotDepartmentIds, catalogDepartmentIds])
-
-  const supervisorsFetchEnabled = departmentIdsForSupervisors.length > 0
-  const supervisorsQuery = useGetSupervisorsByDepartments(
-    departmentIdsForSupervisors,
-    supervisorsFetchEnabled,
-  )
-
-  const awaitingDepartmentsForSupervisorFallback =
-    snapshotDepartmentIds.length === 0 &&
-    (departmentsCatalogQuery.isPending || departmentsCatalogQuery.isFetching)
-
-  const isLoadingSupervisorOptions =
-    awaitingDepartmentsForSupervisorFallback ||
-    (supervisorsFetchEnabled && supervisorsQuery.isPending)
+  const effectivePrimaryId = formPrimaryId || tab3Data?.primarySupervisor?.id?.trim() || ""
+  const effectiveSecondaryId = formSecondaryId || tab3Data?.backupSupervisor?.id?.trim() || ""
+  const effectivePrimaryLabel =
+    formPrimaryLabel || tab3Data?.primarySupervisor?.name?.trim() || ""
+  const effectiveSecondaryLabel =
+    formSecondaryLabel || tab3Data?.backupSupervisor?.name?.trim() || ""
 
   const apiSupervisorOptions = useMemo((): SupervisorPickerOption[] => {
-    if (!supervisorsFetchEnabled || !supervisorsQuery.data) return []
-    return dedupeSupervisorRowsFromApi(supervisorsQuery.data)
-  }, [supervisorsFetchEnabled, supervisorsQuery.data])
-
-  const primarySupervisorId = (watch("supervisorPrimaryId") ?? "").trim()
-  const secondarySupervisorId = (watch("supervisorSecondaryId") ?? "").trim()
-  const supervisorPrimaryLabel = (watch("supervisorPrimary") ?? "").trim()
-  const supervisorSecondaryLabel = (watch("supervisorSecondary") ?? "").trim()
+    if (!tab3Data) return []
+    return supervisorOptionsFromTab3(tab3Data)
+  }, [tab3Data])
 
   const catalogOptions = useMemo(
     () =>
       mergeSupervisorCatalog(
         apiSupervisorOptions,
-        { id: primarySupervisorId, label: supervisorPrimaryLabel },
-        { id: secondarySupervisorId, label: supervisorSecondaryLabel },
+        { id: effectivePrimaryId, label: effectivePrimaryLabel },
+        { id: effectiveSecondaryId, label: effectiveSecondaryLabel },
       ),
     [
       apiSupervisorOptions,
-      primarySupervisorId,
-      secondarySupervisorId,
-      supervisorPrimaryLabel,
-      supervisorSecondaryLabel,
+      effectivePrimaryId,
+      effectiveSecondaryId,
+      effectivePrimaryLabel,
+      effectiveSecondaryLabel,
     ],
   )
 
   const primaryVisible = useMemo(() => {
-    const ex = secondarySupervisorId ? new Set([secondarySupervisorId]) : null
+    const ex = effectiveSecondaryId ? new Set([effectiveSecondaryId]) : null
     if (!ex?.size) return catalogOptions
     return catalogOptions.filter((o) => !ex.has(o.id))
-  }, [catalogOptions, secondarySupervisorId])
+  }, [catalogOptions, effectiveSecondaryId])
 
   const secondaryVisible = useMemo(() => {
-    const ex = primarySupervisorId ? new Set([primarySupervisorId]) : null
+    const ex = effectivePrimaryId ? new Set([effectivePrimaryId]) : null
     if (!ex?.size) return catalogOptions
     return catalogOptions.filter((o) => !ex.has(o.id))
-  }, [catalogOptions, primarySupervisorId])
+  }, [catalogOptions, effectivePrimaryId])
 
   const openChange = (which: "primary" | "secondary", open: boolean) => {
     if (open) setMenuOpen(which)
@@ -154,18 +130,26 @@ export function SupervisorAssignmentsPanel({ mode }: { mode: UserModuleFormMode 
   const toSelectOptions = (opts: SupervisorPickerOption[]) =>
     opts.map((o) => ({ value: o.id, label: o.label, key: o.id }))
 
+  const isLoadingSupervisorOptions = Boolean(supervisorUserId) && tab3Query.isLoading
+
   return (
-    <div className="pt-1">
+    <div className="relative pt-1">
+      {isLoadingSupervisorOptions ? (
+        <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/60">
+          <Spinner className="text-[#6C5DD3]" />
+        </div>
+      ) : null}
+
       {!isAddMode ? (
         <p className="mb-5 select-none text-[12px] font-semibold uppercase text-[#111827]">
           {employeeName}
         </p>
       ) : null}
-      {supervisorsFetchEnabled && supervisorsQuery.isError ? (
+      {tab3Query.isError ? (
         <p className="mb-3 text-[11px] text-red-500" role="alert">
-          {supervisorsQuery.error instanceof Error
-            ? supervisorsQuery.error.message
-            : "Failed to load supervisors"}
+          {tab3Query.error instanceof Error
+            ? tab3Query.error.message
+            : "Failed to load supervisor details"}
         </p>
       ) : null}
       <div className="grid max-w-[620px] grid-cols-2 gap-2 pt-2">
@@ -178,7 +162,7 @@ export function SupervisorAssignmentsPanel({ mode }: { mode: UserModuleFormMode 
                 Primary Supervisor
               </p>
               <SingleSelectDropdown
-                value={(idField.value ?? "").trim()}
+                value={effectivePrimaryId}
                 onChange={(id) => {
                   idField.onChange(id)
                   const opt = primaryVisible.find((o) => o.id === id)
@@ -211,7 +195,7 @@ export function SupervisorAssignmentsPanel({ mode }: { mode: UserModuleFormMode 
                 Backup Supervisor
               </p>
               <SingleSelectDropdown
-                value={(idField.value ?? "").trim()}
+                value={effectiveSecondaryId}
                 onChange={(id) => {
                   idField.onChange(id)
                   const opt = secondaryVisible.find((o) => o.id === id)

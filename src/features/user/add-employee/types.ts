@@ -77,6 +77,38 @@ export type AddEmployeeSecurityRoleCatalogItem = {
   department: string
 }
 
+/** GET /departments/assignedDepartment/roles — assigned + unassigned lists for Security tab. */
+export type SecurityAssignedSnapshot = {
+  id: string
+  name: string
+  departmentId: number
+  department: string
+}
+
+export type SecurityDepartmentRolesQueryResult = {
+  unassigned: AddEmployeeSecurityRoleCatalogItem[]
+  assignedSnapshots: SecurityAssignedSnapshot[]
+}
+
+/** GET /users/:id/details/required?method=tab2 — Security / Assignments tab slice. */
+export type UserDetailsTab2DepartmentRoleDto = {
+  id: number
+  departmentId: number
+  roleId: number
+  department: { id: number; name: string }
+  role: { id: number; name: string }
+  apportioningRequired: boolean
+  apportioning?: number
+}
+
+export type UserDetailsTab2Dto = {
+  id: string
+  firstName: string
+  lastName: string
+  name: string
+  departmentsRoles: UserDetailsTab2DepartmentRoleDto[]
+}
+
 /** POST /userdepartmentrole/assign/roles and …/unassign/roles body (per department). */
 export type UserDepartmentRoleRefPayload = { id: string }
 
@@ -129,16 +161,17 @@ export type AddEmployeeTimeStudyProgramRow = {
   isMultiCode?: boolean
 }
 
-/** GET /timestudyprograms/user/programs-activities?userId= — program row per department bundle. */
+/** GET /timestudyprogram/user/programs-activities-with-assignments — program row. */
 export type UserProgramsActivitiesProgramItem = {
   id: number
   code: string
   name: string
   departmentId: number
+  parentId?: number | null
   isMultiCode?: boolean
 }
 
-/** GET /timestudyprograms/user/programs-activities?userId= — activity row per department bundle. */
+/** Activity row (ActivityDepartment id) nested under an assigned program. */
 export type UserProgramsActivitiesActivityItem = {
   id: number
   code: string
@@ -146,13 +179,21 @@ export type UserProgramsActivitiesActivityItem = {
   departmentId: number
 }
 
-/** One department’s programs + activities for the user-scoped time study endpoint. */
+export type UserProgramsActivitiesAssignedSplit<T> = {
+  assigned: T[]
+  unassigned: T[]
+}
+
+export type UserProgramsActivitiesProgramWithAssignments = UserProgramsActivitiesProgramItem & {
+  children: UserProgramsActivitiesAssignedSplit<UserProgramsActivitiesActivityItem>
+}
+
+/** One department bundle from GET …/programs-activities-with-assignments. */
 export type UserProgramsActivitiesDepartmentBundle = {
   departmentId: number
   departmentCode: string
   departmentName: string
-  programs: UserProgramsActivitiesProgramItem[]
-  activities: UserProgramsActivitiesActivityItem[]
+  programs: UserProgramsActivitiesAssignedSplit<UserProgramsActivitiesProgramWithAssignments>
 }
 
 /** POST /users/new/assign/program and …/unassign/program */
@@ -247,6 +288,8 @@ export type SaveGatedTab = "employee" | "security" | "supervisor"
 export type UseAddEmployeeFormParams = {
   mode: UserModuleFormMode
   initialValues: UserModuleFormValues
+  /** User id for Security / Supervisor tab APIs (edit or draft). */
+  securityContextUserId?: string | null
   onSave: (payload: AddEmployeeSavePayload) => void | Promise<AddEmployeeSaveSync | void>
 }
 
@@ -341,6 +384,12 @@ export type SecurityAssignmentsPanelProps = {
   allowUnassignedQueryWithoutUserId: boolean
   /** Add mode: fired after a successful role transfer (API or local). */
   onAddModeTransferSucceeded?: () => void
+}
+
+export type SupervisorAssignmentsPanelProps = {
+  mode: UserModuleFormMode
+  /** User id for GET …/details/required?method=tab3 (edit / draft). */
+  supervisorContextUserId?: string | null
 }
 
 export type SupervisorMenuOpen = "primary" | "secondary" | null
