@@ -1,10 +1,10 @@
 import { useQuery } from "@tanstack/react-query"
 
 import { jobClassificationKeys } from "../keys"
-import { getJobClassifications } from "../api/jobclassification"
+import { getJobClassifications, getAllJobClassifications } from "../api/jobclassification"
 import type { GetJobClassificationsParams } from "../types"
 
-export function useGetJobClassifications(params: GetJobClassificationsParams) {
+export function useGetJobClassifications(params: GetJobClassificationsParams, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: jobClassificationKeys.list(params),
     queryFn: () => getJobClassifications(params),
@@ -13,5 +13,15 @@ export function useGetJobClassifications(params: GetJobClassificationsParams) {
     refetchOnMount: "always",
     refetchOnWindowFocus: "always",
     refetchOnReconnect: true,
+    ...options,
+  })
+}
+
+export function useGetAllJobClassifications(search?: string, options?: { enabled?: boolean }) {
+  return useQuery({
+    queryKey: [...jobClassificationKeys.all, "all", search || undefined] as const,
+    queryFn: () => getAllJobClassifications(search),
+    staleTime: 30_000,
+    ...options,
   })
 }

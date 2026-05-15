@@ -1,5 +1,6 @@
 import { Search, Check } from "lucide-react"
 import { TitleCaseInput } from "@/components/ui/title-case-input"
+import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { toTitleCase } from "@/lib/utils"
 import tableEmptyIcon from "@/assets/icons/table-empty.png"
@@ -64,17 +65,13 @@ export function TransferPanel({
       {/* Search/Input Area */}
       <div className="p-3 border-b border-[#E5E7EB]">
         <div className={`relative ${isSearchDisabled ? "cursor-not-allowed!" : ""}`}>
-          {!isActivity && (
-            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#9CA3AF]" />
-          )}
-          <TitleCaseInput
-            placeholder={isActivity ? "" : "Search here"}
+          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#9CA3AF]" />
+          <Input
+            placeholder="Search here"
             value={searchValue}
             onChange={(e) => onSearchChange(e.target.value)}
             disabled={isSearchDisabled}
-            className={`h-11 rounded-[8px] border-[#E5E7EB] text-[13px] placeholder:text-[#9CA3AF] focus-visible:ring-1 focus-visible:ring-[#6C5DD3] transition-all ${
-              !isActivity ? "pl-9" : "px-3"
-            } ${isSearchDisabled ? "bg-[#F3F4F6] cursor-not-allowed! opacity-100 placeholder:opacity-50" : "bg-white"}`}
+            className={`h-11 rounded-[8px] border-[#E5E7EB] text-[13px] pl-9 placeholder:text-[#9CA3AF] focus-visible:ring-1 focus-visible:ring-[#6C5DD3] transition-all ${isSearchDisabled ? "bg-[#F3F4F6] cursor-not-allowed! opacity-100 placeholder:opacity-50" : "bg-white"}`}
           />
         </div>
       </div>

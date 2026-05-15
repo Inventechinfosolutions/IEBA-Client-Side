@@ -1,29 +1,41 @@
 import { useMemo, useState } from "react"
 import { TransferPanel } from "./TransferPanel"
 import type { EmployeeSectionProps } from "../../types"
-import { useGetJobClassifications } from "../../../job-classification/queries/getJobClassifications"
-
-export function EmployeeSection({ form }: EmployeeSectionProps) {
+import { useGetAllJobClassifications } from "../../../job-classification/queries/getJobClassifications"
+export function EmployeeSection({ 
+  form, 
+  mode,
+  assignedUserDetails, 
+  unassignedUserDetails 
+}: EmployeeSectionProps) {
   const selectedDept = form.watch("department")
 
 
-  // Fetch ALL classifications (no dept filter) so users are always found
-  const { data: jobClassesData } = useGetJobClassifications({
-    page: 1,
-    pageSize: 10000,
-    search: "",
-    inactiveOnly: false,
-  })
-
   const [searchU, setSearchU] = useState("")
   const [searchA, setSearchA] = useState("")
+
+  const shouldFetch = !!selectedDept && (mode === "add" || !!searchU || !!searchA);
+
+  // Fetch ALL classifications (no dept filter) so users are always found
+  const { data: jobClassesData } = useGetAllJobClassifications(undefined, { enabled: shouldFetch })
 
   const assignedEmployeeIds = form.watch("assignedEmployeeIds") || []
 
   const allUsersMap = useMemo(() => {
     const map = new Map()
     if (!selectedDept) return map
-    const items = jobClassesData?.items ?? []
+
+    // Seed with initial details
+    const assigned = assignedUserDetails || [];
+    const unassigned = unassignedUserDetails || [];
+    [...assigned, ...unassigned].forEach(u => {
+      if (u.id && !map.has(u.id)) {
+        map.set(u.id, { id: u.id, name: u.name || `${u.firstName} ${u.lastName}`.trim() });
+      }
+    });
+
+    // Merge with API data
+    const items = jobClassesData ?? []
     items
       .flatMap(jc => jc.users || [])
       .forEach(u => {
@@ -32,7 +44,7 @@ export function EmployeeSection({ form }: EmployeeSectionProps) {
         }
       })
     return map
-  }, [jobClassesData, selectedDept])
+  }, [jobClassesData, selectedDept, assignedUserDetails, unassignedUserDetails])
 
   const assignedUsers = useMemo(() => {
     return assignedEmployeeIds

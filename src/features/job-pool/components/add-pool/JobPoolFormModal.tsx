@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dialog"
 import { Spinner } from "@/components/ui/spinner"
 import { TitleCaseInput } from "@/components/ui/title-case-input"
-import { useGetDepartments } from "@/features/department/queries/getDepartments"
+import { useGetDepartmentsAll } from "@/features/department/queries/getDepartments"
 import { usePermissions } from "@/hooks/usePermissions"
 
 import { jobPoolFormSchema } from "../../schemas"
@@ -32,6 +32,11 @@ export function JobPoolFormModal({
   onSave,
   assignedActivityDetails,
   unassignedActivityDetails,
+  assignedJobClassificationDetails,
+  unassignedJobClassificationDetails,
+  assignedUserDetails,
+  unassignedUserDetails,
+  departmentName,
 }: JobPoolFormModalProps) {
   const { isDepartmentAdmin, assignedDepartmentIds } = usePermissions()
   const form = useForm<JobPoolFormValues>({
@@ -64,10 +69,10 @@ export function JobPoolFormModal({
   const {
     data: activeDepartmentsData,
     isLoading: isDepartmentsLoading,
-  } = useGetDepartments({ status: "active", page: 1, limit: 100 }, { enabled: open })
+  } = useGetDepartmentsAll({ status: "active" }, { enabled: open && mode !== "edit" })
 
   const activeDepartments = useMemo(() => {
-    const items = activeDepartmentsData?.items ?? []
+    const items = activeDepartmentsData ?? []
     if (isDepartmentAdmin) {
       const allowedSet = new Set(assignedDepartmentIds.map((id: number | string) => String(id)))
       return items.filter((dept: any) => allowedSet.has(String(dept.id)))
@@ -142,6 +147,7 @@ export function JobPoolFormModal({
                       id="jp-department-trigger"
                       value={
                         selectedDepartmentLabel ||
+                        (mode === "edit" ? departmentName : "") ||
                         activeDepartments.find(d => String(d.id) === String(form.watch("department")))?.name ||
                         ""
                       }
@@ -242,14 +248,27 @@ export function JobPoolFormModal({
                   
                   return (
                     <>
-                      <JobClassificationSection form={form} departmentName={currentDeptName} />
-                      <ActivitySection 
+                      <JobClassificationSection 
                         form={form} 
+                        departmentName={currentDeptName} 
+                        mode={mode}
+                        assignedJobClassificationDetails={assignedJobClassificationDetails}
+                        unassignedJobClassificationDetails={unassignedJobClassificationDetails}
+                      />
+                      <ActivitySection 
+                        form={form}
+                        mode={mode}
                         departmentName={currentDeptName} 
                         assignedActivityDetails={assignedActivityDetails}
                         unassignedActivityDetails={unassignedActivityDetails}
                       />
-                      <EmployeeSection form={form} departmentName={currentDeptName} />
+                      <EmployeeSection 
+                        form={form} 
+                        departmentName={currentDeptName} 
+                        mode={mode}
+                        assignedUserDetails={assignedUserDetails}
+                        unassignedUserDetails={unassignedUserDetails}
+                      />
                     </>
                   )
                 })()}

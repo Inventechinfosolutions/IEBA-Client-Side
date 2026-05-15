@@ -14,9 +14,6 @@ export function useCreateJobPool() {
       await queryClient.invalidateQueries({
         queryKey: jobPoolKeys.lists(),
       })
-      await queryClient.invalidateQueries({
-        queryKey: ["jobClassification"],
-      })
     },
   })
 }

@@ -247,4 +247,10 @@ export type GetDepartmentsListResult = {
   total: number
 }
 
+export type DepartmentAllQueryDto = {
+  status?: string
+  search?: string
+  sort?: string
+}
+
 export type { DepartmentApiListSortOrder, DepartmentApiRecordStatus }

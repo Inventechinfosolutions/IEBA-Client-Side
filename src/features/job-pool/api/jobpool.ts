@@ -52,105 +52,148 @@ type JobPoolDepartmentResDto = {
 }
 
 type JobPoolResDto = {
-  id?: number
-  name?: string
-  description?: string | null
-  status?: unknown
-  departmentId?: number
-  jobClassifications?: number[]
-  activities?: number[]
-  users?: string[]
-  jobClassificationDetails?: JobPoolJobClassificationResDto[]
-  activityDetails?: JobPoolActivityResDto[]
-  assignedActivityDetails?: JobPoolActivityResDto[]
-  unassignedActivityDetails?: JobPoolActivityResDto[]
-  userDetails?: JobPoolUserResDto[]
-  department?: JobPoolDepartmentResDto
-}
+  id?: number;
+  name?: string;
+  description?: string | null;
+  status?: unknown;
+  departmentId?: number;
+  jobClassifications?: number[];
+  activities?: number[];
+  users?: string[];
+  jobClassificationDetails?: JobPoolJobClassificationResDto[];
+  assignedJobClassificationDetails?: JobPoolJobClassificationResDto[];
+  unassignedJobClassificationDetails?: JobPoolJobClassificationResDto[];
+  activityDetails?: JobPoolActivityResDto[];
+  assignedActivityDetails?: JobPoolActivityResDto[];
+  unassignedActivityDetails?: JobPoolActivityResDto[];
+  userDetails?: JobPoolUserResDto[];
+  assignedUserDetails?: JobPoolUserResDto[];
+  unassignedUserDetails?: JobPoolUserResDto[];
+  department?: JobPoolDepartmentResDto;
+};
 
 type JobPoolListResponseDto = {
-  data?: JobPoolResDto[]
-  meta?: PaginationMeta
-}
+  data?: JobPoolResDto[];
+  meta?: PaginationMeta;
+};
 
 type CreateJobPoolReqDto = {
-  name: string
-  description?: string
-  status?: string
-  departmentId: number
-  jobClassifications?: number[]
-  activities?: number[]
-  users?: string[]
-}
+  name: string;
+  description?: string;
+  status?: string;
+  departmentId: number;
+  jobClassifications?: number[];
+  activities?: number[];
+  users?: string[];
+};
 
-type UpdateJobPoolReqDto = Partial<CreateJobPoolReqDto>
+type UpdateJobPoolReqDto = Partial<CreateJobPoolReqDto>;
 
 function toJobClassificationTag(dto: JobPoolJobClassificationResDto): JobClassificationTag {
-  const id = dto.id == null ? "" : String(dto.id)
-  const code = typeof dto.code === "string" ? dto.code : ""
-  const name = typeof dto.name === "string" ? dto.name : ""
+  const id = dto.id == null ? "" : String(dto.id);
+  const code = typeof dto.code === "string" ? dto.code : "";
+  const name = typeof dto.name === "string" ? dto.name : "";
 
   return {
     id,
     name: code && name ? `${code} | ${name}` : code || name || id,
     status: typeof dto.status === "string" ? dto.status : undefined,
-  }
+  };
 }
 
 function isActiveStatus(status: unknown): boolean {
   if (typeof status === "string") {
-    return status.toLowerCase() === "active"
+    return status.toLowerCase() === "active";
   }
-  return true
+  return true;
 }
 
 function toJobPoolRow(dto: JobPoolResDto): JobPoolRow {
-  const idRaw = dto.id
-  const nameRaw = dto.name
+  const idRaw = dto.id;
+  const nameRaw = dto.name;
 
   const departmentName =
     typeof dto.department?.name === "string"
       ? dto.department.name
       : dto.departmentId != null
         ? String(dto.departmentId)
-        : ""
+        : "";
 
-  const jobClassificationDetails = Array.isArray(dto.jobClassificationDetails)
-    ? dto.jobClassificationDetails
-    : []
+  const jobClassificationDetails = Array.isArray(dto.assignedJobClassificationDetails)
+    ? dto.assignedJobClassificationDetails
+    : Array.isArray(dto.jobClassificationDetails)
+      ? dto.jobClassificationDetails
+      : [];
 
   const jobClassifications: JobClassificationTag[] = jobClassificationDetails.map((item) =>
     toJobClassificationTag(item),
-  )
+  );
 
   const jobClassificationName = jobClassificationDetails.map((item) => ({
     name: typeof item.name === "string" ? item.name : "",
-    status:
-      typeof item.status === "string"
-        ? item.status
-        : "active",
-  }))
+    status: typeof item.status === "string" ? item.status : "active",
+  }));
 
-  const activities = Array.isArray(dto.activities) ? dto.activities : []
-  const users = Array.isArray(dto.users) ? dto.users : []
-  const userDetails = Array.isArray(dto.userDetails) ? dto.userDetails : []
-
-  // Assigned/unassigned activity details come from getById; map them if present
   const assignedActivityDetails = Array.isArray(dto.assignedActivityDetails)
-    ? dto.assignedActivityDetails.map((a) => ({ id: String(a.id ?? ""), name: a.name ?? "", code: a.code ?? "" }))
-    : undefined
+    ? dto.assignedActivityDetails.map((a) => ({
+        id: String(a.id ?? ""),
+        name: a.name ?? "",
+        code: a.code ?? "",
+      }))
+    : undefined;
 
   const unassignedActivityDetails = Array.isArray(dto.unassignedActivityDetails)
-    ? dto.unassignedActivityDetails.map((a) => ({ id: String(a.id ?? ""), name: a.name ?? "", code: a.code ?? "" }))
-    : undefined
+    ? dto.unassignedActivityDetails.map((a) => ({
+        id: String(a.id ?? ""),
+        name: a.name ?? "",
+        code: a.code ?? "",
+      }))
+    : undefined;
 
-  const userprofiles = userDetails.map((user) => ({
+  const activities = Array.isArray(dto.activities)
+    ? dto.activities
+    : assignedActivityDetails
+      ? assignedActivityDetails.map((a) => Number(a.id))
+      : [];
+
+  const assignedUserDetails = Array.isArray(dto.assignedUserDetails)
+    ? dto.assignedUserDetails
+    : Array.isArray(dto.userDetails)
+      ? dto.userDetails
+      : [];
+
+  const users = Array.isArray(dto.users)
+    ? dto.users
+    : assignedUserDetails
+      ? assignedUserDetails.map((u) => String(u.id ?? ""))
+      : [];
+
+  const unassignedJobClassificationDetails = Array.isArray(dto.unassignedJobClassificationDetails)
+    ? dto.unassignedJobClassificationDetails.map((jc) => ({
+        id: String(jc.id ?? ""),
+        name: jc.name ?? "",
+        code: jc.code ?? "",
+        status: typeof jc.status === "string" ? jc.status : "active",
+      }))
+    : [];
+
+  const unassignedUserDetails = Array.isArray(dto.unassignedUserDetails)
+    ? dto.unassignedUserDetails.map((u) => ({
+        id: u.id ?? "",
+        firstName: u.firstName ?? undefined,
+        lastName: u.lastName ?? undefined,
+        name: u.name ?? undefined,
+        status: u.status ?? undefined,
+      }))
+    : [];
+
+  const userprofiles = assignedUserDetails.map((user) => ({
     id: user.id ?? "",
     name: user.name ?? undefined,
     firstName: user.firstName ?? undefined,
     lastName: user.lastName ?? undefined,
     status: user.status ?? undefined,
-  }))
+  }));
 
   return {
     id: idRaw == null ? "" : String(idRaw),
@@ -167,7 +210,22 @@ function toJobPoolRow(dto: JobPoolResDto): JobPoolRow {
     userprofiles,
     assignedActivityDetails,
     unassignedActivityDetails,
-  }
+    assignedJobClassificationDetails: jobClassificationDetails.map((jc) => ({
+      id: String(jc.id ?? ""),
+      name: jc.name ?? "",
+      code: jc.code ?? "",
+      status: typeof jc.status === "string" ? jc.status : "active",
+    })),
+    unassignedJobClassificationDetails,
+    assignedUserDetails: assignedUserDetails.map((u) => ({
+      id: u.id ?? "",
+      firstName: u.firstName ?? undefined,
+      lastName: u.lastName ?? undefined,
+      name: u.name ?? undefined,
+      status: u.status ?? undefined,
+    })),
+    unassignedUserDetails,
+  };
 }
 
 export async function getJobPools(params: GetJobPoolsParams): Promise<JobPoolListResponse> {
@@ -272,3 +330,25 @@ export async function getJobPoolById(id: string): Promise<JobPoolRow> {
   return toJobPoolRow(payload as JobPoolResDto)
 }
 
+export async function getJobPoolActivitiesByDepartment(
+  departmentId: number,
+  search?: string
+): Promise<{ id: string; name: string; code: string }[]> {
+  const params = new URLSearchParams({
+    departmentId: String(departmentId),
+  })
+  if (search?.trim()) {
+    params.set("search", search.trim())
+  }
+  
+  const raw = await api.get<{ data?: { id: number; name: string; code: string }[] }>(
+    `/activity-departments/all?${params.toString()}`
+  )
+  
+  const list = Array.isArray(raw?.data) ? raw.data : []
+  return list.map(a => ({
+    id: String(a.id),
+    name: a.name,
+    code: a.code,
+  }))
+}
