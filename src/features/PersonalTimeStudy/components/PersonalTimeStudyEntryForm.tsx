@@ -163,6 +163,8 @@ type PersonalTimeStudyEntryFormProps = {
   }>
   isApportioningUser?: boolean
   isLoading?: boolean
+  apportioningConfig?: SupervisorApportioningConfig | null
+  apportioningRecords?: any[]
 }
 
 function TimePicker24h({
@@ -308,6 +310,8 @@ export function PersonalTimeStudyEntryForm({
   className,
   isApportioningUser = false,
   isLoading = false,
+  apportioningConfig = null,
+  apportioningRecords,
 }: PersonalTimeStudyEntryFormProps) {
   const { user } = useAuth()
   const userId = propsUserId || user?.id || ""
@@ -1235,7 +1239,7 @@ export function PersonalTimeStudyEntryForm({
             const mins = Number(computeDurationMinutes(p.start, p.end)) || 0
             return sum + mins
           }, 0)}
-          apportioningRecords={apportioningRecords?.filter(r => r.date === dateStr) || []}
+          apportioningRecords={apportioningRecords?.filter((r: { date?: string }) => r.date === dateStr) || []}
         />
       )}
 
