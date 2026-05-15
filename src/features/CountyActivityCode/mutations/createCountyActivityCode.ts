@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 import { apiPostCountyActivity } from "../api/countyActivityApi"
 import { CountyActivityGridRowType } from "../enums/CountyActivity.enum"
+import { countyActivityCodeKeys } from "../keys"
 import type { CreateCountyActivityApiInput } from "../types"
 
 import {
@@ -17,9 +18,10 @@ export function useCreateCountyActivityCode() {
     onSuccess: (data, variables) => {
       if (variables.tab === CountyActivityGridRowType.PRIMARY) {
         applyCountyActivityQueryCacheAfterPrimaryCreate(queryClient, variables, data)
-        return
+      } else {
+        applyCountyActivityQueryCacheAfterSubCreate(queryClient, variables, data)
       }
-      applyCountyActivityQueryCacheAfterSubCreate(queryClient, variables, data)
+      void queryClient.invalidateQueries({ queryKey: countyActivityCodeKeys.all })
     },
   })
 }

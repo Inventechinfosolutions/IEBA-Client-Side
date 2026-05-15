@@ -46,6 +46,7 @@ export type CountyActivityCodeRow = {
   docRequired: boolean
   multipleJobPools: boolean
   apportioning: boolean
+  apportioningDepartments: { name: string; apportioning: boolean }[]
   rowType: CountyActivityGridRowType
   parentId?: string | null
 }
@@ -144,6 +145,7 @@ export type ApiActivityDepartmentResDto = {
   parentId?: number | null
   apportioning: boolean
   department?: {
+    name?: string
     apportioning: boolean
   }
 }
@@ -151,6 +153,7 @@ export type ApiActivityDepartmentResDto = {
 export type CountyActivityEditPayload = {
   activity: ApiActivityResDto
   departmentNames: string[]
+  apportioningDepartments: { name: string; apportioning: boolean }[]
 }
 
 /** Context for merging copy-from-master and sub-primary defaults into the county activity add form before submit. */
@@ -291,6 +294,7 @@ export type CountyActivityCodeAddPageProps = {
   isEditSourceLoading?: boolean
   /** Sub add flow: loaded primary activity (seeds master / department on save). */
   subParentActivityDetail?: CountyActivityEditPayload | null
+  apportioningDepartments?: { name: string; apportioning: boolean }[]
   isSubmitting?: boolean
 }
 

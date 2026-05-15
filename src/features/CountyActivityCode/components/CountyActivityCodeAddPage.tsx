@@ -15,6 +15,12 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { SingleSelectDropdown } from "@/components/ui/dropdown"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { useGetActivityCodeById } from "@/features/master-code/queries/getMasterCodes"
 
 import {
@@ -34,14 +40,14 @@ import type {
 
 function stripHtmlTags(html: string): string {
   return html
-    .replace(/<[^>]*>/g, " ") 
+    .replace(/<[^>]*>/g, " ")
     .replace(/&nbsp;/gi, " ")
     .replace(/&amp;/gi, "&")
     .replace(/&lt;/gi, "<")
     .replace(/&gt;/gi, ">")
     .replace(/&quot;/gi, '"')
     .replace(/&#39;/gi, "'")
-    .replace(/\s{2,}/g, " ")   
+    .replace(/\s{2,}/g, " ")
     .trim()
 }
 
@@ -100,6 +106,7 @@ export function CountyActivityCodeAddPage({
   readOnlyPrimaryPicker = false,
   isEditSourceLoading = false,
   subParentActivityDetail = null,
+  apportioningDepartments = [],
   isSubmitting = false,
 }: CountyActivityCodeAddPageProps) {
   const [uncontrolledTab, setUncontrolledTab] = useState<CountyActivityGridRowType>(
@@ -280,13 +287,11 @@ export function CountyActivityCodeAddPage({
           type="button"
           disabled={disabledTabs?.primary === true}
           onClick={() => setTab(CountyActivityGridRowType.PRIMARY)}
-          className={`h-[62px] text-[18px] font-normal ${
-            tab === CountyActivityGridRowType.PRIMARY
+          className={`h-[62px] text-[18px] font-normal ${tab === CountyActivityGridRowType.PRIMARY
               ? "bg-[#6C5DD3] text-white"
               : "bg-white text-[#6C5DD3]"
-          } rounded-tl-[10px] ${
-            disabledTabs?.primary === true ? "cursor-not-allowed opacity-60" : ""
-          }`}
+            } rounded-tl-[10px] ${disabledTabs?.primary === true ? "cursor-not-allowed opacity-60" : ""
+            }`}
         >
           Primary County Activity Code
         </button>
@@ -294,13 +299,11 @@ export function CountyActivityCodeAddPage({
           type="button"
           disabled={disabledTabs?.sub === true}
           onClick={() => setTab(CountyActivityGridRowType.SUB)}
-          className={`h-[62px] text-[18px] font-normal ${
-            tab === CountyActivityGridRowType.SUB
+          className={`h-[62px] text-[18px] font-normal ${tab === CountyActivityGridRowType.SUB
               ? "bg-[#6C5DD3] text-white"
               : "bg-white text-[#6C5DD3]"
-          } rounded-tr-[18px] ${
-            disabledTabs?.sub === true ? "cursor-not-allowed opacity-60" : ""
-          }`}
+            } rounded-tr-[18px] ${disabledTabs?.sub === true ? "cursor-not-allowed opacity-60" : ""
+            }`}
         >
           Sub County Activity Code
         </button>
@@ -412,7 +415,7 @@ export function CountyActivityCodeAddPage({
                     form.watch("masterCode") > 0 ? String(form.watch("masterCode")) : ""
                   }
                   onChange={(value) => form.setValue("masterCode", Number(value))}
-                  onBlur={() => {}}
+                  onBlur={() => { }}
                   options={masterCodeOptions.map((item) => ({
                     value: String(item.value),
                     label: item.label,
@@ -431,9 +434,8 @@ export function CountyActivityCodeAddPage({
                 </label>
                 <TitleCaseInput
                   readOnly={primaryFieldsLocked}
-                  className={`h-[48px] w-full rounded-[10px] border-[#D9D9D9] ${
-                    primaryFieldsLocked ? "cursor-not-allowed bg-muted/50" : ""
-                  }`}
+                  className={`h-[48px] w-full rounded-[10px] border-[#D9D9D9] ${primaryFieldsLocked ? "cursor-not-allowed bg-muted/50" : ""
+                    }`}
                   value={displayCountyActivityCode}
                   onChange={(event) =>
                     primaryFieldsLocked
@@ -453,9 +455,8 @@ export function CountyActivityCodeAddPage({
                 </label>
                 <TitleCaseInput
                   readOnly={primaryFieldsLocked}
-                  className={`h-[48px] w-full rounded-[10px] border-[#D9D9D9] ${
-                    primaryFieldsLocked ? "cursor-not-allowed bg-muted/50" : ""
-                  }`}
+                  className={`h-[48px] w-full rounded-[10px] border-[#D9D9D9] ${primaryFieldsLocked ? "cursor-not-allowed bg-muted/50" : ""
+                    }`}
                   value={displayCountyActivityName}
                   onChange={(event) =>
                     primaryFieldsLocked
@@ -527,9 +528,8 @@ export function CountyActivityCodeAddPage({
             <label className="text-[14px] font-normal text-[#1F2937]">Description</label>
             <textarea
               readOnly={primaryFieldsLocked}
-              className={`min-h-[100px] w-full rounded-[10px] border border-[#D9D9D9] px-4 py-3 text-[15px] outline-none ${
-                primaryFieldsLocked ? "cursor-not-allowed bg-muted/50" : ""
-              }`}
+              className={`min-h-[100px] w-full rounded-[10px] border border-[#D9D9D9] px-4 py-3 text-[15px] outline-none ${primaryFieldsLocked ? "cursor-not-allowed bg-muted/50" : ""
+                }`}
               value={displayDescription}
               onChange={(event) =>
                 primaryFieldsLocked
@@ -667,13 +667,38 @@ export function CountyActivityCodeAddPage({
                 />
                 <span>Documents Required?</span>
               </label>
-              <label className="flex items-center gap-2 text-[14px] text-[#1F2937]">
-                <Checkbox
-                  checked={form.watch("apportioning")}
-                  onCheckedChange={(checked) => form.setValue("apportioning", checked === true)}
-                />
-                <span>Apportioning?</span>
-              </label>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <label className="flex cursor-default items-center gap-2 text-[14px] text-[#1F2937]">
+                      <Checkbox
+                        checked={form.watch("apportioning")}
+                        onCheckedChange={(checked) => form.setValue("apportioning", checked === true)}
+                      />
+                      <span>Apportioning?</span>
+                    </label>
+                  </TooltipTrigger>
+                  {apportioningDepartments && apportioningDepartments.length > 0 && (
+                    <TooltipContent
+                      side="top"
+                      align="center"
+                      sideOffset={6}
+                      className="z-[300] !inline-block max-h-[min(20rem,70vh)] max-w-[min(20rem,70vw)] overflow-y-auto rounded-[8px] border-0 bg-black px-3 py-2.5 text-left text-[12px] font-medium leading-relaxed text-white shadow-lg"
+                    >
+                      <span className="block text-center whitespace-normal break-words font-semibold mb-1">
+                        Apportioning :
+                      </span>
+                      <ul className="list-disc pl-4 space-y-1 m-0">
+                        {apportioningDepartments.map((dept, idx) => (
+                          <li key={idx}>
+                            {dept.name} - {dept.apportioning ? "Yes" : "No"}
+                          </li>
+                        ))}
+                      </ul>
+                    </TooltipContent>
+                  )}
+                </Tooltip>
+              </TooltipProvider>
               <label className="flex items-center gap-2 text-[14px] text-[#A1A1AA]">
                 <Checkbox
                   checked={form.watch("multipleJobPools")}
