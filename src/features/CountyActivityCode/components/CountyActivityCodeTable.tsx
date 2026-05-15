@@ -74,6 +74,7 @@ import { apiPutCountyActivity, parseMasterCodeDisplay } from "../api/countyActiv
 
 import { usePermissions } from "@/hooks/usePermissions"
 import { useGetDepartments } from "@/features/department/queries/getDepartments"
+import { getDepartmentById } from "@/features/department/api/departments"
 
 function stripHtmlTags(html: string): string {
   return html
@@ -218,6 +219,12 @@ export function CountyActivityCodeTable({
   const [historyActivityCode, setHistoryActivityCode] = useState("")
   const [historyActivityName, setHistoryActivityName] = useState("")
 
+  // Apportioning confirmation dialog state
+  const [apportioningConfirmOpen, setApportioningConfirmOpen] = useState(false)
+  const [apportioningDeptNames, setApportioningDeptNames] = useState<string[]>([])
+  const [nonApportioningDeptNames, setNonApportioningDeptNames] = useState<string[]>([])
+  const [pendingSaveCallback, setPendingSaveCallback] = useState<(() => void) | null>(null)
+
   const [addOpen, setAddOpen] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
   const [rowToEdit, setRowToEdit] = useState<CountyActivityCodeRow | null>(null)
@@ -233,8 +240,8 @@ export function CountyActivityCodeTable({
   const addSubParentDetailQuery = useGetCountyActivityForEdit(
     currentPrimaryId,
     addOpen &&
-      addTab === CountyActivityGridRowType.SUB &&
-      Boolean(currentPrimaryId?.trim()),
+    addTab === CountyActivityGridRowType.SUB &&
+    Boolean(currentPrimaryId?.trim()),
   )
 
   const [sortBy, setSortBy] = useState<CountyActivityCodeSortableColumn | null>(
@@ -260,8 +267,8 @@ export function CountyActivityCodeTable({
   const editPrimaryDetailQuery = useGetCountyActivityForEdit(
     editSelectedPrimaryId,
     editOpen &&
-      rowToEdit?.rowType === CountyActivityGridRowType.SUB &&
-      Boolean(editSelectedPrimaryId?.trim()),
+    rowToEdit?.rowType === CountyActivityGridRowType.SUB &&
+    Boolean(editSelectedPrimaryId?.trim()),
   )
 
   const editSyncedMasterCodeType = useMemo(() => {
@@ -330,7 +337,7 @@ export function CountyActivityCodeTable({
     if (!editOpen || !rowToEdit) return undefined
 
     const isDetailReady = editDetailQuery.isSuccess && editDetailQuery.data && Number(editDetailQuery.data.activity.id) === Number(rowToEdit.id)
-    
+
     // Fallback to existing row data while waiting for full detail/hydration
     if (!isDetailReady || resolvedEditMasterCodeId === null) {
       return mapCountyActivityRowToFormValues(rowToEdit)
@@ -342,7 +349,7 @@ export function CountyActivityCodeTable({
       rowToEdit.rowType === CountyActivityGridRowType.SUB && rowToEdit.parentId
         ? primaryRows.find((r) => r.id === rowToEdit.parentId) ?? null
         : null
-    
+
     if (rowToEdit.rowType === CountyActivityGridRowType.PRIMARY) {
       return {
         copyCode: false,
@@ -438,9 +445,9 @@ export function CountyActivityCodeTable({
   const editMasterCodesQuery = useGetCountyActivityMasterCodes(
     editMasterCodesQueryType,
     editOpen &&
-      rowToEdit != null &&
-      rowToEdit.rowType !== CountyActivityGridRowType.SUB &&
-      editMasterCodesQueryType.trim().length > 0,
+    rowToEdit != null &&
+    rowToEdit.rowType !== CountyActivityGridRowType.SUB &&
+    editMasterCodesQueryType.trim().length > 0,
   )
 
   const editMasterCodeOptions = useMemo(
@@ -536,47 +543,14 @@ export function CountyActivityCodeTable({
     activePrimaryCountyRows.find((r) => r.id === id) ??
     primaryRows.find((r) => r.id === id)
 
-  const submitCreateCountyActivityFromAddModal = (
+
+
+  const doCreateCountyActivity = (
     tab: CountyActivityGridRowType,
     values: CountyActivityAddFormValues,
+    departmentLinks: { id: number; apportioning?: boolean }[],
+    masterCatalog: { code: string; type: string } | undefined,
   ) => {
-    const assignedNames = values.department
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean)
-    const departmentLinks = assignedNames
-      .map((name) => departmentIdByName[name])
-      .filter((id): id is number => typeof id === "number" && !Number.isNaN(id))
-      .map((id) => ({ id }))
-
-    if (tab === CountyActivityGridRowType.PRIMARY) {
-      if (values.masterCode <= 0) {
-        toast.error("Select a master code")
-        return
-      }
-      const catalog = addMasterCodeOptions.find((o) => o.value === values.masterCode)
-      if (!catalog?.code) {
-        toast.error("Select a valid master code")
-        return
-      }
-    }
-
-    const masterCatalog =
-      tab === CountyActivityGridRowType.PRIMARY
-        ? {
-            code: addMasterCodeOptions.find((o) => o.value === values.masterCode)?.code ?? "",
-            type: values.masterCodeType,
-          }
-        : undefined
-
-    if (
-      tab === CountyActivityGridRowType.PRIMARY &&
-      (!masterCatalog?.code || !masterCatalog.type)
-    ) {
-      toast.error("Select a valid master code")
-      return
-    }
-
     createCountyActivityCode.mutate(
       {
         values,
@@ -628,7 +602,188 @@ export function CountyActivityCodeTable({
     )
   }
 
-  const submitCountyActivityEditFromEditModal = editForm.handleSubmit((values) => {
+  const submitCreateCountyActivityFromAddModal = async (
+    tab: CountyActivityGridRowType,
+    values: CountyActivityAddFormValues,
+  ) => {
+    const assignedNames = values.department
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean)
+    const departmentLinks = assignedNames
+      .map((name) => departmentIdByName[name])
+      .filter((id): id is number => typeof id === "number" && !Number.isNaN(id))
+      .map((id) => ({ id }))
+
+    if (tab === CountyActivityGridRowType.PRIMARY) {
+      if (values.masterCode <= 0) {
+        toast.error("Select a master code")
+        return
+      }
+      const catalog = addMasterCodeOptions.find((o) => o.value === values.masterCode)
+      if (!catalog?.code) {
+        toast.error("Select a valid master code")
+        return
+      }
+    }
+
+    const masterCatalog =
+      tab === CountyActivityGridRowType.PRIMARY
+        ? {
+          code: addMasterCodeOptions.find((o) => o.value === values.masterCode)?.code ?? "",
+          type: values.masterCodeType,
+        }
+        : undefined
+
+    if (
+      tab === CountyActivityGridRowType.PRIMARY &&
+      (!masterCatalog?.code || !masterCatalog.type)
+    ) {
+      toast.error("Select a valid master code")
+      return
+    }
+
+    // If apportioning is checked, verify department data with fresh API calls
+    if (values.apportioning && tab === CountyActivityGridRowType.PRIMARY && departmentLinks.length > 0) {
+      try {
+        // Fetch fresh data for all assigned departments to check apportioning status
+        const freshDepts = await Promise.all(
+          departmentLinks.map(link => getDepartmentById(String(link.id)))
+        )
+
+        const apportioningNames = freshDepts
+          .filter(d => d.settings?.apportioning === true)
+          .map(d => d.name.trim())
+
+        const nonApportioningNames = freshDepts
+          .filter(d => d.settings?.apportioning !== true)
+          .map(d => d.name.trim())
+
+        // Build enriched links with per-dept apportioning flag
+        const enrichedLinks = freshDepts.map(d => ({
+          id: Number(d.id),
+          apportioning: d.settings?.apportioning === true,
+        }))
+
+        // ONLY show popup if there's a mismatch (some departments don't have apportioning enabled)
+        if (apportioningNames.length < assignedNames.length) {
+          setApportioningDeptNames(apportioningNames)
+          setNonApportioningDeptNames(nonApportioningNames)
+          setPendingSaveCallback(() => () => {
+            doCreateCountyActivity(tab, values, enrichedLinks, masterCatalog)
+          })
+          setApportioningConfirmOpen(true)
+          return
+        }
+
+        // All departments support apportioning — save with enriched links
+        doCreateCountyActivity(tab, values, enrichedLinks, masterCatalog)
+        return
+      } catch (error) {
+        console.error("Failed to verify department apportioning status:", error)
+        // Fallback: proceed with regular save if API check fails
+      }
+    }
+
+    doCreateCountyActivity(tab, values, departmentLinks, masterCatalog)
+  }
+
+  const doUpdateCountyActivity = (
+    editingRow: CountyActivityCodeRow,
+    values: CountyActivityAddFormValues,
+    masterCatalog: { code: string; type: string } | undefined,
+    editDepartmentLinks: { id: number; apportioning?: boolean }[],
+  ) => {
+    const isPrimary = editingRow.rowType === CountyActivityGridRowType.PRIMARY
+    const wasActive = editingRow.active
+    const isBecomingActive = values.active
+
+    updateCountyActivityCode.mutate(
+      {
+        id: editingRow.id,
+        values,
+        rowType: editingRow.rowType,
+        masterCatalog,
+        departmentLinks:
+          editingRow.rowType === CountyActivityGridRowType.PRIMARY
+            ? editDepartmentLinks
+            : undefined,
+      },
+      {
+        onSuccess: async () => {
+          if (isPrimary && wasActive !== isBecomingActive) {
+            const children = subRowsByParentId[editingRow.id] ?? []
+            const storageKey = `active_subs_before_inactive_${editingRow.id}`
+
+            if (!isBecomingActive) {
+              const activeSubIds: string[] = []
+              for (const child of children) {
+                if (child.active) {
+                  activeSubIds.push(child.id)
+                  const childValues = mapCountyActivityRowToFormValues(child)
+                  childValues.active = false
+                  try {
+                    await apiPutCountyActivity({
+                      id: child.id,
+                      values: childValues,
+                      rowType: child.rowType,
+                    })
+                  } catch (err) {
+                    console.error(`Failed to inactivate sub-activity ${child.id}:`, err)
+                  }
+                }
+              }
+              if (activeSubIds.length > 0) {
+                sessionStorage.setItem(storageKey, JSON.stringify(activeSubIds))
+              }
+            } else {
+              const stored = sessionStorage.getItem(storageKey)
+              if (stored) {
+                const idsToRestore = JSON.parse(stored) as string[]
+                for (const childId of idsToRestore) {
+                  const child = children.find((c) => c.id === childId)
+                  if (child && !child.active) {
+                    const childValues = mapCountyActivityRowToFormValues(child)
+                    childValues.active = true
+                    try {
+                      await apiPutCountyActivity({
+                        id: child.id,
+                        values: childValues,
+                        rowType: child.rowType,
+                      })
+                    } catch (err) {
+                      console.error(`Failed to restore sub-activity ${child.id}:`, err)
+                    }
+                  }
+                }
+                sessionStorage.removeItem(storageKey)
+              }
+            }
+            void queryClient.invalidateQueries({ queryKey: countyActivityCodeKeys.all })
+          }
+
+          toast.success(
+            editingRow.rowType === CountyActivityGridRowType.PRIMARY
+              ? "Primary county activity updated successfully."
+              : "Secondary county activity updated successfully.",
+          )
+          editForm.reset()
+          setEditOpen(false)
+          setRowToEdit(null)
+        },
+        onError: (err) => {
+          toastCountyActivityCodeApiError(
+            err,
+            editingRow.rowType === CountyActivityGridRowType.PRIMARY
+              ? "Could not update primary county activity."
+              : "Could not update secondary county activity.",
+          )
+        },
+      },
+    )
+  }
+
+  const submitCountyActivityEditFromEditModal = editForm.handleSubmit(async (values) => {
     if (!rowToEdit) return
 
     let masterCatalog: { code: string; type: string } | undefined
@@ -636,7 +791,6 @@ export function CountyActivityCodeTable({
       let catalogId = values.masterCode
       let catalog = editMasterCodeOptions.find((o) => o.value === catalogId)
 
-      // Fallback: if masterCode is 0 or not found by ID (maybe due to stale seeding), try to match by code
       if (!catalog) {
         const currentCode = rowToEdit.catalogActivityCode.trim().toLowerCase()
         const found = editMasterCodeOptions.find((o) => o.code.toLowerCase() === currentCode)
@@ -664,7 +818,6 @@ export function CountyActivityCodeTable({
 
     const editingRow = rowToEdit
 
-    // Prevent activating a sub-activity if its parent is inactive
     if (
       editingRow.rowType === CountyActivityGridRowType.SUB &&
       values.active &&
@@ -674,108 +827,53 @@ export function CountyActivityCodeTable({
       if (parent && !parent.active) {
         toast.error(
           "Cannot activate: Parent County Activity is inactive. Please activate it first.",
-          {
-            icon: <OctagonXIcon className="size-5 text-red-600" />,
-          }
+          { icon: <OctagonXIcon className="size-5 text-red-600" /> }
         )
-
         return
       }
     }
 
-    const isPrimary = editingRow.rowType === CountyActivityGridRowType.PRIMARY
-    const wasActive = editingRow.active
-    const isBecomingActive = values.active
+    // If apportioning is checked on a primary row, verify fresh department data
+    if (values.apportioning && editingRow.rowType === CountyActivityGridRowType.PRIMARY && editDepartmentLinks.length > 0) {
+      try {
+        const freshDepts = await Promise.all(
+          editDepartmentLinks.map(link => getDepartmentById(String(link.id)))
+        )
 
+        const apportioningNames = freshDepts
+          .filter(d => d.settings?.apportioning === true)
+          .map(d => d.name.trim())
 
-    updateCountyActivityCode.mutate(
-      {
-        id: editingRow.id,
-        values,
-        rowType: editingRow.rowType,
-        masterCatalog,
-        departmentLinks:
-          editingRow.rowType === CountyActivityGridRowType.PRIMARY
-            ? editDepartmentLinks
-            : undefined,
-      },
-      {
-        onSuccess: async () => {
-          // Cascading status logic for primary activities
-          if (isPrimary && wasActive !== isBecomingActive) {
-            const children = subRowsByParentId[editingRow.id] ?? []
-            const storageKey = `active_subs_before_inactive_${editingRow.id}`
+        const nonApportioningNames = freshDepts
+          .filter(d => d.settings?.apportioning !== true)
+          .map(d => d.name.trim())
 
-            if (!isBecomingActive) {
-              // Primary becoming INACTIVE: Inactivate all sub-rows that are currently active
-              const activeSubIds: string[] = []
-              for (const child of children) {
-                if (child.active) {
-                  activeSubIds.push(child.id)
-                  const childValues = mapCountyActivityRowToFormValues(child)
-                  childValues.active = false
-                  try {
-                    await apiPutCountyActivity({
-                      id: child.id,
-                      values: childValues,
-                      rowType: child.rowType,
-                    })
-                  } catch (err) {
-                    console.error(`Failed to inactivate sub-activity ${child.id}:`, err)
-                  }
-                }
-              }
-              // Store the list of IDs that were active
-              if (activeSubIds.length > 0) {
-                sessionStorage.setItem(storageKey, JSON.stringify(activeSubIds))
-              }
-            } else {
-              // Primary becoming ACTIVE: Restore previously active sub-rows
-              const stored = sessionStorage.getItem(storageKey)
-              if (stored) {
-                const idsToRestore = JSON.parse(stored) as string[]
-                for (const childId of idsToRestore) {
-                  const child = children.find((c) => c.id === childId)
-                  if (child && !child.active) {
-                    const childValues = mapCountyActivityRowToFormValues(child)
-                    childValues.active = true
-                    try {
-                      await apiPutCountyActivity({
-                        id: child.id,
-                        values: childValues,
-                        rowType: child.rowType,
-                      })
-                    } catch (err) {
-                      console.error(`Failed to restore sub-activity ${child.id}:`, err)
-                    }
-                  }
-                }
-                sessionStorage.removeItem(storageKey)
-              }
-            }
-            // Invalidate queries to refresh the table with all changes
-            void queryClient.invalidateQueries({ queryKey: countyActivityCodeKeys.all })
-          }
+        // Build enriched links with per-dept apportioning flag
+        const enrichedLinks = freshDepts.map(d => ({
+          id: Number(d.id),
+          apportioning: d.settings?.apportioning === true,
+        }))
 
-          toast.success(
-            editingRow.rowType === CountyActivityGridRowType.PRIMARY
-              ? "Primary county activity updated successfully."
-              : "Secondary county activity updated successfully.",
-          )
-          editForm.reset()
-          setEditOpen(false)
-          setRowToEdit(null)
-        },
-        onError: (err) => {
-          toastCountyActivityCodeApiError(
-            err,
-            editingRow.rowType === CountyActivityGridRowType.PRIMARY
-              ? "Could not update primary county activity."
-              : "Could not update secondary county activity.",
-          )
-        },
-      },
-    )
+        // ONLY show popup if there's a mismatch
+        if (apportioningNames.length < editAssignedNames.length) {
+          setApportioningDeptNames(apportioningNames)
+          setNonApportioningDeptNames(nonApportioningNames)
+          setPendingSaveCallback(() => () => {
+            doUpdateCountyActivity(editingRow, values, masterCatalog, enrichedLinks)
+          })
+          setApportioningConfirmOpen(true)
+          return
+        }
+
+        // All departments support apportioning — save with enriched links
+        doUpdateCountyActivity(editingRow, values, masterCatalog, enrichedLinks)
+        return
+      } catch (error) {
+        console.error("Failed to verify department apportioning status:", error)
+      }
+    }
+
+    doUpdateCountyActivity(editingRow, values, masterCatalog, editDepartmentLinks)
   }, (errors) => {
     console.error("Edit validation errors:", errors)
     toast.error("Please fill all required fields correctly.")
@@ -875,11 +973,10 @@ export function CountyActivityCodeTable({
           {/* History toggle button */}
           <button
             type="button"
-            className={`flex h-12 items-center gap-2 rounded-[10px] px-4 text-[14px] font-normal transition-colors ${
-              showHistory
-                ? "bg-[#6C5DD3] text-white"
-                : "border border-[#6C5DD3] bg-white text-[#6C5DD3] hover:bg-[#F3F0FF]"
-            }`}
+            className={`flex h-12 items-center gap-2 rounded-[10px] px-4 text-[14px] font-normal transition-colors ${showHistory
+              ? "bg-[#6C5DD3] text-white"
+              : "border border-[#6C5DD3] bg-white text-[#6C5DD3] hover:bg-[#F3F0FF]"
+              }`}
             onClick={() => {
               setShowHistory((prev) => {
                 if (prev) {
@@ -961,19 +1058,20 @@ export function CountyActivityCodeTable({
       <div className={`overflow-hidden rounded-[10px] border border-[#E5E7EB] ${showHistory ? "hidden" : ""}`}>
         <Table className="w-full table-fixed border-collapse">
           <colgroup>
-            <col className={canUpdateCountyActivity ? "w-[11%]" : "w-[12%]"} /> {/* Code */}
-            <col className={canUpdateCountyActivity ? "w-[11%]" : "w-[13%]"} /> {/* Name */}
-            <col className={canUpdateCountyActivity ? "w-[10%]" : "w-[12%]"} /> {/* Desc */}
-            <col className={canUpdateCountyActivity ? "w-[11%]" : "w-[13%]"} /> {/* Dept */}
-            <col className={canUpdateCountyActivity ? "w-[8%]" : "w-[9%]"} /> {/* Type */}
+            <col className={canUpdateCountyActivity ? "w-[10%]" : "w-[11%]"} /> {/* Code */}
+            <col className={canUpdateCountyActivity ? "w-[10%]" : "w-[11%]"} /> {/* Name */}
+            <col className={canUpdateCountyActivity ? "w-[9%]" : "w-[10%]"} /> {/* Desc */}
+            <col className={canUpdateCountyActivity ? "w-[9%]" : "w-[10%]"} /> {/* Dept */}
+            <col className={canUpdateCountyActivity ? "w-[7%]" : "w-[8%]"} /> {/* Type */}
             <col className={canUpdateCountyActivity ? "w-[6%]" : "w-[7%]"} /> {/* Code */}
             <col className={canUpdateCountyActivity ? "w-[5%]" : "w-[5%]"} /> {/* SPMP */}
             <col className={canUpdateCountyActivity ? "w-[6%]" : "w-[7%]"} /> {/* Match */}
             <col className={canUpdateCountyActivity ? "w-[4%]" : "w-[5%]"} /> {/* % */}
-            <col className={canUpdateCountyActivity ? "w-[6%]" : "w-[7%]"} /> {/* Active */}
+            <col className={canUpdateCountyActivity ? "w-[5%]" : "w-[6%]"} /> {/* Active */}
             <col className={canUpdateCountyActivity ? "w-[5%]" : "w-[5%]"} /> {/* Leave */}
-            <col className={canUpdateCountyActivity ? "w-[8%]" : "w-[5%]"} /> {/* Multiple */}
-            {canUpdateCountyActivity && <col className="w-[9%]" />} {/* Action */}
+            <col className={canUpdateCountyActivity ? "w-[8%]" : "w-[7%]"} /> {/* Apportioning */}
+            <col className={canUpdateCountyActivity ? "w-[8%]" : "w-[6%]"} /> {/* Multiple */}
+            {canUpdateCountyActivity && <col className="w-[8%]" />} {/* Action */}
           </colgroup>
           <TableHeader>
             <TableRow className="h-[48px] bg-[#6C5DD3] hover:bg-[#6C5DD3]">
@@ -989,14 +1087,14 @@ export function CountyActivityCodeTable({
                 "%",
                 "Active",
                 "Leave Code",
+                "Apportioning",
                 "Multiple Job Pools",
                 ...(canUpdateCountyActivity ? ["Action"] : []),
               ].map((column, index) => (
                 <TableHead
                   key={column}
-                  className={`h-[48px] align-middle border-r border-[#FFFFFF66] bg-[#6C5DD3] p-[8px] text-[14px] font-[500] leading-tight whitespace-normal break-normal text-white font-['Roboto',sans-serif] last:border-r-0 ${
-                    ["Match", "%", "Active"].includes(column) ? "text-center" : "text-left"
-                  }`}
+                  className={`h-[48px] align-middle border-r border-[#FFFFFF66] bg-[#6C5DD3] p-[8px] text-[14px] font-[500] leading-tight whitespace-normal break-normal text-white font-['Roboto',sans-serif] last:border-r-0 ${["Match", "%", "Active"].includes(column) ? "text-center" : "text-left"
+                    }`}
                 >
                   {index < 2 ? (
                     <TooltipProvider>
@@ -1004,7 +1102,7 @@ export function CountyActivityCodeTable({
                         open={
                           isSortTooltipOpen &&
                           sortTooltipColumn ===
-                            (index === 0 ? "countyActivityCode" : "countyActivityName")
+                          (index === 0 ? "countyActivityCode" : "countyActivityName")
                         }
                       >
                         <TooltipTrigger asChild>
@@ -1038,26 +1136,24 @@ export function CountyActivityCodeTable({
                             </span>
                             <span className="inline-flex shrink-0 flex-col">
                               <span
-                                className={`h-0 w-0 border-b-[5px] border-l-[4px] border-r-[4px] border-l-transparent border-r-transparent ${
-                                  sortBy ===
-                                    (index === 0
-                                      ? "countyActivityCode"
-                                      : "countyActivityName") &&
+                                className={`h-0 w-0 border-b-[5px] border-l-[4px] border-r-[4px] border-l-transparent border-r-transparent ${sortBy ===
+                                  (index === 0
+                                    ? "countyActivityCode"
+                                    : "countyActivityName") &&
                                   sortDirection === "asc"
-                                    ? "border-b-[#1E8BFF]"
-                                    : "border-b-white/60"
-                                }`}
+                                  ? "border-b-[#1E8BFF]"
+                                  : "border-b-white/60"
+                                  }`}
                               />
                               <span
-                                className={`mt-0.5 h-0 w-0 border-l-[4px] border-r-[4px] border-t-[5px] border-l-transparent border-r-transparent ${
-                                  sortBy ===
-                                    (index === 0
-                                      ? "countyActivityCode"
-                                      : "countyActivityName") &&
+                                className={`mt-0.5 h-0 w-0 border-l-[4px] border-r-[4px] border-t-[5px] border-l-transparent border-r-transparent ${sortBy ===
+                                  (index === 0
+                                    ? "countyActivityCode"
+                                    : "countyActivityName") &&
                                   sortDirection === "desc"
-                                    ? "border-t-[#201547]"
-                                    : "border-t-white"
-                                }`}
+                                  ? "border-t-[#201547]"
+                                  : "border-t-white"
+                                  }`}
                               />
                             </span>
                           </button>
@@ -1075,9 +1171,9 @@ export function CountyActivityCodeTable({
                       </Tooltip>
                     </TooltipProvider>
                   ) : (
-                    <span className="inline-flex h-full items-center max-w-full whitespace-normal break-normal font-[400]">
+                    <div className="flex h-full items-center max-w-full whitespace-normal break-all font-[400]">
                       {column}
-                    </span>
+                    </div>
                   )}
                 </TableHead>
               ))}
@@ -1149,7 +1245,7 @@ export function CountyActivityCodeTable({
                 {rows.length === 0 ? (
                   <TableRow className="ieba-data-row">
                     <TableCell
-                      colSpan={canUpdateCountyActivity ? 13 : 12}
+                      colSpan={canUpdateCountyActivity ? 14 : 13}
                       className="h-20 text-center text-sm text-muted-foreground"
                     >
                       No county activity codes found.
@@ -1166,9 +1262,8 @@ export function CountyActivityCodeTable({
                         <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0] whitespace-normal break-all">
                           <button
                             type="button"
-                            className={`mr-1 inline-flex size-5 shrink-0 items-center justify-center rounded-[6px] align-middle ${
-                              hasChildren ? "text-[#6C5DD3] hover:bg-[#6C5DD3]/10" : "opacity-0"
-                            }`}
+                            className={`mr-1 inline-flex size-5 shrink-0 items-center justify-center rounded-[6px] align-middle ${hasChildren ? "text-[#6C5DD3] hover:bg-[#6C5DD3]/10" : "opacity-0"
+                              }`}
                             aria-label={isExpanded ? "Collapse" : "Expand"}
                             onClick={() => {
                               if (!hasChildren) return
@@ -1255,6 +1350,50 @@ export function CountyActivityCodeTable({
                           )}
                         </TableCell>
                         <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-center text-[#C4C4C4]">
+                          {row.rowType === CountyActivityGridRowType.SUB ? (
+                            <span>--</span>
+                          ) : (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  {row.apportioning ? (
+                                    <img
+                                      src={statusCheckImg}
+                                      alt="apportioning"
+                                      className="mx-auto h-4 w-4 object-contain cursor-default"
+                                    />
+                                  ) : (
+                                    <img
+                                      src={statusCrossImg}
+                                      alt="No"
+                                      className="mx-auto h-4 w-4 object-contain cursor-default"
+                                    />
+                                  )}
+                                </TooltipTrigger>
+                                {row.apportioningDepartments && row.apportioningDepartments.length > 0 && (
+                                  <TooltipContent
+                                    side="top"
+                                    align="center"
+                                    sideOffset={6}
+                                    className="z-50 !inline-block max-h-[min(20rem,70vh)] max-w-[min(20rem,70vw)] overflow-y-auto rounded-[8px] border-0 bg-black px-3 py-2.5 text-left text-[12px] font-medium leading-relaxed text-white shadow-lg"
+                                  >
+                                    <span className="block text-center whitespace-normal break-words font-semibold mb-1">
+                                      Apportioning :
+                                    </span>
+                                    <ul className="list-disc pl-4 space-y-1 m-0">
+                                      {row.apportioningDepartments.map((dept, idx) => (
+                                        <li key={idx}>
+                                          {dept.name} - {dept.apportioning ? "Yes" : "No"}
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  </TooltipContent>
+                                )}
+                              </Tooltip>
+                            </TooltipProvider>
+                          )}
+                        </TableCell>
+                        <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-center text-[#C4C4C4]">
                           {row.multipleJobPools ? (
                             <img
                               src={statusCheckImg}
@@ -1294,127 +1433,130 @@ export function CountyActivityCodeTable({
 
                     const countyActivitySubTableRows = isExpanded
                       ? children.map((child) => (
-                          <TableRow
-                            key={child.id}
-                            className="ieba-data-row border-b border-[#E5E7EB] bg-[#F6F5FF]"
-                          >
-                            <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0] whitespace-normal break-all">
-                              <span className="ml-7">{child.countyActivityCode}</span>
-                            </TableCell>
-                            <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] leading-[1.4] whitespace-normal break-words font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
-                              {child.countyActivityName}
-                            </TableCell>
-                            <CountyActivityDescriptionTableCell description={child.description} />
-                            <TableCell className="min-w-0 border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] leading-[1.4] whitespace-normal break-words font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
-                              <CountyActivityDepartmentStackCell
-                                label={
-                                  child.rowType === CountyActivityGridRowType.SUB
-                                    ? ""
-                                    : getCountyActivityCodeRowDepartmentLabel(child)
-                                }
-                              />
-                            </TableCell>
-                            <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
-                              {child.rowType === CountyActivityGridRowType.SUB
-                                ? ""
-                                : child.masterCodeType}
-                            </TableCell>
-                            <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
-                              {child.rowType === CountyActivityGridRowType.SUB
-                                ? ""
-                                : child.catalogActivityCode || "—"}
-                            </TableCell>
-                            <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-center text-[13px] text-[#C4C4C4]">
-                              {/* Sub rows have no master code — SPMP is always N/cross */}
+                        <TableRow
+                          key={child.id}
+                          className="ieba-data-row border-b border-[#E5E7EB] bg-[#F6F5FF]"
+                        >
+                          <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0] whitespace-normal break-all">
+                            <span className="ml-7">{child.countyActivityCode}</span>
+                          </TableCell>
+                          <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] leading-[1.4] whitespace-normal break-words font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
+                            {child.countyActivityName}
+                          </TableCell>
+                          <CountyActivityDescriptionTableCell description={child.description} />
+                          <TableCell className="min-w-0 border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] leading-[1.4] whitespace-normal break-words font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
+                            <CountyActivityDepartmentStackCell
+                              label={
+                                child.rowType === CountyActivityGridRowType.SUB
+                                  ? ""
+                                  : getCountyActivityCodeRowDepartmentLabel(child)
+                              }
+                            />
+                          </TableCell>
+                          <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
+                            {child.rowType === CountyActivityGridRowType.SUB
+                              ? ""
+                              : child.masterCodeType}
+                          </TableCell>
+                          <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
+                            {child.rowType === CountyActivityGridRowType.SUB
+                              ? ""
+                              : child.catalogActivityCode || "—"}
+                          </TableCell>
+                          <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-center text-[13px] text-[#C4C4C4]">
+                            {/* Sub rows have no master code — SPMP is always N/cross */}
+                            <img
+                              src={statusCrossImg}
+                              alt="No"
+                              className="mx-auto h-4 w-4 object-contain"
+                            />
+                          </TableCell>
+                          <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-center text-[13px] text-[#C4C4C4]">
+                            {/* Sub rows have no master code — Match is always N/cross */}
+                            <img
+                              src={statusCrossImg}
+                              alt="No"
+                              className="mx-auto h-4 w-4 object-contain"
+                            />
+                          </TableCell>
+                          <TableCell className="border-r border-[#E5E7EB] px-[8px] py-[5px] align-middle text-center text-[13px] text-[#C4C4C4]">
+                            {/* Sub rows have no master code — % is always N/cross */}
+                            <img
+                              src={statusCrossImg}
+                              alt="No"
+                              className="mx-auto h-4 w-4 object-contain"
+                            />
+                          </TableCell>
+                          <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-center">
+                            {child.active ? (
                               <img
-                                src={statusCrossImg}
-                                alt="No"
+                                src={statusCheckImg}
+                                alt="active"
                                 className="mx-auto h-4 w-4 object-contain"
                               />
-                            </TableCell>
-                            <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-center text-[13px] text-[#C4C4C4]">
-                              {/* Sub rows have no master code — Match is always N/cross */}
+                            ) : (
                               <img
                                 src={statusCrossImg}
-                                alt="No"
+                                alt="inactive"
                                 className="mx-auto h-4 w-4 object-contain"
                               />
-                            </TableCell>
-                            <TableCell className="border-r border-[#E5E7EB] px-[8px] py-[5px] align-middle text-center text-[13px] text-[#C4C4C4]">
-                              {/* Sub rows have no master code — % is always N/cross */}
-                              <img
-                                src={statusCrossImg}
-                                alt="No"
-                                className="mx-auto h-4 w-4 object-contain"
-                              />
-                            </TableCell>
-                            <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-center">
-                              {child.active ? (
-                                <img
-                                  src={statusCheckImg}
-                                  alt="active"
-                                  className="mx-auto h-4 w-4 object-contain"
-                                />
-                              ) : (
-                                <img
-                                  src={statusCrossImg}
-                                  alt="inactive"
-                                  className="mx-auto h-4 w-4 object-contain"
-                                />
-                              )}
-                            </TableCell>
-                            <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-center text-[#C4C4C4]">
-                              {child.leaveCode ? (
-                                <img
-                                  src={statusCheckImg}
-                                  alt="leave code"
-                                  className="mx-auto h-4 w-4 object-contain"
-                                />
-                              ) : (
-                                <img
-                                  src={statusCrossImg}
-                                  alt="No"
-                                  className="mx-auto h-4 w-4 object-contain"
-                                />
-                              )}
-                            </TableCell>
-                            <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-center text-[#C4C4C4]">
-                              {child.multipleJobPools ? (
-                                <img
-                                  src={statusCheckImg}
-                                  alt="multiple job pools"
-                                  className="mx-auto h-4 w-4 object-contain"
-                                />
-                              ) : (
-                                <img
-                                  src={statusCrossImg}
-                                  alt="No"
-                                  className="mx-auto h-4 w-4 object-contain"
-                                />
-                              )}
-                            </TableCell>
-                            {canUpdateCountyActivity && (
-                              <TableCell className="px-[14px] py-[5px] align-top text-center">
-                                <Button
-                                  type="button"
-                                  size="icon"
-                                  variant="ghost"
-                                  className="text-[#6C5DD3] hover:bg-[#6C5DD3]/10"
-                                  onClick={() => {
-                                    setRowToEdit(child)
-                                    setEditOpen(true)
-                                  }}
-                                >
-                                  <img
-                                    src={editIconImg}
-                                    alt="Edit"
-                                    className="h-4 w-4 object-contain"
-                                  />
-                                </Button>
-                              </TableCell>
                             )}
-                          </TableRow>
-                        ))
+                          </TableCell>
+                          <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-center text-[#C4C4C4]">
+                            {child.leaveCode ? (
+                              <img
+                                src={statusCheckImg}
+                                alt="leave code"
+                                className="mx-auto h-4 w-4 object-contain"
+                              />
+                            ) : (
+                              <img
+                                src={statusCrossImg}
+                                alt="No"
+                                className="mx-auto h-4 w-4 object-contain"
+                              />
+                            )}
+                          </TableCell>
+                          <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-center text-[#C4C4C4]">
+                            <span>--</span>
+                          </TableCell>
+                          <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-center text-[#C4C4C4]">
+                            {child.multipleJobPools ? (
+                              <img
+                                src={statusCheckImg}
+                                alt="multiple job pools"
+                                className="mx-auto h-4 w-4 object-contain"
+                              />
+                            ) : (
+                              <img
+                                src={statusCrossImg}
+                                alt="No"
+                                className="mx-auto h-4 w-4 object-contain"
+                              />
+                            )}
+                          </TableCell>
+                          {canUpdateCountyActivity && (
+                            <TableCell className="px-[14px] py-[5px] align-top text-center">
+                              <Button
+                                type="button"
+                                size="icon"
+                                variant="ghost"
+                                className="text-[#6C5DD3] hover:bg-[#6C5DD3]/10"
+                                onClick={() => {
+                                  setRowToEdit(child)
+                                  setEditOpen(true)
+                                }}
+                              >
+                                <img
+                                  src={editIconImg}
+                                  alt="Edit"
+                                  className="h-4 w-4 object-contain"
+                                />
+                              </Button>
+                            </TableCell>
+                          )}
+                        </TableRow>
+                      ))
                       : []
 
                     return [countyActivityPrimaryTableRow, ...countyActivitySubTableRows]
@@ -1483,6 +1625,7 @@ export function CountyActivityCodeTable({
             onClose={() => setAddOpen(false)}
             isSubmitting={createCountyActivityCode.isPending}
             isEditSourceLoading={addTab === CountyActivityGridRowType.SUB && addSubParentDetailQuery.isPending}
+            apportioningDepartments={addSubParentDetailQuery.data?.apportioningDepartments}
           />
         </DialogContent>
       </Dialog>
@@ -1507,7 +1650,7 @@ export function CountyActivityCodeTable({
                   ? CountyActivityGridRowType.SUB
                   : CountyActivityGridRowType.PRIMARY
               }
-              onTabChange={() => {}}
+              onTabChange={() => { }}
               disabledTabs={{
                 primary: rowToEdit.rowType === CountyActivityGridRowType.SUB,
                 sub: rowToEdit.rowType !== CountyActivityGridRowType.SUB,
@@ -1529,6 +1672,7 @@ export function CountyActivityCodeTable({
                   editMasterCodesQuery.isPending)
               }
               departmentNames={departmentNames}
+              apportioningDepartments={editDetailQuery.data?.apportioningDepartments}
               onSelectedPrimaryIdChange={(id) => {
                 setEditSelectedPrimaryId(id)
                 if (editPrimaryDetailQuery.data && String(editPrimaryDetailQuery.data.activity.id) === id) {
@@ -1555,6 +1699,127 @@ export function CountyActivityCodeTable({
               isSubmitting={updateCountyActivityCode.isPending}
             />
           ) : null}
+        </DialogContent>
+      </Dialog>
+
+      {/* Apportioning Confirmation Dialog */}
+      <Dialog open={apportioningConfirmOpen} onOpenChange={setApportioningConfirmOpen}>
+        <DialogContent
+          showClose={false}
+          className="w-[480px] max-w-[calc(100vw-2rem)] rounded-[14px] border border-[#E5E7EB] bg-white p-0 shadow-xl"
+          overlayClassName="bg-black/50"
+        >
+          <div className="p-6 space-y-4">
+            {/* Header */}
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#EDE9FF]">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <path d="M10 2a8 8 0 100 16A8 8 0 0010 2zm0 4a1 1 0 011 1v3a1 1 0 11-2 0V7a1 1 0 011-1zm0 8a1 1 0 110-2 1 1 0 010 2z" fill="#6C5DD3" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-[17px] font-semibold text-[#111827]">
+                  {apportioningDeptNames.length === 0
+                    ? "Apportioning Not Supported"
+                    : "Apportioning Setup Conflict"}
+                </h3>
+                <p className="mt-1 text-[13px] text-[#6B7280] leading-relaxed">
+                  {apportioningDeptNames.length === 0
+                    ? "None of the assigned departments have apportioning enabled in their settings."
+                    : "Some assigned departments do not support apportioning."}
+                </p>
+              </div>
+            </div>
+
+            {/* Scenario: Some have it, some don't */}
+            {apportioningDeptNames.length > 0 && (
+              <div className="space-y-4">
+                <div className="rounded-[12px] border border-green-200 bg-green-50/40 p-4 shadow-sm">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+                    <p className="text-[12px] font-bold text-green-700 uppercase tracking-widest">
+                      Will be saved with Apportioning
+                    </p>
+                  </div>
+                  <ul className="grid grid-cols-1 gap-2 pl-1">
+                    {apportioningDeptNames.map((name) => (
+                      <li key={name} className="flex items-center gap-2 text-[14px] font-medium text-[#1F2937]">
+                        <svg width="14" height="14" viewBox="0 0 20 20" fill="none" className="text-green-600">
+                          <path d="M16.667 5l-9.167 9.167L3.333 10" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                        {name}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="rounded-[12px] border border-red-200 bg-red-50/40 p-4 shadow-sm">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="h-2 w-2 rounded-full bg-red-500" />
+                    <p className="text-[12px] font-bold text-red-700 uppercase tracking-widest">
+                      Will NOT be saved with Apportioning
+                    </p>
+                  </div>
+                  <ul className="grid grid-cols-1 gap-2 pl-1 mb-3">
+                    {nonApportioningDeptNames.map((name) => (
+                      <li key={name} className="flex items-center gap-2 text-[14px] font-medium text-[#1F2937]">
+                        <svg width="14" height="14" viewBox="0 0 20 20" fill="none" className="text-red-500">
+                          <path d="M15 5L5 15M5 5l10 10" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                        {name}
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="border-t border-red-100 pt-2">
+                    <p className="text-[11px] text-red-600 font-medium italic">
+                      <strong>Note:</strong> {nonApportioningDeptNames.length === 1 ? "This department has" : "These departments have"} apportioning false.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Scenario: None have it */}
+            {apportioningDeptNames.length === 0 && (
+              <div className="rounded-[10px] border border-red-200 bg-red-50 px-4 py-4 text-center">
+                <p className="text-[14px] font-medium text-red-800">
+                  No apportioning will be saved for this activity.
+                </p>
+              </div>
+            )}
+
+            <p className="text-[13px] text-[#6B7280] leading-relaxed">
+              Do you want to proceed with saving this activity anyway?
+            </p>
+
+            {/* Action buttons */}
+            <div className="flex justify-end gap-3 pt-1">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => {
+                  setApportioningConfirmOpen(false)
+                  setPendingSaveCallback(null)
+                }}
+                className="h-[40px] rounded-[10px] bg-[#E5E7EB] px-5 text-[14px] font-normal text-[#111827] hover:bg-[#D1D5DB]"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                onClick={() => {
+                  setApportioningConfirmOpen(false)
+                  if (pendingSaveCallback) {
+                    pendingSaveCallback()
+                    setPendingSaveCallback(null)
+                  }
+                }}
+                className="h-[40px] rounded-[10px] bg-[#6C5DD3] px-5 text-[14px] font-normal text-white hover:bg-[#5B4DC5]"
+              >
+                OK, Proceed
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
