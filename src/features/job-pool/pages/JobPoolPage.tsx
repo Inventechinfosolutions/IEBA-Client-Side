@@ -183,6 +183,11 @@ export function JobPoolPage() {
         onSave={handleSave}
         assignedActivityDetails={sourceRow?.assignedActivityDetails}
         unassignedActivityDetails={sourceRow?.unassignedActivityDetails}
+        assignedJobClassificationDetails={sourceRow?.assignedJobClassificationDetails}
+        unassignedJobClassificationDetails={sourceRow?.unassignedJobClassificationDetails}
+        assignedUserDetails={sourceRow?.assignedUserDetails}
+        unassignedUserDetails={sourceRow?.unassignedUserDetails}
+        departmentName={sourceRow?.departmentName}
       />
     </section>
   )

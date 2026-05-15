@@ -4,31 +4,70 @@ import { ChevronRight, ChevronLeft } from "lucide-react"
 import { TransferPanel } from "./TransferPanel"
 import type { TransferItem, JobClassificationSectionProps } from "../../types"
 
-import { useGetJobClassifications } from "../../../job-classification/queries/getJobClassifications"
-export function JobClassificationSection({ form }: JobClassificationSectionProps) {
+import { useGetAllJobClassifications } from "../../../job-classification/queries/getJobClassifications"
+import type { JobClassificationRow } from "../../../job-classification/types"
+
+export function JobClassificationSection({ 
+  form, 
+  mode,
+  assignedJobClassificationDetails, 
+  unassignedJobClassificationDetails 
+}: JobClassificationSectionProps) {
   const selectedDept = form.watch("department")
 
-  const { data: jobClassesData } = useGetJobClassifications({
-    page: 1,
-    pageSize: 10000,
-    search: "",
-    inactiveOnly: false,
-  })
+  const [searchU, setSearchU] = useState("")
+  const [searchA, setSearchA] = useState("")
 
+  const activeSearch = searchU || searchA || undefined
+
+  const shouldFetch = !!selectedDept && (mode === "add" || !!activeSearch);
+
+  const { data: jobClassesData } = useGetAllJobClassifications(activeSearch, { enabled: shouldFetch })
+
+  // Catalog to store all fetched classifications and their linked users
+  const [itemCatalog, setItemCatalog] = useState<Record<string, JobClassificationRow>>({})
+
+  // Seed catalog with initial details
+  useMemo(() => {
+    const assigned = assignedJobClassificationDetails || [];
+    const unassigned = unassignedJobClassificationDetails || [];
+    if (assigned.length > 0 || unassigned.length > 0) {
+      setItemCatalog(prev => {
+        const next = { ...prev }
+        assigned.forEach(jc => { 
+          next[String(jc.id)] = { ...jc, id: String(jc.id), active: jc.status === "active" || true } 
+        })
+        unassigned.forEach(jc => { 
+          next[String(jc.id)] = { ...jc, id: String(jc.id), active: jc.status === "active" || true } 
+        })
+        return next
+      })
+    }
+  }, [assignedJobClassificationDetails, unassignedJobClassificationDetails])
+
+  // Merge API results into catalog
+  useMemo(() => {
+    if (jobClassesData && jobClassesData.length > 0) {
+      setItemCatalog(prev => {
+        const next = { ...prev }
+        jobClassesData.forEach(jc => {
+          next[String(jc.id)] = jc
+        })
+        return next
+      })
+    }
+  }, [jobClassesData])
 
   const assignedIds = form.watch("assignedJobClassificationIds")
 
   const allJobClasses = useMemo(() => {
-    if (!selectedDept) return []
-    return jobClassesData?.items.map((jc) => ({ 
-      id: String(jc.id), 
+    return Object.values(itemCatalog).map(jc => ({
+      id: String(jc.id),
       name: jc.name,
-      disabled: false 
-    })) ?? []
-  }, [jobClassesData, selectedDept])
+      disabled: false
+    }))
+  }, [itemCatalog])
 
-  const [searchU, setSearchU] = useState("")
-  const [searchA, setSearchA] = useState("")
   const [toggledU, setToggledU] = useState<string[]>([])
   const [toggledA, setToggledA] = useState<string[]>([])
 
@@ -60,11 +99,11 @@ export function JobClassificationSection({ form }: JobClassificationSectionProps
 
     // 2. Synchronize Employees (Auto-assign all users linked to these classifications)
     if (newClassifications.length > 0) {
-      const assignedUsers = (jobClassesData?.items ?? [])
+      const assignedUsers = Object.values(itemCatalog)
         .filter(jc => newClassifications.includes(String(jc.id)))
         .flatMap(jc => jc.users || [])
       
-      const uniqueUserIds = [...new Set(assignedUsers.map(u => u.id))]
+      const uniqueUserIds: string[] = [...new Set(assignedUsers.map(u => String(u.id)))]
       form.setValue("assignedEmployeeIds", uniqueUserIds)
     } else {
       form.setValue("assignedEmployeeIds", [])

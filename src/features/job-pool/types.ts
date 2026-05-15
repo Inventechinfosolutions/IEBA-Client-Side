@@ -40,6 +40,10 @@ export type JobPoolRow = {
   userprofiles?: { id: string; name?: string; firstName?: string; lastName?: string; status?: string }[]
   assignedActivityDetails?: { id: string; name: string; code: string }[]
   unassignedActivityDetails?: { id: string; name: string; code: string }[]
+  assignedJobClassificationDetails?: { id: string; name: string; code: string; status?: string }[]
+  unassignedJobClassificationDetails?: { id: string; name: string; code: string; status?: string }[]
+  assignedUserDetails?: { id: string; firstName?: string; lastName?: string; name?: string; status?: string }[]
+  unassignedUserDetails?: { id: string; firstName?: string; lastName?: string; name?: string; status?: string }[]
 }
 
 export type GetJobPoolsParams = {
@@ -93,6 +97,11 @@ export type JobPoolFormModalProps = {
   onSave: (values: JobPoolFormValues) => void
   assignedActivityDetails?: { id: string; name: string; code: string }[]
   unassignedActivityDetails?: { id: string; name: string; code: string }[]
+  assignedJobClassificationDetails?: { id: string; name: string; code: string; status?: string }[]
+  unassignedJobClassificationDetails?: { id: string; name: string; code: string; status?: string }[]
+  assignedUserDetails?: { id: string; firstName?: string; lastName?: string; name?: string; status?: string }[]
+  unassignedUserDetails?: { id: string; firstName?: string; lastName?: string; name?: string; status?: string }[]
+  departmentName?: string
 }
 
 export type TransferPanelProps = {
@@ -113,11 +122,24 @@ export type TransferPanelProps = {
 /** Shared alias — avoids repeating the full UseFormReturn generic on every section props type. */
 export type JobPoolFormReturn = UseFormReturn<JobPoolFormValues>
 
-export type JobClassificationSectionProps = { form: JobPoolFormReturn; departmentName: string }
+export type JobClassificationSectionProps = { 
+  form: JobPoolFormReturn; 
+  departmentName: string;
+  mode: JobPoolFormMode;
+  assignedJobClassificationDetails?: { id: string; name: string; code: string; status?: string }[];
+  unassignedJobClassificationDetails?: { id: string; name: string; code: string; status?: string }[];
+}
 export type ActivitySectionProps = { 
   form: JobPoolFormReturn; 
+  mode: JobPoolFormMode;
   departmentName: string;
   assignedActivityDetails?: { id: string; name: string; code: string }[];
   unassignedActivityDetails?: { id: string; name: string; code: string }[];
 }
-export type EmployeeSectionProps          = { form: JobPoolFormReturn; departmentName: string }
+export type EmployeeSectionProps = { 
+  form: JobPoolFormReturn; 
+  departmentName: string;
+  mode: JobPoolFormMode;
+  assignedUserDetails?: { id: string; firstName?: string; lastName?: string; name?: string; status?: string }[];
+  unassignedUserDetails?: { id: string; firstName?: string; lastName?: string; name?: string; status?: string }[];
+}
