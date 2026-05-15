@@ -5,7 +5,8 @@ import { queryClient } from "@/main"
 import {
   updateUsersOnCostPool,
   unassignUserFromCostPool,
-  assertAssignableActivityDepartmentIdsForUpdate,
+  updateActivitiesOnCostPool,
+  unassignActivityFromCostPool,
   updateCostPool,
 } from "../api/costPoolApi"
 import { CostPoolStatus } from "../enums/cost-pool.enum"
@@ -16,21 +17,33 @@ type UpdateCostPoolInput = {
   id: number
   values: CostPoolUpsertFormValues
   oldAssignedUsers?: { id: string; assignmentId?: number }[]
+  oldAssignedActivities?: { activityDepartmentId: number; id: number }[]
 }
 
 export function useUpdateCostPool() {
   return useMutation({
-    mutationFn: async ({ id, values, oldAssignedUsers = [] }: UpdateCostPoolInput) => {
-      const activityDepartmentIds = await assertAssignableActivityDepartmentIdsForUpdate(
-        id,
-        values.departmentId,
-        values.assignedActivityDepartmentIds,
-      )
+    mutationFn: async ({ id, values, oldAssignedUsers = [], oldAssignedActivities = [] }: UpdateCostPoolInput) => {
       const costPool = await updateCostPool(id, {
         name: values.costPool.trim(),
         status: values.active ? CostPoolStatus.ACTIVE : CostPoolStatus.INACTIVE,
         departmentId: values.departmentId,
-        activityDepartmentIds,
+      })
+
+      // Handle individual DELETEs for removed activities
+      const newActivityIds = new Set(values.assignedActivityDepartmentIds)
+      const removedActivities = oldAssignedActivities.filter(a => a.id > 0 && !newActivityIds.has(a.activityDepartmentId))
+
+      for (const a of removedActivities) {
+        if (a.id > 0) {
+          await unassignActivityFromCostPool(a.id)
+        }
+      }
+
+      // Sync remaining/new activities using PUT
+      await updateActivitiesOnCostPool({
+        costPoolId: id,
+        departmentId: values.departmentId,
+        activityDepartmentIds: values.assignedActivityDepartmentIds,
       })
 
       // Handle individual DELETEs for removed users
@@ -56,8 +69,8 @@ export function useUpdateCostPool() {
     },
     onSuccess: (_data, variables) => {
       void queryClient.invalidateQueries({ queryKey: costPoolKeys.lists() })
-      void queryClient.invalidateQueries({ queryKey: costPoolKeys.detail(variables.id) })
-      void queryClient.invalidateQueries({
+      queryClient.removeQueries({ queryKey: costPoolKeys.detail(variables.id) })
+      queryClient.removeQueries({
         queryKey: costPoolKeys.activityPicklist(variables.values.departmentId),
       })
     },

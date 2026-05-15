@@ -1,8 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 import { departmentKeys } from "../keys"
-import { getAllDepartments, getDepartments } from "../api/departments"
+import { getAllDepartments, getDepartments, getDepartmentsAll } from "../api/departments"
 import type { GetAllDepartmentsParams } from "../types"
-import { getDepartments, getDepartmentsAll } from "../api/departments"
 
 export function useGetDepartments(
   params: {
@@ -50,6 +49,10 @@ export function useGetAllDepartments(
     refetchOnMount: "always",
     refetchOnWindowFocus: false,
     refetchOnReconnect: true,
+    enabled: options?.enabled ?? true,
+  })
+}
+
 export function useGetDepartmentsAll(
   params?: { status?: string; search?: string; sort?: string },
   options?: { enabled?: boolean }

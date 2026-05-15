@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useQuery } from "@tanstack/react-query"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { ArrowLeft, History, PlusIcon, SearchIcon } from "lucide-react"
 import { useMemo, useState } from "react"
 import { useForm } from "react-hook-form"
@@ -213,7 +213,12 @@ function CostPoolEditFormBody({
 
   const submit = form.handleSubmit((values) => {
     updateMutation.mutate(
-      { id: costPoolId, values, oldAssignedUsers: detail.assignedUsers },
+      { 
+        id: costPoolId, 
+        values, 
+        oldAssignedUsers: detail.assignedUsers,
+        oldAssignedActivities: detail.assignedActivities,
+      },
       {
         onSuccess: () => {
           onUpdated()
@@ -255,55 +260,24 @@ function CostPoolEditDialogContent({
     enabled: true,
     refetchOnMountAlways: true,
   })
-  const { user } = useAuth()
-  const { isSuperAdmin } = usePermissions()
-  const isRestricted = !isSuperAdmin
-
-  const departmentsQuery = useGetDepartments({ status: "active", page: 1, limit: 100 })
-  
-  const { data: userDetails, isLoading: isDetailsLoading } = useQuery({
-    queryKey: ["user-details-local", user?.id],
-    queryFn: () => (user?.id ? getUserDetails(user.id) : Promise.reject("No user ID")),
-    enabled: !!user?.id && isRestricted,
-  })
 
   const departmentOptions = useMemo(() => {
-    const rawOptions = (departmentsQuery.data?.items ?? []).map((d) => ({
-      id: Number(d.id),
-      name: d.name,
-      allowUserCostpoolDirect: d.settings.allowUserCostpoolDirect,
-    }))
-    
-    if (isSuperAdmin) return rawOptions.map(opt => ({ ...opt, id: String(opt.id) }))
-    
-    const apiDepts = (userDetails as any)?.data?.departments || (userDetails as any)?.departments
-    const contextDepts = user?.departmentRoles || []
-    
-    const assignedIds = new Set<number>()
-    
-    if (Array.isArray(apiDepts)) {
-      apiDepts.forEach((d: any) => assignedIds.add(Number(d.id || d.departmentId)))
-    }
-    if (assignedIds.size === 0 && Array.isArray(contextDepts)) {
-      contextDepts.forEach((dr) => assignedIds.add(Number(dr.departmentId)))
-    }
-      
-    return assignedIds.size > 0 
-      ? rawOptions.filter(opt => assignedIds.has(opt.id)).map(opt => ({ ...opt, id: String(opt.id) }))
-      : rawOptions.map(opt => ({ ...opt, id: String(opt.id) }))
-  }, [departmentsQuery.data, userDetails, user, isSuperAdmin])
-
-  const activityPicklist = useCostPoolActivityPicklistQuery(Number(detailQuery.data?.departmentId || 0), {
-    enabled: !!detailQuery.data?.departmentId,
-  })
+    if (!detailQuery.data?.department) return []
+    const d = detailQuery.data.department
+    return [
+      {
+        id: String(d.id),
+        name: d.name,
+        allowUserCostpoolDirect: (d as any).allowUserOrCostpoolDirect,
+      },
+    ]
+  }, [detailQuery.data?.department])
 
   const activityRows = useMemo(() => {
     if (!detailQuery.data) return []
     
-    // Start with currently assigned activities from the detail
     const assigned = (detailQuery.data.assignedActivities ?? []).map(summaryToPickRow)
-    // Add truly unassigned activities from the picklist (excludes activities in other pools)
-    const unassigned = activityPicklist.data ?? []
+    const unassigned = (detailQuery.data.unassignedActivities ?? []).map(summaryToPickRow)
     
     const map = new Map<number, CostPoolActivityPickRow>()
     for (const r of [...assigned, ...unassigned]) {
@@ -312,34 +286,31 @@ function CostPoolEditDialogContent({
       }
     }
     return Array.from(map.values())
-  }, [detailQuery.data, activityPicklist.data])
-
-  const userPicklist = useCostPoolUserPicklistQuery(Number(detailQuery.data?.departmentId || 0), {
-    enabled: !!detailQuery.data?.departmentId,
-  })
+  }, [detailQuery.data])
 
   const userRows = useMemo(() => {
-    const picklistUsers = userPicklist.data?.users ?? []
+    if (!detailQuery.data) return []
     
-    // Ensure all users from detail (assigned and unassigned) are in the list
-    const detailAssigned = (detailQuery.data?.assignedUsers ?? []).map((u) => ({
+    const detailAssigned = (detailQuery.data.assignedUsers ?? []).map((u) => ({
       userId: String(u.id),
       displayName: [u.firstName, u.lastName].filter(Boolean).join(" ") || String(u.id),
     }))
-    const detailUnassigned = (detailQuery.data?.unassignedUsers ?? []).map((u) => ({
+    const detailUnassigned = (detailQuery.data.unassignedUsers ?? []).map((u) => ({
       userId: String(u.id),
       displayName: [u.firstName, u.lastName].filter(Boolean).join(" ") || String(u.id),
     }))
 
-    const combined = [...picklistUsers, ...detailAssigned, ...detailUnassigned]
+    const combined = [...detailAssigned, ...detailUnassigned]
     const map = new Map<string, any>()
     for (const u of combined) {
       if (u.userId) map.set(u.userId, u)
     }
     return Array.from(map.values())
-  }, [userPicklist.data?.users, detailQuery.data])
+  }, [detailQuery.data])
 
-  const allowUserOrCostpoolDirect = userPicklist.data?.allowUserOrCostpoolDirect ?? true
+  const allowUserOrCostpoolDirect = useMemo(() => {
+    return (detailQuery.data?.department as any)?.allowUserOrCostpoolDirect ?? true
+  }, [detailQuery.data])
 
   if (detailQuery.isError) {
     return (
@@ -363,13 +334,13 @@ function CostPoolEditDialogContent({
       costPoolId={costPoolId}
       detail={detailQuery.data}
       activityRows={activityRows}
-      activitiesLoading={detailQuery.isFetching || activityPicklist.isLoading}
+      activitiesLoading={detailQuery.isFetching}
       userRows={userRows}
-      usersLoading={userPicklist.isLoading || detailQuery.isFetching}
+      usersLoading={detailQuery.isFetching}
       allowUserOrCostpoolDirect={allowUserOrCostpoolDirect}
       isLoadingDetails={detailQuery.isFetching}
       departmentOptions={departmentOptions}
-      departmentsLoading={departmentsQuery.isPending || isDetailsLoading}
+      departmentsLoading={false}
       onClose={onClose}
       onUpdated={onUpdated}
     />
@@ -388,6 +359,7 @@ export function CostPoolTable({
   onPageSizeChange,
 }: CostPoolTableProps) {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const { canAdd, canUpdate } = usePermissions()
   const canAddCostPool = canAdd("costpool")
   const canUpdateCostPool = canUpdate("costpool")
@@ -731,7 +703,8 @@ export function CostPoolTable({
             )}
           </TableBody>
         </Table>
-      </div>      {!showHistory && (
+      </div>
+      {!showHistory && (
         <div className="mt-4">
           <MasterCodePagination
             totalItems={totalItems}
@@ -754,7 +727,6 @@ export function CostPoolTable({
               onClose={() => setAddOpen(false)}
               onCreated={() => {
                 onPageChange(1)
-                navigate("/costpool", { replace: true })
               }}
             />
           </div>
@@ -783,7 +755,6 @@ export function CostPoolTable({
                   setRowToEdit(null)
                 }}
                 onUpdated={() => {
-                  navigate("/costpool", { replace: true })
                 }}
               />
             </div>
