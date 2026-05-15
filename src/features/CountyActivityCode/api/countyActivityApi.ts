@@ -56,30 +56,30 @@ export async function apiGetCountyActivityById(id: number): Promise<ApiActivityR
 export async function apiGetCountyActivityForEdit(id: number): Promise<CountyActivityEditPayload> {
   const activity = await apiGetCountyActivityById(id)
   let names: string[] = []
-  let apportioning = activity.apportioning ?? false
-
-  if (activity.activityDepartments != null && activity.activityDepartments.length > 0) {
-    const firstAd = activity.activityDepartments[0]
-    apportioning = firstAd.apportioning || (firstAd.department?.apportioning ?? false)
-  }
 
   if (activity.departments != null && activity.departments.length > 0) {
     names = sortDepartmentNameList(activity.departments.map((d) => d.name))
-    if (activity.activityDepartments == null || activity.activityDepartments.length === 0) {
-      const firstDept = activity.departments.find((d: any) => d.apportioning !== undefined) as any
-      if (firstDept) apportioning = firstDept.apportioning
-    }
   } else {
     const links = await fetchCountyActivityDepartmentLinks(id)
     names = sortDepartmentNameList(links.map((l) => l.name))
-    if ((activity.activityDepartments == null || activity.activityDepartments.length === 0) && links.length > 0) {
-      apportioning = links[0].apportioning
+  }
+  const apportioningDepartments: { name: string; apportioning: boolean }[] = []
+  const actDepts = activity.activityDepartments ?? []
+  actDepts.forEach((ad) => {
+    let name = ""
+    if (ad.department?.name) {
+      name = ad.department.name
+    } else {
+      const d = (activity.departments ?? []).find((x) => x.id === ad.departmentId)
+      if (d?.name) name = d.name
+    }
+    if (name) {
+      apportioningDepartments.push({ name, apportioning: ad.apportioning })
     }
   }
   return { 
     activity: { ...activity, apportioning }, 
-    departmentNames: names,
-    apportioningDepartments: activity.apportioningDepartments || []
+    departmentNames: names 
   }
 }
 
@@ -114,7 +114,7 @@ async function fetchCountyActivityDepartmentLinks(
   const all: ApiActivityDepartmentResDto[] = []
   let page = 1
   const limit = ACTIVITY_DEPARTMENTS_LIST_LIMIT
-  for (;;) {
+  for (; ;) {
     const search = new URLSearchParams({
       activityId: String(activityId),
       page: String(page),
@@ -141,6 +141,8 @@ async function deleteCountyActivityDepartmentLink(linkId: number): Promise<void>
 
 async function createCountyActivityDepartmentLinks(
   input: PostActivityDepartmentLinksInput,
+  /** Map of departmentId → whether that department has apportioning enabled in master */
+  deptApportioningMap?: Map<number, boolean>,
 ): Promise<void> {
   const ids = input.departmentIds.filter(
     (id) => typeof id === "number" && !Number.isNaN(id) && id > 0,
@@ -148,8 +150,11 @@ async function createCountyActivityDepartmentLinks(
   if (ids.length === 0) return
 
   await Promise.all(
-    ids.map((departmentId) =>
-      postCountyActivityDepartmentLink({
+    ids.map((departmentId) => {
+      // Per-dept apportioning: activity must be apportioning AND dept must be apportioning
+      const deptAllowsApportioning = deptApportioningMap?.get(departmentId) ?? true
+      const effectiveApportioning = input.apportioning && deptAllowsApportioning
+      return postCountyActivityDepartmentLink({
         activityId: input.activityId,
         departmentId,
         code: input.activityCode.trim(),
@@ -157,14 +162,16 @@ async function createCountyActivityDepartmentLinks(
         type: input.type,
         leavecode: input.leavecode,
         parentId: input.parentActivityId,
-        apportioning: input.apportioning,
-      }),
-    ),
+        apportioning: effectiveApportioning,
+      })
+    }),
   )
 }
 
 async function syncCountyActivityDepartmentLinks(
   input: SyncActivityDepartmentLinksInput,
+  /** Map of departmentId → whether that department has apportioning enabled in master */
+  deptApportioningMap?: Map<number, boolean>,
 ): Promise<void> {
   const desired = new Set(
     input.desiredDepartmentIds.filter(
@@ -179,17 +186,41 @@ async function syncCountyActivityDepartmentLinks(
 
   const have = new Set(existing.map((row) => row.departmentId))
   const toAdd = [...desired].filter((id) => !have.has(id))
+  await createCountyActivityDepartmentLinks(
+    {
+      activityId: input.activityId,
+      departmentIds: toAdd,
+      activityCode: input.activityCode,
+      activityName: input.activityName,
+      type: input.type,
+      leavecode: input.leavecode,
+      parentActivityId: input.parentActivityId,
+      apportioning: input.apportioning,
+    },
+    deptApportioningMap,
+  )
 
-  await createCountyActivityDepartmentLinks({
-    activityId: input.activityId,
-    departmentIds: toAdd,
-    activityCode: input.activityCode,
-    activityName: input.activityName,
-    type: input.type,
-    leavecode: input.leavecode,
-    parentActivityId: input.parentActivityId,
-    apportioning: input.apportioning,
-  })
+  // UPDATED: Also update existing links if their apportioning status changed
+  const toUpdate = existing.filter((row) => desired.has(row.departmentId))
+  await Promise.all(
+    toUpdate.map((row) => {
+      const deptAllowsApportioning = deptApportioningMap?.get(row.departmentId) ?? true
+      const effectiveApportioning = input.apportioning && deptAllowsApportioning
+
+      // Only call API if apportioning status actually changed
+      if (row.apportioning !== effectiveApportioning) {
+        return api.put<unknown>(`/activity-departments/${row.id}`, {
+          code: input.activityCode.trim(),
+          name: input.activityName.trim(),
+          type: input.type,
+          leavecode: input.leavecode,
+          parentId: input.parentActivityId,
+          apportioning: effectiveApportioning,
+        })
+      }
+      return Promise.resolve()
+    }),
+  )
 }
 
 function countyActivityCatalogEnrichmentKey(activityCodeType: string, activityCode: string): string {
@@ -270,6 +301,22 @@ export function buildCountyActivityCodeRowsFromHierarchy(
         : sortUniquePositiveDepartmentIds(fromLinks)
 
     const id = String(node.id)
+
+    const apportioningDepartments: { name: string; apportioning: boolean }[] = []
+    const actDepts = node.activityDepartments ?? []
+    actDepts.forEach((ad) => {
+      let name = ""
+      if (ad.department?.name) {
+        name = ad.department.name
+      } else {
+        const d = (node.departments ?? []).find((x) => x.id === ad.departmentId)
+        if (d?.name) name = d.name
+      }
+      if (name) {
+        apportioningDepartments.push({ name, apportioning: ad.apportioning })
+      }
+    })
+
     rows.push({
       id,
       countyActivityCode: node.code,
@@ -287,12 +334,8 @@ export function buildCountyActivityCodeRowsFromHierarchy(
       leaveCode: node.leavecode,
       docRequired: node.docrequired,
       multipleJobPools: node.isActivityAssignableToMultipleJobPools,
-      apportioning:
-        node.activityDepartments?.[0]?.apportioning ||
-        node.activityDepartments?.[0]?.department?.apportioning ||
-        node.apportioning || 
-        (node.departments?.[0] as any)?.apportioning || 
-        false,
+      apportioning: node.apportioning || false,
+      apportioningDepartments,
       rowType,
       parentId,
     })
@@ -330,6 +373,21 @@ export function mapCountyActivityListItemToGridRow(
   const isPrimary =
     dto.type === ApiActivityTypeEnum.PRIMARY || typeNorm === "primary"
 
+  const apportioningDepartments: { name: string; apportioning: boolean }[] = []
+  const actDepts = dto.activityDepartments ?? []
+  actDepts.forEach((ad) => {
+    let name = ""
+    if (ad.department?.name) {
+      name = ad.department.name
+    } else {
+      const d = (dto.departments ?? []).find((x) => x.id === ad.departmentId)
+      if (d?.name) name = d.name
+    }
+    if (name) {
+      apportioningDepartments.push({ name, apportioning: ad.apportioning })
+    }
+  })
+
   return {
     id: String(dto.id),
     countyActivityCode: dto.code,
@@ -349,12 +407,8 @@ export function mapCountyActivityListItemToGridRow(
     leaveCode: dto.leavecode,
     docRequired: dto.docrequired,
     multipleJobPools: dto.isActivityAssignableToMultipleJobPools,
-    apportioning:
-      dto.activityDepartments?.[0]?.apportioning ||
-      dto.activityDepartments?.[0]?.department?.apportioning ||
-      dto.apportioning || 
-      (dto.departments?.[0] as any)?.apportioning || 
-      false,
+    apportioning: dto.apportioning || false,
+    apportioningDepartments,
     rowType: isPrimary ? CountyActivityGridRowType.PRIMARY : CountyActivityGridRowType.SUB,
     parentId:
       dto.parentId != null && dto.parentId !== undefined ? String(dto.parentId) : null,
@@ -389,6 +443,8 @@ export function buildCountyActivityPrimaryGridRowAfterCreate(
   const v = input.values
   const linked = sortUniquePositiveDepartmentIds(input.departmentLinks.map((d) => d.id))
 
+  const apportioningDepartments: { name: string; apportioning: boolean }[] = []
+
   return {
     id: String(res.id),
     countyActivityCode: v.countyActivityCode.trim(),
@@ -407,6 +463,7 @@ export function buildCountyActivityPrimaryGridRowAfterCreate(
     docRequired: v.docRequired,
     multipleJobPools: v.multipleJobPools,
     apportioning: v.apportioning,
+    apportioningDepartments,
     rowType: CountyActivityGridRowType.PRIMARY,
     parentId: null,
   }
@@ -456,6 +513,7 @@ export function buildCountyActivitySubGridRowAfterCreate(
     docRequired: v.docRequired,
     multipleJobPools: v.multipleJobPools,
     apportioning: v.apportioning,
+    apportioningDepartments: [],
     rowType: CountyActivityGridRowType.SUB,
     parentId: pid,
   }
@@ -585,7 +643,7 @@ export async function apiGetCountyActivitiesCatalogAggregated(
   let firstMeta: CountyActivityListMeta | null = null
   let page = 1
 
-  for (;;) {
+  for (; ;) {
     const inner = await apiGetCountyActivitiesPage({
       page,
       limit: chunk,
@@ -699,6 +757,12 @@ export async function apiPostCountyActivity(
       throw new Error("Create response missing id")
     }
 
+    // Build a per-dept apportioning map from the departmentLinks metadata if available
+    // This ensures only departments where apportioning=true in dept master get apportioning=true in the link
+    const deptApportioningMap = new Map<number, boolean>(
+      departmentLinks.map((d) => [d.id, (d as any).apportioning ?? true])
+    )
+
     await createCountyActivityDepartmentLinks({
       activityId: data.id,
       departmentIds: departmentLinks.map((d) => d.id),
@@ -708,7 +772,7 @@ export async function apiPostCountyActivity(
       leavecode: values.leaveCode,
       parentActivityId: null,
       apportioning: values.apportioning,
-    })
+    }, deptApportioningMap)
 
     return data
   }
@@ -773,6 +837,13 @@ export async function apiPutCountyActivity(input: UpdateCountyActivityApiInput):
       .map((d) => d.id)
       .filter((x) => typeof x === "number" && !Number.isNaN(x) && x > 0)
 
+    // Build per-dept apportioning map so each link respects dept-level apportioning setting
+    const deptApportioningMap = new Map<number, boolean>(
+      departmentLinks
+        .filter((d) => typeof d.id === "number")
+        .map((d) => [d.id, (d as any).apportioning ?? true])
+    )
+
     await syncCountyActivityDepartmentLinks({
       activityId: id,
       desiredDepartmentIds: desiredIds,
@@ -782,6 +853,6 @@ export async function apiPutCountyActivity(input: UpdateCountyActivityApiInput):
       leavecode: values.leaveCode,
       parentActivityId: null,
       apportioning: values.apportioning,
-    })
+    }, deptApportioningMap)
   }
 }
