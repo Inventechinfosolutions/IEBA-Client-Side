@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { Controller, useFormContext } from "react-hook-form"
 import { Eye, EyeOff, Loader2, Trash2 } from "lucide-react"
+import { useQueryClient } from "@tanstack/react-query"
 
 import { Checkbox } from "@/components/ui/checkbox"
 import { TitleCaseInput } from "@/components/ui/title-case-input"
@@ -18,6 +19,7 @@ import {
   useGetMulticodeMasterCodes,
 } from "../queries/get-add-employee"
 import { useEmployeeLoginDetailsUi } from "../hooks/use-add-employee-form"
+import { addEmployeeLookupKeys } from "../keys"
 import { formatPhoneUs10Input } from "../schemas"
 
 
@@ -28,16 +30,17 @@ export function EmployeeLoginDetailsSection({
   isEditMode,
   userId,
 }: EmployeeLoginDetailsSectionProps) {
-  /** Edit mode: defer GET /jobclassification until the user opens the picker. */
+  /** Defer GET /jobclassification and /location until the user opens the picker. */
   const [jobClassificationMenuOpened, setJobClassificationMenuOpened] = useState(false)
   const [locationMenuOpened, setLocationMenuOpened] = useState(false)
 
   const { isSuperAdmin, user } = usePermissions()
+  const queryClient = useQueryClient()
   // Show dept assignment for all non-super-admin roles (PayrollAdmin, TimeStudyAdmin, DeptAdmin, etc.)
   const showDeptAutoAssign = !isSuperAdmin
 
-  const jobClassificationsEnabled = !isEditMode || jobClassificationMenuOpened
-  const locationsEnabled = !isEditMode || locationMenuOpened
+  const jobClassificationsEnabled = jobClassificationMenuOpened
+  const locationsEnabled = locationMenuOpened
 
   const jobClassificationsQuery = useGetAddEmployeeJobClassifications(jobClassificationsEnabled)
   const locationsQuery = useGetAddEmployeeLocations(locationsEnabled)
@@ -191,7 +194,10 @@ export function EmployeeLoginDetailsSection({
                   }}
                   onBlur={field.onBlur}
                   onOpenChange={(open) => {
-                    if (open) setLocationMenuOpened(true)
+                    if (open) {
+                      setLocationMenuOpened(true)
+                      void queryClient.invalidateQueries({ queryKey: addEmployeeLookupKeys.locations() })
+                    }
                   }}
                   options={options}
                   placeholder="Select location"
@@ -402,7 +408,10 @@ export function EmployeeLoginDetailsSection({
                   }}
                   onBlur={field.onBlur}
                   onOpenChange={(open) => {
-                    if (open) setJobClassificationMenuOpened(true)
+                    if (open) {
+                      setJobClassificationMenuOpened(true)
+                      void queryClient.invalidateQueries({ queryKey: addEmployeeLookupKeys.jobClassifications() })
+                    }
                   }}
                   options={options}
                   placeholder="Select job classification"

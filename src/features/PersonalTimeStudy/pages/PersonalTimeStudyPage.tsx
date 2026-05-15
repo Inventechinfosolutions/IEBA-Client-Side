@@ -21,7 +21,6 @@ import type { WeekSummaryRow } from "../components/PersonalTimeStudyWeekSummary"
 import { TimeStudyMGTPage } from "../TimeStudyMGT"
 import { PersonalTimeStudyNotesSection } from "../components/PersonalTimeStudyNotesSection"
 import { toIsoYmdFromDate, todayLocal } from "@/lib/dates"
-import { useGetUserApportioningConfig } from "../queries/getUserApportioningConfig"
 
 
 type ActiveTab = "personal" | "mgt"
@@ -112,8 +111,6 @@ export function PersonalTimeStudyPage() {
 
   // 5. Fetch Time Entry Summary (MAA etc)
   const summaryQuery = useGetTimeEntrySummary(userId, dateStr, undefined, activeTab === "personal")
-
-  const apportioningConfigQuery = useGetUserApportioningConfig(userId, activeTab === "personal")
 
   // 5. Calendar day & week summaries
   const { dayStatuses, weekSummaries } = useMemo(() => {
@@ -396,8 +393,6 @@ export function PersonalTimeStudyPage() {
                       actualMultiTotal={summaryQuery.data?.actualmultiactivitytime}
                       multiBalanceTotal={summaryQuery.data?.actualmultiactivityTimebalance}
                       hideSummaryHeader={true}
-                      apportioningConfig={apportioningConfigQuery.data ?? null}
-                      apportioningRecords={dayQuery.data?.timeStudyRecords?.filter((r: any) => r.apportioning === true) || []}
                       isLoading={dayQuery.isFetching || submitMutation.isPending || deleteMutation.isPending}
                     />
                   </div>
