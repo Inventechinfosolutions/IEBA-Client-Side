@@ -76,6 +76,7 @@ export type ApiActivityResDto = {
   /** Present when API hydrates links (join to `department` master). */
   departments?: ApiActivityNestedDepartmentResDto[]
   activityDepartments?: ApiActivityDepartmentResDto[]
+  apportioningDepartments?: any[]
 }
 
 export type ApiActivityTreeResDto = ApiActivityResDto & {

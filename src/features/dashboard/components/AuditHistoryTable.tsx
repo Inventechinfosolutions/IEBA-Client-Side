@@ -1,5 +1,4 @@
-import { useRef, useState } from "react"
-import { SearchIcon } from "lucide-react"
+import { useState } from "react"
 
 import tableEmptyIcon from "@/assets/icons/table-empty.png"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -11,7 +10,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { TitleCaseInput } from "@/components/ui/title-case-input"
 import { Spinner } from "@/components/ui/spinner"
 import { MasterCodePagination } from "@/features/master-code/components/MasterCodePagination"
 
@@ -24,7 +22,6 @@ type AuditHistoryTableProps = {
   entityName?: string
 }
 
-const SEARCH_DEBOUNCE_MS = 400
 
 const HEADERS = [
   "Entity Name",

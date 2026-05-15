@@ -1,5 +1,4 @@
-import { useRef, useState } from "react"
-import { SearchIcon } from "lucide-react"
+import { useState } from "react"
 
 import tableEmptyIcon from "@/assets/icons/table-empty.png"
 import { Spinner } from "@/components/ui/spinner"
@@ -12,7 +11,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { TitleCaseInput } from "@/components/ui/title-case-input"
 import { MasterCodePagination } from "@/features/master-code/components/MasterCodePagination"
 
 import {
@@ -25,7 +23,6 @@ type CostPoolHistoryTableProps = {
   assignmentKind?: string
 }
 
-const SEARCH_DEBOUNCE_MS = 400
 
 const HEADERS = [
   "Activity Code",

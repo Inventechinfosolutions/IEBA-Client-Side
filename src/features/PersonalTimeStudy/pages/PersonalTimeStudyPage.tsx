@@ -11,7 +11,6 @@ import { PersonalTimeStudyEntryForm } from "../components/PersonalTimeStudyEntry
 import { PersonalTimeStudyLeaveCard } from "../components/PersonalTimeStudyLeaveCard"
 import { PersonalTimeStudyLegendCard } from "../components/PersonalTimeStudyLegendCard"
 import { PersonalTimeStudyMinutesCard } from "../components/PersonalTimeStudyMinutesCard"
-import { PersonalTimeStudyNotesSection } from "../components/PersonalTimeStudyNotesSection"
 import { useGetPersonalMonthLegend } from "../queries/getPersonalMonthLegend"
 import { useGetPersonalDayDetail } from "../queries/getPersonalDayDetail"
 import { useGetPersonalDropdowns } from "../queries/getPersonalDropdowns"
@@ -21,6 +20,7 @@ import { useSubmitPersonalTimeRecords } from "../mutation/createPersonalTimeReco
 import { useDeletePersonalTimeRecord } from "../mutation/deletePersonalTimeRecord"
 import type { WeekSummaryRow } from "../components/PersonalTimeStudyWeekSummary"
 import { TimeStudyMGTPage } from "../TimeStudyMGT"
+import { PersonalTimeStudyNotesSection } from "../components/PersonalTimeStudyNotesSection"
 import { toIsoYmdFromDate, todayLocal } from "@/lib/dates"
 
 
@@ -263,27 +263,18 @@ export function PersonalTimeStudyPage() {
     return null
   }
 
-  // 6. Notes local state
-  const [localNotes, setLocalNotes] = useState("")
 
-  // Sync local notes when date changes or data arrives
-  const fetchedNotes = dayQuery.data?.notes ?? ""
-  const [prevFetchedNotes, setPrevFetchedNotes] = useState<string | null>(null)
-  const [prevDateStr, setPrevDateStr] = useState(dateStr)
-
-  if (dateStr !== prevDateStr) {
-    setPrevDateStr(dateStr)
-    setLocalNotes("") // Clear notes immediately when date changes
-    setPrevFetchedNotes(null)
-  } else if (fetchedNotes !== prevFetchedNotes && dayQuery.isSuccess) {
-    setPrevFetchedNotes(fetchedNotes)
-    setLocalNotes(fetchedNotes)
-  }
 
   // 7. Mutations
-  const notesMutation = useSavePersonalNotes(userId, dateStr, month, year)
   const submitMutation = useSubmitPersonalTimeRecords(userId, dateStr, month, year)
   const deleteMutation = useDeletePersonalTimeRecord(userId, dateStr, month, year)
+  const notesMutation = useSavePersonalNotes(userId, dateStr, month, year)
+
+  const [draftNotes, setDraftNotes] = useState<string | null>(null)
+  const localNotes = useMemo(
+    () => (draftNotes !== null ? draftNotes : dayQuery.data?.notes || ""),
+    [draftNotes, dayQuery.data?.notes]
+  )
 
   const weekRows: WeekSummaryRow[] = useMemo(() => [], [])
 
@@ -291,7 +282,11 @@ export function PersonalTimeStudyPage() {
     <TooltipProvider>
       <section className="font-roboto *:font-roboto box-border w-full min-w-0 max-w-full overflow-x-hidden">
         <div className="box-border w-full min-w-0 max-w-full px-6 py-4">
+      <section className="font-roboto *:font-roboto box-border w-full min-w-0 max-w-full overflow-x-hidden">
+        <div className="box-border w-full min-w-0 max-w-full px-6 py-4">
 
+          {/* ── Outer card wrapping BOTH tabs — same as Payroll page ── */}
+          <div className="box-border mx-auto min-w-0 w-full max-w-full overflow-hidden rounded-[6px] border border-[#e7e9f2] bg-white shadow-[0_0_14px_0_rgb(0_0_0/0.04),0_0_1px_0_rgb(0_0_0/0.06)]">
           {/* ── Outer card wrapping BOTH tabs — same as Payroll page ── */}
           <div className="box-border mx-auto min-w-0 w-full max-w-full overflow-hidden rounded-[6px] border border-[#e7e9f2] bg-white shadow-[0_0_14px_0_rgb(0_0_0/0.04),0_0_1px_0_rgb(0_0_0/0.06)]">
 
@@ -328,7 +323,42 @@ export function PersonalTimeStudyPage() {
                 )}
               </div>
             </div>
+            {/* Tab Bar — Program-style design */}
+            <div className="border-b border-[#eef0f5]">
+              <div className={cn("grid select-none gap-0 bg-white", canReviewMgt ? "grid-cols-2" : "grid-cols-1")}>
+                <button
+                  id="tab-personal-time-study"
+                  type="button"
+                  onClick={() => setActiveTab("personal")}
+                  className={cn(
+                    "flex h-[63px] cursor-pointer items-center justify-center rounded-[6px] border px-3 text-[17px] leading-none font-medium tracking-wide",
+                    activeTab === "personal"
+                      ? "border-[#6C5DD3] bg-[#6C5DD3] text-white"
+                      : "border-[#e8e9ef] bg-white text-[#6C5DD3]"
+                  )}
+                >
+                  Personal Time Study
+                </button>
+                {canReviewMgt && (
+                  <button
+                    id="tab-time-study-mgt"
+                    type="button"
+                    onClick={() => setActiveTab("mgt")}
+                    className={cn(
+                      "flex h-[63px] cursor-pointer items-center justify-center rounded-[6px] border px-3 text-[17px] leading-none font-medium tracking-wide",
+                      activeTab === "mgt"
+                        ? "border-[#6C5DD3] bg-[#6C5DD3] text-white"
+                        : "border-[#e8e9ef] bg-white text-[#6C5DD3]"
+                    )}
+                  >
+                    Time Study MGT
+                  </button>
+                )}
+              </div>
+            </div>
 
+            {/* Tab Content — padded inside the card */}
+            <div className="p-4 lg:p-6">
             {/* Tab Content — padded inside the card */}
             <div className="p-4 lg:p-6">
 
@@ -349,41 +379,66 @@ export function PersonalTimeStudyPage() {
                         className="h-full min-h-0 w-full min-w-0"
                       />
                     </div>
+              {/* ── Personal Time Study Tab ── */}
+              {activeTab === "personal" && (
+                <>
+                  <div className="flex flex-col gap-2 lg:flex-row lg:items-stretch lg:gap-2">
+                    <div className="flex min-h-0 min-w-0 shrink-0 lg:w-[38%] lg:max-w-[38%]">
+                      <PersonalTimeStudyCalendarCard
+                        weekRows={weekRows}
+                        selectedDate={selectedDate}
+                        onDateSelect={setSelectedDate}
+                        currentMonthDate={viewportDate}
+                        onMonthChange={handleMonthChange}
+                        dayStatuses={dayStatuses}
+                        weekSummaries={weekSummaries}
+                        renderStatus={renderStatus}
+                        className="h-full min-h-0 w-full min-w-0"
+                      />
+                    </div>
 
-                <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-2 lg:min-h-0">
-                  <div className="grid min-h-0 w-full grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                    <PersonalTimeStudyLegendCard className="min-h-0" />
-                    <PersonalTimeStudyLeaveCard
-                      className="min-h-0"
-                      leaveCount={
-                        (monthQuery.data?.leaveRecords?.filter(r => r.status?.toLowerCase() === "approved").length ?? 0) +
-                        (monthQuery.data?.leaveRecords?.filter(r => ["draft", "requested"].includes(r.status?.toLowerCase() ?? "")).length ?? 0) +
-                        (monthQuery.data?.leaveRecords?.filter(r => r.status?.toLowerCase() === "rejected").length ?? 0)
-                      }
-                      approved={monthQuery.data?.leaveRecords?.filter(r => r.status?.toLowerCase() === "approved").length ?? 0}
-                      open={monthQuery.data?.leaveRecords?.filter(r => ["draft", "requested"].includes(r.status?.toLowerCase() ?? "")).length ?? 0}
-                      rejected={monthQuery.data?.leaveRecords?.filter(r => r.status?.toLowerCase() === "rejected").length ?? 0}
-                      leaveRecords={monthQuery.data?.leaveRecords}
-                      dropdownData={dropdownQuery.data}
-                      allowMultiCodes={
-                        apportioningConfigQuery.isPending && !apportioningConfigQuery.isFetched
-                          ? undefined
-                          : apportioningConfigQuery.data?.allowMultiCodes === true
-                      }
-                      onOpen={() => dropdownQuery.refetch()}
-                      dateStr={dateStr}
-                      month={month}
-                      year={year}
-                      isLoading={monthQuery.isLoading}
-                      isDropdownLoading={dropdownQuery.isFetching}
-                    />
-                    <PersonalTimeStudyMinutesCard
-                      className="min-h-0 sm:col-span-2 lg:col-span-1"
-                      allocatedMinutes={summaryQuery.data?.tsmins ?? 0}
-                      actualMinutes={summaryQuery.data?.actualnormalactivitytime ?? 0}
-                      balanceMinutes={summaryQuery.data?.actualnormalactivityTimebalance ?? 0}
-                      totalMAAMinutes={summaryQuery.data?.actualmultiactivitytime ?? 0}
-                    />
+                    <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-2 lg:min-h-0">
+                      <div className="grid min-h-0 w-full grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                        <PersonalTimeStudyLegendCard className="min-h-0" />
+                        <PersonalTimeStudyLeaveCard
+                          className="min-h-0"
+                          leaveCount={
+                            (monthQuery.data?.leaveRecords?.filter(r => r.status?.toLowerCase() === "approved").length ?? 0) +
+                            (monthQuery.data?.leaveRecords?.filter(r => ["draft", "requested"].includes(r.status?.toLowerCase() ?? "")).length ?? 0) +
+                            (monthQuery.data?.leaveRecords?.filter(r => r.status?.toLowerCase() === "rejected").length ?? 0)
+                          }
+                          approved={monthQuery.data?.leaveRecords?.filter(r => r.status?.toLowerCase() === "approved").length ?? 0}
+                          open={monthQuery.data?.leaveRecords?.filter(r => ["draft", "requested"].includes(r.status?.toLowerCase() ?? "")).length ?? 0}
+                          rejected={monthQuery.data?.leaveRecords?.filter(r => r.status?.toLowerCase() === "rejected").length ?? 0}
+                          leaveRecords={monthQuery.data?.leaveRecords}
+                          dropdownData={dropdownQuery.data}
+                          allowMultiCodes={false}
+                          onOpen={() => dropdownQuery.refetch()}
+                          dateStr={dateStr}
+                          month={month}
+                          year={year}
+                          isLoading={monthQuery.isLoading}
+                          isDropdownLoading={dropdownQuery.isFetching}
+                        />
+                        <PersonalTimeStudyMinutesCard
+                          className="min-h-0 sm:col-span-2 lg:col-span-1"
+                          allocatedMinutes={summaryQuery.data?.tsmins ?? 0}
+                          actualMinutes={summaryQuery.data?.actualnormalactivitytime ?? 0}
+                          balanceMinutes={summaryQuery.data?.actualnormalactivityTimebalance ?? 0}
+                          totalMAAMinutes={summaryQuery.data?.actualmultiactivitytime ?? 0}
+                        />
+                      </div>
+
+                      <PersonalTimeStudyNotesSection
+                        value={localNotes}
+                        onChange={setDraftNotes}
+                        onSave={() => notesMutation.mutate(localNotes, {
+                          onSuccess: () => setDraftNotes(null)
+                        })}
+                        isSaving={notesMutation.isPending}
+                        className="min-h-0"
+                      />
+                    </div>
                   </div>
 
                   <div className="mt-6 mb-4">
@@ -402,6 +457,8 @@ export function PersonalTimeStudyPage() {
                       actualMultiTotal={summaryQuery.data?.actualmultiactivitytime}
                       multiBalanceTotal={summaryQuery.data?.actualmultiactivityTimebalance}
                       hideSummaryHeader={true}
+                      apportioningConfig={apportioningConfigQuery.data ?? null}
+                      apportioningRecords={dayQuery.data?.timeStudyRecords?.filter((r: any) => r.apportioning === true) || []}
                       isLoading={dayQuery.isFetching || submitMutation.isPending || deleteMutation.isPending}
                     />
                   </div>
@@ -412,7 +469,15 @@ export function PersonalTimeStudyPage() {
               {activeTab === "mgt" && canReviewMgt && (
                 <TimeStudyMGTPage />
               )}
+              {/* ── Time Study MGT Tab ── */}
+              {activeTab === "mgt" && canReviewMgt && (
+                <TimeStudyMGTPage />
+              )}
 
+            </div>
+          </div>
+        </div>
+      </section>
             </div>
           </div>
         </div>

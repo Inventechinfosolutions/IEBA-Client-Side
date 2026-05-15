@@ -470,7 +470,7 @@ export function PersonalTimeStudyEntryForm({
     return Array.from(new Map(list.map((a) => [a.id, a])).values())
   }, [dropdownData])
 
-  const allowMulticodeUi = apportioningConfig?.allowMultiCodes === true
+  const allowMulticodeUi = false // apportioningConfig?.allowMultiCodes === true
   const hasMulticodeSubRows = useMemo(() => parents.some((p) => p.subRows.length > 0), [parents])
   const multicodeDropdownQuery = useGetPersonalMulticodeDropdowns(
     userId,
@@ -1093,7 +1093,7 @@ export function PersonalTimeStudyEntryForm({
                       <Trash2 className="size-4" />
                     </Button>
                   )}
-                  {!readonly && !isLeaveRow && apportioningConfig?.allowMultiCodes && (
+                  {!readonly && !isLeaveRow && false && (
                     <Button
                       size="icon"
                       variant="outline"
@@ -1227,6 +1227,17 @@ export function PersonalTimeStudyEntryForm({
           )
         })}
       </div>
+      {apportioningConfig?.apportioningRequired && (
+        <PersonalTimeStudyApportioningPanel
+          apportioningConfig={apportioningConfig}
+          supervisorOwnMinutesToday={parents.reduce((sum, p) => {
+            if (p.isLeave) return sum
+            const mins = Number(computeDurationMinutes(p.start, p.end)) || 0
+            return sum + mins
+          }, 0)}
+          apportioningRecords={apportioningRecords?.filter(r => r.date === dateStr) || []}
+        />
+      )}
 
       {!readonly && !moveSaveSubmitToTop && (
         <div className="mt-4 flex justify-end gap-2">

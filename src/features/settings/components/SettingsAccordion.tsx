@@ -81,7 +81,7 @@ export function SettingsAccordion({
                   {section === "County" ? (
                     <CountyForm isSaving={isSaving} />
                   ) : section === "Auto Generate Code" ? (
-                    <AutoGenerateCodeForm isSaving={isSaving} />
+                    <AutoGenerateCodeForm />
                   ) : section === "Payroll" ? (
                     <PayrollForm isSaving={isSaving} />
                   ) : section === "Fiscal Year" ? (

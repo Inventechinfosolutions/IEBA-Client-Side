@@ -1,8 +1,8 @@
 import { useNavigate } from "react-router-dom"
 import { Clock } from "lucide-react"
-import iconApproved from "@/Assets/icon-approved.png"
-import iconPending from "@/Assets/icon-pending.png"
-import iconNotSubmitted from "@/Assets/icon-not-submitted.png"
+import iconApproved from "@/assets/icon-approved.png"
+import iconPending from "@/assets/icon-pending.png"
+import iconNotSubmitted from "@/assets/icon-not-submitted.png"
 import type { TimeStudyStatusCardProps, StatusRowProps } from "../types"
 
 export function TimeStudyStatusCard({ approved, pendingApproval, notSubmitted, isLoading }: TimeStudyStatusCardProps) {

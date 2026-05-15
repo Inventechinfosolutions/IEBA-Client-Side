@@ -286,6 +286,7 @@ export function applyCountyActivityQueryCacheAfterUpdate(
   queryClient.setQueryData<CountyActivityEditPayload>(detailKey, {
     activity: { ...nextActivity, departments: undefined },
     departmentNames,
+    apportioningDepartments: prevDetail.apportioningDepartments,
   })
 
   const listKey = countyActivityCodeKeys.lists()

@@ -76,12 +76,10 @@ export async function apiGetCountyActivityForEdit(id: number): Promise<CountyAct
     if (name) {
       apportioningDepartments.push({ name, apportioning: ad.apportioning })
     }
-  })
-
-  return {
-    activity,
-    departmentNames: names,
-    apportioningDepartments,
+  }
+  return { 
+    activity: { ...activity, apportioning }, 
+    departmentNames: names 
   }
 }
 
