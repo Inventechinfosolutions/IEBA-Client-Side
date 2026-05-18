@@ -24,9 +24,11 @@ import type {
   SecurityDepartmentRolesQueryResult,
   UserDepartmentRoleDepartmentsBody,
   UserProgramsActivitiesActivityItem,
+  UserProgramsActivitiesAssignedPrograms,
   UserProgramsActivitiesAssignedSplit,
   UserProgramsActivitiesDepartmentBundle,
   UserProgramsActivitiesProgramItem,
+  UserProgramsActivitiesProgramsBundle,
   UserProgramsActivitiesProgramWithAssignments,
 } from "./types"
 import { parseSecurityDepartmentRolesResponse } from "./utility/parseSecurityDepartmentRoles"
@@ -401,11 +403,15 @@ function parseUserProgramsActivitiesProgramItem(
       : typeof parentIdRaw === "number"
         ? parentIdRaw
         : Number(parentIdRaw)
+  const status = typeof p.status === "string" ? p.status : undefined
+  const type = typeof p.type === "string" ? p.type : undefined
   return {
     id,
     code,
     name,
     departmentId: Number.isFinite(pid) ? pid : fallbackDepartmentId,
+    status,
+    type,
     parentId: Number.isFinite(parentId) ? parentId : parentId === null ? null : undefined,
     isMultiCode: p.isMultiCode === true,
   }
@@ -417,7 +423,17 @@ function parseUserProgramsActivitiesAssignedSplit<T>(
 ): UserProgramsActivitiesAssignedSplit<T> {
   const assigned: T[] = []
   const unassigned: T[] = []
-  if (raw === null || typeof raw !== "object") {
+  if (raw == null) {
+    return { assigned, unassigned }
+  }
+  if (Array.isArray(raw)) {
+    for (const item of raw) {
+      const parsed = parseItem(item)
+      if (parsed) assigned.push(parsed)
+    }
+    return { assigned, unassigned }
+  }
+  if (typeof raw !== "object") {
     return { assigned, unassigned }
   }
   const split = raw as Record<string, unknown>
@@ -430,6 +446,43 @@ function parseUserProgramsActivitiesAssignedSplit<T>(
   if (Array.isArray(split.unassigned)) {
     for (const item of split.unassigned) {
       const parsed = parseItem(item)
+      if (parsed) unassigned.push(parsed)
+    }
+  }
+  return { assigned, unassigned }
+}
+
+/** Programs split: `assigned` is `{ normal, jobpoolautoassign }` or a legacy array. */
+function parseUserProgramsActivitiesProgramsSplit(
+  raw: unknown,
+  departmentId: number,
+): UserProgramsActivitiesProgramsBundle {
+  const assigned: UserProgramsActivitiesAssignedPrograms = { normal: [], jobpoolautoassign: [] }
+  const unassigned: UserProgramsActivitiesProgramWithAssignments[] = []
+  if (raw === null || typeof raw !== "object") {
+    return { assigned, unassigned }
+  }
+  const split = raw as Record<string, unknown>
+  const assignedRaw = split.assigned
+  if (Array.isArray(assignedRaw)) {
+    for (const item of assignedRaw) {
+      const parsed = parseUserProgramsActivitiesProgramWithAssignments(item, departmentId)
+      if (parsed) assigned.normal.push(parsed)
+    }
+  } else if (assignedRaw !== null && typeof assignedRaw === "object") {
+    const buckets = assignedRaw as Record<string, unknown>
+    for (const key of ["normal", "jobpoolautoassign"] as const) {
+      const list = buckets[key]
+      if (!Array.isArray(list)) continue
+      for (const item of list) {
+        const parsed = parseUserProgramsActivitiesProgramWithAssignments(item, departmentId)
+        if (parsed) assigned[key].push(parsed)
+      }
+    }
+  }
+  if (Array.isArray(split.unassigned)) {
+    for (const item of split.unassigned) {
+      const parsed = parseUserProgramsActivitiesProgramWithAssignments(item, departmentId)
       if (parsed) unassigned.push(parsed)
     }
   }
@@ -460,11 +513,21 @@ function parseUserProgramsActivitiesBundle(raw: unknown): UserProgramsActivities
   const departmentName = typeof b.departmentName === "string" ? b.departmentName.trim() : ""
   if (!Number.isFinite(departmentId) || !departmentName) return null
 
-  const programs = parseUserProgramsActivitiesAssignedSplit(b.programs, (item) =>
-    parseUserProgramsActivitiesProgramWithAssignments(item, departmentId),
-  )
+  const programs = parseUserProgramsActivitiesProgramsSplit(b.programs, departmentId)
 
-  return { departmentId, departmentCode, departmentName, programs }
+  return {
+    departmentId,
+    departmentCode,
+    departmentName,
+    moveSaveSubmitToTop: b.moveSaveSubmitToTop === true,
+    removeAutoFillEndTime: b.removeAutoFillEndTime === true,
+    startorEndTime: b.startorEndTime === true,
+    supportingDoc: b.supportingDoc === true,
+    removeDescriptionActivityNote: b.removeDescriptionActivityNote === true,
+    removeDescriptionActivityNoteAnchor: b.removeDescriptionActivityNoteAnchor === true,
+    removeDescriptionActivityNoteMultiCode: b.removeDescriptionActivityNoteMultiCode === true,
+    programs,
+  }
 }
 
 /**

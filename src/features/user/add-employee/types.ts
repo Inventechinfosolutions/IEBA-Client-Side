@@ -167,6 +167,8 @@ export type UserProgramsActivitiesProgramItem = {
   code: string
   name: string
   departmentId: number
+  status?: string
+  type?: string
   parentId?: number | null
   isMultiCode?: boolean
 }
@@ -188,12 +190,30 @@ export type UserProgramsActivitiesProgramWithAssignments = UserProgramsActivitie
   children: UserProgramsActivitiesAssignedSplit<UserProgramsActivitiesActivityItem>
 }
 
+/** Assigned programs from GET …/programs-activities-with-assignments. */
+export type UserProgramsActivitiesAssignedPrograms = {
+  normal: UserProgramsActivitiesProgramWithAssignments[]
+  jobpoolautoassign: UserProgramsActivitiesProgramWithAssignments[]
+}
+
+export type UserProgramsActivitiesProgramsBundle = {
+  assigned: UserProgramsActivitiesAssignedPrograms
+  unassigned: UserProgramsActivitiesProgramWithAssignments[]
+}
+
 /** One department bundle from GET …/programs-activities-with-assignments. */
 export type UserProgramsActivitiesDepartmentBundle = {
   departmentId: number
   departmentCode: string
   departmentName: string
-  programs: UserProgramsActivitiesAssignedSplit<UserProgramsActivitiesProgramWithAssignments>
+  moveSaveSubmitToTop?: boolean
+  removeAutoFillEndTime?: boolean
+  startorEndTime?: boolean
+  supportingDoc?: boolean
+  removeDescriptionActivityNote?: boolean
+  removeDescriptionActivityNoteAnchor?: boolean
+  removeDescriptionActivityNoteMultiCode?: boolean
+  programs: UserProgramsActivitiesProgramsBundle
 }
 
 /** POST /users/new/assign/program and …/unassign/program */
@@ -354,6 +374,12 @@ export type AddEmployeeTimeStudyTransferItem = {
   ancestors?: { id: string; name: string; code?: string; isMultiCode?: boolean }[]
 }
 
+/** Read-only JobPool block in the assigned transfer column. */
+export type AddEmployeeTimeStudyJobPoolSection = {
+  sectionTitle: string
+  items: AddEmployeeTimeStudyTransferItem[]
+}
+
 export type AddEmployeeTimeStudyTransferPanelProps = {
   title: string
   items: AddEmployeeTimeStudyTransferItem[]
@@ -364,6 +390,7 @@ export type AddEmployeeTimeStudyTransferPanelProps = {
   onSearchChange: (value: string) => void
   selectedDept: string
   isLoading?: boolean
+  jobPoolSection?: AddEmployeeTimeStudyJobPoolSection | null
 }
 
 export type TimeStudyPlacementOverride = "assigned" | "unassigned"
