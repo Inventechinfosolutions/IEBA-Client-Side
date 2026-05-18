@@ -120,7 +120,7 @@ export function MasterCodePagination({
               </div>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-[100px] min-w-[100px] rounded-lg border-[#d8dae3] bg-white p-1.5 shadow-[0_10px_38px_rgba(0,0,0,0.1),0_10px_20px_rgba(0,0,0,0.06)]">
-              {[10, 20, 50].map((size) => (
+              {[5, 10, 20, 50].map((size) => (
                 <DropdownMenuItem
                   key={size}
                   className={`cursor-pointer rounded-md px-2 py-1.5 text-xs text-[#1f2937] outline-none ${

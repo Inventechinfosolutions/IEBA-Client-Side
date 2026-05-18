@@ -144,18 +144,19 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
 
     const [isMultiCodesOpen, setIsMultiCodesOpen] = useState(false)
     const [multiCodesSearch, setMultiCodesSearch] = useState("")
+    const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false)
 
     const { canUpdate: hasUpdatePerm, isDepartmentAdmin } = usePermissions()
     const canUpdateDepartment = hasUpdatePerm("department")
 
-    const usersQuery = useGetDepartmentUsers()
+    const usersQuery = useGetDepartmentUsers(isUserDropdownOpen)
     const userOptions = usersQuery.data ?? []
 
     const departmentQuery = useGetDepartmentById(departmentId)
     const existingDept = departmentQuery.data
     const isLoadingDept = departmentQuery.isLoading
 
-    const masterCodesQuery = useGetMasterCodeOptions()
+    const masterCodesQuery = useGetMasterCodeOptions(isMultiCodesOpen)
     const masterCodeOptions = masterCodesQuery.data ?? []
     const isLoadingMasterCodes = masterCodesQuery.isLoading || masterCodesQuery.isFetching
     const masterCodesErrorMessage =
@@ -579,7 +580,7 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                                                     <Label className="text-[14px] font-[500] text-[#374151]">
                                                         {detailsTab.charAt(0).toUpperCase() + detailsTab.slice(1)} Contact Name
                                                     </Label>
-                                                    <Select
+                                                    <Select onOpenChange={(open) => { if (open) setIsUserDropdownOpen(true); }}
                                                         value={
                                                             detailsTab === "primary"
                                                                 ? (primaryContactId ?? undefined)
