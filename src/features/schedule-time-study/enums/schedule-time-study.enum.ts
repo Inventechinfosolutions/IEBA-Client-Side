@@ -15,3 +15,9 @@ export const RmtsGroupType = {
 } as const
 
 export type RmtsGroupTypeValue = (typeof RmtsGroupType)[keyof typeof RmtsGroupType]
+
+/** Backend `UserListQueryDto.method` for Schedule Time Study participant user picklist. */
+export const UserListMethodScheduleTime = "scheduletime" as const
+
+/** Backend job pool list `method` for Schedule Time Study job pool + users picklist. */
+export const JobPoolUsersMethodScheduleTime = "jobpoolusersscheduletime" as const

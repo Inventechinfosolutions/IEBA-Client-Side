@@ -11,14 +11,21 @@ export function useGetScheduleTimeStudyUsersByDepartment(
   params: GetScheduleTimeStudyUsersByDepartmentQueryParams,
 ) {
   const departmentId = params.departmentId
+  const lazyEnabled = params.enabled ?? true
+  const hasDepartment = departmentId != null && departmentId > 0
 
   return useQuery({
     queryKey: scheduleTimeStudyKeys.departmentUsersList({ departmentId: departmentId ?? 0 }),
     queryFn: async (): Promise<ScheduleTimeStudyDepartmentUserApiDto[]> => {
-      if (departmentId == null || departmentId <= 0) return []
+      if (!hasDepartment) return []
       return fetchScheduleTimeStudyDepartmentUsers({ departmentId })
     },
-    enabled: departmentId != null && departmentId > 0,
+    enabled: lazyEnabled && hasDepartment,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: true,
   })
 }
 

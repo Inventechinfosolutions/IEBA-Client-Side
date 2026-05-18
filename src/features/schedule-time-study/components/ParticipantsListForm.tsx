@@ -30,6 +30,7 @@ import {
   participantsListFormDefaultValues,
   participantsListFormSchema,
 } from "../schemas"
+import { JobPoolUsersAssignedTree } from "./JobPoolUsersAssignedTree"
 import { formatRmtsGroupMutationError } from "../utils/rmtsGroupMutationMessages"
 import type {
   ParticipantUsersModalProps,
@@ -86,14 +87,21 @@ export function ParticipantsListForm({
   const selectedDepartmentLabel =
     selectedDepartmentName.trim() || (selectedDepartment.trim() ? "—" : "")
 
+  const shouldLoadUsers =
+    open && selectedUserBy === "user" && departmentId != null && departmentId > 0
+
   const usersQuery = useGetScheduleTimeStudyUsersByDepartment({
-    departmentId: selectedUserBy === "user" && open ? departmentId : null,
+    departmentId,
+    enabled: shouldLoadUsers,
   })
   const departmentUsers = usersQuery.data ?? []
 
+  const shouldLoadJobPools =
+    open && selectedUserBy === "job-pool" && departmentId != null && departmentId > 0
+
   const jobPoolsQuery = useGetScheduleTimeStudyJobPoolsByDepartment({
-    departmentId: selectedUserBy === "job-pool" && open ? departmentId : null,
-    enabled: selectedUserBy === "job-pool" && open,
+    departmentId,
+    enabled: shouldLoadJobPools,
   })
   const jobPools = jobPoolsQuery.data ?? []
 
@@ -400,90 +408,16 @@ export function ParticipantsListForm({
                   </div>
                 ) : (
                   <div className="p-4">
-                    <ScrollArea className="h-[396px] pb-2">
-                        <div className="flex flex-col">
-                          {jobPools.map((jp) => {
-                            const users = jp.userprofiles ?? []
-                            return (
-                              <div key={jp.id} className="border-b border-[#f1f3f7] last:border-b-0">
-                                {/* Job pool name row (grey like UAT) */}
-                                <div className="grid h-7 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 bg-[#F3F4F6] pl-4 pr-5 text-[12px] font-semibold text-[#374151]">
-                                  <span className="min-w-0">{jp.name || "—"}</span>
-                                  <button
-                                    type="button"
-                                    aria-label={
-                                      selectedJobPoolIds.includes(jp.id)
-                                        ? `Deselect job pool ${jp.name ?? ""}`
-                                        : `Select job pool ${jp.name ?? ""}`
-                                    }
-                                    onClick={() =>
-                                      toggleJobPoolOne(jp.id, !selectedJobPoolIds.includes(jp.id))
-                                    }
-                                    className={`flex size-4.5 shrink-0 items-center justify-center rounded-[6px] border shadow-sm transition-all ${
-                                      selectedJobPoolIds.includes(jp.id)
-                                        ? "border-[#6C5DD3] bg-[#6C5DD3] text-white"
-                                        : "border-[#E5E7EB] bg-white text-transparent hover:border-[#D1D5DB]"
-                                    }`}
-                                  >
-                                    <Check className="size-3.5 stroke-[3]" />
-                                  </button>
-                                </div>
-
-                                <div className="px-6 py-0.5">
-                                  <span className="inline-flex items-center justify-center rounded-[6px] border border-[#E5E7EB] bg-white px-3 py-1 text-[12px] font-bold text-[#374151] shadow-sm">
-                                    Job Pool
-                                  </span>
-                                </div>
-
-                                {/* Users list with tree lines */}
-                                <div className="flex flex-col pb-2">
-                                  {users.map((u) => {
-                                    const deptUser = departmentUsers.find((du) => du.id === u.id)
-                                    const label =
-                                      (u.name ?? "").trim() ||
-                                      `${u.firstName ?? ""} ${u.lastName ?? ""}`.trim() ||
-                                      (deptUser?.name ?? "").trim() ||
-                                      `${deptUser?.firstName ?? ""} ${deptUser?.lastName ?? ""}`.trim() ||
-                                      (deptUser?.user?.loginId ?? "").trim() ||
-                                      u.id
-                                    return (
-                                      <div
-                                        key={u.id}
-                                        className={`group relative grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-2 py-1 pl-[60px] pr-5 text-left transition-colors ${
-                                          selectedJobPoolIds.includes(jp.id)
-                                            ? "bg-[#F3F0FF]"
-                                            : "hover:bg-[#F9FAFB]"
-                                        }`}
-                                      >
-                                        <div className="min-w-0 pr-2">
-                                          <div className="absolute left-6 top-0.5 flex h-full w-8 items-center justify-center">
-                                            <div className="absolute left-4 top-0 h-full w-[1.5px] bg-[#D1D5DB]" />
-                                            <div className="absolute left-4 top-1/2 h-[1.5px] w-3 bg-[#D1D5DB]" />
-                                          </div>
-                                          <div className="pl-6 text-[14px] font-normal text-[#111827] whitespace-normal break-words">
-                                            {label}
-                                          </div>
-                                        </div>
-                                        <div
-                                          className={`flex size-4.5 shrink-0 items-center justify-center rounded-[6px] border shadow-sm transition-all ${
-                                            selectedJobPoolIds.includes(jp.id)
-                                              ? "border-[#6C5DD3] bg-[#6C5DD3] text-white"
-                                              : "border-[#E5E7EB] bg-[#F3F4F6] text-transparent hover:border-[#D1D5DB]"
-                                          }`}
-                                        >
-                                          <Check className="size-3.5 stroke-[3]" />
-                                        </div>
-                                      </div>
-                                    )
-                                  })}
-                                </div>
-                              </div>
-                            )
-                          })}
-                        </div>
-                      </ScrollArea>
-                    </div>
-                  )
+                    <JobPoolUsersAssignedTree
+                      jobPools={jobPools}
+                      selectedJobPoolIds={selectedJobPoolIds}
+                      selectedJobPoolUserIds={selectedJobPoolUserIds}
+                      departmentUsers={departmentUsers}
+                      onToggleJobPool={toggleJobPoolOne}
+                      onToggleUser={toggleUserOne}
+                    />
+                  </div>
+                )
               ) : selectedUserBy !== "user" ? (
                 <div className="flex min-h-[450px] items-center justify-center px-6 text-[14px] text-[#6B7280]">
                   Select “User” to load department users.

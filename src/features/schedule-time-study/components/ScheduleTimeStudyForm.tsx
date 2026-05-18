@@ -172,12 +172,19 @@ export function ScheduleTimeStudyForm({
     return { hasUserGroup: hasUser, hasJobPoolGroup: hasJobPool }
   }, [usersModalOpen, viewEntryIndex, entries, groupsDetailed])
 
+  const shouldLoadDepartmentUsers =
+    usersModalOpen && hasUserGroup && departmentId != null && departmentId > 0
+
   const departmentUsersQuery = useGetScheduleTimeStudyUsersByDepartment({
-    departmentId: usersModalOpen && hasUserGroup ? departmentId : null,
+    departmentId,
+    enabled: shouldLoadDepartmentUsers,
   })
+  const shouldLoadJobPools =
+    usersModalOpen && hasJobPoolGroup && departmentId != null && departmentId > 0
+
   const jobPoolsQuery = useGetScheduleTimeStudyJobPoolsByDepartment({
-    departmentId: usersModalOpen && hasJobPoolGroup ? departmentId : null,
-    enabled: usersModalOpen && hasJobPoolGroup,
+    departmentId,
+    enabled: shouldLoadJobPools,
   })
 
 

@@ -15,10 +15,15 @@ import type {
   RmtsPpGroupListEnrichedApiDto,
   PaginationMeta,
   ScheduleTimeStudyDepartmentUserApiDto,
+  ScheduleTimeStudyJobPoolUserApiDto,
   ScheduleTimeStudyFiscalYearOption,
   UpdateRmtsGroupPayload,
   UpdateRmtsPayPeriodPayload,
 } from "../types"
+import {
+  JobPoolUsersMethodScheduleTime,
+  UserListMethodScheduleTime,
+} from "../enums/schedule-time-study.enum"
 import { compareMmDdYyyy, parseFlexibleToMmDdYyyy } from "@/lib/dates"
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -414,56 +419,85 @@ function mapJobPoolDtoToRow(dto: JobPoolResDto): JobPoolRow {
   }
 }
 
-async function fetchJobPoolsPage(params: {
-  page: number
-  pageSize: number
-}): Promise<{ items: JobPoolRow[]; totalItems: number }> {
-  const searchParams = new URLSearchParams()
-  searchParams.set("page", String(params.page))
-  searchParams.set("limit", String(params.pageSize))
-  searchParams.set("status", "active")
+function parseScheduleTimeStudyJobPoolUsersPayload(res: unknown): ScheduleTimeStudyJobPoolUserApiDto[] {
+  if (res == null || typeof res !== "object") return []
+  const r = res as Record<string, unknown>
+  const data = r.data
+  if (!Array.isArray(data)) return []
 
-  const res = await api.get<unknown>(`/jobpool?${searchParams.toString()}`)
-  const { list, meta } = normalizeJobPoolListFromResponse(res)
-  const items = list.map((dto) => mapJobPoolDtoToRow(dto))
-  const totalItems =
-    typeof meta?.totalItems === "number"
-      ? meta.totalItems
-      : typeof meta?.total === "number"
-        ? meta.total
-        : typeof meta?.itemCount === "number"
-          ? meta.itemCount
-          : items.length
-
-  return { items, totalItems }
+  const rows: ScheduleTimeStudyJobPoolUserApiDto[] = []
+  for (const raw of data) {
+    if (raw == null || typeof raw !== "object") continue
+    const o = raw as Record<string, unknown>
+    const id = o.id == null ? "" : String(o.id).trim()
+    const jobpoolId = Number(o.jobpoolId)
+    if (!id || !Number.isFinite(jobpoolId)) continue
+    rows.push({
+      id,
+      jobpoolId,
+      jobpoolName: typeof o.jobpoolName === "string" ? o.jobpoolName.trim() : String(jobpoolId),
+      loginId: typeof o.loginId === "string" ? o.loginId : null,
+      firstName: typeof o.firstName === "string" ? o.firstName : null,
+      lastName: typeof o.lastName === "string" ? o.lastName : null,
+      name: typeof o.name === "string" ? o.name : null,
+    })
+  }
+  return rows
 }
 
-/** Schedule Time Study: paginate `GET /jobpool`, parse both envelope shapes, filter by department. */
-export async function fetchScheduleTimeStudyJobPoolsByDepartment(params: {
-  departmentId: number
-  pageSize?: number
-  maxPages?: number
-}): Promise<JobPoolRow[]> {
-  const pageSize = params.pageSize ?? 100
-  const maxPages = params.maxPages ?? 30
-  const targetDept = Number(params.departmentId)
-  const out: JobPoolRow[] = []
-  let page = 1
-  let totalPages = 1
+/** Groups flat schedule-time job pool user rows into tree rows for the UI. */
+export function groupScheduleTimeStudyJobPoolUsers(
+  rows: ScheduleTimeStudyJobPoolUserApiDto[],
+): JobPoolRow[] {
+  const pools = new Map<string, JobPoolRow>()
 
-  while (page <= totalPages && page <= maxPages) {
-    const res = await fetchJobPoolsPage({ page, pageSize })
-    for (const item of res.items) {
-      const rowDept = Number(item.departmentId ?? "")
-      if (Number.isFinite(rowDept) && rowDept === targetDept) {
-        out.push(item)
+  for (const row of rows) {
+    const poolId = String(row.jobpoolId)
+    let pool = pools.get(poolId)
+    if (!pool) {
+      pool = {
+        id: poolId,
+        name: row.jobpoolName || poolId,
+        department: "",
+        active: true,
+        jobClassifications: [],
+        userprofiles: [],
+        assignedEmployeeIds: [],
       }
+      pools.set(poolId, pool)
     }
-    totalPages = Math.max(1, Math.ceil(res.totalItems / pageSize))
-    page += 1
+
+    pool.userprofiles!.push({
+      id: row.id,
+      name: row.name ?? undefined,
+      firstName: row.firstName ?? undefined,
+      lastName: row.lastName ?? undefined,
+    })
+    pool.assignedEmployeeIds!.push(row.id)
   }
 
-  return out
+  return Array.from(pools.values()).sort((a, b) =>
+    a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
+  )
+}
+
+/** Schedule Time Study: `GET /jobpool?status=active&departmentId=&method=jobpoolusersscheduletime`. */
+export async function fetchScheduleTimeStudyJobPoolsByDepartment(params: {
+  departmentId: number
+}): Promise<JobPoolRow[]> {
+  const searchParams = new URLSearchParams()
+  searchParams.set("status", "active")
+  searchParams.set("departmentId", String(params.departmentId))
+  searchParams.set("method", JobPoolUsersMethodScheduleTime)
+
+  const res = await api.get<unknown>(`/jobpool?${searchParams.toString()}`)
+  const flatUsers = parseScheduleTimeStudyJobPoolUsersPayload(res)
+  if (flatUsers.length > 0) {
+    return groupScheduleTimeStudyJobPoolUsers(flatUsers)
+  }
+
+  const { list } = normalizeJobPoolListFromResponse(res)
+  return list.map((dto) => mapJobPoolDtoToRow(dto))
 }
 
 // -------------------------
@@ -471,14 +505,44 @@ export async function fetchScheduleTimeStudyJobPoolsByDepartment(params: {
 // -------------------------
 
 function asUserListResponse(payload: ApiResponseDto<UserListResponseDto>): UserListResponseDto {
-  if (!payload?.success || !payload.data) {
+  if (!payload?.success || payload.data == null) {
     throw new Error(payload?.message || "Failed to load users")
   }
-  return payload.data
-}
-
-function isUserInDepartment(user: UserListItemApiDto, departmentId: number): boolean {
-  return (user.departments ?? []).some((d) => d.id === departmentId)
+  const rawData = payload.data as unknown
+  if (Array.isArray(rawData)) {
+    return {
+      data: rawData as UserListItemApiDto[],
+      meta: {
+        totalItems: rawData.length,
+        itemCount: rawData.length,
+        itemsPerPage: rawData.length,
+        totalPages: 1,
+        currentPage: 1,
+      },
+    }
+  }
+  if (rawData !== null && typeof rawData === "object") {
+    const obj = rawData as Record<string, unknown>
+    if (Array.isArray(obj.data)) {
+      return rawData as UserListResponseDto
+    }
+    if (Array.isArray(obj.users)) {
+      return {
+        data: obj.users as UserListItemApiDto[],
+        meta: {
+          totalItems: obj.users.length,
+          itemCount: obj.users.length,
+          itemsPerPage: obj.users.length,
+          totalPages: 1,
+          currentPage: 1,
+        },
+      }
+    }
+  }
+  return {
+    data: [],
+    meta: { totalItems: 0, itemCount: 0, itemsPerPage: 10, totalPages: 0, currentPage: 1 },
+  }
 }
 
 function mapUserListItemToDepartmentUser(user: UserListItemApiDto): ScheduleTimeStudyDepartmentUserApiDto {
@@ -507,14 +571,14 @@ export async function fetchScheduleTimeStudyDepartmentUsers(params: {
     search.set("limit", String(limit))
     search.set("sort", "ASC")
     search.set("status", "active")
+    search.set("method", UserListMethodScheduleTime)
+    search.set("departmentId", String(departmentId))
 
     const res = await api.get<ApiResponseDto<UserListResponseDto>>(`/users?${search.toString()}`)
     const dto = asUserListResponse(res)
     const rows = Array.isArray(dto.data) ? dto.data : []
     for (const user of rows) {
-      if (isUserInDepartment(user, departmentId)) {
-        filtered.push(mapUserListItemToDepartmentUser(user))
-      }
+      filtered.push(mapUserListItemToDepartmentUser(user))
     }
     const meta = dto.meta
     totalPages = typeof meta?.totalPages === "number" && meta.totalPages > 0 ? meta.totalPages : page
