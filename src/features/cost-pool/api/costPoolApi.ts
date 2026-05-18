@@ -1,7 +1,7 @@
 import type { ApiResponseDto } from "@/features/user/types"
 import { api } from "@/lib/api"
 
-import { CostPoolRequestMethod, CostPoolStatus } from "../enums/cost-pool.enum"
+import { CostPoolStatus } from "../enums/cost-pool.enum"
 import type {
   CostPoolActivityPickRow,
   CostPoolActivitySummaryResDto,

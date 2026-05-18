@@ -1,5 +1,4 @@
 import { Search, Check } from "lucide-react"
-import { TitleCaseInput } from "@/components/ui/title-case-input"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { toTitleCase } from "@/lib/utils"

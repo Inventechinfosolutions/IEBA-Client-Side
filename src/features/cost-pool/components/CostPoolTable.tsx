@@ -1,9 +1,8 @@
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useQuery, useQueryClient } from "@tanstack/react-query"
+import { useQuery } from "@tanstack/react-query"
 import { ArrowLeft, History, PlusIcon, SearchIcon } from "lucide-react"
 import { useMemo, useState } from "react"
 import { useForm } from "react-hook-form"
-import { useNavigate } from "react-router-dom"
 
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -358,8 +357,6 @@ export function CostPoolTable({
   onPageChange,
   onPageSizeChange,
 }: CostPoolTableProps) {
-  const navigate = useNavigate()
-  const queryClient = useQueryClient()
   const { canAdd, canUpdate } = usePermissions()
   const canAddCostPool = canAdd("costpool")
   const canUpdateCostPool = canUpdate("costpool")

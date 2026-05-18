@@ -14,7 +14,6 @@ import {
   type GetDepartmentsParams,
   type ToDepartmentUIOptions,
   type UpdateDepartmentReqDto,
-  type DepartmentAllQueryDto,
 } from "../types"
 
 /** When false, address is omitted from create/update department request bodies. */
