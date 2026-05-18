@@ -374,6 +374,7 @@ export type RmtsEntityByIdQueryParams = {
 export type GetRmtsGroupsQueryParams = {
   departmentId: number | null
   fiscalyear: string
+  enabled?: boolean
 }
 
 export type GetRmtsPayPeriodsQueryParams = {

@@ -170,7 +170,7 @@ function ScheduleTimeStudyTableLoaded({
 
   const shouldLoadPeriods =
     hasSelectedDepartment &&
-    (activeTab === "time-study-period-management" || activeTab === "scheduled-time-study")
+    activeTab === "time-study-period-management"
   const { rows, isLoading, isFetching } = useScheduleTimeStudyPeriods(
     departmentId,
     selectedStudyYear,

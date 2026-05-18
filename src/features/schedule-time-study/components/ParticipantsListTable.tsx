@@ -30,8 +30,6 @@ import tableEmptyIcon from "@/assets/icons/table-empty.png"
 import { useDeleteRmtsGroup } from "../mutations/deleteRmtsGroup"
 import { formatRmtsGroupMutationError } from "../utils/rmtsGroupMutationMessages"
 import { useGetRmtsGroups } from "../queries/getRmtsGroups"
-import { useGetScheduleTimeStudyUsersByDepartment } from "../queries/getScheduleTimeStudyUsersByDepartment"
-import { useGetScheduleTimeStudyJobPoolsByDepartment } from "../queries/getScheduleTimeStudyJobPoolsByDepartment"
 import { useGetRmtsGroupById } from "../queries/getRmtsGroupById"
 import type { ParticipantsListRow, ParticipantsListTableProps } from "../types"
 import { ParticipantsListForm, ParticipantUsersModal } from "./ParticipantsListForm"
@@ -66,46 +64,21 @@ export function ParticipantsListTable({
     null,
   )
 
+  const selectedGroupInTable = useMemo(() => {
+    if (viewGroupId == null) return null
+    return rows.find((r) => Number(r.id) === viewGroupId)
+  }, [viewGroupId, rows])
+
   const groupByIdQuery = useGetRmtsGroupById({ id: usersModalOpen ? viewGroupId : null })
-  const departmentUsersQuery = useGetScheduleTimeStudyUsersByDepartment({
-    departmentId: usersModalOpen ? departmentId : null,
-  })
-  const jobPoolsQuery = useGetScheduleTimeStudyJobPoolsByDepartment({
-    departmentId: usersModalOpen ? departmentId : null,
-  })
 
   const assignedUserIds = groupByIdQuery.data?.users ?? []
-  const departmentUsers = departmentUsersQuery.data ?? []
-  const jobPools = jobPoolsQuery.data ?? []
 
   const assignedUsers = useMemo(() => {
-    const userMap = new Map<string, string>()
-
-    // Fill with department users
-    for (const u of departmentUsers) {
-      const label =
-        (u.name ?? "").trim() ||
-        `${u.firstName ?? ""} ${u.lastName ?? ""}`.trim() ||
-        (u.user?.loginId ?? "").trim()
-      if (label && u.id) userMap.set(u.id, label)
-    }
-
-    // Complement with job pool user details
-    for (const jp of jobPools) {
-      const profiles = jp.userprofiles ?? []
-      for (const p of profiles) {
-        const label = (p.name ?? "").trim() || `${p.firstName ?? ""} ${p.lastName ?? ""}`.trim()
-        if (label && p.id && !userMap.has(p.id)) {
-          userMap.set(p.id, label)
-        }
-      }
-    }
-
-    return assignedUserIds.map((id) => ({
-      id,
-      label: userMap.get(id) || id,
+    return assignedUserIds.map((nameOrId) => ({
+      id: nameOrId,
+      label: nameOrId,
     }))
-  }, [assignedUserIds, departmentUsers, jobPools])
+  }, [assignedUserIds])
 
   return (
     <div className="mt-8 space-y-4">
@@ -382,11 +355,7 @@ export function ParticipantsListTable({
             : "List of User in Group"
         }
         departmentLabel={selectedDepartmentName}
-        loading={
-          groupByIdQuery.isFetching ||
-          departmentUsersQuery.isFetching ||
-          jobPoolsQuery.isFetching
-        }
+        loading={groupByIdQuery.isFetching}
         users={assignedUsers}
         grouptype={groupByIdQuery.data?.grouptype as any}
       />

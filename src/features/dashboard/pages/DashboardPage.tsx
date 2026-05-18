@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { useAuth } from "@/contexts/AuthContext"
 import { ArrowLeft, History } from "lucide-react"
+import { Spinner } from "@/components/ui/spinner"
 
 import { PersonalTimeStudyCard } from "../components/PersonalTimeStudyCard"
 import { PersonalLeaveCard } from "../components/PersonalLeaveCard"
@@ -63,7 +64,7 @@ export function DashboardPage() {
   const permissions = user?.permissions
 
   const deptRoles = user?.departmentRoles ?? []
-  const normalizeRoleName = (role: string) => role.trim().toLowerCase().replace(/[^a-z]/g, "")
+  const normalizeRoleName = (role: string) => (role ?? "").trim().toLowerCase().replace(/[^a-z]/g, "")
   const normalizedRoleNames = [
     ...deptRoles.map((dr) => normalizeRoleName(dr.roleName)),
     ...(user?.roles ?? []).map((role) => normalizeRoleName(role)),
@@ -229,6 +230,14 @@ export function DashboardPage() {
   const todoItems = overview.data?.todoList ?? []
   const reportsData = reports.data ?? []
 
+
+  if (overview.isLoading) {
+    return (
+      <div className="flex min-h-[400px] flex-1 items-center justify-center">
+        <Spinner className="size-8 text-[#6C5DD3]" />
+      </div>
+    )
+  }
 
   if (isUserLikeDashboard) {
     return <UserDashboard />

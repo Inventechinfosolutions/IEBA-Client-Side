@@ -87,7 +87,7 @@ export function ParticipantsListForm({
     selectedDepartmentName.trim() || (selectedDepartment.trim() ? "—" : "")
 
   const usersQuery = useGetScheduleTimeStudyUsersByDepartment({
-    departmentId: open ? departmentId : null,
+    departmentId: selectedUserBy === "user" && open ? departmentId : null,
   })
   const departmentUsers = usersQuery.data ?? []
 
@@ -108,10 +108,18 @@ export function ParticipantsListForm({
   const selectedUserIds = useMemo(() => {
     if (manualUserIds !== null) return manualUserIds
     if (open && editingRow?.grouptype === RmtsGroupType.User && groupDetailsQuery.data?.users) {
-      return groupDetailsQuery.data.users
+      return groupDetailsQuery.data.users.map((item) => {
+        const match = departmentUsers.find(
+          (du) =>
+            du.id === item ||
+            (du.name ?? "").trim().toLowerCase() === item.trim().toLowerCase() ||
+            `${du.firstName ?? ""} ${du.lastName ?? ""}`.trim().toLowerCase() === item.trim().toLowerCase()
+        )
+        return match ? match.id : item
+      })
     }
     return []
-  }, [manualUserIds, open, editingRow, groupDetailsQuery.data])
+  }, [manualUserIds, open, editingRow, groupDetailsQuery.data, departmentUsers])
 
   const selectedJobPoolIds = useMemo(() => {
     if (manualJobPoolIds !== null) return manualJobPoolIds
@@ -124,10 +132,18 @@ export function ParticipantsListForm({
   const selectedJobPoolUserIds = useMemo(() => {
     if (manualJobPoolUserIds !== null) return manualJobPoolUserIds
     if (open && editingRow?.grouptype === RmtsGroupType.JobPool && groupDetailsQuery.data?.users) {
-      return groupDetailsQuery.data.users
+      return groupDetailsQuery.data.users.map((item) => {
+        const match = departmentUsers.find(
+          (du) =>
+            du.id === item ||
+            (du.name ?? "").trim().toLowerCase() === item.trim().toLowerCase() ||
+            `${du.firstName ?? ""} ${du.lastName ?? ""}`.trim().toLowerCase() === item.trim().toLowerCase()
+        )
+        return match ? match.id : item
+      })
     }
     return []
-  }, [manualJobPoolUserIds, open, editingRow, groupDetailsQuery.data])
+  }, [manualJobPoolUserIds, open, editingRow, groupDetailsQuery.data, departmentUsers])
 
 
   const toggleUserAll = (checked: boolean) => {

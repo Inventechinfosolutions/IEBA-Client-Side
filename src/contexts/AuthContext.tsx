@@ -40,7 +40,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const queryClient = useQueryClient()
 
   if (typeof window !== "undefined") {
-    (window as any).showSessionExpired = () => setSessionExpired(true)
+    (window as any).showSessionExpired = () => {
+      setSessionExpired(true)
+      ;(window as any).isSessionExpiredOpen = true
+    }
   }
 
   const { data: queryUser, isLoading: sessionLoading } = useQuery<User | null>({
@@ -200,7 +203,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button onClick={() => setSessionExpired(false)} className="rounded-[6px]! bg-[#6C5DD3] hover:bg-[#5a4eb3] text-white border-transparent">OK</Button>
+            <Button onClick={() => {
+              setSessionExpired(false)
+              if (typeof window !== "undefined") {
+                (window as any).isSessionExpiredOpen = false
+              }
+            }} className="rounded-[6px]! bg-[#6C5DD3] hover:bg-[#5a4eb3] text-white border-transparent">OK</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

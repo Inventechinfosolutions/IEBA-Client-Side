@@ -13,6 +13,8 @@ export function useGetRmtsGroups(params: GetRmtsGroupsQueryParams) {
   const departmentId = params.departmentId
   const fiscalyear = params.fiscalyear.trim()
 
+  const enabled = params.enabled ?? true
+
   return useQuery({
     queryKey: scheduleTimeStudyKeys.groupList({
       departmentId: departmentId ?? 0,
@@ -28,7 +30,7 @@ export function useGetRmtsGroups(params: GetRmtsGroupsQueryParams) {
         rows: list.map((dto) => mapGroupToParticipantRow(dto)),
       }
     },
-    enabled: departmentId != null && departmentId > 0 && fiscalyear.length > 0,
+    enabled: enabled && departmentId != null && departmentId > 0 && fiscalyear.length > 0,
     staleTime: 0,
   })
 }

@@ -49,8 +49,19 @@ async function apiRequest<T>(
 
   if (!response.ok) {
     if (response.status === 401) {
-      if (typeof window !== "undefined" && (window as any).showSessionExpired) {
-        (window as any).showSessionExpired()
+      const isPublicPath = typeof window !== "undefined" && (
+        window.location.pathname === "/login" || 
+        window.location.pathname === "/reset-password"
+      )
+      const isLogoutRequest = path.includes("logout")
+      if (!isPublicPath && !isLogoutRequest) {
+        if (typeof window !== "undefined" && (window as any).showSessionExpired) {
+          const isOpen = (window as any).isSessionExpiredOpen
+          const isLoggedIn = !!sessionStorage.getItem("ieba_user")
+          if (!isOpen && isLoggedIn) {
+            (window as any).showSessionExpired()
+          }
+        }
       }
     }
     const errorBody = await response.json().catch(() => ({}))
