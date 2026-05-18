@@ -48,6 +48,11 @@ async function apiRequest<T>(
   })
 
   if (!response.ok) {
+    if (response.status === 401) {
+      if (typeof window !== "undefined" && (window as any).showSessionExpired) {
+        (window as any).showSessionExpired()
+      }
+    }
     const errorBody = await response.json().catch(() => ({}))
     const rawMessage =
       (errorBody as { message?: string | string[] }).message ??

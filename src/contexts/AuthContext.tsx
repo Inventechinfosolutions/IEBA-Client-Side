@@ -8,6 +8,14 @@ import {
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import { CircleCheckIcon } from "lucide-react"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog"
+import { Button } from "@/components/ui/button"
 
 import { clearToken, getToken, setToken } from "@/lib/api"
 import {
@@ -28,7 +36,12 @@ const AUTH_SESSION_QUERY_KEY = ["auth", "session"] as const
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [authLoading, setAuthLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [sessionExpired, setSessionExpired] = useState(false)
   const queryClient = useQueryClient()
+
+  if (typeof window !== "undefined") {
+    (window as any).showSessionExpired = () => setSessionExpired(true)
+  }
 
   const { data: queryUser, isLoading: sessionLoading } = useQuery<User | null>({
     queryKey: AUTH_SESSION_QUERY_KEY,
@@ -177,7 +190,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   )
 
   return (
-    <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+    <AuthContext.Provider value={value}>
+      {children}
+      <Dialog open={sessionExpired} onOpenChange={setSessionExpired}>
+        <DialogContent className="max-w-[400px]!" overlayClassName="bg-black/60!" showClose={false} onPointerDownOutside={(e) => e.preventDefault()} onInteractOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
+          <DialogHeader>
+            <DialogDescription className="text-foreground! font-medium">
+              Session Expired Please Login Again
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button onClick={() => setSessionExpired(false)} className="rounded-[6px]! bg-[#6C5DD3] hover:bg-[#5a4eb3] text-white border-transparent">OK</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </AuthContext.Provider>
   )
 }
 
