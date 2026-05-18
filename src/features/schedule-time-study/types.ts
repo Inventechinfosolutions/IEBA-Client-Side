@@ -231,8 +231,10 @@ export type RmtsGroupApiDto = {
   fiscalyear: string
   grouptype: string
   departmentId: number
+  /** Resolved user display names (COALESCE of name or userId). */
   users?: string[]
-  jobPools?: string[]
+  /** Assigned job pools with id and name. */
+  jobPools?: { id: string; name: string }[]
   /** When true, the group must not be edited or deleted (e.g. used in scheduling). */
   isUsed?: boolean
   /** Alternate wire shape; normalized to row `isUsed` in the mapper. */

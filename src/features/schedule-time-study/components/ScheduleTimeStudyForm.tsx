@@ -24,10 +24,9 @@ import {
 import { SchedulePayPeriodGroupStatus } from "../enums/schedule-time-study.enum"
 import { useCreateRmtsPpGroupListBatch } from "../mutations/createRmtsPpGroupListBatch"
 import { useDeleteRmtsPpGroupList } from "../mutations/deleteRmtsPpGroupList"
-import { useGetScheduleTimeStudyUsersByDepartment } from "../queries/getScheduleTimeStudyUsersByDepartment"
-import { useGetScheduleTimeStudyJobPoolsByDepartment } from "../queries/getScheduleTimeStudyJobPoolsByDepartment"
 import { useGetRmtsGroups } from "../queries/getRmtsGroups"
 import { useGetRmtsPayPeriods } from "../queries/getRmtsPayPeriods"
+import { useGetRmtsGroupsByIds } from "../queries/getRmtsGroupsByIds"
 import {
   scheduleTimeStudyModalDefaultValues,
   scheduleTimeStudyModalFormSchema,
@@ -137,6 +136,20 @@ export function ScheduleTimeStudyForm({
   const [openGroupsDropdownIndex, setOpenGroupsDropdownIndex] = useState<number | null>(null)
   const [groupsSearch, setGroupsSearch] = useState("")
 
+  const handleOpenGroupsDropdown = (index: number) => {
+    setOpenGroupsDropdownIndex(index)
+    void groupsQuery.refetch()
+  }
+
+  const handleToggleGroupsDropdown = (e: React.MouseEvent, index: number) => {
+    e.stopPropagation()
+    const isOpening = openGroupsDropdownIndex !== index
+    setOpenGroupsDropdownIndex(isOpening ? index : null)
+    if (isOpening) {
+      void groupsQuery.refetch()
+    }
+  }
+
   const selectedDepartmentLabel =
     selectedDepartmentName.trim() || (selectedDepartment.trim() ? "—" : "")
 
@@ -152,41 +165,21 @@ export function ScheduleTimeStudyForm({
       ? groupsQuery.data.rows.map((row) => row.groupName)
       : propParticipantGroupOptions ?? []
 
-  const { hasUserGroup, hasJobPoolGroup } = useMemo(() => {
-    if (!usersModalOpen || viewEntryIndex == null) {
-      return { hasUserGroup: false, hasJobPoolGroup: false }
-    }
+  // ── batch query: single request for all selected group IDs ──
+  const selectedGroupIds = useMemo(() => {
+    if (!usersModalOpen || viewEntryIndex == null) return []
     const entry = entries[viewEntryIndex]
-    if (!entry?.groups) {
-      return { hasUserGroup: false, hasJobPoolGroup: false }
-    }
-    const groupNames = entry.groups
+    if (!entry?.groups) return []
+    return entry.groups
       .split(",")
       .map((s) => s.trim())
       .filter(Boolean)
-    const groups = groupNames
-      .map((name) => groupsDetailed.find((g) => g.name.trim() === name))
-      .filter((g) => g != null)
-    const hasUser = groups.some((g) => g.grouptype === "user")
-    const hasJobPool = groups.some((g) => g.grouptype === "job-pool")
-    return { hasUserGroup: hasUser, hasJobPoolGroup: hasJobPool }
+      .map((name) => groupsDetailed.find((g) => g.name.trim() === name)?.id)
+      .filter((id): id is number => id != null && id > 0)
   }, [usersModalOpen, viewEntryIndex, entries, groupsDetailed])
 
-  const shouldLoadDepartmentUsers =
-    usersModalOpen && hasUserGroup && departmentId != null && departmentId > 0
-
-  const departmentUsersQuery = useGetScheduleTimeStudyUsersByDepartment({
-    departmentId,
-    enabled: shouldLoadDepartmentUsers,
-  })
-  const shouldLoadJobPools =
-    usersModalOpen && hasJobPoolGroup && departmentId != null && departmentId > 0
-
-  const jobPoolsQuery = useGetScheduleTimeStudyJobPoolsByDepartment({
-    departmentId,
-    enabled: shouldLoadJobPools,
-  })
-
+  const groupsBatchQuery = useGetRmtsGroupsByIds(selectedGroupIds, usersModalOpen)
+  const groupDetailsLoading = groupsBatchQuery.isFetching
 
   const handleSubmitWithStatus = (targetStatus: SchedulePayPeriodGroupStatus) =>
     form.handleSubmit(
@@ -375,7 +368,6 @@ export function ScheduleTimeStudyForm({
                             form.setValue(`entries.${index}.timeStudyPeriod`, value, {
                               shouldValidate: true,
                             })
-                            void groupsQuery.refetch()
                           }}
                           onOpenChange={async (isOpen) => {
                             if (isOpen) {
@@ -392,7 +384,7 @@ export function ScheduleTimeStudyForm({
                             avoidCollisions={false}
                             sideOffset={8}
                             align="start"
-                            className="rounded-[10px] border border-[#E5E7EB] p-1 min-w-[180px]"
+                            className="rounded-[10px] border border-[#E5E7EB] p-1 min-w-[180px] max-h-[220px] overflow-y-auto"
                           >
                             {payPeriodsQuery.isFetching || payPeriodsQuery.isLoading ? (
                               <div className="flex items-center justify-center p-3">
@@ -422,7 +414,7 @@ export function ScheduleTimeStudyForm({
                               "flex min-h-[40px] w-full items-center gap-1 rounded-[10px] border border-[#D1D5DB] px-2 transition-all cursor-text",
                               openGroupsDropdownIndex === index && "border-[#6C5DD3] ring-1 ring-[#6C5DD3]"
                             )}
-                            onClick={() => setOpenGroupsDropdownIndex(index)}
+                            onClick={() => handleOpenGroupsDropdown(index)}
                           >
                             <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1 py-1">
                               {getSelectedGroups(groupsValue).map((group) => (
@@ -452,7 +444,7 @@ export function ScheduleTimeStudyForm({
                                 autoFocus={openGroupsDropdownIndex === index}
                                 value={openGroupsDropdownIndex === index ? groupsSearch : ""}
                                 onChange={(e) => setGroupsSearch(e.target.value)}
-                                onFocus={() => setOpenGroupsDropdownIndex(index)}
+                                onFocus={() => handleOpenGroupsDropdown(index)}
                                 className="min-w-[60px] flex-1 bg-transparent text-[14px] outline-none"
                                 placeholder={
                                   getSelectedGroups(groupsValue).length === 0 ? "Select group" : ""
@@ -463,10 +455,7 @@ export function ScheduleTimeStudyForm({
                               <Search className="size-4 text-[#C4C4C4]" />
                               <button
                                 type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  setOpenGroupsDropdownIndex(openGroupsDropdownIndex === index ? null : index)
-                                }}
+                                onClick={(e) => handleToggleGroupsDropdown(e, index)}
                                 className="text-[#9CA3AF]"
                               >
                                 <ChevronDown
@@ -481,54 +470,53 @@ export function ScheduleTimeStudyForm({
 
                           {openGroupsDropdownIndex === index && (
                             <div
-                              className="absolute top-[calc(100%+6px)] z-50 w-full rounded-[12px] border border-[#E5E7EB] bg-white p-1 shadow-[0_10px_30px_rgba(0,0,0,0.12)]"
+                              className="absolute top-[calc(100%+6px)] left-0 z-50 w-full rounded-[12px] border border-[#E5E7EB] bg-white p-1 shadow-[0_10px_30px_rgba(0,0,0,0.12)]"
                               onMouseDown={(e) => e.preventDefault()} // Prevent focus loss when clicking list
                             >
-                              <ScrollArea className="max-h-[260px]">
-                                <div className="space-y-0.5 p-1">                                  {groupsQuery.isFetching || groupsQuery.isLoading ? (
-                                    <div className="flex items-center justify-center p-4">
-                                      <Spinner className="size-4 text-[#6C5DD3]" />
-                                      <span className="ml-2 text-sm text-gray-500">Loading...</span>
-                                    </div>
-                                  ) : groupOptions.filter((g) =>
+                              <div className="max-h-[220px] overflow-y-auto space-y-0.5 p-1">
+                                {groupsQuery.isFetching || groupsQuery.isLoading ? (
+                                  <div className="flex items-center justify-center p-4">
+                                    <Spinner className="size-4 text-[#6C5DD3]" />
+                                    <span className="ml-2 text-sm text-gray-500">Loading...</span>
+                                  </div>
+                                ) : groupOptions.filter((g) =>
+                                    g.toLowerCase().includes(groupsSearch.toLowerCase())
+                                  ).length === 0 ? (
+                                  <div className="px-3 py-4 text-center text-[14px] text-[#9CA3AF]">
+                                    No groups found
+                                  </div>
+                                ) : (
+                                  groupOptions
+                                    .filter((g) =>
                                       g.toLowerCase().includes(groupsSearch.toLowerCase())
-                                    ).length === 0 ? (
-                                    <div className="px-3 py-4 text-center text-[14px] text-[#9CA3AF]">
-                                      No groups found
-                                    </div>
-                                  ) : (
-                                    groupOptions
-                                      .filter((g) =>
-                                        g.toLowerCase().includes(groupsSearch.toLowerCase())
+                                    )
+                                    .map((group) => {
+                                      const isSelected = getSelectedGroups(groupsValue).includes(group)
+                                      return (
+                                        <button
+                                          key={group}
+                                          type="button"
+                                          className={cn(
+                                            "flex w-full items-center justify-between rounded-[8px] px-3 py-2 text-left text-[14px] hover:bg-[#F3F4F6] transition-colors",
+                                            isSelected && "bg-[#F3F4F6] text-[#6C5DD3] font-medium"
+                                          )}
+                                          onClick={() => {
+                                            const current = getSelectedGroups(groupsValue)
+                                            const next = isSelected
+                                              ? current.filter((i) => i !== group)
+                                              : [...current, group]
+                                            form.setValue(`entries.${index}.groups`, next.join(", "), {
+                                              shouldValidate: true,
+                                            })
+                                          }}
+                                        >
+                                          <span>{group}</span>
+                                          {isSelected && <Check className="size-4 text-[#6C5DD3]" strokeWidth={2.5} />}
+                                        </button>
                                       )
-                                      .map((group) => {
-                                        const isSelected = getSelectedGroups(groupsValue).includes(group)
-                                        return (
-                                          <button
-                                            key={group}
-                                            type="button"
-                                            className={cn(
-                                              "flex w-full items-center justify-between rounded-[8px] px-3 py-2 text-left text-[14px] hover:bg-[#F3F4F6] transition-colors",
-                                              isSelected && "bg-[#F3F4F6] text-[#6C5DD3] font-medium"
-                                            )}
-                                            onClick={() => {
-                                              const current = getSelectedGroups(groupsValue)
-                                              const next = isSelected
-                                                ? current.filter((i) => i !== group)
-                                                : [...current, group]
-                                              form.setValue(`entries.${index}.groups`, next.join(", "), {
-                                                shouldValidate: true,
-                                              })
-                                            }}
-                                          >
-                                            <span>{group}</span>
-                                            {isSelected && <Check className="size-4 text-[#6C5DD3]" strokeWidth={2.5} />}
-                                          </button>
-                                        )
-                                      })
-                                  )}
-                                </div>
-                              </ScrollArea>
+                                    })
+                                )}
+                              </div>
                             </div>
                           )}
                         </div>
@@ -632,71 +620,10 @@ export function ScheduleTimeStudyForm({
             </div>
             <div className="min-h-[360px] bg-white">
               {(() => {
-                const idx = viewEntryIndex
-                const entry = idx != null ? entries[idx] : null
-                const groupNames = entry?.groups
-                  ? entry.groups
-                      .split(",")
-                      .map((s) => s.trim())
-                      .filter(Boolean)
-                  : []
-
-                const groups = groupNames
-                  .map((name) => groupsDetailed.find((g) => g.name.trim() === name))
-                  .filter((g): g is RmtsGroupApiDto => g != null)
-
-                const departmentUsers = departmentUsersQuery.data ?? []
-                const jobPools = jobPoolsQuery.data ?? []
-
-                const resolveUserLabel = (id: string): string => {
-                  const u = departmentUsers.find((x) => x.id === id)
-                  let jpUserLabel = ""
-                  if (!u) {
-                    for (const jp of jobPools) {
-                      const jpu = jp.userprofiles?.find((x) => x.id === id)
-                      if (jpu) {
-                        jpUserLabel =
-                          (jpu.name ?? "").trim() ||
-                          `${jpu.firstName ?? ""} ${jpu.lastName ?? ""}`.trim()
-                        if (jpUserLabel) break
-                      }
-                    }
-                  }
-
-                  return (
-                    (u?.name ?? "").trim() ||
-                    `${u?.firstName ?? ""} ${u?.lastName ?? ""}`.trim() ||
-                    (u?.user?.loginId ?? "").trim() ||
-                    jpUserLabel ||
-                    id
-                  )
-                }
-
-                const resolveJobPoolUsers = (jobPoolId: string) => {
-                  const jp = jobPools.find((p) => String(p.id) === jobPoolId)
-                  const users = jp?.userprofiles ?? []
-                  return users.map((u) => {
-                    const deptUser = departmentUsers.find((du) => du.id === u.id)
-                    const label =
-                      (u.name ?? "").trim() ||
-                      `${u.firstName ?? ""} ${u.lastName ?? ""}`.trim() ||
-                      (deptUser?.name ?? "").trim() ||
-                      `${deptUser?.firstName ?? ""} ${deptUser?.lastName ?? ""}`.trim() ||
-                      (deptUser?.user?.loginId ?? "").trim() ||
-                      u.id
-                    return { id: u.id, label }
-                  })
-                }
-
-                const loading =
-                  departmentUsersQuery.isFetching ||
-                  jobPoolsQuery.isFetching ||
-                  (usersModalOpen && idx != null && (departmentId == null || departmentId <= 0))
-
-                if (loading) {
+                if (groupDetailsLoading) {
                   return (
                     <div className="space-y-3 p-4">
-                      {Array.from({ length: 10 }, (_, i) => (
+                      {Array.from({ length: 8 }, (_, i) => (
                         <div key={`sched-users-skel-${i}`} className="flex items-center gap-3">
                           <Skeleton className="h-4 w-4 rounded-[4px]" />
                           <Skeleton className="h-4 w-[75%]" />
@@ -706,7 +633,9 @@ export function ScheduleTimeStudyForm({
                   )
                 }
 
-                if (groups.length === 0) {
+                const loadedGroups = groupsBatchQuery.data ?? []
+
+                if (loadedGroups.length === 0) {
                   return (
                     <div className="flex min-h-[360px] items-center justify-center px-6 text-[14px] text-[#6B7280]">
                       Select a Time Study Period and at least one Group to view users.
@@ -717,16 +646,16 @@ export function ScheduleTimeStudyForm({
                 return (
                   <ScrollArea className="h-[360px]">
                     <div className="p-4 space-y-4">
-                      {groups.map((g) => {
-                        const userIds = [...new Set((g.users ?? []).map((x) => x.trim()).filter(Boolean))]
-                        const jobPoolIds = [...new Set((g.jobPools ?? []).map((x) => x.trim()).filter(Boolean))]
+                      {loadedGroups.map((g) => {
+                        // users[] already contains resolved display names from backend
+                        const userRows: { id: string; label: string }[] =
+                          (g.users ?? []).map((name) => ({ id: name, label: name }))
 
-                        const jobPoolUserRows = jobPoolIds.flatMap(resolveJobPoolUsers)
-                        const jobPoolUserIdsSet = new Set(jobPoolUserRows.map((u) => u.id))
-                        const filteredUserIds = userIds.filter((id) => !jobPoolUserIdsSet.has(id))
+                        const jobPoolItems = g.jobPools ?? []
 
                         return (
                           <div key={g.id} className="overflow-hidden rounded-[8px] border border-[#E5E7EB] mb-4 last:mb-0">
+                            {/* Group header */}
                             <div className="grid h-7 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 bg-[#F3F4F6] pl-4 pr-5 text-[12px] font-semibold text-[#374151]">
                               <span className="min-w-0">{g.name || "—"}</span>
                               <Checkbox
@@ -736,63 +665,29 @@ export function ScheduleTimeStudyForm({
                             </div>
 
                             <div className="border-t border-[#E5E7EB] bg-white">
+                              {/* Label tag depends on group type */}
                               <div className="px-6 py-0.5">
                                 <span className="inline-flex items-center justify-center rounded-[6px] border border-[#E5E7EB] bg-white px-3 py-1 text-[11px] font-bold text-[#374151] shadow-sm">
-                                  Users
+                                  {g.grouptype === "job-pool" ? "Jobpool" : "Users"}
                                 </span>
                               </div>
-
-                              {filteredUserIds.length === 0 ? (
+                              {userRows.length === 0 ? (
                                 <div className="px-6 py-2 text-[12px] text-[#6B7280]">No users assigned.</div>
                               ) : (
                                 <div className="flex flex-col pb-2">
-                                  {filteredUserIds.map((id) => (
+                                  {userRows.map((u) => (
                                     <div
-                                      key={`u-${g.id}-${id}`}
+                                      key={`u-${g.id}-${u.id}`}
                                       className="relative grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-2 py-1 pl-[60px] pr-5"
                                     >
                                       <div className="min-w-0 pr-2">
-                                          <div className="absolute left-6 top-0.5 flex h-full w-8 items-center justify-center">
-                                            <div className="absolute left-4 top-0 h-full w-[1.5px] bg-[#D1D5DB]" />
-                                            <div className="absolute left-4 top-1/2 h-[1.5px] w-3 bg-[#D1D5DB]" />
-                                          </div>
-                                          <div className="pl-6 text-[14px] font-normal text-[#111827] whitespace-normal break-words">
-                                            {resolveUserLabel(id)}
-                                          </div>
-                                      </div>
-                                      <div className="flex size-4.5 shrink-0 items-center justify-center rounded-[6px] border border-[#6C5DD3] bg-[#6C5DD3] text-white shadow-sm">
-                                        <Check className="size-3.5 stroke-[3]" />
-                                      </div>
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-
-                              <div className="px-6 py-2">
-                                <span className="inline-flex items-center justify-center rounded-[6px] border border-[#E5E7EB] bg-white px-3 py-1 text-[12px] font-bold text-[#374151] shadow-sm">
-                                  Jobpool
-                                </span>
-                              </div>
-
-                              {jobPoolUserRows.length === 0 ? (
-                                <div className="px-6 py-2 text-[12px] text-[#6B7280]">
-                                  No jobpool users assigned.
-                                </div>
-                              ) : (
-                                <div className="flex flex-col pb-2">
-                                  {jobPoolUserRows.map((u) => (
-                                    <div
-                                      key={`jp-${g.id}-${u.id}`}
-                                      className="relative grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-2 py-1 pl-[60px] pr-5"
-                                    >
-                                      <div className="min-w-0 pr-2">
-                                          <div className="absolute left-6 top-0.5 flex h-full w-8 items-center justify-center">
-                                            <div className="absolute left-4 top-0 h-full w-[1.5px] bg-[#D1D5DB]" />
-                                            <div className="absolute left-4 top-1/2 h-[1.5px] w-3 bg-[#D1D5DB]" />
-                                          </div>
-                                          <div className="pl-6 text-[14px] font-normal text-[#111827] whitespace-normal break-words">
-                                            {u.label}
-                                          </div>
+                                        <div className="absolute left-6 top-0.5 flex h-full w-8 items-center justify-center">
+                                          <div className="absolute left-4 top-0 h-full w-[1.5px] bg-[#D1D5DB]" />
+                                          <div className="absolute left-4 top-1/2 h-[1.5px] w-3 bg-[#D1D5DB]" />
+                                        </div>
+                                        <div className="pl-6 text-[14px] font-normal text-[#111827] whitespace-normal break-words">
+                                          {u.label}
+                                        </div>
                                       </div>
                                       <div className="flex size-4.5 shrink-0 items-center justify-center rounded-[6px] border border-[#6C5DD3] bg-[#6C5DD3] text-white shadow-sm">
                                         <Check className="size-3.5 stroke-[3]" />

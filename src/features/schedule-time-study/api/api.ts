@@ -206,6 +206,15 @@ export async function fetchRmtsGroupById(id: number): Promise<RmtsGroupApiDto> {
   return data
 }
 
+export async function fetchRmtsGroupsByIds(ids: number[]): Promise<RmtsGroupApiDto[]> {
+  if (ids.length === 0) return []
+  const raw = await api.get<ApiResponseDto<RmtsGroupApiDto[]>>(
+    `/rmtsgroup/batch?ids=${ids.join(",")}`
+  )
+  const data = unwrapApiData<RmtsGroupApiDto[]>(raw)
+  return Array.isArray(data) ? data : []
+}
+
 function isNotFoundMessage(message: string): boolean {
   const m = message.toLowerCase()
   return m.includes("not found") || m.includes("404") || m.includes("rmtsppgrouplist")
@@ -559,31 +568,13 @@ export async function fetchScheduleTimeStudyDepartmentUsers(params: {
   departmentId: number
 }): Promise<ScheduleTimeStudyDepartmentUserApiDto[]> {
   const departmentId = params.departmentId
-  const limit = 100
-  const maxPages = 50
-  const filtered: ScheduleTimeStudyDepartmentUserApiDto[] = []
-  let page = 1
-  let totalPages = 1
+  const search = new URLSearchParams()
+  search.set("status", "active")
+  search.set("method", UserListMethodScheduleTime)
+  search.set("departmentId", String(departmentId))
 
-  while (page <= totalPages && page <= maxPages) {
-    const search = new URLSearchParams()
-    search.set("page", String(page))
-    search.set("limit", String(limit))
-    search.set("sort", "ASC")
-    search.set("status", "active")
-    search.set("method", UserListMethodScheduleTime)
-    search.set("departmentId", String(departmentId))
-
-    const res = await api.get<ApiResponseDto<UserListResponseDto>>(`/users?${search.toString()}`)
-    const dto = asUserListResponse(res)
-    const rows = Array.isArray(dto.data) ? dto.data : []
-    for (const user of rows) {
-      filtered.push(mapUserListItemToDepartmentUser(user))
-    }
-    const meta = dto.meta
-    totalPages = typeof meta?.totalPages === "number" && meta.totalPages > 0 ? meta.totalPages : page
-    page += 1
-  }
-
-  return filtered
+  const res = await api.get<ApiResponseDto<UserListResponseDto>>(`/users?${search.toString()}`)
+  const dto = asUserListResponse(res)
+  const rows = Array.isArray(dto.data) ? dto.data : []
+  return rows.map(mapUserListItemToDepartmentUser)
 }

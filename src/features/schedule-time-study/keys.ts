@@ -28,6 +28,7 @@ export const scheduleTimeStudyKeys = {
   groupList: (filters: { departmentId: number; fiscalyear: string }) =>
     [...scheduleTimeStudyKeys.groups(), filters] as const,
   groupById: (id: number) => [...scheduleTimeStudyKeys.groups(), "byId", id] as const,
+  groupsByIds: (ids: number[]) => [...scheduleTimeStudyKeys.groups(), "byIds", ...ids.slice().sort()] as const,
   ppGroupList: () => [...scheduleTimeStudyKeys.all, "ppGroupList"] as const,
   ppGroupListEnriched: (filters: { departmentId: number; fiscalyear: string }) =>
     [...scheduleTimeStudyKeys.ppGroupList(), filters] as const,

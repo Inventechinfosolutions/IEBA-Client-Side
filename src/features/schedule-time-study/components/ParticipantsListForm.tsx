@@ -132,7 +132,7 @@ export function ParticipantsListForm({
   const selectedJobPoolIds = useMemo(() => {
     if (manualJobPoolIds !== null) return manualJobPoolIds
     if (open && editingRow?.grouptype === RmtsGroupType.JobPool && groupDetailsQuery.data?.jobPools) {
-      return groupDetailsQuery.data.jobPools
+      return groupDetailsQuery.data.jobPools.map((jp) => jp.id)
     }
     return []
   }, [manualJobPoolIds, open, editingRow, groupDetailsQuery.data])
@@ -163,7 +163,7 @@ export function ParticipantsListForm({
     const userIdsInPool = (jp?.userprofiles ?? []).map((u) => u.id)
 
     setManualJobPoolIds((prev) => {
-      const current = prev ?? (editingRow?.grouptype === RmtsGroupType.JobPool ? groupDetailsQuery.data?.jobPools ?? [] : [])
+      const current = prev ?? (editingRow?.grouptype === RmtsGroupType.JobPool ? (groupDetailsQuery.data?.jobPools ?? []).map((jp) => jp.id) : [])
       const has = current.includes(jobPoolId)
       if (checked) return has ? current : [...current, jobPoolId]
       return has ? current.filter((x) => x !== jobPoolId) : current
@@ -191,7 +191,7 @@ export function ParticipantsListForm({
       })
       if (jobPoolId) {
         setManualJobPoolIds((prev) => {
-          const current = prev ?? (editingRow?.grouptype === RmtsGroupType.JobPool ? groupDetailsQuery.data?.jobPools ?? [] : [])
+          const current = prev ?? (editingRow?.grouptype === RmtsGroupType.JobPool ? (groupDetailsQuery.data?.jobPools ?? []).map((jp) => jp.id) : [])
           return current.includes(jobPoolId) ? current : [...current, jobPoolId]
         })
       }
@@ -342,11 +342,14 @@ export function ParticipantsListForm({
               <Label className="text-[14px] font-normal text-black">Select User By</Label>
               <RadioGroup
                 value={selectedUserBy}
-                onValueChange={(value) =>
+                onValueChange={(value) => {
                   form.setValue("selectedUserBy", value as "job-pool" | "user", {
                     shouldValidate: true,
                   })
-                }
+                  setManualUserIds(null)
+                  setManualJobPoolIds(null)
+                  setManualJobPoolUserIds(null)
+                }}
                 className="flex h-12 items-center gap-5"
               >
                 <div className="flex items-center space-x-2">
