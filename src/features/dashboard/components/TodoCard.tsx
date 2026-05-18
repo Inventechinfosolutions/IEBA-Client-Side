@@ -51,7 +51,7 @@ export function TodoCard({ items = [], isLoading }: TodoCardProps) {
         </div>
 
         {/* List */}
-        <div className="flex-1 overflow-y-auto divide-y divide-[#F3F4F6] pr-5">
+        <div className="flex-1 overflow-y-auto divide-y divide-gray-200 pr-5">
           {isLoading &&
             Array.from({ length: 4 }).map((_, i) => (
               <div key={i} className="flex items-center gap-3 px-4 py-3 animate-pulse">
@@ -73,15 +73,15 @@ export function TodoCard({ items = [], isLoading }: TodoCardProps) {
                 <TooltipTrigger asChild>
                   <Link 
                     to="/to-do"
-                    className="relative flex items-center px-4 py-2.5 hover:bg-[#FAFAFA] cursor-pointer"
+                    className="relative flex items-center px-4 py-3 hover:bg-[#FAFAFA] cursor-pointer"
                   >
                     <div className="flex items-center flex-1 min-w-0 pr-4">
-                      <span className="text-[#9CA3AF] font-bold text-lg w-[24px] shrink-0">⋮</span>
-                      <span className="text-sm font-medium text-[#1a1a2e] whitespace-normal break-all truncate">
+                      <span className="text-[#9CA3AF]  text-xl w-[24px] shrink-0">⋮</span>
+                      <span className="text-base  text-[#1a1a2e] whitespace-normal break-all truncate">
                         {item.title}
                       </span>
                     </div>
-                    <div className="absolute left-1/2 -translate-x-1/2 text-sm text-[#D1D5DB]">
+                    <div className="absolute left-1/2 -translate-x-1/2 text-sm  text-gray-500">
                       {formatTodoDate(item)}
                     </div>
                     <div className="w-[24px] shrink-0 flex justify-end">
