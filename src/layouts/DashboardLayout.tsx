@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, Suspense } from "react"
 import { Outlet, Link } from "react-router-dom"
 
 import { AppSidebar } from "@/components/dashboard/AppSidebar"
@@ -28,6 +28,7 @@ import {
 import { useAuth } from "@/contexts/AuthContext"
 import { AppLogout } from "@/features/settings/components/General/AppLogout"
 import { usePermissions } from "@/hooks/usePermissions"
+import { Spinner } from "@/components/ui/spinner"
 import { ChangePasswordFormModal } from "@/features/change-password"
 import { ChangeCountyDialog } from "@/features/auth/components/ChangeCountyDialog"
 import { MimicBanner, useMimicSession } from "@/features/user/user-mimic"
@@ -211,7 +212,15 @@ export function DashboardLayout() {
           </div>
         </header>
         <div className="flex flex-1 min-h-0 flex-col gap-4 overflow-auto p-4 md:gap-6 md:p-6">
-          <Outlet />
+          <Suspense
+            fallback={
+              <div className="flex min-h-[300px] flex-1 items-center justify-center">
+                <Spinner className="size-8 text-[#6C5DD3]" />
+              </div>
+            }
+          >
+            <Outlet />
+          </Suspense>
         </div>
       </SidebarInset>
     </SidebarProvider>
