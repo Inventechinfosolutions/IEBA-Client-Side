@@ -33,6 +33,7 @@ export type CostPoolActivitySummaryResDto = {
   name: string
   status: string
   type?: string
+  assigned?: boolean
 }
 
 export type CostPoolResDto = {

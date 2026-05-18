@@ -59,6 +59,7 @@ export function CostPoolAddPage({
   activitiesLoading = false,
   userRows,
   usersLoading = false,
+  allowUserOrCostpoolDirect,
   isSubmitting = false,
   isLoadingDetails = false,
 }: CostPoolAddPageProps) {
@@ -82,6 +83,15 @@ export function CostPoolAddPage({
     if (!hasDepartment) return ""
     return departmentOptions.find((d) => Number(d.id) === departmentId)?.name ?? ""
   }, [departmentOptions, departmentId, hasDepartment])
+
+  const allowUserCostPoolDirect = useMemo(() => {
+    if (!hasDepartment) return false
+    if (allowUserOrCostpoolDirect !== undefined) {
+      return allowUserOrCostpoolDirect
+    }
+    const opt = departmentOptions.find((d) => Number(d.id) === departmentId)
+    return opt?.allowUserCostpoolDirect ?? false
+  }, [departmentOptions, departmentId, hasDepartment, allowUserOrCostpoolDirect])
 
   const assigned = useMemo(
     () => activityRows.filter((a) => assignedIds.includes(a.activityDepartmentId)),
@@ -557,8 +567,8 @@ export function CostPoolAddPage({
           </div>
         </div>
 
-        {/* Employee Section — show when users are available for the selected department */}
-        {hasDepartment && (usersLoading || userRows.length > 0) && (
+        {/* Employee Section — show when allowUserCostpoolDirect is true for the selected department */}
+        {hasDepartment && allowUserCostPoolDirect && (
         <div className="grid grid-cols-12 items-start gap-6 pt-10">
           <div className="col-span-5">
             <div className="rounded-[10px] border border-[#E5E7EB] bg-white shadow-[0_4px_14px_rgba(17,24,39,0.05)]">

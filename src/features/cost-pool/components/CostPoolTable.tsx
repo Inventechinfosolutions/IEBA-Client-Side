@@ -205,7 +205,7 @@ function CostPoolEditFormBody({
 }) {
   const form = useForm<CostPoolUpsertFormValues>({
     resolver: zodResolver(costPoolUpsertFormSchema),
-    defaultValues: detailToUpsertFormValues(detail),
+    values: detailToUpsertFormValues(detail),
   })
 
   const updateMutation = useUpdateCostPool()
