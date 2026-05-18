@@ -49,12 +49,10 @@ export function PersonalTimeStudyLeaveCard({
   dropdownData,
   allowMultiCodes,
   onOpen,
-  onDropdownOpen,
   dateStr = "",
   month = 1,
   year = (() => { const _n = new Date(); return _n.getFullYear() })(),
   isLoading = false,
-  isDropdownLoading = false,
 }: PersonalTimeStudyLeaveCardProps) {
   const [leaveDialogOpen, setLeaveDialogOpen] = useState(false)
   const { user } = useAuth()

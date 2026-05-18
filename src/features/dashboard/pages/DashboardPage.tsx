@@ -333,7 +333,7 @@ export function DashboardPage() {
 
 
         {showUserManagement ? (
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-3 h-full min-h-0">
             <UsersCard
               userCount={userCountVal}
                 activeUsers={shouldShowExtendedStats ? activeUsersVal : undefined}

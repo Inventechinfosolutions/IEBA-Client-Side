@@ -15,6 +15,23 @@ function getStatusColor(status: string) {
   return STATUS_COLORS[status?.toLowerCase()] ?? STATUS_COLORS.default
 }
 
+const formatter = new Intl.DateTimeFormat("en-US", {
+  year: "numeric",
+  day: "2-digit",
+  month: "long",
+})
+
+function formatTodoDate(item: import("../types").TodoItem) {
+  if (item.day) return item.day
+  if (item.createdAt) {
+    const parsed = Date.parse(item.createdAt)
+    if (!Number.isNaN(parsed)) {
+      return formatter.format(parsed)
+    }
+  }
+  return ""
+}
+
 export function TodoCard({ items = [], isLoading }: TodoCardProps) {
   return (
     <TooltipProvider>
@@ -56,15 +73,20 @@ export function TodoCard({ items = [], isLoading }: TodoCardProps) {
                 <TooltipTrigger asChild>
                   <Link 
                     to="/to-do"
-                    className="grid items-center px-4 py-2.5 hover:bg-[#FAFAFA] cursor-pointer"
-                    style={{ gridTemplateColumns: "24px 1fr 120px 24px" }}
+                    className="relative flex items-center px-4 py-2.5 hover:bg-[#FAFAFA] cursor-pointer"
                   >
-                    <span className="text-[#9CA3AF] font-bold text-lg">⋮</span>
-                    <span className="text-sm font-medium text-[#1a1a2e] whitespace-normal break-all pr-2">
-                      {item.title}
-                    </span>
-                    <span className="text-xs text-[#D1D5DB] text-right pr-4">{item.day}</span>
-                    <Check className={`h-4 w-4 shrink-0 justify-self-end ${getStatusColor(item.status)}`} />
+                    <div className="flex items-center flex-1 min-w-0 pr-4">
+                      <span className="text-[#9CA3AF] font-bold text-lg w-[24px] shrink-0">⋮</span>
+                      <span className="text-sm font-medium text-[#1a1a2e] whitespace-normal break-all truncate">
+                        {item.title}
+                      </span>
+                    </div>
+                    <div className="absolute left-1/2 -translate-x-1/2 text-sm text-[#D1D5DB]">
+                      {formatTodoDate(item)}
+                    </div>
+                    <div className="w-[24px] shrink-0 flex justify-end">
+                      <Check className={`h-4 w-4 ${getStatusColor(item.status)}`} />
+                    </div>
                   </Link>
                 </TooltipTrigger>
                 <TooltipContent side="top" align="center" className="max-w-[250px] break-all bg-[#111827] text-white border-0 text-xs p-2">

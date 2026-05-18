@@ -183,13 +183,19 @@ export function useTodos(userId: string | number) {
   const formatTodoDate = (item: TodoItem) => {
     const preferredDate =
       item.updatedAt ?? item.completedAt ?? item.completedDate ?? item.createdAt
-    const parsed = Date.parse(preferredDate)
-    if (!Number.isNaN(parsed)) {
-      return formatter.format(parsed)
+    if (preferredDate) {
+      const parsed = Date.parse(preferredDate)
+      if (!Number.isNaN(parsed)) {
+        return formatter.format(parsed)
+      }
     }
 
-    const createdParsed = Date.parse(item.createdAt)
-    return Number.isNaN(createdParsed) ? "" : formatter.format(createdParsed)
+    if (item.createdAt) {
+      const createdParsed = Date.parse(item.createdAt)
+      return Number.isNaN(createdParsed) ? "" : formatter.format(createdParsed)
+    }
+
+    return ""
   }
 
   return useQuery({
