@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Check, ChevronDown, Eye, Search, Trash2, X } from "lucide-react"
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { useFieldArray, useForm, useWatch } from "react-hook-form"
 import { toast } from "sonner"
 
@@ -26,6 +26,8 @@ import { useCreateRmtsPpGroupListBatch } from "../mutations/createRmtsPpGroupLis
 import { useDeleteRmtsPpGroupList } from "../mutations/deleteRmtsPpGroupList"
 import { useGetScheduleTimeStudyUsersByDepartment } from "../queries/getScheduleTimeStudyUsersByDepartment"
 import { useGetScheduleTimeStudyJobPoolsByDepartment } from "../queries/getScheduleTimeStudyJobPoolsByDepartment"
+import { useGetRmtsGroups } from "../queries/getRmtsGroups"
+import { useGetRmtsPayPeriods } from "../queries/getRmtsPayPeriods"
 import {
   scheduleTimeStudyModalDefaultValues,
   scheduleTimeStudyModalFormSchema,
@@ -87,9 +89,9 @@ export function ScheduleTimeStudyForm({
   selectedStudyYear,
   departmentId,
   fiscalYearOptions,
-  periodRows,
-  participantGroupOptions,
-  groupsDetailed,
+  periodRows: propPeriodRows,
+  participantGroupOptions: propParticipantGroupOptions,
+  groupsDetailed: propGroupsDetailed,
   editingRow,
 }: ScheduleTimeStudyFormProps) {
   const createBatch = useCreateRmtsPpGroupListBatch()
@@ -123,6 +125,13 @@ export function ScheduleTimeStudyForm({
   const studyYear = form.watch("studyYear")
   const entries = useWatch({ control: form.control, name: "entries" }) ?? []
 
+  const payPeriodsQuery = useGetRmtsPayPeriods({
+    departmentId,
+    fiscalyear: studyYear,
+    enabled: !!editingRow,
+  })
+  const periodRows = payPeriodsQuery.data ?? propPeriodRows ?? []
+
   const [usersModalOpen, setUsersModalOpen] = useState(false)
   const [viewEntryIndex, setViewEntryIndex] = useState<number | null>(null)
   const [openGroupsDropdownIndex, setOpenGroupsDropdownIndex] = useState<number | null>(null)
@@ -131,13 +140,46 @@ export function ScheduleTimeStudyForm({
   const selectedDepartmentLabel =
     selectedDepartmentName.trim() || (selectedDepartment.trim() ? "—" : "")
 
+  const groupsQuery = useGetRmtsGroups({
+    departmentId,
+    fiscalyear: studyYear,
+    enabled: !!editingRow,
+  })
+
+  const groupsDetailed = groupsQuery.data?.raw ?? propGroupsDetailed ?? []
+  const participantGroupOptions =
+    groupsQuery.data?.rows != null
+      ? groupsQuery.data.rows.map((row) => row.groupName)
+      : propParticipantGroupOptions ?? []
+
+  const { hasUserGroup, hasJobPoolGroup } = useMemo(() => {
+    if (!usersModalOpen || viewEntryIndex == null) {
+      return { hasUserGroup: false, hasJobPoolGroup: false }
+    }
+    const entry = entries[viewEntryIndex]
+    if (!entry?.groups) {
+      return { hasUserGroup: false, hasJobPoolGroup: false }
+    }
+    const groupNames = entry.groups
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean)
+    const groups = groupNames
+      .map((name) => groupsDetailed.find((g) => g.name.trim() === name))
+      .filter((g) => g != null)
+    const hasUser = groups.some((g) => g.grouptype === "user")
+    const hasJobPool = groups.some((g) => g.grouptype === "job-pool")
+    return { hasUserGroup: hasUser, hasJobPoolGroup: hasJobPool }
+  }, [usersModalOpen, viewEntryIndex, entries, groupsDetailed])
+
   const departmentUsersQuery = useGetScheduleTimeStudyUsersByDepartment({
-    departmentId: usersModalOpen ? departmentId : null,
+    departmentId: usersModalOpen && hasUserGroup ? departmentId : null,
   })
   const jobPoolsQuery = useGetScheduleTimeStudyJobPoolsByDepartment({
-    departmentId: usersModalOpen ? departmentId : null,
-    enabled: usersModalOpen,
+    departmentId: usersModalOpen && hasJobPoolGroup ? departmentId : null,
+    enabled: usersModalOpen && hasJobPoolGroup,
   })
+
 
   const handleSubmitWithStatus = (targetStatus: SchedulePayPeriodGroupStatus) =>
     form.handleSubmit(
@@ -322,11 +364,17 @@ export function ScheduleTimeStudyForm({
                         </Label>
                         <Select
                           value={entry?.timeStudyPeriod ?? ""}
-                          onValueChange={(value) =>
+                          onValueChange={(value) => {
                             form.setValue(`entries.${index}.timeStudyPeriod`, value, {
                               shouldValidate: true,
                             })
-                          }
+                            void groupsQuery.refetch()
+                          }}
+                          onOpenChange={async (isOpen) => {
+                            if (isOpen) {
+                              void payPeriodsQuery.refetch()
+                            }
+                          }}
                         >
                           <SelectTrigger className="!h-[40px] w-full rounded-[10px] border-[#D1D5DB] px-[10px] py-0 text-[14px] data-[size=default]:!h-[40px]">
                             <SelectValue />
@@ -337,13 +385,24 @@ export function ScheduleTimeStudyForm({
                             avoidCollisions={false}
                             sideOffset={8}
                             align="start"
-                            className="rounded-[10px] border border-[#E5E7EB] p-1"
+                            className="rounded-[10px] border border-[#E5E7EB] p-1 min-w-[180px]"
                           >
-                            {periodOptions.map((period) => (
-                              <SelectItem key={period} value={period}>
-                                {period}
-                              </SelectItem>
-                            ))}
+                            {payPeriodsQuery.isFetching || payPeriodsQuery.isLoading ? (
+                              <div className="flex items-center justify-center p-3">
+                                <Spinner className="size-4 text-[#6C5DD3]" />
+                                <span className="ml-2 text-sm text-gray-500">Loading...</span>
+                              </div>
+                            ) : periodOptions.length === 0 ? (
+                              <div className="p-3 text-center text-sm text-gray-500">
+                                No record found
+                              </div>
+                            ) : (
+                              periodOptions.map((period) => (
+                                <SelectItem key={period} value={period}>
+                                  {period}
+                                </SelectItem>
+                              ))
+                            )}
                           </SelectContent>
                         </Select>
                       </div>
@@ -419,42 +478,47 @@ export function ScheduleTimeStudyForm({
                               onMouseDown={(e) => e.preventDefault()} // Prevent focus loss when clicking list
                             >
                               <ScrollArea className="max-h-[260px]">
-                                <div className="space-y-0.5 p-1">
-                                  {groupOptions
-                                    .filter((g) =>
+                                <div className="space-y-0.5 p-1">                                  {groupsQuery.isFetching || groupsQuery.isLoading ? (
+                                    <div className="flex items-center justify-center p-4">
+                                      <Spinner className="size-4 text-[#6C5DD3]" />
+                                      <span className="ml-2 text-sm text-gray-500">Loading...</span>
+                                    </div>
+                                  ) : groupOptions.filter((g) =>
                                       g.toLowerCase().includes(groupsSearch.toLowerCase())
-                                    )
-                                    .map((group) => {
-                                      const isSelected = getSelectedGroups(groupsValue).includes(group)
-                                      return (
-                                        <button
-                                          key={group}
-                                          type="button"
-                                          className={cn(
-                                            "flex w-full items-center justify-between rounded-[8px] px-3 py-2 text-left text-[14px] hover:bg-[#F3F4F6] transition-colors",
-                                            isSelected && "bg-[#F3F4F6] text-[#6C5DD3] font-medium"
-                                          )}
-                                          onClick={() => {
-                                            const current = getSelectedGroups(groupsValue)
-                                            const next = isSelected
-                                              ? current.filter((i) => i !== group)
-                                              : [...current, group]
-                                            form.setValue(`entries.${index}.groups`, next.join(", "), {
-                                              shouldValidate: true,
-                                            })
-                                          }}
-                                        >
-                                          <span>{group}</span>
-                                          {isSelected && <Check className="size-4 text-[#6C5DD3]" strokeWidth={2.5} />}
-                                        </button>
-                                      )
-                                    })}
-                                  {groupOptions.filter((g) =>
-                                    g.toLowerCase().includes(groupsSearch.toLowerCase())
-                                  ).length === 0 && (
+                                    ).length === 0 ? (
                                     <div className="px-3 py-4 text-center text-[14px] text-[#9CA3AF]">
                                       No groups found
                                     </div>
+                                  ) : (
+                                    groupOptions
+                                      .filter((g) =>
+                                        g.toLowerCase().includes(groupsSearch.toLowerCase())
+                                      )
+                                      .map((group) => {
+                                        const isSelected = getSelectedGroups(groupsValue).includes(group)
+                                        return (
+                                          <button
+                                            key={group}
+                                            type="button"
+                                            className={cn(
+                                              "flex w-full items-center justify-between rounded-[8px] px-3 py-2 text-left text-[14px] hover:bg-[#F3F4F6] transition-colors",
+                                              isSelected && "bg-[#F3F4F6] text-[#6C5DD3] font-medium"
+                                            )}
+                                            onClick={() => {
+                                              const current = getSelectedGroups(groupsValue)
+                                              const next = isSelected
+                                                ? current.filter((i) => i !== group)
+                                                : [...current, group]
+                                              form.setValue(`entries.${index}.groups`, next.join(", "), {
+                                                shouldValidate: true,
+                                              })
+                                            }}
+                                          >
+                                            <span>{group}</span>
+                                            {isSelected && <Check className="size-4 text-[#6C5DD3]" strokeWidth={2.5} />}
+                                          </button>
+                                        )
+                                      })
                                   )}
                                 </div>
                               </ScrollArea>

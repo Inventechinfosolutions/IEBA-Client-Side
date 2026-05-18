@@ -27,11 +27,9 @@ import { Spinner } from "@/components/ui/spinner"
 import { SingleSelectDropdown } from "@/components/ui/dropdown"
 
 import tableEmptyIcon from "@/assets/icons/table-empty.png"
-import { useGetRmtsGroups } from "../queries/getRmtsGroups"
 import { useGetRmtsPpGroupListEnriched } from "../queries/getRmtsPpGroupListEnriched"
 import { useDeleteRmtsPpGroupList } from "../mutations/deleteRmtsPpGroupList"
 import type { ScheduledTimeStudyRowEnriched, ScheduledTimeStudyTableProps } from "../types"
-import { DEFAULT_SCHEDULE_PARTICIPANT_GROUP_OPTIONS } from "../types"
 import { SchedulePayPeriodGroupStatus } from "../enums/schedule-time-study.enum"
 import { ScheduleTimeStudyForm } from "./ScheduleTimeStudyForm"
 import { Check } from "lucide-react"
@@ -57,7 +55,6 @@ export function ScheduledTimeStudyTable({
   fiscalYearOptions,
   periodRows,
 }: ScheduledTimeStudyTableProps) {
-  const groupsQuery = useGetRmtsGroups({ departmentId, fiscalyear: selectedStudyYear })
   const { canAdd, canUpdate } = usePermissions()
   const canAddSchedule = canAdd("scheduletimestudy")
   const canUpdateSchedule = canUpdate("scheduletimestudy")
@@ -68,8 +65,6 @@ export function ScheduledTimeStudyTable({
   const deleteRow = useDeleteRmtsPpGroupList()
 
   const scheduledRows: ScheduledTimeStudyRowEnriched[] = scheduledQuery.data ?? []
-  const participantGroupOptions = (groupsQuery.data?.rows ?? []).map((row) => row.groupName)
-  const groupsDetailed = groupsQuery.data?.raw ?? []
 
   const [createScheduledOpen, setCreateScheduledOpen] = useState(false)
   const [editingScheduledRow, setEditingScheduledRow] = useState<ScheduledTimeStudyRowEnriched | null>(
@@ -284,12 +279,8 @@ export function ScheduledTimeStudyTable({
         departmentId={departmentId}
         fiscalYearOptions={fiscalYearOptions}
         periodRows={periodRows}
-        participantGroupOptions={
-          participantGroupOptions.length > 0
-            ? participantGroupOptions
-            : [...DEFAULT_SCHEDULE_PARTICIPANT_GROUP_OPTIONS]
-        }
-        groupsDetailed={groupsDetailed}
+        participantGroupOptions={[]}
+        groupsDetailed={[]}
         editingRow={editingScheduledRow}
       />
     </>
