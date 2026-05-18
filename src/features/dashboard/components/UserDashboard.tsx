@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react"
 import { useAuth } from "@/contexts/AuthContext"
-import { useSelfLeave, useTodos, useReportsByRole, useHolidays, useDashboardOverview } from "../queries/dashboardQueries"
+import { useReportsByRole, useDashboardOverview } from "../queries/dashboardQueries"
 import { PersonalTimeStudyCard } from "../components/PersonalTimeStudyCard"
 import { PersonalLeaveCard } from "../components/PersonalLeaveCard"
 import { ReportsCard } from "../components/ReportsCard"
@@ -54,23 +54,48 @@ export function UserDashboard() {
     roleId, 
     enabled: true 
   })
-  const selfLeave = useSelfLeave(userId)
-  const todos = useTodos(userId)
   const reports = useReportsByRole({ departmentId, roleId })
-  const holidays = useHolidays()
 
   const tsApproved = overview.data?.timeStudyRecordByUserStatusCounts?.find((s: any) => s.status === 'approved')?.count ?? 0
   const tsSubmitted = overview.data?.timeStudyRecordByUserStatusCounts?.find((s: any) => s.status === 'submitted')?.count ?? 0
 
-  const selfLeaveTotal = selfLeave.data?.total ?? 0
-  const selfLeaveApproved = selfLeave.data?.approved ?? 0
-  const selfLeaveOpen = selfLeave.data?.requested ?? 0
-  const selfLeaveRejected = selfLeave.data?.rejected ?? 0
+  const selfLeaveTotal = overview.data?.personalLeaveTotal ?? 0
+  
+  const getPersonalLeaveCount = (statusName: string) => 
+    overview.data?.personalLeaveStatusCounts?.find((s: any) => s.status.toLowerCase() === statusName)?.count ?? 0
+  
+  const selfLeaveApproved = getPersonalLeaveCount('approved')
+  const selfLeaveOpen = getPersonalLeaveCount('requested') || getPersonalLeaveCount('draft')
+  const selfLeaveRejected = getPersonalLeaveCount('rejected')
 
-  const nextHolidayMonth = holidays.data?.nextMonth ?? ""
-  const nextHolidayDay = holidays.data?.nextDay ?? "0"
+  const holidaysList = overview.data?.holidayList ?? []
+  
+  const parseDate = (dStr: string) => {
+    const t = dStr.trim()
+    let m = /^(\d{4})-(\d{2})-(\d{2})/.exec(t)
+    if (m) return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]))
+    m = /^(\d{2})-(\d{2})-(\d{4})/.exec(t)
+    if (m) return new Date(Number(m[3]), Number(m[1]) - 1, Number(m[2]))
+    return new Date(t)
+  }
 
-  const todoItems = todos.data ?? []
+  const upcomingHolidays = [...holidaysList]
+    .sort((a, b) => parseDate(a.date).getTime() - parseDate(b.date).getTime())
+    .filter((h) => {
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      return parseDate(h.date).getTime() >= today.getTime()
+    })
+
+  let nextHolidayMonth = ""
+  let nextHolidayDay = "0"
+  if (upcomingHolidays.length > 0) {
+    const nextDate = parseDate(upcomingHolidays[0].date)
+    nextHolidayMonth = nextDate.toLocaleString("en-US", { month: "long" })
+    nextHolidayDay = nextDate.getDate().toString()
+  }
+
+  const todoItems = overview.data?.todoList ?? []
   const reportsData = reports.data ?? []
 
 
@@ -252,7 +277,7 @@ export function UserDashboard() {
                   rejected={selfLeaveRejected}
                   nextHolidayMonth={nextHolidayMonth}
                   nextHolidayDay={nextHolidayDay}
-                  isLoading={selfLeave.isLoading}
+                  isLoading={overview.isLoading}
                 />
               </div>
             </div>
@@ -270,7 +295,7 @@ export function UserDashboard() {
 
           <div className="lg:col-span-3">
             <div className="h-[406px]">
-              <TodoCard items={todoItems} isLoading={todos.isLoading} />
+              <TodoCard items={todoItems} isLoading={overview.isLoading} />
             </div>
           </div>
         </div>

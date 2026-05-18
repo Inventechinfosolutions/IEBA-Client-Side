@@ -17,13 +17,8 @@ import { AuditHistoryTable } from "../components/AuditHistoryTable"
 import { TitleCaseInput } from "@/components/ui/title-case-input"
 
 import {
-  useSelfLeave,
-  useStaffLeave,
-  useTodos,
-  useHolidays,
   useDashboardOverview,
   useReportsByRole,
-  useDashboardUserCount,
 } from "../queries/dashboardQueries"
 import { downloadPayrollTemplate } from "@/features/payroll/api/payrollApi"
 import { getPayrollDateRange } from "../api/dashboard"
@@ -128,20 +123,12 @@ export function DashboardPage() {
   const departmentId = currentDeptRole?.departmentId
   const roleId = currentDeptRole?.roleId
 
-  const selfLeave = useSelfLeave(userId)
-  const staffLeave = useStaffLeave({ 
-    userId: userId,
-    enabled: canViewAdminLayout 
-  })
-  const todos = useTodos(userId)
-  const holidays = useHolidays()
   const overview = useDashboardOverview({ 
     userId,
     departmentId: isSuperAdminLikeDashboard ? undefined : departmentId, 
     roleId: isSuperAdminLikeDashboard ? undefined : roleId, 
     enabled: canViewAdminLayout 
   })
-  const dashboardUserCount = useDashboardUserCount({ enabled: showUserManagement })
   const reports = useReportsByRole({ 
     departmentId, 
     roleId,
@@ -176,7 +163,7 @@ export function DashboardPage() {
     totalActivityDepartmentCount: activityCountVal = 0,  // Activities in user's departments
   } = overview.data ?? {}
 
-  const userCountVal = overviewUserCount ?? dashboardUserCount.data ?? 0
+  const userCountVal = overviewUserCount
   const activeUsersVal = overviewActiveUserCount
 
   const tsApproved = overview.data?.timeStudyRecordByUserStatusCounts?.find((s: any) => s.status === 'approved')?.count ?? 0
@@ -196,20 +183,50 @@ export function DashboardPage() {
     ? (overview.data?.timeStudyRecordStatusCounts?.find((s: any) => s.status === 'draft')?.count ?? 0)
     : (overview.data?.timeStudyRecordByUserStatusCounts?.find((s: any) => s.status === 'draft')?.count ?? 0)
 
-  const selfLeaveTotal = selfLeave.data?.total ?? 0
-  const selfLeaveApproved = selfLeave.data?.approved ?? 0
-  const selfLeaveOpen = selfLeave.data?.requested ?? 0
-  const selfLeaveRejected = selfLeave.data?.rejected ?? 0
+  const selfLeaveTotal = overview.data?.personalLeaveTotal ?? 0
+  
+  const getPersonalLeaveCount = (statusName: string) => 
+    overview.data?.personalLeaveStatusCounts?.find((s: any) => s.status.toLowerCase() === statusName)?.count ?? 0
+  
+  const selfLeaveApproved = getPersonalLeaveCount('approved')
+  const selfLeaveOpen = getPersonalLeaveCount('requested') || getPersonalLeaveCount('draft')
+  const selfLeaveRejected = getPersonalLeaveCount('rejected')
 
-  const staffLeaveOpen = staffLeave.data?.requested ?? 0
-  const staffLeaveApproved = staffLeave.data?.approved ?? 0
-  const staffLeaveRejected = staffLeave.data?.rejected ?? 0
+  const getStaffLeaveCount = (statusName: string) =>
+    overview.data?.staffLeaveStatusCounts?.find((s: any) => s.status.toLowerCase() === statusName)?.count ?? 0
 
+  const staffLeaveOpen = getStaffLeaveCount('requested') || getStaffLeaveCount('draft')
+  const staffLeaveApproved = getStaffLeaveCount('approved')
+  const staffLeaveRejected = getStaffLeaveCount('rejected')
 
-  const nextHolidayMonth = holidays.data?.nextMonth ?? ""
-  const nextHolidayDay = holidays.data?.nextDay ?? "0"
+  const holidaysList = overview.data?.holidayList ?? []
+  
+  const parseDate = (dStr: string) => {
+    const t = dStr.trim()
+    let m = /^(\d{4})-(\d{2})-(\d{2})/.exec(t)
+    if (m) return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]))
+    m = /^(\d{2})-(\d{2})-(\d{4})/.exec(t)
+    if (m) return new Date(Number(m[3]), Number(m[1]) - 1, Number(m[2]))
+    return new Date(t)
+  }
 
-  const todoItems = todos.data ?? []
+  const upcomingHolidays = [...holidaysList]
+    .sort((a, b) => parseDate(a.date).getTime() - parseDate(b.date).getTime())
+    .filter((h) => {
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      return parseDate(h.date).getTime() >= today.getTime()
+    })
+
+  let nextHolidayMonth = ""
+  let nextHolidayDay = "0"
+  if (upcomingHolidays.length > 0) {
+    const nextDate = parseDate(upcomingHolidays[0].date)
+    nextHolidayMonth = nextDate.toLocaleString("en-US", { month: "long" })
+    nextHolidayDay = nextDate.getDate().toString()
+  }
+
+  const todoItems = overview.data?.todoList ?? []
   const reportsData = reports.data ?? []
 
 
@@ -291,7 +308,7 @@ export function DashboardPage() {
             rejected={selfLeaveRejected}
             nextHolidayMonth={nextHolidayMonth}
             nextHolidayDay={nextHolidayDay}
-            isLoading={selfLeave.isLoading || holidays.isLoading}
+            isLoading={overview.isLoading}
           />
         </div>
 
@@ -307,7 +324,7 @@ export function DashboardPage() {
 
 
         <div className="h-full overflow-hidden">
-          <TodoCard items={todoItems} isLoading={todos.isLoading} />
+          <TodoCard items={todoItems} isLoading={overview.isLoading} />
         </div>
       </div>
 
@@ -316,24 +333,20 @@ export function DashboardPage() {
 
 
         {showUserManagement ? (
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-3 h-full min-h-0">
             <UsersCard
               userCount={userCountVal}
                 activeUsers={shouldShowExtendedStats ? activeUsersVal : undefined}
                 showActiveUsers={shouldShowExtendedStats}
-                isLoading={
-                  shouldShowExtendedStats
-                    ? dashboardUserCount.isLoading || overview.isLoading
-                    : dashboardUserCount.isLoading || overview.isLoading
-                }
+                isLoading={overview.isLoading}
             />
             <div className="flex-1 min-h-0">
-              <HolidayListCard />
+              <HolidayListCard list={holidaysList} isLoading={overview.isLoading} />
             </div>
           </div>
         ) : (
           <div className="h-full min-h-0 overflow-hidden">
-            <HolidayListCard />
+            <HolidayListCard list={holidaysList} isLoading={overview.isLoading} />
           </div>
         )}
 
@@ -361,7 +374,7 @@ export function DashboardPage() {
             activitiesCount={isSuperAdmin ? masterActivityCountVal : activityCountVal}
             jobPools={shouldShowExtendedStats ? jobPoolsVal : undefined}
             costPools={shouldShowExtendedStats ? costPoolsVal : undefined}
-            isLoading={staffLeave.isLoading || overview.isLoading}
+            isLoading={overview.isLoading}
           />
         )}
       </div>

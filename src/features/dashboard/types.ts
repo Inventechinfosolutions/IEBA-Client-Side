@@ -58,7 +58,7 @@ export interface TodoItem {
   title: string
   description?: string
   status: string
-  createdAt: string
+  createdAt?: string
   updatedAt?: string
   completedAt?: string
   completedDate?: string
@@ -236,16 +236,24 @@ export interface DashboardSummary {
 
 
 export interface DashboardOverview {
-  totalUserCount: number
-  totalActiveUserCount: number
-  totalCostPoolCount: number
-  totalJobPoolCount: number
-  totalDepartmentCount: number
-  totalTimeStudyProgramCount: number
-  totalActivityCount: number
-  totalActivityDepartmentCount: number
-  timeStudyRecordStatusCounts?: Array<{ status: string; count: number }>
-  timeStudyRecordByUserStatusCounts?: Array<{ status: string; count: number }>
+  totalUserCount: number;
+  totalActiveUserCount: number;
+  totalCostPoolCount: number;
+  totalJobPoolCount: number;
+  totalDepartmentCount: number;
+  totalTimeStudyProgramCount: number;
+  totalActivityCount: number;
+  totalActivityDepartmentCount: number;
+  timeStudyRecordStatusCounts?: Array<{ status: string; count: number }>;
+  timeStudyRecordByUserStatusCounts?: Array<{ status: string; count: number }>;
+  todoTotal?: number;
+  todoStatusCounts?: Array<{ status: string; count: number }>;
+  personalLeaveTotal?: number;
+  personalLeaveStatusCounts?: Array<{ status: string; count: number }>;
+  staffLeaveTotal?: number;
+  staffLeaveStatusCounts?: Array<{ status: string; count: number }>;
+  holidayList?: Holiday[];
+  todoList?: TodoItem[];
 }
 
 export interface ApiEnvelope<T> {

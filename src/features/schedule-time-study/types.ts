@@ -311,7 +311,6 @@ export type ScheduleTimeStudyUsersByDepartmentApiDto = {
 
 export type ScheduleTimeStudyTableLoadedProps = {
   departments: Department[]
-  fiscalYearOptions: ScheduleTimeStudyFiscalYearOption[]
 }
 
 export type CreateRmtsPpGroupListBatchResult = {

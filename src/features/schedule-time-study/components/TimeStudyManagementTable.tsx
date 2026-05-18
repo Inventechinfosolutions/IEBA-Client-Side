@@ -1,5 +1,6 @@
 import dayjs from "dayjs"
 import { zodResolver } from "@hookform/resolvers/zod"
+import { useQueryClient } from "@tanstack/react-query"
 
 import { AlertCircle, Check, Trash2 } from "lucide-react"
 import type { FormEvent } from "react"
@@ -44,6 +45,8 @@ import {
   scheduleTimeStudyFormSchema,
 } from "../schemas"
 import { fetchScheduleTimeStudyPeriodRows } from "../queries/getRmtsPayPeriods"
+import { fetchScheduleTimeStudyFiscalYears } from "../api/api"
+import { scheduleTimeStudyKeys } from "../keys"
 import { usePermissions } from "@/hooks/usePermissions"
 import type {
   ScheduleTimeStudyFiscalYearOption,
@@ -75,22 +78,18 @@ const noDataToastOptions = {
     "!w-fit !max-w-[340px] !min-h-[35px] !rounded-[8px] !border-0 !px-3 !py-2 !text-[12px] !whitespace-nowrap !shadow-[0_8px_22px_rgba(17,24,39,0.18)]",
 }
 
-function buildScheduleTimeStudyFormDefaults(
-  fiscalYearOptions: readonly ScheduleTimeStudyFiscalYearOption[],
-): ScheduleTimeStudyFormValues {
-  const first = fiscalYearOptions[0]
+function buildScheduleTimeStudyFormDefaults(): ScheduleTimeStudyFormValues {
   return {
     department: "",
-    studyYear: first?.id ?? "",
+    studyYear: "",
     file: null,
   }
 }
 
 export function ScheduleTimeStudyTable() {
   const departmentsQuery = useGetScheduleTimeStudyDepartments()
-  const fiscalYearsQuery = useGetScheduleTimeStudyFiscalYears()
 
-  if (departmentsQuery.isPending || fiscalYearsQuery.isPending) {
+  if (departmentsQuery.isPending) {
     return (
       <section className="min-h-[743px] space-y-4 rounded-[10px] border border-[#E5E7EB] bg-white p-6">
         <Skeleton className="h-12 w-[220px]" />
@@ -100,18 +99,17 @@ export function ScheduleTimeStudyTable() {
     )
   }
 
-  if (departmentsQuery.isError || fiscalYearsQuery.isError) {
+  if (departmentsQuery.isError) {
     return (
       <section className="rounded-[10px] border border-[#E5E7EB] bg-white p-6">
         <p className="text-[15px] text-destructive">
-          Could not load departments or fiscal years. Check your API connection and try again.
+          Could not load departments. Check your API connection and try again.
         </p>
       </section>
     )
   }
 
   const departments = departmentsQuery.data?.items ?? []
-  const fiscalYearOptions = fiscalYearsQuery.data ?? []
 
   if (departments.length === 0) {
     return (
@@ -124,7 +122,6 @@ export function ScheduleTimeStudyTable() {
   return (
     <ScheduleTimeStudyTableLoaded
       departments={departments}
-      fiscalYearOptions={fiscalYearOptions}
       isDepartmentsFetching={departmentsQuery.isFetching}
     />
   )
@@ -132,9 +129,9 @@ export function ScheduleTimeStudyTable() {
 
 function ScheduleTimeStudyTableLoaded({
   departments,
-  fiscalYearOptions,
   isDepartmentsFetching = false,
 }: ScheduleTimeStudyTableLoadedProps & { isDepartmentsFetching?: boolean }) {
+  const queryClient = useQueryClient()
   const { isSuperAdmin, assignedDepartmentIds } = usePermissions()
   const filteredDepartments = useMemo(() => {
     if (isSuperAdmin) return departments
@@ -146,7 +143,7 @@ function ScheduleTimeStudyTableLoaded({
   )
   const form = useForm<ScheduleTimeStudyFormValues>({
     resolver: zodResolver(scheduleTimeStudyFormSchema),
-    defaultValues: buildScheduleTimeStudyFormDefaults(fiscalYearOptions),
+    defaultValues: buildScheduleTimeStudyFormDefaults(),
     mode: "onSubmit",
   })
 
@@ -154,6 +151,9 @@ function ScheduleTimeStudyTableLoaded({
   const selectedStudyYear = useWatch({ control: form.control, name: "studyYear" }) ?? ""
   const selectedFile = useWatch({ control: form.control, name: "file" })
   const hasSelectedDepartment = Boolean(selectedDepartment.trim())
+
+  const fiscalYearsQuery = useGetScheduleTimeStudyFiscalYears({ enabled: hasSelectedDepartment })
+  const fiscalYearOptions = fiscalYearsQuery.data ?? []
 
   const departmentId = useMemo(() => {
     const idStr = selectedDepartment.trim()
@@ -190,7 +190,22 @@ function ScheduleTimeStudyTableLoaded({
         <Label className="text-[14px] font-normal text-[#1F2937]">Select Department</Label>
         <SingleSelectDropdown
           value={selectedDepartment || ""}
-          onChange={(value) => form.setValue("department", value, { shouldValidate: true })}
+          onChange={async (value) => {
+            form.setValue("department", value, { shouldValidate: true })
+            if (value && !form.getValues("studyYear")) {
+              try {
+                const fiscalYears = await queryClient.fetchQuery({
+                  queryKey: scheduleTimeStudyKeys.fiscalYears(),
+                  queryFn: fetchScheduleTimeStudyFiscalYears,
+                })
+                if (fiscalYears.length > 0 && !form.getValues("studyYear")) {
+                  form.setValue("studyYear", fiscalYears[0].id, { shouldValidate: true })
+                }
+              } catch (err) {
+                console.error("Failed to fetch fiscal years automatically", err)
+              }
+            }
+          }}
           onBlur={() => {}}
           options={filteredDepartments.map((dept) => ({ value: String(dept.id), label: dept.name }))}
           placeholder="Select department"

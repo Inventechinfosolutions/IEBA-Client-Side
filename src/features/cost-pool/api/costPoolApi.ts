@@ -1,7 +1,7 @@
 import type { ApiResponseDto } from "@/features/user/types"
 import { api } from "@/lib/api"
 
-import { CostPoolRequestMethod, CostPoolStatus } from "../enums/cost-pool.enum"
+import { CostPoolStatus } from "../enums/cost-pool.enum"
 import type {
   CostPoolActivityPickRow,
   CostPoolActivitySummaryResDto,
@@ -111,10 +111,8 @@ export async function fetchCostPoolList(
 }
 
 export async function fetchCostPoolDetail(id: number): Promise<CostPoolDetailResDto> {
-  const search = new URLSearchParams()
-  search.set("method", CostPoolRequestMethod.FETCH_CP_ASSIGNED_ACTIVITIES)
   const raw = await api.get<ApiResponseDto<CostPoolDetailResDto | CostPoolResDto>>(
-    `/costpool/${id}?${search.toString()}`,
+    `/costpool/${id}`,
   )
   return unwrapDetail(raw)
 }
@@ -163,6 +161,26 @@ export async function unassignUserFromCostPool(assignmentId: number): Promise<Ap
   const raw = await api.delete<ApiResponseDto<any>>(`/costpooluserassignment/${assignmentId}`)
   if (!raw.success) {
     throw new Error(raw.message || "Failed to unassign user")
+  }
+  return raw
+}
+
+export async function updateActivitiesOnCostPool(payload: {
+  costPoolId: number
+  departmentId: number
+  activityDepartmentIds: number[]
+}): Promise<ApiResponseDto<any>> {
+  const raw = await api.put<ApiResponseDto<any>>("/costpoolactivityassignment", payload)
+  if (!raw.success) {
+    throw new Error(raw.message || "Failed to update activity assignments")
+  }
+  return raw
+}
+
+export async function unassignActivityFromCostPool(assignmentId: number): Promise<ApiResponseDto<any>> {
+  const raw = await api.delete<ApiResponseDto<any>>(`/costpoolactivityassignment/${assignmentId}`)
+  if (!raw.success) {
+    throw new Error(raw.message || "Failed to unassign activity")
   }
   return raw
 }
@@ -216,58 +234,7 @@ export function uniqueActivityDepartmentIds(ids: number[]): number[] {
   return [...new Set(ids.filter((n) => Number.isInteger(n) && n > 0))]
 }
 
-/**
- * Call right before POST /costpool. The DB enforces that each activity–department row
- * (`activitydepartmentId`) appears at most once across assignments, so duplicates in the payload
- * or links already tied to another pool cause "Duplicate entry … for key …".
- */
-export async function assertAssignableActivityDepartmentIdsForCreate(
-  departmentId: number,
-  requested: number[],
-  /** When set (e.g. from React Query cache), skips a duplicate GET /costpool/unassigned-activities/:id on Save. */
-  picklistOverride?: CostPoolActivityPickRow[],
-): Promise<number[]> {
-  const unique = uniqueActivityDepartmentIds(requested)
-  const allowedRows =
-    picklistOverride !== undefined
-      ? picklistOverride
-      : await fetchActivityPicklistForNewPool(departmentId)
-  const allowed = new Set(allowedRows.map((r) => r.activityDepartmentId))
-  const rejected = unique.filter((id) => !allowed.has(id))
-  if (rejected.length > 0) {
-    throw new Error(
-      `These activity–department links are already assigned to another cost pool, or the list is out of date (ids: ${rejected.join(
-        ", ",
-      )}). Refresh the page and select activities again.`,
-    )
-  }
-  return unique
-}
 
-/**
- * Before PUT /costpool/:id — allowed links must appear in GET-by-id `assignedActivities` ∪ `unassignedActivities`
- * (same payload the edit UI uses; no extra picklist request).
- */
-export async function assertAssignableActivityDepartmentIdsForUpdate(
-  costPoolId: number,
-  _departmentId: number,
-  requested: number[],
-): Promise<number[]> {
-  const unique = uniqueActivityDepartmentIds(requested)
-  const detail = await fetchCostPoolDetail(costPoolId)
-  const allowed = new Set(
-    mergeDetailActivitiesToPickRows(detail).map((r) => r.activityDepartmentId),
-  )
-  const rejected = unique.filter((id) => !allowed.has(id))
-  if (rejected.length > 0) {
-    throw new Error(
-      `Cannot use activity–department link(s) ${rejected.join(
-        ", ",
-      )}: each link may exist on only one cost pool. They are already assigned elsewhere or the screen is out of date — refresh the page and pick activities again.`,
-    )
-  }
-  return unique
-}
 
 /** Build dual-list rows from GET /costpool/:id with `method` = FETCH_CP_ASSIGNED_ACTIVITIES (`assignedActivities` + `unassignedActivities`). */
 export function mergeDetailActivitiesToPickRows(detail: CostPoolDetailResDto): CostPoolActivityPickRow[] {

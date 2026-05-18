@@ -29,5 +29,6 @@ export function useGetRmtsGroups(params: GetRmtsGroupsQueryParams) {
       }
     },
     enabled: departmentId != null && departmentId > 0 && fiscalyear.length > 0,
+    staleTime: 0,
   })
 }

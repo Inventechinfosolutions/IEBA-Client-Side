@@ -25,5 +25,6 @@ export function useGetRmtsPpGroupListEnriched(params: GetRmtsPpGroupListEnriched
       return list.map(mapEnrichedToScheduledRowEnriched)
     },
     enabled: departmentId != null && departmentId > 0 && fiscalyear.length > 0,
+    staleTime: 0,
   })
 }

@@ -2,10 +2,10 @@ import { useMutation } from "@tanstack/react-query"
 import { toast } from "sonner"
 import { queryClient } from "@/main"
 
-import { createUsersOnCostPool, assertAssignableActivityDepartmentIdsForCreate, createCostPool } from "../api/costPoolApi"
+import { createUsersOnCostPool, createCostPool } from "../api/costPoolApi"
 import { CostPoolStatus } from "../enums/cost-pool.enum"
 import { costPoolKeys } from "../keys"
-import type { CostPoolActivityPickRow, CostPoolUpsertFormValues } from "../types"
+import type { CostPoolUpsertFormValues } from "../types"
 
 type CreateCostPoolInput = {
   values: CostPoolUpsertFormValues
@@ -14,18 +14,11 @@ type CreateCostPoolInput = {
 export function useCreateCostPool() {
   return useMutation({
     mutationFn: async ({ values }: CreateCostPoolInput) => {
-      const picklistKey = costPoolKeys.activityPicklist(values.departmentId)
-      const cachedPicklist = queryClient.getQueryData<CostPoolActivityPickRow[]>(picklistKey)
-      const activityDepartmentIds = await assertAssignableActivityDepartmentIdsForCreate(
-        values.departmentId,
-        values.assignedActivityDepartmentIds,
-        cachedPicklist,
-      )
       const costPool = await createCostPool({
         name: values.costPool.trim(),
         status: values.active ? CostPoolStatus.ACTIVE : CostPoolStatus.INACTIVE,
         departmentId: values.departmentId,
-        activityDepartmentIds,
+        activityDepartmentIds: values.assignedActivityDepartmentIds,
         // users: values.assignedUserIds, // Removed from main call to satisfy separate API requirement
       })
 
@@ -42,9 +35,8 @@ export function useCreateCostPool() {
       return costPool
     },
     onSuccess: (data, { values }) => {
-      // Do not use costPoolKeys.all — that also invalidates detail queries and can refetch GET /costpool/:id.
       void queryClient.invalidateQueries({ queryKey: costPoolKeys.lists() })
-      void queryClient.invalidateQueries({
+      queryClient.removeQueries({
         queryKey: costPoolKeys.activityPicklist(values.departmentId),
       })
       if (data.id > 0) {
