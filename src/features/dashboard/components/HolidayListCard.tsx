@@ -1,4 +1,4 @@
-import { useHolidays } from "../queries/dashboardQueries"
+import type { Holiday } from "../types"
 
 function formatDate(dateStr: string): string {
   const t = dateStr.trim()
@@ -11,10 +11,7 @@ function formatDate(dateStr: string): string {
   return t
 }
 
-export function HolidayListCard() {
-  const { data, isLoading } = useHolidays()
-  const list = data?.list ?? []
-
+export function HolidayListCard({ list = [], isLoading = false }: { list?: Holiday[], isLoading?: boolean }) {
   return (
     <div className="flex h-full flex-col rounded-[10px] border border-[#E8EAF6] bg-white shadow-[0_0_20px_0_#0000001a] overflow-hidden">
   

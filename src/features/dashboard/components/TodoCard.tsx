@@ -15,7 +15,7 @@ function getStatusColor(status: string) {
   return STATUS_COLORS[status?.toLowerCase()] ?? STATUS_COLORS.default
 }
 
-export function TodoCard({ items, isLoading }: TodoCardProps) {
+export function TodoCard({ items = [], isLoading }: TodoCardProps) {
   return (
     <TooltipProvider>
       <div className="flex h-full flex-col rounded-[10px] border border-[#E8EAF6] bg-white shadow-[0_0_20px_0_#0000001a]">
