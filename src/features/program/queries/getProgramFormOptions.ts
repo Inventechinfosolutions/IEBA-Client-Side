@@ -65,13 +65,13 @@ async function fetchProgramFormOptions(
   activeSection?: ProgramFormSection,
   departmentIds?: number[]
 ) {
-  const departments = await fetchAllPages<DepartmentResDto>(
-    "/departments?sort=ASC&status=active",
-    (payload) => ({
-      items: Array.isArray(payload?.data) ? payload.data : [],
-      meta: payload?.meta,
-    })
-  )
+  const res = await api.get<any>("/departments/all?status=active")
+  const envelope = res?.data ?? res
+  const departments: DepartmentResDto[] = Array.isArray(envelope)
+    ? envelope
+    : Array.isArray(envelope?.data)
+      ? envelope.data
+      : []
 
   const activeDepartments = departments
     .filter((d) => isActiveStatus(d.status))
