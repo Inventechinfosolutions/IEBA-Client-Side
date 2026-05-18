@@ -55,7 +55,7 @@ export function useGetAllDepartments(
 
 export function useGetDepartmentsAll(
   params?: { status?: string; search?: string; sort?: string },
-  options?: { enabled?: boolean }
+  options?: { enabled?: boolean },
 ) {
   return useQuery({
     queryKey: [...departmentKeys.all, "all", params],
