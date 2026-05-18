@@ -36,5 +36,6 @@ export function useGetRmtsPayPeriods(params: GetRmtsPayPeriodsQueryParams) {
       return fetchScheduleTimeStudyPeriodRows({ fiscalyear, departmentId })
     },
     enabled: enabled && departmentId != null && departmentId > 0 && fiscalyear.length > 0,
+    staleTime: 0,
   })
 }
