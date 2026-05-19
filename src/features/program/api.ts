@@ -18,27 +18,6 @@ function parsePercent(value: string | undefined): number {
   return n
 }
 
-async function resolveBudgetProgramIdByName(name: string): Promise<number | undefined> {
-  const trimmed = name.trim()
-  if (!trimmed) return undefined
-
-  const search = new URLSearchParams()
-  search.set("page", "1")
-  search.set("limit", "1")
-  search.set("sort", "ASC")
-  search.set("status", "active")
-  search.set("search", trimmed)
-
-  const res = await api.get<ApiEnvelope<{ data?: BudgetProgramResDto[] } | BudgetProgramResDto[]>>(
-    `/budgetprograms?${search.toString()}`
-  )
-  const payload = (res?.data ?? res) as { data?: BudgetProgramResDto[] } | BudgetProgramResDto[]
-  const list = Array.isArray((payload as { data?: BudgetProgramResDto[] }).data)
-    ? ((payload as { data?: BudgetProgramResDto[] }).data ?? [])
-    : (payload as BudgetProgramResDto[])
-  const first = list[0]
-  return typeof first?.id === "number" ? first.id : undefined
-}
 
 function extractCreatedId(payload: unknown): number | undefined {
   // Case 1: plain object with `id`
@@ -349,12 +328,17 @@ export async function apiCreateProgram(input: CreateProgramInput & {
     const createdPayload = raw?.data ?? raw
     const createdId = extractCreatedId(createdPayload)
     if (createdId == null) throw new Error("Create response missing id")
-    const detail = await api.get<ApiEnvelope<BudgetUnitResDto>>(
-      `/budgetunits/${encodeURIComponent(String(createdId))}`
-    )
-    const entity = detail?.data ?? (detail as ApiEnvelope<BudgetUnitResDto>).data
-    if (!entity) throw new Error("Failed to load created budget unit")
-    return mapBudgetUnitToProgramRow(entity as BudgetUnitResDto)
+    // In Add mode the caller only resets the form + refetches the list.
+    // Skip the getById call — build the row from what we already know.
+    return mapBudgetUnitToProgramRow({
+      id: createdId,
+      code: body.code as string,
+      name: body.name as string,
+      description: body.description as string,
+      medicalpercent: String(body.medicalpercent),
+      status: body.status as string,
+      department: { id: body.departmentId as number, name: values.budgetUnitDepartment.trim() },
+    } as unknown as BudgetUnitResDto)
   }
 
   // Budget Program creation (from Budget Units tab "BU Program" section)
@@ -399,42 +383,35 @@ export async function apiCreateProgram(input: CreateProgramInput & {
     const createdPayload = raw?.data ?? raw
     const createdId = extractCreatedId(createdPayload)
     if (createdId == null) throw new Error("Create response missing id")
-    const detail = await api.get<ApiEnvelope<BudgetProgramResDto>>(
-      `/budgetprograms/${encodeURIComponent(String(createdId))}`
-    )
-    const entity = detail?.data ?? (detail as ApiEnvelope<BudgetProgramResDto>).data
-    if (!entity) throw new Error("Failed to load created budget program")
-    return mapBudgetProgramEntityToBudgetUnitsRow(entity as BudgetProgramResDto, 1)
+    // Skip getById — Add mode only resets form + refetches list.
+    return mapBudgetProgramEntityToBudgetUnitsRow({
+      id: createdId,
+      code: body.code as string,
+      name: body.name as string,
+      description: body.description as string,
+      medicalpercent: String(body.medicalpercent),
+      status: body.status as string,
+      type: body.type as string,
+      department: { id: body.departmentId as number, name: values.buProgramDepartment.trim() },
+      budgetUnit: { id: body.budgetUnitId as number, name: values.buProgramBudgetUnitName.trim(), code: "" },
+    } as unknown as BudgetProgramResDto, 1)
   }
 
   // BU Sub-Program creation (from Budget Units tab "BU Sub-Program" section)
   if (tab === "Budget Units" && values.formSection === "BU Sub-Program") {
-    let parentProgramId =
+    const parentProgramId =
       lookups.budgetProgramIdByName?.[values.buSubProgramBudgetUnitProgramName.trim()]
-
-    if (!parentProgramId && values.buSubProgramBudgetUnitProgramName.trim()) {
-      parentProgramId = await resolveBudgetProgramIdByName(
-        values.buSubProgramBudgetUnitProgramName
-      )
-    }
 
     if (!parentProgramId) throw new Error("Please Select Budget Program")
 
-    // Load parent Budget Program to get its budgetUnitId and departmentId.
-    const parentDetail = await api.get<ApiEnvelope<BudgetProgramResDto>>(
-      `/budgetprograms/${encodeURIComponent(String(parentProgramId))}`
-    )
-    const parentEntity =
-      parentDetail?.data ?? (parentDetail as ApiEnvelope<BudgetProgramResDto>).data
-    const budgetUnitId =
-      parentEntity && typeof parentEntity.budgetUnit?.id === "number"
-        ? parentEntity.budgetUnit.id
-        : undefined
+    // Resolve budgetUnitId and departmentId from the already-fetched budget programs lookup
+    // (embedded in the form options response — no extra API call needed).
+    const parentLookup = lookups.budgetProgramLookup?.[values.buSubProgramBudgetUnitProgramName.trim()]
+    const budgetUnitId = parentLookup?.budgetUnitId
     const departmentId =
-      parentEntity && typeof parentEntity.department?.id === "number"
-        ? parentEntity.department.id
-        : lookups.departmentIdByName?.[values.buSubProgramDepartment.trim()] ??
-          lookups.departmentIdByName?.[values.budgetUnitDepartment.trim()]
+      parentLookup?.departmentId ??
+      lookups.departmentIdByName?.[values.buSubProgramDepartment.trim()] ??
+      lookups.departmentIdByName?.[values.budgetUnitDepartment.trim()]
 
     if (!budgetUnitId) throw new Error("Budget Unit not found for selected program")
     if (!departmentId) throw new Error("Please Select Department")
@@ -455,12 +432,20 @@ export async function apiCreateProgram(input: CreateProgramInput & {
     const createdPayload = raw?.data ?? raw
     const createdId = extractCreatedId(createdPayload)
     if (createdId == null) throw new Error("Create response missing id")
-    const detail = await api.get<ApiEnvelope<BudgetProgramResDto>>(
-      `/budgetprograms/${encodeURIComponent(String(createdId))}`
-    )
-    const entity = detail?.data ?? (detail as ApiEnvelope<BudgetProgramResDto>).data
-    if (!entity) throw new Error("Failed to load created budget sub program")
-    return mapBudgetProgramEntityToBudgetUnitsRow(entity as BudgetProgramResDto, 2)
+    // Skip getById — Add mode only resets form + refetches list.
+    return mapBudgetProgramEntityToBudgetUnitsRow({
+      id: createdId,
+      code: body.code as string,
+      name: body.name as string,
+      description: body.description as string,
+      medicalpercent: String(body.medicalpercent),
+      status: body.status as string,
+      type: body.type as string,
+      departmentId: body.departmentId as number,
+      department: { id: body.departmentId as number, name: values.buSubProgramDepartment.trim() },
+      budgetUnit: { id: body.budgetUnitId as number, name: "", code: "" },
+      parentId: body.parentId as number,
+    } as unknown as BudgetProgramResDto, 2)
   }
 
   if (tab === "Time Study programs") {
@@ -486,10 +471,6 @@ export async function apiCreateProgram(input: CreateProgramInput & {
 
     if (isPrimary) {
       budgetProgramId = lookups.budgetProgramIdByName?.[values.buProgramBudgetUnitName.trim()]
-
-      if (!budgetProgramId && values.buProgramBudgetUnitName.trim()) {
-        budgetProgramId = await resolveBudgetProgramIdByName(values.buProgramBudgetUnitName)
-      }
 
       if (!budgetProgramId) throw new Error("Please Select Budget Program")
     } else if (isSecondary || !isPrimary) {
@@ -554,12 +535,20 @@ export async function apiCreateProgram(input: CreateProgramInput & {
     const createdPayload = raw?.data ?? raw
     const createdId = extractCreatedId(createdPayload)
     if (createdId == null) throw new Error("Create response missing id")
-    const detail = await api.get<ApiEnvelope<TimeStudyProgramResDto>>(
-      `/timestudyprograms/${encodeURIComponent(String(createdId))}`
-    )
-    const entity = detail?.data ?? (detail as ApiEnvelope<TimeStudyProgramResDto>).data
-    if (!entity) throw new Error("Failed to load created time study program")
-    return mapTimeStudyProgramToProgramRow(entity as TimeStudyProgramResDto)
+    // Skip getById — Add mode only resets form + refetches list.
+    return mapTimeStudyProgramToProgramRow({
+      id: createdId,
+      code,
+      name,
+      status: body.status as string,
+      type: body.type as string,
+      department: { id: deptId, name: departmentName.trim() },
+      budgetProgram: budgetProgramId ? { id: budgetProgramId, code: "", name: values.buProgramBudgetUnitName?.trim() ?? "" } : undefined,
+      parentId: parentId ?? null,
+      costAllocation: body.costAllocation as boolean,
+      isMultiCode: false,
+      multiCodeType: TimeStudyProgramMultiCodeTypeEnum.NORMAL,
+    } as unknown as TimeStudyProgramResDto)
   }
 
   throw new Error("Create not supported for this section yet")
@@ -730,13 +719,18 @@ export async function apiGetProgramRowById(input: {
     )
     const entity = raw?.data ?? (raw as ApiEnvelope<BudgetProgramResDto>).data
     const mapped = mapBudgetProgramToProgramRow(entity as BudgetProgramResDto)
-    return {
+    const result: ProgramRow = {
       ...mapped,
       hierarchyLevel: row.hierarchyLevel,
-      parentId: row.parentId,
+      parentId: row.parentId != null ? String(row.parentId) : undefined,
       type: mapped.type || row.type,
       tab: activeTab, // Always use current activeTab rather than mapper defaults
+      parentProgramName: row.parentProgramName,
+      parentProgramCode: row.parentProgramCode,
+      parentBudgetUnitCode: row.parentBudgetUnitCode,
     }
+
+    return result
   }
 
   // Time Study programs tab.
@@ -754,22 +748,6 @@ export async function apiGetProgramRowById(input: {
       parentProgramCode: row.parentProgramCode,
       parentBudgetUnitCode: row.parentBudgetUnitCode || mapped.parentBudgetUnitCode,
       hierarchyLevel: row.hierarchyLevel,
-    }
-
-    // If parent info is missing from the table context but we have a parentId, fetch it now.
-    if (result.parentId && (!result.parentProgramName || !result.parentProgramCode)) {
-      try {
-        const parentRes = await api.get<ApiEnvelope<TimeStudyProgramResDto>>(
-          `/timestudyprograms/${encodeURIComponent(result.parentId)}`
-        )
-        const parentEntity = parentRes?.data ?? (parentRes as ApiEnvelope<TimeStudyProgramResDto>).data
-        if (parentEntity) {
-          result.parentProgramName = parentEntity.name
-          result.parentProgramCode = parentEntity.code ?? undefined
-        }
-      } catch {
-        // Fallback to what we have
-      }
     }
 
     return result

@@ -61,7 +61,7 @@ export const ProgramFormModal = forwardRef<ProgramFormModalHandle, ProgramFormMo
   const activeSection = form.watch("formSection") as ProgramFormSection
 
   const formOptionsQuery = useGetProgramFormOptions(
-    open && (mode === "add" || mode === "edit"),
+    open && mode === "add",
     contextTab,
     activeSection,
     departmentIds
@@ -77,12 +77,12 @@ export const ProgramFormModal = forwardRef<ProgramFormModalHandle, ProgramFormMo
   // - TS Sub-Program One (isTsSecondary): use Time Study Primary Programs
   // - TS Sub-Program Two (isTsTertiary): use Time Study Secondary Programs
   const tsPrimaryProgramsQuery = useGetActivePrimaryTimeStudyPrograms(
-    open && (mode === "add" || mode === "edit") && isTsSecondary,
+    open && mode === "add" && isTsSecondary,
     departmentIds
   )
 
   const tsSecondaryProgramsQuery = useGetActiveSecondaryTimeStudyPrograms(
-    open && (mode === "add" || mode === "edit") && isTsTertiary,
+    open && mode === "add" && isTsTertiary,
     departmentIds
   )
 
@@ -201,7 +201,15 @@ export const ProgramFormModal = forwardRef<ProgramFormModalHandle, ProgramFormMo
   }
 
   const handleSubmit = form.handleSubmit((values) => {
-    onSave({ ...values, formSection: activeSection })
+    onSave(
+      { ...values, formSection: activeSection },
+      {
+        departmentIdByName: formOptionsQuery.data?.departmentIdByName,
+        budgetUnitIdByName: formOptionsQuery.data?.budgetUnitIdByName,
+        budgetProgramIdByName: formOptionsQuery.data?.budgetProgramIdByName,
+        budgetProgramLookup: budgetProgramLookup,
+      }
+    )
   }, showInvalidToast)
 
   const hasUnsavedChangesInSection = (section: ProgramFormSection) => {

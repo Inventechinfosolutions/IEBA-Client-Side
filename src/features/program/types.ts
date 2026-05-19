@@ -162,6 +162,8 @@ export type ProgramCreateLookups = {
   departmentIdByName?: Record<string, number>
   budgetUnitIdByName?: Record<string, number>
   budgetProgramIdByName?: Record<string, number>
+  /** Enriched lookup: maps budget program name → id + budgetUnitId + departmentId */
+  budgetProgramLookup?: Record<string, { code: string; department: string; budgetUnitId?: number; departmentId?: number }>
 }
 
 export type CreatedIdResponse = {
@@ -180,6 +182,7 @@ export type CreateProgramInput = {
     departmentIdByName?: Record<string, number>
     budgetUnitIdByName?: Record<string, number>
     budgetProgramIdByName?: Record<string, number>
+    budgetProgramLookup?: Record<string, { code: string; department: string; budgetUnitId?: number; departmentId?: number }>
   }
 }
 
@@ -191,6 +194,7 @@ export type UpdateProgramInput = {
     departmentIdByName?: Record<string, number>
     budgetUnitIdByName?: Record<string, number>
     budgetProgramIdByName?: Record<string, number>
+    budgetProgramLookup?: Record<string, { code: string; department: string; budgetUnitId?: number; departmentId?: number }>
   }
 }
 
@@ -204,7 +208,7 @@ export type ProgramFormModalProps = {
   isSubmitting?: boolean
   isLoading?: boolean
   onOpenChange: (open: boolean) => void
-  onSave: (values: ProgramFormValues) => void
+  onSave: (values: ProgramFormValues, lookups?: ProgramCreateLookups) => void
   departmentIds?: number[]
 }
 

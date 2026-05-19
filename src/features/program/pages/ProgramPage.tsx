@@ -5,6 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { toast } from "sonner"
 
 import { usePermissions } from "@/hooks/usePermissions"
+import { queryClient } from "@/main"
 
 import { MasterCodePagination } from "@/features/master-code/components/MasterCodePagination"
 import { Spinner } from "@/components/ui/spinner"
@@ -15,9 +16,10 @@ import { ProgramTabs } from "../components/ProgramTabs"
 import { TimeStudyProgramTable } from "../components/TimeStudyProgramTable"
 import { ProgramToolbar } from "../components/ProgramToolbar"
 import { useProgramModule } from "../hooks/useProgramModule"
-import { apiGetProgramRowById, apiCheckActiveSubPrograms, apiCheckActiveBudgetSubPrograms } from "../api"
+import { apiGetProgramRowById } from "../api"
 import { useGetProgramFormOptions } from "../queries/getProgramFormOptions"
 import { programFormSchema } from "../schemas"
+import { programKeys } from "../keys"
 import type {
   BudgetUnitTableHandle,
   ProgramFormModalHandle,
@@ -27,6 +29,7 @@ import type {
   ProgramRow,
   ProgramTab,
   TimeStudyProgramTableHandle,
+  ProgramCreateLookups,
 } from "../types"
 
 const UserProgramHistoryTable = lazy(() =>
@@ -209,7 +212,7 @@ export function ProgramPage() {
   }, [isRestrictedRole])
 
   const formOptionsQuery = useGetProgramFormOptions(
-    modalOpen,
+    modalOpen && modalMode === "add",
     activeTab,
     currentSectionForLookups,
     assignedDepartmentIds
@@ -352,6 +355,16 @@ export function ProgramPage() {
     setHistorySearch("")
   }
 
+  // Called only when the modal is dismissed via Exit (not after Save).
+  // This is the single place the table list API is re-triggered for all 6 form sections.
+  const handleModalClose = (open: boolean) => {
+    setModalOpen(open)
+    if (!open) {
+      // Invalidate all list queries across all tabs when Exit is clicked.
+      queryClient.invalidateQueries({ queryKey: programKeys.lists() })
+    }
+  }
+
   const handleSearchChange = (value: string) => {
     if (showHistory) {
       setHistorySearch(value)
@@ -378,13 +391,7 @@ export function ProgramPage() {
       const parentActive = row.parentActive
       const freshRow = await apiGetProgramRowById({ activeTab, row })
       
-      let flags = { hasActiveSubProgramOne: false, hasActiveSubProgramTwo: false }
-      if (activeTab === "Time Study programs") {
-        flags = await apiCheckActiveSubPrograms(freshRow)
-      } else if (activeTab === "Budget Units") {
-        flags = await apiCheckActiveBudgetSubPrograms(freshRow)
-      }
-      setActiveChildrenFlags({ one: flags.hasActiveSubProgramOne, two: flags.hasActiveSubProgramTwo, parentActive })
+      setActiveChildrenFlags({ one: false, two: false, parentActive })
 
       setModalMode("edit")
       setSelectedRow(freshRow)
@@ -406,7 +413,7 @@ export function ProgramPage() {
     setModalOpen(true)
   }
 
-  const handleSaveForm = (values: ProgramFormValues) => {
+  const handleSaveForm = (values: ProgramFormValues, modalLookups?: ProgramCreateLookups) => {
     // Use the currently active main tab to decide which backend flow to use.
     // This ensures that when we're in the "Budget Units" tab and on the "BU Program"
     // section, we hit the Budget Program create/update paths (not Time Study).
@@ -458,9 +465,10 @@ export function ProgramPage() {
           tab: targetTab,
           values,
           lookups: {
-            departmentIdByName: formOptionsQuery.data?.departmentIdByName,
-            budgetUnitIdByName: formOptionsQuery.data?.budgetUnitIdByName,
-            budgetProgramIdByName: formOptionsQuery.data?.budgetProgramIdByName,
+            departmentIdByName: modalLookups?.departmentIdByName ?? formOptionsQuery.data?.departmentIdByName,
+            budgetUnitIdByName: modalLookups?.budgetUnitIdByName ?? formOptionsQuery.data?.budgetUnitIdByName,
+            budgetProgramIdByName: modalLookups?.budgetProgramIdByName ?? formOptionsQuery.data?.budgetProgramIdByName,
+            budgetProgramLookup: modalLookups?.budgetProgramLookup ?? formOptionsQuery.data?.budgetProgramLookup,
           },
         },
         {
@@ -476,9 +484,10 @@ export function ProgramPage() {
         tab: targetTab,
         values,
         lookups: {
-          departmentIdByName: formOptionsQuery.data?.departmentIdByName,
-          budgetUnitIdByName: formOptionsQuery.data?.budgetUnitIdByName,
-          budgetProgramIdByName: formOptionsQuery.data?.budgetProgramIdByName,
+          departmentIdByName: modalLookups?.departmentIdByName ?? formOptionsQuery.data?.departmentIdByName,
+          budgetUnitIdByName: modalLookups?.budgetUnitIdByName ?? formOptionsQuery.data?.budgetUnitIdByName,
+          budgetProgramIdByName: modalLookups?.budgetProgramIdByName ?? formOptionsQuery.data?.budgetProgramIdByName,
+          budgetProgramLookup: modalLookups?.budgetProgramLookup ?? formOptionsQuery.data?.budgetProgramLookup,
         },
       },
       {
@@ -596,7 +605,7 @@ export function ProgramPage() {
         contextTab={activeTab}
         isSubmitting={programModule.isCreating || programModule.isUpdating}
         isLoading={isEditDetailLoading}
-        onOpenChange={setModalOpen}
+        onOpenChange={handleModalClose}
         onSave={handleSaveForm}
         departmentIds={assignedDepartmentIds}
         ref={modalResetRef}
