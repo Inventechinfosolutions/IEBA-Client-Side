@@ -1,6 +1,6 @@
 import { api } from "@/lib/api"
-import type {ApiEnvelope,BudgetProgramResDto,BudgetUnitListResponseDto,BudgetUnitResDto,CreatedIdResponse,CreatedIdWithCodeResponse,CreateProgramInput,GetProgramsParams,PaginationMeta,ProgramActivityRelationActivitiesPayload,ProgramCreateLookups,ProgramListResponse,ProgramRow,ProgramTab,ProgramActivityRelationTimeStudyEnvelope,TimeStudyProgramListResponseDto,TimeStudyProgramOption,TimeStudyProgramResDto,UpdateProgramInput} from "./types"
-import {BudgetProgramTypeEnum,TimeStudyProgramMultiCodeTypeEnum,TimeStudyProgramStatusEnum,TimeStudyProgramTypeEnum} from "./enums/enums"
+import type { ApiEnvelope, BudgetProgramResDto, BudgetUnitListResponseDto, BudgetUnitResDto, CreatedIdResponse, CreatedIdWithCodeResponse, CreateProgramInput, GetProgramsParams, PaginationMeta, ProgramActivityRelationActivitiesPayload, ProgramCreateLookups, ProgramListResponse, ProgramRow, ProgramTab, ProgramActivityRelationTimeStudyEnvelope, TimeStudyProgramListResponseDto, TimeStudyProgramOption, TimeStudyProgramResDto, UpdateProgramInput } from "./types"
+import { BudgetProgramTypeEnum, TimeStudyProgramMultiCodeTypeEnum, TimeStudyProgramStatusEnum, TimeStudyProgramTypeEnum } from "./enums/enums"
 
 function isActiveStatus(status: unknown): boolean {
   if (typeof status === "boolean") return status
@@ -134,6 +134,15 @@ function mapBudgetProgramToProgramRow(raw: BudgetProgramResDto): ProgramRow {
       ? raw.budgetUnit.name
       : undefined
 
+  const resolvedParentId = raw.parentId != null 
+    ? String(raw.parentId)
+    : raw.parent?.id != null
+      ? String(raw.parent.id)
+      : undefined
+
+  const parentProgramName = raw.parent && typeof raw.parent.name === "string" ? raw.parent.name : undefined
+  const parentProgramCode = raw.parent && typeof raw.parent.code === "string" ? raw.parent.code : undefined
+
   return {
     id,
     tab: "Time Study programs",
@@ -143,8 +152,10 @@ function mapBudgetProgramToProgramRow(raw: BudgetProgramResDto): ProgramRow {
     medicalPct: raw.medicalpercent == null ? "0.00" : String(raw.medicalpercent),
     department: departmentName,
     active: isActiveStatus(raw.status),
-    parentId: raw.parentId == null ? undefined : String(raw.parentId),
+    parentId: resolvedParentId,
     parentBudgetUnitName,
+    parentProgramName,
+    parentProgramCode,
     type: typeof raw.type === "string" ? raw.type : undefined,
   }
 }
@@ -245,9 +256,9 @@ async function fetchTimeStudyPrograms(params: GetProgramsParams): Promise<Progra
   // Filter to only primary-type items so secondary/subprogram don't appear as top-level rows.
   const filteredList = Array.isArray(rawPayload)
     ? (list as any[]).filter((item) => {
-        const t = typeof item.type === "string" ? item.type.trim().toLowerCase() : ""
-        return t === TimeStudyProgramTypeEnum.PRIMARY || t === ""
-      })
+      const t = typeof item.type === "string" ? item.type.trim().toLowerCase() : ""
+      return t === TimeStudyProgramTypeEnum.PRIMARY || t === ""
+    })
     : list
 
   // When search returns a flat array, enrich items with budgetProgram/department names
@@ -378,6 +389,7 @@ export async function apiCreateProgram(input: CreateProgramInput & {
       status: toStatus(values.active),
       type: "program",
       medicalpercent: parsePercent(values.buProgramMedicalPct),
+      parentId: budgetUnitId,
     }
     const raw = await api.post<ApiEnvelope<CreatedIdResponse>>("/budgetprograms", body)
     const createdPayload = raw?.data ?? raw
@@ -399,8 +411,9 @@ export async function apiCreateProgram(input: CreateProgramInput & {
 
   // BU Sub-Program creation (from Budget Units tab "BU Sub-Program" section)
   if (tab === "Budget Units" && values.formSection === "BU Sub-Program") {
-    const parentProgramId =
-      lookups.budgetProgramIdByName?.[values.buSubProgramBudgetUnitProgramName.trim()]
+    const parentProgramId = input.parentRowId
+      ? Number(input.parentRowId)
+      : lookups.budgetProgramIdByName?.[values.buSubProgramBudgetUnitProgramName.trim()]
 
     if (!parentProgramId) throw new Error("Please Select Budget Program")
 
@@ -477,28 +490,36 @@ export async function apiCreateProgram(input: CreateProgramInput & {
       // For secondary, the selected "TS Program" is the Primary.
       // For tertiary (subprogram), the selected "TS Program" is the Secondary.
       // We must fetch it to get its ID (parentId) and its budgetProgramId.
-      const parentName = isSecondary 
+      const parentName = isSecondary
         ? values.buSubProgramBudgetUnitProgramName.trim()
         : values.budgetUnitName.trim()
-        
-      const searchType = isSecondary 
-        ? TimeStudyProgramTypeEnum.PRIMARY 
-        : "secondary" // The backend enum doesn't have secondary/subprogram, it uses string
 
-      const search = new URLSearchParams()
-      search.set("page", "1")
-      search.set("limit", "100")
-      search.set("status", TimeStudyProgramStatusEnum.ACTIVE)
-      search.set("type", searchType)
-      
-      const res = await api.get<ApiEnvelope<{ data?: any[] }>>(`/timestudyprograms?${search.toString()}`)
-      const list = Array.isArray(res?.data?.data) ? res.data.data : []
-      const found = list.find((p: any) => p.name === parentName)
-      
-      if (!found) throw new Error(`Could not find active TS Program: ${parentName}`)
-      
-      parentId = found.id
-      budgetProgramId = found.budgetProgram?.id
+      parentId = input.parentRowId ? Number(input.parentRowId) : undefined
+      budgetProgramId = lookups.budgetProgramIdByName?.[parentName]
+
+      if (!parentId) {
+        const searchType = isSecondary
+          ? TimeStudyProgramTypeEnum.PRIMARY
+          : "secondary" // The backend enum doesn't have secondary/subprogram, it uses string
+
+        const search = new URLSearchParams()
+        search.set("page", "1")
+        search.set("limit", "100")
+        search.set("status", TimeStudyProgramStatusEnum.ACTIVE)
+        search.set("type", searchType)
+
+        const res = await api.get<ApiEnvelope<{ data?: any[] }>>(`/timestudyprograms?${search.toString()}`)
+        const list = Array.isArray(res?.data?.data) ? res.data.data : []
+        const found = list.find((p: any) => p.name === parentName)
+
+        if (!found) throw new Error(`Could not find active TS Program: ${parentName}`)
+
+        parentId = found.id
+        if (!budgetProgramId) {
+          budgetProgramId = found.budgetProgram?.id
+        }
+      }
+
       if (!budgetProgramId) throw new Error(`TS Program '${parentName}' is missing budgetProgramId`)
     }
 
@@ -525,7 +546,7 @@ export async function apiCreateProgram(input: CreateProgramInput & {
       isMultiCode: false,
       multiCodeType: TimeStudyProgramMultiCodeTypeEnum.NORMAL,
       groupMaster: false,
-      ...(parentId ? { parentId } : {}),
+      parentId: parentId ?? null,
     }
 
     const raw = await api.post<ApiEnvelope<CreatedIdWithCodeResponse>>(
@@ -752,7 +773,7 @@ export async function apiGetProgramRowById(input: {
 
     return result
   }
- // Program Activity Relation not yet wired to backend.
+  // Program Activity Relation not yet wired to backend.
   return row
 }
 
@@ -836,7 +857,7 @@ export async function apiCheckActiveSubPrograms(row: ProgramRow): Promise<{ hasA
 
   if (row.tab === "Time Study programs" && row.id) {
     const type = (row.type ?? "").toLowerCase().trim()
-    
+
     if (type === "primary" || type === "") {
       const search = new URLSearchParams()
       search.set("page", "1")
@@ -960,8 +981,8 @@ export function parseProgramActivityRelationActivitiesApiResponse(
     tryParseActivityAssignmentsPayloadFromLayer(envelope.data) ??
     (envelope.data && typeof envelope.data === "object"
       ? tryParseActivityAssignmentsPayloadFromLayer(
-          (envelope.data as Record<string, unknown>).data,
-        )
+        (envelope.data as Record<string, unknown>).data,
+      )
       : undefined) ??
     {}
   )

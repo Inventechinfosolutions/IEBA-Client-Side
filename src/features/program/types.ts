@@ -121,6 +121,7 @@ export type BudgetProgramResDto = {
   budgetUnit?: BudgetProgramBudgetUnitResDto | null
   department?: BudgetProgramDepartmentResDto | null
   parentId?: number | null
+  parent?: BudgetProgramResDto | null
 }
 
 export type TimeStudyProgramBudgetProgramResDto = {
@@ -178,6 +179,7 @@ export type CreatedIdWithCodeResponse = {
 export type CreateProgramInput = {
   tab: ProgramTab
   values: ProgramFormValues
+  parentRowId?: string
   lookups?: {
     departmentIdByName?: Record<string, number>
     budgetUnitIdByName?: Record<string, number>

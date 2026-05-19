@@ -240,13 +240,22 @@ export function ProgramPage() {
       const section = detectSection(selectedRow)
       const buNameForProgramTab =
         selectedRow.tab === "Budget Units"
-          ? selectedRow.name
+          ? (selectedRow.hierarchyLevel === 0 
+              ? selectedRow.name 
+              : selectedRow.parentBudgetUnitName?.trim() || "")
           : selectedRow.tab === "Program Activity Relation"
             ? selectedRow.parentBudgetUnitName?.trim() || ""
             : selectedRow.parentBudgetUnitName?.trim() ?? ""
       const parentBU = programModule.rows.find(
         r => r.name.trim().toLowerCase() === selectedRow.parentBudgetUnitName?.trim().toLowerCase()
       )
+      
+      const buCodeForProgramTab =
+        selectedRow.tab === "Budget Units"
+          ? (selectedRow.hierarchyLevel === 0
+              ? selectedRow.code
+              : selectedRow.parentBudgetUnitCode?.trim() || parentBU?.code || "")
+          : parentBU?.code || ""
       
       const effectiveParentName = 
           selectedRow.parentProgramName?.trim() || 
@@ -296,7 +305,7 @@ export function ProgramPage() {
         budgetUnitMedicalPct: selectedRow.medicalPct,
         buProgramBudgetUnitName: buNameForProgramTab,
         buProgramDepartment: selectedRow.department,
-        buProgramCode: selectedRow.code,
+        buProgramCode: buCodeForProgramTab,
         buProgramProgramCode: selectedRow.code,
         buProgramProgramName: selectedRow.name,
         buProgramDescription: selectedRow.description,
@@ -483,6 +492,7 @@ export function ProgramPage() {
       {
         tab: targetTab,
         values,
+        parentRowId: selectedProgramForSubAdd?.id,
         lookups: {
           departmentIdByName: modalLookups?.departmentIdByName ?? formOptionsQuery.data?.departmentIdByName,
           budgetUnitIdByName: modalLookups?.budgetUnitIdByName ?? formOptionsQuery.data?.budgetUnitIdByName,
