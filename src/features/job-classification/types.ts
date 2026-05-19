@@ -149,3 +149,26 @@ export type CreateJobClassificationResponseDto = {
   active?: boolean
   status?: unknown
 }
+
+/** Matches the backend JobClassificationSimpleDto */
+export type JobClassificationSimpleItem = {
+  id: number
+  code: string
+  name: string
+  status: string
+  users?: {
+    id: string
+    firstName: string
+    lastName: string
+    name?: string
+    status?: string
+  }[]
+}
+
+/** Matches the backend JobClassificationGroupedByDepartmentResDto */
+export type JobClassificationGroupedByDepartmentResponse = {
+  departmentId: number
+  departmentName: string
+  assigned: JobClassificationSimpleItem[]
+  unassigned: JobClassificationSimpleItem[]
+}

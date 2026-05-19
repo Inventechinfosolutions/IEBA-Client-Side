@@ -23,8 +23,8 @@ export function useGetMasterCodes(params: GetMasterCodesParams) {
       })
     },
     enabled: Boolean(params.codeType),
-    staleTime: 30_000,
-    gcTime: 5 * 60_000,
+    staleTime: 0,
+    gcTime: 0,
   })
 }
 
@@ -43,8 +43,8 @@ export function useGetActivityCodeById(
     queryKey: masterCodeKeys.detail(id),
     queryFn: () => apiGetMasterCodeById(id),
     enabled: enabled && id.length > 0 && !Number.isNaN(numericId) && numericId > 0,
-    staleTime: 60_000,
-    gcTime: 5 * 60_000,
+    staleTime: 0,
+    gcTime: 0,
   })
 }
 
@@ -68,7 +68,7 @@ export function useTenantMasterCodeByName(name: MasterCodeTab | "") {
     queryKey: masterCodeKeys.tenantByName(name || ""),
     queryFn: async () => await apiGetTenantMasterCodeByName(name as MasterCodeTab),
     enabled: Boolean(name),
-    staleTime: 30_000,
-    gcTime: 5 * 60_000,
+    staleTime: 0,
+    gcTime: 0,
   })
 }

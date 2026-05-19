@@ -308,6 +308,52 @@ export async function getDepartmentsAll(
   )
 }
 
+export async function getDepartmentsTableDetails(
+  params?: GetDepartmentsParams
+): Promise<GetDepartmentsListResult> {
+  const searchParams = new URLSearchParams()
+  if (params?.page) searchParams.set("page", String(params.page))
+  if (params?.limit) searchParams.set("limit", String(params.limit))
+  if (params?.status) searchParams.set("status", params.status)
+  if (params?.search) searchParams.set("search", params.search)
+  if (params?.sort) searchParams.set("sort", params.sort)
+  if (params?.userId) searchParams.set("userId", params.userId)
+
+  const res = await api.get<DepartmentApiEnvelope<DepartmentListResponseDto>>(
+    `/departments/table-all?${searchParams.toString()}`
+  )
+
+  const envelope = (res?.data ?? res) as any
+  const payload =
+    envelope !== null && typeof envelope === "object" && "data" in (envelope as object)
+      ? (envelope as { data: unknown }).data
+      : envelope
+
+  const list = Array.isArray(payload)
+    ? payload
+    : Array.isArray((payload as DepartmentListResponseDto | null)?.data)
+      ? (payload as DepartmentListResponseDto).data
+      : []
+
+  const meta =
+    envelope !== null && typeof envelope === "object" && "meta" in (envelope as object)
+      ? (envelope as { meta: any }).meta
+      : (payload as DepartmentListResponseDto | null)?.meta
+
+  const items = list.map((x: any) => {
+    const dept = toDepartmentUI(x as DepartmentResDto, { includeAddress: true })
+    if (x.primaryContact) dept.primaryContact = x.primaryContact
+    if (x.secondaryContact) dept.secondaryContact = x.secondaryContact
+    if (x.billingContact) dept.billingContact = x.billingContact
+    return dept
+  })
+
+  return {
+    items,
+    total: meta?.total ?? meta?.totalItems ?? items.length,
+  }
+}
+
 export async function getDepartmentById(id: string): Promise<Department> {
   const res = await api.get<DepartmentApiEnvelope<DepartmentResDto>>(`/departments/${id}`)
   const payload = (res?.data ?? res) as DepartmentResDto

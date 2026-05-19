@@ -121,9 +121,12 @@ async function fetchDepartmentUsers(): Promise<DepartmentContactUser[]> {
   return all
 }
 
-export function useGetDepartmentUsers() {
+export function useGetDepartmentUsers(enabled = true) {
   return useQuery({
     queryKey: departmentKeys.contactUsers(),
     queryFn: fetchDepartmentUsers,
+    enabled,
+    staleTime: 5 * 60_000, // Keep fresh for 5 minutes to prevent background refetches on form state changes
+    gcTime: 30 * 60_000,   // Keep cache alive for 30 minutes
   })
 }

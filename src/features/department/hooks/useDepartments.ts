@@ -1,19 +1,19 @@
 import { useCallback, useState } from "react"
-import { useGetDepartments } from "../queries/getDepartments"
+import { useGetDepartmentsTableDetails } from "../queries/getDepartments"
 import type { DepartmentFilter } from "../types"
 
 export function useDepartments(filters: DepartmentFilter, userId?: string) {
   const [pagination, setPagination] = useState({
     page: 1,
-    pageSize: 10,
+    pageSize: 5,
   })
 
   const status: "active" | "inactive" = filters.inactive ? "inactive" : "active"
   const searchText = (filters.search ?? "").trim()
-  const { data, isLoading, isFetching } = useGetDepartments({
-    status,
+  const { data, isLoading, isFetching } = useGetDepartmentsTableDetails({
     page: pagination.page,
     limit: pagination.pageSize,
+    status,
     search: searchText,
     sort: "ASC",
     userId,
