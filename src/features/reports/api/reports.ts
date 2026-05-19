@@ -131,16 +131,6 @@ export async function apiGetCostPoolUsers(costPoolIds: string[], userId: string,
   }))
 }
 
-export async function apiGetMaaTcmActivityDepartments(): Promise<ReportSelectOption[]> {
-  const data = await api.get<any>("/report/maa-tcm/activity-departments")
-  const list = Array.isArray(data) ? data : Array.isArray(data.data) ? data.data : []
-
-  return list.map((r: any) => ({
-    value: String(r.id),
-    label: r.name || r.label,
-  }))
-}
-
 export async function apiGetTimeStudyProgramsForUsers(
   userIds: string[],
   dateFrom: string,

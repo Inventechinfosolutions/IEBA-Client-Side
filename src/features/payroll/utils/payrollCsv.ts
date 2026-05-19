@@ -41,20 +41,6 @@ function rowToCsvCells(row: PayrollManagementRow): string[] {
   ].map((val) => escapeCsvCell(String(val ?? "")))
 }
 
-export function buildPayrollRowsCsvContent(
-  headers: readonly string[],
-  rows: readonly PayrollManagementRow[],
-): string {
-  const headerLine = headers.map(escapeCsvCell).join(",")
-  const lines = rows.map((r) => rowToCsvCells(r).join(","))
-  return [headerLine, ...lines].join("\n")
-}
-
-export function triggerBrowserDownloadTextFile(filename: string, content: string, mime: string): void {
-  const blob = new Blob([content], { type: mime })
-  triggerBrowserDownloadBlob(filename, blob)
-}
-
 export function triggerBrowserDownloadBlob(filename: string, blob: Blob): void {
   const url = URL.createObjectURL(blob)
   const anchor = document.createElement("a")

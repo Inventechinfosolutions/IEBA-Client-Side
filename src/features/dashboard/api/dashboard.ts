@@ -1,21 +1,11 @@
 import { api } from "@/lib/api"
-import { getUsersTotalCountByStatus, getUsersTotalCountUnfiltered } from "@/features/user/api"
 import type {
   ApiEnvelope,
   DashboardOverview,
-  Holiday,
-  JpCpTotals,
-  LeaveAggregateResult,
   ReportItem,
-  TimeStudyAggregateResult,
-  TimeStudySuperAggregateResult,
-  TodoItem,
-  TodoListResult,
 } from "../types"
-import { PayrollPeriod, TimeStudyStatus, DashboardQueryType } from "../enums/dashboard.enum"
+import { PayrollPeriod } from "../enums/dashboard.enum"
 import { toIsoYmdFromDate } from "@/lib/dates"
-
-
 
 function getStartEndOfMonth(date = new Date()): { startDate: string; endDate: string } {
   const start = new Date(date.getFullYear(), date.getMonth(), 1)
@@ -55,11 +45,10 @@ function getStartEndSemimonthly(date = new Date()): { startDate: string; endDate
     const start = new Date(year, month, 1)
     const end = new Date(year, month, 15)
     return { startDate: toIsoYmdFromDate(start), endDate: toIsoYmdFromDate(end) }
-  } else {
-    const start = new Date(year, month, 16)
-    const end = new Date(year, month + 1, 0)
-    return { startDate: toIsoYmdFromDate(start), endDate: toIsoYmdFromDate(end) }
   }
+  const start = new Date(year, month, 16)
+  const end = new Date(year, month + 1, 0)
+  return { startDate: toIsoYmdFromDate(start), endDate: toIsoYmdFromDate(end) }
 }
 
 export function getPayrollDateRange(
@@ -86,147 +75,6 @@ export function getPayrollDateRange(
   }
 }
 
-
-
-
-export async function getPersonalTimeStudy(params: {
-  startDate: string
-  endDate: string
-  userId: string | number
-  departmentId?: number
-  roleId?: number
-}): Promise<TimeStudyAggregateResult> {
-  const body = {
-    startDate: params.startDate,
-    endDate: params.endDate,
-    userId: params.userId,
-    type: DashboardQueryType.Monthly,
-    status: TimeStudyStatus.Submitted,
-    departmentId: params.departmentId,
-    roleId: params.roleId,
-  }
-  const res = await api.post<ApiEnvelope<{ statusCounts: TimeStudyAggregateResult["statusCounts"] }[]>>(
-    "/timestudyrecords/user/timeentry/record",
-    body,
-  )
-  const payload = (res?.data ?? res) as { statusCounts: TimeStudyAggregateResult["statusCounts"] }[]
-  const first = Array.isArray(payload) ? payload[0] : payload
-  return { statusCounts: first?.statusCounts ?? [] }
-}
-
-
-export async function getTimeRecordRequests(params: {
-  startDate: string
-  endDate: string
-  userId: string | number
-  departmentId?: number
-  roleId?: number
-}): Promise<TimeStudySuperAggregateResult> {
-  const body = {
-    startDate: params.startDate,
-    endDate: params.endDate,
-    userId: params.userId,
-    type: DashboardQueryType.Super,
-    status: TimeStudyStatus.Submitted,
-    departmentId: params.departmentId,
-    roleId: params.roleId,
-  }
-  const res = await api.post<ApiEnvelope<{ statusCounts: TimeStudySuperAggregateResult["statusCounts"] }[]>>(
-    "/timestudyrecords/user/timeentry/record",
-    body,
-  )
-  const payload = (res?.data ?? res) as { statusCounts: TimeStudySuperAggregateResult["statusCounts"] }[]
-  const first = Array.isArray(payload) ? payload[0] : payload
-  return { statusCounts: first?.statusCounts ?? [] }
-}
-
-
-export async function getLeaveDetails(
-  filterUserId?: string | number,
-  leaveType?: "personal" | "staff"
-): Promise<LeaveAggregateResult> {
-  const search = new URLSearchParams({ action: "leaveDetails" })
-  if (filterUserId) search.set("filterUserId", String(filterUserId))
-  if (leaveType) search.set("leaveType", leaveType)
-  const res = await api.get<ApiEnvelope<{ statusCounts: LeaveAggregateResult["statusCounts"] }>>(
-    `/usersleave?${search.toString()}`,
-  )
-  const payload = (res?.data ?? res) as { statusCounts: LeaveAggregateResult["statusCounts"] }
-  return { statusCounts: payload?.statusCounts ?? [] }
-}
-
-
-export async function getStaffLeave(userId?: string | number): Promise<LeaveAggregateResult> {
-  const search = new URLSearchParams({ action: "leaveDetails", leaveType: "staff" })
-  if (userId) search.set("userId", String(userId))
-  const res = await api.get<ApiEnvelope<{ statusCounts: LeaveAggregateResult["statusCounts"] }>>(
-    `/usersleave?${search.toString()}`,
-  )
-  const payload = (res?.data ?? res) as { statusCounts: LeaveAggregateResult["statusCounts"] }
-  return { statusCounts: payload?.statusCounts ?? [] }
-}
-
-
-export async function getTodos(userId: string | number): Promise<TodoListResult> {
-  const search = new URLSearchParams()
-  search.set("userId", String(userId))
-  const res = await api.get<ApiEnvelope<{ data: TodoItem[] }>>(`/todos?${search.toString()}`)
-  const payload = (res?.data ?? res) as { data: TodoItem[] }
-  return { items: payload?.data ?? [] }
-}
-
-
-export async function getHolidays(year: number): Promise<Holiday[]> {
-  const res = await api.get<ApiEnvelope<Holiday[]>>(
-    `/setting/holiday/list?year=${year}`,
-  )
-  const payload = (res?.data ?? res) as Holiday[]
-  return Array.isArray(payload) ? payload : []
-}
-
-
-/** Total users: GET /users with no `status` (pagination meta only). */
-export async function getDashboardAllUsersCount(): Promise<number> {
-  return getUsersTotalCountUnfiltered()
-}
-
-/** Active user count from GET /users?status=active (pagination meta), not /user/active-users. */
-export async function getActiveUsers(): Promise<number> {
-  return getUsersTotalCountByStatus("active")
-}
-
-
-export async function getDepartmentCount(): Promise<number> {
-  const res = await api.get<ApiEnvelope<number>>(
-    "/department?screen=dashboard",
-  )
-  const payload = (res?.data ?? res) as number
-  return typeof payload === "number" ? payload : 0
-}
-
-
-export async function getProgramCount(): Promise<number> {
-  const res = await api.get<ApiEnvelope<number>>(
-    "/timestudyprogram?method=count",
-  )
-  const payload = (res?.data ?? res) as number
-  return typeof payload === "number" ? payload : 0
-}
-
-
-
-export async function getJpCpTotals(): Promise<JpCpTotals | null> {
-  try {
-    const res = await api.get<ApiEnvelope<JpCpTotals>>("/costpool/jp-cp-totals")
-    const payload = (res?.data ?? res) as JpCpTotals
-    return payload ?? null
-  } catch {
-    return null
-  }
-}
-
-
-
 export async function getReportsByRole(_params?: {
   departmentId?: number
   roleId?: number
@@ -236,16 +84,16 @@ export async function getReportsByRole(_params?: {
     search.set("status", "active")
 
     const res = await api.get<ApiEnvelope<ReportItem[]>>(`/report?${search.toString()}`)
-    const payload = (res?.data ?? res) as any
+    const payload = (res?.data ?? res) as ReportItem[] | { data?: ReportItem[] }
     const apiData = Array.isArray(payload) ? payload : (payload?.data ?? [])
 
-    return apiData.map((r: any) => ({
+    return apiData.map((r) => ({
       id: r.id,
       code: r.code,
       name: r.name,
       filename: r.filename,
       path: r.path,
-      criteria: r.criteria
+      criteria: r.criteria,
     }))
   } catch (error) {
     console.error("Failed to fetch reports:", error)

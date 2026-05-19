@@ -28,21 +28,7 @@ export const addEmployeeLookupKeys = {
   /** GET /users/:id/details/required?method=tab1|tab2|tab3 */
   userDetailsTab: (userId: string, method: string) =>
     [...addEmployeeLookupKeys.all, "user-details-tab", userId, method] as const,
-  /**
-   * @deprecated Use securityDepartmentRoles. Kept for cache invalidation compatibility during migration.
-   */
-  departmentRolesUnassignedAdd: (userKey: string) =>
-    [...addEmployeeLookupKeys.all, "department-roles-unassigned-add", userKey] as const,
   /** GET /users/supervisors — sorted department id key for stable cache. */
   supervisorsByDepartments: (departmentIdsKey: string) =>
     [...addEmployeeLookupKeys.all, "supervisors-by-departments", departmentIdsKey] as const,
-}
-
-/** Segment for `departmentRolesUnassignedAdd` — must match `useGetDepartmentRolesUnassigned`. */
-export function departmentRolesUnassignedCacheUserKey(
-  userId: string | null | undefined,
-  allowFetchWithoutUserId: boolean,
-): string {
-  const id = userId?.trim() ?? ""
-  return id || (allowFetchWithoutUserId ? "__none__" : "__no-user__")
 }

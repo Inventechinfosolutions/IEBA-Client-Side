@@ -1,0 +1,17 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "entry": ["src/main.tsx"],
+  "project": ["src/**/*.{ts,tsx}"],
+  "ignore": [
+    "src/components/ui/**",
+    "postcss.config.js"
+  ],
+  "ignoreDependencies": [
+    "@radix-ui/react-popover",
+    "@radix-ui/react-slot",
+    "@tabler/icons-react",
+    "@tanstack/react-table",
+    "autoprefixer",
+    "vaul"
+  ]
+}

@@ -5,7 +5,6 @@ import { useGetJobClassificationGroupedByDepartment } from "../../../job-classif
 
 export function EmployeeSection({ 
   form, 
-  mode,
   assignedUserDetails, 
   unassignedUserDetails 
 }: EmployeeSectionProps) {

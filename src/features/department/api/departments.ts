@@ -389,27 +389,3 @@ export async function updateDepartment(
   return toDepartmentUI(payload, { includeAddress: false })
 }
 
-export async function deleteDepartment(id: string): Promise<void> {
-  await api.delete<void>(`/departments/${id}`)
-}
-
-export type DepartmentUserSummaryResDto = {
-  id: string
-  firstName: string | null
-  lastName: string | null
-}
-
-export type DepartmentUsersUnderDepartmentResDto = {
-  userDetails: DepartmentUserSummaryResDto[]
-  allowUserOrCostpoolDirect: boolean
-}
-
-export async function getDepartmentUsers(
-  departmentId: number
-): Promise<DepartmentUsersUnderDepartmentResDto> {
-  const res = await api.get<DepartmentApiEnvelope<DepartmentUsersUnderDepartmentResDto>>(
-    `/departments?method=users&departmentId=${departmentId}`
-  )
-  return (res?.data ?? res) as DepartmentUsersUnderDepartmentResDto
-}
-

@@ -13,8 +13,6 @@ const ReportsPage = lazy(() => import("@/features/reports/pages/ReportsPage"))
 const TodoPage = lazy(() => import("@/features/todo/pages/TodoPage"))
 const UserModulePage = lazy(() => import("@/features/user/pages/UserModulePage"))
 const LeaveApprovalPage = lazy(() => import("@/features/leave-approval/pages/LeaveApprovalPage"))
-const UsersPage = lazy(() => import("@/features/users/pages/UsersPage"))
-const UserPage = lazy(() => import("@/features/users/pages/UserPage"))
 const DepartmentRolePage = lazy(() => import("@/features/DepartmentRole/pages/DepartmentRolePage"))
 const CountyActivityCodePage = lazy(() => import("@/features/CountyActivityCode/pages/CountyActivityCodePage"))
 const SettingsPage = lazy(() => import("@/features/settings/pages/SettingsPage"))
@@ -125,14 +123,6 @@ export function createAppRouter(queryClient: QueryClient) {
             await queryClient.invalidateQueries({ queryKey: leaveApprovalKeys.lists() })
             return null
           },
-        },
-        {
-          path: "users",
-          element: <PermissionRoute permission="superadmin"><UsersPage /></PermissionRoute>,
-        },
-        {
-          path: "users/:id",
-          element: <PermissionRoute permission="superadmin"><UserPage /></PermissionRoute>,
         },
         {
           path: "department-role",

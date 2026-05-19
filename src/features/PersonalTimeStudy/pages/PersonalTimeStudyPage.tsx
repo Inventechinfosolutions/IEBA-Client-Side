@@ -18,7 +18,7 @@ import { useSavePersonalNotes } from "../mutation/updatePersonalNotes"
 import { useSubmitPersonalTimeRecords } from "../mutation/createPersonalTimeRecords"
 import { useDeletePersonalTimeRecord } from "../mutation/deletePersonalTimeRecord"
 import type { WeekSummaryRow } from "../components/PersonalTimeStudyWeekSummary"
-import { TimeStudyMGTPage } from "../TimeStudyMGT"
+import { TimeStudyMGTPage } from "../TimeStudyMGT/pages/TimeStudyMGTPage"
 import { PersonalTimeStudyNotesSection } from "../components/PersonalTimeStudyNotesSection"
 import { toIsoYmdFromDate, todayLocal } from "@/lib/dates"
 

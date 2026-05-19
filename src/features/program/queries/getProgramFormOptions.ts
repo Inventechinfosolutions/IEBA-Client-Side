@@ -238,19 +238,6 @@ async function fetchActiveBudgetProgramsForBuSubProgram(departmentIds?: number[]
   }
 }
 
-export function useActiveBuProgramsForSubProgram(enabled: boolean) {
-  return useQuery({
-    queryKey: ["program", "form-options", "budgetprograms", "type-program"],
-    queryFn: () => fetchActiveBudgetProgramsForBuSubProgram(),
-    enabled,
-    staleTime: 0,
-    gcTime: 0,
-    refetchOnMount: "always",
-    refetchOnWindowFocus: true,
-    refetchOnReconnect: true,
-  })
-}
-
 // Active Time Study Primary Programs (type=primary) for TS Sub-Program One tab (TS Program dropdown).
 async function fetchActivePrimaryTimeStudyPrograms(departmentIds?: number[]) {
   // For the TS Program dropdown we don't need full pagination support,

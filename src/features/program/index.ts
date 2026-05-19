@@ -1,7 +1,0 @@
-export { ProgramPage } from "./pages/ProgramPage"
-export { useProgramModule } from "./hooks/useProgramModule"
-export { useGetPrograms } from "./queries/getPrograms"
-export { useCreateProgram } from "./mutations/createProgram"
-export { useUpdateProgram } from "./mutations/updateProgram"
-export { programKeys } from "./keys"
-export type { ProgramFormValues, ProgramRow } from "./types"

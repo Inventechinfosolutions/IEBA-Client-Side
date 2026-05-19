@@ -6,7 +6,6 @@ import type {
   CreateUserLeaveRequestDto,
   GetUserLeavesParams,
   ReviewUserLeaveRequestDto,
-  SubmitUserLeaveRequestDto,
   UserLeave,
   UserLeaveDetailsResponseDto,
   UserLeaveListItemDto,
@@ -50,31 +49,12 @@ export function normalizeUserLeaveListPayload(
   throw new Error("Invalid user leave list payload")
 }
 
-export async function apiCreateUserLeave(input: CreateUserLeaveRequestDto): Promise<UserLeave> {
-  const res = await api.post<ApiResponseDto<UserLeave> | ApiEnvelopeDto<UserLeave>>(
-    "/usersleave/create",
-    input,
-  )
-  return ensureSuccess(res, "Failed to create leave request")
-}
-
 export async function apiUpdateUserLeave(id: number, input: CreateUserLeaveRequestDto): Promise<UserLeave> {
   const res = await api.put<ApiResponseDto<UserLeave> | ApiEnvelopeDto<UserLeave>>(
     `/usersleave/${id}`,
     input,
   )
   return ensureSuccess(res, "Failed to update leave request")
-}
-
-export async function apiSubmitUserLeaveAction(
-  id: number,
-  input: SubmitUserLeaveRequestDto,
-): Promise<UserLeave> {
-  const res = await api.post<ApiResponseDto<UserLeave> | ApiEnvelopeDto<UserLeave>>(
-    `/usersleave/submit/${id}`,
-    input,
-  )
-  return ensureSuccess(res, "Failed to submit leave action")
 }
 
 export async function apiReviewUserLeave(id: number, input: ReviewUserLeaveRequestDto): Promise<UserLeave> {

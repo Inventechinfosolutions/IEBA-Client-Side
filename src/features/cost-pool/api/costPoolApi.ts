@@ -229,27 +229,6 @@ export async function fetchActivityPicklistForNewPool(
   return list.map((s) => summaryToPickRow(s))
 }
 
-/** Deduplicate; each id is an `activitydepartment` row id (not a bare `activityId`). */
-export function uniqueActivityDepartmentIds(ids: number[]): number[] {
-  return [...new Set(ids.filter((n) => Number.isInteger(n) && n > 0))]
-}
-
-
-
-/** Build dual-list rows from GET /costpool/:id with `method` = FETCH_CP_ASSIGNED_ACTIVITIES (`assignedActivities` + `unassignedActivities`). */
-export function mergeDetailActivitiesToPickRows(detail: CostPoolDetailResDto): CostPoolActivityPickRow[] {
-  const assigned = detail.assignedActivities ?? []
-  const unassigned = detail.unassignedActivities ?? []
-  const map = new Map<number, CostPoolActivityPickRow>()
-  for (const s of [...assigned, ...unassigned]) {
-    const row = summaryToPickRow(s)
-    if (row.activityDepartmentId > 0) {
-      map.set(row.activityDepartmentId, row)
-    }
-  }
-  return [...map.values()]
-}
-
 export function detailToUpsertFormValues(detail: CostPoolDetailResDto): CostPoolUpsertFormValues {
   return {
     costPool: detail.name ?? "",

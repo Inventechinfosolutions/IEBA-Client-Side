@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query"
 import { departmentKeys } from "../keys"
 import { api } from "@/lib/api"
 
-/** Users loaded for department contact pickers (real API; kept here so `features/users` can stay mock-only). */
+/** Users loaded for department contact pickers (GET /users). */
 export type DepartmentContactUser = {
   id: string
   name: string

@@ -26,7 +26,7 @@ import { parseMultiSelectStoredValues } from "@/components/ui/multi-select-dropd
 import { apiGetUserDetails } from "../api"
 import { useUserModule } from "../hooks/useUserModule"
 import { userModuleKeys } from "../keys"
-import { AddEmployeeFormPage } from "../add-employee"
+import { AddEmployeeFormPage } from "../add-employee/pages/add-employee-form-page"
 import {
   isGlobalAdminLogin,
   useMimicSession,

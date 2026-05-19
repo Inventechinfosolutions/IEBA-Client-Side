@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query"
+import { useQuery } from "@tanstack/react-query"
 
 import { api } from "@/lib/api"
 import type { ApiResponseDto } from "@/features/user/types"
@@ -78,13 +78,4 @@ export function useGetPrograms(
     queryFn: () => fetchPrograms(fiscalYearId, employeeId!),
     enabled: !!fiscalYearId && !!employeeId,
   })
-}
-
-/** Helper hook: returns an invalidation function so callers can refresh. */
-export function useInvalidatePrograms() {
-  const queryClient = useQueryClient()
-  return (fiscalYearId: string, employeeId: string) =>
-    queryClient.invalidateQueries({
-      queryKey: fteAllocationKeys.programs(fiscalYearId, employeeId),
-    })
 }

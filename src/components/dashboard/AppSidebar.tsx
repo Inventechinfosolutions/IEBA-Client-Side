@@ -1,7 +1,6 @@
 import { Link, useLocation } from "react-router-dom"
 import { cn } from "@/lib/utils"
 import {
-  Users,
   CalendarClock,
   Layers,
   FileText,
@@ -72,7 +71,6 @@ const mainNav: NavItem[] = [
   { title: "FTE Allocation",        url: "/fte-allocation",        icon: FileText,         permission: "superadmin" },
   { title: "Cost Pool",             url: "/costpool",              icon: Layers,           permission: "costpool" },
   { title: "Schedule Time Study",   url: "/schedule-time-study",   icon: CalendarClock,    permission: "scheduletimestudy" },
-  // { title: "Users",                 url: "/users",                 icon: Users,            permission: "superadmin" },
 ]
 
 // ---------------------------------------------------------------------------

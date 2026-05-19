@@ -114,24 +114,6 @@ export async function getJobClassifications(
   return { items, totalItems }
 }
 
-export async function getAllJobClassifications(search?: string): Promise<JobClassificationRow[]> {
-  const params = new URLSearchParams()
-  if (search?.trim()) {
-    params.set("search", search.trim())
-  }
-
-  const res = await api.get<JobClassificationApiEnvelope<JobClassificationResDto[]> | JobClassificationResDto[]>(
-    `/jobclassification/all?${params.toString()}`,
-  )
-
-  const payload =
-    (res as JobClassificationApiEnvelope<JobClassificationResDto[]>).data ??
-    (res as JobClassificationResDto[] | undefined) ??
-    []
-
-  return payload.map((item) => toJobClassificationRow(item))
-}
-
 export async function createJobClassification(
   values: JobClassificationFormValues,
 ): Promise<JobClassificationRow> {

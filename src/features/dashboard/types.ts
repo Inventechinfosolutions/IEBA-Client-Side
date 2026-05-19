@@ -1,57 +1,4 @@
 
-
-export interface TimeStudyStatusCount {
-  status: string
-  totalActivityTime: number
-}
-
-export interface TimeStudySuperStatusCount {
-  q_status: string
-  count: number
-}
-
-export interface TimeStudyAggregateResult {
-  statusCounts: TimeStudyStatusCount[]
-}
-
-export interface TimeStudySuperAggregateResult {
-  statusCounts: TimeStudySuperStatusCount[]
-}
-
-export interface TimeStudyAggFilter {
-  startDate: string
-  endDate: string
-  userId: string | number
-  type: string
-  status: string
-  usertype?: string
-}
-
-
-
-export interface LeaveStatusCount {
-  q_status: string
-  count: number
-}
-
-export interface LeaveAggregateResult {
-  statusCounts: LeaveStatusCount[]
-}
-
-export interface SelfLeaveStats {
-  requested: number
-  approved: number
-  rejected: number
-  total: number
-}
-
-export interface StaffLeaveStats {
-  requested: number
-  approved: number
-  rejected: number
-}
-
-
 export interface TodoItem {
   id: string | number
   key?: string | number
@@ -65,35 +12,9 @@ export interface TodoItem {
   day?: string
 }
 
-export interface TodoListResult {
-  items: TodoItem[]
-}
-
-
-
-import { HolidayType } from "./enums/dashboard.enum"
-
 export interface Holiday {
   date: string
   description: string
-}
-
-export interface HolidayQueryParams {
-  type: HolidayType
-  year: number
-}
-
-export interface DepartmentCountResult {
-  count: number
-}
-
-export interface ProgramCountResult {
-  count: number
-}
-
-export interface JpCpTotals {
-  jobPools: number
-  costPools: number
 }
 
 export interface ReportItem {
@@ -103,13 +24,6 @@ export interface ReportItem {
   filename?: string
   path?: string
   criteria?: unknown
-}
-
-export interface PayrollDateRange {
-  startDate: string
-  endDate: string
-  totalWeekdays: number
-  periodLabel: string
 }
 
 export interface PayrollManagementCardProps {
@@ -198,43 +112,6 @@ export interface StatusRowProps {
   onAction: () => void
   loading?: boolean
 }
-
-
-
-export interface DashboardSummary {
-
-  totalTSApproved: number
-  totalTSSubmitted: number
-  tsPercent: number
-  currentPeriodLabel: string
-
-
-  totalTRApprovedBy: number
-  totalTRApprovalRequest: number
-  totalTRNotSubmitted: number
-
-
-  selfLeave: SelfLeaveStats
-
-
-  staffLeave: StaffLeaveStats
-
-
-  holidayList: Holiday[]
-  nextHolidayMonth: string
-  nextHolidayDay: string
-
-
-  todos: TodoItem[]
-
-
-  overview: DashboardOverview | null
-
-  reports: ReportItem[]
-}
-
-
-
 export interface DashboardOverview {
   totalUserCount: number;
   totalActiveUserCount: number;

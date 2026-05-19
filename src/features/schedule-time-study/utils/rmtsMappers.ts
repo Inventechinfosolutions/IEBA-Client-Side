@@ -42,32 +42,6 @@ function resolveRmtsGroupIsUsed(dto: RmtsGroupApiDto): boolean {
 }
 
 /**
- * Group ids tied to Scheduled Time Study via `GET /rmtsppgrouplist` (enriched rows).
- * Uses `groupIds` CSV and nested `groups[].id`.
- */
-export function collectGroupIdsFromEnrichedPpGroupList(
-  items: RmtsPpGroupListEnrichedApiDto[],
-): Set<number> {
-  const ids = new Set<number>()
-  for (const item of items) {
-    const csv = (item.groupIds ?? "").trim()
-    if (csv.length > 0) {
-      for (const part of csv.split(/[,\s]+/)) {
-        const t = part.trim()
-        if (!t) continue
-        const n = Number(t)
-        if (Number.isFinite(n) && n > 0) ids.add(n)
-      }
-    }
-    for (const g of item.groups ?? []) {
-      const n = g.id
-      if (Number.isFinite(n) && n > 0) ids.add(n)
-    }
-  }
-  return ids
-}
-
-/**
  * @param assignedInSchedule — true when this group id appears on `rmtsppgrouplist` for the same dept/fiscal year.
  */
 export function mapGroupToParticipantRow(

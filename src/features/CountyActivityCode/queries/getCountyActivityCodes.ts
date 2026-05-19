@@ -10,7 +10,6 @@ import { masterCodeKeys } from "@/features/master-code/keys"
 import { COUNTY_ACTIVITY_ACTIVITIES_API_MAX_LIMIT } from "../constants"
 import {
   apiGetCountyActivitiesCatalogAggregated,
-  apiGetCountyActivitiesByDepartmentId,
   apiGetCountyActivitiesPage,
   apiGetCountyActivityCodeTableRows,
   apiGetCountyActivityForEdit,
@@ -216,14 +215,5 @@ export function useGetCountyActivityForEdit(activityId: string | null, enabled: 
     staleTime: 0,
     refetchOnMount: "always",
     refetchOnWindowFocus: false,
-  })
-}
-
-export function useGetActivitiesByDepartment(departmentId: number | null) {
-  return useQuery({
-    queryKey: [...countyActivityCodeKeys.all, "by-department", departmentId],
-    queryFn: () => apiGetCountyActivitiesByDepartmentId(Number(departmentId)),
-    enabled: !!departmentId,
-    staleTime: 30_000,
   })
 }

@@ -632,6 +632,3 @@ export function EmployeeLoginDetailsSection({
     </>
   )
 }
-
-/** @deprecated Use EmployeeLoginDetailsSection */
-export const EmployeeDetailsContent = EmployeeLoginDetailsSection

@@ -14,54 +14,6 @@ import type {
 } from "./types"
 
 
-
-/** Department rows with `roles: { id?, name }[]` (assigned / unassigned list payloads). */
-function getDepartmentRowsWithRolesFromPayload(payload: unknown): unknown[] {
-  if (Array.isArray(payload)) return payload
-  if (payload !== null && typeof payload === "object") {
-    const p = payload as Record<string, unknown>
-    if (Array.isArray(p.data)) return p.data
-    if (p.success === true && p.data !== null && typeof p.data === "object") {
-      const inner = p.data as Record<string, unknown>
-      if (Array.isArray(inner.data)) return inner.data
-    }
-  }
-  return []
-}
-
-/** Role display names from nested department → roles (deduplicated). */
-export function extractRoleNamesFromDepartmentsWithRolesPayload(payload: unknown): string[] {
-  const names = new Set<string>()
-  for (const raw of getDepartmentRowsWithRolesFromPayload(payload)) {
-    if (raw === null || typeof raw !== "object") continue
-    const roles = (raw as Record<string, unknown>).roles
-    if (!Array.isArray(roles)) continue
-    for (const r of roles) {
-      if (r === null || typeof r !== "object") continue
-      const nm = (r as Record<string, unknown>).name
-      const name = typeof nm === "string" ? nm.trim() : ""
-      if (name) names.add(name)
-    }
-  }
-  return Array.from(names)
-}
-
-/**
- * GET /departments/user/roles-assigned-for-user?userId=
- * Canonical assigned role names for the user (department-role assignments).
- */
-export async function apiGetRolesAssignedForUser(userId: string): Promise<string[]> {
-  const search = new URLSearchParams()
-  search.set("userId", userId.trim())
-  const res = await api.get<ApiResponseDto<unknown>>(
-    `/departments/user/roles-assigned-for-user?${search.toString()}`,
-  )
-  if (!res?.success || res.data == null) {
-    throw new Error(res?.message ?? "Failed to load assigned department roles")
-  }
-  return extractRoleNamesFromDepartmentsWithRolesPayload(res.data)
-}
-
 function asUserListResponseDto(payload: ApiResponseDto<UserListResponseDto>): UserListResponseDto {
   if (!payload?.success || !payload.data) {
     throw new Error(payload?.message || "Failed to load users")
@@ -181,35 +133,6 @@ export async function apiGetUserModuleRows(params: GetUserModuleParams): Promise
   const totalItems = typeof dto.meta?.totalItems === "number" ? dto.meta.totalItems : items.length
 
   return { items, totalItems }
-}
-
-/**
- * GET /users — total row count with no `status` filter (`page=1`, `limit=1`).
- * Dashboard “Users” total (all users).
- */
-export async function getUsersTotalCountUnfiltered(): Promise<number> {
-  const search = new URLSearchParams()
-  search.set("page", "1")
-  search.set("limit", "1")
-  search.set("sort", "ASC")
-  const res = await api.get<ApiResponseDto<UserListResponseDto>>(`/users?${search.toString()}`)
-  const dto = asUserListResponseDto(res)
-  return typeof dto.meta?.totalItems === "number" ? dto.meta.totalItems : dto.data.length
-}
-
-/**
- * GET /users — total row count for one `status` (`page=1`, `limit=1`).
- * Dashboard “Active users” uses `active` only.
- */
-export async function getUsersTotalCountByStatus(status: "active" | "inactive"): Promise<number> {
-  const search = new URLSearchParams()
-  search.set("page", "1")
-  search.set("limit", "1")
-  search.set("sort", "ASC")
-  search.set("status", status)
-  const res = await api.get<ApiResponseDto<UserListResponseDto>>(`/users?${search.toString()}`)
-  const dto = asUserListResponseDto(res)
-  return typeof dto.meta?.totalItems === "number" ? dto.meta.totalItems : dto.data.length
 }
 
 /**

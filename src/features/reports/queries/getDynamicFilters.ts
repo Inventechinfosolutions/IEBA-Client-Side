@@ -2,7 +2,6 @@ import { useQuery } from "@tanstack/react-query"
 import {
   apiGetMaaEmployees,
   apiGetCostPoolUsers,
-  apiGetMaaTcmActivityDepartments,
   apiGetListAllPrograms,
   apiGetUsersUnderDepartment,
   apiGetActivitiesByDepartmentAndUsers,
@@ -27,15 +26,6 @@ export function useGetCostPoolUsers(costPoolIds: string[], userId: string, emplo
     queryFn: () => apiGetCostPoolUsers(costPoolIds, userId, employeeStatus),
     enabled: enabled && costPoolIds.length > 0 && !!userId,
     staleTime: 0,
-  })
-}
-
-export function useGetMaaTcmActivityDepartments(enabled = true) {
-  return useQuery({
-    queryKey: reportKeys.maaTcmActivityDepartments(),
-    queryFn: () => apiGetMaaTcmActivityDepartments(),
-    enabled,
-    staleTime: 10 * 60_000,
   })
 }
 

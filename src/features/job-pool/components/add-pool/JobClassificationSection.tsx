@@ -9,7 +9,6 @@ import type { JobClassificationSimpleItem } from "../../../job-classification/ty
 
 export function JobClassificationSection({
   form,
-  mode,
   assignedJobClassificationDetails,
   unassignedJobClassificationDetails,
 }: JobClassificationSectionProps) {
