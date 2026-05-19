@@ -205,12 +205,18 @@ export async function apiCreateMasterCode(input: {
   if (createdId == null) {
     throw new Error("Create response missing id")
   }
-  const detail = await api.get<{ data?: ApiActivityCode }>(
-    `/activity-codes/${encodeURIComponent(String(createdId))}`
-  )
-  const entity = (detail as { data?: ApiActivityCode })?.data
-  if (!entity) throw new Error("Failed to load created activity code")
-  return normalizeActivityCodeRow(entity)
+  
+  return {
+    id: String(createdId),
+    code: input.values.code,
+    name: input.values.name,
+    spmp: input.values.spmp,
+    allocable: input.values.allocable,
+    ffpPercent: input.values.ffpPercent || "0.00",
+    match: normalizeMatch(input.values.match),
+    status: input.values.active,
+    activityDescription: input.values.activityDescription || "",
+  }
 }
 
 export async function apiUpdateMasterCode(input: {
