@@ -19,7 +19,7 @@ import {
 
 const navMain = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
-  { title: "Users", url: "/users", icon: Users },
+  // { title: "Users", url: "/users", icon: Users },
 ]
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {

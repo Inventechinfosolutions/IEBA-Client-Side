@@ -32,5 +32,9 @@ export function useGetRmtsGroups(params: GetRmtsGroupsQueryParams) {
     },
     enabled: enabled && departmentId != null && departmentId > 0 && fiscalyear.length > 0,
     staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: true,
   })
 }

@@ -231,8 +231,10 @@ export type RmtsGroupApiDto = {
   fiscalyear: string
   grouptype: string
   departmentId: number
+  /** Resolved user display names (COALESCE of name or userId). */
   users?: string[]
-  jobPools?: string[]
+  /** Assigned job pools with id and name. */
+  jobPools?: { id: string; name: string }[]
   /** When true, the group must not be edited or deleted (e.g. used in scheduling). */
   isUsed?: boolean
   /** Alternate wire shape; normalized to row `isUsed` in the mapper. */
@@ -364,6 +366,17 @@ export type JobPoolResDto = {
   department?: JobPoolDepartmentResDto
 }
 
+/** Flat row from `GET /jobpool?method=jobpoolusersscheduletime`. */
+export type ScheduleTimeStudyJobPoolUserApiDto = {
+  id: string
+  jobpoolId: number
+  jobpoolName: string
+  loginId?: string | null
+  firstName?: string | null
+  lastName?: string | null
+  name?: string | null
+}
+
 // —— Query param types (frontend) ——
 
 export type RmtsEntityByIdQueryParams = {
@@ -400,6 +413,8 @@ export type GetScheduleTimeStudyJobPoolsByDepartmentQueryParams = {
 
 export type GetScheduleTimeStudyUsersByDepartmentQueryParams = {
   departmentId: number | null
+  /** Lazy-load: query runs only when true (e.g. modal open + User mode). */
+  enabled?: boolean
 }
 
 export type GetScheduleTimeStudyHolidayListByDateRangeParams = {

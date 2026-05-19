@@ -199,7 +199,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         <DialogContent className="max-w-[400px]!" overlayClassName="bg-black/60!" showClose={false} onPointerDownOutside={(e) => e.preventDefault()} onInteractOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
           <DialogHeader>
             <DialogDescription className="text-foreground! font-medium">
-              Session Expired Please Login Again
+              Session expired. Please logout and login Again
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

@@ -74,8 +74,6 @@ export function ProgramActivityRelationForm({ form, departmentIds }: ProgramActi
   )
   const selectedProgramId = selectedProgram?.id as number | undefined
 
-  const sortOptions = useMemo(() => [] as string[], [])
-
   const programDisabled = !selectedDepartment.trim()
   const isProgramEmpty = !programDisabled && programOptions.length === 0
 
@@ -232,33 +230,7 @@ export function ProgramActivityRelationForm({ form, departmentIds }: ProgramActi
           </div>
         </div>
 
-        <div className="w-[205px] shrink-0 space-y-1">
-          <label
-            className="block h-[10px] text-[10px] leading-[10px] text-transparent select-none"
-            htmlFor="par-sort-trigger"
-          >
-            .
-          </label>
-          <SingleSelectSearchDropdown
-            value={form.watch("programActivityRelationSort") ?? ""}
-            onChange={(option) => {
-              form.setValue("programActivityRelationSort", option, {
-                shouldDirty: true,
-                shouldTouch: true,
-                shouldValidate: true,
-              })
-            }}
-            onBlur={() => {}}
-            options={sortOptions.map((o) => ({ value: o, label: o }))}
-            placeholder="Sorted dropdown sample"
-            className={cn(
-              "min-h-[41px]! h-[41px] w-full rounded-[10px]! border-[#d0d5df]! px-3! pr-9! text-[11px]! font-normal!",
-              "focus-within:border-[#6C5DD3]! focus-within:ring-1! focus-within:ring-[#6C5DD333]!",
-            )}
-            itemButtonClassName="rounded-[6px] border border-transparent px-3 py-2 hover:bg-[#f3f4f8]"
-            itemLabelClassName="text-[11px]! font-normal!"
-          />
-        </div>
+
       </div>
 
       <div className="mt-6 grid grid-cols-[1fr_60px_1fr] items-center gap-4">

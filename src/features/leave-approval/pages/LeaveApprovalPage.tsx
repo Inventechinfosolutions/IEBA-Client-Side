@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useState } from "react"
 
 import { MasterCodePagination } from "@/features/master-code/components/MasterCodePagination"
 import { LeaveApprovalTable } from "../components/LeaveApprovalTable"
@@ -6,7 +6,6 @@ import { LeaveApprovalCommentsModal } from "../components/LeaveApprovalCommentsM
 import { LeaveApprovalToolbar } from "../components/LeaveApprovalToolbar"
 import { useLeaveApprovals } from "../hooks/useLeaveApprovals"
 import { useUpdateLeaveApproval } from "../mutations/updateLeaveApproval"
-import { useGetUserModuleRows } from "@/features/user/queries/getUsers"
 import { toast } from "sonner"
 import { Check } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
@@ -63,26 +62,9 @@ export function LeaveApprovalPage() {
   }
   const updateMutation = useUpdateLeaveApproval({ page, pageSize, filters, sort })
 
-  const usersQuery = useGetUserModuleRows({ page: 1, pageSize: 500, inactiveOnly: false })
-
   const isTableLoading = leaveModule.isLoading || leaveModule.isFetching
 
-  const safeUserOptions = useMemo(() => {
-    if (usersQuery.data?.items && usersQuery.data.items.length > 0) {
-      const uniqueUsers = new Map<string, { id: string, label: string }>()
-      usersQuery.data.items.forEach((u) => {
-        const id = String(u.id)
-        uniqueUsers.set(id, {
-          id,
-          label: (u.employee || u.loginId || id).trim(),
-        })
-      })
-      return Array.from(uniqueUsers.values()).sort((a, b) => 
-        a.label.localeCompare(b.label, undefined, { sensitivity: "base" })
-      )
-    }
-    return leaveModule.userOptions ?? []
-  }, [usersQuery.data?.items, leaveModule.userOptions])
+  const safeUserOptions = leaveModule.userOptions
 
   return (
     <section

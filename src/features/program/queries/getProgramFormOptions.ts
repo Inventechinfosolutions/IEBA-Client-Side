@@ -65,13 +65,13 @@ async function fetchProgramFormOptions(
   activeSection?: ProgramFormSection,
   departmentIds?: number[]
 ) {
-  const departments = await fetchAllPages<DepartmentResDto>(
-    "/departments?sort=ASC&status=active",
-    (payload) => ({
-      items: Array.isArray(payload?.data) ? payload.data : [],
-      meta: payload?.meta,
-    })
-  )
+  const res = await api.get<any>("/departments/all?status=active")
+  const envelope = res?.data ?? res
+  const departments: DepartmentResDto[] = Array.isArray(envelope)
+    ? envelope
+    : Array.isArray(envelope?.data)
+      ? envelope.data
+      : []
 
   const activeDepartments = departments
     .filter((d) => isActiveStatus(d.status))
@@ -191,20 +191,16 @@ export function useGetProgramFormOptions(
 
 // Active Budget Programs (type=program) for BU Sub-Program tab (Budget Unit Program Name dropdown).
 async function fetchActiveBudgetProgramsForBuSubProgram(departmentIds?: number[]) {
-  const items = await fetchAllPages<{
+  const raw = await api.get<PagedEnvelope<unknown>>("/budgetprograms?status=active&type=program")
+  const payload = (raw?.data ?? raw) as PagedEnvelope<unknown>
+  const items = (Array.isArray(payload?.data) ? payload.data : []) as Array<{
     id?: number
     code?: string
     name?: string
     status?: unknown
     type?: string
     department?: DepartmentResDto | null
-  }>(
-    "/budgetprograms?sort=ASC&status=active&type=program",
-    (payload) => ({
-      items: Array.isArray(payload?.data) ? payload.data : [],
-      meta: payload?.meta as PaginationMeta | undefined,
-    })
-  )
+  }>
 
   const activePrograms = items.filter((p) => {
     if (!isActiveStatus(p.status)) return false;

@@ -8,15 +8,21 @@ export function useGetScheduleTimeStudyJobPoolsByDepartment(
   params: GetScheduleTimeStudyJobPoolsByDepartmentQueryParams,
 ) {
   const departmentId = params.departmentId
-  const enabled = (params.enabled ?? true) && departmentId != null && departmentId > 0
+  const lazyEnabled = params.enabled ?? true
+  const hasDepartment = departmentId != null && departmentId > 0
 
   return useQuery({
     queryKey: scheduleTimeStudyKeys.jobPoolsByDepartment({ departmentId: departmentId ?? 0 }),
     queryFn: async () => {
-      if (departmentId == null || departmentId <= 0) return []
+      if (!hasDepartment) return []
       return fetchScheduleTimeStudyJobPoolsByDepartment({ departmentId })
     },
-    enabled,
+    enabled: lazyEnabled && hasDepartment,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: true,
   })
 }
 
