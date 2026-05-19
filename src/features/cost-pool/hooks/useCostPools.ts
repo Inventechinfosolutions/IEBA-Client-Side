@@ -43,10 +43,14 @@ export function useCostPools(filters: CostPoolFilterFormValues) {
 
   const listParams = useMemo(
     () => {
-      // Send all assigned department IDs as a comma-separated string. 
-      const filterDeptId = (assignedDepartmentIds && assignedDepartmentIds.size > 0) 
-        ? Array.from(assignedDepartmentIds).join(",") 
-        : undefined
+      // If user has explicitly picked a department from the filter dropdown, use that.
+      // Otherwise fall back to the role-based restriction.
+      let filterDeptId: string | number | undefined
+      if (filters.departmentId !== undefined && filters.departmentId !== "") {
+        filterDeptId = filters.departmentId
+      } else if (assignedDepartmentIds && assignedDepartmentIds.size > 0) {
+        filterDeptId = Array.from(assignedDepartmentIds).join(",")
+      }
 
       return {
         page: pagination.page,
@@ -59,7 +63,7 @@ export function useCostPools(filters: CostPoolFilterFormValues) {
           : CostPoolStatus.ACTIVE,
       }
     },
-    [pagination.page, pagination.pageSize, filters.search, filters.inactive, assignedDepartmentIds],
+    [pagination.page, pagination.pageSize, filters.search, filters.inactive, filters.departmentId, assignedDepartmentIds],
   )
 
   const query = useCostPoolListQuery(listParams)

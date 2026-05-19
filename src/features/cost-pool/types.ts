@@ -126,6 +126,8 @@ export type CostPoolRow = {
 export type CostPoolFilterFormValues = {
   search: string
   inactive: boolean
+  /** Optional department filter – undefined means "all departments" */
+  departmentId?: number | string
 }
 
 export type CostPoolUpsertFormValues = {
@@ -189,6 +191,7 @@ export type CostPoolTableProps = {
   filters: CostPoolFilterFormValues
   onSearchChange: (value: string) => void
   onInactiveChange: (value: boolean) => void
+  onDepartmentChange: (departmentId: number | string | undefined) => void
   onPageChange: (page: number) => void
   onPageSizeChange: (pageSize: number) => void
 }
