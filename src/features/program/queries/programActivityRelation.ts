@@ -16,7 +16,12 @@ import type {
 } from "../types"
 
 function activityNumericId(node: ProgramActivityRelationActivityNode): string {
-  return String(String(node.key ?? "").split("-").at(-1) ?? "")
+  const lastPart = String(node.key ?? "").split("-").at(-1) ?? ""
+  const num = Number(lastPart)
+  if (!Number.isNaN(num) && num > 0 && Number.isInteger(num)) {
+    return String(num)
+  }
+  return ""
 }
 
 /**

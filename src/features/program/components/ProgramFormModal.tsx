@@ -19,6 +19,7 @@ import {
   useGetProgramFormOptions,
   useGetActivePrimaryTimeStudyPrograms,
   useGetActiveSecondaryTimeStudyPrograms,
+  useGetActiveBuProgramsForDepartment,
 } from "../queries/getProgramFormOptions"
 import { programFormSchema, timeStudyProgramFormSchema } from "../schemas"
 import type {
@@ -72,6 +73,17 @@ export const ProgramFormModal = forwardRef<ProgramFormModalHandle, ProgramFormMo
   const isTsSecondary = isTimeStudyContext && activeSection === "BU Sub-Program"
   const isTsTertiary = isTimeStudyContext && activeSection === "Budget Unit"
 
+  const selectedDeptName = form.watch("buProgramDepartment")
+  const selectedDeptId = selectedDeptName
+    ? formOptionsQuery.data?.departmentIdByName?.[selectedDeptName]
+    : undefined
+
+  const tsActiveBuProgramsQuery = useGetActiveBuProgramsForDepartment(
+    open && mode === "add" && isTimeStudyContext && activeSection === "BU Program" && selectedDeptId != null,
+    selectedDeptId != null ? [selectedDeptId] : undefined,
+    true
+  )
+
   // Budget Program options:
   // - Budget Units context: use Budget Programs (type=program) from form options
   // - TS Sub-Program One (isTsSecondary): use Time Study Primary Programs
@@ -90,13 +102,17 @@ export const ProgramFormModal = forwardRef<ProgramFormModalHandle, ProgramFormMo
     ? tsPrimaryProgramsQuery.data?.budgetProgramNameOptions ?? []
     : isTsTertiary
       ? tsSecondaryProgramsQuery.data?.budgetProgramNameOptions ?? []
-      : formOptionsQuery.data?.budgetProgramNameOptions ?? []
+      : (isTimeStudyContext && activeSection === "BU Program")
+        ? tsActiveBuProgramsQuery.data?.budgetProgramNameOptions ?? []
+        : formOptionsQuery.data?.budgetProgramNameOptions ?? []
 
   const budgetProgramLookup = isTsSecondary
     ? tsPrimaryProgramsQuery.data?.budgetProgramLookup ?? {}
     : isTsTertiary
       ? tsSecondaryProgramsQuery.data?.budgetProgramLookup ?? {}
-      : formOptionsQuery.data?.budgetProgramLookup ?? {}
+      : (isTimeStudyContext && activeSection === "BU Program")
+        ? tsActiveBuProgramsQuery.data?.budgetProgramLookup ?? {}
+        : formOptionsQuery.data?.budgetProgramLookup ?? {}
 
   useImperativeHandle(ref, () => ({
     reset(values: ProgramFormValues) {
@@ -204,9 +220,24 @@ export const ProgramFormModal = forwardRef<ProgramFormModalHandle, ProgramFormMo
     onSave(
       { ...values, formSection: activeSection },
       {
-        departmentIdByName: formOptionsQuery.data?.departmentIdByName,
+        departmentIdByName: isTsSecondary
+          ? tsPrimaryProgramsQuery.data?.departmentIdByName
+          : isTsTertiary
+            ? tsSecondaryProgramsQuery.data?.departmentIdByName
+            : formOptionsQuery.data?.departmentIdByName,
         budgetUnitIdByName: formOptionsQuery.data?.budgetUnitIdByName,
-        budgetProgramIdByName: formOptionsQuery.data?.budgetProgramIdByName,
+        budgetProgramIdByName: isTsSecondary
+          ? tsPrimaryProgramsQuery.data?.budgetProgramIdByName
+          : isTsTertiary
+            ? tsSecondaryProgramsQuery.data?.budgetProgramIdByName
+            : (isTimeStudyContext && activeSection === "BU Program")
+              ? tsActiveBuProgramsQuery.data?.budgetProgramIdByName
+              : formOptionsQuery.data?.budgetProgramIdByName,
+        timeStudyProgramIdByName: isTsSecondary
+          ? tsPrimaryProgramsQuery.data?.timeStudyProgramIdByName
+          : isTsTertiary
+            ? tsSecondaryProgramsQuery.data?.timeStudyProgramIdByName
+            : undefined,
         budgetProgramLookup: budgetProgramLookup,
       }
     )

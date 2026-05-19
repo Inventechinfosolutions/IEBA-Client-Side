@@ -30,7 +30,12 @@ async function fetchProgramFormOptions(
 
   const shouldLoadBudgetPrograms =
     (contextTab === "Budget Units" && activeSection === "BU Sub-Program") ||
+    (!contextTab && activeSection == null)
+
+  const shouldLoadDepartments =
+    (contextTab === "Budget Units" && activeSection === "Budget Unit") ||
     (contextTab === "Time Study programs" && activeSection === "BU Program") ||
+    contextTab === "Program Activity Relation" ||
     (!contextTab && activeSection == null)
 
   let departmentOptions: string[] = []
@@ -38,7 +43,7 @@ async function fetchProgramFormOptions(
 
   // Only fetch /departments/all for the Budget Unit section (1st tab) —
   // every other section derives department from its embedded parent entity.
-  if (!shouldLoadBudgetUnits && !shouldLoadBudgetPrograms) {
+  if (shouldLoadDepartments) {
     const res = await api.get<any>("/departments/all?status=active")
     const envelope = res?.data ?? res
     const departments: DepartmentResDto[] = Array.isArray(envelope)
@@ -162,8 +167,19 @@ export function useGetProgramFormOptions(
 }
 
 // Active Budget Programs (type=program) for BU Sub-Program tab (Budget Unit Program Name dropdown).
-async function fetchActiveBudgetProgramsForBuSubProgram(departmentIds?: number[]) {
-  const raw = await api.get<PagedEnvelope<unknown>>("/budgetprograms?status=active&type=program")
+async function fetchActiveBudgetProgramsForBuSubProgram(
+  departmentIds?: number[],
+  includeSubPrograms?: boolean
+) {
+  const search = new URLSearchParams()
+  search.set("status", "active")
+  if (!includeSubPrograms) {
+    search.set("type", "program")
+  }
+  if (departmentIds && departmentIds.length > 0) {
+    search.set("departmentId", departmentIds[0].toString())
+  }
+  const raw = await api.get<PagedEnvelope<unknown>>(`/budgetprograms?${search.toString()}`)
   const payload = (raw?.data ?? raw) as PagedEnvelope<unknown>
   const items = (Array.isArray(payload?.data) ? payload.data : []) as Array<{
     id?: number
@@ -182,7 +198,14 @@ async function fetchActiveBudgetProgramsForBuSubProgram(departmentIds?: number[]
   })
 
   const budgetProgramNameOptions = activePrograms
-    .map((p) => (typeof p.name === "string" ? p.name.trim() : ""))
+    .map((p) => {
+      const name = typeof p.name === "string" ? p.name.trim() : ""
+      if (includeSubPrograms) {
+        const code = typeof p.code === "string" ? p.code : ""
+        return code ? `${code} - ${name}` : name
+      }
+      return name
+    })
     .filter(Boolean)
     .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }))
 
@@ -195,6 +218,7 @@ async function fetchActiveBudgetProgramsForBuSubProgram(departmentIds?: number[]
     const name = typeof p.name === "string" ? p.name.trim() : ""
     if (!name) continue
     const code = typeof p.code === "string" ? p.code : ""
+    const key = includeSubPrograms && code ? `${code} - ${name}` : name
     const deptName =
       p.department && typeof p.department.name === "string" ? p.department.name.trim() : ""
     const deptId =
@@ -203,9 +227,9 @@ async function fetchActiveBudgetProgramsForBuSubProgram(departmentIds?: number[]
       p.budgetUnit && typeof p.budgetUnit.id === "number" ? p.budgetUnit.id : undefined
 
     // Store budgetUnitId + departmentId so the create flow can skip getById
-    budgetProgramLookup[name] = { code, department: deptName, budgetUnitId, departmentId: deptId }
+    budgetProgramLookup[key] = { code, department: deptName, budgetUnitId, departmentId: deptId }
 
-    if (typeof p.id === "number") budgetProgramIdByName[name] = p.id
+    if (typeof p.id === "number") budgetProgramIdByName[key] = p.id
     if (deptName && deptId != null) {
       departmentIdByName[deptName] = deptId
       departmentSet.add(deptName)
@@ -223,6 +247,23 @@ async function fetchActiveBudgetProgramsForBuSubProgram(departmentIds?: number[]
     departmentIdByName,
     departmentOptions,
   }
+}
+
+export function useGetActiveBuProgramsForDepartment(
+  enabled: boolean,
+  departmentIds?: number[],
+  includeSubPrograms?: boolean
+) {
+  return useQuery({
+    queryKey: ["program", "form-options", "budgetprograms", "type-program", departmentIds, includeSubPrograms],
+    queryFn: () => fetchActiveBudgetProgramsForBuSubProgram(departmentIds, includeSubPrograms),
+    enabled,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+  })
 }
 
 export function useActiveBuProgramsForSubProgram(enabled: boolean) {
@@ -243,10 +284,6 @@ async function fetchActivePrimaryTimeStudyPrograms(departmentIds?: number[]) {
   // For the TS Program dropdown we don't need full pagination support,
   // just a single fetch with a high enough limit to cover all active primary programs.
   const search = new URLSearchParams()
-  search.set("page", "1")
-  // Backend enforces max limit=100
-  search.set("limit", "100")
-  search.set("sort", "ASC")
   search.set("status", "active")
   search.set("type", "primary")
   if (departmentIds && departmentIds.length > 0) {
@@ -260,6 +297,7 @@ async function fetchActivePrimaryTimeStudyPrograms(departmentIds?: number[]) {
     status?: unknown
     type?: string
     department?: DepartmentResDto | null
+    budgetProgram?: { id?: number; name?: string; code?: string } | null
   }[]; meta?: PaginationMeta }>>(`/timestudyprograms?${search.toString()}`)
   const payload = raw?.data ?? raw
   const list = Array.isArray(payload?.data) ? payload.data : []
@@ -272,22 +310,43 @@ async function fetchActivePrimaryTimeStudyPrograms(departmentIds?: number[]) {
     .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }))
 
   const budgetProgramLookup: Record<string, { code: string; department: string }> = {}
+  const budgetProgramIdByName: Record<string, number> = {}
+  const timeStudyProgramIdByName: Record<string, number> = {}
+  const departmentIdByName: Record<string, number> = {}
 
   for (const p of activePrograms) {
     const name = typeof p.name === "string" ? p.name.trim() : ""
     if (!name) continue
-    const code = typeof p.code === "string" ? p.code : ""
+    const bpCode = p.budgetProgram && typeof p.budgetProgram.code === "string" ? p.budgetProgram.code.trim() : ""
+    const bpName = p.budgetProgram && typeof p.budgetProgram.name === "string" ? p.budgetProgram.name.trim() : ""
+    const formattedBp = bpCode && bpName ? `${bpCode} - ${bpName}` : bpCode || bpName
     const deptName =
       p.department && typeof p.department.name === "string" ? p.department.name : ""
+    const deptId =
+      p.department && typeof p.department.id === "number" ? p.department.id : undefined
+      
     budgetProgramLookup[name] = {
-      code,
+      code: formattedBp,
       department: deptName,
+    }
+    const bpId = p.budgetProgram && typeof p.budgetProgram.id === "number" ? p.budgetProgram.id : undefined
+    if (bpId != null) {
+      budgetProgramIdByName[name] = bpId
+    }
+    if (typeof p.id === "number") {
+      timeStudyProgramIdByName[name] = p.id
+    }
+    if (deptName && deptId != null) {
+      departmentIdByName[deptName] = deptId
     }
   }
 
   return {
     budgetProgramNameOptions,
     budgetProgramLookup,
+    budgetProgramIdByName,
+    timeStudyProgramIdByName,
+    departmentIdByName,
   }
 }
 
@@ -307,9 +366,6 @@ export function useGetActivePrimaryTimeStudyPrograms(enabled: boolean, departmen
 // Active Time Study Secondary Programs (type=secondary) for TS Sub-Program Two tab (TS Program dropdown).
 async function fetchActiveSecondaryTimeStudyPrograms(departmentIds?: number[]) {
   const search = new URLSearchParams()
-  search.set("page", "1")
-  search.set("limit", "100")
-  search.set("sort", "ASC")
   search.set("status", "active")
   search.set("type", "secondary")
   if (departmentIds && departmentIds.length > 0) {
@@ -323,6 +379,7 @@ async function fetchActiveSecondaryTimeStudyPrograms(departmentIds?: number[]) {
     status?: unknown
     type?: string
     department?: DepartmentResDto | null
+    budgetProgram?: { id?: number; name?: string; code?: string } | null
   }[]; meta?: PaginationMeta }>>(`/timestudyprograms?${search.toString()}`)
   const payload = raw?.data ?? raw
   const list = Array.isArray(payload?.data) ? payload.data : []
@@ -335,22 +392,43 @@ async function fetchActiveSecondaryTimeStudyPrograms(departmentIds?: number[]) {
     .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }))
 
   const budgetProgramLookup: Record<string, { code: string; department: string }> = {}
+  const budgetProgramIdByName: Record<string, number> = {}
+  const timeStudyProgramIdByName: Record<string, number> = {}
+  const departmentIdByName: Record<string, number> = {}
 
   for (const p of activePrograms) {
     const name = typeof p.name === "string" ? p.name.trim() : ""
     if (!name) continue
-    const code = typeof p.code === "string" ? p.code : ""
+    const bpCode = p.budgetProgram && typeof p.budgetProgram.code === "string" ? p.budgetProgram.code.trim() : ""
+    const bpName = p.budgetProgram && typeof p.budgetProgram.name === "string" ? p.budgetProgram.name.trim() : ""
+    const formattedBp = bpCode && bpName ? `${bpCode} - ${bpName}` : bpCode || bpName
     const deptName =
       p.department && typeof p.department.name === "string" ? p.department.name : ""
+    const deptId =
+      p.department && typeof p.department.id === "number" ? p.department.id : undefined
+
     budgetProgramLookup[name] = {
-      code,
+      code: formattedBp,
       department: deptName,
+    }
+    const bpId = p.budgetProgram && typeof p.budgetProgram.id === "number" ? p.budgetProgram.id : undefined
+    if (bpId != null) {
+      budgetProgramIdByName[name] = bpId
+    }
+    if (typeof p.id === "number") {
+      timeStudyProgramIdByName[name] = p.id
+    }
+    if (deptName && deptId != null) {
+      departmentIdByName[deptName] = deptId
     }
   }
 
   return {
     budgetProgramNameOptions,
     budgetProgramLookup,
+    budgetProgramIdByName,
+    timeStudyProgramIdByName,
+    departmentIdByName,
   }
 }
 

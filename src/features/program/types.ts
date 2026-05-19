@@ -163,6 +163,7 @@ export type ProgramCreateLookups = {
   departmentIdByName?: Record<string, number>
   budgetUnitIdByName?: Record<string, number>
   budgetProgramIdByName?: Record<string, number>
+  timeStudyProgramIdByName?: Record<string, number>
   /** Enriched lookup: maps budget program name → id + budgetUnitId + departmentId */
   budgetProgramLookup?: Record<string, { code: string; department: string; budgetUnitId?: number; departmentId?: number }>
 }
@@ -184,6 +185,7 @@ export type CreateProgramInput = {
     departmentIdByName?: Record<string, number>
     budgetUnitIdByName?: Record<string, number>
     budgetProgramIdByName?: Record<string, number>
+    timeStudyProgramIdByName?: Record<string, number>
     budgetProgramLookup?: Record<string, { code: string; department: string; budgetUnitId?: number; departmentId?: number }>
   }
 }
@@ -196,6 +198,7 @@ export type UpdateProgramInput = {
     departmentIdByName?: Record<string, number>
     budgetUnitIdByName?: Record<string, number>
     budgetProgramIdByName?: Record<string, number>
+    timeStudyProgramIdByName?: Record<string, number>
     budgetProgramLookup?: Record<string, { code: string; department: string; budgetUnitId?: number; departmentId?: number }>
   }
 }

@@ -261,35 +261,7 @@ async function fetchTimeStudyPrograms(params: GetProgramsParams): Promise<Progra
     })
     : list
 
-  // When search returns a flat array, enrich items with budgetProgram/department names
-  // by fetching the budget programs list (one extra call, cached per session).
-  let enrichedList: any[] = filteredList as any[]
-  if (Array.isArray(rawPayload) && filteredList.length > 0) {
-    try {
-      const bpRes = await api.get<any>("/budgetprograms?page=1&limit=200&sort=ASC&status=active")
-      const bpPayload = bpRes?.data ?? bpRes
-      const bpList: any[] = Array.isArray(bpPayload?.data) ? bpPayload.data : []
-      const bpMap = new Map<number, any>(bpList.map((bp: any) => [bp.id, bp]))
-
-      enrichedList = (filteredList as any[]).map((item: any) => {
-        // Skip if already has nested objects
-        if (item.budgetProgram) return item
-        const bp = bpMap.get(item.budgetProgramId)
-        if (!bp) return item
-        return {
-          ...item,
-          budgetProgram: { id: bp.id, code: bp.code ?? "", name: bp.name ?? "", status: bp.status ?? "active" },
-          department: bp.department
-            ? { id: bp.department.id, code: bp.department.code ?? "", name: bp.department.name ?? "", status: bp.department.status ?? "active" }
-            : item.departmentId ? { id: item.departmentId, code: "", name: "", status: "active" } : undefined,
-        }
-      })
-    } catch {
-      // Best-effort enrichment; fall back to unenriched items
-    }
-  }
-
-  const items = enrichedList.map((item: any) => mapTimeStudyProgramToProgramRow(item as TimeStudyProgramResDto))
+  const items = filteredList.map((item: any) => mapTimeStudyProgramToProgramRow(item as TimeStudyProgramResDto))
   const totalItems = extractTotalItems(meta) ?? items.length
 
   return { items, totalItems }
@@ -496,6 +468,10 @@ export async function apiCreateProgram(input: CreateProgramInput & {
 
       parentId = input.parentRowId ? Number(input.parentRowId) : undefined
       budgetProgramId = lookups.budgetProgramIdByName?.[parentName]
+
+      if (!parentId) {
+        parentId = lookups.timeStudyProgramIdByName?.[parentName]
+      }
 
       if (!parentId) {
         const searchType = isSecondary
@@ -781,9 +757,6 @@ export async function apiGetProgramActivityRelationTimeStudyPrograms(
   departmentId: number,
 ): Promise<ProgramActivityRelationTimeStudyEnvelope> {
   const search = new URLSearchParams()
-  search.set("page", "1")
-  search.set("limit", "100")
-  search.set("sort", "ASC")
   search.set("status", "active")
   search.set("departmentId", String(departmentId))
 
