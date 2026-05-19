@@ -1,115 +1,134 @@
-import type { Dispatch, SetStateAction } from "react"
+ import type { Dispatch, SetStateAction } from "react"
 import { useState, useMemo } from "react"
 import { ChevronRight, ChevronLeft } from "lucide-react"
 import { TransferPanel } from "./TransferPanel"
 import type { TransferItem, JobClassificationSectionProps } from "../../types"
 
-import { useGetAllJobClassifications } from "../../../job-classification/queries/getJobClassifications"
-import type { JobClassificationRow } from "../../../job-classification/types"
+import { useGetJobClassificationGroupedByDepartment } from "../../../job-classification/queries/getJobClassifications"
+import type { JobClassificationSimpleItem } from "../../../job-classification/types"
 
-export function JobClassificationSection({ 
-  form, 
+export function JobClassificationSection({
+  form,
   mode,
-  assignedJobClassificationDetails, 
-  unassignedJobClassificationDetails 
+  assignedJobClassificationDetails,
+  unassignedJobClassificationDetails,
 }: JobClassificationSectionProps) {
   const selectedDept = form.watch("department")
 
   const [searchU, setSearchU] = useState("")
   const [searchA, setSearchA] = useState("")
 
-  const activeSearch = searchU || searchA || undefined
+  // ── NEW: fetch grouped classifications whenever department changes ──────────
+  const { data: grouped } = useGetJobClassificationGroupedByDepartment(
+    selectedDept ? Number(selectedDept) : null,
+  )
 
-  const shouldFetch = !!selectedDept && (mode === "add" || !!activeSearch);
+  // ── Build item catalog ──────────────────────────────────────────────────────
+  // Priority: when the grouped API has data (dept selected), use it.
+  // Fallback: seed from the edit-mode details passed in via props.
+  const itemCatalog = useMemo(() => {
+    const catalog: Record<string, JobClassificationSimpleItem> = {}
 
-  const { data: jobClassesData } = useGetAllJobClassifications(activeSearch, { enabled: shouldFetch })
-
-  // Catalog to store all fetched classifications and their linked users
-  const [itemCatalog, setItemCatalog] = useState<Record<string, JobClassificationRow>>({})
-
-  // Seed catalog with initial details
-  useMemo(() => {
-    const assigned = assignedJobClassificationDetails || [];
-    const unassigned = unassignedJobClassificationDetails || [];
-    if (assigned.length > 0 || unassigned.length > 0) {
-      setItemCatalog(prev => {
-        const next = { ...prev }
-        assigned.forEach(jc => { 
-          next[String(jc.id)] = { ...jc, id: String(jc.id), active: jc.status === "active" || true } 
-        })
-        unassigned.forEach(jc => { 
-          next[String(jc.id)] = { ...jc, id: String(jc.id), active: jc.status === "active" || true } 
-        })
-        return next
+    if (grouped) {
+      // Fresh data from new API — authoritative source
+      ;[...grouped.assigned, ...grouped.unassigned].forEach((jc) => {
+        catalog[String(jc.id)] = jc
+      })
+    } else {
+      // Fallback while API loads or no dept selected (edit mode seed)
+      const assigned = assignedJobClassificationDetails ?? []
+      const unassigned = unassignedJobClassificationDetails ?? []
+      ;[...assigned, ...unassigned].forEach((jc) => {
+        catalog[String(jc.id)] = {
+          id: Number(jc.id),
+          code: jc.code,
+          name: jc.name,
+          status: jc.status ?? "active",
+          users: [],
+        }
       })
     }
-  }, [assignedJobClassificationDetails, unassignedJobClassificationDetails])
 
-  // Merge API results into catalog
-  useMemo(() => {
-    if (jobClassesData && jobClassesData.length > 0) {
-      setItemCatalog(prev => {
-        const next = { ...prev }
-        jobClassesData.forEach(jc => {
-          next[String(jc.id)] = jc
-        })
-        return next
-      })
-    }
-  }, [jobClassesData])
+    return catalog
+  }, [grouped, assignedJobClassificationDetails, unassignedJobClassificationDetails])
+
+  // ── Disabled set: IDs already assigned to another pool in this dept ──────────
+  // grouped.assigned[] = classifications already taken by some pool in this dept.
+  // They must appear in the unassigned panel but be blocked (disabled).
+  const disabledIds = useMemo<Set<string>>(() => {
+    if (!grouped) return new Set()
+    return new Set(grouped.assigned.map((jc) => String(jc.id)))
+  }, [grouped])
 
   const assignedIds = form.watch("assignedJobClassificationIds")
 
-  const allJobClasses = useMemo(() => {
-    return Object.values(itemCatalog).map(jc => ({
+  // Build the flat TransferItem list from the catalog.
+  // All items appear in the left (unassigned) panel.
+  // Items in disabledIds are greyed out and non-transferable.
+  const allJobClasses = useMemo<TransferItem[]>(() => {
+    return Object.values(itemCatalog).map((jc) => ({
       id: String(jc.id),
       name: jc.name,
-      disabled: false
+      code: jc.code,
+      disabled: disabledIds.has(String(jc.id)),
     }))
-  }, [itemCatalog])
+  }, [itemCatalog, disabledIds])
 
   const [toggledU, setToggledU] = useState<string[]>([])
   const [toggledA, setToggledA] = useState<string[]>([])
 
-  const getFiltered = (items: TransferItem[], assignedIds: string[], search: string, isAssigned: boolean) => {
+  const getFilteredUnassigned = (items: TransferItem[], assignedIds: string[], search: string) => {
+    // Show everything NOT yet moved to the right panel (preserve disabled state)
     const assignedSet = new Set(assignedIds)
-    const list = isAssigned 
-      ? items.filter(i => assignedSet.has(i.id)).map(i => ({ ...i, disabled: false }))
-      : items.filter(i => !assignedSet.has(i.id))
-    
+    const list = items.filter((i) => !assignedSet.has(i.id))
     if (!search.trim()) return list
-    return list.filter(i => i.name.toLowerCase().includes(search.toLowerCase()))
+    return list.filter((i) => i.name.toLowerCase().includes(search.toLowerCase()))
   }
 
-  const filteredU = getFiltered(allJobClasses, assignedIds, searchU, false)
-  const filteredA = getFiltered(allJobClasses, assignedIds, searchA, true)
+  const getFilteredAssigned = (items: TransferItem[], assignedIds: string[], search: string) => {
+    // Show only items moved to the right panel, always unlocked
+    const assignedSet = new Set(assignedIds)
+    const list = items.filter((i) => assignedSet.has(i.id)).map((i) => ({ ...i, disabled: false }))
+    if (!search.trim()) return list
+    return list.filter((i) => i.name.toLowerCase().includes(search.toLowerCase()))
+  }
 
-  const handleTransfer = async (idsToTransfer: string[], isMovingToAssigned: boolean) => {
+  const filteredU = getFilteredUnassigned(allJobClasses, assignedIds, searchU)
+  const filteredA = getFilteredAssigned(allJobClasses, assignedIds, searchA)
+
+  const handleTransfer = (idsToTransfer: string[], isMovingToAssigned: boolean) => {
+    // Filter out disabled items — they must never be transferred
+    const transferable = idsToTransfer.filter((id) => !disabledIds.has(id))
+    if (transferable.length === 0) return
+
     const current = form.getValues("assignedJobClassificationIds")
     let newClassifications: string[]
 
     if (isMovingToAssigned) {
-      newClassifications = [...new Set([...current, ...idsToTransfer])]
+      newClassifications = [...new Set([...current, ...transferable])]
     } else {
-      newClassifications = current.filter(id => !idsToTransfer.includes(id))
+      newClassifications = current.filter((id) => !transferable.includes(id))
     }
 
-    // 1. Update Classifications
+    // 1. Update classifications
     form.setValue("assignedJobClassificationIds", newClassifications)
 
-    // 2. Synchronize Employees (Auto-assign all users linked to these classifications)
+    // 2. Auto-sync employees linked to the selected classifications
     if (newClassifications.length > 0) {
-      const assignedUsers = Object.values(itemCatalog)
-        .filter(jc => newClassifications.includes(String(jc.id)))
-        .flatMap(jc => jc.users || [])
-      
-      const uniqueUserIds: string[] = [...new Set(assignedUsers.map(u => String(u.id)))]
+      const assignedUsers = newClassifications.flatMap((id) => {
+        const jc = itemCatalog[id]
+        return (jc?.users ?? []).map((u) => ({
+          id: u.id,
+          name: u.name ?? `${u.firstName ?? ""} ${u.lastName ?? ""}`.trim(),
+        }))
+      })
+      const uniqueUserIds = [...new Set(assignedUsers.map((u) => String(u.id)))]
       form.setValue("assignedEmployeeIds", uniqueUserIds)
     } else {
       form.setValue("assignedEmployeeIds", [])
     }
 
-    // 3. Reset UI Selection
+    // 3. Reset UI selection
     if (isMovingToAssigned) {
       setToggledU([])
     } else {
@@ -118,7 +137,7 @@ export function JobClassificationSection({
   }
 
   const handleToggle = (id: string, setState: Dispatch<SetStateAction<string[]>>) => {
-    setState(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
+    setState((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
   }
 
   return (
@@ -137,8 +156,8 @@ export function JobClassificationSection({
         <button
           type="button"
           onClick={() => handleTransfer(toggledU, true)}
-          disabled={toggledU.length === 0}
-          className="flex size-11 cursor-pointer items-center justify-center rounded-[10px] bg-[#6C5DD3] text-white shadow-lg shadow-[#6C5DD3]/20 hover:brightness-110 active:scale-95 transition-all disabled:cursor-not-allowed"
+          disabled={toggledU.length === 0 || toggledU.every((id) => disabledIds.has(id))}
+          className="flex size-11 cursor-pointer items-center justify-center rounded-[10px] bg-[#6C5DD3] text-white shadow-lg shadow-[#6C5DD3]/20 hover:brightness-110 active:scale-95 transition-all disabled:cursor-not-allowed disabled:opacity-50"
         >
           <ChevronRight className="size-5 stroke-[2.5]" />
         </button>

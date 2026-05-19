@@ -28,7 +28,6 @@ import {
   type SortColumn,
   type SortDirection,
 } from "../types"
-import { useGetDepartmentUsers } from "../queries/getDepartmentUsers"
 import statusCheckImg from "@/assets/status-check.png"
 import statusCrossImg from "@/assets/status-cross.png"
 import editIconImg from "@/assets/edit-icon.png"
@@ -146,14 +145,7 @@ export function DepartmentTable({
   const canUpdateDepartment = isSuperAdmin || canUpdate("department")
   const canAddDepartment = isSuperAdmin || canAdd("department")
 
-  const usersQuery = useGetDepartmentUsers()
-  const usersById = useMemo(() => {
-    const map = new Map<string, { name: string; email: string; phone: string; location: string }>()
-    for (const u of usersQuery.data ?? []) {
-      map.set(u.id, { name: u.name, email: u.email, phone: u.phone, location: u.location })
-    }
-    return map
-  }, [usersQuery.data])
+  const usersById = useMemo(() => new Map<string, any>(), [])
 
   const [sortBy, setSortBy] = useState<SortColumn>(null)
   const [sortDirection, setSortDirection] = useState<SortDirection>(null)

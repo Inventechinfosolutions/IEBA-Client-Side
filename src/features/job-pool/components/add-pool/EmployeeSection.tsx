@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react"
 import { TransferPanel } from "./TransferPanel"
 import type { EmployeeSectionProps } from "../../types"
-import { useGetAllJobClassifications } from "../../../job-classification/queries/getJobClassifications"
+import { useGetJobClassificationGroupedByDepartment } from "../../../job-classification/queries/getJobClassifications"
+
 export function EmployeeSection({ 
   form, 
   mode,
@@ -10,74 +11,73 @@ export function EmployeeSection({
 }: EmployeeSectionProps) {
   const selectedDept = form.watch("department")
 
-
   const [searchU, setSearchU] = useState("")
   const [searchA, setSearchA] = useState("")
 
-  const shouldFetch = !!selectedDept && (mode === "add" || !!searchU || !!searchA);
-
-  // Fetch ALL classifications (no dept filter) so users are always found
-  const { data: jobClassesData } = useGetAllJobClassifications(undefined, { enabled: shouldFetch })
+  // Cached — same key as JobClassificationSection, no extra network call
+  const { data: grouped } = useGetJobClassificationGroupedByDepartment(
+    selectedDept ? Number(selectedDept) : null,
+  )
 
   const assignedEmployeeIds = form.watch("assignedEmployeeIds") || []
 
+  // ── Build full user map ──────────────────────────────────────────────────────
   const allUsersMap = useMemo(() => {
-    const map = new Map()
+    const map = new Map<string, { id: string; name: string }>()
     if (!selectedDept) return map
 
-    // Seed with initial details
-    const assigned = assignedUserDetails || [];
-    const unassigned = unassignedUserDetails || [];
-    [...assigned, ...unassigned].forEach(u => {
+    // Seed with initial details (edit mode)
+    const assigned = assignedUserDetails || []
+    const unassigned = unassignedUserDetails || []
+    ;[...assigned, ...unassigned].forEach((u) => {
       if (u.id && !map.has(u.id)) {
-        map.set(u.id, { id: u.id, name: u.name || `${u.firstName} ${u.lastName}`.trim() });
+        map.set(u.id, { id: u.id, name: u.name || `${u.firstName ?? ""} ${u.lastName ?? ""}`.trim() })
       }
-    });
+    })
 
-    // Merge with API data
-    const items = jobClassesData ?? []
-    items
-      .flatMap(jc => jc.users || [])
-      .forEach(u => {
-        if (u.id && !map.has(u.id)) {
-          map.set(u.id, { id: u.id, name: u.name })
-        }
-      })
+    // Merge users from grouped API (both assigned + unassigned classifications)
+    if (grouped) {
+      ;[...grouped.assigned, ...grouped.unassigned]
+        .flatMap((jc) => jc.users ?? [])
+        .forEach((u) => {
+          if (u.id && !map.has(u.id)) {
+            map.set(u.id, {
+              id: u.id,
+              name: u.name ?? `${u.firstName ?? ""} ${u.lastName ?? ""}`.trim(),
+            })
+          }
+        })
+    }
+
     return map
-  }, [jobClassesData, selectedDept, assignedUserDetails, unassignedUserDetails])
+  }, [grouped, selectedDept, assignedUserDetails, unassignedUserDetails])
 
-  const assignedUsers = useMemo(() => {
-    return assignedEmployeeIds
-      .map(id => allUsersMap.get(id))
-      .filter(Boolean)
-  }, [assignedEmployeeIds, allUsersMap])
 
+
+  // ── Filter lists ─────────────────────────────────────────────────────────────
   const unassignedUsers = useMemo(() => {
     const assignedSet = new Set(assignedEmployeeIds)
-    return Array.from(allUsersMap.values()).filter(
-      u => !assignedSet.has(u.id)
-    )
-  }, [assignedEmployeeIds, allUsersMap])
+    const list = Array.from(allUsersMap.values()).filter((u) => !assignedSet.has(u.id))
+    if (!searchU.trim()) return list
+    return list.filter((u) => u.name.toLowerCase().includes(searchU.toLowerCase()))
+  }, [allUsersMap, assignedEmployeeIds, searchU])
 
-  const filteredU = searchU.trim()
-    ? unassignedUsers.filter(u => u.name.toLowerCase().includes(searchU.toLowerCase()))
-    : unassignedUsers
-
-  const filteredA = searchA.trim()
-    ? assignedUsers.filter(u => u.name.toLowerCase().includes(searchA.toLowerCase()))
-    : assignedUsers
+  const assignedUsers = useMemo(() => {
+    const list = assignedEmployeeIds.map((id) => allUsersMap.get(id)).filter(Boolean) as { id: string; name: string }[]
+    if (!searchA.trim()) return list
+    return list.filter((u) => u.name.toLowerCase().includes(searchA.toLowerCase()))
+  }, [assignedEmployeeIds, allUsersMap, searchA])
 
   return (
     <div className="grid grid-cols-[1fr_60px_1fr] items-center gap-4">
       <TransferPanel
         title="Unassigned Employee"
-        items={filteredU}
+        items={unassignedUsers}
         selectedIds={[]}
         onToggleItem={() => {}}
         searchValue={searchU}
         onSearchChange={setSearchU}
-        count={filteredU.length}
-        isSearchDisabled={false}
+        count={unassignedUsers.length}
         isListDisabled={true}
       />
       <div className="flex flex-col gap-3 pt-12">
@@ -86,13 +86,12 @@ export function EmployeeSection({
       </div>
       <TransferPanel
         title="Assigned Employee"
-        items={filteredA}
+        items={assignedUsers}
         selectedIds={[]}
         onToggleItem={() => {}}
         searchValue={searchA}
         onSearchChange={setSearchA}
-        count={filteredA.length}
-        isSearchDisabled={false}
+        count={assignedUsers.length}
         isListDisabled={true}
       />
     </div>

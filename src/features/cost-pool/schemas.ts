@@ -5,6 +5,7 @@ import type { CostPoolFilterFormValues, CostPoolUpsertFormValues } from "./types
 export const costPoolFilterFormSchema = z.object({
   search: z.string().trim(),
   inactive: z.boolean(),
+  departmentId: z.union([z.number(), z.string()]).optional(),
 })
 
 export const costPoolUpsertFormSchema = z.object({
@@ -25,6 +26,7 @@ export const costPoolUpsertFormSchema = z.object({
 export const costPoolFilterDefaultValues: CostPoolFilterFormValues = {
   search: "",
   inactive: false,
+  departmentId: undefined,
 }
 
 export const costPoolUpsertDefaultValues: CostPoolUpsertFormValues = {

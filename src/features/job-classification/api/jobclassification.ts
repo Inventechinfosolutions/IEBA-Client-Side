@@ -5,6 +5,7 @@ import type {
   GetJobClassificationsParams,
   JobClassificationApiEnvelope,
   JobClassificationFormValues,
+  JobClassificationGroupedByDepartmentResponse,
   JobClassificationListResponse,
   JobClassificationListResponseDto,
   JobClassificationResDto,
@@ -190,5 +191,12 @@ export type JobClassificationUser = {
   name: string
 }
 
-
-
+export async function getJobClassificationGroupedByDepartment(
+  departmentId: number | string,
+): Promise<JobClassificationGroupedByDepartmentResponse> {
+  const res = await api.get<JobClassificationApiEnvelope<JobClassificationGroupedByDepartmentResponse>>(
+    `/jobclassification/grouped-by-department?departmentId=${departmentId}`,
+  )
+  const payload = (res as JobClassificationApiEnvelope<JobClassificationGroupedByDepartmentResponse>).data ?? (res as unknown as JobClassificationGroupedByDepartmentResponse)
+  return payload
+}

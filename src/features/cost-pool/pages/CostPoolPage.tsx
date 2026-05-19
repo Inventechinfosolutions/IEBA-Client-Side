@@ -22,6 +22,10 @@ export function CostPoolPage() {
         filters={filters}
         onSearchChange={(search) => setFilters((prev) => ({ ...prev, search }))}
         onInactiveChange={(inactive) => setFilters((prev) => ({ ...prev, inactive }))}
+        onDepartmentChange={(departmentId) => {
+          setFilters((prev) => ({ ...prev, departmentId }))
+          onPageChange(1)
+        }}
         onPageChange={onPageChange}
         onPageSizeChange={onPageSizeChange}
       />

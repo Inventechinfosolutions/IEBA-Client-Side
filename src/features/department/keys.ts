@@ -11,5 +11,5 @@ export const departmentKeys = {
   details: () => [...departmentKeys.all, "detail"] as const,
   detail: (id: string) => [...departmentKeys.details(), id] as const,
   /** Active users for contact dropdowns (paginated API). */
-  contactUsers: () => [...departmentKeys.all, "contact-users"] as const,
+  contactUsers: () => ["department-contact-users"] as const,
 }

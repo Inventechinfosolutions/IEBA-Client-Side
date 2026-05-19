@@ -12,6 +12,13 @@ import { MasterCodePagination } from "@/features/master-code/components/MasterCo
 import { Skeleton } from "@/components/ui/skeleton"
 import { Spinner } from "@/components/ui/spinner"
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import {
   Table,
   TableBody,
   TableCell,
@@ -25,7 +32,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { useGetDepartments } from "@/features/department/queries/getDepartments"
+import { useGetDepartments, useGetAllDepartments } from "@/features/department/queries/getDepartments"
 import editIconImg from "@/assets/edit-icon.png"
 import statusCheckImg from "@/assets/status-check.png"
 import { useAuth } from "@/contexts/AuthContext"
@@ -354,6 +361,7 @@ export function CostPoolTable({
   filters,
   onSearchChange,
   onInactiveChange,
+  onDepartmentChange,
   onPageChange,
   onPageSizeChange,
 }: CostPoolTableProps) {
@@ -374,6 +382,20 @@ export function CostPoolTable({
   const [showHistory, setShowHistory] = useState(false)
   const [historyActivityCode, setHistoryActivityCode] = useState("")
   const [historyAssignmentKind, setHistoryAssignmentKind] = useState("")
+
+  // Lazy-fetch departments only when the dropdown is opened
+  const [deptDropdownOpen, setDeptDropdownOpen] = useState(false)
+  const [deptFetchEnabled, setDeptFetchEnabled] = useState(false)
+  const allDepartmentsQuery = useGetAllDepartments(
+    { status: "active" },
+    { enabled: deptFetchEnabled },
+  )
+  const departmentOptions = allDepartmentsQuery.data?.items ?? []
+
+  const handleDeptOpenChange = (open: boolean) => {
+    setDeptDropdownOpen(open)
+    if (open) setDeptFetchEnabled(true) // trigger API on first open
+  }
 
   const [addOpen, setAddOpen] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
@@ -448,21 +470,62 @@ export function CostPoolTable({
             />
           </div>
         ) : (
-          <div className="w-full max-w-[300px]">
-            <form onSubmit={(event) => event.preventDefault()} className="relative">
-              <SearchIcon className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#9CA3AF]" />
-              <TitleCaseInput
-                placeholder="Search here"
-                className="h-12 rounded-[8px] border border-[#D9D9D9] bg-white pl-9 text-[16px] text-[#1F2937] placeholder:text-[#9CA3AF]"
-                {...filterForm.register("search")}
-                value={searchValue}
-                onChange={(event) => {
-                  filterForm.setValue("search", event.target.value)
-                  onSearchChange(event.target.value)
-                  onPageChange(1)
-                }}
-              />
-            </form>
+          <div className="flex items-center gap-2">
+            {/* Search bar */}
+            <div className="w-full max-w-[260px]">
+              <form onSubmit={(event) => event.preventDefault()} className="relative">
+                <SearchIcon className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#9CA3AF]" />
+                <TitleCaseInput
+                  placeholder="Search here"
+                  className="h-12 rounded-[8px] border border-[#D9D9D9] bg-white pl-9 text-[16px] text-[#1F2937] placeholder:text-[#9CA3AF]"
+                  {...filterForm.register("search")}
+                  value={searchValue}
+                  onChange={(event) => {
+                    filterForm.setValue("search", event.target.value)
+                    onSearchChange(event.target.value)
+                    onPageChange(1)
+                  }}
+                />
+              </form>
+            </div>
+
+            {/* Department filter dropdown */}
+            <Select
+              open={deptDropdownOpen}
+              onOpenChange={handleDeptOpenChange}
+              value={filters.departmentId !== undefined ? String(filters.departmentId) : ""}
+              onValueChange={(val) => {
+                const deptId = val === "__all__" || val === "" ? undefined : val
+                onDepartmentChange(deptId)
+                onPageChange(1)
+              }}
+            >
+              <SelectTrigger
+                className="h-12 min-w-[190px] rounded-[8px] border border-[#D9D9D9] bg-white px-3 text-[14px] text-[#1F2937] shadow-none focus:border-[#6C5DD3] focus:ring-1 focus:ring-[#6C5DD333] data-placeholder:text-[#9CA3AF]"
+              >
+                <SelectValue placeholder="Filter by Department" />
+              </SelectTrigger>
+              <SelectContent className="max-h-60 min-w-[220px] rounded-[8px] border border-[#E5E7EB] bg-white shadow-md">
+                <SelectItem value="__all__" className="text-[13px] text-[#6B7280] italic">
+                  All Departments
+                </SelectItem>
+                {allDepartmentsQuery.isPending && deptFetchEnabled ? (
+                  <div className="flex items-center justify-center py-4">
+                    <Spinner className="text-[#6C5DD3] size-4" />
+                  </div>
+                ) : (
+                  departmentOptions.map((dept) => (
+                    <SelectItem
+                      key={dept.id}
+                      value={String(dept.id)}
+                      className="text-[13px] text-[#1F2937]"
+                    >
+                      {dept.name}
+                    </SelectItem>
+                  ))
+                )}
+              </SelectContent>
+            </Select>
           </div>
         )}
 
