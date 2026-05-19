@@ -7,7 +7,10 @@ export function EmployeeSection({
   form, 
   mode,
   assignedUserDetails, 
-  unassignedUserDetails 
+  unassignedUserDetails,
+  assigned,
+  assignedToOtherPoolsInDept,
+  unassigned
 }: EmployeeSectionProps) {
   const selectedDept = form.watch("department")
 
@@ -17,6 +20,7 @@ export function EmployeeSection({
   // Cached — same key as JobClassificationSection, no extra network call
   const { data: grouped } = useGetJobClassificationGroupedByDepartment(
     selectedDept ? Number(selectedDept) : null,
+    { enabled: mode !== "edit" }
   )
 
   const assignedEmployeeIds = form.watch("assignedEmployeeIds") || []
@@ -27,11 +31,25 @@ export function EmployeeSection({
     if (!selectedDept) return map
 
     // Seed with initial details (edit mode)
-    const assigned = assignedUserDetails || []
-    const unassigned = unassignedUserDetails || []
-    ;[...assigned, ...unassigned].forEach((u) => {
+    const listA = assignedUserDetails || []
+    const listU = unassignedUserDetails || []
+    ;[...listA, ...listU].forEach((u) => {
       if (u.id && !map.has(u.id)) {
         map.set(u.id, { id: u.id, name: u.name || `${u.firstName ?? ""} ${u.lastName ?? ""}`.trim() })
+      }
+    })
+
+    // Seed with nested users from new rich classification properties (edit mode)
+    const classA = assigned || []
+    const classO = assignedToOtherPoolsInDept || []
+    const classU = unassigned || []
+    ;[...classA, ...classO, ...classU].forEach((jc) => {
+      if (jc.users && Array.isArray(jc.users)) {
+        jc.users.forEach((u) => {
+          if (u.id && !map.has(u.id)) {
+            map.set(u.id, { id: u.id, name: u.name ?? "" })
+          }
+        })
       }
     })
 
@@ -50,7 +68,7 @@ export function EmployeeSection({
     }
 
     return map
-  }, [grouped, selectedDept, assignedUserDetails, unassignedUserDetails])
+  }, [grouped, selectedDept, assignedUserDetails, unassignedUserDetails, assigned, assignedToOtherPoolsInDept, unassigned])
 
 
 

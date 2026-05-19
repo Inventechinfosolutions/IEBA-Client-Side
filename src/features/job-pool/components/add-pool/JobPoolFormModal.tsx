@@ -36,6 +36,9 @@ export function JobPoolFormModal({
   unassignedJobClassificationDetails,
   assignedUserDetails,
   unassignedUserDetails,
+  assigned,
+  assignedToOtherPoolsInDept,
+  unassigned,
   departmentName,
 }: JobPoolFormModalProps) {
   const { isDepartmentAdmin, assignedDepartmentIds } = usePermissions()
@@ -254,6 +257,9 @@ export function JobPoolFormModal({
                         mode={mode}
                         assignedJobClassificationDetails={assignedJobClassificationDetails}
                         unassignedJobClassificationDetails={unassignedJobClassificationDetails}
+                        assigned={assigned}
+                        assignedToOtherPoolsInDept={assignedToOtherPoolsInDept}
+                        unassigned={unassigned}
                       />
                       <ActivitySection 
                         form={form}
@@ -268,6 +274,9 @@ export function JobPoolFormModal({
                         mode={mode}
                         assignedUserDetails={assignedUserDetails}
                         unassignedUserDetails={unassignedUserDetails}
+                        assigned={assigned}
+                        assignedToOtherPoolsInDept={assignedToOtherPoolsInDept}
+                        unassigned={unassigned}
                       />
                     </>
                   )

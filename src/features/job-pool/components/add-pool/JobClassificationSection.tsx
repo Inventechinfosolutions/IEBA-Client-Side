@@ -12,6 +12,9 @@ export function JobClassificationSection({
   mode,
   assignedJobClassificationDetails,
   unassignedJobClassificationDetails,
+  assigned,
+  assignedToOtherPoolsInDept,
+  unassigned,
 }: JobClassificationSectionProps) {
   const selectedDept = form.watch("department")
 
@@ -21,6 +24,7 @@ export function JobClassificationSection({
   // ── NEW: fetch grouped classifications whenever department changes ──────────
   const { data: grouped } = useGetJobClassificationGroupedByDepartment(
     selectedDept ? Number(selectedDept) : null,
+    { enabled: mode !== "edit" }
   )
 
   // ── Build item catalog ──────────────────────────────────────────────────────
@@ -36,29 +40,34 @@ export function JobClassificationSection({
       })
     } else {
       // Fallback while API loads or no dept selected (edit mode seed)
-      const assigned = assignedJobClassificationDetails ?? []
-      const unassigned = unassignedJobClassificationDetails ?? []
-      ;[...assigned, ...unassigned].forEach((jc) => {
+      const listA = assigned ?? assignedJobClassificationDetails ?? []
+      const listU = unassigned ?? unassignedJobClassificationDetails ?? []
+      const listO = assignedToOtherPoolsInDept ?? []
+
+      ;[...listA, ...listU, ...listO].forEach((jc) => {
         catalog[String(jc.id)] = {
           id: Number(jc.id),
           code: jc.code,
           name: jc.name,
           status: jc.status ?? "active",
-          users: [],
+          users: 'users' in jc && Array.isArray(jc.users) ? jc.users : [],
         }
       })
     }
 
     return catalog
-  }, [grouped, assignedJobClassificationDetails, unassignedJobClassificationDetails])
+  }, [grouped, assignedJobClassificationDetails, unassignedJobClassificationDetails, assigned, unassigned, assignedToOtherPoolsInDept])
 
   // ── Disabled set: IDs already assigned to another pool in this dept ──────────
-  // grouped.assigned[] = classifications already taken by some pool in this dept.
-  // They must appear in the unassigned panel but be blocked (disabled).
   const disabledIds = useMemo<Set<string>>(() => {
-    if (!grouped) return new Set()
-    return new Set(grouped.assigned.map((jc) => String(jc.id)))
-  }, [grouped])
+    if (grouped) {
+      return new Set(grouped.assigned.map((jc) => String(jc.id)))
+    }
+    if (assignedToOtherPoolsInDept) {
+      return new Set(assignedToOtherPoolsInDept.map((jc) => String(jc.id)))
+    }
+    return new Set()
+  }, [grouped, assignedToOtherPoolsInDept])
 
   const assignedIds = form.watch("assignedJobClassificationIds")
 
