@@ -121,11 +121,15 @@ export function PayrollPage() {
 
   const handleGetRows = useCallback((params: GetPayrollRowsParams) => {
     setPage(1) // Reset to first page on new search
-    setActiveQueryParams(params)
-    // Always force a refetch when clicking 'Get'
-    setTimeout(() => {
-      rowsModule.refetch()
-    }, 0)
+    setActiveQueryParams((prev) => {
+      if (prev && JSON.stringify(prev) === JSON.stringify(params)) {
+        // Only force a manual refetch if the parameters are exactly the same.
+        setTimeout(() => {
+          rowsModule.refetch()
+        }, 0)
+      }
+      return params
+    })
   }, [rowsModule])
 
   const handleEditRow = useCallback((row: PayrollManagementRow) => {

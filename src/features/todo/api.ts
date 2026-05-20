@@ -109,7 +109,8 @@ export async function apiCreateTodo(input: {
     userId: input.userId,
     status: input.status,
   })
-  return normalizeTodoRow(raw)
+  const res = raw as { data?: unknown }
+  return normalizeTodoRow(res?.data ?? raw)
 }
 
 import { getChangedFields } from "@/utils/diff"
@@ -163,7 +164,8 @@ export async function apiUpdateTodo(input: {
   }
 
   const raw = await api.put<unknown>(`/todos/${encodeURIComponent(input.id)}`, body)
-  return normalizeTodoRow(raw)
+  const res = raw as { data?: unknown }
+  return normalizeTodoRow(res?.data ?? raw)
 }
 
 export async function apiGetTodoById(id: string) {
