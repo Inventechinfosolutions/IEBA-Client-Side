@@ -11,13 +11,7 @@ import { TitleCaseInput } from "@/components/ui/title-case-input"
 import { MasterCodePagination } from "@/features/master-code/components/MasterCodePagination"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Spinner } from "@/components/ui/spinner"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import { SingleSelectDropdown } from "@/components/ui/dropdown"
 import {
   Table,
   TableBody,
@@ -384,16 +378,20 @@ export function CostPoolTable({
   const [historyAssignmentKind, setHistoryAssignmentKind] = useState("")
 
   // Lazy-fetch departments only when the dropdown is opened
-  const [deptDropdownOpen, setDeptDropdownOpen] = useState(false)
   const [deptFetchEnabled, setDeptFetchEnabled] = useState(false)
   const allDepartmentsQuery = useGetAllDepartments(
     { status: "active" },
     { enabled: deptFetchEnabled },
   )
-  const departmentOptions = allDepartmentsQuery.data?.items ?? []
+  const departmentOptions = useMemo(() => {
+    const items = allDepartmentsQuery.data?.items ?? []
+    return [
+      { value: "__all__", label: "All Departments" },
+      ...items.map((d) => ({ value: String(d.id), label: d.name })),
+    ]
+  }, [allDepartmentsQuery.data])
 
   const handleDeptOpenChange = (open: boolean) => {
-    setDeptDropdownOpen(open)
     if (open) setDeptFetchEnabled(true) // trigger API on first open
   }
 
@@ -490,42 +488,19 @@ export function CostPoolTable({
             </div>
 
             {/* Department filter dropdown */}
-            <Select
-              open={deptDropdownOpen}
-              onOpenChange={handleDeptOpenChange}
+            <SingleSelectDropdown
               value={filters.departmentId !== undefined ? String(filters.departmentId) : ""}
-              onValueChange={(val) => {
+              onChange={(val) => {
                 const deptId = val === "__all__" || val === "" ? undefined : val
                 onDepartmentChange(deptId)
                 onPageChange(1)
               }}
-            >
-              <SelectTrigger
-                className="h-12 min-w-[190px] rounded-[8px] border border-[#D9D9D9] bg-white px-3 text-[14px] text-[#1F2937] shadow-none focus:border-[#6C5DD3] focus:ring-1 focus:ring-[#6C5DD333] data-placeholder:text-[#9CA3AF]"
-              >
-                <SelectValue placeholder="Filter by Department" />
-              </SelectTrigger>
-              <SelectContent className="max-h-60 min-w-[220px] rounded-[8px] border border-[#E5E7EB] bg-white shadow-md">
-                <SelectItem value="__all__" className="text-[13px] text-[#6B7280] italic">
-                  All Departments
-                </SelectItem>
-                {allDepartmentsQuery.isPending && deptFetchEnabled ? (
-                  <div className="flex items-center justify-center py-4">
-                    <Spinner className="text-[#6C5DD3] size-4" />
-                  </div>
-                ) : (
-                  departmentOptions.map((dept) => (
-                    <SelectItem
-                      key={dept.id}
-                      value={String(dept.id)}
-                      className="text-[13px] text-[#1F2937]"
-                    >
-                      {dept.name}
-                    </SelectItem>
-                  ))
-                )}
-              </SelectContent>
-            </Select>
+              onBlur={() => {}}
+              options={departmentOptions}
+              placeholder="Filter by Department"
+              isLoading={allDepartmentsQuery.isPending && deptFetchEnabled}
+              onOpenChange={handleDeptOpenChange}
+            />
           </div>
         )}
 
