@@ -18,5 +18,7 @@ export function useGetTodoById(id: string | undefined) {
       return await apiGetTodoById(id)
     },
     enabled: !!id,
+    staleTime: 0,
+    refetchOnMount: "always",
   })
 }
