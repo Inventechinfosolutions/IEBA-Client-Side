@@ -125,27 +125,41 @@ export function JobClassificationFormModal({
   }
 
   const handleSave = handleSubmit(
-    (values: JobClassificationFormValues) => {
+    async (values: JobClassificationFormValues) => {
       const editor = descriptionEditorRef.current
       const nextValues = editor
         ? { ...values, activityDescription: editor.innerHTML }
         : values
-      onSave(nextValues)
-      toast.success(
-        mode === "edit"
-          ? "Job classification updated successfully"
-          : "Job classification saved successfully",
-        {
+      try {
+        await onSave(nextValues)
+        toast.success(
+          mode === "edit"
+            ? "Job classification updated successfully"
+            : "Job classification saved successfully",
+          {
+            position: "top-center",
+            icon: (
+              <span className="inline-flex size-4 items-center justify-center rounded-full bg-[#10b981] text-white">
+                <Check className="size-3 stroke-[3]" />
+              </span>
+            ),
+            className:
+              "!w-fit !max-w-[340px] !min-h-[35px] !rounded-[8px] !border-0 !px-3 !py-2 !text-[12px] !shadow-[0_8px_22px_rgba(17,24,39,0.18)]",
+          }
+        )
+      } catch (error: any) {
+        const firstMessage = error instanceof Error ? error.message : "Operation failed"
+        toast.error(firstMessage, {
           position: "top-center",
           icon: (
-            <span className="inline-flex size-4 items-center justify-center rounded-full bg-[#10b981] text-white">
-              <Check className="size-3 stroke-[3]" />
+            <span className="inline-flex size-4 items-center justify-center rounded-full bg-[#ef4444] text-white">
+              <X className="size-3 stroke-[2.5]" />
             </span>
           ),
           className:
             "!w-fit !max-w-[340px] !min-h-[35px] !rounded-[8px] !border-0 !px-3 !py-2 !text-[12px] !shadow-[0_8px_22px_rgba(17,24,39,0.18)]",
-        }
-      )
+        })
+      }
     },
     (formErrors) => {
       const firstInvalidField = fieldOrder.find((field) => Boolean(formErrors[field]))

@@ -77,7 +77,7 @@ export type ProgramTableProps = {
   selectedEmployeeId: string | null
   isLoading?: boolean
   isSaving?: boolean
-  onUpdate: (values: ProgramsUpdateFormValues) => void | Promise<void>
+  onUpdate: (values: ProgramsUpdateFormValues, initialValues?: ProgramsUpdateFormValues) => void | Promise<void>
 }
 
 // ─── FteTableProps (legacy, used by page) ────────────────────────────────────

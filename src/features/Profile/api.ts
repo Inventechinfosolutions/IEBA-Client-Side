@@ -61,7 +61,7 @@ export async function fetchProfileDetail(userId: string): Promise<ProfileDetailD
 }
 
 export async function updateProfileDetail(input: UpdateProfileDetailInput): Promise<ProfileDetailData> {
-  const { id, values, persist } = input
+  const { id, values, initialValues, persist } = input
   const phoneDigits = buildPrimaryPhoneDigits(values.areaCode, values.telephoneNumber)
 
   const payload: UpdateUserRequestDto = {
@@ -87,7 +87,28 @@ export async function updateProfileDetail(input: UpdateProfileDetailInput): Prom
     payload.jobClassificationIds = persist.jobClassificationIds
   }
 
-  await apiUpdateUser(id, payload)
+  let initialPayload: UpdateUserRequestDto | undefined = undefined
+  if (initialValues) {
+    const initialPhoneDigits = buildPrimaryPhoneDigits(initialValues.areaCode, initialValues.telephoneNumber)
+    initialPayload = {
+      firstName: initialValues.firstName.trim(),
+      lastName: initialValues.lastName.trim(),
+      employeeId: initialValues.onRecords.employeeId.trim(),
+      positionName: clampPositionName(initialValues.onRecords.positionId),
+      contacts: contactsPayloadForUpdate(initialPhoneDigits),
+      emergencyContact: buildEmergencyContactPayload(initialValues),
+    }
+    if (pid) initialPayload.primarySupervisorId = pid
+    if (bid) initialPayload.backupSupervisorId = bid
+    if (loc != null && Number.isInteger(loc) && loc >= 1) {
+      initialPayload.locationId = loc
+    }
+    if (persist?.jobClassificationIds !== undefined) {
+      initialPayload.jobClassificationIds = persist.jobClassificationIds
+    }
+  }
+
+  await apiUpdateUser(id, payload, initialPayload)
   const details = await apiGetUserDetails(id)
   return mapUserDetailsToProfileDetailData(details)
 }

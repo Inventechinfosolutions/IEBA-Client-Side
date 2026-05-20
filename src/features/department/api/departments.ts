@@ -376,11 +376,27 @@ export async function createDepartment(
   return payload
 }
 
+import { getChangedFields } from "@/utils/diff"
+
+// ...
+
 export async function updateDepartment(
   id: string,
-  values: DepartmentUpsertValues
+  values: DepartmentUpsertValues,
+  initialValues?: DepartmentUpsertValues
 ): Promise<Department> {
-  const body: UpdateDepartmentReqDto = toCreateUpdateDto(values)
+  const currentDto = toCreateUpdateDto(values)
+  let body: UpdateDepartmentReqDto = currentDto
+
+  if (initialValues) {
+    const initialDto = toCreateUpdateDto(initialValues)
+    const diff = getChangedFields(initialDto, currentDto)
+    if (!diff) {
+      throw new Error("No changes to save")
+    }
+    body = diff
+  }
+
   const res = await api.put<DepartmentApiEnvelope<DepartmentResDto>>(
     `/departments/${id}`,
     body

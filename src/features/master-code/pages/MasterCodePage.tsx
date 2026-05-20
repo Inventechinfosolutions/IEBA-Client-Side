@@ -65,7 +65,7 @@ export function MasterCodePage() {
     setIsSaving(true)
     if (ui.modalMode === "edit" && ui.selectedRow) {
       masterCodes.updateMasterCode(
-        { id: ui.selectedRow.id, codeType: ui.activeTab, values },
+        { id: ui.selectedRow.id, codeType: ui.activeTab, values, initialValues: ui.modalInitialValues },
         {
           onSuccess: () => {
             toast.success(`${ui.activeTab} updated successfully`, successToastOptions)

@@ -286,6 +286,7 @@ export type CreateUserModuleInput = {
 export type UpdateUserModuleInput = {
   id: string
   values: UserModuleFormValues
+  initialValues?: UserModuleFormValues
 }
 
 export type UserTableProps = {

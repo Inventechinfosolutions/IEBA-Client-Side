@@ -9,7 +9,7 @@ export function useUpdateJobPool() {
 
   return useMutation({
     mutationFn: async (input: UpdateJobPoolInput): Promise<JobPoolRow> =>
-      updateJobPool(input.id, input.values),
+      updateJobPool(input.id, input.values, input.initialValues),
     onSuccess: async () => {
       await queryClient.invalidateQueries({
         queryKey: jobPoolKeys.lists(),

@@ -6,7 +6,7 @@ import { updateJobClassification } from "../api/jobclassification"
 import type { UpdateJobClassificationInput, JobClassificationRow } from "../types"
 
 async function updateJobClassificationMutation(input: UpdateJobClassificationInput): Promise<JobClassificationRow> {
-  return updateJobClassification(input.id, input.values)
+  return updateJobClassification(input.id, input.values, input.initialValues)
 }
 
 export function useUpdateJobClassification() {

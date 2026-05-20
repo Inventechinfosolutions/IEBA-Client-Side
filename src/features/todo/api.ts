@@ -112,19 +112,57 @@ export async function apiCreateTodo(input: {
   return normalizeTodoRow(raw)
 }
 
+import { getChangedFields } from "@/utils/diff"
+
 export async function apiUpdateTodo(input: {
   id: string
   title: string
   description: string
   userId?: string
   status: TodoStatusEnum
+  initialValues?: {
+    title: string
+    description: string
+    status: TodoStatusEnum
+  }
 }) {
-  const raw = await api.put<unknown>(`/todos/${encodeURIComponent(input.id)}`, {
-    title: input.title,
-    description: input.description,
-    userId: input.userId,
-    status: input.status,
-  })
+  const currentTitle = input.title.trim()
+  const currentDesc = input.description.trim()
+  const currentStatus = input.status
+
+  const currentValues = {
+    title: currentTitle,
+    description: currentDesc,
+    status: currentStatus,
+  }
+
+  let body: Record<string, unknown> = {
+    ...currentValues,
+  }
+
+  if (input.userId != null) {
+    body.userId = input.userId
+  }
+
+  if (input.initialValues) {
+    const initialValues = {
+      title: input.initialValues.title.trim(),
+      description: input.initialValues.description.trim(),
+      status: input.initialValues.status,
+    }
+
+    const diff = getChangedFields(initialValues, currentValues)
+    if (!diff) {
+      throw new Error("No changes to save")
+    }
+
+    body = { ...diff }
+    if (input.userId != null) {
+      body.userId = input.userId
+    }
+  }
+
+  const raw = await api.put<unknown>(`/todos/${encodeURIComponent(input.id)}`, body)
   return normalizeTodoRow(raw)
 }
 

@@ -1,3 +1,4 @@
+import { useMemo } from "react"
 import { useForm, useFieldArray } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 
@@ -53,15 +54,17 @@ export function ProgramTable({
   isSaving = false,
   onUpdate,
 }: ProgramTableProps) {
+  const initialValues = useMemo<ProgramsUpdateFormValues>(() => ({
+    programs: programs.map((p) => ({
+      ...p,
+      budgetedFte: Number(p.budgetedFte),
+      allocatedFte: Number(p.allocatedFte),
+    })),
+  }), [programs])
+
   const form = useForm<ProgramsUpdateFormValues>({
     resolver: zodResolver(programsUpdateFormSchema),
-    values: {
-      programs: programs.map((p) => ({
-        ...p,
-        budgetedFte: Number(p.budgetedFte),
-        allocatedFte: Number(p.allocatedFte),
-      })),
-    },
+    values: initialValues,
   })
 
   const {
@@ -215,7 +218,7 @@ export function ProgramTable({
       <div className="flex items-center justify-end rounded-[8px] border border-[#E5E7EB] bg-white px-4 py-[12px] shadow-[0_0_20px_0_#0000001a]">
         <Button
           type="button"
-          onClick={form.handleSubmit((values) => onUpdate(values))}
+          onClick={form.handleSubmit((values) => onUpdate(values, initialValues))}
           disabled={!selectedEmployeeId || isSaving}
           className="h-[44px] min-w-[120px] rounded-[10px] bg-[#6C5DD3] px-8 text-[14px] font-[400] text-white hover:bg-[#5B4DC5] disabled:opacity-50"
         >

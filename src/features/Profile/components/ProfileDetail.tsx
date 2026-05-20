@@ -656,6 +656,7 @@ export function ProfileDetail() {
           await updateProfile.mutateAsync({
             id: profileId,
             values,
+            initialValues,
             persist: profileQuery.data?.persist,
           })
           

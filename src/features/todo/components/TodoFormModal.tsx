@@ -99,9 +99,13 @@ export function TodoFormModal({
                       </label>
                       <TitleCaseInput
                         {...form.register("title")}
-                        disabled={isEditMode}
+                        readOnly={isEditMode}
                         placeholder="Enter To Do Title"
-                        className="h-[46px] w-[300px] rounded-[8px] border-[#dfe3ee] text-[12px] placeholder:text-[12px] placeholder:text-gray-400 disabled:pointer-events-auto disabled:cursor-not-allowed disabled:border-[0.8px]! disabled:border-[#cfd4dd]! disabled:bg-[#d2d4d9]/20! disabled:text-black! disabled:opacity-100 focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
+                        className={`h-[46px] w-[300px] rounded-[8px] border-[#dfe3ee] text-[12px] placeholder:text-[12px] placeholder:text-gray-400 focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333] ${
+                          isEditMode
+                            ? "pointer-events-auto cursor-not-allowed border-[0.8px]! border-[#cfd4dd]! bg-[#d2d4d9]/20! text-black! opacity-100"
+                            : ""
+                        }`}
                       />
                     </div>
                     <div>
@@ -166,9 +170,13 @@ export function TodoFormModal({
                   </label>
                   <Textarea
                     {...form.register("description")}
-                    disabled={isDescriptionDisabled}
+                    readOnly={isDescriptionDisabled}
                     placeholder="Enter To Do Description"
-                    className="min-h-[86px] whitespace-pre-wrap break-all rounded-[8px] border-[#dfe3ee] text-[12px] placeholder:text-[12px] placeholder:text-gray-400 disabled:pointer-events-auto disabled:cursor-not-allowed disabled:border-[0.8px]! disabled:border-[#cfd4dd]! disabled:bg-[#d2d4d9]/20! disabled:text-black! disabled:opacity-100 focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
+                    className={`min-h-[86px] whitespace-pre-wrap break-all rounded-[8px] border-[#dfe3ee] text-[12px] placeholder:text-[12px] placeholder:text-gray-400 focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333] ${
+                      isDescriptionDisabled
+                        ? "pointer-events-auto cursor-not-allowed border-[0.8px]! border-[#cfd4dd]! bg-[#d2d4d9]/20! text-black! opacity-100"
+                        : ""
+                    }`}
                   />
                 </div>
               </div>

@@ -816,8 +816,69 @@ export function PersonalTimeStudyEntryForm({
     return true
   }
 
+  const checkHasChanges = (currentParents: TimeEntryParentRow[], initial: any[] | undefined): boolean => {
+    const dbParents = (initial ?? []).filter(
+      (r) => r.date?.split("T")[0] === dateStr && r.apportioning !== true && !r.parentId
+    )
+    
+    const nonLeaveParents = currentParents.filter(p => !p.isLeave || p.dbId)
+
+    if (nonLeaveParents.length !== dbParents.length) {
+      return true
+    }
+
+    for (const p of nonLeaveParents) {
+      const matching = dbParents.find(r => r.id === p.dbId)
+      if (!matching) {
+        if (p.tsProgram || p.serviceActivity || p.start || p.end || p.description) {
+          return true
+        }
+        continue
+      }
+
+      if (
+        p.start !== (matching.starttime ?? "") ||
+        p.end !== (matching.endtime ?? "") ||
+        p.tsProgram !== String(matching.programid ?? "") ||
+        p.serviceActivity !== String(matching.activityid ?? "") ||
+        p.description !== (matching.description ?? "")
+      ) {
+        return true
+      }
+
+      const dbSubRows = matching.multiCodeRecords ?? []
+      if (p.subRows.length !== dbSubRows.length) {
+        return true
+      }
+
+      for (const s of p.subRows) {
+        const matchingSub = dbSubRows.find((m: any) => String(m.id) === s.id)
+        if (!matchingSub) {
+          if (s.studyProgram || s.serviceActivity || s.totalMin || s.description) {
+            return true
+          }
+          continue
+        }
+        if (
+          s.studyProgram !== String(matchingSub.programid ?? "") ||
+          s.serviceActivity !== String(matchingSub.activityid ?? "") ||
+          s.totalMin !== String(matchingSub.activitytime ?? "") ||
+          s.description !== (matchingSub.description ?? "")
+        ) {
+          return true
+        }
+      }
+    }
+
+    return false
+  }
+
   const handleSave = () => {
     if (!validateEntries()) return
+    if (!checkHasChanges(parents, initialRecords)) {
+      toast.error("No changes to save")
+      return
+    }
     const payload = mapToPayload("draft")
     if (payload.length === 0) { toast.error("Please add at least one time entry"); return; }
     onSave?.(payload)
@@ -825,6 +886,10 @@ export function PersonalTimeStudyEntryForm({
 
   const handleSubmitInternal = () => {
     if (!validateEntries()) return
+    if (!checkHasChanges(parents, initialRecords)) {
+      toast.error("No changes to save")
+      return
+    }
     const payload = mapToPayload("submitted")
     if (payload.length === 0) { toast.error("Please add at least one time entry"); return; }
     onSubmit?.(payload)

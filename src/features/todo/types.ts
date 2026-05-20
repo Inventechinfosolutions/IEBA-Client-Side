@@ -52,6 +52,7 @@ export type CreateTodoInput = {
 export type UpdateTodoInput = {
   id: string
   values: TodoFormValues
+  initialValues?: TodoFormValues
 }
 
 export type TodoFormModalProps = {

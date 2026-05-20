@@ -66,6 +66,7 @@ export type CreateJobPoolInput = {
 export type UpdateJobPoolInput = {
   id: string
   values: JobPoolFormValues
+  initialValues?: JobPoolFormValues
 }
 
 export type JobPoolTableSortState = {

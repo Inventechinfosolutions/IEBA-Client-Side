@@ -393,7 +393,7 @@ export function UserModulePage() {
           await persistSecurityApportioningOnSave(selectedRow.id, values)
         }
 
-        await userModule.updateRowAsync({ id: selectedRow.id, values })
+        await userModule.updateRowAsync({ id: selectedRow.id, values, initialValues: formInitialValues })
         toast.success("User Saved Successfully", successToastOptions)
         invalidateUserTabCaches(queryClient, selectedRow.id, sourceTab)
         const merged = await refetchFormAfterTabSave(
@@ -409,7 +409,7 @@ export function UserModulePage() {
         if (sourceTab === "security") {
           await persistSecurityApportioningOnSave(draftUserId, values)
         }
-        await userModule.updateRowAsync({ id: draftUserId, values })
+        await userModule.updateRowAsync({ id: draftUserId, values, initialValues: formInitialValues })
         toast.success("Employee saved successfully", successToastOptions)
         invalidateUserTabCaches(queryClient, draftUserId, sourceTab)
         const merged = await refetchFormAfterTabSave(queryClient, draftUserId, sourceTab, values)

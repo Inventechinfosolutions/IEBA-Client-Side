@@ -812,48 +812,101 @@ export async function apiPutCountyActivity(input: UpdateCountyActivityApiInput):
     throw new Error("Invalid activity id")
   }
 
-  const { values, rowType, masterCatalog, departmentLinks } = input
+  const { values, initialValues, rowType, masterCatalog, departmentLinks } = input
   const status = values.active ? ActivityStatusEnum.ACTIVE : ActivityStatusEnum.INACTIVE
 
-  const body: Record<string, unknown> = {
-    code: values.countyActivityCode.trim(),
-    name: values.countyActivityName.trim(),
-    description: values.description.trim(),
-    leavecode: values.leaveCode,
-    docrequired: values.docRequired,
-    status,
-    isActivityAssignableToMultipleJobPools: values.multipleJobPools,
-    apportioning: values.apportioning,
+  const currentCode = values.countyActivityCode.trim()
+  const currentName = values.countyActivityName.trim()
+  const currentDesc = values.description.trim()
+  const currentLeave = values.leaveCode
+  const currentDoc = values.docRequired
+  const currentActive = status
+  const currentMultiple = values.multipleJobPools
+  const currentApportioning = values.apportioning
+
+  let body: Record<string, unknown> = {}
+  let isModified = false
+
+  if (initialValues) {
+    const initialStatus = initialValues.active ? ActivityStatusEnum.ACTIVE : ActivityStatusEnum.INACTIVE
+    const initialCode = initialValues.countyActivityCode.trim()
+    const initialName = initialValues.countyActivityName.trim()
+    const initialDesc = initialValues.description.trim()
+    const initialLeave = initialValues.leaveCode
+    const initialDoc = initialValues.docRequired
+    const initialActive = initialStatus
+    const initialMultiple = initialValues.multipleJobPools
+    const initialApportioning = initialValues.apportioning
+
+    if (currentCode !== initialCode) body.code = currentCode
+    if (currentName !== initialName) body.name = currentName
+    if (currentDesc !== initialDesc) body.description = currentDesc
+    if (currentLeave !== initialLeave) body.leavecode = currentLeave
+    if (currentDoc !== initialDoc) body.docrequired = currentDoc
+    if (currentActive !== initialActive) body.status = currentActive
+    if (currentMultiple !== initialMultiple) body.isActivityAssignableToMultipleJobPools = currentMultiple
+    if (currentApportioning !== initialApportioning) body.apportioning = currentApportioning
+
+    if (rowType === CountyActivityGridRowType.PRIMARY && masterCatalog?.code?.trim() && masterCatalog.type?.trim()) {
+      const initialMasterCode = initialValues.masterCode
+      const initialMasterType = initialValues.masterCodeType.trim()
+      if (values.masterCode !== initialMasterCode || masterCatalog.type.trim() !== initialMasterType) {
+        body.activityCode = masterCatalog.code.trim()
+        body.activityCodeType = masterCatalog.type.trim()
+      }
+    }
+
+    const deptChanged = rowType === CountyActivityGridRowType.PRIMARY && (values.department.trim() !== initialValues.department.trim())
+    isModified = Object.keys(body).length > 0 || deptChanged
+
+    if (!isModified) {
+      throw new Error("No changes to save")
+    }
+  } else {
+    body = {
+      code: currentCode,
+      name: currentName,
+      description: currentDesc,
+      leavecode: currentLeave,
+      docrequired: currentDoc,
+      status: currentActive,
+      isActivityAssignableToMultipleJobPools: currentMultiple,
+      apportioning: currentApportioning,
+    }
+    if (rowType === CountyActivityGridRowType.PRIMARY && masterCatalog?.code?.trim() && masterCatalog.type?.trim()) {
+      body.activityCode = masterCatalog.code.trim()
+      body.activityCodeType = masterCatalog.type.trim()
+    }
   }
 
-  if (rowType === CountyActivityGridRowType.PRIMARY && masterCatalog?.code?.trim() && masterCatalog.type?.trim()) {
-    body.activityCode = masterCatalog.code.trim()
-    body.activityCodeType = masterCatalog.type.trim()
+  if (Object.keys(body).length > 0) {
+    await api.put<unknown>(`/activities/${id}`, body)
   }
-
-  await api.put<unknown>(`/activities/${id}`, body)
 
   if (rowType === CountyActivityGridRowType.PRIMARY && departmentLinks != null) {
-    const desiredIds = departmentLinks
-      .map((d) => d.id)
-      .filter((x) => typeof x === "number" && !Number.isNaN(x) && x > 0)
+    const deptChanged = initialValues ? (values.department.trim() !== initialValues.department.trim() || values.apportioning !== initialValues.apportioning) : true
+    if (deptChanged) {
+      const desiredIds = departmentLinks
+        .map((d) => d.id)
+        .filter((x) => typeof x === "number" && !Number.isNaN(x) && x > 0)
 
-    // Build per-dept apportioning map so each link respects dept-level apportioning setting
-    const deptApportioningMap = new Map<number, boolean>(
-      departmentLinks
-        .filter((d) => typeof d.id === "number")
-        .map((d) => [d.id, (d as any).apportioning ?? true])
-    )
+      // Build per-dept apportioning map so each link respects dept-level apportioning setting
+      const deptApportioningMap = new Map<number, boolean>(
+        departmentLinks
+          .filter((d) => typeof d.id === "number")
+          .map((d) => [d.id, (d as any).apportioning ?? true])
+      )
 
-    await syncCountyActivityDepartmentLinks({
-      activityId: id,
-      desiredDepartmentIds: desiredIds,
-      activityCode: values.countyActivityCode,
-      activityName: values.countyActivityName,
-      type: ApiActivityTypeEnum.PRIMARY,
-      leavecode: values.leaveCode,
-      parentActivityId: null,
-      apportioning: values.apportioning,
-    }, deptApportioningMap)
+      await syncCountyActivityDepartmentLinks({
+        activityId: id,
+        desiredDepartmentIds: desiredIds,
+        activityCode: values.countyActivityCode,
+        activityName: values.countyActivityName,
+        type: ApiActivityTypeEnum.PRIMARY,
+        leavecode: values.leaveCode,
+        parentActivityId: null,
+        apportioning: values.apportioning,
+      }, deptApportioningMap)
+    }
   }
 }

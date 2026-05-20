@@ -13,6 +13,7 @@ async function updateTodo(input: UpdateTodoInput, userId: string) {
     description: input.values.description,
     userId,
     status: input.values.status,
+    initialValues: input.initialValues,
   })
 }
 

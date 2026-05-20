@@ -52,6 +52,7 @@ export type CreateJobClassificationInput = {
 export type UpdateJobClassificationInput = {
   id: string
   values: JobClassificationFormValues
+  initialValues?: JobClassificationFormValues
 }
 
 export type JobClassificationTableSortState = {
@@ -80,7 +81,7 @@ export type JobClassificationFormModalProps = {
   isSubmitting?: boolean
   isLoadingDetails?: boolean
   onOpenChange: (open: boolean) => void
-  onSave: (values: JobClassificationFormValues) => void
+  onSave: (values: JobClassificationFormValues) => Promise<void>
 }
 
 // API DTO and envelope types shared with `api/jobclassification.ts`

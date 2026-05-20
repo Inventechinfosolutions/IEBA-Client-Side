@@ -51,7 +51,7 @@ export function TodoPage() {
   const handleSaveForm = (values: TodoFormValues) => {
     if (ui.modalMode === "edit" && ui.selectedRow) {
       todoModule.updateTodo(
-        { id: ui.selectedRow.id, values },
+        { id: ui.selectedRow.id, values, initialValues: ui.modalInitialValues },
         {
           onSuccess: () => {
             toast.success("To Do updated successfully", getToastOptions())

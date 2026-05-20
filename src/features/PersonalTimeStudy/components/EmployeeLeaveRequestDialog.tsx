@@ -628,6 +628,29 @@ export function EmployeeLeaveRequestDialog({
     return false
   }
 
+  const checkHasChanges = (data: EmployeeLeaveRequestFormValues) => {
+    if (!initialValues) return true
+    const entries = data.entries
+    const initEntries = initialValues.entries
+    if (entries.length !== initEntries.length) return true
+    for (let i = 0; i < entries.length; i++) {
+      const e = entries[i]
+      const ie = initEntries[i]
+      if (
+        e.date !== ie.date ||
+        e.startTime !== ie.startTime ||
+        e.endTime !== ie.endTime ||
+        e.programCode !== ie.programCode ||
+        e.activityCode !== ie.activityCode ||
+        e.totalMinApplied !== ie.totalMinApplied ||
+        e.comment !== ie.comment
+      ) {
+        return true
+      }
+    }
+    return false
+  }
+
   const handleSave = async () => {
     if (validateManualExceeds()) {
       toast.error("Total minutes cannot exceed the maximum allowed duration.")
@@ -636,6 +659,10 @@ export function EmployeeLeaveRequestDialog({
     
     await form.handleSubmit(
       async (data) => {
+        if (!checkHasChanges(data)) {
+          toast.error("No changes to save")
+          return
+        }
         await onSave?.(data, mergedLookupDropdown ?? dropdownData)
         toast.success("Leave request saved")
         handleClose(false)
@@ -658,6 +685,10 @@ export function EmployeeLeaveRequestDialog({
 
     await form.handleSubmit(
       async (data) => {
+        if (!checkHasChanges(data)) {
+          toast.error("No changes to save")
+          return
+        }
         await onSubmit?.(data, mergedLookupDropdown ?? dropdownData)
         toast.success("Leave request submitted")
         handleClose(false)

@@ -218,6 +218,13 @@ export function DepartmentRolePage() {
           const nextStatus = values.active ? "active" : "inactive"
           const statusChanged = initialStatus !== nextStatus
           const nameChanged = detail.roleName !== values.roleName
+          const hasPermsToAdd = Boolean(values.permIdsToAdd && values.permIdsToAdd.length > 0)
+          const hasPermsToRemove = Boolean(values.permIdsToRemove && values.permIdsToRemove.length > 0)
+
+          if (!statusChanged && !nameChanged && !hasPermsToAdd && !hasPermsToRemove) {
+            toast.error("No changes to save")
+            return
+          }
 
           if (statusChanged || nameChanged) {
             await updateChild.mutateAsync({

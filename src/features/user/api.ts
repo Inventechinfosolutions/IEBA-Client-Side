@@ -221,8 +221,24 @@ export async function apiCreateUser(input: CreateUserRequestDto): Promise<Create
   return res.data
 }
 
-export async function apiUpdateUser(id: string, input: UpdateUserRequestDto): Promise<CreateUserResponseDto> {
-  const res = await api.put<ApiResponseDto<CreateUserResponseDto>>(`/users/${encodeURIComponent(id)}`, input)
+import { getChangedFields } from "@/utils/diff"
+
+// ...
+
+export async function apiUpdateUser(
+  id: string,
+  input: UpdateUserRequestDto,
+  initialInput?: UpdateUserRequestDto
+): Promise<CreateUserResponseDto> {
+  let body = input
+  if (initialInput) {
+    const diff = getChangedFields(initialInput, input)
+    if (!diff) {
+      throw new Error("No changes to save")
+    }
+    body = diff
+  }
+  const res = await api.put<ApiResponseDto<CreateUserResponseDto>>(`/users/${encodeURIComponent(id)}`, body)
   if (!res?.success || !res.data) throw new Error(res?.message || "Failed to update user")
   return res.data
 }

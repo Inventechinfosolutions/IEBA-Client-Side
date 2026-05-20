@@ -10,6 +10,7 @@ type UpdateUserProgramAssignmentsInput = {
   userId: string
   isUpdate?: boolean
   values: ProgramsUpdateFormValues
+  initialValues?: ProgramsUpdateFormValues
 }
 
 /** Matches backend DTO: `id` is programId when isupdate=false, assignment row id when isupdate=true. */
@@ -42,6 +43,49 @@ function toRequestBody(values: ProgramsUpdateFormValues): CreateUserProgramAssig
 async function postUserProgramAssignments(
   input: UpdateUserProgramAssignmentsInput
 ): Promise<void> {
+  if (input.initialValues) {
+    const initialMap = new Map(
+      input.initialValues.programs.map((p) => [
+        p.id,
+        { budgetedFte: Number(p.budgetedFte) || 0, allocatedFte: Number(p.allocatedFte) || 0 }
+      ])
+    )
+    
+    let hasChanges = false
+    for (const p of input.values.programs) {
+      const match = initialMap.get(p.id)
+      const currentBudgeted = Number(p.budgetedFte) || 0
+      const currentAllocated = Number(p.allocatedFte) || 0
+      if (!match) {
+        if (currentBudgeted > 0 || currentAllocated > 0) {
+          hasChanges = true
+          break
+        }
+      } else {
+        if (currentBudgeted !== match.budgetedFte || currentAllocated !== match.allocatedFte) {
+          hasChanges = true
+          break
+        }
+      }
+    }
+    
+    if (!hasChanges) {
+      const currentIds = new Set(input.values.programs.map(p => p.id))
+      for (const [id, match] of initialMap.entries()) {
+        if (!currentIds.has(id)) {
+          if (match.budgetedFte > 0 || match.allocatedFte > 0) {
+            hasChanges = true
+            break
+          }
+        }
+      }
+    }
+
+    if (!hasChanges) {
+      throw new Error("No changes to save")
+    }
+  }
+
   const search = new URLSearchParams()
   search.set("isupdate", String(input.isUpdate ?? false))
   search.set("fiscalYear", input.fiscalYearId)

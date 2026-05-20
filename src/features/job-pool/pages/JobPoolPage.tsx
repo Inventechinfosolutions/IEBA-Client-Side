@@ -95,7 +95,7 @@ export function JobPoolPage() {
   async function handleSave(values: JobPoolFormValues) {
     try {
       if (modalMode === "edit" && selectedRow) {
-        await updateJobPoolAsync({ id: selectedRow.id, values })
+        await updateJobPoolAsync({ id: selectedRow.id, values, initialValues })
         toast.success("Job Pool updated successfully", successToastOptions)
       } else {
         await createJobPoolAsync({ values })

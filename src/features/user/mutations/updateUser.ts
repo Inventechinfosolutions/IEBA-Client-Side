@@ -60,7 +60,10 @@ export function useUpdateUserModuleRow() {
   return useMutation({
     mutationFn: async (input: UpdateUserModuleInput): Promise<CreateUserResponseDto> => {
       const dto = mapUpdateInput(input)
-      return await apiUpdateUser(input.id, dto)
+      const initialDto = input.initialValues
+        ? mapUpdateInput({ id: input.id, values: input.initialValues })
+        : undefined
+      return await apiUpdateUser(input.id, dto, initialDto)
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: userModuleKeys.lists() })

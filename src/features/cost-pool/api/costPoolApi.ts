@@ -125,8 +125,24 @@ export async function createCostPool(body: CreateCostPoolRequestDto): Promise<Cr
   return raw.data
 }
 
-export async function updateCostPool(id: number, body: Partial<CreateCostPoolRequestDto>): Promise<CostPoolResDto> {
-  const raw = await api.put<ApiResponseDto<CostPoolResDto>>(`/costpool/${id}`, body)
+import { getChangedFields } from "@/utils/diff"
+
+// ...
+
+export async function updateCostPool(
+  id: number,
+  body: Partial<CreateCostPoolRequestDto>,
+  initialBody?: Partial<CreateCostPoolRequestDto>,
+): Promise<CostPoolResDto> {
+  let data = body
+  if (initialBody) {
+    const diff = getChangedFields(initialBody, body)
+    if (!diff) {
+      throw new Error("No changes to save")
+    }
+    data = diff
+  }
+  const raw = await api.put<ApiResponseDto<CostPoolResDto>>(`/costpool/${id}`, data)
   if (!raw.success || raw.data == null) {
     throw new Error(raw.message || "Failed to update cost pool")
   }

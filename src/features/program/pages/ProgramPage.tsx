@@ -457,6 +457,7 @@ export function ProgramPage() {
           id: selectedRow.id,
           tab: targetTab,
           values,
+          initialValues: modalInitialValues,
           lookups: {
             departmentIdByName: formOptionsQuery.data?.departmentIdByName,
             budgetUnitIdByName: formOptionsQuery.data?.budgetUnitIdByName,

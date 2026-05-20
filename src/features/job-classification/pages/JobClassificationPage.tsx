@@ -64,7 +64,7 @@ export function JobClassificationPage() {
 
   async function handleSave(values: JobClassificationFormValues) {
     if (modalMode === "edit" && selectedRow) {
-      await updateJobClassificationAsync({ id: selectedRow.id, values })
+      await updateJobClassificationAsync({ id: selectedRow.id, values, initialValues })
     } else {
       await createJobClassificationAsync({ values })
     }

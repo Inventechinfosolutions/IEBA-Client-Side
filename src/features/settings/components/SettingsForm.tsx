@@ -91,16 +91,109 @@ function SettingsFormInner({ settings, isSaving, onSubmitSettings }: SettingsFor
     form.clearErrors()
 
     // Trigger validation for the section OR the whole form
-    const isValid = submitterSection 
-      ? await form.trigger(submitterSection) 
+    const isValid = submitterSection
+      ? await form.trigger(submitterSection)
       : await form.trigger()
 
     if (!isValid) {
-      const message = submitterSection 
+      const message = submitterSection
         ? getSettingsFormSectionErrorMessage(form.formState.errors, submitterSection)
         : getSettingsFormFirstErrorMessage(form.formState.errors)
       showSettingsFormErrorToast(message)
       return
+    }
+
+    if (submitterSection) {
+      const currentSectionVal = form.getValues(submitterSection as any)
+      const initialSectionVal = formValues[submitterSection as keyof typeof formValues]
+
+      let hasChanges = true
+      if (submitterSection === SettingsFormSaveSection.General) {
+        const cur = currentSectionVal as SettingsFormValues["general"]
+        const init = initialSectionVal as SettingsFormValues["general"]
+        hasChanges = Number(cur.screenInactivityTimeMinutes) !== Number(init.screenInactivityTimeMinutes)
+      } else if (submitterSection === SettingsFormSaveSection.Login) {
+        const cur = currentSectionVal as SettingsFormValues["login"]
+        const init = initialSectionVal as SettingsFormValues["login"]
+        hasChanges =
+          cur.twoFactorAuthentication !== init.twoFactorAuthentication ||
+          Number(cur.otpValidationTimerSeconds) !== Number(init.otpValidationTimerSeconds)
+      } else if (submitterSection === SettingsFormSaveSection.Reports) {
+        const cur = currentSectionVal as SettingsFormValues["reports"]
+        const init = initialSectionVal as SettingsFormValues["reports"]
+        const keySame = cur.reportKey === init.reportKey
+        const modeSame = cur.exclusionMode === init.exclusionMode
+        const curCodes = cur.selectedActivityCodes ?? []
+        const initCodes = init.selectedActivityCodes ?? []
+        let codesSame = curCodes.length === initCodes.length
+        if (codesSame) {
+          const initSet = new Set(initCodes.map(String))
+          codesSame = curCodes.every((c: any) => initSet.has(String(c)))
+        }
+        hasChanges = !keySame || !modeSame || !codesSame
+      } else if (submitterSection === SettingsFormSaveSection.Payroll) {
+        const cur = currentSectionVal as SettingsFormValues["payroll"]
+        const init = initialSectionVal as SettingsFormValues["payroll"]
+        const bySame = cur.payrollBy === init.payrollBy
+        const curCols = cur.columns ?? []
+        const initCols = init.columns ?? []
+        let colsSame = curCols.length === initCols.length
+        if (colsSame) {
+          for (let i = 0; i < curCols.length; i++) {
+            const cC = curCols[i]
+            const iC = initCols[i]
+            if (
+              String(cC.key) !== String(iC.key) ||
+              cC.label !== iC.label ||
+              Boolean(cC.enabled) !== Boolean(iC.enabled) ||
+              Boolean(cC.editable) !== Boolean(iC.editable)
+            ) {
+              colsSame = false
+              break
+            }
+          }
+        }
+        hasChanges = !bySame || !colsSame
+      } else if (submitterSection === SettingsFormSaveSection.County) {
+        const cur = currentSectionVal as SettingsFormValues["county"]
+        const init = initialSectionVal as SettingsFormValues["county"]
+        const logoSame = (cur.logoDataUrl ?? null) === (init.logoDataUrl ?? null)
+        const nameSame = cur.countyName === init.countyName
+        const msgSame = cur.welcomeMessage === init.welcomeMessage
+        const rangeSame = cur.isTimeRangeEnabled === init.isTimeRangeEnabled
+        const startTimeSame = cur.startTime2 === init.startTime2
+        const endTimeSame = cur.endTime === init.endTime
+        const weekendSame = cur.includedWeekends === init.includedWeekends
+        const autoSame = cur.autoApproval === init.autoApproval
+        const apportionSame = cur.supervisorApportioning === init.supervisorApportioning
+        
+        const curAddrs = cur.addresses ?? []
+        const initAddrs = init.addresses ?? []
+        let addrsSame = curAddrs.length === initAddrs.length
+        if (addrsSame) {
+          for (let i = 0; i < curAddrs.length; i++) {
+            const cA = curAddrs[i]
+            const iA = initAddrs[i]
+            if (
+              String(cA.locationId ?? "") !== String(iA.locationId ?? "") ||
+              (cA.location ?? "").trim() !== (iA.location ?? "").trim() ||
+              (cA.street ?? "").trim() !== (iA.street ?? "").trim() ||
+              (cA.city ?? "").trim() !== (iA.city ?? "").trim() ||
+              (cA.state ?? "").trim() !== (iA.state ?? "").trim() ||
+              (cA.zip ?? "").trim() !== (iA.zip ?? "").trim()
+            ) {
+              addrsSame = false
+              break
+            }
+          }
+        }
+        hasChanges = !logoSame || !nameSame || !msgSame || !rangeSame || !startTimeSame || !endTimeSame || !weekendSame || !autoSame || !apportionSame || !addrsSame
+      }
+
+      if (!hasChanges) {
+        showSettingsFormErrorToast("No changes to save")
+        return
+      }
     }
 
     onSubmitSettings(form.getValues(), { submitterSection })

@@ -315,6 +315,20 @@ export function TimeStudyPeriodsForm({
           if (!Number.isFinite(id) || id <= 0) {
             throw new Error("Invalid pay period id")
           }
+
+          const nameChanged = (editingRow.timeStudyPeriod ?? "").trim() !== autoPeriodLabel.trim()
+          const startChanged = normalizeDateInputValue(editingRow.startDate) !== values.startDate
+          const endChanged = normalizeDateInputValue(editingRow.endDate) !== values.endDate
+          const hoursChanged = Number(editingRow.hours) !== toNumber(values.hours)
+          const holidaysChanged = Number(editingRow.holidays) !== toNumber(values.holidays)
+          const allocableChanged = Number(editingRow.allocable) !== toNumber(values.allocable)
+          const nonAllocableChanged = Number(editingRow.nonAllocable) !== toNumber(values.nonAllocable)
+
+          if (!nameChanged && !startChanged && !endChanged && !hoursChanged && !holidaysChanged && !allocableChanged && !nonAllocableChanged) {
+            toast.error("No changes to save")
+            return
+          }
+
           await updatePayPeriod.mutateAsync({ id, body: payload })
           toast.success("Pay periods updated successfully", payPeriodUpdateSuccessToastOptions)
         } else {

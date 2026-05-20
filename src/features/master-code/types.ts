@@ -90,6 +90,7 @@ export type UpdateMasterCodeInput = {
   id: string
   codeType: MasterCodeTab
   values: MasterCodeFormValues
+  initialValues?: MasterCodeFormValues
 }
 
 export type ActiveTools = {

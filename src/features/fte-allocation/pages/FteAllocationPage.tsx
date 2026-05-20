@@ -43,7 +43,7 @@ export function FteAllocationPage() {
 
   const updateMutation = useUpdateUserProgramAssignments()
 
-  async function handleUpdate(values: ProgramsUpdateFormValues) {
+  async function handleUpdate(values: ProgramsUpdateFormValues, initialValues?: ProgramsUpdateFormValues) {
     if (!selectedEmployeeId || !activeFiscalYearId) return
     try {
       await updateMutation.mutateAsync({
@@ -51,6 +51,7 @@ export function FteAllocationPage() {
         userId: selectedEmployeeId,
         isUpdate: false,
         values,
+        initialValues,
       })
 
       toast.success("FTE allocation updated successfully.")

@@ -136,7 +136,7 @@ export function PayrollPage() {
   const handleSaveEdit = useCallback(async (patch: Record<string, string>) => {
     if (!editRow) return
     if (Object.keys(patch).length === 0) {
-      toast.message("No changes to save.")
+      toast.error("No changes to save")
       return
     }
 

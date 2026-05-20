@@ -303,8 +303,26 @@ export async function createJobPool(values: JobPoolFormValues): Promise<JobPoolR
   return toJobPoolRow(payload as JobPoolResDto)
 }
 
-export async function updateJobPool(id: string, values: JobPoolFormValues): Promise<JobPoolRow> {
-  const body: UpdateJobPoolReqDto = toCreateUpdateDto(values)
+import { getChangedFields } from "@/utils/diff"
+
+// ...
+
+export async function updateJobPool(
+  id: string,
+  values: JobPoolFormValues,
+  initialValues?: JobPoolFormValues
+): Promise<JobPoolRow> {
+  const currentDto = toCreateUpdateDto(values)
+  let body: UpdateJobPoolReqDto = currentDto
+
+  if (initialValues) {
+    const initialDto = toCreateUpdateDto(initialValues)
+    const diff = getChangedFields(initialDto, currentDto)
+    if (!diff) {
+      throw new Error("No changes to save")
+    }
+    body = diff
+  }
 
   const res = await api.put<ApiEnvelope<JobPoolResDto> | JobPoolResDto>(
     `/jobpool/${id}`,

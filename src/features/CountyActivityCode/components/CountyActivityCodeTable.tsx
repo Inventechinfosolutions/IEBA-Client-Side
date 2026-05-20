@@ -702,6 +702,7 @@ export function CountyActivityCodeTable({
       {
         id: editingRow.id,
         values,
+        initialValues: editFormValuesFromServer,
         rowType: editingRow.rowType,
         masterCatalog,
         departmentLinks:

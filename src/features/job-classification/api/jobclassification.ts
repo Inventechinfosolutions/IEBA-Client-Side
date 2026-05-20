@@ -149,11 +149,26 @@ export async function createJobClassification(
   return toJobClassificationRow(payload as JobClassificationResDto)
 }
 
+import { getChangedFields } from "@/utils/diff"
+
+// ...
+
 export async function updateJobClassification(
   id: string,
   values: JobClassificationFormValues,
+  initialValues?: JobClassificationFormValues
 ): Promise<JobClassificationRow> {
-  const body: UpdateJobClassificationReqDto = toCreateUpdateDto(values)
+  const currentDto = toCreateUpdateDto(values)
+  let body: UpdateJobClassificationReqDto = currentDto
+
+  if (initialValues) {
+    const initialDto = toCreateUpdateDto(initialValues)
+    const diff = getChangedFields(initialDto, currentDto)
+    if (!diff) {
+      throw new Error("No changes to save")
+    }
+    body = diff
+  }
 
   const res = await api.put<JobClassificationApiEnvelope<JobClassificationResDto> | JobClassificationResDto>(
     `/jobclassification/${id}`,

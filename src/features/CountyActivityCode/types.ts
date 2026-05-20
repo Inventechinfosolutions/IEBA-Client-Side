@@ -223,6 +223,7 @@ export type CreateCountyActivityApiInput = {
 export type UpdateCountyActivityApiInput = {
   id: string
   values: CountyActivityAddFormValues
+  initialValues?: CountyActivityAddFormValues
   rowType: CountyActivityGridRowType
   masterCatalog?: { code: string; type: string }
   /** Resolved department IDs for primary rows — synced via activity-departments API after PUT. */

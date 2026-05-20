@@ -202,11 +202,11 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
     const handleSave = async (opts?: { toastMode?: "none" | "createOrUpdate" }): Promise<boolean> => {
         if (createDeptMutation.isPending || updateDeptMutation.isPending) return false
         const toastMode = opts?.toastMode ?? "createOrUpdate"
-
         const values = getValues()
+
         if (departmentId) {
             try {
-                await updateDeptMutation.mutateAsync({ id: departmentId, values })
+                await updateDeptMutation.mutateAsync({ id: departmentId, values, initialValues: valuesFromDepartmentQuery })
                 if (toastMode === "createOrUpdate") {
                     toast(
                         <div className="flex items-center gap-2 text-[14px]">
@@ -215,10 +215,11 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                         </div>
                     )
                 }
+                return true
             } catch (err) {
                 toast.error(err instanceof Error ? err.message : "Failed to update department")
+                return false
             }
-            return true
         }
         try {
             const created = await createDeptMutation.mutateAsync(values)

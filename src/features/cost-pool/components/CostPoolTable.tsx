@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query"
 import { ArrowLeft, History, PlusIcon, SearchIcon } from "lucide-react"
 import { useMemo, useState } from "react"
 import { useForm } from "react-hook-form"
+import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -204,9 +205,10 @@ function CostPoolEditFormBody({
   allowUserOrCostpoolDirect: boolean
   isLoadingDetails?: boolean
 }) {
+  const initialValues = useMemo(() => detailToUpsertFormValues(detail), [detail])
   const form = useForm<CostPoolUpsertFormValues>({
     resolver: zodResolver(costPoolUpsertFormSchema),
-    values: detailToUpsertFormValues(detail),
+    values: initialValues,
   })
 
   const updateMutation = useUpdateCostPool()
@@ -216,6 +218,7 @@ function CostPoolEditFormBody({
       { 
         id: costPoolId, 
         values, 
+        initialValues,
         oldAssignedUsers: detail.assignedUsers,
         oldAssignedActivities: detail.assignedActivities,
       },
@@ -224,6 +227,9 @@ function CostPoolEditFormBody({
           onUpdated()
           onClose()
         },
+        onError: (err) => {
+          toast.error(err instanceof Error ? err.message : "Failed to update cost pool")
+        }
       },
     )
   })

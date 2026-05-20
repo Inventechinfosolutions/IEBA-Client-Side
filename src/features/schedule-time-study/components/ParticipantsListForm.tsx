@@ -228,6 +228,45 @@ export function ParticipantsListForm({
         if (!Number.isFinite(id) || id <= 0) {
           throw new Error("Invalid participant group id")
         }
+
+        const initialDetails = groupDetailsQuery.data
+        if (initialDetails) {
+          const nameChanged = editingRow.groupName.trim() !== values.groupName.trim()
+          const yearChanged = selectedStudyYear !== values.studyYear
+          
+          let listChanged = false
+          if (grouptype === RmtsGroupType.User) {
+            const initialUsers = initialDetails.users ?? []
+            const usersSet = new Set(initialUsers)
+            const currentUsersSet = new Set(selectedUserIds)
+            if (usersSet.size !== currentUsersSet.size || [...usersSet].some(u => !currentUsersSet.has(u))) {
+              listChanged = true
+            }
+          } else {
+            const initialJobPools = (initialDetails.jobPools ?? []).map(jp => jp.id)
+            const jobPoolsSet = new Set(initialJobPools)
+            const currentJobPoolsSet = new Set(selectedJobPoolIds)
+            
+            const initialUsers = initialDetails.users ?? []
+            const usersSet = new Set(initialUsers)
+            const currentUsersSet = new Set(selectedJobPoolUserIds)
+            
+            if (
+              jobPoolsSet.size !== currentJobPoolsSet.size ||
+              [...jobPoolsSet].some(jp => !currentJobPoolsSet.has(jp)) ||
+              usersSet.size !== currentUsersSet.size ||
+              [...usersSet].some(u => !currentUsersSet.has(u))
+            ) {
+              listChanged = true
+            }
+          }
+
+          if (!nameChanged && !yearChanged && !listChanged) {
+            toast.error("No changes to save")
+            return
+          }
+        }
+
         await updateGroup.mutateAsync({
           id,
           body: payload,

@@ -428,6 +428,17 @@ export function FiscalYearForm({ isSaving = false }: { isSaving?: boolean }) {
         },
       )
     } else {
+      const original = holidays.find((h) => h.id === editingHolidayId)
+      if (original) {
+        const dateChanged = original.dateIso !== date
+        const descChanged = original.description !== description
+        const optChanged = Boolean(original.optional) !== Boolean(holidayDraft.optional)
+        if (!dateChanged && !descChanged && !optChanged) {
+          toast.error("No changes to save", FISCAL_YEAR_ERROR_TOAST_OPTIONS)
+          return
+        }
+      }
+
       updateHolidayMutation.mutate(
         {
           id: editingHolidayId,

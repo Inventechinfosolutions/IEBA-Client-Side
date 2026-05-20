@@ -217,10 +217,33 @@ export async function apiUpdateMasterCode(input: {
   id: string
   codeType: MasterCodeTab
   values: MasterCodeFormValues
+  initialValues?: MasterCodeFormValues
 }): Promise<MasterCodeRow> {
+  const { id, codeType, values, initialValues } = input
+  const currentBody = buildUpdateBody(codeType, values)
+  let body: Record<string, unknown> = currentBody
+
+  if (initialValues) {
+    const initialBody = buildUpdateBody(codeType, initialValues)
+    const diff: Record<string, unknown> = {}
+    let hasChanges = false
+
+    for (const key of Object.keys(currentBody)) {
+      if (currentBody[key] !== initialBody[key]) {
+        diff[key] = currentBody[key]
+        hasChanges = true
+      }
+    }
+
+    if (!hasChanges) {
+      throw new Error("No changes to save")
+    }
+    body = diff
+  }
+
   const raw = await api.put<{ data?: ApiActivityCode }>(
-    `/activity-codes/${encodeURIComponent(input.id)}`,
-    buildUpdateBody(input.codeType, input.values)
+    `/activity-codes/${encodeURIComponent(id)}`,
+    body
   )
   const entity = (raw as { data?: ApiActivityCode })?.data
   if (!entity) throw new Error("Update response missing data")

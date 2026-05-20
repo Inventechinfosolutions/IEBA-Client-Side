@@ -51,6 +51,7 @@ export type ProfileDetailData = {
 export type UpdateProfileDetailInput = {
   id: string
   values: ProfileDetailFormValues
+  initialValues?: ProfileDetailFormValues
   persist?: ProfilePersistFields
 }
 
