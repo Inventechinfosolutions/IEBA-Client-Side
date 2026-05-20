@@ -12,7 +12,7 @@ import { useUnassignDepartmentRolePermissions } from "../mutations/unassignDepar
 import { useUpdateDepartmentRoleChildStatus } from "../mutations/updateDepartmentRoleChildStatus"
 import { useUpdateDepartmentRoleChild } from "../mutations/updateDepartmentRoleChild"
 import { DepartmentRoleHistoryTable } from "../components/DepartmentRoleHistoryTable"
-import { useGetDepartments } from "@/features/department/queries/getDepartments"
+import { useGetAllDepartments } from "@/features/department/queries/getDepartments"
 import { TitleCaseInput } from "@/components/ui/title-case-input"
 
 import { useDepartmentRoleDetailQuery } from "../queries/getDepartmentRoleById"
@@ -68,12 +68,13 @@ export function DepartmentRolePage() {
   const editDetailResolved = editDetailQuery.data
 
   /** 
-   * ONLY fetch departments when needed (Add or Edit modal is being prepared).
-   * This prevents the unwanted API call on initial page load.
+   * ONLY fetch departments when needed (Add modal is being prepared in create mode).
+   * This prevents the unwanted API call on initial page load or during edit mode.
+   * Fetches all active departments unpaginated.
    */
-  const activeDepartmentsQuery = useGetDepartments(
-    { status: "active", page: 1, limit: 100 },
-    { enabled: addOpen || Boolean(editRoleId) }
+  const activeDepartmentsQuery = useGetAllDepartments(
+    { status: "active" },
+    { enabled: addOpen && addMode === "create" }
   )
 
   const viewRole: DepartmentRoleViewData | null = useMemo(() => {
@@ -284,6 +285,7 @@ export function DepartmentRolePage() {
         {
           onSuccess: () => {
             toast.success("New Role created Successfully", successToastOptions)
+            setAddOpen(false)
           },
           onError: (error) => {
             toast.error(
@@ -304,6 +306,8 @@ export function DepartmentRolePage() {
       resolveDepartmentId,
       successToastOptions,
       updateChild,
+      assignPerms,
+      unassignPerms,
       editDetailResolved,
     ]
   )

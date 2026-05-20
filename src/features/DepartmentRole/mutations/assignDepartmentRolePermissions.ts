@@ -23,9 +23,6 @@ export function useAssignDepartmentRolePermissions() {
       await assignDepartmentRolePermissions({ departmentRoleId, permissions })
     },
     onSuccess: async (_void, variables) => {
-      await queryClient.invalidateQueries({
-        queryKey: departmentRoleKeys.list(variables.listFilters),
-      })
       if (variables.detailId) {
         await queryClient.invalidateQueries({
           queryKey: departmentRoleKeys.detail(variables.detailId),
