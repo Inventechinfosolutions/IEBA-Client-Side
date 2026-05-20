@@ -55,21 +55,22 @@ export async function apiGetCountyActivityById(id: number): Promise<ApiActivityR
 
 export async function apiGetCountyActivityForEdit(id: number): Promise<CountyActivityEditPayload> {
   const activity = await apiGetCountyActivityById(id)
-  let names: string[] = []
+  const actDepts = Array.isArray(activity.activityDepartments)
+    ? activity.activityDepartments
+    : (activity.activityDepartments?.assigned ?? [])
 
-  if (activity.departments != null && activity.departments.length > 0) {
+  let names: string[] = []
+  if (actDepts.length > 0) {
+    names = sortDepartmentNameList(
+      actDepts.map((ad: any) => ad.departmentName || ad.department?.name).filter(Boolean)
+    )
+  } else if (activity.departments != null && activity.departments.length > 0) {
     names = sortDepartmentNameList(activity.departments.map((d) => d.name))
-  } else {
-    const links = await fetchCountyActivityDepartmentLinks(id)
-    names = sortDepartmentNameList(links.map((l) => l.name))
   }
   const apportioningDepartments: { name: string; apportioning: boolean }[] = []
-  const actDepts = activity.activityDepartments ?? []
-  actDepts.forEach((ad) => {
-    let name = ""
-    if (ad.department?.name) {
-      name = ad.department.name
-    } else {
+  actDepts.forEach((ad: any) => {
+    let name = ad.departmentName || ad.department?.name || ""
+    if (!name) {
       const d = (activity.departments ?? []).find((x) => x.id === ad.departmentId)
       if (d?.name) name = d.name
     }
@@ -183,7 +184,10 @@ async function syncCountyActivityDepartmentLinks(
   const existing = await fetchCountyActivityDepartmentLinks(input.activityId)
 
   const toRemove = existing.filter((row) => !desired.has(row.departmentId))
-  await Promise.all(toRemove.map((row) => deleteCountyActivityDepartmentLink(row.id)))
+  const deleteIds = toRemove
+    .map((row) => row.id)
+    .filter((id): id is number => typeof id === "number")
+  await Promise.all(deleteIds.map((id) => deleteCountyActivityDepartmentLink(id)))
 
   const have = new Set(existing.map((row) => row.departmentId))
   const toAdd = [...desired].filter((id) => !have.has(id))
@@ -304,12 +308,12 @@ export function buildCountyActivityCodeRowsFromHierarchy(
     const id = String(node.id)
 
     const apportioningDepartments: { name: string; apportioning: boolean }[] = []
-    const actDepts = node.activityDepartments ?? []
-    actDepts.forEach((ad) => {
-      let name = ""
-      if (ad.department?.name) {
-        name = ad.department.name
-      } else {
+    const actDepts = Array.isArray(node.activityDepartments)
+      ? node.activityDepartments
+      : (node.activityDepartments?.assigned ?? [])
+    actDepts.forEach((ad: any) => {
+      let name = ad.departmentName || ad.department?.name || ""
+      if (!name) {
         const d = (node.departments ?? []).find((x) => x.id === ad.departmentId)
         if (d?.name) name = d.name
       }
@@ -354,17 +358,15 @@ export function buildCountyActivityCodeRowsFromHierarchy(
   return rows
 }
 
-/** Maps a flat `GET /activities` row into a county grid row (catalog enrichment for SPMP / match / %). */
+/** Maps a flat `GET /activities` row into a county grid row. */
 export function mapCountyActivityListItemToGridRow(
   dto: ApiActivityResDto,
-  enrichment: ReadonlyMap<string, ActivityCatalogEnrichmentValue>,
 ): CountyActivityCodeRow {
-  const enr =
-    enrichment.get(countyActivityCatalogEnrichmentKey(dto.activityCodeType, dto.activityCode)) ?? {
-      spmp: false,
-      match: CountyActivityCatalogMatchDefault.NONE,
-      percentage: 0,
-    }
+  const departmentNames = (dto.departments ?? [])
+    .map((d) => d.name)
+    .filter(Boolean)
+  departmentNames.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }))
+  const departmentStr = departmentNames.join(", ")
 
   const linkedDepartmentIds = sortUniquePositiveDepartmentIds(
     (dto.departments ?? []).map((d) => d.id),
@@ -375,12 +377,12 @@ export function mapCountyActivityListItemToGridRow(
     dto.type === ApiActivityTypeEnum.PRIMARY || typeNorm === "primary"
 
   const apportioningDepartments: { name: string; apportioning: boolean }[] = []
-  const actDepts = dto.activityDepartments ?? []
-  actDepts.forEach((ad) => {
-    let name = ""
-    if (ad.department?.name) {
-      name = ad.department.name
-    } else {
+  const actDepts = Array.isArray(dto.activityDepartments)
+    ? dto.activityDepartments
+    : (dto.activityDepartments?.assigned ?? [])
+  actDepts.forEach((ad: any) => {
+    let name = ad.departmentName || ad.department?.name || ""
+    if (!name) {
       const d = (dto.departments ?? []).find((x) => x.id === ad.departmentId)
       if (d?.name) name = d.name
     }
@@ -394,14 +396,14 @@ export function mapCountyActivityListItemToGridRow(
     countyActivityCode: dto.code,
     countyActivityName: dto.name,
     description: dto.description ?? "",
-    department: "",
+    department: departmentStr,
     linkedDepartmentIds,
     masterCodeType: dto.activityCodeType,
     masterCode: parseMasterCodeDisplay(dto.activityCode),
     catalogActivityCode: dto.activityCode,
-    spmp: enr.spmp,
-    match: enr.match,
-    percentage: enr.percentage,
+    spmp: dto.spmp ?? false,
+    match: dto.match ?? "",
+    percentage: dto.percent ?? 0,
     active:
       dto.status === ActivityStatusEnum.ACTIVE ||
       String(dto.status ?? "").trim().toLowerCase() === "active",
@@ -413,14 +415,14 @@ export function mapCountyActivityListItemToGridRow(
     rowType: isPrimary ? CountyActivityGridRowType.PRIMARY : CountyActivityGridRowType.SUB,
     parentId:
       dto.parentId != null && dto.parentId !== undefined ? String(dto.parentId) : null,
+    hasChildren: dto.hasChildren,
   }
 }
 
 export function mapCountyActivityListItemsToGridRows(
   dtos: readonly ApiActivityResDto[],
-  enrichment: ReadonlyMap<string, ActivityCatalogEnrichmentValue>,
 ): CountyActivityCodeRow[] {
-  return dtos.map((dto) => mapCountyActivityListItemToGridRow(dto, enrichment))
+  return dtos.map((dto) => mapCountyActivityListItemToGridRow(dto))
 }
 
 /** Primary grid row after `POST /activities` — avoids an immediate `GET /activities` refetch. */
@@ -856,4 +858,13 @@ export async function apiPutCountyActivity(input: UpdateCountyActivityApiInput):
       apportioning: values.apportioning,
     }, deptApportioningMap)
   }
+}
+
+/** GET `/activities/:parentId/nestedactivities`. */
+export async function apiGetNestedActivities(parentId: number): Promise<ApiActivityResDto[]> {
+  const raw = await api.get<ApiResponseDto<ApiActivityResDto[]>>(`/activities/${parentId}/nestedactivities`)
+  if (!raw.success || raw.data == null) {
+    throw new Error(raw.message?.trim() || "Failed to load nested activities")
+  }
+  return Array.isArray(raw.data) ? raw.data : []
 }

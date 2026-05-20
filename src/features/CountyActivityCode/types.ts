@@ -49,6 +49,7 @@ export type CountyActivityCodeRow = {
   apportioningDepartments: { name: string; apportioning: boolean }[]
   rowType: CountyActivityGridRowType
   parentId?: string | null
+  hasChildren?: boolean
 }
 
 /** Nested on `GET /activities/hierarchy` and `GET /activities/:id` (backend `ActivityNestedDepartmentResDto`). */
@@ -73,10 +74,19 @@ export type ApiActivityResDto = {
   isActivityAssignableToMultipleJobPools: boolean
   apportioning: boolean
   parentId?: number | null
+  hasChildren?: boolean
+  percent?: number
+  spmp?: boolean
+  match?: string | null
   /** Present when API hydrates links (join to `department` master). */
   departments?: ApiActivityNestedDepartmentResDto[]
-  activityDepartments?: ApiActivityDepartmentResDto[]
+  activityDepartments?: ApiActivityDepartmentResDto[] | GroupedActivityDepartments
   apportioningDepartments?: any[]
+}
+
+export interface GroupedActivityDepartments {
+  assigned: ApiActivityDepartmentResDto[]
+  unassigned: ApiActivityDepartmentResDto[]
 }
 
 export type ApiActivityTreeResDto = ApiActivityResDto & {
@@ -135,16 +145,17 @@ export type CountyActivityPagedListParams = {
 }
 
 export type ApiActivityDepartmentResDto = {
-  id: number
+  id?: number | null
   activityId: number
   departmentId: number
-  code: string
-  name: string
-  status: string
-  type: ApiActivityType
+  code?: string
+  name?: string
+  status?: string
+  type?: ApiActivityType
   leavecode: boolean
   parentId?: number | null
   apportioning: boolean
+  departmentName?: string
   department?: {
     name?: string
     apportioning: boolean
@@ -297,20 +308,16 @@ export type CountyActivityCodeAddPageProps = {
   subParentActivityDetail?: CountyActivityEditPayload | null
   apportioningDepartments?: { name: string; apportioning: boolean }[]
   isSubmitting?: boolean
+  onCodeDropdownOpenChange?: (open: boolean) => void
+  onTypeDropdownOpenChange?: (open: boolean) => void
 }
 
 export type CountyActivityCodeTableProps = {
   rows: CountyActivityCodeRow[]
   primaryRows: CountyActivityCodeRow[]
-  /** From `GET /activities/top-level` — table context / inactive primary list. */
-  activePrimaryCountyRows: CountyActivityCodeRow[]
-  /** Sub county add/edit only — all active primaries from aggregated `GET /activities`. */
-  subCountyParentPickerRows: CountyActivityCodeRow[]
   subRowsByParentId: Record<string, CountyActivityCodeRow[]>
   pagination: CountyActivityPagination
   totalItems: number
-  /** Single shared list from `useGetDepartments` on the page (avoids duplicate department API calls). */
-  departments: Department[]
   isLoading?: boolean
   filters: CountyActivityFilterFormValues
   onSearchChange: (value: string) => void

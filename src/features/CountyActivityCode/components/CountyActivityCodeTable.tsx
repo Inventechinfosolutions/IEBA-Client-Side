@@ -65,16 +65,18 @@ import { ActivityStatusEnum } from "@/features/master-code/enums/activityStatus"
 import { COUNTY_ACTIVITY_SEARCH_DEBOUNCE_MS } from "../constants"
 import { countyActivityCodeKeys } from "../keys"
 import {
+  useGetCountyActivityActivePrimarySubPicker,
   useGetCountyActivityForEdit,
   useGetCountyActivityMasterCodes,
   useGetMasterActivityCatalog,
+  useGetNestedActivities,
 } from "../queries/getCountyActivityCodes"
 import { ACTIVITY_DEFINITION_HISTORY_KIND } from "../queries/activityHistory"
 import { apiPutCountyActivity, parseMasterCodeDisplay } from "../api/countyActivityApi"
 
 import { usePermissions } from "@/hooks/usePermissions"
-import { useGetDepartments } from "@/features/department/queries/getDepartments"
-import { getDepartmentById } from "@/features/department/api/departments"
+import { useGetDepartments, useGetDepartmentsAll } from "@/features/department/queries/getDepartments"
+import { getDepartmentsAll } from "@/features/department/api/departments"
 
 function stripHtmlTags(html: string): string {
   return html
@@ -105,19 +107,19 @@ function getCountyActivityCodeRowDepartmentLabel(row: CountyActivityCodeRow): st
 function mapCountyActivityRowToFormValues(row: CountyActivityCodeRow): CountyActivityAddFormValues {
   return {
     copyCode: false,
-    countyActivityCode: row.countyActivityCode,
-    countyActivityName: row.countyActivityName,
-    description: row.description,
-    masterCodeType: row.masterCodeType,
-    masterCode: row.masterCode,
-    match: row.match,
-    percentage: row.percentage,
-    active: row.active,
-    leaveCode: row.leaveCode,
-    docRequired: row.docRequired,
-    multipleJobPools: row.multipleJobPools,
-    department: row.department,
-    apportioning: row.apportioning,
+    countyActivityCode: row.countyActivityCode ?? "",
+    countyActivityName: row.countyActivityName ?? "",
+    description: row.description ?? "",
+    masterCodeType: row.masterCodeType ?? "",
+    masterCode: row.masterCode ?? 0,
+    match: row.match ?? "",
+    percentage: row.percentage ?? 0,
+    active: row.active ?? false,
+    leaveCode: row.leaveCode ?? false,
+    docRequired: row.docRequired ?? false,
+    multipleJobPools: row.multipleJobPools ?? false,
+    department: row.department ?? "",
+    apportioning: row.apportioning ?? false,
   }
 }
 
@@ -175,15 +177,176 @@ function CountyActivityDescriptionTableCell({
   )
 }
 
+interface CountyActivitySubRowsWrapperProps {
+  parentId: number
+  isExpanded: boolean
+  canUpdateCountyActivity: boolean
+  setRowToEdit: (row: CountyActivityCodeRow) => void
+  setEditOpen: (open: boolean) => void
+  colSpan: number
+}
+
+function CountyActivitySubRowsWrapper({
+  parentId,
+  isExpanded,
+  canUpdateCountyActivity,
+  setRowToEdit,
+  setEditOpen,
+  colSpan,
+}: CountyActivitySubRowsWrapperProps) {
+  const { data: children, isLoading } = useGetNestedActivities(parentId, isExpanded)
+
+  if (!isExpanded) return null
+
+  if (isLoading) {
+    return (
+      <TableRow className="border-b border-[#E5E7EB] bg-[#F6F5FF]/50">
+        <TableCell colSpan={colSpan} className="py-3 text-center align-middle">
+          <div className="flex items-center justify-center gap-2 text-sm text-[#6C5DD3]">
+            <Spinner className="h-4.5 w-4.5 animate-spin" />
+            <span>Loading nested activities...</span>
+          </div>
+        </TableCell>
+      </TableRow>
+    )
+  }
+
+  if (!children || children.length === 0) {
+    return (
+      <TableRow className="border-b border-[#E5E7EB] bg-[#F6F5FF]/50">
+        <TableCell colSpan={colSpan} className="py-3 text-center align-middle text-sm text-muted-foreground">
+          No sub activities found.
+        </TableCell>
+      </TableRow>
+    )
+  }
+
+  return (
+    <>
+      {children.map((child) => (
+        <TableRow
+          key={child.id}
+          className="ieba-data-row border-b border-[#E5E7EB] bg-[#F6F5FF]"
+        >
+          <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0] whitespace-normal break-all">
+            <span className="ml-7">{child.countyActivityCode}</span>
+          </TableCell>
+          <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] leading-[1.4] whitespace-normal break-words font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
+            {child.countyActivityName}
+          </TableCell>
+          <CountyActivityDescriptionTableCell description={child.description} />
+          <TableCell className="min-w-0 border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] leading-[1.4] whitespace-normal break-words font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
+            <CountyActivityDepartmentStackCell
+              label={""}
+            />
+          </TableCell>
+          <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
+            {""}
+          </TableCell>
+          <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
+            {""}
+          </TableCell>
+          <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-center text-[13px] text-[#C4C4C4]">
+            <img
+              src={statusCrossImg}
+              alt="No"
+              className="mx-auto h-4 w-4 object-contain"
+            />
+          </TableCell>
+          <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-center text-[13px] text-[#C4C4C4]">
+            <img
+              src={statusCrossImg}
+              alt="No"
+              className="mx-auto h-4 w-4 object-contain"
+            />
+          </TableCell>
+          <TableCell className="border-r border-[#E5E7EB] px-[8px] py-[5px] align-middle text-center text-[13px] text-[#C4C4C4]">
+            <img
+              src={statusCrossImg}
+              alt="No"
+              className="mx-auto h-4 w-4 object-contain"
+            />
+          </TableCell>
+          <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-center">
+            {child.active ? (
+              <img
+                src={statusCheckImg}
+                alt="active"
+                className="mx-auto h-4 w-4 object-contain"
+              />
+            ) : (
+              <img
+                src={statusCrossImg}
+                alt="inactive"
+                className="mx-auto h-4 w-4 object-contain"
+              />
+            )}
+          </TableCell>
+          <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-center text-[#C4C4C4]">
+            {child.leaveCode ? (
+              <img
+                src={statusCheckImg}
+                alt="leave code"
+                className="mx-auto h-4 w-4 object-contain"
+              />
+            ) : (
+              <img
+                src={statusCrossImg}
+                alt="No"
+                className="mx-auto h-4 w-4 object-contain"
+              />
+            )}
+          </TableCell>
+          <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-center text-[#C4C4C4]">
+            <span>--</span>
+          </TableCell>
+          <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-center text-[#C4C4C4]">
+            {child.multipleJobPools ? (
+              <img
+                src={statusCheckImg}
+                alt="multiple job pools"
+                className="mx-auto h-4 w-4 object-contain"
+              />
+            ) : (
+              <img
+                src={statusCrossImg}
+                alt="No"
+                className="mx-auto h-4 w-4 object-contain"
+              />
+            )}
+          </TableCell>
+          {canUpdateCountyActivity && (
+            <TableCell className="px-[14px] py-[5px] align-top text-center">
+              <Button
+                type="button"
+                size="icon"
+                variant="ghost"
+                className="text-[#6C5DD3] hover:bg-[#6C5DD3]/10"
+                onClick={() => {
+                  setRowToEdit(child)
+                  setEditOpen(true)
+                }}
+              >
+                <img
+                  src={editIconImg}
+                  alt="Edit"
+                  className="h-4 w-4 object-contain"
+                />
+              </Button>
+            </TableCell>
+          )}
+        </TableRow>
+      ))}
+    </>
+  )
+}
+
 export function CountyActivityCodeTable({
   rows,
   primaryRows,
-  activePrimaryCountyRows,
-  subCountyParentPickerRows,
   subRowsByParentId,
   pagination,
   totalItems,
-  departments,
   isLoading = false,
   filters,
   onSearchChange,
@@ -244,6 +407,9 @@ export function CountyActivityCodeTable({
     Boolean(currentPrimaryId?.trim()),
   )
 
+  const [editTypeDropdownOpened, setEditTypeDropdownOpened] = useState(false)
+  const [editCodeDropdownOpened, setEditCodeDropdownOpened] = useState(false)
+
   const [sortBy, setSortBy] = useState<CountyActivityCodeSortableColumn | null>(
     null
   )
@@ -258,7 +424,30 @@ export function CountyActivityCodeTable({
 
   const addMasterCodeType = addForm.watch("masterCodeType")
 
-  const masterCatalogQuery = useGetMasterActivityCatalog(addOpen || editOpen)
+  const masterCatalogQuery = useGetMasterActivityCatalog(
+    addOpen || (editOpen && editTypeDropdownOpened)
+  )
+
+  const departmentsQuery = useGetDepartmentsAll(
+    { status: "active" },
+    { enabled: addOpen }
+  )
+  const departments = departmentsQuery.data ?? []
+
+  const assignedDepartmentIds = useMemo<number[] | undefined>(() => {
+    if (isSuperAdmin) return undefined
+    const ids = new Set<number>()
+    user?.departmentRoles?.forEach((dr) => {
+      if (dr.departmentId) ids.add(dr.departmentId)
+    })
+    return [...ids].sort((a, b) => a - b)
+  }, [isSuperAdmin, user])
+
+  const subPickerQuery = useGetCountyActivityActivePrimarySubPicker(
+    assignedDepartmentIds,
+    addOpen,
+  )
+  const subCountyParentPickerRows = subPickerQuery.data ?? []
 
   const editActivityId = editOpen && rowToEdit ? rowToEdit.id : null
   const editDetailQuery = useGetCountyActivityForEdit(editActivityId, editOpen)
@@ -266,9 +455,7 @@ export function CountyActivityCodeTable({
   const [editSelectedPrimaryId, setEditSelectedPrimaryId] = useState<string | null>(null)
   const editPrimaryDetailQuery = useGetCountyActivityForEdit(
     editSelectedPrimaryId,
-    editOpen &&
-    rowToEdit?.rowType === CountyActivityGridRowType.SUB &&
-    Boolean(editSelectedPrimaryId?.trim()),
+    false,
   )
 
   const editSyncedMasterCodeType = useMemo(() => {
@@ -353,38 +540,38 @@ export function CountyActivityCodeTable({
     if (rowToEdit.rowType === CountyActivityGridRowType.PRIMARY) {
       return {
         copyCode: false,
-        countyActivityCode: activity.code,
-        countyActivityName: activity.name,
+        countyActivityCode: activity.code ?? "",
+        countyActivityName: activity.name ?? "",
         description: stripHtmlTags((activity.description ?? "").trim()),
-        masterCodeType: activity.activityCodeType,
-        masterCode: resolvedEditMasterCodeId,
-        match: rowToEdit.match,
-        percentage: rowToEdit.percentage,
+        masterCodeType: activity.activityCodeType ?? "",
+        masterCode: resolvedEditMasterCodeId ?? 0,
+        match: rowToEdit.match ?? "",
+        percentage: rowToEdit.percentage ?? 0,
         active: activity.status === ActivityStatusEnum.ACTIVE,
-        leaveCode: activity.leavecode,
-        docRequired: activity.docrequired,
-        multipleJobPools: activity.isActivityAssignableToMultipleJobPools,
-        department: editDeptNames.join(", "),
-        apportioning: activity.apportioning,
+        leaveCode: activity.leavecode || false,
+        docRequired: activity.docrequired || false,
+        multipleJobPools: activity.isActivityAssignableToMultipleJobPools || false,
+        department: editDeptNames.join(", ") ?? "",
+        apportioning: activity.apportioning || false,
       }
     }
 
     return {
       copyCode: false,
-      countyActivityCode: activity.code,
-      countyActivityName: activity.name,
+      countyActivityCode: activity.code ?? "",
+      countyActivityName: activity.name ?? "",
       description: stripHtmlTags((activity.description ?? "").trim()),
-      masterCodeType: parent?.masterCodeType ?? rowToEdit.masterCodeType,
+      masterCodeType: parent?.masterCodeType ?? rowToEdit.masterCodeType ?? "",
       masterCode: 0,
-      match: rowToEdit.match,
-      percentage: rowToEdit.percentage,
+      match: rowToEdit.match ?? "",
+      percentage: rowToEdit.percentage ?? 0,
       active: activity.status === ActivityStatusEnum.ACTIVE,
-      leaveCode: activity.leavecode,
-      docRequired: activity.docrequired,
-      multipleJobPools: activity.isActivityAssignableToMultipleJobPools,
+      leaveCode: activity.leavecode || false,
+      docRequired: activity.docrequired || false,
+      multipleJobPools: activity.isActivityAssignableToMultipleJobPools || false,
       department:
-        editDeptNames.length > 0 ? editDeptNames.join(", ") : rowToEdit.department,
-      apportioning: activity.apportioning,
+        (editDeptNames.length > 0 ? editDeptNames.join(", ") : rowToEdit.department) ?? "",
+      apportioning: activity.apportioning || false,
     }
   }, [
     editOpen,
@@ -444,26 +631,45 @@ export function CountyActivityCodeTable({
 
   const editMasterCodesQuery = useGetCountyActivityMasterCodes(
     editMasterCodesQueryType,
-    editOpen &&
-    rowToEdit != null &&
-    rowToEdit.rowType !== CountyActivityGridRowType.SUB &&
-    editMasterCodesQueryType.trim().length > 0,
+    editOpen && editCodeDropdownOpened && editMasterCodesQueryType.trim().length > 0,
   )
 
-  const editMasterCodeOptions = useMemo(
-    () =>
-      (editMasterCodesQuery.data?.items ?? [])
-        .map((item) => ({
-          label: item.code ? `${item.code} * ${item.name}` : item.name,
-          value: Number(item.id),
-          code: String(item.code ?? "").trim(),
-        }))
-        .filter((o) => o.code.length > 0)
-        .sort((a, b) =>
-          a.code.localeCompare(b.code, undefined, { numeric: true, sensitivity: "base" }),
-        ),
-    [editMasterCodesQuery.data?.items],
-  )
+  const editMasterCodeOptions = useMemo(() => {
+    const loadedOptions = (editMasterCodesQuery.data?.items ?? [])
+      .map((item) => ({
+        label: item.code ? `${item.code} * ${item.name}` : item.name,
+        value: Number(item.id),
+        code: String(item.code ?? "").trim(),
+      }))
+      .filter((o) => o.code.length > 0)
+      .sort((a, b) =>
+        a.code.localeCompare(b.code, undefined, { numeric: true, sensitivity: "base" }),
+      )
+
+    const currentCode = editDetailQuery.data?.activity?.activityCode || rowToEdit?.catalogActivityCode
+    if (currentCode) {
+      const trimmedCode = currentCode.trim()
+      const hasOption = loadedOptions.some(o => o.code.toLowerCase() === trimmedCode.toLowerCase())
+      if (!hasOption) {
+        const dummyValue = (resolvedEditMasterCodeId && resolvedEditMasterCodeId > 0)
+          ? resolvedEditMasterCodeId
+          : (resolvedEditMasterCodeId === 0 ? 0 : (rowToEdit?.masterCode || 0))
+        const dummyLabel = `${trimmedCode} * ${editDetailQuery.data?.activity?.name || rowToEdit?.countyActivityName || ""}`
+        loadedOptions.unshift({
+          label: dummyLabel,
+          value: dummyValue,
+          code: trimmedCode,
+        })
+      }
+    }
+
+    return loadedOptions
+  }, [
+    editMasterCodesQuery.data?.items,
+    editDetailQuery.data?.activity,
+    rowToEdit,
+    resolvedEditMasterCodeId,
+  ])
 
   const userDepartmentsQuery = useGetDepartments(
     {
@@ -472,10 +678,22 @@ export function CountyActivityCodeTable({
       limit: 100,
       userId: user?.id,
     },
-    { enabled: !isSuperAdmin && !!user?.id && (addOpen || editOpen) }
+    { enabled: !isSuperAdmin && !!user?.id && addOpen }
   )
 
   const departmentNames = useMemo(() => {
+    if (editOpen && editDetailQuery.data?.activity?.activityDepartments) {
+      const actDepts = editDetailQuery.data.activity.activityDepartments
+      const assigned = Array.isArray(actDepts) ? actDepts : (actDepts.assigned ?? [])
+      const unassigned = Array.isArray(actDepts) ? [] : (actDepts.unassigned ?? [])
+      const allDepts = [...assigned, ...unassigned]
+      const names = allDepts
+        .map((d: any) => d.departmentName?.trim() || d.department?.name?.trim())
+        .filter(Boolean) as string[]
+      names.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }))
+      return [...new Set(names)]
+    }
+
     if (isSuperAdmin) {
       return departments
         .map((d) => d.name.trim())
@@ -493,17 +711,31 @@ export function CountyActivityCodeTable({
       .map((d) => d.name.trim())
       .filter(Boolean)
       .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }))
-  }, [departments, isSuperAdmin, userDepartmentsQuery.data?.items])
+  }, [departments, isSuperAdmin, userDepartmentsQuery.data?.items, editOpen, editDetailQuery.data])
 
   const departmentIdByName = useMemo(() => {
     const map: Record<string, number> = {}
+    if (editOpen && editDetailQuery.data?.activity?.activityDepartments) {
+      const actDepts = editDetailQuery.data.activity.activityDepartments
+      const assigned = Array.isArray(actDepts) ? actDepts : (actDepts.assigned ?? [])
+      const unassigned = Array.isArray(actDepts) ? [] : (actDepts.unassigned ?? [])
+      const allDepts = [...assigned, ...unassigned]
+
+      for (const d of allDepts) {
+        const id = Number(d.departmentId)
+        const name = (d.departmentName || d.department?.name || "").trim()
+        if (!Number.isNaN(id) && name) map[name] = id
+      }
+      return map
+    }
+
     for (const d of departments) {
       const id = Number(d.id)
       const name = d.name.trim()
       if (!Number.isNaN(id) && name) map[name] = id
     }
     return map
-  }, [departments])
+  }, [departments, editOpen, editDetailQuery.data])
 
   const formatCountyActivityPrimaryPickerOptionLabel = (row: CountyActivityCodeRow): string => {
     const full = `${row.countyActivityCode} - ${row.countyActivityName}`
@@ -540,7 +772,6 @@ export function CountyActivityCodeTable({
     id: string,
   ): CountyActivityCodeRow | undefined =>
     subCountyParentPickerRows.find((r) => r.id === id) ??
-    activePrimaryCountyRows.find((r) => r.id === id) ??
     primaryRows.find((r) => r.id === id)
 
 
@@ -643,13 +874,12 @@ export function CountyActivityCodeTable({
       return
     }
 
-    // If apportioning is checked, verify department data with fresh API calls
+    // If apportioning is checked, verify department data — fetch all departments once and filter locally
     if (values.apportioning && tab === CountyActivityGridRowType.PRIMARY && departmentLinks.length > 0) {
       try {
-        // Fetch fresh data for all assigned departments to check apportioning status
-        const freshDepts = await Promise.all(
-          departmentLinks.map(link => getDepartmentById(String(link.id)))
-        )
+        const assignedIds = new Set(departmentLinks.map(link => Number(link.id)))
+        const allDepts = await getDepartmentsAll({ status: "active" })
+        const freshDepts = allDepts.filter(d => assignedIds.has(Number(d.id)))
 
         const apportioningNames = freshDepts
           .filter(d => d.settings?.apportioning === true)
@@ -770,6 +1000,8 @@ export function CountyActivityCodeTable({
           editForm.reset()
           setEditOpen(false)
           setRowToEdit(null)
+          setEditTypeDropdownOpened(false)
+          setEditCodeDropdownOpened(false)
         },
         onError: (err) => {
           toastCountyActivityCodeApiError(
@@ -800,7 +1032,7 @@ export function CountyActivityCodeTable({
         }
       }
 
-      if (catalogId <= 0 || !catalog?.code) {
+      if (!catalog || !catalog.code) {
         toast.error("Select a valid master code")
         return
       }
@@ -833,12 +1065,12 @@ export function CountyActivityCodeTable({
       }
     }
 
-    // If apportioning is checked on a primary row, verify fresh department data
+    // If apportioning is checked on a primary row, verify department data — fetch all departments once and filter locally
     if (values.apportioning && editingRow.rowType === CountyActivityGridRowType.PRIMARY && editDepartmentLinks.length > 0) {
       try {
-        const freshDepts = await Promise.all(
-          editDepartmentLinks.map(link => getDepartmentById(String(link.id)))
-        )
+        const assignedIds = new Set(editDepartmentLinks.map(link => Number(link.id)))
+        const allDepts = await getDepartmentsAll({ status: "active" })
+        const freshDepts = allDepts.filter(d => assignedIds.has(Number(d.id)))
 
         const apportioningNames = freshDepts
           .filter(d => d.settings?.apportioning === true)
@@ -876,7 +1108,10 @@ export function CountyActivityCodeTable({
     doUpdateCountyActivity(editingRow, values, masterCatalog, editDepartmentLinks)
   }, (errors) => {
     console.error("Edit validation errors:", errors)
-    toast.error("Please fill all required fields correctly.")
+    const errMsgs = Object.entries(errors)
+      .map(([field, err]) => `${field}: ${err?.message || "Invalid value"}`)
+      .join(", ")
+    toast.error(`Please fill all required fields correctly. (Errors: ${errMsgs})`)
   })
 
 
@@ -1253,9 +1488,8 @@ export function CountyActivityCodeTable({
                   </TableRow>
                 ) : (
                   sortedRows.flatMap((row) => {
-                    const children = subRowsByParentId[row.id] ?? []
                     const isExpanded = Boolean(expandedRowIds[row.id])
-                    const hasChildren = children.length > 0
+                    const hasChildren = row.hasChildren
 
                     const countyActivityPrimaryTableRow = (
                       <TableRow key={row.id} className="ieba-data-row border-b border-[#E5E7EB]">
@@ -1431,135 +1665,19 @@ export function CountyActivityCodeTable({
                       </TableRow>
                     )
 
-                    const countyActivitySubTableRows = isExpanded
-                      ? children.map((child) => (
-                        <TableRow
-                          key={child.id}
-                          className="ieba-data-row border-b border-[#E5E7EB] bg-[#F6F5FF]"
-                        >
-                          <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0] whitespace-normal break-all">
-                            <span className="ml-7">{child.countyActivityCode}</span>
-                          </TableCell>
-                          <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] leading-[1.4] whitespace-normal break-words font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
-                            {child.countyActivityName}
-                          </TableCell>
-                          <CountyActivityDescriptionTableCell description={child.description} />
-                          <TableCell className="min-w-0 border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] leading-[1.4] whitespace-normal break-words font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
-                            <CountyActivityDepartmentStackCell
-                              label={
-                                child.rowType === CountyActivityGridRowType.SUB
-                                  ? ""
-                                  : getCountyActivityCodeRowDepartmentLabel(child)
-                              }
-                            />
-                          </TableCell>
-                          <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
-                            {child.rowType === CountyActivityGridRowType.SUB
-                              ? ""
-                              : child.masterCodeType}
-                          </TableCell>
-                          <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
-                            {child.rowType === CountyActivityGridRowType.SUB
-                              ? ""
-                              : child.catalogActivityCode || "—"}
-                          </TableCell>
-                          <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-center text-[13px] text-[#C4C4C4]">
-                            {/* Sub rows have no master code — SPMP is always N/cross */}
-                            <img
-                              src={statusCrossImg}
-                              alt="No"
-                              className="mx-auto h-4 w-4 object-contain"
-                            />
-                          </TableCell>
-                          <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-center text-[13px] text-[#C4C4C4]">
-                            {/* Sub rows have no master code — Match is always N/cross */}
-                            <img
-                              src={statusCrossImg}
-                              alt="No"
-                              className="mx-auto h-4 w-4 object-contain"
-                            />
-                          </TableCell>
-                          <TableCell className="border-r border-[#E5E7EB] px-[8px] py-[5px] align-middle text-center text-[13px] text-[#C4C4C4]">
-                            {/* Sub rows have no master code — % is always N/cross */}
-                            <img
-                              src={statusCrossImg}
-                              alt="No"
-                              className="mx-auto h-4 w-4 object-contain"
-                            />
-                          </TableCell>
-                          <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-center">
-                            {child.active ? (
-                              <img
-                                src={statusCheckImg}
-                                alt="active"
-                                className="mx-auto h-4 w-4 object-contain"
-                              />
-                            ) : (
-                              <img
-                                src={statusCrossImg}
-                                alt="inactive"
-                                className="mx-auto h-4 w-4 object-contain"
-                              />
-                            )}
-                          </TableCell>
-                          <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-center text-[#C4C4C4]">
-                            {child.leaveCode ? (
-                              <img
-                                src={statusCheckImg}
-                                alt="leave code"
-                                className="mx-auto h-4 w-4 object-contain"
-                              />
-                            ) : (
-                              <img
-                                src={statusCrossImg}
-                                alt="No"
-                                className="mx-auto h-4 w-4 object-contain"
-                              />
-                            )}
-                          </TableCell>
-                          <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-center text-[#C4C4C4]">
-                            <span>--</span>
-                          </TableCell>
-                          <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-center text-[#C4C4C4]">
-                            {child.multipleJobPools ? (
-                              <img
-                                src={statusCheckImg}
-                                alt="multiple job pools"
-                                className="mx-auto h-4 w-4 object-contain"
-                              />
-                            ) : (
-                              <img
-                                src={statusCrossImg}
-                                alt="No"
-                                className="mx-auto h-4 w-4 object-contain"
-                              />
-                            )}
-                          </TableCell>
-                          {canUpdateCountyActivity && (
-                            <TableCell className="px-[14px] py-[5px] align-top text-center">
-                              <Button
-                                type="button"
-                                size="icon"
-                                variant="ghost"
-                                className="text-[#6C5DD3] hover:bg-[#6C5DD3]/10"
-                                onClick={() => {
-                                  setRowToEdit(child)
-                                  setEditOpen(true)
-                                }}
-                              >
-                                <img
-                                  src={editIconImg}
-                                  alt="Edit"
-                                  className="h-4 w-4 object-contain"
-                                />
-                              </Button>
-                            </TableCell>
-                          )}
-                        </TableRow>
-                      ))
-                      : []
+                    const countyActivitySubTableRows = (
+                      <CountyActivitySubRowsWrapper
+                        key={row.id + "-subs"}
+                        parentId={Number(row.id)}
+                        isExpanded={isExpanded}
+                        canUpdateCountyActivity={canUpdateCountyActivity}
+                        setRowToEdit={setRowToEdit}
+                        setEditOpen={setEditOpen}
+                        colSpan={canUpdateCountyActivity ? 14 : 13}
+                      />
+                    )
 
-                    return [countyActivityPrimaryTableRow, ...countyActivitySubTableRows]
+                    return [countyActivityPrimaryTableRow, countyActivitySubTableRows]
                   })
                 )}
               </>
@@ -1593,9 +1711,9 @@ export function CountyActivityCodeTable({
             subParentActivityDetail={addSubParentDetailQuery.data ?? null}
             tab={addTab}
             masterCodeTypeOptions={masterCodeTypeOptions}
-            isMasterCodeTypeOptionsLoading={masterCatalogQuery.isPending}
+            isMasterCodeTypeOptionsLoading={masterCatalogQuery.isFetching}
             masterCodeOptions={addMasterCodeOptions}
-            isMasterCodeOptionsLoading={addMasterCodesQuery.isPending}
+            isMasterCodeOptionsLoading={addMasterCodesQuery.isFetching}
             departmentNames={departmentNames}
             onTabChange={(nextTab) => {
               setAddTab(nextTab)
@@ -1663,14 +1781,10 @@ export function CountyActivityCodeTable({
               }
               readOnlyPrimaryPicker={false}
               masterCodeTypeOptions={masterCodeTypeOptions}
-              isMasterCodeTypeOptionsLoading={masterCatalogQuery.isPending}
+              isMasterCodeTypeOptionsLoading={masterCatalogQuery.isFetching}
               masterCodeOptions={editMasterCodeOptions}
-              isMasterCodeOptionsLoading={editMasterCodesQuery.isPending}
-              isEditSourceLoading={
-                editDetailQuery.isPending ||
-                (rowToEdit?.rowType === CountyActivityGridRowType.PRIMARY &&
-                  editMasterCodesQuery.isPending)
-              }
+              isMasterCodeOptionsLoading={editMasterCodesQuery.isFetching}
+              isEditSourceLoading={editDetailQuery.isPending}
               departmentNames={departmentNames}
               apportioningDepartments={editDetailQuery.data?.apportioningDepartments}
               onSelectedPrimaryIdChange={(id) => {
@@ -1695,8 +1809,16 @@ export function CountyActivityCodeTable({
               onClose={() => {
                 setEditOpen(false)
                 setRowToEdit(null)
+                setEditTypeDropdownOpened(false)
+                setEditCodeDropdownOpened(false)
               }}
               isSubmitting={updateCountyActivityCode.isPending}
+              onCodeDropdownOpenChange={(open) => {
+                if (open) setEditCodeDropdownOpened(true)
+              }}
+              onTypeDropdownOpenChange={(open) => {
+                if (open) setEditTypeDropdownOpened(true)
+              }}
             />
           ) : null}
         </DialogContent>

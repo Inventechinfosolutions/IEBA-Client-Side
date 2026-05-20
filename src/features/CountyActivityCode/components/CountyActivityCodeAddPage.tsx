@@ -108,6 +108,8 @@ export function CountyActivityCodeAddPage({
   subParentActivityDetail = null,
   apportioningDepartments = [],
   isSubmitting = false,
+  onCodeDropdownOpenChange,
+  onTypeDropdownOpenChange,
 }: CountyActivityCodeAddPageProps) {
   const [uncontrolledTab, setUncontrolledTab] = useState<CountyActivityGridRowType>(
     CountyActivityGridRowType.PRIMARY,
@@ -288,8 +290,8 @@ export function CountyActivityCodeAddPage({
           disabled={disabledTabs?.primary === true}
           onClick={() => setTab(CountyActivityGridRowType.PRIMARY)}
           className={`h-[62px] text-[18px] font-normal ${tab === CountyActivityGridRowType.PRIMARY
-              ? "bg-[#6C5DD3] text-white"
-              : "bg-white text-[#6C5DD3]"
+            ? "bg-[#6C5DD3] text-white"
+            : "bg-white text-[#6C5DD3]"
             } rounded-tl-[10px] ${disabledTabs?.primary === true ? "cursor-not-allowed opacity-60" : ""
             }`}
         >
@@ -300,8 +302,8 @@ export function CountyActivityCodeAddPage({
           disabled={disabledTabs?.sub === true}
           onClick={() => setTab(CountyActivityGridRowType.SUB)}
           className={`h-[62px] text-[18px] font-normal ${tab === CountyActivityGridRowType.SUB
-              ? "bg-[#6C5DD3] text-white"
-              : "bg-white text-[#6C5DD3]"
+            ? "bg-[#6C5DD3] text-white"
+            : "bg-white text-[#6C5DD3]"
             } rounded-tr-[18px] ${disabledTabs?.sub === true ? "cursor-not-allowed opacity-60" : ""
             }`}
         >
@@ -367,7 +369,7 @@ export function CountyActivityCodeAddPage({
               <div className="min-w-0 space-y-1">
                 <label className="text-[14px] font-normal text-[#1F2937]">Code Type</label>
                 <Select
-                  value={masterCodeType.trim() === "" ? undefined : masterCodeType}
+                  value={form.watch("masterCodeType")}
                   onValueChange={(value) => {
                     form.setValue("masterCodeType", value)
                     form.setValue("masterCode", 0)
@@ -377,6 +379,7 @@ export function CountyActivityCodeAddPage({
                       form.setValue("description", "")
                     }
                   }}
+                  onOpenChange={onTypeDropdownOpenChange}
                   disabled={
                     isMasterCodeTypeOptionsLoading || codeTypeSelectItems.length === 0
                   }
@@ -408,7 +411,7 @@ export function CountyActivityCodeAddPage({
                   </SelectContent>
                 </Select>
               </div>
-              <div className="min-w-0 overflow-hidden space-y-1">
+              <div className="min-w-0 space-y-1">
                 <label className="text-[14px] font-normal text-[#1F2937]">Code</label>
                 <SingleSelectDropdown
                   value={
@@ -424,6 +427,7 @@ export function CountyActivityCodeAddPage({
                   isLoading={isMasterCodeOptionsLoading}
                   loadingLabel="Loading codes…"
                   disabled={!isMasterCodeOptionsLoading && masterCodeOptions.length === 0}
+                  onOpenChange={onCodeDropdownOpenChange}
                   className="h-[48px] rounded-[10px] border-[#D9D9D9] text-[14px]"
                   contentClassName="z-[200]"
                 />

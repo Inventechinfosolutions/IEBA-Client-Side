@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query"
+import { useQuery } from "@tanstack/react-query"
 
 import {
   apiFetchActivityCodesCatalogAll,
@@ -12,56 +12,19 @@ import {
   apiGetCountyActivitiesCatalogAggregated,
   apiGetCountyActivitiesByDepartmentId,
   apiGetCountyActivitiesPage,
-  apiGetCountyActivityCodeTableRows,
   apiGetCountyActivityForEdit,
   apiGetCountyActivityTopLevel,
-  buildCountyActivityCatalogEnrichmentMapFromMasterCodes,
+  apiGetNestedActivities,
   mapCountyActivityListItemsToGridRows,
 } from "../api/countyActivityApi"
 import { CountyActivityGridRowType } from "../enums/CountyActivity.enum"
 import { countyActivityCodeKeys } from "../keys"
-import type { ActivityCatalogEnrichmentValue, CountyActivityPagedListParams } from "../types"
+import type { CountyActivityPagedListParams } from "../types"
 
-const CATALOG_ENRICHMENT_STALE_MS = 10 * 60_000
 const MASTER_CODE_OPTIONS_STALE_MS = 60_000
-
-async function fetchActivityCatalogEnrichmentMap(
-  queryClient: ReturnType<typeof useQueryClient>,
-): Promise<ReadonlyMap<string, ActivityCatalogEnrichmentValue>> {
-  // Use fetchQuery (not ensureQueryData) so the enrichment map is always rebuilt
-  // from up-to-date master-code data. ensureQueryData would serve a 10-min stale
-  // cache even when the county table itself is refetching, causing SPMP / Match / %
-  // to show stale defaults (false / "N" / 0) for newly added or updated master codes.
-  const rows = await queryClient.fetchQuery({
-    queryKey: masterCodeKeys.activityCodesCatalogAll(),
-    queryFn: () => apiFetchActivityCodesCatalogAll({ inactiveOnly: false }),
-    staleTime: CATALOG_ENRICHMENT_STALE_MS,
-    gcTime: 30 * 60_000,
-  })
-  return buildCountyActivityCatalogEnrichmentMapFromMasterCodes(rows)
-}
-
-/** Full hierarchy grid: `GET /activities/hierarchy` + activity–department links + catalog enrichment. */
-export function useGetCountyActivityCodes() {
-  const queryClient = useQueryClient()
-
-  return useQuery({
-    queryKey: countyActivityCodeKeys.lists(),
-    queryFn: async () => {
-      const enrichment = await fetchActivityCatalogEnrichmentMap(queryClient)
-      return apiGetCountyActivityCodeTableRows(enrichment)
-    },
-    staleTime: 0,
-    gcTime: 10 * 60_000,
-    refetchOnMount: "always",
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: true,
-  })
-}
 
 /** Paginated `GET /activities` for the main county activity table. */
 export function useGetCountyActivityPagedList(params: CountyActivityPagedListParams) {
-  const queryClient = useQueryClient()
   const status = params.showInactive ? "inactive" : "active"
   const search = params.search.trim()
   const departmentIds = params.assignedDepartmentIds ?? []
@@ -75,7 +38,6 @@ export function useGetCountyActivityPagedList(params: CountyActivityPagedListPar
       departmentIds: departmentIds.length > 0 ? departmentIds : undefined,
     }),
     queryFn: async () => {
-      const enrichment = await fetchActivityCatalogEnrichmentMap(queryClient)
       const needsAggregatedCatalog =
         params.page === 1 && params.pageSize > COUNTY_ACTIVITY_ACTIVITIES_API_MAX_LIMIT
 
@@ -94,7 +56,7 @@ export function useGetCountyActivityPagedList(params: CountyActivityPagedListPar
           sort: "ASC",
           departmentIds: departmentIds.length > 0 ? departmentIds : undefined,
         })
-      const rows = mapCountyActivityListItemsToGridRows(payload.data, enrichment)
+      const rows = mapCountyActivityListItemsToGridRows(payload.data)
       return { rows, meta: payload.meta, raw: payload.data }
     },
     /** `0` so switching Inactive (query key `status` active ↔ inactive) always refetches instead of reusing fresh cache. */
@@ -106,16 +68,13 @@ export function useGetCountyActivityPagedList(params: CountyActivityPagedListPar
   })
 }
 
-/** Table + shared context: `GET /activities/top-level` (enriched, active primaries only). */
+/** Table + shared context: `GET /activities/top-level` (active primaries only). */
 export function useGetCountyActivityTopLevel() {
-  const queryClient = useQueryClient()
-
   return useQuery({
     queryKey: countyActivityCodeKeys.topLevel(),
     queryFn: async () => {
-      const enrichment = await fetchActivityCatalogEnrichmentMap(queryClient)
       const dtos = await apiGetCountyActivityTopLevel()
-      const rows = mapCountyActivityListItemsToGridRows(dtos, enrichment)
+      const rows = mapCountyActivityListItemsToGridRows(dtos)
       const primaries = rows.filter(
         (r) => r.rowType === CountyActivityGridRowType.PRIMARY && r.active,
       )
@@ -135,20 +94,21 @@ export function useGetCountyActivityTopLevel() {
 }
 
 /** Sub county modal only: full active catalog from `GET /activities`, then primary rows. */
-export function useGetCountyActivityActivePrimarySubPicker(assignedDepartmentIds?: number[]) {
-  const queryClient = useQueryClient()
+export function useGetCountyActivityActivePrimarySubPicker(
+  assignedDepartmentIds?: number[],
+  enabled: boolean = true,
+) {
   const deptIds = assignedDepartmentIds && assignedDepartmentIds.length > 0 ? assignedDepartmentIds : undefined
 
   return useQuery({
     queryKey: [...countyActivityCodeKeys.activePrimarySubPicker(), { departmentIds: deptIds }] as const,
     queryFn: async () => {
-      const enrichment = await fetchActivityCatalogEnrichmentMap(queryClient)
       const payload = await apiGetCountyActivitiesCatalogAggregated({
         status: "active",
         sort: "ASC",
         departmentIds: deptIds,
       })
-      const rows = mapCountyActivityListItemsToGridRows(payload.data, enrichment)
+      const rows = mapCountyActivityListItemsToGridRows(payload.data)
       const primaries = rows.filter(
         (r) => r.rowType === CountyActivityGridRowType.PRIMARY && r.active,
       )
@@ -159,11 +119,12 @@ export function useGetCountyActivityActivePrimarySubPicker(assignedDepartmentIds
       )
       return primaries
     },
-    staleTime: 30_000,
-    gcTime: 10 * 60_000,
+    staleTime: 0,
+    gcTime: 0,
     refetchOnMount: "always",
-    refetchOnWindowFocus: false,
+    refetchOnWindowFocus: "always",
     refetchOnReconnect: true,
+    enabled,
   })
 }
 
@@ -180,7 +141,6 @@ export function useGetMasterActivityCatalog(enabled: boolean) {
     gcTime: 15 * 60_000,
   })
 }
-
 
 export function useGetCountyActivityMasterCodes(codeType: string, enabled: boolean) {
   const typeSelected = codeType.trim().length > 0
@@ -224,6 +184,19 @@ export function useGetActivitiesByDepartment(departmentId: number | null) {
     queryKey: [...countyActivityCodeKeys.all, "by-department", departmentId],
     queryFn: () => apiGetCountyActivitiesByDepartmentId(Number(departmentId)),
     enabled: !!departmentId,
+    staleTime: 30_000,
+  })
+}
+
+export function useGetNestedActivities(parentId: number | null, enabled: boolean) {
+  return useQuery({
+    queryKey: [...countyActivityCodeKeys.all, "nested", parentId],
+    queryFn: async () => {
+      if (!parentId) return []
+      const dtos = await apiGetNestedActivities(parentId)
+      return mapCountyActivityListItemsToGridRows(dtos)
+    },
+    enabled: enabled && !!parentId,
     staleTime: 30_000,
   })
 }
