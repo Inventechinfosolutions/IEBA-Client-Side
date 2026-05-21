@@ -195,8 +195,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   return (
     <AuthContext.Provider value={value}>
       {children}
-      <Dialog open={sessionExpired} onOpenChange={setSessionExpired}>
-        <DialogContent className="max-w-[400px]!" overlayClassName="bg-black/60!" showClose={false} onPointerDownOutside={(e) => e.preventDefault()} onInteractOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
+      <Dialog 
+        open={sessionExpired} 
+        onOpenChange={(open) => {
+          setSessionExpired(open)
+          if (!open && typeof window !== "undefined") {
+            (window as any).isSessionExpiredOpen = false
+          }
+        }}
+      >
+        <DialogContent className="max-w-[400px]!" overlayClassName="bg-black/60!" showClose={false}>
           <DialogHeader>
             <DialogDescription className="text-foreground! font-medium">
               Session expired. Please logout and login Again

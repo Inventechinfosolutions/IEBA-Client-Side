@@ -44,6 +44,9 @@ export type JobPoolRow = {
   unassignedJobClassificationDetails?: { id: string; name: string; code: string; status?: string }[]
   assignedUserDetails?: { id: string; firstName?: string; lastName?: string; name?: string; status?: string }[]
   unassignedUserDetails?: { id: string; firstName?: string; lastName?: string; name?: string; status?: string }[]
+  assigned?: { id: string; name: string; code: string; status?: string; users?: { id: string; name: string }[] }[]
+  assignedToOtherPoolsInDept?: { id: string; name: string; code: string; status?: string; users?: { id: string; name: string }[] }[]
+  unassigned?: { id: string; name: string; code: string; status?: string; users?: { id: string; name: string }[] }[]
 }
 
 export type GetJobPoolsParams = {
@@ -101,6 +104,9 @@ export type JobPoolFormModalProps = {
   unassignedJobClassificationDetails?: { id: string; name: string; code: string; status?: string }[]
   assignedUserDetails?: { id: string; firstName?: string; lastName?: string; name?: string; status?: string }[]
   unassignedUserDetails?: { id: string; firstName?: string; lastName?: string; name?: string; status?: string }[]
+  assigned?: { id: string; name: string; code: string; status?: string; users?: { id: string; name: string }[] }[]
+  assignedToOtherPoolsInDept?: { id: string; name: string; code: string; status?: string; users?: { id: string; name: string }[] }[]
+  unassigned?: { id: string; name: string; code: string; status?: string; users?: { id: string; name: string }[] }[]
   departmentName?: string
 }
 
@@ -128,6 +134,9 @@ export type JobClassificationSectionProps = {
   mode: JobPoolFormMode;
   assignedJobClassificationDetails?: { id: string; name: string; code: string; status?: string }[];
   unassignedJobClassificationDetails?: { id: string; name: string; code: string; status?: string }[];
+  assigned?: { id: string; name: string; code: string; status?: string; users?: { id: string; name: string }[] }[]
+  assignedToOtherPoolsInDept?: { id: string; name: string; code: string; status?: string; users?: { id: string; name: string }[] }[]
+  unassigned?: { id: string; name: string; code: string; status?: string; users?: { id: string; name: string }[] }[]
 }
 export type ActivitySectionProps = { 
   form: JobPoolFormReturn; 
@@ -142,4 +151,7 @@ export type EmployeeSectionProps = {
   mode: JobPoolFormMode;
   assignedUserDetails?: { id: string; firstName?: string; lastName?: string; name?: string; status?: string }[];
   unassignedUserDetails?: { id: string; firstName?: string; lastName?: string; name?: string; status?: string }[];
+  assigned?: { id: string; name: string; code: string; status?: string; users?: { id: string; name: string }[] }[]
+  assignedToOtherPoolsInDept?: { id: string; name: string; code: string; status?: string; users?: { id: string; name: string }[] }[]
+  unassigned?: { id: string; name: string; code: string; status?: string; users?: { id: string; name: string }[] }[]
 }

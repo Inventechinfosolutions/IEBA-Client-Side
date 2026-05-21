@@ -10,12 +10,11 @@ async function updateProgram(input: UpdateProgramInput) {
 }
 
 export function useUpdateProgram() {
-
   return useMutation({
     mutationFn: (input: UpdateProgramInput) => updateProgram(input),
     onSuccess: async (_, variables) => {
-      // Invalidate all cached program lists so they refetch and reflect filter changes
-      await queryClient.invalidateQueries({ queryKey: programKeys.lists() })
+      // Invalidate the detail cache only so future opens get fresh data.
+      // List refetch is deferred to modal Exit — no table API call on save.
       await queryClient.invalidateQueries({ queryKey: programKeys.detail(variables.id) })
     },
   })

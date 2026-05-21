@@ -10,11 +10,8 @@ async function createProgram(input: CreateProgramInput) {
 }
 
 export function useCreateProgram() {
-
   return useMutation({
     mutationFn: (input: CreateProgramInput) => createProgram(input),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: programKeys.lists() })
-    },
+    // No automatic list refetch after save — the caller handles invalidation on modal Exit.
   })
 }

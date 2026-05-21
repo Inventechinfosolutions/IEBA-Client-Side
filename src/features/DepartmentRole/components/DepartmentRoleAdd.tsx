@@ -52,8 +52,9 @@ export function DepartmentRoleAdd({
   const [selectedAvailable, setSelectedAvailable] = useState<Set<string>>(new Set())
   const [selectedAssigned, setSelectedAssigned] = useState<Set<string>>(new Set())
 
-  // Always fetch catalog when dialog is open
-  const catalogQuery = usePermissionCatalogQuery(open)
+  // Fetch catalog when dialog is open and we are creating a new role.
+  // In edit mode, we retrieve the catalog from the get by ID response.
+  const catalogQuery = usePermissionCatalogQuery(open && mode === "create")
   const globalCatalog = catalogQuery.data
 
   // Fetch role details when in edit mode
@@ -152,8 +153,17 @@ export function DepartmentRoleAdd({
     const key = `${itemId}:${perm}`
     setSelectedAvailable((prev) => {
       const next = new Set(prev)
-      if (next.has(key)) next.delete(key)
-      else next.add(key)
+      if (next.has(key)) {
+        next.delete(key)
+        next.delete(itemId)
+      } else {
+        next.add(key)
+        const childPerms = activeCatalog?.[itemId]?.map((p) => prettifyPermissionId(p.permissionId)) || []
+        const allChecked = childPerms.every((p) => next.has(`${itemId}:${p}`))
+        if (allChecked) {
+          next.add(itemId)
+        }
+      }
       return next
     })
   }
@@ -178,8 +188,17 @@ export function DepartmentRoleAdd({
     const key = `${itemId}:${perm}`
     setSelectedAssigned((prev) => {
       const next = new Set(prev)
-      if (next.has(key)) next.delete(key)
-      else next.add(key)
+      if (next.has(key)) {
+        next.delete(key)
+        next.delete(itemId)
+      } else {
+        next.add(key)
+        const childPerms = activeCatalog?.[itemId]?.map((p) => prettifyPermissionId(p.permissionId)) || []
+        const allChecked = childPerms.every((p) => next.has(`${itemId}:${p}`))
+        if (allChecked) {
+          next.add(itemId)
+        }
+      }
       return next
     })
   }
@@ -282,6 +301,8 @@ export function DepartmentRoleAdd({
   }
 
   const handleSubmit = form.handleSubmit((values) => {
+    setSelectedAvailable(new Set())
+    setSelectedAssigned(new Set())
     if (mode === "edit" && editRoleId && editDetail) {
       const initialLabels = assignedModuleLabelsFromDetail(
         editDetail,
@@ -331,11 +352,11 @@ export function DepartmentRoleAdd({
   }
 
   const showEditError = mode === "edit" && Boolean(editRoleId) && editDetailError != null
-  const showEditLoading = 
-    (mode === "edit" && Boolean(editRoleId) && !editDetailError && isEditDetailLoading) || 
-    (open && !globalCatalog && catalogQuery.isLoading)
+  const showEditLoading = mode === "edit"
+    ? (Boolean(editRoleId) && !editDetailError && isEditDetailLoading)
+    : (open && !globalCatalog && catalogQuery.isLoading)
 
-  const editFormReady = mode === "create" ? !!globalCatalog : (Boolean(editDetail) && !!globalCatalog)
+  const editFormReady = mode === "create" ? !!globalCatalog : Boolean(editDetail)
   
   const transferDisabled = mode === "edit" && !editFormReady
   const submitDisabled = isSubmitting || (mode === "edit" && !editFormReady)

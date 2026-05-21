@@ -29,6 +29,7 @@ type JobPoolJobClassificationResDto = {
   code?: string
   name?: string
   status?: unknown
+  users?: { id?: string; name?: string }[]
 }
 
 type JobPoolActivityResDto = {
@@ -60,6 +61,9 @@ type JobPoolResDto = {
   jobClassifications?: number[];
   activities?: number[];
   users?: string[];
+  assigned?: JobPoolJobClassificationResDto[];
+  assignedToOtherPoolsInDept?: JobPoolJobClassificationResDto[];
+  unassigned?: JobPoolJobClassificationResDto[];
   jobClassificationDetails?: JobPoolJobClassificationResDto[];
   assignedJobClassificationDetails?: JobPoolJobClassificationResDto[];
   unassignedJobClassificationDetails?: JobPoolJobClassificationResDto[];
@@ -119,28 +123,26 @@ function toJobPoolRow(dto: JobPoolResDto): JobPoolRow {
         ? String(dto.departmentId)
         : "";
 
-  const jobClassificationDetails = Array.isArray(dto.assignedJobClassificationDetails)
-    ? dto.assignedJobClassificationDetails
-    : Array.isArray(dto.jobClassificationDetails)
-      ? dto.jobClassificationDetails
-      : [];
+  // ── Job Classifications ────────────────────────────────────────────────────
+  const assignedClassifications = Array.isArray(dto.assigned) ? dto.assigned : []
 
-  const jobClassifications: JobClassificationTag[] = jobClassificationDetails.map((item) =>
+  const jobClassifications: JobClassificationTag[] = assignedClassifications.map((item) =>
     toJobClassificationTag(item),
-  );
+  )
 
-  const jobClassificationName = jobClassificationDetails.map((item) => ({
+  const jobClassificationName = assignedClassifications.map((item) => ({
     name: typeof item.name === "string" ? item.name : "",
     status: typeof item.status === "string" ? item.status : "active",
-  }));
+  }))
 
+  // ── Activities ─────────────────────────────────────────────────────────────
   const assignedActivityDetails = Array.isArray(dto.assignedActivityDetails)
     ? dto.assignedActivityDetails.map((a) => ({
         id: String(a.id ?? ""),
         name: a.name ?? "",
         code: a.code ?? "",
       }))
-    : undefined;
+    : undefined
 
   const unassignedActivityDetails = Array.isArray(dto.unassignedActivityDetails)
     ? dto.unassignedActivityDetails.map((a) => ({
@@ -148,52 +150,41 @@ function toJobPoolRow(dto: JobPoolResDto): JobPoolRow {
         name: a.name ?? "",
         code: a.code ?? "",
       }))
-    : undefined;
+    : undefined
 
-  const activities = Array.isArray(dto.activities)
-    ? dto.activities
-    : assignedActivityDetails
-      ? assignedActivityDetails.map((a) => Number(a.id))
-      : [];
+  // ── Users (nested inside classification buckets) ───────────────────────────
+  const assignedUsersMap = new Map<string, { id: string; name?: string; firstName?: string; lastName?: string; status?: string }>()
+  for (const jc of assignedClassifications) {
+    for (const u of (jc.users ?? [])) {
+      const uid = String(u.id ?? "")
+      if (uid && !assignedUsersMap.has(uid)) {
+        assignedUsersMap.set(uid, { id: uid, name: u.name ?? "" })
+      }
+    }
+  }
+  const assignedUserDetails = Array.from(assignedUsersMap.values())
 
-  const assignedUserDetails = Array.isArray(dto.assignedUserDetails)
-    ? dto.assignedUserDetails
-    : Array.isArray(dto.userDetails)
-      ? dto.userDetails
-      : [];
+  const allUsersMap = new Map<string, { id: string; name?: string; firstName?: string; lastName?: string; status?: string }>()
+  const assignedToOther = Array.isArray(dto.assignedToOtherPoolsInDept) ? dto.assignedToOtherPoolsInDept : []
+  const unassignedClassifications = Array.isArray(dto.unassigned) ? dto.unassigned : []
+  for (const jc of [...assignedClassifications, ...assignedToOther, ...unassignedClassifications]) {
+    for (const u of (jc.users ?? [])) {
+      const uid = String(u.id ?? "")
+      if (uid && !allUsersMap.has(uid)) {
+        allUsersMap.set(uid, { id: uid, name: u.name ?? "" })
+      }
+    }
+  }
+  const assignedUserIdSet = new Set(assignedUserDetails.map((u) => u.id))
+  const unassignedUserDetails = Array.from(allUsersMap.values()).filter((u) => !assignedUserIdSet.has(u.id))
 
-  const users = Array.isArray(dto.users)
-    ? dto.users
-    : assignedUserDetails
-      ? assignedUserDetails.map((u) => String(u.id ?? ""))
-      : [];
-
-  const unassignedJobClassificationDetails = Array.isArray(dto.unassignedJobClassificationDetails)
-    ? dto.unassignedJobClassificationDetails.map((jc) => ({
-        id: String(jc.id ?? ""),
-        name: jc.name ?? "",
-        code: jc.code ?? "",
-        status: typeof jc.status === "string" ? jc.status : "active",
-      }))
-    : [];
-
-  const unassignedUserDetails = Array.isArray(dto.unassignedUserDetails)
-    ? dto.unassignedUserDetails.map((u) => ({
-        id: u.id ?? "",
-        firstName: u.firstName ?? undefined,
-        lastName: u.lastName ?? undefined,
-        name: u.name ?? undefined,
-        status: u.status ?? undefined,
-      }))
-    : [];
-
-  const userprofiles = assignedUserDetails.map((user) => ({
-    id: user.id ?? "",
-    name: user.name ?? undefined,
-    firstName: user.firstName ?? undefined,
-    lastName: user.lastName ?? undefined,
-    status: user.status ?? undefined,
-  }));
+  const userprofiles = assignedUserDetails.map((u) => ({
+    id: u.id,
+    name: u.name,
+    firstName: u.firstName,
+    lastName: u.lastName,
+    status: u.status,
+  }))
 
   return {
     id: idRaw == null ? "" : String(idRaw),
@@ -201,32 +192,53 @@ function toJobPoolRow(dto: JobPoolResDto): JobPoolRow {
     department: departmentName,
     active: isActiveStatus(dto.status),
     jobClassifications,
-    assignedJobClassificationIds: jobClassifications.map((jc) => jc.id),
-    assignedActivityIds: activities.map((id) => String(id)),
-    assignedEmployeeIds: users.map((id) => String(id)),
+    assignedJobClassificationIds: assignedClassifications.map((jc) => String(jc.id ?? "")),
+    assignedActivityIds: (assignedActivityDetails ?? []).map((a) => a.id),
+    assignedEmployeeIds: assignedUserDetails.map((u) => u.id),
     departmentId: dto.departmentId != null ? String(dto.departmentId) : undefined,
     departmentName,
     jobClassificationName,
     userprofiles,
     assignedActivityDetails,
     unassignedActivityDetails,
-    assignedJobClassificationDetails: jobClassificationDetails.map((jc) => ({
+    assignedJobClassificationDetails: assignedClassifications.map((jc) => ({
       id: String(jc.id ?? ""),
       name: jc.name ?? "",
       code: jc.code ?? "",
       status: typeof jc.status === "string" ? jc.status : "active",
     })),
-    unassignedJobClassificationDetails,
-    assignedUserDetails: assignedUserDetails.map((u) => ({
-      id: u.id ?? "",
-      firstName: u.firstName ?? undefined,
-      lastName: u.lastName ?? undefined,
-      name: u.name ?? undefined,
-      status: u.status ?? undefined,
+    unassignedJobClassificationDetails: unassignedClassifications.map((jc) => ({
+      id: String(jc.id ?? ""),
+      name: jc.name ?? "",
+      code: jc.code ?? "",
+      status: typeof jc.status === "string" ? jc.status : "active",
     })),
+    assignedUserDetails,
     unassignedUserDetails,
-  };
+    assigned: assignedClassifications.map((jc) => ({
+      id: String(jc.id ?? ""),
+      name: jc.name ?? "",
+      code: jc.code ?? "",
+      status: typeof jc.status === "string" ? jc.status : "active",
+      users: (jc.users ?? []).map((u) => ({ id: String(u.id ?? ""), name: u.name ?? "" })),
+    })),
+    assignedToOtherPoolsInDept: assignedToOther.map((jc) => ({
+      id: String(jc.id ?? ""),
+      name: jc.name ?? "",
+      code: jc.code ?? "",
+      status: typeof jc.status === "string" ? jc.status : "active",
+      users: (jc.users ?? []).map((u) => ({ id: String(u.id ?? ""), name: u.name ?? "" })),
+    })),
+    unassigned: unassignedClassifications.map((jc) => ({
+      id: String(jc.id ?? ""),
+      name: jc.name ?? "",
+      code: jc.code ?? "",
+      status: typeof jc.status === "string" ? jc.status : "active",
+      users: (jc.users ?? []).map((u) => ({ id: String(u.id ?? ""), name: u.name ?? "" })),
+    })),
+  }
 }
+
 
 export async function getJobPools(params: GetJobPoolsParams): Promise<JobPoolListResponse> {
   const { page, pageSize, search, inactiveOnly, departmentId } = params

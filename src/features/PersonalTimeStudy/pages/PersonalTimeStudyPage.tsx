@@ -14,6 +14,7 @@ import { useGetPersonalMonthLegend } from "../queries/getPersonalMonthLegend"
 import { useGetPersonalDayDetail } from "../queries/getPersonalDayDetail"
 import { useGetPersonalDropdowns } from "../queries/getPersonalDropdowns"
 import { useGetTimeEntrySummary } from "../queries/getTimeEntrySummary"
+import { useGetUserApportioningConfig } from "../queries/getUserApportioningConfig"
 import { useSavePersonalNotes } from "../mutation/updatePersonalNotes"
 import { useSubmitPersonalTimeRecords } from "../mutation/createPersonalTimeRecords"
 import { useDeletePersonalTimeRecord } from "../mutation/deletePersonalTimeRecord"
@@ -106,13 +107,14 @@ export function PersonalTimeStudyPage() {
   // 3. Fetch Day Detail
   const dayQuery = useGetPersonalDayDetail(userId, dateStr, selectedDate.getMonth() + 1, selectedDate.getFullYear(), activeTab === "personal")
 
-  const [dropdownOpened, setDropdownOpened] = useState(false)
+  // 4. Fetch user & dropdown data — fetch eagerly so department settings apply immediately on load
+  const dropdownQuery = useGetPersonalDropdowns(userId, activeTab === "personal" && !!userId)
 
   // 5. Fetch Time Entry Summary (MAA etc)
   const summaryQuery = useGetTimeEntrySummary(userId, dateStr, undefined, activeTab === "personal")
 
-  // 4. Fetch user & dropdown data
-  const dropdownQuery = useGetPersonalDropdowns(userId, (activeTab === "personal") && dropdownOpened)
+  // 6. Apportioning config for supervisor panel
+  const apportioningConfigQuery = useGetUserApportioningConfig(userId, activeTab === "personal" && !!userId)
 
   // 5. Calendar day & week summaries
   const { dayStatuses, weekSummaries } = useMemo(() => {
@@ -349,11 +351,14 @@ export function PersonalTimeStudyPage() {
                           open={monthQuery.data?.leaveRecords?.filter(r => ["draft", "requested"].includes(r.status?.toLowerCase() ?? "")).length ?? 0}
                           rejected={monthQuery.data?.leaveRecords?.filter(r => r.status?.toLowerCase() === "rejected").length ?? 0}
                           leaveRecords={monthQuery.data?.leaveRecords}
-                          allowMultiCodes={false}
+                          dropdownData={dropdownQuery.data}
+                          allowMultiCodes={apportioningConfigQuery.data?.allowMultiCodes === true}
+                          onOpen={() => dropdownQuery.refetch()}
                           dateStr={dateStr}
                           month={month}
                           year={year}
                           isLoading={monthQuery.isLoading}
+                          isDropdownLoading={dropdownQuery.isFetching}
                         />
                         <PersonalTimeStudyMinutesCard
                           className="min-h-0 sm:col-span-2 lg:col-span-1"
@@ -383,14 +388,6 @@ export function PersonalTimeStudyPage() {
                       initialRecords={dayQuery.data?.timeStudyRecords}
                       dropdownData={dropdownQuery.data}
                       leaveRecords={dayQuery.data?.leaveRecords}
-                      isDropdownLoading={dropdownQuery.isFetching}
-                      onDropdownOpen={() => {
-                        if (!dropdownOpened) {
-                          setDropdownOpened(true)
-                        } else {
-                          dropdownQuery.refetch()
-                        }
-                      }}
                       onSave={(records) => submitMutation.mutate({ records, mode: "save" })}
                       onSubmit={(records) => submitMutation.mutate({ records, mode: "submit" })}
                       onDelete={(id) => deleteMutation.mutate(id)}
@@ -400,6 +397,8 @@ export function PersonalTimeStudyPage() {
                       actualMultiTotal={summaryQuery.data?.actualmultiactivitytime}
                       multiBalanceTotal={summaryQuery.data?.actualmultiactivityTimebalance}
                       hideSummaryHeader={true}
+                      apportioningConfig={apportioningConfigQuery.data ?? null}
+                      apportioningRecords={dayQuery.data?.timeStudyRecords?.filter((r: any) => r.apportioning === true) || []}
                       isLoading={dayQuery.isFetching || submitMutation.isPending || deleteMutation.isPending}
                     />
                   </div>

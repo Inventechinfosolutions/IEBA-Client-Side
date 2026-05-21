@@ -854,7 +854,10 @@ export const BudgetUnitTable = forwardRef<BudgetUnitTableHandle, BudgetUnitTable
                                     >
                                       {canAddBudgetProgram && displayRow.row.active && (
                                         <DropdownMenuItem
-                                          onClick={() => onAddSubProgramFromProgram?.(displayRow.row)}
+                                          onClick={(event) => {
+                                            event.stopPropagation()
+                                            onAddSubProgramFromProgram?.(displayRow.row)
+                                          }}
                                           className="cursor-pointer gap-1.5 rounded-[8px] px-1.5 py-1 text-[12px] text-[#111827]"
                                         >
                                           <Plus className="size-[13px] text-(--primary)" />
@@ -863,7 +866,10 @@ export const BudgetUnitTable = forwardRef<BudgetUnitTableHandle, BudgetUnitTable
                                       )}
                                       {canUpdateBudgetProgram && (
                                         <DropdownMenuItem
-                                          onClick={() => onEditRow(displayRow.row)}
+                                          onClick={(event) => {
+                                            event.stopPropagation()
+                                            onEditRow(displayRow.row)
+                                          }}
                                           className="cursor-pointer gap-1.5 rounded-[8px] px-1.5 py-1 text-[12px] text-[#111827]"
                                         >
                                           <Pencil className="size-[13px] text-(--primary)" />
