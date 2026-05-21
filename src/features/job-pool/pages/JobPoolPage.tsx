@@ -100,9 +100,9 @@ export function JobPoolPage() {
       } else {
         await createJobPoolAsync({ values })
         toast.success("Job Pool created successfully", successToastOptions)
+        setPage(1)
       }
       setModalOpen(false)
-      setPage(1)
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Operation failed"
       toast.error(message)
@@ -187,6 +187,9 @@ export function JobPoolPage() {
         unassignedJobClassificationDetails={sourceRow?.unassignedJobClassificationDetails}
         assignedUserDetails={sourceRow?.assignedUserDetails}
         unassignedUserDetails={sourceRow?.unassignedUserDetails}
+        assigned={sourceRow?.assigned}
+        assignedToOtherPoolsInDept={sourceRow?.assignedToOtherPoolsInDept}
+        unassigned={sourceRow?.unassigned}
         departmentName={sourceRow?.departmentName}
       />
     </section>
@@ -194,4 +197,6 @@ export function JobPoolPage() {
 }
 
 export default JobPoolPage
+
+
 

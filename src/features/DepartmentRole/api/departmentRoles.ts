@@ -181,6 +181,42 @@ function buildPermissionCatalogFromRole(
   return out
 }
 
+function buildPermissionCatalogFromDetail(
+  assigned: Record<string, unknown> | null,
+  unassigned: Record<string, unknown> | null
+): DepartmentRolePermissionCatalog {
+  const catalog: DepartmentRolePermissionCatalog = {}
+
+  const addItems = (group: Record<string, unknown> | null) => {
+    if (!group) return
+    for (const [moduleName, items] of Object.entries(group)) {
+      if (!Array.isArray(items)) continue
+      const label = shuttleLabelForModuleName(moduleName)
+      if (!catalog[label]) catalog[label] = []
+
+      for (const item of items) {
+        const pr = asRecord(item)
+        if (!pr) continue
+        const pidRaw = pr.permissionId ?? pr.id
+        if (typeof pidRaw !== "string" || !pidRaw.trim()) continue
+        const permissionId = pidRaw.trim()
+        const moduleId = typeof pr.moduleId === "number" ? pr.moduleId : 0
+
+        const row = { permissionId, moduleId }
+        const key = `${permissionId}\0${moduleId}`
+        const exists = catalog[label].some(
+          (x) => `${x.permissionId}\0${x.moduleId}` === key
+        )
+        if (!exists) catalog[label].push(row)
+      }
+    }
+  }
+
+  addItems(assigned)
+  addItems(unassigned)
+  return catalog
+}
+
 function normalizeDepartmentRoleDetail(raw: unknown): DepartmentRoleDetail {
   const root = asRecord(raw) ?? {}
   const inner = asRecord(root.data) ?? root
@@ -258,46 +294,83 @@ function normalizeDepartmentRoleDetail(raw: unknown): DepartmentRoleDetail {
   }
   const groupByModuleId = new Map<number, MutableGroup>()
 
-  const rolePermsRaw = inner.rolePermissions
-  if (Array.isArray(rolePermsRaw)) {
-    for (const item of rolePermsRaw) {
-      const r = asRecord(item)
-      if (!r || !permissionStatusIsActive(r.status)) continue
+  const assignedRecord = asRecord(inner.assignedRolePermissions)
+  const unassignedRecord = asRecord(inner.unassignedRolePermissions)
 
-      const permissionIdRaw = r.permissionId
-      if (typeof permissionIdRaw !== "string" || !permissionIdRaw.trim()) continue
-      const permissionId = permissionIdRaw.trim()
-
-      const mod = asRecord(r.module)
-      const moduleId =
-        typeof mod?.id === "number"
-          ? mod.id
-          : typeof r.moduleId === "number"
-            ? r.moduleId
-            : 0
-      const moduleName =
-        typeof mod?.name === "string" ? mod.name : "Other"
-
-      const name = nameByPermissionId.get(permissionId) ?? permissionId
-
-      let g = groupByModuleId.get(moduleId)
-      if (!g) {
-        g = { moduleId, moduleName, items: new Map() }
-        groupByModuleId.set(moduleId, g)
-      }
-      g.items.set(permissionId, { permissionId, name })
-    }
+  let permissionCatalogByModuleName: DepartmentRolePermissionCatalog
+  if (assignedRecord || unassignedRecord) {
+    permissionCatalogByModuleName = buildPermissionCatalogFromDetail(assignedRecord, unassignedRecord)
+  } else {
+    permissionCatalogByModuleName = buildPermissionCatalogFromRole(role)
   }
 
-  let permissionGroups: DepartmentRolePermissionModuleGroup[] = [...groupByModuleId.values()]
-    .sort((a, b) => a.moduleId - b.moduleId)
-    .map((g) => ({
-      moduleId: g.moduleId,
-      moduleName: g.moduleName,
-      permissions: [...g.items.values()].sort((a, b) =>
-        a.name.localeCompare(b.name, undefined, { sensitivity: "base" })
-      ),
-    }))
+  let permissionGroups: DepartmentRolePermissionModuleGroup[] = []
+  if (assignedRecord) {
+    for (const [moduleName, items] of Object.entries(assignedRecord)) {
+      if (!Array.isArray(items) || items.length === 0) continue
+      const first = asRecord(items[0])
+      const moduleId = typeof first?.moduleId === "number" ? first.moduleId : 0
+
+      const permissions = items
+        .map((item) => {
+          const pr = asRecord(item)
+          const permissionId = typeof pr?.permissionId === "string" ? pr.permissionId : ""
+          const name = typeof pr?.name === "string" ? pr.name : permissionId
+          return { permissionId, name }
+        })
+        .filter((p) => Boolean(p.permissionId))
+        .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }))
+
+      permissionGroups.push({
+        moduleId,
+        moduleName: shuttleLabelForModuleName(moduleName),
+        permissions,
+      })
+    }
+    permissionGroups.sort((a, b) => a.moduleId - b.moduleId)
+  } else {
+    // Fallback: original logic
+    const rolePermsRaw = inner.rolePermissions
+    if (Array.isArray(rolePermsRaw)) {
+      for (const item of rolePermsRaw) {
+        const r = asRecord(item)
+        if (!r || !permissionStatusIsActive(r.status)) continue
+
+        const permissionIdRaw = r.permissionId
+        if (typeof permissionIdRaw !== "string" || !permissionIdRaw.trim()) continue
+        const permissionId = permissionIdRaw.trim()
+
+        const mod = asRecord(r.module)
+        const moduleId =
+          typeof mod?.id === "number"
+            ? mod.id
+            : typeof r.moduleId === "number"
+              ? r.moduleId
+              : 0
+        const moduleName =
+          typeof mod?.name === "string" ? mod.name : "Other"
+
+        const name = nameByPermissionId.get(permissionId) ?? permissionId
+
+        let g = groupByModuleId.get(moduleId)
+        if (!g) {
+          g = { moduleId, moduleName, items: new Map() }
+          groupByModuleId.set(moduleId, g)
+        }
+        g.items.set(permissionId, { permissionId, name })
+      }
+    }
+
+    permissionGroups = [...groupByModuleId.values()]
+      .sort((a, b) => a.moduleId - b.moduleId)
+      .map((g) => ({
+        moduleId: g.moduleId,
+        moduleName: g.moduleName,
+        permissions: [...g.items.values()].sort((a, b) =>
+          a.name.localeCompare(b.name, undefined, { sensitivity: "base" })
+        ),
+      }))
+  }
 
   let assignedPermissions: string[] = permissionGroups.flatMap((g) =>
     g.permissions.map((p) => p.name)
@@ -324,7 +397,7 @@ function normalizeDepartmentRoleDetail(raw: unknown): DepartmentRoleDetail {
     active,
     assignedPermissions,
     permissionGroups,
-    permissionCatalogByModuleName: buildPermissionCatalogFromRole(role),
+    permissionCatalogByModuleName,
   }
 }
 
