@@ -1,5 +1,6 @@
-import { ChevronDown, Clock, Eye, Plus, Trash2, Check } from "lucide-react"
+import { ChevronDown, Clock, Eye, Plus, Trash2 } from "lucide-react"
 import { useCallback, useMemo, useRef, useState } from "react"
+import type { SupervisorApportioningConfig } from "../queries/getUserApportioningConfig"
 import { useGetPersonalMulticodeDropdowns } from "../queries/getPersonalDropdowns"
 import { useGetProgramActivityRelations } from "../queries/getProgramActivityRelations"
 
@@ -15,9 +16,6 @@ import { useAuth } from "@/contexts/AuthContext"
 import { API_BASE_URL } from "@/lib/config"
 import { apiDownloadSupportingDoc, apiDeleteSupportingDoc } from "../api/personalTimeStudyApi"
 import { Spinner } from "@/components/ui/spinner"
-import { useQuery } from "@tanstack/react-query"
-import { userModuleKeys } from "@/features/user/keys"
-import { apiGetUserDetails } from "@/features/user/api"
 import { normalizeMulticodeDropdownPayload } from "../utils/multicodeDropdownUtils"
 import { mergeProgramActivityRelationTransferItems } from "@/features/program/queries/programActivityRelation"
 
@@ -55,6 +53,7 @@ export type TimeEntryParentRow = {
   dbId?: number
   start: string
   end: string
+  totalMin?: string
   tsProgram: string
   serviceActivity: string
   description: string
@@ -90,6 +89,7 @@ function createParent(): TimeEntryParentRow {
     id: newId(),
     start: "",
     end: "",
+    totalMin: "",
     tsProgram: "",
     serviceActivity: "",
     description: "",
@@ -159,10 +159,10 @@ type PersonalTimeStudyEntryFormProps = {
     name?: string
     employeeName?: string
   }>
-  isApportioningUser?: boolean
+  apportioningConfig?: SupervisorApportioningConfig | null
+  /** Pre-calculated apportioning records from backend (apportioning=true TSRs). */
+  apportioningRecords?: any[]
   isLoading?: boolean
-  onDropdownOpen?: () => void
-  isDropdownLoading?: boolean
 }
 
 function TimePicker24h({
@@ -306,31 +306,13 @@ export function PersonalTimeStudyEntryForm({
   showLeaveBanner = false,
   leaveRecords,
   className,
-  isApportioningUser = false,
+  apportioningConfig,
+  apportioningRecords,
   isLoading = false,
-  onDropdownOpen,
-  isDropdownLoading = false,
 }: PersonalTimeStudyEntryFormProps) {
   const { user } = useAuth()
   const userId = propsUserId || user?.id || ""
   const username = propsUsername || user?.name || ""
-
-  // Fetch User Details to check Apportioning status if not explicitly passed as true
-  const userDetailsQuery = useQuery({
-    queryKey: userModuleKeys.detail(userId),
-    queryFn: () => apiGetUserDetails(userId),
-    enabled: !!userId,
-  })
-
-  const effectiveIsApportioningUser = useMemo(() => {
-    if (isApportioningUser) return true
-    if (!userDetailsQuery.data) return false
-    const details = userDetailsQuery.data
-    return details.supervisorApportioning === true || 
-           (details.departmentsRoles ?? []).some(dr => dr.apportioningRequired === true)
-  }, [isApportioningUser, userDetailsQuery.data])
-
-  const effectiveIsLoading = isLoading || userDetailsQuery.isLoading
 
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false)
   const [parents, setParents] = useState<TimeEntryParentRow[]>([createParent()])
@@ -338,6 +320,17 @@ export function PersonalTimeStudyEntryForm({
   const [prevLeaveRecords, setPrevLeaveRecords] = useState<any[] | undefined>(undefined)
 
   const formSettings = useMemo(() => {
+    if (apportioningConfig?.settings) {
+      return {
+        moveSaveSubmitToTop: apportioningConfig.settings.moveSaveSubmitToTop,
+        removeAutoFillEndTime: apportioningConfig.settings.removeAutoFillEndTime,
+        startorEndTime: apportioningConfig.settings.removeStartEndTime,
+        supportingDoc: apportioningConfig.settings.removeSupportingDocument,
+        removeDescriptionActivityNote: apportioningConfig.settings.removeDescriptionActivityNote,
+        removeDescriptionActivityNoteAnchor: apportioningConfig.settings.removeDescriptionActivityNoteAnchor,
+        removeDescriptionActivityNoteMultiCode: apportioningConfig.settings.removeDescriptionActivityNoteMultiCode,
+      }
+    }
     if (!dropdownData || dropdownData.length === 0) return null
     return {
       moveSaveSubmitToTop: dropdownData.some((d: any) => !!d.moveSaveSubmitToTop),
@@ -348,7 +341,7 @@ export function PersonalTimeStudyEntryForm({
       removeDescriptionActivityNoteAnchor: dropdownData.some((d: any) => !!d.removeDescriptionActivityNoteAnchor),
       removeDescriptionActivityNoteMultiCode: dropdownData.some((d: any) => !!d.removeDescriptionActivityNoteMultiCode),
     }
-  }, [dropdownData])
+  }, [apportioningConfig, dropdownData])
 
   const moveSaveSubmitToTop = formSettings?.moveSaveSubmitToTop ?? false
 
@@ -367,6 +360,7 @@ export function PersonalTimeStudyEntryForm({
             dbId: rec.id,
             start: rec.starttime ?? "",
             end: rec.endtime ?? "",
+            totalMin: String(rec.activitytime ?? ""),
             tsProgram: String(rec.programid ?? ""),
             serviceActivity: String(rec.activityid ?? ""),
             description: rec.description ?? "",
@@ -472,7 +466,7 @@ export function PersonalTimeStudyEntryForm({
     return Array.from(new Map(list.map((a) => [a.id, a])).values())
   }, [dropdownData])
 
-  const allowMulticodeUi = false // apportioningConfig?.allowMultiCodes === true
+  const allowMulticodeUi = apportioningConfig?.allowMultiCodes === true
   const hasMulticodeSubRows = useMemo(() => parents.some((p) => p.subRows.length > 0), [parents])
   const multicodeDropdownQuery = useGetPersonalMulticodeDropdowns(
     userId,
@@ -619,19 +613,22 @@ export function PersonalTimeStudyEntryForm({
         updatedP.end = addMinutesToTime(patch.start, 15)
       }
 
-      if (patch.start !== undefined || patch.end !== undefined) {
+      if (patch.start !== undefined || patch.end !== undefined || patch.totalMin !== undefined) {
         if (updatedP.subRows.length > 0) {
-          const parentMin = Number(computeDurationMinutes(updatedP.start, updatedP.end)) || 0
-          const subTotalMin = updatedP.subRows.reduce((sum, s) => sum + (Number(computeDurationMinutes(s.start, s.end)) || 0), 0)
+          const hideTime = !!formSettings?.startorEndTime
+          const parentMin = hideTime
+            ? (Number(updatedP.totalMin) || 0)
+            : (Number(computeDurationMinutes(updatedP.start, updatedP.end)) || 0)
+          const subTotalMin = updatedP.subRows.reduce((sum, s) => sum + (Number(s.totalMin) || Number(computeDurationMinutes(s.start, s.end)) || 0), 0)
           if (subTotalMin > parentMin) {
             toast.error(`Parent total is ${parentMin} mins . Child total should not exceed the parent time.`, { id: `val-${id}` })
-            updatedP.end = ""
+            if (!hideTime) updatedP.end = ""
           }
         }
       }
       return updatedP
     }))
-  }, [formSettings?.removeAutoFillEndTime])
+  }, [formSettings?.removeAutoFillEndTime, formSettings?.startorEndTime])
 
   const updateSubRow = (parentId: string, subRowId: string, updates: Partial<TimeEntrySubRow>) => {
     if (isLocked) return
@@ -656,7 +653,10 @@ export function PersonalTimeStudyEntryForm({
         })
 
         if (updates.end || updates.start || updates.totalMin) {
-          const parentMinutes = Number(computeDurationMinutes(p.start, p.end)) || 0
+          const hideTime = !!formSettings?.startorEndTime
+          const parentMinutes = hideTime
+            ? (Number(p.totalMin) || 0)
+            : (Number(computeDurationMinutes(p.start, p.end)) || 0)
           const subTotalMinutes = newSubRows.reduce((acc, s) => acc + (Number(s.totalMin) || 0), 0)
 
           if (subTotalMinutes > parentMinutes) {
@@ -717,6 +717,7 @@ export function PersonalTimeStudyEntryForm({
 
   const mapToPayload = (overrideStatus?: string): any[] => {
     const deptId = dropdownData?.[0]?.departmentId
+    const hideTime = !!formSettings?.startorEndTime
     return parents
       .filter((p) => !(p.isLeave && !p.dbId))
       .map((p) => ({
@@ -726,7 +727,7 @@ export function PersonalTimeStudyEntryForm({
         date: dateStr,
         starttime: p.start,
         endtime: p.end,
-        activitytime: Number(computeDurationMinutes(p.start, p.end)) || 0,
+        activitytime: hideTime ? (Number(p.totalMin) || 0) : (Number(computeDurationMinutes(p.start, p.end)) || 0),
         programid: p.tsProgram,
         activityid: p.serviceActivity,
         description: p.description,
@@ -753,14 +754,24 @@ export function PersonalTimeStudyEntryForm({
   }
 
   const validateEntries = () => {
+    const hideTime = !!formSettings?.startorEndTime
     for (const p of parents) {
-      if (!p.start || !p.end || !p.tsProgram || !p.serviceActivity) {
-        toast.error("Please fill all the required fields")
-        return false
+      if (hideTime) {
+        if (!p.totalMin || !p.tsProgram || !p.serviceActivity) {
+          toast.error("Please fill all the required fields")
+          return false
+        }
+      } else {
+        if (!p.start || !p.end || !p.tsProgram || !p.serviceActivity) {
+          toast.error("Please fill all the required fields")
+          return false
+        }
       }
 
       if (p.subRows.length > 0) {
-        const parentMin = Number(computeDurationMinutes(p.start, p.end)) || 0
+        const parentMin = hideTime
+          ? (Number(p.totalMin) || 0)
+          : (Number(computeDurationMinutes(p.start, p.end)) || 0)
         let subTotalMin = 0
         for (const s of p.subRows) {
           if (!s.totalMin || !s.studyProgram || !s.serviceActivity) {
@@ -895,7 +906,7 @@ export function PersonalTimeStudyEntryForm({
 
   return (
     <section className={cn("relative w-full rounded-[6px] border-0 bg-white p-4 shadow-[0_4px_16px_rgba(16,24,40,0.12)]", className)}>
-      {effectiveIsLoading && (
+      {isLoading && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/60 backdrop-blur-[1px] rounded-[6px]">
           <Spinner className="text-[#6C5DD3]" />
         </div>
@@ -937,14 +948,6 @@ export function PersonalTimeStudyEntryForm({
         <div className="flex items-center justify-between">
           <h3 className="text-[14px] text-[#6C5DD3] font-semibold">Time Entries</h3>
           <div className="flex items-center gap-3">
-            {effectiveIsApportioningUser && !readonly && (
-              <div className="flex items-center gap-2 mr-2">
-                <div className="flex size-4 items-center justify-center rounded-[4px] bg-[#6C5DD3]/50 cursor-not-allowed">
-                  <Check className="size-2.5 text-white stroke-[4]" />
-                </div>
-                <span className="text-[13px] text-gray-500 font-medium">Apportioning</span>
-              </div>
-            )}
             {!readonly && moveSaveSubmitToTop && (
               <div className="flex items-center gap-2 mr-2">
                 <Button
@@ -993,17 +996,10 @@ export function PersonalTimeStudyEntryForm({
                 )}
                 <div className="flex-1 space-y-0.5">
                   <Label className="text-[11px] text-[#6C5DD3] font-medium">TS Program <RequiredMark /></Label>
-                  <div>
-                    <SingleSelectSearchDropdown
+                  <SingleSelectSearchDropdown
                       value={parent.tsProgram}
                       placeholder="Select program"
                       disabled={isLocked || isLeaveRow}
-                      isLoading={isDropdownLoading}
-                      onOpenChange={(open) => {
-                        if (open) {
-                          onDropdownOpen?.();
-                        }
-                      }}
                       options={(() => {
                         const filtered = programs
                           .filter((p: any) => !p.isMultiCode)
@@ -1031,7 +1027,6 @@ export function PersonalTimeStudyEntryForm({
                       onBlur={() => { }}
                       className={cn("h-10 text-[11px]", (isLocked || isLeaveRow) && "bg-[#F2F4F7] cursor-not-allowed", isLeaveRow && "border-yellow-400")}
                     />
-                  </div>
                 </div>
                 <div className="flex-1 space-y-0.5">
                   <Label className="text-[11px] text-[#6C5DD3] font-medium">Service / Activity Code <RequiredMark /></Label>
@@ -1065,7 +1060,23 @@ export function PersonalTimeStudyEntryForm({
                 )}
                 <div className="w-[60px] space-y-0.5">
                   <Label className="text-[11px] text-muted-foreground">Min. <RequiredMark /></Label>
-                  <TitleCaseInput readOnly value={totalDisplay} placeholder="—" className={cn("h-10 bg-[#F2F4F7] text-[11px] cursor-not-allowed", isLeaveRow && "border-yellow-400")} />
+                  <TitleCaseInput
+                    type="number"
+                    min="0"
+                    readOnly={isLocked || isLeaveRow || !hideTime}
+                    value={hideTime ? (parent.totalMin ?? "") : totalDisplay}
+                    placeholder="—"
+                    className={cn(
+                      "h-10 text-[11px]",
+                      (isLocked || isLeaveRow || !hideTime) && "bg-[#F2F4F7] cursor-not-allowed",
+                      isLeaveRow && "border-yellow-400"
+                    )}
+                    onChange={(e) => {
+                      if (hideTime) {
+                        updateParent(parent.id, { totalMin: e.target.value })
+                      }
+                    }}
+                  />
                 </div>
                 {!hideNotes && (
                   <div className="flex-[1.5] space-y-0.5">
@@ -1103,7 +1114,7 @@ export function PersonalTimeStudyEntryForm({
                       <Trash2 className="size-4" />
                     </Button>
                   )}
-                  {!readonly && !isLeaveRow && false && (
+                  {!readonly && !isLeaveRow && allowMulticodeUi && (
                     <Button
                       size="icon"
                       variant="outline"
