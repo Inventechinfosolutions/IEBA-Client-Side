@@ -497,7 +497,7 @@ export function ScheduleTimeStudyForm({
                                           key={group}
                                           type="button"
                                           className={cn(
-                                            "flex w-full items-center justify-between rounded-[8px] px-3 py-2 text-left text-[14px] hover:bg-[#F3F4F6] transition-colors",
+                                            "flex w-full items-center justify-between rounded-[8px] px-2 py-2 text-left text-[14px] hover:bg-[#F3F4F6] transition-colors",
                                             isSelected && "bg-[#F3F4F6] text-[#6C5DD3] font-medium"
                                           )}
                                           onClick={() => {
@@ -650,8 +650,6 @@ export function ScheduleTimeStudyForm({
                         // users[] already contains resolved display names from backend
                         const userRows: { id: string; label: string }[] =
                           (g.users ?? []).map((name) => ({ id: name, label: name }))
-
-                        const jobPoolItems = g.jobPools ?? []
 
                         return (
                           <div key={g.id} className="overflow-hidden rounded-[8px] border border-[#E5E7EB] mb-4 last:mb-0">

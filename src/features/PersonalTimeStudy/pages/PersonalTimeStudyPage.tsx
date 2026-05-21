@@ -280,9 +280,11 @@ export function PersonalTimeStudyPage() {
   return (
     <TooltipProvider>
       <section className="font-roboto *:font-roboto box-border w-full min-w-0 max-w-full overflow-x-hidden">
-        <div className="box-border w-full min-w-0 max-w-full px-6 py-4">
+        <div className="box-border w-full min-w-0 max-w-full">
+
           {/* ── Outer card wrapping BOTH tabs — same as Payroll page ── */}
           <div className="box-border mx-auto min-w-0 w-full max-w-full overflow-hidden rounded-[6px] border border-[#e7e9f2] bg-white shadow-[0_0_14px_0_rgb(0_0_0/0.04),0_0_1px_0_rgb(0_0_0/0.06)]">
+
             {/* Tab Bar — Program-style design */}
             <div className="border-b border-[#eef0f5]">
               <div className={cn("grid select-none gap-0 bg-white", canReviewMgt ? "grid-cols-2" : "grid-cols-1")}>

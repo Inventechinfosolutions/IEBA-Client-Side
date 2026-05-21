@@ -1248,8 +1248,6 @@ export function PersonalTimeStudyEntryForm({
           )
         })}
       </div>
-
-
       {!readonly && !moveSaveSubmitToTop && (
         <div className="mt-4 flex justify-end gap-2">
           <Button

@@ -85,7 +85,7 @@ export function UserTable({ rows, isLoading, onEditRow, onSwitchUser }: UserTabl
             {headers.map((header, idx) => (
               <TableHead
                 key={header}
-                className={`h-10 bg-[var(--primary)] p-[8px] text-[12px] leading-[1.15] font-medium text-white whitespace-normal break-words ${
+                className={`h-10 bg-[var(--primary)] p-[8px] text-[12px] leading-[1.15] font-normal text-white whitespace-normal break-words ${
                   idx === headers.length - 1 ? "border-r-0" : "border-r border-white/50"
                 } ${idx >= 3 ? "text-center" : ""}`}
               >
