@@ -1,5 +1,4 @@
 import { useMemo, useState } from "react"
-import { useQuery } from "@tanstack/react-query"
 import { X, Lock, Check } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
@@ -281,12 +280,8 @@ export function PersonalTimeStudyPage() {
   return (
     <TooltipProvider>
       <section className="font-roboto *:font-roboto box-border w-full min-w-0 max-w-full overflow-x-hidden">
-        <div className="box-border w-full min-w-0 max-w-full px-6 py-4">
-      <section className="font-roboto *:font-roboto box-border w-full min-w-0 max-w-full overflow-x-hidden">
-        <div className="box-border w-full min-w-0 max-w-full px-6 py-4">
+        <div className="box-border w-full min-w-0 max-w-full">
 
-          {/* ── Outer card wrapping BOTH tabs — same as Payroll page ── */}
-          <div className="box-border mx-auto min-w-0 w-full max-w-full overflow-hidden rounded-[6px] border border-[#e7e9f2] bg-white shadow-[0_0_14px_0_rgb(0_0_0/0.04),0_0_1px_0_rgb(0_0_0/0.06)]">
           {/* ── Outer card wrapping BOTH tabs — same as Payroll page ── */}
           <div className="box-border mx-auto min-w-0 w-full max-w-full overflow-hidden rounded-[6px] border border-[#e7e9f2] bg-white shadow-[0_0_14px_0_rgb(0_0_0/0.04),0_0_1px_0_rgb(0_0_0/0.06)]">
 
@@ -323,62 +318,10 @@ export function PersonalTimeStudyPage() {
                 )}
               </div>
             </div>
-            {/* Tab Bar — Program-style design */}
-            <div className="border-b border-[#eef0f5]">
-              <div className={cn("grid select-none gap-0 bg-white", canReviewMgt ? "grid-cols-2" : "grid-cols-1")}>
-                <button
-                  id="tab-personal-time-study"
-                  type="button"
-                  onClick={() => setActiveTab("personal")}
-                  className={cn(
-                    "flex h-[63px] cursor-pointer items-center justify-center rounded-[6px] border px-3 text-[17px] leading-none font-medium tracking-wide",
-                    activeTab === "personal"
-                      ? "border-[#6C5DD3] bg-[#6C5DD3] text-white"
-                      : "border-[#e8e9ef] bg-white text-[#6C5DD3]"
-                  )}
-                >
-                  Personal Time Study
-                </button>
-                {canReviewMgt && (
-                  <button
-                    id="tab-time-study-mgt"
-                    type="button"
-                    onClick={() => setActiveTab("mgt")}
-                    className={cn(
-                      "flex h-[63px] cursor-pointer items-center justify-center rounded-[6px] border px-3 text-[17px] leading-none font-medium tracking-wide",
-                      activeTab === "mgt"
-                        ? "border-[#6C5DD3] bg-[#6C5DD3] text-white"
-                        : "border-[#e8e9ef] bg-white text-[#6C5DD3]"
-                    )}
-                  >
-                    Time Study MGT
-                  </button>
-                )}
-              </div>
-            </div>
 
             {/* Tab Content — padded inside the card */}
             <div className="p-4 lg:p-6">
-            {/* Tab Content — padded inside the card */}
-            <div className="p-4 lg:p-6">
 
-              {/* ── Personal Time Study Tab ── */}
-              {activeTab === "personal" && (
-                <>
-                  <div className="flex flex-col gap-2 lg:flex-row lg:items-stretch lg:gap-2">
-                    <div className="flex min-h-0 min-w-0 shrink-0 lg:w-[38%] lg:max-w-[38%]">
-                      <PersonalTimeStudyCalendarCard
-                        weekRows={weekRows}
-                        selectedDate={selectedDate}
-                        onDateSelect={setSelectedDate}
-                        currentMonthDate={viewportDate}
-                        onMonthChange={handleMonthChange}
-                        dayStatuses={dayStatuses}
-                        weekSummaries={weekSummaries}
-                        renderStatus={renderStatus}
-                        className="h-full min-h-0 w-full min-w-0"
-                      />
-                    </div>
               {/* ── Personal Time Study Tab ── */}
               {activeTab === "personal" && (
                 <>
@@ -457,8 +400,6 @@ export function PersonalTimeStudyPage() {
                       actualMultiTotal={summaryQuery.data?.actualmultiactivitytime}
                       multiBalanceTotal={summaryQuery.data?.actualmultiactivityTimebalance}
                       hideSummaryHeader={true}
-                      apportioningConfig={apportioningConfigQuery.data ?? null}
-                      apportioningRecords={dayQuery.data?.timeStudyRecords?.filter((r: any) => r.apportioning === true) || []}
                       isLoading={dayQuery.isFetching || submitMutation.isPending || deleteMutation.isPending}
                     />
                   </div>
@@ -469,15 +410,7 @@ export function PersonalTimeStudyPage() {
               {activeTab === "mgt" && canReviewMgt && (
                 <TimeStudyMGTPage />
               )}
-              {/* ── Time Study MGT Tab ── */}
-              {activeTab === "mgt" && canReviewMgt && (
-                <TimeStudyMGTPage />
-              )}
 
-            </div>
-          </div>
-        </div>
-      </section>
             </div>
           </div>
         </div>

@@ -210,7 +210,7 @@ export function DashboardLayout() {
             )}
           </div>
         </header>
-        <div className="flex flex-1 min-h-0 flex-col gap-4 overflow-auto p-4 md:gap-6 md:p-6">
+        <div className="flex flex-1 min-h-0 flex-col gap-4 overflow-auto p-4 md:gap-6 md:p-6 bg-[#f5f5f5]">
           <Outlet />
         </div>
       </SidebarInset>

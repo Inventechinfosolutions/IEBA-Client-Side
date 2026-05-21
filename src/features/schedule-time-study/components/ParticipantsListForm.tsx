@@ -444,7 +444,7 @@ export function ParticipantsListForm({
                                             <div className="absolute left-4 top-0 h-full w-[1.5px] bg-[#D1D5DB]" />
                                             <div className="absolute left-4 top-1/2 h-[1.5px] w-3 bg-[#D1D5DB]" />
                                           </div>
-                                          <div className="pl-6 text-[14px] font-normal text-[#111827] whitespace-normal break-words">
+                                          <div className=" text-[14px] font-normal text-[#111827] whitespace-normal break-words">
                                             {label}
                                           </div>
                                         </div>
@@ -546,7 +546,7 @@ export function ParticipantsListForm({
                                     <div className="absolute left-4 top-0 h-full w-[1.5px] bg-[#D1D5DB]" />
                                     <div className="absolute left-4 top-1/2 h-[1.5px] w-3 bg-[#D1D5DB]" />
                                   </div>
-                                  <div className="pl-6 text-[14px] font-normal text-[#111827] whitespace-normal break-words">
+                                  <div className=" text-[14px] font-normal text-[#111827] whitespace-normal break-words">
                                     {label}
                                   </div>
                                 </div>
@@ -653,14 +653,14 @@ export function ParticipantUsersModal({
                         {list.map((u) => (
                           <div
                             key={u.id}
-                            className="relative grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-2 bg-[#F3F0FF] py-1 pl-[60px] pr-5 text-left"
+                            className="relative grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-2 py-1 pl-[60px] pr-5 text-left"
                           >
                             <div className="min-w-0 pr-2">
                               <div className="absolute left-6 top-0.5 flex h-full w-8 items-center justify-center">
                                 <div className="absolute left-4 top-0 h-full w-[1.5px] bg-[#D1D5DB]" />
                                 <div className="absolute left-4 top-1/2 h-[1.5px] w-3 bg-[#D1D5DB]" />
                               </div>
-                              <div className="pl-6 text-[14px] font-normal text-[#111827] whitespace-normal break-words">
+                              <div className=" text-[14px] font-normal text-[#111827] whitespace-normal break-words">
                                 {u.label}
                               </div>
                             </div>

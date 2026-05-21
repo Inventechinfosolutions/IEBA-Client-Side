@@ -431,7 +431,7 @@ export function ScheduleTimeStudyForm({
                                           key={group}
                                           type="button"
                                           className={cn(
-                                            "flex w-full items-center justify-between rounded-[8px] px-3 py-2 text-left text-[14px] hover:bg-[#F3F4F6] transition-colors",
+                                            "flex w-full items-center justify-between rounded-[8px] px-2 py-2 text-left text-[14px] hover:bg-[#F3F4F6] transition-colors",
                                             isSelected && "bg-[#F3F4F6] text-[#6C5DD3] font-medium"
                                           )}
                                           onClick={() => {
@@ -685,7 +685,7 @@ export function ScheduleTimeStudyForm({
                                             <div className="absolute left-4 top-0 h-full w-[1.5px] bg-[#D1D5DB]" />
                                             <div className="absolute left-4 top-1/2 h-[1.5px] w-3 bg-[#D1D5DB]" />
                                           </div>
-                                          <div className="pl-6 text-[14px] font-normal text-[#111827] whitespace-normal break-words">
+                                          <div className="text-[14px] font-normal text-[#111827] whitespace-normal break-words">
                                             {resolveUserLabel(id)}
                                           </div>
                                       </div>
@@ -719,7 +719,7 @@ export function ScheduleTimeStudyForm({
                                             <div className="absolute left-4 top-0 h-full w-[1.5px] bg-[#D1D5DB]" />
                                             <div className="absolute left-4 top-1/2 h-[1.5px] w-3 bg-[#D1D5DB]" />
                                           </div>
-                                          <div className="pl-6 text-[14px] font-normal text-[#111827] whitespace-normal break-words">
+                                          <div className=" text-[14px] font-normal text-[#111827] whitespace-normal break-words">
                                             {u.label}
                                           </div>
                                       </div>

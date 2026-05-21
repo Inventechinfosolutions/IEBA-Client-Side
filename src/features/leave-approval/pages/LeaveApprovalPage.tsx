@@ -94,7 +94,7 @@ export function LeaveApprovalPage() {
         } as React.CSSProperties
       }
     >
-      <div className="rounded-[8px] bg-white p-3">
+      <div className="rounded-[8px] bg-white p-4 border border-[#E5E7EB]">
         <div className="mb-5">
           <LeaveApprovalToolbar
             defaultValues={filters}
