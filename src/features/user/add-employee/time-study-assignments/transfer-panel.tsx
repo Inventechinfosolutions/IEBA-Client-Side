@@ -1,11 +1,5 @@
 
 import { Check, Search } from "lucide-react"
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
 
 import tableEmptyIcon from "@/assets/icons/table-empty.png"
 import { TitleCaseInput } from "@/components/ui/title-case-input"
@@ -104,38 +98,16 @@ function TransferRow({
   onToggle?: () => void
 }) {
   const rawLevel = item.level ?? minLevel
-  const badgeCount = Math.max(0, rawLevel - minLevel)
+  const depth = Math.max(0, rawLevel - minLevel)
+  const indentPx = 12 + depth * 14
 
   const rowBody = (
     <>
-      <div className="flex min-w-0 flex-1 items-center gap-1 py-2">
-        <TreeBranch />
-        {badgeCount > 0 &&
-          Array.from({ length: badgeCount }).map((_, i) => {
-            const ancestor = item.ancestors?.[i]
-            return (
-              <div key={i} className="flex items-center">
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span
-                        className="relative flex size-[18px] shrink-0 cursor-help items-center justify-center rounded-full border border-[#6C5DD3] bg-[#F9FAFB] text-[9px] font-medium text-[#111827] shadow-[0_4px_8px_rgba(0,0,0,0.15)] -translate-y-px"
-                        style={{ zIndex: 11 }}
-                      >
-                        {i + 1}
-                      </span>
-                    </TooltipTrigger>
-                    <TooltipContent side="top">{ancestor?.name || `Parent ${i + 1}`}</TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-                {i < badgeCount - 1 && <TreeConnector />}
-              </div>
-            )
-          })}
-        {badgeCount > 0 && <TreeConnector />}
-        <div className="ml-1 flex flex-wrap items-center gap-1 text-[10px] font-medium">
-          <RowLabel item={item} isSelected={isSelected} readOnly={readOnly} />
-        </div>
+      <div
+        className="flex min-w-0 flex-1 items-center gap-1 py-2 text-[10px] font-medium"
+        style={{ paddingLeft: indentPx }}
+      >
+        <RowLabel item={item} isSelected={isSelected} readOnly={readOnly} />
       </div>
       <RowCheckbox isSelected={isSelected} readOnly={readOnly} />
     </>
@@ -162,14 +134,6 @@ function TransferRow({
   )
 }
 
-function TreeBranch() {
-  return <div className="h-px w-2.5 shrink-0 bg-[#E5E7EB]" style={{ marginLeft: "30px" }} />
-}
-
-function TreeConnector() {
-  return <div className="h-px w-1.5 shrink-0 bg-[#E5E7EB]" />
-}
-
 function ItemTree({
   items,
   selectedIds,
@@ -186,11 +150,7 @@ function ItemTree({
   if (items.length === 0) return null
 
   return (
-    <div className="relative flex flex-col pb-2">
-      <div
-        className="pointer-events-none absolute bottom-0 top-0 w-px bg-[#E5E7EB]"
-        style={{ left: "30px", zIndex: 10 }}
-      />
+    <div className="flex flex-col pb-2">
       {items.map((item) => (
         <TransferRow
           key={item.id}
@@ -209,6 +169,22 @@ function DisabledHeaderCheckbox() {
   return <RowCheckbox isSelected={false} readOnly />
 }
 
+function groupJobPoolItemsByLabel(
+  items: AddEmployeeTimeStudyTransferItem[],
+): Array<{ label: string; items: AddEmployeeTimeStudyTransferItem[] }> {
+  const order: string[] = []
+  const map = new Map<string, AddEmployeeTimeStudyTransferItem[]>()
+  for (const item of items) {
+    const label = item.ancestors?.[0]?.name?.trim() ?? ""
+    if (!map.has(label)) {
+      map.set(label, [])
+      order.push(label)
+    }
+    map.get(label)!.push({ ...item, ancestors: [], level: 1 })
+  }
+  return order.map((label) => ({ label, items: map.get(label) ?? [] }))
+}
+
 function JobPoolBlock({
   section,
   minLevel,
@@ -216,13 +192,26 @@ function JobPoolBlock({
   section: AddEmployeeTimeStudyJobPoolSection
   minLevel: number
 }) {
+  const groups = groupJobPoolItemsByLabel(section.items)
+
   return (
     <div className="flex flex-col">
       <div className="grid h-7 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 bg-[#F3F4F6] pl-4 pr-2 text-[10px] font-semibold text-[#6C5DD3]">
         <span className="min-w-0">{section.sectionTitle}</span>
         <DisabledHeaderCheckbox />
       </div>
-      <ItemTree items={section.items} selectedIds={[]} minLevel={minLevel} readOnly />
+      {groups.map((group) => (
+        <div key={group.label || "default"} className="flex flex-col">
+          {group.label ? (
+            <div className="px-4 py-1">
+              <span className="inline-flex items-center justify-center rounded-[6px] border border-[#E5E7EB] bg-white px-3 py-1 text-[10px] font-bold text-[#374151] shadow-sm">
+                {group.label}
+              </span>
+            </div>
+          ) : null}
+          <ItemTree items={group.items} selectedIds={[]} minLevel={minLevel} readOnly />
+        </div>
+      ))}
     </div>
   )
 }

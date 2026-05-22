@@ -502,7 +502,21 @@ function parseUserProgramsActivitiesProgramWithAssignments(
   const children = parseUserProgramsActivitiesAssignedSplit(childrenRaw, (item) =>
     parseUserProgramsActivitiesActivityItem(item, departmentId),
   )
-  return { ...program, children }
+  const row = raw as Record<string, unknown>
+  const jobpoolIdRaw = row.jobpoolId
+  const jobpoolId =
+    jobpoolIdRaw === null || jobpoolIdRaw === undefined
+      ? null
+      : typeof jobpoolIdRaw === "number"
+        ? jobpoolIdRaw
+        : Number(jobpoolIdRaw)
+  const jobpoolName = typeof row.jobpoolName === "string" ? row.jobpoolName.trim() : null
+  return {
+    ...program,
+    children,
+    jobpoolId: Number.isFinite(jobpoolId) ? jobpoolId : null,
+    jobpoolName: jobpoolName || null,
+  }
 }
 
 function parseUserProgramsActivitiesBundle(raw: unknown): UserProgramsActivitiesDepartmentBundle | null {
@@ -514,6 +528,13 @@ function parseUserProgramsActivitiesBundle(raw: unknown): UserProgramsActivities
   if (!Number.isFinite(departmentId) || !departmentName) return null
 
   const programs = parseUserProgramsActivitiesProgramsSplit(b.programs, departmentId)
+  const orphanActivities = parseUserProgramsActivitiesAssignedSplit(b.orphanActivities, (item) =>
+    parseUserProgramsActivitiesActivityItem(item, departmentId),
+  )
+  const jobPoolActivities = parseUserProgramsActivitiesAssignedSplit(
+    b.jobPoolActivities ?? b.job_pool_activities,
+    (item) => parseUserProgramsActivitiesActivityItem(item, departmentId),
+  )
 
   return {
     departmentId,
@@ -527,6 +548,8 @@ function parseUserProgramsActivitiesBundle(raw: unknown): UserProgramsActivities
     removeDescriptionActivityNoteAnchor: b.removeDescriptionActivityNoteAnchor === true,
     removeDescriptionActivityNoteMultiCode: b.removeDescriptionActivityNoteMultiCode === true,
     programs,
+    orphanActivities,
+    jobPoolActivities,
   }
 }
 
@@ -556,6 +579,9 @@ export async function fetchUserProgramsAndActivities(
   for (const row of list) {
     const bundle = parseUserProgramsActivitiesBundle(row)
     if (bundle) out.push(bundle)
+  }
+  if (departmentId != null && Number.isFinite(departmentId) && departmentId >= 1) {
+    return out.filter((b) => Number(b.departmentId) === departmentId)
   }
   return out
 }
