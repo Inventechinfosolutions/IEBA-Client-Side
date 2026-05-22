@@ -1,6 +1,6 @@
 import { parseMultiSelectStoredValues } from "@/components/ui/multi-select-dropdown"
 
-import type { UserContactItemPayload, UserDetailsDto, UserModuleFormValues } from "../types"
+import type { UserContactItemPayload, UserDetailsDto, UpdateUserRequestDto, UserModuleFormValues } from "../types"
 import { normalizePhoneForFormDisplay, phoneDigitsOnly } from "../add-employee/schemas"
 
 /** Bridge `number[]` form state ↔ `MultiSelectDropdown` comma-separated numeric tokens. */
@@ -185,5 +185,65 @@ export function mergeUserDetailsIntoFormValues(
       }
       return acc
     }, {} as Record<string, string>),
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Form values → UpdateUserRequestDto (shared by update and reset flows)
+// ---------------------------------------------------------------------------
+
+function toAssignedMultiCodes(value: string | undefined): string[] | undefined {
+  const raw = (value ?? "").trim()
+  if (!raw) return undefined
+  const parts = raw
+    .split(/[,;\n]+/g)
+    .map((p) => p.trim())
+    .filter(Boolean)
+  return parts.length ? parts : undefined
+}
+
+function toTsMinPerDay(value: string | undefined): number | undefined {
+  const n = Number.parseInt(String(value ?? "").trim(), 10)
+  if (!Number.isFinite(n)) return undefined
+  return n
+}
+
+function clampPositionName(raw: string): string {
+  const t = raw.trim()
+  if (t.length <= 255) return t
+  return t.slice(0, 255)
+}
+
+/**
+ * Maps `UserModuleFormValues` (RHF) to the `UpdateUserRequestDto` payload.
+ * Used by both the normal Save (PUT /users/:id) and Password Reset (PUT /users/:id/reset) flows.
+ */
+export function mapFormValuesToUpdateDto(
+  values: UserModuleFormValues,
+  opts?: { includePassword?: boolean },
+): UpdateUserRequestDto {
+  const passwordTrimmed = (values.password ?? "").trim()
+  const locationId = normalizeLocationId(values.locationId)
+  const jcIds = values.jobClassificationIds ?? []
+  return {
+    firstName: values.firstName.trim(),
+    lastName: values.lastName.trim(),
+    ...(opts?.includePassword !== false && passwordTrimmed !== "" ? { password: passwordTrimmed } : {}),
+    employeeId: (values.employeeNo ?? "").trim(),
+    positionName: clampPositionName(values.positionNo ?? ""),
+    jobClassificationIds: jcIds,
+    active: values.active,
+    pki: values.pkiUser,
+    spmp: values.spmp,
+    multilingual: values.multilingual,
+    allowMultiCodes: values.allowMultiCodes,
+    tsMinPerDay: toTsMinPerDay(values.tsMinDay),
+    claimingUnit: (values.claimingUnit ?? "").trim(),
+    assignedMultiCodes: toAssignedMultiCodes(values.assignedMultiCodes),
+    ...(locationId != null ? { locationId } : {}),
+    contacts: contactsPayloadForUpdate(values.phone),
+    primarySupervisorId: (values.supervisorPrimaryId ?? "").trim(),
+    backupSupervisorId: (values.supervisorSecondaryId ?? "").trim(),
+    supervisorApportioning: values.supervisorApportioning,
   }
 }
