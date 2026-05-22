@@ -20,6 +20,7 @@ import type {
   TimeStudyPlacementOverride,
   TimeStudyPlacementOverrideMap,
   UserModuleFormValues,
+  UserProgramsActivitiesActivityItem,
   UserProgramsActivitiesDepartmentBundle,
   UserProgramsActivitiesProgramWithAssignments,
 } from "../types"
@@ -177,6 +178,16 @@ function filterTransferItemsByDepartment(
   return items.filter((row) => row.department === d)
 }
 
+/** Pick exactly one department bundle from a multi-department API response. */
+function pickDepartmentBundleById(
+  bundles: ReadonlyArray<UserProgramsActivitiesDepartmentBundle>,
+  departmentId: number,
+): UserProgramsActivitiesDepartmentBundle | undefined {
+  const id = Number(departmentId)
+  if (!Number.isFinite(id) || id < 1) return undefined
+  return bundles.find((b) => Number(b.departmentId) === id)
+}
+
 function mapBundleProgramToTransferItem(
   program: UserProgramsActivitiesProgramWithAssignments,
   departmentName: string,
@@ -221,10 +232,12 @@ function getProgramsAssignedSplit(bundle: UserProgramsActivitiesDepartmentBundle
   if (Array.isArray(assigned)) {
     return { normal: assigned, jobpoolautoassign: [] as UserProgramsActivitiesProgramWithAssignments[] }
   }
-  return {
-    normal: assigned.normal ?? [],
-    jobpoolautoassign: assigned.jobpoolautoassign ?? [],
-  }
+  const normal = assigned.normal ?? []
+  const normalIds = new Set(normal.map((p) => p.id))
+  const jobpoolautoassign = (assigned.jobpoolautoassign ?? []).filter(
+    (p) => p.jobpoolId != null && p.jobpoolId >= 1 && !normalIds.has(p.id),
+  )
+  return { normal, jobpoolautoassign }
 }
 
 function allProgramsInBundle(
@@ -238,22 +251,84 @@ function mapJobPoolRowToTransferItem(
   row: { id: number; code: string; name: string },
   departmentName: string,
   itemId: string,
+  ancestors: AddEmployeeTimeStudyTransferItem["ancestors"] = [],
 ): AddEmployeeTimeStudyTransferItem {
   return {
     id: itemId,
     department: departmentName,
     code: row.code,
     name: row.name,
-    level: 1,
-    ancestors: [],
+    level: ancestors.length + 1,
+    ancestors,
   }
+}
+
+function jobPoolGroupAncestor(
+  bundle: UserProgramsActivitiesDepartmentBundle,
+  program: UserProgramsActivitiesProgramWithAssignments,
+): AddEmployeeTimeStudyTransferItem["ancestors"] {
+  const jobpoolName = program.jobpoolName?.trim()
+  if (program.jobpoolId == null || !jobpoolName) return []
+  // Pool name in prod is often already formatted (e.g. "SS | Fiscal"); avoid "SS-501100 | SS | Fiscal".
+  const groupLabel = jobpoolName.includes("|") ? jobpoolName : bundle.departmentCode.trim()
+    ? `${bundle.departmentCode.trim()} | ${jobpoolName}`
+    : jobpoolName
+  return [{ id: `jobpool-group-${program.jobpoolId}`, name: groupLabel }]
+}
+
+function mapJobPoolProgramToTransferItem(
+  program: UserProgramsActivitiesProgramWithAssignments,
+  bundle: UserProgramsActivitiesDepartmentBundle,
+): AddEmployeeTimeStudyTransferItem {
+  const departmentName = bundle.departmentName.trim()
+  const ancestors = jobPoolGroupAncestor(bundle, program)
+  return mapJobPoolRowToTransferItem(
+    program,
+    departmentName,
+    `jobpool-program-parent-${program.id}`,
+    ancestors,
+  )
+}
+
+function dedupeActivitiesById(
+  activities: UserProgramsActivitiesActivityItem[],
+): UserProgramsActivitiesActivityItem[] {
+  const byId = new Map<number, UserProgramsActivitiesActivityItem>()
+  for (const activity of activities) {
+    if (!byId.has(activity.id)) byId.set(activity.id, activity)
+  }
+  return [...byId.values()]
+}
+
+function jobPoolAssignedActivities(
+  bundle: UserProgramsActivitiesDepartmentBundle,
+): UserProgramsActivitiesActivityItem[] {
+  const fromBundle = bundle.jobPoolActivities?.assigned ?? []
+  if (fromBundle.length > 0) {
+    return dedupeActivitiesById(fromBundle)
+  }
+  return dedupeActivitiesById(
+    getProgramsAssignedSplit(bundle).jobpoolautoassign.flatMap(
+      (parent) => parent.children?.assigned ?? [],
+    ),
+  )
+}
+
+function jobPoolOnlyAssignedPrograms(
+  bundle: UserProgramsActivitiesDepartmentBundle,
+): UserProgramsActivitiesProgramWithAssignments[] {
+  const { normal, jobpoolautoassign } = getProgramsAssignedSplit(bundle)
+  const normalIds = new Set(normal.map((p) => p.id))
+  return jobpoolautoassign.filter(
+    (p) => p.jobpoolId != null && p.jobpoolId >= 1 && !normalIds.has(p.id),
+  )
 }
 
 function buildJobPoolTransferSection(
   bundle: UserProgramsActivitiesDepartmentBundle,
   kind: "programs" | "activities",
 ): AddEmployeeTimeStudyJobPoolSection | null {
-  const jobPoolPrograms = getProgramsAssignedSplit(bundle).jobpoolautoassign
+  const jobPoolPrograms = jobPoolOnlyAssignedPrograms(bundle)
   if (jobPoolPrograms.length === 0) return null
 
   const departmentName = bundle.departmentName.trim()
@@ -261,17 +336,9 @@ function buildJobPoolTransferSection(
 
   const items =
     kind === "programs"
-      ? jobPoolPrograms.map((parent) =>
-          mapJobPoolRowToTransferItem(parent, departmentName, `jobpool-program-parent-${parent.id}`),
-        )
-      : jobPoolPrograms.flatMap((parent) =>
-          (parent.children?.assigned ?? []).map((child) =>
-            mapJobPoolRowToTransferItem(
-              child,
-              departmentName,
-              `jobpool-activity-${parent.id}-${child.id}`,
-            ),
-          ),
+      ? sortTransferItems(jobPoolPrograms.map((parent) => mapJobPoolProgramToTransferItem(parent, bundle)))
+      : jobPoolAssignedActivities(bundle).map((child) =>
+          mapJobPoolRowToTransferItem(child, departmentName, `jobpool-activity-${child.id}`),
         )
 
   if (items.length === 0) return null
@@ -286,11 +353,11 @@ function collectJobPoolAssignedIds(bundle: UserProgramsActivitiesDepartmentBundl
   const programIds = new Set<string>()
   const activityIds = new Set<string>()
 
-  for (const parent of getProgramsAssignedSplit(bundle).jobpoolautoassign) {
+  for (const parent of jobPoolOnlyAssignedPrograms(bundle)) {
     programIds.add(String(parent.id))
-    for (const child of parent.children?.assigned ?? []) {
-      activityIds.add(String(child.id))
-    }
+  }
+  for (const child of jobPoolAssignedActivities(bundle)) {
+    activityIds.add(String(child.id))
   }
   return { programIds, activityIds }
 }
@@ -300,21 +367,23 @@ function collectBundleActivityTransferItems(
 ): AddEmployeeTimeStudyTransferItem[] {
   const dept = bundle.departmentName.trim()
   if (!dept) return []
-  const { normal } = getProgramsAssignedSplit(bundle)
-  const programs = normal
   const byId = new Map<string, AddEmployeeTimeStudyTransferItem>()
-  for (const program of programs) {
-    for (const activity of [...program.children.assigned, ...program.children.unassigned]) {
-      const id = String(activity.id)
-      if (!byId.has(id)) {
-        byId.set(id, {
-          id,
-          department: dept,
-          code: activity.code,
-          name: activity.name,
-        })
-      }
+  const addActivity = (activity: { id: number; code: string; name: string }) => {
+    const id = String(activity.id)
+    if (!byId.has(id)) {
+      byId.set(id, {
+        id,
+        department: dept,
+        code: activity.code,
+        name: activity.name,
+      })
     }
+  }
+  for (const activity of [
+    ...bundle.orphanActivities.assigned,
+    ...bundle.orphanActivities.unassigned,
+  ]) {
+    addActivity(activity)
   }
   return sortTransferItems([...byId.values()])
 }
@@ -515,15 +584,14 @@ export function TimeStudyAssignmentsPanel({
   const selectedBundle = useMemo((): UserProgramsActivitiesDepartmentBundle | undefined => {
     if (!hasUserTsBundle || programsDepartmentId == null) return undefined
     if (fetchProgramsPerDepartment) {
-      const list = userProgramsActivitiesQuery.data ?? []
-      return (
-        list.find((b) => b.departmentId === programsDepartmentId) ??
-        list[0]
+      const fromDeptQuery = pickDepartmentBundleById(
+        userProgramsActivitiesQuery.data ?? [],
+        programsDepartmentId,
       )
+      if (fromDeptQuery) return fromDeptQuery
+      return pickDepartmentBundleById(tsDepartmentScopeQuery.data ?? [], programsDepartmentId)
     }
-    return (tsDepartmentScopeQuery.data ?? []).find(
-      (b) => b.departmentId === programsDepartmentId,
-    )
+    return pickDepartmentBundleById(tsDepartmentScopeQuery.data ?? [], programsDepartmentId)
   }, [
     hasUserTsBundle,
     programsDepartmentId,
@@ -579,13 +647,20 @@ export function TimeStudyAssignmentsPanel({
 
   const bundleActivityIdsForSelectedDepartment = useMemo(() => {
     const ids = new Set<string>()
+    if (!selectedBundle) return ids
+    for (const activity of selectedBundle.orphanActivities.assigned) {
+      ids.add(String(activity.id))
+    }
+    for (const activity of jobPoolAssignedActivities(selectedBundle)) {
+      ids.add(String(activity.id))
+    }
     for (const program of assignedProgramsSplit.normal) {
       for (const activity of program.children.assigned) {
         ids.add(String(activity.id))
       }
     }
     return ids
-  }, [assignedProgramsSplit.normal])
+  }, [selectedBundle, assignedProgramsSplit.normal])
 
   const jobPoolProgramsSection = useMemo(
     () => (selectedBundle ? buildJobPoolTransferSection(selectedBundle, "programs") : null),
@@ -1051,7 +1126,7 @@ export function TimeStudyAssignmentsPanel({
 
       {needsDepartmentSelection ? (
         <p className="mb-3 text-[11px] text-[#6b7280]" role="status">
-          Select a department to load time study programs and activities for that department.
+          {/* Select a department to load time study programs and activities for that department. */}
         </p>
       ) : null}
 

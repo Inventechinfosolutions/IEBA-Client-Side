@@ -188,6 +188,8 @@ export type UserProgramsActivitiesAssignedSplit<T> = {
 
 export type UserProgramsActivitiesProgramWithAssignments = UserProgramsActivitiesProgramItem & {
   children: UserProgramsActivitiesAssignedSplit<UserProgramsActivitiesActivityItem>
+  jobpoolId?: number | null
+  jobpoolName?: string | null
 }
 
 /** Assigned programs from GET …/programs-activities-with-assignments. */
@@ -214,6 +216,10 @@ export type UserProgramsActivitiesDepartmentBundle = {
   removeDescriptionActivityNoteAnchor?: boolean
   removeDescriptionActivityNoteMultiCode?: boolean
   programs: UserProgramsActivitiesProgramsBundle
+  /** Clubbed activities for the regular activity shuttle (assigned / unassigned). */
+  orphanActivities: UserProgramsActivitiesAssignedSplit<UserProgramsActivitiesActivityItem>
+  /** Deduped job-pool template activities (JobPool Assigned Activities block). */
+  jobPoolActivities?: UserProgramsActivitiesAssignedSplit<UserProgramsActivitiesActivityItem>
 }
 
 /** POST /users/new/assign/program and …/unassign/program */
