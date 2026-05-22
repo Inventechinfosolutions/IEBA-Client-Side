@@ -98,6 +98,51 @@ function toastCountyActivityCodeApiError(err: unknown, fallback: string): void {
   })
 }
 
+type CountyActivityTableColumnConfig = {
+  key: string
+  labelLines: readonly string[]
+  widthWithAction: string
+  widthWithoutAction: string
+  align?: "left" | "center"
+  sortKey?: CountyActivityCodeSortableColumn
+}
+
+const COUNTY_ACTIVITY_TABLE_COLUMNS: CountyActivityTableColumnConfig[] = [
+  { key: "code", labelLines: ["County Activity", "Code"], widthWithAction: "w-[12%]", widthWithoutAction: "w-[10%]", sortKey: "countyActivityCode" },
+  { key: "name", labelLines: ["County Activity", "Name"], widthWithAction: "w-[12%]", widthWithoutAction: "w-[10%]", sortKey: "countyActivityName" },
+  { key: "description", labelLines: ["Description"], widthWithAction: "w-[8%]", widthWithoutAction: "w-[9%]" },
+  { key: "department", labelLines: ["Department"], widthWithAction: "w-[8%]", widthWithoutAction: "w-[9%]" },
+  { key: "masterCodeType", labelLines: ["Master Code", "Type"], widthWithAction: "w-[8%]", widthWithoutAction: "w-[9%]" },
+  { key: "masterCode", labelLines: ["Master Code"], widthWithAction: "w-[7%]", widthWithoutAction: "w-[8%]" },
+  { key: "spmp", labelLines: ["SPMP"], widthWithAction: "w-[4%]", widthWithoutAction: "w-[5%]", align: "center" },
+  { key: "match", labelLines: ["Match"], widthWithAction: "w-[5%]", widthWithoutAction: "w-[6%]", align: "center" },
+  { key: "percent", labelLines: ["%"], widthWithAction: "w-[3%]", widthWithoutAction: "w-[4%]", align: "center" },
+  { key: "active", labelLines: ["Active"], widthWithAction: "w-[4%]", widthWithoutAction: "w-[5%]", align: "center" },
+  { key: "leaveCode", labelLines: ["Leave Code"], widthWithAction: "w-[7%]", widthWithoutAction: "w-[7%]" },
+  { key: "apportioning", labelLines: ["Apportioning"], widthWithAction: "w-[7%]", widthWithoutAction: "w-[8%]" },
+  { key: "multipleJobPools", labelLines: ["Multiple Job", "Pools"], widthWithAction: "w-[9%]", widthWithoutAction: "w-[10%]" },
+]
+
+const COUNTY_ACTIVITY_ACTION_COLUMN: CountyActivityTableColumnConfig = {
+  key: "action",
+  labelLines: ["Action"],
+  widthWithAction: "w-[5%]",
+  widthWithoutAction: "w-[5%]",
+  align: "center",
+}
+
+function renderCountyActivityHeaderLabel(labelLines: readonly string[]) {
+  if (labelLines.length === 1) {
+    return <span className="whitespace-nowrap">{labelLines[0]}</span>
+  }
+
+  return labelLines.map((line, idx) => (
+    <span key={`${line}-${idx}`}>
+      {idx > 0 && <br />}
+      {line}
+    </span>
+  ))
+}
 
 function getCountyActivityCodeRowDepartmentLabel(row: CountyActivityCodeRow): string {
   const dept = row.department?.trim() ?? ""
@@ -1293,102 +1338,72 @@ export function CountyActivityCodeTable({
       <div className={`overflow-hidden rounded-[10px] border border-[#E5E7EB] ${showHistory ? "hidden" : ""}`}>
         <Table className="w-full table-fixed border-collapse">
           <colgroup>
-            <col className={canUpdateCountyActivity ? "w-[10%]" : "w-[11%]"} /> {/* Code */}
-            <col className={canUpdateCountyActivity ? "w-[10%]" : "w-[11%]"} /> {/* Name */}
-            <col className={canUpdateCountyActivity ? "w-[9%]" : "w-[10%]"} /> {/* Desc */}
-            <col className={canUpdateCountyActivity ? "w-[9%]" : "w-[10%]"} /> {/* Dept */}
-            <col className={canUpdateCountyActivity ? "w-[7%]" : "w-[8%]"} /> {/* Type */}
-            <col className={canUpdateCountyActivity ? "w-[6%]" : "w-[7%]"} /> {/* Code */}
-            <col className={canUpdateCountyActivity ? "w-[5%]" : "w-[5%]"} /> {/* SPMP */}
-            <col className={canUpdateCountyActivity ? "w-[6%]" : "w-[7%]"} /> {/* Match */}
-            <col className={canUpdateCountyActivity ? "w-[4%]" : "w-[5%]"} /> {/* % */}
-            <col className={canUpdateCountyActivity ? "w-[5%]" : "w-[6%]"} /> {/* Active */}
-            <col className={canUpdateCountyActivity ? "w-[5%]" : "w-[5%]"} /> {/* Leave */}
-            <col className={canUpdateCountyActivity ? "w-[8%]" : "w-[7%]"} /> {/* Apportioning */}
-            <col className={canUpdateCountyActivity ? "w-[8%]" : "w-[6%]"} /> {/* Multiple */}
-            {canUpdateCountyActivity && <col className="w-[8%]" />} {/* Action */}
+            {COUNTY_ACTIVITY_TABLE_COLUMNS.map((column) => (
+              <col
+                key={column.key}
+                className={
+                  canUpdateCountyActivity ? column.widthWithAction : column.widthWithoutAction
+                }
+              />
+            ))}
+            {canUpdateCountyActivity && <col className={COUNTY_ACTIVITY_ACTION_COLUMN.widthWithAction} />}
           </colgroup>
           <TableHeader>
-            <TableRow className="h-[48px] bg-[#6C5DD3] hover:bg-[#6C5DD3]">
+            <TableRow className="h-[52px] bg-[#6C5DD3] hover:bg-[#6C5DD3]">
               {[
-                "County Activity Code",
-                "County Activity Name",
-                "Description",
-                "Department",
-                "Master Code Type",
-                "Master Code",
-                "SPMP",
-                "Match",
-                "%",
-                "Active",
-                "Leave Code",
-                "Apportioning",
-                "Multiple Job Pools",
-                ...(canUpdateCountyActivity ? ["Action"] : []),
-              ].map((column, index) => (
+                ...COUNTY_ACTIVITY_TABLE_COLUMNS,
+                ...(canUpdateCountyActivity ? [COUNTY_ACTIVITY_ACTION_COLUMN] : []),
+              ].map((column) => (
                 <TableHead
-                  key={column}
-                  className={`h-[48px] align-middle border-r border-[#FFFFFF66] bg-[#6C5DD3] p-[8px] text-[14px] font-[500] leading-tight whitespace-normal break-normal text-white font-['Roboto',sans-serif] last:border-r-0 ${["Match", "%", "Active"].includes(column) ? "text-center" : "text-left"
-                    }`}
+                  key={column.key}
+                  className={`h-[52px] align-middle border-r border-[#FFFFFF66] bg-[#6C5DD3] px-[8px] py-[6px] text-[13px] font-[500] leading-tight text-white font-['Roboto',sans-serif] last:border-r-0 ${
+                    column.align === "center" ? "text-center" : "text-left"
+                  }`}
                 >
-                  {index < 2 ? (
+                  {column.sortKey ? (
                     <TooltipProvider>
                       <Tooltip
                         open={
-                          isSortTooltipOpen &&
-                          sortTooltipColumn ===
-                          (index === 0 ? "countyActivityCode" : "countyActivityName")
+                          isSortTooltipOpen && sortTooltipColumn === column.sortKey
                         }
                       >
                         <TooltipTrigger asChild>
                           <button
                             type="button"
                             onClick={() => {
-                              const column =
-                                index === 0 ? "countyActivityCode" : "countyActivityName"
-                              setSortTooltipColumn(column)
+                              setSortTooltipColumn(column.sortKey!)
                               setIsSortTooltipOpen(true)
-                              toggleCountyActivityTableSortColumn(column)
+                              toggleCountyActivityTableSortColumn(column.sortKey!)
                             }}
                             onMouseEnter={() => {
-                              const column =
-                                index === 0 ? "countyActivityCode" : "countyActivityName"
-                              setSortTooltipColumn(column)
+                              setSortTooltipColumn(column.sortKey!)
                               setIsSortTooltipOpen(true)
                             }}
                             onMouseLeave={() => setIsSortTooltipOpen(false)}
                             onFocus={() => {
-                              const column =
-                                index === 0 ? "countyActivityCode" : "countyActivityName"
-                              setSortTooltipColumn(column)
+                              setSortTooltipColumn(column.sortKey!)
                               setIsSortTooltipOpen(true)
                             }}
                             onBlur={() => setIsSortTooltipOpen(false)}
                             className="flex h-full max-w-full cursor-pointer items-center gap-2 text-left font-[400]"
                           >
-                            <span className="max-w-full whitespace-normal break-normal font-[400]">
-                              {column}
+                            <span className="max-w-full leading-tight font-normal">
+                              {renderCountyActivityHeaderLabel(column.labelLines)}
                             </span>
                             <span className="inline-flex shrink-0 flex-col">
                               <span
-                                className={`h-0 w-0 border-b-[5px] border-l-[4px] border-r-[4px] border-l-transparent border-r-transparent ${sortBy ===
-                                  (index === 0
-                                    ? "countyActivityCode"
-                                    : "countyActivityName") &&
-                                  sortDirection === "asc"
-                                  ? "border-b-[#1E8BFF]"
-                                  : "border-b-white/60"
-                                  }`}
+                                className={`h-0 w-0 border-b-[5px] border-l-[4px] border-r-[4px] border-l-transparent border-r-transparent ${
+                                  sortBy === column.sortKey && sortDirection === "asc"
+                                    ? "border-b-[#1E8BFF]"
+                                    : "border-b-white/60"
+                                }`}
                               />
                               <span
-                                className={`mt-0.5 h-0 w-0 border-l-[4px] border-r-[4px] border-t-[5px] border-l-transparent border-r-transparent ${sortBy ===
-                                  (index === 0
-                                    ? "countyActivityCode"
-                                    : "countyActivityName") &&
-                                  sortDirection === "desc"
-                                  ? "border-t-[#201547]"
-                                  : "border-t-white"
-                                  }`}
+                                className={`mt-0.5 h-0 w-0 border-l-[4px] border-r-[4px] border-t-[5px] border-l-transparent border-r-transparent ${
+                                  sortBy === column.sortKey && sortDirection === "desc"
+                                    ? "border-t-[#201547]"
+                                    : "border-t-white"
+                                }`}
                               />
                             </span>
                           </button>
@@ -1397,17 +1412,17 @@ export function CountyActivityCodeTable({
                           side="top"
                           className="rounded-[10px] bg-black px-3.5 py-2.5 text-[13px] font-medium text-white"
                         >
-                          {getCountyActivityTableSortColumnTooltip(
-                            index === 0
-                              ? "countyActivityCode"
-                              : "countyActivityName"
-                          )}
+                          {getCountyActivityTableSortColumnTooltip(column.sortKey)}
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
                   ) : (
-                    <div className="flex h-full items-center max-w-full whitespace-normal break-all font-[400]">
-                      {column}
+                    <div
+                      className={`flex h-full items-center leading-tight font-[400] ${
+                        column.align === "center" ? "justify-center" : ""
+                      }`}
+                    >
+                      {renderCountyActivityHeaderLabel(column.labelLines)}
                     </div>
                   )}
                 </TableHead>

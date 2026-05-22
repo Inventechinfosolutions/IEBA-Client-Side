@@ -5,6 +5,8 @@ import { useForm, useFormContext, type FieldErrors, type FieldValues } from "rea
 import { AlertTriangle, Check, X } from "lucide-react"
 import { toast } from "sonner"
 import { useUploadUserDocument } from "../mutations/upload-user-document"
+import { apiResetUser } from "../../api"
+import { mapFormValuesToUpdateDto } from "../../utility/mapUserDetailsToForm"
 
 import type {
   AddEmployeeFormTab,
@@ -67,6 +69,7 @@ export function useAddEmployeeForm({
   const [activeTab, setActiveTab] = useState<AddEmployeeFormTab>("employee")
   const [tabSaved, setTabSaved] = useState<Record<SaveGatedTab, boolean>>(initialTabSaved)
   const [addSecurityTransferSucceeded, setAddSecurityTransferSucceeded] = useState(false)
+  const [isResettingPassword, setIsResettingPassword] = useState(false)
 
   const onAddModeSecurityTransferSucceeded = useCallback(() => {
     setAddSecurityTransferSucceeded(true)
@@ -352,22 +355,43 @@ export function useAddEmployeeForm({
     ? []
     : orderedAddEmployeeTabs.filter((_, index) => index > furthestUnlockedIndex)
 
-  const handlePasswordReset = () => {
-    toast.success(
-      <span>
-        Password Reset Sucessfully by default the password will be :{" "}
-        <span className="text-[#ef4444]">Password1-2</span>
-      </span>,
-      {
+  const handlePasswordReset = async () => {
+    if (!securityContextUserId) return
+    setIsResettingPassword(true)
+    try {
+      const currentValues = getValues()
+      const dto = mapFormValuesToUpdateDto(currentValues, { includePassword: false })
+      await apiResetUser(securityContextUserId, dto)
+      toast.success(
+        <span>
+          Password Reset Successfully by default the password will be:{" "}
+          <span className="text-[#ef4444]">Password1-2</span>
+        </span>,
+        {
+          icon: (
+            <span className="inline-flex size-4 items-center justify-center rounded-full bg-[#22c55e] text-white">
+              <Check className="size-3 stroke-3" />
+            </span>
+          ),
+          className:
+            "!w-fit !max-w-none !min-h-[35px] !rounded-[8px] !border-0 !px-3 !py-2 !text-[12px] !whitespace-nowrap !shadow-[0_8px_22px_rgba(17,24,39,0.18)]",
+        },
+      )
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Password reset failed"
+      toast.error(message, {
+        position: "top-center",
         icon: (
-          <span className="inline-flex size-4 items-center justify-center rounded-full bg-[#22c55e] text-white">
-            <Check className="size-3 stroke-3" />
+          <span className="inline-flex size-4 items-center justify-center rounded-full bg-[#ef4444] text-white">
+            <X className="size-3 stroke-[2.5]" />
           </span>
         ),
         className:
-          "!w-fit !max-w-none !min-h-[35px] !rounded-[8px] !border-0 !px-3 !py-2 !text-[12px] !whitespace-nowrap !shadow-[0_8px_22px_rgba(17,24,39,0.18)]",
-      },
-    )
+          "!w-fit !max-w-[340px] !min-h-[35px] !rounded-[8px] !border-0 !px-3 !py-2 !text-[12px] !shadow-[0_8px_22px_rgba(17,24,39,0.18)]",
+      })
+    } finally {
+      setIsResettingPassword(false)
+    }
   }
 
   return {
@@ -382,6 +406,7 @@ export function useAddEmployeeForm({
     handleNext,
     handleTabChange,
     handlePasswordReset,
+    isResettingPassword,
     onAddModeSecurityTransferSucceeded,
   }
 }

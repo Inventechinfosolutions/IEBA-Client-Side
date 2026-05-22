@@ -32,6 +32,7 @@ export function EmployeePanel({
     handleNext,
     handleTabChange,
     handlePasswordReset,
+    isResettingPassword,
     onAddModeSecurityTransferSucceeded,
   } = useAddEmployeeForm({ mode, initialValues, securityContextUserId, onSave })
 
@@ -125,10 +126,10 @@ export function EmployeePanel({
               <Button
                 type="button"
                 onClick={handlePasswordReset}
-                disabled={isSubmitting}
-                className="h-9 min-w-[120px] cursor-pointer rounded-[8px] bg-[#6C5DD3] px-5 text-[12px] text-white hover:bg-[#6C5DD3]"
+                disabled={isSubmitting || isResettingPassword}
+                className="h-9 min-w-[120px] cursor-pointer rounded-[8px] bg-[#6C5DD3] px-5 text-[12px] text-white hover:bg-[#6C5DD3] disabled:opacity-60"
               >
-                Password Reset
+                {isResettingPassword ? "Resetting..." : "Password Reset"}
               </Button>
             ) : null}
             <Button

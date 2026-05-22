@@ -37,7 +37,7 @@ export function TimeStudyMGTPage() {
       <div className="flex flex-col gap-4">
 
         {/* 3-column layout: Employee Panel | Calendar | Legend */}
-        <div className="flex gap-8 items-stretch px-10">
+        <div className="flex gap-8 items-stretch px-3">
 
           {/* Left: Employee list */}
           <MgtEmployeePanel

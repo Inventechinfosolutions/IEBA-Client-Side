@@ -189,7 +189,7 @@ export function PayrollPage() {
           <Spinner className="text-[#6C5DD3]" />
         </div>
       )}
-      <div className="box-border w-full min-w-0 max-w-full px-3 py-3">
+      <div className="box-border w-full min-w-0 max-w-full ">
         <div
           className={cn(
             "box-border mx-auto min-w-0 w-full max-w-full overflow-x-hidden rounded-[8px] border border-[#e7e9f2] bg-white",

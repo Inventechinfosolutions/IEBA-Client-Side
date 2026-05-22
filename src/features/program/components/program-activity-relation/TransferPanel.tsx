@@ -56,7 +56,7 @@ export function TransferPanel({
                     <Check className="size-3.5 stroke-[3]" />
                   </button>
                 </div>
-                <div className="px-6 py-0.5">
+                <div className="px-3 py-0.5">
                   <span className="inline-flex items-center justify-center rounded-[6px] border border-[#E5E7EB] bg-white px-3 py-1 text-[10px] font-bold text-[#374151] shadow-sm">
                     Activities
                   </span>
@@ -64,7 +64,7 @@ export function TransferPanel({
               </div>
             ) : null}
 
-            <div className={`flex flex-col ${isActivity ? "pl-6" : ""}`}>
+            <div className={`flex flex-col ${isActivity ? "pl-1" : ""}`}>
               {items.map((item) => {
                 const isSelected = selectedIds.includes(item.id)
                 return (
@@ -72,15 +72,15 @@ export function TransferPanel({
                     key={item.id}
                     type="button"
                     onClick={() => onToggleItem(item.id)}
-                    className={`group relative flex cursor-pointer items-center justify-between px-9 py-1 text-left transition-colors ${
+                    className={`group relative flex cursor-pointer items-center justify-between px-4 py-1 text-left transition-colors ${
                       isSelected ? "bg-[#F3F0FF]" : "hover:bg-[#F9FAFB]"
                     }`}
                   >
                     <div className="min-w-0 flex-1 pr-2">
                       {isActivity ? (
-                        <div className="absolute left-6 top-0.5 flex h-full w-8 items-center justify-center">
-                          <div className="absolute left-4 top-0 h-full w-px bg-[#E5E7EB]" />
-                          <div className="absolute left-4 top-1/2 h-px w-3 bg-[#E5E7EB]" />
+                        <div className="absolute left-4 top-0.5 flex h-full w-8 items-center justify-center">
+                          <div className="absolute left-1 top-0 h-full w-px bg-[#E5E7EB]" />
+                          <div className="absolute left-1 top-1/2 h-px w-3 bg-[#E5E7EB]" />
                         </div>
                       ) : null}
                       <div
@@ -90,10 +90,7 @@ export function TransferPanel({
                       >
                         {item.code ? (
                           <>
-                            <div className="font-bold text-[#6C5DD3]">({item.code})</div>
-                            <div className={isSelected ? "text-[#6C5DD3]" : "text-[#111827]"}>
-                              {item.name}
-                            </div>
+                            <div className={isSelected ? "text-[#6C5DD3]" : "text-[#111827]"}><span className="font-bold text-[#6C5DD3]">({item.code})</span>  {item.name}</div>
                           </>
                         ) : (
                           <div className={isSelected ? "text-[#6C5DD3]" : "text-[#374151]"}>

@@ -172,7 +172,7 @@ export function SingleSelectDropdown({
                 >
                   <span
                     className={cn(
-                      "block truncate text-[11px] font-normal text-[#111827]",
+                      "block truncate text-[13px] font-normal text-[#111827]",
                       itemLabelClassName,
                     )}
                   >
