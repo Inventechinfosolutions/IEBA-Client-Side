@@ -227,6 +227,16 @@ export async function apiUpdateUser(id: string, input: UpdateUserRequestDto): Pr
   return res.data
 }
 
+/**
+ * PUT /users/:id/reset — resets the user's password to the system default (`Password1-2`)
+ * and sets `changePasswordRequired = true`. Other profile fields in `input` are also persisted.
+ */
+export async function apiResetUser(id: string, input: UpdateUserRequestDto): Promise<CreateUserResponseDto> {
+  const res = await api.put<ApiResponseDto<CreateUserResponseDto>>(`/users/${encodeURIComponent(id)}/reset`, input)
+  if (!res?.success || !res.data) throw new Error(res?.message || "Failed to reset user password")
+  return res.data
+}
+
 export async function apiGetUserDetails(userId: string): Promise<UserDetailsDto> {
   const res = await api.get<ApiResponseDto<UserDetailsDto>>(
     `/users/${encodeURIComponent(userId)}/details`
