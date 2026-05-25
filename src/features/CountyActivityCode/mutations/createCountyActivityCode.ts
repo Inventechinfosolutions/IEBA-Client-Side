@@ -21,7 +21,8 @@ export function useCreateCountyActivityCode() {
       } else {
         applyCountyActivityQueryCacheAfterSubCreate(queryClient, variables, data)
       }
-      void queryClient.invalidateQueries({ queryKey: countyActivityCodeKeys.pagedLists() })
+      // NOTE: pagedLists invalidation is intentionally deferred.
+      // CountyActivityCodeTable fires it only when the Add modal is closed (Exit button or backdrop).
       if (variables.tab === CountyActivityGridRowType.SUB && variables.parentId) {
         void queryClient.invalidateQueries({
           queryKey: countyActivityCodeKeys.nestedActivities(variables.parentId),

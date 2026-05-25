@@ -13,8 +13,6 @@ export function useUpdateCountyActivityCode() {
   return useMutation({
     mutationFn: (input: UpdateCountyActivityApiInput) => apiPutCountyActivity(input),
     onSuccess: (_data, input) => {
-      applyCountyActivityQueryCacheAfterUpdate(queryClient, input)
-      void queryClient.invalidateQueries({ queryKey: countyActivityCodeKeys.pagedLists() })
       if (input.rowType === CountyActivityGridRowType.SUB && input.parentId) {
         void queryClient.invalidateQueries({
           queryKey: countyActivityCodeKeys.nestedActivities(input.parentId),

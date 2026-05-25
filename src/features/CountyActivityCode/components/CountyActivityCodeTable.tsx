@@ -418,6 +418,7 @@ export function CountyActivityCodeTable({
   const [pendingSaveCallback, setPendingSaveCallback] = useState<(() => void) | null>(null)
 
   const [addOpen, setAddOpen] = useState(false)
+  const [hasCreatedNew, setHasCreatedNew] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
   const [rowToEdit, setRowToEdit] = useState<CountyActivityCodeRow | null>(null)
   const [editMasterCodesDropdownOpened, setEditMasterCodesDropdownOpened] = useState(false)
@@ -523,8 +524,8 @@ export function CountyActivityCodeTable({
     }
     const parent =
       rowToEdit.parentId != null
-         ? primaryRows.find((r) => r.id === rowToEdit.parentId) ?? null
-         : null
+        ? primaryRows.find((r) => r.id === rowToEdit.parentId) ?? null
+        : null
     return (parent?.masterCodeType ?? rowToEdit.masterCodeType).trim()
   }, [editOpen, rowToEdit, editDetailQuery.isSuccess, editDetailQuery.data, primaryRows])
 
@@ -545,8 +546,8 @@ export function CountyActivityCodeTable({
 
     const parent =
       rowToEdit.rowType === CountyActivityGridRowType.SUB && rowToEdit.parentId
-         ? primaryRows.find((r) => r.id === rowToEdit.parentId) ?? null
-         : null
+        ? primaryRows.find((r) => r.id === rowToEdit.parentId) ?? null
+        : null
 
     if (rowToEdit.rowType === CountyActivityGridRowType.PRIMARY) {
       return {
@@ -634,60 +635,60 @@ export function CountyActivityCodeTable({
   )
 
   const addMasterCodeOptions = useMemo(
-     () =>
-       (addMasterCodesQuery.data?.items ?? [])
-         .map((item) => ({
-           label: item.code ? `${item.code} * ${item.name}` : item.name,
-           value: Number(item.id),
-           code: String(item.code ?? "").trim(),
-         }))
-         .filter((o) => o.code.length > 0)
-         .sort((a, b) =>
-           a.code.localeCompare(b.code, undefined, { numeric: true, sensitivity: "base" }),
-         ),
-     [addMasterCodesQuery.data?.items],
+    () =>
+      (addMasterCodesQuery.data?.items ?? [])
+        .map((item) => ({
+          label: item.code ? `${item.code} * ${item.name}` : item.name,
+          value: Number(item.id),
+          code: String(item.code ?? "").trim(),
+        }))
+        .filter((o) => o.code.length > 0)
+        .sort((a, b) =>
+          a.code.localeCompare(b.code, undefined, { numeric: true, sensitivity: "base" }),
+        ),
+    [addMasterCodesQuery.data?.items],
   )
 
 
 
   const editMasterCodeOptions = useMemo(
-     () => {
-       const base = (editMasterCodesQuery.data?.items ?? [])
-         .map((item) => ({
-           label: item.code ? `${item.code} * ${item.name}` : item.name,
-           value: Number(item.id),
-           code: String(item.code ?? "").trim(),
-         }))
-         .filter((o) => o.code.length > 0)
+    () => {
+      const base = (editMasterCodesQuery.data?.items ?? [])
+        .map((item) => ({
+          label: item.code ? `${item.code} * ${item.name}` : item.name,
+          value: Number(item.id),
+          code: String(item.code ?? "").trim(),
+        }))
+        .filter((o) => o.code.length > 0)
 
-       const selectedId = watchMasterCode || editDetailQuery.data?.activity.activityCodeId
-       if (
-         selectedId &&
-         rowToEdit?.rowType === CountyActivityGridRowType.PRIMARY &&
-         !base.some((o) => o.value === selectedId)
-       ) {
-         const name = editDetailQuery.data?.activity.activityCodeName ?? rowToEdit.countyActivityName
-         const code = editDetailQuery.data?.activity.activityCode ?? rowToEdit.catalogActivityCode
-         base.push({
-           label: code ? `${code} * ${name}` : name,
-           value: selectedId,
-           code: code,
-         })
-       }
+      const selectedId = watchMasterCode || editDetailQuery.data?.activity.activityCodeId
+      if (
+        selectedId &&
+        rowToEdit?.rowType === CountyActivityGridRowType.PRIMARY &&
+        !base.some((o) => o.value === selectedId)
+      ) {
+        const name = editDetailQuery.data?.activity.activityCodeName ?? rowToEdit.countyActivityName
+        const code = editDetailQuery.data?.activity.activityCode ?? rowToEdit.catalogActivityCode
+        base.push({
+          label: code ? `${code} * ${name}` : name,
+          value: selectedId,
+          code: code,
+        })
+      }
 
-       return base.sort((a, b) =>
-         a.code.localeCompare(b.code, undefined, { numeric: true, sensitivity: "base" }),
-       )
-     },
-     [editMasterCodesQuery.data?.items, rowToEdit, editDetailQuery.data?.activity, watchMasterCode],
+      return base.sort((a, b) =>
+        a.code.localeCompare(b.code, undefined, { numeric: true, sensitivity: "base" }),
+      )
+    },
+    [editMasterCodesQuery.data?.items, rowToEdit, editDetailQuery.data?.activity, watchMasterCode],
   )
 
   const departmentNames = useMemo(() => {
     if (isSuperAdmin) {
       return departments
-         .map((d) => d.name.trim())
-         .filter(Boolean)
-         .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }))
+        .map((d) => d.name.trim())
+        .filter(Boolean)
+        .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }))
     }
 
     const assignedIds = new Set<number>()
@@ -696,10 +697,10 @@ export function CountyActivityCodeTable({
     })
 
     return departments
-       .filter((d) => assignedIds.has(Number(d.id)))
-       .map((d) => d.name.trim())
-       .filter(Boolean)
-       .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }))
+      .filter((d) => assignedIds.has(Number(d.id)))
+      .map((d) => d.name.trim())
+      .filter(Boolean)
+      .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }))
   }, [departments, isSuperAdmin, user?.departmentRoles])
 
   const editModalDepartmentNames = useMemo(() => {
@@ -714,8 +715,8 @@ export function CountyActivityCodeTable({
 
     const allDepts = [...assigned, ...unassigned]
     const names = allDepts
-       .map((d) => String(d.name ?? "").trim())
-       .filter(Boolean)
+      .map((d) => String(d.name ?? "").trim())
+      .filter(Boolean)
 
     return [...new Set(names)].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }))
   }, [editDetailQuery.data?.activity])
@@ -834,6 +835,10 @@ export function CountyActivityCodeTable({
               ? "Primary county activity created successfully."
               : "Secondary county activity created successfully.",
           )
+
+          // Mark that at least one county activity was created in this session.
+          // The table paged list will be refreshed only when the Add modal is closed.
+          setHasCreatedNew(true)
 
           if (tab === CountyActivityGridRowType.PRIMARY) {
             setAddTab(CountyActivityGridRowType.PRIMARY)
@@ -1386,9 +1391,8 @@ export function CountyActivityCodeTable({
               ].map((column) => (
                 <TableHead
                   key={column.key}
-                  className={`h-[52px] align-middle border-r border-[#FFFFFF66] bg-[#6C5DD3] px-[8px] py-[6px] text-[13px] font-[500] leading-tight text-white font-['Roboto',sans-serif] last:border-r-0 ${
-                    column.align === "center" ? "text-center" : "text-left"
-                  }`}
+                  className={`h-[52px] align-middle border-r border-[#FFFFFF66] bg-[#6C5DD3] px-[8px] py-[6px] text-[13px] font-[500] leading-tight text-white font-['Roboto',sans-serif] last:border-r-0 ${column.align === "center" ? "text-center" : "text-left"
+                    }`}
                 >
                   {column.sortKey ? (
                     <TooltipProvider>
@@ -1422,18 +1426,16 @@ export function CountyActivityCodeTable({
                             </span>
                             <span className="inline-flex shrink-0 flex-col">
                               <span
-                                className={`h-0 w-0 border-b-[5px] border-l-[4px] border-r-[4px] border-l-transparent border-r-transparent ${
-                                  sortBy === column.sortKey && sortDirection === "asc"
+                                className={`h-0 w-0 border-b-[5px] border-l-[4px] border-r-[4px] border-l-transparent border-r-transparent ${sortBy === column.sortKey && sortDirection === "asc"
                                     ? "border-b-[#1E8BFF]"
                                     : "border-b-white/60"
-                                }`}
+                                  }`}
                               />
                               <span
-                                className={`mt-0.5 h-0 w-0 border-l-[4px] border-r-[4px] border-t-[5px] border-l-transparent border-r-transparent ${
-                                  sortBy === column.sortKey && sortDirection === "desc"
+                                className={`mt-0.5 h-0 w-0 border-l-[4px] border-r-[4px] border-t-[5px] border-l-transparent border-r-transparent ${sortBy === column.sortKey && sortDirection === "desc"
                                     ? "border-t-[#201547]"
                                     : "border-t-white"
-                                }`}
+                                  }`}
                               />
                             </span>
                           </button>
@@ -1448,9 +1450,8 @@ export function CountyActivityCodeTable({
                     </TooltipProvider>
                   ) : (
                     <div
-                      className={`flex h-full items-center leading-tight font-[400] ${
-                        column.align === "center" ? "justify-center" : ""
-                      }`}
+                      className={`flex h-full items-center leading-tight font-[400] ${column.align === "center" ? "justify-center" : ""
+                        }`}
                     >
                       {renderCountyActivityHeaderLabel(column.labelLines)}
                     </div>
@@ -1757,6 +1758,10 @@ export function CountyActivityCodeTable({
             setCodeTypeDropdownOpened(false)
             setPrimaryPickerOpened(false)
             addForm.reset(countyActivityAddDefaultValues)
+            if (hasCreatedNew) {
+              void queryClient.invalidateQueries({ queryKey: countyActivityCodeKeys.pagedLists() })
+              setHasCreatedNew(false)
+            }
           } else {
             setAddOpen(true)
           }
@@ -1812,6 +1817,10 @@ export function CountyActivityCodeTable({
               setAddOpen(false)
               setCodeTypeDropdownOpened(false)
               setPrimaryPickerOpened(false)
+              if (hasCreatedNew) {
+                void queryClient.invalidateQueries({ queryKey: countyActivityCodeKeys.pagedLists() })
+                setHasCreatedNew(false)
+              }
             }}
             isSubmitting={createCountyActivityCode.isPending}
             isEditSourceLoading={addTab === CountyActivityGridRowType.SUB && addSubParentDetailQuery.isLoading}
@@ -1864,8 +1873,8 @@ export function CountyActivityCodeTable({
               selectedPrimaryId={
                 rowToEdit.rowType === CountyActivityGridRowType.SUB
                   ? (editDetailQuery.data?.activity.parent?.id != null
-                      ? String(editDetailQuery.data.activity.parent.id)
-                      : rowToEdit.parentId ?? null)
+                    ? String(editDetailQuery.data.activity.parent.id)
+                    : rowToEdit.parentId ?? null)
                   : null
               }
               readOnlyPrimaryPicker={false}

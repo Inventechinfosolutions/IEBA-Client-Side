@@ -21,7 +21,6 @@ import { CountyActivityGridRowType } from "../enums/CountyActivity.enum"
 import { countyActivityCodeKeys } from "../keys"
 import type { CountyActivityPagedListParams } from "../types"
 
-const MASTER_CODE_OPTIONS_STALE_MS = 60_000
 
 /** Paginated `GET /activities` for the main county activity table. */
 export function useGetCountyActivityPagedList(params: CountyActivityPagedListParams) {

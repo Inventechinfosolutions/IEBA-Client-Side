@@ -685,40 +685,38 @@ export function CountyActivityCodeAddPage({
                 />
                 <span>Documents Required?</span>
               </label>
-              {tab === CountyActivityGridRowType.PRIMARY && (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <label className="flex cursor-default items-center gap-2 text-[14px] text-[#1F2937]">
-                        <Checkbox
-                          checked={form.watch("apportioning")}
-                          onCheckedChange={(checked) => form.setValue("apportioning", checked === true)}
-                        />
-                        <span>Apportioning?</span>
-                      </label>
-                    </TooltipTrigger>
-                    {apportioningDepartments && apportioningDepartments.length > 0 && (
-                      <TooltipContent
-                        side="top"
-                        align="center"
-                        sideOffset={6}
-                        className="z-[300] !inline-block max-h-[min(20rem,70vh)] max-w-[min(20rem,70vw)] overflow-y-auto rounded-[8px] border-0 bg-black px-3 py-2.5 text-left text-[12px] font-medium leading-relaxed text-white shadow-lg"
-                      >
-                        <span className="block text-center whitespace-normal break-words font-semibold mb-1">
-                          Apportioning :
-                        </span>
-                        <ul className="list-disc pl-4 space-y-1 m-0">
-                          {apportioningDepartments.map((dept, idx) => (
-                            <li key={idx}>
-                              {dept.name} - {dept.apportioning ? "Yes" : "No"}
-                            </li>
-                          ))}
-                        </ul>
-                      </TooltipContent>
-                    )}
-                  </Tooltip>
-                </TooltipProvider>
-              )}
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <label className="flex cursor-default items-center gap-2 text-[14px] text-[#1F2937]">
+                      <Checkbox
+                        checked={form.watch("apportioning")}
+                        onCheckedChange={(checked) => form.setValue("apportioning", checked === true)}
+                      />
+                      <span>Apportioning?</span>
+                    </label>
+                  </TooltipTrigger>
+                  {apportioningDepartments && apportioningDepartments.length > 0 && (
+                    <TooltipContent
+                      side="top"
+                      align="center"
+                      sideOffset={6}
+                      className="z-[300] !inline-block max-h-[min(20rem,70vh)] max-w-[min(20rem,70vw)] overflow-y-auto rounded-[8px] border-0 bg-black px-3 py-2.5 text-left text-[12px] font-medium leading-relaxed text-white shadow-lg"
+                    >
+                      <span className="block text-center whitespace-normal break-words font-semibold mb-1">
+                        Apportioning :
+                      </span>
+                      <ul className="list-disc pl-4 space-y-1 m-0">
+                        {apportioningDepartments.map((dept, idx) => (
+                          <li key={idx}>
+                            {dept.name} - {dept.apportioning ? "Yes" : "No"}
+                          </li>
+                        ))}
+                      </ul>
+                    </TooltipContent>
+                  )}
+                </Tooltip>
+              </TooltipProvider>
               <label className="flex items-center gap-2 text-[14px] text-[#A1A1AA]">
                 <Checkbox
                   checked={form.watch("multipleJobPools")}

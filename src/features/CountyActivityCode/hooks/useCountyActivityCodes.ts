@@ -4,7 +4,6 @@ import { useCallback, useMemo, useRef, useState } from "react"
 import { countyActivityCodeKeys } from "../keys"
 import { useGetCountyActivityPagedList } from "../queries/getCountyActivityCodes"
 import type {
-  CountyActivityCodeRow,
   CountyActivityFilterFormValues,
   CountyActivityPagination,
 } from "../types"
