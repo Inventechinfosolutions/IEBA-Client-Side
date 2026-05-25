@@ -2,9 +2,8 @@ export { CountyActivityCodePage } from "./pages/CountyActivityCodePage"
 export { CountyActivityCodeTable } from "./components/CountyActivityCodeTable"
 export { useCountyActivityCodes } from "./hooks/useCountyActivityCodes"
 export {
-  useGetCountyActivityCodes,
   useGetCountyActivityPagedList,
-  useGetCountyActivityTopLevel,
+  useGetCountyActivityNested,
   useGetCountyActivityActivePrimarySubPicker,
   useGetCountyActivityMasterCodes,
   useGetCountyActivityForEdit,
