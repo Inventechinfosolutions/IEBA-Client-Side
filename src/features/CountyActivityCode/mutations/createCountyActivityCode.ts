@@ -21,7 +21,12 @@ export function useCreateCountyActivityCode() {
       } else {
         applyCountyActivityQueryCacheAfterSubCreate(queryClient, variables, data)
       }
-      void queryClient.invalidateQueries({ queryKey: countyActivityCodeKeys.all })
+      void queryClient.invalidateQueries({ queryKey: countyActivityCodeKeys.pagedLists() })
+      if (variables.tab === CountyActivityGridRowType.SUB && variables.parentId) {
+        void queryClient.invalidateQueries({
+          queryKey: countyActivityCodeKeys.nestedActivities(variables.parentId),
+        })
+      }
     },
   })
 }

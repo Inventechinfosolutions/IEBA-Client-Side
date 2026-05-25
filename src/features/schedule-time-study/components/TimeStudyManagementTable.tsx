@@ -49,7 +49,6 @@ import { fetchScheduleTimeStudyFiscalYears } from "../api/api"
 import { scheduleTimeStudyKeys } from "../keys"
 import { usePermissions } from "@/hooks/usePermissions"
 import type {
-  ScheduleTimeStudyFiscalYearOption,
   ScheduleTimeStudyFormValues,
   ScheduleTimeStudyPeriodRow,
   ScheduleTimeStudyTab,

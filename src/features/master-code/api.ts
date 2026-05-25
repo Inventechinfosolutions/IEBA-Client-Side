@@ -97,64 +97,32 @@ export async function apiGetActivityCodesAllForType(params: {
   codeType: MasterCodeTab
   inactiveOnly: boolean
 }): Promise<MasterCodeListResponse> {
-  const limit = ACTIVITY_CODES_API_MAX_LIMIT
-  const items: MasterCodeRow[] = []
-  let page = 1
-  let totalItems = 0
-
-  while (true) {
-    const res = await apiGetMasterCodesPage({
-      codeType: params.codeType,
-      page,
-      pageSize: limit,
-      inactiveOnly: params.inactiveOnly,
-    })
-    totalItems = res.totalItems
-    items.push(...res.items)
-
-    if (res.items.length === 0) break
-    if (totalItems > 0 && items.length >= totalItems) break
-    if (res.items.length < limit) break
-    page += 1
+  const status = params.inactiveOnly ? ActivityStatusEnum.INACTIVE : ActivityStatusEnum.ACTIVE
+  const raw = await api.get<{ success: boolean; data: ApiActivityCode[] }>(
+    `/activity-codes/all?type=${encodeURIComponent(params.codeType)}&status=${status}`,
+  )
+  if (!raw.success || !Array.isArray(raw.data)) {
+    throw new Error("Failed to load activity codes")
   }
-
-  return { items, totalItems }
+  const items = raw.data.map(normalizeActivityCodeRow)
+  return { items, totalItems: items.length }
 }
 
-const ACTIVITY_CODES_CATALOG_MAX_PAGES = 20
 
-/**
- * All activity codes in one API shape: `GET /activity-codes` with **no** `type` filter.
- * Pages with {@link ACTIVITY_CODES_CATALOG_ALL_LIMIT} until the API reports no more rows.
- */
+
+
 export async function apiFetchActivityCodesCatalogAll(options?: {
   inactiveOnly?: boolean
 }): Promise<ApiActivityCode[]> {
   const inactiveOnly = options?.inactiveOnly ?? false
-  const limit = ACTIVITY_CODES_CATALOG_ALL_LIMIT
-  const all: ApiActivityCode[] = []
-  let page = 1
-
-  while (page <= ACTIVITY_CODES_CATALOG_MAX_PAGES) {
-    const search = new URLSearchParams({
-      page: String(page),
-      limit: String(limit),
-      sort: "ASC",
-      sortField: "code",
-      status: inactiveOnly ? ActivityStatusEnum.INACTIVE : ActivityStatusEnum.ACTIVE,
-    })
-
-    const raw = await api.get<unknown>(`/activity-codes?${search.toString()}`)
-    const { data, meta } = unwrapActivityListPayload(raw)
-    all.push(...data)
-
-    if (data.length === 0) break
-    if (meta.totalItems > 0 && all.length >= meta.totalItems) break
-    if (data.length < limit) break
-    page += 1
+  const status = inactiveOnly ? ActivityStatusEnum.INACTIVE : ActivityStatusEnum.ACTIVE
+  const raw = await api.get<{ success: boolean; data: ApiActivityCode[] }>(
+    `/activity-codes/all?status=${status}`,
+  )
+  if (!raw.success || !Array.isArray(raw.data)) {
+    throw new Error("Failed to load activity codes")
   }
-
-  return all
+  return raw.data
 }
 
 function buildCreateBody(codeType: MasterCodeTab, values: MasterCodeFormValues) {
@@ -205,7 +173,7 @@ export async function apiCreateMasterCode(input: {
   if (createdId == null) {
     throw new Error("Create response missing id")
   }
-  
+
   return {
     id: String(createdId),
     code: input.values.code,
