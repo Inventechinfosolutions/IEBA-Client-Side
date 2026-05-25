@@ -106,7 +106,8 @@ export function CountyActivityCodeAddPage({
   readOnlyPrimaryPicker = false,
   isEditSourceLoading = false,
   subParentActivityDetail = null,
-  apportioningDepartments = [],
+  apportioningDepartments: apportioningDepartmentsProp = [],
+  departmentApportioningMap = {},
   isSubmitting = false,
   onCodeDropdownOpen,
   onCodeTypeDropdownOpen,
@@ -178,6 +179,18 @@ export function CountyActivityCodeAddPage({
       .map((item) => item.trim())
       .filter(Boolean)
   }, [departmentValue])
+
+  const apportioningDepartments = useMemo(() => {
+    if (tab === CountyActivityGridRowType.SUB || mode === CountyActivityAddPageMode.EDIT) {
+      return apportioningDepartmentsProp ?? []
+    }
+    return assignedDepartments.map((name) => {
+      if (departmentApportioningMap && name in departmentApportioningMap) {
+        return { name, apportioning: departmentApportioningMap[name] }
+      }
+      return { name, apportioning: false }
+    })
+  }, [tab, mode, assignedDepartments, apportioningDepartmentsProp, departmentApportioningMap])
 
   const unassignedDepartments = useMemo(
     () => departmentNames.filter((item) => !assignedDepartments.includes(item)),

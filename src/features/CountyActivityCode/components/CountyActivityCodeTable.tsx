@@ -450,6 +450,14 @@ export function CountyActivityCodeTable({
   )
   const departments = allDepartmentsQuery.data?.items ?? []
 
+  const departmentApportioningMap = useMemo(() => {
+    const map: Record<string, boolean> = {}
+    for (const d of departments) {
+      map[d.name.trim()] = d.settings?.apportioning === true
+    }
+    return map
+  }, [departments])
+
   const subPickerQuery = useGetCountyActivityActivePrimarySubPicker(
     assignedDepartmentIds,
     // Only fire the API when the user has actually clicked the Primary Activity Code dropdown
@@ -1825,6 +1833,7 @@ export function CountyActivityCodeTable({
             isSubmitting={createCountyActivityCode.isPending}
             isEditSourceLoading={addTab === CountyActivityGridRowType.SUB && addSubParentDetailQuery.isLoading}
             apportioningDepartments={addSubParentDetailQuery.data?.apportioningDepartments}
+            departmentApportioningMap={departmentApportioningMap}
           />
         </DialogContent>
       </Dialog>
@@ -1889,6 +1898,7 @@ export function CountyActivityCodeTable({
               }
               departmentNames={editModalDepartmentNames}
               apportioningDepartments={editDetailQuery.data?.apportioningDepartments}
+              departmentApportioningMap={departmentApportioningMap}
               onSelectedPrimaryIdChange={(id) => {
                 setEditSelectedPrimaryId(id)
                 if (editPrimaryDetailQuery.data && String(editPrimaryDetailQuery.data.activity.id) === id) {

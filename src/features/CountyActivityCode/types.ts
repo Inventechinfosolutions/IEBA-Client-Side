@@ -322,6 +322,7 @@ export type CountyActivityCodeAddPageProps = {
   /** Sub add flow: loaded primary activity (seeds master / department on save). */
   subParentActivityDetail?: CountyActivityEditPayload | null
   apportioningDepartments?: { name: string; apportioning: boolean }[]
+  departmentApportioningMap?: Record<string, boolean>
   isSubmitting?: boolean
   onCodeDropdownOpen?: () => void
   onCodeTypeDropdownOpen?: () => void
