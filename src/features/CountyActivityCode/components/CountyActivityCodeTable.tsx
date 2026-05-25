@@ -1687,6 +1687,18 @@ export function CountyActivityCodeTable({
                   editMasterCodesQuery.isPending)
               }
               departmentNames={departmentNames}
+              initialDepartmentShuttle={
+                rowToEdit.rowType === CountyActivityGridRowType.PRIMARY &&
+                editDetailQuery.data?.activity
+                  ? {
+                      assigned:
+                        editDetailQuery.data.activity.assignedDepartments ??
+                        editDetailQuery.data.activity.departments ??
+                        [],
+                      unassigned: editDetailQuery.data.activity.unassignedDepartments ?? [],
+                    }
+                  : undefined
+              }
               apportioningDepartments={editDetailQuery.data?.apportioningDepartments}
               onSelectedPrimaryIdChange={(id) => {
                 setEditSelectedPrimaryId(id)

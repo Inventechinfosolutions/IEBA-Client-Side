@@ -28,8 +28,15 @@ import type {
   UserProgramsActivitiesAssignedSplit,
   UserProgramsActivitiesDepartmentBundle,
   UserProgramsActivitiesProgramItem,
+  UserProgramsActivitiesProgramActivitiesBundle,
+  UserProgramsActivitiesProgramActivityGroup,
   UserProgramsActivitiesProgramsBundle,
   UserProgramsActivitiesProgramWithAssignments,
+  UserActivitiesOnlyDepartmentBundle,
+  UserProgramsOnlyDepartmentBundle,
+  UserProgramsOnlyProgram,
+  UserProgramsOnlyProgramsBundle,
+  UserTimeStudyDepartment,
 } from "./types"
 import { parseSecurityDepartmentRolesResponse } from "./utility/parseSecurityDepartmentRoles"
 
@@ -489,33 +496,81 @@ function parseUserProgramsActivitiesProgramsSplit(
   return { assigned, unassigned }
 }
 
-function parseUserProgramsActivitiesProgramWithAssignments(
-  raw: unknown,
-  departmentId: number,
-): UserProgramsActivitiesProgramWithAssignments | null {
-  const program = parseUserProgramsActivitiesProgramItem(raw, departmentId)
-  if (!program) return null
-  const childrenRaw =
-    raw !== null && typeof raw === "object"
-      ? (raw as Record<string, unknown>).children
-      : undefined
-  const children = parseUserProgramsActivitiesAssignedSplit(childrenRaw, (item) =>
-    parseUserProgramsActivitiesActivityItem(item, departmentId),
-  )
-  const row = raw as Record<string, unknown>
-  const jobpoolIdRaw = row.jobpoolId
+function readProgramJobPoolMeta(raw: Record<string, unknown>): {
+  jobpoolId: number | null
+  jobpoolName: string | null
+} {
+  const jobpoolIdRaw = raw.jobpoolId
   const jobpoolId =
     jobpoolIdRaw === null || jobpoolIdRaw === undefined
       ? null
       : typeof jobpoolIdRaw === "number"
         ? jobpoolIdRaw
         : Number(jobpoolIdRaw)
-  const jobpoolName = typeof row.jobpoolName === "string" ? row.jobpoolName.trim() : null
+  const jobpoolName = typeof raw.jobpoolName === "string" ? raw.jobpoolName.trim() : null
+  return {
+    jobpoolId: Number.isFinite(jobpoolId) ? jobpoolId : null,
+    jobpoolName: jobpoolName || null,
+  }
+}
+
+function parseUserProgramsOnlyProgram(raw: unknown, departmentId: number): UserProgramsOnlyProgram | null {
+  const program = parseUserProgramsActivitiesProgramItem(raw, departmentId)
+  if (!program) return null
+  const row = raw as Record<string, unknown>
+  return { ...program, ...readProgramJobPoolMeta(row) }
+}
+
+function parseUserProgramsOnlyProgramsSplit(
+  raw: unknown,
+  departmentId: number,
+): UserProgramsOnlyProgramsBundle {
+  const assigned: UserProgramsOnlyProgramsBundle["assigned"] = { normal: [], jobpoolautoassign: [] }
+  const unassigned: UserProgramsOnlyProgram[] = []
+  if (raw === null || typeof raw !== "object") {
+    return { assigned, unassigned }
+  }
+  const split = raw as Record<string, unknown>
+  const assignedRaw = split.assigned
+  if (Array.isArray(assignedRaw)) {
+    for (const item of assignedRaw) {
+      const parsed = parseUserProgramsOnlyProgram(item, departmentId)
+      if (parsed) assigned.normal.push(parsed)
+    }
+  } else if (assignedRaw !== null && typeof assignedRaw === "object") {
+    const buckets = assignedRaw as Record<string, unknown>
+    for (const key of ["normal", "jobpoolautoassign"] as const) {
+      const list = buckets[key]
+      if (!Array.isArray(list)) continue
+      for (const item of list) {
+        const parsed = parseUserProgramsOnlyProgram(item, departmentId)
+        if (parsed) assigned[key].push(parsed)
+      }
+    }
+  }
+  if (Array.isArray(split.unassigned)) {
+    for (const item of split.unassigned) {
+      const parsed = parseUserProgramsOnlyProgram(item, departmentId)
+      if (parsed) unassigned.push(parsed)
+    }
+  }
+  return { assigned, unassigned }
+}
+
+function parseUserProgramsActivitiesProgramWithAssignments(
+  raw: unknown,
+  departmentId: number,
+): UserProgramsActivitiesProgramWithAssignments | null {
+  const program = parseUserProgramsActivitiesProgramItem(raw, departmentId)
+  if (!program) return null
+  const row = raw as Record<string, unknown>
+  const children = parseUserProgramsActivitiesAssignedSplit(row.children, (item) =>
+    parseUserProgramsActivitiesActivityItem(item, departmentId),
+  )
   return {
     ...program,
     children,
-    jobpoolId: Number.isFinite(jobpoolId) ? jobpoolId : null,
-    jobpoolName: jobpoolName || null,
+    ...readProgramJobPoolMeta(row),
   }
 }
 
@@ -536,10 +591,98 @@ function parseUserProgramsActivitiesBundle(raw: unknown): UserProgramsActivities
     (item) => parseUserProgramsActivitiesActivityItem(item, departmentId),
   )
 
+  const flags = parseDepartmentFlagsFromBundleRow(b, departmentId, departmentCode, departmentName)
+  return {
+    ...flags,
+    programs,
+    orphanActivities,
+    jobPoolActivities,
+  }
+}
+
+function parseUserProgramsActivitiesProgramActivityGroup(
+  raw: unknown,
+  departmentId: number,
+): UserProgramsActivitiesProgramActivityGroup | null {
+  if (raw === null || typeof raw !== "object") return null
+  const row = raw as Record<string, unknown>
+  const programId =
+    typeof row.programId === "number" ? row.programId : Number(row.programId ?? row.id)
+  const code = typeof row.code === "string" ? row.code : ""
+  const name = typeof row.name === "string" ? row.name.trim() : ""
+  if (!Number.isFinite(programId) || !name) return null
+  const children = parseUserProgramsActivitiesAssignedSplit(row.children, (item) =>
+    parseUserProgramsActivitiesActivityItem(item, departmentId),
+  )
+  const jobpoolIdRaw = row.jobpoolId
+  const jobpoolId =
+    jobpoolIdRaw === null || jobpoolIdRaw === undefined
+      ? null
+      : typeof jobpoolIdRaw === "number"
+        ? jobpoolIdRaw
+        : Number(jobpoolIdRaw)
+  const jobpoolName = typeof row.jobpoolName === "string" ? row.jobpoolName.trim() : null
+  return {
+    programId,
+    code,
+    name,
+    departmentId: Number.isFinite(Number(row.departmentId)) ? Number(row.departmentId) : departmentId,
+    children,
+    jobpoolId: Number.isFinite(jobpoolId) ? jobpoolId : null,
+    jobpoolName: jobpoolName || null,
+  }
+}
+
+function parseUserProgramsActivitiesProgramActivitiesSplit(
+  raw: unknown,
+  departmentId: number,
+): UserProgramsActivitiesProgramActivitiesBundle {
+  const assigned = { normal: [] as UserProgramsActivitiesProgramActivityGroup[], jobpoolautoassign: [] as UserProgramsActivitiesProgramActivityGroup[] }
+  const unassigned: UserProgramsActivitiesProgramActivityGroup[] = []
+  if (raw === null || typeof raw !== "object") {
+    return { assigned, unassigned }
+  }
+  const split = raw as Record<string, unknown>
+  const assignedRaw = split.assigned
+  if (assignedRaw !== null && typeof assignedRaw === "object" && !Array.isArray(assignedRaw)) {
+    const buckets = assignedRaw as Record<string, unknown>
+    for (const key of ["normal", "jobpoolautoassign"] as const) {
+      const list = buckets[key]
+      if (!Array.isArray(list)) continue
+      for (const item of list) {
+        const parsed = parseUserProgramsActivitiesProgramActivityGroup(item, departmentId)
+        if (parsed) assigned[key].push(parsed)
+      }
+    }
+  }
+  if (Array.isArray(split.unassigned)) {
+    for (const item of split.unassigned) {
+      const parsed = parseUserProgramsActivitiesProgramActivityGroup(item, departmentId)
+      if (parsed) unassigned.push(parsed)
+    }
+  }
+  return { assigned, unassigned }
+}
+
+function readTsMinPerDay(row: Record<string, unknown>): number | null | undefined {
+  const raw = row.tsMinPerDay ?? row.ts_min_per_day ?? row.tsmins
+  if (raw === null || raw === undefined) return undefined
+  const n = typeof raw === "number" ? raw : Number(raw)
+  return Number.isFinite(n) ? n : undefined
+}
+
+function parseDepartmentFlagsFromBundleRow(
+  b: Record<string, unknown>,
+  departmentId: number,
+  departmentCode: string,
+  departmentName: string,
+) {
+  const tsMinPerDay = readTsMinPerDay(b)
   return {
     departmentId,
     departmentCode,
     departmentName,
+    ...(tsMinPerDay !== undefined ? { tsMinPerDay } : {}),
     moveSaveSubmitToTop: b.moveSaveSubmitToTop === true,
     removeAutoFillEndTime: b.removeAutoFillEndTime === true,
     startorEndTime: b.startorEndTime === true,
@@ -547,43 +690,267 @@ function parseUserProgramsActivitiesBundle(raw: unknown): UserProgramsActivities
     removeDescriptionActivityNote: b.removeDescriptionActivityNote === true,
     removeDescriptionActivityNoteAnchor: b.removeDescriptionActivityNoteAnchor === true,
     removeDescriptionActivityNoteMultiCode: b.removeDescriptionActivityNoteMultiCode === true,
-    programs,
+  }
+}
+
+function parseUserProgramsOnlyBundle(raw: unknown): UserProgramsOnlyDepartmentBundle | null {
+  if (raw === null || typeof raw !== "object") return null
+  const b = raw as Record<string, unknown>
+  const departmentId = typeof b.departmentId === "number" ? b.departmentId : Number(b.departmentId)
+  const departmentCode = typeof b.departmentCode === "string" ? b.departmentCode : ""
+  const departmentName = typeof b.departmentName === "string" ? b.departmentName.trim() : ""
+  const departmentLabel = departmentName || departmentCode.trim()
+  if (!Number.isFinite(departmentId) || !departmentLabel) return null
+  return {
+    ...parseDepartmentFlagsFromBundleRow(b, departmentId, departmentCode, departmentName || departmentLabel),
+    programs: parseUserProgramsOnlyProgramsSplit(b.programs, departmentId),
+  }
+}
+
+function parseUserActivitiesOnlyBundle(raw: unknown): UserActivitiesOnlyDepartmentBundle | null {
+  if (raw === null || typeof raw !== "object") return null
+  const b = raw as Record<string, unknown>
+  const departmentId = typeof b.departmentId === "number" ? b.departmentId : Number(b.departmentId)
+  const departmentCode = typeof b.departmentCode === "string" ? b.departmentCode : ""
+  const departmentName = typeof b.departmentName === "string" ? b.departmentName.trim() : ""
+  const departmentLabel = departmentName || departmentCode.trim()
+  if (!Number.isFinite(departmentId) || !departmentLabel) return null
+
+  const programActivities = parseUserProgramsActivitiesProgramActivitiesSplit(
+    b.programActivities,
+    departmentId,
+  )
+  const orphanActivities = parseUserProgramsActivitiesAssignedSplit(b.orphanActivities, (item) =>
+    parseUserProgramsActivitiesActivityItem(item, departmentId),
+  )
+  const jobPoolActivities = parseUserProgramsActivitiesAssignedSplit(
+    b.jobPoolActivities ?? b.job_pool_activities,
+    (item) => parseUserProgramsActivitiesActivityItem(item, departmentId),
+  )
+
+  return {
+    ...parseDepartmentFlagsFromBundleRow(b, departmentId, departmentCode, departmentName || departmentLabel),
+    programActivities,
     orphanActivities,
     jobPoolActivities,
   }
 }
 
-/**
- * GET /timestudyprogram/user/programs-activities-with-assignments
- * Omit `departmentId` to list departments in scope; pass `departmentId` to load one department’s programs.
- */
-export async function fetchUserProgramsAndActivities(
-  userId: string,
-  departmentId?: number,
-): Promise<UserProgramsActivitiesDepartmentBundle[]> {
-  const uid = userId.trim()
-  if (!uid) {
-    throw new Error("userId is required")
+function programActivityGroupToProgramWithAssignments(
+  group: UserProgramsActivitiesProgramActivityGroup,
+): UserProgramsActivitiesProgramWithAssignments {
+  return {
+    id: group.programId,
+    code: group.code,
+    name: group.name,
+    departmentId: group.departmentId,
+    children: group.children,
+    jobpoolId: group.jobpoolId ?? null,
+    jobpoolName: group.jobpoolName ?? null,
   }
+}
+
+const EMPTY_ACTIVITY_SPLIT: UserProgramsActivitiesAssignedSplit<UserProgramsActivitiesActivityItem> = {
+  assigned: [],
+  unassigned: [],
+}
+
+function programOnlyToWithAssignments(
+  program: UserProgramsOnlyProgram,
+  children: UserProgramsActivitiesAssignedSplit<UserProgramsActivitiesActivityItem> = EMPTY_ACTIVITY_SPLIT,
+): UserProgramsActivitiesProgramWithAssignments {
+  return {
+    ...program,
+    children,
+    jobpoolId: program.jobpoolId ?? null,
+    jobpoolName: program.jobpoolName ?? null,
+  }
+}
+
+function attachProgramActivitiesToProgramsBundle(
+  programsOnly: UserProgramsOnlyDepartmentBundle,
+  activitiesOnly: UserActivitiesOnlyDepartmentBundle,
+): UserProgramsActivitiesDepartmentBundle {
+  const mapGroups = (
+    programs: UserProgramsOnlyProgram[],
+    groups: UserProgramsActivitiesProgramActivityGroup[],
+  ): UserProgramsActivitiesProgramWithAssignments[] =>
+    programs.map((p) => {
+      const group = groups.find((g) => g.programId === p.id)
+      return group
+        ? programActivityGroupToProgramWithAssignments(group)
+        : programOnlyToWithAssignments(p)
+    })
+
+  return {
+    ...programsOnly,
+    programs: {
+      assigned: {
+        normal: mapGroups(
+          programsOnly.programs.assigned.normal,
+          activitiesOnly.programActivities.assigned.normal,
+        ),
+        jobpoolautoassign: mapGroups(
+          programsOnly.programs.assigned.jobpoolautoassign,
+          activitiesOnly.programActivities.assigned.jobpoolautoassign,
+        ),
+      },
+      unassigned: mapGroups(
+        programsOnly.programs.unassigned,
+        activitiesOnly.programActivities.unassigned,
+      ),
+    },
+    orphanActivities: activitiesOnly.orphanActivities,
+    jobPoolActivities: activitiesOnly.jobPoolActivities,
+  }
+}
+
+function mergeProgramsAndActivitiesBundleLists(
+  programsList: UserProgramsOnlyDepartmentBundle[],
+  activitiesList: UserActivitiesOnlyDepartmentBundle[],
+): UserProgramsActivitiesDepartmentBundle[] {
+  const activitiesByDept = new Map(activitiesList.map((b) => [b.departmentId, b]))
+  return programsList.map((programsOnly) => {
+    const activitiesOnly = activitiesByDept.get(programsOnly.departmentId)
+    if (!activitiesOnly) {
+      return {
+        ...programsOnly,
+        orphanActivities: { assigned: [], unassigned: [] },
+        jobPoolActivities: { assigned: [], unassigned: [] },
+      }
+    }
+    return attachProgramActivitiesToProgramsBundle(programsOnly, activitiesOnly)
+  })
+}
+
+export type UserDepartmentsScope = "security" | "timestudy"
+
+function parseUserTimeStudyDepartment(raw: unknown): UserTimeStudyDepartment | null {
+  if (raw === null || typeof raw !== "object") return null
+  const row = raw as Record<string, unknown>
+  const departmentId = typeof row.departmentId === "number" ? row.departmentId : Number(row.departmentId)
+  const departmentCode = typeof row.departmentCode === "string" ? row.departmentCode : ""
+  const departmentName = typeof row.departmentName === "string" ? row.departmentName.trim() : ""
+  if (!Number.isFinite(departmentId) || departmentId < 1 || !departmentName) return null
+  const tsMinPerDay = readTsMinPerDay(row)
+  return {
+    departmentId,
+    departmentCode,
+    departmentName,
+    ...(tsMinPerDay !== undefined ? { tsMinPerDay } : {}),
+  }
+}
+
+/** GET …/user/departments?userId=… — departments mapped to the user. */
+export async function fetchUserTimeStudyDepartments(
+  userId: string,
+  scope: UserDepartmentsScope = "timestudy",
+  departmentId?: number,
+): Promise<UserTimeStudyDepartment[]> {
+  const uid = userId.trim()
+  if (!uid) throw new Error("userId is required")
+  const search = new URLSearchParams()
+  search.set("userId", uid)
+  search.set("scope", scope)
+  if (departmentId != null && Number.isFinite(departmentId) && departmentId >= 1) {
+    search.set("departmentId", String(departmentId))
+  }
+  const res = await api.get<ApiResponseDto<unknown>>(
+    `/timestudyprogram/user/departments?${search.toString()}`,
+  )
+  const payload = unwrapSuccess(res, "Failed to load user departments")
+  const list = Array.isArray(payload) ? payload : []
+  const out: UserTimeStudyDepartment[] = []
+  for (const row of list) {
+    const parsed = parseUserTimeStudyDepartment(row)
+    if (parsed) out.push(parsed)
+  }
+  return out
+}
+
+function userTimeStudyDepartmentToBundleStub(
+  dept: UserTimeStudyDepartment,
+): UserProgramsActivitiesDepartmentBundle {
+  return {
+    departmentId: dept.departmentId,
+    departmentCode: dept.departmentCode,
+    departmentName: dept.departmentName,
+    ...(dept.tsMinPerDay !== undefined ? { tsMinPerDay: dept.tsMinPerDay } : {}),
+    programs: {
+      assigned: { normal: [], jobpoolautoassign: [] },
+      unassigned: [],
+    },
+    orphanActivities: { assigned: [], unassigned: [] },
+    jobPoolActivities: { assigned: [], unassigned: [] },
+  }
+}
+
+async function fetchUserProgramsActivitiesSplit(
+  userId: string,
+  path: "programs-with-assignments" | "activities-with-assignments",
+  departmentId?: number,
+): Promise<unknown[]> {
+  const uid = userId.trim()
+  if (!uid) throw new Error("userId is required")
   const search = new URLSearchParams()
   search.set("userId", uid)
   if (departmentId != null && Number.isFinite(departmentId) && departmentId >= 1) {
     search.set("departmentId", String(departmentId))
   }
   const res = await api.get<ApiResponseDto<unknown>>(
-    `/timestudyprogram/user/programs-activities-with-assignments?${search.toString()}`,
+    `/timestudyprogram/user/${path}?${search.toString()}`,
   )
-  const payload = unwrapSuccess(res, "Failed to load user programs and activities")
-  const list = Array.isArray(payload) ? payload : []
-  const out: UserProgramsActivitiesDepartmentBundle[] = []
+  const payload = unwrapSuccess(res, `Failed to load user ${path}`)
+  return Array.isArray(payload) ? payload : []
+}
+
+/** GET …/user/programs-with-assignments — programs only (no nested activity children). */
+export async function fetchUserProgramsWithAssignments(
+  userId: string,
+  departmentId?: number,
+): Promise<UserProgramsOnlyDepartmentBundle[]> {
+  const list = await fetchUserProgramsActivitiesSplit(userId, "programs-with-assignments", departmentId)
+  const out: UserProgramsOnlyDepartmentBundle[] = []
   for (const row of list) {
-    const bundle = parseUserProgramsActivitiesBundle(row)
+    const bundle = parseUserProgramsOnlyBundle(row)
     if (bundle) out.push(bundle)
   }
   if (departmentId != null && Number.isFinite(departmentId) && departmentId >= 1) {
     return out.filter((b) => Number(b.departmentId) === departmentId)
   }
   return out
+}
+
+/** GET …/user/activities-with-assignments — programActivities, orphanActivities, jobPoolActivities. */
+export async function fetchUserActivitiesWithAssignments(
+  userId: string,
+  departmentId?: number,
+): Promise<UserActivitiesOnlyDepartmentBundle[]> {
+  const list = await fetchUserProgramsActivitiesSplit(userId, "activities-with-assignments", departmentId)
+  const out: UserActivitiesOnlyDepartmentBundle[] = []
+  for (const row of list) {
+    const bundle = parseUserActivitiesOnlyBundle(row)
+    if (bundle) out.push(bundle)
+  }
+  if (departmentId != null && Number.isFinite(departmentId) && departmentId >= 1) {
+    return out.filter((b) => Number(b.departmentId) === departmentId)
+  }
+  return out
+}
+
+/**
+ * Time Study tab: parallel programs + activities split endpoints, merged by departmentId.
+ * Attaches per-program activity children from `programActivities` (not legacy transfer trees).
+ */
+export async function fetchUserProgramsAndActivities(
+  userId: string,
+  departmentId?: number,
+): Promise<UserProgramsActivitiesDepartmentBundle[]> {
+  const [programsList, activitiesList] = await Promise.all([
+    fetchUserProgramsWithAssignments(userId, departmentId),
+    fetchUserActivitiesWithAssignments(userId, departmentId),
+  ])
+  return mergeProgramsAndActivitiesBundleLists(programsList, activitiesList)
 }
 
 function normalizeMasterCodeRow(raw: unknown): AddEmployeeMasterCodeRow | null {
