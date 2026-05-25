@@ -19,19 +19,28 @@ import { Button } from "@/components/ui/button"
 
 import { clearToken, getToken, setToken } from "@/lib/api"
 import {
+  clearExplicitLogout,
   clearStoredUser,
   getStoredUser,
-  hasPasswordBeenChangedForUser,
+  markExplicitLogout,
   setStoredUser,
+  wasExplicitLogout,
 } from "@/lib/auth-storage"
 import { clearStoredMimicSession } from "@/features/user/user-mimic/storage"
 import { login as loginRequest } from "@/features/auth/api/login"
 import { logout as logoutRequest } from "@/features/auth/api/logout"
 import { getUserDetails } from "@/features/auth/api/getUserDetails"
+import { buildAuthUserFromDetails } from "@/features/auth/utils/buildAuthUser"
+import { restoreSessionFromRefreshCookie } from "@/features/auth/utils/restoreSession"
+import { isSigningOut, setSigningOut } from "@/features/auth/utils/signOutState"
 import type { AuthContextValue, User } from "./types"
 
 const AuthContext = createContext<AuthContextValue | null>(null)
 const AUTH_SESSION_QUERY_KEY = ["auth", "session"] as const
+
+function isAuthSessionQueryKey(queryKey: readonly unknown[]): boolean {
+  return queryKey[0] === "auth" && queryKey[1] === "session"
+}
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [authLoading, setAuthLoading] = useState(false)
@@ -40,9 +49,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const queryClient = useQueryClient()
 
   if (typeof window !== "undefined") {
-    (window as any).showSessionExpired = () => {
+    ;(window as Window & { showSessionExpired?: () => void }).showSessionExpired = () => {
       setSessionExpired(true)
-      ;(window as any).isSessionExpiredOpen = true
+      ;(window as Window & { isSessionExpiredOpen?: boolean }).isSessionExpiredOpen = true
     }
   }
 
@@ -54,13 +63,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (token && storedUser) {
         return storedUser
       }
+
+      if (isSigningOut() || wasExplicitLogout()) {
+        return null
+      }
+
+      const restored = await restoreSessionFromRefreshCookie()
+      if (restored) {
+        setStoredUser(restored)
+        return restored
+      }
+
+      clearToken()
+      clearStoredUser()
       return null
     },
+    staleTime: Infinity,
+    retry: false,
   })
   const user: User | null = queryUser ?? null
 
   const establishDashboardSession = useCallback(
     (authUser: User) => {
+      setSigningOut(false)
+      clearExplicitLogout()
       setError(null)
       setStoredUser(authUser)
       queryClient.setQueryData<User | null>(AUTH_SESSION_QUERY_KEY, authUser)
@@ -70,63 +96,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signIn = useCallback(
     async (email: string, password: string) => {
+      setSigningOut(false)
+      clearExplicitLogout()
       setError(null)
       setAuthLoading(true)
       try {
         const result = await loginRequest({ email, password })
-        // If OTP is required, return result so LoginPage can redirect
         if (result.nextPage === "otp") {
           return result
         }
-        // If dashboard, fetch full details to get permissions/roles
-        let roles: string[] | undefined
-        let permissions: string[] | undefined
-        let displayName: string | undefined
-        let departmentRoles: User["departmentRoles"] | undefined
-        let isPasswordChangeRequired: boolean | undefined
-        
+
+        setToken(result.accessToken)
+        let authUser: User
         try {
-          // IMPORTANT: Set token first so getUserDetails call is authorized
-          setToken(result.accessToken)
           const details = await getUserDetails(result.userId)
-          roles = details.roles?.map((r) => r.name)
-          permissions = details.allpermissions
-          isPasswordChangeRequired = !!details.isPasswordChangeRequired
-          departmentRoles = details.departmentsRoles?.map(dr => ({
-            departmentId: dr.departmentId,
-            roleId: dr.roleId,
-            departmentName: dr.department?.name ?? "",
-            roleName: dr.role?.name ?? "",
-          }))
-          if (!permissions || permissions.length === 0) {
-            const all = new Set<string>()
-            details.departmentsRoles?.forEach(dr => {
-              dr.permissions?.forEach(p => all.add(p))
-            })
-            permissions = Array.from(all)
+          authUser = buildAuthUserFromDetails(
+            result.userId,
+            result.loginId,
+            details
+          )
+        } catch {
+          authUser = {
+            id: result.userId,
+            name: result.loginId.split("@")[0] || result.loginId,
+            email: result.loginId,
           }
-          displayName = details.name ?? 
-            [details.firstName, details.lastName]
-              .filter(Boolean)
-              .join(" ")
-        } catch (err) {
-          // Fallback if details call fails
         }
 
-        const authUser: User = {
-          id: result.userId,
-          name: displayName && displayName.trim().length > 0 
-            ? displayName 
-            : result.loginId.split("@")[0] || result.loginId,
-          email: result.loginId,
-          isPasswordChangeRequired:
-            isPasswordChangeRequired && !hasPasswordBeenChangedForUser(result.userId)
-              ? true
-              : false,
-          roles,
-          permissions,
-          departmentRoles,
-        }
         setStoredUser(authUser)
         queryClient.setQueryData<User | null>(AUTH_SESSION_QUERY_KEY, authUser)
       } catch (err) {
@@ -141,7 +137,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   )
 
   const signOut = useCallback(() => {
-    void logoutRequest()
+    setSigningOut(true)
+    markExplicitLogout()
+
+    // Call logout while access token is still in sessionStorage (backend requires Bearer).
+    const logoutPromise = logoutRequest()
       .then(() => {
         toast.success("Logged out successfully", {
           icon: (
@@ -150,20 +150,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         })
       })
       .catch(() => {
-        // Ignore API errors; still clear client-side session.
         toast.success("Logged out successfully", {
           icon: (
             <CircleCheckIcon className="size-4 shrink-0 text-green-600 dark:text-green-400" />
           ),
         })
       })
-    queryClient.setQueryData<User | null>(AUTH_SESSION_QUERY_KEY, null)
-    queryClient.clear()
+
     clearToken()
     clearStoredUser()
     clearStoredMimicSession()
     localStorage.removeItem("SCREEN_INACTIVITY_TIME_IN_MIN")
     localStorage.removeItem("APP_LAST_ACTIVITY_TIME")
+
+    void queryClient.cancelQueries({ queryKey: AUTH_SESSION_QUERY_KEY })
+    queryClient.setQueryData<User | null>(AUTH_SESSION_QUERY_KEY, null)
+    queryClient.removeQueries({
+      predicate: (query) => !isAuthSessionQueryKey(query.queryKey),
+    })
+
+    void logoutPromise
   }, [queryClient])
 
   const clearError = useCallback(() => setError(null), [])
@@ -195,28 +201,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   return (
     <AuthContext.Provider value={value}>
       {children}
-      <Dialog 
-        open={sessionExpired} 
+      <Dialog
+        open={sessionExpired}
         onOpenChange={(open) => {
           setSessionExpired(open)
           if (!open && typeof window !== "undefined") {
-            (window as any).isSessionExpiredOpen = false
+            ;(window as Window & { isSessionExpiredOpen?: boolean }).isSessionExpiredOpen =
+              false
           }
         }}
       >
-        <DialogContent className="max-w-[400px]!" overlayClassName="bg-black/60!" showClose={false}>
+        <DialogContent
+          className="max-w-[400px]!"
+          overlayClassName="bg-black/60!"
+          showClose={false}
+        >
           <DialogHeader>
             <DialogDescription className="text-foreground! font-medium">
-              Session expired. Please logout and login Again
+              Session expired. Please logout and login again
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button onClick={() => {
-              setSessionExpired(false)
-              if (typeof window !== "undefined") {
-                (window as any).isSessionExpiredOpen = false
-              }
-            }} className="rounded-[6px]! bg-[#6C5DD3] hover:bg-[#5a4eb3] text-white border-transparent">OK</Button>
+            <Button
+              onClick={() => {
+                setSessionExpired(false)
+                if (typeof window !== "undefined") {
+                  ;(window as Window & { isSessionExpiredOpen?: boolean }).isSessionExpiredOpen =
+                    false
+                }
+                signOut()
+              }}
+              className="rounded-[6px]! bg-[#6C5DD3] hover:bg-[#5a4eb3] text-white border-transparent"
+            >
+              OK
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

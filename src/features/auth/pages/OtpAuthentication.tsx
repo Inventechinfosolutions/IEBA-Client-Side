@@ -28,6 +28,7 @@ import { otpSchema } from "@/features/auth/schemas"
 import { useGlobalNamespaces } from "@/features/auth/queries/getGlobalNamespaces"
 import { useValidateLoginOtp } from "@/features/auth/mutations/useValidateLoginOtp"
 import { getUserDetails } from "@/features/auth/api/getUserDetails"
+import { buildAuthUserFromDetails } from "@/features/auth/utils/buildAuthUser"
 import { AuthJourney } from "@/features/auth/enums/auth.enum"
 import {
   type OtpFormValues,
@@ -175,51 +176,28 @@ export function OtpAuthentication() {
         onSuccess: async (result) => {
           setToken(result.accessToken)
 
-          // Fetch full user details (roles, departments, permissions, etc.)
-          let roles: string[] | undefined
-          let permissions: string[] | undefined
-          let displayName: string | undefined
-          try {
-            const details = await getUserDetails(result.userId)
-            roles = details.roles?.map((r) => r.name)
-            
-            // Get flattened permissions from top-level or from roles
-            permissions = details.allpermissions
-            if (!permissions || permissions.length === 0) {
-              // Fallback to concatenating from departmentRoles
-              const all = new Set<string>()
-              details.departmentsRoles?.forEach(dr => {
-                dr.permissions?.forEach(p => all.add(p))
-              })
-              permissions = Array.from(all)
-            }
-
-            displayName =
-              details.name ??
-              [details.firstName, details.lastName]
-                .filter((part) => !!part && part.trim().length > 0)
-                .join(" ")
-          } catch (error) {
-            // If profile call fails, continue with basic session so user can still log in.
-          }
-
           const loginId = email.trim()
           const countyName = selectedCountyLabel?.toUpperCase() ?? ""
 
-          establishDashboardSession({
-            id: result.userId,
-            name:
-              displayName && displayName.trim().length > 0
-                ? displayName
-                : loginId.includes("@")
-                  ? (loginId.split("@")[0] ?? "User")
-                  : loginId,
-            email: loginId,
-            namespace: selectedNameSpace,
-            countyName,
-            roles,
-            permissions,
-          })
+          let authUser
+          try {
+            const details = await getUserDetails(result.userId)
+            authUser = {
+              ...buildAuthUserFromDetails(result.userId, loginId, details),
+              namespace: selectedNameSpace,
+              countyName,
+            }
+          } catch {
+            authUser = {
+              id: result.userId,
+              name: loginId.includes("@") ? (loginId.split("@")[0] ?? "User") : loginId,
+              email: loginId,
+              namespace: selectedNameSpace,
+              countyName,
+            }
+          }
+
+          establishDashboardSession(authUser)
           setCountyModalOpen(false)
           toast.success("Signed in successfully", {
             icon: (
