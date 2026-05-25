@@ -16,7 +16,6 @@ import type {
   ActivityDepartmentPageResult,
   ApiActivityDepartmentResDto,
   ApiActivityResDto,
-  ApiActivityTreeResDto,
   ApiCountyActivityCreateResponse,
   CountyActivityCodeRow,
   CountyActivityEditPayload,
@@ -55,22 +54,20 @@ export async function apiGetCountyActivityById(id: number): Promise<ApiActivityR
 
 export async function apiGetCountyActivityForEdit(id: number): Promise<CountyActivityEditPayload> {
   const activity = await apiGetCountyActivityById(id)
-  let names: string[] = []
+  // Use ONLY assignedDepartments — this is the source of truth for what is currently assigned.
+  // The legacy `departments` field is a join that may be incomplete or stale; do NOT fall back to it.
+  const assignedDepts = activity.assignedDepartments ?? []
+  const names = sortDepartmentNameList(assignedDepts.map((d) => d.name))
 
-  if (activity.departments != null && activity.departments.length > 0) {
-    names = sortDepartmentNameList(activity.departments.map((d) => d.name))
-  } else {
-    const links = await fetchCountyActivityDepartmentLinks(id)
-    names = sortDepartmentNameList(links.map((l) => l.name))
-  }
   const apportioningDepartments: { name: string; apportioning: boolean }[] = []
   const actDepts = activity.activityDepartments ?? []
+  const allDepts = [...(activity.assignedDepartments ?? []), ...(activity.unassignedDepartments ?? [])]
   actDepts.forEach((ad) => {
     let name = ""
     if (ad.department?.name) {
       name = ad.department.name
     } else {
-      const d = (activity.departments ?? []).find((x) => x.id === ad.departmentId)
+      const d = allDepts.find((x) => x.id === ad.departmentId)
       if (d?.name) name = d.name
     }
     if (name) {
@@ -104,32 +101,16 @@ export async function apiGetCountyActivityLinkedDepartmentIds(
 }
 
 
-const ACTIVITY_DEPARTMENTS_LIST_LIMIT = 1000
-
-
-
-
 async function fetchCountyActivityDepartmentLinks(
   activityId: number,
 ): Promise<ApiActivityDepartmentResDto[]> {
-  const all: ApiActivityDepartmentResDto[] = []
-  let page = 1
-  const limit = ACTIVITY_DEPARTMENTS_LIST_LIMIT
-  for (; ;) {
-    const search = new URLSearchParams({
-      activityId: String(activityId),
-      page: String(page),
-      limit: String(limit),
-    })
-    const raw = await api.get<unknown>(`/activity-departments?${search.toString()}`)
-    const { items, totalItems } = parseCountyActivityDepartmentListPage(raw)
-    if (items.length === 0) break
-    all.push(...items)
-    if (items.length < limit) break
-    if (totalItems > 0 && all.length >= totalItems) break
-    page += 1
+  const raw = await api.get<{ success: boolean; data: ApiActivityDepartmentResDto[] }>(
+    `/activity-departments/all?activityId=${activityId}`,
+  )
+  if (!raw.success || !Array.isArray(raw.data)) {
+    throw new Error("Failed to load activity departments")
   }
-  return all
+  return raw.data
 }
 
 async function postCountyActivityDepartmentLink(body: PostActivityDepartmentBody): Promise<void> {
@@ -150,29 +131,49 @@ async function createCountyActivityDepartmentLinks(
   )
   if (ids.length === 0) return
 
-  await Promise.all(
-    ids.map((departmentId) => {
-      // Per-dept apportioning: activity must be apportioning AND dept must be apportioning
+  if (ids.length > 1) {
+    const links = ids.map((departmentId) => {
       const deptAllowsApportioning = deptApportioningMap?.get(departmentId) ?? true
       const effectiveApportioning = input.apportioning && deptAllowsApportioning
-      return postCountyActivityDepartmentLink({
-        activityId: input.activityId,
+      return {
         departmentId,
-        code: input.activityCode.trim(),
-        name: input.activityName.trim(),
-        type: input.type,
-        leavecode: input.leavecode,
-        parentId: input.parentActivityId,
         apportioning: effectiveApportioning,
-      })
-    }),
-  )
+      }
+    })
+
+    const body = {
+      activityId: input.activityId,
+      code: input.activityCode.trim(),
+      name: input.activityName.trim(),
+      type: input.type,
+      leavecode: input.leavecode,
+      parentId: input.parentActivityId,
+      status: "active",
+      links,
+    }
+
+    await api.post<unknown>("/activity-departments/bulk", body)
+  } else {
+    const departmentId = ids[0]
+    const deptAllowsApportioning = deptApportioningMap?.get(departmentId) ?? true
+    const effectiveApportioning = input.apportioning && deptAllowsApportioning
+    await postCountyActivityDepartmentLink({
+      activityId: input.activityId,
+      departmentId,
+      code: input.activityCode.trim(),
+      name: input.activityName.trim(),
+      type: input.type,
+      leavecode: input.leavecode,
+      parentId: input.parentActivityId,
+      apportioning: effectiveApportioning,
+    })
+  }
 }
 
 async function syncCountyActivityDepartmentLinks(
   input: SyncActivityDepartmentLinksInput,
-  /** Map of departmentId → whether that department has apportioning enabled in master */
   deptApportioningMap?: Map<number, boolean>,
+  existingLinks?: ApiActivityDepartmentResDto[],
 ): Promise<void> {
   const desired = new Set(
     input.desiredDepartmentIds.filter(
@@ -180,7 +181,8 @@ async function syncCountyActivityDepartmentLinks(
     ),
   )
 
-  const existing = await fetchCountyActivityDepartmentLinks(input.activityId)
+  // Use pre-fetched links when available — avoids a redundant GET /activity-departments call
+  const existing = existingLinks ?? await fetchCountyActivityDepartmentLinks(input.activityId)
 
   const toRemove = existing.filter((row) => !desired.has(row.departmentId))
   await Promise.all(toRemove.map((row) => deleteCountyActivityDepartmentLink(row.id)))
@@ -201,7 +203,7 @@ async function syncCountyActivityDepartmentLinks(
     deptApportioningMap,
   )
 
-  // UPDATED: Also update existing links if their apportioning status changed
+  // Also update existing links if their apportioning status changed
   const toUpdate = existing.filter((row) => desired.has(row.departmentId))
   await Promise.all(
     toUpdate.map((row) => {
@@ -221,6 +223,7 @@ async function syncCountyActivityDepartmentLinks(
       }
       return Promise.resolve()
     }),
+
   )
 }
 
@@ -273,94 +276,24 @@ function sortUniquePositiveDepartmentIds(ids: readonly number[]): number[] {
 
 
 
-/** Maps hierarchy DTOs + enrichment + department links into county grid rows. */
-export function buildCountyActivityCodeRowsFromHierarchy(
-  roots: ApiActivityTreeResDto[],
-  enrichment: ReadonlyMap<string, ActivityCatalogEnrichmentValue>,
-  linkByActivity: ReadonlyMap<number, number[]>,
-): CountyActivityCodeRow[] {
-  const rows: CountyActivityCodeRow[] = []
-
-  const visit = (
-    node: ApiActivityTreeResDto,
-    parentId: string | null,
-    rowType: CountyActivityGridRowType,
-  ): void => {
-    const enr = enrichment.get(
-      countyActivityCatalogEnrichmentKey(node.activityCodeType, node.activityCode),
-    ) ?? {
-      spmp: false,
-      match: CountyActivityCatalogMatchDefault.NONE,
-      percentage: 0,
-    }
-
-    const fromNested = node.departments
-    const fromLinks = linkByActivity.get(node.id) ?? []
-    const linkedDepartmentIds =
-      fromNested !== undefined
-        ? sortUniquePositiveDepartmentIds(fromNested.map((d) => d.id))
-        : sortUniquePositiveDepartmentIds(fromLinks)
-
-    const id = String(node.id)
-
-    const apportioningDepartments: { name: string; apportioning: boolean }[] = []
-    const actDepts = node.activityDepartments ?? []
-    actDepts.forEach((ad) => {
-      let name = ""
-      if (ad.department?.name) {
-        name = ad.department.name
-      } else {
-        const d = (node.departments ?? []).find((x) => x.id === ad.departmentId)
-        if (d?.name) name = d.name
-      }
-      if (name) {
-        apportioningDepartments.push({ name, apportioning: ad.apportioning })
-      }
-    })
-
-    rows.push({
-      id,
-      countyActivityCode: node.code,
-      countyActivityName: node.name,
-      description: node.description ?? "",
-      department: "",
-      linkedDepartmentIds,
-      masterCodeType: node.activityCodeType,
-      masterCode: parseMasterCodeDisplay(node.activityCode),
-      catalogActivityCode: node.activityCode,
-      spmp: enr.spmp,
-      match: enr.match,
-      percentage: enr.percentage,
-      active: node.status === ActivityStatusEnum.ACTIVE,
-      leaveCode: node.leavecode,
-      docRequired: node.docrequired,
-      multipleJobPools: node.isActivityAssignableToMultipleJobPools,
-      apportioning: node.apportioning || false,
-      apportioningDepartments,
-      rowType,
-      parentId,
-    })
-
-    const children = node.children ?? []
-    for (const child of children) {
-      visit(child, id, CountyActivityGridRowType.SUB)
-    }
-  }
-
-  for (const root of roots) {
-    visit(root, null, CountyActivityGridRowType.PRIMARY)
-  }
-
-  return rows
-}
 
 /** Maps a flat `GET /activities` row into a county grid row (catalog enrichment for SPMP / match / %). */
 export function mapCountyActivityListItemToGridRow(
   dto: ApiActivityResDto,
   enrichment: ReadonlyMap<string, ActivityCatalogEnrichmentValue>,
 ): CountyActivityCodeRow {
-  const enr =
-    enrichment.get(countyActivityCatalogEnrichmentKey(dto.activityCodeType, dto.activityCode)) ?? {
+  // Prefer the fields already embedded in the list DTO by the backend.
+  // Fall back to the enrichment map only when they are absent (e.g. older endpoints).
+  const hasDtoEnrichment =
+    dto.spmp !== undefined || dto.match !== undefined || dto.percent !== undefined
+
+  const enr = hasDtoEnrichment
+    ? {
+      spmp: dto.spmp ?? false,
+      match: normalizeCatalogMatchForCountyActivityGrid(dto.match ?? undefined),
+      percentage: Number.isFinite(dto.percent) ? (dto.percent ?? 0) : 0,
+    }
+    : enrichment.get(countyActivityCatalogEnrichmentKey(dto.activityCodeType, dto.activityCode)) ?? {
       spmp: false,
       match: CountyActivityCatalogMatchDefault.NONE,
       percentage: 0,
@@ -372,7 +305,8 @@ export function mapCountyActivityListItemToGridRow(
 
   const typeNorm = String(dto.type ?? "").trim().toLowerCase()
   const isPrimary =
-    dto.type === ApiActivityTypeEnum.PRIMARY || typeNorm === "primary"
+    (dto.type === ApiActivityTypeEnum.PRIMARY || typeNorm === "primary") &&
+    dto.parent?.id == null
 
   const apportioningDepartments: { name: string; apportioning: boolean }[] = []
   const actDepts = dto.activityDepartments ?? []
@@ -412,7 +346,8 @@ export function mapCountyActivityListItemToGridRow(
     apportioningDepartments,
     rowType: isPrimary ? CountyActivityGridRowType.PRIMARY : CountyActivityGridRowType.SUB,
     parentId:
-      dto.parentId != null && dto.parentId !== undefined ? String(dto.parentId) : null,
+      dto.parent?.id != null ? String(dto.parent.id) : null,
+    hasChild: dto.hasChild ?? false,
   }
 }
 
@@ -687,20 +622,31 @@ export async function apiGetCountyActivitiesCatalogAggregated(
   }
 }
 
-/** GET `/activities/top-level` — root primaries for the main grid / table pickers (not the Sub-only aggregated list). */
-export async function apiGetCountyActivityTopLevel(): Promise<ApiActivityResDto[]> {
-  const raw = await api.get<ApiResponseDto<ApiActivityResDto[]>>("/activities/top-level")
-  if (!raw.success || raw.data == null) {
-    throw new Error(raw.message?.trim() || "Failed to load top-level activities")
+export async function apiGetCountyActivitiesAllActive(
+  params?: { departmentIds?: number[] },
+): Promise<CountyActivityListResponsePayload> {
+  let url = `/activities?status=active`
+  if (params?.departmentIds && params.departmentIds.length > 0) {
+    url += `&departmentIds=${params.departmentIds.join(",")}`
   }
-  return Array.isArray(raw.data) ? raw.data : []
+  const raw = await api.get<ApiResponseDto<CountyActivityListResponsePayload>>(url)
+  if (!raw.success || raw.data == null) {
+    throw new Error(raw.message?.trim() || "Failed to load county activities")
+  }
+  const inner = raw.data
+  if (!Array.isArray(inner.data) || inner.meta == null) {
+    throw new Error("Invalid county activities list response")
+  }
+  return inner
 }
 
-/** GET `/activities/hierarchy`. */
-export async function apiGetCountyActivityHierarchy(): Promise<ApiActivityTreeResDto[]> {
-  const raw = await api.get<unknown>("/activities/hierarchy")
-  const data = unwrapData<ApiActivityTreeResDto[]>(raw)
-  return Array.isArray(data) ? data : []
+/** GET `/activities/:parentId/nestedactivities` — direct children for a parent. */
+export async function apiGetCountyActivityNested(parentId: number): Promise<ApiActivityResDto[]> {
+  const raw = await api.get<ApiResponseDto<ApiActivityResDto[]>>(`/activities/${parentId}/nestedactivities`)
+  if (!raw.success || raw.data == null) {
+    throw new Error(raw.message?.trim() || "Failed to load nested activities")
+  }
+  return Array.isArray(raw.data) ? raw.data : []
 }
 
 export async function apiGetCountyActivitiesByDepartmentId(
@@ -716,14 +662,6 @@ export async function apiGetCountyActivitiesByDepartmentId(
   return items
 }
 
-/** County grid: hierarchy + all activity–department links + catalog enrichment (enrichment usually from query cache). */
-export async function apiGetCountyActivityCodeTableRows(
-  enrichment: ReadonlyMap<string, ActivityCatalogEnrichmentValue>,
-): Promise<CountyActivityCodeRow[]> {
-  const tree = await apiGetCountyActivityHierarchy()
-  const linkByActivity = new Map<number, number[]>()
-  return buildCountyActivityCodeRowsFromHierarchy(tree, enrichment, linkByActivity)
-}
 
 /** POST `/activities` — primary (with master code + department links) or sub (with parentId). */
 export async function apiPostCountyActivity(
