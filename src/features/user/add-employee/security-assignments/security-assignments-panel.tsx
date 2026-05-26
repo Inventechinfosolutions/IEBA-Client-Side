@@ -481,6 +481,75 @@ export function SecurityAssignmentsPanel({
       }
     }
 
+    // 2. Guard for Add Mode: Only allow unassign if the department's local allocation is 0
+    if (displaySupervisorApportioning && isAddMode) {
+      const supervisorSnapshots = assignedSnapshots.filter(s => s.name.trim() === "Time Study Supervisor");
+      const supervisorDeptIds = new Set(supervisorSnapshots.map(s => s.departmentId));
+
+      const supervisorItemsRemoving = toRemoveItems.filter(i => i.name.trim() === "Time Study Supervisor");
+      const deptsRemovingIds = new Set(
+        supervisorItemsRemoving
+          .map(i => departmentIdFromSecurityCatalogItemId(i.id))
+          .filter((id): id is number => id != null)
+      );
+
+      // If removing ALL supervisor roles at once, allow it!
+      const isRemovingAllSupervisorRoles = deptsRemovingIds.size === supervisorDeptIds.size && supervisorDeptIds.size > 0;
+
+      const failingItem = toRemoveItems.find((i) => {
+        // Only check if we are specifically trying to unassign the Supervisor role
+        if (i.name.trim() !== "Time Study Supervisor") return false
+
+        const deptId = departmentIdFromSecurityCatalogItemId(i.id)
+        if (deptId == null) return false
+        
+        // Exception 1: If removing ALL supervisor roles, allow it!
+        if (isRemovingAllSupervisorRoles) return false
+
+        // Exception 2: If this is the ONLY supervisor department, allow unassigning it
+        // regardless of the current percentage.
+        if (supervisorDeptIds.size <= 1) return false
+
+        // Otherwise, if they have multiple departments, they must set this one to 0 first
+        const currentAllocations = getValues("apportioningAllocations") ?? {}
+        const allocationVal = parseFloat(currentAllocations[String(deptId)] ?? "") || 0
+        const hasAllocation = allocationVal > 0
+        
+        return hasAllocation
+      })
+
+      if (failingItem) {
+        // Find departments that are staying
+        const deptsStaying = supervisorSnapshots.filter(s => !deptsRemovingIds.has(s.departmentId));
+        
+        const deptId = departmentIdFromSecurityCatalogItemId(failingItem.id);
+        const allRolesForThisDept = assignedSnapshots.filter((s) => s.departmentId === deptId)
+        const rolesBeingRemovedForThisDept = toRemoveItems.filter(i => departmentIdFromSecurityCatalogItemId(i.id) === deptId);
+        
+        // Check if user is removing ALL roles they have in this department
+        const isRemovingFullDepartment = allRolesForThisDept.length > 0 && 
+          allRolesForThisDept.every(snap => 
+            rolesBeingRemovedForThisDept.some(removingItem => removingItem.id === snap.id)
+          );
+
+        let message = "";
+        const stayingDeptName = deptsStaying.length === 1 ? (deptsStaying[0].department || "the remaining department") : "";
+
+        if (isRemovingFullDepartment) {
+          message = `Cannot unassign ${failingItem.department} department.`;
+        } else {
+          message = `Cannot unassign ${failingItem.name} role from ${failingItem.department}.`;
+        }
+
+        if (deptsStaying.length === 1) {
+          toast.error(`${message} Please make ${stayingDeptName} apportioning 100% and try again.`)
+        } else {
+          toast.error(`${message} Please update your allocations among remaining departments first.`)
+        }
+        return
+      }
+    }
+
     if (canPersistTransfers) {
       const invalid = toRemoveItems.some(
         (i) =>
