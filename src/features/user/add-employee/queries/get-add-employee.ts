@@ -17,7 +17,6 @@ import {
   fetchMulticodeMasterCodes,
   fetchSupervisorsByDepartmentIds,
   fetchUserProgramsAndActivities,
-  fetchUserProgramsWithAssignments,
   fetchUserActivitiesWithAssignments,
   fetchUserTimeStudyDepartments,
   fetchUserDetailsTab,

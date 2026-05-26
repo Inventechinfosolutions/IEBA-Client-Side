@@ -243,6 +243,13 @@ export type UserTimeStudyDepartment = {
   departmentName: string
   /** `userprofile.tsmins` for this user (same on every department row). */
   tsMinPerDay?: number | null
+  moveSaveSubmitToTop?: boolean
+  removeAutoFillEndTime?: boolean
+  startorEndTime?: boolean
+  supportingDoc?: boolean
+  removeDescriptionActivityNote?: boolean
+  removeDescriptionActivityNoteAnchor?: boolean
+  removeDescriptionActivityNoteMultiCode?: boolean
 }
 
 /** GET …/user/programs-with-assignments — programs only. */
