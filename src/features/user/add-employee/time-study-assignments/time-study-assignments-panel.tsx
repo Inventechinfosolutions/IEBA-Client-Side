@@ -421,11 +421,20 @@ function collectJobPoolAssignedIds(bundle: UserProgramsActivitiesDepartmentBundl
   return { programIds, activityIds }
 }
 
+function isNormalNonJobPoolProgram(
+  program: UserProgramsActivitiesProgramWithAssignments,
+): boolean {
+  const jobpoolId = program.jobpoolId
+  return jobpoolId == null || jobpoolId < 1
+}
+
+/** Regular shuttle activities: only those linked to assigned (non–job-pool) programs. */
 function collectBundleActivityTransferItems(
   bundle: UserProgramsActivitiesDepartmentBundle,
+  assignedNormalPrograms: UserProgramsActivitiesProgramWithAssignments[],
 ): AddEmployeeTimeStudyTransferItem[] {
   const dept = bundle.departmentName.trim()
-  if (!dept) return []
+  if (!dept || assignedNormalPrograms.length === 0) return []
   const byId = new Map<string, AddEmployeeTimeStudyTransferItem>()
   const addActivity = (activity: { id: number; code: string; name: string }) => {
     const id = String(activity.id)
@@ -438,9 +447,11 @@ function collectBundleActivityTransferItems(
       })
     }
   }
-  const orphanActivities = orphanActivitiesFor(bundle)
-  for (const activity of [...orphanActivities.assigned, ...orphanActivities.unassigned]) {
-    addActivity(activity)
+  for (const program of assignedNormalPrograms) {
+    const children = program.children ?? EMPTY_ACTIVITY_SPLIT
+    for (const activity of [...children.assigned, ...children.unassigned]) {
+      addActivity(activity)
+    }
   }
   return sortTransferItems([...byId.values()])
 }
@@ -719,11 +730,6 @@ export function TimeStudyAssignmentsPanel({
     [selectedBundle],
   )
 
-  const activityCatalogForUserBundle = useMemo(
-    () => (selectedBundle ? collectBundleActivityTransferItems(selectedBundle) : []),
-    [selectedBundle],
-  )
-
   const globalProgramsForSelectedDepartment = useMemo(
     () => filterTransferItemsByDepartment(programCatalogForUserBundle, selectedDept),
     [programCatalogForUserBundle, selectedDept],
@@ -750,6 +756,23 @@ export function TimeStudyAssignmentsPanel({
         activityPlacementOverridesEditMode,
       ),
     [selectedDept, bundleActivityIdsForSelectedDepartment, activityPlacementOverridesEditMode],
+  )
+
+  const uiAssignedNormalPrograms = useMemo(() => {
+    if (!selectedBundle) return []
+    return allProgramsInSelectedBundle.filter(
+      (program) =>
+        isNormalNonJobPoolProgram(program) &&
+        programAssignedPredicateEditMode(String(program.id)),
+    )
+  }, [selectedBundle, allProgramsInSelectedBundle, programAssignedPredicateEditMode])
+
+  const activityCatalogForUserBundle = useMemo(
+    () =>
+      selectedBundle
+        ? collectBundleActivityTransferItems(selectedBundle, uiAssignedNormalPrograms)
+        : [],
+    [selectedBundle, uiAssignedNormalPrograms],
   )
 
   const deptProgramsAddMode = useMemo(
@@ -800,6 +823,10 @@ export function TimeStudyAssignmentsPanel({
     deptProgramsAddMode,
     assignedProgramIdsAddMode,
   ])
+
+  const hasAssignedNormalProgramsForActivities = hasUserTsBundle
+    ? uiAssignedNormalPrograms.length > 0
+    : programsAssigned.length > 0
 
   /**
    * Activities are only fetched once at least one program is assigned.
@@ -904,6 +931,7 @@ export function TimeStudyAssignmentsPanel({
     tsDepartmentScopeQuery.isPending || tsDepartmentScopeQuery.isFetching
 
   const activitiesUnassigned = useMemo(() => {
+    if (!hasAssignedNormalProgramsForActivities) return []
     if (hasUserTsBundle) {
       return buildUnassignedItemsForEditMode(
         globalActivitiesForSelectedDepartment,
@@ -912,6 +940,7 @@ export function TimeStudyAssignmentsPanel({
     }
     return deptActivitiesAddMode.filter((a) => !assignedActivityIdsAddMode.includes(a.id))
   }, [
+    hasAssignedNormalProgramsForActivities,
     hasUserTsBundle,
     globalActivitiesForSelectedDepartment,
     activityAssignedPredicateEditMode,
@@ -920,6 +949,7 @@ export function TimeStudyAssignmentsPanel({
   ])
 
   const activitiesAssigned = useMemo(() => {
+    if (!hasAssignedNormalProgramsForActivities) return []
     if (hasUserTsBundle) {
       return buildAssignedItemsForEditMode(
         globalActivitiesForSelectedDepartment,
@@ -929,6 +959,7 @@ export function TimeStudyAssignmentsPanel({
     }
     return deptActivitiesAddMode.filter((a) => assignedActivityIdsAddMode.includes(a.id))
   }, [
+    hasAssignedNormalProgramsForActivities,
     hasUserTsBundle,
     globalActivitiesForSelectedDepartment,
     jobPoolAssignedIds,
