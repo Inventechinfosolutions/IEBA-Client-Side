@@ -16,6 +16,7 @@ import type {
   ActivityDepartmentPageResult,
   ApiActivityDepartmentResDto,
   ApiActivityResDto,
+  ApiActivityTreeResDto,
   ApiCountyActivityCreateResponse,
   CountyActivityCodeRow,
   CountyActivityEditPayload,
@@ -26,6 +27,7 @@ import type {
   MatchStatus,
   PostActivityDepartmentBody,
   PostActivityDepartmentLinksInput,
+  SyncActivityDepartmentLinksInput,
   UpdateCountyActivityApiInput,
 } from "../types"
 
@@ -53,15 +55,6 @@ export async function apiGetCountyActivityById(id: number): Promise<ApiActivityR
 
 export async function apiGetCountyActivityForEdit(id: number): Promise<CountyActivityEditPayload> {
   const activity = await apiGetCountyActivityById(id)
-  const assigned =
-    activity.assignedDepartments ??
-    activity.departments ??
-    []
-  const names = sortDepartmentNameList(assigned.map((d) => d.name))
-  const apportioningDepartments = assigned.map((d) => ({
-    name: d.name,
-    apportioning: d.apportioning ?? false,
-  }))
   // Use ONLY assignedDepartments — this is the source of truth for what is currently assigned.
   // The legacy `departments` field is a join that may be incomplete or stale; do NOT fall back to it.
   const assignedDepts = activity.assignedDepartments ?? []
@@ -183,9 +176,9 @@ async function syncCountyActivityDepartmentLinks(
   deptApportioningMap?: Map<number, boolean>,
   existingLinks?: ApiActivityDepartmentResDto[],
 ): Promise<void> {
-  const desired = new Set(
+  const desired = new Set<number>(
     input.desiredDepartmentIds.filter(
-      (id) => typeof id === "number" && !Number.isNaN(id) && id > 0,
+      (id: unknown): id is number => typeof id === "number" && !Number.isNaN(id) && id > 0,
     ),
   )
 
@@ -195,7 +188,7 @@ async function syncCountyActivityDepartmentLinks(
   const toRemove = existing.filter((row) => !desired.has(row.departmentId))
   await Promise.all(toRemove.map((row) => deleteCountyActivityDepartmentLink(row.id)))
 
-  const have = new Set(existing.map((row) => row.departmentId))
+  const have = new Set<number>(existing.map((row) => row.departmentId))
   const toAdd = [...desired].filter((id) => !have.has(id))
   await createCountyActivityDepartmentLinks(
     {
@@ -816,14 +809,14 @@ export async function apiPostCountyActivity(
   return data
 }
 
-/** PUT `/activities/:id`; primary rows may sync `/activity-departments` afterward. */
+/** PUT `/activities/:id`; primary rows sync `/activity-departments` afterward. */
 export async function apiPutCountyActivity(input: UpdateCountyActivityApiInput): Promise<void> {
   const id = Number(input.id)
   if (Number.isNaN(id)) {
     throw new Error("Invalid activity id")
   }
 
-  const { values, rowType, masterCatalog, departmentLinks } = input
+  const { values, rowType, masterCatalog, departmentLinks, existingActivityDepartments } = input
   const status = values.active ? ActivityStatusEnum.ACTIVE : ActivityStatusEnum.INACTIVE
 
   const body: Record<string, unknown> = {
@@ -842,12 +835,26 @@ export async function apiPutCountyActivity(input: UpdateCountyActivityApiInput):
     body.activityCodeType = masterCatalog.type.trim()
   }
 
-  if (rowType === CountyActivityGridRowType.PRIMARY && departmentLinks != null) {
-    body.departments = departmentLinks
-      .map((d) => d.id)
-      .filter((x) => typeof x === "number" && !Number.isNaN(x) && x > 0)
-      .map((deptId) => ({ id: deptId }))
-  }
-
   await api.put<unknown>(`/activities/${id}`, body)
+
+  // Sync department links via /activity-departments for primary rows (diff add/remove/update).
+  if (rowType === CountyActivityGridRowType.PRIMARY && departmentLinks != null) {
+    const deptApportioningMap = new Map<number, boolean>(
+      departmentLinks.map((d) => [d.id, d.apportioning ?? true]),
+    )
+    await syncCountyActivityDepartmentLinks(
+      {
+        activityId: id,
+        desiredDepartmentIds: departmentLinks.map((d) => d.id),
+        activityCode: values.countyActivityCode,
+        activityName: values.countyActivityName,
+        type: ApiActivityTypeEnum.PRIMARY,
+        leavecode: values.leaveCode,
+        parentActivityId: null,
+        apportioning: values.apportioning,
+      },
+      deptApportioningMap,
+      existingActivityDepartments,
+    )
+  }
 }
