@@ -303,6 +303,11 @@ export function mapCountyActivityListItemToGridRow(
     (dto.departments ?? []).map((d) => d.id),
   )
 
+  const departmentNames = (dto.departments ?? [])
+    .map((d) => (d.name ?? "").trim())
+    .filter(Boolean)
+  const department = departmentNames.length > 0 ? departmentNames.join(", ") : ""
+
   const typeNorm = String(dto.type ?? "").trim().toLowerCase()
   const isPrimary =
     (dto.type === ApiActivityTypeEnum.PRIMARY || typeNorm === "primary") &&
@@ -328,7 +333,7 @@ export function mapCountyActivityListItemToGridRow(
     countyActivityCode: dto.code,
     countyActivityName: dto.name,
     description: dto.description ?? "",
-    department: "",
+    department,
     linkedDepartmentIds,
     masterCodeType: dto.activityCodeType,
     masterCode: parseMasterCodeDisplay(dto.activityCode),
