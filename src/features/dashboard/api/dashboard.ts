@@ -190,9 +190,11 @@ export async function getDashboardAllUsersCount(): Promise<number> {
   return getUsersTotalCountUnfiltered()
 }
 
-/** Active user count from GET /users?status=active (pagination meta), not /user/active-users. */
+/** Logged-in sessions for current tenant (Redis ZSET; expired pruned via ZREMRANGEBYSCORE on server). */
 export async function getActiveUsers(): Promise<number> {
-  return getUsersTotalCountByStatus("active")
+  const res = await api.get<ApiEnvelope<{ count: number }>>("/auth/active-sessions")
+  const payload = (res?.data ?? res) as { count?: number }
+  return typeof payload?.count === "number" ? payload.count : 0
 }
 
 
@@ -268,6 +270,7 @@ export async function getDashboardOverview(params?: {
   return (
     payload ?? {
       totalUserCount: 0,
+      totalActiveUserCount: 0,
       totalCostPoolCount: 0,
       totalJobPoolCount: 0,
       totalDepartmentCount: 0,

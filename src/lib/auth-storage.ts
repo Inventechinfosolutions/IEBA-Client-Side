@@ -2,6 +2,20 @@ import type { User } from "@/contexts/types"
 
 const USER_KEY = "ieba_user"
 const PASSWORD_CHANGED_PREFIX = "ieba_password_changed:"
+/** Set on manual logout so startup/refresh does not restore from cookie. */
+const EXPLICIT_LOGOUT_KEY = "ieba_explicit_logout"
+
+export function markExplicitLogout(): void {
+  sessionStorage.setItem(EXPLICIT_LOGOUT_KEY, "1")
+}
+
+export function clearExplicitLogout(): void {
+  sessionStorage.removeItem(EXPLICIT_LOGOUT_KEY)
+}
+
+export function wasExplicitLogout(): boolean {
+  return sessionStorage.getItem(EXPLICIT_LOGOUT_KEY) === "1"
+}
 
 export function getStoredUser(): User | null {
   try {
