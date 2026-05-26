@@ -64,11 +64,6 @@ export function ParticipantsListTable({
     null,
   )
 
-  const selectedGroupInTable = useMemo(() => {
-    if (viewGroupId == null) return null
-    return rows.find((r) => Number(r.id) === viewGroupId)
-  }, [viewGroupId, rows])
-
   const groupByIdQuery = useGetRmtsGroupById({ id: usersModalOpen ? viewGroupId : null })
 
   const assignedUserIds = groupByIdQuery.data?.users ?? []
