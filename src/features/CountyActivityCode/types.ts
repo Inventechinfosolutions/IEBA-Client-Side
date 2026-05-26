@@ -103,10 +103,6 @@ export type ApiActivityResDto = {
   match?: string | null
   /** Percent (%) from linked activity code (present on list responses). */
   percent?: number
-  /** Present when API hydrates links (join to `department` master). */
-  departments?: ApiActivityNestedDepartmentResDto[]
-  assignedDepartments?: ApiActivityNestedDepartmentResDto[]
-  unassignedDepartments?: ApiActivityNestedDepartmentResDto[]
   activityDepartments?: ApiActivityDepartmentResDto[]
   apportioningDepartments?: any[]
   hasChild?: boolean

@@ -1887,7 +1887,6 @@ export function CountyActivityCodeTable({
                 (rowToEdit?.rowType === CountyActivityGridRowType.PRIMARY &&
                   editMasterCodesQuery.isLoading)
               }
-              departmentNames={departmentNames}
               initialDepartmentShuttle={
                 rowToEdit.rowType === CountyActivityGridRowType.PRIMARY &&
                 editDetailQuery.data?.activity
