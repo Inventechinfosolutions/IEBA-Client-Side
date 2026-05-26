@@ -1,6 +1,6 @@
 import { ChevronDown, Clock, Eye, Plus, Trash2 } from "lucide-react"
 import { useCallback, useMemo, useRef, useState } from "react"
-import type { SupervisorApportioningConfig } from "../queries/getUserApportioningConfig"
+import type { UserAssignedDepartmentsSettingChecks } from "../queries/getUserAssignedDepartmentsSettingChecks"
 import { useGetPersonalMulticodeDropdowns } from "../queries/getPersonalDropdowns"
 
 
@@ -159,10 +159,12 @@ type PersonalTimeStudyEntryFormProps = {
     name?: string
     employeeName?: string
   }>
-  apportioningConfig?: SupervisorApportioningConfig | null
+  apportioningConfig?: UserAssignedDepartmentsSettingChecks | null
   /** Pre-calculated apportioning records from backend (apportioning=true TSRs). */
   apportioningRecords?: any[]
   isLoading?: boolean
+  isDropdownLoading?: boolean
+  onOpenDropdown?: () => void
 }
 
 function TimePicker24h({
@@ -308,6 +310,8 @@ export function PersonalTimeStudyEntryForm({
   className,
   apportioningConfig,
   isLoading = false,
+  isDropdownLoading = false,
+  onOpenDropdown,
 }: PersonalTimeStudyEntryFormProps) {
   const { user } = useAuth()
   const userId = propsUserId || user?.id || ""
@@ -330,17 +334,8 @@ export function PersonalTimeStudyEntryForm({
         removeDescriptionActivityNoteMultiCode: apportioningConfig.settings.removeDescriptionActivityNoteMultiCode,
       }
     }
-    if (!dropdownData || dropdownData.length === 0) return null
-    return {
-      moveSaveSubmitToTop: dropdownData.some((d: any) => !!d.moveSaveSubmitToTop),
-      removeAutoFillEndTime: dropdownData.some((d: any) => !!d.removeAutoFillEndTime),
-      startorEndTime: dropdownData.some((d: any) => !!d.startorEndTime),
-      supportingDoc: dropdownData.some((d: any) => !!d.supportingDoc),
-      removeDescriptionActivityNote: dropdownData.some((d: any) => !!d.removeDescriptionActivityNote),
-      removeDescriptionActivityNoteAnchor: dropdownData.some((d: any) => !!d.removeDescriptionActivityNoteAnchor),
-      removeDescriptionActivityNoteMultiCode: dropdownData.some((d: any) => !!d.removeDescriptionActivityNoteMultiCode),
-    }
-  }, [apportioningConfig, dropdownData])
+    return null
+  }, [apportioningConfig])
 
   const moveSaveSubmitToTop = formSettings?.moveSaveSubmitToTop ?? false
 
@@ -942,6 +937,10 @@ export function PersonalTimeStudyEntryForm({
                       value={parent.tsProgram}
                       placeholder="Select program"
                       disabled={isLocked || isLeaveRow}
+                      isLoading={isDropdownLoading}
+                      onOpenChange={(open) => {
+                        if (open) onOpenDropdown?.()
+                      }}
                       options={(() => {
                         const filtered = programs
                           .filter((p: any) => !p.isMultiCode)
@@ -949,7 +948,7 @@ export function PersonalTimeStudyEntryForm({
                             const deptPrefix = (p.departmentCode ?? '').split('-')[0]
                             return { value: String(p.id), label: `${deptPrefix}-${p.code} - ${p.name}` }
                           });
-  
+   
                         if (parent.tsProgram && !filtered.some((o) => o.value === parent.tsProgram)) {
                           if (parent.programCode || parent.programName) {
                             const deptPrefix = (parent.departmentCode ?? '').split('-')[0];
@@ -1060,7 +1059,7 @@ export function PersonalTimeStudyEntryForm({
                       size="icon"
                       variant="outline"
                       disabled={isLocked}
-                      className={cn("size-10 border-[#6C5DD3] text-[#6C5DD3] hover:bg-[#6C5DD3]/10", isLocked && "cursor-not-allowed")}
+                      className={cn("size-10 border-green-600 text-green-600 hover:bg-green-600/10", isLocked && "cursor-not-allowed")}
                       onClick={() => addSubRow(parent.id)}
                       aria-label="Add multi-code row"
                     >
@@ -1080,6 +1079,9 @@ export function PersonalTimeStudyEntryForm({
                           placeholder="Select program"
                           disabled={isLocked}
                           isLoading={multicodeListLoading}
+                          onOpenChange={(open) => {
+                            if (open) onOpenDropdown?.()
+                          }}
                           options={(() => {
                             const filtered = [...subRowProgramOptions]
                             if (sub.studyProgram && !filtered.some((o) => o.value === sub.studyProgram)) {

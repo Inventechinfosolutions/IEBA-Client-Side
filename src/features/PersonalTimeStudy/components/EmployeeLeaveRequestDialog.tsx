@@ -106,18 +106,18 @@ export type EmployeeLeaveRequestDialogProps = {
 
 const getHeaderGridClass = (isEditing: boolean) =>
   cn(
-    "grid min-w-[1020px] items-end gap-4 text-[14px] font-normal text-[#4A4A4A] whitespace-nowrap",
+    "grid min-w-[950px] items-end gap-2.5 text-[14px] font-normal text-[#4A4A4A] whitespace-nowrap",
     isEditing
-      ? "grid-cols-[minmax(8.5rem,1fr)_minmax(6.5rem,0.9fr)_minmax(6.5rem,0.9fr)_minmax(10rem,1.5fr)_minmax(10rem,1.5fr)_minmax(8.5rem,1fr)_minmax(10rem,1.2fr)]"
-      : "grid-cols-[minmax(8.5rem,1fr)_minmax(6.5rem,0.9fr)_minmax(6.5rem,0.9fr)_minmax(10rem,1.5fr)_minmax(10rem,1.5fr)_minmax(8.5rem,1fr)_minmax(10rem,1.2fr)_2.5rem]"
+      ? "grid-cols-[minmax(7.5rem,1fr)_minmax(5rem,0.8fr)_minmax(5rem,0.8fr)_minmax(8.5rem,1.3fr)_minmax(8.5rem,1.3fr)_minmax(6.5rem,0.8fr)_minmax(8.5rem,1.1fr)]"
+      : "grid-cols-[minmax(7.5rem,1fr)_minmax(5rem,0.8fr)_minmax(5rem,0.8fr)_minmax(8.5rem,1.3fr)_minmax(8.5rem,1.3fr)_minmax(6.5rem,0.8fr)_minmax(8.5rem,1.1fr)_7.5rem]"
   )
 
 const getRowGridClass = (isEditing: boolean) =>
   cn(
-    "grid min-w-[1020px] items-end gap-4 py-2",
+    "grid min-w-[950px] items-end gap-2.5 py-2",
     isEditing
-      ? "grid-cols-[minmax(8.5rem,1fr)_minmax(6.5rem,0.9fr)_minmax(6.5rem,0.9fr)_minmax(10rem,1.5fr)_minmax(10rem,1.5fr)_minmax(8.5rem,1fr)_minmax(10rem,1.2fr)]"
-      : "grid-cols-[minmax(8.5rem,1fr)_minmax(6.5rem,0.9fr)_minmax(6.5rem,0.9fr)_minmax(10rem,1.5fr)_minmax(10rem,1.5fr)_minmax(8.5rem,1fr)_minmax(10rem,1.2fr)_2.5rem]"
+      ? "grid-cols-[minmax(7.5rem,1fr)_minmax(5rem,0.8fr)_minmax(5rem,0.8fr)_minmax(8.5rem,1.3fr)_minmax(8.5rem,1.3fr)_minmax(6.5rem,0.8fr)_minmax(8.5rem,1.1fr)]"
+      : "grid-cols-[minmax(7.5rem,1fr)_minmax(5rem,0.8fr)_minmax(5rem,0.8fr)_minmax(8.5rem,1.3fr)_minmax(8.5rem,1.3fr)_minmax(6.5rem,0.8fr)_minmax(8.5rem,1.1fr)_7.5rem]"
   )
 
 function TimePicker24h({
@@ -142,8 +142,8 @@ function TimePicker24h({
       <Popover modal={false} open={open} onOpenChange={(val) => !disabled && setOpen(val)}>
         <div className="relative">
           <PopoverAnchor asChild>
-            <div 
-              className={cn("relative cursor-pointer", disabled && "cursor-not-allowed")} 
+            <div
+              className={cn("relative cursor-pointer", disabled && "cursor-not-allowed")}
               onClick={openMenu}
             >
               <TitleCaseInput
@@ -201,15 +201,15 @@ function addMinutesToTime(time: string, minutesToAdd: number): string {
   let h = parseInt(hStr || "0", 10)
   let m = parseInt(mStr || "0", 10)
   if (isNaN(h) || isNaN(m)) return ""
-  
+
   m += minutesToAdd
   h += Math.floor(m / 60)
   m = m % 60
   h = h % 24
-  
+
   if (h < 0) h += 24
   if (m < 0) m += 60
-  
+
   return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`
 }
 
@@ -633,7 +633,7 @@ export function EmployeeLeaveRequestDialog({
       toast.error("Total minutes cannot exceed the maximum allowed duration.")
       return
     }
-    
+
     await form.handleSubmit(
       async (data) => {
         await onSave?.(data, mergedLookupDropdown ?? dropdownData)
@@ -956,9 +956,9 @@ export function EmployeeLeaveRequestDialog({
                                   className={cn(
                                     "h-10 text-sm tabular-nums rounded-[6px]",
                                     isApproved &&
-                                      "cursor-not-allowed bg-muted !opacity-100 !text-foreground",
+                                    "cursor-not-allowed bg-muted !opacity-100 !text-foreground",
                                     isErrorState &&
-                                      "border-destructive text-destructive focus-visible:ring-destructive",
+                                    "border-destructive text-destructive focus-visible:ring-destructive",
                                   )}
                                   disabled={isApproved}
                                   placeholder="0"
@@ -1004,6 +1004,18 @@ export function EmployeeLeaveRequestDialog({
 
                       {!isEditing && (
                         <div className="flex items-end justify-center gap-1 pb-0.5">
+                          {allowMulticodeUi && (
+                            <Button
+                              type="button"
+                              size="icon"
+                              variant="outline"
+                              className="size-10 shrink-0 rounded-[6px] border-green-600 text-green-600 hover:bg-green-600/10 ml-3"
+                              onClick={() => appendMulticodeChildRowForParent(parentIndex)}
+                              aria-label="Add multi-code row for this time"
+                            >
+                              <Plus className="size-4" />
+                            </Button>
+                          )}
                           {isLastGroup && (
                             <Button
                               type="button"
@@ -1011,18 +1023,6 @@ export function EmployeeLeaveRequestDialog({
                               className="size-10 shrink-0 rounded-[6px] bg-[#6C5DD3] hover:bg-[#6C5DD3]/90"
                               onClick={() => appendPrimaryLeaveRow()}
                               aria-label="Add another leave period"
-                            >
-                              <Plus className="size-4" />
-                            </Button>
-                          )}
-                          {allowMulticodeUi && (
-                            <Button
-                              type="button"
-                              size="icon"
-                              variant="outline"
-                              className="size-10 shrink-0 rounded-[6px] border-[#6C5DD3] text-[#6C5DD3] hover:bg-[#6C5DD3]/10"
-                              onClick={() => appendMulticodeChildRowForParent(parentIndex)}
-                              aria-label="Add multi-code row for this time"
                             >
                               <Plus className="size-4" />
                             </Button>
@@ -1217,9 +1217,9 @@ export function EmployeeLeaveRequestDialog({
                                           className={cn(
                                             "h-9 text-[11px] tabular-nums rounded-[6px]",
                                             isApproved &&
-                                              "cursor-not-allowed bg-muted !opacity-100 !text-foreground",
+                                            "cursor-not-allowed bg-muted !opacity-100 !text-foreground",
                                             isErrorState &&
-                                              "border-destructive text-destructive focus-visible:ring-destructive",
+                                            "border-destructive text-destructive focus-visible:ring-destructive",
                                           )}
                                           disabled={isApproved}
                                           placeholder="0"
