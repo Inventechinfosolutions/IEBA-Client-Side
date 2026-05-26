@@ -203,11 +203,88 @@ export type UserProgramsActivitiesProgramsBundle = {
   unassigned: UserProgramsActivitiesProgramWithAssignments[]
 }
 
+/** Per-program activity shuttle from GET …/user/activities-with-assignments. */
+export type UserProgramsActivitiesProgramActivityGroup = {
+  programId: number
+  code: string
+  name: string
+  departmentId: number
+  jobpoolId?: number | null
+  jobpoolName?: string | null
+  children: UserProgramsActivitiesAssignedSplit<UserProgramsActivitiesActivityItem>
+}
+
+export type UserProgramsActivitiesProgramActivitiesBundle = {
+  assigned: {
+    normal: UserProgramsActivitiesProgramActivityGroup[]
+    jobpoolautoassign: UserProgramsActivitiesProgramActivityGroup[]
+  }
+  unassigned: UserProgramsActivitiesProgramActivityGroup[]
+}
+
+/** Program row from GET …/user/programs-with-assignments (no `children`). */
+export type UserProgramsOnlyProgram = UserProgramsActivitiesProgramItem & {
+  jobpoolId?: number | null
+  jobpoolName?: string | null
+}
+
+export type UserProgramsOnlyProgramsBundle = {
+  assigned: {
+    normal: UserProgramsOnlyProgram[]
+    jobpoolautoassign: UserProgramsOnlyProgram[]
+  }
+  unassigned: UserProgramsOnlyProgram[]
+}
+
+/** GET …/user/departments — lightweight department list (+ user tsMinPerDay). */
+export type UserTimeStudyDepartment = {
+  departmentId: number
+  departmentCode: string
+  departmentName: string
+  /** `userprofile.tsmins` for this user (same on every department row). */
+  tsMinPerDay?: number | null
+}
+
+/** GET …/user/programs-with-assignments — programs only. */
+export type UserProgramsOnlyDepartmentBundle = {
+  departmentId: number
+  departmentCode: string
+  departmentName: string
+  tsMinPerDay?: number | null
+  moveSaveSubmitToTop?: boolean
+  removeAutoFillEndTime?: boolean
+  startorEndTime?: boolean
+  supportingDoc?: boolean
+  removeDescriptionActivityNote?: boolean
+  removeDescriptionActivityNoteAnchor?: boolean
+  removeDescriptionActivityNoteMultiCode?: boolean
+  programs: UserProgramsOnlyProgramsBundle
+}
+
+/** GET …/user/activities-with-assignments (activity blocks only). */
+export type UserActivitiesOnlyDepartmentBundle = {
+  departmentId: number
+  departmentCode: string
+  departmentName: string
+  tsMinPerDay?: number | null
+  moveSaveSubmitToTop?: boolean
+  removeAutoFillEndTime?: boolean
+  startorEndTime?: boolean
+  supportingDoc?: boolean
+  removeDescriptionActivityNote?: boolean
+  removeDescriptionActivityNoteAnchor?: boolean
+  removeDescriptionActivityNoteMultiCode?: boolean
+  programActivities: UserProgramsActivitiesProgramActivitiesBundle
+  orphanActivities: UserProgramsActivitiesAssignedSplit<UserProgramsActivitiesActivityItem>
+  jobPoolActivities: UserProgramsActivitiesAssignedSplit<UserProgramsActivitiesActivityItem>
+}
+
 /** One department bundle from GET …/programs-activities-with-assignments. */
 export type UserProgramsActivitiesDepartmentBundle = {
   departmentId: number
   departmentCode: string
   departmentName: string
+  tsMinPerDay?: number | null
   moveSaveSubmitToTop?: boolean
   removeAutoFillEndTime?: boolean
   startorEndTime?: boolean

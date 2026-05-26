@@ -17,6 +17,9 @@ import {
   fetchMulticodeMasterCodes,
   fetchSupervisorsByDepartmentIds,
   fetchUserProgramsAndActivities,
+  fetchUserProgramsWithAssignments,
+  fetchUserActivitiesWithAssignments,
+  fetchUserTimeStudyDepartments,
   fetchUserDetailsTab,
 } from "../api"
 import { addEmployeeLookupKeys } from "../keys"
@@ -33,7 +36,14 @@ import type {
   SecurityDepartmentRolesQueryResult,
   AddEmployeeDepartmentSupervisorRow,
   UserProgramsActivitiesDepartmentBundle,
+  UserActivitiesOnlyDepartmentBundle,
 } from "../types"
+
+/** Time Study tab: always stale so department/program/activity changes refetch immediately. */
+const TIME_STUDY_QUERY_OPTS = {
+  staleTime: 0,
+  refetchOnWindowFocus: false,
+} as const
 
 export function useGetEmployees(
   params: GetUserModuleParams,
@@ -118,6 +128,7 @@ export function useGetActivityDepartmentsForDepartment(
       return await fetchActivityDepartmentsForDepartment(id!)
     },
     enabled: Boolean(enabled && id != null),
+    ...TIME_STUDY_QUERY_OPTS,
   })
 }
 
@@ -192,26 +203,56 @@ export function useGetDepartmentRolesUnassigned(
   }
 }
 
-/** Time Study tab: department list (no `departmentId` query param). */
+/** Time Study tab: departments for user (GET …/user/departments). */
+export function useGetUserTimeStudyDepartments(
+  userId: string | null | undefined,
+  enabled: boolean,
+  scope: "security" | "timestudy" = "timestudy",
+) {
+  const id = userId?.trim() ?? ""
+  const key = id || "__none__"
+  return useQuery({
+    queryKey: addEmployeeLookupKeys.userDepartments(key, scope),
+    queryFn: () => fetchUserTimeStudyDepartments(id, scope),
+    enabled: Boolean(id) && enabled,
+    retry: 1,
+    ...TIME_STUDY_QUERY_OPTS,
+  })
+}
+
+/** Department scope as bundle stubs (panel still reads departmentId / departmentName). */
 export function useGetUserProgramsActivitiesDepartmentScope(
   userId: string | null | undefined,
   enabled: boolean,
 ) {
   const id = userId?.trim() ?? ""
   const key = id || "__none__"
-  return useQuery({
-    queryKey: addEmployeeLookupKeys.userProgramsActivities(key, "__scope__"),
-    queryFn: async (): Promise<UserProgramsActivitiesDepartmentBundle[]> => {
-      return await fetchUserProgramsAndActivities(id)
-    },
-    enabled: Boolean(id) && enabled,
-    staleTime: 0,
-    retry: 1,
-    refetchOnWindowFocus: false,
-  })
+  const departmentsQuery = useGetUserTimeStudyDepartments(id, enabled, "timestudy")
+  return {
+    ...departmentsQuery,
+    queryKey: addEmployeeLookupKeys.userProgramsWithAssignments(key, "__scope__") as readonly string[],
+    data: departmentsQuery.data?.map((d) => ({
+      departmentId: d.departmentId,
+      departmentCode: d.departmentCode,
+      departmentName: d.departmentName,
+      moveSaveSubmitToTop: d.moveSaveSubmitToTop,
+      removeAutoFillEndTime: d.removeAutoFillEndTime,
+      startorEndTime: d.startorEndTime,
+      supportingDoc: d.supportingDoc,
+      removeDescriptionActivityNote: d.removeDescriptionActivityNote,
+      removeDescriptionActivityNoteAnchor: d.removeDescriptionActivityNoteAnchor,
+      removeDescriptionActivityNoteMultiCode: d.removeDescriptionActivityNoteMultiCode,
+      programs: {
+        assigned: { normal: [], jobpoolautoassign: [] },
+        unassigned: [],
+      },
+      orphanActivities: { assigned: [], unassigned: [] },
+      jobPoolActivities: { assigned: [], unassigned: [] },
+    })) as UserProgramsActivitiesDepartmentBundle[] | undefined,
+  }
 }
 
-/** Time Study tab: programs for one department (`departmentId` query param). */
+/** Time Study tab: merged programs + activities for one department (two API calls, one bundle shape). */
 export function useGetUserProgramsAndActivities(
   userId: string | null | undefined,
   departmentId: number | null | undefined,
@@ -223,15 +264,41 @@ export function useGetUserProgramsAndActivities(
     departmentId != null && Number.isFinite(departmentId) && departmentId >= 1
       ? departmentId
       : null
+  const deptKey = dept != null ? String(dept) : "__none__"
   return useQuery({
-    queryKey: addEmployeeLookupKeys.userProgramsActivities(key, dept != null ? String(dept) : "__none__"),
+    queryKey: [...addEmployeeLookupKeys.userProgramsActivities(key, deptKey), "merged"] as const,
     queryFn: async (): Promise<UserProgramsActivitiesDepartmentBundle[]> => {
       return await fetchUserProgramsAndActivities(id, dept!)
     },
     enabled: Boolean(id) && enabled && dept != null,
-    staleTime: 0,
     retry: 1,
-    refetchOnWindowFocus: false,
+    ...TIME_STUDY_QUERY_OPTS,
+  })
+}
+
+/** Activities only for one department (`programActivities`, `orphanActivities`, `jobPoolActivities`). */
+export function useGetUserActivitiesWithAssignments(
+  userId: string | null | undefined,
+  departmentId: number | null | undefined,
+  enabled: boolean,
+) {
+  const id = userId?.trim() ?? ""
+  const key = id || "__none__"
+  const dept =
+    departmentId != null && Number.isFinite(departmentId) && departmentId >= 1
+      ? departmentId
+      : null
+  return useQuery({
+    queryKey: addEmployeeLookupKeys.userActivitiesWithAssignments(
+      key,
+      dept != null ? String(dept) : "__none__",
+    ),
+    queryFn: async (): Promise<UserActivitiesOnlyDepartmentBundle[]> => {
+      return await fetchUserActivitiesWithAssignments(id, dept!)
+    },
+    enabled: Boolean(id) && enabled && dept != null,
+    retry: 1,
+    ...TIME_STUDY_QUERY_OPTS,
   })
 }
 

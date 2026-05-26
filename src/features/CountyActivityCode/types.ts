@@ -57,6 +57,7 @@ export type ApiActivityNestedDepartmentResDto = {
   code: string
   name: string
   status: string
+  apportioning?: boolean
 }
 
 export type ApiActivityParentResDto = {
@@ -86,6 +87,13 @@ export type ApiActivityResDto = {
   status: string
   isActivityAssignableToMultipleJobPools: boolean
   apportioning: boolean
+  parentId?: number | null
+  /** Present on list/hierarchy when API hydrates links. */
+  departments?: ApiActivityNestedDepartmentResDto[]
+  /** Detail GET/PUT — linked departments for the shuttle (right side). */
+  assignedDepartments?: ApiActivityNestedDepartmentResDto[]
+  /** Detail GET/PUT — active departments not linked (left side). */
+  unassignedDepartments?: ApiActivityNestedDepartmentResDto[]
   parent?: ApiActivityParentResDto | null
   activityCodeId?: number | null
   activityCodeName?: string | null
@@ -315,6 +323,11 @@ export type CountyActivityCodeAddPageProps = {
   masterCodeOptions?: ReadonlyArray<CountyActivityMasterCodeOption>
   isMasterCodeOptionsLoading?: boolean
   departmentNames?: readonly string[]
+  /** Edit primary: server-built assigned/unassigned lists (`GET /activities/:id`). When set, shuttle does not diff client-side. */
+  initialDepartmentShuttle?: {
+    assigned: ApiActivityNestedDepartmentResDto[]
+    unassigned: ApiActivityNestedDepartmentResDto[]
+  }
   /** When true, primary-activity picker is disabled (e.g. sub-activity edit; parent is not updatable via API). */
   readOnlyPrimaryPicker?: boolean
   /** Edit modal: `GET /activities/:id` in flight */

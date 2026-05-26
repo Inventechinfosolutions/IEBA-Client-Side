@@ -32,6 +32,7 @@ import {
   CountyActivityGridRowType,
 } from "../enums/CountyActivity.enum"
 import type {
+  ApiActivityNestedDepartmentResDto,
   CountyActivityAddFormMergeContext,
   CountyActivityAddFormValues,
   CountyActivityCodeAddPageProps,
@@ -103,6 +104,7 @@ export function CountyActivityCodeAddPage({
   masterCodeOptions = [],
   isMasterCodeOptionsLoading = false,
   departmentNames = [],
+  initialDepartmentShuttle,
   readOnlyPrimaryPicker = false,
   isEditSourceLoading = false,
   subParentActivityDetail = null,
@@ -170,18 +172,47 @@ export function CountyActivityCodeAddPage({
       : form.watch("description")
 
   const departmentValue = form.watch("department")
-  const assignedDepartments = useMemo(() => {
+
+  const departmentCatalogByName = useMemo(() => {
+    const map = new Map<string, ApiActivityNestedDepartmentResDto>()
+    if (initialDepartmentShuttle) {
+      for (const d of [...initialDepartmentShuttle.assigned, ...initialDepartmentShuttle.unassigned]) {
+        map.set(d.name, d)
+      }
+      return map
+    }
+    for (const name of departmentNames) {
+      map.set(name, { id: 0, code: "", name, status: "active" })
+    }
+    return map
+  }, [departmentNames, initialDepartmentShuttle])
+
+  const assignedDepartmentRows = useMemo((): ApiActivityNestedDepartmentResDto[] => {
     const value = departmentValue.trim()
     if (!value) return []
-    return value
+    const names = value
       .split(",")
       .map((item) => item.trim())
       .filter(Boolean)
-  }, [departmentValue])
+    return names.map(
+      (name) =>
+        departmentCatalogByName.get(name) ?? { id: 0, code: "", name, status: "active" },
+    )
+  }, [departmentValue, departmentCatalogByName])
+
+  const unassignedDepartmentRows = useMemo((): ApiActivityNestedDepartmentResDto[] => {
+    const assignedNames = new Set(assignedDepartmentRows.map((d) => d.name))
+    return [...departmentCatalogByName.values()].filter((d) => !assignedNames.has(d.name))
+  }, [assignedDepartmentRows, departmentCatalogByName])
+
+  const assignedDepartments = useMemo(
+    () => assignedDepartmentRows.map((d) => d.name),
+    [assignedDepartmentRows],
+  )
 
   const unassignedDepartments = useMemo(
-    () => departmentNames.filter((item) => !assignedDepartments.includes(item)),
-    [assignedDepartments, departmentNames],
+    () => unassignedDepartmentRows.map((d) => d.name),
+    [unassignedDepartmentRows],
   )
 
   const filteredUnassigned = useMemo(

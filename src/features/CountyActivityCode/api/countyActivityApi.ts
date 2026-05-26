@@ -26,7 +26,6 @@ import type {
   MatchStatus,
   PostActivityDepartmentBody,
   PostActivityDepartmentLinksInput,
-  SyncActivityDepartmentLinksInput,
   UpdateCountyActivityApiInput,
 } from "../types"
 
@@ -54,6 +53,15 @@ export async function apiGetCountyActivityById(id: number): Promise<ApiActivityR
 
 export async function apiGetCountyActivityForEdit(id: number): Promise<CountyActivityEditPayload> {
   const activity = await apiGetCountyActivityById(id)
+  const assigned =
+    activity.assignedDepartments ??
+    activity.departments ??
+    []
+  const names = sortDepartmentNameList(assigned.map((d) => d.name))
+  const apportioningDepartments = assigned.map((d) => ({
+    name: d.name,
+    apportioning: d.apportioning ?? false,
+  }))
   // Use ONLY assignedDepartments — this is the source of truth for what is currently assigned.
   // The legacy `departments` field is a join that may be incomplete or stale; do NOT fall back to it.
   const assignedDepts = activity.assignedDepartments ?? []
@@ -276,6 +284,76 @@ function sortUniquePositiveDepartmentIds(ids: readonly number[]): number[] {
 
 
 
+/** Maps hierarchy DTOs + enrichment + department links into county grid rows. */
+export function buildCountyActivityCodeRowsFromHierarchy(
+  roots: ApiActivityTreeResDto[],
+  enrichment: ReadonlyMap<string, ActivityCatalogEnrichmentValue>,
+  linkByActivity: ReadonlyMap<number, number[]>,
+): CountyActivityCodeRow[] {
+  const rows: CountyActivityCodeRow[] = []
+
+  const visit = (
+    node: ApiActivityTreeResDto,
+    parentId: string | null,
+    rowType: CountyActivityGridRowType,
+  ): void => {
+    const enr = enrichment.get(
+      countyActivityCatalogEnrichmentKey(node.activityCodeType, node.activityCode),
+    ) ?? {
+      spmp: false,
+      match: CountyActivityCatalogMatchDefault.NONE,
+      percentage: 0,
+    }
+
+    const fromNested = node.departments
+    const fromLinks = linkByActivity.get(node.id) ?? []
+    const linkedDepartmentIds =
+      fromNested !== undefined
+        ? sortUniquePositiveDepartmentIds(fromNested.map((d) => d.id))
+        : sortUniquePositiveDepartmentIds(fromLinks)
+
+    const id = String(node.id)
+
+    const apportioningDepartments = (node.departments ?? []).map((d) => ({
+      name: d.name,
+      apportioning: d.apportioning ?? false,
+    }))
+
+    rows.push({
+      id,
+      countyActivityCode: node.code,
+      countyActivityName: node.name,
+      description: node.description ?? "",
+      department: "",
+      linkedDepartmentIds,
+      masterCodeType: node.activityCodeType,
+      masterCode: parseMasterCodeDisplay(node.activityCode),
+      catalogActivityCode: node.activityCode,
+      spmp: enr.spmp,
+      match: enr.match,
+      percentage: enr.percentage,
+      active: node.status === ActivityStatusEnum.ACTIVE,
+      leaveCode: node.leavecode,
+      docRequired: node.docrequired,
+      multipleJobPools: node.isActivityAssignableToMultipleJobPools,
+      apportioning: node.apportioning || false,
+      apportioningDepartments,
+      rowType,
+      parentId,
+    })
+
+    const children = node.children ?? []
+    for (const child of children) {
+      visit(child, id, CountyActivityGridRowType.SUB)
+    }
+  }
+
+  for (const root of roots) {
+    visit(root, null, CountyActivityGridRowType.PRIMARY)
+  }
+
+  return rows
+}
 
 /** Maps a flat `GET /activities` row into a county grid row (catalog enrichment for SPMP / match / %). */
 export function mapCountyActivityListItemToGridRow(
@@ -313,20 +391,10 @@ export function mapCountyActivityListItemToGridRow(
     (dto.type === ApiActivityTypeEnum.PRIMARY || typeNorm === "primary") &&
     dto.parent?.id == null
 
-  const apportioningDepartments: { name: string; apportioning: boolean }[] = []
-  const actDepts = dto.activityDepartments ?? []
-  actDepts.forEach((ad) => {
-    let name = ""
-    if (ad.department?.name) {
-      name = ad.department.name
-    } else {
-      const d = (dto.departments ?? []).find((x) => x.id === ad.departmentId)
-      if (d?.name) name = d.name
-    }
-    if (name) {
-      apportioningDepartments.push({ name, apportioning: ad.apportioning })
-    }
-  })
+  const apportioningDepartments = (dto.departments ?? dto.assignedDepartments ?? []).map((d) => ({
+    name: d.name,
+    apportioning: d.apportioning ?? false,
+  }))
 
   return {
     id: String(dto.id),
@@ -774,29 +842,12 @@ export async function apiPutCountyActivity(input: UpdateCountyActivityApiInput):
     body.activityCodeType = masterCatalog.type.trim()
   }
 
-  await api.put<unknown>(`/activities/${id}`, body)
-
   if (rowType === CountyActivityGridRowType.PRIMARY && departmentLinks != null) {
-    const desiredIds = departmentLinks
+    body.departments = departmentLinks
       .map((d) => d.id)
       .filter((x) => typeof x === "number" && !Number.isNaN(x) && x > 0)
-
-    // Build per-dept apportioning map so each link respects dept-level apportioning setting
-    const deptApportioningMap = new Map<number, boolean>(
-      departmentLinks
-        .filter((d) => typeof d.id === "number")
-        .map((d) => [d.id, (d as any).apportioning ?? true])
-    )
-
-    await syncCountyActivityDepartmentLinks({
-      activityId: id,
-      desiredDepartmentIds: desiredIds,
-      activityCode: values.countyActivityCode,
-      activityName: values.countyActivityName,
-      type: ApiActivityTypeEnum.PRIMARY,
-      leavecode: values.leaveCode,
-      parentActivityId: null,
-      apportioning: values.apportioning,
-    }, deptApportioningMap)
+      .map((deptId) => ({ id: deptId }))
   }
+
+  await api.put<unknown>(`/activities/${id}`, body)
 }
