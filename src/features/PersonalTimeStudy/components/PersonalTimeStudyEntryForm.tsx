@@ -2,7 +2,7 @@ import { ChevronDown, Clock, Eye, Plus, Trash2 } from "lucide-react"
 import { useCallback, useMemo, useRef, useState } from "react"
 import type { SupervisorApportioningConfig } from "../queries/getUserApportioningConfig"
 import { useGetPersonalMulticodeDropdowns } from "../queries/getPersonalDropdowns"
-import { useGetProgramActivityRelations } from "../queries/getProgramActivityRelations"
+
 
 import { Button } from "@/components/ui/button"
 import { TitleCaseInput } from "@/components/ui/title-case-input"
@@ -17,7 +17,7 @@ import { API_BASE_URL } from "@/lib/config"
 import { apiDownloadSupportingDoc, apiDeleteSupportingDoc } from "../api/personalTimeStudyApi"
 import { Spinner } from "@/components/ui/spinner"
 import { normalizeMulticodeDropdownPayload } from "../utils/multicodeDropdownUtils"
-import { mergeProgramActivityRelationTransferItems } from "@/features/program/queries/programActivityRelation"
+
 
 /** Inline required-field asterisk — available to all components in this module. */
 function RequiredMark() {
@@ -516,6 +516,8 @@ export function PersonalTimeStudyEntryForm({
     [allowMulticodeUi, multicodeBundles, dropdownData],
   )
 
+
+
   const subRowActivityCatalog = useMemo(() => {
     if (!allowMulticodeUi || !multicodeBundles.length) return activities
     const list = multicodeBundles.flatMap((d: any) =>
@@ -540,67 +542,8 @@ export function PersonalTimeStudyEntryForm({
     return mapToOpts(programs.filter((p: any) => p.isMultiCode))
   }, [allowMulticodeUi, multicodeBundles, programs])
 
-  /**
-   * Only request activities for programs the user has actually chosen on a row
-   * (or that were loaded from existing records). Avoids one HTTP call per program
-   * in the bundle on initial page load.
-   */
-  const programQueries = useMemo(() => {
-    const list: { departmentId: number; programId: string }[] = []
-    const seen = new Set<string>()
-
-    const pushPair = (programIdStr: string | undefined) => {
-      const trimmed = programIdStr?.trim()
-      if (!trimmed) return
-      const deptId = resolveDepartmentIdForProgram(trimmed)
-      if (deptId == null) return
-      const key = `${deptId}:${trimmed}`
-      if (seen.has(key)) return
-      seen.add(key)
-      list.push({ departmentId: deptId, programId: trimmed })
-    }
-
-    for (const parent of parents) {
-      pushPair(parent.tsProgram)
-      for (const sub of parent.subRows) {
-        pushPair(sub.studyProgram)
-      }
-    }
-    return list
-  }, [parents, resolveDepartmentIdForProgram])
-
-  const queriesEnabled = !readonly && !isLocked
-  const programActivityQueryResults = useGetProgramActivityRelations(programQueries, queriesEnabled)
-
-  const getActivitiesForProgram = useCallback((programId: string): Set<string> => {
-    const normalized = String(programId ?? "").trim()
-    if (!normalized) return new Set()
-    const deptId = resolveDepartmentIdForProgram(normalized)
-    const index = programQueries.findIndex(
-      (pq) => String(pq.programId).trim() === normalized && pq.departmentId === deptId,
-    )
-    if (index === -1) return new Set()
-    const result = programActivityQueryResults[index]
-    if (!result?.data) return new Set()
-    return new Set(
-      mergeProgramActivityRelationTransferItems(result.data)
-        .map((t) => t.id)
-        .filter(Boolean),
-    )
-  }, [resolveDepartmentIdForProgram, programQueries, programActivityQueryResults])
-
-  const isFetchingActivitiesForProgram = useCallback(
-    (programId: string | undefined) => {
-      const normalized = String(programId ?? "").trim()
-      if (!normalized) return false
-      const deptId = resolveDepartmentIdForProgram(normalized)
-      const index = programQueries.findIndex(
-        (pq) => String(pq.programId).trim() === normalized && pq.departmentId === deptId,
-      )
-      return index !== -1 && !!programActivityQueryResults[index]?.isFetching
-    },
-    [resolveDepartmentIdForProgram, programQueries, programActivityQueryResults],
-  )
+  // Activities are already user-filtered by the /user/programs-activities endpoint.
+  // No per-program API call needed — use the already-loaded activities directly.
 
   const updateParent = useCallback((id: string, patch: Partial<TimeEntryParentRow>) => {
     setParents((prev) => prev.map((p) => {
@@ -1035,9 +978,8 @@ export function PersonalTimeStudyEntryForm({
                     disabled={isLocked || isLeaveRow || !parent.tsProgram}
                     options={(() => {
                       if (!parent.tsProgram) return [];
-                      const allowed = getActivitiesForProgram(parent.tsProgram);
+                      // Use activities already loaded from /user/programs-activities — no extra API call.
                       const filtered = activities
-                        .filter((a: any) => allowed.has(String(a.id)))
                         .map((a: any) => ({ value: String(a.id), label: `${a.code} - ${a.name}` }));
                       if (parent.serviceActivity && !filtered.some((o) => o.value === parent.serviceActivity)) {
                         const fallback = activities.find((a: any) => String(a.id) === parent.serviceActivity) as any;
@@ -1169,12 +1111,11 @@ export function PersonalTimeStudyEntryForm({
                           value={sub.serviceActivity}
                           placeholder="Select Activity Code"
                           disabled={isLocked || !sub.studyProgram}
-                          isLoading={isFetchingActivitiesForProgram(sub.studyProgram)}
+                          isLoading={false}
                           options={(() => {
                             if (!sub.studyProgram) return []
-                            const allowed = getActivitiesForProgram(sub.studyProgram)
+                            // Use already-loaded activities — no extra API call.
                             const filtered = subRowActivityCatalog
-                              .filter((a: any) => allowed.has(String(a.id)))
                               .map((a: any) => ({ value: String(a.id), label: `${a.code} - ${a.name}` }))
                             if (sub.serviceActivity && !filtered.some((o) => o.value === sub.serviceActivity)) {
                               const fallback = subRowActivityCatalog.find((a: any) => String(a.id) === sub.serviceActivity) as any
