@@ -128,20 +128,10 @@ function resolveParentCatalogForSubCreate(
 }
 
 function invalidateAllCountyActivityCaches(
-  queryClient: QueryClient,
-  input: { id: string },
+  _queryClient: QueryClient,
+  _input: { id: string },
 ): void {
-  void queryClient.invalidateQueries({ queryKey: countyActivityCodeKeys.lists() })
-  void queryClient.invalidateQueries({ queryKey: countyActivityCodeKeys.pagedLists() })
-  void queryClient.invalidateQueries({
-    queryKey: countyActivityCodeKeys.activityDetail(input.id),
-  })
-  void queryClient.invalidateQueries({
-    queryKey: countyActivityCodeKeys.activePrimarySubPicker(),
-  })
-  void queryClient.invalidateQueries({
-    queryKey: countyActivityCodeKeys.topLevel(),
-  })
+  // No-op: parent mutation onSuccess invalidates countyActivityCodeKeys.all
 }
 
 /**
@@ -212,20 +202,13 @@ export function applyCountyActivityQueryCacheAfterPrimaryCreate(
       }
     })
   }
-
-  for (const refetchKey of pagedKeysToRefetch) {
-    void queryClient.invalidateQueries({ queryKey: refetchKey })
-  }
-
   for (const topKey of [
     countyActivityCodeKeys.activePrimarySubPicker(),
     countyActivityCodeKeys.topLevel(),
   ] as const) {
     if (row.active) {
       const prev = queryClient.getQueryData<CountyActivityCodeRow[]>(topKey)
-      if (prev == null || !Array.isArray(prev)) {
-        void queryClient.invalidateQueries({ queryKey: topKey })
-      } else if (!prev.some((r) => r.id === row.id)) {
+      if (prev != null && Array.isArray(prev) && !prev.some((r) => r.id === row.id)) {
         queryClient.setQueryData<CountyActivityCodeRow[]>(
           topKey,
           insertRowSortedByActivityCode(prev, row),
@@ -256,6 +239,7 @@ export function applyCountyActivityQueryCacheAfterSubCreate(
     return
   }
 
+  // 1. Append the new sub-row into the flat hierarchy list (used by sub-pickers etc.)
   const listKey = countyActivityCodeKeys.lists()
   queryClient.setQueryData<CountyActivityCodeRow[]>(listKey, (old) => {
     if (old == null || !Array.isArray(old)) return old
@@ -263,7 +247,25 @@ export function applyCountyActivityQueryCacheAfterSubCreate(
     return [...old, row]
   })
 
-  void queryClient.invalidateQueries({ queryKey: countyActivityCodeKeys.pagedLists() })
+  // 2. Optimistically patch hasChild=true on the parent row in every paged-list cache slice.
+  //    This makes the expand arrow appear immediately without waiting for the background refetch.
+  const pagedQueries = queryClient.getQueryCache().findAll({
+    queryKey: countyActivityCodeKeys.pagedLists(),
+    exact: false,
+  })
+
+  for (const q of pagedQueries) {
+    queryClient.setQueryData<PagedCountyActivityData>(q.queryKey as QueryKey, (old) => {
+      if (old?.meta == null || !Array.isArray(old.rows)) return old
+      const idx = old.rows.findIndex((r) => r.id === parentId)
+      if (idx === -1) return old
+      // Only patch if not already marked as having children
+      if (old.rows[idx].hasChild) return old
+      const rows = [...old.rows]
+      rows[idx] = { ...rows[idx], hasChild: true }
+      return { ...old, rows }
+    })
+  }
 }
 
 /** After `PUT /activities/:id`: sync detail, hierarchy slice, and paged rows when possible. */
@@ -294,15 +296,6 @@ export function applyCountyActivityQueryCacheAfterUpdate(
   const prevRow = listRows.find((r) => r.id === id)
 
   if (prevRow == null) {
-    void queryClient.invalidateQueries({ queryKey: countyActivityCodeKeys.pagedLists() })
-    if (input.rowType === CountyActivityGridRowType.PRIMARY) {
-      void queryClient.invalidateQueries({
-        queryKey: countyActivityCodeKeys.activePrimarySubPicker(),
-      })
-      void queryClient.invalidateQueries({
-        queryKey: countyActivityCodeKeys.topLevel(),
-      })
-    }
     return
   }
 
@@ -365,9 +358,6 @@ export function applyCountyActivityQueryCacheAfterUpdate(
     const topRows = queryClient.getQueryData<CountyActivityCodeRow[]>(topKey)
 
     if (topRows == null || !Array.isArray(topRows)) {
-      if (nextRow.active) {
-        void queryClient.invalidateQueries({ queryKey: topKey })
-      }
       continue
     }
 
@@ -384,11 +374,6 @@ export function applyCountyActivityQueryCacheAfterUpdate(
       const rows = [...topRows]
       rows[idx] = nextRow
       queryClient.setQueryData<CountyActivityCodeRow[]>(topKey, rows)
-      continue
-    }
-
-    if (statusFlip) {
-      void queryClient.invalidateQueries({ queryKey: topKey })
       continue
     }
 

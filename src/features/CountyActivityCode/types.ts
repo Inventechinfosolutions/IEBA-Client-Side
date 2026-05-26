@@ -1,7 +1,6 @@
 import type { UseFormReturn } from "react-hook-form"
 import { z } from "zod"
 
-import type { Department } from "@/features/department/types"
 import type { MasterCodeRow } from "@/features/master-code/types"
 
 import type {
@@ -49,6 +48,7 @@ export type CountyActivityCodeRow = {
   apportioningDepartments: { name: string; apportioning: boolean }[]
   rowType: CountyActivityGridRowType
   parentId?: string | null
+  hasChild?: boolean
 }
 
 /** Nested on `GET /activities/hierarchy` and `GET /activities/:id` (backend `ActivityNestedDepartmentResDto`). */
@@ -58,6 +58,20 @@ export type ApiActivityNestedDepartmentResDto = {
   name: string
   status: string
   apportioning?: boolean
+}
+
+export type ApiActivityParentResDto = {
+  id: number
+  code?: string
+  name?: string
+  description?: string | null
+  type?: ApiActivityType
+  activityCode?: string
+  activityCodeType?: string
+  leavecode?: boolean
+  docrequired?: boolean
+  status?: string
+  isActivityAssignableToMultipleJobPools?: boolean
 }
 
 export type ApiActivityResDto = {
@@ -80,6 +94,18 @@ export type ApiActivityResDto = {
   assignedDepartments?: ApiActivityNestedDepartmentResDto[]
   /** Detail GET/PUT — active departments not linked (left side). */
   unassignedDepartments?: ApiActivityNestedDepartmentResDto[]
+  parent?: ApiActivityParentResDto | null
+  activityCodeId?: number | null
+  activityCodeName?: string | null
+  /** SPMP flag from linked activity code (present on list responses). */
+  spmp?: boolean
+  /** Match from linked activity code (present on list responses). */
+  match?: string | null
+  /** Percent (%) from linked activity code (present on list responses). */
+  percent?: number
+  activityDepartments?: ApiActivityDepartmentResDto[]
+  apportioningDepartments?: any[]
+  hasChild?: boolean
 }
 
 export type ApiActivityTreeResDto = ApiActivityResDto & {
@@ -227,9 +253,10 @@ export type UpdateCountyActivityApiInput = {
   id: string
   values: CountyActivityAddFormValues
   rowType: CountyActivityGridRowType
+  parentId?: string | null
   masterCatalog?: { code: string; type: string }
-  /** Resolved department IDs for primary rows — synced via activity-departments API after PUT. */
-  departmentLinks?: { id: number }[]
+  departmentLinks?: { id: number; apportioning?: boolean }[]
+  existingActivityDepartments?: ApiActivityDepartmentResDto[]
 }
 
 export type ApiCountyActivityCreateResponse = {
@@ -305,20 +332,17 @@ export type CountyActivityCodeAddPageProps = {
   subParentActivityDetail?: CountyActivityEditPayload | null
   apportioningDepartments?: { name: string; apportioning: boolean }[]
   isSubmitting?: boolean
+  onCodeDropdownOpen?: () => void
+  onCodeTypeDropdownOpen?: () => void
+  /** Fired the first time the Primary Activity Code dropdown is opened — triggers lazy API fetch. */
+  onPrimaryPickerDropdownOpen?: () => void
 }
 
 export type CountyActivityCodeTableProps = {
   rows: CountyActivityCodeRow[]
   primaryRows: CountyActivityCodeRow[]
-  /** From `GET /activities/top-level` — table context / inactive primary list. */
-  activePrimaryCountyRows: CountyActivityCodeRow[]
-  /** Sub county add/edit only — all active primaries from aggregated `GET /activities`. */
-  subCountyParentPickerRows: CountyActivityCodeRow[]
-  subRowsByParentId: Record<string, CountyActivityCodeRow[]>
   pagination: CountyActivityPagination
   totalItems: number
-  /** Single shared list from `useGetDepartments` on the page (avoids duplicate department API calls). */
-  departments: Department[]
   isLoading?: boolean
   filters: CountyActivityFilterFormValues
   onSearchChange: (value: string) => void

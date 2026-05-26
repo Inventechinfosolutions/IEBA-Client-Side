@@ -1,7 +1,5 @@
 import { useMutation } from "@tanstack/react-query"
-import { queryClient } from "@/main"
 
-import { programKeys } from "../keys"
 import { apiCreateProgram } from "../api"
 import type { CreateProgramInput } from "../types"
 

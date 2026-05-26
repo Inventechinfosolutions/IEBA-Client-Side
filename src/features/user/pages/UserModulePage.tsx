@@ -361,8 +361,6 @@ export function UserModulePage() {
     values,
     sourceTab,
   }: AddEmployeeSavePayload): Promise<AddEmployeeSaveSync | void> => {
-    setIsSaving(true)
-
     // 1. Validation for Supervisor Apportioning Total Percentage (must be exactly 100%)
     if (sourceTab === "security" && values.supervisorApportioning) {
       const saveUserId =
@@ -387,6 +385,7 @@ export function UserModulePage() {
       }
     }
 
+    setIsSaving(true)
     try {
       if (formMode === "edit" && selectedRow) {
         if (sourceTab === "security") {

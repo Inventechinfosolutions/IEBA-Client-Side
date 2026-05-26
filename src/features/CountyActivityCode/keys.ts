@@ -33,6 +33,9 @@ export const countyActivityCodeKeys = {
    * Same cache entry as {@link masterCodeKeys.detail} — `GET /activity-codes/:id` for “Copy code” on add primary.
    */
   masterActivityCodeDetail: (id: string) => masterCodeKeys.detail(id),
+  /** `GET /activities/:parentId/nestedactivities` — direct children of a parent activity. */
+  nestedActivities: (parentId: string | number) =>
+    [...countyActivityCodeKeys.all, "nested", String(parentId)] as const,
   /** `GET /users/activity-history` — paginated activity history log. */
   history: (params: {
     page: number

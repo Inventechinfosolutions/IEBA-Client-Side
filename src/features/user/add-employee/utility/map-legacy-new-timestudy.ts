@@ -271,9 +271,7 @@ function parseActivityNode(
   const id = parseEntityIdFromKey(node.key, deptId)
   if (id == null) return null
   let name = typeof node.title === "string" ? node.title.trim() : ""
-  let type = "primary"
   if (node.child) {
-    type = "secondary"
     name = lastSegmentAfterDelimiter(name, "---")
   }
   return {

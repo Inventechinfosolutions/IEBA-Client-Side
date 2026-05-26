@@ -307,7 +307,6 @@ export function PersonalTimeStudyEntryForm({
   leaveRecords,
   className,
   apportioningConfig,
-  apportioningRecords,
   isLoading = false,
 }: PersonalTimeStudyEntryFormProps) {
   const { user } = useAuth()

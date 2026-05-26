@@ -574,7 +574,7 @@ function parseUserProgramsActivitiesProgramWithAssignments(
   }
 }
 
-function parseUserProgramsActivitiesBundle(raw: unknown): UserProgramsActivitiesDepartmentBundle | null {
+export function parseUserProgramsActivitiesBundle(raw: unknown): UserProgramsActivitiesDepartmentBundle | null {
   if (raw === null || typeof raw !== "object") return null
   const b = raw as Record<string, unknown>
   const departmentId = typeof b.departmentId === "number" ? b.departmentId : Number(b.departmentId)
@@ -815,6 +815,13 @@ function mergeProgramsAndActivitiesBundleLists(
     if (!activitiesOnly) {
       return {
         ...programsOnly,
+        programs: {
+          assigned: {
+            normal: programsOnly.programs.assigned.normal.map((p) => programOnlyToWithAssignments(p)),
+            jobpoolautoassign: programsOnly.programs.assigned.jobpoolautoassign.map((p) => programOnlyToWithAssignments(p)),
+          },
+          unassigned: programsOnly.programs.unassigned.map((p) => programOnlyToWithAssignments(p)),
+        },
         orphanActivities: { assigned: [], unassigned: [] },
         jobPoolActivities: { assigned: [], unassigned: [] },
       }
@@ -838,6 +845,13 @@ function parseUserTimeStudyDepartment(raw: unknown): UserTimeStudyDepartment | n
     departmentCode,
     departmentName,
     ...(tsMinPerDay !== undefined ? { tsMinPerDay } : {}),
+    moveSaveSubmitToTop: row.moveSaveSubmitToTop === true,
+    removeAutoFillEndTime: row.removeAutoFillEndTime === true,
+    startorEndTime: row.startorEndTime === true,
+    supportingDoc: row.supportingDoc === true,
+    removeDescriptionActivityNote: row.removeDescriptionActivityNote === true,
+    removeDescriptionActivityNoteAnchor: row.removeDescriptionActivityNoteAnchor === true,
+    removeDescriptionActivityNoteMultiCode: row.removeDescriptionActivityNoteMultiCode === true,
   }
 }
 
@@ -868,7 +882,7 @@ export async function fetchUserTimeStudyDepartments(
   return out
 }
 
-function userTimeStudyDepartmentToBundleStub(
+export function userTimeStudyDepartmentToBundleStub(
   dept: UserTimeStudyDepartment,
 ): UserProgramsActivitiesDepartmentBundle {
   return {

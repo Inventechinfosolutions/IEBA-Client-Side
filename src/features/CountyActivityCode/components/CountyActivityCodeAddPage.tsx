@@ -110,6 +110,9 @@ export function CountyActivityCodeAddPage({
   subParentActivityDetail = null,
   apportioningDepartments = [],
   isSubmitting = false,
+  onCodeDropdownOpen,
+  onCodeTypeDropdownOpen,
+  onPrimaryPickerDropdownOpen,
 }: CountyActivityCodeAddPageProps) {
   const [uncontrolledTab, setUncontrolledTab] = useState<CountyActivityGridRowType>(
     CountyActivityGridRowType.PRIMARY,
@@ -408,18 +411,16 @@ export function CountyActivityCodeAddPage({
                       form.setValue("description", "")
                     }
                   }}
-                  disabled={
-                    isMasterCodeTypeOptionsLoading || codeTypeSelectItems.length === 0
-                  }
+                  onOpenChange={(open) => {
+                    if (open) onCodeTypeDropdownOpen?.()
+                  }}
                 >
                   <SelectTrigger className="data-[size=default]:h-[48px] data-[size=sm]:h-[48px] h-[48px] w-full max-w-full min-w-0 rounded-[10px] border-[#D9D9D9]">
                     <SelectValue
                       placeholder={
                         isMasterCodeTypeOptionsLoading
                           ? "Loading types…"
-                          : codeTypeSelectItems.length === 0
-                            ? "No types available"
-                            : "Select type"
+                          : "Select type"
                       }
                     />
                   </SelectTrigger>
@@ -431,11 +432,22 @@ export function CountyActivityCodeAddPage({
                     avoidCollisions={false}
                     className="w-(--radix-select-trigger-width) max-h-[280px] [&_[data-slot=select-scroll-up-button]]:hidden [&_[data-slot=select-scroll-down-button]]:hidden"
                   >
-                    {codeTypeSelectItems.map((item) => (
-                      <SelectItem key={item} value={item}>
-                        {item}
-                      </SelectItem>
-                    ))}
+                    {isMasterCodeTypeOptionsLoading && codeTypeSelectItems.length === 0 ? (
+                      <div className="flex items-center justify-center p-2 text-sm text-gray-500">
+                        <Spinner className="h-4 w-4 text-[#6C5DD3] mr-2" />
+                        Loading types…
+                      </div>
+                    ) : codeTypeSelectItems.length === 0 ? (
+                      <div className="p-2 text-center text-sm text-gray-500">
+                        No types available
+                      </div>
+                    ) : (
+                      codeTypeSelectItems.map((item) => (
+                        <SelectItem key={item} value={item}>
+                          {item}
+                        </SelectItem>
+                      ))
+                    )}
                   </SelectContent>
                 </Select>
               </div>
@@ -447,6 +459,9 @@ export function CountyActivityCodeAddPage({
                   }
                   onChange={(value) => form.setValue("masterCode", Number(value))}
                   onBlur={() => { }}
+                  onOpenChange={(open) => {
+                    if (open) onCodeDropdownOpen?.()
+                  }}
                   options={masterCodeOptions.map((item) => ({
                     value: String(item.value),
                     label: item.label,
@@ -512,6 +527,9 @@ export function CountyActivityCodeAddPage({
                   value={selectedPrimaryId ?? ""}
                   onValueChange={(value) => onSelectedPrimaryIdChange?.(value)}
                   disabled={readOnlyPrimaryPicker}
+                  onOpenChange={(open) => {
+                    if (open) onPrimaryPickerDropdownOpen?.()
+                  }}
                 >
                   <SelectTrigger className="data-[size=default]:h-[48px] data-[size=sm]:h-[48px] h-[48px] w-full max-w-full min-w-0 rounded-[10px] border-[#D9D9D9] [&_[data-slot=select-value]]:line-clamp-none [&_[data-slot=select-value]]:block [&_[data-slot=select-value]]:min-w-0 [&_[data-slot=select-value]]:flex-1 [&_[data-slot=select-value]]:overflow-hidden [&_[data-slot=select-value]]:text-ellipsis [&_[data-slot=select-value]]:whitespace-nowrap [&_[data-slot=select-value]]:text-left">
                     <SelectValue placeholder="Select primary activity code" />
