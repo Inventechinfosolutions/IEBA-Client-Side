@@ -124,14 +124,11 @@ export function PersonalTimeStudyPage() {
   const fetchMulticodeProgramsForDepartment = useCallback(async (deptIdStr: string | number | undefined) => {
     const deptId = String(deptIdStr || '').trim()
     if (!deptId || !userId) return
-    if (fetchedMulticodesRef.current.has(deptId)) return
-    fetchedMulticodesRef.current.add(deptId)
     setFetchingDepartments(prev => ({ ...prev, [deptId]: true }))
     try {
       const res = await apiGetUserProgramsAndActivitiesMulticode(userId, deptId)
       setDepartmentMulticodes(prev => ({ ...prev, [deptId]: res || [] }))
     } catch (err) {
-      fetchedMulticodesRef.current.delete(deptId)
       console.error(`Failed to fetch multicode programs for department ${deptId}`, err)
     } finally {
       setFetchingDepartments(prev => ({ ...prev, [deptId]: false }))
@@ -417,7 +414,7 @@ export function PersonalTimeStudyPage() {
                       dateStr={dateStr}
                       initialRecords={dayQuery.data?.timeStudyRecords}
                       dropdownData={dropdownQuery.data}
-                      leaveRecords={dayQuery.data?.leaveRecords}
+                      leaveRecords={dayQuery.data?.leaveRecords as any}
                       onSave={(records) => submitMutation.mutate({ records, mode: "save" })}
                       onSubmit={(records) => submitMutation.mutate({ records, mode: "submit" })}
                       onDelete={(id) => deleteMutation.mutate(id)}
