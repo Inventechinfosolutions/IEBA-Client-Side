@@ -115,7 +115,10 @@ function TransferRow({
 
   if (readOnly) {
     return (
-      <div className="group relative z-0 flex cursor-default items-center justify-between py-1 pr-3 text-left">
+      <div
+        className="group relative z-0 flex cursor-not-allowed items-center justify-between py-1 pr-3 text-left"
+        aria-disabled="true"
+      >
         {rowBody}
       </div>
     )
@@ -195,15 +198,21 @@ function JobPoolBlock({
   const groups = groupJobPoolItemsByLabel(section.items)
 
   return (
-    <div className="flex flex-col">
-      <div className="grid h-7 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 bg-[#F3F4F6] pl-4 pr-2 text-[10px] font-semibold text-[#6C5DD3]">
+    <div
+      className="flex cursor-not-allowed flex-col select-none"
+      role="group"
+      aria-label={section.sectionTitle}
+      aria-disabled="true"
+      title="Job pool assignments are read-only"
+    >
+      <div className="grid h-7 grid-cols-[minmax(0,1fr)_auto] cursor-not-allowed items-center gap-2 bg-[#F3F4F6] pl-4 pr-2 text-[10px] font-semibold text-[#6C5DD3]">
         <span className="min-w-0">{section.sectionTitle}</span>
         <DisabledHeaderCheckbox />
       </div>
       {groups.map((group) => (
-        <div key={group.label || "default"} className="flex flex-col">
+        <div key={group.label || "default"} className="flex cursor-not-allowed flex-col">
           {group.label ? (
-            <div className="px-4 py-1">
+            <div className="cursor-not-allowed px-4 py-1">
               <span className="inline-flex items-center justify-center rounded-[6px] border border-[#E5E7EB] bg-white px-3 py-1 text-[10px] font-bold text-[#374151] shadow-sm">
                 {group.label}
               </span>

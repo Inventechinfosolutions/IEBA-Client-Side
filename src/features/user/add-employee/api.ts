@@ -379,7 +379,8 @@ function parseUserProgramsActivitiesActivityItem(
 ): UserProgramsActivitiesActivityItem | null {
   if (raw === null || typeof raw !== "object") return null
   const a = raw as Record<string, unknown>
-  const id = typeof a.id === "number" ? a.id : Number(a.id)
+  const idRaw = a.id ?? a.countyActivityId ?? a.county_activity_id
+  const id = typeof idRaw === "number" ? idRaw : Number(idRaw)
   const name = typeof a.name === "string" ? a.name.trim() : ""
   if (!Number.isFinite(id) || !name) return null
   const code = typeof a.code === "string" ? a.code : ""

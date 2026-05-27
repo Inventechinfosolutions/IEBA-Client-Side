@@ -428,13 +428,31 @@ function isNormalNonJobPoolProgram(
   return jobpoolId == null || jobpoolId < 1
 }
 
-/** Regular shuttle activities: only those linked to assigned (non–job-pool) programs. */
+function mapBundleActivitiesToTransferItems(
+  activities: UserProgramsActivitiesActivityItem[],
+  departmentName: string,
+): AddEmployeeTimeStudyTransferItem[] {
+  const dept = departmentName.trim()
+  if (!dept) return []
+  return sortTransferItems(
+    activities.map((activity) => ({
+      id: String(activity.id),
+      department: dept,
+      code: activity.code,
+      name: activity.name,
+    })),
+  )
+}
+
 function collectBundleActivityTransferItems(
   bundle: UserProgramsActivitiesDepartmentBundle,
   assignedNormalPrograms: UserProgramsActivitiesProgramWithAssignments[],
 ): AddEmployeeTimeStudyTransferItem[] {
   const dept = bundle.departmentName.trim()
-  if (!dept || assignedNormalPrograms.length === 0) return []
+  const orphanAssigned = orphanActivitiesFor(bundle).assigned
+  if (!dept) return []
+  if (assignedNormalPrograms.length === 0 && orphanAssigned.length === 0) return []
+
   const byId = new Map<string, AddEmployeeTimeStudyTransferItem>()
   const addActivity = (activity: { id: number; code: string; name: string }) => {
     const id = String(activity.id)
@@ -453,7 +471,29 @@ function collectBundleActivityTransferItems(
       addActivity(activity)
     }
   }
+  for (const activity of orphanAssigned) {
+    addActivity(activity)
+  }
   return sortTransferItems([...byId.values()])
+}
+
+function collectNormalAssignedActivityItems(
+  bundle: UserProgramsActivitiesDepartmentBundle,
+  assignedNormalPrograms: UserProgramsActivitiesProgramWithAssignments[],
+): UserProgramsActivitiesActivityItem[] {
+  const byId = new Map<number, UserProgramsActivitiesActivityItem>()
+  const add = (activity: UserProgramsActivitiesActivityItem) => {
+    if (!byId.has(activity.id)) byId.set(activity.id, activity)
+  }
+  for (const program of assignedNormalPrograms) {
+    for (const activity of programChildrenAssigned(program)) {
+      add(activity)
+    }
+  }
+  for (const activity of orphanActivitiesFor(bundle).assigned) {
+    add(activity)
+  }
+  return [...byId.values()]
 }
 
 /** Assigned column: global rows + bundle-only rows the user is considered assigned to. */
@@ -695,23 +735,6 @@ export function TimeStudyAssignmentsPanel({
     [assignedProgramsSplit.normal],
   )
 
-  const bundleActivityIdsForSelectedDepartment = useMemo(() => {
-    const ids = new Set<string>()
-    if (!selectedBundle) return ids
-    for (const activity of orphanActivitiesFor(selectedBundle).assigned) {
-      ids.add(String(activity.id))
-    }
-    for (const activity of jobPoolAssignedActivities(selectedBundle)) {
-      ids.add(String(activity.id))
-    }
-    for (const program of assignedProgramsSplit.normal) {
-      for (const activity of programChildrenAssigned(program)) {
-        ids.add(String(activity.id))
-      }
-    }
-    return ids
-  }, [selectedBundle, assignedProgramsSplit.normal])
-
   const jobPoolProgramsSection = useMemo(
     () => (selectedBundle ? buildJobPoolTransferSection(selectedBundle, "programs") : null),
     [selectedBundle],
@@ -747,17 +770,6 @@ export function TimeStudyAssignmentsPanel({
     [selectedDept, bundleProgramIdsForSelectedDepartment, programPlacementOverridesEditMode],
   )
 
-  const activityAssignedPredicateEditMode = useMemo(
-    () => (rowId: string) =>
-      isTransferItemAssignedInEditMode(
-        selectedDept,
-        rowId,
-        bundleActivityIdsForSelectedDepartment,
-        activityPlacementOverridesEditMode,
-      ),
-    [selectedDept, bundleActivityIdsForSelectedDepartment, activityPlacementOverridesEditMode],
-  )
-
   const uiAssignedNormalPrograms = useMemo(() => {
     if (!selectedBundle) return []
     return allProgramsInSelectedBundle.filter(
@@ -767,12 +779,48 @@ export function TimeStudyAssignmentsPanel({
     )
   }, [selectedBundle, allProgramsInSelectedBundle, programAssignedPredicateEditMode])
 
+  const orphanAssignedActivitiesForBundle = useMemo(
+    () => (selectedBundle ? orphanActivitiesFor(selectedBundle).assigned : []),
+    [selectedBundle],
+  )
+
+  const bundleActivityIdsForSelectedDepartment = useMemo(() => {
+    const ids = new Set<string>()
+    if (!selectedBundle) return ids
+    for (const activity of jobPoolAssignedActivities(selectedBundle)) {
+      ids.add(String(activity.id))
+    }
+    for (const activity of collectNormalAssignedActivityItems(selectedBundle, uiAssignedNormalPrograms)) {
+      ids.add(String(activity.id))
+    }
+    return ids
+  }, [selectedBundle, uiAssignedNormalPrograms])
+
+  const bundleAssignedActivityRows = useMemo(() => {
+    if (!selectedBundle) return []
+    return mapBundleActivitiesToTransferItems(
+      collectNormalAssignedActivityItems(selectedBundle, uiAssignedNormalPrograms),
+      selectedBundle.departmentName,
+    )
+  }, [selectedBundle, uiAssignedNormalPrograms])
+
   const activityCatalogForUserBundle = useMemo(
     () =>
       selectedBundle
         ? collectBundleActivityTransferItems(selectedBundle, uiAssignedNormalPrograms)
         : [],
     [selectedBundle, uiAssignedNormalPrograms],
+  )
+
+  const activityAssignedPredicateEditMode = useMemo(
+    () => (rowId: string) =>
+      isTransferItemAssignedInEditMode(
+        selectedDept,
+        rowId,
+        bundleActivityIdsForSelectedDepartment,
+        activityPlacementOverridesEditMode,
+      ),
+    [selectedDept, bundleActivityIdsForSelectedDepartment, activityPlacementOverridesEditMode],
   )
 
   const deptProgramsAddMode = useMemo(
@@ -826,6 +874,11 @@ export function TimeStudyAssignmentsPanel({
 
   const hasAssignedNormalProgramsForActivities = hasUserTsBundle
     ? uiAssignedNormalPrograms.length > 0
+    : programsAssigned.length > 0
+
+  /** Orphan-assigned rows must appear even when the unassigned shuttle is program-gated. */
+  const hasAssignedActivitiesForAssignedColumn = hasUserTsBundle
+    ? uiAssignedNormalPrograms.length > 0 || orphanAssignedActivitiesForBundle.length > 0
     : programsAssigned.length > 0
 
   /**
@@ -949,19 +1002,20 @@ export function TimeStudyAssignmentsPanel({
   ])
 
   const activitiesAssigned = useMemo(() => {
-    if (!hasAssignedNormalProgramsForActivities) return []
+    if (!hasAssignedActivitiesForAssignedColumn) return []
     if (hasUserTsBundle) {
       return buildAssignedItemsForEditMode(
         globalActivitiesForSelectedDepartment,
-        [],
+        bundleAssignedActivityRows,
         activityAssignedPredicateEditMode,
       ).filter((row) => !jobPoolAssignedIds.activityIds.has(row.id))
     }
     return deptActivitiesAddMode.filter((a) => assignedActivityIdsAddMode.includes(a.id))
   }, [
-    hasAssignedNormalProgramsForActivities,
+    hasAssignedActivitiesForAssignedColumn,
     hasUserTsBundle,
     globalActivitiesForSelectedDepartment,
+    bundleAssignedActivityRows,
     jobPoolAssignedIds,
     activityAssignedPredicateEditMode,
     deptActivitiesAddMode,
