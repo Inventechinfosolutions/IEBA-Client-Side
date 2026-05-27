@@ -72,27 +72,34 @@ function buildBackendPayload(body: ReportRunPayload, overrideDownloadType?: stri
   return payload
 }
 
-/** Download report (PDF/Excel) via /report/generate. */
-export async function apiPostDownloadReport(body: ReportRunPayload, options?: { type?: string; signal?: AbortSignal }): Promise<any> {
-  const downloadType = options?.type || body.downloadType
-  const payload = buildBackendPayload(body, downloadType)
-  return api.post("/report/generate", payload, {
-    signal: options?.signal,
-    headers: {
-      Accept: "application/pdf, application/octet-stream, */*",
-    },
+const reportFileHeaders = {
+  Accept: "application/pdf, application/octet-stream, */*",
+}
+
+/** View report: POST /report/data, then POST /report/generate (PDF). */
+export async function apiPostViewReport(
+  body: ReportRunPayload,
+  options?: { signal?: AbortSignal },
+): Promise<unknown> {
+  const signal = options?.signal
+  await api.post("/report/data", buildBackendPayload(body), { signal })
+  return api.post("/report/generate", buildBackendPayload(body, "PDF"), {
+    signal,
+    headers: reportFileHeaders,
   })
 }
 
-/** View report preview via /report/generate. */
-export async function apiPostViewReport(body: ReportRunPayload, options?: { signal?: AbortSignal }): Promise<any> {
-  // Use the same generation flow as Postman-proven downloads to guarantee file output for in-page preview.
-  const payload = buildBackendPayload(body, "PDF")
-  return api.post("/report/generate", payload, {
-    signal: options?.signal,
-    headers: {
-      Accept: "application/pdf, application/octet-stream, */*",
-    },
+/** Download report: POST /report/data, then POST /report/generate. */
+export async function apiPostDownloadReport(
+  body: ReportRunPayload,
+  options?: { type?: string; signal?: AbortSignal },
+): Promise<unknown> {
+  const downloadType = options?.type || body.downloadType
+  const signal = options?.signal
+  await api.post("/report/data", buildBackendPayload(body), { signal })
+  return api.post("/report/generate", buildBackendPayload(body, downloadType), {
+    signal,
+    headers: reportFileHeaders,
   })
 }
 
