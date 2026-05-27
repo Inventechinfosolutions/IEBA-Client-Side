@@ -1,4 +1,4 @@
-import { useMemo, useState, Fragment ,useRef, useCallback} from "react"
+import { useMemo, useState, Fragment, useRef, useCallback } from "react"
 import { useLocation } from "react-router-dom"
 import { Controller, useForm, useWatch } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -52,6 +52,10 @@ import type {
 } from "../types"
 import { mapReportFormToRunPayload } from "../utils/mapReportFormToRunPayload"
 import { readStoredReportFormParams, writeStoredReportFormParams } from "../utils/reportFormSessionStorage"
+
+function isTuolumneDisabledReport(label: string, countyName?: string | null): boolean {
+  return (countyName ?? "").trim().toUpperCase() === "TUOLUMNE" && /start\/stop\/travel/i.test(label)
+}
 
 /**
  * Progress bar driven by TanStack mutation's isPending — no useEffect.
@@ -560,6 +564,8 @@ export function ReportForm({ module }: ReportFormProps) {
   }
 
   const navState = location.state as any
+  const { user } = useAuth()
+  const countyName = user?.countyName
 
   const formValues = useMemo((): ReportFormValues => {
     const stored = readStoredReportFormParams()
@@ -576,8 +582,13 @@ export function ReportForm({ module }: ReportFormProps) {
     if (!base.employeeIds?.trim() && typeof legacyId === "string" && legacyId.trim() !== "") {
       base.employeeIds = legacyId.trim()
     }
+    const selected = module.catalogItems.find((item) => item.key === base.reportKey)
+    if (selected && isTuolumneDisabledReport(selected.label, countyName)) {
+      base.reportKey = ""
+      base.fileName = ""
+    }
     return base
-  }, [navState])
+  }, [navState, module.catalogItems, countyName])
 
   const form = useForm<ReportFormValues>({
     resolver: zodResolver(reportFormSchema),
@@ -662,8 +673,6 @@ export function ReportForm({ module }: ReportFormProps) {
   const includeInactiveEmployees = useWatch({ control, name: "includeInactiveEmployees" })
   const includeActiveActivities = useWatch({ control, name: "includeActiveActivities" })
   const includeInactiveActivities = useWatch({ control, name: "includeInactiveActivities" })
-  const { user } = useAuth()
-
   const employeeStatusArr = useMemo(() => {
     const statuses: string[] = []
     if (includeActiveEmployees) statuses.push("active")
@@ -784,9 +793,13 @@ export function ReportForm({ module }: ReportFormProps) {
   const reportOptions = useMemo(
     () =>
       sortSelectOptionsByLabel(
-        module.catalogItems.map((item) => ({ value: item.key, label: item.label })),
+        module.catalogItems.map((item) => ({
+          value: item.key,
+          label: item.label,
+          disabled: isTuolumneDisabledReport(item.label, countyName),
+        })),
       ),
-    [module.catalogItems],
+    [module.catalogItems, countyName],
   )
 
   const shouldFilterProgramsByUser = useMemo(() => {
@@ -1389,6 +1402,7 @@ const ReportFiltersBody = ({
                   value={field.value}
                   onChange={(val) => {
                     const item = module.catalogItems.find((i) => i.key === val)
+                    if (!item) return
 
                     // Reset all fields to defaults, keeping only the new report key
                     form.reset({

@@ -18,6 +18,8 @@ export type SingleSelectOption = {
   label: string
   /** Stable React `key` when `value` may repeat across options */
   key?: string
+  /** When true, the option is visible but not selectable */
+  disabled?: boolean
   /** Arbitrary metadata associated with this option */
   metadata?: Record<string, any>
 }
@@ -156,23 +158,31 @@ export function SingleSelectDropdown({
             {options.map((opt, index) => {
               const selected = valueTrimmed === opt.value
               const rowKey = opt.key ?? `${opt.value}-${index}`
+              const optionDisabled = opt.disabled === true
               return (
                 <button
                   type="button"
                   key={rowKey}
+                  disabled={optionDisabled}
+                  aria-disabled={optionDisabled}
                   onClick={() => {
+                    if (optionDisabled) return
                     onChange(opt.value)
                     closeMenu()
                   }}
                   className={cn(
-                    "w-full cursor-pointer px-3 py-2 text-left hover:bg-[#f3f4f8]",
-                    selected ? "bg-[#eef8ff]" : "bg-transparent",
+                    "w-full px-3 py-2 text-left",
+                    optionDisabled
+                      ? "cursor-not-allowed text-[#9ca3af]"
+                      : "cursor-pointer hover:bg-[#f3f4f8]",
+                    selected && !optionDisabled ? "bg-[#eef8ff]" : "bg-transparent",
                     itemButtonClassName,
                   )}
                 >
                   <span
                     className={cn(
-                      "block truncate text-[13px] font-normal text-[#111827]",
+                      "block truncate text-[13px] font-normal",
+                      optionDisabled ? "text-[#9ca3af]" : "text-[#111827]",
                       itemLabelClassName,
                     )}
                   >
