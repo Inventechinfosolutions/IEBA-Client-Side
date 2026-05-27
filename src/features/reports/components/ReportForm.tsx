@@ -31,11 +31,8 @@ import {
   useGetCostPoolsByDepartment,
 } from "../queries/getDynamicFilters"
 import type { ReportsModuleApi } from "../hooks/useReportsModule"
-import { useGetDepartments } from "@/features/department/queries/getDepartments"
-import { useCostPoolListQuery } from "@/features/cost-pool/queries/getCostPools"
-
+import { useGetReportDepartments } from "../queries/getReports"
 import { useListFiscalYears } from "@/features/settings/queries/listFiscalYears"
-import { CostPoolStatus } from "@/features/cost-pool/enums/cost-pool.enum"
 import {
   REPORT_DOWNLOAD_TYPES,
   REPORT_FORM_DEFAULT_VALUES,
@@ -651,6 +648,8 @@ export function ReportForm({ module }: ReportFormProps) {
     return module.catalogItems.find((i) => i.key === reportKey)
   }, [reportKey, module.catalogItems])
 
+  const hasSelectedReportType = reportKey.trim().length > 0
+
   const secondaryLayout = useMemo(
     () => getReportSecondaryLayout(currentReportItem?.criteria),
     [currentReportItem],
@@ -689,32 +688,55 @@ export function ReportForm({ module }: ReportFormProps) {
     return costPoolIdsRaw.split(",").map((s) => s.trim()).filter(Boolean)
   }, [costPoolIdsRaw])
 
+  const criteria = currentReportItem?.criteria
+  const showDepartmentSelect = criteria?.showDepartmentSelect !== false
+  const showProgramSelect = isTrue(criteria?.showProgramSelect)
+  const showActivitySelect = criteria?.showActivitySelect === true
+  const showScheduleTime = isTrue(criteria?.showScheduleTime)
+
   const isMaaReport = useMemo(() => reportKey.includes("MAA") || reportKey.includes("TCM"), [reportKey])
   const shouldShowCostPool = useMemo(
-    () =>
-      isTrue(currentReportItem?.criteria?.showCostPoolSelect) ||
-      isTrue(currentReportItem?.criteria?.showCostPool),
-    [currentReportItem],
+    () => isTrue(criteria?.showCostPoolSelect) || isTrue(criteria?.showCostPool),
+    [criteria],
   )
-  const shouldFetchCostPoolUsers = shouldShowCostPool && costPoolIdsArr.length > 0
+  const showMasterCodes = isTrue(criteria?.showmasterCodes)
 
-  const showMasterCodes = isTrue(currentReportItem?.criteria?.showmasterCodes)
-  
-  const shouldFetchMaaEmployees = isMaaReport && !!departmentId && !showMasterCodes
-  const { data: maaEmployeesData, isFetching: isMaaEmployeesFetching } = useGetMaaEmployees(activityIdsArr, departmentId, shouldFetchMaaEmployees)
+  const shouldFetchDepartments = hasSelectedReportType && showDepartmentSelect
+  const shouldLoadFiscalYears =
+    hasSelectedReportType &&
+    (showScheduleTime || selectMonthBy === "qtr" || selectMonthBy === "year" || selectMonthBy === "scheduled")
+  const shouldFetchCostPoolsByDepartment =
+    hasSelectedReportType && shouldShowCostPool && !!departmentId
+  const shouldFetchCostPoolUsers =
+    shouldFetchCostPoolsByDepartment && !!user?.id && costPoolIdsArr.length > 0
+  const shouldFetchDepartmentUsers =
+    hasSelectedReportType &&
+    !!departmentId &&
+    !!user?.id &&
+    (!isMaaReport || showMasterCodes) &&
+    !shouldShowCostPool
+  const shouldFetchMaaEmployees =
+    hasSelectedReportType && isMaaReport && !!departmentId && !showMasterCodes
+  const { data: maaEmployeesData, isFetching: isMaaEmployeesFetching } = useGetMaaEmployees(
+    activityIdsArr,
+    departmentId,
+    shouldFetchMaaEmployees,
+    reportKey,
+  )
   const { data: costPoolUsersData, isFetching: isCostPoolUsersFetching } = useGetCostPoolUsers(
     costPoolIdsArr,
     user?.id ?? "",
     employeeStatusArr,
     shouldFetchCostPoolUsers,
+    reportKey,
   )
-  const shouldFetchDepartmentUsers = !!departmentId && (!isMaaReport || showMasterCodes) && !shouldShowCostPool
   const { data: departmentUsersData, isFetching: isDeptUsersFetching } = useGetUsersUnderDepartment(
-    departmentId, 
-    user?.id ?? "", 
+    departmentId,
+    user?.id ?? "",
     showMasterCodes ? masterCode : undefined,
     employeeStatusArr,
-    shouldFetchDepartmentUsers
+    shouldFetchDepartmentUsers,
+    reportKey,
   )
   // Format dates from ISO (YYYY-MM-DD) to backend format (MM-DD-YYYY) for the activities API
   const activityStartDate = useMemo(() => {
@@ -730,7 +752,8 @@ export function ReportForm({ module }: ReportFormProps) {
 
   const hasActivityDateRange = !!activityStartDate && !!activityEndDate
   const shouldFetchActivities =
-    currentReportItem?.criteria?.showActivitySelect === true &&
+    hasSelectedReportType &&
+    showActivitySelect &&
     !!departmentId &&
     employeeIds.length > 0 &&
     hasActivityDateRange
@@ -742,6 +765,7 @@ export function ReportForm({ module }: ReportFormProps) {
     activityStatusStr || "active",
     showMasterCodes ? masterCode : undefined,
     shouldFetchActivities,
+    reportKey,
   )
 
   const {
@@ -766,46 +790,50 @@ export function ReportForm({ module }: ReportFormProps) {
   )
 
   const shouldFilterProgramsByUser = useMemo(() => {
-    return isTrue(currentReportItem?.criteria?.filterProgramsByUser) || 
-           (currentReportItem?.criteria?.showProgramSelect === true && employeeIds.length > 0)
-  }, [currentReportItem, employeeIds])
+    return (
+      isTrue(criteria?.filterProgramsByUser) ||
+      (showProgramSelect && employeeIds.length > 0)
+    )
+  }, [criteria, showProgramSelect, employeeIds])
 
-  const { data: fiscalYearsData } = useListFiscalYears()
-  const { data: departmentsData, isLoading: isDeptsLoading } = useGetDepartments({ 
-    status: "active", 
-    page: 1, 
-    limit: 100,
+  const shouldFetchAllPrograms =
+    hasSelectedReportType && showProgramSelect && !shouldFilterProgramsByUser
+  const shouldFetchUserPrograms =
+    hasSelectedReportType &&
+    showProgramSelect &&
+    shouldFilterProgramsByUser &&
+    !!departmentId &&
+    employeeIds.length > 0 &&
+    !!actualDateFrom &&
+    !!actualDateTo
+  const shouldFetchRmtsPayPeriods =
+    hasSelectedReportType && selectMonthBy === "scheduled" && !!fiscalYearId && !!departmentId
+
+  const { data: fiscalYearsData } = useListFiscalYears({
+    enabled: shouldLoadFiscalYears,
+    scopeKey: reportKey,
+  })
+  const { data: departmentsData, isLoading: isDeptsLoading } = useGetReportDepartments(
     reportKey,
-    masterCode: showMasterCodes ? masterCode : undefined
-  } as any)
-  const { data: allProgramsData } = useGetListAllPrograms(
-    currentReportItem?.criteria?.showProgramSelect === true && !shouldFilterProgramsByUser
+    shouldFetchDepartments,
   )
-  const { data: costPoolsData } = useCostPoolListQuery(
-    { costpoolStatus: CostPoolStatus.ACTIVE, page: 1, limit: 100 },
-    { enabled: shouldShowCostPool && !departmentId },
-  )
-  const shouldFetchCostPoolsByDepartment = shouldShowCostPool && !!departmentId
-  const { data: costPoolsByDepartmentData } = useGetCostPoolsByDepartment(
-    departmentId,
-    shouldFetchCostPoolsByDepartment,
-  )
-
+  const { data: allProgramsData } = useGetListAllPrograms(shouldFetchAllPrograms, reportKey)
+  const { data: costPoolsByDepartmentData, isFetching: isCostPoolsByDeptFetching } =
+    useGetCostPoolsByDepartment(departmentId, shouldFetchCostPoolsByDepartment, reportKey)
 
   const { data: userSpecificPrograms } = useGetTimeStudyProgramsForUsers(
     employeeIds,
     actualDateFrom,
     actualDateTo,
-    shouldFilterProgramsByUser && 
-    employeeIds.length > 0 && 
-    !!actualDateFrom && 
-    !!actualDateTo,
+    shouldFetchUserPrograms,
+    reportKey,
   )
 
   const { data: rmtsPayPeriodsData } = useGetRmtsPayPeriods(
     fiscalYearId,
     departmentId,
-    isTrue(currentReportItem?.criteria?.showTimeStudy) || selectMonthBy === "scheduled"
+    shouldFetchRmtsPayPeriods,
+    reportKey,
   )
 
   const timeStudyPeriodOptions = useMemo(() => {
@@ -846,10 +874,10 @@ export function ReportForm({ module }: ReportFormProps) {
     return []
   }, [shouldFetchCostPoolUsers, costPoolUsersData, departmentId, departmentUsersData, reportKey, maaEmployeesData])
 
-  const isEmployeeLoading = 
+  const isEmployeeLoading =
     (shouldFetchCostPoolUsers && isCostPoolUsersFetching) ||
-    (!!departmentId && isDeptUsersFetching) ||
-    ((reportKey.includes("MAA") || reportKey.includes("TCM")) && isMaaEmployeesFetching);
+    (shouldFetchDepartmentUsers && isDeptUsersFetching) ||
+    (shouldFetchMaaEmployees && isMaaEmployeesFetching)
 
   const activityOptions = useMemo(() => {
     if (activitiesByDepartmentData) {
@@ -859,11 +887,11 @@ export function ReportForm({ module }: ReportFormProps) {
   }, [activitiesByDepartmentData])
 
   const costPoolOptions = useMemo(() => {
-    if (costPoolsByDepartmentData) {
-      return sortSelectOptionsByLabel(costPoolsByDepartmentData)
-    }
-    return costPoolsData?.data ? mapIdNameRowsToSelectOptions(costPoolsData.data) : []
-  }, [costPoolsByDepartmentData, costPoolsData])
+    if (!departmentId) return []
+    return costPoolsByDepartmentData
+      ? sortSelectOptionsByLabel(costPoolsByDepartmentData)
+      : []
+  }, [costPoolsByDepartmentData, departmentId])
 
   const programOptions = useMemo(() => {
     if (shouldFilterProgramsByUser) {
@@ -1441,7 +1469,7 @@ const ReportFiltersBody = ({
             </div>
           )}
 
-          {(currentReportItem?.criteria as { showDepartmentSelect?: boolean } | undefined)?.showDepartmentSelect !== false && (
+          {showDepartmentSelect && (
             <div className="min-w-0 w-full max-w-[350px] shrink-0">
               <label className={labelClassName} htmlFor="reports-department">
                 Department
@@ -1465,7 +1493,7 @@ const ReportFiltersBody = ({
                     options={departmentOptions}
                     placeholder="Select Department"
                     className={departmentSelectTrigger}
-                    isLoading={isDeptsLoading}
+                    isLoading={hasSelectedReportType && isDeptsLoading}
                     contentClassName="max-h-[220px]"
                     itemButtonClassName="rounded-[6px] px-3 py-2"
                     itemLabelClassName="!text-[14px] !font-normal"
@@ -1475,7 +1503,7 @@ const ReportFiltersBody = ({
             </div>
           )}
 
-          {isTrue(currentReportItem?.criteria?.showScheduleTime) && (
+          {showScheduleTime && (
             <div className="w-[180px] shrink-0">
               <label className={labelClassName} htmlFor="reports-fiscal-year">
                 Fiscal Year
@@ -1500,7 +1528,7 @@ const ReportFiltersBody = ({
             </div>
           )}
 
-          {!isTrue(currentReportItem?.criteria?.showScheduleTime) && (
+          {!showScheduleTime && (
             <ReportFiltersBody
               control={control}
               currentReportItem={currentReportItem}
@@ -1520,7 +1548,7 @@ const ReportFiltersBody = ({
           )}
         </div>
 
-        {isTrue(currentReportItem?.criteria?.showScheduleTime) && (
+        {showScheduleTime && (
           <>
             <div className="pt-2">
               <p className="text-[14px] font-medium text-[#5e49e2] mb-1">Time Selection</p>
@@ -1630,8 +1658,13 @@ const ReportFiltersBody = ({
                       inactiveField="includeInactiveCostPools"
                       idsField="costPoolIds"
                       options={costPoolOptions}
-                      placeholder="Select Cost Pool"
-                      emptyListMessage="No cost pools available"
+                      placeholder={
+                        departmentId ? "Select Cost Pool" : "Select department first"
+                      }
+                      emptyListMessage={
+                        departmentId ? "No cost pools available" : "Select a department first"
+                      }
+                      isLoading={shouldFetchCostPoolsByDepartment && isCostPoolsByDeptFetching}
                       onValuesChange={() => {
                         setValue("employeeIds", "")
                         setValue("activityIds", "")
