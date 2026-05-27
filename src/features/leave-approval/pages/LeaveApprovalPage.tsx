@@ -1,4 +1,6 @@
 import { useState } from "react"
+import { useQuery } from "@tanstack/react-query"
+import { apiGetUserProgramsAndActivities } from "../../PersonalTimeStudy/api/personalTimeStudyApi"
 
 import { MasterCodePagination } from "@/features/master-code/components/MasterCodePagination"
 import { LeaveApprovalTable } from "../components/LeaveApprovalTable"
@@ -47,6 +49,13 @@ export function LeaveApprovalPage() {
   const [commentsModalFormKey, setCommentsModalFormKey] = useState(0)
 
   const hasAccess = isSuperAdmin || canReview("userleave")
+
+  const userId = user?.id || ""
+  const dropdownQuery = useQuery({
+    queryKey: ["personal-time-study-dropdowns", userId],
+    queryFn: () => apiGetUserProgramsAndActivities(userId),
+    enabled: !!userId,
+  })
 
   const leaveModule = useLeaveApprovals({
     page,
@@ -105,6 +114,7 @@ export function LeaveApprovalPage() {
             setCommentsModalFormKey((k) => k + 1)
             setCommentsModalOpen(true)
           }}
+          dropdownData={dropdownQuery.data}
         />
         <MasterCodePagination
           totalItems={leaveModule.totalItems}

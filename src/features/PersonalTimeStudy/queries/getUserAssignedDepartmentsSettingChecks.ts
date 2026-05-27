@@ -63,7 +63,7 @@ export function useGetUserAssignedDepartmentsSettingChecks(
       }
 
       const allowMultiCodes = checkSettings ? checkSettings.departmentAllowMultiCodes === true : false
-      const apportioningRequired = checkSettings ? checkSettings.apportioning === true : false
+      const apportioningRequired = checkSettings ? checkSettings.userApportioning === true : false
 
       return {
         apportioningRequired,

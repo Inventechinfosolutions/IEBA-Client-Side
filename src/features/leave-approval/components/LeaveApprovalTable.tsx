@@ -38,10 +38,8 @@ function syntheticListChild(
     activitycode: mc.activitycode ?? parent.activitycode,
     activityname: mc.activityname ?? parent.activityname,
     leaveTotalTime: mc.leaveTotalTime ?? parent.leaveTotalTime,
-    requestcomment:
-      mc.requestcomment !== undefined && mc.requestcomment !== null
-        ? mc.requestcomment
-        : parent.requestcomment,
+    requestcomment: mc.requestcomment ?? null,
+    supervisorcomment: mc.supervisorcomment ?? null,
   }
 }
 
@@ -65,7 +63,23 @@ export function LeaveApprovalTable({
   sort,
   onToggleSort,
   onOpenComments,
+  dropdownData,
 }: LeaveApprovalTableProps) {
+  const getProgramLabel = (leave: LeaveApprovalRow) => {
+    if (dropdownData) {
+      for (const bundle of dropdownData) {
+        const prog = bundle.programs?.find((p: any) => String(p.id) === String(leave.programid))
+        if (prog) {
+          const deptPrefix = (bundle.departmentCode ?? "").split("-")[0]
+          return `${deptPrefix}-${prog.code} - ${prog.name}`
+        }
+      }
+    }
+    return leave.programcode === leave.programname
+      ? leave.programcode
+      : `${leave.programcode} - ${leave.programname}`
+  }
+
   const [isEmployeeTooltipOpen, setIsEmployeeTooltipOpen] = useState(false)
   const [isStartDateTooltipOpen, setIsStartDateTooltipOpen] = useState(false)
   const [expandedByParentId, setExpandedByParentId] = useState<Record<number, boolean>>({})
@@ -305,7 +319,7 @@ export function LeaveApprovalTable({
                       isChild && "bg-[#f8f7fc]/90",
                     )}
                   >
-                    {r.programcode} - {r.programname}
+                    {getProgramLabel(r)}
                   </TableCell>
                   <TableCell
                     className={cn(

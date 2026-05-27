@@ -9,11 +9,11 @@ import { useAuth } from "@/contexts/AuthContext"
 
 import { EmployeeLeaveRequestDialog } from "./EmployeeLeaveRequestDialog"
 import { PendingLeaveRequestDialog } from "./PendingLeaveRequestDialog"
-import { 
-  useCreatePersonalLeave, 
-  useSubmitPersonalLeave, 
-  useUpdatePersonalLeave, 
-  useWithdrawPersonalLeave 
+import {
+  useCreatePersonalLeave,
+  useSubmitPersonalLeave,
+  useUpdatePersonalLeave,
+  useWithdrawPersonalLeave
 } from "../mutation/createPersonalLeave"
 import { apiGetUserLeaveById, apiGetUserProgramsAndActivities } from "../api/personalTimeStudyApi"
 import { personalTimeStudyKeys } from "../keys"
@@ -48,7 +48,6 @@ export function PersonalTimeStudyLeaveCard({
   className,
   dropdownData,
   allowMultiCodes,
-  onOpen,
   dateStr = "",
   month = 1,
   year = (() => { const _n = new Date(); return _n.getFullYear() })(),
@@ -72,7 +71,7 @@ export function PersonalTimeStudyLeaveCard({
   const leaveDropdownQuery = useQuery({
     queryKey: [...personalTimeStudyKeys.dropdowns(userId), "leave-modal"],
     queryFn: () => apiGetUserProgramsAndActivities(userId),
-    enabled: !!userId && leaveDropdownOpened,
+    enabled: !!userId,
     staleTime: 0,
     gcTime: 0,
     refetchOnMount: true,
@@ -133,16 +132,32 @@ export function PersonalTimeStudyLeaveCard({
 
   const initialValues: EmployeeLeaveRequestFormValues | undefined = useMemo(() => {
     if (!editingLeave) return undefined
+    const parentRow = {
+      id: editingLeave.id,
+      date: (editingLeave as any).startdt ?? "",
+      startTime: ((editingLeave as any).starttime || "").slice(0, 5),
+      endTime: ((editingLeave as any).endtime || "").slice(0, 5),
+      programCode: String((editingLeave as any).programid ?? ""),
+      activityCode: String((editingLeave as any).activityid ?? ""),
+      totalMinApplied: String((editingLeave as any).leaveTotalTime ?? "0"),
+      comment: (editingLeave as any).requestcomment || "",
+      multicodeChild: false,
+    }
+
+    const childRows = ((editingLeave as any).multiCodeRecords ?? []).map((c: any) => ({
+      id: c.id,
+      date: (editingLeave as any).startdt ?? "",
+      startTime: ((editingLeave as any).starttime || "").slice(0, 5),
+      endTime: ((editingLeave as any).endtime || "").slice(0, 5),
+      programCode: String(c.programid ?? ""),
+      activityCode: String(c.activityid ?? ""),
+      totalMinApplied: String(c.leaveTotalTime ?? "0"),
+      comment: c.requestcomment || "",
+      multicodeChild: true,
+    }))
+
     return {
-      entries: [{
-        date: (editingLeave as any).startdt ?? "",
-        startTime: ((editingLeave as any).starttime || "").slice(0, 5),
-        endTime: ((editingLeave as any).endtime || "").slice(0, 5),
-        programCode: String((editingLeave as any).programid ?? ""),
-        activityCode: String((editingLeave as any).activityid ?? ""),
-        totalMinApplied: String((editingLeave as any).leaveTotalTime ?? "0"),
-        comment: (editingLeave as any).requestcomment || "",
-      }]
+      entries: [parentRow, ...childRows]
     }
   }, [editingLeave])
 
@@ -158,7 +173,7 @@ export function PersonalTimeStudyLeaveCard({
       </CardHeader>
       <CardContent className="flex flex-1 flex-col gap-2 px-3 pt-2 pb-3">
         <ul className="flex flex-col text-[14px] divide-y divide-border/60">
-          <li 
+          <li
             className="flex items-center justify-between gap-2 py-1.5 cursor-pointer hover:bg-gray-50 transition-colors px-1 rounded-[4px]"
             onClick={() => handleStatusClick("approved")}
           >
@@ -168,7 +183,7 @@ export function PersonalTimeStudyLeaveCard({
             </span>
             <span className="tabular-nums text-muted-foreground font-medium">{approved}</span>
           </li>
-          <li 
+          <li
             className="flex items-center justify-between gap-2 py-1.5 cursor-pointer hover:bg-gray-50 transition-colors px-1 rounded-[4px]"
             onClick={() => handleStatusClick("open")}
           >
@@ -178,7 +193,7 @@ export function PersonalTimeStudyLeaveCard({
             </span>
             <span className="tabular-nums text-muted-foreground font-medium">{open}</span>
           </li>
-          <li 
+          <li
             className="flex items-center justify-between gap-2 py-1.5 cursor-pointer hover:bg-gray-50 transition-colors px-1 rounded-[4px]"
             onClick={() => handleStatusClick("rejected")}
           >
@@ -193,7 +208,6 @@ export function PersonalTimeStudyLeaveCard({
           type="button"
           className="mt-auto w-full bg-[#6C5DD3] hover:bg-[#6C5DD3]/90 rounded-[6px]"
           onClick={() => {
-            onOpen?.()
             setLeaveDialogOpen(true)
           }}
         >
@@ -222,19 +236,19 @@ export function PersonalTimeStudyLeaveCard({
           }
         }}
         editingLeave={editingLeave}
-        onSave={async (values, lookupDropdown) => { 
+        onSave={async (values, lookupDropdown) => {
           if (editingLeave) {
             await updateMutation.mutateAsync({ id: (editingLeave as any).id, values, userId, dropdownData: lookupDropdown ?? leaveDropdownQuery.data, status: "draft" })
           } else {
-            await saveMutation.mutateAsync({ values, userId, dropdownData: lookupDropdown ?? leaveDropdownQuery.data }) 
+            await saveMutation.mutateAsync({ values, userId, dropdownData: lookupDropdown ?? leaveDropdownQuery.data })
           }
         }}
-        onSubmit={async (values, lookupDropdown) => { 
+        onSubmit={async (values, lookupDropdown) => {
           if (editingLeave) {
             const targetStatus = editingStatus?.toLowerCase() === "approved" ? "approved" : "requested"
             await updateMutation.mutateAsync({ id: (editingLeave as any).id, values, userId, dropdownData: lookupDropdown ?? leaveDropdownQuery.data, status: targetStatus })
           } else {
-            await submitMutation.mutateAsync({ values, userId, dropdownData: lookupDropdown ?? leaveDropdownQuery.data }) 
+            await submitMutation.mutateAsync({ values, userId, dropdownData: lookupDropdown ?? leaveDropdownQuery.data })
           }
         }}
         isSaving={saveMutation.isPending || (updateMutation.isPending && (editingStatus?.toLowerCase() !== "approved" && editingStatus?.toLowerCase() !== "requested"))}

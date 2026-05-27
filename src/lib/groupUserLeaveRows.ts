@@ -14,6 +14,7 @@ export type UserLeaveMultiCodeFragment = {
   activityname?: string
   leaveTotalTime?: number
   requestcomment?: string | null
+  supervisorcomment?: string | null
 }
 
 export type UserLeaveGroupable = {

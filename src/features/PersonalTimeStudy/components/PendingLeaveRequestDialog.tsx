@@ -61,7 +61,8 @@ function syntheticSnapshotChild(
     activitycode: mc.activitycode ?? parent.activitycode,
     activityname: mc.activityname ?? parent.activityname,
     leaveTotalTime: mc.leaveTotalTime ?? parent.leaveTotalTime,
-    requestcomment: mc.requestcomment ?? parent.requestcomment,
+    requestcomment: mc.requestcomment ?? null,
+    supervisorcomment: mc.supervisorcomment ?? null,
   }
 }
 

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useCallback, useMemo, useRef, useState } from "react"
 import { X, Lock, Check } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
@@ -13,6 +13,7 @@ import { PersonalTimeStudyMinutesCard } from "../components/PersonalTimeStudyMin
 import { useGetPersonalMonthLegend } from "../queries/getPersonalMonthLegend"
 import { useGetPersonalDayDetail } from "../queries/getPersonalDayDetail"
 import { useGetPersonalDropdowns } from "../queries/getPersonalDropdowns"
+import { apiGetUserProgramsAndActivitiesMulticode } from "../api/personalTimeStudyApi"
 import { useGetTimeEntrySummary } from "../queries/getTimeEntrySummary"
 import { useGetUserAssignedDepartmentsSettingChecks } from "../queries/getUserAssignedDepartmentsSettingChecks"
 import { useSavePersonalNotes } from "../mutation/updatePersonalNotes"
@@ -114,6 +115,28 @@ export function PersonalTimeStudyPage() {
     setFetchDropdowns(true)
     dropdownQuery.refetch()
   }
+
+  // 4b. Multicode programs cache — lifted here so it survives date remounts (key={dateStr} on the form)
+  const [departmentMulticodes, setDepartmentMulticodes] = useState<Record<string, any[]>>({})
+  const [fetchingDepartments, setFetchingDepartments] = useState<Record<string, boolean>>({})
+  const fetchedMulticodesRef = useRef<Set<string>>(new Set())
+
+  const fetchMulticodeProgramsForDepartment = useCallback(async (deptIdStr: string | number | undefined) => {
+    const deptId = String(deptIdStr || '').trim()
+    if (!deptId || !userId) return
+    if (fetchedMulticodesRef.current.has(deptId)) return
+    fetchedMulticodesRef.current.add(deptId)
+    setFetchingDepartments(prev => ({ ...prev, [deptId]: true }))
+    try {
+      const res = await apiGetUserProgramsAndActivitiesMulticode(userId, deptId)
+      setDepartmentMulticodes(prev => ({ ...prev, [deptId]: res || [] }))
+    } catch (err) {
+      fetchedMulticodesRef.current.delete(deptId)
+      console.error(`Failed to fetch multicode programs for department ${deptId}`, err)
+    } finally {
+      setFetchingDepartments(prev => ({ ...prev, [deptId]: false }))
+    }
+  }, [userId])
 
   // 5. Fetch Time Entry Summary (MAA etc)
   const summaryQuery = useGetTimeEntrySummary(userId, dateStr, undefined, activeTab === "personal")
@@ -409,6 +432,9 @@ export function PersonalTimeStudyPage() {
                       isLoading={dayQuery.isFetching || submitMutation.isPending || deleteMutation.isPending}
                       isDropdownLoading={dropdownQuery.isFetching}
                       onOpenDropdown={handleOpenDropdown}
+                      departmentMulticodes={departmentMulticodes}
+                      fetchingDepartments={fetchingDepartments}
+                      onFetchMulticodeDept={fetchMulticodeProgramsForDepartment}
                     />
                   </div>
                 </>

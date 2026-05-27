@@ -1,8 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Plus, Trash2 } from "lucide-react"
-import { useCallback, useMemo, useState } from "react"
-import { useGetProgramActivityRelations } from "../queries/getProgramActivityRelations"
-import { useGetPersonalMulticodeDropdowns } from "../queries/getPersonalDropdowns"
+import { useCallback, useMemo, useRef, useState } from "react"
+
 import { Controller, useFieldArray, useForm } from "react-hook-form"
 import { toast } from "sonner"
 import { useAuth } from "@/contexts/AuthContext"
@@ -39,8 +38,8 @@ import {
   normalizeMulticodeDropdownPayload,
   pickDepartmentIdFromEntity,
 } from "../utils/multicodeDropdownUtils"
-import { mergeProgramActivityRelationTransferItems } from "@/features/program/queries/programActivityRelation"
-import { partitionLeaveEntryIndexGroups } from "../api/personalTimeStudyApi"
+
+import { partitionLeaveEntryIndexGroups, apiGetUserActivitiesForProgram, apiGetUserProgramsAndActivitiesMulticode } from "../api/personalTimeStudyApi"
 
 const EMPTY = EMPLOYEE_LEAVE_EMPTY_SELECT_VALUE
 
@@ -104,18 +103,18 @@ export type EmployeeLeaveRequestDialogProps = {
   allowMultiCodes?: boolean
 }
 
-const getHeaderGridClass = (isEditing: boolean) =>
+const getHeaderGridClass = (isEditing: boolean, allowMulticodeUi: boolean) =>
   cn(
     "grid min-w-[950px] items-end gap-2.5 text-[14px] font-normal text-[#4A4A4A] whitespace-nowrap",
-    isEditing
+    isEditing && !allowMulticodeUi
       ? "grid-cols-[minmax(7.5rem,1fr)_minmax(5rem,0.8fr)_minmax(5rem,0.8fr)_minmax(8.5rem,1.3fr)_minmax(8.5rem,1.3fr)_minmax(6.5rem,0.8fr)_minmax(8.5rem,1.1fr)]"
       : "grid-cols-[minmax(7.5rem,1fr)_minmax(5rem,0.8fr)_minmax(5rem,0.8fr)_minmax(8.5rem,1.3fr)_minmax(8.5rem,1.3fr)_minmax(6.5rem,0.8fr)_minmax(8.5rem,1.1fr)_7.5rem]"
   )
 
-const getRowGridClass = (isEditing: boolean) =>
+const getRowGridClass = (isEditing: boolean, allowMulticodeUi: boolean) =>
   cn(
     "grid min-w-[950px] items-end gap-2.5 py-2",
-    isEditing
+    isEditing && !allowMulticodeUi
       ? "grid-cols-[minmax(7.5rem,1fr)_minmax(5rem,0.8fr)_minmax(5rem,0.8fr)_minmax(8.5rem,1.3fr)_minmax(8.5rem,1.3fr)_minmax(6.5rem,0.8fr)_minmax(8.5rem,1.1fr)]"
       : "grid-cols-[minmax(7.5rem,1fr)_minmax(5rem,0.8fr)_minmax(5rem,0.8fr)_minmax(8.5rem,1.3fr)_minmax(8.5rem,1.3fr)_minmax(6.5rem,0.8fr)_minmax(8.5rem,1.1fr)_7.5rem]"
   )
@@ -255,11 +254,7 @@ export function EmployeeLeaveRequestDialog({
     return unique
   }, [dropdownBundles])
 
-  const activities = useMemo(() => {
-    const list = dropdownBundles.flatMap((d: any) => d.activities ?? []) ?? []
-    const unique = Array.from(new Map(list.map((a: any) => [a.id, a])).values())
-    return unique
-  }, [dropdownBundles])
+
 
   const form = useForm<EmployeeLeaveRequestFormValues>({
     resolver: zodResolver(employeeLeaveRequestFormSchema),
@@ -288,39 +283,64 @@ export function EmployeeLeaveRequestDialog({
     [formEntries],
   )
 
-  /** True when a row has a program id that is not in the primary (non–multi-code) list — e.g. editing MAA leave. */
-  const needsMulticodeData = useMemo(() => {
-    if (!allowMulticodeUi || !formEntries?.length) return false
-    const primaryIds = new Set(
-      programs.filter((p: any) => !p.isMultiCode).map((p: any) => String(p.id)),
-    )
-    return formEntries.some((e) => {
-      const id = e.programCode && e.programCode !== EMPTY ? String(e.programCode).trim() : ""
-      if (!id) return false
-      return !primaryIds.has(id)
-    })
-  }, [allowMulticodeUi, formEntries, programs])
 
-  const hasMulticodeChildRow = useMemo(
-    () => (formEntries ?? []).some((e) => e.multicodeChild === true),
-    [formEntries],
-  )
 
-  const shouldFetchMulticode =
-    open &&
-    allowMulticodeUi &&
-    Boolean(effectiveUserId) &&
-    (needsMulticodeData || hasMulticodeChildRow)
 
-  const multicodeDropdownQuery = useGetPersonalMulticodeDropdowns(effectiveUserId, shouldFetchMulticode)
-  const multicodeBundles = useMemo(
-    () => normalizeMulticodeDropdownPayload(multicodeDropdownQuery.data, dropdownBundles),
-    [multicodeDropdownQuery.data, dropdownBundles],
-  )
-  const mergedLookupDropdown = useMemo(
-    () => mergeDropdownDataForLeaveLookups(dropdownBundles, multicodeDropdownQuery.data),
-    [dropdownBundles, multicodeDropdownQuery.data],
-  )
+  const [departmentMulticodes, setDepartmentMulticodes] = useState<Record<string, any[]>>({})
+  const [fetchingDepartments, setFetchingDepartments] = useState<Record<string, boolean>>({})
+  const fetchedMulticodesRef = useRef<Set<string>>(new Set())
+  const [programActivities, setProgramActivities] = useState<Record<string, any[]>>({})
+  const fetchedRef = useRef<Set<string>>(new Set())
+
+  const fetchMulticodeProgramsForDepartment = useCallback(async (deptIdStr: string | number | undefined) => {
+    const deptId = String(deptIdStr || '').trim()
+    if (!deptId || !effectiveUserId) return
+    if (fetchedMulticodesRef.current.has(deptId)) return
+    fetchedMulticodesRef.current.add(deptId)
+    setFetchingDepartments(prev => ({ ...prev, [deptId]: true }))
+    try {
+      const res = await apiGetUserProgramsAndActivitiesMulticode(effectiveUserId, deptId)
+      setDepartmentMulticodes(prev => ({
+        ...prev,
+        [deptId]: res || []
+      }))
+    } catch (err) {
+      fetchedMulticodesRef.current.delete(deptId)
+      console.error(`Failed to fetch multicode programs for department ${deptId}`, err)
+    } finally {
+      setFetchingDepartments(prev => ({ ...prev, [deptId]: false }))
+    }
+  }, [effectiveUserId])
+
+  const multicodeBundles = useMemo(() => {
+    const allFetched = Object.values(departmentMulticodes).flat()
+    return normalizeMulticodeDropdownPayload(allFetched, dropdownBundles)
+  }, [departmentMulticodes, dropdownBundles])
+
+  const mergedLookupDropdown = useMemo(() => {
+    const allFetched = Object.values(departmentMulticodes).flat()
+    const merged = mergeDropdownDataForLeaveLookups(dropdownBundles, allFetched)
+    if (!merged) return merged
+
+    // Merge dynamically fetched activities from programActivities into the respective department bundles
+    for (const key of Object.keys(programActivities)) {
+      const [deptId] = key.split(":")
+      if (!deptId) continue
+      const activitiesList = programActivities[key] ?? []
+      const bundle = merged.find((b: any) => Number(b.departmentId) === Number(deptId))
+      if (bundle) {
+        if (!bundle.activities) bundle.activities = []
+        const existingIds = new Set(bundle.activities.map((a: any) => String(a.id)))
+        for (const act of activitiesList) {
+          if (!existingIds.has(String(act.id))) {
+            bundle.activities.push(act)
+            existingIds.add(String(act.id))
+          }
+        }
+      }
+    }
+    return merged
+  }, [dropdownBundles, departmentMulticodes, programActivities])
 
   /** Main / merged bundles first so primary leave rows match PTS `departmentId`+`programId` pairs; multicode last. */
   const resolveDepartmentIdForProgram = useCallback(
@@ -372,128 +392,99 @@ export function EmployeeLeaveRequestDialog({
     return { value: String(p.id), label: `${prefixed} - ${p.name}` }
   }, [])
 
-  /** Primary rows: non–multi-code programs. Rows with `multicodeChild`: multicode program list (like PTS sub-rows). */
+  /** Primary rows: non–multi-code programs. Rows with `multicodeChild`: multicode program list filtered to parent's dept. */
   const getLeaveProgramOptions = useCallback(
     (rowIndex: number) => {
       const isMulticodeRow = formEntries?.[rowIndex]?.multicodeChild === true
       if (allowMulticodeUi && isMulticodeRow) {
-        if (multicodeBundles.length) {
-          const list = multicodeBundles.flatMap((d: any) =>
+        // Find the parent row by walking back to the nearest non-multicode row
+        let parentProgramId: string | undefined
+        for (let i = rowIndex - 1; i >= 0; i--) {
+          if (!formEntries?.[i]?.multicodeChild) {
+            parentProgramId = formEntries?.[i]?.programCode
+            break
+          }
+        }
+        const parentDeptId = parentProgramId ? resolveDepartmentIdForProgram(parentProgramId) : undefined
+
+        if (parentDeptId && departmentMulticodes[String(parentDeptId)]?.length) {
+          // Use per-dept cache filtered to parent's department
+          const rawMc = departmentMulticodes[String(parentDeptId)]
+          const bundles = normalizeMulticodeDropdownPayload(rawMc, dropdownBundles)
+          const list = bundles.flatMap((d: any) =>
             (d.programs ?? []).map((pr: any) => ({ ...pr, departmentCode: d.departmentCode })),
           )
           const unique = Array.from(new Map(list.map((pr: any) => [pr.id, pr])).values())
           if (unique.length) return unique.map(formatLeaveProgramOption)
         }
-        return programs.filter((p: any) => p.isMultiCode).map(formatLeaveProgramOption)
+
+        if (multicodeBundles.length) {
+          // Fallback: filter global multicode bundles by parent dept
+          const list = multicodeBundles.flatMap((d: any) =>
+            (d.programs ?? []).map((pr: any) => ({ ...pr, departmentCode: d.departmentCode })),
+          )
+          let filtered = list
+          if (parentDeptId) {
+            filtered = list.filter((pr: any) => {
+              const prDept = pr.departmentId ?? pr.department?.id
+              return prDept != null && Number(prDept) === Number(parentDeptId)
+            })
+          }
+          const unique = Array.from(new Map(filtered.map((pr: any) => [pr.id, pr])).values())
+          if (unique.length) return unique.map(formatLeaveProgramOption)
+        }
+
+        // Last fallback: filter programs array
+        const fallback = programs.filter((p: any) => p.isMultiCode)
+        const deptFiltered = parentDeptId
+          ? fallback.filter((p: any) => Number(p.departmentId) === Number(parentDeptId))
+          : fallback
+        return deptFiltered.map(formatLeaveProgramOption)
       }
       return programs.filter((p: any) => !p.isMultiCode).map(formatLeaveProgramOption)
     },
-    [allowMulticodeUi, formEntries, multicodeBundles, programs, formatLeaveProgramOption],
+    [allowMulticodeUi, departmentMulticodes, dropdownBundles, formEntries, multicodeBundles, programs, formatLeaveProgramOption, resolveDepartmentIdForProgram],
   )
 
-  const leaveActivityCatalog = useMemo(() => {
-    const fromMc = multicodeBundles.flatMap((d: any) =>
-      (d.activities ?? []).map((a: any) => ({ ...a, departmentCode: d.departmentCode })),
-    )
-    const merged = [...fromMc, ...activities]
-    return Array.from(new Map(merged.map((a: any) => [a.id, a])).values())
-  }, [multicodeBundles, activities])
 
-  const getLeaveActivityCatalogForRow = useCallback(
-    (rowIndex: number) => {
-      const isMulticodeRow = formEntries?.[rowIndex]?.multicodeChild === true
-      const ready = multicodeBundles.length > 0
-      if (!ready) return activities
-      if (isMulticodeRow && allowMulticodeUi) return leaveActivityCatalog
-      if (!isMulticodeRow && needsMulticodeData) return leaveActivityCatalog
-      return activities
-    },
-    [activities, allowMulticodeUi, formEntries, leaveActivityCatalog, multicodeBundles.length, needsMulticodeData],
-  )
+
+
 
   const multicodeProgramListLoading =
     allowMulticodeUi &&
-    shouldFetchMulticode &&
-    multicodeDropdownQuery.isFetching &&
-    !multicodeBundles.some((b: any) => (b.programs ?? []).length > 0)
+    Object.values(fetchingDepartments).some(Boolean)
 
-  /**
-   * Only fetch assigned activities for programs selected on a leave row (dialog open).
-   */
-  const programQueries = useMemo(() => {
-    const list: { departmentId: number; programId: string }[] = []
-    const seen = new Set<string>()
+  const fetchActivitiesForProgram = useCallback(async (programIdStr: string | undefined) => {
+    const programId = programIdStr?.trim()
+    if (!programId || !effectiveUserId || programId === EMPTY) return
+    const deptId = resolveDepartmentIdForProgram(programId)
+    if (!deptId) return
 
-    const pushPair = (programIdStr: string | undefined) => {
-      if (!programIdStr || programIdStr === EMPTY) return
-      const trimmed = programIdStr.trim()
-      if (!trimmed) return
-      const deptId = resolveDepartmentIdForProgram(trimmed)
-      if (deptId == null) return
-      const key = `${deptId}:${trimmed}`
-      if (seen.has(key)) return
-      seen.add(key)
-      list.push({ departmentId: deptId, programId: trimmed })
+    const key = `${deptId}:${programId}`
+    if (fetchedRef.current.has(key)) return
+    fetchedRef.current.add(key)
+    try {
+      const res = await apiGetUserActivitiesForProgram(effectiveUserId, deptId, programId)
+      setProgramActivities(prev => ({
+        ...prev,
+        [key]: res || []
+      }))
+    } catch (err) {
+      fetchedRef.current.delete(key)
+      console.error(`Failed to fetch activities for program ${programId} in dept ${deptId}`, err)
     }
-
-    for (const entry of formEntries ?? []) {
-      pushPair(entry.programCode)
-    }
-    return list
-  }, [formEntries, resolveDepartmentIdForProgram])
-
-  const programActivityQueryResults = useGetProgramActivityRelations(programQueries, open)
-
-  /** When structured activities parse to nothing (or query did not run), use same-dept bundle activities as PTS catalog. */
-  const getBundleActivitiesFallbackForProgram = useCallback(
-    (programIdStr: string | undefined): { id: string; name: string; code?: string }[] => {
-      const trimmed = String(programIdStr ?? "").trim()
-      if (!trimmed || trimmed === EMPTY) return []
-      for (const d of dropdownBundles) {
-        const hasProgram = (d.programs ?? []).some((p: any) => String(p.id) === trimmed)
-        if (!hasProgram) continue
-        const list = (d.activities ?? []) as { id?: unknown; name?: string; code?: string }[]
-        return list
-          .filter((a) => a.id != null && String(a.id).trim() !== "")
-          .map((a) => ({
-            id: String(a.id),
-            name: String(a.name ?? ""),
-            code: a.code != null ? String(a.code) : undefined,
-          }))
-      }
-      return []
-    },
-    [dropdownBundles],
-  )
-
-  /** Same tree walk as program admin + PTS sub-rows: do not rely on `node.assigned` (often absent). */
-  const getActivityTransferItemsForProgram = useCallback(
-    (programId: string) => {
-      const normalized = String(programId ?? "").trim()
-      if (!normalized || normalized === EMPTY) return []
-      const deptId = resolveDepartmentIdForProgram(normalized)
-      const index = programQueries.findIndex(
-        (pq) => String(pq.programId).trim() === normalized && pq.departmentId === deptId,
-      )
-      if (index === -1) return []
-      const result = programActivityQueryResults[index]
-      if (!result?.data) return []
-      return mergeProgramActivityRelationTransferItems(result.data)
-    },
-    [resolveDepartmentIdForProgram, programQueries, programActivityQueryResults],
-  )
+  }, [effectiveUserId, resolveDepartmentIdForProgram])
 
   const isFetchingActivitiesForProgram = useCallback(
     (programId: string | undefined) => {
       const normalized = String(programId ?? "").trim()
       if (!normalized || normalized === EMPTY) return false
       const deptId = resolveDepartmentIdForProgram(normalized)
-      const index = programQueries.findIndex(
-        (pq) => String(pq.programId).trim() === normalized && pq.departmentId === deptId,
-      )
-      return index !== -1 && !!programActivityQueryResults[index]?.isFetching
+      if (!deptId) return false
+      const key = `${deptId}:${normalized}`
+      return fetchedRef.current.has(key) && !programActivities[key]
     },
-    [resolveDepartmentIdForProgram, programQueries, programActivityQueryResults],
+    [resolveDepartmentIdForProgram, programActivities],
   )
 
   const hasExceeded = useMemo(() => {
@@ -704,7 +695,7 @@ export function EmployeeLeaveRequestDialog({
         >
           <div className="min-h-0 flex-1 overflow-x-auto overflow-y-auto px-4 py-3 sm:px-6">
             {/* Column headers */}
-            <div className={getHeaderGridClass(isEditing)}>
+            <div className={getHeaderGridClass(isEditing, allowMulticodeUi)}>
               <span>Date</span>
               <span>Start Time</span>
               <span>End Time</span>
@@ -712,7 +703,7 @@ export function EmployeeLeaveRequestDialog({
               <span>Activity Code</span>
               <span>Total Min Applied</span>
               <span>Comments</span>
-              {!isEditing && <span className="sr-only">Row actions</span>}
+              {(!isEditing || allowMulticodeUi) && <span className="sr-only">Row actions</span>}
             </div>
 
             <div className="divide-y divide-border">
@@ -726,7 +717,7 @@ export function EmployeeLeaveRequestDialog({
 
                 return (
                   <div key={parentField.id} className="py-3 first:pt-1">
-                    <div className={getRowGridClass(isEditing)}>
+                    <div className={getRowGridClass(isEditing, allowMulticodeUi)}>
                       {/* Date */}
                       <div className="space-y-1">
                         <Controller
@@ -846,6 +837,16 @@ export function EmployeeLeaveRequestDialog({
                                   form.setValue(`entries.${parentIndex}.activityCode`, EMPTY, {
                                     shouldValidate: false,
                                   })
+                                  if (v && v !== EMPTY) {
+                                    fetchActivitiesForProgram(v)
+                                  }
+                                  // Clear all multicode child rows immediately following this parent
+                                  let i = parentIndex + 1
+                                  while (i < (formEntries?.length ?? 0) && formEntries?.[i]?.multicodeChild === true) {
+                                    form.setValue(`entries.${i}.programCode`, EMPTY, { shouldValidate: false })
+                                    form.setValue(`entries.${i}.activityCode`, EMPTY, { shouldValidate: false })
+                                    i++
+                                  }
                                 }}
                                 onBlur={f.onBlur}
                                 className="h-10 min-h-0 rounded-[6px]"
@@ -869,27 +870,17 @@ export function EmployeeLeaveRequestDialog({
                                 const programIdRaw = formEntries?.[parentIndex]?.programCode
                                 const programId = String(programIdRaw ?? "").trim()
                                 const hasProgram = programId.length > 0 && programId !== EMPTY
-                                const catalog = getLeaveActivityCatalogForRow(parentIndex)
-                                const catalogById = new Map(
-                                  catalog.map((a: any) => [String(a.id), a] as const),
-                                )
                                 const isActivityLoading = isFetchingActivitiesForProgram(
                                   !hasProgram ? undefined : programId,
                                 )
                                 const options = (() => {
                                   if (!hasProgram) return []
-                                  let items = getActivityTransferItemsForProgram(programId)
-                                  if (items.length === 0 && !isActivityLoading) {
-                                    items = getBundleActivitiesFallbackForProgram(programId)
-                                  }
-                                  const opts = items.map((item) => {
+                                  const deptId = resolveDepartmentIdForProgram(programId)
+                                  const key = deptId ? `${deptId}:${programId}` : ""
+                                  const listForProg = key ? (programActivities[key] ?? []) : []
+                                  const opts = listForProg.map((item: any) => {
                                     const id = String(item.id)
-                                    const a = catalogById.get(id) as any
-                                    const label = a
-                                      ? `${a.code} - ${a.name}`
-                                      : item.code
-                                        ? `${item.code} - ${item.name}`
-                                        : item.name || id
+                                    const label = `${item.code} - ${item.name}`
                                     return { value: id, label }
                                   })
                                   const currentVal = f.value === EMPTY ? "" : f.value
@@ -1002,21 +993,28 @@ export function EmployeeLeaveRequestDialog({
                         />
                       </div>
 
-                      {!isEditing && (
+                      {(!isEditing || (allowMulticodeUi && !isApproved)) && (
                         <div className="flex items-end justify-center gap-1 pb-0.5">
-                          {allowMulticodeUi && (
+                          {allowMulticodeUi && !isApproved && (
                             <Button
                               type="button"
                               size="icon"
                               variant="outline"
                               className="size-10 shrink-0 rounded-[6px] border-green-600 text-green-600 hover:bg-green-600/10 ml-3"
-                              onClick={() => appendMulticodeChildRowForParent(parentIndex)}
+                              onClick={() => {
+                                const parentProgramId = form.getValues(`entries.${parentIndex}.programCode`)
+                                if (parentProgramId) {
+                                  const deptId = resolveDepartmentIdForProgram(parentProgramId)
+                                  if (deptId) fetchMulticodeProgramsForDepartment(deptId)
+                                }
+                                appendMulticodeChildRowForParent(parentIndex)
+                              }}
                               aria-label="Add multi-code row for this time"
                             >
                               <Plus className="size-4" />
                             </Button>
                           )}
-                          {isLastGroup && (
+                          {!isEditing && isLastGroup && (
                             <Button
                               type="button"
                               size="icon"
@@ -1027,7 +1025,7 @@ export function EmployeeLeaveRequestDialog({
                               <Plus className="size-4" />
                             </Button>
                           )}
-                          {canRemoveParent && (
+                          {!isEditing && canRemoveParent && (
                             <Button
                               type="button"
                               size="icon"
@@ -1085,7 +1083,18 @@ export function EmployeeLeaveRequestDialog({
                                             !opts.some((o) => o.value === currentVal) &&
                                             editingLeave
                                           ) {
-                                            if (String(editingLeave.programid) === currentVal) {
+                                            const childMc = (editingLeave.multiCodeRecords ?? []).find(
+                                              (c: any) => String(c.programid) === currentVal
+                                            )
+                                            if (childMc) {
+                                              const deptPrefix = (childMc.departmentcode || "").split("-")[0]
+                                              opts.push({
+                                                value: currentVal,
+                                                label: deptPrefix
+                                                  ? `${deptPrefix}-${childMc.programcode} - ${childMc.programname}`
+                                                  : `${childMc.programcode} - ${childMc.programname}`,
+                                              })
+                                            } else if (String(editingLeave.programid) === currentVal) {
                                               const deptPrefix = (editingLeave.departmentcode ?? "").split("-")[0]
                                               opts.push({
                                                 value: currentVal,
@@ -1103,6 +1112,9 @@ export function EmployeeLeaveRequestDialog({
                                           form.setValue(`entries.${index}.activityCode`, EMPTY, {
                                             shouldValidate: false,
                                           })
+                                          if (v && v !== EMPTY) {
+                                            fetchActivitiesForProgram(v)
+                                          }
                                         }}
                                         onBlur={f.onBlur}
                                         className="h-9 min-h-0 text-[11px] rounded-[6px]"
@@ -1127,27 +1139,17 @@ export function EmployeeLeaveRequestDialog({
                                         const programIdRaw = formEntries?.[index]?.programCode
                                         const programId = String(programIdRaw ?? "").trim()
                                         const hasProgram = programId.length > 0 && programId !== EMPTY
-                                        const catalog = getLeaveActivityCatalogForRow(index)
-                                        const catalogById = new Map(
-                                          catalog.map((a: any) => [String(a.id), a] as const),
-                                        )
                                         const isActivityLoading = isFetchingActivitiesForProgram(
                                           !hasProgram ? undefined : programId,
                                         )
                                         const options = (() => {
                                           if (!hasProgram) return []
-                                          let items = getActivityTransferItemsForProgram(programId)
-                                          if (items.length === 0 && !isActivityLoading) {
-                                            items = getBundleActivitiesFallbackForProgram(programId)
-                                          }
-                                          const opts = items.map((item) => {
+                                          const deptId = resolveDepartmentIdForProgram(programId)
+                                          const key = deptId ? `${deptId}:${programId}` : ""
+                                          const listForProg = key ? (programActivities[key] ?? []) : []
+                                          const opts = listForProg.map((item: any) => {
                                             const id = String(item.id)
-                                            const a = catalogById.get(id) as any
-                                            const label = a
-                                              ? `${a.code} - ${a.name}`
-                                              : item.code
-                                                ? `${item.code} - ${item.name}`
-                                                : item.name || id
+                                            const label = `${item.code} - ${item.name}`
                                             return { value: id, label }
                                           })
                                           const currentVal = f.value === EMPTY ? "" : f.value
@@ -1156,7 +1158,15 @@ export function EmployeeLeaveRequestDialog({
                                             !opts.some((o) => o.value === currentVal) &&
                                             editingLeave
                                           ) {
-                                            if (String(editingLeave.activityid) === currentVal) {
+                                            const childMc = (editingLeave.multiCodeRecords ?? []).find(
+                                              (c: any) => String(c.activityid) === currentVal
+                                            )
+                                            if (childMc) {
+                                              opts.push({
+                                                value: currentVal,
+                                                label: `${childMc.activitycode} - ${childMc.activityname}`,
+                                              })
+                                            } else if (String(editingLeave.activityid) === currentVal) {
                                               opts.push({
                                                 value: currentVal,
                                                 label: `${editingLeave.activitycode} - ${editingLeave.activityname}`,
@@ -1261,20 +1271,20 @@ export function EmployeeLeaveRequestDialog({
                                   )}
                                 />
                               </div>
-                              {!isEditing && (
-                                <div className="flex shrink-0 items-end pb-0.5">
-                                  <Button
-                                    type="button"
-                                    size="icon"
-                                    variant="ghost"
-                                    className="size-9 shrink-0 text-destructive hover:bg-destructive/10"
-                                    onClick={() => remove(index)}
-                                    aria-label="Remove multi-code row"
-                                  >
-                                    <Trash2 className="size-4" />
-                                  </Button>
-                                </div>
-                              )}
+                                {!isApproved && (
+                                  <div className="flex shrink-0 items-end pb-0.5">
+                                    <Button
+                                      type="button"
+                                      size="icon"
+                                      variant="ghost"
+                                      className="size-9 shrink-0 text-destructive hover:bg-destructive/10"
+                                      onClick={() => remove(index)}
+                                      aria-label="Remove multi-code row"
+                                    >
+                                      <Trash2 className="size-4" />
+                                    </Button>
+                                  </div>
+                                )}
                             </div>
                           </div>
                         ))}
