@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useCallback, useMemo, useRef, useState } from "react"
 import { X, Lock, Check } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
@@ -13,8 +13,9 @@ import { PersonalTimeStudyMinutesCard } from "../components/PersonalTimeStudyMin
 import { useGetPersonalMonthLegend } from "../queries/getPersonalMonthLegend"
 import { useGetPersonalDayDetail } from "../queries/getPersonalDayDetail"
 import { useGetPersonalDropdowns } from "../queries/getPersonalDropdowns"
+import { apiGetUserProgramsAndActivitiesMulticode } from "../api/personalTimeStudyApi"
 import { useGetTimeEntrySummary } from "../queries/getTimeEntrySummary"
-import { useGetUserApportioningConfig } from "../queries/getUserApportioningConfig"
+import { useGetUserAssignedDepartmentsSettingChecks } from "../queries/getUserAssignedDepartmentsSettingChecks"
 import { useSavePersonalNotes } from "../mutation/updatePersonalNotes"
 import { useSubmitPersonalTimeRecords } from "../mutation/createPersonalTimeRecords"
 import { useDeletePersonalTimeRecord } from "../mutation/deletePersonalTimeRecord"
@@ -107,14 +108,41 @@ export function PersonalTimeStudyPage() {
   // 3. Fetch Day Detail
   const dayQuery = useGetPersonalDayDetail(userId, dateStr, selectedDate.getMonth() + 1, selectedDate.getFullYear(), activeTab === "personal")
 
-  // 4. Fetch user & dropdown data — fetch eagerly so department settings apply immediately on load
-  const dropdownQuery = useGetPersonalDropdowns(userId, activeTab === "personal" && !!userId)
+  // 4. Fetch user & dropdown data — lazy load when clicked
+  const [fetchDropdowns, setFetchDropdowns] = useState(false)
+  const dropdownQuery = useGetPersonalDropdowns(userId, fetchDropdowns && activeTab === "personal" && !!userId)
+  const handleOpenDropdown = () => {
+    setFetchDropdowns(true)
+    dropdownQuery.refetch()
+  }
+
+  // 4b. Multicode programs cache — lifted here so it survives date remounts (key={dateStr} on the form)
+  const [departmentMulticodes, setDepartmentMulticodes] = useState<Record<string, any[]>>({})
+  const [fetchingDepartments, setFetchingDepartments] = useState<Record<string, boolean>>({})
+  const fetchedMulticodesRef = useRef<Set<string>>(new Set())
+
+  const fetchMulticodeProgramsForDepartment = useCallback(async (deptIdStr: string | number | undefined) => {
+    const deptId = String(deptIdStr || '').trim()
+    if (!deptId || !userId) return
+    if (fetchedMulticodesRef.current.has(deptId)) return
+    fetchedMulticodesRef.current.add(deptId)
+    setFetchingDepartments(prev => ({ ...prev, [deptId]: true }))
+    try {
+      const res = await apiGetUserProgramsAndActivitiesMulticode(userId, deptId)
+      setDepartmentMulticodes(prev => ({ ...prev, [deptId]: res || [] }))
+    } catch (err) {
+      fetchedMulticodesRef.current.delete(deptId)
+      console.error(`Failed to fetch multicode programs for department ${deptId}`, err)
+    } finally {
+      setFetchingDepartments(prev => ({ ...prev, [deptId]: false }))
+    }
+  }, [userId])
 
   // 5. Fetch Time Entry Summary (MAA etc)
   const summaryQuery = useGetTimeEntrySummary(userId, dateStr, undefined, activeTab === "personal")
 
-  // 6. Apportioning config for supervisor panel
-  const apportioningConfigQuery = useGetUserApportioningConfig(userId, activeTab === "personal" && !!userId)
+  // 6. Aggregated department setting checks for the user
+  const settingChecksQuery = useGetUserAssignedDepartmentsSettingChecks(userId, activeTab === "personal" && !!userId)
 
   // 5. Calendar day & week summaries
   const { dayStatuses, weekSummaries } = useMemo(() => {
@@ -354,8 +382,8 @@ export function PersonalTimeStudyPage() {
                           rejected={monthQuery.data?.leaveRecords?.filter(r => r.status?.toLowerCase() === "rejected").length ?? 0}
                           leaveRecords={monthQuery.data?.leaveRecords}
                           dropdownData={dropdownQuery.data}
-                          allowMultiCodes={apportioningConfigQuery.data?.allowMultiCodes === true}
-                          onOpen={() => dropdownQuery.refetch()}
+                          allowMultiCodes={settingChecksQuery.data?.allowMultiCodes === true}
+                          onOpen={handleOpenDropdown}
                           dateStr={dateStr}
                           month={month}
                           year={year}
@@ -399,9 +427,14 @@ export function PersonalTimeStudyPage() {
                       actualMultiTotal={summaryQuery.data?.actualmultiactivitytime}
                       multiBalanceTotal={summaryQuery.data?.actualmultiactivityTimebalance}
                       hideSummaryHeader={true}
-                      apportioningConfig={apportioningConfigQuery.data ?? null}
+                      apportioningConfig={settingChecksQuery.data ?? null}
                       apportioningRecords={dayQuery.data?.timeStudyRecords?.filter((r: any) => r.apportioning === true) || []}
                       isLoading={dayQuery.isFetching || submitMutation.isPending || deleteMutation.isPending}
+                      isDropdownLoading={dropdownQuery.isFetching}
+                      onOpenDropdown={handleOpenDropdown}
+                      departmentMulticodes={departmentMulticodes}
+                      fetchingDepartments={fetchingDepartments}
+                      onFetchMulticodeDept={fetchMulticodeProgramsForDepartment}
                     />
                   </div>
                 </>

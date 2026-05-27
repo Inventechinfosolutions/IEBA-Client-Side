@@ -1,12 +1,12 @@
 import { useMemo, useState } from "react"
 import { cn } from "@/lib/utils"
 import { SingleSelectSearchDropdown } from "@/components/ui/dropdown-search"
-import type { SupervisorApportioningConfig } from "../queries/getUserApportioningConfig"
+import type { UserAssignedDepartmentsSettingChecks } from "../queries/getUserAssignedDepartmentsSettingChecks"
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
 export type ApportioningPanelProps = {
-  apportioningConfig: SupervisorApportioningConfig | null | undefined
+  apportioningConfig: UserAssignedDepartmentsSettingChecks | null | undefined
   supervisorOwnMinutesToday: number
   /** Saved apportioning TSRs from backend (apportioning=true). Pre-fills rows when autoApportioning=true. */
   apportioningRecords?: any[]

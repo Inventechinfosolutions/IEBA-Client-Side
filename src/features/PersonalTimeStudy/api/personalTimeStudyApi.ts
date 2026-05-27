@@ -1,11 +1,11 @@
 import { api } from "@/lib/api"
 import type { ApiEnvelope } from "@/features/program/types"
-import type { 
-  SubmitNotesReqDto, 
-  TimeStudyRecordResDto, 
-  TimeStudyRecordSubmitItemDto, 
-  UserDayLegendDetailResDto, 
-  UserMonthLegendResDto 
+import type {
+  SubmitNotesReqDto,
+  TimeStudyRecordResDto,
+  TimeStudyRecordSubmitItemDto,
+  UserDayLegendDetailResDto,
+  UserMonthLegendResDto
 } from "../types"
 import type { EmployeeLeaveRequestFormValues } from "../schema/PersonalTimeStudySchema"
 import type {
@@ -57,7 +57,7 @@ export async function apiSubmitTimeRecords(
 ): Promise<TimeStudyRecordResDto[]> {
   const strippedPayload = payload.map(({ supportingDocs, ...rest }: any) => rest)
   const url = `/timestudyrecords/submit?mode=${mode}`
-  const res = method === "put" 
+  const res = method === "put"
     ? await api.put<ApiEnvelope<TimeStudyRecordResDto[]>>(url, strippedPayload)
     : await api.post<ApiEnvelope<TimeStudyRecordResDto[]>>(url, strippedPayload)
   return res.data!
@@ -92,10 +92,26 @@ export async function apiGetUserProgramsAndActivities(userId: string): Promise<a
   return res.data!
 }
 
-/** Multicode programs/activities for sub-rows when `allowMultiCodes` is enabled on the user profile. */
-export async function apiGetUserProgramsAndActivitiesMulticode(userId: string): Promise<any> {
+/** Fetches activities for a specific program, department, and user. */
+export async function apiGetUserActivitiesForProgram(
+  userId: string,
+  departmentId: number | string,
+  programId: number | string,
+): Promise<any> {
   const res = await api.get<ApiEnvelope<any>>(
-    `/timestudyprograms/user/programs-activities/multicode?userId=${encodeURIComponent(userId)}`,
+    `/timestudyprograms/user/activities?userId=${encodeURIComponent(userId)}&departmentId=${departmentId}&programId=${programId}`,
+  )
+  return res.data!
+}
+
+/** Multicode programs/activities for sub-rows when `allowMultiCodes` is enabled on the user profile. */
+export async function apiGetUserProgramsAndActivitiesMulticode(
+  userId: string,
+  departmentId?: number | string,
+): Promise<any> {
+  const deptParam = departmentId != null && String(departmentId).trim() !== "" ? `&departmentId=${departmentId}` : ""
+  const res = await api.get<ApiEnvelope<any>>(
+    `/timestudyprograms/user/programs-activities/multicode?userId=${encodeURIComponent(userId)}${deptParam}`,
   )
   return res.data!
 }
@@ -162,6 +178,7 @@ function mapLeaveEntryToDto(
   const activity = allActivities.find((a: any) => String(a.id) === entry.activityCode) as any
 
   return {
+    id: (entry as any).id && typeof (entry as any).id === "number" ? (entry as any).id : undefined,
     userId,
     programid: entry.programCode,
     activityid: entry.activityCode,
@@ -176,15 +193,12 @@ function mapLeaveEntryToDto(
     leaveTotalTime: parseInt(entry.totalMinApplied, 10) || 0,
     requestcomment: entry.comment || undefined,
     status: status as any,
-    recordType: "NORMAL",
   }
 }
 
 /** Builds `multiCodeRecords` for child rows (same date/times as parent; distinct program/activity/minutes). */
 function mapMulticodeChildToRecord(
   child: EmployeeLeaveRequestFormValues["entries"][number],
-  userId: string,
-  parent: CreateUserLeaveRequestDto,
   allPrograms: any[],
   allActivities: any[],
 ): UserLeaveMultiCodeRecordRequestDto {
@@ -192,20 +206,15 @@ function mapMulticodeChildToRecord(
   const activity = allActivities.find((a: any) => String(a.id) === child.activityCode) as any
 
   return {
-    userId,
+    id: (child as any).id && typeof (child as any).id === "number" ? (child as any).id : undefined,
     programid: child.programCode,
     activityid: child.activityCode,
     programcode: program?.code ?? child.programCode,
     programname: program?.name ?? child.programCode,
     activitycode: activity?.code ?? child.activityCode,
     activityname: activity?.name ?? child.activityCode,
-    startdt: parent.startdt,
-    enddt: parent.enddt,
-    starttime: parent.starttime,
-    endtime: parent.endtime,
     leaveTotalTime: parseInt(child.totalMinApplied, 10) || 0,
     requestcomment: child.comment || undefined,
-    recordType: "MULTI_CODE",
   }
 }
 
@@ -227,7 +236,7 @@ function buildLeaveRecords(
 
     const multiCodeRecords = group
       .slice(1)
-      .map((child) => mapMulticodeChildToRecord(child, userId, parent, allPrograms, allActivities))
+      .map((child) => mapMulticodeChildToRecord(child, allPrograms, allActivities))
 
     return { ...parent, multiCodeRecords }
   })

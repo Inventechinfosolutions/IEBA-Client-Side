@@ -1,8 +1,8 @@
-import { ChevronDown, Clock, Eye, Plus, Trash2 } from "lucide-react"
+import { ChevronDown, Clock, Eye, Plus, Trash2, Check } from "lucide-react"
 import { useCallback, useMemo, useRef, useState } from "react"
-import type { SupervisorApportioningConfig } from "../queries/getUserApportioningConfig"
-import { useGetPersonalMulticodeDropdowns } from "../queries/getPersonalDropdowns"
-import { useGetProgramActivityRelations } from "../queries/getProgramActivityRelations"
+import type { UserAssignedDepartmentsSettingChecks } from "../queries/getUserAssignedDepartmentsSettingChecks"
+
+
 
 import { Button } from "@/components/ui/button"
 import { TitleCaseInput } from "@/components/ui/title-case-input"
@@ -14,10 +14,10 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { TimePickerDropdown } from "@/components/ui/time-picker"
 import { useAuth } from "@/contexts/AuthContext"
 import { API_BASE_URL } from "@/lib/config"
-import { apiDownloadSupportingDoc, apiDeleteSupportingDoc } from "../api/personalTimeStudyApi"
+import { apiDownloadSupportingDoc, apiDeleteSupportingDoc, apiGetUserActivitiesForProgram, apiGetUserProgramsAndActivitiesMulticode } from "../api/personalTimeStudyApi"
 import { Spinner } from "@/components/ui/spinner"
 import { normalizeMulticodeDropdownPayload } from "../utils/multicodeDropdownUtils"
-import { mergeProgramActivityRelationTransferItems } from "@/features/program/queries/programActivityRelation"
+
 
 /** Inline required-field asterisk — available to all components in this module. */
 function RequiredMark() {
@@ -66,6 +66,7 @@ export type TimeEntryParentRow = {
   activityName?: string
   departmentCode?: string
   isLeave?: boolean
+  leaveid?: number
   status?: string
   recordType?: string
 }
@@ -145,7 +146,6 @@ type PersonalTimeStudyEntryFormProps = {
   multiBalanceTotal?: number
   hideSummaryHeader?: boolean
   showLeaveBanner?: boolean
-  /** Leave records for the selected date — used for overlap validation */
   leaveRecords?: Array<{
     starttime: string
     endtime: string
@@ -158,11 +158,31 @@ type PersonalTimeStudyEntryFormProps = {
     activityname?: string
     name?: string
     employeeName?: string
+    parentId?: number
+    id?: number
+    leaveTotalTime?: number | string
+    multiCodeRecords?: Array<{
+      id?: number
+      programid?: string | number
+      activityid?: string | number
+      programcode?: string
+      programname?: string
+      activitycode?: string
+      activityname?: string
+      leaveTotalTime?: number | string
+      status?: string
+    }>
   }>
-  apportioningConfig?: SupervisorApportioningConfig | null
+  apportioningConfig?: UserAssignedDepartmentsSettingChecks | null
   /** Pre-calculated apportioning records from backend (apportioning=true TSRs). */
   apportioningRecords?: any[]
   isLoading?: boolean
+  isDropdownLoading?: boolean
+  onOpenDropdown?: () => void
+  /** Lifted from parent so multicode cache survives date remounts. */
+  departmentMulticodes?: Record<string, any[]>
+  fetchingDepartments?: Record<string, boolean>
+  onFetchMulticodeDept?: (deptId: string | number | undefined) => Promise<void>
 }
 
 function TimePicker24h({
@@ -308,6 +328,11 @@ export function PersonalTimeStudyEntryForm({
   className,
   apportioningConfig,
   isLoading = false,
+  isDropdownLoading = false,
+  onOpenDropdown,
+  departmentMulticodes: propDepartmentMulticodes,
+  fetchingDepartments: propFetchingDepartments,
+  onFetchMulticodeDept,
 }: PersonalTimeStudyEntryFormProps) {
   const { user } = useAuth()
   const userId = propsUserId || user?.id || ""
@@ -317,6 +342,144 @@ export function PersonalTimeStudyEntryForm({
   const [parents, setParents] = useState<TimeEntryParentRow[]>([createParent()])
   const [prevInitialRecords, setPrevInitialRecords] = useState<any[] | undefined>(undefined)
   const [prevLeaveRecords, setPrevLeaveRecords] = useState<any[] | undefined>(undefined)
+
+  const isLocked = useMemo(() => {
+    if (readonly) return true
+    if (!initialRecords) return false
+    return initialRecords.some(rec =>
+      rec.date?.split("T")[0] === dateStr &&
+      !rec.leaveid &&
+      ["submitted", "approved"].includes(rec.status?.toLowerCase())
+    )
+  }, [initialRecords, dateStr, readonly])
+
+  const allIsLeave = useMemo(() => {
+    return parents.length > 0 && parents.every(p => p.isLeave)
+  }, [parents])
+
+  const programs = useMemo(() => {
+    const list = dropdownData?.flatMap((d) => d.programs.map((p: any) => ({ ...p, departmentCode: d.departmentCode }))) ?? []
+    return Array.from(new Map(list.map((p) => [p.id, p])).values())
+  }, [dropdownData])
+
+
+  const allowMulticodeUi = apportioningConfig?.allowMultiCodes === true
+
+
+  const [programActivities, setProgramActivities] = useState<Record<string, any[]>>({})
+  const fetchedRef = useRef<Set<string>>(new Set())
+
+  // Multicode cache: use lifted state from parent if provided (survives date remounts), else local
+  const [localDepartmentMulticodes, setLocalDepartmentMulticodes] = useState<Record<string, any[]>>({})
+  const [localFetchingDepartments, setLocalFetchingDepartments] = useState<Record<string, boolean>>({})
+  const localFetchedMulticodesRef = useRef<Set<string>>(new Set())
+
+  const departmentMulticodes = propDepartmentMulticodes ?? localDepartmentMulticodes
+  const fetchingDepartments = propFetchingDepartments ?? localFetchingDepartments
+
+  // Derive multicodeBundles from the per-dept cache (no separate API call needed)
+  const multicodeBundles = useMemo(() => {
+    if (!allowMulticodeUi) return []
+    const allRaw = Object.values(departmentMulticodes).flat()
+    if (!allRaw.length) return []
+    return normalizeMulticodeDropdownPayload(allRaw, dropdownData)
+  }, [allowMulticodeUi, departmentMulticodes, dropdownData])
+
+  /** Department for a program id — multicode bundle first when multi-code UI is enabled, then main dropdown. */
+  const resolveDepartmentIdForProgram = useCallback(
+    (programIdStr: string | undefined): number | undefined => {
+      const trimmed = programIdStr?.trim()
+      if (!trimmed) return undefined
+
+      const entityDepartmentId = (entity: any): number | undefined => {
+        if (!entity) return undefined
+        const raw = entity.departmentId ?? entity.department?.id
+        if (raw == null || raw === "") return undefined
+        const n = Number(raw)
+        if (!Number.isFinite(n) || n <= 0) return undefined
+        return n
+      }
+
+      const findDepartmentInBundles = (bundles: any[] | undefined): number | undefined => {
+        if (!bundles?.length) return undefined
+        for (const d of bundles) {
+          const pr = (d.programs ?? []).find((p: any) => String(p.id) === trimmed)
+          if (!pr) continue
+          const fromProgram = entityDepartmentId(pr)
+          if (fromProgram != null) return fromProgram
+          const fromBundle = entityDepartmentId(d)
+          if (fromBundle != null) return fromBundle
+        }
+        return undefined
+      }
+
+      if (allowMulticodeUi) {
+        const fromMc = findDepartmentInBundles(multicodeBundles.length ? multicodeBundles : undefined)
+        if (fromMc != null) return fromMc
+      }
+      return findDepartmentInBundles(dropdownData ?? undefined)
+    },
+    [allowMulticodeUi, multicodeBundles, dropdownData],
+  )
+
+  const fetchMulticodeProgramsForDepartment = useCallback(async (deptIdStr: string | number | undefined) => {
+    // If parent is managing the cache, delegate to it
+    if (onFetchMulticodeDept) {
+      return onFetchMulticodeDept(deptIdStr)
+    }
+    // Local fallback
+    const deptId = String(deptIdStr || '').trim()
+    if (!deptId || !userId) return
+    if (localFetchedMulticodesRef.current.has(deptId)) return
+    localFetchedMulticodesRef.current.add(deptId)
+    setLocalFetchingDepartments(prev => ({ ...prev, [deptId]: true }))
+    try {
+      const res = await apiGetUserProgramsAndActivitiesMulticode(userId, deptId)
+      setLocalDepartmentMulticodes(prev => ({ ...prev, [deptId]: res || [] }))
+    } catch (err) {
+      localFetchedMulticodesRef.current.delete(deptId)
+      console.error(`Failed to fetch multicode programs for department ${deptId}`, err)
+    } finally {
+      setLocalFetchingDepartments(prev => ({ ...prev, [deptId]: false }))
+    }
+  }, [onFetchMulticodeDept, userId])
+
+  const fetchActivitiesForProgram = useCallback(async (programIdStr: string | undefined) => {
+    const programId = programIdStr?.trim()
+    if (!programId || !userId) return
+    const deptId = resolveDepartmentIdForProgram(programId)
+    if (!deptId) return
+
+    if (allowMulticodeUi) {
+      fetchMulticodeProgramsForDepartment(deptId)
+    }
+
+    const key = `${deptId}:${programId}`
+    if (fetchedRef.current.has(key)) return
+    fetchedRef.current.add(key)
+    try {
+      const res = await apiGetUserActivitiesForProgram(userId, deptId, programId)
+      setProgramActivities(prev => ({
+        ...prev,
+        [key]: res || []
+      }))
+    } catch (err) {
+      fetchedRef.current.delete(key)
+      console.error(`Failed to fetch activities for program ${programId} in dept ${deptId}`, err)
+    }
+  }, [userId, resolveDepartmentIdForProgram, allowMulticodeUi, fetchMulticodeProgramsForDepartment])
+
+  const isFetchingActivitiesForProgram = useCallback(
+    (programId: string | undefined) => {
+      const normalized = String(programId ?? "").trim()
+      if (!normalized) return false
+      const deptId = resolveDepartmentIdForProgram(normalized)
+      if (!deptId) return false
+      const key = `${deptId}:${normalized}`
+      return !programActivities[key] && fetchedRef.current.has(key)
+    },
+    [programActivities, resolveDepartmentIdForProgram],
+  )
 
   const formSettings = useMemo(() => {
     if (apportioningConfig?.settings) {
@@ -330,17 +493,8 @@ export function PersonalTimeStudyEntryForm({
         removeDescriptionActivityNoteMultiCode: apportioningConfig.settings.removeDescriptionActivityNoteMultiCode,
       }
     }
-    if (!dropdownData || dropdownData.length === 0) return null
-    return {
-      moveSaveSubmitToTop: dropdownData.some((d: any) => !!d.moveSaveSubmitToTop),
-      removeAutoFillEndTime: dropdownData.some((d: any) => !!d.removeAutoFillEndTime),
-      startorEndTime: dropdownData.some((d: any) => !!d.startorEndTime),
-      supportingDoc: dropdownData.some((d: any) => !!d.supportingDoc),
-      removeDescriptionActivityNote: dropdownData.some((d: any) => !!d.removeDescriptionActivityNote),
-      removeDescriptionActivityNoteAnchor: dropdownData.some((d: any) => !!d.removeDescriptionActivityNoteAnchor),
-      removeDescriptionActivityNoteMultiCode: dropdownData.some((d: any) => !!d.removeDescriptionActivityNoteMultiCode),
-    }
-  }, [apportioningConfig, dropdownData])
+    return null
+  }, [apportioningConfig])
 
   const moveSaveSubmitToTop = formSettings?.moveSaveSubmitToTop ?? false
 
@@ -393,6 +547,8 @@ export function PersonalTimeStudyEntryForm({
             })),
             status: rec.status,
             recordType: rec.recordType,
+            leaveid: rec.leaveid ?? undefined,
+            isLeave: rec.leaveid ? true : undefined,
           }
           parentMap.set(rec.id, parentRow)
         }
@@ -406,15 +562,34 @@ export function PersonalTimeStudyEntryForm({
       const leaveRows: TimeEntryParentRow[] = []
       if (leaveRecords) {
         leaveRecords.forEach((leave) => {
-          if (leave.status?.toLowerCase() === "approved") {
+          if (["approved", "requested"].includes(leave.status?.toLowerCase() ?? "")) {
             const lStart = (leave.starttime ?? "").split(":").slice(0, 2).join(":")
             const lEnd = (leave.endtime ?? "").split(":").slice(0, 2).join(":")
             const existing = sorted.find(
-              (rec) => rec.start === lStart && rec.end === lEnd && rec.tsProgram === String(leave.programid ?? "")
+              (rec) => 
+                (rec.leaveid !== undefined && leave.id !== undefined && Number(rec.leaveid) === Number(leave.id)) ||
+                (rec.start === lStart && rec.end === lEnd && rec.tsProgram === String(leave.programid ?? ""))
             )
             if (existing) {
               existing.isLeave = true
             } else {
+              const children = leave.multiCodeRecords ?? []
+              const subRows: TimeEntrySubRow[] = children.map((c) => ({
+                id: newId(),
+                studyProgram: String(c.programid ?? ""),
+                serviceActivity: String(c.activityid ?? ""),
+                totalMin: String(c.leaveTotalTime ?? "0"),
+                description: "",
+                start: "",
+                end: "",
+                programCode: c.programcode,
+                programName: c.programname,
+                activityCode: c.activitycode,
+                activityName: c.activityname,
+                status: c.status,
+                recordType: "MULTI_CODE",
+              }))
+
               leaveRows.push({
                 id: newId(),
                 start: lStart,
@@ -424,7 +599,7 @@ export function PersonalTimeStudyEntryForm({
                 description: "",
                 supportingDocLabel: "",
                 supportingDocs: [],
-                subRows: [],
+                subRows: subRows,
                 programCode: leave.programcode,
                 programName: leave.programname,
                 activityCode: leave.activitycode,
@@ -438,174 +613,60 @@ export function PersonalTimeStudyEntryForm({
 
       const combined = [...sorted, ...leaveRows]
       setParents(combined.length > 0 ? combined : [createParent()])
+
     }
     syncRecordsToState()
   }
 
-  const isLocked = useMemo(() => {
-    if (readonly) return true
-    if (!initialRecords) return false
-    return initialRecords.some(rec =>
-      rec.date?.split("T")[0] === dateStr &&
-      ["submitted", "approved"].includes(rec.status?.toLowerCase())
-    )
-  }, [initialRecords, dateStr, readonly])
 
-  const allIsLeave = useMemo(() => {
-    return parents.length > 0 && parents.every(p => p.isLeave)
-  }, [parents])
 
-  const programs = useMemo(() => {
-    const list = dropdownData?.flatMap((d) => d.programs.map((p: any) => ({ ...p, departmentCode: d.departmentCode }))) ?? []
-    return Array.from(new Map(list.map((p) => [p.id, p])).values())
-  }, [dropdownData])
 
-  const activities = useMemo(() => {
-    const list = dropdownData?.flatMap((d) => d.activities.map((a: any) => ({ ...a, departmentCode: d.departmentCode }))) ?? []
-    return Array.from(new Map(list.map((a) => [a.id, a])).values())
-  }, [dropdownData])
 
-  const allowMulticodeUi = apportioningConfig?.allowMultiCodes === true
-  const hasMulticodeSubRows = useMemo(() => parents.some((p) => p.subRows.length > 0), [parents])
-  const multicodeDropdownQuery = useGetPersonalMulticodeDropdowns(
-    userId,
-    allowMulticodeUi && Boolean(userId) && hasMulticodeSubRows,
-  )
 
-  const multicodeBundles = useMemo(
-    () => normalizeMulticodeDropdownPayload(multicodeDropdownQuery.data, dropdownData),
-    [multicodeDropdownQuery.data, dropdownData],
-  )
-
-  const multicodeListLoading = allowMulticodeUi && hasMulticodeSubRows && multicodeDropdownQuery.isFetching
-
-  /** Department for a program id — multicode bundle first when multi-code UI is enabled, then main dropdown. */
-  const resolveDepartmentIdForProgram = useCallback(
-    (programIdStr: string | undefined): number | undefined => {
-      const trimmed = programIdStr?.trim()
-      if (!trimmed) return undefined
-
-      const entityDepartmentId = (entity: any): number | undefined => {
-        if (!entity) return undefined
-        const raw = entity.departmentId ?? entity.department?.id
-        if (raw == null || raw === "") return undefined
-        const n = Number(raw)
-        if (!Number.isFinite(n) || n <= 0) return undefined
-        return n
-      }
-
-      const findDepartmentInBundles = (bundles: any[] | undefined): number | undefined => {
-        if (!bundles?.length) return undefined
-        for (const d of bundles) {
-          const pr = (d.programs ?? []).find((p: any) => String(p.id) === trimmed)
-          if (!pr) continue
-          const fromProgram = entityDepartmentId(pr)
-          if (fromProgram != null) return fromProgram
-          const fromBundle = entityDepartmentId(d)
-          if (fromBundle != null) return fromBundle
-        }
-        return undefined
-      }
-
-      if (allowMulticodeUi) {
-        const fromMc = findDepartmentInBundles(multicodeBundles.length ? multicodeBundles : undefined)
-        if (fromMc != null) return fromMc
-      }
-      return findDepartmentInBundles(dropdownData ?? undefined)
-    },
-    [allowMulticodeUi, multicodeBundles, dropdownData],
-  )
-
-  const subRowActivityCatalog = useMemo(() => {
-    if (!allowMulticodeUi || !multicodeBundles.length) return activities
-    const list = multicodeBundles.flatMap((d: any) =>
-      (d.activities ?? []).map((a: any) => ({ ...a, departmentCode: d.departmentCode })),
-    )
-    return Array.from(new Map(list.map((a: any) => [a.id, a])).values())
-  }, [allowMulticodeUi, multicodeBundles, activities])
-
-  const subRowProgramOptions = useMemo(() => {
+  const getSubRowProgramOptions = useCallback((parentTsProgram: string | undefined) => {
     const mapToOpts = (list: any[]) =>
       list.map((p: any) => {
         const deptPrefix = (p.departmentCode ?? "").split("-")[0]
         return { value: String(p.id), label: `${deptPrefix}-${p.code} - ${p.name}` }
       })
-    if (allowMulticodeUi && multicodeBundles.length) {
-      const list = multicodeBundles.flatMap((d: any) =>
+
+    const parentDeptId = resolveDepartmentIdForProgram(parentTsProgram)
+    if (allowMulticodeUi && parentDeptId) {
+      const rawMc = departmentMulticodes[parentDeptId] || []
+      const bundles = normalizeMulticodeDropdownPayload(rawMc, dropdownData)
+      const list = bundles.flatMap((d: any) =>
         (d.programs ?? []).map((p: any) => ({ ...p, departmentCode: d.departmentCode })),
       )
       const unique = Array.from(new Map(list.map((p: any) => [p.id, p])).values())
       return mapToOpts(unique)
     }
-    return mapToOpts(programs.filter((p: any) => p.isMultiCode))
-  }, [allowMulticodeUi, multicodeBundles, programs])
+    const fallbackList = programs.filter((p: any) => p.isMultiCode)
+    const filteredFallback = parentDeptId
+      ? fallbackList.filter((p: any) => Number(p.departmentId) === Number(parentDeptId))
+      : fallbackList
+    return mapToOpts(filteredFallback)
+  }, [allowMulticodeUi, departmentMulticodes, dropdownData, programs, resolveDepartmentIdForProgram])
 
-  /**
-   * Only request activities for programs the user has actually chosen on a row
-   * (or that were loaded from existing records). Avoids one HTTP call per program
-   * in the bundle on initial page load.
-   */
-  const programQueries = useMemo(() => {
-    const list: { departmentId: number; programId: string }[] = []
-    const seen = new Set<string>()
-
-    const pushPair = (programIdStr: string | undefined) => {
-      const trimmed = programIdStr?.trim()
-      if (!trimmed) return
-      const deptId = resolveDepartmentIdForProgram(trimmed)
-      if (deptId == null) return
-      const key = `${deptId}:${trimmed}`
-      if (seen.has(key)) return
-      seen.add(key)
-      list.push({ departmentId: deptId, programId: trimmed })
-    }
-
-    for (const parent of parents) {
-      pushPair(parent.tsProgram)
-      for (const sub of parent.subRows) {
-        pushPair(sub.studyProgram)
-      }
-    }
-    return list
-  }, [parents, resolveDepartmentIdForProgram])
-
-  const queriesEnabled = !readonly && !isLocked
-  const programActivityQueryResults = useGetProgramActivityRelations(programQueries, queriesEnabled)
-
-  const getActivitiesForProgram = useCallback((programId: string): Set<string> => {
-    const normalized = String(programId ?? "").trim()
-    if (!normalized) return new Set()
-    const deptId = resolveDepartmentIdForProgram(normalized)
-    const index = programQueries.findIndex(
-      (pq) => String(pq.programId).trim() === normalized && pq.departmentId === deptId,
-    )
-    if (index === -1) return new Set()
-    const result = programActivityQueryResults[index]
-    if (!result?.data) return new Set()
-    return new Set(
-      mergeProgramActivityRelationTransferItems(result.data)
-        .map((t) => t.id)
-        .filter(Boolean),
-    )
-  }, [resolveDepartmentIdForProgram, programQueries, programActivityQueryResults])
-
-  const isFetchingActivitiesForProgram = useCallback(
-    (programId: string | undefined) => {
-      const normalized = String(programId ?? "").trim()
-      if (!normalized) return false
-      const deptId = resolveDepartmentIdForProgram(normalized)
-      const index = programQueries.findIndex(
-        (pq) => String(pq.programId).trim() === normalized && pq.departmentId === deptId,
-      )
-      return index !== -1 && !!programActivityQueryResults[index]?.isFetching
-    },
-    [resolveDepartmentIdForProgram, programQueries, programActivityQueryResults],
-  )
+  // Activities are already user-filtered by the /user/programs-activities endpoint.
+  // No per-program API call needed — use the already-loaded activities directly.
 
   const updateParent = useCallback((id: string, patch: Partial<TimeEntryParentRow>) => {
     setParents((prev) => prev.map((p) => {
       if (p.id !== id) return p
       const updatedP = { ...p, ...patch }
+
+      if (patch.tsProgram !== undefined && patch.tsProgram !== p.tsProgram) {
+        updatedP.subRows = p.subRows.map((sr) => ({
+          ...sr,
+          studyProgram: "",
+          serviceActivity: "",
+          programCode: undefined,
+          programName: undefined,
+          activityCode: undefined,
+          activityName: undefined,
+          departmentCode: undefined,
+        }))
+      }
 
       // Auto-fill logic
       if (patch.start !== undefined && !formSettings?.removeAutoFillEndTime) {
@@ -617,7 +678,7 @@ export function PersonalTimeStudyEntryForm({
           const hideTime = !!formSettings?.startorEndTime
           const parentMin = hideTime
             ? (Number(updatedP.totalMin) || 0)
-            : (Number(computeDurationMinutes(updatedP.start, updatedP.end)) || 0)
+            : (Number(computeDurationMinutes(updatedP.start, updatedP.end)) || Number(updatedP.totalMin) || 0)
           const subTotalMin = updatedP.subRows.reduce((sum, s) => sum + (Number(s.totalMin) || Number(computeDurationMinutes(s.start, s.end)) || 0), 0)
           if (subTotalMin > parentMin) {
             toast.error(`Parent total is ${parentMin} mins . Child total should not exceed the parent time.`, { id: `val-${id}` })
@@ -655,7 +716,7 @@ export function PersonalTimeStudyEntryForm({
           const hideTime = !!formSettings?.startorEndTime
           const parentMinutes = hideTime
             ? (Number(p.totalMin) || 0)
-            : (Number(computeDurationMinutes(p.start, p.end)) || 0)
+            : (Number(computeDurationMinutes(p.start, p.end)) || Number(p.totalMin) || 0)
           const subTotalMinutes = newSubRows.reduce((acc, s) => acc + (Number(s.totalMin) || 0), 0)
 
           if (subTotalMinutes > parentMinutes) {
@@ -718,7 +779,7 @@ export function PersonalTimeStudyEntryForm({
     const deptId = dropdownData?.[0]?.departmentId
     const hideTime = !!formSettings?.startorEndTime
     return parents
-      .filter((p) => !(p.isLeave && !p.dbId))
+      .filter((p) => !p.isLeave)
       .map((p) => ({
         id: p.dbId,
         userId,
@@ -726,7 +787,7 @@ export function PersonalTimeStudyEntryForm({
         date: dateStr,
         starttime: p.start,
         endtime: p.end,
-        activitytime: hideTime ? (Number(p.totalMin) || 0) : (Number(computeDurationMinutes(p.start, p.end)) || 0),
+        activitytime: hideTime ? (Number(p.totalMin) || 0) : (Number(computeDurationMinutes(p.start, p.end)) || Number(p.totalMin) || 0),
         programid: p.tsProgram,
         activityid: p.serviceActivity,
         description: p.description,
@@ -770,7 +831,7 @@ export function PersonalTimeStudyEntryForm({
       if (p.subRows.length > 0) {
         const parentMin = hideTime
           ? (Number(p.totalMin) || 0)
-          : (Number(computeDurationMinutes(p.start, p.end)) || 0)
+          : (Number(computeDurationMinutes(p.start, p.end)) || Number(p.totalMin) || 0)
         let subTotalMin = 0
         for (const s of p.subRows) {
           if (!s.totalMin || !s.studyProgram || !s.serviceActivity) {
@@ -787,7 +848,8 @@ export function PersonalTimeStudyEntryForm({
       }
 
       // ── Leave-overlap check (additive) ──────────────────────────────
-      if (!p.isLeave && leaveRecords && leaveRecords.length > 0) {
+      // Skip overlap check for rows that were auto-generated from a leave (leaveid set) — they ARE the leave.
+      if (!p.isLeave && !p.leaveid && leaveRecords && leaveRecords.length > 0) {
         const BLOCKING_STATUSES = ["draft", "requested", "approved"]
         const parseT = (t: string): number | null => {
           if (!t) return null
@@ -937,7 +999,7 @@ export function PersonalTimeStudyEntryForm({
           </div>
         )}
 
-        {showLeaveBanner && leaveRecords && leaveRecords.filter(l => l.status?.toLowerCase() === "approved").map((leave, idx) => (
+        {showLeaveBanner && leaveRecords && leaveRecords.filter(l => ["approved", "requested"].includes(l.status?.toLowerCase() ?? "")).map((leave, idx) => (
           <div key={idx} className="mt-5 mb-1 mx-auto max-w-max rounded-[6px] bg-[#E2E8F0]/50 px-4 py-1.5 text-[13px] text-gray-600 italic text-center border border-[#CBD5E1]">
             {leave.name || leave.employeeName || username} applied leave in this date : <span className="not-italic font-medium text-gray-800">({dateStr})</span> from : <span className="not-italic font-medium text-gray-800">({leave.starttime})</span> To : <span className="not-italic font-medium text-gray-800">({leave.endtime})</span>.
           </div>
@@ -947,6 +1009,18 @@ export function PersonalTimeStudyEntryForm({
         <div className="flex items-center justify-between">
           <h3 className="text-[14px] text-[#6C5DD3] font-semibold">Time Entries</h3>
           <div className="flex items-center gap-3">
+            {apportioningConfig?.apportioningRequired && (
+              <div className="flex items-center gap-2 bg-[#F8F9FA] border border-[#E2E8F0] px-3 py-1.5 rounded-[6px] h-9">
+                <div className="flex size-4 shrink-0 items-center justify-center rounded-[4px] border border-[#6C5DD3] bg-[#6C5DD3] text-white opacity-50 cursor-not-allowed">
+                  <Check className="size-3 stroke-[3]" />
+                </div>
+                <Label
+                  className="text-[12px] text-[#344054] font-semibold cursor-not-allowed select-none"
+                >
+                  Apportioning
+                </Label>
+              </div>
+            )}
             {!readonly && moveSaveSubmitToTop && (
               <div className="flex items-center gap-2 mr-2">
                 <Button
@@ -996,36 +1070,41 @@ export function PersonalTimeStudyEntryForm({
                 <div className="flex-1 space-y-0.5">
                   <Label className="text-[11px] text-[#6C5DD3] font-medium">TS Program <RequiredMark /></Label>
                   <SingleSelectSearchDropdown
-                      value={parent.tsProgram}
-                      placeholder="Select program"
-                      disabled={isLocked || isLeaveRow}
-                      options={(() => {
-                        const filtered = programs
-                          .filter((p: any) => !p.isMultiCode)
-                          .map((p: any) => {
-                            const deptPrefix = (p.departmentCode ?? '').split('-')[0]
-                            return { value: String(p.id), label: `${deptPrefix}-${p.code} - ${p.name}` }
-                          });
-  
-                        if (parent.tsProgram && !filtered.some((o) => o.value === parent.tsProgram)) {
-                          if (parent.programCode || parent.programName) {
-                            const deptPrefix = (parent.departmentCode ?? '').split('-')[0];
-                            const prefix = deptPrefix ? `${deptPrefix}-` : '';
-                            filtered.unshift({ value: parent.tsProgram, label: `${prefix}${parent.programCode ?? ''} - ${parent.programName ?? ''}` });
-                          }
+                    value={parent.tsProgram}
+                    placeholder="Select program"
+                    disabled={isLocked || isLeaveRow}
+                    isLoading={isDropdownLoading}
+                    onOpenChange={(open) => {
+                      if (open) onOpenDropdown?.()
+                    }}
+                    options={(() => {
+                      const filtered = programs
+                        .filter((p: any) => !p.isMultiCode)
+                        .map((p: any) => {
+                          const deptPrefix = (p.departmentCode ?? '').split('-')[0]
+                          return { value: String(p.id), label: `${deptPrefix}-${p.code} - ${p.name}` }
+                        });
+
+                      if (parent.tsProgram && !filtered.some((o) => o.value === parent.tsProgram)) {
+                        if (parent.programCode || parent.programName) {
+                          const deptPrefix = (parent.departmentCode ?? '').split('-')[0];
+                          const prefix = deptPrefix ? `${deptPrefix}-` : '';
+                          filtered.unshift({ value: parent.tsProgram, label: `${prefix}${parent.programCode ?? ''} - ${parent.programName ?? ''}` });
                         }
-                        return filtered;
-                      })()}
-                      onChange={(v) => {
-                        if (v !== parent.tsProgram) {
-                          updateParent(parent.id, { tsProgram: v, serviceActivity: '' });
-                        } else {
-                          updateParent(parent.id, { tsProgram: v });
-                        }
-                      }}
-                      onBlur={() => { }}
-                      className={cn("h-10 text-[11px]", (isLocked || isLeaveRow) && "bg-[#F2F4F7] cursor-not-allowed", isLeaveRow && "border-yellow-400")}
-                    />
+                      }
+                      return filtered;
+                    })()}
+                    onChange={(v) => {
+                      if (v !== parent.tsProgram) {
+                        updateParent(parent.id, { tsProgram: v, serviceActivity: '' });
+                      } else {
+                        updateParent(parent.id, { tsProgram: v });
+                      }
+                      fetchActivitiesForProgram(v);
+                    }}
+                    onBlur={() => { }}
+                    className={cn("h-10 text-[11px]", (isLocked || isLeaveRow) && "bg-[#F2F4F7] cursor-not-allowed", isLeaveRow && "border-yellow-400")}
+                  />
                 </div>
                 <div className="flex-1 space-y-0.5">
                   <Label className="text-[11px] text-[#6C5DD3] font-medium">Service / Activity Code <RequiredMark /></Label>
@@ -1033,14 +1112,21 @@ export function PersonalTimeStudyEntryForm({
                     value={parent.serviceActivity}
                     placeholder="Select Activity Code"
                     disabled={isLocked || isLeaveRow || !parent.tsProgram}
+                    isLoading={isFetchingActivitiesForProgram(parent.tsProgram)}
+                    onOpenChange={(open) => {
+                      if (open && parent.tsProgram) {
+                        fetchActivitiesForProgram(parent.tsProgram);
+                      }
+                    }}
                     options={(() => {
                       if (!parent.tsProgram) return [];
-                      const allowed = getActivitiesForProgram(parent.tsProgram);
-                      const filtered = activities
-                        .filter((a: any) => allowed.has(String(a.id)))
+                      const deptId = resolveDepartmentIdForProgram(parent.tsProgram);
+                      const key = deptId ? `${deptId}:${parent.tsProgram}` : "";
+                      const listForProg = key ? (programActivities[key] ?? []) : [];
+                      const filtered = listForProg
                         .map((a: any) => ({ value: String(a.id), label: `${a.code} - ${a.name}` }));
                       if (parent.serviceActivity && !filtered.some((o) => o.value === parent.serviceActivity)) {
-                        const fallback = activities.find((a: any) => String(a.id) === parent.serviceActivity) as any;
+                        const fallback = listForProg.find((a: any) => String(a.id) === parent.serviceActivity) as any;
                         if (fallback) {
                           filtered.unshift({ value: String(fallback.id), label: `${fallback.code} - ${fallback.name}` });
                         } else if (parent.activityCode || parent.activityName) {
@@ -1063,7 +1149,7 @@ export function PersonalTimeStudyEntryForm({
                     type="number"
                     min="0"
                     readOnly={isLocked || isLeaveRow || !hideTime}
-                    value={hideTime ? (parent.totalMin ?? "") : totalDisplay}
+                    value={hideTime ? (parent.totalMin ?? "") : (totalDisplay || parent.totalMin || "")}
                     placeholder="—"
                     className={cn(
                       "h-10 text-[11px]",
@@ -1118,7 +1204,7 @@ export function PersonalTimeStudyEntryForm({
                       size="icon"
                       variant="outline"
                       disabled={isLocked}
-                      className={cn("size-10 border-[#6C5DD3] text-[#6C5DD3] hover:bg-[#6C5DD3]/10", isLocked && "cursor-not-allowed")}
+                      className={cn("size-10 border-green-600 text-green-600 hover:bg-green-600/10", isLocked && "cursor-not-allowed")}
                       onClick={() => addSubRow(parent.id)}
                       aria-label="Add multi-code row"
                     >
@@ -1136,10 +1222,22 @@ export function PersonalTimeStudyEntryForm({
                         <SingleSelectSearchDropdown
                           value={sub.studyProgram}
                           placeholder="Select program"
-                          disabled={isLocked}
-                          isLoading={multicodeListLoading}
+                          disabled={isLocked || isLeaveRow}
+                          isLoading={(() => {
+                            const deptId = resolveDepartmentIdForProgram(parent.tsProgram)
+                            return Boolean(deptId && fetchingDepartments[String(deptId)])
+                          })()}
+                          onOpenChange={(open) => {
+                            if (open) {
+                              onOpenDropdown?.()
+                              const deptId = resolveDepartmentIdForProgram(parent.tsProgram)
+                              if (deptId) {
+                                fetchMulticodeProgramsForDepartment(deptId)
+                              }
+                            }
+                          }}
                           options={(() => {
-                            const filtered = [...subRowProgramOptions]
+                            const filtered = [...getSubRowProgramOptions(parent.tsProgram)]
                             if (sub.studyProgram && !filtered.some((o) => o.value === sub.studyProgram)) {
                               if (sub.programCode || sub.programName) {
                                 const deptPrefix = (sub.departmentCode ?? "").split("-")[0]
@@ -1158,9 +1256,10 @@ export function PersonalTimeStudyEntryForm({
                             } else {
                               updateSubRow(parent.id, sub.id, { studyProgram: v })
                             }
+                            fetchActivitiesForProgram(v)
                           }}
                           onBlur={() => { }}
-                          className={cn("h-9 text-[11px]", isLocked && "bg-[#F2F4F7] cursor-not-allowed")}
+                          className={cn("h-9 text-[11px]", (isLocked || isLeaveRow) && "bg-[#F2F4F7] cursor-not-allowed", isLeaveRow && "border-yellow-400")}
                         />
                       </div>
                       <div className="flex-1 space-y-1">
@@ -1168,16 +1267,22 @@ export function PersonalTimeStudyEntryForm({
                         <SingleSelectSearchDropdown
                           value={sub.serviceActivity}
                           placeholder="Select Activity Code"
-                          disabled={isLocked || !sub.studyProgram}
+                          disabled={isLocked || isLeaveRow || !sub.studyProgram}
                           isLoading={isFetchingActivitiesForProgram(sub.studyProgram)}
+                          onOpenChange={(open) => {
+                            if (open && sub.studyProgram) {
+                              fetchActivitiesForProgram(sub.studyProgram)
+                            }
+                          }}
                           options={(() => {
                             if (!sub.studyProgram) return []
-                            const allowed = getActivitiesForProgram(sub.studyProgram)
-                            const filtered = subRowActivityCatalog
-                              .filter((a: any) => allowed.has(String(a.id)))
+                            const deptId = resolveDepartmentIdForProgram(sub.studyProgram)
+                            const key = deptId ? `${deptId}:${sub.studyProgram}` : ""
+                            const listForProg = key ? (programActivities[key] ?? []) : []
+                            const filtered = listForProg
                               .map((a: any) => ({ value: String(a.id), label: `${a.code} - ${a.name}` }))
                             if (sub.serviceActivity && !filtered.some((o) => o.value === sub.serviceActivity)) {
-                              const fallback = subRowActivityCatalog.find((a: any) => String(a.id) === sub.serviceActivity) as any
+                              const fallback = listForProg.find((a: any) => String(a.id) === sub.serviceActivity) as any
                               if (fallback) {
                                 filtered.unshift({ value: String(fallback.id), label: `${fallback.code} - ${fallback.name}` })
                               } else if (sub.activityCode || sub.activityName) {
@@ -1191,7 +1296,7 @@ export function PersonalTimeStudyEntryForm({
                           })()}
                           onChange={(v) => updateSubRow(parent.id, sub.id, { serviceActivity: v })}
                           onBlur={() => { }}
-                          className={cn("h-9 text-[11px]", (isLocked || !sub.studyProgram) && "bg-[#F2F4F7] cursor-not-allowed")}
+                          className={cn("h-9 text-[11px]", (isLocked || isLeaveRow || !sub.studyProgram) && "bg-[#F2F4F7] cursor-not-allowed", isLeaveRow && "border-yellow-400")}
                         />
                       </div>
                       <div className="w-[60px] space-y-1">
@@ -1200,9 +1305,9 @@ export function PersonalTimeStudyEntryForm({
                           type="number"
                           min="0"
                           value={sub.totalMin}
-                          readOnly={isLocked}
+                          readOnly={isLocked || isLeaveRow}
                           placeholder="0"
-                          className={cn("h-9 text-[11px]", isLocked && "bg-[#F2F4F7] cursor-not-allowed")}
+                          className={cn("h-9 text-[11px]", (isLocked || isLeaveRow) && "bg-[#F2F4F7] cursor-not-allowed", isLeaveRow && "border-yellow-400")}
                           onChange={(e) => updateSubRow(parent.id, sub.id, { totalMin: e.target.value })}
                         />
                       </div>
@@ -1218,10 +1323,10 @@ export function PersonalTimeStudyEntryForm({
                             </div>
                             <TitleCaseInput
                               value={sub.description}
-                              readOnly={isLocked}
+                              readOnly={isLocked || isLeaveRow}
                               onChange={(e) => updateSubRow(parent.id, sub.id, { description: e.target.value })}
                               placeholder="Notes"
-                              className={cn("h-9 text-[11px] text-[#344054] font-normal", isLocked && "bg-[#F2F4F7] cursor-not-allowed")}
+                              className={cn("h-9 text-[11px] text-[#344054] font-normal", (isLocked || isLeaveRow) && "bg-[#F2F4F7] cursor-not-allowed", isLeaveRow && "border-yellow-400")}
                             />
                           </div>
                         )

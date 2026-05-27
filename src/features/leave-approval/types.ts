@@ -135,6 +135,7 @@ export type UserLeaveRecordTypeDto = "NORMAL" | "MULTI_CODE"
 
 // --- Backend: `dto/request/create-user-leave.req.dto.ts` (+ optional `multiCodeRecords` for MULTI_CODE child rows) ---
 export type UserLeaveMultiCodeRecordRequestDto = {
+  id?: number
   userId?: string
   programid?: string
   activityid?: string
@@ -142,13 +143,13 @@ export type UserLeaveMultiCodeRecordRequestDto = {
   programname: string
   activitycode: string
   activityname: string
-  startdt: string
-  enddt: string
-  starttime: string
-  endtime: string
+  startdt?: string
+  enddt?: string
+  starttime?: string
+  endtime?: string
   leaveTotalTime: number
   requestcomment?: string
-  recordType: UserLeaveRecordTypeDto
+  recordType?: UserLeaveRecordTypeDto
 }
 
 export type CreateUserLeaveRequestDto = {
@@ -167,7 +168,7 @@ export type CreateUserLeaveRequestDto = {
   leaveTotalTime: number
   requestcomment?: string
   status?: "requested" | "withdraw"
-  recordType: UserLeaveRecordTypeDto
+  recordType?: UserLeaveRecordTypeDto
   /** Child rows for the same calendar slot; backend sets `parentId` after parent insert. */
   multiCodeRecords?: UserLeaveMultiCodeRecordRequestDto[]
 }
@@ -256,6 +257,7 @@ export type LeaveApprovalTableProps = {
   sort: LeaveApprovalSortState
   onToggleSort: (key: LeaveApprovalSortKey) => void
   onOpenComments: (rowId: number, mode: "comments" | "reject" | "approve" | "requested") => void
+  dropdownData?: any[]
 }
 
 export type LeaveApprovalPaginationProps = {
