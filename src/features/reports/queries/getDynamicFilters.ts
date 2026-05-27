@@ -11,78 +11,118 @@ import {
   apiGetRmtsPayPeriods,
 } from "../api/reports"
 import { reportKeys } from "../keys"
+import { reportQueryOptions } from "../queryOptions"
 
-export function useGetMaaEmployees(activityTypes: string[], departmentId?: string, enabled = true) {
+export function useGetMaaEmployees(
+  activityTypes: string[],
+  departmentId: string | undefined,
+  enabled: boolean,
+  reportKey: string,
+) {
   return useQuery({
-    queryKey: reportKeys.maaEmployees(activityTypes, departmentId),
+    queryKey: [...reportKeys.maaEmployees(activityTypes, departmentId), reportKey],
     queryFn: () => apiGetMaaEmployees(activityTypes, departmentId),
-    enabled: enabled && (activityTypes.length > 0 || !!departmentId),
-    staleTime: 0,
+    enabled: enabled && !!departmentId,
+    ...reportQueryOptions,
   })
 }
 
-export function useGetCostPoolUsers(costPoolIds: string[], userId: string, employeeStatus?: string[], enabled = true) {
+export function useGetCostPoolUsers(
+  costPoolIds: string[],
+  userId: string,
+  employeeStatus: string[] | undefined,
+  enabled: boolean,
+  reportKey: string,
+) {
   return useQuery({
-    queryKey: reportKeys.costPoolUsers(costPoolIds, userId, employeeStatus),
+    queryKey: [...reportKeys.costPoolUsers(costPoolIds, userId, employeeStatus), reportKey],
     queryFn: () => apiGetCostPoolUsers(costPoolIds, userId, employeeStatus),
     enabled: enabled && costPoolIds.length > 0 && !!userId,
-    staleTime: 0,
+    ...reportQueryOptions,
   })
 }
 
-export function useGetMaaTcmActivityDepartments(enabled = true) {
+export function useGetMaaTcmActivityDepartments(enabled: boolean, reportKey: string) {
   return useQuery({
-    queryKey: reportKeys.maaTcmActivityDepartments(),
+    queryKey: [...reportKeys.maaTcmActivityDepartments(), reportKey],
     queryFn: () => apiGetMaaTcmActivityDepartments(),
     enabled,
-    staleTime: 10 * 60_000,
+    ...reportQueryOptions,
   })
 }
 
-export function useGetListAllPrograms(enabled = true) {
+export function useGetListAllPrograms(enabled: boolean, reportKey: string) {
   return useQuery({
-    queryKey: reportKeys.listAllPrograms(),
+    queryKey: [...reportKeys.listAllPrograms(), reportKey],
     queryFn: () => apiGetListAllPrograms(),
     enabled,
-    staleTime: 10 * 60_000,
+    ...reportQueryOptions,
   })
 }
 
-export function useGetUsersUnderDepartment(departmentId: string | undefined, userId: string | undefined, masterCode?: string, userStatus: string[] = ["active"], enabled = true) {
-  const statusStr = userStatus.length ? userStatus.join(",") : "active";
+export function useGetUsersUnderDepartment(
+  departmentId: string | undefined,
+  userId: string | undefined,
+  masterCode: string | undefined,
+  userStatus: string[],
+  enabled: boolean,
+  reportKey: string,
+) {
+  const statusStr = userStatus.length ? userStatus.join(",") : "active"
   return useQuery({
-    queryKey: [...reportKeys.all, "users-under-department", { departmentId, userId, masterCode, statusStr }],
+    queryKey: [
+      ...reportKeys.all,
+      "users-under-department",
+      reportKey,
+      { departmentId, userId, masterCode, statusStr },
+    ],
     queryFn: () => apiGetUsersUnderDepartment(departmentId!, userId || "", masterCode, statusStr),
     enabled: enabled && !!departmentId,
-    staleTime: 0,
+    ...reportQueryOptions,
   })
 }
 
-
-/** Fetch activities filtered by department + selected employees + date range. */
 export function useGetActivitiesByDepartmentAndUsers(
   departmentId: string | undefined,
   userIds: string[],
-  startDate?: string,
-  endDate?: string,
-  activityStatus = "active",
-  masterCode?: string,
-  enabled = true,
+  startDate: string | undefined,
+  endDate: string | undefined,
+  activityStatus: string,
+  masterCode: string | undefined,
+  enabled: boolean,
+  reportKey: string,
 ) {
   return useQuery({
-    queryKey: [...reportKeys.all, "activities-by-dept-users", { departmentId, userIds, startDate, endDate, activityStatus, masterCode }],
-    queryFn: () => apiGetActivitiesByDepartmentAndUsers(departmentId!, userIds, startDate, endDate, activityStatus, masterCode),
+    queryKey: [
+      ...reportKeys.all,
+      "activities-by-dept-users",
+      reportKey,
+      { departmentId, userIds, startDate, endDate, activityStatus, masterCode },
+    ],
+    queryFn: () =>
+      apiGetActivitiesByDepartmentAndUsers(
+        departmentId!,
+        userIds,
+        startDate,
+        endDate,
+        activityStatus,
+        masterCode,
+      ),
     enabled: enabled && !!departmentId && userIds.length > 0,
-    staleTime: 0,
+    ...reportQueryOptions,
   })
 }
-/** Fetch cost pools filtered by department. */
-export function useGetCostPoolsByDepartment(departmentId: string | undefined, enabled = true) {
+
+export function useGetCostPoolsByDepartment(
+  departmentId: string | undefined,
+  enabled: boolean,
+  reportKey: string,
+) {
   return useQuery({
-    queryKey: [...reportKeys.all, "costpools-by-department", { departmentId }],
+    queryKey: [...reportKeys.all, "costpools-by-department", reportKey, { departmentId }],
     queryFn: () => apiGetCostPoolsByDepartment(departmentId!),
     enabled: enabled && !!departmentId,
-    staleTime: 0,
+    ...reportQueryOptions,
   })
 }
 
@@ -90,25 +130,27 @@ export function useGetTimeStudyProgramsForUsers(
   userIds: string[],
   dateFrom: string | undefined,
   dateTo: string | undefined,
-  enabled = true,
+  enabled: boolean,
+  reportKey: string,
 ) {
   return useQuery({
-    queryKey: [...reportKeys.all, "programs-by-users", { userIds, dateFrom, dateTo }],
+    queryKey: [...reportKeys.all, "programs-by-users", reportKey, { userIds, dateFrom, dateTo }],
     queryFn: () => apiGetTimeStudyProgramsForUsers(userIds, dateFrom!, dateTo!),
     enabled: enabled && userIds.length > 0 && !!dateFrom && !!dateTo,
-    staleTime: 0,
+    ...reportQueryOptions,
   })
 }
 
 export function useGetRmtsPayPeriods(
   fiscalYear: string | undefined,
   departmentId: string | undefined,
-  enabled = true,
+  enabled: boolean,
+  reportKey: string,
 ) {
   return useQuery({
-    queryKey: [...reportKeys.all, "rmts-pay-periods", { fiscalYear, departmentId }],
+    queryKey: [...reportKeys.all, "rmts-pay-periods", reportKey, { fiscalYear, departmentId }],
     queryFn: () => apiGetRmtsPayPeriods(fiscalYear!, departmentId!),
     enabled: enabled && !!fiscalYear && !!departmentId,
-    staleTime: 5 * 60_000,
+    ...reportQueryOptions,
   })
 }

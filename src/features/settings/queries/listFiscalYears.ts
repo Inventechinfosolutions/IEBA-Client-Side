@@ -56,10 +56,16 @@ export async function fetchListFiscalYears(): Promise<SettingsFiscalYearRow[]> {
   return normalizeListFiscalYearsPayload(res.data)
 }
 
-export function useListFiscalYears() {
+export function useListFiscalYears(options?: { enabled?: boolean; scopeKey?: string }) {
+  const scopeKey = options?.scopeKey?.trim()
   return useQuery({
-    queryKey: settingsKeys.fiscalYear.list(),
+    queryKey: scopeKey ? [...settingsKeys.fiscalYear.list(), scopeKey] : settingsKeys.fiscalYear.list(),
     queryFn: fetchListFiscalYears,
-    staleTime: 30_000,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: "always",
+    refetchOnReconnect: true,
+    enabled: options?.enabled ?? true,
   })
 }

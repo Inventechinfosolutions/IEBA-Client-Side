@@ -2,6 +2,7 @@ export const reportKeys = {
   all: ["reports"] as const,
   lists: () => [...reportKeys.all, "list"] as const,
   catalog: () => [...reportKeys.lists(), "catalog"] as const,
+  departments: (reportKey: string) => [...reportKeys.all, "departments", reportKey] as const,
   maaEmployees: (types: string[], dept?: string) => [...reportKeys.all, "maa-employees", { types, dept }] as const,
   costPoolUsers: (pools: string[], user: string, status?: string[]) =>
     [...reportKeys.all, "cost-pool-users", { pools, user, status }] as const,
