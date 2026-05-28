@@ -349,13 +349,13 @@ export function PersonalTimeStudyEntryForm({
     return initialRecords.some(rec =>
       rec.date?.split("T")[0] === dateStr &&
       !rec.leaveid &&
-      ["submitted", "approved"].includes(rec.status?.toLowerCase())
+      (!rec.leave || rec.leave === "null" || rec.leave === "NULL") &&
+      ["submitted", "approved"].includes(rec.status?.toLowerCase()) &&
+      rec.apportioning !== true
     )
   }, [initialRecords, dateStr, readonly])
 
-  const allIsLeave = useMemo(() => {
-    return parents.length > 0 && parents.every(p => p.isLeave)
-  }, [parents])
+  const allIsLeave = false
 
   const programs = useMemo(() => {
     const list = dropdownData?.flatMap((d) => d.programs.map((p: any) => ({ ...p, departmentCode: d.departmentCode }))) ?? []
@@ -450,9 +450,6 @@ export function PersonalTimeStudyEntryForm({
     const deptId = resolveDepartmentIdForProgram(programId)
     if (!deptId) return
 
-    if (allowMulticodeUi) {
-      fetchMulticodeProgramsForDepartment(deptId)
-    }
 
     const key = `${deptId}:${programId}`
     if (fetchedRef.current.has(key)) return
@@ -502,9 +499,18 @@ export function PersonalTimeStudyEntryForm({
     setPrevInitialRecords(initialRecords)
     setPrevLeaveRecords(leaveRecords)
     const syncRecordsToState = () => {
-      const filtered = (initialRecords ?? []).filter(
-        (r) => r.date?.split("T")[0] === dateStr && r.apportioning !== true
-      )
+      const filtered = (initialRecords ?? []).filter((r) => {
+        if (r.date?.split("T")[0] !== dateStr || r.apportioning === true) {
+          return false
+        }
+        if (r.leaveid) {
+          const leave = leaveRecords?.find((l) => Number(l.id) === Number(r.leaveid))
+          if (leave && leave.status?.toLowerCase() !== "approved") {
+            return false
+          }
+        }
+        return true
+      })
       const parentMap = new Map<number, TimeEntryParentRow>()
       filtered.forEach((rec) => {
         if (!rec.parentId) {
@@ -562,11 +568,11 @@ export function PersonalTimeStudyEntryForm({
       const leaveRows: TimeEntryParentRow[] = []
       if (leaveRecords) {
         leaveRecords.forEach((leave) => {
-          if (["approved", "requested"].includes(leave.status?.toLowerCase() ?? "")) {
+          if (leave.status?.toLowerCase() === "approved") {
             const lStart = (leave.starttime ?? "").split(":").slice(0, 2).join(":")
             const lEnd = (leave.endtime ?? "").split(":").slice(0, 2).join(":")
             const existing = sorted.find(
-              (rec) => 
+              (rec) =>
                 (rec.leaveid !== undefined && leave.id !== undefined && Number(rec.leaveid) === Number(leave.id)) ||
                 (rec.start === lStart && rec.end === lEnd && rec.tsProgram === String(leave.programid ?? ""))
             )
@@ -755,6 +761,13 @@ export function PersonalTimeStudyEntryForm({
   }, [parents, onDelete])
 
   const addSubRow = useCallback((parentId: string) => {
+    const parent = parents.find((p) => p.id === parentId)
+    if (parent && parent.tsProgram) {
+      const deptId = resolveDepartmentIdForProgram(parent.tsProgram)
+      if (deptId) {
+        fetchMulticodeProgramsForDepartment(deptId)
+      }
+    }
     setParents((prev) => prev.map((p) => {
       if (p.id !== parentId) return p
       return {
@@ -762,7 +775,7 @@ export function PersonalTimeStudyEntryForm({
         subRows: [...p.subRows, createSubRow()]
       }
     }))
-  }, [])
+  }, [parents, resolveDepartmentIdForProgram, fetchMulticodeProgramsForDepartment])
 
   const removeSubRow = useCallback((parentId: string, subId: string) => {
     setParents((prev) => prev.map((p) => (p.id === parentId ? { ...p, subRows: p.subRows.filter((s) => s.id !== subId) } : p)))
@@ -999,7 +1012,7 @@ export function PersonalTimeStudyEntryForm({
           </div>
         )}
 
-        {showLeaveBanner && leaveRecords && leaveRecords.filter(l => ["approved", "requested"].includes(l.status?.toLowerCase() ?? "")).map((leave, idx) => (
+        {showLeaveBanner && leaveRecords && leaveRecords.filter(l => l.status?.toLowerCase() === "approved").map((leave, idx) => (
           <div key={idx} className="mt-5 mb-1 mx-auto max-w-max rounded-[6px] bg-[#E2E8F0]/50 px-4 py-1.5 text-[13px] text-gray-600 italic text-center border border-[#CBD5E1]">
             {leave.name || leave.employeeName || username} applied leave in this date : <span className="not-italic font-medium text-gray-800">({dateStr})</span> from : <span className="not-italic font-medium text-gray-800">({leave.starttime})</span> To : <span className="not-italic font-medium text-gray-800">({leave.endtime})</span>.
           </div>

@@ -291,12 +291,9 @@ export function EmployeeLeaveRequestDialog({
   const fetchedMulticodesRef = useRef<Set<string>>(new Set())
   const [programActivities, setProgramActivities] = useState<Record<string, any[]>>({})
   const fetchedRef = useRef<Set<string>>(new Set())
-
   const fetchMulticodeProgramsForDepartment = useCallback(async (deptIdStr: string | number | undefined) => {
     const deptId = String(deptIdStr || '').trim()
     if (!deptId || !effectiveUserId) return
-    if (fetchedMulticodesRef.current.has(deptId)) return
-    fetchedMulticodesRef.current.add(deptId)
     setFetchingDepartments(prev => ({ ...prev, [deptId]: true }))
     try {
       const res = await apiGetUserProgramsAndActivitiesMulticode(effectiveUserId, deptId)
@@ -305,13 +302,11 @@ export function EmployeeLeaveRequestDialog({
         [deptId]: res || []
       }))
     } catch (err) {
-      fetchedMulticodesRef.current.delete(deptId)
       console.error(`Failed to fetch multicode programs for department ${deptId}`, err)
     } finally {
       setFetchingDepartments(prev => ({ ...prev, [deptId]: false }))
     }
   }, [effectiveUserId])
-
   const multicodeBundles = useMemo(() => {
     const allFetched = Object.values(departmentMulticodes).flat()
     return normalizeMulticodeDropdownPayload(allFetched, dropdownBundles)
@@ -1271,20 +1266,20 @@ export function EmployeeLeaveRequestDialog({
                                   )}
                                 />
                               </div>
-                                {!isApproved && (
-                                  <div className="flex shrink-0 items-end pb-0.5">
-                                    <Button
-                                      type="button"
-                                      size="icon"
-                                      variant="ghost"
-                                      className="size-9 shrink-0 text-destructive hover:bg-destructive/10"
-                                      onClick={() => remove(index)}
-                                      aria-label="Remove multi-code row"
-                                    >
-                                      <Trash2 className="size-4" />
-                                    </Button>
-                                  </div>
-                                )}
+                              {!isApproved && (
+                                <div className="flex shrink-0 items-end pb-0.5">
+                                  <Button
+                                    type="button"
+                                    size="icon"
+                                    variant="ghost"
+                                    className="size-9 shrink-0 text-destructive hover:bg-destructive/10"
+                                    onClick={() => remove(index)}
+                                    aria-label="Remove multi-code row"
+                                  >
+                                    <Trash2 className="size-4" />
+                                  </Button>
+                                </div>
+                              )}
                             </div>
                           </div>
                         ))}
