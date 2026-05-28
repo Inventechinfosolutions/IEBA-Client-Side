@@ -1345,7 +1345,7 @@ export function PersonalTimeStudyEntryForm({
                         )
                       })()}
                       <div className="flex items-end pb-0.5">
-                        {!readonly && (
+                        {!readonly && !isLeaveRow && (
                           <Button
                             size="icon"
                             variant="ghost"
