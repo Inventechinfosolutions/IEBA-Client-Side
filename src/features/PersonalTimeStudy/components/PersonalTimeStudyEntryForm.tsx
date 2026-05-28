@@ -158,13 +158,13 @@ type PersonalTimeStudyEntryFormProps = {
     activityname?: string
     name?: string
     employeeName?: string
-    parentId?: number
+    parentId?: number | null
     id?: number
     leaveTotalTime?: number | string
     multiCodeRecords?: Array<{
       id?: number
-      programid?: string | number
-      activityid?: string | number
+      programid?: string | number | null
+      activityid?: string | number | null
       programcode?: string
       programname?: string
       activitycode?: string

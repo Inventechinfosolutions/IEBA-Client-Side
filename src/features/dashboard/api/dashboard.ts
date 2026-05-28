@@ -1,5 +1,5 @@
 import { api } from "@/lib/api"
-import { getUsersTotalCountByStatus, getUsersTotalCountUnfiltered } from "@/features/user/api"
+import { getUsersTotalCountUnfiltered } from "@/features/user/api"
 import type {
   ApiEnvelope,
   DashboardOverview,
