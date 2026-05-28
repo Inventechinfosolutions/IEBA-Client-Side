@@ -44,6 +44,8 @@ export const addEmployeeLookupKeys = {
   /** GET /users/supervisors — sorted department id key for stable cache. */
   supervisorsByDepartments: (departmentIdsKey: string) =>
     [...addEmployeeLookupKeys.all, "supervisors-by-departments", departmentIdsKey] as const,
+  userAllowMulticodeHistory: (userId: string) =>
+    [...addEmployeeLookupKeys.all, "user-allow-multicode-history", userId] as const,
 }
 
 /** Segment for `departmentRolesUnassignedAdd` — must match `useGetDepartmentRolesUnassigned`. */

@@ -52,6 +52,8 @@ function mapUpdateInput(input: UpdateUserModuleInput): UpdateUserRequestDto {
     primarySupervisorId: (input.values.supervisorPrimaryId ?? "").trim(),
     backupSupervisorId: (input.values.supervisorSecondaryId ?? "").trim(),
     supervisorApportioning: input.values.supervisorApportioning,
+    activationStartDate: input.values.activationStartDate || undefined,
+    activationEndDate: input.values.activationEndDate || undefined,
   }
 }
 

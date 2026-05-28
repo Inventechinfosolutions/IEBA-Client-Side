@@ -17,7 +17,10 @@ import {
   apiUploadUserDocument,
 } from "../add-employee/api"
 import { resolveAssignedSnapshotsForSecuritySave } from "../add-employee/utility/parseSecurityDepartmentRoles"
-import { persistSecurityApportioningOnSave } from "../add-employee/utility/persistSecurityApportioningOnSave"
+import {
+  persistSecurityApportioningOnSave,
+  persistUserAllowMultiCodeHistoryOnSave,
+} from "../add-employee/utility/persistSecurityApportioningOnSave"
 import {
   invalidateUserTabCaches,
   refetchFormAfterTabSave,
@@ -74,6 +77,16 @@ const emptyFormValues: UserModuleFormValues = {
   supervisorApportioning: false,
   clientAdmin: false,
   assignedMultiCodes: "",
+  activationStartDate: "",
+  activationEndDate: "",
+  departmentMultiCodes: [{
+    departmentId: 0,
+    departmentName: "",
+    allowMultiCodes: false,
+    assignedMultiCodes: "",
+    activationStartDate: "",
+    activationEndDate: "",
+  }],
   copyUser: false,
   copyUserId: "",
   apportioningAllocations: {},
@@ -226,6 +239,16 @@ export function UserModulePage() {
       supervisorApportioning: selectedRow.supervisorApportioning ?? false,
       clientAdmin: selectedRow.clientAdmin ?? false,
       assignedMultiCodes: selectedRow.assignedMultiCodes ?? "",
+      activationStartDate: selectedRow.activationStartDate ?? "",
+      activationEndDate: selectedRow.activationEndDate ?? "",
+      departmentMultiCodes: [{
+        departmentId: 0,
+        departmentName: "",
+        allowMultiCodes: false,
+        assignedMultiCodes: "",
+        activationStartDate: "",
+        activationEndDate: "",
+      }],
       copyUser: false,
       copyUserId: "",
     }
@@ -390,6 +413,7 @@ export function UserModulePage() {
       if (formMode === "edit" && selectedRow) {
         if (sourceTab === "security") {
           await persistSecurityApportioningOnSave(selectedRow.id, values)
+          await persistUserAllowMultiCodeHistoryOnSave(selectedRow.id, values)
         }
 
         await userModule.updateRowAsync({ id: selectedRow.id, values })
@@ -407,6 +431,7 @@ export function UserModulePage() {
       if (draftUserId) {
         if (sourceTab === "security") {
           await persistSecurityApportioningOnSave(draftUserId, values)
+          await persistUserAllowMultiCodeHistoryOnSave(draftUserId, values)
         }
         await userModule.updateRowAsync({ id: draftUserId, values })
         toast.success("Employee saved successfully", successToastOptions)

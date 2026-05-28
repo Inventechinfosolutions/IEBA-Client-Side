@@ -37,14 +37,36 @@ import type {
   UserProgramsOnlyProgram,
   UserProgramsOnlyProgramsBundle,
   UserTimeStudyDepartment,
+  UserAllowMultiCodeHistoryRow,
 } from "./types"
 import { parseSecurityDepartmentRolesResponse } from "./utility/parseSecurityDepartmentRoles"
 
 function unwrapSuccess<T>(res: ApiResponseDto<T>, failureMessage: string): T {
-  if (!res?.success || res.data == null) {
+  if (!res?.success) {
     throw new Error(res?.message ?? failureMessage)
   }
-  return res.data
+  return res.data as T
+}
+
+export async function fetchUserAllowMulticodeHistory(userId: string): Promise<UserAllowMultiCodeHistoryRow[]> {
+  const res = await api.get<ApiResponseDto<UserAllowMultiCodeHistoryRow[]>>(`/user/allow-multicode-history/${userId}`)
+  return unwrapSuccess(res, "Failed to load MultiCodes history")
+}
+
+export type RecordUserAllowMultiCodeHistoryPayload = {
+  records: {
+    userId: string
+    departmentId: number
+    startDate?: string
+    endDate?: string
+    allowMultiCodes: boolean
+    multiCodeTypes?: string[]
+  }[]
+}
+
+export async function postUserAllowMulticodeHistory(payload: RecordUserAllowMultiCodeHistoryPayload): Promise<void> {
+  const res = await api.post<ApiResponseDto<void>>(`/user/allow-multicode-history/record`, payload)
+  unwrapSuccess(res, "Failed to record MultiCodes history")
 }
 
 function isJobPoolRow(row: unknown): row is AddEmployeeJobPoolRow {
@@ -841,11 +863,16 @@ function parseUserTimeStudyDepartment(raw: unknown): UserTimeStudyDepartment | n
   const departmentName = typeof row.departmentName === "string" ? row.departmentName.trim() : ""
   if (!Number.isFinite(departmentId) || departmentId < 1 || !departmentName) return null
   const tsMinPerDay = readTsMinPerDay(row)
+  const allowActivationStartDateAndEndDate = typeof row.allowActivationStartDateAndEndDate === "boolean" ? row.allowActivationStartDateAndEndDate : undefined
+  const multiCodes = Array.isArray(row.multiCodes) ? row.multiCodes.map(String) : undefined
+
   return {
     departmentId,
     departmentCode,
     departmentName,
-    ...(tsMinPerDay !== undefined ? { tsMinPerDay } : {}),
+    ...(tsMinPerDay !== null ? { tsMinPerDay } : {}),
+    ...(allowActivationStartDateAndEndDate !== undefined ? { allowActivationStartDateAndEndDate } : {}),
+    ...(multiCodes !== undefined ? { multiCodes } : {}),
     moveSaveSubmitToTop: row.moveSaveSubmitToTop === true,
     removeAutoFillEndTime: row.removeAutoFillEndTime === true,
     startorEndTime: row.startorEndTime === true,

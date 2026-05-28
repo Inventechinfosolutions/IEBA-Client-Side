@@ -171,6 +171,8 @@ export function mergeUserDetailsIntoFormValues(
     pkiUser: typeof details.pki === "boolean" ? details.pki : previous.pkiUser,
     allowMultiCodes: details.allowMultiCodes,
     assignedMultiCodes: multiJoined || previous.assignedMultiCodes,
+    activationStartDate: details.activationStartDate ? details.activationStartDate.split('T')[0] : previous.activationStartDate || "",
+    activationEndDate: details.activationEndDate ? details.activationEndDate.split('T')[0] : previous.activationEndDate || "",
     roleAssignments: roleAssignmentsFromDetails(details),
     securityAssignedSnapshots: securitySnapshotsFromDepartmentRoles(details),
     supervisorApportioning: details.supervisorApportioning ?? previous.supervisorApportioning,
@@ -245,5 +247,7 @@ export function mapFormValuesToUpdateDto(
     primarySupervisorId: (values.supervisorPrimaryId ?? "").trim(),
     backupSupervisorId: (values.supervisorSecondaryId ?? "").trim(),
     supervisorApportioning: values.supervisorApportioning,
+    activationStartDate: values.activationStartDate || undefined,
+    activationEndDate: values.activationEndDate || undefined,
   }
 }
