@@ -27,6 +27,7 @@ export const departmentSettingsSchema = z.object({
   removeDescriptionActivityNote: z.boolean(),
   removeDescriptionActivityNoteAnchor: z.boolean(),
   removeDescriptionActivityNoteMultiCode: z.boolean(),
+  allowActivationStartDateAndEndDate: z.boolean(),
   moveSaveSubmitToTop: z.boolean(),
 })
 
@@ -88,6 +89,7 @@ export const DEPARTMENT_FORM_DEFAULT_VALUES: z.infer<typeof departmentUpsertSche
     removeDescriptionActivityNote: false,
     removeDescriptionActivityNoteAnchor: false,
     removeDescriptionActivityNoteMultiCode: false,
+    allowActivationStartDateAndEndDate: false,
     moveSaveSubmitToTop: false,
   },
 }

@@ -119,6 +119,10 @@ export const DEPARTMENT_SETTINGS_ROWS: readonly {
   { key: "removeDescriptionActivityNote", label: "Remove Description/Activity/Note" },
   { key: "removeDescriptionActivityNoteAnchor", label: "Remove Description/Activity/Note Anchor" },
   { key: "removeDescriptionActivityNoteMultiCode", label: "Remove Description/Activity/Note MultiCode" },
+  {
+    key: "allowActivationStartDateAndEndDate",
+    label: "Allow Activation start date and end Date",
+  },
   { key: "moveSaveSubmitToTop", label: "Move Save and Submit Button to Top" },
 ] as const
 
@@ -182,6 +186,7 @@ export type DepartmentResDto = Record<string, unknown> & {
   removeDescriptionActivityNote?: boolean;
   removeDescriptionActivityNoteAnchor?: boolean;
   removeDescriptionActivityNoteMultiCode?: boolean;
+  allowActivationStartDateAndEndDate?: boolean;
   moveSaveSubmitToTop?: boolean;
 }
 
@@ -209,6 +214,7 @@ export type CreateDepartmentReqDto = {
   removeDescriptionActivityNote?: boolean;
   removeDescriptionActivityNoteAnchor?: boolean;
   removeDescriptionActivityNoteMultiCode?: boolean;
+  allowActivationStartDateAndEndDate?: boolean;
   moveSaveSubmitToTop?: boolean;
   primaryContactId?: string | null;
   secondaryContactId?: string | null;
