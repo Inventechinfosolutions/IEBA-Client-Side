@@ -366,6 +366,8 @@ export function useGetUserAllowMulticodeHistory(userId: string | null | undefine
     queryKey: addEmployeeLookupKeys.userAllowMulticodeHistory(id),
     queryFn: () => fetchUserAllowMulticodeHistory(id),
     enabled: Boolean(id) && enabled,
-    staleTime: 60_000,
+    staleTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
   })
 }

@@ -1,6 +1,10 @@
 import type { QueryClient } from "@tanstack/react-query"
 
-import { fetchSecurityDepartmentRoles, fetchUserDetailsTab } from "../api"
+import {
+  fetchSecurityDepartmentRoles,
+  fetchUserAllowMulticodeHistory,
+  fetchUserDetailsTab,
+} from "../api"
 import { addEmployeeLookupKeys } from "../keys"
 import type { AddEmployeeFormTab, UserModuleFormValues } from "../types"
 import {
@@ -285,6 +289,11 @@ export async function refetchFormAfterTabSave(
           staleTime: 0,
         }),
         fetchTab2(queryClient, id),
+        queryClient.fetchQuery({
+          queryKey: addEmployeeLookupKeys.userAllowMulticodeHistory(id),
+          queryFn: () => fetchUserAllowMulticodeHistory(id),
+          staleTime: 0,
+        }),
       ])
       return {
         ...values,
@@ -319,6 +328,7 @@ export function invalidateUserTabCaches(
   if (sourceTab === "security") {
     void queryClient.invalidateQueries({ queryKey: addEmployeeLookupKeys.userDetailsTab(id, "tab2") })
     void queryClient.invalidateQueries({ queryKey: addEmployeeLookupKeys.securityDepartmentRoles(id) })
+    void queryClient.invalidateQueries({ queryKey: addEmployeeLookupKeys.userAllowMulticodeHistory(id) })
     return
   }
   if (sourceTab === "supervisor") {
