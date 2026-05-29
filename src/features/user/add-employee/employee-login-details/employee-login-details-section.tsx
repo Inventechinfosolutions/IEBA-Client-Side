@@ -8,7 +8,6 @@ import { TitleCaseInput } from "@/components/ui/title-case-input"
 import { Input } from "@/components/ui/input"
 import {
   MultiSelectDropdown,
-  parseMultiSelectStoredValues,
 } from "@/components/ui/multi-select-dropdown"
 import { SingleSelectDropdown, type SingleSelectOption } from "@/components/ui/dropdown"
 
@@ -16,7 +15,6 @@ import type { UserModuleFormValues, EmployeeLoginDetailsSectionProps } from "../
 import {
   useGetAddEmployeeJobClassifications,
   useGetAddEmployeeLocations,
-  useGetMulticodeMasterCodes,
   useGetUserDetailsTab,
 } from "../queries/get-add-employee"
 import { useEmployeeLoginDetailsUi } from "../hooks/use-add-employee-form"
@@ -35,7 +33,6 @@ export function EmployeeLoginDetailsSection({
   /** Defer GET /jobclassification and /location until the user opens the picker. */
   const [jobClassificationMenuOpened, setJobClassificationMenuOpened] = useState(false)
   const [locationMenuOpened, setLocationMenuOpened] = useState(false)
-  const [masterCodesOpened, setMasterCodesOpened] = useState(false)
 
   const { isSuperAdmin, user } = usePermissions()
   const queryClient = useQueryClient()
@@ -77,9 +74,6 @@ export function EmployeeLoginDetailsSection({
   }, [isEditMode, tabData, setValue, getValues])
 
   const employeeName = `${watch("firstName") ?? ""} ${watch("lastName") ?? ""}`.trim()
-  const allowMultiCodesEnabled = watch("allowMultiCodes") === true
-  /** Only fetch when dropdown is clicked */
-  const multicodeMasterCodesQuery = useGetMulticodeMasterCodes(allowMultiCodesEnabled && masterCodesOpened)
 
   const labelClassName = "mb-1 block select-none text-[11px] font-medium text-[#2a2f3a]"
   const passwordErrorClassName = "mt-1 text-[11px] text-[#ff0000]"
@@ -533,66 +527,6 @@ export function EmployeeLoginDetailsSection({
             />
             Multilingual
           </label>
-          <div className="flex flex-wrap items-center gap-3">
-            <label className="flex shrink-0 cursor-pointer select-none items-center gap-2 text-[12px] text-[#111827]">
-              <Controller
-                name="allowMultiCodes"
-                control={control}
-                render={({ field }) => (
-                  <Checkbox
-                    checked={field.value}
-                    onCheckedChange={(checked) => {
-                      const on = checked === true
-                      field.onChange(on)
-                      if (!on) {
-                        setValue("assignedMultiCodes", "", {
-                          shouldDirty: true,
-                          shouldTouch: true,
-                          shouldValidate: true,
-                        })
-                      } else {
-                        void queryClient.invalidateQueries({
-                          queryKey: addEmployeeLookupKeys.multicodeMasterCodes(),
-                        })
-                      }
-                    }}
-                    className="size-3.5 cursor-pointer rounded-[3px] border-[#c2c6d1] data-[state=checked]:border-(--primary) data-[state=checked]:bg-(--primary)"
-                  />
-                )}
-              />
-              Allow MultiCodes
-            </label>
-            {allowMultiCodesEnabled ? (
-              <div className="min-w-[200px] max-w-[280px] shrink-0">
-                <Controller
-                  name="assignedMultiCodes"
-                  control={control}
-                  render={({ field }) => {
-                    const rows = multicodeMasterCodesQuery.data ?? []
-                    const tokens = parseMultiSelectStoredValues(field.value ?? "")
-                    const rowNames = new Set(rows.map((r) => r.name))
-                    const orphanTokens = [...new Set(tokens.filter((t) => !rowNames.has(t)))]
-                    const options = [
-                      ...rows.map((r) => ({ value: r.name, label: r.name })),
-                      ...orphanTokens.map((t) => ({ value: t, label: t })),
-                    ]
-                    return (
-                      <div onClick={() => setMasterCodesOpened(true)}>
-                        <MultiSelectDropdown
-                          value={field.value ?? ""}
-                          onChange={field.onChange}
-                          onBlur={field.onBlur}
-                          placeholder="Select MultiCodes"
-                          options={options}
-                          isLoading={multicodeMasterCodesQuery.isFetching}
-                        />
-                      </div>
-                    )
-                  }}
-                />
-              </div>
-            ) : null}
-          </div>
         </div>
       </div>
 

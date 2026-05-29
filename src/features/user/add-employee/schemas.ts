@@ -145,6 +145,20 @@ const userModuleFormFieldsSchema = z.object({
   jobDutyFile: z.custom<File | null>().optional(),
   /** Map of departmentId -> percentage string for Supervisor Apportioning table. */
   apportioningAllocations: z.record(z.string(), z.string().nullish()).optional().default({}),
+  /** Activation Start Date for MultiCode assignment (ISO date string YYYY-MM-DD). */
+  activationStartDate: z.string().trim().optional(),
+  /** Activation End Date for MultiCode assignment (ISO date string YYYY-MM-DD). */
+  activationEndDate: z.string().trim().optional(),
+  departmentMultiCodes: z.array(
+    z.object({
+      departmentId: z.number(),
+      departmentName: z.string(),
+      allowMultiCodes: z.boolean(),
+      assignedMultiCodes: z.string().trim().optional(),
+      activationStartDate: z.string().trim().optional(),
+      activationEndDate: z.string().trim().optional(),
+    })
+  ).optional().default([]),
 })
 
 const passwordMatchRefine = {

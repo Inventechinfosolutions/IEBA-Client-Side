@@ -734,11 +734,13 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                                                     id={setting.key}
                                                     checked={!!settings[setting.key as keyof typeof settings]}
                                                     disabled={
-                                                        (setting.key === "removeAutoFillEndTime" && settings.removeStartEndTime)
+                                                        (setting.key === "removeAutoFillEndTime" && settings.removeStartEndTime) ||
+                                                        (setting.key === "allowActivationStartDateAndEndDate" && !settings.allowMultiCodes)
                                                     }
                                                     onCheckedChange={(val) => {
                                                         if (
-                                                            (setting.key === "removeAutoFillEndTime" && settings.removeStartEndTime)
+                                                            (setting.key === "removeAutoFillEndTime" && settings.removeStartEndTime) ||
+                                                            (setting.key === "allowActivationStartDateAndEndDate" && !settings.allowMultiCodes)
                                                         ) {
                                                             return
                                                         }
@@ -752,9 +754,14 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                                                         if (setting.key === "removeStartEndTime" && isChecked) {
                                                             setValue("settings.removeAutoFillEndTime", false)
                                                         }
+                                                        if (setting.key === "allowMultiCodes" && !isChecked) {
+                                                            setValue("settings.allowActivationStartDateAndEndDate", false)
+                                                            setValue("settings.multiCodes", "")
+                                                        }
                                                     }}
                                                     className={`h-[18px] w-[18px] data-[state=checked]:bg-[#6C5DD3] data-[state=checked]:border-[#6C5DD3] disabled:opacity-50 ${
-                                                        (setting.key === "removeAutoFillEndTime" && settings.removeStartEndTime)
+                                                        ((setting.key === "removeAutoFillEndTime" && settings.removeStartEndTime) ||
+                                                            (setting.key === "allowActivationStartDateAndEndDate" && !settings.allowMultiCodes))
                                                             ? "cursor-not-allowed"
                                                             : ""
                                                     }`}
@@ -762,7 +769,8 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                                                 <Label
                                                     htmlFor={setting.key}
                                                     className={`text-[14px] font-[400] text-[#374151] ${
-                                                        ((setting.key === "removeAutoFillEndTime" && settings.removeStartEndTime))
+                                                        ((setting.key === "removeAutoFillEndTime" && settings.removeStartEndTime) ||
+                                                            (setting.key === "allowActivationStartDateAndEndDate" && !settings.allowMultiCodes))
                                                             ? "cursor-not-allowed opacity-60"
                                                             : ""
                                                     }`}

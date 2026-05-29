@@ -58,6 +58,8 @@ export type UserModuleRow = {
   clientAdmin: boolean
   multicodesEnabled: boolean
   assignedMultiCodes: string
+  activationStartDate?: string
+  activationEndDate?: string
   active: boolean
 }
 
@@ -161,6 +163,8 @@ export type CreateUserRequestDto = {
   contacts?: Array<{ phone?: string; countryCode?: string }>
   supervisorApportioning?: boolean
   apportioningAllocations?: Array<{ departmentId: number; apportioning: number }>
+  activationStartDate?: string
+  activationEndDate?: string
 }
 
 /** Matches backend `EmergencyContactUpsertReqDto` on PUT /users/:id (`""` = none, same as other empty strings). */
@@ -196,6 +200,8 @@ export type UpdateUserRequestDto = {
   emergencyContact?: EmergencyContactUpsertDto
   supervisorApportioning?: boolean
   apportioningAllocations?: Array<{ departmentId: number; apportioning: number }>
+  activationStartDate?: string
+  activationEndDate?: string
 }
 
 export type CreateUserResponseDto = {
@@ -272,6 +278,8 @@ export type UserDetailsDto = {
     status: string
   }>
   supervisorApportioning: boolean
+  activationStartDate?: string | null
+  activationEndDate?: string | null
 }
 
 export type UserModuleListResponse = {

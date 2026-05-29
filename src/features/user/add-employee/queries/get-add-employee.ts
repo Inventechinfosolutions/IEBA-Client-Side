@@ -20,6 +20,7 @@ import {
   fetchUserActivitiesWithAssignments,
   fetchUserTimeStudyDepartments,
   fetchUserDetailsTab,
+  fetchUserAllowMulticodeHistory,
 } from "../api"
 import { addEmployeeLookupKeys } from "../keys"
 import type {
@@ -356,5 +357,17 @@ export function useGetDepartmentRolesForUser(userId: string | null | undefined, 
       return await fetchSecurityDepartmentRoles(id)
     },
     enabled: Boolean(id) && enabled,
+  })
+}
+
+export function useGetUserAllowMulticodeHistory(userId: string | null | undefined, enabled: boolean) {
+  const id = userId?.trim() ?? ""
+  return useQuery({
+    queryKey: addEmployeeLookupKeys.userAllowMulticodeHistory(id),
+    queryFn: () => fetchUserAllowMulticodeHistory(id),
+    enabled: Boolean(id) && enabled,
+    staleTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
   })
 }

@@ -243,6 +243,8 @@ export type UserTimeStudyDepartment = {
   departmentName: string
   /** `userprofile.tsmins` for this user (same on every department row). */
   tsMinPerDay?: number | null
+  allowActivationStartDateAndEndDate?: boolean
+  multiCodes?: string[] | null
   moveSaveSubmitToTop?: boolean
   removeAutoFillEndTime?: boolean
   startorEndTime?: boolean
@@ -510,3 +512,19 @@ export type SupervisorAssignmentsPanelProps = {
 }
 
 export type SupervisorMenuOpen = "primary" | "secondary" | null
+
+export type UserAllowMultiCodeHistoryRow = {
+  id: number
+  userId: string
+  startDate: string
+  endDate: string | null
+  allowMultiCodes: boolean
+  multiCodeTypes: string[] | null
+  departmentId: number | null
+  latestMultiCodeTypes?: string[] | null
+  createdAt: string
+  createdBy: string | null
+  updatedAt: string
+  updatedBy: string | null
+}
+

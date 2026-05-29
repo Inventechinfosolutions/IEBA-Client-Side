@@ -52,6 +52,8 @@ function mapCreateInput(input: CreateUserModuleInput): CreateUserRequestDto {
     ...(locationId != null ? { locationId } : {}),
     ...(contacts ? { contacts } : {}),
     supervisorApportioning: input.values.supervisorApportioning,
+    activationStartDate: input.values.activationStartDate || undefined,
+    activationEndDate: input.values.activationEndDate || undefined,
   }
 }
 
