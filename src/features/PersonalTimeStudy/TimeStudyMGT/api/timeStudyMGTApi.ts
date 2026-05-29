@@ -1,4 +1,3 @@
-import { apiGetUserModuleRows } from "@/features/user/api"
 import { apiGetMonthLegend, apiGetDayDetail, apiGetUserProgramsAndActivities } from "../../api/personalTimeStudyApi"
 import { api } from "@/lib/api"
 import type { UserMonthLegendResDto, UserDayLegendDetailResDto } from "../../types"
@@ -9,21 +8,18 @@ import type { MgtEmployeeRow } from "../types"
  * @param search - Optional name search
  * @param departmentIds - Optional comma-separated department IDs
  */
-export async function apiMgtGetEmployeeList(search?: string, departmentIds?: string): Promise<MgtEmployeeRow[]> {
-  const res = await apiGetUserModuleRows({
-    page: 1,
-    pageSize: 100,
-    sort: "ASC",
-    inactiveOnly: false,
-    name: search || undefined,
-    departmentId: departmentIds,
-  })
-  return res.items.map((u) => ({
+export async function apiMgtGetEmployeeList(_search?: string, _departmentIds?: string): Promise<MgtEmployeeRow[]> {
+  const res = await api.get<any>(
+    `/timestudyrecords/users/eligible?status=active`
+  )
+  const items = res.data?.data ?? []
+  return items.map((u: any) => ({
     id: u.id,
-    employee: u.employee,
-    firstName: u.firstName,
-    lastName: u.lastName,
-    department: u.department,
+    employee: u.name || `${u.firstName ?? ""} ${u.lastName ?? ""}`.trim() || u.id,
+    firstName: u.firstName ?? "",
+    lastName: u.lastName ?? "",
+    name: u.name || `${u.firstName ?? ""} ${u.lastName ?? ""}`.trim(),
+    department: "",
   }))
 }
 

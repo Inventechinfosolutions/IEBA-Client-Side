@@ -2,8 +2,6 @@ import { useMemo, useState } from "react"
 import { useGetMGTEmployeeList } from "../queries/getMGTEmployeeList"
 import { useGetMGTMonthLegend } from "../queries/getMGTMonthLegend"
 import { useGetMGTDayDetail } from "../queries/getMGTDayDetail"
-import { useGetMGTDropdowns } from "../queries/getMGTDropdowns"
-import { useGetTimeEntrySummary } from "../../queries/getTimeEntrySummary"
 import { toIsoYmdFromDate, todayLocal } from "@/lib/dates"
 import { usePermissions } from "@/hooks/usePermissions"
 import type { MgtEmployeeRow, MgtDayStatusMap, MgtWeekSummary } from "../types"
@@ -51,8 +49,8 @@ export function useTimeStudyMGT() {
     selectedDate ? selectedDate.getMonth() + 1 : month,
     selectedDate ? selectedDate.getFullYear() : year
   )
-  const dropdownQuery = useGetMGTDropdowns(selectedUserId)
-  const summaryQuery  = useGetTimeEntrySummary(selectedUserId || "", dateStr || "", "tsmanagement", !!selectedUserId && !!dateStr)
+  // dropdownQuery removed: MGT form is read-only, programs-activities not needed
+  // summaryQuery removed: allocated/actual totals come from monthlegend data
 
   // ── Derived data ──────────────────────────────────────────────────────────
   const employees = employeeListQuery.data ?? []
@@ -92,7 +90,7 @@ export function useTimeStudyMGT() {
       if (!weekMap[weekKey]) {
         weekMap[weekKey] = { totalMinutes: 0, status: "notsubmitted", days: [] }
       }
-      weekMap[weekKey].totalMinutes += (d.minutes ?? 0) + (d.leaveMinutes ?? 0)
+      weekMap[weekKey].totalMinutes += d.minutes ?? 0
       weekMap[weekKey].days.push(d.status)
     }
 
@@ -208,14 +206,14 @@ export function useTimeStudyMGT() {
     filteredEmployees,
     dayStatuses,
     weekSummaries,
-    allocatedTotal: summaryQuery.data?.tsmins ?? allocatedTotal,
-    actualTotal: summaryQuery.data?.actualnormalactivitytime ?? actualTotal,
-    balanceTotal: summaryQuery.data?.actualnormalactivityTimebalance ?? balanceTotal,
+    allocatedTotal,
+    actualTotal,
+    balanceTotal,
     legend,
     dayDetail: dayDetailQuery.data,
-    dropdownData: dropdownQuery.data,
-    actualMultiTotal: summaryQuery.data?.actualmultiactivitytime,
-    multiBalanceTotal: summaryQuery.data?.actualmultiactivityTimebalance,
+    dropdownData: undefined,
+    actualMultiTotal: undefined,
+    multiBalanceTotal: undefined,
 
     // Loading states
     isEmployeeListLoading: employeeListQuery.isLoading,

@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from "react"
+import { useCallback, useMemo, useState } from "react"
 import { X, Lock, Check } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
@@ -119,7 +119,6 @@ export function PersonalTimeStudyPage() {
   // 4b. Multicode programs cache — lifted here so it survives date remounts (key={dateStr} on the form)
   const [departmentMulticodes, setDepartmentMulticodes] = useState<Record<string, any[]>>({})
   const [fetchingDepartments, setFetchingDepartments] = useState<Record<string, boolean>>({})
-  const fetchedMulticodesRef = useRef<Set<string>>(new Set())
 
   const fetchMulticodeProgramsForDepartment = useCallback(async (deptIdStr: string | number | undefined) => {
     const deptId = String(deptIdStr || '').trim()
@@ -159,7 +158,7 @@ export function PersonalTimeStudyPage() {
         weekMap[weekKey] = { totalMinutes: 0, targetMinutes: 0, days: [] }
       }
 
-      weekMap[weekKey].totalMinutes += (d.minutes ?? 0) + (d.leaveMinutes ?? 0)
+      weekMap[weekKey].totalMinutes += d.minutes ?? 0
       weekMap[weekKey].targetMinutes += d.allocatedMinutes ?? 0
       weekMap[weekKey].days.push(d.status)
     }

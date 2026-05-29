@@ -288,7 +288,6 @@ export function EmployeeLeaveRequestDialog({
 
   const [departmentMulticodes, setDepartmentMulticodes] = useState<Record<string, any[]>>({})
   const [fetchingDepartments, setFetchingDepartments] = useState<Record<string, boolean>>({})
-  const fetchedMulticodesRef = useRef<Set<string>>(new Set())
   const [programActivities, setProgramActivities] = useState<Record<string, any[]>>({})
   const fetchedRef = useRef<Set<string>>(new Set())
   const fetchMulticodeProgramsForDepartment = useCallback(async (deptIdStr: string | number | undefined) => {

@@ -1,6 +1,6 @@
 "use client"
 
-import { LayoutDashboard, Users } from "lucide-react"
+import { LayoutDashboard } from "lucide-react"
 import { Link } from "react-router-dom"
 
 import { useAuth } from "@/contexts/AuthContext"
