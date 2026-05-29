@@ -3,7 +3,39 @@ import tableEmptyIcon from "@/assets/icons/table-empty.png"
 import { TitleCaseInput } from "@/components/ui/title-case-input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 
-import type { TransferPanelProps } from "../../types"
+import type { TransferItem, TransferPanelProps } from "../../types"
+
+const ROW_NAME_MAX_LENGTH = 70
+
+function truncateLabelName(name: string, maxLength = ROW_NAME_MAX_LENGTH): string {
+  if (name.length <= maxLength) return name
+  return `${name.slice(0, maxLength)}…`
+}
+
+function RowLabel({ item, isSelected }: { item: TransferItem; isSelected: boolean }) {
+  const displayName = truncateLabelName(item.name)
+  const showFullNameTooltip = item.name.length > ROW_NAME_MAX_LENGTH
+
+  if (item.code) {
+    const rowColorClass = isSelected ? "text-[#6C5DD3]" : "text-[#111827]"
+    return (
+      <div className={`flex min-w-0 overflow-hidden ${rowColorClass}`}>
+        <span className="shrink-0 font-bold text-[#6C5DD3]">({item.code})</span>
+        <span className="shrink-0 font-bold text-[#111827]"> - </span>
+        <span className="min-w-0" title={showFullNameTooltip ? item.name : undefined}>
+          {displayName}
+        </span>
+      </div>
+    )
+  }
+
+  return (
+    <div className={isSelected ? "text-[#6C5DD3]" : "text-[#374151]"}>
+      <span className="font-bold text-[#111827]"> - </span>
+      <span title={showFullNameTooltip ? item.name : undefined}>{displayName}</span>
+    </div>
+  )
+}
 
 export function TransferPanel({
   title,
@@ -36,7 +68,7 @@ export function TransferPanel({
         </div>
       </div>
 
-      <ScrollArea className="h-[220px] py-2 px-2">
+      <ScrollArea className="h-[380px] py-2 px-2">
         {items.length > 0 ? (
           <div className="flex flex-col">
             {isActivity && selectedDept ? (
@@ -84,19 +116,11 @@ export function TransferPanel({
                         </div>
                       ) : null}
                       <div
-                        className={`text-[10px] font-medium whitespace-normal break-words ${
+                        className={`min-w-0 text-[10px] font-medium ${
                           isActivity ? "pl-6" : ""
                         }`}
                       >
-                        {item.code ? (
-                          <>
-                            <div className={isSelected ? "text-[#6C5DD3]" : "text-[#111827]"}><span className="font-bold text-[#6C5DD3]">({item.code})</span>  {item.name}</div>
-                          </>
-                        ) : (
-                          <div className={isSelected ? "text-[#6C5DD3]" : "text-[#374151]"}>
-                            {item.name}
-                          </div>
-                        )}
+                        <RowLabel item={item} isSelected={isSelected} />
                       </div>
                     </div>
 

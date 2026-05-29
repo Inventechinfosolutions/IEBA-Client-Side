@@ -54,6 +54,13 @@ function RowCheckbox({ isSelected, readOnly }: { isSelected: boolean; readOnly?:
   )
 }
 
+const ROW_NAME_MAX_LENGTH = 70
+
+function truncateLabelName(name: string, maxLength = ROW_NAME_MAX_LENGTH): string {
+  if (name.length <= maxLength) return name
+  return `${name.slice(0, maxLength)}…`
+}
+
 function RowLabel({
   item,
   isSelected,
@@ -63,23 +70,33 @@ function RowLabel({
   isSelected: boolean
   readOnly?: boolean
 }) {
+  const nameColorClass = readOnly ? "text-[#111827]" : isSelected ? "text-[#6C5DD3]" : "text-[#111827]"
+  const displayName = truncateLabelName(item.name)
+  const showFullNameTooltip = item.name.length > ROW_NAME_MAX_LENGTH
+
   if (item.code) {
     return (
-      <>
-        <span className={`font-bold ${readOnly ? "text-[#6C5DD3]" : isSelected ? "text-[#6C5DD3]" : "text-[#6C5DD3]"}`}>
+      <span className="flex min-w-0 flex-1 items-center overflow-hidden">
+        <span className="shrink-0 font-bold text-[#6C5DD3]">
           ({item.code}
           {item.isMultiCode ? "**" : ""})
         </span>
-        <span className="font-bold text-[#111827]"> — </span>
-        <span className={readOnly ? "text-[#111827]" : isSelected ? "text-[#6C5DD3]" : "text-[#111827]"}>
-          {item.name}
+        <span className="shrink-0 font-bold text-[#111827]"> — </span>
+        <span
+          className={`min-w-0 ${nameColorClass}`}
+          title={showFullNameTooltip ? item.name : undefined}
+        >
+          {displayName}
         </span>
-      </>
+      </span>
     )
   }
   return (
-    <span className={readOnly ? "text-[#111827]" : isSelected ? "text-[#6C5DD3]" : "text-[#111827]"}>
-      {item.name}
+    <span
+      className={`block min-w-0 flex-1 ${nameColorClass}`}
+      title={showFullNameTooltip ? item.name : undefined}
+    >
+      {displayName}
     </span>
   )
 }
@@ -99,12 +116,16 @@ function TransferRow({
 }) {
   const rawLevel = item.level ?? minLevel
   const depth = Math.max(0, rawLevel - minLevel)
-  const indentPx = 12 + depth * 14
+  const indentPx = 35 + depth * 14
 
   const rowBody = (
     <>
+     <div className="absolute left-4 top-0.5 flex h-full w-8 items-center justify-center">
+          <div className="absolute left-1 top-0 h-full w-px bg-[#E5E7EB]" />
+          <div className="absolute left-1 top-1/2 h-px w-3 bg-[#E5E7EB]" />
+        </div>
       <div
-        className="flex min-w-0 flex-1 items-center gap-1 py-2 text-[10px] font-medium"
+        className="flex min-w-0 flex-1 items-center gap-1 text-[10px] font-medium"
         style={{ paddingLeft: indentPx }}
       >
         <RowLabel item={item} isSelected={isSelected} readOnly={readOnly} />
@@ -255,7 +276,7 @@ export function TransferPanel({
 
       <PanelSearchBar searchValue={searchValue} onSearchChange={onSearchChange} />
 
-      <ScrollArea className="relative h-[220px] py-2 px-2">
+      <ScrollArea className="relative h-[380px] py-2 px-2">
         {isLoading ? (
           <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/60">
             <Spinner className="text-[#6C5DD3]" />
@@ -274,7 +295,7 @@ export function TransferPanel({
                     : "flex flex-col"
                 }
               >
-                <div className="grid h-7 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 bg-[#F3F4F6] pl-4 pr-2 text-[10px] font-semibold text-[#374151]">
+                <div className="grid h-7 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 bg-[#F3F4F6] pl-4 pr-3 text-[10px] font-semibold text-[#374151]">
                   <span className="min-w-0">{selectedDept}</span>
                   <button
                     type="button"
@@ -290,7 +311,7 @@ export function TransferPanel({
                   </button>
                 </div>
 
-                <div className="px-4 py-1">
+                <div className="px-2 py-1">
                   <span className="inline-flex items-center justify-center rounded-[6px] border border-[#E5E7EB] bg-white px-3 py-1 text-[10px] font-bold text-[#374151] shadow-sm">
                     {title.includes("Activities") ? "Activities" : "Programs"}
                   </span>
