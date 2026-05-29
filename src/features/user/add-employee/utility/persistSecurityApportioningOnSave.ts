@@ -15,8 +15,6 @@ export async function persistSecurityApportioningOnSave(
   userId: string,
   values: UserModuleFormValues,
 ): Promise<void> {
-  if (!values.supervisorApportioning) return
-
   const snapshots = resolveAssignedSnapshotsForSecuritySave(
     userId,
     values.securityAssignedSnapshots ?? [],
@@ -25,6 +23,16 @@ export async function persistSecurityApportioningOnSave(
     catalogItemsFromAssignedSnapshots(snapshots),
   )
   if (departments.length === 0) return
+
+  if (!values.supervisorApportioning) {
+    await assignUserDepartmentRoles({
+      userId,
+      departments,
+      apportioningRequired: false,
+      apportioningAllocation: [],
+    })
+    return
+  }
 
   const apportioningAllocation = Object.entries(values.apportioningAllocations ?? {}).map(
     ([id, val]) => ({
