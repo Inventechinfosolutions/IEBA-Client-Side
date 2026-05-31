@@ -9,6 +9,7 @@ import { api } from "@/lib/api"
 export type UserAssignedDepartmentsSettingChecks = {
   apportioningRequired: boolean
   allowMultiCodes: boolean
+  userMultiCode: Array<{ departmentId: number }>
   departments: Array<{
     departmentId: number
     departmentName: string
@@ -62,12 +63,18 @@ export function useGetUserAssignedDepartmentsSettingChecks(
         removeDescriptionActivityNoteMultiCode: checkSettings ? checkSettings.requiresDescriptionActivityNotesMultiCode === false : false,
       }
 
-      const allowMultiCodes = checkSettings ? checkSettings.departmentAllowMultiCodes === true : false
+      const allowMultiCodes = checkSettings
+        ? (checkSettings.departmentAllowMultiCodes === true ||
+           checkSettings.allowMultiCodeForDate === true ||
+           (Array.isArray(checkSettings.userMultiCode) && checkSettings.userMultiCode.length > 0))
+        : false
+      const userMultiCode = checkSettings ? checkSettings.userMultiCode ?? [] : []
       const apportioningRequired = checkSettings ? checkSettings.userApportioning === true : false
 
       return {
         apportioningRequired,
         allowMultiCodes,
+        userMultiCode,
         departments: [],
         settings,
       }
