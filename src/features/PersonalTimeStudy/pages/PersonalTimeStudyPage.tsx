@@ -138,7 +138,7 @@ export function PersonalTimeStudyPage() {
   const summaryQuery = useGetTimeEntrySummary(userId, dateStr, undefined, activeTab === "personal")
 
   // 6. Aggregated department setting checks for the user
-  const settingChecksQuery = useGetUserAssignedDepartmentsSettingChecks(userId, activeTab === "personal" && !!userId)
+  const settingChecksQuery = useGetUserAssignedDepartmentsSettingChecks(userId, dateStr, activeTab === "personal" && !!userId)
 
   // 5. Calendar day & week summaries
   const { dayStatuses, weekSummaries } = useMemo(() => {

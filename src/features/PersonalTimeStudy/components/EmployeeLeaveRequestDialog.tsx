@@ -5,6 +5,7 @@ import { useCallback, useMemo, useRef, useState } from "react"
 import { Controller, useFieldArray, useForm } from "react-hook-form"
 import { toast } from "sonner"
 import { useAuth } from "@/contexts/AuthContext"
+import { api } from "@/lib/api"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -236,6 +237,25 @@ export function EmployeeLeaveRequestDialog({
   const effectiveUserId = (propsUserId ?? user?.id ?? "").trim()
   const allowMulticodeUi = allowMultiCodes === true
 
+  const [dateConfigs, setDateConfigs] = useState<Record<string, Array<{ departmentId: number }>>>({})
+
+  const fetchConfigForDate = useCallback(async (dateStr: string | undefined) => {
+    const date = dateStr?.split("T")[0]
+    if (!date || !effectiveUserId) return
+
+    try {
+      const res = await api.get<any>(`/timestudyrecords/user/config?userId=${encodeURIComponent(effectiveUserId)}&date=${date}`)
+      if (res?.success && res.data) {
+        setDateConfigs(prev => ({
+          ...prev,
+          [date]: res.data.userMultiCode ?? []
+        }))
+      }
+    } catch (err) {
+      console.error(`Failed to fetch user config for date ${date}`, err)
+    }
+  }, [effectiveUserId])
+
   const isEditing = !!initialValues;
   const isApproved = editingStatus?.toLowerCase() === "approved";
 
@@ -268,6 +288,15 @@ export function EmployeeLeaveRequestDialog({
     setPrevInitialValues(initialValues)
     if (initialValues) {
       form.reset(initialValues)
+      const dates = initialValues.entries
+        ?.map(e => e.date?.split("T")[0])
+        .filter((d): d is string => !!d)
+      if (dates) {
+        const uniqueDates = [...new Set(dates)]
+        for (const date of uniqueDates) {
+          fetchConfigForDate(date)
+        }
+      }
     }
   }
 
@@ -372,6 +401,25 @@ export function EmployeeLeaveRequestDialog({
       return undefined
     },
     [allowMulticodeUi, dropdownBundles, mergedLookupDropdown, multicodeBundles, programs, user?.departmentRoles],
+  )
+
+  const isMulticodeAllowedForLeaveParent = useCallback(
+    (parentIndex: number) => {
+      if (!allowMulticodeUi) return false
+      const parentRow = formEntries?.[parentIndex]
+      if (!parentRow) return false
+      const dateStr = parentRow.date?.split("T")[0]
+      if (!dateStr) return false
+      const parentProgramId = parentRow.programCode
+      if (!parentProgramId || parentProgramId === EMPTY) return false
+
+      const deptId = resolveDepartmentIdForProgram(parentProgramId)
+      if (!deptId) return false
+
+      const userMultiCode = dateConfigs[dateStr] ?? []
+      return userMultiCode.some(item => item.departmentId === deptId)
+    },
+    [allowMulticodeUi, formEntries, resolveDepartmentIdForProgram, dateConfigs]
   )
 
   const formatLeaveProgramOption = useCallback((p: any) => {
@@ -511,6 +559,8 @@ export function EmployeeLeaveRequestDialog({
 
   const appendMulticodeChildRowForParent = useCallback(
     (parentAnchorIndex: number) => {
+      if (!isMulticodeAllowedForLeaveParent(parentAnchorIndex)) return
+
       const entries = form.getValues("entries")
       const anchor = entries[parentAnchorIndex] ?? createEmptyRow()
       let insertAt = parentAnchorIndex + 1
@@ -519,7 +569,7 @@ export function EmployeeLeaveRequestDialog({
       }
       insert(insertAt, createMulticodeChildRow(anchor))
     },
-    [form, insert],
+    [form, insert, isMulticodeAllowedForLeaveParent],
   )
 
   const removeLeaveGroup = useCallback(
@@ -728,6 +778,9 @@ export function EmployeeLeaveRequestDialog({
                                 onBlur={f.onBlur}
                                 onChange={(e) => {
                                   f.onChange(e)
+                                  if (e.target.value) {
+                                    fetchConfigForDate(e.target.value)
+                                  }
                                   scheduleSyncMulticodeChildRowsFromParent(parentIndex)
                                 }}
                               />
@@ -803,6 +856,10 @@ export function EmployeeLeaveRequestDialog({
                                 onOpenChange={(open) => {
                                   if (open) {
                                     onDropdownOpen?.();
+                                    const dateStr = form.getValues(`entries.${parentIndex}.date`)
+                                    if (dateStr) {
+                                      fetchConfigForDate(dateStr)
+                                    }
                                   }
                                 }}
                                 options={(() => {
@@ -833,6 +890,10 @@ export function EmployeeLeaveRequestDialog({
                                   })
                                   if (v && v !== EMPTY) {
                                     fetchActivitiesForProgram(v)
+                                  }
+                                  const dateStr = form.getValues(`entries.${parentIndex}.date`)
+                                  if (dateStr) {
+                                    fetchConfigForDate(dateStr)
                                   }
                                   // Clear all multicode child rows immediately following this parent
                                   let i = parentIndex + 1
@@ -989,7 +1050,7 @@ export function EmployeeLeaveRequestDialog({
 
                       {(!isEditing || (allowMulticodeUi && !isApproved)) && (
                         <div className="flex items-end justify-center gap-1 pb-0.5">
-                          {allowMulticodeUi && !isApproved && (
+                          {isMulticodeAllowedForLeaveParent(parentIndex) && !isApproved && (
                             <Button
                               type="button"
                               size="icon"

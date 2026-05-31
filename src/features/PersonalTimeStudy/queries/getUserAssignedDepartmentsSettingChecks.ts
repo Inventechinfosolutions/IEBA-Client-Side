@@ -35,17 +35,18 @@ export type UserAssignedDepartmentsSettingChecks = {
  */
 export function useGetUserAssignedDepartmentsSettingChecks(
   userId: string,
+  date: string,
   enabled = true,
 ): import("@tanstack/react-query").UseQueryResult<UserAssignedDepartmentsSettingChecks | null> {
   return useQuery<UserAssignedDepartmentsSettingChecks | null>({
-    queryKey: [...userModuleKeys.detail(userId), "user-assigned-departments-setting-checks"],
+    queryKey: [...userModuleKeys.detail(userId), "user-assigned-departments-setting-checks", date],
     queryFn: async () => {
       if (!userId) return null
 
       // Fetch aggregated settings for all departments the user is assigned to
       let checkSettings: any = null
       try {
-        const res = await api.get<any>(`/timestudyrecords/user/config?userId=${encodeURIComponent(userId)}`)
+        const res = await api.get<any>(`/timestudyrecords/user/config?userId=${encodeURIComponent(userId)}&date=${encodeURIComponent(date)}`)
         if (res?.success && res.data) {
           checkSettings = res.data
         }
