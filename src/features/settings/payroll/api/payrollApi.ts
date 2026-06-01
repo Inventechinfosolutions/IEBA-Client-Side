@@ -54,29 +54,24 @@ function payrollByToBackendValue(payrollBy: PayrollBy): string {
 }
 
 /**
- * Bulk update payroll column settings.
- * Backend does not expose a single bulk endpoint, so we update only changed
- * rows via `PUT /payrollmanagement/settings/:id` and send only changed fields.
+ * Update payroll column settings.
+ * Uses individual PUT /payrollmanagement/settings/:id per changed column so the
+ * backend only updates isEnable/isEditable/displayOrder — it never deletes records.
+ *
+ * NOTE: The bulk endpoint (/payrollmanagement/settings/bulk) was intentionally
+ * removed because it was deleting rows from the DB instead of updating them.
+ * Individual per-id PUTs are safe and correct.
  */
 export async function updatePayrollSettings(data: PayrollSettingsBulkUpdateInput): Promise<void> {
-  // 1) Update changed columns.
-  // Prefer a true bulk endpoint if the backend supports it (single request),
-  // otherwise fall back to per-id updates.
+  // 1) Update each changed column individually via its own PUT request.
+  //    This guarantees the backend only mutates the specified fields (isEnable,
+  //    isEditable, displayOrder) without removing any records.
   if (Array.isArray(data.columns) && data.columns.length > 0) {
-    try {
-      // Backend expects a raw JSON array body.
-      await api.put("/payrollmanagement/settings/bulk", data.columns)
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err)
-      // Fallback for backends without bulk support (e.g. "Cannot PUT /api/v1/payrollmanagement/settings/bulk").
-      if (/cannot put|not found|404/i.test(msg)) {
-        await Promise.all(
-          data.columns.map(({ id, ...patch }: PayrollSettingsBulkUpdateColumn) => api.put(`/payrollmanagement/settings/${id}`, patch)),
-        )
-      } else {
-        throw err
-      }
-    }
+    await Promise.all(
+      data.columns.map(({ id, ...patch }: PayrollSettingsBulkUpdateColumn) =>
+        api.put(`/payrollmanagement/settings/${id}`, patch),
+      ),
+    )
   }
 
   // 2) Update Payroll Period only if included
