@@ -261,9 +261,10 @@ function SupportingDocField({
       <input ref={fileRef} type="file" className="hidden" multiple onChange={(e) => { if (e.target.files?.length) { onAdd(parentId, e.target.files); e.target.value = ""; } }} />
       <div className={cn(
         "flex h-10 w-full items-center rounded-[6px] border border-input text-[11px] overflow-hidden bg-white",
+        disabled && "bg-[#F2F4F7] cursor-not-allowed",
         isLeave && "border-yellow-400"
       )}>
-        <button type="button" className="flex flex-1 min-w-0 items-center px-2 overflow-hidden" onClick={() => setOpen((v) => !v)}>
+        <button type="button" className={cn("flex flex-1 min-w-0 items-center px-2 overflow-hidden", disabled && "cursor-not-allowed")} onClick={() => setOpen((v) => !v)}>
           <span className="truncate text-foreground flex-1">{pillLabel}</span>
           {extraCount > 0 && (
             <span className="ml-1 px-1.5 py-0.5 rounded-[6px] bg-[#6C5DD3]/10 text-[#6C5DD3] text-[10px] font-bold shrink-0">
@@ -345,6 +346,7 @@ export function PersonalTimeStudyEntryForm({
 
   const isLocked = useMemo(() => {
     if (readonly) return true
+    if (apportioningConfig && apportioningConfig.allowUserEntry === false) return true
     if (!initialRecords) return false
     return initialRecords.some(rec =>
       rec.date?.split("T")[0] === dateStr &&
@@ -353,14 +355,18 @@ export function PersonalTimeStudyEntryForm({
       ["submitted", "approved"].includes(rec.status?.toLowerCase()) &&
       rec.apportioning !== true
     )
-  }, [initialRecords, dateStr, readonly])
+  }, [initialRecords, dateStr, readonly, apportioningConfig])
 
   const allIsLeave = false
 
   const programs = useMemo(() => {
-    const list = dropdownData?.flatMap((d) => d.programs.map((p: any) => ({ ...p, departmentCode: d.departmentCode }))) ?? []
+    const allowedDeptIds = apportioningConfig?.timestudyAllowedDepartmentIds?.map((d) => d.departmentId) ?? []
+    const filteredData = allowedDeptIds.length > 0
+      ? (dropdownData ?? []).filter((d) => allowedDeptIds.includes(d.departmentId))
+      : (dropdownData ?? [])
+    const list = filteredData.flatMap((d) => d.programs.map((p: any) => ({ ...p, departmentCode: d.departmentCode })))
     return Array.from(new Map(list.map((p) => [p.id, p])).values())
-  }, [dropdownData])
+  }, [dropdownData, apportioningConfig?.timestudyAllowedDepartmentIds])
 
 
   const allowMulticodeUi = apportioningConfig?.allowMultiCodes === true
