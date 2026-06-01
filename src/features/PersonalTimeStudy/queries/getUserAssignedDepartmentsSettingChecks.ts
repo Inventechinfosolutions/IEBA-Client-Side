@@ -9,6 +9,7 @@ import { api } from "@/lib/api"
 export type UserAssignedDepartmentsSettingChecks = {
   apportioningRequired: boolean
   allowMultiCodes: boolean
+  userMultiCode: Array<{ departmentId: number }>
   departments: Array<{
     departmentId: number
     departmentName: string
@@ -34,17 +35,18 @@ export type UserAssignedDepartmentsSettingChecks = {
  */
 export function useGetUserAssignedDepartmentsSettingChecks(
   userId: string,
+  date: string,
   enabled = true,
 ): import("@tanstack/react-query").UseQueryResult<UserAssignedDepartmentsSettingChecks | null> {
   return useQuery<UserAssignedDepartmentsSettingChecks | null>({
-    queryKey: [...userModuleKeys.detail(userId), "user-assigned-departments-setting-checks"],
+    queryKey: [...userModuleKeys.detail(userId), "user-assigned-departments-setting-checks", date],
     queryFn: async () => {
       if (!userId) return null
 
       // Fetch aggregated settings for all departments the user is assigned to
       let checkSettings: any = null
       try {
-        const res = await api.get<any>(`/timestudyrecords/user/config?userId=${encodeURIComponent(userId)}`)
+        const res = await api.get<any>(`/timestudyrecords/user/config?userId=${encodeURIComponent(userId)}&date=${encodeURIComponent(date)}`)
         if (res?.success && res.data) {
           checkSettings = res.data
         }
@@ -62,12 +64,18 @@ export function useGetUserAssignedDepartmentsSettingChecks(
         removeDescriptionActivityNoteMultiCode: checkSettings ? checkSettings.requiresDescriptionActivityNotesMultiCode === false : false,
       }
 
-      const allowMultiCodes = checkSettings ? checkSettings.departmentAllowMultiCodes === true : false
+      const allowMultiCodes = checkSettings
+        ? (checkSettings.departmentAllowMultiCodes === true ||
+           checkSettings.allowMultiCodeForDate === true ||
+           (Array.isArray(checkSettings.userMultiCode) && checkSettings.userMultiCode.length > 0))
+        : false
+      const userMultiCode = checkSettings ? checkSettings.userMultiCode ?? [] : []
       const apportioningRequired = checkSettings ? checkSettings.userApportioning === true : false
 
       return {
         apportioningRequired,
         allowMultiCodes,
+        userMultiCode,
         departments: [],
         settings,
       }

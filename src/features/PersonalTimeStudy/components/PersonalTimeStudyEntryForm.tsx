@@ -422,6 +422,17 @@ export function PersonalTimeStudyEntryForm({
     [allowMulticodeUi, multicodeBundles, dropdownData],
   )
 
+  const isMulticodeAllowedForParent = useCallback(
+    (parent: TimeEntryParentRow) => {
+      if (!allowMulticodeUi) return false
+      const deptId = resolveDepartmentIdForProgram(parent.tsProgram)
+      if (!deptId) return false
+      const userMultiCode = apportioningConfig?.userMultiCode ?? []
+      return userMultiCode.some(item => item.departmentId === deptId)
+    },
+    [allowMulticodeUi, resolveDepartmentIdForProgram, apportioningConfig?.userMultiCode],
+  )
+
   const fetchMulticodeProgramsForDepartment = useCallback(async (deptIdStr: string | number | undefined) => {
     // If parent is managing the cache, delegate to it
     if (onFetchMulticodeDept) {
@@ -762,11 +773,16 @@ export function PersonalTimeStudyEntryForm({
 
   const addSubRow = useCallback((parentId: string) => {
     const parent = parents.find((p) => p.id === parentId)
-    if (parent && parent.tsProgram) {
-      const deptId = resolveDepartmentIdForProgram(parent.tsProgram)
-      if (deptId) {
-        fetchMulticodeProgramsForDepartment(deptId)
-      }
+    if (!parent) return
+
+    const deptId = resolveDepartmentIdForProgram(parent.tsProgram)
+    const userMultiCode = apportioningConfig?.userMultiCode ?? []
+    if (!allowMulticodeUi || !deptId || !userMultiCode.some(item => item.departmentId === deptId)) {
+      return
+    }
+
+    if (deptId) {
+      fetchMulticodeProgramsForDepartment(deptId)
     }
     setParents((prev) => prev.map((p) => {
       if (p.id !== parentId) return p
@@ -775,7 +791,7 @@ export function PersonalTimeStudyEntryForm({
         subRows: [...p.subRows, createSubRow()]
       }
     }))
-  }, [parents, resolveDepartmentIdForProgram, fetchMulticodeProgramsForDepartment])
+  }, [parents, resolveDepartmentIdForProgram, fetchMulticodeProgramsForDepartment, allowMulticodeUi, apportioningConfig?.userMultiCode])
 
   const removeSubRow = useCallback((parentId: string, subId: string) => {
     setParents((prev) => prev.map((p) => (p.id === parentId ? { ...p, subRows: p.subRows.filter((s) => s.id !== subId) } : p)))
@@ -1212,7 +1228,7 @@ export function PersonalTimeStudyEntryForm({
                       <Trash2 className="size-4" />
                     </Button>
                   )}
-                  {!readonly && !isLeaveRow && allowMulticodeUi && (
+                  {!readonly && !isLeaveRow && isMulticodeAllowedForParent(parent) && (
                     <Button
                       size="icon"
                       variant="outline"
