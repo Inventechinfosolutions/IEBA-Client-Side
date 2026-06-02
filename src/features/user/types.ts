@@ -75,6 +75,7 @@ export type GetUserModuleParams = {
   name?: string
   employeeId?: string
   departmentId?: string | number
+  isSupervisor?: boolean
 }
 
 export type PaginationMetaDto = {

@@ -46,7 +46,7 @@ export function UserTable({ rows, isLoading, onEditRow, onSwitchUser }: UserTabl
     "Supervisor Apportioning",
     "Multicodes enabled?",
     "Assigned Multi Codes",
-    "Action",
+    ...(canUpdateUser ? ["Action"] : []),
     ...(showSwitchUser ? (["Switch User"] as const) : []),
   ]
 
@@ -77,7 +77,7 @@ export function UserTable({ rows, isLoading, onEditRow, onSwitchUser }: UserTabl
           <col style={{ width: "95px" }} />
           <col style={{ width: "95px" }} />
           <col style={{ width: "75px" }} />
-          <col style={{ width: "70px" }} />
+          {canUpdateUser ? <col style={{ width: "70px" }} /> : null}
           {showSwitchUser ? <col style={{ width: "70px" }} /> : null}
         </colgroup>
         <TableHeader className="[&_tr]:border-b-0">
@@ -298,8 +298,8 @@ export function UserTable({ rows, isLoading, onEditRow, onSwitchUser }: UserTabl
                   <TableCell className="align-top border-r border-[#eff0f5] px-[14px] py-[5px] text-center text-[12px] text-[#232735] whitespace-normal break-words">
                     {row.assignedMultiCodes}
                   </TableCell>
-                  <TableCell className="border-r border-[#eff0f5] px-[14px] py-[5px] text-center">
-                    {canUpdateUser && (
+                  {canUpdateUser && (
+                    <TableCell className="border-r border-[#eff0f5] px-[14px] py-[5px] text-center">
                       <button
                         type="button"
                         onClick={() => onEditRow(row)}
@@ -312,8 +312,8 @@ export function UserTable({ rows, isLoading, onEditRow, onSwitchUser }: UserTabl
                           className="size-[12.1px] object-contain"
                         />
                       </button>
-                    )}
-                  </TableCell>
+                    </TableCell>
+                  )}
                   {showSwitchUser ? (
                     <TableCell className="border-r border-[#eff0f5] px-[14px] py-[5px] text-center">
                       <button

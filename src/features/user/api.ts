@@ -153,6 +153,30 @@ function mapUserListItemToRow(item: UserListItemApiDto): UserModuleRow {
 }
 
 export async function apiGetUserModuleRows(params: GetUserModuleParams): Promise<UserModuleListResponse> {
+  const listActive = !params.inactiveOnly
+
+  if (params.isSupervisor) {
+    const search = new URLSearchParams()
+    search.set("page", String(params.page))
+    search.set("limit", String(params.pageSize))
+    search.set("sort", params.sort ?? "ASC")
+    search.set("status", params.inactiveOnly ? "inactive" : "active")
+    if (params.departmentId !== undefined) {
+      search.set("departmentId", String(params.departmentId))
+    }
+    const queryString = search.toString()
+    const eligibleRes = await api.get<ApiResponseDto<UserListResponseDto>>(`/timestudyrecords/users/eligible?${queryString}`)
+    const dto = asUserListResponseDto(eligibleRes)
+    
+    const items = dto.data.map((item: UserListItemApiDto) => ({
+      ...mapUserListItemToRow(item),
+      active: listActive,
+    }))
+    const totalItems = typeof dto.meta?.totalItems === "number" ? dto.meta.totalItems : items.length
+
+    return { items, totalItems }
+  }
+
   const search = new URLSearchParams()
   search.set("page", String(params.page))
   search.set("limit", String(params.pageSize))
@@ -173,7 +197,6 @@ export async function apiGetUserModuleRows(params: GetUserModuleParams): Promise
   const res = await api.get<ApiResponseDto<UserListResponseDto>>(`/users?${queryString}`)
   const dto = asUserListResponseDto(res)
 
-  const listActive = !params.inactiveOnly
   const items = dto.data.map((item) => ({
     ...mapUserListItemToRow(item),
     active: listActive,

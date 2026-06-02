@@ -176,9 +176,10 @@ export function UserModulePage() {
     if (/^\d+$/.test(normalized)) {
       return { firstName: "", lastName: "", name: "", employeeId: normalized }
     }
-    // We send everything as the full name to search on the backed `name` column
     return { firstName: "", lastName: "", name: normalized, employeeId: "" }
   }, [searchTerm])
+
+  const isOnlySupervisor = isTimeStudySupervisor && !isSuperAdmin && !isDepartmentAdmin
 
   const userModule = useUserModule({
     page,
@@ -188,6 +189,7 @@ export function UserModulePage() {
     lastName: searchFilters.lastName || undefined,
     name: searchFilters.name || undefined,
     employeeId: searchFilters.employeeId || undefined,
+    isSupervisor: isOnlySupervisor || undefined,
     // SuperAdmin sees all users; all other roles are scoped to their assigned departments.
     // selectedDepartmentId (toolbar picker) takes priority when explicitly chosen.
     departmentId: selectedDepartmentId
