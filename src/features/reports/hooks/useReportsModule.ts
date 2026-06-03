@@ -1,17 +1,12 @@
 import { useDownloadReport } from "../mutations/downloadReport"
 import { useViewReport } from "../mutations/viewReport"
-import { useGetReportCatalog } from "../queries/getReports"
 
+/** View/download mutations for the Reports screen. Data queries live in ReportForm. */
 export function useReportsModule() {
-  const catalogQuery = useGetReportCatalog()
   const viewMutation = useViewReport()
   const downloadMutation = useDownloadReport()
 
   return {
-    catalogItems: catalogQuery.data ?? [],
-    isCatalogPending: catalogQuery.isPending,
-    isCatalogFetching: catalogQuery.isFetching,
-    catalogError: catalogQuery.error,
     viewReport: viewMutation.mutate,
     viewReportAsync: viewMutation.mutateAsync,
     isViewPending: viewMutation.isPending,

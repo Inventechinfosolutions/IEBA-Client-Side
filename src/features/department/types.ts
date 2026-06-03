@@ -12,6 +12,7 @@ import {
   type DepartmentApiListSortOrder,
   type DepartmentApiRecordStatus,
 } from "./enums/department.enum"
+import type { ReportMasterCodeData } from "@/features/reports/lib/reportMasterCodeData.utils"
 
 export type DepartmentUpsertValues = z.infer<typeof departmentUpsertSchema>
 
@@ -258,6 +259,58 @@ export type DepartmentAllQueryDto = {
   status?: string
   search?: string
   sort?: string
+}
+
+// Department report settings (tab 3) — API DTOs and UI types
+
+export type DepartmentReportOption = {
+  id: number
+  code: string
+  name: string
+  label: string
+}
+
+export type DepartmentMappedReportItem = {
+  id: number
+  code: string
+  name: string
+  /** Present on `/report/department/:id/mapped` when backend includes filter config. */
+  criteria?: string | Record<string, unknown>
+  reportdata?: string | null
+  type?: string
+  excludedMasterCodeData?: ReportMasterCodeData
+  includedMasterCodeData?: ReportMasterCodeData
+}
+
+export type DepartmentReportsMapResDto = {
+  tenantId?: string
+  countyName: string
+  nameSpace?: string
+  /** @deprecated use nameSpace */
+  namespace?: string
+  departmentId: number
+  name: string
+  reportIds: number[]
+  reports: DepartmentMappedReportItem[]
+}
+
+export type MapDepartmentReportsReqDto = {
+  departmentId: number
+  name: string
+  reportIds: number[]
+}
+
+export interface DepartmentReportSettingsPanelProps {
+  departmentId: string | null
+  departmentCode?: string
+  departmentName?: string
+  reportOptions: DepartmentReportOption[]
+  mappedReports: DepartmentReportsMapResDto | undefined
+  isReportOptionsLoading: boolean
+  isMappedReportsLoading: boolean
+  isSubmitting?: boolean
+  onEnsureDepartmentId: () => Promise<string | null>
+  onExit: () => void
 }
 
 export type { DepartmentApiListSortOrder, DepartmentApiRecordStatus }

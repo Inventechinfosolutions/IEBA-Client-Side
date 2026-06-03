@@ -11,16 +11,20 @@ import type { ReportsSettingsModel } from "@/features/settings/components/Report
 import type { FiscalYearSettingsModel } from "@/features/settings/components/FiscalYear/types"
 import type { PayrollSettingsModel } from "./payroll"
 
-export type ReportOption = { 
-  key: string; 
-  label: string;
-  id?: number;
-  criteria?: string | null;
-  type?: string;
-  reportdata?: string | null;
-  filename?: string | null;
-  path?: string | null;
-  status?: string | null;
+import type { ReportMasterCodeData } from "@/features/reports/lib/reportMasterCodeData.utils"
+
+export type ReportOption = {
+  key: string
+  label: string
+  id?: number
+  criteria?: string | null
+  type?: string
+  reportdata?: string | null
+  filename?: string | null
+  path?: string | null
+  status?: string | null
+  excludedMasterCodeData?: ReportMasterCodeData
+  includedMasterCodeData?: ReportMasterCodeData
 }
 export type ActivityOption = { code: string; label: string }
 
@@ -57,9 +61,13 @@ export type SettingsFormValues = z.input<typeof settingsFormSchema>
 
 export type SettingsResponse = SettingsModel
 
+export type ReportsSaveScope = "masterCodes" | "activities"
+
 export type UpdateSettingsInput = {
   values: SettingsFormValues
   submitterSection?: SettingsFormSaveSection
+  /** Which Reports row Save was clicked (master codes vs activities). */
+  reportsSaveScope?: ReportsSaveScope
 }
 
 export type SettingsFormDerivedFiscalYear = {
@@ -75,7 +83,7 @@ export type SettingsFormInnerProps = {
   isSaving: boolean
   onSubmitSettings: (
     values: SettingsFormValues,
-    meta?: { submitterSection?: SettingsFormSaveSection },
+    meta?: { submitterSection?: SettingsFormSaveSection; reportsSaveScope?: ReportsSaveScope },
   ) => void
 }
 

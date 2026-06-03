@@ -1,9 +1,12 @@
 import { useState } from "react"
+import { useQueryClient } from "@tanstack/react-query"
 import { Spinner } from "@/components/ui/spinner"
 import { ChevronDown, ChevronLeft } from "lucide-react"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { cn } from "@/lib/utils"
 
+import { ACTIVE_DEPARTMENTS_PAGE_PARAMS } from "@/features/department/constants"
+import { departmentKeys } from "@/features/department/keys"
 import { SETTINGS_ACCORDION_SECTIONS } from "@/features/settings/types"
 import { CountyForm } from "@/features/settings/components/Country/CountyForm"
 import { AutoGenerateCodeForm } from "@/features/settings/components/AutoGenerateCode/AutoGenerateCodeForm"
@@ -22,11 +25,19 @@ export function SettingsAccordion({
   openSection: string | undefined
   onOpenSectionChange: (next: string | undefined) => void
 }) {
+  const queryClient = useQueryClient()
   const [loadingSection, setLoadingSection] = useState<string | null>(null)
 
   const handleValueChange = (next: string) => {
     const section = next || undefined
+
     onOpenSectionChange(section)
+
+    if (next === "Reports") {
+      void queryClient.refetchQueries({
+        queryKey: departmentKeys.paginatedList(ACTIVE_DEPARTMENTS_PAGE_PARAMS),
+      })
+    }
 
     if (section) {
       setLoadingSection(section)
@@ -87,7 +98,7 @@ export function SettingsAccordion({
                   ) : section === "Fiscal Year" ? (
                     <FiscalYearForm isSaving={isSaving} />
                   ) : section === "Reports" ? (
-                    <ReportsForm isSaving={isSaving} />
+                    <ReportsForm isSaving={isSaving} isSectionOpen={openSection === "Reports"} />
                   ) : section === "General" ? (
                     <GeneralForm isSaving={isSaving} />
                   ) : (

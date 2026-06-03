@@ -19,9 +19,14 @@ export const DEFAULT_SETTINGS: SettingsModel = {
     screenInactivityTimeMinutes: 120,
   },
   reports: {
+    departmentId: "",
     reportKey: "",
-    exclusionMode: "exclude",
-    selectedActivityCodes: [],
+    masterCodeExclusionMode: "exclude",
+    activityExclusionMode: "exclude",
+    excludedMasterCodeIds: [],
+    includedMasterCodeIds: [],
+    excludedActivityCodes: [],
+    includedActivityCodes: [],
   },
   login: {
     twoFactorAuthentication: true,

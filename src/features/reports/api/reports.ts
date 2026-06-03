@@ -1,32 +1,41 @@
 import { api } from "@/lib/api"
+import {
+  mapRawReportsToCatalogItems,
+  mergeReportCriteriaFromCatalog,
+} from "../lib/reportCatalog.utils"
 import type {
   ReportCatalogItem,
   ReportRunPayload,
   ReportSelectOption,
 } from "../types"
 
-/** Fetches the list of available reports. */
+/** Fetches the full report catalog (department settings tab only). */
 export async function apiGetReportCatalog(): Promise<ReportCatalogItem[]> {
-  const resData = await api.get<any>("/report")
-  const data = Array.isArray(resData) ? resData : Array.isArray(resData.data) ? resData.data : []
+  const resData = await api.get<unknown>("/report")
+  const data = Array.isArray(resData)
+    ? resData
+    : Array.isArray((resData as { data?: unknown }).data)
+      ? (resData as { data: unknown[] }).data
+      : []
+  return mapRawReportsToCatalogItems(data)
+}
 
-  return data.map((r: any) => {
-    const code = r.code || r.reportCode || ""
-    const name = r.name || r.reportName || ""
-    let criteria: ReportCatalogItem["criteria"] | undefined = undefined
-    if (r.criteria) {
-      try {
-        criteria = typeof r.criteria === "string" ? JSON.parse(r.criteria) : r.criteria
-      } catch {
-        // malformed criteria string — ignore and leave criteria undefined
-      }
-    }
-    return {
-      key: code,
-      label: code && name ? `${code} ${name}` : code || name || "Unnamed Report",
-      criteria,
-    }
-  })
+/** GET /report/department/:departmentId/mapped?method=reportscreen — slim list for Reports run screen. */
+export async function apiGetReportsByDepartment(departmentId: string): Promise<ReportCatalogItem[]> {
+  const params = new URLSearchParams({ method: "reportscreen" })
+  const res = await api.get<unknown>(
+    `/report/department/${encodeURIComponent(departmentId)}/mapped?${params.toString()}`,
+  )
+  const body =
+    (res as { data?: { reports?: unknown[] } })?.data ?? (res as { reports?: unknown[] })
+  const reports = Array.isArray(body?.reports) ? body.reports : []
+  let items = mapRawReportsToCatalogItems(reports)
+  // Mapped rows are often id/code/name only; merge criteria so filters (cost pool, activities, etc.) work.
+  if (items.length > 0 && items.some((item) => !item.criteria)) {
+    const catalog = await apiGetReportCatalog()
+    items = mergeReportCriteriaFromCatalog(items, catalog)
+  }
+  return items
 }
 
 function formatDateForBackend(raw?: string): string | undefined {
