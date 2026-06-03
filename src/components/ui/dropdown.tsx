@@ -12,6 +12,12 @@ import {
 import { cn } from "@/lib/utils"
 import tableEmptyIcon from "@/assets/icons/table-empty.png"
 import { Spinner } from "@/components/ui/spinner"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 export type SingleSelectOption = {
   value: string
@@ -116,14 +122,29 @@ export function SingleSelectDropdown({
             className,
           )}
         >
-          <span
-            className={cn(
-              "min-w-0 flex-1 truncate",
-              !isLoading && !selectedLabel && "text-[#9ca3af]",
-            )}
-          >
-            {isLoading ? loadingLabel : selectedLabel || placeholder}
-          </span>
+          <TooltipProvider>
+            <Tooltip open={open ? false : undefined}>
+              <TooltipTrigger asChild>
+                <span
+                  className={cn(
+                    "min-w-0 flex-1 truncate",
+                    !isLoading && !selectedLabel && "text-[#9ca3af]",
+                  )}
+                >
+                  {isLoading ? loadingLabel : selectedLabel || placeholder}
+                </span>
+              </TooltipTrigger>
+              {selectedLabel && !isLoading && (
+                <TooltipContent
+                  side="top"
+                  sideOffset={6}
+                  className="z-[2000] bg-black border border-black rounded-[8px] text-white text-xs px-3 py-1.5 shadow-md font-normal max-w-xs break-words"
+                >
+                  {selectedLabel}
+                </TooltipContent>
+              )}
+            </Tooltip>
+          </TooltipProvider>
           {isLoading ? (
             <Spinner className="absolute right-3 top-1/2 size-4 -translate-y-1/2 text-[#6C5DD3]" />
           ) : (
@@ -160,35 +181,47 @@ export function SingleSelectDropdown({
               const rowKey = opt.key ?? `${opt.value}-${index}`
               const optionDisabled = opt.disabled === true
               return (
-                <button
-                  type="button"
-                  key={rowKey}
-                  disabled={optionDisabled}
-                  aria-disabled={optionDisabled}
-                  onClick={() => {
-                    if (optionDisabled) return
-                    onChange(opt.value)
-                    closeMenu()
-                  }}
-                  className={cn(
-                    "w-full px-3 py-2 text-left",
-                    optionDisabled
-                      ? "cursor-not-allowed text-[#9ca3af]"
-                      : "cursor-pointer hover:bg-[#f3f4f8]",
-                    selected && !optionDisabled ? "bg-[#eef8ff]" : "bg-transparent",
-                    itemButtonClassName,
-                  )}
-                >
-                  <span
-                    className={cn(
-                      "block truncate text-[13px] font-normal",
-                      optionDisabled ? "text-[#9ca3af]" : "text-[#111827]",
-                      itemLabelClassName,
-                    )}
-                  >
-                    {opt.label}
-                  </span>
-                </button>
+                <TooltipProvider key={rowKey}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        disabled={optionDisabled}
+                        aria-disabled={optionDisabled}
+                        onClick={() => {
+                          if (optionDisabled) return
+                          onChange(opt.value)
+                          closeMenu()
+                        }}
+                        className={cn(
+                          "w-full px-3 py-2 text-left",
+                          optionDisabled
+                            ? "cursor-not-allowed text-[#9ca3af]"
+                            : "cursor-pointer hover:bg-[#f3f4f8]",
+                          selected && !optionDisabled ? "bg-[#eef8ff]" : "bg-transparent",
+                          itemButtonClassName,
+                        )}
+                      >
+                        <span
+                          className={cn(
+                            "block truncate text-[13px] font-normal",
+                            optionDisabled ? "text-[#9ca3af]" : "text-[#111827]",
+                            itemLabelClassName,
+                          )}
+                        >
+                          {opt.label}
+                        </span>
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent
+                      side="right"
+                      sideOffset={6}
+                      className="z-[2000] bg-black border border-black rounded-[8px] text-white text-xs px-3 py-1.5 shadow-md font-normal max-w-xs break-words"
+                    >
+                      {opt.label}
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               )
             })}
           </div>
