@@ -8,6 +8,7 @@ import { api } from "@/lib/api"
  */
 export type UserAssignedDepartmentsSettingChecks = {
   apportioningRequired: boolean
+  autoApportioning: boolean
   allowMultiCodes: boolean
   userMultiCode: Array<{ departmentId: number }>
   departments: Array<{
@@ -80,6 +81,7 @@ export function useGetUserAssignedDepartmentsSettingChecks(
 
       return {
         apportioningRequired,
+        autoApportioning: checkSettings ? checkSettings.autoApportioning === true : false,
         allowMultiCodes,
         userMultiCode,
         departments: [],

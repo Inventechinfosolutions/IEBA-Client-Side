@@ -1,4 +1,4 @@
-import { ChevronDown, Clock, Eye, Plus, Trash2, Check, AlertCircle } from "lucide-react"
+import { ChevronDown, Clock, Eye, Plus, Trash2, Check } from "lucide-react"
 import { useCallback, useMemo, useRef, useState } from "react"
 import type { UserAssignedDepartmentsSettingChecks } from "../queries/getUserAssignedDepartmentsSettingChecks"
 
@@ -12,7 +12,7 @@ import { toast } from "sonner"
 import { SingleSelectSearchDropdown } from "@/components/ui/dropdown-search"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { TimePickerDropdown } from "@/components/ui/time-picker"
-import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card"
+import { PersonalTimeStudyApportioningPanel } from "./PersonalTimeStudyApportioningPanel"
 import { useAuth } from "@/contexts/AuthContext"
 import { API_BASE_URL } from "@/lib/config"
 import { apiDownloadSupportingDoc, apiDeleteSupportingDoc, apiGetUserActivitiesForProgram, apiGetUserProgramsAndActivitiesMulticode } from "../api/personalTimeStudyApi"
@@ -264,23 +264,7 @@ function SupportingDocField({
 
   return (
     <div className={cn("min-w-[90px] flex-1 space-y-0.5 relative")}>
-      <div className="flex items-center justify-between h-4">
-        <Label className="text-[11px] text-muted-foreground">Supporting doc</Label>
-        {isApportioned && (
-          <HoverCard openDelay={0} closeDelay={100}>
-            <HoverCardTrigger asChild>
-              <div className="cursor-pointer text-blue-500 hover:text-blue-600 transition-colors flex items-center relative -top-[2px] pb-[1px]">
-                <AlertCircle className="size-3.5" />
-              </div>
-            </HoverCardTrigger>
-            <HoverCardContent className="w-fit max-w-xs p-3 z-[100] bg-white border border-gray-100 shadow-xl rounded-[8px] text-[#111827]" align="end" side="top">
-              <div className="text-[12px] font-medium leading-relaxed">
-                To be updated soon...
-              </div>
-            </HoverCardContent>
-          </HoverCard>
-        )}
-      </div>
+      <Label className="text-[11px] text-muted-foreground">Supporting doc</Label>
       <input ref={fileRef} type="file" className="hidden" multiple onChange={(e) => { if (e.target.files?.length) { onAdd(parentId, e.target.files); e.target.value = ""; } }} />
       <div className={cn(
         "flex h-10 w-full items-center rounded-[6px] border border-input text-[11px] overflow-hidden bg-white",
@@ -358,6 +342,7 @@ export function PersonalTimeStudyEntryForm({
   departmentMulticodes: propDepartmentMulticodes,
   fetchingDepartments: propFetchingDepartments,
   onFetchMulticodeDept,
+  apportioningRecords,
 }: PersonalTimeStudyEntryFormProps) {
   const { user } = useAuth()
   const userId = propsUserId || user?.id || ""
@@ -542,6 +527,9 @@ export function PersonalTimeStudyEntryForm({
     const syncRecordsToState = () => {
       const filtered = (initialRecords ?? []).filter((r) => {
         if (r.date?.split("T")[0] !== dateStr) {
+          return false
+        }
+        if (r.apportioning === true) {
           return false
         }
         if (r.leaveid) {
@@ -1424,6 +1412,14 @@ export function PersonalTimeStudyEntryForm({
           )
         })}
       </div>
+
+      <PersonalTimeStudyApportioningPanel
+        apportioningConfig={apportioningConfig}
+        supervisorOwnMinutesToday={actualTotal || 0}
+        apportioningRecords={apportioningRecords}
+        autoApportioning={apportioningConfig?.autoApportioning}
+      />
+
       {!readonly && !moveSaveSubmitToTop && (
         <div className="mt-4 flex justify-end gap-2">
           <Button
