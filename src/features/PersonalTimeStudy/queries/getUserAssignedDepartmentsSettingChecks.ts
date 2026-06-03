@@ -26,6 +26,8 @@ export type UserAssignedDepartmentsSettingChecks = {
     removeDescriptionActivityNoteAnchor: boolean
     removeDescriptionActivityNoteMultiCode: boolean
   }
+  allowUserEntry: boolean
+  timestudyAllowedDepartmentIds: Array<{ departmentId: number }>
 }
 
 /**
@@ -66,11 +68,15 @@ export function useGetUserAssignedDepartmentsSettingChecks(
 
       const allowMultiCodes = checkSettings
         ? (checkSettings.departmentAllowMultiCodes === true ||
-           checkSettings.allowMultiCodeForDate === true ||
-           (Array.isArray(checkSettings.userMultiCode) && checkSettings.userMultiCode.length > 0))
+          checkSettings.allowMultiCodeForDate === true ||
+          (Array.isArray(checkSettings.userMultiCode) && checkSettings.userMultiCode.length > 0))
         : false
       const userMultiCode = checkSettings ? checkSettings.userMultiCode ?? [] : []
       const apportioningRequired = checkSettings ? checkSettings.userApportioning === true : false
+      const timestudyAllowedDepartmentIds: Array<{ departmentId: number }> = Array.isArray(checkSettings?.timestudyAllowed)
+        ? (checkSettings.timestudyAllowed as Array<{ departmentId: number }>)
+        : []
+      const allowUserEntry = timestudyAllowedDepartmentIds.length > 0
 
       return {
         apportioningRequired,
@@ -78,6 +84,8 @@ export function useGetUserAssignedDepartmentsSettingChecks(
         userMultiCode,
         departments: [],
         settings,
+        allowUserEntry,
+        timestudyAllowedDepartmentIds,
       }
     },
     enabled: !!userId && enabled,

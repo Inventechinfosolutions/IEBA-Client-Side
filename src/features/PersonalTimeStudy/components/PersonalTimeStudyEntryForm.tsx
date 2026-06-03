@@ -66,6 +66,7 @@ export type TimeEntryParentRow = {
   activityName?: string
   departmentCode?: string
   isLeave?: boolean
+  apportioning?: boolean
   leaveid?: number
   status?: string
   recordType?: string
@@ -192,6 +193,7 @@ function TimePicker24h({
   required = true,
   disabled = false,
   isLeave = false,
+  isApportioned = false,
 }: {
   value: string
   onChange: (v: string) => void
@@ -199,6 +201,7 @@ function TimePicker24h({
   required?: boolean
   disabled?: boolean
   isLeave?: boolean
+  isApportioned?: boolean
 }) {
   const [open, setOpen] = useState(false)
   return (
@@ -216,7 +219,8 @@ function TimePicker24h({
               className={cn(
                 "h-10 pr-8 text-[11px] font-normal rounded-[6px] text-[#344054] bg-white",
                 disabled && "bg-[#F2F4F7] cursor-not-allowed",
-                isLeave && "border-yellow-400"
+                isLeave && "border-yellow-400",
+                isApportioned && "border-[#6C5DD3]"
               )}
               onClick={() => !disabled && setOpen(true)}
             />
@@ -240,6 +244,7 @@ function SupportingDocField({
   onDelete,
   onDownload,
   isLeave = false,
+  isApportioned = false,
 }: {
   parentId: string
   docs: Array<{ name: string; url: string; file?: File; docId?: number }>
@@ -249,6 +254,7 @@ function SupportingDocField({
   onDelete: (parentId: string, name: string) => void
   onDownload: (parentId: string, doc: { name: string; url: string; file?: File; docId?: number }) => void
   isLeave?: boolean
+  isApportioned?: boolean
 }) {
   const [open, setOpen] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
@@ -261,9 +267,11 @@ function SupportingDocField({
       <input ref={fileRef} type="file" className="hidden" multiple onChange={(e) => { if (e.target.files?.length) { onAdd(parentId, e.target.files); e.target.value = ""; } }} />
       <div className={cn(
         "flex h-10 w-full items-center rounded-[6px] border border-input text-[11px] overflow-hidden bg-white",
-        isLeave && "border-yellow-400"
+        disabled && "bg-[#F2F4F7] cursor-not-allowed",
+        isLeave && "border-yellow-400",
+        isApportioned && "border-[#6C5DD3]"
       )}>
-        <button type="button" className="flex flex-1 min-w-0 items-center px-2 overflow-hidden" onClick={() => setOpen((v) => !v)}>
+        <button type="button" className={cn("flex flex-1 min-w-0 items-center px-2 overflow-hidden", disabled && "cursor-not-allowed")} onClick={() => setOpen((v) => !v)}>
           <span className="truncate text-foreground flex-1">{pillLabel}</span>
           {extraCount > 0 && (
             <span className="ml-1 px-1.5 py-0.5 rounded-[6px] bg-[#6C5DD3]/10 text-[#6C5DD3] text-[10px] font-bold shrink-0">
@@ -345,6 +353,7 @@ export function PersonalTimeStudyEntryForm({
 
   const isLocked = useMemo(() => {
     if (readonly) return true
+    if (apportioningConfig && apportioningConfig.allowUserEntry === false) return true
     if (!initialRecords) return false
     return initialRecords.some(rec =>
       rec.date?.split("T")[0] === dateStr &&
@@ -353,14 +362,18 @@ export function PersonalTimeStudyEntryForm({
       ["submitted", "approved"].includes(rec.status?.toLowerCase()) &&
       rec.apportioning !== true
     )
-  }, [initialRecords, dateStr, readonly])
+  }, [initialRecords, dateStr, readonly, apportioningConfig])
 
   const allIsLeave = false
 
   const programs = useMemo(() => {
-    const list = dropdownData?.flatMap((d) => d.programs.map((p: any) => ({ ...p, departmentCode: d.departmentCode }))) ?? []
+    const allowedDeptIds = apportioningConfig?.timestudyAllowedDepartmentIds?.map((d) => d.departmentId) ?? []
+    const filteredData = allowedDeptIds.length > 0
+      ? (dropdownData ?? []).filter((d) => allowedDeptIds.includes(d.departmentId))
+      : (dropdownData ?? [])
+    const list = filteredData.flatMap((d) => d.programs.map((p: any) => ({ ...p, departmentCode: d.departmentCode })))
     return Array.from(new Map(list.map((p) => [p.id, p])).values())
-  }, [dropdownData])
+  }, [dropdownData, apportioningConfig?.timestudyAllowedDepartmentIds])
 
 
   const allowMulticodeUi = apportioningConfig?.allowMultiCodes === true
@@ -511,7 +524,7 @@ export function PersonalTimeStudyEntryForm({
     setPrevLeaveRecords(leaveRecords)
     const syncRecordsToState = () => {
       const filtered = (initialRecords ?? []).filter((r) => {
-        if (r.date?.split("T")[0] !== dateStr || r.apportioning === true) {
+        if (r.date?.split("T")[0] !== dateStr) {
           return false
         }
         if (r.leaveid) {
@@ -566,6 +579,7 @@ export function PersonalTimeStudyEntryForm({
             recordType: rec.recordType,
             leaveid: rec.leaveid ?? undefined,
             isLeave: rec.leaveid ? true : undefined,
+            apportioning: rec.apportioning,
           }
           parentMap.set(rec.id, parentRow)
         }
@@ -800,7 +814,7 @@ export function PersonalTimeStudyEntryForm({
   const canDeleteParent = (parentId: string) => {
     if (isLocked) return false
     const parent = parents.find((p) => p.id === parentId)
-    if (parent?.isLeave) return false
+    if (parent?.isLeave || parent?.leaveid || parent?.apportioning) return false
     return parents.length > 1 || !!parent?.dbId
   }
 
@@ -808,7 +822,7 @@ export function PersonalTimeStudyEntryForm({
     const deptId = dropdownData?.[0]?.departmentId
     const hideTime = !!formSettings?.startorEndTime
     return parents
-      .filter((p) => !p.isLeave)
+      .filter((p) => !p.isLeave && !p.leaveid && !p.apportioning)
       .map((p) => ({
         id: p.dbId,
         userId,
@@ -845,6 +859,7 @@ export function PersonalTimeStudyEntryForm({
   const validateEntries = () => {
     const hideTime = !!formSettings?.startorEndTime
     for (const p of parents) {
+      if (p.isLeave || p.leaveid || p.apportioning) continue
       if (hideTime) {
         if (!p.totalMin || !p.tsProgram || !p.serviceActivity) {
           toast.error("Please fill all the required fields")
@@ -920,14 +935,20 @@ export function PersonalTimeStudyEntryForm({
   const handleSave = () => {
     if (!validateEntries()) return
     const payload = mapToPayload("draft")
-    if (payload.length === 0) { toast.error("Please add at least one time entry"); return; }
+    if (payload.length === 0) {
+      toast.error("Please add at least one time entry")
+      return
+    }
     onSave?.(payload)
   }
 
   const handleSubmitInternal = () => {
     if (!validateEntries()) return
     const payload = mapToPayload("submitted")
-    if (payload.length === 0) { toast.error("Please add at least one time entry"); return; }
+    if (payload.length === 0) {
+      toast.error("Please add at least one time entry")
+      return
+    }
     onSubmit?.(payload)
   }
 
@@ -1086,22 +1107,24 @@ export function PersonalTimeStudyEntryForm({
         {parents.map((parent) => {
           const totalDisplay = computeDurationMinutes(parent.start, parent.end)
           const isLeaveRow = parent.isLeave
+          const isApportionedRow = parent.apportioning === true
           const hideTime = !!formSettings?.startorEndTime
           const hideDocs = !!formSettings?.supportingDoc
           const hideNotes = !!formSettings?.removeDescriptionActivityNote
 
           return (
-            <div key={parent.id} className={cn("rounded-md", !isLeaveRow && "bg-card/50 p-2 border border-border/50")}>
-              <div className={cn(parentFieldRowClass, isLeaveRow && "p-2")}>
+            <div key={parent.id} className={cn("rounded-md", !isLeaveRow && !isApportionedRow && "bg-card/50 p-2 border border-border/50")}>
+              <div className={cn(parentFieldRowClass, (isLeaveRow || isApportionedRow) && "p-2")}>
                 {!hideTime && (
-                  <TimePicker24h label="Start" value={parent.start} disabled={isLocked || isLeaveRow} isLeave={isLeaveRow} onChange={(v) => updateParent(parent.id, { start: v })} />
+                  <TimePicker24h label="Start" value={parent.start} disabled={isLocked || isLeaveRow || isApportionedRow} isLeave={isLeaveRow} isApportioned={isApportionedRow} onChange={(v) => updateParent(parent.id, { start: v })} />
                 )}
                 <div className="flex-1 space-y-0.5">
                   <Label className="text-[11px] text-[#6C5DD3] font-medium">TS Program <RequiredMark /></Label>
                   <SingleSelectSearchDropdown
                     value={parent.tsProgram}
                     placeholder="Select program"
-                    disabled={isLocked || isLeaveRow}
+                    disabled={isLocked || isLeaveRow || isApportionedRow}
+                    title={(!apportioningConfig?.timestudyAllowedDepartmentIds || apportioningConfig.timestudyAllowedDepartmentIds.length === 0) ? "No Time Study period Allocated" : undefined}
                     isLoading={isDropdownLoading}
                     onOpenChange={(open) => {
                       if (open) onOpenDropdown?.()
@@ -1132,7 +1155,7 @@ export function PersonalTimeStudyEntryForm({
                       fetchActivitiesForProgram(v);
                     }}
                     onBlur={() => { }}
-                    className={cn("h-10 text-[11px]", (isLocked || isLeaveRow) && "bg-[#F2F4F7] cursor-not-allowed", isLeaveRow && "border-yellow-400")}
+                    className={cn("h-10 text-[11px]", (isLocked || isLeaveRow || isApportionedRow) && "bg-[#F2F4F7] cursor-not-allowed", isLeaveRow && "border-yellow-400", isApportionedRow && "border-[#6C5DD3]")}
                   />
                 </div>
                 <div className="flex-1 space-y-0.5">
@@ -1140,7 +1163,7 @@ export function PersonalTimeStudyEntryForm({
                   <SingleSelectSearchDropdown
                     value={parent.serviceActivity}
                     placeholder="Select Activity Code"
-                    disabled={isLocked || isLeaveRow || !parent.tsProgram}
+                    disabled={isLocked || isLeaveRow || isApportionedRow || !parent.tsProgram}
                     isLoading={isFetchingActivitiesForProgram(parent.tsProgram)}
                     onOpenChange={(open) => {
                       if (open && parent.tsProgram) {
@@ -1166,24 +1189,25 @@ export function PersonalTimeStudyEntryForm({
                     })()}
                     onChange={(v) => updateParent(parent.id, { serviceActivity: v })}
                     onBlur={() => { }}
-                    className={cn("h-10 text-[11px]", (isLocked || isLeaveRow || !parent.tsProgram) && "bg-[#F2F4F7] cursor-not-allowed", isLeaveRow && "border-yellow-400")}
+                    className={cn("h-10 text-[11px]", (isLocked || isLeaveRow || isApportionedRow || !parent.tsProgram) && "bg-[#F2F4F7] cursor-not-allowed", isLeaveRow && "border-yellow-400", isApportionedRow && "border-[#6C5DD3]")}
                   />
                 </div>
                 {!hideTime && (
-                  <TimePicker24h label="End" value={parent.end} disabled={isLocked || isLeaveRow || !parent.start} isLeave={isLeaveRow} onChange={(v) => updateParent(parent.id, { end: v })} />
+                  <TimePicker24h label="End" value={parent.end} disabled={isLocked || isLeaveRow || isApportionedRow || !parent.start} isLeave={isLeaveRow} isApportioned={isApportionedRow} onChange={(v) => updateParent(parent.id, { end: v })} />
                 )}
                 <div className="w-[60px] space-y-0.5">
                   <Label className="text-[11px] text-muted-foreground">Min. <RequiredMark /></Label>
                   <TitleCaseInput
                     type="number"
                     min="0"
-                    readOnly={isLocked || isLeaveRow || !hideTime}
+                    readOnly={isLocked || isLeaveRow || isApportionedRow || !hideTime}
                     value={hideTime ? (parent.totalMin ?? "") : (totalDisplay || parent.totalMin || "")}
                     placeholder="—"
                     className={cn(
                       "h-10 text-[11px]",
-                      (isLocked || isLeaveRow || !hideTime) && "bg-[#F2F4F7] cursor-not-allowed",
-                      isLeaveRow && "border-yellow-400"
+                      (isLocked || isLeaveRow || isApportionedRow || !hideTime) && "bg-[#F2F4F7] cursor-not-allowed",
+                      isLeaveRow && "border-yellow-400",
+                      isApportionedRow && "border-[#6C5DD3]"
                     )}
                     onChange={(e) => {
                       if (hideTime) {
@@ -1197,10 +1221,10 @@ export function PersonalTimeStudyEntryForm({
                     <Label className="text-[11px] text-muted-foreground">Notes </Label>
                     <TitleCaseInput
                       value={parent.description}
-                      readOnly={isLocked || isLeaveRow}
+                      readOnly={isLocked || isLeaveRow || isApportionedRow}
                       onChange={(e) => updateParent(parent.id, { description: e.target.value })}
                       placeholder="Notes"
-                      className={cn("h-10 text-[11px] text-[#344054] font-normal", (isLocked || isLeaveRow) && "bg-[#F2F4F7] cursor-not-allowed", isLeaveRow && "border-yellow-400")}
+                      className={cn("h-10 text-[11px] text-[#344054] font-normal", (isLocked || isLeaveRow || isApportionedRow) && "bg-[#F2F4F7] cursor-not-allowed", isLeaveRow && "border-yellow-400", isApportionedRow && "border-[#6C5DD3]")}
                     />
                   </div>
                 )}
@@ -1209,8 +1233,9 @@ export function PersonalTimeStudyEntryForm({
                     parentId={parent.id}
                     docs={parent.supportingDocs}
                     uploading={false}
-                    disabled={isLocked || isLeaveRow}
+                    disabled={isLocked || isLeaveRow || isApportionedRow}
                     isLeave={isLeaveRow}
+                    isApportioned={isApportionedRow}
                     onAdd={handleAddDocs}
                     onDelete={handleDeleteDoc}
                     onDownload={handleDownloadDoc}
@@ -1228,7 +1253,7 @@ export function PersonalTimeStudyEntryForm({
                       <Trash2 className="size-4" />
                     </Button>
                   )}
-                  {!readonly && !isLeaveRow && isMulticodeAllowedForParent(parent) && (
+                  {!readonly && !isLeaveRow && !isApportionedRow && isMulticodeAllowedForParent(parent) && (
                     <Button
                       size="icon"
                       variant="outline"
@@ -1251,7 +1276,8 @@ export function PersonalTimeStudyEntryForm({
                         <SingleSelectSearchDropdown
                           value={sub.studyProgram}
                           placeholder="Select program"
-                          disabled={isLocked || isLeaveRow}
+                          disabled={isLocked || isLeaveRow || isApportionedRow}
+                          title={(!apportioningConfig?.timestudyAllowedDepartmentIds || apportioningConfig.timestudyAllowedDepartmentIds.length === 0) ? "No Time Study period Allocated" : undefined}
                           isLoading={(() => {
                             const deptId = resolveDepartmentIdForProgram(parent.tsProgram)
                             return Boolean(deptId && fetchingDepartments[String(deptId)])
@@ -1288,7 +1314,7 @@ export function PersonalTimeStudyEntryForm({
                             fetchActivitiesForProgram(v)
                           }}
                           onBlur={() => { }}
-                          className={cn("h-9 text-[11px]", (isLocked || isLeaveRow) && "bg-[#F2F4F7] cursor-not-allowed", isLeaveRow && "border-yellow-400")}
+                          className={cn("h-9 text-[11px]", (isLocked || isLeaveRow || isApportionedRow) && "bg-[#F2F4F7] cursor-not-allowed", isLeaveRow && "border-yellow-400", isApportionedRow && "border-[#6C5DD3]")}
                         />
                       </div>
                       <div className="flex-1 space-y-1">
@@ -1296,7 +1322,7 @@ export function PersonalTimeStudyEntryForm({
                         <SingleSelectSearchDropdown
                           value={sub.serviceActivity}
                           placeholder="Select Activity Code"
-                          disabled={isLocked || isLeaveRow || !sub.studyProgram}
+                          disabled={isLocked || isLeaveRow || isApportionedRow || !sub.studyProgram}
                           isLoading={isFetchingActivitiesForProgram(sub.studyProgram)}
                           onOpenChange={(open) => {
                             if (open && sub.studyProgram) {
@@ -1325,7 +1351,7 @@ export function PersonalTimeStudyEntryForm({
                           })()}
                           onChange={(v) => updateSubRow(parent.id, sub.id, { serviceActivity: v })}
                           onBlur={() => { }}
-                          className={cn("h-9 text-[11px]", (isLocked || isLeaveRow || !sub.studyProgram) && "bg-[#F2F4F7] cursor-not-allowed", isLeaveRow && "border-yellow-400")}
+                          className={cn("h-9 text-[11px]", (isLocked || isLeaveRow || isApportionedRow || !sub.studyProgram) && "bg-[#F2F4F7] cursor-not-allowed", isLeaveRow && "border-yellow-400", isApportionedRow && "border-[#6C5DD3]")}
                         />
                       </div>
                       <div className="w-[60px] space-y-1">
@@ -1334,9 +1360,9 @@ export function PersonalTimeStudyEntryForm({
                           type="number"
                           min="0"
                           value={sub.totalMin}
-                          readOnly={isLocked || isLeaveRow}
+                          readOnly={isLocked || isLeaveRow || isApportionedRow}
                           placeholder="0"
-                          className={cn("h-9 text-[11px]", (isLocked || isLeaveRow) && "bg-[#F2F4F7] cursor-not-allowed", isLeaveRow && "border-yellow-400")}
+                          className={cn("h-9 text-[11px]", (isLocked || isLeaveRow || isApportionedRow) && "bg-[#F2F4F7] cursor-not-allowed", isLeaveRow && "border-yellow-400", isApportionedRow && "border-[#6C5DD3]")}
                           onChange={(e) => updateSubRow(parent.id, sub.id, { totalMin: e.target.value })}
                         />
                       </div>
@@ -1352,16 +1378,16 @@ export function PersonalTimeStudyEntryForm({
                             </div>
                             <TitleCaseInput
                               value={sub.description}
-                              readOnly={isLocked || isLeaveRow}
+                              readOnly={isLocked || isLeaveRow || isApportionedRow}
                               onChange={(e) => updateSubRow(parent.id, sub.id, { description: e.target.value })}
                               placeholder="Notes"
-                              className={cn("h-9 text-[11px] text-[#344054] font-normal", (isLocked || isLeaveRow) && "bg-[#F2F4F7] cursor-not-allowed", isLeaveRow && "border-yellow-400")}
+                              className={cn("h-9 text-[11px] text-[#344054] font-normal", (isLocked || isLeaveRow || isApportionedRow) && "bg-[#F2F4F7] cursor-not-allowed", isLeaveRow && "border-yellow-400", isApportionedRow && "border-[#6C5DD3]")}
                             />
                           </div>
                         )
                       })()}
                       <div className="flex items-end pb-0.5">
-                        {!readonly && !isLeaveRow && (
+                        {!readonly && !isLeaveRow && !isApportionedRow && (
                           <Button
                             size="icon"
                             variant="ghost"

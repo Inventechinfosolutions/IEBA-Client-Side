@@ -45,6 +45,7 @@ export type SingleSelectSearchDropdownProps = {
   emptyListSlot?: ReactNode
   /** Notified when the menu opens or closes */
   onOpenChange?: (open: boolean) => void
+  title?: string
 }
 
 export function SingleSelectSearchDropdown({
@@ -63,6 +64,7 @@ export function SingleSelectSearchDropdown({
   itemLabelClassName,
   emptyListSlot,
   onOpenChange,
+  title,
 }: SingleSelectSearchDropdownProps) {
   const [internalOpen, setInternalOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
@@ -130,6 +132,7 @@ export function SingleSelectSearchDropdown({
       {/* PopoverAnchor lets the content align to this element without it being the trigger */}
       <PopoverAnchor asChild>
           <div
+            title={title}
             className={cn(
               "relative flex min-h-[43px] w-full items-center rounded-[7px] border border-input bg-white px-3 py-1.5 pr-9",
               "focus-within:border-[#6C5DD3] focus-within:ring-1 focus-within:ring-[#6C5DD333]",

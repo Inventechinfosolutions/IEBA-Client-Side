@@ -237,19 +237,34 @@ export function EmployeeLeaveRequestDialog({
   const effectiveUserId = (propsUserId ?? user?.id ?? "").trim()
   const allowMulticodeUi = allowMultiCodes === true
 
-  const [dateConfigs, setDateConfigs] = useState<Record<string, Array<{ departmentId: number }>>>({})
+  const [dateConfigs, setDateConfigs] = useState<
+    Record<
+      string,
+      {
+        userMultiCode: Array<{ departmentId: number }>
+        timestudyAllowed: Array<{ departmentId: number }>
+      }
+    >
+  >({})
 
-  const fetchConfigForDate = useCallback(async (dateStr: string | undefined) => {
+  const fetchConfigForDate = useCallback(async (dateStr: string | undefined, showToastOnEmpty?: boolean) => {
     const date = dateStr?.split("T")[0]
     if (!date || !effectiveUserId) return
 
     try {
       const res = await api.get<any>(`/timestudyrecords/user/config?userId=${encodeURIComponent(effectiveUserId)}&date=${date}`)
       if (res?.success && res.data) {
+        const timestudyAllowed = res.data.timestudyAllowed ?? []
         setDateConfigs(prev => ({
           ...prev,
-          [date]: res.data.userMultiCode ?? []
+          [date]: {
+            userMultiCode: res.data.userMultiCode ?? [],
+            timestudyAllowed,
+          }
         }))
+        if (showToastOnEmpty && timestudyAllowed.length === 0) {
+          toast.error("No Time Study Period Allocated")
+        }
       }
     } catch (err) {
       console.error(`Failed to fetch user config for date ${date}`, err)
@@ -416,7 +431,7 @@ export function EmployeeLeaveRequestDialog({
       const deptId = resolveDepartmentIdForProgram(parentProgramId)
       if (!deptId) return false
 
-      const userMultiCode = dateConfigs[dateStr] ?? []
+      const userMultiCode = dateConfigs[dateStr]?.userMultiCode ?? []
       return userMultiCode.some(item => item.departmentId === deptId)
     },
     [allowMulticodeUi, formEntries, resolveDepartmentIdForProgram, dateConfigs]
@@ -437,6 +452,12 @@ export function EmployeeLeaveRequestDialog({
   /** Primary rows: non–multi-code programs. Rows with `multicodeChild`: multicode program list filtered to parent's dept. */
   const getLeaveProgramOptions = useCallback(
     (rowIndex: number) => {
+      const rowDate = formEntries?.[rowIndex]?.date?.split("T")[0]
+      if (!rowDate) return []
+
+      const config = dateConfigs[rowDate]
+      if (!config) return []
+
       const isMulticodeRow = formEntries?.[rowIndex]?.multicodeChild === true
       if (allowMulticodeUi && isMulticodeRow) {
         // Find the parent row by walking back to the nearest non-multicode row
@@ -483,9 +504,11 @@ export function EmployeeLeaveRequestDialog({
           : fallback
         return deptFiltered.map(formatLeaveProgramOption)
       }
-      return programs.filter((p: any) => !p.isMultiCode).map(formatLeaveProgramOption)
+      const allowedDeptIds = config.timestudyAllowed.map((d) => d.departmentId)
+      const filteredPrograms = programs.filter((p: any) => allowedDeptIds.includes(p.departmentId))
+      return filteredPrograms.filter((p: any) => !p.isMultiCode).map(formatLeaveProgramOption)
     },
-    [allowMulticodeUi, departmentMulticodes, dropdownBundles, formEntries, multicodeBundles, programs, formatLeaveProgramOption, resolveDepartmentIdForProgram],
+    [allowMulticodeUi, departmentMulticodes, dropdownBundles, formEntries, multicodeBundles, programs, formatLeaveProgramOption, resolveDepartmentIdForProgram, dateConfigs],
   )
 
 
@@ -853,12 +876,29 @@ export function EmployeeLeaveRequestDialog({
                               <SingleSelectSearchDropdown
                                 value={f.value === EMPTY ? "" : f.value}
                                 isLoading={isDropdownLoading || multicodeProgramListLoading}
+                                title={(() => {
+                                  const dateStr = form.getValues(`entries.${parentIndex}.date`)
+                                  if (!dateStr) return undefined
+                                  const dateKey = dateStr.split("T")[0]
+                                  const config = dateConfigs[dateKey]
+                                  if (config && (!config.timestudyAllowed || config.timestudyAllowed.length === 0)) {
+                                    return "No Time Study Period Allocated"
+                                  }
+                                  return undefined
+                                })()}
                                 onOpenChange={(open) => {
                                   if (open) {
-                                    onDropdownOpen?.();
                                     const dateStr = form.getValues(`entries.${parentIndex}.date`)
                                     if (dateStr) {
-                                      fetchConfigForDate(dateStr)
+                                      onDropdownOpen?.();
+                                      const dateKey = dateStr.split("T")[0]
+                                      const config = dateConfigs[dateKey]
+                                      if (config && (!config.timestudyAllowed || config.timestudyAllowed.length === 0)) {
+                                        toast.error("No Time Study Period Allocated")
+                                      }
+                                      fetchConfigForDate(dateStr, !config)
+                                    } else {
+                                      toast.error("Please select a date.")
                                     }
                                   }
                                 }}
@@ -1130,6 +1170,32 @@ export function EmployeeLeaveRequestDialog({
                                       <SingleSelectSearchDropdown
                                         value={f.value === EMPTY ? "" : f.value}
                                         isLoading={isDropdownLoading || multicodeProgramListLoading}
+                                        title={(() => {
+                                          const dateStr = form.getValues(`entries.${index}.date`)
+                                          if (!dateStr) return undefined
+                                          const dateKey = dateStr.split("T")[0]
+                                          const config = dateConfigs[dateKey]
+                                          if (config && (!config.timestudyAllowed || config.timestudyAllowed.length === 0)) {
+                                            return "No Time Study period Allocated"
+                                          }
+                                          return undefined
+                                        })()}
+                                        onOpenChange={(open) => {
+                                          if (open) {
+                                            const dateStr = form.getValues(`entries.${index}.date`)
+                                            if (dateStr) {
+                                              onDropdownOpen?.();
+                                              const dateKey = dateStr.split("T")[0]
+                                              const config = dateConfigs[dateKey]
+                                              if (config && (!config.timestudyAllowed || config.timestudyAllowed.length === 0)) {
+                                                toast.error("No Time Study Period Allocated")
+                                              }
+                                              fetchConfigForDate(dateStr, !config)
+                                            } else {
+                                              toast.error("Please select a date.")
+                                            }
+                                          }
+                                        }}
                                         options={(() => {
                                           const opts = [...getLeaveProgramOptions(index)]
                                           const currentVal = f.value === EMPTY ? "" : f.value
