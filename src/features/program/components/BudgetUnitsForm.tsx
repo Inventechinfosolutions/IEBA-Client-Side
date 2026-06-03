@@ -20,19 +20,19 @@ export function BudgetUnitsForm({
     field: "budgetUnitMedicalPct" | "buProgramMedicalPct" | "buSubProgramMedicalPct",
     rawValue: string
   ) => {
-    if (!rawValue) {
-      form.setValue(field, "0.00", { shouldDirty: true, shouldTouch: true })
+    if (rawValue === "") {
+      form.setValue(field, "", { shouldDirty: true, shouldTouch: true, shouldValidate: true })
       return
     }
 
-    const nextValue = Number(rawValue)
-    if (Number.isNaN(nextValue) || nextValue < 0) return
-
-    form.setValue(field, nextValue.toFixed(2), {
-      shouldDirty: true,
-      shouldTouch: true,
-      shouldValidate: true,
-    })
+    // Allow numbers, decimal points, and typing
+    if (/^\d*\.?\d*$/.test(rawValue)) {
+      form.setValue(field, rawValue, {
+        shouldDirty: true,
+        shouldTouch: true,
+        shouldValidate: true,
+      })
+    }
   }
 
   const handleMedicalPctBlur = (
@@ -72,7 +72,8 @@ export function BudgetUnitsForm({
         <TitleCaseInput
           type="text"
           inputMode="decimal"
-          value={form.watch(field) || "0.00"}
+          placeholder="0.00"
+          value={form.watch(field) ?? ""}
           onChange={(event) => handleMedicalPctChange(field, event.target.value)}
           onBlur={() => handleMedicalPctBlur(field)}
           onKeyDown={(event) => {

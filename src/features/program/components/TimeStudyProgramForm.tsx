@@ -38,6 +38,9 @@ export function TimeStudyProgramForm({
   isQuickAdd = false,
 }: TimeStudyProgramFormProps) {
   const isEditMode = formMode === "edit"
+  const defaultValues = form.formState.defaultValues
+  const initialBudgetProgram = defaultValues?.buProgramBudgetUnitName ?? ""
+  const hasSavedBudgetProgram = Boolean(initialBudgetProgram.trim())
 
   if (activeSection === "BU Program") {
     return (
@@ -68,7 +71,7 @@ export function TimeStudyProgramForm({
             onBlur={() => {}}
             options={budgetProgramNameOptions.map((o) => ({ value: o, label: o }))}
             placeholder="Select Budget (BU) Program"
-            disabled={isEditMode && !form.watch("isMultiCode")}
+            disabled={isEditMode && (!form.watch("isMultiCode") || hasSavedBudgetProgram)}
             className="!min-h-[44px] h-[44px] !rounded-[7px] !border-[#c6cedd] !px-3 !pr-9 !text-[14px] !font-normal"
             itemButtonClassName="rounded-[4px] px-2.5 py-1.5"
             itemLabelClassName="!text-[14px]"
