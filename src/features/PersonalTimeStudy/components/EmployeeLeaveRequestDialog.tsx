@@ -263,7 +263,7 @@ export function EmployeeLeaveRequestDialog({
           }
         }))
         if (showToastOnEmpty && timestudyAllowed.length === 0) {
-          toast.error("No Time Study period Allocated")
+          toast.error("No Time Study Period Allocated")
         }
       }
     } catch (err) {
@@ -882,7 +882,7 @@ export function EmployeeLeaveRequestDialog({
                                   const dateKey = dateStr.split("T")[0]
                                   const config = dateConfigs[dateKey]
                                   if (config && (!config.timestudyAllowed || config.timestudyAllowed.length === 0)) {
-                                    return "No Time Study period Allocated"
+                                    return "No Time Study Period Allocated"
                                   }
                                   return undefined
                                 })()}
@@ -894,7 +894,7 @@ export function EmployeeLeaveRequestDialog({
                                       const dateKey = dateStr.split("T")[0]
                                       const config = dateConfigs[dateKey]
                                       if (config && (!config.timestudyAllowed || config.timestudyAllowed.length === 0)) {
-                                        toast.error("No Time Study period Allocated")
+                                        toast.error("No Time Study Period Allocated")
                                       }
                                       fetchConfigForDate(dateStr, !config)
                                     } else {
@@ -1188,7 +1188,7 @@ export function EmployeeLeaveRequestDialog({
                                               const dateKey = dateStr.split("T")[0]
                                               const config = dateConfigs[dateKey]
                                               if (config && (!config.timestudyAllowed || config.timestudyAllowed.length === 0)) {
-                                                toast.error("No Time Study period Allocated")
+                                                toast.error("No Time Study Period Allocated")
                                               }
                                               fetchConfigForDate(dateStr, !config)
                                             } else {
