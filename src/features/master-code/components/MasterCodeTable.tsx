@@ -109,13 +109,14 @@ export function MasterCodeTable({
                 className={`h-10 bg-(--primary) px-3 text-[12px] font-medium text-white ${
                   idx === headers.length - 1 ? "border-r-0" : "border-r border-white/50"
                 } ${
-                  idx === 0 ||
-                  idx === 2 ||
-                  idx === 3 ||
-                  idx === 4 ||
-                  idx === 5 ||
-                  idx === 6 ||
-                  idx === 7
+                  idx === 0
+                    ? "text-left"
+                    : idx === 2 ||
+                      idx === 3 ||
+                      idx === 4 ||
+                      idx === 5 ||
+                      idx === 6 ||
+                      idx === 7
                     ? "text-center"
                     : ""
                 }`}
@@ -128,9 +129,7 @@ export function MasterCodeTable({
                   <button
                     type="button"
                     onClick={() => handleSort(key)}
-                    className={`inline-flex w-full cursor-pointer items-center gap-1.5 ${
-                      idx === 0 ? "justify-center" : ""
-                    }`}
+                    className="inline-flex w-full cursor-pointer items-center gap-1.5"
                   >
                     <span>{header}</span>
                     {isActive ? (
@@ -148,7 +147,6 @@ export function MasterCodeTable({
                 ) : (
                   <span
                     className={`inline-flex items-center gap-1 ${
-                      idx === 0 ||
                       idx === 2 ||
                       idx === 3 ||
                       idx === 4 ||
@@ -170,8 +168,8 @@ export function MasterCodeTable({
           {isLoading
             ? skeletonRows.map((rowId) => (
                 <TableRow key={rowId} className="h-10 border-b border-[#eff0f5] hover:bg-transparent">
-                  <TableCell className="border-r border-[#eff0f5] px-3 py-2 text-center">
-                    <div className="flex items-center justify-center gap-3">
+                  <TableCell className="border-r border-[#eff0f5] px-3 py-2 text-left">
+                    <div className="flex items-center justify-start gap-3">
                       <Skeleton className="h-3.5 w-3.5 rounded-sm" />
                       <Skeleton className="h-3.5 w-8" />
                     </div>
@@ -223,8 +221,8 @@ export function MasterCodeTable({
                 return (
                   <Fragment key={row.id}>
                     <TableRow className="min-h-[40px] border-b border-[#eff0f5] hover:bg-transparent">
-                      <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-center text-[12px] text-[#232735] whitespace-normal wrap-break-word">
-                        <div className="flex items-center justify-center gap-3">
+                      <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-left text-[12px] text-[#232735] whitespace-normal wrap-break-word">
+                        <div className="flex items-center justify-start gap-3">
                           <button
                             type="button"
                             onClick={() =>

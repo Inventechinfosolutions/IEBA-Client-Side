@@ -11,6 +11,12 @@ import {
 import { cn } from "@/lib/utils"
 import tableEmptyIcon from "@/assets/icons/table-empty.png"
 import { Spinner } from "@/components/ui/spinner"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 export type MultiSelectOption = {
   value: string
@@ -110,34 +116,46 @@ export function MultiSelectDropdown({
             ) : (
               <>
                 {selectedItems.slice(0, maxVisibleItems).map((a) => (
-                  <span
-                    key={a.value}
-                    className="inline-flex max-w-full items-center gap-1 rounded-[2px] bg-[#eef0f5] px-2 py-0.5 text-[11px] text-[#111827]"
-                  >
-                    <span className="truncate">{a.label}</span>
-                    <span
-                      role="button"
-                      tabIndex={0}
-                      className="ml-0.5 inline-flex size-4 shrink-0 cursor-pointer items-center justify-center rounded-[4px] text-[#6b7280]"
-                      onPointerDown={(e) => {
-                        e.preventDefault()
-                        e.stopPropagation()
-                      }}
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        remove(a.value)
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key !== "Enter" && e.key !== " ") return
-                        e.preventDefault()
-                        e.stopPropagation()
-                        remove(a.value)
-                      }}
-                      aria-label={`Remove ${a.label}`}
-                    >
-                      <X className="size-3" />
-                    </span>
-                  </span>
+                  <TooltipProvider key={a.value}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span
+                          className="inline-flex max-w-full items-center gap-1 rounded-[2px] bg-[#eef0f5] px-2 py-0.5 text-[11px] text-[#111827]"
+                        >
+                          <span className="truncate">{a.label}</span>
+                          <span
+                            role="button"
+                            tabIndex={0}
+                            className="ml-0.5 inline-flex size-4 shrink-0 cursor-pointer items-center justify-center rounded-[4px] text-[#6b7280]"
+                            onPointerDown={(e) => {
+                              e.preventDefault()
+                              e.stopPropagation()
+                            }}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              remove(a.value)
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key !== "Enter" && e.key !== " ") return
+                              e.preventDefault()
+                              e.stopPropagation()
+                              remove(a.value)
+                            }}
+                            aria-label={`Remove ${a.label}`}
+                          >
+                            <X className="size-3" />
+                          </span>
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent
+                        side="top"
+                        sideOffset={6}
+                        className="z-[2000] bg-black border border-black rounded-[8px] text-white text-xs px-3 py-1.5 shadow-md font-normal max-w-xs break-words"
+                      >
+                        {a.label}
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 ))}
                 {selectedItems.length > maxVisibleItems ? (
                   <span className="inline-flex shrink-0 items-center rounded-[8px] bg-[#eef0f5] px-2 py-0.5 text-[11px] text-[#111827]">
@@ -174,18 +192,30 @@ export function MultiSelectDropdown({
             {options.map((opt) => {
               const selected = selectedValues.includes(opt.value)
               return (
-                <button
-                  type="button"
-                  key={opt.value}
-                  onClick={() => toggle(opt.value)}
-                  className={cn(
-                    "flex w-full items-center justify-between gap-3 px-3 py-2 text-left hover:bg-[#f3f4f8]",
-                    selected ? "bg-[#eef8ff]" : "bg-transparent",
-                  )}
-                >
-                  <span className="truncate text-[11px] font-normal text-[#111827]">{opt.label}</span>
-                  {selected ? <Check className="size-4 shrink-0 text-[#2563eb]" strokeWidth={2.5} /> : null}
-                </button>
+                <TooltipProvider key={opt.value}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        onClick={() => toggle(opt.value)}
+                        className={cn(
+                          "flex w-full items-center justify-between gap-3 px-3 py-2 text-left hover:bg-[#f3f4f8]",
+                          selected ? "bg-[#eef8ff]" : "bg-transparent",
+                        )}
+                      >
+                        <span className="truncate text-[11px] font-normal text-[#111827]">{opt.label}</span>
+                        {selected ? <Check className="size-4 shrink-0 text-[#2563eb]" strokeWidth={2.5} /> : null}
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent
+                      side="right"
+                      sideOffset={6}
+                      className="z-[2000] bg-black border border-black rounded-[8px] text-white text-xs px-3 py-1.5 shadow-md font-normal max-w-xs break-words"
+                    >
+                      {opt.label}
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               )
             })}
           </div>

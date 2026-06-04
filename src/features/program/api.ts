@@ -55,6 +55,8 @@ function mapBudgetUnitToProgramRow(raw: BudgetUnitResDto): ProgramRow {
   const medicalPct = raw.medicalpercent == null ? "0.00" : String(raw.medicalpercent)
   const departmentName =
     raw.department && typeof raw.department.name === "string" ? raw.department.name : ""
+  const departmentId =
+    raw.department && typeof raw.department.id === "number" ? raw.department.id : undefined
 
   return {
     id,
@@ -64,6 +66,7 @@ function mapBudgetUnitToProgramRow(raw: BudgetUnitResDto): ProgramRow {
     description,
     medicalPct,
     department: departmentName,
+    departmentId,
     active: isActiveStatus(raw.status),
     hierarchyLevel: 0,
     type: "bu",
@@ -78,6 +81,8 @@ function mapTimeStudyProgramToProgramRow(raw: TimeStudyProgramResDto): ProgramRo
     typeof raw.type === "string" ? String(raw.type).trim().toLowerCase() : ""
   const departmentName =
     raw.department && typeof raw.department.name === "string" ? raw.department.name : ""
+  const departmentId =
+    raw.department && typeof raw.department.id === "number" ? raw.department.id : undefined
   const parentBudgetUnitName =
     raw.budgetProgram && typeof raw.budgetProgram.name === "string"
       ? raw.budgetProgram.name
@@ -109,6 +114,7 @@ function mapTimeStudyProgramToProgramRow(raw: TimeStudyProgramResDto): ProgramRo
     description: "",
     medicalPct: "0.00",
     department: departmentName,
+    departmentId,
     active: isActiveStatus(raw.status),
     parentBudgetUnitName,
     parentBudgetUnitCode,
@@ -129,6 +135,8 @@ function mapBudgetProgramToProgramRow(raw: BudgetProgramResDto): ProgramRow {
   const description = raw.description == null ? "" : String(raw.description)
   const departmentName =
     raw.department && typeof raw.department.name === "string" ? raw.department.name : ""
+  const departmentId =
+    raw.department && typeof raw.department.id === "number" ? raw.department.id : undefined
   const parentBudgetUnitName =
     raw.budgetUnit && typeof raw.budgetUnit.name === "string"
       ? raw.budgetUnit.name
@@ -151,6 +159,7 @@ function mapBudgetProgramToProgramRow(raw: BudgetProgramResDto): ProgramRow {
     description,
     medicalPct: raw.medicalpercent == null ? "0.00" : String(raw.medicalpercent),
     department: departmentName,
+    departmentId,
     active: isActiveStatus(raw.status),
     parentId: resolvedParentId,
     parentBudgetUnitName,

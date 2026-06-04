@@ -28,6 +28,7 @@ export type ProgramRow = {
   medicalPct: string
   description: string
   department: string
+  departmentId?: number
   active: boolean
   /** Active status of this row's direct parent — set by the table so the edit
    *  form can enforce "cannot activate child when parent is inactive" without
@@ -215,6 +216,7 @@ export type ProgramFormModalProps = {
   onOpenChange: (open: boolean) => void
   onSave: (values: ProgramFormValues, lookups?: ProgramCreateLookups) => void
   departmentIds?: number[]
+  selectedRow?: ProgramRow | null
 }
 
 export type ProgramFormModalHandle = {

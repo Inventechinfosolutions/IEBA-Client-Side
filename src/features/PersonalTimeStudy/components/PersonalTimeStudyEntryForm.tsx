@@ -12,6 +12,7 @@ import { toast } from "sonner"
 import { SingleSelectSearchDropdown } from "@/components/ui/dropdown-search"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { TimePickerDropdown } from "@/components/ui/time-picker"
+import { PersonalTimeStudyApportioningPanel } from "./PersonalTimeStudyApportioningPanel"
 import { useAuth } from "@/contexts/AuthContext"
 import { API_BASE_URL } from "@/lib/config"
 import { apiDownloadSupportingDoc, apiDeleteSupportingDoc, apiGetUserActivitiesForProgram, apiGetUserProgramsAndActivitiesMulticode } from "../api/personalTimeStudyApi"
@@ -341,6 +342,7 @@ export function PersonalTimeStudyEntryForm({
   departmentMulticodes: propDepartmentMulticodes,
   fetchingDepartments: propFetchingDepartments,
   onFetchMulticodeDept,
+  apportioningRecords,
 }: PersonalTimeStudyEntryFormProps) {
   const { user } = useAuth()
   const userId = propsUserId || user?.id || ""
@@ -525,6 +527,9 @@ export function PersonalTimeStudyEntryForm({
     const syncRecordsToState = () => {
       const filtered = (initialRecords ?? []).filter((r) => {
         if (r.date?.split("T")[0] !== dateStr) {
+          return false
+        }
+        if (r.apportioning === true) {
           return false
         }
         if (r.leaveid) {
@@ -1407,6 +1412,14 @@ export function PersonalTimeStudyEntryForm({
           )
         })}
       </div>
+
+      <PersonalTimeStudyApportioningPanel
+        apportioningConfig={apportioningConfig}
+        supervisorOwnMinutesToday={actualTotal || 0}
+        apportioningRecords={apportioningRecords}
+        autoApportioning={apportioningConfig?.autoApportioning}
+      />
+
       {!readonly && !moveSaveSubmitToTop && (
         <div className="mt-4 flex justify-end gap-2">
           <Button

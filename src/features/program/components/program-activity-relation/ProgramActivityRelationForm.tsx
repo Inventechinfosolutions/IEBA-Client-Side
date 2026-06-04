@@ -57,11 +57,18 @@ export function ProgramActivityRelationForm({ form, departmentIds }: ProgramActi
     : []
 
   const programOptions = useMemo(() => {
-    const names = timeStudyPrograms
-      .map((p) => String(p?.name ?? "").trim())
-      .filter((name): name is string => Boolean(name))
-    return Array.from(new Set(names)).sort((a, b) =>
-      a.localeCompare(b, undefined, { sensitivity: "base" }),
+    const uniqueProgramsMap = new Map<string, { value: string; label: string }>()
+    for (const p of timeStudyPrograms) {
+      const name = String(p?.name ?? "").trim()
+      if (!name) continue
+      const code = String(p?.code ?? "").trim()
+      const label = code && name ? `${code} - ${name}` : (code || name)
+      if (!uniqueProgramsMap.has(name)) {
+        uniqueProgramsMap.set(name, { value: name, label })
+      }
+    }
+    return Array.from(uniqueProgramsMap.values()).sort((a, b) =>
+      a.label.localeCompare(b.label, undefined, { sensitivity: "base", numeric: true }),
     )
   }, [timeStudyPrograms])
 
@@ -210,7 +217,7 @@ export function ProgramActivityRelationForm({ form, departmentIds }: ProgramActi
                   })
                 }}
                 onBlur={() => {}}
-                options={programOptions.map((n) => ({ value: n, label: n }))}
+                options={programOptions}
                 placeholder="Select Program"
                 emptyListSlot={
                   <div className="flex flex-col items-center justify-center rounded-[6px] border border-[#eceff5] bg-white px-3 py-4">

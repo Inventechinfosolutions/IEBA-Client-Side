@@ -52,21 +52,21 @@ const emptyFormValues: ProgramFormValues = {
   budgetUnitCode: "",
   budgetUnitName: "",
   budgetUnitDescription: "",
-  budgetUnitMedicalPct: "0.0",
+  budgetUnitMedicalPct: "0.00",
   buProgramBudgetUnitName: "",
   buProgramCode: "",
   buProgramDepartment: "",
   buProgramProgramCode: "",
   buProgramProgramName: "",
   buProgramDescription: "",
-  buProgramMedicalPct: "0.0",
+  buProgramMedicalPct: "0.00",
   buSubProgramBudgetUnitProgramName: "",
   buSubProgramBudgetCode: "",
   buSubProgramDepartment: "",
   buSubProgramCode: "",
   buSubProgramName: "",
   buSubProgramDescription: "",
-  buSubProgramMedicalPct: "0.0",
+  buSubProgramMedicalPct: "0.00",
   programActivityRelationDepartment: "",
   programActivityRelationProgram: "",
   programActivityRelationSort: "",
@@ -330,7 +330,7 @@ export function ProgramPage() {
           budgetUnitCode: selectedProgramForSubAdd.code,
           budgetUnitDepartment: selectedProgramForSubAdd.department,
           budgetUnitDescription: selectedProgramForSubAdd.parentBudgetUnitName ?? "",
-          budgetUnitMedicalPct: "0.0",
+          budgetUnitMedicalPct: "0.00",
         }
       }
       // Budget Units tab: adding BU Sub-Program from a BU Program parent
@@ -341,7 +341,7 @@ export function ProgramPage() {
         buSubProgramBudgetUnitProgramName: selectedProgramForSubAdd.name,
         buSubProgramBudgetCode: selectedProgramForSubAdd.code,
         buSubProgramDepartment: selectedProgramForSubAdd.department,
-        buSubProgramMedicalPct: "0.0",
+        buSubProgramMedicalPct: "0.00",
       }
     }
     return {
@@ -620,6 +620,7 @@ export function ProgramPage() {
         onOpenChange={handleModalClose}
         onSave={handleSaveForm}
         departmentIds={assignedDepartmentIds}
+        selectedRow={selectedRow}
         ref={modalResetRef}
       />
     </section>
