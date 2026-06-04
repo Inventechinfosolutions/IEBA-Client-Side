@@ -76,15 +76,15 @@ export function useGetUserAssignedDepartmentsSettingChecks(
       const userMultiCode = checkSettings ? checkSettings.userMultiCode ?? [] : []
       const apportioningRequired = checkSettings ? checkSettings.userApportioning === true : false
       
-      const timestudyAllowedRaw: Array<{ departmentId?: number; bypassSchedule?: boolean }> = Array.isArray(checkSettings?.timestudyAllowed)
-        ? (checkSettings.timestudyAllowed as Array<{ departmentId?: number; bypassSchedule?: boolean }>)
+      const timestudyAllowedRaw: Array<{ departmentId?: number; allowed?: boolean }> = Array.isArray(checkSettings?.timestudyAllowed)
+        ? (checkSettings.timestudyAllowed as Array<{ departmentId?: number; allowed?: boolean }>)
         : []
-      const bypassSchedule = timestudyAllowedRaw.some((item) => item.bypassSchedule === true)
+      const bypassSchedule = false
       const timestudyAllowedDepartmentIds = timestudyAllowedRaw
-        .filter((item): item is { departmentId: number } => typeof item.departmentId === "number")
+        .filter((item): item is { departmentId: number; allowed?: boolean } => typeof item.departmentId === "number" && item.allowed === true)
         .map((item) => ({ departmentId: item.departmentId }))
       
-      const allowUserEntry = bypassSchedule || timestudyAllowedDepartmentIds.length > 0
+      const allowUserEntry = timestudyAllowedDepartmentIds.length > 0
 
       return {
         apportioningRequired,

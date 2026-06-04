@@ -255,10 +255,10 @@ export function EmployeeLeaveRequestDialog({
     try {
       const res = await api.get<any>(`/timestudyrecords/user/config?userId=${encodeURIComponent(effectiveUserId)}&date=${date}`)
       if (res?.success && res.data) {
-        const timestudyAllowedRaw: Array<{ departmentId?: number; bypassSchedule?: boolean }> = res.data.timestudyAllowed ?? []
-        const bypassSchedule = timestudyAllowedRaw.some((item) => item.bypassSchedule === true)
+        const timestudyAllowedRaw: Array<{ departmentId?: number; allowed?: boolean }> = res.data.timestudyAllowed ?? []
+        const bypassSchedule = false
         const timestudyAllowed = timestudyAllowedRaw
-          .filter((item): item is { departmentId: number } => typeof item.departmentId === "number")
+          .filter((item): item is { departmentId: number; allowed?: boolean } => typeof item.departmentId === "number" && item.allowed === true)
           .map((item) => ({ departmentId: item.departmentId }))
 
         setDateConfigs(prev => ({
