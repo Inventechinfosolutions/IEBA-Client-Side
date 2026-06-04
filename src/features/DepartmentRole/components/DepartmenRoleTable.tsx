@@ -126,7 +126,7 @@ export function DepartmenRoleTable({
               </TableCell>
             </TableRow>
           ) : (
-            rows.map((row) => {
+            rows.map((row, index) => {
               const isExpanded = expandedIds.has(row.id)
               const hasChildren = row.children && row.children.length > 0
               return (
@@ -135,7 +135,8 @@ export function DepartmenRoleTable({
                     key={row.id}
                     className={cn(
                       "border-[#f0f0f0]",
-                      !(hasChildren && isExpanded) && "border-b"
+                      !(hasChildren && isExpanded) && "border-b",
+                      index % 2 === 1 ? "bg-[#FAF8FF] hover:bg-[#FAF8FF]" : "bg-white hover:bg-white"
                     )}
                   >
                     <TableCell className="w-[15%] align-middle p-2 pl-[1%] text-sm">

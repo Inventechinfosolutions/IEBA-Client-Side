@@ -201,6 +201,36 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
     const primaryContactId = watch("primaryContactId")
     const secondaryContactId = watch("secondaryContactId")
     const billingContactId = watch("billingContactId")
+    const primaryContactName = watch("primaryContact.name")
+    const secondaryContactName = watch("secondaryContact.name")
+    const billingContactName = watch("billingContact.name")
+
+    const renderedOptions = useMemo(() => {
+        const list = [...userOptions]
+        const currentId =
+            detailsTab === "primary"
+                ? primaryContactId
+                : detailsTab === "secondary"
+                  ? secondaryContactId
+                  : billingContactId
+        const currentName =
+            detailsTab === "primary"
+                ? primaryContactName
+                : detailsTab === "secondary"
+                  ? secondaryContactName
+                  : billingContactName
+
+        if (currentId?.trim() && currentName?.trim() && !list.some((u) => u.id === currentId.trim())) {
+            list.push({
+                id: currentId.trim(),
+                name: currentName.trim(),
+                email: "",
+                phone: "",
+                location: "",
+            })
+        }
+        return list
+    }, [userOptions, detailsTab, primaryContactId, secondaryContactId, billingContactId, primaryContactName, secondaryContactName, billingContactName])
 
     const isReportSettingsTabActive = activeTab === "reportSettings"
     const {
@@ -282,6 +312,7 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
 
     /** Exit always discards without calling the API. Persist only via Save / OK on create confirm / contact Save when a row exists. */
     const handleExit = () => {
+        void queryClient.invalidateQueries({ queryKey: departmentKeys.all })
         onClose()
     }
 
@@ -444,7 +475,7 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                             <Spinner className="text-[#6C5DD3]" />
                         </div>
                     )}
-                    {((id && (departmentQuery.isFetching || !existingDept)) || usersQuery.isFetching || masterCodesQuery.isFetching) ? (
+                    {(id && (departmentQuery.isFetching || !existingDept)) ? (
                         <div className="flex h-[400px] items-center justify-center">
                             <Spinner className="text-[#6C5DD3]" />
                         </div>
@@ -634,7 +665,7 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                                                             const key = DEPARTMENT_CONTACT_FORM_PREFIX[detailsTab]
                                                             const idKey = DEPARTMENT_CONTACT_ID_FIELD[detailsTab]
                                                             setValue(idKey, userId)
-                                                            const selected = userOptions.find((u) => u.id === userId)
+                                                            const selected = renderedOptions.find((u) => u.id === userId)
                                                             if (selected) {
                                                                 setValue(`${key}.name` as const, selected.name, { shouldValidate: true })
                                                                 setValue(`${key}.email` as const, selected.email)
@@ -672,12 +703,12 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                                                                     {usersQuery.error instanceof Error ? usersQuery.error.message : "Failed to load users"}
                                                                 </div>
                                                             )}
-                                                            {!usersQuery.isLoading && !usersQuery.isError && userOptions.length === 0 && (
+                                                            {!usersQuery.isLoading && !usersQuery.isError && renderedOptions.length === 0 && (
                                                                 <div className="px-3 py-2 text-[13px] text-[#6B7280]">
                                                                     No users found
                                                                 </div>
                                                             )}
-                                                            {userOptions.map((u) => (
+                                                            {renderedOptions.map((u) => (
                                                                 <SelectItem 
                                                                     key={u.id} 
                                                                     value={u.id}

@@ -6,11 +6,13 @@ import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
 import { Checkbox } from "@/components/ui/checkbox"
 import { TransferListMoveButton } from "@/components/ui/transfer-list-move-button"
+import { X } from "lucide-react"
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogClose,
 } from "@/components/ui/dialog"
 import {
   Select,
@@ -421,189 +423,197 @@ export function DepartmentRoleAdd({
           permissions: filtered,
         }
       })
+    
   }, [assignedPermissions, getPermissionsForLabel])
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent
-        className="flex max-h-[92vh] w-[1200px] max-w-[98vw] min-h-0 flex-col overflow-hidden bg-white p-[2%_5%] data-[state=open]:slide-in-from-right-1/2 data-[state=closed]:slide-out-to-right-1/2 data-[state=open]:slide-in-from-top-[48%] data-[state=closed]:slide-out-to-top-[48%]"
+        showClose={false}
+        className="fixed inset-0 z-50 overflow-y-auto grid place-items-center bg-transparent border-none shadow-none p-0 left-0 top-0 translate-x-0 translate-y-0 max-w-none w-screen h-screen"
         overlayClassName="bg-black/40"
       >
-        <DialogHeader className="flex shrink-0 flex-col gap-3">
-          <DialogTitle className="text-center text-xl text-black">
-            {mode === "edit" ? "Edit Role" : "Add Role"}
-          </DialogTitle>
-          <div className="flex items-center justify-end gap-2">
-            {mode !== "edit" && (
-              <>
-                <Checkbox
-                  id="active"
-                  checked={activeValue}
-                  onCheckedChange={(checked) =>
-                    form.setValue("active", checked === true)
-                  }
-                  className="border-[rgb(108,93,211)] data-[state=checked]:border-[rgb(108,93,211)] data-[state=checked]:bg-[rgb(108,93,211)]"
-                />
-                <Label
-                  htmlFor="active"
-                  className="cursor-pointer text-sm font-normal text-black"
-                >
-                  Active
-                </Label>
-              </>
-            )}
-          </div>
-        </DialogHeader>
+        <div className="relative my-8 w-[1000px] max-w-[95vw] bg-white rounded-lg border p-[2%_5%] shadow-lg flex flex-col">
+          <DialogClose className="absolute right-6 top-6 cursor-pointer rounded-sm opacity-70 hover:opacity-100">
+            <X className="size-4 text-black" />
+          </DialogClose>
 
-        {showEditError ? (
-          <div className="flex min-h-[320px] flex-col items-center justify-center gap-4 px-4">
-            <p className="text-center text-sm text-destructive">
-              {editDetailError.message}
-            </p>
-            <Button
-              type="button"
-              variant="outline"
-              className="min-h-[50px] min-w-[98px] border-[#DADADA] bg-[#DADADA] px-5 py-2.5 text-black hover:bg-[#d1d1d1]"
-              onClick={() => handleOpenChange(false)}
-            >
-              Exit
-            </Button>
-          </div>
-        ) : showEditLoading ? (
-          <div className="flex min-h-[400px] flex-1 items-center justify-center">
-            <Spinner className="text-[rgb(108,93,211)]" />
-          </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="relative flex min-h-0 flex-1 flex-col">
-            {isSubmitting && (
-              <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/60">
-                <Spinner className="text-[rgb(108,93,211)]" />
-              </div>
-            )}
-            <div className="space-y-4 pt-10 pb-2 pr-1">
-              <div className="grid grid-cols-[1fr_auto_1fr] gap-2 px-1">
-                <div className="min-w-0 space-y-2">
-                  <Label htmlFor="department" className="text-black">
-                    Department
-                  </Label>
-                  <Select
-                    value={form.watch("department")}
-                    onValueChange={(v) => form.setValue("department", v)}
-                    disabled
+          <DialogHeader className="flex shrink-0 flex-col gap-3">
+            <DialogTitle className="text-center text-xl text-black">
+              {mode === "edit" ? "Edit Role" : "Add Role"}
+            </DialogTitle>
+            <div className="flex items-center justify-end gap-2">
+              {mode !== "edit" && (
+                <>
+                  <Checkbox
+                    id="active"
+                    checked={activeValue}
+                    onCheckedChange={(checked) =>
+                      form.setValue("active", checked === true)
+                    }
+                    className="border-[rgb(108,93,211)] data-[state=checked]:border-[rgb(108,93,211)] data-[state=checked]:bg-[rgb(108,93,211)]"
+                  />
+                  <Label
+                    htmlFor="active"
+                    className="cursor-pointer text-sm font-normal text-black"
                   >
-                    <SelectTrigger
-                      id="department"
-                      className={cn(
-                        "!h-[50px] w-full rounded-md border border-[#e5e5e5] bg-black/[0.04] px-[18px] text-black",
-                        form.formState.errors.department &&
-                          "border-destructive",
-                        "cursor-not-allowed opacity-60"
-                      )}
-                    >
-                      <SelectValue placeholder="Select department" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {departmentOptions.map((d) => (
-                        <SelectItem key={d} value={d}>
-                          {d}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {form.formState.errors.department && (
-                    <p className="text-sm text-destructive">
-                      {form.formState.errors.department.message}
-                    </p>
-                  )}
-                </div>
-                <div className="w-[62px] shrink-0" aria-hidden />
-                <div className="min-w-0 space-y-2">
-                  <Label htmlFor="roleName" className="text-black">
-                    Role Name
+                    Active
                   </Label>
-                  <TitleCaseInput
-                    id="roleName"
-                    placeholder="Role Name"
-                    disabled={mode === "edit"}
-                    className={cn(
-                      "h-[60px] w-full rounded-md border border-[#e5e5e5] bg-white px-[18px] py-1 text-black placeholder:text-muted-foreground",
-                      form.formState.errors.roleName && "border-destructive",
-                      mode === "edit" && "cursor-not-allowed opacity-60 bg-black/[0.04]"
-                    )}
-                    {...form.register("roleName")}
-                  />
-                  {form.formState.errors.roleName && (
-                    <p className="text-sm text-destructive">
-                      {form.formState.errors.roleName.message}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-[1fr_auto_1fr] gap-2 py-4">
-                <TransferPanel
-                  title="All permissions"
-                  items={availableItems}
-                  selectedIds={Array.from(selectedAvailable)}
-                  onToggleItem={toggleAvailable}
-                  onTogglePermission={toggleAvailablePerm}
-                  totalCount={availableItems.length}
-                  allSelected={
-                    availableItems.length > 0 &&
-                    availableItems.every((item) => selectedAvailable.has(item.id))
-                  }
-                  onSelectAll={selectAllAvailable}
-                />
-
-                <div className="flex flex-col items-center justify-center gap-3">
-                  <TransferListMoveButton
-                    direction="forward"
-                    onClick={() => void transferToAssigned()}
-                    disabled={selectedAvailable.size === 0 || transferDisabled}
-                    aria-label="Assign selected"
-                  />
-                  <TransferListMoveButton
-                    direction="back"
-                    onClick={() => void transferToAvailable()}
-                    disabled={selectedAssigned.size === 0 || transferDisabled}
-                    aria-label="Unassign selected"
-                  />
-                </div>
-
-                <TransferPanel
-                  title="Assigned permissions"
-                  items={assignedItems}
-                  selectedIds={Array.from(selectedAssigned)}
-                  onToggleItem={toggleAssigned}
-                  onTogglePermission={toggleAssignedPerm}
-                  totalCount={assignedItems.length}
-                  allSelected={
-                    assignedItems.length > 0 &&
-                    assignedItems.every((item) => selectedAssigned.has(item.id))
-                  }
-                  onSelectAll={selectAllAssigned}
-                />
-              </div>
-              <div className="flex justify-end gap-2 p-1">
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="min-h-[50px] min-w-[98px] border-[#DADADA] bg-[#DADADA] px-5 py-2.5 text-black hover:bg-[#d1d1d1]"
-                  onClick={() => handleOpenChange(false)}
-                >
-                  Exit
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={submitDisabled}
-                  className="min-h-[50px] min-w-[98px] bg-[rgb(108,93,211)] px-5 py-2.5 text-white hover:bg-[rgb(108,93,211)]/90"
-                >
-                  Save
-                </Button>
-              </div>
+                </>
+              )}
             </div>
-          </form>
-        )}
+          </DialogHeader>
+
+          {showEditError ? (
+            <div className="flex min-h-[320px] flex-col items-center justify-center gap-4 px-4">
+              <p className="text-center text-sm text-destructive">
+                {editDetailError.message}
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                className="min-h-[50px] min-w-[98px] border-[#DADADA] bg-[#DADADA] px-5 py-2.5 text-black hover:bg-[#d1d1d1]"
+                onClick={() => handleOpenChange(false)}
+              >
+                Exit
+              </Button>
+            </div>
+          ) : showEditLoading ? (
+            <div className="flex min-h-[400px] flex-1 items-center justify-center">
+              <Spinner className="text-[rgb(108,93,211)]" />
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit} className="relative flex min-h-0 flex-1 flex-col">
+              {isSubmitting && (
+                <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/60">
+                  <Spinner className="text-[rgb(108,93,211)]" />
+                </div>
+              )}
+              <div className="space-y-4 pt-10 pb-2 pr-1">
+                <div className="grid grid-cols-[1fr_auto_1fr] gap-2 px-1">
+                  <div className="min-w-0 space-y-2">
+                    <Label htmlFor="department" className="text-black">
+                      Department
+                    </Label>
+                    <Select
+                      value={form.watch("department")}
+                      onValueChange={(v) => form.setValue("department", v)}
+                      disabled
+                    >
+                      <SelectTrigger
+                        id="department"
+                        className={cn(
+                          "!h-[50px] w-full rounded-md border border-[#e5e5e5] bg-black/[0.04] px-[18px] text-black",
+                          form.formState.errors.department &&
+                            "border-destructive",
+                          "cursor-not-allowed opacity-60"
+                        )}
+                      >
+                        <SelectValue placeholder="Select department" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {departmentOptions.map((d) => (
+                          <SelectItem key={d} value={d}>
+                            {d}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {form.formState.errors.department && (
+                      <p className="text-sm text-destructive">
+                        {form.formState.errors.department.message}
+                      </p>
+                    )}
+                  </div>
+                  <div className="w-[62px] shrink-0" aria-hidden />
+                  <div className="min-w-0 space-y-2">
+                    <Label htmlFor="roleName" className="text-black">
+                      Role Name
+                    </Label>
+                    <TitleCaseInput
+                      id="roleName"
+                      placeholder="Role Name"
+                      disabled={mode === "edit"}
+                      className={cn(
+                        "h-[50px] w-full rounded-md border border-[#e5e5e5] bg-white px-[18px] py-1 text-black placeholder:text-muted-foreground",
+                        form.formState.errors.roleName && "border-destructive",
+                        mode === "edit" && "cursor-not-allowed opacity-60 bg-black/[0.04]"
+                      )}
+                      {...form.register("roleName")}
+                    />
+                    {form.formState.errors.roleName && (
+                      <p className="text-sm text-destructive">
+                        {form.formState.errors.roleName.message}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-[1fr_auto_1fr] gap-2 py-4">
+                  <TransferPanel
+                    title="All permissions"
+                    items={availableItems}
+                    selectedIds={Array.from(selectedAvailable)}
+                    onToggleItem={toggleAvailable}
+                    onTogglePermission={toggleAvailablePerm}
+                    totalCount={availableItems.length}
+                    allSelected={
+                      availableItems.length > 0 &&
+                      availableItems.every((item) => selectedAvailable.has(item.id))
+                    }
+                    onSelectAll={selectAllAvailable}
+                  />
+
+                  <div className="flex flex-col items-center justify-center gap-3">
+                    <TransferListMoveButton
+                      direction="forward"
+                      onClick={() => void transferToAssigned()}
+                      disabled={selectedAvailable.size === 0 || transferDisabled}
+                      aria-label="Assign selected"
+                    />
+                    <TransferListMoveButton
+                      direction="back"
+                      onClick={() => void transferToAvailable()}
+                      disabled={selectedAssigned.size === 0 || transferDisabled}
+                      aria-label="Unassign selected"
+                    />
+                  </div>
+
+                  <TransferPanel
+                    title="Assigned permissions"
+                    items={assignedItems}
+                    selectedIds={Array.from(selectedAssigned)}
+                    onToggleItem={toggleAssigned}
+                    onTogglePermission={toggleAssignedPerm}
+                    totalCount={assignedItems.length}
+                    allSelected={
+                      assignedItems.length > 0 &&
+                      assignedItems.every((item) => selectedAssigned.has(item.id))
+                    }
+                    onSelectAll={selectAllAssigned}
+                  />
+                </div>
+                <div className="flex justify-end gap-2 p-1">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="min-h-[50px] min-w-[98px] border-[#DADADA] bg-[#DADADA] px-5 py-2.5 text-black hover:bg-[#d1d1d1]"
+                    onClick={() => handleOpenChange(false)}
+                  >
+                    Exit
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={submitDisabled}
+                    className="min-h-[50px] min-w-[98px] bg-[rgb(108,93,211)] px-5 py-2.5 text-white hover:bg-[rgb(108,93,211)]/90"
+                  >
+                    Save
+                  </Button>
+                </div>
+              </div>
+            </form>
+          )}
+        </div>
       </DialogContent>
     </Dialog>
   )

@@ -91,7 +91,7 @@ const ContactInfo = ({
   }
 
   return (
-    <div className="flex w-full flex-col text-[13px] text-[#111827]">
+    <div className="flex w-full max-w-full flex-col text-[13px] text-[#111827] min-w-0 overflow-hidden">
       <div className={contactRowClass}>
         <User className="h-[14px] w-[14px] shrink-0 text-[#6C5DD3]" />
         <span>{effective!.name}</span>
@@ -100,13 +100,16 @@ const ContactInfo = ({
         <Phone className="h-[14px] w-[14px] shrink-0 text-[#6C5DD3]" />
         <span className="text-[#6C5DD3]">{effective!.phone || ""}</span>
       </div>
-      <div className={`${contactRowClass} ${contactDividerClass} min-w-0`}>
-        <Mail className="h-[14px] w-[14px] shrink-0 text-[#6C5DD3]" />
+      <div className="flex items-start gap-[6px] py-[1px] leading-tight border-t border-[#E5E7EB] w-full min-w-0 overflow-hidden">
+        <Mail className="h-[14px] w-[14px] shrink-0 text-[#6C5DD3] mt-0.5" />
         {effective!.email ? (
           <TooltipProvider delayDuration={200}>
             <Tooltip>
               <TooltipTrigger asChild>
-                <span className="min-w-0 cursor-pointer whitespace-nowrap text-[12px] font-medium text-[#6C5DD3]">
+                <span 
+                  style={{ wordBreak: "break-all", whiteSpace: "normal" }}
+                  className="block w-full min-w-0 cursor-pointer text-[12px] font-medium text-[#6C5DD3]"
+                >
                   {effective!.email}
                 </span>
               </TooltipTrigger>
@@ -256,7 +259,7 @@ export function DepartmentTable({
             {canUpdateDepartment && <col className="w-[5%]" />} { /* Action */ }
           </colgroup>
           <TableHeader>
-            <TableRow className="bg-[#6C5DD3] hover:bg-[#6C5DD3]">
+            <TableRow className="bg-[#6C5DD3] hover:bg-[#6C5DD3] h-[56px]">
               <TableHead className="border-r border-[#FFFFFF66] p-[8px] align-middle text-center text-[14px] font-medium text-white">
                 <TooltipProvider>
                   <Tooltip open={isSortTooltipOpen && sortTooltipColumn === "code"}>
@@ -406,7 +409,7 @@ export function DepartmentTable({
                   key={dept.id}
                   className={`border-b border-[#E5E7EB] hover:bg-[#F9FAFB] ${index % 2 !== 0 ? 'bg-[#F9FAFB]' : 'bg-white'}`}
                 >
-                  <TableCell className="border-r border-[#D1D5DB] px-[8px] py-[6px] align-middle text-center text-[13px] leading-tight font-medium text-[#111827] truncate">
+                  <TableCell className="border-r border-[#D1D5DB] px-[8px] py-[6px] align-middle text-center text-[13px] leading-tight font-medium text-[#111827] whitespace-normal break-all">
                     {dept.code}
                   </TableCell>
                   <TableCell className="border-r border-[#D1D5DB] px-[8px] py-[6px] align-middle text-center text-[13px] leading-tight font-medium text-[#111827] whitespace-normal wrap-break-word">

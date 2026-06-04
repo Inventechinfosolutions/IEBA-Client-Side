@@ -121,6 +121,33 @@ function toDepartmentUI(dto: DepartmentResDto, options?: ToDepartmentUIOptions):
   const secondaryContactId = dto.secondaryContactId == null ? null : String(dto.secondaryContactId)
   const billingContactId = dto.billingContactId == null ? null : String(dto.billingContactId)
 
+  const primaryContact = dto.primaryContact
+    ? {
+        name: (dto.primaryContact as any).name ?? "",
+        phone: (dto.primaryContact as any).phone ?? "",
+        email: (dto.primaryContact as any).email ?? "",
+        location: (dto.primaryContact as any).location ?? "",
+      }
+    : EMPTY_DEPARTMENT_UI.primaryContact
+
+  const secondaryContact = dto.secondaryContact
+    ? {
+        name: (dto.secondaryContact as any).name ?? "",
+        phone: (dto.secondaryContact as any).phone ?? "",
+        email: (dto.secondaryContact as any).email ?? "",
+        location: (dto.secondaryContact as any).location ?? "",
+      }
+    : EMPTY_DEPARTMENT_UI.secondaryContact
+
+  const billingContact = dto.billingContact
+    ? {
+        name: (dto.billingContact as any).name ?? "",
+        phone: (dto.billingContact as any).phone ?? "",
+        email: (dto.billingContact as any).email ?? "",
+        location: (dto.billingContact as any).location ?? "",
+      }
+    : EMPTY_DEPARTMENT_UI.billingContact
+
   return {
     ...EMPTY_DEPARTMENT_UI,
     id: idRaw == null ? "" : String(idRaw),
@@ -130,6 +157,9 @@ function toDepartmentUI(dto: DepartmentResDto, options?: ToDepartmentUIOptions):
     primaryContactId,
     secondaryContactId,
     billingContactId,
+    primaryContact,
+    secondaryContact,
+    billingContact,
     ...(mappedAddress ? { address: mappedAddress } : {}),
     settings: {
       ...EMPTY_DEPARTMENT_UI.settings,
