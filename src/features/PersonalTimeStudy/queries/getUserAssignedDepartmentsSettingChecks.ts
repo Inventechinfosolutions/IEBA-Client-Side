@@ -29,6 +29,13 @@ export type UserAssignedDepartmentsSettingChecks = {
   }
   allowUserEntry: boolean
   timestudyAllowedDepartmentIds: Array<{ departmentId: number }>
+  timestudyAllowedRaw: Array<{
+    departmentId: number
+    departmentName: string | null
+    allowed: boolean
+    startDate: string | null
+    endDate: string | null
+  }>
   bypassSchedule: boolean
 }
 
@@ -76,12 +83,29 @@ export function useGetUserAssignedDepartmentsSettingChecks(
       const userMultiCode = checkSettings ? checkSettings.userMultiCode ?? [] : []
       const apportioningRequired = checkSettings ? checkSettings.userApportioning === true : false
       
-      const timestudyAllowedRaw: Array<{ departmentId?: number; allowed?: boolean }> = Array.isArray(checkSettings?.timestudyAllowed)
-        ? (checkSettings.timestudyAllowed as Array<{ departmentId?: number; allowed?: boolean }>)
+      const timestudyAllowedRaw: Array<{
+        departmentId: number
+        departmentName: string | null
+        allowed: boolean
+        startDate: string | null
+        endDate: string | null
+      }> = (Array.isArray(checkSettings?.timestudyAllowed)
+        ? checkSettings.timestudyAllowed
         : []
+      ).filter(
+        (item: any): item is { departmentId: number; departmentName?: string | null; allowed: boolean; startDate: string | null; endDate: string | null } =>
+          typeof item?.departmentId === "number" && typeof item?.allowed === "boolean"
+      ).map((item: any) => ({
+        departmentId: item.departmentId,
+        departmentName: item.departmentName ?? null,
+        allowed: item.allowed,
+        startDate: item.startDate ?? null,
+        endDate: item.endDate ?? null,
+      }))
+
       const bypassSchedule = false
       const timestudyAllowedDepartmentIds = timestudyAllowedRaw
-        .filter((item): item is { departmentId: number; allowed?: boolean } => typeof item.departmentId === "number" && item.allowed === true)
+        .filter((item) => item.allowed === true)
         .map((item) => ({ departmentId: item.departmentId }))
       
       const allowUserEntry = timestudyAllowedDepartmentIds.length > 0
@@ -95,6 +119,7 @@ export function useGetUserAssignedDepartmentsSettingChecks(
         settings,
         allowUserEntry,
         timestudyAllowedDepartmentIds,
+        timestudyAllowedRaw,
         bypassSchedule,
       }
     },

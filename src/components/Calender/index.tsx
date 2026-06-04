@@ -459,8 +459,10 @@ const AppCalender = ({
                         return (
                           <Tooltip key={`${dayObj.date.getTime()}-${index}`}>
                             <TooltipTrigger asChild>{cell}</TooltipTrigger>
-                            <TooltipContent side="top" className="max-w-[200px] text-xs wrap-break-word">
-                              {dayObj.noteText}
+                            <TooltipContent side="top" className="max-w-[200px] text-xs">
+                              <span className="block break-all break-words">
+                                {dayObj.noteText}
+                              </span>
                             </TooltipContent>
                           </Tooltip>
                         );

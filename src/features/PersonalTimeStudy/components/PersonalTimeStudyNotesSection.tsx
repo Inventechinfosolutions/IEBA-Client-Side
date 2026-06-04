@@ -22,7 +22,7 @@ export function PersonalTimeStudyNotesSection({
   return (
     <section
       className={cn(
-        "relative flex w-full min-h-0 flex-col rounded-[6px] border-0 ring-0 bg-white p-3 shadow-[0_4px_16px_rgba(16,24,40,0.12)]",
+        "relative flex w-full min-h-0 flex-col rounded-[6px] border-0 ring-0 bg-white p-3 shadow-[0_4px_16px_rgba(16,24,40,0.12)] max-h-[248px]",
         className
       )}
     >
@@ -42,7 +42,8 @@ export function PersonalTimeStudyNotesSection({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder="Add notes…"
-        className="h-[120px] w-full resize-none border border-border text-[12px] placeholder:text-[10px] focus-visible:ring-1 focus-visible:ring-[#6C5DD3] focus-visible:border-[#6C5DD3]"
+        className="flex-1 w-full min-h-0 h-0 resize-none border border-border text-[12px] placeholder:text-[10px] focus-visible:ring-1 focus-visible:ring-[#6C5DD3] focus-visible:border-[#6C5DD3] overflow-y-auto [field-sizing:normal]"
+        style={{ fieldSizing: "normal" } as any}
         disabled={isSaving}
       />
       <div className="mt-2 flex shrink-0 justify-end">
