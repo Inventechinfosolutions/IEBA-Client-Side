@@ -40,6 +40,7 @@ export function JobPoolFormModal({
   assignedToOtherPoolsInDept,
   unassigned,
   departmentName,
+  formRef,
 }: JobPoolFormModalProps) {
   const { isDepartmentAdmin, assignedDepartmentIds } = usePermissions()
   const form = useForm<JobPoolFormValues>({
@@ -47,6 +48,10 @@ export function JobPoolFormModal({
     defaultValues: initialValues,
     values: initialValues,
   })
+
+  if (formRef) {
+    formRef.current = form
+  }
 
   const [isDepartmentOpen, setIsDepartmentOpen] = useState(false)
   // For edit mode, initialValues.department holds a raw ID. We resolve the
