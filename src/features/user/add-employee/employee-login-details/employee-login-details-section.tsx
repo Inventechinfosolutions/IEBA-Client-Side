@@ -137,6 +137,7 @@ export function EmployeeLoginDetailsSection({
 
       <div className="grid grid-cols-3 gap-3">
         <div>
+          <label className={labelClassName}>*Employee #</label>
           <TitleCaseInput
             {...register("employeeNo")}
             value={watch("employeeNo") || tabData?.employeeId || tabData?.employeeNo || ""}

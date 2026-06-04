@@ -1129,7 +1129,7 @@ export function PersonalTimeStudyEntryForm({
                     value={parent.tsProgram}
                     placeholder="Select program"
                     disabled={isLocked || isLeaveRow || isApportionedRow}
-                    title={(!apportioningConfig?.timestudyAllowedDepartmentIds || apportioningConfig.timestudyAllowedDepartmentIds.length === 0) ? "No Time Study period Allocated" : undefined}
+                    title={(!apportioningConfig?.timestudyAllowedDepartmentIds || apportioningConfig.timestudyAllowedDepartmentIds.length === 0) && !apportioningConfig?.bypassSchedule ? "No Time Study period Allocated" : undefined}
                     isLoading={isDropdownLoading}
                     onOpenChange={(open) => {
                       if (open) onOpenDropdown?.()
@@ -1282,7 +1282,7 @@ export function PersonalTimeStudyEntryForm({
                           value={sub.studyProgram}
                           placeholder="Select program"
                           disabled={isLocked || isLeaveRow || isApportionedRow}
-                          title={(!apportioningConfig?.timestudyAllowedDepartmentIds || apportioningConfig.timestudyAllowedDepartmentIds.length === 0) ? "No Time Study period Allocated" : undefined}
+                          title={(!apportioningConfig?.timestudyAllowedDepartmentIds || apportioningConfig.timestudyAllowedDepartmentIds.length === 0) && !apportioningConfig?.bypassSchedule ? "No Time Study period Allocated" : undefined}
                           isLoading={(() => {
                             const deptId = resolveDepartmentIdForProgram(parent.tsProgram)
                             return Boolean(deptId && fetchingDepartments[String(deptId)])
