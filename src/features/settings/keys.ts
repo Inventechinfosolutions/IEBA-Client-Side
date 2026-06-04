@@ -21,6 +21,9 @@ export const settingsKeys = {
     all: () => [...settingsKeys.all, "reports"] as const,
     lists: () => [...settingsKeys.reports.all(), "list"] as const,
     list: () => [...settingsKeys.reports.lists()] as const,
+    byDepartment: (departmentId: string) =>
+      [...settingsKeys.reports.all(), "by-department", departmentId] as const,
+    masterCodes: () => [...settingsKeys.reports.all(), "master-codes", "all"] as const,
     activities: () => [...settingsKeys.reports.all(), "activities"] as const,
     detail: () => [...settingsKeys.reports.all(), "detail"] as const,
   },

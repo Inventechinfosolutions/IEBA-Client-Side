@@ -1,25 +1,29 @@
 import { Controller, useFormContext } from "react-hook-form"
-import { useState, useEffect } from "react"
-import { Search } from "lucide-react"
+import { useMemo } from "react"
 
-import { Button } from "@/components/ui/button"
 import { SingleSelectDropdown } from "@/components/ui/dropdown"
-import {
-  MultiSelectDropdown,
-  parseMultiSelectStoredValues,
-} from "@/components/ui/multi-select-dropdown"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { TitleCaseInput } from "@/components/ui/title-case-input"
-import { Switch } from "@/components/ui/switch"
-import { Spinner } from "@/components/ui/spinner"
-import { Table, TableBody, TableCell, TableHeader, TableRow } from "@/components/ui/table"
-import { cn } from "@/lib/utils"
-import { SettingsFormSaveSection } from "@/features/settings/enums/setting.enum"
+import { parseMultiSelectStoredValues } from "@/components/ui/multi-select-dropdown"
+import { MultiSelectSearchDropdown } from "@/components/ui/multi-select-search-dropdown"
+import { cn, sortSelectOptionsByLabel } from "@/lib/utils"
 import type { SettingsFormValues } from "@/features/settings/types"
-import { useActivityOptions } from "@/features/settings/queries/getActivityOptions"
-import { useReportOptions } from "@/features/settings/queries/getReportOptions"
-import { useProgramOptions } from "@/features/settings/queries/getProgramOptions"
-import tableEmptyIcon from "@/assets/icons/table-empty.png"
+import {
+  useSettingsDepartmentReports,
+  useSettingsReportDepartments,
+} from "@/features/settings/queries/getSettingsDepartmentReports"
+import { useSettingsMasterCodes } from "@/features/settings/queries/getSettingsMasterCodes"
+import { useMasterCodeActivities } from "@/features/settings/queries/getMasterCodeActivities"
+import {
+  previewActivityBuckets,
+  previewMasterCodeBuckets,
+  reassignActiveActivitiesForModeChange,
+  reassignActiveMasterCodesForModeChange,
+} from "@/features/reports/lib/reportMasterCodeData.utils"
+import { ReportsExclusionSaveControls } from "@/features/settings/components/Reports/ReportsExclusionSaveControls"
+import { SavedBucketPanel } from "@/features/settings/components/Reports/SavedBucketPanel"
+import {
+  clearReportBuckets,
+  loadReportBucketsFromApiRow,
+} from "@/features/settings/components/Reports/reportsForm.utils"
 
 const labelClassName = "mb-2 block text-[12px] font-normal text-[#2a2f3a]"
 const selectTriggerClassName =
@@ -27,51 +31,282 @@ const selectTriggerClassName =
 const activityMultiSelectClassName =
   "!min-h-[38px] !h-[38px] !w-[600px] !max-w-[600px] !rounded-[8px] !border-[#d6d7dc] !px-[11px] !py-0 !pr-9 !text-[12px] !font-normal !leading-normal overflow-hidden"
 
-export function ReportsForm({ isSaving = false }: { isSaving?: boolean }) {
-  const { control, watch, setValue } = useFormContext<SettingsFormValues>()
-  const { data: reportOptions = [], isPending: reportsOptionsPending } = useReportOptions()
-  const { data: activityOptions = [], isPending: activityOptionsPending } = useActivityOptions()
-  // Trigger program options fetch as requested
-  useProgramOptions()
+type ReportsFormProps = {
+  isSaving?: boolean
+  /** True when the Reports accordion section is expanded — loads departments. */
+  isSectionOpen?: boolean
+}
 
-  const selectedCodes = watch("reports.selectedActivityCodes")
-  const [isTableSearchOpen, setIsTableSearchOpen] = useState(false)
-  const [tableSearchDraft, setTableSearchDraft] = useState("")
-  const [tableSearchValue, setTableSearchValue] = useState("")
-  const reportKeyValue = watch("reports.reportKey")
+/**
+ * Settings → Reports configuration.
+ * - TanStack Query for API data (departments, mapped reports, master codes, activities).
+ * - React Hook Form for state; no useEffect (hydration on dropdown / toggle handlers only).
+ * - Summary panels use derived previews (useMemo), not live complement writes.
+ */
+export function ReportsForm({ isSaving = false, isSectionOpen = false }: ReportsFormProps) {
+  const { control, watch, setValue, getValues } = useFormContext<SettingsFormValues>()
 
-  // Auto-populate form when report selection changes
-  useEffect(() => {
-    if (!reportKeyValue || reportOptions.length === 0) return
-    const report = reportOptions.find((r) => r.key === reportKeyValue)
-    if (report) {
-      const mode = report.type === "included" ? "include" : "exclude"
-      const codes = (report.reportdata ?? "").split(",").filter(Boolean)
-      
-      setValue("reports.exclusionMode", mode)
-      setValue("reports.selectedActivityCodes", codes)
+  const departmentId = watch("reports.departmentId") ?? ""
+  const reportKey = watch("reports.reportKey") ?? ""
+  const masterCodeExclusionMode = watch("reports.masterCodeExclusionMode")
+  const activityExclusionMode = watch("reports.activityExclusionMode")
+  const isMasterCodeIncludeMode = masterCodeExclusionMode === "include"
+  const isActivityIncludeMode = activityExclusionMode === "include"
+
+  const excludedMasterCodeIds = watch("reports.excludedMasterCodeIds") ?? []
+  const includedMasterCodeIds = watch("reports.includedMasterCodeIds") ?? []
+  const excludedActivityCodes = watch("reports.excludedActivityCodes") ?? []
+  const includedActivityCodes = watch("reports.includedActivityCodes") ?? []
+
+  const masterCodeField = isMasterCodeIncludeMode
+    ? ("reports.includedMasterCodeIds" as const)
+    : ("reports.excludedMasterCodeIds" as const)
+  const activityField = isActivityIncludeMode
+    ? ("reports.includedActivityCodes" as const)
+    : ("reports.excludedActivityCodes" as const)
+
+  const { data: departmentsData, isLoading: isDeptsLoading } =
+    useSettingsReportDepartments(isSectionOpen)
+  const {
+    data: departmentReportItems = [],
+    isPending: isReportsPending,
+    isFetching: isReportsFetching,
+  } = useSettingsDepartmentReports(departmentId, isSectionOpen && !!departmentId)
+  const reportsLoading = isReportsPending || isReportsFetching
+
+  const {
+    data: masterCodeOptions = [],
+    isPending: isMasterCodesPending,
+    isFetching: isMasterCodesFetching,
+  } = useSettingsMasterCodes(isSectionOpen && !!reportKey)
+  const masterCodesLoading = isMasterCodesPending || isMasterCodesFetching
+
+  const masterCatalogIds = useMemo(
+    () =>
+      masterCodeOptions
+        .map((o) => Number(o.value))
+        .filter((n) => Number.isFinite(n) && n >= 1),
+    [masterCodeOptions],
+  )
+
+  const includedMasterCodeIdsForActivities = useMemo(
+    () =>
+      previewMasterCodeBuckets(
+        isMasterCodeIncludeMode ? "include" : "exclude",
+        excludedMasterCodeIds,
+        includedMasterCodeIds,
+        masterCatalogIds,
+      ).includedMasterCodeIds,
+    [
+      isMasterCodeIncludeMode,
+      excludedMasterCodeIds,
+      includedMasterCodeIds,
+      masterCatalogIds,
+    ],
+  )
+
+  const activitiesApiEnabled =
+    Boolean(reportKey) && includedMasterCodeIdsForActivities.length > 0
+
+  const {
+    data: activityOptions = [],
+    isPending: isActivitiesPending,
+    isFetching: isActivitiesFetching,
+  } = useMasterCodeActivities(
+    includedMasterCodeIdsForActivities,
+    activitiesApiEnabled && isSectionOpen,
+  )
+  const activitiesLoading = activitiesApiEnabled && (isActivitiesPending || isActivitiesFetching)
+
+  const activityCatalogCodes = useMemo(
+    () => activityOptions.map((o) => o.code),
+    [activityOptions],
+  )
+
+  const activityPickerLabel = isActivityIncludeMode
+    ? "Select Included Activities"
+    : "Select Excluded Activities"
+  const masterCodePickerLabel = isMasterCodeIncludeMode
+    ? "Select Included Master Codes"
+    : "Select Excluded Master Codes"
+
+  const handleMasterCodeExclusionModeChange = (checked: boolean) => {
+    const previousMode =
+      getValues("reports.masterCodeExclusionMode") === "include" ? "include" : "exclude"
+    const nextMode = checked ? "include" : "exclude"
+    if (previousMode === nextMode) return
+
+    const reassigned = reassignActiveMasterCodesForModeChange(
+      previousMode,
+      nextMode,
+      getValues("reports.excludedMasterCodeIds") ?? [],
+      getValues("reports.includedMasterCodeIds") ?? [],
+    )
+    setValue("reports.masterCodeExclusionMode", nextMode)
+    setValue("reports.excludedMasterCodeIds", reassigned.excludedMasterCodeIds)
+    setValue("reports.includedMasterCodeIds", reassigned.includedMasterCodeIds)
+  }
+
+  const handleActivityExclusionModeChange = (checked: boolean) => {
+    const previousMode =
+      getValues("reports.activityExclusionMode") === "include" ? "include" : "exclude"
+    const nextMode = checked ? "include" : "exclude"
+    if (previousMode === nextMode) return
+
+    const reassigned = reassignActiveActivitiesForModeChange(
+      previousMode,
+      nextMode,
+      getValues("reports.excludedActivityCodes") ?? [],
+      getValues("reports.includedActivityCodes") ?? [],
+    )
+    setValue("reports.activityExclusionMode", nextMode)
+    setValue("reports.excludedActivityCodes", reassigned.excludedActivityCodes)
+    setValue("reports.includedActivityCodes", reassigned.includedActivityCodes)
+  }
+
+  const departmentOptions = sortSelectOptionsByLabel(
+    (departmentsData?.items ?? []).map((d) => ({
+      value: String(d.id),
+      label: d.name ?? String(d.id),
+    })),
+  )
+
+  const reportOptions = sortSelectOptionsByLabel(
+    departmentReportItems.map((item) => ({ value: item.key, label: item.label })),
+  )
+
+  const masterCodeLabelById = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const opt of masterCodeOptions) {
+      map.set(opt.value, opt.label)
     }
-  }, [reportKeyValue, reportOptions, setValue])
-  const exclusionMode = watch("reports.exclusionMode")
-  const isActivitiesFieldDisabled =
-    !reportKeyValue || activityOptions.length === 0 || activityOptionsPending
-  const isIncludeMode = exclusionMode === "include"
-  const activityPickerLabel = isIncludeMode ? "Select Included Activities" : "Select Excluded Activities"
-  const activityCodesTableTitle = isIncludeMode ? "Included Activity Codes" : "Excluded Activity Codes"
+    return map
+  }, [masterCodeOptions])
 
-  const selectedActivities = (selectedCodes ?? [])
-    .map((code) => activityOptions.find((a) => a.code === code))
-    .filter((x): x is (typeof activityOptions)[number] => Boolean(x))
+  const mapMasterCodeIdsToDisplay = (ids: string[]) =>
+    ids.map((id) => ({
+      code: id,
+      label: masterCodeLabelById.get(id) ?? id,
+    }))
 
-  const filteredTableActivities = (() => {
-    const q = tableSearchValue.trim().toLowerCase()
-    if (!q) return selectedActivities
-    return selectedActivities.filter((a) => `${a.code} ${a.label}`.toLowerCase().includes(q))
-  })()
+  const masterCodeBucketPreview = useMemo(
+    () =>
+      previewMasterCodeBuckets(
+        isMasterCodeIncludeMode ? "include" : "exclude",
+        excludedMasterCodeIds,
+        includedMasterCodeIds,
+        masterCatalogIds,
+      ),
+    [
+      isMasterCodeIncludeMode,
+      excludedMasterCodeIds,
+      includedMasterCodeIds,
+      masterCatalogIds,
+    ],
+  )
+
+  const excludedMasterCodesDisplay = mapMasterCodeIdsToDisplay(
+    masterCodeBucketPreview.excludedMasterCodeIds,
+  )
+  const includedMasterCodesDisplay = mapMasterCodeIdsToDisplay(
+    masterCodeBucketPreview.includedMasterCodeIds,
+  )
+  const masterCodeExcludedPanelHint = isMasterCodeIncludeMode
+    ? "All other master codes (auto)"
+    : "Your excluded selection"
+  const masterCodeIncludedPanelHint = isMasterCodeIncludeMode
+    ? "Your included selection"
+    : "All other master codes (auto)"
+
+  const showSavedBucketsSummary = Boolean(reportKey) && !masterCodesLoading
+
+  const activityLabelByCode = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const opt of activityOptions) {
+      map.set(opt.code, opt.label)
+    }
+    return map
+  }, [activityOptions])
+
+  const mapActivityCodesToDisplay = (codes: string[]) =>
+    codes.map((code) => ({
+      code,
+      label: activityLabelByCode.get(code) ?? code,
+    }))
+
+  const activityBucketPreview = useMemo(
+    () =>
+      previewActivityBuckets(
+        isActivityIncludeMode ? "include" : "exclude",
+        excludedActivityCodes,
+        includedActivityCodes,
+        activityCatalogCodes,
+      ),
+    [
+      isActivityIncludeMode,
+      excludedActivityCodes,
+      includedActivityCodes,
+      activityCatalogCodes,
+    ],
+  )
+
+  const excludedActivitiesDisplay = mapActivityCodesToDisplay(
+    activityBucketPreview.excludedActivityCodes,
+  )
+  const includedActivitiesDisplay = mapActivityCodesToDisplay(
+    activityBucketPreview.includedActivityCodes,
+  )
+  const activityExcludedPanelHint = isActivityIncludeMode
+    ? "All other activities (auto)"
+    : "Your excluded selection"
+  const activityIncludedPanelHint = isActivityIncludeMode
+    ? "Your included selection"
+    : "All other activities (auto)"
+
+  const activityMultiSelectOptions = activityOptions.map((opt) => ({
+    value: opt.code,
+    label: opt.label,
+  }))
 
   return (
     <div className="bg-transparent px-2 py-1">
-      <div className="grid grid-cols-[260px_180px_600px] items-start gap-2">
+      <div className="grid grid-cols-[260px_260px_260px_180px] items-start gap-2">
+        <div>
+          <label className={labelClassName}>Department</label>
+          <Controller
+            name="reports.departmentId"
+            control={control}
+            render={({ field }) => (
+              <SingleSelectDropdown
+                value={field.value ?? ""}
+                onChange={(val) => {
+                  if ((field.value ?? "") !== val) {
+                    setValue("reports.reportKey", "")
+                    setValue("reports.masterCodeExclusionMode", "exclude")
+                    setValue("reports.activityExclusionMode", "exclude")
+                    clearReportBuckets(setValue)
+                  }
+                  field.onChange(val)
+                }}
+                onBlur={field.onBlur}
+                options={departmentOptions}
+                placeholder="Select department"
+                disabled={!isSectionOpen}
+                isLoading={isSectionOpen && isDeptsLoading}
+                loadingLabel="Loading departments…"
+                className={cn(
+                  selectTriggerClassName,
+                  "!min-h-[38px] h-[38px] !text-[12px] disabled:cursor-not-allowed disabled:opacity-70",
+                  "[&_span]:!text-[12px]",
+                )}
+                contentClassName="max-h-[180px]"
+                itemButtonClassName="rounded-[6px] px-3 py-2"
+                itemLabelClassName="!text-[12px] !font-normal"
+              />
+            )}
+          />
+        </div>
+
         <div>
           <label className={labelClassName}>Reports</label>
           <Controller
@@ -80,12 +315,25 @@ export function ReportsForm({ isSaving = false }: { isSaving?: boolean }) {
             render={({ field }) => (
               <SingleSelectDropdown
                 value={field.value ?? ""}
-                onChange={field.onChange}
+                onChange={(val) => {
+                  field.onChange(val)
+                  const report = departmentReportItems.find((r) => r.key === val)
+                  if (report) {
+                    loadReportBucketsFromApiRow(
+                      setValue,
+                      report,
+                      masterCatalogIds,
+                      activityCatalogCodes,
+                    )
+                  } else if ((field.value ?? "") !== val) {
+                    clearReportBuckets(setValue)
+                  }
+                }}
                 onBlur={field.onBlur}
-                options={reportOptions.map((r) => ({ value: r.key, label: r.label }))}
+                options={reportOptions}
                 placeholder="Select report"
-                disabled={reportsOptionsPending}
-                isLoading={reportsOptionsPending}
+                disabled={!departmentId || reportsLoading}
+                isLoading={reportsLoading}
                 loadingLabel="Loading reports…"
                 className={cn(
                   selectTriggerClassName,
@@ -100,198 +348,124 @@ export function ReportsForm({ isSaving = false }: { isSaving?: boolean }) {
           />
         </div>
 
-        <div className="flex flex-col items-center">
-          <label className={labelClassName}>Exclusion/Inclusion</label>
-          <Controller
-            name="reports.exclusionMode"
-            control={control}
-            render={({ field }) => (
-              <Switch
-                checked={field.value === "include"}
-                onCheckedChange={(checked) => field.onChange(checked ? "include" : "exclude")}
-                className="mt-[10px] data-checked:bg-[var(--primary)]"
-              />
-            )}
-          />
-        </div>
-
         <div>
-          <label className={labelClassName}>{activityPickerLabel}</label>
+          <label className={labelClassName}>{masterCodePickerLabel}</label>
           <Controller
-            name="reports.selectedActivityCodes"
+            key={masterCodeField}
+            name={masterCodeField}
             control={control}
             render={({ field }) => (
-              <MultiSelectDropdown
+              <MultiSelectSearchDropdown
                 value={(field.value ?? []).join(", ")}
                 onChange={(next) => {
-                  field.onChange(parseMultiSelectStoredValues(next))
+                  const selected = parseMultiSelectStoredValues(next)
+                  field.onChange(selected)
+                  setValue("reports.excludedActivityCodes", [])
+                  setValue("reports.includedActivityCodes", [])
                 }}
                 onBlur={field.onBlur}
-                placeholder={activityPickerLabel}
-                disabled={isActivitiesFieldDisabled}
-                isLoading={activityOptionsPending}
+                placeholder={masterCodePickerLabel}
+                disabled={!reportKey || masterCodesLoading}
+                isLoading={masterCodesLoading}
+                loadingLabel="Loading master codes…"
                 maxVisibleItems={2}
-                options={activityOptions.map((a) => ({
-                  value: a.code,
-                  label: `${a.code} ${a.label}`,
-                }))}
+                options={masterCodeOptions}
                 className={cn(
                   activityMultiSelectClassName,
-                  "[&_span]:!text-[12px]",
-                  isActivitiesFieldDisabled && "cursor-not-allowed bg-[#f2f2f2] opacity-100",
+                  "!w-[260px] !max-w-[260px] !min-h-[38px] !h-auto",
+                  "[&_input]:!text-[12px] [&_span]:!text-[12px]",
+                  (!reportKey || masterCodesLoading) && "cursor-not-allowed opacity-70",
                 )}
               />
             )}
           />
         </div>
+
+        <ReportsExclusionSaveControls
+          control={control}
+          modeField="reports.masterCodeExclusionMode"
+          isSaving={isSaving}
+          saveDisabled={isSaving || !departmentId || !reportKey}
+          saveScope="masterCodes"
+          onExclusionModeChange={handleMasterCodeExclusionModeChange}
+        />
       </div>
 
-      <div className="mt-8 overflow-hidden rounded-[8px] border border-[#e7e9f2]">
-        <div className="grid h-[34px] grid-cols-[1fr_14px] items-center bg-[var(--primary)]">
-          <div className="relative flex items-center px-3">
-            <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-              <div className="text-[12px] font-medium text-white">{activityCodesTableTitle}</div>
-            </div>
-            <div className="ml-auto flex items-center">
-              <DropdownMenu open={isTableSearchOpen} onOpenChange={setIsTableSearchOpen}>
-                <DropdownMenuTrigger asChild>
-                  <button
-                    type="button"
-                    className="inline-flex cursor-pointer items-center justify-center"
-                    aria-label="Open table search"
-                  >
-                    <Search className="size-3.5 text-white" />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent
-                  align="end"
-                  side="bottom"
-                  sideOffset={8}
-                  onCloseAutoFocus={(e) => e.preventDefault()}
-                  className="w-[320px] rounded-[10px] border border-[#e7e9f2] bg-white p-3 shadow-[0_10px_24px_rgba(17,24,39,0.18)]"
-                >
-                  <TitleCaseInput
-                    value={tableSearchDraft}
-                    onChange={(e) => setTableSearchDraft(e.target.value)}
-                    placeholder="Search value"
-                    className="h-[40px] rounded-[10px] border border-[#d6d7dc] bg-white px-3 text-[12px] shadow-none focus-visible:border-[#6C5DD3] focus-visible:ring-0"
-                  />
-                  <div className="mt-2 flex items-center gap-2">
-                    <Button
-                      type="button"
-                      onClick={() => setTableSearchValue(tableSearchDraft)}
-                      className="h-[28px] cursor-pointer gap-2 rounded-[6px] bg-[#2563eb] px-3 text-[12px] font-medium text-white hover:bg-[#2563eb]"
-                    >
-                      <Search className="size-3.5 text-white" />
-                      Search
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => {
-                        setTableSearchDraft("")
-                        setTableSearchValue("")
-                      }}
-                      className="h-[28px] cursor-pointer rounded-[6px] border border-[#d6d7dc] bg-white px-4 text-[12px] font-medium text-[#111827] hover:bg-white"
-                    >
-                      Reset
-                    </Button>
-                    <button
-                      type="button"
-                      className="ml-auto cursor-pointer text-[12px] font-medium text-[#2563eb] hover:underline"
-                      onClick={() => {
-                        // Placeholder for filter behavior; keep UI parity with design.
-                      }}
-                    >
-                      Filter
-                    </button>
-                    <button
-                      type="button"
-                      className="cursor-pointer text-[12px] font-medium text-[#2563eb] hover:underline"
-                      onClick={() => {
-                        setIsTableSearchOpen(false)
-                        setTableSearchDraft(tableSearchValue)
-                      }}
-                    >
-                      Close
-                    </button>
-                  </div>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </div>
-          <div className="h-full border-l border-white/30" />
+      {showSavedBucketsSummary ? (
+        <div className="mt-4 grid max-w-[1120px] grid-cols-2 gap-4">
+          <SavedBucketPanel
+            title="Excluded Master Codes"
+            subtitle={masterCodeExcludedPanelHint}
+            items={excludedMasterCodesDisplay}
+          />
+          <SavedBucketPanel
+            title="Included Master Codes"
+            subtitle={masterCodeIncludedPanelHint}
+            items={includedMasterCodesDisplay}
+          />
         </div>
+      ) : null}
 
-        <div className="max-h-[216px] overflow-y-scroll bg-white [scrollbar-gutter:stable]">
-          <Table>
-            <TableHeader className="[&_tr]:border-b-0">
-              <TableRow className="border-b-0" />
-            </TableHeader>
-            <TableBody className="bg-white">
-              {(activityOptionsPending || isSaving) ? (
-                <TableRow className="hover:bg-white">
-                  <TableCell className="h-[160px] p-0">
-                    <div className="flex h-full items-center justify-center">
-                      <Spinner className="text-[#6C5DD3]" />
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ) : selectedActivities.length === 0 ? (
-                <TableRow className="hover:bg-white">
-                  <TableCell className="h-[160px] p-0">
-                    <div className="flex h-full flex-col items-center justify-center gap-2">
-                      <img
-                        src={tableEmptyIcon}
-                        alt="No data"
-                        className="h-20 w-20 opacity-70"
-                      />
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredTableActivities.length === 0 ? (
-                  <TableRow className="hover:bg-white">
-                    <TableCell className="h-[216px] p-0">
-                      <div className="flex h-full flex-col items-center justify-center gap-2">
-                        <img
-                          src={tableEmptyIcon}
-                          alt="No data"
-                          className="h-20 w-20 opacity-70"
-                        />
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredTableActivities.map((a) => (
-                  <TableRow
-                    key={a.code}
-                    className="h-[36px] cursor-pointer border-b border-black/5 hover:bg-[#f3f4f8]"
-                  >
-                    <TableCell className="py-0 text-center text-[13px] text-[#111827]">
-                      {a.code} {a.label}
-                    </TableCell>
-                  </TableRow>
-                  ))
-                )
-              )}
-            </TableBody>
-          </Table>
+      <div className="mt-4 flex items-start gap-2">
+        <div>
+          <label className={labelClassName}>{activityPickerLabel}</label>
+          <Controller
+            key={activityField}
+            name={activityField}
+            control={control}
+            render={({ field }) => (
+              <MultiSelectSearchDropdown
+                value={(field.value ?? []).join(", ")}
+                onChange={(next) => {
+                  const selected = parseMultiSelectStoredValues(next)
+                  field.onChange(selected)
+                }}
+                onBlur={field.onBlur}
+                placeholder={
+                  !activitiesApiEnabled
+                    ? "Save included master codes first"
+                    : activityPickerLabel
+                }
+                disabled={!activitiesApiEnabled || !reportKey || activitiesLoading}
+                isLoading={activitiesLoading}
+                loadingLabel="Loading activities…"
+                maxVisibleItems={2}
+                options={activitiesApiEnabled ? activityMultiSelectOptions : []}
+                className={cn(
+                  activityMultiSelectClassName,
+                  "!min-h-[38px] !h-auto",
+                  "[&_input]:!text-[12px] [&_span]:!text-[12px] [&_button_span]:!text-[12px]",
+                  (!activitiesApiEnabled || !reportKey || activitiesLoading) &&
+                    "cursor-not-allowed opacity-70",
+                )}
+              />
+            )}
+          />
         </div>
+        <ReportsExclusionSaveControls
+          control={control}
+          modeField="reports.activityExclusionMode"
+          isSaving={isSaving}
+          saveDisabled={isSaving || !departmentId || !reportKey}
+          saveScope="activities"
+          onExclusionModeChange={handleActivityExclusionModeChange}
+        />
       </div>
 
-      <div className="mt-8 flex justify-end">
-        <Button
-          type="submit"
-          data-settings-section={SettingsFormSaveSection.Reports}
-          disabled={isSaving}
-          className="h-[44px] w-[88px] cursor-pointer rounded-[10px] bg-[var(--primary)] px-0 py-2 text-[14px] font-medium text-white hover:bg-[var(--primary)]"
-        >
-          {isSaving ? <Spinner className="text-white" /> : "Save"}
-        </Button>
-      </div>
+      {showSavedBucketsSummary && activitiesApiEnabled ? (
+        <div className="mt-4 grid max-w-[1120px] grid-cols-2 gap-4">
+          <SavedBucketPanel
+            title="Excluded Activities"
+            subtitle={activityExcludedPanelHint}
+            items={excludedActivitiesDisplay}
+          />
+          <SavedBucketPanel
+            title="Included Activities"
+            subtitle={activityIncludedPanelHint}
+            items={includedActivitiesDisplay}
+          />
+        </div>
+      ) : null}
     </div>
   )
 }
-
-

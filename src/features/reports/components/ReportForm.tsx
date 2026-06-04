@@ -31,7 +31,7 @@ import {
   useGetCostPoolsByDepartment,
 } from "../queries/getDynamicFilters"
 import type { ReportsModuleApi } from "../hooks/useReportsModule"
-import { useGetReportDepartments } from "../queries/getReports"
+import { useGetReportDepartments, useGetReportsByDepartment } from "../queries/getReports"
 import { useListFiscalYears } from "@/features/settings/queries/listFiscalYears"
 import {
   REPORT_DOWNLOAD_TYPES,
@@ -582,13 +582,8 @@ export function ReportForm({ module }: ReportFormProps) {
     if (!base.employeeIds?.trim() && typeof legacyId === "string" && legacyId.trim() !== "") {
       base.employeeIds = legacyId.trim()
     }
-    const selected = module.catalogItems.find((item) => item.key === base.reportKey)
-    if (selected && isTuolumneDisabledReport(selected.label, countyName)) {
-      base.reportKey = ""
-      base.fileName = ""
-    }
     return base
-  }, [navState, module.catalogItems, countyName])
+  }, [navState])
 
   const form = useForm<ReportFormValues>({
     resolver: zodResolver(reportFormSchema),
@@ -597,9 +592,20 @@ export function ReportForm({ module }: ReportFormProps) {
     mode: "onTouched",
   })
 
-  const { control, handleSubmit, setError, setValue, formState } = form
+  const { control, handleSubmit, setError, setValue, getValues, formState } = form
 
   const reportKey = useWatch({ control, name: "reportKey" }) ?? ""
+  const departmentId = useWatch({ control, name: "departmentId" }) ?? ""
+
+  const { data: departmentsData, isLoading: isDeptsLoading } = useGetReportDepartments(true)
+  const {
+    data: departmentReportItems = [],
+    isPending: isDeptReportsPending,
+    isFetching: isDeptReportsFetching,
+  } = useGetReportsByDepartment(departmentId, !!departmentId)
+  const hasSelectedReportType = reportKey.trim().length > 0
+  const deptReportsLoading = isDeptReportsPending || isDeptReportsFetching
+
   const selectMonthBy = useWatch({ control, name: "selectMonthBy" })
   const fiscalYearId = useWatch({ control, name: "fiscalYearId" }) ?? ""
   const quarter = useWatch({ control, name: "quarter" }) ?? ""
@@ -656,17 +662,14 @@ export function ReportForm({ module }: ReportFormProps) {
   }, [selectMonthBy, dateFrom, dateTo, monthVal, yearVal, fiscalYearId, quarter, weekIdVal])
 
   const currentReportItem = useMemo(() => {
-    return module.catalogItems.find((i) => i.key === reportKey)
-  }, [reportKey, module.catalogItems])
-
-  const hasSelectedReportType = reportKey.trim().length > 0
+    return departmentReportItems.find((i) => i.key === reportKey)
+  }, [reportKey, departmentReportItems])
 
   const secondaryLayout = useMemo(
     () => getReportSecondaryLayout(currentReportItem?.criteria),
     [currentReportItem],
   )
 
-  const departmentId = useWatch({ control, name: "departmentId" })
   const activityIdsRaw = useWatch({ control, name: "activityIds" })
   const costPoolIdsRaw = useWatch({ control, name: "costPoolIds" })
   const includeActiveEmployees = useWatch({ control, name: "includeActiveEmployees" })
@@ -698,7 +701,8 @@ export function ReportForm({ module }: ReportFormProps) {
   }, [costPoolIdsRaw])
 
   const criteria = currentReportItem?.criteria
-  const showDepartmentSelect = criteria?.showDepartmentSelect !== false
+  /** Reports screen always shows department first; criteria drives downstream filters only. */
+  const showReportsDepartmentField = true
   const showProgramSelect = isTrue(criteria?.showProgramSelect)
   const showActivitySelect = criteria?.showActivitySelect === true
   const showScheduleTime = isTrue(criteria?.showScheduleTime)
@@ -710,7 +714,6 @@ export function ReportForm({ module }: ReportFormProps) {
   )
   const showMasterCodes = isTrue(criteria?.showmasterCodes)
 
-  const shouldFetchDepartments = hasSelectedReportType && showDepartmentSelect
   const shouldLoadFiscalYears =
     hasSelectedReportType &&
     (showScheduleTime || selectMonthBy === "qtr" || selectMonthBy === "year" || selectMonthBy === "scheduled")
@@ -723,7 +726,8 @@ export function ReportForm({ module }: ReportFormProps) {
     !!departmentId &&
     !!user?.id &&
     (!isMaaReport || showMasterCodes) &&
-    !shouldShowCostPool
+    !shouldShowCostPool &&
+    employeeStatusArr.length > 0
   const shouldFetchMaaEmployees =
     hasSelectedReportType && isMaaReport && !!departmentId && !showMasterCodes
   const { data: maaEmployeesData, isFetching: isMaaEmployeesFetching } = useGetMaaEmployees(
@@ -793,13 +797,13 @@ export function ReportForm({ module }: ReportFormProps) {
   const reportOptions = useMemo(
     () =>
       sortSelectOptionsByLabel(
-        module.catalogItems.map((item) => ({
+        departmentReportItems.map((item) => ({
           value: item.key,
           label: item.label,
           disabled: isTuolumneDisabledReport(item.label, countyName),
         })),
       ),
-    [module.catalogItems, countyName],
+    [departmentReportItems, countyName],
   )
 
   const shouldFilterProgramsByUser = useMemo(() => {
@@ -826,10 +830,6 @@ export function ReportForm({ module }: ReportFormProps) {
     enabled: shouldLoadFiscalYears,
     scopeKey: reportKey,
   })
-  const { data: departmentsData, isLoading: isDeptsLoading } = useGetReportDepartments(
-    reportKey,
-    shouldFetchDepartments,
-  )
   const { data: allProgramsData } = useGetListAllPrograms(shouldFetchAllPrograms, reportKey)
   const { data: costPoolsByDepartmentData, isFetching: isCostPoolsByDeptFetching } =
     useGetCostPoolsByDepartment(departmentId, shouldFetchCostPoolsByDepartment, reportKey)
@@ -989,7 +989,6 @@ export function ReportForm({ module }: ReportFormProps) {
   }
 
 
-  const catalogLoading = module.isCatalogPending
 
 type ReportFiltersBodyProps = {
   control: any
@@ -1388,8 +1387,44 @@ const ReportFiltersBody = ({
 
     <div className="w-full max-w-none rounded-[10px] border border-[#E5E7EB] bg-white px-[19px] pb-8 pt-5 shadow-sm sm:px-8 sm:pb-10 sm:pt-6">
       <form className="space-y-5" onSubmit={(e) => e.preventDefault()}>
-        {/* Row 1: Reports + Department + period selection */}
+        {/* Row 1: Department + Reports + period selection */}
         <div className="flex min-w-0 flex-wrap items-end gap-3 pb-0.5 sm:gap-4">
+          {showReportsDepartmentField && (
+            <div className="min-w-0 w-full max-w-[350px] shrink-0">
+              <label className={labelClassName} htmlFor="reports-department">
+                Department
+              </label>
+              <Controller
+                name="departmentId"
+                control={control}
+                render={({ field }) => (
+                  <SingleSelectDropdown
+                    value={field.value ?? ""}
+                    onChange={(val) => {
+                      if ((field.value ?? "") !== val) {
+                        setValue("reportKey", "")
+                        setValue("fileName", "")
+                        setValue("employeeIds", "")
+                        setValue("activityIds", "")
+                        setValue("costPoolIds", "")
+                        setValue("programIds", "")
+                      }
+                      field.onChange(val)
+                    }}
+                    onBlur={field.onBlur}
+                    options={departmentOptions}
+                    placeholder="Select Department"
+                    className={departmentSelectTrigger}
+                    isLoading={isDeptsLoading}
+                    contentClassName="max-h-[220px]"
+                    itemButtonClassName="rounded-[6px] px-3 py-2"
+                    itemLabelClassName="!text-[14px] !font-normal"
+                  />
+                )}
+              />
+            </div>
+          )}
+
           <div className="w-[min(100%,240px)] min-w-[162.83px] shrink-0">
             <label className={labelClassName} htmlFor="reports-select-report">
               Reports
@@ -1401,35 +1436,39 @@ const ReportFiltersBody = ({
                 <SingleSelectDropdown
                   value={field.value}
                   onChange={(val) => {
-                    const item = module.catalogItems.find((i) => i.key === val)
-                    if (!item) return
+                    const item = departmentReportItems.find((i) => i.key === val)
+                    const label =
+                      item?.label ??
+                      reportOptions.find((o) => o.value === val)?.label ??
+                      ""
 
-                    // Reset all fields to defaults, keeping only the new report key
                     form.reset({
                       ...REPORT_FORM_DEFAULT_VALUES,
+                      departmentId: getValues("departmentId"),
                       reportKey: val,
-                      fileName: item?.label ?? "",
+                      fileName: label,
                     })
 
-                    // Set the appropriate period type based on report criteria
-                    const monthByOpts = item?.criteria?.showMonthBy?.map((o: any) => o.type)
+                    if (!item) return
+
+                    const monthByOpts = item.criteria?.showMonthBy?.map((o) => o.type)
                     if (monthByOpts && monthByOpts.length > 0) {
                       form.setValue("selectMonthBy", monthByOpts[0] as "qtr" | "dates" | "month" | "year")
-                    } else if (isTrue(item?.criteria?.monthly) || isTrue(item?.criteria?.showMonthly)) {
+                    } else if (isTrue(item.criteria?.monthly) || isTrue(item.criteria?.showMonthly)) {
                       form.setValue("selectMonthBy", "month")
-                    } else if (isTrue(item?.criteria?.showYear)) {
+                    } else if (isTrue(item.criteria?.showYear)) {
                       form.setValue("selectMonthBy", "year")
-                    } else if (isTrue(item?.criteria?.showQuarterSelect) || isTrue(item?.criteria?.showQtr)) {
+                    } else if (isTrue(item.criteria?.showQuarterSelect) || isTrue(item.criteria?.showQtr)) {
                       form.setValue("selectMonthBy", "qtr")
-                    } else if (isTrue(item?.criteria?.showDate) || isTrue(item?.criteria?.showDates)) {
+                    } else if (isTrue(item.criteria?.showDate) || isTrue(item.criteria?.showDates)) {
                       form.setValue("selectMonthBy", "dates")
                     }
                   }}
                   onBlur={field.onBlur}
                   options={reportOptions}
                   placeholder="Select Report"
-                  disabled={catalogLoading}
-                  isLoading={catalogLoading}
+                  disabled={!departmentId || deptReportsLoading}
+                  isLoading={deptReportsLoading}
                   loadingLabel="Loading reports…"
                   className={reportSelectTrigger}
                   contentClassName="max-h-[220px]"
@@ -1474,40 +1513,6 @@ const ReportFiltersBody = ({
                     ]}
                     placeholder="Select Master Code"
                     className={reportSelectTrigger}
-                    contentClassName="max-h-[220px]"
-                    itemButtonClassName="rounded-[6px] px-3 py-2"
-                    itemLabelClassName="!text-[14px] !font-normal"
-                  />
-                )}
-              />
-            </div>
-          )}
-
-          {showDepartmentSelect && (
-            <div className="min-w-0 w-full max-w-[350px] shrink-0">
-              <label className={labelClassName} htmlFor="reports-department">
-                Department
-              </label>
-              <Controller
-                name="departmentId"
-                control={control}
-                render={({ field }) => (
-                  <SingleSelectDropdown
-                    value={field.value ?? ""}
-                    onChange={(val) => {
-                      if ((field.value ?? "") !== val) {
-                        setValue("employeeIds", "")
-                        setValue("activityIds", "")
-                        setValue("costPoolIds", "")
-                        setValue("programIds", "")
-                      }
-                      field.onChange(val)
-                    }}
-                    onBlur={field.onBlur}
-                    options={departmentOptions}
-                    placeholder="Select Department"
-                    className={departmentSelectTrigger}
-                    isLoading={hasSelectedReportType && isDeptsLoading}
                     contentClassName="max-h-[220px]"
                     itemButtonClassName="rounded-[6px] px-3 py-2"
                     itemLabelClassName="!text-[14px] !font-normal"

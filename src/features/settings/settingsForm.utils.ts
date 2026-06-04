@@ -70,9 +70,20 @@ export function mapToSettingsFormValues(
       screenInactivityTimeMinutes: Number(localStorage.getItem("SCREEN_INACTIVITY_TIME_IN_MIN")) || settings.general?.screenInactivityTimeMinutes || 120,
     },
     reports: {
+      departmentId: settings.reports?.departmentId ?? "",
       reportKey: settings.reports?.reportKey ?? "",
-      exclusionMode: settings.reports?.exclusionMode ?? "exclude",
-      selectedActivityCodes: settings.reports?.selectedActivityCodes ?? [],
+      masterCodeExclusionMode:
+        settings.reports?.masterCodeExclusionMode ??
+        (settings.reports as { exclusionMode?: "exclude" | "include" })?.exclusionMode ??
+        "exclude",
+      activityExclusionMode:
+        settings.reports?.activityExclusionMode ??
+        (settings.reports as { exclusionMode?: "exclude" | "include" })?.exclusionMode ??
+        "exclude",
+      excludedMasterCodeIds: settings.reports?.excludedMasterCodeIds ?? [],
+      includedMasterCodeIds: settings.reports?.includedMasterCodeIds ?? [],
+      excludedActivityCodes: settings.reports?.excludedActivityCodes ?? [],
+      includedActivityCodes: settings.reports?.includedActivityCodes ?? [],
     },
     login: {
       twoFactorAuthentication: settings.login?.twoFactorAuthentication ?? false,

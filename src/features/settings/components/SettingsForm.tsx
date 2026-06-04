@@ -86,6 +86,9 @@ function SettingsFormInner({ settings, isSaving, onSubmitSettings }: SettingsFor
     const submitter = (native.submitter || document.activeElement) as HTMLElement | null
     const attr = submitter?.getAttribute("data-settings-section")
     const submitterSection = isSettingsFormSaveSection(attr) ? attr : undefined
+    const scopeAttr = submitter?.getAttribute("data-reports-save-scope")
+    const reportsSaveScope =
+      scopeAttr === "masterCodes" || scopeAttr === "activities" ? scopeAttr : undefined
 
     // Clear previous errors so validation state is fresh for the current section
     form.clearErrors()
@@ -103,7 +106,7 @@ function SettingsFormInner({ settings, isSaving, onSubmitSettings }: SettingsFor
       return
     }
 
-    onSubmitSettings(form.getValues(), { submitterSection })
+    onSubmitSettings(form.getValues(), { submitterSection, reportsSaveScope })
   }
 
   return (
@@ -138,7 +141,11 @@ export function SettingsForm() {
       isSaving={isSaving}
       onSubmitSettings={(values, meta) => {
         saveSettings(
-          { values, submitterSection: meta?.submitterSection },
+          {
+            values,
+            submitterSection: meta?.submitterSection,
+            reportsSaveScope: meta?.reportsSaveScope,
+          },
           {
             onSuccess: () => {
               showSettingsFormSuccessToast(getSettingsSaveSuccessMessage(meta?.submitterSection))

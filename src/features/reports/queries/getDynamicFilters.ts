@@ -108,7 +108,8 @@ export function useGetActivitiesByDepartmentAndUsers(
         activityStatus,
         masterCode,
       ),
-    enabled: enabled && !!departmentId && userIds.length > 0,
+    enabled:
+      enabled && !!departmentId && userIds.length > 0 && !!startDate && !!endDate,
     ...reportQueryOptions,
   })
 }
