@@ -589,10 +589,10 @@ export function TimeStudyPeriodsForm({
                     Hours <span className="text-[12px]">(8 hrs/day)</span>
                   </Label>
                   <TitleCaseInput
-                    readOnly={isCreateMode}
+                    disabled={!isCreateMode}
                     className={cn(
                       "h-10 rounded-[14px] border-[#D1D5DB]",
-                      isCreateMode && "cursor-not-allowed bg-[#F9FAFB]"
+                      !isCreateMode && "cursor-not-allowed bg-[#F9FAFB]"
                     )}
                     value={hours}
                     onChange={(event) => form.setValue("hours", event.target.value)}
@@ -602,10 +602,10 @@ export function TimeStudyPeriodsForm({
                 <div className="space-y-1">
                   <Label className="text-[14px] font-normal text-black">Holidays</Label>
                   <TitleCaseInput
-                    readOnly={isCreateMode}
+                    disabled={!isCreateMode}
                     className={cn(
                       "h-10 rounded-[14px] border-[#D1D5DB]",
-                      isCreateMode && "cursor-not-allowed bg-[#F9FAFB]"
+                      !isCreateMode && "cursor-not-allowed bg-[#F9FAFB]"
                     )}
                     value={holidays}
                     onChange={(event) => form.setValue("holidays", event.target.value)}
@@ -615,10 +615,10 @@ export function TimeStudyPeriodsForm({
                 <div className="space-y-1">
                   <Label className="text-[14px] font-normal text-black">Allocable</Label>
                   <TitleCaseInput
-                    readOnly={isCreateMode}
+                    disabled={!isCreateMode}
                     className={cn(
                       "h-10 rounded-[14px] border-[#D1D5DB]",
-                      isCreateMode && "cursor-not-allowed bg-[#F9FAFB]"
+                      !isCreateMode && "cursor-not-allowed bg-[#F9FAFB]"
                     )}
                     value={allocable}
                     onChange={(event) => form.setValue("allocable", event.target.value)}
@@ -628,10 +628,10 @@ export function TimeStudyPeriodsForm({
                 <div className="space-y-1">
                   <Label className="text-[14px] font-normal text-black">Non-Allocable</Label>
                   <TitleCaseInput
-                    readOnly={isCreateMode}
+                    disabled={!isCreateMode}
                     className={cn(
                       "h-10 rounded-[14px] border-[#D1D5DB]",
-                      isCreateMode && "cursor-not-allowed bg-[#F9FAFB]"
+                      !isCreateMode && "cursor-not-allowed bg-[#F9FAFB]"
                     )}
                     value={nonAllocable}
                     onChange={(event) => form.setValue("nonAllocable", event.target.value)}
