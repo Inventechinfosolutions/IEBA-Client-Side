@@ -1130,7 +1130,7 @@ export function PersonalTimeStudyEntryForm({
         <div className="flex items-center justify-between">
           <h3 className="text-[14px] text-[#6C5DD3] font-semibold">Time Entries</h3>
           <div className="flex items-center gap-3">
-            {apportioningConfig?.apportioningRequired && (
+            {apportioningConfig?.supervisorApportioning && (
               <div className="flex items-center gap-2 bg-[#F8F9FA] border border-[#E2E8F0] px-3 py-1.5 rounded-[6px] h-9">
                 <div className="flex size-4 shrink-0 items-center justify-center rounded-[4px] border border-[#6C5DD3] bg-[#6C5DD3] text-white opacity-50 cursor-not-allowed">
                   <Check className="size-3 stroke-[3]" />
