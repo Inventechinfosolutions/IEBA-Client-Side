@@ -226,10 +226,11 @@ export function useTimeStudyMGT() {
     legend,
     dayDetail: dayDetailQuery.data,
     dropdownData: undefined,
-    actualMultiTotal: undefined,
-    multiBalanceTotal: undefined,
+    actualMultiTotal: dayDetailQuery.data?.enteredMaaMinutes,
+    multiBalanceTotal: dayDetailQuery.data?.maaBalance,
     apportioningConfig: apportioningConfigQuery.data,
     apportioningRecords,
+    refetchConfig: apportioningConfigQuery.refetch,
 
     // Loading states
     isEmployeeListLoading: employeeListQuery.isLoading,
