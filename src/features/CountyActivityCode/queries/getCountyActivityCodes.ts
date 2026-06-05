@@ -145,12 +145,18 @@ export async function fetchCountyActivityNestedRows(
  * Used for "Copy code" dropdowns in Add/Edit modals without hitting `/master-codes`.
  */
 export function useGetMasterActivityCatalog(enabled: boolean) {
+  console.log("useGetMasterActivityCatalog called with enabled:", enabled);
   return useQuery({
     queryKey: masterCodeKeys.activityCodesCatalogAll(),
-    queryFn: () => apiFetchActivityCodesCatalogAll({ inactiveOnly: false }),
+    queryFn: () => {
+      console.log("useGetMasterActivityCatalog queryFn executing! Fetching from API...");
+      return apiFetchActivityCodesCatalogAll({ inactiveOnly: false });
+    },
     enabled,
     staleTime: 5 * 60_000,
     gcTime: 15 * 60_000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
   })
 }
 
