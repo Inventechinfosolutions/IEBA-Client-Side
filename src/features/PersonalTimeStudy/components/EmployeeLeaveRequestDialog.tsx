@@ -243,6 +243,7 @@ export function EmployeeLeaveRequestDialog({
       {
         userMultiCode: Array<{ departmentId: number }>
         timestudyAllowed: Array<{ departmentId: number }>
+        bypassSchedule: boolean
       }
     >
   >({})
@@ -254,15 +255,21 @@ export function EmployeeLeaveRequestDialog({
     try {
       const res = await api.get<any>(`/timestudyrecords/user/config?userId=${encodeURIComponent(effectiveUserId)}&date=${date}`)
       if (res?.success && res.data) {
-        const timestudyAllowed = res.data.timestudyAllowed ?? []
+        const timestudyAllowedRaw: Array<{ departmentId?: number; allowed?: boolean }> = res.data.timestudyAllowed ?? []
+        const bypassSchedule = false
+        const timestudyAllowed = timestudyAllowedRaw
+          .filter((item): item is { departmentId: number; allowed?: boolean } => typeof item.departmentId === "number" && item.allowed === true)
+          .map((item) => ({ departmentId: item.departmentId }))
+
         setDateConfigs(prev => ({
           ...prev,
           [date]: {
             userMultiCode: res.data.userMultiCode ?? [],
             timestudyAllowed,
+            bypassSchedule,
           }
         }))
-        if (showToastOnEmpty && timestudyAllowed.length === 0) {
+        if (showToastOnEmpty && timestudyAllowed.length === 0 && !bypassSchedule) {
           toast.error("No Time Study Period Allocated")
         }
       }
@@ -505,7 +512,9 @@ export function EmployeeLeaveRequestDialog({
         return deptFiltered.map(formatLeaveProgramOption)
       }
       const allowedDeptIds = config.timestudyAllowed.map((d) => d.departmentId)
-      const filteredPrograms = programs.filter((p: any) => allowedDeptIds.includes(p.departmentId))
+      const filteredPrograms = config.bypassSchedule
+        ? programs
+        : programs.filter((p: any) => allowedDeptIds.includes(p.departmentId))
       return filteredPrograms.filter((p: any) => !p.isMultiCode).map(formatLeaveProgramOption)
     },
     [allowMulticodeUi, departmentMulticodes, dropdownBundles, formEntries, multicodeBundles, programs, formatLeaveProgramOption, resolveDepartmentIdForProgram, dateConfigs],
@@ -881,7 +890,7 @@ export function EmployeeLeaveRequestDialog({
                                   if (!dateStr) return undefined
                                   const dateKey = dateStr.split("T")[0]
                                   const config = dateConfigs[dateKey]
-                                  if (config && (!config.timestudyAllowed || config.timestudyAllowed.length === 0)) {
+                                  if (config && (!config.timestudyAllowed || config.timestudyAllowed.length === 0) && !config.bypassSchedule) {
                                     return "No Time Study Period Allocated"
                                   }
                                   return undefined
@@ -893,7 +902,7 @@ export function EmployeeLeaveRequestDialog({
                                       onDropdownOpen?.();
                                       const dateKey = dateStr.split("T")[0]
                                       const config = dateConfigs[dateKey]
-                                      if (config && (!config.timestudyAllowed || config.timestudyAllowed.length === 0)) {
+                                      if (config && (!config.timestudyAllowed || config.timestudyAllowed.length === 0) && !config.bypassSchedule) {
                                         toast.error("No Time Study Period Allocated")
                                       }
                                       fetchConfigForDate(dateStr, !config)
@@ -1175,7 +1184,7 @@ export function EmployeeLeaveRequestDialog({
                                           if (!dateStr) return undefined
                                           const dateKey = dateStr.split("T")[0]
                                           const config = dateConfigs[dateKey]
-                                          if (config && (!config.timestudyAllowed || config.timestudyAllowed.length === 0)) {
+                                          if (config && (!config.timestudyAllowed || config.timestudyAllowed.length === 0) && !config.bypassSchedule) {
                                             return "No Time Study period Allocated"
                                           }
                                           return undefined
@@ -1187,7 +1196,7 @@ export function EmployeeLeaveRequestDialog({
                                               onDropdownOpen?.();
                                               const dateKey = dateStr.split("T")[0]
                                               const config = dateConfigs[dateKey]
-                                              if (config && (!config.timestudyAllowed || config.timestudyAllowed.length === 0)) {
+                                              if (config && (!config.timestudyAllowed || config.timestudyAllowed.length === 0) && !config.bypassSchedule) {
                                                 toast.error("No Time Study Period Allocated")
                                               }
                                               fetchConfigForDate(dateStr, !config)

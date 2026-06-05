@@ -30,6 +30,7 @@ export function TimeStudyMGTPage() {
     isDayDetailLoading,
     apportioningConfig,
     apportioningRecords,
+    refetchConfig,
   } = useTimeStudyMGT()
 
   const { mutate: notifyUser } = useActionUserTimeRecord()
@@ -219,6 +220,7 @@ export function TimeStudyMGTPage() {
               isLoading={isDayDetailLoading}
               apportioningConfig={apportioningConfig}
               apportioningRecords={apportioningRecords}
+              refetchConfig={refetchConfig}
             />
           </div>
         )}

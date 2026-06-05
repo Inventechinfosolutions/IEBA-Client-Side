@@ -22,6 +22,7 @@ import { useDeletePersonalTimeRecord } from "../mutation/deletePersonalTimeRecor
 import type { WeekSummaryRow } from "../components/PersonalTimeStudyWeekSummary"
 import { TimeStudyMGTPage } from "../TimeStudyMGT"
 import { PersonalTimeStudyNotesSection } from "../components/PersonalTimeStudyNotesSection"
+import { PersonalTimeStudyPeriodsSection } from "../components/PersonalTimeStudyPeriodsSection"
 import { toIsoYmdFromDate, todayLocal } from "@/lib/dates"
 
 
@@ -138,7 +139,11 @@ export function PersonalTimeStudyPage() {
   const summaryQuery = useGetTimeEntrySummary(userId, dateStr, undefined, activeTab === "personal")
 
   // 6. Aggregated department setting checks for the user
-  const settingChecksQuery = useGetUserAssignedDepartmentsSettingChecks(userId, dateStr, activeTab === "personal" && !!userId)
+  const settingChecksQuery = useGetUserAssignedDepartmentsSettingChecks(
+    userId,
+    dateStr,
+    activeTab === "personal" && !!userId,
+  )
 
   // 5. Calendar day & week summaries
   const { dayStatuses, weekSummaries } = useMemo(() => {
@@ -395,15 +400,22 @@ export function PersonalTimeStudyPage() {
                         />
                       </div>
 
-                      <PersonalTimeStudyNotesSection
-                        value={localNotes}
-                        onChange={setDraftNotes}
-                        onSave={() => notesMutation.mutate(localNotes, {
-                          onSuccess: () => setDraftNotes(null)
-                        })}
-                        isSaving={notesMutation.isPending}
-                        className="min-h-0"
-                      />
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 min-h-0 flex-1">
+                        <PersonalTimeStudyNotesSection
+                          value={localNotes}
+                          onChange={setDraftNotes}
+                          onSave={() => notesMutation.mutate(localNotes, {
+                            onSuccess: () => setDraftNotes(null)
+                          })}
+                          isSaving={notesMutation.isPending}
+                          className="h-full min-h-0"
+                        />
+                        <PersonalTimeStudyPeriodsSection
+                          timestudyAllowed={settingChecksQuery.data?.timestudyAllowedRaw ?? []}
+                          dropdownData={dropdownQuery.data ?? []}
+                          className="h-full min-h-0"
+                        />
+                      </div>
                     </div>
                   </div>
 
@@ -431,6 +443,7 @@ export function PersonalTimeStudyPage() {
                       departmentMulticodes={departmentMulticodes}
                       fetchingDepartments={fetchingDepartments}
                       onFetchMulticodeDept={fetchMulticodeProgramsForDepartment}
+                      refetchConfig={settingChecksQuery.refetch}
                     />
                   </div>
                 </>

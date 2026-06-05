@@ -154,7 +154,7 @@ export function JobPoolTable({
                   </Tooltip>
                 </TooltipProvider>
               </TableHead>
-              <TableHead className="h-[44px] border-r border-white/20 bg-(--primary) px-3 text-[12px] font-medium text-white">
+              <TableHead className="h-[44px] border-r border-white/20 bg-(--primary) px-3 text-center text-[12px] font-medium text-white">
                 <TooltipProvider>
                   <Tooltip open={tooltipOpenKey === "jobClassifications"}>
                     <TooltipTrigger asChild>
@@ -165,7 +165,7 @@ export function JobPoolTable({
                         onMouseLeave={() => setTooltipOpenKey(null)}
                         onFocus={() => setTooltipOpenKey("jobClassifications")}
                         onBlur={() => setTooltipOpenKey(null)}
-                        className="relative flex h-full w-full cursor-pointer items-center justify-start pr-4 text-left text-white"
+                        className="relative flex h-full w-full cursor-pointer items-center justify-center pr-4 text-center text-white"
                       >
                         <span>Job Classification</span>
                         <span className="pointer-events-none absolute right-0 inline-flex flex-col items-center leading-none">
@@ -190,7 +190,7 @@ export function JobPoolTable({
                   </Tooltip>
                 </TooltipProvider>
               </TableHead>
-              <TableHead className="h-[44px] border-r border-white/20 bg-(--primary) px-3 text-[12px] font-medium text-white">
+              <TableHead className="h-[44px] border-r border-white/20 bg-(--primary) px-3 text-center text-[12px] font-medium text-white">
                 <TooltipProvider>
                   <Tooltip open={tooltipOpenKey === "users"}>
                     <TooltipTrigger asChild>
@@ -201,7 +201,7 @@ export function JobPoolTable({
                         onMouseLeave={() => setTooltipOpenKey(null)}
                         onFocus={() => setTooltipOpenKey("users")}
                         onBlur={() => setTooltipOpenKey(null)}
-                        className="relative flex h-full w-full cursor-pointer items-center justify-start pr-4 text-left text-white"
+                        className="relative flex h-full w-full cursor-pointer items-center justify-center pr-4 text-center text-white"
                       >
                         <span>Users</span>
                         <span className="pointer-events-none absolute right-0 inline-flex flex-col items-center leading-none">
@@ -292,8 +292,8 @@ export function JobPoolTable({
                   </TableCell>
 
                   {/* Job Classification tags */}
-                  <TableCell className="align-middle border-r border-[#eff0f5] px-3 py-2.5 text-[11px] text-[#232735] wrap-break-word whitespace-normal">
-                    <div className="flex flex-wrap gap-2">
+                  <TableCell className="align-middle border-r border-[#eff0f5] px-3 py-2.5 text-[11px] text-[#232735] wrap-break-word whitespace-normal text-center">
+                    <div className="flex flex-wrap gap-2 justify-center">
                       {row.jobClassifications.map((tag, idx) => (
                         <span
                           key={idx}
@@ -309,9 +309,9 @@ export function JobPoolTable({
                   </TableCell>
 
                   {/* Users */}
-                  <TableCell className="align-middle border-r border-[#eff0f5] px-3 py-2.5 text-[11px] text-[#232735] wrap-break-word whitespace-normal">
+                  <TableCell className="align-middle border-r border-[#eff0f5] px-3 py-2.5 text-[11px] text-[#232735] wrap-break-word whitespace-normal text-center">
                     {row.userprofiles && row.userprofiles.length > 0 ? (
-                      <div className="flex flex-wrap gap-2">
+                      <div className="flex flex-wrap gap-2 justify-center">
                         {row.userprofiles
                           .map((u) => ({
                             id: u.id,
@@ -322,9 +322,9 @@ export function JobPoolTable({
                           .map((u) => (
                             <span
                               key={u.id}
-                              className={`inline-flex items-center rounded-[6px] bg-[#f8f9fa] px-2 py-1 text-[10px] text-[#232735] ${u.status?.toLowerCase() === "inactive"
-                                ? "border border-red-300"
-                                : "border border-[#d8dae3]"
+                              className={`inline-flex items-center rounded-[6px] border bg-[#f8f9fa] px-2 py-1 text-[10px] text-[#232735] ${u.status?.toLowerCase() === "inactive"
+                                ? "border-red-400"
+                                : "border-[#d8dae3]"
                                 }`}
                             >
                               {u.label}

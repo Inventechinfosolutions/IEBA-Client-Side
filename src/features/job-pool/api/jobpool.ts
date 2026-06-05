@@ -29,7 +29,7 @@ type JobPoolJobClassificationResDto = {
   code?: string
   name?: string
   status?: unknown
-  users?: { id?: string; name?: string }[]
+  users?: { id?: string; name?: string; firstName?: string; lastName?: string; status?: string }[]
 }
 
 type JobPoolActivityResDto = {
@@ -158,7 +158,13 @@ function toJobPoolRow(dto: JobPoolResDto): JobPoolRow {
     for (const u of (jc.users ?? [])) {
       const uid = String(u.id ?? "")
       if (uid && !assignedUsersMap.has(uid)) {
-        assignedUsersMap.set(uid, { id: uid, name: u.name ?? "" })
+        assignedUsersMap.set(uid, {
+          id: uid,
+          name: u.name ?? "",
+          firstName: u.firstName,
+          lastName: u.lastName,
+          status: u.status,
+        })
       }
     }
   }
@@ -171,7 +177,13 @@ function toJobPoolRow(dto: JobPoolResDto): JobPoolRow {
     for (const u of (jc.users ?? [])) {
       const uid = String(u.id ?? "")
       if (uid && !allUsersMap.has(uid)) {
-        allUsersMap.set(uid, { id: uid, name: u.name ?? "" })
+        allUsersMap.set(uid, {
+          id: uid,
+          name: u.name ?? "",
+          firstName: u.firstName,
+          lastName: u.lastName,
+          status: u.status,
+        })
       }
     }
   }
@@ -220,21 +232,39 @@ function toJobPoolRow(dto: JobPoolResDto): JobPoolRow {
       name: jc.name ?? "",
       code: jc.code ?? "",
       status: typeof jc.status === "string" ? jc.status : "active",
-      users: (jc.users ?? []).map((u) => ({ id: String(u.id ?? ""), name: u.name ?? "" })),
+      users: (jc.users ?? []).map((u) => ({
+        id: String(u.id ?? ""),
+        name: u.name ?? "",
+        firstName: u.firstName,
+        lastName: u.lastName,
+        status: u.status,
+      })),
     })),
     assignedToOtherPoolsInDept: assignedToOther.map((jc) => ({
       id: String(jc.id ?? ""),
       name: jc.name ?? "",
       code: jc.code ?? "",
       status: typeof jc.status === "string" ? jc.status : "active",
-      users: (jc.users ?? []).map((u) => ({ id: String(u.id ?? ""), name: u.name ?? "" })),
+      users: (jc.users ?? []).map((u) => ({
+        id: String(u.id ?? ""),
+        name: u.name ?? "",
+        firstName: u.firstName,
+        lastName: u.lastName,
+        status: u.status,
+      })),
     })),
     unassigned: unassignedClassifications.map((jc) => ({
       id: String(jc.id ?? ""),
       name: jc.name ?? "",
       code: jc.code ?? "",
       status: typeof jc.status === "string" ? jc.status : "active",
-      users: (jc.users ?? []).map((u) => ({ id: String(u.id ?? ""), name: u.name ?? "" })),
+      users: (jc.users ?? []).map((u) => ({
+        id: String(u.id ?? ""),
+        name: u.name ?? "",
+        firstName: u.firstName,
+        lastName: u.lastName,
+        status: u.status,
+      })),
     })),
   }
 }

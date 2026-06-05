@@ -201,8 +201,9 @@ export function ScheduledTimeStudyTable({
                         ) : null}
                         <button
                           type="button"
-                          disabled={deleteRow.isPending}
+                          disabled={deleteRow.isPending || row.statusRaw !== SchedulePayPeriodGroupStatus.DRAFT}
                           onClick={async () => {
+                            if (row.statusRaw !== SchedulePayPeriodGroupStatus.DRAFT) return
                             const ok = window.confirm("Delete this scheduled time study row?")
                             if (!ok) return
                             const id = Number(row.id)

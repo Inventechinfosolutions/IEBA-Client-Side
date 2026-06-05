@@ -127,6 +127,8 @@ export type UserDayLegendDetailResDto = {
   timeStudyRecords: TimeStudyRecordResDto[]
   leaveRecords: UserLeaveDaySnapshotResDto[]
   legend: UserMonthLegendDayResDto
+  enteredMaaMinutes?: number
+  maaBalance?: number
 }
 
 /** Payload for saving/submitting time records. */

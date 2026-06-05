@@ -40,6 +40,7 @@ export function JobPoolFormModal({
   assignedToOtherPoolsInDept,
   unassigned,
   departmentName,
+  formRef,
 }: JobPoolFormModalProps) {
   const { isDepartmentAdmin, assignedDepartmentIds } = usePermissions()
   const form = useForm<JobPoolFormValues>({
@@ -47,6 +48,10 @@ export function JobPoolFormModal({
     defaultValues: initialValues,
     values: initialValues,
   })
+
+  if (formRef) {
+    formRef.current = form
+  }
 
   const [isDepartmentOpen, setIsDepartmentOpen] = useState(false)
   // For edit mode, initialValues.department holds a raw ID. We resolve the
@@ -89,7 +94,7 @@ export function JobPoolFormModal({
       <DialogContent 
         showClose={false}
         overlayClassName="bg-black/35"
-        className="max-w-[1400px] w-[95vw] h-[90vh] p-0 flex flex-col overflow-hidden rounded-[10px]! bg-white"
+        className="max-w-[1000px] w-[80vw] h-[90vh] p-0 flex flex-col overflow-hidden rounded-[10px]! bg-white"
       >
         <form 
           onSubmit={form.handleSubmit(onSave)} 
@@ -101,8 +106,8 @@ export function JobPoolFormModal({
             </div>
           )}
           {/* Header Section */}
-          <div className="flex flex-col border-b border-[#F3F4F6]">
-            <div className="relative flex items-center justify-center px-8 py-6">
+          <div className="flex flex-col">
+            <div className="relative flex items-center justify-center px-8 py-4">
               <h2 className="text-[24px] font-semibold text-[#111827]">
                 {mode === "add" ? "Add Job Pool" : "Edit Job Pool"}
               </h2>
@@ -127,7 +132,7 @@ export function JobPoolFormModal({
 
           {/* Scrollable Form Body */}
           <div className="flex-1 overflow-y-auto program-table-scroll">
-            <div className="p-8">
+            <div className="p-6">
               {/* Top Row: Department and Job Pool Name */}
               <div
                 className="grid grid-cols-[minmax(0,2fr)_60px_minmax(0,2fr)] gap-4"
@@ -286,7 +291,7 @@ export function JobPoolFormModal({
           </div>
 
           {/* Footer Actions */}
-          <div className="flex items-center justify-end gap-3 border-t border-[#F3F4F6] px-8 py-5">
+          <div className="flex items-center justify-end gap-3 px-8 py-5">
             <Button
               type="submit"
               disabled={isSubmitting}

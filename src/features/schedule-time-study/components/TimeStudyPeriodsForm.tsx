@@ -49,6 +49,7 @@ import {
   addDaysMmDdYyyy,
   endOfMonthMmDdYyyy,
   isStartOnOrBeforeEnd,
+  isWithinInclusive,
   normalizeDateInputValue,
   toDateInputValue,
 } from "@/lib/dates"
@@ -229,6 +230,22 @@ export function TimeStudyPeriodsForm({
           return
         }
 
+        if (selectedFiscalYearOption) {
+          const { start, end } = selectedFiscalYearOption
+          if (start && end) {
+            const startVal = normalizeDateInputValue(values.startDate)
+            const endVal = normalizeDateInputValue(values.endDate)
+            if (!isWithinInclusive(startVal, start, end)) {
+              toast.error(`Start date must be within the selected fiscal year (${start} to ${end})`)
+              return
+            }
+            if (!isWithinInclusive(endVal, start, end)) {
+              toast.error(`End date must be within the selected fiscal year (${start} to ${end})`)
+              return
+            }
+          }
+        }
+
         // Prevent backend unique-index duplicate. Backend appears to enforce uniqueness
         // by (name + fiscalyear + departmentId) and/or (month(startdt) + fiscalyear + departmentId).
         {
@@ -349,6 +366,10 @@ export function TimeStudyPeriodsForm({
   const allocable = form.watch("allocable")
   const nonAllocable = form.watch("nonAllocable")
   const isCreateDateEditable = !isCreateMode || fiscalYear.trim().length > 0
+
+  const selectedFiscalYearOption = useMemo(() => {
+    return fiscalYearOptions.find((fy) => fy.id === fiscalYear)
+  }, [fiscalYearOptions, fiscalYear])
 
   const departmentLabel = selectedDepartmentName.trim() || "—"
 
@@ -547,6 +568,8 @@ export function TimeStudyPeriodsForm({
                     )}
                     placeholder="MM-DD-YYYY"
                     value={isCreateDateEditable ? toDateInputValue(startDate) : startDate}
+                    min={selectedFiscalYearOption?.start ? toDateInputValue(selectedFiscalYearOption.start) : undefined}
+                    max={selectedFiscalYearOption?.end ? toDateInputValue(selectedFiscalYearOption.end) : undefined}
                     onChange={(event) => {
                       const nextStartDate = normalizeDateInputValue(event.target.value)
                       form.setValue("startDate", nextStartDate, { shouldValidate: true })
@@ -576,6 +599,8 @@ export function TimeStudyPeriodsForm({
                     )}
                     placeholder="MM-DD-YYYY"
                     value={isCreateDateEditable ? toDateInputValue(endDate) : endDate}
+                    min={selectedFiscalYearOption?.start ? toDateInputValue(selectedFiscalYearOption.start) : undefined}
+                    max={selectedFiscalYearOption?.end ? toDateInputValue(selectedFiscalYearOption.end) : undefined}
                     onChange={(event) => {
                       const nextEndDate = normalizeDateInputValue(event.target.value)
                       form.setValue("endDate", nextEndDate, { shouldValidate: true })
@@ -589,10 +614,10 @@ export function TimeStudyPeriodsForm({
                     Hours <span className="text-[12px]">(8 hrs/day)</span>
                   </Label>
                   <TitleCaseInput
-                    readOnly={isCreateMode}
+                    disabled={!isCreateMode}
                     className={cn(
                       "h-10 rounded-[14px] border-[#D1D5DB]",
-                      isCreateMode && "cursor-not-allowed bg-[#F9FAFB]"
+                      !isCreateMode && "cursor-not-allowed bg-[#F9FAFB]"
                     )}
                     value={hours}
                     onChange={(event) => form.setValue("hours", event.target.value)}
@@ -602,10 +627,10 @@ export function TimeStudyPeriodsForm({
                 <div className="space-y-1">
                   <Label className="text-[14px] font-normal text-black">Holidays</Label>
                   <TitleCaseInput
-                    readOnly={isCreateMode}
+                    disabled={!isCreateMode}
                     className={cn(
                       "h-10 rounded-[14px] border-[#D1D5DB]",
-                      isCreateMode && "cursor-not-allowed bg-[#F9FAFB]"
+                      !isCreateMode && "cursor-not-allowed bg-[#F9FAFB]"
                     )}
                     value={holidays}
                     onChange={(event) => form.setValue("holidays", event.target.value)}
@@ -615,10 +640,10 @@ export function TimeStudyPeriodsForm({
                 <div className="space-y-1">
                   <Label className="text-[14px] font-normal text-black">Allocable</Label>
                   <TitleCaseInput
-                    readOnly={isCreateMode}
+                    disabled={!isCreateMode}
                     className={cn(
                       "h-10 rounded-[14px] border-[#D1D5DB]",
-                      isCreateMode && "cursor-not-allowed bg-[#F9FAFB]"
+                      !isCreateMode && "cursor-not-allowed bg-[#F9FAFB]"
                     )}
                     value={allocable}
                     onChange={(event) => form.setValue("allocable", event.target.value)}
@@ -628,10 +653,10 @@ export function TimeStudyPeriodsForm({
                 <div className="space-y-1">
                   <Label className="text-[14px] font-normal text-black">Non-Allocable</Label>
                   <TitleCaseInput
-                    readOnly={isCreateMode}
+                    disabled={!isCreateMode}
                     className={cn(
                       "h-10 rounded-[14px] border-[#D1D5DB]",
-                      isCreateMode && "cursor-not-allowed bg-[#F9FAFB]"
+                      !isCreateMode && "cursor-not-allowed bg-[#F9FAFB]"
                     )}
                     value={nonAllocable}
                     onChange={(event) => form.setValue("nonAllocable", event.target.value)}

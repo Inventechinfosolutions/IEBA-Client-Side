@@ -49,7 +49,7 @@ export function DashboardLayout() {
   const [changeCountyOpen, setChangeCountyOpen] = useState(false)
   const [notificationsOpen, setNotificationsOpen] = useState(false)
   const { data: notificationsData } = useNotifications("unread")
-  const forcePasswordChange = !!user?.isPasswordChangeRequired
+  const forcePasswordChange = !!user?.isPasswordChangeRequired && !isSuperAdmin
   const isChangePasswordModalOpen = forcePasswordChange || changePasswordOpen
 
   const unreadCountFromMeta = notificationsData?.data?.meta?.unreadCount
