@@ -378,19 +378,22 @@ export async function getJobPoolActivitiesByDepartment(
 ): Promise<{ id: string; name: string; code: string }[]> {
   const params = new URLSearchParams({
     departmentId: String(departmentId),
+    status: "active",
   })
   if (search?.trim()) {
     params.set("search", search.trim())
   }
   
-  const raw = await api.get<{ data?: { id: number; name: string; code: string }[] }>(
+  const raw = await api.get<{ data?: { id: number; name: string; code: string; status?: string }[] }>(
     `/activity-departments/all?${params.toString()}`
   )
   
   const list = Array.isArray(raw?.data) ? raw.data : []
-  return list.map(a => ({
-    id: String(a.id),
-    name: a.name,
-    code: a.code,
-  }))
+  return list
+    .filter(a => !a.status || a.status.toLowerCase() === "active")
+    .map(a => ({
+      id: String(a.id),
+      name: a.name,
+      code: a.code,
+    }))
 }
