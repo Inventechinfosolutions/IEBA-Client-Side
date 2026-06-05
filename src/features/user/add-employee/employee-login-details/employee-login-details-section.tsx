@@ -103,7 +103,7 @@ export function EmployeeLoginDetailsSection({
         <p className="text-[12px] font-semibold uppercase text-[#111827]">
           {isEditMode ? employeeName : ""}
         </p>
-        <div className="space-y-2">
+        <div className="space-y-2 flex items-start justify-between gap-4">
           <label className="flex cursor-pointer select-none items-center gap-2 text-[11px] text-[#4b5563]">
             <Controller
               name="active"

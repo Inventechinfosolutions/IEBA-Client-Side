@@ -163,18 +163,21 @@ export function PersonalTimeStudyLeaveCard({
 
   return (
     <Card
-      className={cn("flex h-full min-h-0 flex-col gap-0 border-0 ring-0 py-0 bg-white shadow-[0_4px_16px_rgba(16,24,40,0.12)] rounded-[6px]", className)}
+      className={cn(
+        "flex flex-col gap-0 rounded-[10px] border-0 bg-white py-0 shadow-[0_4px_16px_rgba(16,24,40,0.12)] ring-0",
+        className,
+      )}
       size="sm"
     >
-      <CardHeader className="shrink-0 px-3 pt-2 pb-1">
-        <CardTitle className="text-[14px] font-semibold text-foreground">
+      <CardHeader className="shrink-0 px-3 pb-1 pt-3">
+        <CardTitle className="text-center text-[13px] font-semibold text-foreground">
           Leave Status ({leaveCount})
         </CardTitle>
       </CardHeader>
-      <CardContent className="flex flex-1 flex-col gap-2 px-3 pt-2 pb-3">
-        <ul className="flex flex-col text-[14px] divide-y divide-border/60">
+      <CardContent className="flex flex-col gap-2 px-3 pb-3 pt-0">
+        <ul className="flex flex-col text-[12px] divide-y divide-[#E5E7EB]">
           <li
-            className="flex items-center justify-between gap-2 py-1.5 cursor-pointer hover:bg-gray-50 transition-colors px-1 rounded-[4px]"
+            className="flex cursor-pointer items-center justify-between gap-2 rounded-[4px] px-1 py-1.5 transition-colors hover:bg-gray-50"
             onClick={() => handleStatusClick("approved")}
           >
             <span className="flex items-center gap-1.5 text-foreground">
@@ -184,7 +187,7 @@ export function PersonalTimeStudyLeaveCard({
             <span className="tabular-nums text-muted-foreground font-medium">{approved}</span>
           </li>
           <li
-            className="flex items-center justify-between gap-2 py-1.5 cursor-pointer hover:bg-gray-50 transition-colors px-1 rounded-[4px]"
+            className="flex cursor-pointer items-center justify-between gap-2 rounded-[4px] px-1 py-1.5 transition-colors hover:bg-gray-50"
             onClick={() => handleStatusClick("open")}
           >
             <span className="flex items-center gap-1.5 text-foreground">
@@ -194,7 +197,7 @@ export function PersonalTimeStudyLeaveCard({
             <span className="tabular-nums text-muted-foreground font-medium">{open}</span>
           </li>
           <li
-            className="flex items-center justify-between gap-2 py-1.5 cursor-pointer hover:bg-gray-50 transition-colors px-1 rounded-[4px]"
+            className="flex cursor-pointer items-center justify-between gap-2 rounded-[4px] px-1 py-1.5 transition-colors hover:bg-gray-50"
             onClick={() => handleStatusClick("rejected")}
           >
             <span className="flex items-center gap-1.5 text-foreground">
@@ -206,7 +209,7 @@ export function PersonalTimeStudyLeaveCard({
         </ul>
         <Button
           type="button"
-          className="mt-auto w-full bg-[#6C5DD3] hover:bg-[#6C5DD3]/90 rounded-[6px]"
+          className="h-8 w-full rounded-[8px] bg-[#6C5DD3] text-[12px] hover:bg-[#6C5DD3]/90"
           onClick={() => {
             setLeaveDialogOpen(true)
           }}

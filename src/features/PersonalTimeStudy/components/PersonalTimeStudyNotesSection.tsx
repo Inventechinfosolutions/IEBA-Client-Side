@@ -22,6 +22,8 @@ export function PersonalTimeStudyNotesSection({
   return (
     <section
       className={cn(
+        "relative flex w-full flex-col rounded-[10px] border-0 bg-white p-3 shadow-[0_4px_16px_rgba(16,24,40,0.12)] ring-0",
+        className,
         "relative flex w-full min-h-0 flex-col rounded-[6px] border-0 ring-0 bg-white p-3 shadow-[0_4px_16px_rgba(16,24,40,0.12)] max-h-[248px]",
         className
       )}
@@ -33,7 +35,7 @@ export function PersonalTimeStudyNotesSection({
       )}
       <Label
         htmlFor="pts-notes"
-        className="mb-1 shrink-0 text-[14px] font-bold text-[#6C5DD3]"
+        className="mb-1 shrink-0 text-[13px] font-bold text-[#6C5DD3]"
       >
         Notes
       </Label>
@@ -42,15 +44,16 @@ export function PersonalTimeStudyNotesSection({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder="Add notes…"
+        className="h-[88px] w-full resize-none rounded-[8px] border border-[#E5E7EB] text-[12px] placeholder:text-[11px] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD3]"
         className="flex-1 w-full min-h-0 h-0 resize-none border border-border text-[12px] placeholder:text-[10px] focus-visible:ring-1 focus-visible:ring-[#6C5DD3] focus-visible:border-[#6C5DD3] overflow-y-auto [field-sizing:normal]"
         style={{ fieldSizing: "normal" } as any}
         disabled={isSaving}
       />
       <div className="mt-2 flex shrink-0 justify-end">
-        <Button 
-          type="button" 
-          size="sm" 
-          className="h-7 text-[12px] bg-[#6C5DD3] hover:bg-[#6C5DD3]/90" 
+        <Button
+          type="button"
+          size="sm"
+          className="h-8 rounded-[8px] bg-[#6C5DD3] px-4 text-[12px] hover:bg-[#6C5DD3]/90"
           onClick={onSave}
           disabled={isSaving}
         >

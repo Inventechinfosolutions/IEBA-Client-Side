@@ -56,6 +56,7 @@ export function TimeStudyMGTPage() {
           <div className="flex-1 min-w-0 px-3">
             <PersonalTimeStudyCalendarCard
               weekRows={[]}
+              variant="management"
               selectedDate={selectedDate}
               onDateSelect={setSelectedDate}
               currentMonthDate={currentDate}
