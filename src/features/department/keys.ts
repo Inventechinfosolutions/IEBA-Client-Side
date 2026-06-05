@@ -21,4 +21,16 @@ export const departmentKeys = {
     mapped: (departmentId: string) =>
       [...departmentKeys.reportSettings.all(), "mapped", departmentId] as const,
   },
+  /** `GET /departments/history` — paginated department history log. */
+  history: (params: {
+    page: number
+    limit: number
+    departmentCode: string
+    departmentName: string
+  }) => [...departmentKeys.all, "history", params] as const,
+  /** `GET /departments/history/:departmentId` — history for one department. */
+  historyById: (
+    departmentId: string,
+    params: { page: number; limit: number },
+  ) => [...departmentKeys.all, "history", "by-id", departmentId, params] as const,
 }

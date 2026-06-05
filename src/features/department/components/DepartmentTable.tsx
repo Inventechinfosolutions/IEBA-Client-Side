@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react"
-import { User, Phone, Mail, MapPin } from "lucide-react"
+import { ArrowLeft, History, User, Phone, Mail, MapPin } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { TitleCaseInput } from "@/components/ui/title-case-input"
@@ -32,6 +32,7 @@ import statusCheckImg from "@/assets/status-check.png"
 import statusCrossImg from "@/assets/status-cross.png"
 import editIconImg from "@/assets/edit-icon.png"
 import { usePermissions } from "@/hooks/usePermissions"
+import { DepartmentHistoryTable } from "./DepartmentHistoryTable"
 
 
 
@@ -157,6 +158,9 @@ export function DepartmentTable({
   const [sortDirection, setSortDirection] = useState<SortDirection>(null)
   const [isSortTooltipOpen, setIsSortTooltipOpen] = useState(false)
   const [sortTooltipColumn, setSortTooltipColumn] = useState<SortColumn>(null)
+  const [showHistory, setShowHistory] = useState(false)
+  const [historyDepartmentCode, setHistoryDepartmentCode] = useState("")
+  const [historyDepartmentName, setHistoryDepartmentName] = useState("")
 
   const sortedDepartments = useMemo(() => {
     if (!sortBy || !sortDirection) return departments
@@ -196,39 +200,95 @@ export function DepartmentTable({
     <div className="flex flex-1 flex-col gap-[24px]">
   
       <div className="flex items-center justify-between">
-        <div className="w-[300px]">
-          <TitleCaseInput
-            value={filters.search || ""}
-            onChange={(e) => {
-              onSearchChange(e.target.value)
-              onPageChange(1)
-              setSortBy(null)
-              setSortDirection(null)
-            }}
-            placeholder="Search here"
-            className="h-[48px] w-full rounded-[8px] border-[#E5E7EB] bg-white px-[15px] py-[12px] text-[14px] shadow-sm focus-visible:ring-1 focus-visible:ring-[#6C5DD3]"
-          />
-        </div>
+        {showHistory ? (
+          <div className="flex flex-1 items-center gap-2">
+            <TitleCaseInput
+              placeholder="Search Department Code"
+              value={historyDepartmentCode}
+              onChange={(e) => setHistoryDepartmentCode(e.target.value)}
+              className="h-[48px] w-[220px] rounded-[8px] border-[#E5E7EB] bg-white px-[15px] py-[12px] text-[14px] shadow-sm focus-visible:ring-1 focus-visible:ring-[#6C5DD3]"
+            />
+            <TitleCaseInput
+              placeholder="Search Department Name"
+              value={historyDepartmentName}
+              onChange={(e) => setHistoryDepartmentName(e.target.value)}
+              className="h-[48px] w-[260px] rounded-[8px] border-[#E5E7EB] bg-white px-[15px] py-[12px] text-[14px] shadow-sm focus-visible:ring-1 focus-visible:ring-[#6C5DD3]"
+            />
+          </div>
+        ) : (
+          <div className="w-[300px]">
+            <TitleCaseInput
+              value={filters.search || ""}
+              onChange={(e) => {
+                onSearchChange(e.target.value)
+                onPageChange(1)
+                setSortBy(null)
+                setSortDirection(null)
+              }}
+              placeholder="Search here"
+              className="h-[48px] w-full rounded-[8px] border-[#E5E7EB] bg-white px-[15px] py-[12px] text-[14px] shadow-sm focus-visible:ring-1 focus-visible:ring-[#6C5DD3]"
+            />
+          </div>
+        )}
 
         <div className="flex items-center gap-[12px]">
           <button
             type="button"
-            className="flex h-[48px] items-center gap-2 rounded-[10px] bg-[#6C5DD3] px-4 text-white mr-[12px]"
+            className={`flex h-[48px] items-center gap-2 rounded-[10px] px-4 text-[14px] font-medium transition-colors ${
+              showHistory
+                ? "bg-[#6C5DD3] text-white"
+                : "border border-[#6C5DD3] bg-white text-[#6C5DD3] hover:bg-[#F3F0FF]"
+            }`}
             onClick={() => {
-              onInactiveChange(!filters.inactive)
-              onPageChange(1)
-              setSortBy(null)
-              setSortDirection(null)
+              setShowHistory((prev) => {
+                if (prev) {
+                  setHistoryDepartmentCode("")
+                  setHistoryDepartmentName("")
+                } else {
+                  onSearchChange("")
+                  onPageChange(1)
+                  setSortBy(null)
+                  setSortDirection(null)
+                }
+                return !prev
+              })
             }}
           >
-            <Checkbox
-              checked={filters.inactive}
-              className="size-5 rounded-[6px] border-white bg-white data-[state=checked]:border-white data-[state=checked]:bg-[#6C5DD3] data-[state=checked]:text-white shadow-none"
-            />
-            <span className="text-[14px] font-medium text-white select-none whitespace-nowrap">Inactive</span>
+            {showHistory ? (
+              <>
+                <ArrowLeft className="size-4 animate-back-bounce" />
+                Back to Department
+              </>
+            ) : (
+              <>
+                <History className="size-4" />
+                History
+              </>
+            )}
           </button>
 
-          {canAddDepartment && (
+          {!showHistory && (
+            <button
+              type="button"
+              className="flex h-[48px] items-center gap-2 rounded-[10px] bg-[#6C5DD3] px-4 text-white"
+              onClick={() => {
+                onInactiveChange(!filters.inactive)
+                onPageChange(1)
+                setSortBy(null)
+                setSortDirection(null)
+              }}
+            >
+              <Checkbox
+                checked={filters.inactive}
+                className="size-5 rounded-[6px] border-white bg-white data-[state=checked]:border-white data-[state=checked]:bg-[#6C5DD3] data-[state=checked]:text-white shadow-none"
+              />
+              <span className="text-[14px] font-medium text-white select-none whitespace-nowrap">
+                Inactive
+              </span>
+            </button>
+          )}
+
+          {!showHistory && canAddDepartment && (
             <Button
               onClick={onAdd}
               className="h-[48px] rounded-[8px] bg-[#6C5DD3] px-[20px] text-[14px] font-medium hover:bg-[#5B4DC5]"
@@ -239,8 +299,19 @@ export function DepartmentTable({
         </div>
       </div>
 
+      {showHistory ? (
+        <DepartmentHistoryTable
+          departmentCode={historyDepartmentCode}
+          departmentName={historyDepartmentName}
+        />
+      ) : null}
+
       {/* ── Table ───────────────────────────────────────────────────────── */}
-      <div className="overflow-hidden rounded-[8px] border border-[#E5E7EB] bg-white">
+      <div
+        className={`overflow-hidden rounded-[8px] border border-[#E5E7EB] bg-white ${
+          showHistory ? "hidden" : ""
+        }`}
+      >
         <Table className="w-full table-fixed border-collapse">
           <colgroup>
             <col className={canUpdateDepartment ? "w-[7%]" : "w-[18%]"} /> { /* Code */ }
@@ -498,15 +569,17 @@ export function DepartmentTable({
         </Table>
       </div>
 
-      <div className="mt-4">
-        <MasterCodePagination
-          totalItems={totalItems}
-          currentPage={pagination.pageIndex}
-          pageSize={pagination.pageSize}
-          onPageChange={onPageChange}
-          onPageSizeChange={onPageSizeChange}
-        />
-      </div>
+      {!showHistory ? (
+        <div className="mt-4">
+          <MasterCodePagination
+            totalItems={totalItems}
+            currentPage={pagination.pageIndex}
+            pageSize={pagination.pageSize}
+            onPageChange={onPageChange}
+            onPageSizeChange={onPageSizeChange}
+          />
+        </div>
+      ) : null}
     </div>
   )
 }
