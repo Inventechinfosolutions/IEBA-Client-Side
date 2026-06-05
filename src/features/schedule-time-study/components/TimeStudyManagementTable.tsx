@@ -3,6 +3,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useQueryClient } from "@tanstack/react-query"
 
 import { AlertCircle, Check, Trash2 } from "lucide-react"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import type { FormEvent } from "react"
 import { useMemo, useState } from "react"
 import { useForm, useWatch } from "react-hook-form"
@@ -421,14 +422,22 @@ function ScheduleTimeStudyTableLoaded({
                       <TableCell className="px-3 py-2 text-center">
                         <div className="flex items-center justify-center gap-2">
                           {row.isUsed === true ? (
-                            <span
-                              className="inline-flex shrink-0 cursor-not-allowed text-[#D1D5DB]"
-                              title="Time Study Period is already in use"
-                              role="img"
-                              aria-label="Time Study Period is already in use"
-                            >
-                              <Trash2 className="size-3.5" strokeWidth={1.75} aria-hidden />
-                            </span>
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <span
+                                    className="inline-flex shrink-0 cursor-not-allowed text-[#D1D5DB]"
+                                    role="img"
+                                    aria-label="Time Study Period is already in use"
+                                  >
+                                    <Trash2 className="size-3.5" strokeWidth={1.75} aria-hidden />
+                                  </span>
+                                </TooltipTrigger>
+                                <TooltipContent className="bg-black text-white px-3 py-1.5 rounded-md text-xs">
+                                  Time Study Period is already in use
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
                           ) : (
                             <>
                               <button

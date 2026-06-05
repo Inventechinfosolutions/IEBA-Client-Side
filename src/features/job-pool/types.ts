@@ -108,6 +108,7 @@ export type JobPoolFormModalProps = {
   assignedToOtherPoolsInDept?: { id: string; name: string; code: string; status?: string; users?: { id: string; name: string }[] }[]
   unassigned?: { id: string; name: string; code: string; status?: string; users?: { id: string; name: string }[] }[]
   departmentName?: string
+  formRef?: React.MutableRefObject<any>
 }
 
 export type TransferPanelProps = {

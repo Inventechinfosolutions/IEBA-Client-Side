@@ -1,8 +1,13 @@
 import { z } from "zod"
 
 export const reportsSettingsSchema = z.object({
-  reportKey: z.string().trim().min(1, "Please select a report to edit"),
-  exclusionMode: z.enum(["exclude", "include"]).default("exclude"),
-  selectedActivityCodes: z.array(z.string().trim()).default([]),
+  departmentId: z.string().trim().default(""),
+  reportKey: z.string().trim().default(""),
+  masterCodeExclusionMode: z.enum(["exclude", "include"]).default("exclude"),
+  activityExclusionMode: z.enum(["exclude", "include"]).default("exclude"),
+  excludedMasterCodeIds: z.array(z.string().trim()).default([]),
+  includedMasterCodeIds: z.array(z.string().trim()).default([]),
+  excludedActivityCodes: z.array(z.string().trim()).default([]),
+  includedActivityCodes: z.array(z.string().trim()).default([]),
 })
 

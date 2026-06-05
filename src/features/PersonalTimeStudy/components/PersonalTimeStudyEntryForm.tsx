@@ -12,6 +12,7 @@ import { toast } from "sonner"
 import { SingleSelectSearchDropdown } from "@/components/ui/dropdown-search"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { TimePickerDropdown } from "@/components/ui/time-picker"
+import { PersonalTimeStudyApportioningPanel } from "./PersonalTimeStudyApportioningPanel"
 import { useAuth } from "@/contexts/AuthContext"
 import { API_BASE_URL } from "@/lib/config"
 import { apiDownloadSupportingDoc, apiDeleteSupportingDoc, apiGetUserActivitiesForProgram, apiGetUserProgramsAndActivitiesMulticode } from "../api/personalTimeStudyApi"
@@ -65,7 +66,9 @@ export type TimeEntryParentRow = {
   activityCode?: string
   activityName?: string
   departmentCode?: string
+  departmentId?: number
   isLeave?: boolean
+  apportioning?: boolean
   leaveid?: number
   status?: string
   recordType?: string
@@ -183,6 +186,7 @@ type PersonalTimeStudyEntryFormProps = {
   departmentMulticodes?: Record<string, any[]>
   fetchingDepartments?: Record<string, boolean>
   onFetchMulticodeDept?: (deptId: string | number | undefined) => Promise<void>
+  refetchConfig?: () => void
 }
 
 function TimePicker24h({
@@ -192,6 +196,7 @@ function TimePicker24h({
   required = true,
   disabled = false,
   isLeave = false,
+  isApportioned = false,
 }: {
   value: string
   onChange: (v: string) => void
@@ -199,6 +204,7 @@ function TimePicker24h({
   required?: boolean
   disabled?: boolean
   isLeave?: boolean
+  isApportioned?: boolean
 }) {
   const [open, setOpen] = useState(false)
   return (
@@ -216,7 +222,8 @@ function TimePicker24h({
               className={cn(
                 "h-10 pr-8 text-[11px] font-normal rounded-[6px] text-[#344054] bg-white",
                 disabled && "bg-[#F2F4F7] cursor-not-allowed",
-                isLeave && "border-yellow-400"
+                isLeave && "border-yellow-400",
+                isApportioned && "border-[#6C5DD3]"
               )}
               onClick={() => !disabled && setOpen(true)}
             />
@@ -240,6 +247,7 @@ function SupportingDocField({
   onDelete,
   onDownload,
   isLeave = false,
+  isApportioned = false,
 }: {
   parentId: string
   docs: Array<{ name: string; url: string; file?: File; docId?: number }>
@@ -249,6 +257,7 @@ function SupportingDocField({
   onDelete: (parentId: string, name: string) => void
   onDownload: (parentId: string, doc: { name: string; url: string; file?: File; docId?: number }) => void
   isLeave?: boolean
+  isApportioned?: boolean
 }) {
   const [open, setOpen] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
@@ -261,9 +270,11 @@ function SupportingDocField({
       <input ref={fileRef} type="file" className="hidden" multiple onChange={(e) => { if (e.target.files?.length) { onAdd(parentId, e.target.files); e.target.value = ""; } }} />
       <div className={cn(
         "flex h-10 w-full items-center rounded-[6px] border border-input text-[11px] overflow-hidden bg-white",
-        isLeave && "border-yellow-400"
+        disabled && "bg-[#F2F4F7] cursor-not-allowed",
+        isLeave && "border-yellow-400",
+        isApportioned && "border-[#6C5DD3]"
       )}>
-        <button type="button" className="flex flex-1 min-w-0 items-center px-2 overflow-hidden" onClick={() => setOpen((v) => !v)}>
+        <button type="button" className={cn("flex flex-1 min-w-0 items-center px-2 overflow-hidden", disabled && "cursor-not-allowed")} onClick={() => setOpen((v) => !v)}>
           <span className="truncate text-foreground flex-1">{pillLabel}</span>
           {extraCount > 0 && (
             <span className="ml-1 px-1.5 py-0.5 rounded-[6px] bg-[#6C5DD3]/10 text-[#6C5DD3] text-[10px] font-bold shrink-0">
@@ -333,6 +344,8 @@ export function PersonalTimeStudyEntryForm({
   departmentMulticodes: propDepartmentMulticodes,
   fetchingDepartments: propFetchingDepartments,
   onFetchMulticodeDept,
+  apportioningRecords,
+  refetchConfig,
 }: PersonalTimeStudyEntryFormProps) {
   const { user } = useAuth()
   const userId = propsUserId || user?.id || ""
@@ -345,6 +358,7 @@ export function PersonalTimeStudyEntryForm({
 
   const isLocked = useMemo(() => {
     if (readonly) return true
+    if (apportioningConfig && apportioningConfig.allowUserEntry === false) return true
     if (!initialRecords) return false
     return initialRecords.some(rec =>
       rec.date?.split("T")[0] === dateStr &&
@@ -353,14 +367,18 @@ export function PersonalTimeStudyEntryForm({
       ["submitted", "approved"].includes(rec.status?.toLowerCase()) &&
       rec.apportioning !== true
     )
-  }, [initialRecords, dateStr, readonly])
+  }, [initialRecords, dateStr, readonly, apportioningConfig])
 
   const allIsLeave = false
 
   const programs = useMemo(() => {
-    const list = dropdownData?.flatMap((d) => d.programs.map((p: any) => ({ ...p, departmentCode: d.departmentCode }))) ?? []
+    const allowedDeptIds = apportioningConfig?.timestudyAllowedDepartmentIds?.map((d) => d.departmentId) ?? []
+    const filteredData = allowedDeptIds.length > 0
+      ? (dropdownData ?? []).filter((d) => allowedDeptIds.includes(d.departmentId))
+      : (dropdownData ?? [])
+    const list = filteredData.flatMap((d) => d.programs.map((p: any) => ({ ...p, departmentCode: d.departmentCode })))
     return Array.from(new Map(list.map((p) => [p.id, p])).values())
-  }, [dropdownData])
+  }, [dropdownData, apportioningConfig?.timestudyAllowedDepartmentIds])
 
 
   const allowMulticodeUi = apportioningConfig?.allowMultiCodes === true
@@ -422,6 +440,41 @@ export function PersonalTimeStudyEntryForm({
     [allowMulticodeUi, multicodeBundles, dropdownData],
   )
 
+  const getRowSettings = useCallback((parent: TimeEntryParentRow) => {
+    // Try resolving dept from dropdown data first; fall back to the saved departmentId on the row
+    const deptId = resolveDepartmentIdForProgram(parent.tsProgram) ?? parent.departmentId
+    const departments = apportioningConfig?.departments
+    const deptConfig = departments?.find((d: any) => Number(d.departmentId) === Number(deptId))
+    // If deptId resolved → use that dept (or first as fallback).
+    // If deptId is still unknown AND user has exactly 1 dept → auto-apply it.
+    // If deptId is unknown AND multiple depts → safe defaults (can't know which).
+    const activeConfig = deptId != null
+      ? (deptConfig ?? departments?.[0])
+      : (departments?.length === 1 ? departments[0] : deptConfig)
+
+    if (!activeConfig) {
+      return {
+        hideTime: false,
+        hideSupportingDoc: false,
+        hideDescriptionActivityNote: false,
+        hideDescriptionActivityNoteAnchor: false,
+        hideDescriptionActivityNoteMultiCode: false,
+        removeAutoFillEndTime: false,
+        moveSaveSubmitToTop: false,
+      }
+    }
+
+    return {
+      hideTime: activeConfig.requiresStartEndTime === false,
+      hideSupportingDoc: activeConfig.requiresSupportingDoc === false,
+      hideDescriptionActivityNote: activeConfig.requiresDescriptionActivityNotes === false,
+      hideDescriptionActivityNoteAnchor: activeConfig.requiresDescriptionActivityNotesAnchor === false,
+      hideDescriptionActivityNoteMultiCode: activeConfig.requiresDescriptionActivityNotesMultiCode === false,
+      removeAutoFillEndTime: activeConfig.removeAutoFillEndTime === true,
+      moveSaveSubmitToTop: activeConfig.requiresSaveAndSubmitButtonMoveToTop === true,
+    }
+  }, [apportioningConfig?.departments, resolveDepartmentIdForProgram])
+
   const isMulticodeAllowedForParent = useCallback(
     (parent: TimeEntryParentRow) => {
       if (!allowMulticodeUi) return false
@@ -432,6 +485,25 @@ export function PersonalTimeStudyEntryForm({
     },
     [allowMulticodeUi, resolveDepartmentIdForProgram, apportioningConfig?.userMultiCode],
   )
+
+  const refetchedDeptsRef = useRef<Set<number>>(new Set())
+  const hasRefetchedEmptyConfig = useRef(false)
+
+  const checkAndRefetchConfig = useCallback((programIdStr: string | undefined) => {
+    if (!refetchConfig) return
+    const programId = programIdStr?.trim()
+    if (!programId) return
+    const deptId = resolveDepartmentIdForProgram(programId)
+    if (!deptId) return
+    const hasDeptConfig = apportioningConfig?.departments?.some((d: any) => Number(d.departmentId) === Number(deptId))
+    if (!apportioningConfig && !hasRefetchedEmptyConfig.current) {
+      hasRefetchedEmptyConfig.current = true
+      refetchConfig()
+    } else if (apportioningConfig && !hasDeptConfig && !refetchedDeptsRef.current.has(deptId)) {
+      refetchedDeptsRef.current.add(deptId)
+      refetchConfig()
+    }
+  }, [apportioningConfig, refetchConfig, resolveDepartmentIdForProgram])
 
   const fetchMulticodeProgramsForDepartment = useCallback(async (deptIdStr: string | number | undefined) => {
     // If parent is managing the cache, delegate to it
@@ -489,29 +561,29 @@ export function PersonalTimeStudyEntryForm({
     [programActivities, resolveDepartmentIdForProgram],
   )
 
-  const formSettings = useMemo(() => {
-    if (apportioningConfig?.settings) {
-      return {
-        moveSaveSubmitToTop: apportioningConfig.settings.moveSaveSubmitToTop,
-        removeAutoFillEndTime: apportioningConfig.settings.removeAutoFillEndTime,
-        startorEndTime: apportioningConfig.settings.removeStartEndTime,
-        supportingDoc: apportioningConfig.settings.removeSupportingDocument,
-        removeDescriptionActivityNote: apportioningConfig.settings.removeDescriptionActivityNote,
-        removeDescriptionActivityNoteAnchor: apportioningConfig.settings.removeDescriptionActivityNoteAnchor,
-        removeDescriptionActivityNoteMultiCode: apportioningConfig.settings.removeDescriptionActivityNoteMultiCode,
-      }
+  // moveSaveSubmitToTop: computed live from the programs the user has actually selected.
+  // Buttons move to top only when ALL non-leave, non-apportioning rows with a selected
+  // program belong to departments that require the button at top.
+  // If the user has exactly 1 department assigned, we auto-apply its setting initially.
+  const moveSaveSubmitToTop = useMemo(() => {
+    const departments = apportioningConfig?.departments
+    if (departments?.length === 1) {
+      return departments[0].requiresSaveAndSubmitButtonMoveToTop === true
     }
-    return null
-  }, [apportioningConfig])
-
-  const moveSaveSubmitToTop = formSettings?.moveSaveSubmitToTop ?? false
+    const activeParents = parents.filter(p => !p.isLeave && !p.apportioning && !!p.tsProgram)
+    if (activeParents.length === 0) return false
+    return activeParents.every(p => getRowSettings(p).moveSaveSubmitToTop)
+  }, [parents, getRowSettings, apportioningConfig?.departments])
 
   if (initialRecords !== prevInitialRecords || leaveRecords !== prevLeaveRecords) {
     setPrevInitialRecords(initialRecords)
     setPrevLeaveRecords(leaveRecords)
     const syncRecordsToState = () => {
       const filtered = (initialRecords ?? []).filter((r) => {
-        if (r.date?.split("T")[0] !== dateStr || r.apportioning === true) {
+        if (r.date?.split("T")[0] !== dateStr) {
+          return false
+        }
+        if (r.apportioning === true) {
           return false
         }
         if (r.leaveid) {
@@ -545,6 +617,7 @@ export function PersonalTimeStudyEntryForm({
             activityCode: rec.activitycode,
             activityName: rec.activityname,
             departmentCode: rec.departmentcode,
+            departmentId: rec.departmentId,
             subRows: (rec.multiCodeRecords ?? []).map((m: any) => ({
               id: String(m.id),
               dbId: m.id,
@@ -566,6 +639,7 @@ export function PersonalTimeStudyEntryForm({
             recordType: rec.recordType,
             leaveid: rec.leaveid ?? undefined,
             isLeave: rec.leaveid ? true : undefined,
+            apportioning: rec.apportioning,
           }
           parentMap.set(rec.id, parentRow)
         }
@@ -629,7 +703,8 @@ export function PersonalTimeStudyEntryForm({
       }
 
       const combined = [...sorted, ...leaveRows]
-      setParents(combined.length > 0 ? combined : [createParent()])
+      const final = combined.length > 0 ? combined : [createParent()]
+      setParents(final)
 
     }
     syncRecordsToState()
@@ -668,50 +743,55 @@ export function PersonalTimeStudyEntryForm({
   // No per-program API call needed — use the already-loaded activities directly.
 
   const updateParent = useCallback((id: string, patch: Partial<TimeEntryParentRow>) => {
-    setParents((prev) => prev.map((p) => {
-      if (p.id !== id) return p
-      const updatedP = { ...p, ...patch }
+    setParents((prev) => {
+      const next = prev.map((p) => {
+        if (p.id !== id) return p
+        const updatedP = { ...p, ...patch }
+        const rowSettings = getRowSettings(updatedP)
 
-      if (patch.tsProgram !== undefined && patch.tsProgram !== p.tsProgram) {
-        updatedP.subRows = p.subRows.map((sr) => ({
-          ...sr,
-          studyProgram: "",
-          serviceActivity: "",
-          programCode: undefined,
-          programName: undefined,
-          activityCode: undefined,
-          activityName: undefined,
-          departmentCode: undefined,
-        }))
-      }
+        if (patch.tsProgram !== undefined && patch.tsProgram !== p.tsProgram) {
+          updatedP.subRows = p.subRows.map((sr) => ({
+            ...sr,
+            studyProgram: "",
+            serviceActivity: "",
+            programCode: undefined,
+            programName: undefined,
+            activityCode: undefined,
+            activityName: undefined,
+            departmentCode: undefined,
+          }))
+        }
 
-      // Auto-fill logic
-      if (patch.start !== undefined && !formSettings?.removeAutoFillEndTime) {
-        updatedP.end = addMinutesToTime(patch.start, 15)
-      }
+        // Auto-fill logic
+        if (patch.start !== undefined && !rowSettings.removeAutoFillEndTime) {
+          updatedP.end = addMinutesToTime(patch.start, 15)
+        }
 
-      if (patch.start !== undefined || patch.end !== undefined || patch.totalMin !== undefined) {
-        if (updatedP.subRows.length > 0) {
-          const hideTime = !!formSettings?.startorEndTime
-          const parentMin = hideTime
-            ? (Number(updatedP.totalMin) || 0)
-            : (Number(computeDurationMinutes(updatedP.start, updatedP.end)) || Number(updatedP.totalMin) || 0)
-          const subTotalMin = updatedP.subRows.reduce((sum, s) => sum + (Number(s.totalMin) || Number(computeDurationMinutes(s.start, s.end)) || 0), 0)
-          if (subTotalMin > parentMin) {
-            toast.error(`Parent total is ${parentMin} mins . Child total should not exceed the parent time.`, { id: `val-${id}` })
-            if (!hideTime) updatedP.end = ""
+        if (patch.start !== undefined || patch.end !== undefined || patch.totalMin !== undefined) {
+          if (updatedP.subRows.length > 0) {
+            const hideTime = rowSettings.hideTime
+            const parentMin = hideTime
+              ? (Number(updatedP.totalMin) || 0)
+              : (Number(computeDurationMinutes(updatedP.start, updatedP.end)) || Number(updatedP.totalMin) || 0)
+            const subTotalMin = updatedP.subRows.reduce((sum, s) => sum + (Number(s.totalMin) || Number(computeDurationMinutes(s.start, s.end)) || 0), 0)
+            if (subTotalMin > parentMin) {
+              toast.error(`Parent total is ${parentMin} mins . Child total should not exceed the parent time.`, { id: `val-${id}` })
+              if (!hideTime) updatedP.end = ""
+            }
           }
         }
-      }
-      return updatedP
-    }))
-  }, [formSettings?.removeAutoFillEndTime, formSettings?.startorEndTime])
+        return updatedP
+      })
+      return next
+    })
+  }, [getRowSettings])
 
   const updateSubRow = (parentId: string, subRowId: string, updates: Partial<TimeEntrySubRow>) => {
     if (isLocked) return
     setParents((prev) =>
       prev.map((p) => {
         if (p.id !== parentId) return p
+        const rowSettings = getRowSettings(p)
 
         const newSubRows = p.subRows.map((s) => {
           if (s.id !== subRowId) return s
@@ -722,7 +802,7 @@ export function PersonalTimeStudyEntryForm({
           } else if (updates.totalMin !== undefined) {
             // If totalMin is updated manually, try to move end time
             const mins = Number(updates.totalMin) || 0
-            if (!formSettings?.removeAutoFillEndTime) {
+            if (!rowSettings.removeAutoFillEndTime) {
               updated.end = addMinutesToTime(updated.start, mins)
             }
           }
@@ -730,7 +810,7 @@ export function PersonalTimeStudyEntryForm({
         })
 
         if (updates.end || updates.start || updates.totalMin) {
-          const hideTime = !!formSettings?.startorEndTime
+          const hideTime = rowSettings.hideTime
           const parentMinutes = hideTime
             ? (Number(p.totalMin) || 0)
             : (Number(computeDurationMinutes(p.start, p.end)) || Number(p.totalMin) || 0)
@@ -752,12 +832,13 @@ export function PersonalTimeStudyEntryForm({
     const newP = createParent()
     if (topParent) {
       newP.start = topParent.end || ""
-      if (newP.start && !formSettings?.removeAutoFillEndTime) {
+      const rowSettings = getRowSettings(newP)
+      if (newP.start && !rowSettings.removeAutoFillEndTime) {
         newP.end = addMinutesToTime(newP.start, 15)
       }
     }
     setParents((prev) => [newP, ...prev])
-  }, [parents, formSettings?.removeAutoFillEndTime])
+  }, [parents, getRowSettings])
 
   const removeParent = useCallback((id: string) => {
     const p = parents.find((row) => row.id === id)
@@ -800,51 +881,56 @@ export function PersonalTimeStudyEntryForm({
   const canDeleteParent = (parentId: string) => {
     if (isLocked) return false
     const parent = parents.find((p) => p.id === parentId)
-    if (parent?.isLeave) return false
+    if (parent?.isLeave || parent?.leaveid || parent?.apportioning) return false
     return parents.length > 1 || !!parent?.dbId
   }
 
   const mapToPayload = (overrideStatus?: string): any[] => {
     const deptId = dropdownData?.[0]?.departmentId
-    const hideTime = !!formSettings?.startorEndTime
     return parents
-      .filter((p) => !p.isLeave)
-      .map((p) => ({
-        id: p.dbId,
-        userId,
-        username,
-        date: dateStr,
-        starttime: p.start,
-        endtime: p.end,
-        activitytime: hideTime ? (Number(p.totalMin) || 0) : (Number(computeDurationMinutes(p.start, p.end)) || Number(p.totalMin) || 0),
-        programid: p.tsProgram,
-        activityid: p.serviceActivity,
-        description: p.description,
-        departmentId: deptId,
-        supportingDocs: p.supportingDocs,
-        status: overrideStatus || p.status || "draft",
-        recordType: p.recordType || "NORMAL",
-        multiCodeRecords: p.subRows.map((s) => {
-          const subDeptId = resolveDepartmentIdForProgram(s.studyProgram)
-          return {
-            id: s.dbId,
-            programid: s.studyProgram,
-            activityid: s.serviceActivity,
-            activitytime: Number(s.totalMin) || Number(computeDurationMinutes(s.start, s.end)) || 0,
-            description: s.description,
-            departmentId: subDeptId,
-            starttime: s.start,
-            endtime: s.end,
-            recordType: "MULTI_CODE",
-            status: overrideStatus || s.status || p.status || "draft",
-          }
-        }),
-      }))
+      .filter((p) => !p.isLeave && !p.leaveid && !p.apportioning)
+      .map((p) => {
+        const rowSettings = getRowSettings(p)
+        const hideTime = rowSettings.hideTime
+        return {
+          id: p.dbId,
+          userId,
+          username,
+          date: dateStr,
+          starttime: p.start,
+          endtime: p.end,
+          activitytime: hideTime ? (Number(p.totalMin) || 0) : (Number(computeDurationMinutes(p.start, p.end)) || Number(p.totalMin) || 0),
+          programid: p.tsProgram,
+          activityid: p.serviceActivity,
+          description: p.description,
+          departmentId: resolveDepartmentIdForProgram(p.tsProgram) || deptId,
+          supportingDocs: p.supportingDocs,
+          status: overrideStatus || p.status || "draft",
+          recordType: p.recordType || "NORMAL",
+          multiCodeRecords: p.subRows.map((s) => {
+            const subDeptId = resolveDepartmentIdForProgram(s.studyProgram)
+            return {
+              id: s.dbId,
+              programid: s.studyProgram,
+              activityid: s.serviceActivity,
+              activitytime: Number(s.totalMin) || Number(computeDurationMinutes(s.start, s.end)) || 0,
+              description: s.description,
+              departmentId: subDeptId,
+              starttime: s.start,
+              endtime: s.end,
+              recordType: "MULTI_CODE",
+              status: overrideStatus || s.status || p.status || "draft",
+            }
+          }),
+        }
+      })
   }
 
   const validateEntries = () => {
-    const hideTime = !!formSettings?.startorEndTime
     for (const p of parents) {
+      if (p.isLeave || p.leaveid || p.apportioning) continue
+      const rowSettings = getRowSettings(p)
+      const hideTime = rowSettings.hideTime
       if (hideTime) {
         if (!p.totalMin || !p.tsProgram || !p.serviceActivity) {
           toast.error("Please fill all the required fields")
@@ -920,14 +1006,20 @@ export function PersonalTimeStudyEntryForm({
   const handleSave = () => {
     if (!validateEntries()) return
     const payload = mapToPayload("draft")
-    if (payload.length === 0) { toast.error("Please add at least one time entry"); return; }
+    if (payload.length === 0) {
+      toast.error("Please add at least one time entry")
+      return
+    }
     onSave?.(payload)
   }
 
   const handleSubmitInternal = () => {
     if (!validateEntries()) return
     const payload = mapToPayload("submitted")
-    if (payload.length === 0) { toast.error("Please add at least one time entry"); return; }
+    if (payload.length === 0) {
+      toast.error("Please add at least one time entry")
+      return
+    }
     onSubmit?.(payload)
   }
 
@@ -1086,22 +1178,22 @@ export function PersonalTimeStudyEntryForm({
         {parents.map((parent) => {
           const totalDisplay = computeDurationMinutes(parent.start, parent.end)
           const isLeaveRow = parent.isLeave
-          const hideTime = !!formSettings?.startorEndTime
-          const hideDocs = !!formSettings?.supportingDoc
-          const hideNotes = !!formSettings?.removeDescriptionActivityNote
+          const isApportionedRow = parent.apportioning === true
+          const rowSettings = getRowSettings(parent)
+          const hideTime = rowSettings.hideTime
+          const hideDocs = rowSettings.hideSupportingDoc
+          const hideNotes = rowSettings.hideDescriptionActivityNote
 
           return (
-            <div key={parent.id} className={cn("rounded-md", !isLeaveRow && "bg-card/50 p-2 border border-border/50")}>
-              <div className={cn(parentFieldRowClass, isLeaveRow && "p-2")}>
-                {!hideTime && (
-                  <TimePicker24h label="Start" value={parent.start} disabled={isLocked || isLeaveRow} isLeave={isLeaveRow} onChange={(v) => updateParent(parent.id, { start: v })} />
-                )}
+            <div key={parent.id} className={cn("rounded-md", !isLeaveRow && !isApportionedRow && "bg-card/50 p-2 border border-border/50")}>
+              <div className={cn(parentFieldRowClass, (isLeaveRow || isApportionedRow) && "p-2")}>
                 <div className="flex-1 space-y-0.5">
                   <Label className="text-[11px] text-[#6C5DD3] font-medium">TS Program <RequiredMark /></Label>
                   <SingleSelectSearchDropdown
                     value={parent.tsProgram}
                     placeholder="Select program"
-                    disabled={isLocked || isLeaveRow}
+                    disabled={isLocked || isLeaveRow || isApportionedRow}
+                    title={(!apportioningConfig?.timestudyAllowedDepartmentIds || apportioningConfig.timestudyAllowedDepartmentIds.length === 0) && !apportioningConfig?.bypassSchedule ? "No Time Study period Allocated" : undefined}
                     isLoading={isDropdownLoading}
                     onOpenChange={(open) => {
                       if (open) onOpenDropdown?.()
@@ -1130,9 +1222,10 @@ export function PersonalTimeStudyEntryForm({
                         updateParent(parent.id, { tsProgram: v });
                       }
                       fetchActivitiesForProgram(v);
+                      checkAndRefetchConfig(v);
                     }}
                     onBlur={() => { }}
-                    className={cn("h-10 text-[11px]", (isLocked || isLeaveRow) && "bg-[#F2F4F7] cursor-not-allowed", isLeaveRow && "border-yellow-400")}
+                    className={cn("h-10 text-[11px]", (isLocked || isLeaveRow || isApportionedRow) && "bg-[#F2F4F7] cursor-not-allowed", isLeaveRow && "border-yellow-400", isApportionedRow && "border-[#6C5DD3]")}
                   />
                 </div>
                 <div className="flex-1 space-y-0.5">
@@ -1140,7 +1233,7 @@ export function PersonalTimeStudyEntryForm({
                   <SingleSelectSearchDropdown
                     value={parent.serviceActivity}
                     placeholder="Select Activity Code"
-                    disabled={isLocked || isLeaveRow || !parent.tsProgram}
+                    disabled={isLocked || isLeaveRow || isApportionedRow || !parent.tsProgram}
                     isLoading={isFetchingActivitiesForProgram(parent.tsProgram)}
                     onOpenChange={(open) => {
                       if (open && parent.tsProgram) {
@@ -1166,24 +1259,28 @@ export function PersonalTimeStudyEntryForm({
                     })()}
                     onChange={(v) => updateParent(parent.id, { serviceActivity: v })}
                     onBlur={() => { }}
-                    className={cn("h-10 text-[11px]", (isLocked || isLeaveRow || !parent.tsProgram) && "bg-[#F2F4F7] cursor-not-allowed", isLeaveRow && "border-yellow-400")}
+                    className={cn("h-10 text-[11px]", (isLocked || isLeaveRow || isApportionedRow || !parent.tsProgram) && "bg-[#F2F4F7] cursor-not-allowed", isLeaveRow && "border-yellow-400", isApportionedRow && "border-[#6C5DD3]")}
                   />
                 </div>
                 {!hideTime && (
-                  <TimePicker24h label="End" value={parent.end} disabled={isLocked || isLeaveRow || !parent.start} isLeave={isLeaveRow} onChange={(v) => updateParent(parent.id, { end: v })} />
+                  <TimePicker24h label="Start" value={parent.start} disabled={isLocked || isLeaveRow || isApportionedRow} isLeave={isLeaveRow} isApportioned={isApportionedRow} onChange={(v) => updateParent(parent.id, { start: v })} />
+                )}
+                {!hideTime && (
+                  <TimePicker24h label="End" value={parent.end} disabled={isLocked || isLeaveRow || isApportionedRow || !parent.start} isLeave={isLeaveRow} isApportioned={isApportionedRow} onChange={(v) => updateParent(parent.id, { end: v })} />
                 )}
                 <div className="w-[60px] space-y-0.5">
                   <Label className="text-[11px] text-muted-foreground">Min. <RequiredMark /></Label>
                   <TitleCaseInput
                     type="number"
                     min="0"
-                    readOnly={isLocked || isLeaveRow || !hideTime}
+                    readOnly={isLocked || isLeaveRow || isApportionedRow || !hideTime}
                     value={hideTime ? (parent.totalMin ?? "") : (totalDisplay || parent.totalMin || "")}
                     placeholder="—"
                     className={cn(
                       "h-10 text-[11px]",
-                      (isLocked || isLeaveRow || !hideTime) && "bg-[#F2F4F7] cursor-not-allowed",
-                      isLeaveRow && "border-yellow-400"
+                      (isLocked || isLeaveRow || isApportionedRow || !hideTime) && "bg-[#F2F4F7] cursor-not-allowed",
+                      isLeaveRow && "border-yellow-400",
+                      isApportionedRow && "border-[#6C5DD3]"
                     )}
                     onChange={(e) => {
                       if (hideTime) {
@@ -1197,10 +1294,10 @@ export function PersonalTimeStudyEntryForm({
                     <Label className="text-[11px] text-muted-foreground">Notes </Label>
                     <TitleCaseInput
                       value={parent.description}
-                      readOnly={isLocked || isLeaveRow}
+                      readOnly={isLocked || isLeaveRow || isApportionedRow}
                       onChange={(e) => updateParent(parent.id, { description: e.target.value })}
                       placeholder="Notes"
-                      className={cn("h-10 text-[11px] text-[#344054] font-normal", (isLocked || isLeaveRow) && "bg-[#F2F4F7] cursor-not-allowed", isLeaveRow && "border-yellow-400")}
+                      className={cn("h-10 text-[11px] text-[#344054] font-normal", (isLocked || isLeaveRow || isApportionedRow) && "bg-[#F2F4F7] cursor-not-allowed", isLeaveRow && "border-yellow-400", isApportionedRow && "border-[#6C5DD3]")}
                     />
                   </div>
                 )}
@@ -1209,8 +1306,9 @@ export function PersonalTimeStudyEntryForm({
                     parentId={parent.id}
                     docs={parent.supportingDocs}
                     uploading={false}
-                    disabled={isLocked || isLeaveRow}
+                    disabled={isLocked || isLeaveRow || isApportionedRow}
                     isLeave={isLeaveRow}
+                    isApportioned={isApportionedRow}
                     onAdd={handleAddDocs}
                     onDelete={handleDeleteDoc}
                     onDownload={handleDownloadDoc}
@@ -1228,7 +1326,7 @@ export function PersonalTimeStudyEntryForm({
                       <Trash2 className="size-4" />
                     </Button>
                   )}
-                  {!readonly && !isLeaveRow && isMulticodeAllowedForParent(parent) && (
+                  {!readonly && !isLeaveRow && !isApportionedRow && isMulticodeAllowedForParent(parent) && (
                     <Button
                       size="icon"
                       variant="outline"
@@ -1251,7 +1349,8 @@ export function PersonalTimeStudyEntryForm({
                         <SingleSelectSearchDropdown
                           value={sub.studyProgram}
                           placeholder="Select program"
-                          disabled={isLocked || isLeaveRow}
+                          disabled={isLocked || isLeaveRow || isApportionedRow}
+                          title={(!apportioningConfig?.timestudyAllowedDepartmentIds || apportioningConfig.timestudyAllowedDepartmentIds.length === 0) && !apportioningConfig?.bypassSchedule ? "No Time Study period Allocated" : undefined}
                           isLoading={(() => {
                             const deptId = resolveDepartmentIdForProgram(parent.tsProgram)
                             return Boolean(deptId && fetchingDepartments[String(deptId)])
@@ -1286,9 +1385,10 @@ export function PersonalTimeStudyEntryForm({
                               updateSubRow(parent.id, sub.id, { studyProgram: v })
                             }
                             fetchActivitiesForProgram(v)
+                            checkAndRefetchConfig(v)
                           }}
                           onBlur={() => { }}
-                          className={cn("h-9 text-[11px]", (isLocked || isLeaveRow) && "bg-[#F2F4F7] cursor-not-allowed", isLeaveRow && "border-yellow-400")}
+                          className={cn("h-9 text-[11px]", (isLocked || isLeaveRow || isApportionedRow) && "bg-[#F2F4F7] cursor-not-allowed", isLeaveRow && "border-yellow-400", isApportionedRow && "border-[#6C5DD3]")}
                         />
                       </div>
                       <div className="flex-1 space-y-1">
@@ -1296,7 +1396,7 @@ export function PersonalTimeStudyEntryForm({
                         <SingleSelectSearchDropdown
                           value={sub.serviceActivity}
                           placeholder="Select Activity Code"
-                          disabled={isLocked || isLeaveRow || !sub.studyProgram}
+                          disabled={isLocked || isLeaveRow || isApportionedRow || !sub.studyProgram}
                           isLoading={isFetchingActivitiesForProgram(sub.studyProgram)}
                           onOpenChange={(open) => {
                             if (open && sub.studyProgram) {
@@ -1325,7 +1425,7 @@ export function PersonalTimeStudyEntryForm({
                           })()}
                           onChange={(v) => updateSubRow(parent.id, sub.id, { serviceActivity: v })}
                           onBlur={() => { }}
-                          className={cn("h-9 text-[11px]", (isLocked || isLeaveRow || !sub.studyProgram) && "bg-[#F2F4F7] cursor-not-allowed", isLeaveRow && "border-yellow-400")}
+                          className={cn("h-9 text-[11px]", (isLocked || isLeaveRow || isApportionedRow || !sub.studyProgram) && "bg-[#F2F4F7] cursor-not-allowed", isLeaveRow && "border-yellow-400", isApportionedRow && "border-[#6C5DD3]")}
                         />
                       </div>
                       <div className="w-[60px] space-y-1">
@@ -1334,14 +1434,14 @@ export function PersonalTimeStudyEntryForm({
                           type="number"
                           min="0"
                           value={sub.totalMin}
-                          readOnly={isLocked || isLeaveRow}
+                          readOnly={isLocked || isLeaveRow || isApportionedRow}
                           placeholder="0"
-                          className={cn("h-9 text-[11px]", (isLocked || isLeaveRow) && "bg-[#F2F4F7] cursor-not-allowed", isLeaveRow && "border-yellow-400")}
+                          className={cn("h-9 text-[11px]", (isLocked || isLeaveRow || isApportionedRow) && "bg-[#F2F4F7] cursor-not-allowed", isLeaveRow && "border-yellow-400", isApportionedRow && "border-[#6C5DD3]")}
                           onChange={(e) => updateSubRow(parent.id, sub.id, { totalMin: e.target.value })}
                         />
                       </div>
                       {(() => {
-                        const hideSubNotes = !!formSettings?.removeDescriptionActivityNote
+                        const hideSubNotes = getRowSettings(parent).hideDescriptionActivityNote
                         if (hideSubNotes) return null
                         return (
                           <div className="flex-1 space-y-1">
@@ -1352,16 +1452,16 @@ export function PersonalTimeStudyEntryForm({
                             </div>
                             <TitleCaseInput
                               value={sub.description}
-                              readOnly={isLocked || isLeaveRow}
+                              readOnly={isLocked || isLeaveRow || isApportionedRow}
                               onChange={(e) => updateSubRow(parent.id, sub.id, { description: e.target.value })}
                               placeholder="Notes"
-                              className={cn("h-9 text-[11px] text-[#344054] font-normal", (isLocked || isLeaveRow) && "bg-[#F2F4F7] cursor-not-allowed", isLeaveRow && "border-yellow-400")}
+                              className={cn("h-9 text-[11px] text-[#344054] font-normal", (isLocked || isLeaveRow || isApportionedRow) && "bg-[#F2F4F7] cursor-not-allowed", isLeaveRow && "border-yellow-400", isApportionedRow && "border-[#6C5DD3]")}
                             />
                           </div>
                         )
                       })()}
                       <div className="flex items-end pb-0.5">
-                        {!readonly && !isLeaveRow && (
+                        {!readonly && !isLeaveRow && !isApportionedRow && (
                           <Button
                             size="icon"
                             variant="ghost"
@@ -1381,6 +1481,14 @@ export function PersonalTimeStudyEntryForm({
           )
         })}
       </div>
+
+      <PersonalTimeStudyApportioningPanel
+        apportioningConfig={apportioningConfig}
+        supervisorOwnMinutesToday={actualTotal || 0}
+        apportioningRecords={apportioningRecords}
+        autoApportioning={apportioningConfig?.autoApportioning}
+      />
+
       {!readonly && !moveSaveSubmitToTop && (
         <div className="mt-4 flex justify-end gap-2">
           <Button
@@ -1414,3 +1522,4 @@ export function PersonalTimeStudyEntryForm({
     </section>
   )
 }
+

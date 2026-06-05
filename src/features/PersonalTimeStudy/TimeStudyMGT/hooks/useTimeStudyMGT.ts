@@ -5,6 +5,7 @@ import { useGetMGTDayDetail } from "../queries/getMGTDayDetail"
 import { toIsoYmdFromDate, todayLocal } from "@/lib/dates"
 import { usePermissions } from "@/hooks/usePermissions"
 import type { MgtEmployeeRow, MgtDayStatusMap, MgtWeekSummary } from "../types"
+import { useGetUserAssignedDepartmentsSettingChecks } from "../../queries/getUserAssignedDepartmentsSettingChecks"
 
 /**
  * Helper to get the start of the week (Sunday) for a given YYYY-MM-DD date string.
@@ -189,6 +190,19 @@ export function useTimeStudyMGT() {
     setCurrentDate(new Date(today.getFullYear(), today.getMonth(), 1))
   }
 
+  // ── Apportioning config for selected user/date ───────────────────────────
+  const apportioningConfigQuery = useGetUserAssignedDepartmentsSettingChecks(
+    selectedUserId ?? "",
+    dateStr ?? "",
+    !!selectedUserId && !!dateStr,
+  )
+
+  // Filter apportioning records from dayDetail
+  const apportioningRecords = useMemo(() => {
+    const records = dayDetailQuery.data?.timeStudyRecords ?? []
+    return records.filter((r: any) => r.apportioning === true)
+  }, [dayDetailQuery.data])
+
   return {
     // State
     search,
@@ -212,8 +226,11 @@ export function useTimeStudyMGT() {
     legend,
     dayDetail: dayDetailQuery.data,
     dropdownData: undefined,
-    actualMultiTotal: undefined,
-    multiBalanceTotal: undefined,
+    actualMultiTotal: dayDetailQuery.data?.enteredMaaMinutes,
+    multiBalanceTotal: dayDetailQuery.data?.maaBalance,
+    apportioningConfig: apportioningConfigQuery.data,
+    apportioningRecords,
+    refetchConfig: apportioningConfigQuery.refetch,
 
     // Loading states
     isEmployeeListLoading: employeeListQuery.isLoading,

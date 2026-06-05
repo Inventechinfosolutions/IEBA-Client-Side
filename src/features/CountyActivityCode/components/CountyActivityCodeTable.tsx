@@ -110,18 +110,18 @@ type CountyActivityTableColumnConfig = {
 }
 
 const COUNTY_ACTIVITY_TABLE_COLUMNS: CountyActivityTableColumnConfig[] = [
-  { key: "code", labelLines: ["County Activity", "Code"], widthWithAction: "w-[12%]", widthWithoutAction: "w-[10%]", sortKey: "countyActivityCode" },
-  { key: "name", labelLines: ["County Activity", "Name"], widthWithAction: "w-[12%]", widthWithoutAction: "w-[10%]", sortKey: "countyActivityName" },
+  { key: "code", labelLines: ["County Activity", "Code"], widthWithAction: "w-[9%]", widthWithoutAction: "w-[11%]", sortKey: "countyActivityCode" },
+  { key: "name", labelLines: ["County Activity", "Name"], widthWithAction: "w-[11%]", widthWithoutAction: "w-[11%]", sortKey: "countyActivityName" },
   { key: "description", labelLines: ["Description"], widthWithAction: "w-[8%]", widthWithoutAction: "w-[9%]" },
   { key: "department", labelLines: ["Department"], widthWithAction: "w-[8%]", widthWithoutAction: "w-[9%]" },
-  { key: "masterCodeType", labelLines: ["Master Code", "Type"], widthWithAction: "w-[8%]", widthWithoutAction: "w-[9%]" },
-  { key: "masterCode", labelLines: ["Master Code"], widthWithAction: "w-[7%]", widthWithoutAction: "w-[8%]" },
-  { key: "spmp", labelLines: ["SPMP"], widthWithAction: "w-[4%]", widthWithoutAction: "w-[5%]", align: "center" },
-  { key: "match", labelLines: ["Match"], widthWithAction: "w-[5%]", widthWithoutAction: "w-[6%]", align: "center" },
-  { key: "percent", labelLines: ["%"], widthWithAction: "w-[3%]", widthWithoutAction: "w-[4%]", align: "center" },
-  { key: "active", labelLines: ["Active"], widthWithAction: "w-[4%]", widthWithoutAction: "w-[5%]", align: "center" },
-  { key: "leaveCode", labelLines: ["Leave Code"], widthWithAction: "w-[7%]", widthWithoutAction: "w-[7%]" },
-  { key: "apportioning", labelLines: ["Apportioning"], widthWithAction: "w-[7%]", widthWithoutAction: "w-[8%]" },
+  { key: "masterCodeType", labelLines: ["Master Code", "Type"], widthWithAction: "w-[7%]", widthWithoutAction: "w-[9%]" },
+  { key: "masterCode", labelLines: ["Master", "Code"], widthWithAction: "w-[6%]", widthWithoutAction: "w-[8%]" },
+  { key: "spmp", labelLines: ["SPMP"], widthWithAction: "w-[5%]", widthWithoutAction: "w-[4%]", align: "center" },
+  { key: "match", labelLines: ["Match"], widthWithAction: "w-[5%]", widthWithoutAction: "w-[4%]", align: "center" },
+  { key: "percent", labelLines: ["%"], widthWithAction: "w-[5%]", widthWithoutAction: "w-[3%]", align: "center" },
+  { key: "active", labelLines: ["Active"], widthWithAction: "w-[5%]", widthWithoutAction: "w-[4%]", align: "center" },
+  { key: "leaveCode", labelLines: ["Leave", "Code"], widthWithAction: "w-[7%]", widthWithoutAction: "w-[8%]" },
+  { key: "apportioning", labelLines: ["Apportioning"], widthWithAction: "w-[8%]", widthWithoutAction: "w-[10%]" },
   { key: "multipleJobPools", labelLines: ["Multiple Job", "Pools"], widthWithAction: "w-[9%]", widthWithoutAction: "w-[10%]" },
 ]
 
@@ -134,16 +134,15 @@ const COUNTY_ACTIVITY_ACTION_COLUMN: CountyActivityTableColumnConfig = {
 }
 
 function renderCountyActivityHeaderLabel(labelLines: readonly string[]) {
-  if (labelLines.length === 1) {
-    return <span className="whitespace-nowrap">{labelLines[0]}</span>
-  }
-
-  return labelLines.map((line, idx) => (
-    <span key={`${line}-${idx}`}>
-      {idx > 0 && <br />}
-      {line}
+  return (
+    <span className="block whitespace-normal break-words">
+      {labelLines.map((line, idx) => (
+        <span key={`${line}-${idx}`} className="block">
+          {line}
+        </span>
+      ))}
     </span>
-  ))
+  )
 }
 
 function getCountyActivityCodeRowDepartmentLabel(row: CountyActivityCodeRow): string {
@@ -200,7 +199,7 @@ function CountyActivityDescriptionTableCell({
 }: CountyActivityDescriptionTableCellProps) {
   const text = description ?? ""
   return (
-    <TableCell className="min-w-0 max-w-0 border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
+    <TableCell className="min-w-0 max-w-0 border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
@@ -253,14 +252,14 @@ function CountyActivitySubTableRowsRenderer({
           key={child.id}
           className="ieba-data-row border-b border-[#E5E7EB] bg-[#F6F5FF]"
         >
-          <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0] whitespace-normal break-all">
+          <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0] whitespace-normal break-all">
             <span className="ml-7">{child.countyActivityCode}</span>
           </TableCell>
-          <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] leading-[1.4] whitespace-normal break-words font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
+          <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-left text-[14px] leading-[1.4] whitespace-normal break-words font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
             {child.countyActivityName}
           </TableCell>
           <CountyActivityDescriptionTableCell description={child.description} />
-          <TableCell className="min-w-0 border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] leading-[1.4] whitespace-normal break-words font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
+          <TableCell className="min-w-0 border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-left text-[14px] leading-[1.4] whitespace-normal break-words font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
             <CountyActivityDepartmentStackCell
               label={
                 child.rowType === CountyActivityGridRowType.SUB
@@ -269,12 +268,12 @@ function CountyActivitySubTableRowsRenderer({
               }
             />
           </TableCell>
-          <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
+          <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
             {child.rowType === CountyActivityGridRowType.SUB
               ? ""
               : child.masterCodeType}
           </TableCell>
-          <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
+          <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
             {child.rowType === CountyActivityGridRowType.SUB
               ? ""
               : child.catalogActivityCode || "—"}
@@ -349,7 +348,7 @@ function CountyActivitySubTableRowsRenderer({
             )}
           </TableCell>
           {canUpdateCountyActivity && (
-            <TableCell className="px-[14px] py-[5px] align-top text-center">
+            <TableCell className="px-[14px] py-[5px] align-middle text-center">
               <Button
                 type="button"
                 size="icon"
@@ -762,7 +761,9 @@ export function CountyActivityCodeTable({
   }, [departments, editDetailQuery.data?.activity, editPrimaryDetailQuery.data?.activity])
 
   const formatCountyActivityPrimaryPickerOptionLabel = (row: CountyActivityCodeRow): string => {
-    return row.countyActivityCode
+    return row.countyActivityName
+      ? `${row.countyActivityCode} - ${row.countyActivityName}`
+      : row.countyActivityCode
   }
 
   const addModalPrimaryActivityOptions = useMemo(
@@ -784,8 +785,10 @@ export function CountyActivityCodeTable({
         const parentCode = act?.parent?.code
 
         if (serverParentId === Number(pid) && parentCode) {
+          const parentName = act?.parent?.name
+          const label = parentName ? `${parentCode} - ${parentName}` : parentCode
           return [
-            { label: parentCode, value: pid },
+            { label, value: pid },
             ...base,
           ]
         }
@@ -1384,15 +1387,14 @@ export function CountyActivityCodeTable({
             {canUpdateCountyActivity && <col className={COUNTY_ACTIVITY_ACTION_COLUMN.widthWithAction} />}
           </colgroup>
           <TableHeader>
-            <TableRow className="h-[52px] bg-[#6C5DD3] hover:bg-[#6C5DD3]">
+            <TableRow className="h-[72px] bg-[#6C5DD3] hover:bg-[#6C5DD3]">
               {[
                 ...COUNTY_ACTIVITY_TABLE_COLUMNS,
                 ...(canUpdateCountyActivity ? [COUNTY_ACTIVITY_ACTION_COLUMN] : []),
               ].map((column) => (
                 <TableHead
                   key={column.key}
-                  className={`h-[52px] align-middle border-r border-[#FFFFFF66] bg-[#6C5DD3] px-[8px] py-[6px] text-[13px] font-[500] leading-tight text-white font-['Roboto',sans-serif] last:border-r-0 ${column.align === "center" ? "text-center" : "text-left"
-                    }`}
+                  className="h-[72px] align-middle border-r border-[#FFFFFF66] bg-[#6C5DD3] px-[8px] py-[6px] text-[13px] font-[500] leading-tight text-white font-['Roboto',sans-serif] last:border-r-0 text-center"
                 >
                   {column.sortKey ? (
                     <TooltipProvider>
@@ -1419,9 +1421,9 @@ export function CountyActivityCodeTable({
                               setIsSortTooltipOpen(true)
                             }}
                             onBlur={() => setIsSortTooltipOpen(false)}
-                            className="flex h-full max-w-full cursor-pointer items-center gap-2 text-left font-[400]"
+                            className="mx-auto flex h-full max-w-full cursor-pointer items-center justify-center gap-2 text-center font-[400]"
                           >
-                            <span className="max-w-full leading-tight font-normal">
+                            <span className="leading-tight font-normal whitespace-normal break-words">
                               {renderCountyActivityHeaderLabel(column.labelLines)}
                             </span>
                             <span className="inline-flex shrink-0 flex-col">
@@ -1449,10 +1451,7 @@ export function CountyActivityCodeTable({
                       </Tooltip>
                     </TooltipProvider>
                   ) : (
-                    <div
-                      className={`flex h-full items-center leading-tight font-[400] ${column.align === "center" ? "justify-center" : ""
-                        }`}
-                    >
+                    <div className="flex h-full items-center justify-center leading-tight font-[400]">
                       {renderCountyActivityHeaderLabel(column.labelLines)}
                     </div>
                   )}
@@ -1480,31 +1479,31 @@ export function CountyActivityCodeTable({
                     key={`skeleton-${rowIndex}`}
                     className="ieba-skeleton-row border-b border-[#E5E7EB]"
                   >
-                    <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
+                    <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
                       <Skeleton className="h-4 w-[90%]" />
                     </TableCell>
-                    <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] leading-[1.4] whitespace-normal break-words font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
+                    <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-left text-[14px] leading-[1.4] whitespace-normal break-words font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
                       <Skeleton className="h-4 w-[95%]" />
                     </TableCell>
-                    <TableCell className="min-w-0 max-w-0 border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
+                    <TableCell className="min-w-0 max-w-0 border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
                       <Skeleton className="h-4 w-[100%]" />
                     </TableCell>
-                    <TableCell className="min-w-0 border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
+                    <TableCell className="min-w-0 border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
                       <Skeleton className="h-4 w-[70%]" />
                     </TableCell>
-                    <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
+                    <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
                       <Skeleton className="h-4 w-[80%]" />
                     </TableCell>
-                    <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
+                    <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
                       <Skeleton className="h-4 w-[60%]" />
                     </TableCell>
                     <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-center text-[13px] text-[#C4C4C4]">
                       <Skeleton className="mx-auto h-4 w-4" />
                     </TableCell>
-                    <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-center text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
+                    <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-center text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
                       <Skeleton className="mx-auto h-4 w-[40%]" />
                     </TableCell>
-                    <TableCell className="border-r border-[#E5E7EB] px-[8px] py-[5px] align-top text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
+                    <TableCell className="border-r border-[#E5E7EB] px-[8px] py-[5px] align-middle text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
                       <Skeleton className="mx-auto h-4 w-[70%]" />
                     </TableCell>
                     <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-center">
@@ -1516,7 +1515,7 @@ export function CountyActivityCodeTable({
                     <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-center text-[#C4C4C4]">
                       <Skeleton className="mx-auto h-4 w-4" />
                     </TableCell>
-                    <TableCell className="px-[14px] py-[5px] align-top text-center">
+                    <TableCell className="px-[14px] py-[5px] align-middle text-center">
                       <Skeleton className="mx-auto h-6 w-6" />
                     </TableCell>
                   </TableRow>
@@ -1539,7 +1538,7 @@ export function CountyActivityCodeTable({
 
                     const countyActivityPrimaryTableRow = (
                       <TableRow key={row.id} className="ieba-data-row border-b border-[#E5E7EB]">
-                        <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0] whitespace-normal break-all">
+                        <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0] whitespace-normal break-all">
                           <button
                             type="button"
                             className={`mr-1 inline-flex size-5 shrink-0 items-center justify-center rounded-[6px] align-middle ${hasChildren ? "text-[#6C5DD3] hover:bg-[#6C5DD3]/10" : "opacity-0"
@@ -1563,17 +1562,17 @@ export function CountyActivityCodeTable({
                           </button>
                           {row.countyActivityCode}
                         </TableCell>
-                        <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] leading-[1.4] whitespace-normal break-words font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
+                        <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-left text-[14px] leading-[1.4] whitespace-normal break-words font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
                           {row.countyActivityName}
                         </TableCell>
                         <CountyActivityDescriptionTableCell description={row.description} />
-                        <TableCell className="min-w-0 border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] leading-[1.4] whitespace-normal break-words font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
+                        <TableCell className="min-w-0 border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-left text-[14px] leading-[1.4] whitespace-normal break-words font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
                           <CountyActivityDepartmentStackCell label={getCountyActivityCodeRowDepartmentLabel(row)} />
                         </TableCell>
-                        <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
+                        <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
                           {row.masterCodeType}
                         </TableCell>
-                        <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
+                        <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
                           {row.catalogActivityCode || "—"}
                         </TableCell>
                         <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-center text-[13px] text-[#C4C4C4]">
@@ -1591,10 +1590,10 @@ export function CountyActivityCodeTable({
                             />
                           )}
                         </TableCell>
-                        <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-top text-center text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
+                        <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-center text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
                           {row.match}
                         </TableCell>
-                        <TableCell className="border-r border-[#E5E7EB] px-[8px] py-[5px] align-top text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
+                        <TableCell className="border-r border-[#E5E7EB] px-[8px] py-[5px] align-middle text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
                           <span className="block w-full text-center">
                             {row.percentage.toFixed(2)}
                           </span>
@@ -1689,7 +1688,7 @@ export function CountyActivityCodeTable({
                           )}
                         </TableCell>
                         {canUpdateCountyActivity && (
-                          <TableCell className="px-[14px] py-[5px] align-top text-center">
+                          <TableCell className="px-[14px] py-[5px] align-middle text-center">
                             <Button
                               type="button"
                               size="icon"
@@ -1769,10 +1768,11 @@ export function CountyActivityCodeTable({
       >
         <DialogContent
           showClose={false}
-          className="max-h-[85vh] w-[1120px] max-w-[calc(100vw-2rem)] overflow-y-auto border-0 bg-transparent p-0 shadow-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+          className="fixed inset-0 z-50 overflow-y-auto grid place-items-center bg-transparent border-none shadow-none p-0 left-0 top-0 translate-x-0 translate-y-0 max-w-none w-screen h-screen"
           overlayClassName="bg-black/50"
         >
-          <CountyActivityCodeAddPage
+          <div className="relative my-8 w-[900px] max-w-[calc(100vw-2rem)]">
+            <CountyActivityCodeAddPage
             key={addFormMountKey}
             form={addForm}
             onAddSave={submitCreateCountyActivityFromAddModal}
@@ -1826,6 +1826,7 @@ export function CountyActivityCodeTable({
             isEditSourceLoading={addTab === CountyActivityGridRowType.SUB && addSubParentDetailQuery.isLoading}
             apportioningDepartments={addSubParentDetailQuery.data?.apportioningDepartments}
           />
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -1847,15 +1848,16 @@ export function CountyActivityCodeTable({
       >
         <DialogContent
           showClose={false}
-          className="max-h-[85vh] w-[1120px] max-w-[calc(100vw-2rem)] overflow-y-auto border-0 bg-transparent p-0 shadow-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+          className="fixed inset-0 z-50 overflow-y-auto grid place-items-center bg-transparent border-none shadow-none p-0 left-0 top-0 translate-x-0 translate-y-0 max-w-none w-screen h-screen"
           overlayClassName="bg-black/50"
         >
-          {editDetailQuery.isLoading && editOpen ? (
-            <div className="flex h-[500px] w-full items-center justify-center rounded-[10px] bg-white">
-              <Spinner className="text-[#6C5DD3]" />
-            </div>
-          ) : rowToEdit ? (
-            <CountyActivityCodeAddPage
+          <div className="relative my-8 w-[1000px] max-w-[calc(100vw-2rem)]">
+            {editDetailQuery.isLoading && editOpen ? (
+              <div className="flex h-[500px] w-full items-center justify-center rounded-[10px] bg-white border border-[#EBEDF0]">
+                <Spinner className="text-[#6C5DD3]" />
+              </div>
+            ) : rowToEdit ? (
+              <CountyActivityCodeAddPage
               key={rowToEdit.id}
               mode={CountyActivityAddPageMode.EDIT}
               form={editForm}
@@ -1938,6 +1940,7 @@ export function CountyActivityCodeTable({
               isSubmitting={updateCountyActivityCode.isPending}
             />
           ) : null}
+          </div>
         </DialogContent>
       </Dialog>
 

@@ -8,24 +8,38 @@ import { api } from "@/lib/api"
  */
 export type UserAssignedDepartmentsSettingChecks = {
   apportioningRequired: boolean
+  autoApportioning: boolean
   allowMultiCodes: boolean
   userMultiCode: Array<{ departmentId: number }>
   departments: Array<{
     departmentId: number
-    departmentName: string
-    apportioningPercent: number
-    allowedMinutes: number
+    apportioning: boolean
+    costallocation: boolean
     autoApportioning: boolean
-  }>
-  settings: {
-    moveSaveSubmitToTop: boolean
+    allowUserOrCostpoolDirect: boolean
+    departmentAllowMultiCodes: boolean
+    departmentMultiCodes: string[]
+    requiresStartEndTime: boolean
+    requiresSupportingDoc: boolean
     removeAutoFillEndTime: boolean
-    removeStartEndTime: boolean
-    removeSupportingDocument: boolean
-    removeDescriptionActivityNote: boolean
-    removeDescriptionActivityNoteAnchor: boolean
-    removeDescriptionActivityNoteMultiCode: boolean
-  }
+    autoFillEndTime: boolean
+    requiresDescriptionActivityNotes: boolean
+    requiresDescriptionActivityNotesAnchor: boolean
+    requiresDescriptionActivityNotesMultiCode: boolean
+    requiresSaveAndSubmitButtonMoveToTop: boolean
+    allowActivationStartDateAndEndDate: boolean
+    requiresActivationStartDateAndEndDate: boolean
+  }>
+  allowUserEntry: boolean
+  timestudyAllowedDepartmentIds: Array<{ departmentId: number }>
+  timestudyAllowedRaw: Array<{
+    departmentId: number
+    departmentName: string | null
+    allowed: boolean
+    startDate: string | null
+    endDate: string | null
+  }>
+  bypassSchedule: boolean
 }
 
 /**
@@ -43,7 +57,7 @@ export function useGetUserAssignedDepartmentsSettingChecks(
     queryFn: async () => {
       if (!userId) return null
 
-      // Fetch aggregated settings for all departments the user is assigned to
+      // Fetch settings for departments the user is assigned to
       let checkSettings: any = null
       try {
         const res = await api.get<any>(`/timestudyrecords/user/config?userId=${encodeURIComponent(userId)}&date=${encodeURIComponent(date)}`)
@@ -54,30 +68,51 @@ export function useGetUserAssignedDepartmentsSettingChecks(
         console.error("Failed to fetch aggregated department settings", e)
       }
 
-      const settings = {
-        moveSaveSubmitToTop: checkSettings ? checkSettings.requiresSaveAndSubmitButtonMoveToTop === false : false,
-        removeAutoFillEndTime: checkSettings ? checkSettings.removeAutoFillEndTime === true : false,
-        removeStartEndTime: checkSettings ? checkSettings.requiresStartEndTime === false : false,
-        removeSupportingDocument: checkSettings ? checkSettings.requiresSupportingDoc === false : false,
-        removeDescriptionActivityNote: checkSettings ? checkSettings.requiresDescriptionActivityNotes === false : false,
-        removeDescriptionActivityNoteAnchor: checkSettings ? checkSettings.requiresDescriptionActivityNotesAnchor === false : false,
-        removeDescriptionActivityNoteMultiCode: checkSettings ? checkSettings.requiresDescriptionActivityNotesMultiCode === false : false,
-      }
-
       const allowMultiCodes = checkSettings
         ? (checkSettings.departmentAllowMultiCodes === true ||
-           checkSettings.allowMultiCodeForDate === true ||
-           (Array.isArray(checkSettings.userMultiCode) && checkSettings.userMultiCode.length > 0))
+          checkSettings.allowMultiCodeForDate === true ||
+          (Array.isArray(checkSettings.userMultiCode) && checkSettings.userMultiCode.length > 0))
         : false
       const userMultiCode = checkSettings ? checkSettings.userMultiCode ?? [] : []
       const apportioningRequired = checkSettings ? checkSettings.userApportioning === true : false
 
+      const timestudyAllowedRaw: Array<{
+        departmentId: number
+        departmentName: string | null
+        allowed: boolean
+        startDate: string | null
+        endDate: string | null
+      }> = (Array.isArray(checkSettings?.timestudyAllowed)
+        ? checkSettings.timestudyAllowed
+        : []
+      ).filter(
+        (item: any): item is { departmentId: number; departmentName?: string | null; allowed: boolean; startDate: string | null; endDate: string | null } =>
+          typeof item?.departmentId === "number" && typeof item?.allowed === "boolean"
+      ).map((item: any) => ({
+        departmentId: item.departmentId,
+        departmentName: item.departmentName ?? null,
+        allowed: item.allowed,
+        startDate: item.startDate ?? null,
+        endDate: item.endDate ?? null,
+      }))
+
+      const bypassSchedule = false
+      const timestudyAllowedDepartmentIds = timestudyAllowedRaw
+        .filter((item) => item.allowed === true)
+        .map((item) => ({ departmentId: item.departmentId }))
+
+      const allowUserEntry = timestudyAllowedDepartmentIds.length > 0
+
       return {
         apportioningRequired,
+        autoApportioning: checkSettings ? checkSettings.autoApportioning === true : false,
         allowMultiCodes,
         userMultiCode,
-        departments: [],
-        settings,
+        departments: Array.isArray(checkSettings?.departments) ? checkSettings.departments : [],
+        allowUserEntry,
+        timestudyAllowedDepartmentIds,
+        timestudyAllowedRaw,
+        bypassSchedule,
       }
     },
     enabled: !!userId && enabled,

@@ -12,6 +12,12 @@ import {
 import { cn } from "@/lib/utils"
 import tableEmptyIcon from "@/assets/icons/table-empty.png"
 import { Spinner } from "@/components/ui/spinner"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 export type SingleSelectOption = {
   value: string
@@ -45,6 +51,7 @@ export type SingleSelectSearchDropdownProps = {
   emptyListSlot?: ReactNode
   /** Notified when the menu opens or closes */
   onOpenChange?: (open: boolean) => void
+  title?: string
 }
 
 export function SingleSelectSearchDropdown({
@@ -63,6 +70,7 @@ export function SingleSelectSearchDropdown({
   itemLabelClassName,
   emptyListSlot,
   onOpenChange,
+  title,
 }: SingleSelectSearchDropdownProps) {
   const [internalOpen, setInternalOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
@@ -137,31 +145,46 @@ export function SingleSelectSearchDropdown({
             className,
           )}
         >
-          <input
-            ref={inputRef}
-            type="text"
-            disabled={disabledEffective}
-            placeholder={inputPlaceholder}
-            value={inputDisplayValue}
-            // Open on focus/click
-            onFocus={openMenu}
-            onClick={openMenu}
-            onChange={(e) => {
-              setSearchQuery(e.target.value)
-              if (!open) openMenu()
-            }}
-            onBlur={() => {
-              if (selectingRef.current) return
+          <TooltipProvider>
+            <Tooltip open={open ? false : undefined}>
+              <TooltipTrigger asChild>
+                <input
+                  ref={inputRef}
+                  type="text"
+                  disabled={disabledEffective}
+                  placeholder={inputPlaceholder}
+                  value={inputDisplayValue}
+                  // Open on focus/click
+                  onFocus={openMenu}
+                  onClick={openMenu}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value)
+                    if (!open) openMenu()
+                  }}
+                  onBlur={() => {
+                    if (selectingRef.current) return
 
-              onBlur()
-            }}
-            className={cn(
-              "min-w-0 flex-1 bg-transparent outline-none",
-              "text-[11px] font-normal leading-[16px] text-[#111827]",
-              "placeholder:text-[#9ca3af]",
-              disabledEffective && "cursor-not-allowed",
-            )}
-          />
+                    onBlur()
+                  }}
+                  className={cn(
+                    "min-w-0 flex-1 bg-transparent outline-none",
+                    "text-[11px] font-normal leading-[16px] text-[#111827]",
+                    "placeholder:text-[#9ca3af]",
+                    disabledEffective && "cursor-not-allowed",
+                  )}
+                />
+              </TooltipTrigger>
+              {!open && (selectedLabel || title) && (
+                <TooltipContent
+                  side="top"
+                  sideOffset={6}
+                  className="z-[2000] bg-black border border-black rounded-[8px] text-white text-xs px-3 py-1.5 shadow-md font-normal max-w-xs break-words"
+                >
+                  {selectedLabel || title}
+                </TooltipContent>
+              )}
+            </Tooltip>
+          </TooltipProvider>
           {isLoading ? (
             <Spinner className="absolute right-3 top-1/2 size-4 -translate-y-1/2 text-[#6C5DD3]" />
           ) : open ? (
@@ -211,33 +234,42 @@ export function SingleSelectSearchDropdown({
               const selected = valueTrimmed === opt.value
               const rowKey = opt.key ?? `${opt.value}-${index}`
               return (
-                <button
-                  type="button"
-                  key={rowKey}
-                  // onMouseDown fires before input's onBlur.
-                  // e.preventDefault() keeps focus on the input (no blur flash).
-                  // selectingRef guards the onBlur from closing the menu.
-                  onMouseDown={(e) => {
-                    e.preventDefault()
-                    selectingRef.current = true
-                    handleSelect(opt.value)
-                    selectingRef.current = false
-                  }}
-                  className={cn(
-                    "w-full cursor-pointer rounded px-3 py-2 text-left hover:bg-[#f3f4f8]",
-                    selected ? "bg-[#eef8ff]" : "bg-transparent",
-                    itemButtonClassName,
-                  )}
-                >
-                  <span
-                    className={cn(
-                      "block truncate text-[13px] font-normal text-[#111827]",
-                      itemLabelClassName,
-                    )}
-                  >
-                    {opt.label}
-                  </span>
-                </button>
+                <TooltipProvider key={rowKey}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        onMouseDown={(e) => {
+                          e.preventDefault()
+                          selectingRef.current = true
+                          handleSelect(opt.value)
+                          selectingRef.current = false
+                        }}
+                        className={cn(
+                          "w-full cursor-pointer rounded px-3 py-2 text-left hover:bg-[#f3f4f8]",
+                          selected ? "bg-[#eef8ff]" : "bg-transparent",
+                          itemButtonClassName,
+                        )}
+                      >
+                        <span
+                          className={cn(
+                            "block truncate text-[13px] font-normal text-[#111827]",
+                            itemLabelClassName,
+                          )}
+                        >
+                          {opt.label}
+                        </span>
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent
+                      side="right"
+                      sideOffset={6}
+                      className="z-[2000] bg-black border border-black rounded-[8px] text-white text-xs px-3 py-1.5 shadow-md font-normal max-w-xs break-words"
+                    >
+                      {opt.label}
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               )
             })}
           </div>

@@ -220,13 +220,13 @@ export function JobClassificationTable({
                   </TableCell>
 
                   {/* Users */}
-                  <TableCell className="align-middle border-r border-[#eff0f5] px-3 py-2.5 text-[11px] text-[#232735] wrap-break-word whitespace-normal">
+                  <TableCell className="align-middle border-r border-[#eff0f5] px-3 py-2.5 text-[11px] text-[#232735] wrap-break-word whitespace-normal text-center">
                     {row.users && row.users.length > 0 ? (
-                      <div className="flex flex-wrap gap-2">
+                      <div className="flex flex-wrap gap-2 justify-center">
                         {row.users.map((user) => (
                           <span
                             key={user.id}
-                            className="inline-flex items-center rounded-[6px] border border-[#d8dae3] bg-[#f8f9fa] px-2 py-1 text-[10px] text-[#232735]"
+                            className={`inline-flex items-center rounded-[6px] border bg-[#f8f9fa] px-2 py-1 text-[10px] text-[#232735] ${user.status?.toLowerCase() === "inactive" ? "border-red-400" : "border-[#d8dae3]"}`}
                           >
                             {user.name}
                           </span>

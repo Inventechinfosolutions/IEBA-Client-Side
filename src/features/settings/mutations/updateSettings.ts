@@ -2,10 +2,19 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { settingsKeys } from "@/features/settings/keys"
 import { DEFAULT_SETTINGS } from "@/features/settings/constants"
 import { SettingsFormSaveSection } from "@/features/settings/enums/setting.enum"
-import type { SettingsModel, UpdateSettingsInput, ReportOption } from "@/features/settings/types"
+import type { ReportOption, SettingsModel, UpdateSettingsInput } from "@/features/settings/types"
 import type { PayrollBy, PayrollColumnSettingModel, PayrollSettingsModel } from "../payroll"
 import { updatePayrollSettings } from "../payroll"
 import { api } from "@/lib/api"
+import {
+  applyReportBucketsComplementForSave,
+  buildReportMasterCodeSavePayload,
+  includedActivityCodesForSave,
+  includedMasterCodeIdsForActivityCatalog,
+  resolveReportBucketsForForm,
+} from "@/features/reports/lib/reportMasterCodeData.utils"
+import { mapRawReportsToReportOptions } from "@/features/settings/lib/reportOptions.utils"
+import { fetchMasterCodeActivities } from "@/features/settings/queries/getMasterCodeActivities"
 import {
   createCountyLocation,
   deleteCountyLocation,
@@ -127,36 +136,174 @@ async function updateSettings(
   queryClient: ReturnType<typeof useQueryClient>,
   input: UpdateSettingsInput,
 ): Promise<SettingsModel> {
+  let reportsAfterSave: SettingsModel["reports"] | undefined
+
   if (input.submitterSection === SettingsFormSaveSection.County) {
     await saveCountyToBackend(queryClient, input)
   }
 
   if (input.submitterSection === SettingsFormSaveSection.Reports) {
-    const reportOptions = queryClient.getQueryData<ReportOption[]>(settingsKeys.reports.list()) ?? []
+    const departmentId = input.values.reports?.departmentId?.trim() ?? ""
+    const reportOptions =
+      queryClient.getQueryData<ReportOption[]>(settingsKeys.reports.byDepartment(departmentId)) ??
+      []
     const selectedReportKey = input.values.reports?.reportKey
-    const selectedReport = reportOptions.find(r => r.key === selectedReportKey)
-    
-    if (selectedReport?.id) {
-      const reportData = (input.values.reports?.selectedActivityCodes ?? []).join(",")
-      const inclusionMode = input.values.reports?.exclusionMode === "include" ? "included" : "excluded"
-      
-      // Parse existing criteria or use default
-      let reportCriteria = { monthly: false, showProgramSelect: false, multipleEmployees: true }
-      if (selectedReport.criteria) {
-        try {
-          reportCriteria = { ...reportCriteria, ...JSON.parse(selectedReport.criteria) }
-        } catch (e) {
-          console.error("Failed to parse report criteria:", e)
-        }
-      }
+    const selectedReport = reportOptions.find((r) => r.key === selectedReportKey)
 
-      await api.put(`/report/${selectedReport.id}`, {
-        name: selectedReport.label.replace(new RegExp(`^${selectedReport.key}\\s*`), ""),
-        filename: selectedReport.filename,
-        path: selectedReport.path,
-        type: inclusionMode,
-        reportdata: reportData,
-        status: selectedReport.status ?? "active",
+    if (!selectedReport?.id) {
+      throw new Error("Please select department and report before saving")
+    }
+
+    const masterCodeExclusionMode =
+      input.values.reports?.masterCodeExclusionMode === "include" ? "include" : "exclude"
+    const activityExclusionMode =
+      input.values.reports?.activityExclusionMode === "include" ? "include" : "exclude"
+    const inclusionType = masterCodeExclusionMode === "include" ? "included" : "excluded"
+    const saveScope = input.reportsSaveScope
+    const excludedActivityCodes = input.values.reports?.excludedActivityCodes ?? []
+    const includedActivityCodes = input.values.reports?.includedActivityCodes ?? []
+    const masterCodeOpts =
+      queryClient.getQueryData<Array<{ value: string }>>(settingsKeys.reports.masterCodes()) ??
+      []
+    const catalogIds = masterCodeOpts
+      .map((o) => Number(o.value))
+      .filter((n) => Number.isFinite(n) && n >= 1)
+
+    const mcIncludedForActivities = includedMasterCodeIdsForActivityCatalog(
+      masterCodeExclusionMode,
+      input.values.reports?.excludedMasterCodeIds ?? [],
+      input.values.reports?.includedMasterCodeIds ?? [],
+      catalogIds,
+    )
+      .map((id) => Number(id))
+      .filter((n) => Number.isFinite(n) && n >= 1)
+
+    let activityCatalog: string[] = []
+    if (mcIncludedForActivities.length > 0) {
+      const activitiesQueryKey = [
+        ...settingsKeys.reports.activities(),
+        mcIncludedForActivities
+          .slice()
+          .sort((a, b) => a - b)
+          .join(","),
+      ] as const
+      const cached = queryClient.getQueryData<Array<{ code: string }>>(activitiesQueryKey)
+      if (cached?.length) {
+        activityCatalog = cached.map((a) => a.code)
+      } else {
+        const fetched = await fetchMasterCodeActivities(mcIncludedForActivities)
+        activityCatalog = fetched.map((a) => a.code)
+        queryClient.setQueryData(activitiesQueryKey, fetched)
+      }
+    }
+
+    let finalExcludedIds = input.values.reports?.excludedMasterCodeIds ?? []
+    let finalIncludedIds = input.values.reports?.includedMasterCodeIds ?? []
+    let finalExcludedActivityCodes = excludedActivityCodes
+    let finalIncludedActivityCodes = includedActivityCodes
+
+    if (saveScope === "masterCodes") {
+      const mc = applyReportBucketsComplementForSave(
+        catalogIds,
+        [],
+        masterCodeExclusionMode,
+        activityExclusionMode,
+        finalExcludedIds,
+        [],
+        finalIncludedIds,
+        [],
+      )
+      finalExcludedIds = mc.excludedMasterCodeIds
+      finalIncludedIds = mc.includedMasterCodeIds
+    } else if (saveScope === "activities") {
+      finalIncludedActivityCodes = includedActivityCodesForSave(
+        activityExclusionMode,
+        finalExcludedActivityCodes,
+        finalIncludedActivityCodes,
+        activityCatalog,
+      )
+      finalExcludedActivityCodes = []
+    } else {
+      const all = applyReportBucketsComplementForSave(
+        catalogIds,
+        activityCatalog,
+        masterCodeExclusionMode,
+        activityExclusionMode,
+        finalExcludedIds,
+        finalExcludedActivityCodes,
+        finalIncludedIds,
+        finalIncludedActivityCodes,
+      )
+      finalExcludedIds = all.excludedMasterCodeIds
+      finalIncludedIds = all.includedMasterCodeIds
+      finalExcludedActivityCodes = all.excludedActivityCodes
+      finalIncludedActivityCodes = all.includedActivityCodes
+    }
+
+    const { excludedMasterCodeData, includedMasterCodeData } = buildReportMasterCodeSavePayload(
+      finalExcludedIds,
+      finalExcludedActivityCodes,
+      finalIncludedIds,
+      finalIncludedActivityCodes,
+    )
+
+    /** Legacy `reportdata` column is NOT NULL — activities save stores included codes only. */
+    const reportdata =
+      saveScope === "activities"
+        ? finalIncludedActivityCodes.join(",")
+        : activityExclusionMode === "include"
+          ? finalIncludedActivityCodes.join(",")
+          : finalExcludedActivityCodes.join(",")
+
+    const putRes = await api.put<unknown>(`/report/${selectedReport.id}`, {
+      name: selectedReport.label.replace(new RegExp(`^${selectedReport.key}\\s*`), ""),
+      filename: selectedReport.filename,
+      path: selectedReport.path,
+      type: inclusionType,
+      reportdata,
+      excludedMasterCodeData,
+      includedMasterCodeData,
+      status: selectedReport.status ?? "active",
+    })
+
+    const putRow = ((putRes as { data?: unknown })?.data ?? putRes) as Record<string, unknown>
+    const bucketsFromApi = resolveReportBucketsForForm(putRow, catalogIds, activityCatalog)
+    const updatedReportOption = mapRawReportsToReportOptions([putRow])[0]
+
+    queryClient.setQueryData<ReportOption[]>(
+      settingsKeys.reports.byDepartment(departmentId),
+      (prev) => {
+        const list = prev ?? []
+        return list.map((r) => (r.key === selectedReportKey ? { ...r, ...updatedReportOption } : r))
+      },
+    )
+
+    reportsAfterSave = {
+      departmentId,
+      reportKey: selectedReportKey ?? "",
+      masterCodeExclusionMode,
+      activityExclusionMode,
+      excludedMasterCodeIds: bucketsFromApi.excludedMasterCodeIds,
+      includedMasterCodeIds: bucketsFromApi.includedMasterCodeIds,
+      excludedActivityCodes: bucketsFromApi.excludedActivityCodes,
+      includedActivityCodes: bucketsFromApi.includedActivityCodes,
+    }
+
+    const activityMasterIds = bucketsFromApi.includedMasterCodeIds
+      .map((id) => Number(id))
+      .filter((n) => Number.isFinite(n) && n >= 1)
+
+    if (activityMasterIds.length > 0) {
+      const activitiesQueryKey = [
+        ...settingsKeys.reports.activities(),
+        activityMasterIds
+          .slice()
+          .sort((a, b) => a - b)
+          .join(","),
+      ] as const
+      await queryClient.fetchQuery({
+        queryKey: activitiesQueryKey,
+        queryFn: () => fetchMasterCodeActivities(activityMasterIds),
       })
     }
   }
@@ -260,12 +407,25 @@ async function updateSettings(
       ...input.values.general,
       screenInactivityTimeMinutes: Number(input.values.general.screenInactivityTimeMinutes),
     },
-    reports: {
+    reports: reportsAfterSave ?? {
       ...DEFAULT_SETTINGS.reports,
       ...input.values.reports,
       reportKey: String(input.values.reports.reportKey ?? ""),
-      selectedActivityCodes: Array.isArray(input.values.reports.selectedActivityCodes)
-        ? input.values.reports.selectedActivityCodes.map(String)
+      masterCodeExclusionMode:
+        input.values.reports.masterCodeExclusionMode === "include" ? "include" : "exclude",
+      activityExclusionMode:
+        input.values.reports.activityExclusionMode === "include" ? "include" : "exclude",
+      excludedMasterCodeIds: Array.isArray(input.values.reports.excludedMasterCodeIds)
+        ? input.values.reports.excludedMasterCodeIds.map(String)
+        : [],
+      includedMasterCodeIds: Array.isArray(input.values.reports.includedMasterCodeIds)
+        ? input.values.reports.includedMasterCodeIds.map(String)
+        : [],
+      excludedActivityCodes: Array.isArray(input.values.reports.excludedActivityCodes)
+        ? input.values.reports.excludedActivityCodes.map(String)
+        : [],
+      includedActivityCodes: Array.isArray(input.values.reports.includedActivityCodes)
+        ? input.values.reports.includedActivityCodes.map(String)
         : [],
     },
     login: {
@@ -314,7 +474,12 @@ export function useUpdateSettings() {
           void queryClient.invalidateQueries({ queryKey: settingsCountyClientQueryKey })
         }
         if (variables.submitterSection === SettingsFormSaveSection.Reports) {
-          void queryClient.invalidateQueries({ queryKey: settingsKeys.reports.list() })
+          const deptId = variables.values.reports?.departmentId?.trim() ?? ""
+          if (deptId) {
+            void queryClient.invalidateQueries({
+              queryKey: settingsKeys.reports.byDepartment(deptId),
+            })
+          }
         }
       }
     },

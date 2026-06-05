@@ -3,7 +3,7 @@ import { Spinner } from "@/components/ui/spinner"
 import { Controller, useFormContext, useFieldArray } from "react-hook-form"
 import { toast } from "sonner"
 
-import { ArrowLeft, History, Building2, Trash2, Plus } from "lucide-react"
+import { ArrowLeft, History, Trash2, Plus } from "lucide-react"
 import { queryClient } from "@/main"
 import { fetchSecurityDepartmentRoles, fetchUserDetailsTab } from "../api"
 import { TransferListMoveButton } from "@/components/ui/transfer-list-move-button"
@@ -45,7 +45,7 @@ import {
   PopoverContent,
 } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
-import { CalendarDays, X as CloseIcon } from "lucide-react"
+import { CalendarDays } from "lucide-react"
 import { securityRoleItemsFromSnapshots } from "../utility/parseSecurityDepartmentRoles"
 import { syncSecurityAssignmentsForm } from "../utility/syncSecurityAssignmentsForm"
 import {

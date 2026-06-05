@@ -282,12 +282,18 @@ export function CountyActivityCodeAddPage({
     }
 
     if (mode === CountyActivityAddPageMode.EDIT) {
+      if (tab === CountyActivityGridRowType.PRIMARY && assignedDepartments.length === 0) {
+        form.setError("department", { message: "Department is required", type: "manual" })
+        toast.error("Department is required")
+        return
+      }
       onEditSave?.()
       return
     }
 
     if (tab === CountyActivityGridRowType.PRIMARY && assignedDepartments.length === 0) {
       form.setError("department", { message: "Department is required", type: "manual" })
+      toast.error("Department is required")
       return
     }
 
@@ -542,11 +548,27 @@ export function CountyActivityCodeAddPage({
                     avoidCollisions={false}
                     className="w-(--radix-select-trigger-width) max-h-[280px] [&_[data-slot=select-scroll-up-button]]:hidden [&_[data-slot=select-scroll-down-button]]:hidden"
                   >
-                    {(primaryActivityCodeOptions ?? []).map((item) => (
-                      <SelectItem key={item.value} value={item.value}>
-                        {item.label}
-                      </SelectItem>
-                    ))}
+                    <TooltipProvider delayDuration={100}>
+                      {(primaryActivityCodeOptions ?? []).map((item) => (
+                        <SelectItem key={item.value} value={item.value}>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="block max-w-[245px] truncate">
+                                {item.label}
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent
+                              side="right"
+                              align="center"
+                              sideOffset={10}
+                              className="z-[300]"
+                            >
+                              {item.label}
+                            </TooltipContent>
+                          </Tooltip>
+                        </SelectItem>
+                      ))}
+                    </TooltipProvider>
                   </SelectContent>
                 </Select>
               </div>
@@ -696,9 +718,7 @@ export function CountyActivityCodeAddPage({
             </div>
           )}
 
-          {tab === CountyActivityGridRowType.PRIMARY && form.formState.errors.department && (
-            <p className="text-sm text-destructive">{form.formState.errors.department.message}</p>
-          )}
+
 
           <div className="mt-[70px] flex flex-wrap items-center justify-between gap-3 pt-4">
             <div className="flex items-center gap-5">

@@ -11,6 +11,12 @@ import { cn } from "@/lib/utils"
 import { Search, X, ChevronDown, Check } from "lucide-react"
 import tableEmptyIcon from "@/assets/icons/table-empty.png"
 import { Spinner } from "@/components/ui/spinner"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 export type MultiSelectSearchOption = {
   value: string
@@ -141,34 +147,46 @@ export function MultiSelectSearchDropdown({
             ) : (
               <>
                 {selectedItems.slice(0, maxVisibleItems).map((a) => (
-                  <span
-                    key={a.value}
-                    className="inline-flex max-w-30 shrink-0 items-center gap-2 rounded-[2px] bg-[#eef0f5] px-1.5 py-0.5 text-[14px] text-[#111827]"
-                  >
-                    <span className="truncate">{a.label}</span>
-                    <span
-                      role="button"
-                      tabIndex={0}
-                      className="ml-0.5 inline-flex size-4 shrink-0 cursor-pointer items-center justify-center rounded-[4px] text-[#6b7280]"
-                      onPointerDown={(e) => {
-                        e.preventDefault()
-                        e.stopPropagation()
-                      }}
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        remove(a.value)
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key !== "Enter" && e.key !== " ") return
-                        e.preventDefault()
-                        e.stopPropagation()
-                        remove(a.value)
-                      }}
-                      aria-label={`Remove ${a.label}`}
-                    >
-                      <X className="size-3" />
-                    </span>
-                  </span>
+                  <TooltipProvider key={a.value}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span
+                          className="inline-flex max-w-30 shrink-0 items-center gap-2 rounded-[2px] bg-[#eef0f5] px-1.5 py-0.5 text-[14px] text-[#111827]"
+                        >
+                          <span className="truncate">{a.label}</span>
+                          <span
+                            role="button"
+                            tabIndex={0}
+                            className="ml-0.5 inline-flex size-4 shrink-0 cursor-pointer items-center justify-center rounded-[4px] text-[#6b7280]"
+                            onPointerDown={(e) => {
+                              e.preventDefault()
+                              e.stopPropagation()
+                            }}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              remove(a.value)
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key !== "Enter" && e.key !== " ") return
+                              e.preventDefault()
+                              e.stopPropagation()
+                              remove(a.value)
+                            }}
+                            aria-label={`Remove ${a.label}`}
+                          >
+                            <X className="size-3" />
+                          </span>
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent
+                        side="top"
+                        sideOffset={6}
+                        className="z-[2000] bg-black border border-black rounded-[8px] text-white text-xs px-3 py-1.5 shadow-md font-normal max-w-xs break-words"
+                      >
+                        {a.label}
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 ))}
                 {selectedItems.length > maxVisibleItems && (
                   <span className="inline-flex shrink-0 items-center rounded-[8px] bg-[#eef0f5] px-2 py-0.5 text-[14px] font-semibold tabular-nums text-[#111827]">
@@ -263,27 +281,39 @@ export function MultiSelectSearchDropdown({
             {filteredOptions.map((opt) => {
               const selected = selectedValues.includes(opt.value)
               return (
-                <button
-                  type="button"
-                  key={opt.value}
-                  className={cn(
-                    "flex w-full cursor-pointer items-center justify-between gap-3 px-3 py-2 hover:bg-[#f5f5f5]",
-                    selected ? "bg-[#e6f4ff]" : "bg-transparent",
-                  )}
-                  onMouseDown={(e) => {
-                    e.preventDefault()
-                    selectingRef.current = true
-                  }}
-                  onMouseUp={() => {
-                    selectingRef.current = false
-                  }}
-                  onClick={() => toggle(opt.value)}
-                >
-                  <span className="min-w-0 flex-1 truncate text-left text-[14px] font-normal text-[#111827]">
-                    {opt.label}
-                  </span>
-                  {selected && <Check className="size-4 shrink-0 text-[#1890ff]" strokeWidth={3} />}
-                </button>
+                <TooltipProvider key={opt.value}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        className={cn(
+                          "flex w-full cursor-pointer items-center justify-between gap-3 px-3 py-2 hover:bg-[#f5f5f5]",
+                          selected ? "bg-[#e6f4ff]" : "bg-transparent",
+                        )}
+                        onMouseDown={(e) => {
+                          e.preventDefault()
+                          selectingRef.current = true
+                        }}
+                        onMouseUp={() => {
+                          selectingRef.current = false
+                        }}
+                        onClick={() => toggle(opt.value)}
+                      >
+                        <span className="min-w-0 flex-1 truncate text-left text-[14px] font-normal text-[#111827]">
+                          {opt.label}
+                        </span>
+                        {selected && <Check className="size-4 shrink-0 text-[#1890ff]" strokeWidth={3} />}
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent
+                      side="right"
+                      sideOffset={6}
+                      className="z-[2000] bg-black border border-black rounded-[8px] text-white text-xs px-3 py-1.5 shadow-md font-normal max-w-xs break-words"
+                    >
+                      {opt.label}
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               )
             })}
           </div>

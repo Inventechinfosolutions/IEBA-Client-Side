@@ -26,12 +26,15 @@ import { useCreateDepartment } from "../mutations/createDepartment"
 import { useUpdateDepartment } from "../mutations/updateDepartment"
 import { useGetDepartmentById } from "../queries/getDepartmentById"
 import { useGetMasterCodeOptions } from "../queries/getMasterCodeOptions"
+import { useDepartmentReportSettingsTabQueries } from "../hooks/useDepartmentReportSettingsTabQueries"
 import { departmentKeys } from "../keys"
 import { queryClient } from "@/main"
 import { apiGetUserDetails } from "@/features/user/api"
 import type { UserDetailsDto } from "@/features/user/types"
 import type { DepartmentContactUser } from "../queries/getDepartmentUsers"
 import { useGetDepartmentUsers } from "../queries/getDepartmentUsers"
+import { DepartmentEditContextHeader } from "./DepartmentEditContextHeader"
+import { DepartmentReportSettingsPanel } from "./DepartmentReportSettingsPanel"
 import {
     type Department,
     type DepartmentAddPageProps,
@@ -198,9 +201,47 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
     const primaryContactId = watch("primaryContactId")
     const secondaryContactId = watch("secondaryContactId")
     const billingContactId = watch("billingContactId")
+    const primaryContactName = watch("primaryContact.name")
+    const secondaryContactName = watch("secondaryContact.name")
+    const billingContactName = watch("billingContact.name")
 
-    const handleSave = async (opts?: { toastMode?: "none" | "createOrUpdate" }): Promise<boolean> => {
-        if (createDeptMutation.isPending || updateDeptMutation.isPending) return false
+    const renderedOptions = useMemo(() => {
+        const list = [...userOptions]
+        const currentId =
+            detailsTab === "primary"
+                ? primaryContactId
+                : detailsTab === "secondary"
+                  ? secondaryContactId
+                  : billingContactId
+        const currentName =
+            detailsTab === "primary"
+                ? primaryContactName
+                : detailsTab === "secondary"
+                  ? secondaryContactName
+                  : billingContactName
+
+        if (currentId?.trim() && currentName?.trim() && !list.some((u) => u.id === currentId.trim())) {
+            list.push({
+                id: currentId.trim(),
+                name: currentName.trim(),
+                email: "",
+                phone: "",
+                location: "",
+            })
+        }
+        return list
+    }, [userOptions, detailsTab, primaryContactId, secondaryContactId, billingContactId, primaryContactName, secondaryContactName, billingContactName])
+
+    const isReportSettingsTabActive = activeTab === "reportSettings"
+    const {
+        reportOptions: departmentReportOptions,
+        isReportOptionsLoading: isDepartmentReportOptionsLoading,
+        mappedReports: departmentMappedReports,
+        isMappedReportsLoading: isDepartmentMappedReportsLoading,
+    } = useDepartmentReportSettingsTabQueries(isReportSettingsTabActive, departmentId)
+
+    const handleSave = async (opts?: { toastMode?: "none" | "createOrUpdate" }): Promise<string | null> => {
+        if (createDeptMutation.isPending || updateDeptMutation.isPending) return null
         const toastMode = opts?.toastMode ?? "createOrUpdate"
 
         const values = getValues()
@@ -217,8 +258,9 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                 }
             } catch (err) {
                 toast.error(err instanceof Error ? err.message : "Failed to update department")
+                return null
             }
-            return true
+            return departmentId
         }
         try {
             const created = await createDeptMutation.mutateAsync(values)
@@ -248,7 +290,7 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
             queryClient.setQueryData(departmentKeys.detail(nextId), optimisticDept)
             setDepartmentId(nextId)
             setIsDepartmentSaved(true)
-            return true
+            return nextId
         } catch (err) {
             const message =
                 err instanceof Error ? err.message : "Failed to create department"
@@ -256,26 +298,27 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
             if (message.toLowerCase().includes("code already exists")) {
                 setError("code", { type: "manual", message })
             }
-            return false
+            return null
         }
     }
 
     const handleActualSave = async () => {
         setShowCreateConfirm(false)
-        const ok = await handleSave()
-        if (!ok) return
+        const savedDeptId = await handleSave()
+        if (!savedDeptId) return
         setActiveTab("details")
         setDetailsTab("primary")
     }
 
     /** Exit always discards without calling the API. Persist only via Save / OK on create confirm / contact Save when a row exists. */
     const handleExit = () => {
+        void queryClient.invalidateQueries({ queryKey: departmentKeys.all })
         onClose()
     }
 
     const onSubmit = (_data: DepartmentUpsertValues) => {
-        // If we're on the settings tab and submitting the main form
-        if (activeTab === "settings") {
+        // If we're on the settings or report settings tab and submitting the main form
+        if (activeTab === "settings" || activeTab === "reportSettings") {
             if (id) {
                 void handleSave()
             } else {
@@ -324,8 +367,8 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
 
         const hasExistingDepartment = id != null || departmentId != null
         if (hasExistingDepartment) {
-            const ok = await handleSave({ toastMode: "none" })
-            if (!ok) return
+            const savedDeptId = await handleSave({ toastMode: "none" })
+            if (!savedDeptId) return
             toast(
                 <div className="flex items-center gap-2 text-[14px]">
                     <CheckCircle2 className="w-4 h-4 text-green-500" />
@@ -363,6 +406,29 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
         return true
     }
 
+    const handleSettingsSave = async () => {
+        const isValid = await validateDetailsTab()
+        if (!isValid) {
+            setActiveTab("details")
+            return
+        }
+        if (id) {
+            void handleSave()
+        } else {
+            setShowCreateConfirm(true)
+        }
+    }
+
+    const ensureDepartmentIdForReportMapping = async (): Promise<string | null> => {
+        const isValid = await validateDetailsTab()
+        if (!isValid) {
+            setActiveTab("details")
+            return null
+        }
+        if (departmentId) return departmentId
+        return handleSave({ toastMode: "none" })
+    }
+
     const handleTabChange: HandleTabChange = async (value) => {
         if (detailsTab !== "address" && modifiedContacts[detailsTab]) {
             setPendingTabChange({ type: 'active', value: value as ActiveTab })
@@ -370,7 +436,7 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
             return
         }
 
-        if (value === "settings") {
+        if (value === "settings" || value === "reportSettings") {
             const isValid = await validateDetailsTab()
             if (!isValid) return
         }
@@ -409,7 +475,7 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                             <Spinner className="text-[#6C5DD3]" />
                         </div>
                     )}
-                    {((id && (departmentQuery.isFetching || !existingDept)) || usersQuery.isFetching || masterCodesQuery.isFetching) ? (
+                    {(id && (departmentQuery.isFetching || !existingDept)) ? (
                         <div className="flex h-[400px] items-center justify-center">
                             <Spinner className="text-[#6C5DD3]" />
                         </div>
@@ -417,19 +483,26 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                         <form onSubmit={handleSubmit(onSubmit)}>
                     <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
                         <div className="px-6 py-4">
-                            <TabsList className="grid !h-[62px] w-full grid-cols-2 items-stretch gap-0 overflow-hidden rounded-[6px] border border-[#E5E7EB] bg-white p-0">
+                            <TabsList className="grid !h-[62px] w-full grid-cols-3 items-stretch gap-0 overflow-hidden rounded-[6px] border border-[#E5E7EB] bg-white p-0">
                                 <TabsTrigger
                                     value="details"
-                                    className="h-full rounded-[8px] border-0 data-[state=active]:bg-[#6C5DD3] data-[state=active]:text-white data-[state=inactive]:text-[#9CA3AF] font-[500] text-[17px] transition-all shadow-none"
+                                    className="h-full rounded-[8px] border-0 data-[state=active]:bg-[#6C5DD3] data-[state=active]:text-white data-[state=inactive]:text-[#9CA3AF] font-[500] text-[15px] transition-all shadow-none"
                                 >
                                     Department Details
                                 </TabsTrigger>
                                 <TabsTrigger
                                     value="settings"
                                     disabled={isLoadingDept}
-                                    className="h-full rounded-[8px] border-0 data-[state=active]:bg-[#6C5DD3] data-[state=active]:text-white data-[state=inactive]:text-[#9CA3AF] font-[500] text-[17px] transition-all shadow-none disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="h-full rounded-[8px] border-0 data-[state=active]:bg-[#6C5DD3] data-[state=active]:text-white data-[state=inactive]:text-[#9CA3AF] font-[500] text-[15px] transition-all shadow-none disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     Department Settings
+                                </TabsTrigger>
+                                <TabsTrigger
+                                    value="reportSettings"
+                                    disabled={isLoadingDept}
+                                    className="h-full rounded-[8px] border-0 px-2 data-[state=active]:bg-[#6C5DD3] data-[state=active]:text-white data-[state=inactive]:text-[#9CA3AF] font-[500] text-[14px] leading-tight transition-all shadow-none disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    Department Report Setting
                                 </TabsTrigger>
                             </TabsList>
                         </div>
@@ -592,7 +665,7 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                                                             const key = DEPARTMENT_CONTACT_FORM_PREFIX[detailsTab]
                                                             const idKey = DEPARTMENT_CONTACT_ID_FIELD[detailsTab]
                                                             setValue(idKey, userId)
-                                                            const selected = userOptions.find((u) => u.id === userId)
+                                                            const selected = renderedOptions.find((u) => u.id === userId)
                                                             if (selected) {
                                                                 setValue(`${key}.name` as const, selected.name, { shouldValidate: true })
                                                                 setValue(`${key}.email` as const, selected.email)
@@ -630,12 +703,12 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                                                                     {usersQuery.error instanceof Error ? usersQuery.error.message : "Failed to load users"}
                                                                 </div>
                                                             )}
-                                                            {!usersQuery.isLoading && !usersQuery.isError && userOptions.length === 0 && (
+                                                            {!usersQuery.isLoading && !usersQuery.isError && renderedOptions.length === 0 && (
                                                                 <div className="px-3 py-2 text-[13px] text-[#6B7280]">
                                                                     No users found
                                                                 </div>
                                                             )}
-                                                            {userOptions.map((u) => (
+                                                            {renderedOptions.map((u) => (
                                                                 <SelectItem 
                                                                     key={u.id} 
                                                                     value={u.id}
@@ -714,14 +787,10 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                         <TabsContent value="settings" className="mt-0">
                             <div className="px-6 pb-6">
                                 {id && (
-                                    <div className="pt-4 space-y-1">
-                                        <div className="text-[14px] font-[600] text-[#374151]">
-                                            Code: <span className="text-[#6C5DD3]">{currentCode}</span>
-                                        </div>
-                                        <div className="text-[14px] font-[600] text-[#374151]">
-                                            Department Name: <span className="text-[#6C5DD3]">{currentName}</span>
-                                        </div>
-                                    </div>
+                                    <DepartmentEditContextHeader
+                                        code={currentCode}
+                                        departmentName={currentName}
+                                    />
                                 )}
                                 <div className="grid grid-cols-1 gap-3 py-4 min-h-[300px]">
                                     {DEPARTMENT_SETTINGS_ROWS
@@ -889,21 +958,7 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                                     <Button
                                         type="button"
                                         disabled={isSubmitting}
-                                        onClick={async () => {
-                                            const isValid = await trigger([
-                                                "code", "name", "address.street", "address.city", "address.state", "address.zip"
-                                            ])
-                                            if (isValid) {
-                                                if (id) {
-                                                    void handleSave()
-                                                } else {
-                                                    setShowCreateConfirm(true)
-                                                }
-                                            } else {
-                                                setActiveTab("details")
-                                                setShowSummaryErrors(true)
-                                            }
-                                        }}
+                                        onClick={() => void handleSettingsSave()}
                                         className="w-[140px] h-[50px] bg-[#6C5DD3] hover:bg-[#5B4DC5] rounded-[8px] text-[16px] font-[500]"
                                     >
                                         Save
@@ -918,6 +973,21 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                                     </Button>
                                 </div>
                             </div>
+                        </TabsContent>
+
+                        <TabsContent value="reportSettings" className="mt-0">
+                            <DepartmentReportSettingsPanel
+                                departmentId={departmentId}
+                                departmentCode={currentCode}
+                                departmentName={currentName}
+                                reportOptions={departmentReportOptions}
+                                mappedReports={departmentMappedReports}
+                                isReportOptionsLoading={isDepartmentReportOptionsLoading}
+                                isMappedReportsLoading={isDepartmentMappedReportsLoading}
+                                isSubmitting={isSubmitting}
+                                onEnsureDepartmentId={ensureDepartmentIdForReportMapping}
+                                onExit={handleExit}
+                            />
                         </TabsContent>
                     </Tabs>
                 </form>

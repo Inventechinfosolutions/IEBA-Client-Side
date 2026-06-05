@@ -35,9 +35,8 @@ export function TransferPanel({
           <button
             type="button"
             onClick={() => onSelectAll(!allSelected)}
-            className={`flex size-4 items-center justify-center rounded-[3px] border transition-colors ${
-              allSelected ? "bg-white text-[#6C5DD3]" : "border-white/20 bg-white"
-            }`}
+            className={`flex size-4 items-center justify-center rounded-[3px] border transition-colors ${allSelected ? "bg-white text-[#6C5DD3]" : "border-white/20 bg-white"
+              }`}
           >
             {allSelected && <Check className="size-3 stroke-3 text-[#6C5DD3]" />}
           </button>
@@ -46,24 +45,27 @@ export function TransferPanel({
       </div>
 
 
-      <ScrollArea className="h-[400px] py-2">
+      <ScrollArea className="h-[400px]">
         {items.length > 0 ? (
-          <div className="flex flex-col">
+          <div className="flex flex-col gap-2.5 p-3">
             {items.map((item) => {
               const isSelected = selectedIds.includes(item.id)
               const isExpanded = expandedIds.has(item.id)
               return (
-                <div key={item.id} className="flex flex-col">
+                <div
+                  key={item.id}
+                  className="flex flex-col rounded-[6px] overflow-hidden bg-[#F5F5F5] transition-all"
+                >
                   <div
-                    className={`group relative flex cursor-pointer items-center justify-between px-3 py-2 transition-colors ${
-                      isSelected ? "bg-[#F3F0FF]" : "hover:bg-[#F9FAFB]"
+                    className={`group relative flex h-[40px] cursor-pointer items-center justify-between px-3 transition-colors ${
+                      isSelected ? "bg-[#F3F0FF]" : "bg-[#F5F5F5] hover:bg-[#EBEBEB]"
                     }`}
                   >
-                    <div className="flex flex-1 items-center gap-2" onClick={() => toggleExpand(item.id)}>
+                    <div className="flex flex-1 items-center gap-2.5" onClick={() => toggleExpand(item.id)}>
                       {isExpanded ? (
-                        <ChevronDown className="size-4 shrink-0 text-[#9CA3AF]" />
+                        <ChevronDown className="size-4.5 shrink-0 text-[#6C5DD3]" />
                       ) : (
-                        <ChevronRight className="size-4 shrink-0 text-[#9CA3AF]" />
+                        <ChevronRight className="size-4.5 shrink-0 text-[#6C5DD3]" />
                       )}
                       <span className="text-[14px] font-medium text-[#111827]">{item.name}</span>
                     </div>
@@ -71,39 +73,37 @@ export function TransferPanel({
                     <button
                       type="button"
                       onClick={() => onToggleItem(item.id)}
-                      className={`flex size-4.5 shrink-0 items-center justify-center rounded-[4px] border shadow-sm transition-all ${
-                        isSelected
+                      className={`flex size-4.5 shrink-0 items-center justify-center rounded-[4px] border shadow-sm transition-all ${isSelected
                           ? "border-[#6C5DD3] bg-[#6C5DD3] text-white"
                           : "border-[#E5E7EB] bg-white text-transparent hover:border-[#D1D5DB]"
-                      }`}
+                        }`}
                     >
                       <Check className="size-3.5 stroke-3" />
                     </button>
                   </div>
 
                   {isExpanded && item.permissions.length > 0 && (
-                    <div className="flex flex-col bg-white pb-2 px-1">
+                    <div className="flex flex-col bg-white pb-2.5 px-1">
                       {item.permissions.map((perm, idx) => {
                         const isPermSelected = selectedIds.includes(`${item.id}:${perm}`)
                         return (
                           <div
                             key={idx}
-                            className="relative flex items-center justify-between py-1.5 pl-10 pr-2 hover:bg-[#F9FAFB]/50 rounded-md"
+                            className="relative flex items-center justify-between py-0.5 pl-12 pr-2 hover:bg-[#F9FAFB]/50 rounded-md"
                           >
                             {/* Tree lines */}
                             <div className="absolute left-[26px] top-0 h-full w-[1.5px] bg-[#E5E7EB]" />
                             <div className="absolute left-[26px] top-1/2 h-[1.5px] w-4 bg-[#E5E7EB]" />
-                            
-                            <span className="text-[13.5px] text-[#4B5563] leading-relaxed">{perm}</span>
+
+                            <span className="text-[13.5px] text-[#4B5563] leading-normal">{perm}</span>
 
                             <button
                               type="button"
                               onClick={() => onTogglePermission?.(item.id, perm)}
-                              className={`flex size-4.5 shrink-0 items-center justify-center rounded-[4px] border shadow-sm transition-all ${
-                                isPermSelected
+                              className={`flex size-4.5 shrink-0 items-center justify-center rounded-[4px] border shadow-sm transition-all ${isPermSelected
                                   ? "border-[#6C5DD3] bg-[#6C5DD3] text-white"
                                   : "border-[#E5E7EB] bg-white text-transparent hover:border-[#D1D5DB]"
-                              }`}
+                                }`}
                             >
                               <Check className="size-3.5 stroke-3" />
                             </button>

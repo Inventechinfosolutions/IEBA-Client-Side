@@ -13,11 +13,11 @@ export function ActivitySection({ form, mode, departmentName, assignedActivityDe
   const [searchA, setSearchA] = useState("")
   const activeSearch = searchU || searchA || undefined
 
-  const shouldFetch = !!selectedDept && (mode === "add" || !!activeSearch);
+  const shouldFetch = !!selectedDept && mode === "add";
   
   const { data: activitiesData = [] } = useQuery({
-    queryKey: ["jobPool", "activities-by-dept", selectedDept, activeSearch],
-    queryFn: () => getJobPoolActivitiesByDepartment(Number(selectedDept), activeSearch),
+    queryKey: ["jobPool", "activities-by-dept", selectedDept],
+    queryFn: () => getJobPoolActivitiesByDepartment(Number(selectedDept)),
     enabled: shouldFetch,
     staleTime: 30_000,
   })
@@ -75,7 +75,11 @@ export function ActivitySection({ form, mode, departmentName, assignedActivityDe
       : items.filter(i => !assignedSet.has(i.id))
     
     if (!search.trim()) return list
-    return list.filter(i => i.name.toLowerCase().includes(search.toLowerCase()))
+    const term = search.toLowerCase()
+    return list.filter(i => 
+      i.name.toLowerCase().includes(term) || 
+      (i.code && i.code.toLowerCase().includes(term))
+    )
   }
 
   const filteredU = getFiltered(allActivities, assignedIds, searchU, false)

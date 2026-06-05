@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { Check } from "lucide-react"
 import { toast } from "sonner"
 
@@ -48,6 +48,7 @@ export function JobPoolPage() {
   const [modalMode, setModalMode]     = useState<JobPoolFormMode>("add")
   const [selectedRow, setSelectedRow] = useState<JobPoolRow | null>(null)
   const [showHistory, setShowHistory] = useState(false)
+  const formRef = useRef<any>(null)
 
   const { isDepartmentAdmin, assignedDepartmentIds } = usePermissions()
   const deptFilter = isDepartmentAdmin ? assignedDepartmentIds.join(",") : undefined
@@ -62,7 +63,7 @@ export function JobPoolPage() {
     updateJobPoolAsync,
   } = useJobPoolModule({ page, pageSize, search, inactiveOnly, departmentId: deptFilter })
 
-  const { data: fetchedJobPool, isFetching: isFetchingDetail } = useGetJobPoolById(
+  const { data: fetchedJobPool, isFetching: isFetchingDetail, refetch } = useGetJobPoolById(
     modalMode === "edit" && modalOpen && selectedRow ? selectedRow.id : undefined
   )
 
@@ -106,6 +107,10 @@ export function JobPoolPage() {
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Operation failed"
       toast.error(message)
+      if (modalMode === "edit" && selectedRow) {
+        await refetch()
+        formRef.current?.reset()
+      }
     }
   }
 
@@ -181,6 +186,7 @@ export function JobPoolPage() {
         isLoadingDetails={isFetchingDetail}
         onOpenChange={setModalOpen}
         onSave={handleSave}
+        formRef={formRef}
         assignedActivityDetails={sourceRow?.assignedActivityDetails}
         unassignedActivityDetails={sourceRow?.unassignedActivityDetails}
         assignedJobClassificationDetails={sourceRow?.assignedJobClassificationDetails}

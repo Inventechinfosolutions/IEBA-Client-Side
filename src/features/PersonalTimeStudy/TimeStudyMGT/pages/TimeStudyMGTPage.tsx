@@ -28,6 +28,9 @@ export function TimeStudyMGTPage() {
     actualMultiTotal,
     multiBalanceTotal,
     isDayDetailLoading,
+    apportioningConfig,
+    apportioningRecords,
+    refetchConfig,
   } = useTimeStudyMGT()
 
   const { mutate: notifyUser } = useActionUserTimeRecord()
@@ -216,6 +219,9 @@ export function TimeStudyMGTPage() {
               multiBalanceTotal={multiBalanceTotal}
               showLeaveBanner={true}
               isLoading={isDayDetailLoading}
+              apportioningConfig={apportioningConfig}
+              apportioningRecords={apportioningRecords}
+              refetchConfig={refetchConfig}
             />
           </div>
         )}

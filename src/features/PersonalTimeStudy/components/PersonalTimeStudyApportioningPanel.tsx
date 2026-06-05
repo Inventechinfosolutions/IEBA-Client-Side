@@ -1,7 +1,9 @@
-import { useMemo, useState } from "react"
+import React, { useMemo, useState } from "react"
 import { cn } from "@/lib/utils"
 import { SingleSelectSearchDropdown } from "@/components/ui/dropdown-search"
 import type { UserAssignedDepartmentsSettingChecks } from "../queries/getUserAssignedDepartmentsSettingChecks"
+import { AlertCircle } from "lucide-react"
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card"
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -10,6 +12,8 @@ export type ApportioningPanelProps = {
   supervisorOwnMinutesToday: number
   /** Saved apportioning TSRs from backend (apportioning=true). Pre-fills rows when autoApportioning=true. */
   apportioningRecords?: any[]
+  /** Whether auto-apportioning is enabled — comes from the config API (checkSettings.autoApportioning). */
+  autoApportioning?: boolean
 }
 
 /** Row state keyed by a unique string — `rec_${record.id}` for auto rows, `dept_${deptId}` for manual rows. */
@@ -40,18 +44,19 @@ function ReadOnlyAutoToggle({ checked }: { checked: boolean }) {
   )
 }
 
-/** Computed remaining-time display — read-only, colour-coded. */
-function RemainingTimeDisplay({ minutes }: { minutes: number }) {
+/** Computed remaining-time display — read-only, colour-coded. Icon slot on the right. */
+function RemainingTimeDisplay({ minutes, children }: { minutes: number; children?: React.ReactNode }) {
   const isOver = minutes < 0
   return (
     <div
       aria-readonly="true"
       className={cn(
-        "flex h-10 w-full items-center rounded-[6px] border bg-[#F2F4F7] px-3 text-[11px] font-semibold cursor-not-allowed select-none",
+        "flex h-10 w-full items-center justify-between rounded-[6px] border bg-[#F2F4F7] px-3 text-[11px] font-semibold cursor-not-allowed select-none",
         isOver ? "border-red-300 text-red-600" : "border-input text-[#344054]",
       )}
     >
-      {minutes}
+      <span>{minutes}</span>
+      {children}
     </div>
   )
 }
@@ -73,13 +78,11 @@ export function PersonalTimeStudyApportioningPanel({
   apportioningConfig,
   supervisorOwnMinutesToday,
   apportioningRecords,
+  autoApportioning,
 }: ApportioningPanelProps) {
   const shouldRender = useMemo(
-    () =>
-      !!apportioningConfig &&
-      apportioningConfig.apportioningRequired &&
-      apportioningConfig.departments.length > 0,
-    [apportioningConfig],
+    () => (apportioningRecords || []).length > 0,
+    [apportioningRecords],
   )
 
   // ── Build flat program / activity lists from apportioningRecords ──────────────────
@@ -218,16 +221,16 @@ export function PersonalTimeStudyApportioningPanel({
       <h4 className="mb-3 text-[13px] font-semibold text-[#6C5DD3]">Apportioning</h4>
 
       {/* Column headers */}
-      <div className="mb-1 grid grid-cols-[110px_150px_1fr_1fr_110px] items-end gap-2">
-        <span className="text-[11px] font-medium text-muted-foreground">Department</span>
+      <div className="mb-1 grid grid-cols-[110px_150px_1fr_1fr_140px] items-end gap-2">
+        <span className="text-[11px] font-medium text-muted-foreground"></span>
         <span className="text-[11px] font-medium text-muted-foreground">Auto Apportioning</span>
         <span className="text-[11px] font-medium text-[#6C5DD3]">
-          Program <span className="text-destructive">*</span>
+          Time Study Program <span className="text-destructive">*</span>
         </span>
         <span className="text-[11px] font-medium text-[#6C5DD3]">
-          Service / Activity <span className="text-destructive">*</span>
+          Service/Activity <span className="text-destructive">*</span>
         </span>
-        <span className="text-[11px] font-medium text-muted-foreground">Remaining Time (Min.)</span>
+        <span className="text-[11px] font-medium text-muted-foreground">Apportioned Time(Min.)</span>
       </div>
 
       {/* Rows */}
@@ -287,16 +290,16 @@ export function PersonalTimeStudyApportioningPanel({
           return (
             <div
               key={row.rowKey}
-              className="grid grid-cols-[110px_150px_1fr_1fr_110px] items-end gap-2"
+              className="grid grid-cols-[110px_150px_1fr_1fr_140px] items-end gap-2"
             >
               {/* Department name */}
-              <span className="text-[12px] font-medium text-[#344054] leading-snug pb-2">
+              <span className="text-[12px] font-bold text-[#111827] leading-snug pb-2">
                 {row.deptName}
               </span>
 
-              {/* Auto Apportioning toggle — READ-ONLY */}
+              {/* Auto Apportioning toggle — READ-ONLY, driven by config API */}
               <div className="flex h-10 items-center">
-                <ReadOnlyAutoToggle checked={row.autoApportioning} />
+                <ReadOnlyAutoToggle checked={autoApportioning ?? row.autoApportioning} />
               </div>
 
               {/* Program — read-only when auto-apportioning or record exists */}
@@ -343,8 +346,23 @@ export function PersonalTimeStudyApportioningPanel({
                 />
               )}
 
-              {/* Remaining Time (Min.) — read-only */}
-              <RemainingTimeDisplay minutes={remainingMinutes} />
+              {/* Remaining Time (Min.) — read-only, icon inside box on the right */}
+              <div className="pb-0.5">
+                <RemainingTimeDisplay minutes={remainingMinutes}>
+                  <HoverCard openDelay={0} closeDelay={100}>
+                    <HoverCardTrigger asChild>
+                      <div className="cursor-pointer text-blue-500 hover:text-blue-600 transition-colors flex items-center shrink-0">
+                        <AlertCircle className="size-3.5" />
+                      </div>
+                    </HoverCardTrigger>
+                    <HoverCardContent className="w-fit max-w-xs p-3 z-[100] bg-white border border-gray-100 shadow-xl rounded-[8px] text-[#111827]" align="end" side="top">
+                      <div className="text-[12px] font-medium leading-relaxed">
+                        To be updated soon...
+                      </div>
+                    </HoverCardContent>
+                  </HoverCard>
+                </RemainingTimeDisplay>
+              </div>
             </div>
           )
         })}

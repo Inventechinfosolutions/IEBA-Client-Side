@@ -42,6 +42,7 @@ export const ProgramFormModal = forwardRef<ProgramFormModalHandle, ProgramFormMo
   onOpenChange,
   onSave,
   departmentIds,
+  selectedRow,
 }: ProgramFormModalProps, ref) {
   const isTimeStudyContext = contextTab === "Time Study programs"
   const sections: ProgramFormSection[] = isTimeStudyContext
@@ -61,25 +62,36 @@ export const ProgramFormModal = forwardRef<ProgramFormModalHandle, ProgramFormMo
   const [pendingSection, setPendingSection] = useState<ProgramFormSection | null>(null)
   const activeSection = form.watch("formSection") as ProgramFormSection
 
+  const isMultiCode = form.watch("isMultiCode") ?? false
+  const buProgramBudgetUnitName = form.watch("buProgramBudgetUnitName") ?? ""
+  const isBudgetProgramEmpty = !buProgramBudgetUnitName.trim()
+
+  const shouldFetchOptions =
+    mode === "add" || (mode === "edit" && isMultiCode && isBudgetProgramEmpty)
+
   const formOptionsQuery = useGetProgramFormOptions(
     open && mode === "add",
     contextTab,
     activeSection,
     departmentIds
   )
-  const departmentOptions = formOptionsQuery.data?.departmentOptions ?? []
+  const departmentOptions = mode === "edit" && selectedRow?.department
+    ? [selectedRow.department]
+    : (formOptionsQuery.data?.departmentOptions ?? [])
   const budgetUnitNameOptions = formOptionsQuery.data?.budgetUnitNameOptions ?? []
   const budgetUnitLookup = formOptionsQuery.data?.budgetUnitLookup ?? {}
   const isTsSecondary = isTimeStudyContext && activeSection === "BU Sub-Program"
   const isTsTertiary = isTimeStudyContext && activeSection === "Budget Unit"
 
   const selectedDeptName = form.watch("buProgramDepartment")
-  const selectedDeptId = selectedDeptName
-    ? formOptionsQuery.data?.departmentIdByName?.[selectedDeptName]
-    : undefined
+  const selectedDeptId = mode === "edit" && selectedRow?.departmentId != null
+    ? selectedRow.departmentId
+    : (selectedDeptName
+      ? formOptionsQuery.data?.departmentIdByName?.[selectedDeptName]
+      : undefined)
 
   const tsActiveBuProgramsQuery = useGetActiveBuProgramsForDepartment(
-    open && mode === "add" && isTimeStudyContext && activeSection === "BU Program" && selectedDeptId != null,
+    open && shouldFetchOptions && isTimeStudyContext && activeSection === "BU Program" && selectedDeptId != null,
     selectedDeptId != null ? [selectedDeptId] : undefined,
     true
   )
