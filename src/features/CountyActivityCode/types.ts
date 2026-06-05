@@ -174,6 +174,7 @@ export type ApiActivityDepartmentResDto = {
   leavecode: boolean
   parentId?: number | null
   apportioning: boolean
+  departmentName?: string
   department?: {
     name?: string
     apportioning: boolean
@@ -310,6 +311,7 @@ export type CountyActivityCodeAddPageProps = {
   tab?: CountyActivityGridRowType
   onTabChange?: (tab: CountyActivityGridRowType) => void
   primaryActivityCodeOptions?: ReadonlyArray<CountyActivityPrimaryActivityOption>
+  isPrimaryActivityCodeOptionsLoading?: boolean
   selectedPrimaryId?: string | null
   onSelectedPrimaryIdChange?: (id: string) => void
   disabledTabs?: Partial<Record<CountyActivityGridRowType, boolean>>

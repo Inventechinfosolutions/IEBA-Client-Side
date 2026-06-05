@@ -55,26 +55,44 @@ export async function apiGetCountyActivityById(id: number): Promise<ApiActivityR
 
 export async function apiGetCountyActivityForEdit(id: number): Promise<CountyActivityEditPayload> {
   const activity = await apiGetCountyActivityById(id)
-  // Use ONLY assignedDepartments — this is the source of truth for what is currently assigned.
-  // The legacy `departments` field is a join that may be incomplete or stale; do NOT fall back to it.
-  const assignedDepts = activity.assignedDepartments ?? []
-  const names = sortDepartmentNameList(assignedDepts.map((d) => d.name))
 
   const apportioningDepartments: { name: string; apportioning: boolean }[] = []
   const actDepts = activity.activityDepartments ?? []
-  const allDepts = [...(activity.assignedDepartments ?? []), ...(activity.unassignedDepartments ?? [])]
-  actDepts.forEach((ad) => {
-    let name = ""
-    if (ad.department?.name) {
-      name = ad.department.name
-    } else {
-      const d = allDepts.find((x) => x.id === ad.departmentId)
-      if (d?.name) name = d.name
-    }
-    if (name) {
-      apportioningDepartments.push({ name, apportioning: ad.apportioning })
-    }
-  })
+  let names: string[] = []
+
+  const isSecondary =
+    activity.type === ApiActivityTypeEnum.SECONDARY ||
+    activity.type?.toLowerCase() === "secondary"
+
+  if (isSecondary) {
+    // For secondary/sub-county activities, read directly from activityDepartments (since we added departmentName to backend DTO).
+    names = sortDepartmentNameList(actDepts.map((ad) => ad.departmentName ?? ""))
+    actDepts.forEach((ad) => {
+      const name = ad.departmentName ?? ""
+      if (name) {
+        apportioningDepartments.push({ name, apportioning: ad.apportioning })
+      }
+    })
+  } else {
+    // For primary activities, use assignedDepartments.
+    const assignedDepts = activity.assignedDepartments ?? []
+    names = sortDepartmentNameList(assignedDepts.map((d) => d.name))
+
+    const allDepts = [...(activity.assignedDepartments ?? []), ...(activity.unassignedDepartments ?? [])]
+    actDepts.forEach((ad) => {
+      let name = ""
+      if (ad.department?.name) {
+        name = ad.department.name
+      } else {
+        const d = allDepts.find((x) => x.id === ad.departmentId)
+        if (d?.name) name = d.name
+      }
+      if (name) {
+        apportioningDepartments.push({ name, apportioning: ad.apportioning })
+      }
+    })
+  }
+
   return {
     activity,
     departmentNames: names,
@@ -837,20 +855,29 @@ export async function apiPutCountyActivity(input: UpdateCountyActivityApiInput):
 
   await api.put<unknown>(`/activities/${id}`, body)
 
-  // Sync department links via /activity-departments for primary rows (diff add/remove/update).
-  if (rowType === CountyActivityGridRowType.PRIMARY && departmentLinks != null) {
+  // Sync department links via /activity-departments for both PRIMARY and SUB rows.
+  // For SUB rows the enriched departmentLinks carry per-dept apportioning flags so we
+  // only set apportioning=true on departments that actually support it.
+  if (departmentLinks != null && departmentLinks.length > 0) {
     const deptApportioningMap = new Map<number, boolean>(
       departmentLinks.map((d) => [d.id, d.apportioning ?? true]),
     )
+    const parentId =
+      rowType === CountyActivityGridRowType.SUB && input.parentId != null
+        ? Number(input.parentId)
+        : null
     await syncCountyActivityDepartmentLinks(
       {
         activityId: id,
         desiredDepartmentIds: departmentLinks.map((d) => d.id),
         activityCode: values.countyActivityCode,
         activityName: values.countyActivityName,
-        type: ApiActivityTypeEnum.PRIMARY,
+        type:
+          rowType === CountyActivityGridRowType.PRIMARY
+            ? ApiActivityTypeEnum.PRIMARY
+            : ApiActivityTypeEnum.SECONDARY,
         leavecode: values.leaveCode,
-        parentActivityId: null,
+        parentActivityId: parentId,
         apportioning: values.apportioning,
       },
       deptApportioningMap,

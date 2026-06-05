@@ -96,6 +96,7 @@ export function CountyActivityCodeAddPage({
   tab: controlledTab,
   onTabChange,
   primaryActivityCodeOptions,
+  isPrimaryActivityCodeOptionsLoading = false,
   selectedPrimaryId,
   onSelectedPrimaryIdChange,
   disabledTabs,
@@ -538,7 +539,13 @@ export function CountyActivityCodeAddPage({
                   }}
                 >
                   <SelectTrigger className="data-[size=default]:h-[48px] data-[size=sm]:h-[48px] h-[48px] w-full max-w-full min-w-0 rounded-[10px] border-[#D9D9D9] [&_[data-slot=select-value]]:line-clamp-none [&_[data-slot=select-value]]:block [&_[data-slot=select-value]]:min-w-0 [&_[data-slot=select-value]]:flex-1 [&_[data-slot=select-value]]:overflow-hidden [&_[data-slot=select-value]]:text-ellipsis [&_[data-slot=select-value]]:whitespace-nowrap [&_[data-slot=select-value]]:text-left">
-                    <SelectValue placeholder="Select primary activity code" />
+                    <SelectValue
+                      placeholder={
+                        isPrimaryActivityCodeOptionsLoading
+                          ? "Loading codes…"
+                          : "Select primary activity code"
+                      }
+                    />
                   </SelectTrigger>
                   <SelectContent
                     position="popper"
@@ -548,27 +555,38 @@ export function CountyActivityCodeAddPage({
                     avoidCollisions={false}
                     className="w-(--radix-select-trigger-width) max-h-[280px] [&_[data-slot=select-scroll-up-button]]:hidden [&_[data-slot=select-scroll-down-button]]:hidden"
                   >
-                    <TooltipProvider delayDuration={100}>
-                      {(primaryActivityCodeOptions ?? []).map((item) => (
-                        <SelectItem key={item.value} value={item.value}>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <span className="block max-w-[245px] truncate">
+                    {isPrimaryActivityCodeOptionsLoading && (primaryActivityCodeOptions ?? []).length === 0 ? (
+                      <div className="flex items-center justify-center p-2 text-sm text-gray-500">
+                        <Spinner className="h-4 w-4 text-[#6C5DD3] mr-2" />
+                        Loading codes…
+                      </div>
+                    ) : (primaryActivityCodeOptions ?? []).length === 0 ? (
+                      <div className="p-2 text-center text-sm text-gray-500">
+                        No primary activities available
+                      </div>
+                    ) : (
+                      <TooltipProvider delayDuration={100}>
+                        {(primaryActivityCodeOptions ?? []).map((item) => (
+                          <SelectItem key={item.value} value={item.value}>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span className="block max-w-[245px] truncate">
+                                  {item.label}
+                                </span>
+                              </TooltipTrigger>
+                              <TooltipContent
+                                side="right"
+                                align="center"
+                                sideOffset={10}
+                                className="z-[300]"
+                              >
                                 {item.label}
-                              </span>
-                            </TooltipTrigger>
-                            <TooltipContent
-                              side="right"
-                              align="center"
-                              sideOffset={10}
-                              className="z-[300]"
-                            >
-                              {item.label}
-                            </TooltipContent>
-                          </Tooltip>
-                        </SelectItem>
-                      ))}
-                    </TooltipProvider>
+                              </TooltipContent>
+                            </Tooltip>
+                          </SelectItem>
+                        ))}
+                      </TooltipProvider>
+                    )}
                   </SelectContent>
                 </Select>
               </div>
