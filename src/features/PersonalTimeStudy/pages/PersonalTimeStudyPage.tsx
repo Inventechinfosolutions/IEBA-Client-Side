@@ -348,8 +348,8 @@ export function PersonalTimeStudyPage() {
               {/* ── Personal Time Study Tab ── */}
               {activeTab === "personal" && (
                 <>
-                  <div className="flex flex-col gap-2 lg:flex-row lg:items-stretch lg:gap-2">
-                    <div className="flex min-h-0 min-w-0 shrink-0 lg:w-[38%] lg:max-w-[38%]">
+                  <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:gap-4">
+                    <div className="min-w-0 shrink-0 lg:w-[40%] lg:max-w-[40%]">
                       <PersonalTimeStudyCalendarCard
                         weekRows={weekRows}
                         selectedDate={selectedDate}
@@ -359,15 +359,14 @@ export function PersonalTimeStudyPage() {
                         dayStatuses={dayStatuses}
                         weekSummaries={weekSummaries}
                         renderStatus={renderStatus}
-                        className="h-full min-h-0 w-full min-w-0"
+                        className="w-full min-w-0"
                       />
                     </div>
 
-                    <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-2 lg:min-h-0">
-                      <div className="grid min-h-0 w-full grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                        <PersonalTimeStudyLegendCard className="min-h-0" />
+                    <div className="flex min-w-0 flex-1 flex-col gap-3">
+                      <div className="grid w-full grid-cols-1 items-start gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                        <PersonalTimeStudyLegendCard />
                         <PersonalTimeStudyLeaveCard
-                          className="min-h-0"
                           leaveCount={
                             (monthQuery.data?.leaveRecords?.filter(r => r.status?.toLowerCase() === "approved").length ?? 0) +
                             (monthQuery.data?.leaveRecords?.filter(r => ["draft", "requested"].includes(r.status?.toLowerCase() ?? "")).length ?? 0) +
@@ -387,7 +386,7 @@ export function PersonalTimeStudyPage() {
                           isDropdownLoading={dropdownQuery.isFetching}
                         />
                         <PersonalTimeStudyMinutesCard
-                          className="min-h-0 sm:col-span-2 lg:col-span-1"
+                          className="sm:col-span-2 lg:col-span-1"
                           allocatedMinutes={summaryQuery.data?.tsmins ?? 0}
                           actualMinutes={summaryQuery.data?.actualnormalactivitytime ?? 0}
                           balanceMinutes={summaryQuery.data?.actualnormalactivityTimebalance ?? 0}
@@ -402,12 +401,11 @@ export function PersonalTimeStudyPage() {
                           onSuccess: () => setDraftNotes(null)
                         })}
                         isSaving={notesMutation.isPending}
-                        className="min-h-0"
                       />
                     </div>
                   </div>
 
-                  <div className="mt-6 mb-4">
+                  <div className="mt-4 mb-2">
                     <PersonalTimeStudyEntryForm
                       key={dateStr}
                       dateStr={dateStr}
