@@ -18,6 +18,13 @@ import { Spinner } from "@/components/ui/spinner"
 
 import { CostPoolUpsertMode } from "../enums/cost-pool.enum"
 import type { CostPoolAddPageProps, CostPoolVisualCheckboxProps } from "../types"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
+import { toTitleCase } from "@/lib/utils"
 
 function renderActivityName(value: string) {
   const match = value.match(/^\(([^)]*)\)(.*)$/)
@@ -357,14 +364,14 @@ export function CostPoolAddPage({
                       </button>
                       <span
                         aria-hidden="true"
-                        className="pointer-events-none absolute left-[18px] bottom-[-12px] h-4 w-px bg-[#9CA3AF]"
+                        className="pointer-events-none absolute left-[18px] bottom-[-12px] h-4 w-px bg-[#E5E7EB]"
                       />
                     </div>
                     <ScrollArea className="h-[300px]">
                       <div className="relative">
                         <div
                           aria-hidden="true"
-                          className="pointer-events-none absolute left-[18px] top-[-12px] bottom-0 w-px bg-[#9CA3AF]"
+                          className="pointer-events-none absolute left-[18px] top-[-12px] bottom-0 w-px bg-[#E5E7EB]"
                         />
                         <div>
                           {filteredUnassigned.map((a) => {
@@ -374,7 +381,7 @@ export function CostPoolAddPage({
                                 key={a.activityDepartmentId}
                                 role="button"
                                 tabIndex={0}
-                                className="flex w-full cursor-pointer items-center justify-between gap-3 px-3 py-3 text-left text-[12px] leading-4"
+                                className="flex w-full cursor-pointer items-center justify-between gap-3 px-3 py-1 text-left text-[12px] leading-4"
                                 onClick={() =>
                                   setSelectedUnassignedIds((prev) =>
                                     prev.includes(a.activityDepartmentId)
@@ -393,12 +400,51 @@ export function CostPoolAddPage({
                                 }}
                               >
                                 <div className="min-w-0 flex-1 pr-2">
-                                  <div className="relative pl-7">
+                                  <div className="relative pl-7 flex items-center min-w-0">
                                     <span
                                       aria-hidden="true"
-                                      className="pointer-events-none absolute left-[18px] top-1/2 w-3 -translate-y-1/2 border-t border-[#9CA3AF]"
+                                      className="pointer-events-none absolute left-[6px] w-[22px] top-1/2 -translate-y-1/2 border-t border-[#E5E7EB]"
                                     />
-                                    {renderActivityName(a.displayName)}
+                                    {a.isChild ? (
+                                      <TooltipProvider>
+                                        <Tooltip>
+                                          <TooltipTrigger asChild>
+                                            <div className="flex items-center min-w-0">
+                                              <div className="flex items-center justify-center w-[16px] h-[22px] rounded-full border border-[#6C5DD3] bg-white text-[#6C5DD3] text-[10px] font-bold shrink-0">
+                                                {a.level || 1}
+                                              </div>
+                                              <div className="w-2 h-px bg-[#E5E7EB] ml-[3px] mr-[2px] shrink-0" />
+                                              <span className="text-[13px] font-normal whitespace-normal wrap-break-word pr-2">
+                                                <span className="text-[#111827] font-normal">
+                                                  {toTitleCase(a.name)}
+                                                </span>
+                                                {a.code && (
+                                                  <span className="text-[#6C5DD3] font-normal">
+                                                    {" "}({a.code})
+                                                  </span>
+                                                )}
+                                              </span>
+                                            </div>
+                                          </TooltipTrigger>
+                                          {a.parentName && (
+                                            <TooltipContent>
+                                              {a.parentName}
+                                            </TooltipContent>
+                                          )}
+                                        </Tooltip>
+                                      </TooltipProvider>
+                                    ) : (
+                                      <span className="text-[13px] font-medium whitespace-normal wrap-break-word pr-2">
+                                        {a.code ? (
+                                          <>
+                                            <span className="text-[#6C5DD3] font-bold">({a.code})</span>
+                                            <span className="text-[#111827]"> - {toTitleCase(a.name)}</span>
+                                          </>
+                                        ) : (
+                                          <span className="text-[#374151]">{toTitleCase(a.name)}</span>
+                                        )}
+                                      </span>
+                                    )}
                                   </div>
                                 </div>
                                 <VisualCheckbox checked={checked} />
@@ -505,14 +551,14 @@ export function CostPoolAddPage({
                       </button>
                       <span
                         aria-hidden="true"
-                        className="pointer-events-none absolute left-[18px] bottom-[-12px] h-4 w-px bg-[#9CA3AF]"
+                        className="pointer-events-none absolute left-[18px] bottom-[-12px] h-4 w-px bg-[#E5E7EB]"
                       />
                     </div>
                     <ScrollArea className="h-[300px]">
                       <div className="relative">
                         <div
                           aria-hidden="true"
-                          className="pointer-events-none absolute left-[18px] top-[-12px] bottom-0 w-px bg-[#9CA3AF]"
+                          className="pointer-events-none absolute left-[18px] top-[-12px] bottom-0 w-px bg-[#E5E7EB]"
                         />
                         <div>
                           {filteredAssigned.map((a) => {
@@ -522,7 +568,7 @@ export function CostPoolAddPage({
                                 key={a.activityDepartmentId}
                                 role="button"
                                 tabIndex={0}
-                                className="flex w-full cursor-pointer items-center justify-between gap-3 px-3 py-3 text-left text-[12px] leading-4"
+                                className="flex w-full cursor-pointer items-center justify-between gap-3 px-3 py-1 text-left text-[12px] leading-4"
                                 onClick={() =>
                                   setSelectedAssignedIds((prev) =>
                                     prev.includes(a.activityDepartmentId)
@@ -541,12 +587,51 @@ export function CostPoolAddPage({
                                 }}
                               >
                                 <div className="min-w-0 flex-1 pr-2">
-                                  <div className="relative pl-7">
+                                  <div className="relative pl-7 flex items-center min-w-0">
                                     <span
                                       aria-hidden="true"
-                                      className="pointer-events-none absolute left-[18px] top-1/2 w-3 -translate-y-1/2 border-t border-[#9CA3AF]"
+                                      className="pointer-events-none absolute left-[6px] w-[22px] top-1/2 -translate-y-1/2 border-t border-[#E5E7EB]"
                                     />
-                                    {renderActivityName(a.displayName)}
+                                    {a.isChild ? (
+                                      <TooltipProvider>
+                                        <Tooltip>
+                                          <TooltipTrigger asChild>
+                                            <div className="flex items-center min-w-0">
+                                              <div className="flex items-center justify-center w-[16px] h-[22px] rounded-full border border-[#6C5DD3] bg-white text-[#6C5DD3] text-[10px] font-bold shrink-0">
+                                                {a.level || 1}
+                                              </div>
+                                              <div className="w-2 h-px bg-[#E5E7EB] ml-[3px] mr-[2px] shrink-0" />
+                                              <span className="text-[13px] font-normal whitespace-normal wrap-break-word pr-2">
+                                                <span className="text-[#111827] font-normal">
+                                                  {toTitleCase(a.name)}
+                                                </span>
+                                                {a.code && (
+                                                  <span className="text-[#6C5DD3] font-normal">
+                                                    {" "}({a.code})
+                                                  </span>
+                                                )}
+                                              </span>
+                                            </div>
+                                          </TooltipTrigger>
+                                          {a.parentName && (
+                                            <TooltipContent>
+                                              {a.parentName}
+                                            </TooltipContent>
+                                          )}
+                                        </Tooltip>
+                                      </TooltipProvider>
+                                    ) : (
+                                      <span className="text-[13px] font-medium whitespace-normal wrap-break-word pr-2">
+                                        {a.code ? (
+                                          <>
+                                            <span className="text-[#6C5DD3] font-bold">({a.code})</span>
+                                            <span className="text-[#111827]"> - {toTitleCase(a.name)}</span>
+                                          </>
+                                        ) : (
+                                          <span className="text-[#374151]">{toTitleCase(a.name)}</span>
+                                        )}
+                                      </span>
+                                    )}
                                   </div>
                                 </div>
                                 <VisualCheckbox checked={checked} />

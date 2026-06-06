@@ -35,7 +35,7 @@ import { getUserDetails } from "@/features/auth/api/getUserDetails"
 
 import {
   detailToUpsertFormValues,
-  summaryToPickRow,
+  mergeDetailActivitiesToPickRows,
 } from "../api/costPoolApi"
 import { CostPoolAddPage } from "./CostPoolAddPage"
 import { useCreateCostPool } from "../mutations/createCostPool"
@@ -275,17 +275,7 @@ function CostPoolEditDialogContent({
 
   const activityRows = useMemo(() => {
     if (!detailQuery.data) return []
-    
-    const assigned = (detailQuery.data.assignedActivities ?? []).map(summaryToPickRow)
-    const unassigned = (detailQuery.data.unassignedActivities ?? []).map(summaryToPickRow)
-    
-    const map = new Map<number, CostPoolActivityPickRow>()
-    for (const r of [...assigned, ...unassigned]) {
-      if (r.activityDepartmentId > 0) {
-        map.set(r.activityDepartmentId, r)
-      }
-    }
-    return Array.from(map.values())
+    return mergeDetailActivitiesToPickRows(detailQuery.data)
   }, [detailQuery.data])
 
   const userRows = useMemo(() => {

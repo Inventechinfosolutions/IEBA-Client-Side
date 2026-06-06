@@ -34,6 +34,7 @@ export type CostPoolActivitySummaryResDto = {
   status: string
   type?: string
   assigned?: boolean
+  parentId?: number | null
 }
 
 export type CostPoolResDto = {
@@ -141,6 +142,13 @@ export type CostPoolUpsertFormValues = {
 export type CostPoolActivityPickRow = {
   activityDepartmentId: number
   displayName: string
+  parentId?: number | null
+  activityId?: number
+  name: string
+  code: string
+  isChild?: boolean
+  level?: number
+  parentName?: string
 }
 
 export type CostPoolUserPickRow = {
