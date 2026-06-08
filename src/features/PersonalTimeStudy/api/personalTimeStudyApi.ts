@@ -98,10 +98,14 @@ export async function apiGetUserActivitiesForProgram(
   departmentId: number | string,
   programId: number | string,
 ): Promise<any> {
-  const res = await api.get<ApiEnvelope<any>>(
+  const res = await api.get<ApiEnvelope<{ activities?: any[]; orphanActivity?: any[] }>>(
     `/timestudyprograms/user/activities?userId=${encodeURIComponent(userId)}&departmentId=${departmentId}&programId=${programId}`,
   )
-  return res.data!
+  const data = res.data
+  if (data && typeof data === "object") {
+    return [...(data.activities ?? []), ...(data.orphanActivity ?? [])]
+  }
+  return []
 }
 
 /** Multicode programs/activities for sub-rows when `allowMultiCodes` is enabled on the user profile. */

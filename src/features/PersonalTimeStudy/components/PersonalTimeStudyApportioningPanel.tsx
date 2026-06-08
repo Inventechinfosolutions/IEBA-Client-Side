@@ -108,7 +108,6 @@ export function PersonalTimeStudyApportioningPanel({
 
   // ── Build the flat list of display rows ───────────────────────────────────
   const displayRows = useMemo(() => {
-    if (!apportioningConfig) return []
     const rows: Array<{
       rowKey: string
       deptId: number
@@ -120,60 +119,26 @@ export function PersonalTimeStudyApportioningPanel({
       backendRecord?: any
     }> = []
 
-    const processedDeptIds = new Set<number>()
-
-    for (const dept of apportioningConfig.departments) {
-      processedDeptIds.add(dept.departmentId)
-
-      const deptRecords = (apportioningRecords || []).filter(
-        (r) => Number(r.departmentId) === dept.departmentId,
+    for (const rec of (apportioningRecords || [])) {
+      const dept = apportioningConfig?.departments?.find(
+        (d) => Number(d.departmentId) === Number(rec.departmentId)
       )
-
-      if (dept.autoApportioning && deptRecords.length > 0) {
-        deptRecords.forEach((rec) => {
-          rows.push({
-            rowKey: `rec_${rec.id}`,
-            deptId: dept.departmentId,
-            deptName: dept.departmentName,
-            deptCode: rec.departmentcode ?? "",
-            autoApportioning: true,
-            apportioningPercent: dept.apportioningPercent,
-            allowedMinutes: dept.allowedMinutes,
-            backendRecord: rec,
-          })
-        })
-      } else {
-        rows.push({
-          rowKey: `dept_${dept.departmentId}`,
-          deptId: dept.departmentId,
-          deptName: dept.departmentName,
-          deptCode: "",
-          autoApportioning: dept.autoApportioning,
-          apportioningPercent: dept.apportioningPercent,
-          allowedMinutes: dept.allowedMinutes,
-        })
-      }
-    }
-
-    // Add records for departments NOT in the config (fallback)
-    const extraRecords = (apportioningRecords || []).filter(
-      (r) => !processedDeptIds.has(Number(r.departmentId))
-    )
-    extraRecords.forEach((rec) => {
       rows.push({
         rowKey: `rec_${rec.id}`,
         deptId: Number(rec.departmentId),
-        deptName: rec.departmentname || `Dept ${rec.departmentId}`,
+        deptName: rec.departmentname || rec.departmentName || dept?.departmentName || dept?.departmentname || `Dept ${rec.departmentId}`,
         deptCode: rec.departmentcode ?? "",
-        autoApportioning: true,
-        apportioningPercent: 0,
-        allowedMinutes: 0,
+        autoApportioning: rec.apportioningType
+          ? rec.apportioningType === "AUTO"
+          : (dept ? (autoApportioning ?? dept.autoApportioning) : true),
+        apportioningPercent: dept?.apportioningPercent ?? 0,
+        allowedMinutes: dept?.allowedMinutes ?? 0,
         backendRecord: rec,
       })
-    })
+    }
 
     return rows
-  }, [apportioningConfig, apportioningRecords])
+  }, [apportioningConfig, apportioningRecords, autoApportioning])
 
   // ── Row selection state (UI-only) ─────────────────────────────────────────
   const [rowStates, setRowStates] = useState<Record<string, ApportioningRowState>>({})
@@ -293,13 +258,13 @@ export function PersonalTimeStudyApportioningPanel({
               className="grid grid-cols-[110px_150px_1fr_1fr_140px] items-end gap-2"
             >
               {/* Department name */}
-              <span className="text-[12px] font-bold text-[#111827] leading-snug pb-2">
+              <span className="text-[12px] font-bold text-[#111827] leading-snug pb-3">
                 {row.deptName}
               </span>
 
               {/* Auto Apportioning toggle — READ-ONLY, driven by config API */}
               <div className="flex h-10 items-center">
-                <ReadOnlyAutoToggle checked={autoApportioning ?? row.autoApportioning} />
+                <ReadOnlyAutoToggle checked={row.autoApportioning} />
               </div>
 
               {/* Program — read-only when auto-apportioning or record exists */}
@@ -357,7 +322,7 @@ export function PersonalTimeStudyApportioningPanel({
                     </HoverCardTrigger>
                     <HoverCardContent className="w-fit max-w-xs p-3 z-[100] bg-white border border-gray-100 shadow-xl rounded-[8px] text-[#111827]" align="end" side="top">
                       <div className="text-[12px] font-medium leading-relaxed">
-                        To be updated soon...
+                        {rec?.apportioningDesc || "No description available"}
                       </div>
                     </HoverCardContent>
                   </HoverCard>

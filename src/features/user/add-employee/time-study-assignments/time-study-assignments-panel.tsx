@@ -1,7 +1,7 @@
 
 import { lazy, Suspense, useEffect, useMemo, useState } from "react"
 import { ArrowLeft, ClipboardList, History } from "lucide-react"
-import { useQueries } from "@tanstack/react-query"
+import { useQueries, useQuery } from "@tanstack/react-query"
 import { useFormContext } from "react-hook-form"
 import { toast } from "sonner"
 
@@ -447,11 +447,15 @@ function mapBundleActivitiesToTransferItems(
 function collectBundleActivityTransferItems(
   bundle: UserProgramsActivitiesDepartmentBundle,
   assignedNormalPrograms: UserProgramsActivitiesProgramWithAssignments[],
+  jobPoolAutoAssignPrograms: UserProgramsActivitiesProgramWithAssignments[] = [],
 ): AddEmployeeTimeStudyTransferItem[] {
   const dept = bundle.departmentName.trim()
   const orphanAssigned = orphanActivitiesFor(bundle).assigned
+  const orphanUnassigned = orphanActivitiesFor(bundle).unassigned ?? []
   if (!dept) return []
-  if (assignedNormalPrograms.length === 0 && orphanAssigned.length === 0) return []
+
+  const allAssignedPrograms = [...assignedNormalPrograms, ...jobPoolAutoAssignPrograms]
+  if (allAssignedPrograms.length === 0 && orphanAssigned.length === 0 && orphanUnassigned.length === 0) return []
 
   const byId = new Map<string, AddEmployeeTimeStudyTransferItem>()
   const addActivity = (activity: { id: number; code: string; name: string }) => {
@@ -465,13 +469,13 @@ function collectBundleActivityTransferItems(
       })
     }
   }
-  for (const program of assignedNormalPrograms) {
+  for (const program of allAssignedPrograms) {
     const children = program.children ?? EMPTY_ACTIVITY_SPLIT
     for (const activity of [...children.assigned, ...children.unassigned]) {
       addActivity(activity)
     }
   }
-  for (const activity of orphanAssigned) {
+  for (const activity of [...orphanAssigned, ...orphanUnassigned]) {
     addActivity(activity)
   }
   return sortTransferItems([...byId.values()])
@@ -807,9 +811,13 @@ export function TimeStudyAssignmentsPanel({
   const activityCatalogForUserBundle = useMemo(
     () =>
       selectedBundle
-        ? collectBundleActivityTransferItems(selectedBundle, uiAssignedNormalPrograms)
+        ? collectBundleActivityTransferItems(
+            selectedBundle,
+            uiAssignedNormalPrograms,
+            assignedProgramsSplit.jobpoolautoassign,
+          )
         : [],
-    [selectedBundle, uiAssignedNormalPrograms],
+    [selectedBundle, uiAssignedNormalPrograms, assignedProgramsSplit.jobpoolautoassign],
   )
 
   const activityAssignedPredicateEditMode = useMemo(
@@ -882,14 +890,47 @@ export function TimeStudyAssignmentsPanel({
     : programsAssigned.length > 0
 
   /**
-   * Activities are only fetched once at least one program is assigned.
-   * This enforces the Department → Program → Activities dependency chain
-   * without useEffect: the query is simply disabled until programsAssigned is non-empty.
+   * Activities are fetched immediately when a department is selected so that
+   * orphan activities can be displayed without program assignment gating.
    */
   const activityDepartmentsQuery = useGetActivityDepartmentsForDepartment(
     selectedDepartmentNumericId,
-    !hasUserTsBundle && selectedDepartmentNumericId != null && programsAssigned.length > 0,
+    !hasUserTsBundle && selectedDepartmentNumericId != null,
   )
+
+  /**
+   * Fetch orphan activities for this department.
+   */
+  const orphanActivitiesQuery = useQuery({
+    queryKey: ["programActivityRelation", "orphanActivities", selectedDepartmentNumericId],
+    enabled: !hasUserTsBundle && selectedDepartmentNumericId != null,
+    queryFn: () =>
+      apiGetProgramActivityRelationActivities(
+        selectedDepartmentNumericId!,
+        "",
+      ),
+    staleTime: 0,
+  })
+
+  const orphanActivityIds = useMemo(() => {
+    const ids = new Set<string>()
+    const roots = orphanActivitiesQuery.data?.orphanActivities
+    if (!Array.isArray(roots) || roots.length === 0) return ids
+    const deptNode = roots[0] as any
+    const children = [
+      ...(Array.isArray(deptNode?.assigned) ? deptNode.assigned : []),
+      ...(Array.isArray(deptNode?.unassigned) ? deptNode.unassigned : []),
+      ...(Array.isArray(deptNode?.activity?.[0]?.children) ? deptNode.activity[0].children : []),
+    ]
+    for (const node of children) {
+      const lastPart = String(node.key ?? "").split("-").at(-1) ?? ""
+      const num = Number(lastPart)
+      if (!Number.isNaN(num) && num > 0 && Number.isInteger(num)) {
+        ids.add(String(num))
+      }
+    }
+    return ids
+  }, [orphanActivitiesQuery.data])
 
   /**
    * For each assigned program, fetch its activities in parallel (no useEffect).
@@ -947,10 +988,13 @@ export function TimeStudyAssignmentsPanel({
     const deptLabel = selectedDept.trim()
     if (!deptLabel) return []
     const rows = activityDepartmentsQuery.data ?? []
-    const filtered =
-      programsAssigned.length > 0 && programAssignedActivityIds.size > 0
-        ? rows.filter((a) => isActiveActivityDepartmentStatus(a.status) && programAssignedActivityIds.has(String(a.id)))
-        : []
+    const filtered = rows.filter((a) => {
+      if (!isActiveActivityDepartmentStatus(a.status)) return false
+      const idStr = String(a.id)
+      const isMappedToAssignedProgram = programsAssigned.length > 0 && programAssignedActivityIds.has(idStr)
+      const isOrphan = orphanActivityIds.has(idStr)
+      return isMappedToAssignedProgram || isOrphan
+    })
     return filtered.map((a) => ({
       id: String(a.id),
       department: deptLabel,
@@ -958,7 +1002,7 @@ export function TimeStudyAssignmentsPanel({
       name: a.name,
       level: activityLevels.get(String(a.id)) || 0,
     }))
-  }, [activityDepartmentsQuery.data, selectedDept, programsAssigned, programAssignedActivityIds, activityLevels])
+  }, [activityDepartmentsQuery.data, selectedDept, programsAssigned, programAssignedActivityIds, orphanActivityIds, activityLevels])
 
   const globalActivitiesForSelectedDepartment = useMemo(() => {
     if (hasUserTsBundle) {
@@ -984,7 +1028,6 @@ export function TimeStudyAssignmentsPanel({
     tsDepartmentScopeQuery.isPending || tsDepartmentScopeQuery.isFetching
 
   const activitiesUnassigned = useMemo(() => {
-    if (!hasAssignedNormalProgramsForActivities) return []
     if (hasUserTsBundle) {
       return buildUnassignedItemsForEditMode(
         globalActivitiesForSelectedDepartment,
@@ -993,7 +1036,6 @@ export function TimeStudyAssignmentsPanel({
     }
     return deptActivitiesAddMode.filter((a) => !assignedActivityIdsAddMode.includes(a.id))
   }, [
-    hasAssignedNormalProgramsForActivities,
     hasUserTsBundle,
     globalActivitiesForSelectedDepartment,
     activityAssignedPredicateEditMode,
@@ -1002,7 +1044,6 @@ export function TimeStudyAssignmentsPanel({
   ])
 
   const activitiesAssigned = useMemo(() => {
-    if (!hasAssignedActivitiesForAssignedColumn) return []
     if (hasUserTsBundle) {
       return buildAssignedItemsForEditMode(
         globalActivitiesForSelectedDepartment,
@@ -1012,7 +1053,6 @@ export function TimeStudyAssignmentsPanel({
     }
     return deptActivitiesAddMode.filter((a) => assignedActivityIdsAddMode.includes(a.id))
   }, [
-    hasAssignedActivitiesForAssignedColumn,
     hasUserTsBundle,
     globalActivitiesForSelectedDepartment,
     bundleAssignedActivityRows,

@@ -911,7 +911,9 @@ function isCamelCaseActivityAssignmentsPayload(
   if (!value || typeof value !== "object") return false
   const record = value as Record<string, unknown>
   return (
-    Array.isArray(record.assignedActivities) || Array.isArray(record.unassignedActivities)
+    Array.isArray(record.assignedActivities) ||
+    Array.isArray(record.unassignedActivities) ||
+    Array.isArray(record.orphanActivities)
   )
 }
 
@@ -930,10 +932,14 @@ function readActivityAssignmentsPayloadFromRecord(
   const unassigned =
     (record.unassignedActivities ??
       record.unassigned_activities) as ProgramActivityRelationActivitiesPayload["unassignedActivities"]
-  if (!Array.isArray(assigned) && !Array.isArray(unassigned)) return undefined
+  const orphan =
+    (record.orphanActivities ??
+      record.orphan_activities) as ProgramActivityRelationActivitiesPayload["orphanActivities"]
+  if (!Array.isArray(assigned) && !Array.isArray(unassigned) && !Array.isArray(orphan)) return undefined
   return {
     assignedActivities: Array.isArray(assigned) ? assigned : undefined,
     unassignedActivities: Array.isArray(unassigned) ? unassigned : undefined,
+    orphanActivities: Array.isArray(orphan) ? orphan : undefined,
   }
 }
 

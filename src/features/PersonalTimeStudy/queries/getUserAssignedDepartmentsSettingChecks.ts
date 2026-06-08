@@ -8,11 +8,14 @@ import { api } from "@/lib/api"
  */
 export type UserAssignedDepartmentsSettingChecks = {
   apportioningRequired: boolean
+  supervisorApportioning: boolean
   autoApportioning: boolean
   allowMultiCodes: boolean
   userMultiCode: Array<{ departmentId: number }>
   departments: Array<{
     departmentId: number
+    departmentName?: string | null
+    departmentname?: string | null
     apportioning: boolean
     costallocation: boolean
     autoApportioning: boolean
@@ -29,6 +32,8 @@ export type UserAssignedDepartmentsSettingChecks = {
     requiresSaveAndSubmitButtonMoveToTop: boolean
     allowActivationStartDateAndEndDate: boolean
     requiresActivationStartDateAndEndDate: boolean
+    apportioningPercent?: number
+    allowedMinutes?: number
   }>
   allowUserEntry: boolean
   timestudyAllowedDepartmentIds: Array<{ departmentId: number }>
@@ -74,7 +79,8 @@ export function useGetUserAssignedDepartmentsSettingChecks(
           (Array.isArray(checkSettings.userMultiCode) && checkSettings.userMultiCode.length > 0))
         : false
       const userMultiCode = checkSettings ? checkSettings.userMultiCode ?? [] : []
-      const apportioningRequired = checkSettings ? checkSettings.userApportioning === true : false
+      const apportioningRequired = checkSettings ? checkSettings.supervisorApportioning === true : false
+      const supervisorApportioning = checkSettings ? checkSettings.supervisorApportioning === true : false
 
       const timestudyAllowedRaw: Array<{
         departmentId: number
@@ -105,6 +111,7 @@ export function useGetUserAssignedDepartmentsSettingChecks(
 
       return {
         apportioningRequired,
+        supervisorApportioning,
         autoApportioning: checkSettings ? checkSettings.autoApportioning === true : false,
         allowMultiCodes,
         userMultiCode,

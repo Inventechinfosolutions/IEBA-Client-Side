@@ -170,7 +170,7 @@ export function PersonalTimeStudyLeaveCard({
       size="sm"
     >
       <CardHeader className="shrink-0 px-3 pb-1 pt-3">
-        <CardTitle className="text-center text-[13px] font-semibold text-foreground">
+        <CardTitle className="text-center text-[13px] font-semibold text-[#6C5DD3]">
           Leave Status ({leaveCount})
         </CardTitle>
       </CardHeader>
