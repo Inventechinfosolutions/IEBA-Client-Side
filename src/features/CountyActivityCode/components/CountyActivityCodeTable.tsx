@@ -73,7 +73,12 @@ import {
   fetchCountyActivityNestedRows,
 } from "../queries/getCountyActivityCodes"
 import { ACTIVITY_DEFINITION_HISTORY_KIND } from "../queries/activityHistory"
-import { apiPutCountyActivity, parseMasterCodeDisplay } from "../api/countyActivityApi"
+import {
+  apiPutCountyActivity,
+  normalizeCountyActivityApportioningFlags,
+  parseMasterCodeDisplay,
+} from "../api/countyActivityApi"
+import { filterDepartmentNamesToManualApportioning } from "../lib/countyActivityDepartmentApportioning"
 
 import { usePermissions } from "@/hooks/usePermissions"
 import { useGetAllDepartments } from "@/features/department/queries/getDepartments"
@@ -98,6 +103,18 @@ function toastCountyActivityCodeApiError(err: unknown, fallback: string): void {
   toast.error(msg.length > 0 ? msg : fallback, {
     icon: <OctagonXIcon className="size-5 text-red-600" />,
   })
+}
+
+function mergeDepartmentManualApportioningByName(
+  master: Record<string, boolean>,
+  fromActivity?: Record<string, boolean>,
+): Record<string, boolean> {
+  const out = { ...master }
+  if (!fromActivity) return out
+  for (const [name, enabled] of Object.entries(fromActivity)) {
+    if (enabled) out[name] = true
+  }
+  return out
 }
 
 type CountyActivityTableColumnConfig = {
@@ -166,6 +183,7 @@ function mapCountyActivityRowToFormValues(row: CountyActivityCodeRow): CountyAct
     multipleJobPools: row.multipleJobPools,
     department: row.department,
     apportioning: row.apportioning,
+    manualApportioning: row.apportioning,
   }
 }
 
@@ -445,9 +463,35 @@ export function CountyActivityCodeTable({
   // Fetch all departments lazily — only fires when Add modal is open
   const allDepartmentsQuery = useGetAllDepartments(
     { status: "active" },
-    { enabled: addOpen }
+    { enabled: addOpen || editOpen },
   )
   const departments = allDepartmentsQuery.data?.items ?? []
+
+  const departmentManualApportioningFromMaster = useMemo(() => {
+    const out: Record<string, boolean> = {}
+    for (const dept of departments) {
+      const name = dept.name.trim()
+      if (name) {
+        out[name] = dept.settings?.manualApportioning === true
+      }
+    }
+    return out
+  }, [departments])
+
+  const editActivityId = editOpen && rowToEdit ? rowToEdit.id : null
+  const editDetailQuery = useGetCountyActivityForEdit(editActivityId, editOpen)
+
+  const editDepartmentManualApportioningByName = useMemo(
+    () =>
+      mergeDepartmentManualApportioningByName(
+        departmentManualApportioningFromMaster,
+        editDetailQuery.data?.departmentManualApportioningByName,
+      ),
+    [
+      departmentManualApportioningFromMaster,
+      editDetailQuery.data?.departmentManualApportioningByName,
+    ],
+  )
 
   const subPickerQuery = useGetCountyActivityActivePrimarySubPicker(
     assignedDepartmentIds,
@@ -501,9 +545,6 @@ export function CountyActivityCodeTable({
 
   const masterCatalogQuery = useGetMasterActivityCatalog((addOpen || editOpen) && codeTypeDropdownOpened)
 
-  const editActivityId = editOpen && rowToEdit ? rowToEdit.id : null
-  const editDetailQuery = useGetCountyActivityForEdit(editActivityId, editOpen)
-
   const [editSelectedPrimaryId, setEditSelectedPrimaryId] = useState<string | null>(null)
   const editPrimaryDetailQuery = useGetCountyActivityForEdit(
     editSelectedPrimaryId,
@@ -542,6 +583,15 @@ export function CountyActivityCodeTable({
     }
 
     const { activity, departmentNames: editDeptNames } = editDetailQuery.data
+    const { apportioning, manualApportioning } = normalizeCountyActivityApportioningFlags(
+      activity.apportioning,
+    )
+    const visibleEditDeptNames = apportioning
+      ? filterDepartmentNamesToManualApportioning(
+          editDeptNames,
+          editDepartmentManualApportioningByName,
+        )
+      : editDeptNames
 
     const parent =
       rowToEdit.rowType === CountyActivityGridRowType.SUB && rowToEdit.parentId
@@ -562,8 +612,9 @@ export function CountyActivityCodeTable({
         leaveCode: activity.leavecode,
         docRequired: activity.docrequired,
         multipleJobPools: activity.isActivityAssignableToMultipleJobPools,
-        department: editDeptNames.join(", "),
-        apportioning: activity.apportioning,
+        department: visibleEditDeptNames.join(", "),
+        apportioning,
+        manualApportioning,
       }
     }
 
@@ -581,10 +632,14 @@ export function CountyActivityCodeTable({
       docRequired: activity.docrequired,
       multipleJobPools: activity.isActivityAssignableToMultipleJobPools,
       department:
-        editDeptNames.length > 0 ? editDeptNames.join(", ") : rowToEdit.department,
-      apportioning: activity.apportioning,
+        visibleEditDeptNames.length > 0
+          ? visibleEditDeptNames.join(", ")
+          : rowToEdit.department,
+      apportioning,
+      manualApportioning,
     }
   }, [
+    editDepartmentManualApportioningByName,
     editOpen,
     rowToEdit,
     editDetailQuery.isSuccess,
@@ -816,7 +871,7 @@ export function CountyActivityCodeTable({
   const doCreateCountyActivity = (
     tab: CountyActivityGridRowType,
     values: CountyActivityAddFormValues,
-    departmentLinks: { id: number; apportioning?: boolean }[],
+    departmentLinks: { id: number; apportioning?: boolean; manualApportioning?: boolean }[],
     masterCatalog: { code: string; type: string } | undefined,
   ) => {
     createCountyActivityCode.mutate(
@@ -939,6 +994,7 @@ export function CountyActivityCodeTable({
         const enrichedLinks = freshDepts.map(d => ({
           id: Number(d.id),
           apportioning: d.settings?.apportioning === true,
+          manualApportioning: d.settings?.manualApportioning === true,
         }))
 
         // ONLY show popup if there's a mismatch (some departments don't have apportioning enabled)
@@ -968,7 +1024,7 @@ export function CountyActivityCodeTable({
     editingRow: CountyActivityCodeRow,
     values: CountyActivityAddFormValues,
     masterCatalog: { code: string; type: string } | undefined,
-    editDepartmentLinks: { id: number; apportioning?: boolean }[],
+    editDepartmentLinks: { id: number; apportioning?: boolean; manualApportioning?: boolean }[],
   ) => {
     const isPrimary = editingRow.rowType === CountyActivityGridRowType.PRIMARY
     const wasActive = editingRow.active
@@ -1169,6 +1225,7 @@ export function CountyActivityCodeTable({
         const enrichedLinks = freshDepts.map(d => ({
           id: Number(d.id),
           apportioning: d.settings?.apportioning === true,
+          manualApportioning: d.settings?.manualApportioning === true,
         }))
 
         // ONLY show popup if there's a mismatch
@@ -1783,6 +1840,7 @@ export function CountyActivityCodeTable({
             masterCodeOptions={addMasterCodeOptions}
             isMasterCodeOptionsLoading={addMasterCodesQuery.isLoading}
             departmentNames={departmentNames}
+            departmentManualApportioningByName={departmentManualApportioningFromMaster}
             onCodeDropdownOpen={() => {
               void addMasterCodesQuery.refetch()
             }}
@@ -1902,6 +1960,7 @@ export function CountyActivityCodeTable({
                   : undefined
               }
               departmentNames={editModalDepartmentNames}
+              departmentManualApportioningByName={editDepartmentManualApportioningByName}
               apportioningDepartments={editDetailQuery.data?.apportioningDepartments}
               onSelectedPrimaryIdChange={(id) => {
                 setEditSelectedPrimaryId(id)

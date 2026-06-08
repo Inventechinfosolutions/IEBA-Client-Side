@@ -34,6 +34,7 @@ export const countyActivityAddFormSchema = z.object({
   docRequired: z.boolean(),
   multipleJobPools: z.boolean(),
   apportioning: z.boolean(),
+  manualApportioning: z.boolean(),
 })
 
 export const countyActivityAddDefaultValues = {
@@ -51,6 +52,7 @@ export const countyActivityAddDefaultValues = {
   docRequired: false,
   multipleJobPools: true,
   apportioning: false,
+  manualApportioning: false,
 } satisfies z.infer<typeof countyActivityAddFormSchema>
 
 export const countyActivityFilterDefaultValues = {

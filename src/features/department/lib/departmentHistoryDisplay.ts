@@ -142,6 +142,7 @@ const SETTING_TOGGLE_LABELS: Record<string, string> = {
   apportioning: "Apportioning",
   costallocation: "Cost Allocation",
   autoApportioning: "Auto Apportioning",
+  manualApportioning: "Manual Apportioning",
   allowUserOrCostpoolDirect: "Allow User/Costpool Direct",
   allowMultiCodes: "Allow Multi Codes",
   startorEndTime: "Remove Start and End Time",

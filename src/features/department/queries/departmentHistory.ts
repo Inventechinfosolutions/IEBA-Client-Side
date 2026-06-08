@@ -21,6 +21,7 @@ export type DepartmentHistorySettingsSnapshot = {
   startorEndTime?: boolean
   allowMultiCodes?: boolean
   autoApportioning?: boolean
+  manualApportioning?: boolean
   billingContactId?: string | null
   primaryContactId?: string | null
   secondaryContactId?: string | null

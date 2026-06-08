@@ -16,6 +16,7 @@ import { TitleCaseInput } from "@/components/ui/title-case-input"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { HelpCircle, CheckCircle2, X, Search, ChevronDown, Check, History } from "lucide-react"
 import { Spinner } from "@/components/ui/spinner"
@@ -808,7 +809,6 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                                 <div className="grid grid-cols-1 gap-3 py-4 min-h-[300px]">
                                     {DEPARTMENT_SETTINGS_ROWS
                                         .filter(s => s.key !== 'allowMultiCodes' || canUpdateDepartment)
-                                        .filter(s => s.key !== 'autoApportioning' || settings.apportioning)
                                         .map((setting) => (
                                         <div key={setting.key} className="space-y-1">
                                             <div className="flex items-center gap-3">
@@ -831,7 +831,13 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                                                             `settings.${setting.key}` as Path<DepartmentUpsertValues>
                                                         setValue(fieldPath, isChecked)
                                                         if (setting.key === "apportioning") {
-                                                            setValue("settings.autoApportioning", isChecked)
+                                                            if (isChecked) {
+                                                                setValue("settings.autoApportioning", true)
+                                                                setValue("settings.manualApportioning", false)
+                                                            } else {
+                                                                setValue("settings.autoApportioning", false)
+                                                                setValue("settings.manualApportioning", false)
+                                                            }
                                                         }
                                                         if (setting.key === "removeStartEndTime" && isChecked) {
                                                             setValue("settings.removeAutoFillEndTime", false)
@@ -860,6 +866,69 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                                                     {setting.label}
                                                 </Label>
                                             </div>
+
+                                            {setting.key === "apportioning" ? (
+                                                <div className="ml-9 mt-2">
+                                                    <RadioGroup
+                                                        value={
+                                                            settings.apportioning
+                                                                ? settings.manualApportioning
+                                                                    ? "manual"
+                                                                    : "auto"
+                                                                : ""
+                                                        }
+                                                        onValueChange={(value) => {
+                                                            if (!settings.apportioning) return
+                                                            if (value === "auto") {
+                                                                setValue("settings.autoApportioning", true)
+                                                                setValue("settings.manualApportioning", false)
+                                                            } else if (value === "manual") {
+                                                                setValue("settings.autoApportioning", false)
+                                                                setValue("settings.manualApportioning", true)
+                                                            }
+                                                        }}
+                                                        className="flex flex-row gap-6"
+                                                        disabled={!settings.apportioning}
+                                                    >
+                                                        <div className="flex items-center gap-2">
+                                                            <RadioGroupItem
+                                                                value="auto"
+                                                                id="department-apportioning-auto"
+                                                                disabled={!settings.apportioning}
+                                                                className="border-[#D1D5DB] data-checked:border-[#6C5DD3] data-checked:bg-[#6C5DD3]"
+                                                            />
+                                                            <Label
+                                                                htmlFor="department-apportioning-auto"
+                                                                className={`text-[14px] font-[400] text-[#374151] ${
+                                                                    !settings.apportioning
+                                                                        ? "cursor-not-allowed opacity-50"
+                                                                        : "cursor-pointer"
+                                                                }`}
+                                                            >
+                                                                Auto Apportioning
+                                                            </Label>
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                            <RadioGroupItem
+                                                                value="manual"
+                                                                id="department-apportioning-manual"
+                                                                disabled={!settings.apportioning}
+                                                                className="border-[#D1D5DB] data-checked:border-[#6C5DD3] data-checked:bg-[#6C5DD3]"
+                                                            />
+                                                            <Label
+                                                                htmlFor="department-apportioning-manual"
+                                                                className={`text-[14px] font-[400] text-[#374151] ${
+                                                                    !settings.apportioning
+                                                                        ? "cursor-not-allowed opacity-50"
+                                                                        : "cursor-pointer"
+                                                                }`}
+                                                            >
+                                                                Manual Apportioning
+                                                            </Label>
+                                                        </div>
+                                                    </RadioGroup>
+                                                </div>
+                                            ) : null}
 
                                             {setting.key === "allowMultiCodes" && settings.allowMultiCodes && (
                                                 <div className="ml-9 mt-2">
