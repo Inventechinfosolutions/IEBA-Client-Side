@@ -137,6 +137,7 @@ export type UserDayLegendDetailResDto = {
     enteredMinutes: number
     remainingMinutes: number
     apportioningType?: string
+    supervisorConsumedMinutes?: number
   }>
 }
 

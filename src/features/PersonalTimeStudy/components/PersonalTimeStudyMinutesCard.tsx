@@ -17,6 +17,7 @@ type PersonalTimeStudyMinutesCardProps = {
     enteredMinutes: number
     remainingMinutes: number
     apportioningType?: string
+    supervisorConsumedMinutes?: number
   }>
 }
 
@@ -90,7 +91,7 @@ export function PersonalTimeStudyMinutesCard({
                   </div>
                 </HoverCardTrigger>
                 <HoverCardContent
-                  className="w-fit min-w-[200px] max-w-xs p-3 z-[100] bg-white border border-gray-100 shadow-xl rounded-[8px] text-[#111827]"
+                  className="w-fit min-w-[340px] max-w-sm p-3 z-[100] bg-white border border-gray-100 shadow-xl rounded-[8px] text-[#111827]"
                   align="end"
                   side="top"
                 >
@@ -113,6 +114,10 @@ export function PersonalTimeStudyMinutesCard({
                           <div>
                             <span className="text-muted-foreground font-medium">Allocated:</span>{" "}
                             <span className="font-semibold text-foreground">{item.allocatedMinutes} Min.</span>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground font-medium">Supervisor Consumed:</span>{" "}
+                            <span className="font-semibold text-[#6C5DD3]">{item.supervisorConsumedMinutes ?? 0} Min.</span>
                           </div>
                           <div>
                             <span className="text-muted-foreground font-medium">Reportee Minutes:</span>{" "}
