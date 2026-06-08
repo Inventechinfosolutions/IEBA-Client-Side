@@ -38,6 +38,7 @@ function flattenDepartmentRoleRowsToCatalogItems(
         id: `${deptId}-${roleId}`,
         name: roleName,
         department: deptName,
+        roleId,
       })
     }
   }
