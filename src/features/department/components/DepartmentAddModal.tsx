@@ -17,7 +17,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { HelpCircle, CheckCircle2, X, Search, ChevronDown, Check } from "lucide-react"
+import { HelpCircle, CheckCircle2, X, Search, ChevronDown, Check, History } from "lucide-react"
 import { Spinner } from "@/components/ui/spinner"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { toast } from "sonner"
@@ -34,6 +34,7 @@ import type { UserDetailsDto } from "@/features/user/types"
 import type { DepartmentContactUser } from "../queries/getDepartmentUsers"
 import { useGetDepartmentUsers } from "../queries/getDepartmentUsers"
 import { DepartmentEditContextHeader } from "./DepartmentEditContextHeader"
+import { DepartmentHistoryTable } from "./DepartmentHistoryTable"
 import { DepartmentReportSettingsPanel } from "./DepartmentReportSettingsPanel"
 import {
     type Department,
@@ -138,6 +139,7 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
     const [isDepartmentSaved, setIsDepartmentSaved] = useState(!!id)
     const [departmentId, setDepartmentId] = useState<string | null>(id)
     const [showCreateConfirm, setShowCreateConfirm] = useState(false)
+    const [showDepartmentHistory, setShowDepartmentHistory] = useState(false)
     const [showInactiveConfirm, setShowInactiveConfirm] = useState(false)
     const [showSaveContactConfirm, setShowSaveContactConfirm] = useState(false)
     const [pendingTabChange, setPendingTabChange] = useState<PendingTabChange | null>(null)
@@ -198,6 +200,7 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
     const settings = watch("settings")
     const currentCode = watch("code")
     const currentName = watch("name")
+    const historyDepartmentId = (id ?? departmentId ?? "").trim()
     const primaryContactId = watch("primaryContactId")
     const secondaryContactId = watch("secondaryContactId")
     const billingContactId = watch("billingContactId")
@@ -464,6 +467,16 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
         <>
             <Dialog open onOpenChange={(open) => { if (!open) handleExit() }}>
             <DialogContent className="max-w-[893px] p-0 max-h-[90vh] overflow-y-auto border-none shadow-2xl rounded-[12px] bg-white [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                {historyDepartmentId ? (
+                    <button
+                        type="button"
+                        className="absolute right-12 top-4 z-10 cursor-pointer rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                        onClick={() => setShowDepartmentHistory(true)}
+                        aria-label="View department history"
+                    >
+                        <History className="h-4 w-4" />
+                    </button>
+                ) : null}
                 <DialogHeader className="bg-white px-6 py-4 text-center">
                     <DialogTitle className="text-center text-[22px] font-[600] text-[#111827]">
                         {id ? "Edit Department" : "Add Department"}
@@ -1052,6 +1065,24 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                     >
                         OK
                     </Button>
+                </div>
+            </DialogContent>
+        </Dialog>
+
+        <Dialog open={showDepartmentHistory} onOpenChange={setShowDepartmentHistory}>
+            <DialogContent className="max-h-[92vh] max-w-[980px] overflow-hidden rounded-[12px] border border-[#E5E7EB] p-0 shadow-2xl">
+                <DialogHeader className="border-b border-[#E5E7EB] bg-[#FAFAFC] px-6 py-4 text-left">
+                    <DialogTitle className="text-[18px] font-[600] text-[#111827]">
+                        Department History
+                    </DialogTitle>
+                    {currentCode || currentName ? (
+                        <p className="text-[13px] text-[#6B7280]">
+                            {[currentCode, currentName].filter(Boolean).join(" — ")}
+                        </p>
+                    ) : null}
+                </DialogHeader>
+                <div className="max-h-[calc(92vh-88px)] overflow-y-auto px-6 py-4">
+                    <DepartmentHistoryTable departmentId={historyDepartmentId} />
                 </div>
             </DialogContent>
         </Dialog>
