@@ -19,6 +19,12 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Skeleton } from "@/components/ui/skeleton"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import type {
   MasterCodeSortKey,
   MasterCodeSortState,
@@ -42,6 +48,8 @@ export function MasterCodeTable({
     key: "code",
     direction: "asc",
   })
+  const [isCodeTooltipOpen, setIsCodeTooltipOpen] = useState(false)
+  const [isNameTooltipOpen, setIsNameTooltipOpen] = useState(false)
   const headers = [
     `${codeType} Code`,
     `${codeType} Code Name`,
@@ -125,23 +133,45 @@ export function MasterCodeTable({
                   (() => {
                     const key: MasterCodeSortKey = idx === 0 ? "code" : "name"
                     const isActive = sortState.key === key
+                    const isOpen = idx === 0 ? isCodeTooltipOpen : isNameTooltipOpen
+                    const setIsOpen = idx === 0 ? setIsCodeTooltipOpen : setIsNameTooltipOpen
+                    const tooltipText =
+                      sortState.key === key
+                        ? sortState.direction === "asc"
+                          ? "Click to sort descending"
+                          : "Click to sort ascending"
+                        : "Click to sort ascending"
+
                     return (
-                  <button
-                    type="button"
-                    onClick={() => handleSort(key)}
-                    className="inline-flex w-full cursor-pointer items-center gap-1.5"
-                  >
-                    <span>{header}</span>
-                    {isActive ? (
-                      <Triangle
-                        className={`size-[5px] fill-white text-white transition-transform ${
-                          sortState.direction === "asc" ? "" : "rotate-180"
-                        }`}
-                      />
-                    ) : (
-                      <Triangle className="size-[5px] fill-white text-white" />
-                    )}
-                  </button>
+                      <TooltipProvider>
+                        <Tooltip open={isOpen}>
+                          <TooltipTrigger asChild>
+                            <button
+                              type="button"
+                              onClick={() => handleSort(key)}
+                              onMouseEnter={() => setIsOpen(true)}
+                              onMouseLeave={() => setIsOpen(false)}
+                              onFocus={() => setIsOpen(true)}
+                              onBlur={() => setIsOpen(false)}
+                              className="inline-flex w-full cursor-pointer items-center gap-1.5"
+                            >
+                              <span>{header}</span>
+                              {isActive ? (
+                                <Triangle
+                                  className={`size-[5px] fill-white text-white transition-transform ${
+                                    sortState.direction === "asc" ? "" : "rotate-180"
+                                  }`}
+                                />
+                              ) : (
+                                <Triangle className="size-[5px] fill-white text-white" />
+                              )}
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" sideOffset={6}>
+                            {tooltipText}
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                     )
                   })()
                 ) : (

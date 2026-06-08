@@ -1,16 +1,12 @@
 import { useCallback, useMemo, useState } from "react"
 import { useAuth } from "@/contexts/AuthContext"
 import {
-  MASTER_CODE_TYPE_TAB_ORDER,
   type MasterCodeFormMode,
   type MasterCodeFormValues,
   type MasterCodeRow,
   type MasterCodeTab,
 } from "../types"
-import { MasterCodeTypeEnum } from "../enums/masterCodeType"
-
-/** Counties that are allowed to see the CDSS master-code tab. */
-const CDSS_ENABLED_COUNTIES = new Set<string>(["TUOLUMNE"])
+import { useGetActivityCodeTypes } from "../queries/getMasterCodes"
 
 const emptyFormValues: MasterCodeFormValues = {
   code: "",
@@ -25,13 +21,10 @@ const emptyFormValues: MasterCodeFormValues = {
 
 export function useMasterCodeUI() {
   const { user } = useAuth()
-  const countyName = (user?.countyName ?? "").trim().toUpperCase()
+  const { data: dbTypes = [], isLoading: isTypesLoading } = useGetActivityCodeTypes()
   const tabs = useMemo<MasterCodeTab[]>(
-    () =>
-      CDSS_ENABLED_COUNTIES.has(countyName)
-        ? MASTER_CODE_TYPE_TAB_ORDER
-        : MASTER_CODE_TYPE_TAB_ORDER.filter((t) => t !== MasterCodeTypeEnum.CDSS),
-    [countyName],
+    () => dbTypes as MasterCodeTab[],
+    [dbTypes],
   )
   const [selectedTab, setSelectedTab] = useState<MasterCodeTab | null>(null)
   const [inactiveOnly, setInactiveOnly] = useState(false)
@@ -47,7 +40,7 @@ export function useMasterCodeUI() {
   const [modalSessionId, setModalSessionId] = useState(0)
 
   const activeTab: MasterCodeTab = useMemo(() => {
-    if (tabs.length === 0) return MASTER_CODE_TYPE_TAB_ORDER[0]
+    if (tabs.length === 0) return "" as MasterCodeTab
     if (selectedTab && tabs.includes(selectedTab)) return selectedTab
     return tabs[0]!
   }, [selectedTab, tabs])
@@ -122,7 +115,7 @@ export function useMasterCodeUI() {
     toggleInactiveOnly,
     toggleLocalMultiCodes,
     handleTabChange,
-    isTabLoading,
+    isTabLoading: isTabLoading || isTypesLoading,
     
     // Pagination
     currentPage,
