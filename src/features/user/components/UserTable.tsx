@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useState } from "react"
 import {
   ChevronDown,
   ChevronRight,
@@ -25,7 +25,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import type { UserTableProps, UserTableSortState } from "@/features/user/types"
+import type { UserTableProps } from "@/features/user/types"
 import { usePermissions } from "@/hooks/usePermissions"
 
 export function UserTable({ rows, isLoading, onEditRow, onSwitchUser, sortState, onSortChange }: UserTableProps) {

@@ -11,7 +11,6 @@ export function ActivitySection({ form, departmentName, assignedActivityDetails,
   
   const [searchU, setSearchU] = useState("")
   const [searchA, setSearchA] = useState("")
-  const activeSearch = searchU || searchA || undefined
 
   const shouldFetch = !!selectedDept;
   

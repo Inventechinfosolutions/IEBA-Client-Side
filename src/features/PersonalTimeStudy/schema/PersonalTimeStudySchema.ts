@@ -30,6 +30,7 @@ export const personalTimeStudyFilterDefaultValues = {
 
 export const employeeLeaveRequestRowSchema = z
   .object({
+    id: z.number().optional(),
     date: z.string().trim().min(1, "Date is required"),
     startTime: z.string().trim(),
     endTime: z.string().trim(),

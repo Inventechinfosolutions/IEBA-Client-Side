@@ -553,12 +553,23 @@ export function EmployeeLeaveRequestDialog({
         return deptFiltered.map(formatLeaveProgramOption)
       }
       const allowedDeptIds = config.timestudyAllowed.map((d) => d.departmentId)
-      const filteredPrograms = config.bypassSchedule
+      let filteredPrograms = config.bypassSchedule
         ? programs
         : programs.filter((p: any) => allowedDeptIds.includes(p.departmentId))
+
+      const isApproved = editingStatus?.toLowerCase() === "approved"
+      let approvedDeptId = editingLeave?.departmentId
+      if (isApproved && !approvedDeptId && editingLeave?.programid) {
+        const approvedProgram = programs.find((p: any) => Number(p.id) === Number(editingLeave.programid))
+        approvedDeptId = approvedProgram?.departmentId
+      }
+      if (isApproved && approvedDeptId) {
+        filteredPrograms = filteredPrograms.filter((p: any) => Number(p.departmentId) === Number(approvedDeptId))
+      }
+
       return filteredPrograms.filter((p: any) => !p.isMultiCode).map(formatLeaveProgramOption)
     },
-    [allowMulticodeUi, departmentMulticodes, dropdownBundles, formEntries, multicodeBundles, programs, formatLeaveProgramOption, resolveDepartmentIdForProgram, dateConfigs],
+    [allowMulticodeUi, departmentMulticodes, dropdownBundles, formEntries, multicodeBundles, programs, formatLeaveProgramOption, resolveDepartmentIdForProgram, dateConfigs, editingStatus, editingLeave],
   )
 
 
@@ -1159,7 +1170,6 @@ export function EmployeeLeaveRequestDialog({
                               form.getValues(`entries.${parentIndex}.programCode`)
                             )
                             const hideTime = settings.hideTime
-                            const removeAutoFill = settings.removeAutoFillEndTime
                             if (hideTime) {
                               return (
                                 <div className="flex h-10 items-center justify-center text-[#98A2B3] font-medium">
@@ -1169,7 +1179,7 @@ export function EmployeeLeaveRequestDialog({
                             }
                             // removeAutoFill=false → auto-filled, field disabled
                             // removeAutoFill=true → user sets manually, field enabled
-                            const endTimeDisabled = isApproved || !removeAutoFill
+                            const endTimeDisabled = false
                             return (
                               <div className="space-y-1">
                                 <TimePicker24h
@@ -1559,12 +1569,9 @@ export function EmployeeLeaveRequestDialog({
                                           inputMode="numeric"
                                           className={cn(
                                             "h-9 text-[11px] tabular-nums rounded-[6px]",
-                                            isApproved &&
-                                            "cursor-not-allowed bg-muted !opacity-100 !text-foreground",
                                             isErrorState &&
                                             "border-destructive text-destructive focus-visible:ring-destructive",
                                           )}
-                                          disabled={isApproved}
                                           placeholder="0"
                                           autoComplete="off"
                                           {...f}

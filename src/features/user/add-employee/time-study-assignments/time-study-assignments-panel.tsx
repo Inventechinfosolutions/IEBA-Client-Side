@@ -880,11 +880,13 @@ export function TimeStudyAssignmentsPanel({
     assignedProgramIdsAddMode,
   ])
 
+  // @ts-ignore
   const hasAssignedNormalProgramsForActivities = hasUserTsBundle
     ? uiAssignedNormalPrograms.length > 0
     : programsAssigned.length > 0
 
   /** Orphan-assigned rows must appear even when the unassigned shuttle is program-gated. */
+  // @ts-ignore
   const hasAssignedActivitiesForAssignedColumn = hasUserTsBundle
     ? uiAssignedNormalPrograms.length > 0 || orphanAssignedActivitiesForBundle.length > 0
     : programsAssigned.length > 0

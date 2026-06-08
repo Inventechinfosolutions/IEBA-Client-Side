@@ -164,8 +164,8 @@ function partitionLeaveEntryGroups(
   return partitionLeaveEntryIndexGroups(entries).map((idxs) => idxs.map((j) => entries[j]))
 }
 
-function normalizeLeaveTimeString(t: string): string {
-  if (!t) return "00:00:00"
+function normalizeLeaveTimeString(t: string | null | undefined): string | null {
+  if (!t) return null
   if (t.length === 5) return `${t}:00`
   return t
 }

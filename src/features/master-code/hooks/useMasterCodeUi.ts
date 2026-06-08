@@ -1,5 +1,4 @@
 import { useCallback, useMemo, useState } from "react"
-import { useAuth } from "@/contexts/AuthContext"
 import {
   type MasterCodeFormMode,
   type MasterCodeFormValues,
@@ -20,7 +19,6 @@ const emptyFormValues: MasterCodeFormValues = {
 }
 
 export function useMasterCodeUI() {
-  const { user } = useAuth()
   const { data: dbTypes = [], isLoading: isTypesLoading } = useGetActivityCodeTypes()
   const tabs = useMemo<MasterCodeTab[]>(
     () => dbTypes as MasterCodeTab[],
