@@ -538,7 +538,10 @@ export function UserModulePage() {
             inactiveOnly={inactiveOnly}
             searchTerm={searchTerm}
             suggestions={employeeSuggestions}
-            onToggleInactiveOnly={() => setInactiveOnly((prev) => !prev)}
+            onToggleInactiveOnly={() => {
+              setInactiveOnly((prev) => !prev)
+              setPage(1)
+            }}
             onSearchChange={(value) => {
               setSearchTerm(value)
               setPage(1)
