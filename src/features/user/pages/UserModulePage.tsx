@@ -43,6 +43,7 @@ import {
   type UserModuleFormMode,
   type UserModuleFormValues,
   type UserModuleRow,
+  type UserTableSortState,
 } from "../types"
 
 const emptyFormValues: UserModuleFormValues = {
@@ -127,6 +128,7 @@ export function UserModulePage() {
   const [selectedDepartmentId, setSelectedDepartmentId] = useState<string | undefined>()
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
+  const [sortState, setSortState] = useState<UserTableSortState>("none")
   const [showForm, setShowForm] = useState(false)
   const [formMode, setFormMode] = useState<UserModuleFormMode>("add")
 
@@ -185,6 +187,8 @@ export function UserModulePage() {
     page,
     pageSize,
     inactiveOnly,
+    sort: sortState === "desc" ? "DESC" : "ASC",
+    sortBy: sortState !== "none" ? "employee" : undefined,
     firstName: searchFilters.firstName || undefined,
     lastName: searchFilters.lastName || undefined,
     name: searchFilters.name || undefined,
@@ -298,6 +302,10 @@ export function UserModulePage() {
     return currentRows;
   }, [userModule.rows, isTimeStudySupervisor, isSuperAdmin, isDepartmentAdmin, user?.id]);
 
+  const handleSortChange = (newSortState: UserTableSortState) => {
+    setSortState(newSortState)
+    setPage(1)
+  }
 
   const handleAddEmployee = () => {
     setFormMode("add")
@@ -565,6 +573,8 @@ export function UserModulePage() {
                 isLoading={isTableLoading}
                 onEditRow={handleEditRow}
                 onSwitchUser={isGlobalAdmin && !mimicSession ? handleSwitchUser : undefined}
+                sortState={sortState}
+                onSortChange={handleSortChange}
               />
             </div>
             <MasterCodePagination
