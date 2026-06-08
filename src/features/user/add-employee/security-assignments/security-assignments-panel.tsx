@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useMemo, useRef, useState } from "react"
+import { lazy, Suspense, useCallback, useMemo, useRef, useState, useLayoutEffect } from "react"
 import { Spinner } from "@/components/ui/spinner"
 import { Controller, useFormContext, useFieldArray } from "react-hook-form"
 import { toast } from "sonner"
@@ -258,6 +258,11 @@ export function SecurityAssignmentsPanel({
     getValues,
     formState: { dirtyFields },
   } = useFormContext<UserModuleFormValues>()
+
+  useLayoutEffect(() => {
+    if (isAddMode || !tab2Data || typeof tab2Data !== "object") return
+    syncSecurityTab2Form(setValue, tab2Data)
+  }, [isAddMode, tab2Data, setValue])
 
   const {
     fields: multiCodeFields,
