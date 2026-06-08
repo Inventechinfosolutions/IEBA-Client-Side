@@ -104,20 +104,28 @@ export type EmployeeLeaveRequestDialogProps = {
   allowMultiCodes?: boolean
 }
 
-const getHeaderGridClass = (isEditing: boolean, allowMulticodeUi: boolean) =>
+const getHeaderGridClass = (isEditing: boolean, allowMulticodeUi: boolean, showTime: boolean) =>
   cn(
     "grid min-w-[950px] items-end gap-2.5 text-[14px] font-normal text-[#4A4A4A] whitespace-nowrap",
-    isEditing && !allowMulticodeUi
-      ? "grid-cols-[minmax(7.5rem,1fr)_minmax(5rem,0.8fr)_minmax(5rem,0.8fr)_minmax(8.5rem,1.3fr)_minmax(8.5rem,1.3fr)_minmax(6.5rem,0.8fr)_minmax(8.5rem,1.1fr)]"
-      : "grid-cols-[minmax(7.5rem,1fr)_minmax(5rem,0.8fr)_minmax(5rem,0.8fr)_minmax(8.5rem,1.3fr)_minmax(8.5rem,1.3fr)_minmax(6.5rem,0.8fr)_minmax(8.5rem,1.1fr)_7.5rem]"
+    showTime
+      ? (isEditing && !allowMulticodeUi
+          ? "grid-cols-[minmax(7.5rem,1fr)_minmax(8.5rem,1.3fr)_minmax(8.5rem,1.3fr)_minmax(5rem,0.8fr)_minmax(5rem,0.8fr)_minmax(6.5rem,0.8fr)_minmax(8.5rem,1.1fr)]"
+          : "grid-cols-[minmax(7.5rem,1fr)_minmax(8.5rem,1.3fr)_minmax(8.5rem,1.3fr)_minmax(5rem,0.8fr)_minmax(5rem,0.8fr)_minmax(6.5rem,0.8fr)_minmax(8.5rem,1.1fr)_7.5rem]")
+      : (isEditing && !allowMulticodeUi
+          ? "grid-cols-[minmax(7.5rem,1fr)_minmax(8.5rem,1.3fr)_minmax(8.5rem,1.3fr)_minmax(6.5rem,0.8fr)_minmax(8.5rem,1.1fr)]"
+          : "grid-cols-[minmax(7.5rem,1fr)_minmax(8.5rem,1.3fr)_minmax(8.5rem,1.3fr)_minmax(6.5rem,0.8fr)_minmax(8.5rem,1.1fr)_7.5rem]")
   )
 
-const getRowGridClass = (isEditing: boolean, allowMulticodeUi: boolean) =>
+const getRowGridClass = (isEditing: boolean, allowMulticodeUi: boolean, showTime: boolean) =>
   cn(
     "grid min-w-[950px] items-end gap-2.5 py-2",
-    isEditing && !allowMulticodeUi
-      ? "grid-cols-[minmax(7.5rem,1fr)_minmax(5rem,0.8fr)_minmax(5rem,0.8fr)_minmax(8.5rem,1.3fr)_minmax(8.5rem,1.3fr)_minmax(6.5rem,0.8fr)_minmax(8.5rem,1.1fr)]"
-      : "grid-cols-[minmax(7.5rem,1fr)_minmax(5rem,0.8fr)_minmax(5rem,0.8fr)_minmax(8.5rem,1.3fr)_minmax(8.5rem,1.3fr)_minmax(6.5rem,0.8fr)_minmax(8.5rem,1.1fr)_7.5rem]"
+    showTime
+      ? (isEditing && !allowMulticodeUi
+          ? "grid-cols-[minmax(7.5rem,1fr)_minmax(8.5rem,1.3fr)_minmax(8.5rem,1.3fr)_minmax(5rem,0.8fr)_minmax(5rem,0.8fr)_minmax(6.5rem,0.8fr)_minmax(8.5rem,1.1fr)]"
+          : "grid-cols-[minmax(7.5rem,1fr)_minmax(8.5rem,1.3fr)_minmax(8.5rem,1.3fr)_minmax(5rem,0.8fr)_minmax(5rem,0.8fr)_minmax(6.5rem,0.8fr)_minmax(8.5rem,1.1fr)_7.5rem]")
+      : (isEditing && !allowMulticodeUi
+          ? "grid-cols-[minmax(7.5rem,1fr)_minmax(8.5rem,1.3fr)_minmax(8.5rem,1.3fr)_minmax(6.5rem,0.8fr)_minmax(8.5rem,1.1fr)]"
+          : "grid-cols-[minmax(7.5rem,1fr)_minmax(8.5rem,1.3fr)_minmax(8.5rem,1.3fr)_minmax(6.5rem,0.8fr)_minmax(8.5rem,1.1fr)_7.5rem]")
   )
 
 function TimePicker24h({
@@ -244,6 +252,7 @@ export function EmployeeLeaveRequestDialog({
         userMultiCode: Array<{ departmentId: number }>
         timestudyAllowed: Array<{ departmentId: number }>
         bypassSchedule: boolean
+        departments: any[]
       }
     >
   >({})
@@ -267,6 +276,7 @@ export function EmployeeLeaveRequestDialog({
             userMultiCode: res.data.userMultiCode ?? [],
             timestudyAllowed,
             bypassSchedule,
+            departments: res.data.departments ?? [],
           }
         }))
         if (showToastOnEmpty && timestudyAllowed.length === 0 && !bypassSchedule) {
@@ -424,6 +434,37 @@ export function EmployeeLeaveRequestDialog({
     },
     [allowMulticodeUi, dropdownBundles, mergedLookupDropdown, multicodeBundles, programs, user?.departmentRoles],
   )
+
+  const getRowSettings = useCallback((date: string | undefined, programCode: string | undefined) => {
+    const defaultSettings = { hideTime: false, removeAutoFillEndTime: true }
+    const dateKey = date?.split("T")[0]
+
+    const departments: any[] | undefined = dateKey ? dateConfigs[dateKey]?.departments : undefined
+
+    // Resolve the department for this program
+    const deptId = programCode && programCode !== EMPTY
+      ? resolveDepartmentIdForProgram(programCode)
+      : undefined
+
+    const deptConfig = deptId != null
+      ? departments?.find((d: any) => Number(d.departmentId) === Number(deptId))
+      : undefined
+
+    // Mirror EntryForm logic:
+    // - deptId resolved → use that dept config (or first dept as fallback)
+    // - deptId unknown + exactly 1 dept → auto-apply that single dept
+    // - deptId unknown + multiple depts → safe defaults (can't know which)
+    const activeConfig = deptId != null
+      ? (deptConfig ?? departments?.[0])
+      : (departments?.length === 1 ? departments[0] : undefined)
+
+    if (!activeConfig) return defaultSettings
+
+    return {
+      hideTime: activeConfig.requiresStartEndTime === false,
+      removeAutoFillEndTime: activeConfig.removeAutoFillEndTime === true,
+    }
+  }, [dateConfigs, resolveDepartmentIdForProgram])
 
   const isMulticodeAllowedForLeaveParent = useCallback(
     (parentIndex: number) => {
@@ -652,11 +693,10 @@ export function EmployeeLeaveRequestDialog({
         form.setValue(`entries.${i}.date`, anchor.date, { shouldValidate: true, shouldDirty: true })
         form.setValue(`entries.${i}.startTime`, anchor.startTime, { shouldValidate: true, shouldDirty: true })
         form.setValue(`entries.${i}.endTime`, anchor.endTime, { shouldValidate: true, shouldDirty: true })
-        updateDuration(i, anchor.startTime, anchor.endTime)
         i++
       }
     },
-    [form, updateDuration],
+    [form],
   )
 
   const scheduleSyncMulticodeChildRowsFromParent = useCallback(
@@ -675,6 +715,28 @@ export function EmployeeLeaveRequestDialog({
     },
     [onOpenChange, resetForm]
   )
+
+  const validateChildMinutes = () => {
+    const entries = form.getValues("entries")
+    for (let i = 0; i < entries.length; i++) {
+      const entry = entries[i]
+      if (entry.multicodeChild) continue
+
+      const parentMin = Number(entry.totalMinApplied || 0)
+      let childSum = 0
+      let j = i + 1
+      while (j < entries.length && entries[j]?.multicodeChild === true) {
+        childSum += Number(entries[j].totalMinApplied || 0)
+        j++
+      }
+
+      if (childSum > parentMin) {
+        toast.error(`Total child minutes (${childSum}) cannot exceed parent minutes (${parentMin}).`)
+        return false
+      }
+    }
+    return true
+  }
 
   const validateManualExceeds = () => {
     const entries = form.getValues("entries")
@@ -695,9 +757,33 @@ export function EmployeeLeaveRequestDialog({
     return false
   }
 
+  const validateRequiredTimes = () => {
+    const entries = form.getValues("entries")
+    for (let i = 0; i < entries.length; i++) {
+      const entry = entries[i]
+      if (entry.multicodeChild) continue // Child rows inherit times/requirements from parent
+      const settings = getRowSettings(entry.date, entry.programCode)
+      if (!settings.hideTime) {
+        if (!entry.startTime || !entry.endTime) {
+          return false
+        }
+      }
+    }
+    return true
+  }
+
   const handleSave = async () => {
     if (validateManualExceeds()) {
       toast.error("Total minutes cannot exceed the maximum allowed duration.")
+      return
+    }
+
+    if (!validateRequiredTimes()) {
+      toast.error("Start time and End time are required.")
+      return
+    }
+
+    if (!validateChildMinutes()) {
       return
     }
 
@@ -723,6 +809,15 @@ export function EmployeeLeaveRequestDialog({
       return
     }
 
+    if (!validateRequiredTimes()) {
+      toast.error("Start time and End time are required.")
+      return
+    }
+
+    if (!validateChildMinutes()) {
+      return
+    }
+
     await form.handleSubmit(
       async (data) => {
         await onSubmit?.(data, mergedLookupDropdown ?? dropdownData)
@@ -738,6 +833,26 @@ export function EmployeeLeaveRequestDialog({
       }
     )()
   }
+
+  const showTimeColumns = useMemo(() => {
+    return formEntries.some((entry) => {
+      if (entry.multicodeChild) return false // Child rows inherit times/visibility from parent
+      if (!entry.programCode || entry.programCode === EMPTY) {
+        // No program selected — check the date's allowed departments config
+        const dateKey = entry.date?.split("T")[0]
+        if (!dateKey || !dateConfigs[dateKey]) return true // no config yet → show by default (safe)
+        const depts: any[] = dateConfigs[dateKey].departments ?? []
+        if (depts.length === 0) return true // no departments config → show by default (safe)
+        // Only 1 dept → use its setting; multiple → return safe default (show time columns)
+        if (depts.length === 1) {
+          return depts[0].requiresStartEndTime !== false
+        }
+        return true
+      }
+      const settings = getRowSettings(entry.date, entry.programCode)
+      return !settings.hideTime
+    })
+  }, [formEntries, getRowSettings, dateConfigs])
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -771,12 +886,12 @@ export function EmployeeLeaveRequestDialog({
         >
           <div className="min-h-0 flex-1 overflow-x-auto overflow-y-auto px-4 py-3 sm:px-6">
             {/* Column headers */}
-            <div className={getHeaderGridClass(isEditing, allowMulticodeUi)}>
+            <div className={getHeaderGridClass(isEditing, allowMulticodeUi, showTimeColumns)}>
               <span>Date</span>
-              <span>Start Time</span>
-              <span>End Time</span>
               <span>Program Code</span>
               <span>Activity Code</span>
+              {showTimeColumns && <span>Start Time</span>}
+              {showTimeColumns && <span>End Time</span>}
               <span>Total Min Applied</span>
               <span>Comments</span>
               {(!isEditing || allowMulticodeUi) && <span className="sr-only">Row actions</span>}
@@ -793,7 +908,7 @@ export function EmployeeLeaveRequestDialog({
 
                 return (
                   <div key={parentField.id} className="py-3 first:pt-1">
-                    <div className={getRowGridClass(isEditing, allowMulticodeUi)}>
+                    <div className={getRowGridClass(isEditing, allowMulticodeUi, showTimeColumns)}>
                       {/* Date */}
                       <div className="space-y-1">
                         <Controller
@@ -823,57 +938,6 @@ export function EmployeeLeaveRequestDialog({
                           )}
                         />
                       </div>
-
-                      {/* Start Time */}
-                      <Controller
-                        control={form.control}
-                        name={`entries.${parentIndex}.startTime`}
-                        render={({ field: f, fieldState }) => (
-                          <div className="space-y-1">
-                            <TimePicker24h
-                              value={f.value}
-                              disabled={isApproved}
-                              onChange={(v) => {
-                                f.onChange(v)
-                                const newEnd = addMinutesToTime(v, 15)
-                                form.setValue(`entries.${parentIndex}.endTime`, newEnd, {
-                                  shouldValidate: true,
-                                  shouldDirty: true,
-                                })
-                                updateDuration(parentIndex, v, newEnd)
-                                scheduleSyncMulticodeChildRowsFromParent(parentIndex)
-                              }}
-                              className="w-full"
-                            />
-                            {fieldState.error?.message && (
-                              <p className="text-xs text-destructive">{fieldState.error.message}</p>
-                            )}
-                          </div>
-                        )}
-                      />
-
-                      {/* End Time */}
-                      <Controller
-                        control={form.control}
-                        name={`entries.${parentIndex}.endTime`}
-                        render={({ field: f, fieldState }) => (
-                          <div className="space-y-1">
-                            <TimePicker24h
-                              value={f.value}
-                              onChange={(v) => {
-                                f.onChange(v)
-                                const currentStart = form.getValues(`entries.${parentIndex}.startTime`)
-                                updateDuration(parentIndex, currentStart, v)
-                                scheduleSyncMulticodeChildRowsFromParent(parentIndex)
-                              }}
-                              className="w-full"
-                            />
-                            {fieldState.error?.message && (
-                              <p className="text-xs text-destructive">{fieldState.error.message}</p>
-                            )}
-                          </div>
-                        )}
-                      />
 
                       {/* Program Code */}
                       <div className="space-y-1">
@@ -944,6 +1008,14 @@ export function EmployeeLeaveRequestDialog({
                                   if (dateStr) {
                                     fetchConfigForDate(dateStr)
                                   }
+
+                                  // Clear start/end times if newly selected program has hideTime === true
+                                  const settings = getRowSettings(dateStr, v || EMPTY)
+                                  if (settings.hideTime) {
+                                    form.setValue(`entries.${parentIndex}.startTime`, "", { shouldValidate: true, shouldDirty: true })
+                                    form.setValue(`entries.${parentIndex}.endTime`, "", { shouldValidate: true, shouldDirty: true })
+                                  }
+
                                   // Clear all multicode child rows immediately following this parent
                                   let i = parentIndex + 1
                                   while (i < (formEntries?.length ?? 0) && formEntries?.[i]?.multicodeChild === true) {
@@ -1024,12 +1096,118 @@ export function EmployeeLeaveRequestDialog({
                         />
                       </div>
 
+                      {/* Start Time */}
+                      {showTimeColumns && (
+                        <Controller
+                          control={form.control}
+                          name={`entries.${parentIndex}.startTime`}
+                          render={({ field: f, fieldState }) => {
+                            const settings = getRowSettings(
+                              form.getValues(`entries.${parentIndex}.date`),
+                              form.getValues(`entries.${parentIndex}.programCode`)
+                            )
+                            const hideTime = settings.hideTime
+                            const removeAutoFill = settings.removeAutoFillEndTime
+                            if (hideTime) {
+                              return (
+                                <div className="flex h-10 items-center justify-center text-[#98A2B3] font-medium">
+                                  —
+                                </div>
+                              )
+                            }
+                            return (
+                              <div className="space-y-1">
+                                <TimePicker24h
+                                  value={f.value}
+                                  disabled={isApproved}
+                                  onChange={(v) => {
+                                    f.onChange(v)
+                                    if (!removeAutoFill) {
+                                      // Auto-fill end time to start + 15 min
+                                      const newEnd = addMinutesToTime(v, 15)
+                                      form.setValue(`entries.${parentIndex}.endTime`, newEnd, {
+                                        shouldValidate: true,
+                                        shouldDirty: true,
+                                      })
+                                      updateDuration(parentIndex, v, newEnd)
+                                    } else {
+                                      // No auto-fill — just recalculate duration with existing end
+                                      const currentEnd = form.getValues(`entries.${parentIndex}.endTime`)
+                                      updateDuration(parentIndex, v, currentEnd)
+                                    }
+                                    scheduleSyncMulticodeChildRowsFromParent(parentIndex)
+                                  }}
+                                  className="w-full"
+                                />
+                                {fieldState.error?.message && (
+                                  <p className="text-xs text-destructive">{fieldState.error.message}</p>
+                                )}
+                              </div>
+                            )
+                          }}
+                        />
+                      )}
+
+                      {/* End Time */}
+                      {showTimeColumns && (
+                        <Controller
+                          control={form.control}
+                          name={`entries.${parentIndex}.endTime`}
+                          render={({ field: f, fieldState }) => {
+                            const settings = getRowSettings(
+                              form.getValues(`entries.${parentIndex}.date`),
+                              form.getValues(`entries.${parentIndex}.programCode`)
+                            )
+                            const hideTime = settings.hideTime
+                            const removeAutoFill = settings.removeAutoFillEndTime
+                            if (hideTime) {
+                              return (
+                                <div className="flex h-10 items-center justify-center text-[#98A2B3] font-medium">
+                                  —
+                                </div>
+                              )
+                            }
+                            // removeAutoFill=false → auto-filled, field disabled
+                            // removeAutoFill=true → user sets manually, field enabled
+                            const endTimeDisabled = isApproved || !removeAutoFill
+                            return (
+                              <div className="space-y-1">
+                                <TimePicker24h
+                                  value={f.value}
+                                  disabled={endTimeDisabled}
+                                  onChange={(v) => {
+                                    f.onChange(v)
+                                    const currentStart = form.getValues(`entries.${parentIndex}.startTime`)
+                                    updateDuration(parentIndex, currentStart, v)
+                                    scheduleSyncMulticodeChildRowsFromParent(parentIndex)
+                                  }}
+                                  className="w-full"
+                                />
+                                {fieldState.error?.message && (
+                                  <p className="text-xs text-destructive">{fieldState.error.message}</p>
+                                )}
+                              </div>
+                            )
+                          }}
+                        />
+                      )}
+
                       {/* Total Min Applied */}
                       <div className="space-y-1">
                         <Controller
                           control={form.control}
                           name={`entries.${parentIndex}.totalMinApplied`}
                           render={({ field: f, fieldState }) => {
+                            const settings = getRowSettings(
+                              form.getValues(`entries.${parentIndex}.date`),
+                              form.getValues(`entries.${parentIndex}.programCode`)
+                            )
+                            const hideTime = settings.hideTime
+                            const removeAutoFill = settings.removeAutoFillEndTime
+                            // Editable when: time is hidden (user enters min directly)
+                            // OR removeAutoFillEndTime=true (user manually sets all times)
+                            const minAppliedEditable = hideTime || removeAutoFill
+
                             const originalTotal = Number(
                               initialValues?.entries?.[parentIndex]?.totalMinApplied || 0,
                             )
@@ -1040,7 +1218,7 @@ export function EmployeeLeaveRequestDialog({
                             const endTime = formEntries?.[parentIndex]?.endTime
                             const diff =
                               startTime && endTime ? calculateMinutesDiff(startTime, endTime) : 0
-                            const exceedsCalculated = diff > 0 && currentTotal > diff
+                            const exceedsCalculated = !hideTime && diff > 0 && currentTotal > diff
                             const isErrorState = exceedsOriginal || exceedsCalculated
 
                             return (
@@ -1050,15 +1228,22 @@ export function EmployeeLeaveRequestDialog({
                                   inputMode="numeric"
                                   className={cn(
                                     "h-10 text-sm tabular-nums rounded-[6px]",
-                                    isApproved &&
+                                    (isApproved || !minAppliedEditable) &&
                                     "cursor-not-allowed bg-muted !opacity-100 !text-foreground",
                                     isErrorState &&
                                     "border-destructive text-destructive focus-visible:ring-destructive",
                                   )}
                                   disabled={isApproved}
+                                  readOnly={!minAppliedEditable}
                                   placeholder="0"
                                   autoComplete="off"
                                   {...f}
+                                  onChange={(e) => {
+                                    if (minAppliedEditable) {
+                                      const cleanVal = e.target.value.replace(/\D/g, "")
+                                      f.onChange(cleanVal)
+                                    }
+                                  }}
                                 />
                                 {fieldState.error?.message ? (
                                   <p className="text-xs text-destructive">{fieldState.error.message}</p>
@@ -1347,7 +1532,25 @@ export function EmployeeLeaveRequestDialog({
                                         ? calculateMinutesDiff(startTime, endTime)
                                         : 0
                                     const exceedsCalculated = diff > 0 && currentTotal > diff
-                                    const isErrorState = exceedsOriginal || exceedsCalculated
+                                    // Find parent row to sum children
+                                    let parentRowIndex = -1
+                                    for (let k = index - 1; k >= 0; k--) {
+                                      if (!formEntries[k]?.multicodeChild) {
+                                        parentRowIndex = k
+                                        break
+                                      }
+                                    }
+                                    const parentMin = parentRowIndex !== -1 ? Number(formEntries[parentRowIndex].totalMinApplied || 0) : 0
+                                    let childSum = 0
+                                    if (parentRowIndex !== -1) {
+                                      let j = parentRowIndex + 1
+                                      while (j < formEntries.length && formEntries[j]?.multicodeChild === true) {
+                                        childSum += Number(formEntries[j].totalMinApplied || 0)
+                                        j++
+                                      }
+                                    }
+                                    const sumExceedsParent = childSum > parentMin
+                                    const isErrorState = exceedsOriginal || exceedsCalculated || sumExceedsParent
 
                                     return (
                                       <>
@@ -1365,6 +1568,10 @@ export function EmployeeLeaveRequestDialog({
                                           placeholder="0"
                                           autoComplete="off"
                                           {...f}
+                                          onChange={(e) => {
+                                            const cleanVal = e.target.value.replace(/\D/g, "")
+                                            f.onChange(cleanVal)
+                                          }}
                                         />
                                         {fieldState.error?.message ? (
                                           <p className="text-xs text-destructive">{fieldState.error.message}</p>
@@ -1375,6 +1582,10 @@ export function EmployeeLeaveRequestDialog({
                                         ) : exceedsOriginal ? (
                                           <p className="text-[10px] text-destructive leading-tight">
                                             Exceeds {originalTotal} min
+                                          </p>
+                                        ) : sumExceedsParent ? (
+                                          <p className="text-[10px] text-destructive leading-tight">
+                                            Exceeds parent
                                           </p>
                                         ) : null}
                                       </>

@@ -31,8 +31,8 @@ export const personalTimeStudyFilterDefaultValues = {
 export const employeeLeaveRequestRowSchema = z
   .object({
     date: z.string().trim().min(1, "Date is required"),
-    startTime: z.string().trim().min(1, "Start time is required"),
-    endTime: z.string().trim().min(1, "End time is required"),
+    startTime: z.string().trim(),
+    endTime: z.string().trim(),
     programCode: z
       .string()
       .trim()
@@ -52,32 +52,37 @@ export const employeeLeaveRequestRowSchema = z
     multicodeChild: z.boolean().optional(),
   })
   .superRefine((row, ctx) => {
-    const startM = parseTimeToMinutes(row.startTime)
-    const endM = parseTimeToMinutes(row.endTime)
-    if (startM === null) {
-      ctx.addIssue({
-        code: "custom",
-        message: "Enter a valid start time (HH:MM)",
-        path: ["startTime"],
-      })
-    }
-    if (endM === null) {
-      ctx.addIssue({
-        code: "custom",
-        message: "Enter a valid end time (HH:MM)",
-        path: ["endTime"],
-      })
-    }
-    if (
-      startM !== null &&
-      endM !== null &&
-      endM <= startM
-    ) {
-      ctx.addIssue({
-        code: "custom",
-        message: "End time must be after start time",
-        path: ["endTime"],
-      })
+    const hasStart = row.startTime.length > 0
+    const hasEnd = row.endTime.length > 0
+
+    if (hasStart || hasEnd) {
+      const startM = parseTimeToMinutes(row.startTime)
+      const endM = parseTimeToMinutes(row.endTime)
+      if (startM === null) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Enter a valid start time (HH:MM)",
+          path: ["startTime"],
+        })
+      }
+      if (endM === null) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Enter a valid end time (HH:MM)",
+          path: ["endTime"],
+        })
+      }
+      if (
+        startM !== null &&
+        endM !== null &&
+        endM <= startM
+      ) {
+        ctx.addIssue({
+          code: "custom",
+          message: "End time must be after start time",
+          path: ["endTime"],
+        })
+      }
     }
   })
 
