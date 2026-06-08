@@ -30,6 +30,7 @@ import { apiGetUserDetails } from "../api"
 import { useUserModule } from "../hooks/useUserModule"
 import { userModuleKeys } from "../keys"
 import { AddEmployeeFormPage } from "../add-employee"
+import { addEmployeeLookupKeys } from "../add-employee/keys"
 import {
   isGlobalAdminLogin,
   useMimicSession,
@@ -199,8 +200,8 @@ export function UserModulePage() {
     departmentId: selectedDepartmentId
       ? String(selectedDepartmentId)
       : (!isSuperAdmin && assignedDepartmentIds.length > 0
-          ? assignedDepartmentIds.join(",")
-          : undefined),
+        ? assignedDepartmentIds.join(",")
+        : undefined),
   }, { enabled: !showForm })
   const isTableLoading = userModule.isLoading
 
@@ -451,11 +452,6 @@ export function UserModulePage() {
       }
 
       const created = await userModule.createRowAsync({ values })
-      setDraftUserId(created.id)
-      toast.success(
-        "Employee details saved. You can go to the next tab without saving again.",
-        successToastOptions,
-      )
 
       if (values.jobDutyFile) {
         try {
@@ -471,8 +467,9 @@ export function UserModulePage() {
           const deptIds = parseMultiSelectStoredValues(values.autoAssignedDepartments)
           if (deptIds.length > 0) {
             const rolesCatalog = await fetchDepartmentRolesCatalog()
-            
-            // Build the payload dynamically ensuring we use the exact departmentrole ID mapped to each dept
+
+            // Build payload using the explicit roleId from the catalog for each department
+            // If roleId is missing, fall back to extracting the numeric part after the dash.
             const mappedDepartments = deptIds
               .map(idStr => {
                 const deptIdNum = Number(idStr);
@@ -480,25 +477,34 @@ export function UserModulePage() {
                   r => r.id.startsWith(`${deptIdNum}-`) && r.name.toLowerCase() === "user"
                 );
                 if (matchingRole) {
-                   const roleId = matchingRole.id.split("-").pop();
-                   if (roleId) return { id: deptIdNum, roles: [{ id: roleId }] };
+                  const roleId = matchingRole.roleId ?? Number(matchingRole.id.split("-")[1]);
+                  if (!Number.isFinite(roleId)) return null;
+                  return { id: deptIdNum, roles: [{ id: String(roleId) }] };
                 }
                 return null;
               })
-              .filter((d): d is { id: number, roles: { id: string }[] } => d !== null);
+              .filter((d): d is { id: number; roles: { id: string }[] } => d !== null);
 
             if (mappedDepartments.length > 0) {
+              console.log('Auto‑assign payload:', { userId: created.id, departments: mappedDepartments });
               await assignUserDepartmentRoles({
                 userId: created.id,
-                departments: mappedDepartments
+                departments: mappedDepartments,
               })
+                .then(() => console.log('Auto‑assign succeeded'))
+                .catch(err => console.error('Auto‑assign failed:', err));
+              // Invalidate security roles query so it reflects the new assignments
+              void queryClient.invalidateQueries({ queryKey: addEmployeeLookupKeys.securityDepartmentRoles(created.id) });
             }
           }
         } catch (autoAssignError) {
-           toast.error(autoAssignError instanceof Error ? autoAssignError.message : "Failed to auto-assign departments.")
-           // Continue to show success for user creation
+          toast.error(autoAssignError instanceof Error ? autoAssignError.message : "Failed to auto-assign departments.")
+          // Continue to show success for user creation
         }
       }
+
+      setDraftUserId(created.id)
+
       toast.success(
         "Employee details saved. You can go to the next tab without saving again.",
         successToastOptions

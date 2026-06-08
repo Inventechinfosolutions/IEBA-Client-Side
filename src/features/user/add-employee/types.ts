@@ -75,6 +75,7 @@ export type AddEmployeeSecurityRoleCatalogItem = {
   id: string
   name: string
   department: string
+  roleId?: number
 }
 
 /** GET /departments/assignedDepartment/roles — assigned + unassigned lists for Security tab. */
