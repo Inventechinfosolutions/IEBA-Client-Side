@@ -1,6 +1,7 @@
-import { ChevronDown, Clock, Eye, Plus, Trash2, Check } from "lucide-react"
+import { ChevronDown, Clock, Eye, Plus, Trash2, Check, AlertCircle } from "lucide-react"
 import { useCallback, useMemo, useRef, useState } from "react"
 import type { UserAssignedDepartmentsSettingChecks } from "../queries/getUserAssignedDepartmentsSettingChecks"
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card"
 
 
 
@@ -179,6 +180,7 @@ type PersonalTimeStudyEntryFormProps = {
   apportioningConfig?: UserAssignedDepartmentsSettingChecks | null
   /** Pre-calculated apportioning records from backend (apportioning=true TSRs). */
   apportioningRecords?: any[]
+  apportioningSummary?: any[]
   isLoading?: boolean
   isDropdownLoading?: boolean
   onOpenDropdown?: () => void
@@ -338,6 +340,7 @@ export function PersonalTimeStudyEntryForm({
   leaveRecords,
   className,
   apportioningConfig,
+  apportioningSummary,
   isLoading = false,
   isDropdownLoading = false,
   onOpenDropdown,
@@ -1094,52 +1097,102 @@ export function PersonalTimeStudyEntryForm({
         </div>
       )}
       <div className="mb-6 flex flex-col gap-2">
-        {/* Top Row: Metrics aligned right */}
-        {!hideSummaryHeader && (
-          <div className="flex flex-wrap items-center justify-end gap-x-6 gap-y-2 text-[14px]">
-            <div className="flex items-center gap-1.5">
-              <span className="text-gray-700">Allocated TS Minutes:</span>
-              <span className="font-semibold text-[#6C5DD3]">{allocatedTotal || 0}</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="text-gray-700">Entered TS Minutes:</span>
-              <span className="font-semibold text-[#6C5DD3]">{actualTotal || 0}</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="text-gray-700">TS Balance:</span>
-              <span className="font-semibold text-[#6C5DD3]">{balanceTotal || 0}</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="text-gray-700">Entered MAA Minutes:</span>
-              <span className="font-semibold text-[#6C5DD3]">{actualMultiTotal || 0}</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="text-gray-700">MAA Balance:</span>
-              <span className="font-semibold text-[#6C5DD3]">{multiBalanceTotal || 0}</span>
-            </div>
-          </div>
-        )}
-
         {showLeaveBanner && leaveRecords && leaveRecords.filter(l => l.status?.toLowerCase() === "approved").map((leave, idx) => (
           <div key={idx} className="mt-5 mb-1 mx-auto max-w-max rounded-[6px] bg-[#E2E8F0]/50 px-4 py-1.5 text-[13px] text-gray-600 italic text-center border border-[#CBD5E1]">
             {leave.name || leave.employeeName || username} applied leave in this date : <span className="not-italic font-medium text-gray-800">({dateStr})</span> from : <span className="not-italic font-medium text-gray-800">({leave.starttime})</span> To : <span className="not-italic font-medium text-gray-800">({leave.endtime})</span>.
           </div>
         ))}
 
-        {/* Bottom Row: Title and Button */}
-        <div className="flex items-center justify-between">
-          <h3 className="text-[14px] text-[#6C5DD3] font-semibold">Time Entries</h3>
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <h3 className="text-[14px] text-[#6C5DD3] font-semibold">Time Entries</h3>
+          </div>
+
+          {!hideSummaryHeader && (
+            <div className="flex flex-wrap items-center justify-end gap-x-6 gap-y-2 text-[14px] flex-1">
+              <div className="flex items-center gap-1.5">
+                <span className="text-gray-700">Allocated TS Minutes:</span>
+                <span className="font-semibold text-[#6C5DD3]">{allocatedTotal || 0}</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-gray-700">Entered TS Minutes:</span>
+                <span className="font-semibold text-[#6C5DD3]">{actualTotal || 0}</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-gray-700">TS Balance:</span>
+                <span className="font-semibold text-[#6C5DD3]">{balanceTotal || 0}</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-gray-700">Entered MAA Minutes:</span>
+                <span className="font-semibold text-[#6C5DD3]">{actualMultiTotal || 0}</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-gray-700">MAA Balance:</span>
+                <span className="font-semibold text-[#6C5DD3]">{multiBalanceTotal || 0}</span>
+              </div>
+            </div>
+          )}
+
           <div className="flex items-center gap-3">
             {apportioningConfig?.supervisorApportioning && (
               <div className="flex items-center gap-2 bg-[#F8F9FA] border border-[#E2E8F0] px-3 py-1.5 rounded-[6px] h-9">
                 <div className="flex size-4 shrink-0 items-center justify-center rounded-[4px] border border-[#6C5DD3] bg-[#6C5DD3] text-white opacity-50 cursor-not-allowed">
                   <Check className="size-3 stroke-[3]" />
                 </div>
-                <Label
-                  className="text-[12px] text-[#344054] font-semibold cursor-not-allowed select-none"
-                >
-                  Apportioning
-                </Label>
+                <div className="flex items-center gap-1.5">
+                  <Label
+                    className="text-[12px] text-[#344054] font-semibold cursor-not-allowed select-none"
+                  >
+                    Apportioning
+                  </Label>
+                  {apportioningSummary && apportioningSummary.length > 0 && (
+                    <HoverCard openDelay={0} closeDelay={100}>
+                      <HoverCardTrigger asChild>
+                        <div className="cursor-pointer text-blue-500 hover:text-blue-600 transition-colors flex items-center shrink-0">
+                          <AlertCircle className="size-3.5" />
+                        </div>
+                      </HoverCardTrigger>
+                      <HoverCardContent
+                        className="w-fit min-w-[200px] max-w-xs p-3 z-[100] bg-white border border-gray-100 shadow-xl rounded-[8px] text-[#111827]"
+                        align="end"
+                        side="top"
+                      >
+                        <div className="text-[11px] font-medium space-y-2">
+                          {apportioningSummary.map((item) => (
+                            <div key={item.departmentId} className="border-b last:border-b-0 pb-1.5 last:pb-0 border-gray-100">
+                              <div className="font-bold text-[#6C5DD3] text-[12px] flex items-center justify-between gap-2">
+                                <span>{item.departmentName}</span>
+                                {item.apportioningType && item.apportioningType !== "none" && (
+                                  <span className="text-[9px] uppercase font-semibold px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 border border-gray-200 font-mono">
+                                    {item.apportioningType}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 mt-1 text-[#344054]">
+                                <div>
+                                  <span className="text-muted-foreground font-medium">Percent:</span>{" "}
+                                  <span className="font-semibold text-foreground">{item.apportioningPercent}%</span>
+                                </div>
+                                <div>
+                                  <span className="text-muted-foreground font-medium">Allocated:</span>{" "}
+                                  <span className="font-semibold text-foreground">{item.allocatedMinutes} Min.</span>
+                                </div>
+                                <div>
+                                  <span className="text-muted-foreground font-medium">Reportee Minutes:</span>{" "}
+                                  <span className="font-semibold text-[#6C5DD3]">{item.enteredMinutes} Min.</span>
+                                </div>
+                                <div>
+                                  <span className="text-muted-foreground font-medium">Remaining:</span>{" "}
+                                  <span className="font-semibold text-[#6C5DD3]">{item.remainingMinutes} Min.</span>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </HoverCardContent>
+                    </HoverCard>
+                  )}
+                </div>
               </div>
             )}
             {!readonly && moveSaveSubmitToTop && (

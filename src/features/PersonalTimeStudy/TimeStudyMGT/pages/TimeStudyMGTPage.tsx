@@ -221,6 +221,7 @@ export function TimeStudyMGTPage() {
               isLoading={isDayDetailLoading}
               apportioningConfig={apportioningConfig}
               apportioningRecords={apportioningRecords}
+              apportioningSummary={dayDetail?.apportioningSummary}
               refetchConfig={refetchConfig}
             />
           </div>
