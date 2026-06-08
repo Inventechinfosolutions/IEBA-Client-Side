@@ -1179,7 +1179,8 @@ export function EmployeeLeaveRequestDialog({
                             }
                             // removeAutoFill=false → auto-filled, field disabled
                             // removeAutoFill=true → user sets manually, field enabled
-                            const endTimeDisabled = false
+                            const removeAutoFill = settings.removeAutoFillEndTime
+                            const endTimeDisabled = isApproved ? false : !removeAutoFill
                             return (
                               <div className="space-y-1">
                                 <TimePicker24h
@@ -1213,10 +1214,9 @@ export function EmployeeLeaveRequestDialog({
                               form.getValues(`entries.${parentIndex}.programCode`)
                             )
                             const hideTime = settings.hideTime
-                            const removeAutoFill = settings.removeAutoFillEndTime
                             // Editable when: time is hidden (user enters min directly)
-                            // OR removeAutoFillEndTime=true (user manually sets all times)
-                            const minAppliedEditable = hideTime || removeAutoFill
+                            // If removeAutoFillEndTime is true, total minutes should be blocked
+                            const minAppliedEditable = hideTime
 
                             const originalTotal = Number(
                               initialValues?.entries?.[parentIndex]?.totalMinApplied || 0,
@@ -1238,12 +1238,12 @@ export function EmployeeLeaveRequestDialog({
                                   inputMode="numeric"
                                   className={cn(
                                     "h-10 text-sm tabular-nums rounded-[6px]",
-                                    (isApproved || !minAppliedEditable) &&
+                                    !minAppliedEditable &&
                                     "cursor-not-allowed bg-muted !opacity-100 !text-foreground",
                                     isErrorState &&
                                     "border-destructive text-destructive focus-visible:ring-destructive",
                                   )}
-                                  disabled={isApproved}
+                                  disabled={isApproved && !minAppliedEditable}
                                   readOnly={!minAppliedEditable}
                                   placeholder="0"
                                   autoComplete="off"
