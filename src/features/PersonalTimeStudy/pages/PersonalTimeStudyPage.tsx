@@ -399,7 +399,7 @@ export function PersonalTimeStudyPage() {
                         />
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 min-h-0 flex-1">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 h-[180px]">
                         <PersonalTimeStudyNotesSection
                           value={localNotes}
                           onChange={setDraftNotes}
@@ -407,12 +407,10 @@ export function PersonalTimeStudyPage() {
                             onSuccess: () => setDraftNotes(null)
                           })}
                           isSaving={notesMutation.isPending}
-                          className="h-full min-h-0"
                         />
                         <PersonalTimeStudyPeriodsSection
                           timestudyAllowed={settingChecksQuery.data?.timestudyAllowedRaw ?? []}
                           dropdownData={dropdownQuery.data ?? []}
-                          className="h-full min-h-0"
                         />
                       </div>
                     </div>
