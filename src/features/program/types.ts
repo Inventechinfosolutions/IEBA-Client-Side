@@ -328,6 +328,11 @@ export type TransferItem = {
   id: string
   name: string
   code?: string
+  parentId?: string
+  parentName?: string
+  level?: number
+  isChild?: boolean
+  activityId?: string
 }
 
 export type TransferPanelProps = {

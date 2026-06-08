@@ -84,6 +84,8 @@ function activityNodeToTransferItem(node: ProgramActivityRelationActivityNode): 
     id: activityNumericId(node),
     name: String(node.title ?? ""),
     code: node.code ? String(node.code) : undefined,
+    parentId: (node as any).parentId ? String((node as any).parentId) : undefined,
+    activityId: (node as any).activityId ? String((node as any).activityId) : undefined,
   }
 }
 
@@ -103,7 +105,107 @@ export function mergeProgramActivityRelationTransferItems(
     if (item.id) byId.set(item.id, item)
   }
 
-  return Array.from(byId.values())
+  const itemsList = Array.from(byId.values())
+
+  // Enrich with isChild, level, parentName
+  const enriched = itemsList.map((item) => {
+    let parentName = undefined
+    let isChild = false
+    let level = 0
+
+    if (item.parentId) {
+      // Find parent in the list using activityId
+      const parent = itemsList.find((x) => x.activityId === item.parentId)
+      if (parent) {
+        parentName = parent.name
+        isChild = true
+        level = 1
+
+        let currentParentId = item.parentId
+        const visited = new Set<string>([item.activityId || item.id])
+        while (currentParentId) {
+          if (visited.has(currentParentId)) break
+          visited.add(currentParentId)
+          const p = itemsList.find((x) => x.activityId === currentParentId)
+          if (p && p.parentId) {
+            level++
+            currentParentId = p.parentId
+          } else {
+            break
+          }
+        }
+      }
+    }
+
+    return {
+      ...item,
+      isChild,
+      level,
+      parentName,
+    }
+  })
+
+  // Sort hierarchically using DFS
+  const idMap = new Map<string, typeof enriched[0]>()
+  for (const a of enriched) {
+    if (a.activityId) {
+      idMap.set(a.activityId, a)
+    }
+  }
+
+  const parentToChildren = new Map<string, typeof enriched[0][]>()
+  const roots: typeof enriched[0][] = []
+
+  for (const a of enriched) {
+    if (a.parentId && idMap.has(a.parentId)) {
+      if (!parentToChildren.has(a.parentId)) {
+        parentToChildren.set(a.parentId, [])
+      }
+      parentToChildren.get(a.parentId)!.push(a)
+    } else {
+      roots.push(a)
+    }
+  }
+
+  // Sort roots alphabetically
+  roots.sort((x, y) => {
+    const xCode = x.code ?? ""
+    const yCode = y.code ?? ""
+    const xName = xCode ? `(${xCode})${x.name}` : x.name
+    const yName = yCode ? `(${yCode})${y.name}` : y.name
+    return xName.localeCompare(yName)
+  })
+
+  // Sort children alphabetically
+  for (const [_, childrenList] of parentToChildren.entries()) {
+    childrenList.sort((x, y) => {
+      const xCode = x.code ?? ""
+      const yCode = y.code ?? ""
+      const xName = xCode ? `(${xCode})${x.name}` : x.name
+      const yName = yCode ? `(${yCode})${y.name}` : y.name
+      return xName.localeCompare(yName)
+    })
+  }
+
+  const result: TransferItem[] = []
+  const visited = new Set<string>()
+
+  function traverse(node: typeof enriched[0]) {
+    result.push(node)
+    visited.add(node.id)
+    const children = parentToChildren.get(node.activityId || node.id) || []
+    for (const child of children) {
+      if (!visited.has(child.id)) {
+        traverse(child)
+      }
+    }
+  }
+
+  for (const root of roots) {
+    traverse(root)
+  }
+
+  return result
 }
 
 export function assignedIdsFromProgramActivityRelationPayload(
