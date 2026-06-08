@@ -129,6 +129,16 @@ export type UserDayLegendDetailResDto = {
   legend: UserMonthLegendDayResDto
   enteredMaaMinutes?: number
   maaBalance?: number
+  apportioningSummary?: Array<{
+    departmentId: number
+    departmentName: string
+    apportioningPercent: number
+    allocatedMinutes: number
+    enteredMinutes: number
+    remainingMinutes: number
+    apportioningType?: string
+    supervisorConsumedMinutes?: number
+  }>
 }
 
 /** Payload for saving/submitting time records. */

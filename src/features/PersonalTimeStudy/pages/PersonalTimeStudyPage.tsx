@@ -396,6 +396,7 @@ export function PersonalTimeStudyPage() {
                           actualMinutes={summaryQuery.data?.actualnormalactivitytime ?? 0}
                           balanceMinutes={summaryQuery.data?.actualnormalactivityTimebalance ?? 0}
                           totalMAAMinutes={summaryQuery.data?.actualmultiactivitytime ?? 0}
+                          apportioningSummary={summaryQuery.data?.apportioningSummary}
                         />
                       </div>
 
@@ -434,6 +435,7 @@ export function PersonalTimeStudyPage() {
                       hideSummaryHeader={true}
                       apportioningConfig={settingChecksQuery.data ?? null}
                       apportioningRecords={dayQuery.data?.timeStudyRecords?.filter((r: any) => r.apportioning === true) || []}
+                      apportioningSummary={summaryQuery.data?.apportioningSummary}
                       isLoading={dayQuery.isFetching || submitMutation.isPending || deleteMutation.isPending}
                       isDropdownLoading={dropdownQuery.isFetching}
                       onOpenDropdown={handleOpenDropdown}

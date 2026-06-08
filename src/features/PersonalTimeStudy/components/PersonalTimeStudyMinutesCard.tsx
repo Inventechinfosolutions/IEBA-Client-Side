@@ -1,5 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card"
+import { AlertCircle } from "lucide-react"
 
 type PersonalTimeStudyMinutesCardProps = {
   allocatedMinutes: number
@@ -7,6 +9,16 @@ type PersonalTimeStudyMinutesCardProps = {
   balanceMinutes: number
   totalMAAMinutes?: number
   className?: string
+  apportioningSummary?: Array<{
+    departmentId: number
+    departmentName: string
+    apportioningPercent: number
+    allocatedMinutes: number
+    enteredMinutes: number
+    remainingMinutes: number
+    apportioningType?: string
+    supervisorConsumedMinutes?: number
+  }>
 }
 
 export function PersonalTimeStudyMinutesCard({
@@ -15,6 +27,7 @@ export function PersonalTimeStudyMinutesCard({
   balanceMinutes,
   totalMAAMinutes,
   className,
+  apportioningSummary,
 }: PersonalTimeStudyMinutesCardProps) {
   const maaBalance = actualMinutes - (totalMAAMinutes || 0);
 
@@ -65,6 +78,64 @@ export function PersonalTimeStudyMinutesCard({
             {maaBalance}
           </span>
         </div>
+
+        {apportioningSummary && apportioningSummary.length > 0 && (
+          <>
+            <hr className="my-0.5 border-[#E5E7EB]" />
+            <div className="flex items-center justify-between gap-2 text-[12px]">
+              <span className="font-semibold text-[#111827]">Apportioned Minutes:</span>
+              <HoverCard openDelay={0} closeDelay={100}>
+                <HoverCardTrigger asChild>
+                  <div className="cursor-pointer text-blue-500 hover:text-blue-600 transition-colors flex items-center shrink-0">
+                    <AlertCircle className="size-3.5" />
+                  </div>
+                </HoverCardTrigger>
+                <HoverCardContent
+                  className="w-fit min-w-[340px] max-w-sm p-3 z-[100] bg-white border border-gray-100 shadow-xl rounded-[8px] text-[#111827]"
+                  align="end"
+                  side="top"
+                >
+                  <div className="text-[11px] font-medium space-y-2">
+                    {apportioningSummary.map((item) => (
+                      <div key={item.departmentId} className="border-b last:border-b-0 pb-1.5 last:pb-0 border-gray-100">
+                        <div className="font-bold text-[#6C5DD3] text-[12px] flex items-center justify-between gap-2">
+                          <span>{item.departmentName}</span>
+                          {item.apportioningType && item.apportioningType !== "none" && (
+                            <span className="text-[9px] uppercase font-semibold px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 border border-gray-200 font-mono">
+                              {item.apportioningType}
+                            </span>
+                          )}
+                        </div>
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 mt-1 text-[#344054]">
+                          <div>
+                            <span className="text-muted-foreground font-medium">Percent:</span>{" "}
+                            <span className="font-semibold text-foreground">{item.apportioningPercent}%</span>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground font-medium">Allocated:</span>{" "}
+                            <span className="font-semibold text-foreground">{item.allocatedMinutes} Min.</span>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground font-medium">Supervisor Consumed:</span>{" "}
+                            <span className="font-semibold text-[#6C5DD3]">{item.supervisorConsumedMinutes ?? 0} Min.</span>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground font-medium">Reportee Minutes:</span>{" "}
+                            <span className="font-semibold text-[#6C5DD3]">{item.enteredMinutes} Min.</span>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground font-medium">Remaining:</span>{" "}
+                            <span className="font-semibold text-[#6C5DD3]">{item.remainingMinutes} Min.</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </HoverCardContent>
+              </HoverCard>
+            </div>
+          </>
+        )}
       </CardContent>
     </Card>
   )
