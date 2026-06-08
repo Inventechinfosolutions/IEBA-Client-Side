@@ -160,6 +160,9 @@ export async function apiGetUserModuleRows(params: GetUserModuleParams): Promise
     search.set("page", String(params.page))
     search.set("limit", String(params.pageSize))
     search.set("sort", params.sort ?? "ASC")
+    if (params.sortBy !== undefined) {
+      search.set("sortBy", params.sortBy)
+    }
     search.set("status", params.inactiveOnly ? "inactive" : "active")
     if (params.departmentId !== undefined) {
       search.set("departmentId", String(params.departmentId))
@@ -181,6 +184,9 @@ export async function apiGetUserModuleRows(params: GetUserModuleParams): Promise
   search.set("page", String(params.page))
   search.set("limit", String(params.pageSize))
   search.set("sort", params.sort ?? "ASC")
+  if (params.sortBy !== undefined) {
+    search.set("sortBy", params.sortBy)
+  }
   /** Backend `UserListQueryDto.status` — matches `UserStatus` enum strings. */
   search.set("status", params.inactiveOnly ? "inactive" : "active")
   const firstName = (params.firstName ?? "").trim()

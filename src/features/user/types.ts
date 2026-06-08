@@ -69,6 +69,7 @@ export type GetUserModuleParams = {
   inactiveOnly: boolean
   /** Backend `UserListQueryDto.sort` — order by loginId. */
   sort?: "ASC" | "DESC"
+  sortBy?: string
   /** Optional filters for GET /users (case-insensitive partial match, ANDed when multiple set). */
   firstName?: string
   lastName?: string
@@ -302,6 +303,8 @@ export type UserTableProps = {
   isLoading: boolean
   onEditRow: (row: UserModuleRow) => void
   onSwitchUser?: (row: UserModuleRow) => void
+  sortState: UserTableSortState
+  onSortChange: (state: UserTableSortState) => void
 }
 
 export type UserTableSortState = "none" | "asc" | "desc"

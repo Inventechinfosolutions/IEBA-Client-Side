@@ -529,7 +529,10 @@ export function ProgramPage() {
             searchValue={showHistory ? historySearch : search}
             inactiveOnly={inactiveOnly}
             onSearchChange={handleSearchChange}
-            onToggleInactiveOnly={() => setInactiveOnly((prev) => !prev)}
+            onToggleInactiveOnly={() => {
+              setInactiveOnly((prev) => !prev)
+              setPage(1)
+            }}
             onAddProgram={handleAddProgram}
             hideAdd={isRestrictedRole}
             showHistory={showHistory}

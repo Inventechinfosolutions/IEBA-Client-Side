@@ -28,11 +28,10 @@ import {
 import type { UserTableProps, UserTableSortState } from "@/features/user/types"
 import { usePermissions } from "@/hooks/usePermissions"
 
-export function UserTable({ rows, isLoading, onEditRow, onSwitchUser }: UserTableProps) {
+export function UserTable({ rows, isLoading, onEditRow, onSwitchUser, sortState, onSortChange }: UserTableProps) {
   const { canUpdate } = usePermissions()
   const canUpdateUser = canUpdate("user")
   const [expandedRowIds, setExpandedRowIds] = useState<Record<string, boolean>>({})
-  const [employeeSortState, setEmployeeSortState] = useState<UserTableSortState>("none")
   const [isEmployeeTooltipOpen, setIsEmployeeTooltipOpen] = useState(false)
   const showSwitchUser = typeof onSwitchUser === "function"
   const headers = [
@@ -54,14 +53,7 @@ export function UserTable({ rows, isLoading, onEditRow, onSwitchUser }: UserTabl
     { length: 10 },
     (_, index) => `skeleton-row-${index}`
   )
-  const sortedRows = useMemo(() => {
-    if (employeeSortState === "none") return rows
-
-    const sorted = [...rows].sort((a, b) =>
-      a.employee.localeCompare(b.employee, undefined, { sensitivity: "base" })
-    )
-    return employeeSortState === "asc" ? sorted : sorted.reverse()
-  }, [rows, employeeSortState])
+  const sortedRows = rows
 
   return (
     <div className="overflow-hidden rounded-[4px] border border-[#e6e7ef]">
@@ -96,8 +88,8 @@ export function UserTable({ rows, isLoading, onEditRow, onSwitchUser }: UserTabl
                         <button
                           type="button"
                           onClick={() =>
-                            setEmployeeSortState((prev) =>
-                              prev === "none" ? "asc" : prev === "asc" ? "desc" : "none"
+                            onSortChange(
+                              sortState === "none" ? "asc" : sortState === "asc" ? "desc" : "none"
                             )
                           }
                           onMouseEnter={() => setIsEmployeeTooltipOpen(true)}
@@ -110,14 +102,14 @@ export function UserTable({ rows, isLoading, onEditRow, onSwitchUser }: UserTabl
                           <span className="ml-1 inline-flex flex-col items-center leading-none">
                             <ChevronUp
                               className={`size-[10px] ${
-                                employeeSortState === "asc"
+                                sortState === "asc"
                                   ? "text-white"
                                   : "text-white/50"
                               }`}
                             />
                             <ChevronDown
                               className={`-mt-1 size-[10px] ${
-                                employeeSortState === "desc"
+                                sortState === "desc"
                                   ? "text-white"
                                   : "text-white/50"
                               }`}
@@ -126,9 +118,9 @@ export function UserTable({ rows, isLoading, onEditRow, onSwitchUser }: UserTabl
                         </button>
                       </TooltipTrigger>
                       <TooltipContent side="top" sideOffset={6}>
-                        {employeeSortState === "none"
+                        {sortState === "none"
                           ? "Click to sort ascending"
-                          : employeeSortState === "asc"
+                          : sortState === "asc"
                             ? "Click to sort descending"
                             : "Click to cancel sorting"}
                       </TooltipContent>
