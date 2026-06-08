@@ -6,6 +6,7 @@ const LEGEND_ITEMS = [
   { label: "Less Hours",          color: "#F97316", icon: "1" },
   { label: "More Hours",          color: "#EF4444", icon: "1" },
   { label: "Equal Hours",         color: "#22C55E", icon: "1" },
+  { label: "Selected day",        color: "#6C5DD3", icon: "1" },
   { label: "Submitted",           color: "#3B82F6", icon: "1" },
 ] as const
 

@@ -71,7 +71,7 @@ export function LoginPage() {
         }}
       >
         <div className="relative z-10 flex w-full max-w-[450px] flex-col items-center pt-[23vh]">
-          <div className="w-full min-h-[480px] max-h-[60vh] overflow-y-auto rounded-[5px] bg-white p-8 shadow-login-card">
+          <div className="w-[110%] min-h-[480px] max-h-[60vh] overflow-y-auto rounded-[5px] bg-white p-8 shadow-login-card">
             <div className="text-center">
               <h1 className="mb-2 tracking-tight text-[#212529] font-[Roboto,sans-serif] text-[38.465px] leading-tight">
                 Login

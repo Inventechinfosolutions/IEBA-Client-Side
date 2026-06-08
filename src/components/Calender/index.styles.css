@@ -243,10 +243,11 @@
 }
 
 .day-cell.selected {
-  background-color: #3b82f6;
-  color: white;
+  background-color: #6C5DD3 !important;
+  color: #fff !important;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  border: 3px solid #1d4ed8;
+  border: 3px solid #6C5DD3;
+font-weight: 600 !important;
 }
 
 .day-cell.week-selected:not(.selected) {
@@ -261,7 +262,7 @@
 }
 
 .day-cell.today:not(.selected):not(.week-selected) {
-  border: 2px solid #3b82f6;
+  border: 2px solid #6C5DD3;
   color: #1d4ed8;
   font-weight: 600;
 }

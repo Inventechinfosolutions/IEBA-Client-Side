@@ -11,6 +11,7 @@ const LEGEND_ITEMS: {
   { key: "lessHours", label: "Less Hours" },
   { key: "moreHours", label: "More Hours" },
   { key: "equalHours", label: "Equal hours" },
+  { key: "selectedDay", label: "Selected day" },
 ]
 
 type PersonalTimeStudyLegendCardProps = {

@@ -4,4 +4,5 @@ export const PERSONAL_TIME_STUDY_LEGEND = {
   lessHours: "#FFC107",
   moreHours: "#DC3545",
   equalHours: "#28A745",
+  selectedDay: "#6C5DD3",
 } as const
