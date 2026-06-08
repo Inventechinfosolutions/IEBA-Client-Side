@@ -10,6 +10,7 @@ export type UserAssignedDepartmentsSettingChecks = {
   apportioningRequired: boolean
   supervisorApportioning: boolean
   autoApportioning: boolean
+  manualApportioning: boolean
   allowMultiCodes: boolean
   userMultiCode: Array<{ departmentId: number }>
   departments: Array<{
@@ -19,6 +20,7 @@ export type UserAssignedDepartmentsSettingChecks = {
     apportioning: boolean
     costallocation: boolean
     autoApportioning: boolean
+    manualApportioning: boolean
     allowUserOrCostpoolDirect: boolean
     departmentAllowMultiCodes: boolean
     departmentMultiCodes: string[]
@@ -113,6 +115,7 @@ export function useGetUserAssignedDepartmentsSettingChecks(
         apportioningRequired,
         supervisorApportioning,
         autoApportioning: checkSettings ? checkSettings.autoApportioning === true : false,
+        manualApportioning: checkSettings ? checkSettings.manualApportioning === true : false,
         allowMultiCodes,
         userMultiCode,
         departments: Array.isArray(checkSettings?.departments) ? checkSettings.departments : [],

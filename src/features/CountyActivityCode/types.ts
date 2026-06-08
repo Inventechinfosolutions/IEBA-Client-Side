@@ -45,7 +45,8 @@ export type CountyActivityCodeRow = {
   docRequired: boolean
   multipleJobPools: boolean
   apportioning: boolean
-  apportioningDepartments: { name: string; apportioning: boolean }[]
+  manualApportioning: boolean
+  apportioningDepartments: { name: string; apportioning: boolean; manualApportioning?: boolean }[]
   rowType: CountyActivityGridRowType
   parentId?: string | null
   hasChild?: boolean
@@ -58,6 +59,7 @@ export type ApiActivityNestedDepartmentResDto = {
   name: string
   status: string
   apportioning?: boolean
+  manualApportioning?: boolean
 }
 
 export type ApiActivityParentResDto = {
@@ -87,6 +89,7 @@ export type ApiActivityResDto = {
   status: string
   isActivityAssignableToMultipleJobPools: boolean
   apportioning: boolean
+  manualApportioning: boolean
   parentId?: number | null
   /** Present on list/hierarchy when API hydrates links. */
   departments?: ApiActivityNestedDepartmentResDto[]
@@ -174,16 +177,20 @@ export type ApiActivityDepartmentResDto = {
   leavecode: boolean
   parentId?: number | null
   apportioning: boolean
+  manualApportioning: boolean
   department?: {
     name?: string
     apportioning: boolean
+    manualApportioning?: boolean
   }
 }
 
 export type CountyActivityEditPayload = {
   activity: ApiActivityResDto
   departmentNames: string[]
-  apportioningDepartments: { name: string; apportioning: boolean }[]
+  apportioningDepartments: { name: string; apportioning: boolean; manualApportioning?: boolean }[]
+  /** From GET /activities/:id shuttle + activityDepartments — drives manual-only filter in edit modal. */
+  departmentManualApportioningByName?: Record<string, boolean>
 }
 
 /** Context for merging copy-from-master and sub-primary defaults into the county activity add form before submit. */
@@ -217,6 +224,7 @@ export type PostActivityDepartmentBody = {
   leavecode: boolean
   parentId: number | null
   apportioning: boolean
+  manualApportioning: boolean
 }
 
 export type PostActivityDepartmentLinksInput = {
@@ -228,6 +236,7 @@ export type PostActivityDepartmentLinksInput = {
   leavecode: boolean
   parentActivityId: number | null
   apportioning: boolean
+  manualApportioning: boolean
 }
 
 export type SyncActivityDepartmentLinksInput = {
@@ -239,6 +248,7 @@ export type SyncActivityDepartmentLinksInput = {
   leavecode: boolean
   parentActivityId: number | null
   apportioning: boolean
+  manualApportioning: boolean
 }
 
 export type CreateCountyActivityApiInput = {
@@ -255,7 +265,7 @@ export type UpdateCountyActivityApiInput = {
   rowType: CountyActivityGridRowType
   parentId?: string | null
   masterCatalog?: { code: string; type: string }
-  departmentLinks?: { id: number; apportioning?: boolean }[]
+  departmentLinks?: { id: number; apportioning?: boolean; manualApportioning?: boolean }[]
   existingActivityDepartments?: ApiActivityDepartmentResDto[]
 }
 
@@ -319,6 +329,8 @@ export type CountyActivityCodeAddPageProps = {
   masterCodeOptions?: ReadonlyArray<CountyActivityMasterCodeOption>
   isMasterCodeOptionsLoading?: boolean
   departmentNames?: readonly string[]
+  /** Department master settings — used to filter shuttle lists when apportioning is enabled. */
+  departmentManualApportioningByName?: Readonly<Record<string, boolean>>
   /** Edit primary: server-built assigned/unassigned lists (`GET /activities/:id`). When set, shuttle does not diff client-side. */
   initialDepartmentShuttle?: {
     assigned: ApiActivityNestedDepartmentResDto[]
@@ -330,7 +342,7 @@ export type CountyActivityCodeAddPageProps = {
   isEditSourceLoading?: boolean
   /** Sub add flow: loaded primary activity (seeds master / department on save). */
   subParentActivityDetail?: CountyActivityEditPayload | null
-  apportioningDepartments?: { name: string; apportioning: boolean }[]
+  apportioningDepartments?: { name: string; apportioning: boolean; manualApportioning?: boolean }[]
   isSubmitting?: boolean
   onCodeDropdownOpen?: () => void
   onCodeTypeDropdownOpen?: () => void

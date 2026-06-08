@@ -111,7 +111,6 @@ export const DEPARTMENT_SETTINGS_ROWS: readonly {
 }[] = [
   { key: "apportioning", label: "Apportioning" },
   { key: "costAllocation", label: "Cost Allocation" },
-  { key: "autoApportioning", label: "Auto Apportioning" },
   { key: "allowUserCostpoolDirect", label: "Allow User/Costpool Direct" },
   { key: "allowMultiCodes", label: "Allow MultiCodes" },
   { key: "removeStartEndTime", label: "Remove Start and End Time" },
@@ -181,6 +180,7 @@ export type DepartmentResDto = Record<string, unknown> & {
   costallocation?: boolean;
   apportioning?: boolean;
   autoApportioning?: boolean;
+  manualApportioning?: boolean;
   removeAutoFillEndTime?: boolean;
   startorEndTime?: boolean;
   supportingDoc?: boolean;
@@ -206,6 +206,7 @@ export type CreateDepartmentReqDto = {
   apportioning?: boolean;
   costallocation?: boolean;
   autoApportioning?: boolean;
+  manualApportioning?: boolean;
   allowUserOrCostpoolDirect?: boolean;
   allowMultiCodes?: boolean;
   multiCodes?: string[];
