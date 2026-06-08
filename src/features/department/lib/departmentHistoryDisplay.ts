@@ -1,4 +1,5 @@
 import type {
+  DepartmentHistoryFieldChange,
   DepartmentHistoryRecord,
   DepartmentHistoryReportItem,
   DepartmentHistorySettingsSnapshot,
@@ -138,7 +139,15 @@ export function getDepartmentHistoryReportsDisplay(row: DepartmentHistoryRecord)
   return "—"
 }
 
-const SETTING_TOGGLE_LABELS: Record<string, string> = {
+export const DEPARTMENT_SETTING_LABELS: Record<string, string> = {
+  status: "Status",
+  isDefault: "Default Department",
+  multiCodes: "Multi Codes",
+  addresses: "Addresses",
+  reportIds: "Report IDs",
+  primaryContactId: "Primary Contact",
+  secondaryContactId: "Secondary Contact",
+  billingContactId: "Billing Contact",
   apportioning: "Apportioning",
   costallocation: "Cost Allocation",
   autoApportioning: "Auto Apportioning",
@@ -155,14 +164,64 @@ const SETTING_TOGGLE_LABELS: Record<string, string> = {
   moveSaveSubmitToTop: "Move Save and Submit to Top",
 }
 
-const SETTING_TOGGLE_ORDER = Object.keys(SETTING_TOGGLE_LABELS)
+const SETTING_TOGGLE_ORDER = [
+  "apportioning",
+  "costallocation",
+  "autoApportioning",
+  "manualApportioning",
+  "allowUserOrCostpoolDirect",
+  "allowMultiCodes",
+  "startorEndTime",
+  "supportingDoc",
+  "removeAutoFillEndTime",
+  "removeDescriptionActivityNote",
+  "removeDescriptionActivityNoteAnchor",
+  "removeDescriptionActivityNoteMultiCode",
+  "allowActivationStartDateAndEndDate",
+  "moveSaveSubmitToTop",
+] as const
+
+const GENERAL_CHANGE_FIELDS = new Set(["status", "multiCodes", "isDefault", "addresses"])
+const CONTACT_CHANGE_FIELDS = new Set([
+  "primaryContactId",
+  "secondaryContactId",
+  "billingContactId",
+])
+const REPORT_CHANGE_FIELDS = new Set(["reportIds"])
+
+function getDepartmentFieldLabel(field: string): string {
+  return DEPARTMENT_SETTING_LABELS[field] ?? field
+}
+
+function formatDepartmentHistoryFieldValue(field: string, value: unknown): string {
+  if (value == null) return "—"
+  if (typeof value === "boolean") return value ? "Yes" : "No"
+  if (field === "status" && typeof value === "string") {
+    return value.charAt(0).toUpperCase() + value.slice(1).toLowerCase()
+  }
+  if (field.endsWith("ContactId") && typeof value === "string") {
+    return formatContactIdShort(value)
+  }
+  if (Array.isArray(value)) {
+    if (value.length === 0) return "None"
+    if (field === "addresses") return `${value.length} saved`
+    if (field === "reportIds") return value.map(String).join(", ")
+    if (field === "multiCodes") return value.map(String).join(", ")
+    return value.map(String).join(", ")
+  }
+  return String(value).trim() || "—"
+}
 
 export type DepartmentHistorySnapshotItem = {
   label: string
   value: string
   fullValue?: string
-  kind: "text" | "boolean" | "list"
+  kind: "text" | "boolean" | "list" | "change"
   enabled?: boolean
+  previousValue?: string
+  newValue?: string
+  previousEnabled?: boolean
+  newEnabled?: boolean
 }
 
 export type DepartmentHistorySnapshotSection = {
@@ -211,7 +270,7 @@ export function getDepartmentHistorySnapshotSections(
     const value = snapshot[key]
     if (typeof value !== "boolean") return []
     return [{
-      label: SETTING_TOGGLE_LABELS[key] ?? key,
+      label: getDepartmentFieldLabel(key),
       value: value ? "Yes" : "No",
       kind: "boolean" as const,
       enabled: value,
@@ -253,6 +312,87 @@ export function getDepartmentHistorySnapshotSections(
   }
 
   return sections
+}
+
+function changeToSnapshotItem(change: DepartmentHistoryFieldChange): DepartmentHistorySnapshotItem {
+  const { field, previousValue, newValue } = change
+  const label = getDepartmentFieldLabel(field)
+
+  if (typeof previousValue === "boolean" || typeof newValue === "boolean") {
+    const prev = Boolean(previousValue)
+    const next = Boolean(newValue)
+    return {
+      label,
+      value: `${prev ? "Yes" : "No"} → ${next ? "Yes" : "No"}`,
+      kind: "change",
+      previousValue: prev ? "Yes" : "No",
+      newValue: next ? "Yes" : "No",
+      previousEnabled: prev,
+      newEnabled: next,
+    }
+  }
+
+  const prevDisplay = formatDepartmentHistoryFieldValue(field, previousValue)
+  const nextDisplay = formatDepartmentHistoryFieldValue(field, newValue)
+  const fullValue =
+    field.endsWith("ContactId")
+      ? [String(previousValue ?? ""), String(newValue ?? "")].filter(Boolean).join(" → ")
+      : undefined
+
+  return {
+    label,
+    value: `${prevDisplay} → ${nextDisplay}`,
+    fullValue,
+    kind: "change",
+    previousValue: prevDisplay,
+    newValue: nextDisplay,
+  }
+}
+
+function getDepartmentHistoryChangeSections(
+  changes: DepartmentHistoryFieldChange[],
+  options?: { hideReportIds?: boolean },
+): DepartmentHistorySnapshotSection[] {
+  const generalItems: DepartmentHistorySnapshotItem[] = []
+  const settingItems: DepartmentHistorySnapshotItem[] = []
+  const contactItems: DepartmentHistorySnapshotItem[] = []
+  const reportItems: DepartmentHistorySnapshotItem[] = []
+
+  for (const change of changes) {
+    const item = changeToSnapshotItem(change)
+    if (GENERAL_CHANGE_FIELDS.has(change.field)) {
+      generalItems.push(item)
+    } else if (CONTACT_CHANGE_FIELDS.has(change.field)) {
+      contactItems.push(item)
+    } else if (REPORT_CHANGE_FIELDS.has(change.field)) {
+      if (!options?.hideReportIds) reportItems.push(item)
+    } else {
+      settingItems.push(item)
+    }
+  }
+
+  const sections: DepartmentHistorySnapshotSection[] = []
+  if (generalItems.length > 0) sections.push({ title: "General", items: generalItems })
+  if (settingItems.length > 0) {
+    sections.push({ title: "Department Settings", items: settingItems })
+  }
+  if (contactItems.length > 0) sections.push({ title: "Contacts", items: contactItems })
+  if (reportItems.length > 0) sections.push({ title: "Report IDs", items: reportItems })
+  return sections
+}
+
+export function getDepartmentHistoryDetailSections(
+  row: DepartmentHistoryRecord,
+  options?: { hideReportIds?: boolean },
+): DepartmentHistorySnapshotSection[] {
+  const changes = row.settingsChanges
+  if (changes == null) {
+    return getDepartmentHistorySnapshotSections(row.settingsSnapshot, options)
+  }
+  if (changes.length > 0) {
+    return getDepartmentHistoryChangeSections(changes, options)
+  }
+  return []
 }
 
 /** @deprecated Use getDepartmentHistorySnapshotSections */

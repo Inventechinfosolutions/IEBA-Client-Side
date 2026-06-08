@@ -108,6 +108,10 @@ export function DashboardPage() {
   const showUserManagement = isSuperAdmin || canCreateUser || canAlwaysViewUserCard
   const showPayrollCard = isSuperAdmin || hasPayrollAdminRole
   const showStaffStatsCard = isSuperAdmin || isPayrollAdmin || isDeptOrTSAdmin
+  const showPersonalTimeStudyCard = !hasSuperAdminRole
+  const row1TemplateColumns = showPersonalTimeStudyCard
+    ? "0.86fr 0.7fr 1.24fr 1.2fr"
+    : "0.7fr 1.24fr 1.2fr"
   const row2TemplateColumns = showPayrollCard
     ? "0.90fr 1.10fr 1.23fr 0.81fr"
     : showStaffStatsCard
@@ -295,19 +299,20 @@ export function DashboardPage() {
         <>
           <div
             className="grid gap-4 h-[250px]"
-            style={{ gridTemplateColumns: "0.86fr 0.7fr 1.24fr 1.2fr" }}
+            style={{ gridTemplateColumns: row1TemplateColumns }}
           >
 
-        <div className="h-full overflow-hidden">
-          <PersonalTimeStudyCard
-            totalApproved={tsApproved}
-            totalSubmitted={tsSubmitted}
-            percent={tsPercent}
-            periodLabel={periodLabel}
-            isLoading={overview.isLoading}
-          />
-        </div>
-
+        {showPersonalTimeStudyCard && (
+          <div className="h-full overflow-hidden">
+            <PersonalTimeStudyCard
+              totalApproved={tsApproved}
+              totalSubmitted={tsSubmitted}
+              percent={tsPercent}
+              periodLabel={periodLabel}
+              isLoading={overview.isLoading}
+            />
+          </div>
+        )}
 
         <div className="h-full overflow-hidden">
           <PersonalLeaveCard
