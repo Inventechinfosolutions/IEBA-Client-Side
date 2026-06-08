@@ -1,13 +1,14 @@
-import { Check, X } from "lucide-react"
+import { ArrowRight, Check, X } from "lucide-react"
 
 import {
   formatDepartmentHistoryReportLabel,
   getDepartmentHistoryCreatedAtDisplay,
   getDepartmentHistoryCreatedByDisplay,
+  getDepartmentHistoryDetailSections,
   getDepartmentHistoryReports,
-  getDepartmentHistorySnapshotSections,
   getDepartmentHistoryUpdatedAtDisplay,
   getDepartmentHistoryUpdatedByDisplay,
+  type DepartmentHistorySnapshotItem,
 } from "../lib/departmentHistoryDisplay"
 import type { DepartmentHistoryRecord } from "../queries/departmentHistory"
 
@@ -28,9 +29,65 @@ function BooleanPill({ enabled, label }: { enabled: boolean; label: string }) {
   )
 }
 
+function RemovedValuePill({ enabled }: { enabled: boolean }) {
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full bg-[#FEF2F2] px-2 py-0.5 text-[11px] font-medium text-[#B91C1C]">
+      {enabled ? <Check className="size-3" /> : <X className="size-3" />}
+      {enabled ? "Yes" : "No"}
+    </span>
+  )
+}
+
+function AddedValuePill({ enabled }: { enabled: boolean }) {
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full bg-[#ECFDF3] px-2 py-0.5 text-[11px] font-medium text-[#027A48]">
+      {enabled ? <Check className="size-3" /> : <X className="size-3" />}
+      {enabled ? "Yes" : "No"}
+    </span>
+  )
+}
+
+function ChangeItem({ item }: { item: DepartmentHistorySnapshotItem }) {
+  const isBooleanChange =
+    item.kind === "change" &&
+    typeof item.previousEnabled === "boolean" &&
+    typeof item.newEnabled === "boolean"
+
+  if (isBooleanChange) {
+    return (
+      <div className="rounded-[8px] border border-[#F3F4F6] bg-white px-3 py-2">
+        <div className="text-[11px] font-medium text-[#6B7280]">{item.label}</div>
+        <div className="mt-1.5 flex flex-wrap items-center gap-2">
+          <RemovedValuePill enabled={item.previousEnabled!} />
+          <ArrowRight className="size-3.5 text-[#9CA3AF]" />
+          <AddedValuePill enabled={item.newEnabled!} />
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="rounded-[8px] border border-[#F3F4F6] bg-white px-3 py-2">
+      <div className="text-[11px] font-medium text-[#6B7280]">{item.label}</div>
+      <div
+        className="mt-0.5 text-[13px] font-medium break-words"
+        title={item.fullValue}
+      >
+        <span className="rounded-[4px] bg-[#FEF2F2] px-1.5 py-0.5 text-[#B91C1C]">
+          {item.previousValue}
+        </span>
+        <ArrowRight className="mx-1.5 inline size-3.5 text-[#9CA3AF]" />
+        <span className="rounded-[4px] bg-[#ECFDF3] px-1.5 py-0.5 text-[#027A48]">
+          {item.newValue}
+        </span>
+      </div>
+    </div>
+  )
+}
+
 export function DepartmentHistoryDetailPanel({ row }: DepartmentHistoryDetailPanelProps) {
   const reports = getDepartmentHistoryReports(row)
-  const sections = getDepartmentHistorySnapshotSections(row.settingsSnapshot, {
+  const sections = getDepartmentHistoryDetailSections(row, {
     hideReportIds: reports.length > 0,
   })
 
@@ -97,7 +154,7 @@ export function DepartmentHistoryDetailPanel({ row }: DepartmentHistoryDetailPan
             {section.title}
           </h4>
 
-          {section.title === "Department Settings" ? (
+          {section.title === "Department Settings" && section.items[0]?.kind === "boolean" ? (
             <div className="flex flex-wrap gap-2">
               {section.items.map((item) => (
                 <BooleanPill
@@ -105,6 +162,12 @@ export function DepartmentHistoryDetailPanel({ row }: DepartmentHistoryDetailPan
                   enabled={Boolean(item.enabled)}
                   label={item.label}
                 />
+              ))}
+            </div>
+          ) : section.items[0]?.kind === "change" ? (
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              {section.items.map((item) => (
+                <ChangeItem key={item.label} item={item} />
               ))}
             </div>
           ) : (

@@ -2,6 +2,12 @@ import { useState, useRef } from "react"
 import { Check } from "lucide-react"
 import { toast } from "sonner"
 
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { usePermissions } from "@/hooks/usePermissions"
 import { MasterCodePagination } from "@/features/master-code/components/MasterCodePagination"
 import { JobPoolFormModal } from "../components/add-pool/JobPoolFormModal"
@@ -48,9 +54,12 @@ export function JobPoolPage() {
   const [modalMode, setModalMode]     = useState<JobPoolFormMode>("add")
   const [selectedRow, setSelectedRow] = useState<JobPoolRow | null>(null)
   const [showHistory, setShowHistory] = useState(false)
+  const [historyDialogOpen, setHistoryDialogOpen] = useState(false)
+  const [historyJobPool, setHistoryJobPool] = useState<JobPoolRow | null>(null)
   const formRef = useRef<any>(null)
 
-  const { isDepartmentAdmin, assignedDepartmentIds } = usePermissions()
+  const { isDepartmentAdmin, assignedDepartmentIds, canView } = usePermissions()
+  const canViewJobPool = canView("jobpool")
   const deptFilter = isDepartmentAdmin ? assignedDepartmentIds.join(",") : undefined
 
   const {
@@ -91,6 +100,11 @@ export function JobPoolPage() {
     setSelectedRow(row)
     setModalMode("edit")
     setModalOpen(true)
+  }
+
+  function handleHistoryRow(row: JobPoolRow) {
+    setHistoryJobPool(row)
+    setHistoryDialogOpen(true)
   }
 
   async function handleSave(values: JobPoolFormValues) {
@@ -161,6 +175,7 @@ export function JobPoolPage() {
                 rows={rows}
                 isLoading={isLoading}
                 onEditRow={handleEditRow}
+                onHistoryRow={canViewJobPool ? handleHistoryRow : undefined}
               />
             </div>
             <MasterCodePagination
@@ -198,6 +213,24 @@ export function JobPoolPage() {
         unassigned={sourceRow?.unassigned}
         departmentName={sourceRow?.departmentName}
       />
+
+      <Dialog open={historyDialogOpen} onOpenChange={setHistoryDialogOpen}>
+        <DialogContent className="max-h-[92vh] max-w-[980px] overflow-hidden rounded-[12px] border border-[#E5E7EB] p-0 shadow-2xl">
+          <DialogHeader className="border-b border-[#E5E7EB] bg-[#FAFAFC] px-6 py-4 text-left">
+            <DialogTitle className="text-[18px] font-[600] text-[#111827]">
+              Job Pool History
+            </DialogTitle>
+            {historyJobPool?.name ? (
+              <p className="text-[13px] text-[#6B7280]">{historyJobPool.name}</p>
+            ) : null}
+          </DialogHeader>
+          <div className="max-h-[calc(92vh-88px)] overflow-y-auto px-6 py-4">
+            {historyDialogOpen && historyJobPool?.id ? (
+              <JobPoolHistoryTable jobPoolId={historyJobPool.id} />
+            ) : null}
+          </div>
+        </DialogContent>
+      </Dialog>
     </section>
   )
 }

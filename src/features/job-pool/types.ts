@@ -92,6 +92,7 @@ export type JobPoolTableProps = {
   rows: JobPoolRow[]
   isLoading: boolean
   onEditRow: (row: JobPoolRow) => void
+  onHistoryRow?: (row: JobPoolRow) => void
 }
 
 export type JobPoolFormModalProps = {

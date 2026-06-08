@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react"
-import { ChevronDown, ChevronUp } from "lucide-react"
+import { ChevronDown, ChevronUp, History } from "lucide-react"
 
 import tableCheckIcon from "@/assets/icons/table-check.png"
 import tableEditIcon from "@/assets/icons/table-edit.png"
@@ -53,9 +53,12 @@ export function JobPoolTable({
   rows,
   isLoading,
   onEditRow,
+  onHistoryRow,
 }: JobPoolTableProps) {
-  const { canUpdate } = usePermissions()
+  const { canView, canUpdate } = usePermissions()
+  const canViewJobPool = canView("jobpool")
   const canUpdateJobPool = canUpdate("jobpool")
+  const showActionColumn = canUpdateJobPool || Boolean(onHistoryRow && canViewJobPool)
   const [sortState, setSortState] = useState<JobPoolTableSortState>({
     key: "name",
     direction: "none",
@@ -109,12 +112,12 @@ export function JobPoolTable({
       <div className="overflow-y-auto [scrollbar-gutter:stable] bg-[#6C5DD3]">
         <Table className="table-fixed">
           <colgroup>
-            <col style={{ width: canUpdateJobPool ? "12%" : "13.5%" }} />
-            <col style={{ width: canUpdateJobPool ? "42%" : "46.5%" }} />
-            <col style={{ width: canUpdateJobPool ? "19%" : "21%" }} />
-            <col style={{ width: canUpdateJobPool ? "12%" : "13%" }} />
-            <col style={{ width: canUpdateJobPool ? "7.5%" : "6%" }} />
-            {canUpdateJobPool && <col style={{ width: "7.5%" }} />}
+            <col style={{ width: showActionColumn ? "12%" : "13.5%" }} />
+            <col style={{ width: showActionColumn ? "42%" : "46.5%" }} />
+            <col style={{ width: showActionColumn ? "19%" : "21%" }} />
+            <col style={{ width: showActionColumn ? "12%" : "13%" }} />
+            <col style={{ width: showActionColumn ? "7.5%" : "6%" }} />
+            {showActionColumn && <col style={{ width: "7.5%" }} />}
           </colgroup>
           <TableHeader className="[&_tr]:border-b-0">
             <TableRow className="hover:bg-transparent">
@@ -232,7 +235,7 @@ export function JobPoolTable({
               <TableHead className="h-[44px] border-r border-white/20 bg-(--primary) px-3 text-center text-[12px] font-medium text-white">
                 Active
               </TableHead>
-              {canUpdateJobPool && (
+              {showActionColumn && (
                 <TableHead className="h-[44px] bg-(--primary) px-3 text-center text-[12px] font-medium text-white">
                   Action
                 </TableHead>
@@ -247,12 +250,12 @@ export function JobPoolTable({
       >
         <Table className="table-fixed">
           <colgroup>
-            <col style={{ width: canUpdateJobPool ? "12%" : "13.5%" }} />
-            <col style={{ width: canUpdateJobPool ? "42%" : "46.5%" }} />
-            <col style={{ width: canUpdateJobPool ? "19%" : "21%" }} />
-            <col style={{ width: canUpdateJobPool ? "12%" : "13%" }} />
-            <col style={{ width: canUpdateJobPool ? "7.5%" : "6%" }} />
-            {canUpdateJobPool && <col style={{ width: "7.5%" }} />}
+            <col style={{ width: showActionColumn ? "12%" : "13.5%" }} />
+            <col style={{ width: showActionColumn ? "42%" : "46.5%" }} />
+            <col style={{ width: showActionColumn ? "19%" : "21%" }} />
+            <col style={{ width: showActionColumn ? "12%" : "13%" }} />
+            <col style={{ width: showActionColumn ? "7.5%" : "6%" }} />
+            {showActionColumn && <col style={{ width: "7.5%" }} />}
           </colgroup>
           <TableBody>
             {isLoading
@@ -361,20 +364,35 @@ export function JobPoolTable({
                   </TableCell>
 
                   {/* Action - only render cell if user has permission */}
-                  {canUpdateJobPool && (
+                  {showActionColumn && (
                     <TableCell className="align-middle px-4 py-2.5 text-center whitespace-normal">
-                      <button
-                        type="button"
-                        onClick={() => onEditRow(row)}
-                        className="inline-flex cursor-pointer items-center justify-center opacity-80 drop-shadow-[0_1px_0_rgba(108,93,211,0.35)] transition-opacity hover:opacity-100 p-1"
-                      >
-                        <img
-                          src={tableEditIcon}
-                          alt="Edit"
-                          aria-hidden="true"
-                          className="size-[16px] object-contain"
-                        />
-                      </button>
+                      <div className="inline-flex items-center justify-center gap-0.5">
+                        {onHistoryRow && canViewJobPool ? (
+                          <button
+                            type="button"
+                            onClick={() => onHistoryRow(row)}
+                            className="inline-flex cursor-pointer items-center justify-center rounded-sm p-1 text-[#6C5DD3] opacity-80 transition-opacity hover:opacity-100"
+                            aria-label={`View history for ${row.name}`}
+                          >
+                            <History className="size-[14px]" strokeWidth={2} />
+                          </button>
+                        ) : null}
+                        {canUpdateJobPool ? (
+                          <button
+                            type="button"
+                            onClick={() => onEditRow(row)}
+                            className="inline-flex cursor-pointer items-center justify-center opacity-80 drop-shadow-[0_1px_0_rgba(108,93,211,0.35)] transition-opacity hover:opacity-100 p-1"
+                            aria-label={`Edit ${row.name}`}
+                          >
+                            <img
+                              src={tableEditIcon}
+                              alt="Edit"
+                              aria-hidden="true"
+                              className="size-[16px] object-contain"
+                            />
+                          </button>
+                        ) : null}
+                      </div>
                     </TableCell>
                   )}
                 </TableRow>
@@ -382,7 +400,7 @@ export function JobPoolTable({
 
             {!isLoading && sortedRows.length === 0 && (
               <TableRow className="h-[150px] bg-white hover:bg-white transition-none">
-                <TableCell colSpan={canUpdateJobPool ? 6 : 5} className="text-center align-middle">
+                <TableCell colSpan={showActionColumn ? 6 : 5} className="text-center align-middle">
                   <img
                     src={tableEmptyIcon}
                     alt="No data"

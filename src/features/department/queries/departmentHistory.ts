@@ -35,6 +35,12 @@ export type DepartmentHistorySettingsSnapshot = {
   [key: string]: unknown
 }
 
+export type DepartmentHistoryFieldChange = {
+  field: string
+  previousValue: unknown
+  newValue: unknown
+}
+
 export type DepartmentHistoryRecord = {
   id: number | string
   departmentId?: number | string | null
@@ -44,6 +50,7 @@ export type DepartmentHistoryRecord = {
   effectiveFrom?: string | null
   effectiveTo?: string | null
   settingsSnapshot?: DepartmentHistorySettingsSnapshot | null
+  settingsChanges?: DepartmentHistoryFieldChange[] | null
   reports?: DepartmentHistoryReportItem[] | null
   code?: string | null
   name?: string | null

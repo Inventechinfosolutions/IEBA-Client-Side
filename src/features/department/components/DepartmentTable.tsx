@@ -2,6 +2,12 @@ import { useState, useMemo } from "react"
 import { ArrowLeft, History, User, Phone, Mail, MapPin } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { TitleCaseInput } from "@/components/ui/title-case-input"
 import { MasterCodePagination } from "@/features/master-code/components/MasterCodePagination"
 
@@ -148,9 +154,12 @@ export function DepartmentTable({
   onAdd,
   onEdit,
 }: DepartmentTableProps) {
-  const { isSuperAdmin, canAdd, canUpdate } = usePermissions()
+  const { isSuperAdmin, canAdd, canUpdate, canView } = usePermissions()
   const canUpdateDepartment = isSuperAdmin || canUpdate("department")
+  const canViewDepartment = isSuperAdmin || canView("department")
   const canAddDepartment = isSuperAdmin || canAdd("department")
+  const showActionColumn = canUpdateDepartment || canViewDepartment
+  const tableColumnCount = canUpdateDepartment ? 10 : showActionColumn ? 7 : 6
 
   const usersById = useMemo(() => new Map<string, any>(), [])
 
@@ -161,6 +170,22 @@ export function DepartmentTable({
   const [showHistory, setShowHistory] = useState(false)
   const [historyDepartmentCode, setHistoryDepartmentCode] = useState("")
   const [historyDepartmentName, setHistoryDepartmentName] = useState("")
+  const [historyDialogOpen, setHistoryDialogOpen] = useState(false)
+  const [historyDepartment, setHistoryDepartment] = useState<{
+    id: string
+    code: string
+    name: string
+  } | null>(null)
+
+  function handleHistoryRow(dept: { id: string; code: string; name: string }) {
+    setHistoryDepartment(dept)
+    setHistoryDialogOpen(true)
+  }
+
+  function handleHistoryDialogOpenChange(open: boolean) {
+    setHistoryDialogOpen(open)
+    if (!open) setHistoryDepartment(null)
+  }
 
   const sortedDepartments = useMemo(() => {
     if (!sortBy || !sortDirection) return departments
@@ -327,7 +352,7 @@ export function DepartmentTable({
             <col className={canUpdateDepartment ? "w-[7%]" : "w-[15%]"} /> { /* Allow Multi */ }
             <col className={canUpdateDepartment ? "w-[5%]" : "w-[12%]"} /> { /* Multi Codes */ }
             <col className={canUpdateDepartment ? "w-[5%]" : "w-[15%]"} /> { /* Active */ }
-            {canUpdateDepartment && <col className="w-[5%]" />} { /* Action */ }
+            {showActionColumn && <col className="w-[5%]" />} { /* Action */ }
           </colgroup>
           <TableHeader>
             <TableRow className="bg-[#6C5DD3] hover:bg-[#6C5DD3] h-[56px]">
@@ -452,7 +477,7 @@ export function DepartmentTable({
               <TableHead className="border-r border-[#FFFFFF66] p-[4px] align-middle text-center text-[14px] font-medium text-white">
                 Active
               </TableHead>
-              {canUpdateDepartment && (
+              {showActionColumn && (
                 <TableHead className="p-[4px] align-middle text-center text-[14px] font-medium text-white">
                   Action
                 </TableHead>
@@ -463,14 +488,14 @@ export function DepartmentTable({
             {isLoading ? (
               Array.from({ length: 3 }).map((_, i) => (
                 <TableRow key={i} className="border-b border-[#E5E7EB]">
-                  <TableCell colSpan={canUpdateDepartment ? 10 : 6} className="px-[8px] py-[8px]">
+                  <TableCell colSpan={tableColumnCount} className="px-[8px] py-[8px]">
                     <Skeleton className="h-[48px] w-full" />
                   </TableCell>
                 </TableRow>
               ))
             ) : sortedDepartments.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={canUpdateDepartment ? 10 : 6} className="py-[60px] text-center text-[14px] text-[#6B7280]">
+                <TableCell colSpan={tableColumnCount} className="py-[60px] text-center text-[14px] text-[#6B7280]">
                   No data found
                 </TableCell>
               </TableRow>
@@ -550,16 +575,36 @@ export function DepartmentTable({
                       />
                     </div>
                   </TableCell>
-                  {canUpdateDepartment && (
+                  {showActionColumn && (
                     <TableCell className="px-[4px] py-[6px] text-center">
-                      {(canUpdateDepartment || dept.canEdit) && (
-                        <button
-                          onClick={() => onEdit?.(dept.id)}
-                          className="inline-flex h-[24px] w-[24px] items-center justify-center transition-opacity hover:opacity-80"
-                        >
-                          <img src={editIconImg} alt="Edit" className="h-[16px] w-[16px]" />
-                        </button>
-                      )}
+                      <div className="inline-flex items-center justify-center gap-0.5">
+                        {canViewDepartment ? (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handleHistoryRow({
+                                id: dept.id,
+                                code: dept.code,
+                                name: dept.name,
+                              })
+                            }
+                            className="inline-flex h-[24px] w-[24px] cursor-pointer items-center justify-center rounded-sm text-[#6C5DD3] opacity-80 transition-opacity hover:opacity-100"
+                            aria-label={`View history for ${dept.name}`}
+                          >
+                            <History className="size-[14px]" strokeWidth={2} />
+                          </button>
+                        ) : null}
+                        {(canUpdateDepartment || dept.canEdit) ? (
+                          <button
+                            type="button"
+                            onClick={() => onEdit?.(dept.id)}
+                            className="inline-flex h-[24px] w-[24px] cursor-pointer items-center justify-center transition-opacity hover:opacity-80"
+                            aria-label={`Edit ${dept.name}`}
+                          >
+                            <img src={editIconImg} alt="Edit" className="h-[16px] w-[16px]" />
+                          </button>
+                        ) : null}
+                      </div>
                     </TableCell>
                   )}
                 </TableRow>
@@ -580,6 +625,26 @@ export function DepartmentTable({
           />
         </div>
       ) : null}
+
+      <Dialog open={historyDialogOpen} onOpenChange={handleHistoryDialogOpenChange}>
+        <DialogContent className="max-h-[92vh] max-w-[980px] overflow-hidden rounded-[12px] border border-[#E5E7EB] p-0 shadow-2xl">
+          <DialogHeader className="border-b border-[#E5E7EB] bg-[#FAFAFC] px-6 py-4 text-left">
+            <DialogTitle className="text-[18px] font-[600] text-[#111827]">
+              Department History
+            </DialogTitle>
+            {historyDepartment ? (
+              <p className="text-[13px] text-[#6B7280]">
+                {[historyDepartment.code, historyDepartment.name].filter(Boolean).join(" — ")}
+              </p>
+            ) : null}
+          </DialogHeader>
+          <div className="max-h-[calc(92vh-88px)] overflow-y-auto px-6 py-4">
+            {historyDialogOpen && historyDepartment?.id ? (
+              <DepartmentHistoryTable departmentId={historyDepartment.id} />
+            ) : null}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

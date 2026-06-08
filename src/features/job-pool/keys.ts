@@ -10,4 +10,9 @@ export const jobPoolKeys = {
   /** `GET /jobpool/history` — paginated job pool history log. */
   history: (params: { page: number; limit: number; assignmentKind: string }) =>
     [...jobPoolKeys.all, "history", params] as const,
+  /** `GET /jobpool/history/:jobPoolId` — history for one job pool. */
+  historyById: (
+    jobPoolId: string,
+    params: { page: number; limit: number; assignmentKind: string },
+  ) => [...jobPoolKeys.all, "history", "by-id", jobPoolId, params] as const,
 }
