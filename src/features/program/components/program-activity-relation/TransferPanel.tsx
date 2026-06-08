@@ -2,40 +2,10 @@ import { Check, Search } from "lucide-react"
 import tableEmptyIcon from "@/assets/icons/table-empty.png"
 import { TitleCaseInput } from "@/components/ui/title-case-input"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { toTitleCase } from "@/lib/utils"
 
-import type { TransferItem, TransferPanelProps } from "../../types"
-
-const ROW_NAME_MAX_LENGTH = 70
-
-function truncateLabelName(name: string, maxLength = ROW_NAME_MAX_LENGTH): string {
-  if (name.length <= maxLength) return name
-  return `${name.slice(0, maxLength)}…`
-}
-
-function RowLabel({ item, isSelected }: { item: TransferItem; isSelected: boolean }) {
-  const displayName = truncateLabelName(item.name)
-  const showFullNameTooltip = item.name.length > ROW_NAME_MAX_LENGTH
-
-  if (item.code) {
-    const rowColorClass = isSelected ? "text-[#6C5DD3]" : "text-[#111827]"
-    return (
-      <div className={`flex min-w-0 overflow-hidden ${rowColorClass}`}>
-        <span className="shrink-0 font-bold text-[#6C5DD3]">({item.code})</span>
-        <span className="shrink-0 font-bold text-[#111827]"> - </span>
-        <span className="min-w-0" title={showFullNameTooltip ? item.name : undefined}>
-          {displayName}
-        </span>
-      </div>
-    )
-  }
-
-  return (
-    <div className={isSelected ? "text-[#6C5DD3]" : "text-[#374151]"}>
-      <span className="font-bold text-[#111827]"> - </span>
-      <span title={showFullNameTooltip ? item.name : undefined}>{displayName}</span>
-    </div>
-  )
-}
+import type {  TransferPanelProps } from "../../types"
 
 export function TransferPanel({
   title,
@@ -60,7 +30,7 @@ export function TransferPanel({
         <div className="relative">
           <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#9CA3AF]" />
           <TitleCaseInput
-            placeholder="Search here"
+             placeholder="Search here"
             value={searchValue}
             onChange={(e) => onSearchChange(e.target.value)}
             className="h-10 rounded-[8px] border-[#E5E7EB] bg-white pl-9 text-[12px] placeholder:text-[#9CA3AF] focus-visible:ring-1 focus-visible:ring-[#6C5DD3] transition-all"
@@ -96,7 +66,7 @@ export function TransferPanel({
               </div>
             ) : null}
 
-            <div className={`flex flex-col ${isActivity ? "pl-1" : ""}`}>
+            <div className={`flex flex-col ${isActivity ? "pl-6" : ""}`}>
               {items.map((item) => {
                 const isSelected = selectedIds.includes(item.id)
                 return (
@@ -104,28 +74,70 @@ export function TransferPanel({
                     key={item.id}
                     type="button"
                     onClick={() => onToggleItem(item.id)}
-                    className={`group relative flex cursor-pointer items-center justify-between px-4 py-1 text-left transition-colors ${
+                    className={`group relative flex items-start justify-between px-4 py-1 text-left transition-colors cursor-pointer ${
                       isSelected ? "bg-[#F3F0FF]" : "hover:bg-[#F9FAFB]"
                     }`}
                   >
-                    <div className="min-w-0 flex-1 pr-2">
-                      {isActivity ? (
-                        <div className="absolute left-4 top-0.5 flex h-full w-8 items-center justify-center">
-                          <div className="absolute left-1 top-0 h-full w-px bg-[#E5E7EB]" />
-                          <div className="absolute left-1 top-1/2 h-px w-3 bg-[#E5E7EB]" />
+                    <div className="flex items-start flex-1 min-w-0 pt-0.5">
+                      {isActivity && (
+                        <div className="absolute left-0 top-0 h-full w-8 flex items-center justify-center">
+                          {/* Tree Lines */}
+                          <div className="absolute left-4 top-0 w-px h-full bg-[#E5E7EB]" />
+                          <div className={`absolute left-4 top-1/2 -translate-y-1/2 h-px bg-[#E5E7EB] ${item.isChild ? "w-2" : "w-3"}`} />
                         </div>
-                      ) : null}
-                      <div
-                        className={`min-w-0 text-[10px] font-medium ${
-                          isActivity ? "pl-6" : ""
-                        }`}
-                      >
-                        <RowLabel item={item} isSelected={isSelected} />
-                      </div>
+                      )}
+
+                      {isActivity && item.isChild ? (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div className="flex items-center pl-6 min-w-0">
+                                <div className="flex items-center justify-center w-[16px] h-[22px] rounded-full border border-[#6C5DD3] bg-white text-[#6C5DD3] text-[10px] font-bold shrink-0">
+                                  {item.level || 1}
+                                </div>
+                                <div className="w-2 h-px bg-[#E5E7EB] ml-[3px] mr-[2px] shrink-0" />
+                                <span className="text-[10px] font-normal whitespace-normal wrap-break-word pr-2">
+                                  <span className={isSelected ? "text-[#6C5DD3]" : "text-[#111827]"}>
+                                    {toTitleCase(item.name)}
+                                  </span>
+                                  {item.code && (
+                                    <span className="text-[#6C5DD3] font-normal">
+                                      {" "}({item.code})
+                                    </span>
+                                  )}
+                                </span>
+                              </div>
+                            </TooltipTrigger>
+                            {item.parentName && (
+                              <TooltipContent>
+                                {item.parentName}
+                              </TooltipContent>
+                            )}
+                          </Tooltip>
+                        </TooltipProvider>
+                      ) : (
+                        <span
+                          className={`text-[10px] font-medium whitespace-normal wrap-break-word pr-2 ${
+                            isActivity ? "pl-6" : ""
+                          }`}
+                          title={item.isChild && item.parentName ? item.parentName : undefined}
+                        >
+                          {item.code ? (
+                            <>
+                              <span className="text-[#6C5DD3] font-bold">({item.code})</span>
+                              <span className={isSelected ? "text-[#6C5DD3]" : "text-[#111827]"}> - {toTitleCase(item.name)}</span>
+                            </>
+                          ) : (
+                            <span className={isSelected ? "text-[#6C5DD3]" : "text-[#374151]"}>
+                              {toTitleCase(item.name)}
+                            </span>
+                          )}
+                        </span>
+                      )}
                     </div>
 
                     <div
-                      className={`flex size-4.5 shrink-0 items-center justify-center rounded-[6px] border shadow-sm transition-all ${
+                      className={`flex size-4.5 shrink-0 items-center justify-center rounded-[6px] border shadow-sm transition-all mt-0.5 ${
                         isSelected
                           ? "border-[#6C5DD3] bg-[#6C5DD3] text-white"
                           : "border-[#E5E7EB] bg-white text-transparent hover:border-[#D1D5DB]"

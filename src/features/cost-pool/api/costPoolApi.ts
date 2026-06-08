@@ -209,7 +209,100 @@ export function summaryToPickRow(s: CostPoolActivitySummaryResDto | Record<strin
   const code = typeof o.code === "string" ? o.code.trim() : ""
   const name = typeof o.name === "string" ? o.name.trim() : ""
   const displayName = code ? `(${code})${name}` : name
-  return { activityDepartmentId, displayName }
+  const parentId = typeof o.parentId === "number" ? o.parentId : undefined
+  const activityId = typeof o.activityId === "number" ? o.activityId : undefined
+  return { activityDepartmentId, displayName, parentId, activityId, name, code }
+}
+
+export function buildActivityPickRows(list: (CostPoolActivitySummaryResDto | Record<string, unknown>)[]): CostPoolActivityPickRow[] {
+  const mapped = list.map((s) => summaryToPickRow(s))
+  const enriched = mapped.map((a) => {
+    let parentName = undefined
+    if (a.parentId) {
+      const parent = mapped.find((x) => x.activityId === a.parentId)
+      if (parent) {
+        parentName = parent.name
+      }
+    }
+
+    let level = 0
+    if (a.parentId) {
+      level = 1
+      let currentParentId = a.parentId
+      const visited = new Set<number>([a.activityId || 0])
+      while (currentParentId) {
+        if (visited.has(currentParentId)) break
+        visited.add(currentParentId)
+        const parent = mapped.find((x) => x.activityId === currentParentId)
+        if (parent && parent.parentId) {
+          level++
+          currentParentId = parent.parentId
+        } else {
+          break
+        }
+      }
+    }
+
+    return {
+      ...a,
+      isChild: !!a.parentId,
+      level,
+      parentName,
+    }
+  })
+
+  // Group by parent ID to construct a tree structure and sort it hierarchically
+  const idMap = new Map<number, CostPoolActivityPickRow>()
+  for (const a of enriched) {
+    if (a.activityId) {
+      idMap.set(a.activityId, a)
+    }
+  }
+
+  const parentToChildren = new Map<number, CostPoolActivityPickRow[]>()
+  const roots: CostPoolActivityPickRow[] = []
+
+  for (const a of enriched) {
+    if (a.parentId && idMap.has(a.parentId)) {
+      if (!parentToChildren.has(a.parentId)) {
+        parentToChildren.set(a.parentId, [])
+      }
+      parentToChildren.get(a.parentId)!.push(a)
+    } else {
+      roots.push(a)
+    }
+  }
+
+  // Sort roots alphabetically
+  roots.sort((x, y) => x.displayName.localeCompare(y.displayName))
+
+  // Sort child lists alphabetically
+  for (const [_, childrenList] of parentToChildren.entries()) {
+    childrenList.sort((x, y) => x.displayName.localeCompare(y.displayName))
+  }
+
+  // Traverse the tree in DFS order to place children directly below their parents
+  const result: CostPoolActivityPickRow[] = []
+  const visited = new Set<number>()
+
+  function traverse(node: CostPoolActivityPickRow) {
+    result.push(node)
+    if (node.activityId) {
+      visited.add(node.activityId)
+      const children = parentToChildren.get(node.activityId) || []
+      for (const child of children) {
+        if (child.activityId && !visited.has(child.activityId)) {
+          traverse(child)
+        }
+      }
+    }
+  }
+
+  for (const root of roots) {
+    traverse(root)
+  }
+
+  return result
 }
 
 /**
@@ -226,7 +319,7 @@ export async function fetchActivityPicklistForNewPool(
     throw new Error(raw.message || "Failed to load activity picklist")
   }
   const list = Array.isArray(raw.data) ? raw.data : []
-  return list.map((s) => summaryToPickRow(s))
+  return buildActivityPickRows(list)
 }
 
 /** Deduplicate; each id is an `activitydepartment` row id (not a bare `activityId`). */
@@ -240,14 +333,7 @@ export function uniqueActivityDepartmentIds(ids: number[]): number[] {
 export function mergeDetailActivitiesToPickRows(detail: CostPoolDetailResDto): CostPoolActivityPickRow[] {
   const assigned = detail.assignedActivities ?? []
   const unassigned = detail.unassignedActivities ?? []
-  const map = new Map<number, CostPoolActivityPickRow>()
-  for (const s of [...assigned, ...unassigned]) {
-    const row = summaryToPickRow(s)
-    if (row.activityDepartmentId > 0) {
-      map.set(row.activityDepartmentId, row)
-    }
-  }
-  return [...map.values()]
+  return buildActivityPickRows([...assigned, ...unassigned])
 }
 
 export function detailToUpsertFormValues(detail: CostPoolDetailResDto): CostPoolUpsertFormValues {

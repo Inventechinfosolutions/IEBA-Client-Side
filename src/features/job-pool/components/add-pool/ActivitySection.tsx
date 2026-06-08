@@ -6,14 +6,14 @@ import { useQuery } from "@tanstack/react-query"
 import type { TransferItem, ActivitySectionProps } from "../../types"
 import { getJobPoolActivitiesByDepartment } from "../../api/jobpool"
 
-export function ActivitySection({ form, mode, departmentName, assignedActivityDetails, unassignedActivityDetails }: ActivitySectionProps) {
+export function ActivitySection({ form, departmentName, assignedActivityDetails, unassignedActivityDetails }: ActivitySectionProps) {
   const selectedDept = form.watch("department")
   
   const [searchU, setSearchU] = useState("")
   const [searchA, setSearchA] = useState("")
   const activeSearch = searchU || searchA || undefined
 
-  const shouldFetch = !!selectedDept && mode === "add";
+  const shouldFetch = !!selectedDept;
   
   const { data: activitiesData = [] } = useQuery({
     queryKey: ["jobPool", "activities-by-dept", selectedDept],
@@ -23,7 +23,7 @@ export function ActivitySection({ form, mode, departmentName, assignedActivityDe
   })
 
   // Maintain a catalog of all items we've seen so far
-  const [itemCatalog, setItemCatalog] = useState<Record<string, { id: string; name: string; code: string }>>({})
+  const [itemCatalog, setItemCatalog] = useState<Record<string, { id: string; name: string; code: string; isChild?: boolean; parentId?: string; parentName?: string; level?: number }>>({})
 
   // Seed catalog with initial details from props
   useMemo(() => {
@@ -45,7 +45,15 @@ export function ActivitySection({ form, mode, departmentName, assignedActivityDe
       setItemCatalog(prev => {
         const next = { ...prev }
         activitiesData.forEach(a => {
-          next[String(a.id)] = { id: String(a.id), name: a.name, code: a.code }
+          next[String(a.id)] = { 
+            id: String(a.id), 
+            name: a.name, 
+            code: a.code,
+            isChild: a.isChild,
+            parentId: a.parentId,
+            parentName: a.parentName,
+            level: a.level
+          }
         })
         return next
       })
@@ -55,12 +63,27 @@ export function ActivitySection({ form, mode, departmentName, assignedActivityDe
   const allActivities = useMemo(() => {
     // We always use the catalog as the source of truth, 
     // which contains both initial items and newly searched items.
-    return Object.values(itemCatalog).map(a => ({
+    const list = Object.values(itemCatalog).map(a => ({
       id: a.id,
       name: a.name,
       code: a.code,
-      disabled: false
+      disabled: false,
+      isChild: a.isChild,
+      parentId: a.parentId,
+      parentName: a.parentName,
+      level: a.level
     }))
+
+    const unique: typeof list = []
+    const seen = new Set<string>()
+    for (const item of list) {
+      const key = `${item.code || ""}_${item.name}`
+      if (!seen.has(key)) {
+        seen.add(key)
+        unique.push(item)
+      }
+    }
+    return unique
   }, [itemCatalog])
 
   const [toggledU, setToggledU] = useState<string[]>([])

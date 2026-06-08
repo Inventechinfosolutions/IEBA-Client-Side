@@ -20,6 +20,10 @@ export type TransferItem = {
   name: string
   code?: string
   disabled?: boolean
+  parentId?: string
+  parentName?: string
+  isChild?: boolean
+  level?: number
 }
 
 export type JobPoolRow = {

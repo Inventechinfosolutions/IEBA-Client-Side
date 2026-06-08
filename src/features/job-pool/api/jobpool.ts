@@ -375,7 +375,7 @@ export async function getJobPoolById(id: string): Promise<JobPoolRow> {
 export async function getJobPoolActivitiesByDepartment(
   departmentId: number,
   search?: string
-): Promise<{ id: string; name: string; code: string }[]> {
+): Promise<{ id: string; name: string; code: string; parentId?: string; parentName?: string; isChild?: boolean; level?: number }[]> {
   const params = new URLSearchParams({
     departmentId: String(departmentId),
     status: "active",
@@ -384,16 +384,46 @@ export async function getJobPoolActivitiesByDepartment(
     params.set("search", search.trim())
   }
   
-  const raw = await api.get<{ data?: { id: number; name: string; code: string; status?: string }[] }>(
+  const raw = await api.get<{ data?: { id: number; activityId: number; name: string; code: string; parentId?: number | null }[] }>(
     `/activity-departments/all?${params.toString()}`
   )
   
   const list = Array.isArray(raw?.data) ? raw.data : []
-  return list
-    .filter(a => !a.status || a.status.toLowerCase() === "active")
-    .map(a => ({
+  return list.map(a => {
+    let parentName = undefined;
+    if (a.parentId) {
+      const parent = list.find(x => x.activityId === a.parentId);
+      if (parent) {
+        parentName = parent.name;
+      }
+    }
+
+    let level = 0;
+    if (a.parentId) {
+      level = 1;
+      let currentParentId = a.parentId;
+      const visited = new Set<number>([a.activityId]);
+      while (currentParentId) {
+        if (visited.has(currentParentId)) break;
+        visited.add(currentParentId);
+        const parent = list.find(x => x.activityId === currentParentId);
+        if (parent && parent.parentId) {
+          level++;
+          currentParentId = parent.parentId;
+        } else {
+          break;
+        }
+      }
+    }
+
+    return {
       id: String(a.id),
       name: a.name,
       code: a.code,
-    }))
+      parentId: a.parentId ? String(a.parentId) : undefined,
+      parentName,
+      isChild: !!a.parentId,
+      level
+    };
+  })
 }

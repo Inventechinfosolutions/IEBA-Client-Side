@@ -4,6 +4,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { toTitleCase } from "@/lib/utils"
 import tableEmptyIcon from "@/assets/icons/table-empty.png"
 import type { TransferPanelProps } from "../../types"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 export function TransferPanel({
   title,
@@ -117,7 +118,9 @@ export function TransferPanel({
                     type="button"
                     onClick={() => !isDisabled && onToggleItem(item.id)}
                     disabled={isDisabled}
-                    className={`group relative flex items-start justify-between px-4 py-3 text-left transition-colors border-b border-[#F3F4F6] last:border-0 ${
+                    className={`group relative flex items-start justify-between px-4 text-left transition-colors last:border-0 ${
+                      !isActivity ? "py-1.5" : "py-1"
+                    } ${
                       isSelected ? "bg-[#F3F0FF]" : "hover:bg-[#F9FAFB]"
                     } ${isDisabled ? "cursor-not-allowed! opacity-50" : "cursor-pointer"}`}
                   >
@@ -126,20 +129,55 @@ export function TransferPanel({
                         <div className="absolute left-0 top-0 h-full w-8 flex items-center justify-center">
                           {/* Tree Lines */}
                           <div className="absolute left-4 top-0 w-px h-full bg-[#E5E7EB]" />
-                          <div className="absolute left-4 top-[22px] w-3 h-px bg-[#E5E7EB]" />
+                          <div className={`absolute left-4 top-1/2 -translate-y-1/2 h-px bg-[#E5E7EB] ${item.isChild ? "w-2" : "w-3"}`} />
                         </div>
                       )}
                       
-                      <span className={`text-[13px] font-medium whitespace-normal wrap-break-word pr-2 ${isActivity ? "pl-6" : ""}`}>
-                        {item.code ? (
-                          <>
-                            <span className="text-[#6C5DD3] font-bold">({item.code})</span>
-                            <span className={isSelected ? "text-[#6C5DD3]" : (isDisabled ? "text-[#9CA3AF]" : "text-[#111827]")}> - {toTitleCase(item.name)}</span>
-                          </>
-                        ) : (
-                          <span className={isSelected ? "text-[#6C5DD3]" : (isDisabled ? "text-[#9CA3AF]" : "text-[#374151]")}>{toTitleCase(item.name)}</span>
-                        )}
-                      </span>
+                      {isActivity && item.isChild ? (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div 
+                                className="flex items-center pl-6 min-w-0"
+                              >
+                                <div className="flex items-center justify-center w-[16px] h-[22px] rounded-full border border-[#6C5DD3] bg-white text-[#6C5DD3] text-[10px] font-bold shrink-0">
+                                  {item.level || 1}
+                                </div>
+                                <div className="w-2 h-px bg-[#E5E7EB] ml-[3px] mr-[2px] shrink-0" />
+                                <span className="text-[13px] font-medium whitespace-normal wrap-break-word pr-2">
+                                  <span className={isSelected ? "text-[#6C5DD3]" : (isDisabled ? "text-[#9CA3AF]" : "text-[#111827]")}>
+                                    {toTitleCase(item.name)}
+                                  </span>
+                                  {item.code && (
+                                    <span className="text-[#6C5DD3] font-semibold">
+                                      {" "}({item.code})
+                                    </span>
+                                  )}
+                                </span>
+                              </div>
+                            </TooltipTrigger>
+                            {item.parentName && (
+                              <TooltipContent>
+                                {item.parentName}
+                              </TooltipContent>
+                            )}
+                          </Tooltip>
+                        </TooltipProvider>
+                      ) : (
+                        <span
+                          className={`text-[13px] font-medium whitespace-normal wrap-break-word pr-2 ${isActivity ? "pl-6" : ""}`}
+                          title={item.isChild && item.parentName ? item.parentName : undefined}
+                        >
+                          {item.code ? (
+                            <>
+                              <span className="text-[#6C5DD3] font-bold">({item.code})</span>
+                              <span className={isSelected ? "text-[#6C5DD3]" : (isDisabled ? "text-[#9CA3AF]" : "text-[#111827]")}> - {toTitleCase(item.name)}</span>
+                            </>
+                          ) : (
+                            <span className={isSelected ? "text-[#6C5DD3]" : (isDisabled ? "text-[#9CA3AF]" : "text-[#374151]")}>{toTitleCase(item.name)}</span>
+                          )}
+                        </span>
+                      )}
                     </div>
  
                     <div
