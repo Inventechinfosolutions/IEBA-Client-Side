@@ -1,4 +1,4 @@
-import { Card, CardContent } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 
 import { PERSONAL_TIME_STUDY_LEGEND } from "../constants"
@@ -28,7 +28,12 @@ export function PersonalTimeStudyLegendCard({
       )}
       size="sm"
     >
-      <CardContent className="px-3 py-3">
+      <CardHeader className="shrink-0 px-3 pb-1 pt-2">
+        <CardTitle className="text-left text-[13px] font-semibold text-[#6C5DD3]">
+          Legend
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="px-3 pb-3 pt-1">
         <ul className="flex flex-col gap-2">
           {LEGEND_ITEMS.map(({ key, label }) => (
             <li key={key} className="flex items-center gap-2.5 text-[13px]">

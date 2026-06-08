@@ -603,7 +603,7 @@ export function PersonalTimeStudyEntryForm({
             start: rec.starttime ?? "",
             end: rec.endtime ?? "",
             totalMin: String(rec.activitytime ?? ""),
-            tsProgram: String(rec.programid ?? ""),
+            tsProgram: rec.programid ? String(rec.programid) : "",
             serviceActivity: String(rec.activityid ?? ""),
             description: rec.description ?? "",
             supportingDocLabel: "",
@@ -621,7 +621,7 @@ export function PersonalTimeStudyEntryForm({
             subRows: (rec.multiCodeRecords ?? []).map((m: any) => ({
               id: String(m.id),
               dbId: m.id,
-              studyProgram: String(m.programid ?? ""),
+              studyProgram: m.programid ? String(m.programid) : "",
               serviceActivity: String(m.activityid ?? ""),
               totalMin: String(m.activitytime ?? ""),
               description: m.description ?? "",

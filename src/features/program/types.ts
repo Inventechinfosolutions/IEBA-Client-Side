@@ -397,11 +397,14 @@ export type ProgramActivityRelationActivityRoots = Array<{
   key?: number
   title?: string
   activity?: { title?: string; key?: string; children?: ProgramActivityRelationActivityNode[] }[]
+  assigned?: ProgramActivityRelationActivityNode[]
+  unassigned?: ProgramActivityRelationActivityNode[]
 }>
 
 export type ProgramActivityRelationActivitiesPayload = {
   assignedActivities?: ProgramActivityRelationActivityRoots
   unassignedActivities?: ProgramActivityRelationActivityRoots
+  orphanActivities?: ProgramActivityRelationActivityRoots
 }
 
 export type ProgramActivityRelationTimeStudyEnvelope = {

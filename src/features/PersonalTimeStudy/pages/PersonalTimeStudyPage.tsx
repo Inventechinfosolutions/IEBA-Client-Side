@@ -369,8 +369,8 @@ export function PersonalTimeStudyPage() {
                     </div>
 
                     <div className="flex min-w-0 flex-1 flex-col gap-3">
-                      <div className="grid w-full grid-cols-1 items-start gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                        <PersonalTimeStudyLegendCard />
+                      <div className="grid w-full grid-cols-1 items-stretch gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                        <PersonalTimeStudyLegendCard className="h-full" />
                         <PersonalTimeStudyLeaveCard
                           leaveCount={
                             (monthQuery.data?.leaveRecords?.filter(r => r.status?.toLowerCase() === "approved").length ?? 0) +
@@ -391,7 +391,7 @@ export function PersonalTimeStudyPage() {
                           isDropdownLoading={dropdownQuery.isFetching}
                         />
                         <PersonalTimeStudyMinutesCard
-                          className="sm:col-span-2 lg:col-span-1"
+                          className="sm:col-span-2 lg:col-span-1 h-full"
                           allocatedMinutes={summaryQuery.data?.tsmins ?? 0}
                           actualMinutes={summaryQuery.data?.actualnormalactivitytime ?? 0}
                           balanceMinutes={summaryQuery.data?.actualnormalactivityTimebalance ?? 0}
@@ -399,14 +399,6 @@ export function PersonalTimeStudyPage() {
                         />
                       </div>
 
-                      <PersonalTimeStudyNotesSection
-                        value={localNotes}
-                        onChange={setDraftNotes}
-                        onSave={() => notesMutation.mutate(localNotes, {
-                          onSuccess: () => setDraftNotes(null)
-                        })}
-                        isSaving={notesMutation.isPending}
-                      />
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-2 min-h-0 flex-1">
                         <PersonalTimeStudyNotesSection
                           value={localNotes}

@@ -322,7 +322,7 @@ export function PersonalTimeStudyApportioningPanel({
                     </HoverCardTrigger>
                     <HoverCardContent className="w-fit max-w-xs p-3 z-[100] bg-white border border-gray-100 shadow-xl rounded-[8px] text-[#111827]" align="end" side="top">
                       <div className="text-[12px] font-medium leading-relaxed">
-                        To be updated soon...
+                        {rec?.apportioningDesc || "No description available"}
                       </div>
                     </HoverCardContent>
                   </HoverCard>

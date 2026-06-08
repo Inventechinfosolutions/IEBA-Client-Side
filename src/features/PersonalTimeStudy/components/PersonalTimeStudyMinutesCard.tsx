@@ -1,4 +1,4 @@
-import { Card, CardContent } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 
 type PersonalTimeStudyMinutesCardProps = {
@@ -26,7 +26,12 @@ export function PersonalTimeStudyMinutesCard({
       )}
       size="sm"
     >
-      <CardContent className="flex flex-col gap-1.5 px-3 py-3">
+      <CardHeader className="shrink-0 px-3 pb-1 pt-2">
+        <CardTitle className="text-left text-[13px] font-semibold text-[#6C5DD3]">
+          Minutes Summary
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-1.5 px-3 pb-3 pt-1">
         <div className="flex items-center justify-between gap-2 text-[12px]">
           <span className="font-semibold text-[#111827]">Allocated TS Minutes:</span>
           <span className="shrink-0 font-semibold tabular-nums text-[#6C5DD3]">
