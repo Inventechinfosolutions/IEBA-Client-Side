@@ -4,6 +4,7 @@ import {
   apiGetMasterCodesPage,
   apiGetMasterCodeById,
   apiGetTenantMasterCodeByName,
+  apiGetActivityCodeTypes,
 } from "../api"
 import { masterCodeKeys } from "../keys"
 import type { GetMasterCodesParams, MasterCodeTab } from "../types"
@@ -68,6 +69,15 @@ export function useTenantMasterCodeByName(name: MasterCodeTab | "") {
     queryKey: masterCodeKeys.tenantByName(name || ""),
     queryFn: async () => await apiGetTenantMasterCodeByName(name as MasterCodeTab),
     enabled: Boolean(name),
+    staleTime: 0,
+    gcTime: 0,
+  })
+}
+
+export function useGetActivityCodeTypes() {
+  return useQuery({
+    queryKey: [...masterCodeKeys.all, "types"] as const,
+    queryFn: apiGetActivityCodeTypes,
     staleTime: 0,
     gcTime: 0,
   })

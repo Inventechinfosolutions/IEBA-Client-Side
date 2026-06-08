@@ -35,14 +35,7 @@ export type ApiTenantMasterCode = {
   status: string
 }
 
-/** Tab strip order (UI); tab labels match `MasterCodeTypeEnum` / activity `type` — not loaded from DB. */
-export const MASTER_CODE_TYPE_TAB_ORDER: MasterCodeTab[] = [
-  MasterCodeTypeEnum.FFP,
-  MasterCodeTypeEnum.MAA,
-  MasterCodeTypeEnum.TCM,
-  MasterCodeTypeEnum.INTERNAL,
-  MasterCodeTypeEnum.CDSS,
-]
+
 
 export type MasterCodeFormMode = "add" | "edit"
 

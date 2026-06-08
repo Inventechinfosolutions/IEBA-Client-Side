@@ -267,3 +267,11 @@ export async function apiUpdateTenantMasterCode(input: {
   if (!entity) throw new Error("Master code update response missing data")
   return normalizeTenantMasterCode(entity)
 }
+
+export async function apiGetActivityCodeTypes(): Promise<string[]> {
+  const raw = await api.get<{ success: boolean; data: string[] }>("/activity-codes/types")
+  if (!raw.success || !Array.isArray(raw.data)) {
+    throw new Error("Failed to load activity code types")
+  }
+  return raw.data
+}
