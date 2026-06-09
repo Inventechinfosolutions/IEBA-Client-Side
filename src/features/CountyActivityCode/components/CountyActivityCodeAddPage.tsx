@@ -28,10 +28,6 @@ import {
   parseMasterCodeDisplay,
 } from "../api/countyActivityApi"
 import {
-  filterDepartmentNamesToManualApportioning,
-  isDepartmentManualApportioningEnabled,
-} from "../lib/countyActivityDepartmentApportioning"
-import {
   CountyActivityAddPageMode,
   CountyActivityGridRowType,
 } from "../enums/CountyActivity.enum"
@@ -108,7 +104,6 @@ export function CountyActivityCodeAddPage({
   masterCodeOptions = [],
   isMasterCodeOptionsLoading = false,
   departmentNames = [],
-  departmentManualApportioningByName = {},
   initialDepartmentShuttle,
   readOnlyPrimaryPicker = false,
   isEditSourceLoading = false,
@@ -177,45 +172,20 @@ export function CountyActivityCodeAddPage({
       : form.watch("description")
 
   const departmentValue = form.watch("department")
-  const apportioningChecked = form.watch("apportioning")
-
-  const isManualApportioningDepartment = useMemo(
-    () => (dept: ApiActivityNestedDepartmentResDto) =>
-      isDepartmentManualApportioningEnabled(
-        dept.name,
-        departmentManualApportioningByName,
-        dept,
-      ),
-    [departmentManualApportioningByName],
-  )
 
   const departmentCatalogByName = useMemo(() => {
     const map = new Map<string, ApiActivityNestedDepartmentResDto>()
     if (initialDepartmentShuttle) {
       for (const d of [...initialDepartmentShuttle.assigned, ...initialDepartmentShuttle.unassigned]) {
-        if (apportioningChecked && !isDepartmentManualApportioningEnabled(d.name, departmentManualApportioningByName, d)) {
-          continue
-        }
         map.set(d.name, d)
       }
       return map
     }
     for (const name of departmentNames) {
-      if (
-        apportioningChecked &&
-        !isDepartmentManualApportioningEnabled(name, departmentManualApportioningByName)
-      ) {
-        continue
-      }
       map.set(name, { id: 0, code: "", name, status: "active" })
     }
     return map
-  }, [
-    apportioningChecked,
-    departmentManualApportioningByName,
-    departmentNames,
-    initialDepartmentShuttle,
-  ])
+  }, [departmentNames, initialDepartmentShuttle])
 
   const assignedDepartmentRows = useMemo((): ApiActivityNestedDepartmentResDto[] => {
     const value = departmentValue.trim()
@@ -224,18 +194,11 @@ export function CountyActivityCodeAddPage({
       .split(",")
       .map((item) => item.trim())
       .filter(Boolean)
-    return names
-      .map(
-        (name) =>
-          departmentCatalogByName.get(name) ?? { id: 0, code: "", name, status: "active" },
-      )
-      .filter((dept) => !apportioningChecked || isManualApportioningDepartment(dept))
-  }, [
-    apportioningChecked,
-    departmentCatalogByName,
-    departmentValue,
-    isManualApportioningDepartment,
-  ])
+    return names.map(
+      (name) =>
+        departmentCatalogByName.get(name) ?? { id: 0, code: "", name, status: "active" },
+    )
+  }, [departmentCatalogByName, departmentValue])
 
   const unassignedDepartmentRows = useMemo((): ApiActivityNestedDepartmentResDto[] => {
     const assignedNames = new Set(assignedDepartmentRows.map((d) => d.name))
@@ -783,24 +746,6 @@ export function CountyActivityCodeAddPage({
                           const isChecked = checked === true
                           form.setValue("apportioning", isChecked)
                           form.setValue("manualApportioning", isChecked)
-                          if (isChecked) {
-                            const currentAssigned = form
-                              .getValues("department")
-                              .split(",")
-                              .map((item) => item.trim())
-                              .filter(Boolean)
-                            const manualOnly = filterDepartmentNamesToManualApportioning(
-                              currentAssigned,
-                              departmentManualApportioningByName,
-                            )
-                            if (manualOnly.length !== currentAssigned.length) {
-                              form.setValue("department", manualOnly.join(", "), {
-                                shouldValidate: true,
-                              })
-                            }
-                            setSelectedLeft([])
-                            setSelectedRight([])
-                          }
                         }}
                       />
                       <span>Apportioning?</span>

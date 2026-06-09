@@ -78,8 +78,6 @@ import {
   normalizeCountyActivityApportioningFlags,
   parseMasterCodeDisplay,
 } from "../api/countyActivityApi"
-import { filterDepartmentNamesToManualApportioning } from "../lib/countyActivityDepartmentApportioning"
-
 import { usePermissions } from "@/hooks/usePermissions"
 import { useGetAllDepartments } from "@/features/department/queries/getDepartments"
 import { getAllDepartments } from "@/features/department/api/departments"
@@ -103,18 +101,6 @@ function toastCountyActivityCodeApiError(err: unknown, fallback: string): void {
   toast.error(msg.length > 0 ? msg : fallback, {
     icon: <OctagonXIcon className="size-5 text-red-600" />,
   })
-}
-
-function mergeDepartmentManualApportioningByName(
-  master: Record<string, boolean>,
-  fromActivity?: Record<string, boolean>,
-): Record<string, boolean> {
-  const out = { ...master }
-  if (!fromActivity) return out
-  for (const [name, enabled] of Object.entries(fromActivity)) {
-    if (enabled) out[name] = true
-  }
-  return out
 }
 
 type CountyActivityTableColumnConfig = {
@@ -467,31 +453,8 @@ export function CountyActivityCodeTable({
   )
   const departments = allDepartmentsQuery.data?.items ?? []
 
-  const departmentManualApportioningFromMaster = useMemo(() => {
-    const out: Record<string, boolean> = {}
-    for (const dept of departments) {
-      const name = dept.name.trim()
-      if (name) {
-        out[name] = dept.settings?.manualApportioning === true
-      }
-    }
-    return out
-  }, [departments])
-
   const editActivityId = editOpen && rowToEdit ? rowToEdit.id : null
   const editDetailQuery = useGetCountyActivityForEdit(editActivityId, editOpen)
-
-  const editDepartmentManualApportioningByName = useMemo(
-    () =>
-      mergeDepartmentManualApportioningByName(
-        departmentManualApportioningFromMaster,
-        editDetailQuery.data?.departmentManualApportioningByName,
-      ),
-    [
-      departmentManualApportioningFromMaster,
-      editDetailQuery.data?.departmentManualApportioningByName,
-    ],
-  )
 
   const subPickerQuery = useGetCountyActivityActivePrimarySubPicker(
     assignedDepartmentIds,
@@ -586,12 +549,6 @@ export function CountyActivityCodeTable({
     const { apportioning, manualApportioning } = normalizeCountyActivityApportioningFlags(
       activity.apportioning,
     )
-    const visibleEditDeptNames = apportioning
-      ? filterDepartmentNamesToManualApportioning(
-          editDeptNames,
-          editDepartmentManualApportioningByName,
-        )
-      : editDeptNames
 
     const parent =
       rowToEdit.rowType === CountyActivityGridRowType.SUB && rowToEdit.parentId
@@ -612,7 +569,7 @@ export function CountyActivityCodeTable({
         leaveCode: activity.leavecode,
         docRequired: activity.docrequired,
         multipleJobPools: activity.isActivityAssignableToMultipleJobPools,
-        department: visibleEditDeptNames.join(", "),
+        department: editDeptNames.join(", "),
         apportioning,
         manualApportioning,
       }
@@ -632,14 +589,13 @@ export function CountyActivityCodeTable({
       docRequired: activity.docrequired,
       multipleJobPools: activity.isActivityAssignableToMultipleJobPools,
       department:
-        visibleEditDeptNames.length > 0
-          ? visibleEditDeptNames.join(", ")
+        editDeptNames.length > 0
+          ? editDeptNames.join(", ")
           : rowToEdit.department,
       apportioning,
       manualApportioning,
     }
   }, [
-    editDepartmentManualApportioningByName,
     editOpen,
     rowToEdit,
     editDetailQuery.isSuccess,
@@ -1840,7 +1796,6 @@ export function CountyActivityCodeTable({
             masterCodeOptions={addMasterCodeOptions}
             isMasterCodeOptionsLoading={addMasterCodesQuery.isLoading}
             departmentNames={departmentNames}
-            departmentManualApportioningByName={departmentManualApportioningFromMaster}
             onCodeDropdownOpen={() => {
               void addMasterCodesQuery.refetch()
             }}
@@ -1960,7 +1915,6 @@ export function CountyActivityCodeTable({
                   : undefined
               }
               departmentNames={editModalDepartmentNames}
-              departmentManualApportioningByName={editDepartmentManualApportioningByName}
               apportioningDepartments={editDetailQuery.data?.apportioningDepartments}
               onSelectedPrimaryIdChange={(id) => {
                 setEditSelectedPrimaryId(id)
