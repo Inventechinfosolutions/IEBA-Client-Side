@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useMemo, useRef, useState } from "react"
+import { lazy, Suspense, useCallback, useMemo, useRef, useState, useLayoutEffect } from "react"
 import { Spinner } from "@/components/ui/spinner"
 import { Controller, useFormContext, useFieldArray } from "react-hook-form"
 import { toast } from "sonner"
@@ -259,6 +259,11 @@ export function SecurityAssignmentsPanel({
     formState: { dirtyFields },
   } = useFormContext<UserModuleFormValues>()
 
+  useLayoutEffect(() => {
+    if (isAddMode || !tab2Data || typeof tab2Data !== "object") return
+    syncSecurityTab2Form(setValue, tab2Data)
+  }, [isAddMode, tab2Data, setValue])
+
   const {
     fields: multiCodeFields,
     append: appendMultiCode,
@@ -305,6 +310,13 @@ export function SecurityAssignmentsPanel({
   const assignedRoles = watch("roleAssignments") ?? []
 
   const userDeptsLoadPromiseRef = useRef<Promise<UserTimeStudyDepartment[]> | null>(null)
+
+  const hasHydratedRef = useRef(false)
+  const prevUserIdRef = useRef(securityUserId)
+  if (prevUserIdRef.current !== securityUserId) {
+    hasHydratedRef.current = false
+    prevUserIdRef.current = securityUserId
+  }
 
   /** Prefer GET /assignedDepartment/roles when loaded; form state for add-before-userId. */
   const assignedSnapshots = useMemo(() => {
@@ -385,19 +397,40 @@ export function SecurityAssignmentsPanel({
       const globalItems = departmentsQuery.data?.items ?? []
       if (!userDeptList.length && !globalItems.length) return rows
 
-      return rows.filter((row) => {
-        const deptId = Number(row.departmentId)
-        if (!Number.isFinite(deptId) || deptId < 1) return true
-        const userDept = userDeptList.find((d) => Number(d.departmentId) === deptId)
-        const globalDept = globalItems.find((d) => String(d.id) === String(deptId))
-        if (userDept != null) {
-          return !departmentMultiCodeSupportFromApi(userDept, undefined).multiCodeNotAvailable
-        }
-        if (globalDept?.settings != null) {
-          return !departmentMultiCodeSupportFromApi(undefined, globalDept.settings).multiCodeNotAvailable
-        }
-        return false
-      })
+      return rows
+        .filter((row) => {
+          const deptId = Number(row.departmentId)
+          if (!Number.isFinite(deptId) || deptId < 1) return true
+          const userDept = userDeptList.find((d) => Number(d.departmentId) === deptId)
+          const globalDept = globalItems.find((d) => String(d.id) === String(deptId))
+          if (userDept != null) {
+            return !departmentMultiCodeSupportFromApi(userDept, undefined).multiCodeNotAvailable
+          }
+          if (globalDept?.settings != null) {
+            return !departmentMultiCodeSupportFromApi(undefined, globalDept.settings).multiCodeNotAvailable
+          }
+          return false
+        })
+        .map((row) => {
+          // Also filter assigned codes within each row against what the dept currently allows.
+          // E.g. if saved code is TCM but dept settings now only list MAA, clear TCM.
+          const deptId = Number(row.departmentId)
+          if (!Number.isFinite(deptId) || deptId < 1) return row
+          const userDept = userDeptList.find((d) => Number(d.departmentId) === deptId)
+          const globalDept = globalItems.find((d) => String(d.id) === String(deptId))
+          const { allowedCodes } = departmentMultiCodeSupportFromApi(userDept, globalDept?.settings)
+          if (allowedCodes.length === 0) return row // settings not ready yet — don't clear
+          const current = parseMultiSelectStoredValues(row.assignedMultiCodes ?? "")
+          const kept = current.filter((c) => allowedCodes.includes(c))
+          const nextCodes = kept.join(",")
+          if (nextCodes === (row.assignedMultiCodes ?? "")) return row
+          // Only clear multicode selection + checkbox; preserve activation dates
+          return {
+            ...row,
+            assignedMultiCodes: nextCodes,
+            allowMultiCodes: nextCodes !== "" ? row.allowMultiCodes : false,
+          }
+        })
     },
     [userDeptsQuery.data, departmentsQuery.data?.items],
   )
@@ -438,22 +471,31 @@ export function SecurityAssignmentsPanel({
     return deptSeed.map((dept) => {
       const deptHistory = latestHistoryByDept.get(Number(dept.id))
       const userDept = userDeptList.find((d) => Number(d.departmentId) === Number(dept.id))
+      const globalDept = departmentsQuery.data?.items?.find((d) => String(d.id) === String(dept.id))
 
       const allowActivationDates =
         userDept == null || userDept.allowActivationStartDateAndEndDate === true
 
-      // Only restore saved user history — never auto-select dept API multi-code list.
+      // Filter saved codes against what the department currently allows.
+      // If user saved MAA but dept settings now only list TCM, MAA is cleared.
+      const { allowedCodes } = departmentMultiCodeSupportFromApi(userDept, globalDept?.settings)
       const historyCodes = (deptHistory?.multiCodeTypes ?? []).filter(Boolean)
+      const validHistoryCodes = allowedCodes.length > 0
+        ? historyCodes.filter((c) => allowedCodes.includes(c))
+        : historyCodes
+      const validAllowMultiCodes = deptHistory?.allowMultiCodes === true && validHistoryCodes.length > 0
       return {
         departmentId: Number(dept.id),
         departmentName: dept.name,
-        allowMultiCodes: deptHistory?.allowMultiCodes === true,
-        assignedMultiCodes: historyCodes.join(","),
+        allowMultiCodes: validAllowMultiCodes,
+        assignedMultiCodes: validHistoryCodes.join(","),
+        // Always restore dates from history — they are independent of multicode selection.
+        // Even if the saved multicode was cleared (invalid), the dates should be kept.
         activationStartDate: allowActivationDates ? toDateInputValue(deptHistory?.startDate) : "",
         activationEndDate: allowActivationDates ? toDateInputValue(deptHistory?.endDate) : "",
       }
     })
-  }, [isAddMode, userDeptsQuery.data, historyQuery.data, assignedDeptsForMultiCodeRows])
+  }, [isAddMode, userDeptsQuery.data, historyQuery.data, assignedDeptsForMultiCodeRows, departmentsQuery.data])
 
   const multiCodeRowsSyncStampRef = useRef<string>("")
   const multiCodeRowsModeRef = useRef<"none" | "rows">("rows")
@@ -479,11 +521,13 @@ export function SecurityAssignmentsPanel({
     let next = stripIneligibleDepartmentMultiCodeRows(current)
 
     if (!isAddMode && assignedDeptsForMultiCodeRows.length > 0 && hydratedEditRows.length > 0) {
-      const covered = new Set(
-        next.map((r) => Number(r.departmentId)).filter((id) => Number.isFinite(id) && id > 0),
-      )
-      if (!assignedDeptsForMultiCodeRows.every((d) => covered.has(Number(d.id)))) {
+      // Only hydrate once both user departments (multicode settings) AND history are loaded.
+      // This ensures stale saved codes (e.g. MAA) are correctly filtered out against the
+      // current department settings (e.g. only TCM is now allowed).
+      const deptDataReady = userDeptsQuery.isSuccess || departmentsQuery.isSuccess
+      if (!hasHydratedRef.current && deptDataReady) {
         next = hydratedEditRows
+        hasHydratedRef.current = true
       }
     } else if (isAddMode && assignedDeptsForMultiCodeRows.length > 0 && next.length === 0) {
       next = [emptyDepartmentMultiCodeRow()]
@@ -1427,6 +1471,34 @@ export function SecurityAssignmentsPanel({
 
       {assignedDeptsForMultiCodeRows.length > 0 ? (
       <div className="mt-8 mb-6">
+        {/* Top-right + icon */}
+        <div className="flex justify-end mb-4 pr-1">
+          <button
+            type="button"
+            disabled={!(multiCodeFields.length < assignedDeptsForMultiCodeRows.length)}
+            onClick={() => {
+              if (multiCodeFields.length < assignedDeptsForMultiCodeRows.length) {
+                appendMultiCode({
+                  departmentId: 0,
+                  departmentName: "",
+                  allowMultiCodes: false,
+                  assignedMultiCodes: "",
+                  activationStartDate: "",
+                  activationEndDate: "",
+                })
+              }
+            }}
+            className={`flex items-center justify-center size-7 rounded-full border-2 transition-all bg-white ${
+              multiCodeFields.length < assignedDeptsForMultiCodeRows.length
+                ? "border-[#22c55e] text-[#22c55e] hover:bg-green-50/30 cursor-pointer"
+                : "border-[#9ca3af] text-[#9ca3af] cursor-not-allowed"
+            }`}
+            title="Add another department"
+          >
+            <Plus className="size-4" strokeWidth={3} />
+          </button>
+        </div>
+
         <div className="flex flex-col gap-6">
           {(() => {
             const currentMultiCodes = watch("departmentMultiCodes") || []
@@ -1459,12 +1531,6 @@ export function SecurityAssignmentsPanel({
                 globalDeptConfig,
               )
 
-              // Create: show activation dates only after dept + Allow MultiCodes + dept flag.
-              // Edit: show when dept allows activation dates (end date column is edit-only below).
-              const showActivationDates = isAddMode
-                ? deptSelected && isAllowEnabled && deptAllowsActivationDates
-                : deptAllowsActivationDates
-
               return (
                 <div key={field.id} className="flex items-start gap-4 w-full relative">
                   
@@ -1486,6 +1552,12 @@ export function SecurityAssignmentsPanel({
                           onValueChange={(val) => {
                             const found = assignedDeptsForMultiCodeRows.find((d) => String(d.id) === val)
                             if (found) {
+                              // Reset the fields for this row on department change
+                              setValue(`departmentMultiCodes.${index}.allowMultiCodes`, false)
+                              setValue(`departmentMultiCodes.${index}.assignedMultiCodes`, "")
+                              setValue(`departmentMultiCodes.${index}.activationStartDate`, "")
+                              setValue(`departmentMultiCodes.${index}.activationEndDate`, "")
+
                               dFieldId.onChange(found.id)
                               setValue(`departmentMultiCodes.${index}.departmentName`, found.name)
                               void fetchUserDeptsForRow(index)
@@ -1493,19 +1565,20 @@ export function SecurityAssignmentsPanel({
                           }}
                         >
                           <SelectTrigger className="!h-[40px] w-full rounded-[6px] border border-[#d1d5db] bg-white px-3 text-[12px] text-[#111827] focus:ring-1 focus:ring-[#3b82f6] shadow-sm disabled:cursor-not-allowed disabled:bg-gray-50">
-                            <SelectValue placeholder="Enter department name" />
+                            <SelectValue placeholder="Select Department" />
                           </SelectTrigger>
-                          <SelectContent position="popper" className="z-[100] max-h-60 overflow-y-auto w-(--radix-select-trigger-width) bg-white">
-                            {assignedDeptsForMultiCodeRows.map((d) => (
-                              <SelectItem 
-                                key={d.id} 
-                                value={String(d.id)}
-                                disabled={selectedDeptIds.includes(Number(d.id)) && Number(dFieldId.value) !== Number(d.id)}
-                                className="text-[12px]"
-                              >
-                                {d.name}
-                              </SelectItem>
-                            ))}
+                          <SelectContent position="popper" className="z-[100] max-h-60 overflow-y-auto w-(--radix-select-trigger-width) bg-white rounded-[6px]">
+                            {assignedDeptsForMultiCodeRows
+                              .filter((d) => !selectedDeptIds.includes(Number(d.id)) || Number(dFieldId.value) === Number(d.id))
+                              .map((d) => (
+                                <SelectItem 
+                                  key={d.id} 
+                                  value={String(d.id)}
+                                  className="text-[12px] rounded-[4px] py-2"
+                                >
+                                  {d.name}
+                                </SelectItem>
+                              ))}
                           </SelectContent>
                         </Select>
                       )}
@@ -1528,11 +1601,12 @@ export function SecurityAssignmentsPanel({
                               userDeptsQuery.isFetched &&
                               Number(currentDeptId) > 0 &&
                               allowCheckboxSupport.multiCodeNotAvailable
+                            const isCheckboxDisabled = allowCheckboxBlocked || !deptSelected
                             return (
                               <Checkbox
                                 id={`allow-multicodes-checkbox-${index}`}
                                 checked={cField.value === true}
-                                disabled={allowCheckboxBlocked}
+                                disabled={isCheckboxDisabled}
                                 onCheckedChange={(checked) => {
                                   const on = checked === true
                                   cField.onChange(on)
@@ -1553,7 +1627,12 @@ export function SecurityAssignmentsPanel({
                             )
                           }}
                         />
-                        <label htmlFor={`allow-multicodes-checkbox-${index}`} className="text-[11px] font-normal text-[#374151] whitespace-nowrap cursor-pointer select-none">
+                        <label 
+                          htmlFor={`allow-multicodes-checkbox-${index}`} 
+                          className={`text-[11px] font-normal whitespace-nowrap select-none ${
+                            !deptSelected ? "text-[#9ca3af] cursor-not-allowed" : "text-[#374151] cursor-pointer"
+                          }`}
+                        >
                           Allow MultiCodes
                         </label>
                       </div>
@@ -1649,12 +1728,19 @@ export function SecurityAssignmentsPanel({
                             return (
                               <MultiSelectDropdown
                                 value={displayValue}
-                                onChange={aField.onChange}
+                                onChange={(val) => {
+                                  aField.onChange(val)
+                                  // Reset date when multicode selection is cleared
+                                  if (!val) {
+                                    setValue(`departmentMultiCodes.${index}.activationStartDate`, "")
+                                    setValue(`departmentMultiCodes.${index}.activationEndDate`, "")
+                                  }
+                                }}
                                 onBlur={aField.onBlur}
                                 placeholder="Select MultiCodes"
                                 options={options}
                                 isLoading={userDeptsQuery.isFetching}
-                                disabled={!isAllowEnabled}
+                                disabled={!isAllowEnabled || !deptSelected}
                                 onOpenChange={(open) => {
                                   if (open && Number(currentDeptId) > 0) {
                                     void fetchUserDeptsForRow(index)
@@ -1669,114 +1755,129 @@ export function SecurityAssignmentsPanel({
                     </div>
                   </div>
 
-                  {/* Conditionally rendered Activation Dates */}
-                  {showActivationDates ? (
-                    <>
-                      {/* Activation Start Date */}
-                      <div className="flex-1 flex flex-col">
-                        <div className="h-[22px] mb-1 flex items-end">
-                          <label className="text-[11px] font-normal text-[#374151] flex items-center gap-1">
-                            <span>Activation Start Date</span>
-                          </label>
-                        </div>
-                        <div className="h-[40px] flex items-center w-full">
-                          <Controller
-                            name={`departmentMultiCodes.${index}.activationStartDate`}
-                            control={control}
-                            render={({ field: sField }) => (
-                              <DatePickerField
-                                value={sField.value}
-                                onChange={(val) => {
-                                  if (val && isActivationEndBeforeStart(val, watch(`departmentMultiCodes.${index}.activationEndDate`))) {
-                                    toast.error(ACTIVATION_END_BEFORE_START_MSG)
-                                    return
-                                  }
-                                  sField.onChange(val)
-                                }}
-                                disabled={!currentDeptName || !isAllowEnabled || !hasSelectedMultiCodes}
-                              />
-                            )}
-                          />
-                        </div>
+                  {/* Activation Dates */}
+                  {isAddMode ? (
+                    /* Add Mode: always show Activation Start Date */
+                    <div className="flex-1 flex flex-col">
+                      <div className="h-[22px] mb-1 flex items-end">
+                        <label className="text-[11px] font-normal text-[#374151] flex items-center gap-1">
+                          <span>Activation Start Date</span>
+                        </label>
                       </div>
-
-                      {/* Activation End Date */}
-                      {!isAddMode && (
-                        <div className="flex-1 flex flex-col">
-                          <div className="h-[22px] mb-1 flex items-end">
-                            <label className="block text-[11px] font-normal text-[#374151]">Activation End Date</label>
-                          </div>
-                          <div className="h-[40px] flex items-center w-full">
-                            <Controller
-                              name={`departmentMultiCodes.${index}.activationEndDate`}
-                              control={control}
-                              render={({ field: eField }) => (
-                                <DatePickerField
-                                  value={eField.value}
-                                  onChange={(val) => {
-                                    if (val && isActivationEndBeforeStart(watch(`departmentMultiCodes.${index}.activationStartDate`), val)) {
-                                      toast.error(ACTIVATION_END_BEFORE_START_MSG)
-                                      return
-                                    }
-                                    eField.onChange(val)
-                                  }}
-                                  disabled={isAllowEnabled}
-                                />
-                              )}
+                      <div className="h-[40px] flex items-center w-full">
+                        <Controller
+                          name={`departmentMultiCodes.${index}.activationStartDate`}
+                          control={control}
+                          render={({ field: sField }) => (
+                            <DatePickerField
+                              value={sField.value}
+                              onChange={(val) => {
+                                if (val && isActivationEndBeforeStart(val, watch(`departmentMultiCodes.${index}.activationEndDate`))) {
+                                  toast.error(ACTIVATION_END_BEFORE_START_MSG)
+                                  return
+                                }
+                                sField.onChange(val)
+                              }}
+                              disabled={!deptSelected || !isAllowEnabled || !hasSelectedMultiCodes || !deptAllowsActivationDates}
                             />
+                          )}
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    /* Edit Mode: check deptAllowsActivationDates */
+                    <>
+                      {deptAllowsActivationDates ? (
+                        <>
+                          {/* Activation Start Date */}
+                          <div className="flex-1 flex flex-col">
+                            <div className="h-[22px] mb-1 flex items-end">
+                              <label className="text-[11px] font-normal text-[#374151] flex items-center gap-1">
+                                <span>Activation Start Date</span>
+                              </label>
+                            </div>
+                            <div className="h-[40px] flex items-center w-full">
+                              <Controller
+                                name={`departmentMultiCodes.${index}.activationStartDate`}
+                                control={control}
+                                render={({ field: sField }) => (
+                                  <DatePickerField
+                                    value={sField.value}
+                                    onChange={(val) => {
+                                      if (val && isActivationEndBeforeStart(val, watch(`departmentMultiCodes.${index}.activationEndDate`))) {
+                                        toast.error(ACTIVATION_END_BEFORE_START_MSG)
+                                        return
+                                      }
+                                      sField.onChange(val)
+                                    }}
+                                    disabled={!deptSelected || !isAllowEnabled || !hasSelectedMultiCodes}
+                                  />
+                                )}
+                              />
+                            </div>
                           </div>
-                        </div>
+
+                          {/* Activation End Date */}
+                          <div className="flex-1 flex flex-col">
+                            <div className="h-[22px] mb-1 flex items-end">
+                              <label className="block text-[11px] font-normal text-[#374151]">Activation End Date</label>
+                            </div>
+                            <div className="h-[40px] flex items-center w-full">
+                              <Controller
+                                name={`departmentMultiCodes.${index}.activationEndDate`}
+                                control={control}
+                                render={({ field: eField }) => (
+                                  <DatePickerField
+                                    value={eField.value}
+                                    onChange={(val) => {
+                                      if (val && isActivationEndBeforeStart(watch(`departmentMultiCodes.${index}.activationStartDate`), val)) {
+                                        toast.error(ACTIVATION_END_BEFORE_START_MSG)
+                                        return
+                                      }
+                                      eField.onChange(val)
+                                    }}
+                                    disabled={isAllowEnabled}
+                                  />
+                                )}
+                              />
+                            </div>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          {/* Keep grid alignment when dept does not allow activation dates */}
+                          <div className="flex-1 flex flex-col pointer-events-none opacity-0" />
+                          <div className="flex-1 flex flex-col pointer-events-none opacity-0" />
+                        </>
                       )}
                     </>
-                  ) : !isAddMode ? (
-                    <>
-                      {/* Edit: keep grid alignment when dept does not allow activation dates */}
-                      <div className="flex-1 flex flex-col pointer-events-none opacity-0" />
-                      <div className="flex-1 flex flex-col pointer-events-none opacity-0" />
-                    </>
-                  ) : null}
+                  )}
                   
                   {/* Delete Button */}
                   <div className="w-10 flex flex-col flex-shrink-0 mt-[26px]">
-                    {isAddMode && index > 0 && (
-                      <button 
-                        type="button" 
-                        onClick={() => removeMultiCode(index)} 
-                        className="flex size-10 flex-shrink-0 items-center justify-center rounded-[6px] border border-[#e5e7eb] bg-white text-[#9ca3af] hover:bg-gray-50 hover:text-red-500 transition-colors shadow-sm"
-                        title="Remove row"
-                      >
-                        <Trash2 className="size-4" />
-                      </button>
-                    )}
+                    <button 
+                      type="button" 
+                      disabled={multiCodeFields.length <= 1}
+                      onClick={() => {
+                        if (multiCodeFields.length > 1) {
+                          removeMultiCode(index)
+                        }
+                      }}
+                      className={`flex size-10 flex-shrink-0 items-center justify-center transition-colors ${
+                        multiCodeFields.length <= 1 
+                          ? "text-[#c2c6d1] cursor-not-allowed opacity-50" 
+                          : "text-red-500 hover:text-red-600 cursor-pointer"
+                      }`}
+                      title="Remove row"
+                    >
+                      <Trash2 className="size-5" />
+                    </button>
                   </div>
                 </div> 
               )
             })
           })()}
         </div>
-
-        {multiCodeFields.length < assignedDeptsForMultiCodeRows.length && (
-          <div className="mt-6">
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full h-11 flex items-center justify-center gap-2 rounded-[8px] bg-white border border-[#d1d5db] text-[#111827] text-[13px] font-medium hover:bg-gray-50 shadow-[0_1px_2px_rgba(0,0,0,0.05)] transition-colors"
-              onClick={() => {
-                appendMultiCode({
-                  departmentId: 0,
-                  departmentName: "",
-                  allowMultiCodes: false,
-                  assignedMultiCodes: "",
-                  activationStartDate: "",
-                  activationEndDate: "",
-                })
-              }}
-            >
-              <Plus className="size-4" strokeWidth={2.5} />
-              Add another department
-            </Button>
-          </div>
-        )}
       </div>
       ) : null}
         </>

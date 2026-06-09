@@ -58,6 +58,9 @@ export const ADD_EMPLOYEE_PRIMARY_SUPERVISOR_REQUIRED = "Primary Supervisor can'
 
 export const ADD_EMPLOYEE_BACKUP_SUPERVISOR_REQUIRED = "Backup Supervisor can't be empty"
 
+export const ADD_EMPLOYEE_DEPARTMENT_ASSIGNMENT_REQUIRED =
+  "Department Assignment can't be empty"
+
 /** Add mode: Next on Security requires at least one successful transfer (not Save). */
 export const ADD_EMPLOYEE_SECURITY_TRANSFER_REQUIRED =
   "Complete at least one successful Security transfer before continuing."

@@ -318,6 +318,7 @@ function flattenDepartmentsRolesToSecurityItems(
         id: `${deptId}-${roleId}`,
         name: roleName,
         department: deptName,
+        roleId,
       })
     }
   }
@@ -384,6 +385,7 @@ export async function fetchDepartmentRolesCatalog(): Promise<AddEmployeeSecurity
           id: `${dept.id}-${dr.id}`,
           name: roleName,
           department: dept.name,
+          roleId: dr.role?.id,
         })
       }
     }

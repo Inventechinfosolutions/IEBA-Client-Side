@@ -22,12 +22,14 @@ import {
   ADD_EMPLOYEE_SECURITY_TRANSFER_REQUIRED,
   ADD_EMPLOYEE_SAVE_TO_MOVE_NEXT_MESSAGE,
   ADD_EMPLOYEE_SUPERVISOR_NEEDS_SECURITY_ASSIGNMENTS,
+  ADD_EMPLOYEE_DEPARTMENT_ASSIGNMENT_REQUIRED,
   userModuleFormEditSchema,
   userModuleFormSchema,
 } from "../schemas"
 import { addEmployeeTabFieldKeys, orderedAddEmployeeTabs } from "../constants/user-form-tabs"
 import { resolveSecurityRolesForSupervisorTab } from "../utility/parseSecurityDepartmentRoles"
 import { syncSecurityAssignmentsForm } from "../utility/syncSecurityAssignmentsForm"
+import { usePermissions } from "@/hooks/usePermissions"
 
 const initialTabSaved: Record<SaveGatedTab, boolean> = {
   employee: false,
@@ -66,6 +68,8 @@ export function useAddEmployeeForm({
   onSave,
 }: UseAddEmployeeFormParams) {
   const isEditMode = mode === "edit"
+  const { isSuperAdmin } = usePermissions()
+  const showDeptAutoAssign = !isSuperAdmin
   const [activeTab, setActiveTab] = useState<AddEmployeeFormTab>("employee")
   const [tabSaved, setTabSaved] = useState<Record<SaveGatedTab, boolean>>(initialTabSaved)
   const [addSecurityTransferSucceeded, setAddSecurityTransferSucceeded] = useState(false)
@@ -194,15 +198,39 @@ export function useAddEmployeeForm({
       } as unknown as UserModuleFormValues
 
       // Add-mode tab-specific required checks (not represented in the base schema).
-      if (!isEditMode && tabWhenSaving === "security") {
-        const count = values.securityAssignedSnapshots?.length ?? 0
-        if (count === 0) {
-          setError("securityAssignedSnapshots", {
+      if (!isEditMode && tabWhenSaving === "employee" && showDeptAutoAssign) {
+        const autoAssignedDepts = (values.autoAssignedDepartments ?? "").trim()
+        if (!autoAssignedDepts) {
+          setError("autoAssignedDepartments", {
             type: "manual",
-            message: ADD_EMPLOYEE_SECURITY_ASSIGNMENT_REQUIRED,
+            message: ADD_EMPLOYEE_DEPARTMENT_ASSIGNMENT_REQUIRED,
           })
-          showInvalidToast(methods.formState.errors)
+          showInvalidToast({
+            ...methods.formState.errors,
+            autoAssignedDepartments: {
+              type: "manual",
+              message: ADD_EMPLOYEE_DEPARTMENT_ASSIGNMENT_REQUIRED,
+            } as any,
+          })
           return
+        }
+      }
+
+      if (!isEditMode && tabWhenSaving === "security") {
+        const count = values.securityAssignedSnapshots?.length ?? 0;
+        if (count === 0) {
+          // Show a warning but do not block the save operation.
+          toast.warning(ADD_EMPLOYEE_SECURITY_ASSIGNMENT_REQUIRED, {
+            position: "top-center",
+            icon: (
+              <span className="inline-flex size-4 shrink-0 items-center justify-center rounded-full bg-[#eab308] text-white">
+                <AlertTriangle className="size-3 stroke-[2.5]" />
+              </span>
+            ),
+            className: warningToastClassName,
+            classNames: warningToastInnerClassNames,
+          });
+          // Continue without returning; allow the save to proceed.
         }
       }
 
@@ -243,6 +271,24 @@ export function useAddEmployeeForm({
   )
 
   const handleNext = async () => {
+    if (!isEditMode && activeTab === "employee" && showDeptAutoAssign) {
+      const autoAssignedDepts = (getValues("autoAssignedDepartments") ?? "").trim()
+      if (!autoAssignedDepts) {
+        setError("autoAssignedDepartments", {
+          type: "manual",
+          message: ADD_EMPLOYEE_DEPARTMENT_ASSIGNMENT_REQUIRED,
+        })
+        showInvalidToast({
+          ...formState.errors,
+          autoAssignedDepartments: {
+            type: "manual",
+            message: ADD_EMPLOYEE_DEPARTMENT_ASSIGNMENT_REQUIRED,
+          } as any,
+        })
+        return
+      }
+    }
+
     const fields = isEditMode
       ? addEmployeeTabFieldKeys[activeTab].filter(
           (field) => field !== "password" && field !== "confirmPassword",

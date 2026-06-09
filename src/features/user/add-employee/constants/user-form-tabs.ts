@@ -14,6 +14,7 @@ export const addEmployeeTabFieldKeys: Record<
     "confirmPassword",
     "jobClassificationIds",
     "claimingUnit",
+    "autoAssignedDepartments",
   ],
   security: ["roleAssignments", "supervisorApportioning", "clientAdmin"],
   supervisor: [

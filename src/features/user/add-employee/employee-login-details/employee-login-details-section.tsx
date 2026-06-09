@@ -65,6 +65,7 @@ export function EmployeeLoginDetailsSection({
     watch,
     setValue,
     getValues,
+    clearErrors,
     formState: { errors, touchedFields, dirtyFields },
   } = useFormContext<UserModuleFormValues>()
 
@@ -534,7 +535,7 @@ export function EmployeeLoginDetailsSection({
       {showDeptAutoAssign && !isEditMode && (
         <div className="mt-4 grid grid-cols-3 gap-3">
           <div>
-            <label className={labelClassName}>Department Assignment</label>
+            <label className={labelClassName}>*Department Assignment</label>
             <Controller
               name="autoAssignedDepartments"
               control={control}
@@ -553,7 +554,12 @@ export function EmployeeLoginDetailsSection({
                 return (
                   <MultiSelectDropdown
                     value={field.value ?? ""}
-                    onChange={field.onChange}
+                    onChange={(val) => {
+                      field.onChange(val)
+                      if (val && val.trim()) {
+                        clearErrors("autoAssignedDepartments")
+                      }
+                    }}
                     onBlur={field.onBlur}
                     placeholder="Select departments"
                     options={options}
@@ -561,6 +567,11 @@ export function EmployeeLoginDetailsSection({
                 )
               }}
             />
+            {errors.autoAssignedDepartments?.message ? (
+              <p className="mt-1 text-[11px] text-[#ff0000]" role="alert">
+                {String(errors.autoAssignedDepartments.message)}
+              </p>
+            ) : null}
           </div>
         </div>
       )}
