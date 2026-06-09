@@ -652,9 +652,21 @@ export function SecurityAssignmentsPanel({
   const isApportioningEnabled = useMemo(() => {
     if (assignedSnapshots.length === 0 || !hasTimeStudySupervisorRole) return false
     if (!departmentsQuery.data?.items?.length) return true
-    const assignedDeptIds = new Set(assignedSnapshots.map((s) => String(s.departmentId)))
+    const supervisorDeptIds = new Set(
+      assignedSnapshots
+        .filter((s) => s.name.trim() === "Time Study Supervisor")
+        .map((s) => String(s.departmentId))
+    )
+    const userDeptIds = new Set(
+      assignedSnapshots
+        .filter((s) => s.name.trim() === "User")
+        .map((s) => String(s.departmentId))
+    )
     return departmentsQuery.data.items.some(
-      (dept) => assignedDeptIds.has(String(dept.id)) && dept.settings.apportioning,
+      (dept) =>
+        supervisorDeptIds.has(String(dept.id)) &&
+        userDeptIds.has(String(dept.id)) &&
+        dept.settings.apportioning,
     )
   }, [assignedSnapshots, hasTimeStudySupervisorRole, departmentsQuery.data?.items])
 
@@ -883,169 +895,6 @@ export function SecurityAssignmentsPanel({
       return
     }
 
-    let dbSupervisorDepts = new Set<number>()
-
-    // 1. Guard: Only allow unassign if the department's allocation is 0 or null IN THE DATABASE
-    if (displaySupervisorApportioning && !isAddMode && securityUserId) {
-      try {
-        const tab2Raw =
-          tab2Data ??
-          parseUserDetailsTab2(
-            (await queryClient.fetchQuery({
-              queryKey: addEmployeeLookupKeys.userDetailsTab(securityUserId, "tab2"),
-              queryFn: () => fetchUserDetailsTab(securityUserId, "tab2"),
-              staleTime: 0,
-            })) as Record<string, unknown>,
-          )
-        const details = tab2Raw
-
-        const supervisorDbRoles =
-          details.departmentsRoles?.filter((dr) => dr.role?.name?.trim() === "Time Study Supervisor") ?? []
-        dbSupervisorDepts = new Set(supervisorDbRoles.map(dr => dr.departmentId));
-
-        const supervisorItemsRemoving = toRemoveItems.filter(i => i.name.trim() === "Time Study Supervisor");
-        const deptsRemovingIds = new Set(
-          supervisorItemsRemoving
-            .map(i => departmentIdFromSecurityCatalogItemId(i.id))
-            .filter((id): id is number => id != null)
-        );
-
-        // If removing ALL supervisor roles at once, allow it!
-        const isRemovingAllSupervisorRoles = deptsRemovingIds.size === dbSupervisorDepts.size && dbSupervisorDepts.size > 0;
-
-        const failingItem = toRemoveItems.find((i) => {
-          // Only check if we are specifically trying to unassign the Supervisor role
-          if (i.name.trim() !== "Time Study Supervisor") return false
-
-          const deptId = departmentIdFromSecurityCatalogItemId(i.id)
-          if (deptId == null) return false
-          
-          // Exception 1: If removing ALL supervisor roles, allow it!
-          if (isRemovingAllSupervisorRoles) return false
-
-          // Exception 2: If this is the ONLY supervisor department, allow unassigning it
-          // regardless of the current database percentage.
-          if (dbSupervisorDepts.size <= 1) return false
-
-          // Otherwise, if they have multiple departments, they must set this one to 0 first
-          const deptRoles = details.departmentsRoles?.filter((dr) => dr.departmentId === deptId)
-          const hasAllocation = deptRoles?.some((dr) => (dr.apportioning ?? 0) > 0)
-          
-          return hasAllocation
-        })
-
-        if (failingItem) {
-          // Find departments that are staying
-          const deptsStaying = supervisorDbRoles.filter(dr => !deptsRemovingIds.has(dr.departmentId));
-          
-          const deptId = departmentIdFromSecurityCatalogItemId(failingItem.id);
-          const allRolesForThisDeptInDb =
-            details.departmentsRoles?.filter((dr) => dr.departmentId === deptId) ?? []
-          const rolesBeingRemovedForThisDept = toRemoveItems.filter(i => departmentIdFromSecurityCatalogItemId(i.id) === deptId);
-          
-          // Check if user is removing ALL roles they have in this department
-          const isRemovingFullDepartment = allRolesForThisDeptInDb.length > 0 && 
-            allRolesForThisDeptInDb.every(dbRole => 
-              rolesBeingRemovedForThisDept.some(removingItem => {
-                const removingRoleId = roleRefIdFromSecurityCatalogItemId(removingItem.id);
-                return Number(removingRoleId) === Number(dbRole.roleId);
-              })
-            );
-
-          let message = "";
-          const stayingDeptName = deptsStaying.length === 1 ? (deptsStaying[0].department?.name || "the remaining department") : "";
-
-          if (isRemovingFullDepartment) {
-            message = `Cannot unassign ${failingItem.department} department.`;
-          } else {
-            message = `Cannot unassign ${failingItem.name} role from ${failingItem.department}.`;
-          }
-
-          if (deptsStaying.length === 1) {
-            toast.error(`${message} Please make ${stayingDeptName} apportioning 100% and try again.`)
-          } else {
-            toast.error(`${message} Please update your allocations among remaining departments first.`)
-          }
-          return
-        }
-      } catch (err) {
-        console.error("Failed to verify database allocations:", err)
-        // Fallback to local check if API fails, or block for safety? 
-        // Blocking is safer for business rules.
-        toast.error("Could not verify department status. Please try again.")
-        return
-      }
-    }
-
-    // 2. Guard for Add Mode: Only allow unassign if the department's local allocation is 0
-    if (displaySupervisorApportioning && isAddMode) {
-      const supervisorSnapshots = assignedSnapshots.filter(s => s.name.trim() === "Time Study Supervisor");
-      const supervisorDeptIds = new Set(supervisorSnapshots.map(s => s.departmentId));
-
-      const supervisorItemsRemoving = toRemoveItems.filter(i => i.name.trim() === "Time Study Supervisor");
-      const deptsRemovingIds = new Set(
-        supervisorItemsRemoving
-          .map(i => departmentIdFromSecurityCatalogItemId(i.id))
-          .filter((id): id is number => id != null)
-      );
-
-      // If removing ALL supervisor roles at once, allow it!
-      const isRemovingAllSupervisorRoles = deptsRemovingIds.size === supervisorDeptIds.size && supervisorDeptIds.size > 0;
-
-      const failingItem = toRemoveItems.find((i) => {
-        // Only check if we are specifically trying to unassign the Supervisor role
-        if (i.name.trim() !== "Time Study Supervisor") return false
-
-        const deptId = departmentIdFromSecurityCatalogItemId(i.id)
-        if (deptId == null) return false
-        
-        // Exception 1: If removing ALL supervisor roles, allow it!
-        if (isRemovingAllSupervisorRoles) return false
-
-        // Exception 2: If this is the ONLY supervisor department, allow unassigning it
-        // regardless of the current percentage.
-        if (supervisorDeptIds.size <= 1) return false
-
-        // Otherwise, if they have multiple departments, they must set this one to 0 first
-        const currentAllocations = getValues("apportioningAllocations") ?? {}
-        const allocationVal = parseFloat(currentAllocations[String(deptId)] ?? "") || 0
-        const hasAllocation = allocationVal > 0
-        
-        return hasAllocation
-      })
-
-      if (failingItem) {
-        // Find departments that are staying
-        const deptsStaying = supervisorSnapshots.filter(s => !deptsRemovingIds.has(s.departmentId));
-        
-        const deptId = departmentIdFromSecurityCatalogItemId(failingItem.id);
-        const allRolesForThisDept = assignedSnapshots.filter((s) => s.departmentId === deptId)
-        const rolesBeingRemovedForThisDept = toRemoveItems.filter(i => departmentIdFromSecurityCatalogItemId(i.id) === deptId);
-        
-        // Check if user is removing ALL roles they have in this department
-        const isRemovingFullDepartment = allRolesForThisDept.length > 0 && 
-          allRolesForThisDept.every(snap => 
-            rolesBeingRemovedForThisDept.some(removingItem => removingItem.id === snap.id)
-          );
-
-        let message = "";
-        const stayingDeptName = deptsStaying.length === 1 ? (deptsStaying[0].department || "the remaining department") : "";
-
-        if (isRemovingFullDepartment) {
-          message = `Cannot unassign ${failingItem.department} department.`;
-        } else {
-          message = `Cannot unassign ${failingItem.name} role from ${failingItem.department}.`;
-        }
-
-        if (deptsStaying.length === 1) {
-          toast.error(`${message} Please make ${stayingDeptName} apportioning 100% and try again.`)
-        } else {
-          toast.error(`${message} Please update your allocations among remaining departments first.`)
-        }
-        return
-      }
-    }
-
     if (canPersistTransfers) {
       const invalid = toRemoveItems.some(
         (i) =>
@@ -1063,16 +912,10 @@ export function SecurityAssignmentsPanel({
         return
       }
       try {
-        // If unassigning the last supervisor department, force apportioningRequired to false
-        const isRemovingSupervisorRole = toRemoveItems.some(i => i.name.trim() === "Time Study Supervisor");
-        const willHaveNoSupervisorDepts = 
-          dbSupervisorDepts.size === 0 || 
-          (dbSupervisorDepts.size === 1 && isRemovingSupervisorRole);
-
         await unassignMutation.mutateAsync({
           userId: securityUserId,
           departments,
-          apportioningRequired: willHaveNoSupervisorDepts ? false : getValues("supervisorApportioning"),
+          apportioningRequired: getValues("supervisorApportioning"),
           apportioningAllocation: [], // Role assignment only - do not update percentages
         })
         toast.success("Roles unassigned.", addEmployeeTransferSuccessToastOptions)
@@ -1388,8 +1231,14 @@ export function SecurityAssignmentsPanel({
                     .filter(s => s.name.trim() === supervisorRoleName)
                     .map(s => s.departmentId)
                 )
+                const deptsWithUser = new Set(
+                  assignedSnapshots
+                    .filter(s => s.name.trim() === "User")
+                    .map(s => s.departmentId)
+                )
+                const qualifiedDeptIds = Array.from(deptsWithSupervisor).filter(id => deptsWithUser.has(id))
 
-                const assignedDepts = Array.from(deptsWithSupervisor)
+                const assignedDepts = qualifiedDeptIds
                   .map(id => {
                     const snap = assignedSnapshots.find(s => s.departmentId === id)
                     const deptInfo = departmentsQuery.data?.items.find(d => String(d.id) === String(id))

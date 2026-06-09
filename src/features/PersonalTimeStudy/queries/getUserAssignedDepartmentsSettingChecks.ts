@@ -45,6 +45,7 @@ export type UserAssignedDepartmentsSettingChecks = {
     allowed: boolean
     startDate: string | null
     endDate: string | null
+    message?: string | null
   }>
   bypassSchedule: boolean
 }
@@ -90,6 +91,7 @@ export function useGetUserAssignedDepartmentsSettingChecks(
         allowed: boolean
         startDate: string | null
         endDate: string | null
+        message?: string | null
       }> = (Array.isArray(checkSettings?.timestudyAllowed)
         ? checkSettings.timestudyAllowed
         : []
@@ -102,6 +104,7 @@ export function useGetUserAssignedDepartmentsSettingChecks(
         allowed: item.allowed,
         startDate: item.startDate ?? null,
         endDate: item.endDate ?? null,
+        message: item.message ?? null,
       }))
 
       const bypassSchedule = false
