@@ -329,8 +329,6 @@ export type CountyActivityCodeAddPageProps = {
   masterCodeOptions?: ReadonlyArray<CountyActivityMasterCodeOption>
   isMasterCodeOptionsLoading?: boolean
   departmentNames?: readonly string[]
-  /** Department master settings — used to filter shuttle lists when apportioning is enabled. */
-  departmentManualApportioningByName?: Readonly<Record<string, boolean>>
   /** Edit primary: server-built assigned/unassigned lists (`GET /activities/:id`). When set, shuttle does not diff client-side. */
   initialDepartmentShuttle?: {
     assigned: ApiActivityNestedDepartmentResDto[]
