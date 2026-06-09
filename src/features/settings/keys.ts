@@ -24,7 +24,17 @@ export const settingsKeys = {
     byDepartment: (departmentId: string) =>
       [...settingsKeys.reports.all(), "by-department", departmentId] as const,
     masterCodes: () => [...settingsKeys.reports.all(), "master-codes", "all"] as const,
+    masterCodeBuckets: (selectedIdsKey: string, mode: string) =>
+      [...settingsKeys.reports.all(), "master-code-buckets", selectedIdsKey, mode] as const,
     activities: () => [...settingsKeys.reports.all(), "activities"] as const,
+    activityBuckets: (idsKey: string, selectedCodesKey: string, mode: string) =>
+      [
+        ...settingsKeys.reports.all(),
+        "activity-buckets",
+        idsKey,
+        selectedCodesKey,
+        mode,
+      ] as const,
     detail: () => [...settingsKeys.reports.all(), "detail"] as const,
   },
 

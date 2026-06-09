@@ -13,8 +13,11 @@ import {
   includedMasterCodeIdsForActivityCatalog,
   resolveReportBucketsForForm,
 } from "@/features/reports/lib/reportMasterCodeData.utils"
+import type { MasterCodeTransferBuckets } from "@/features/settings/components/Reports/reportsTransfer.api.types"
+import { flattenActivityBucketRows } from "@/features/settings/components/Reports/reportsTransfer.utils"
 import { mapRawReportsToReportOptions } from "@/features/settings/lib/reportOptions.utils"
-import { fetchMasterCodeActivities } from "@/features/settings/queries/getMasterCodeActivities"
+import { fetchReportActivityBuckets } from "@/features/settings/queries/getReportActivityBuckets"
+import { fetchReportMasterCodeBuckets } from "@/features/settings/queries/getReportMasterCodeBuckets"
 import {
   createCountyLocation,
   deleteCountyLocation,
@@ -162,11 +165,34 @@ async function updateSettings(
     const saveScope = input.reportsSaveScope
     const excludedActivityCodes = input.values.reports?.excludedActivityCodes ?? []
     const includedActivityCodes = input.values.reports?.includedActivityCodes ?? []
-    const masterCodeOpts =
-      queryClient.getQueryData<Array<{ value: string }>>(settingsKeys.reports.masterCodes()) ??
-      []
-    const catalogIds = masterCodeOpts
-      .map((o) => Number(o.value))
+
+    const masterCodePickerIds = (
+      masterCodeExclusionMode === "include"
+        ? (input.values.reports?.includedMasterCodeIds ?? [])
+        : (input.values.reports?.excludedMasterCodeIds ?? [])
+    )
+      .map((id) => Number(id))
+      .filter((n) => Number.isFinite(n) && n >= 1)
+
+    const masterCodeBucketsKey = settingsKeys.reports.masterCodeBuckets(
+      masterCodePickerIds
+        .slice()
+        .sort((a, b) => a - b)
+        .join(","),
+      masterCodeExclusionMode,
+    )
+    let masterCodeBuckets =
+      queryClient.getQueryData<MasterCodeTransferBuckets>(masterCodeBucketsKey)
+    if (!masterCodeBuckets) {
+      masterCodeBuckets = await fetchReportMasterCodeBuckets(
+        masterCodePickerIds,
+        masterCodeExclusionMode,
+      )
+      queryClient.setQueryData(masterCodeBucketsKey, masterCodeBuckets)
+    }
+
+    const catalogIds = [...masterCodeBuckets.excluded, ...masterCodeBuckets.included]
+      .map((row) => row.id)
       .filter((n) => Number.isFinite(n) && n >= 1)
 
     const mcIncludedForActivities = includedMasterCodeIdsForActivityCatalog(
@@ -178,23 +204,35 @@ async function updateSettings(
       .map((id) => Number(id))
       .filter((n) => Number.isFinite(n) && n >= 1)
 
+    const activityPickerCodes =
+      activityExclusionMode === "include" ? includedActivityCodes : excludedActivityCodes
+
     let activityCatalog: string[] = []
     if (mcIncludedForActivities.length > 0) {
-      const activitiesQueryKey = [
-        ...settingsKeys.reports.activities(),
+      const activityBucketsKey = settingsKeys.reports.activityBuckets(
         mcIncludedForActivities
           .slice()
           .sort((a, b) => a - b)
           .join(","),
-      ] as const
-      const cached = queryClient.getQueryData<Array<{ code: string }>>(activitiesQueryKey)
-      if (cached?.length) {
-        activityCatalog = cached.map((a) => a.code)
-      } else {
-        const fetched = await fetchMasterCodeActivities(mcIncludedForActivities)
-        activityCatalog = fetched.map((a) => a.code)
-        queryClient.setQueryData(activitiesQueryKey, fetched)
+        [...new Set(activityPickerCodes.map((c) => c.trim()).filter(Boolean))]
+          .sort()
+          .join(","),
+        activityExclusionMode,
+      )
+      let activityBuckets =
+        queryClient.getQueryData<MasterCodeTransferBuckets>(activityBucketsKey)
+      if (!activityBuckets) {
+        activityBuckets = await fetchReportActivityBuckets(
+          mcIncludedForActivities,
+          activityPickerCodes,
+          activityExclusionMode,
+        )
+        queryClient.setQueryData(activityBucketsKey, activityBuckets)
       }
+      activityCatalog = [
+        ...flattenActivityBucketRows(activityBuckets.excluded),
+        ...flattenActivityBucketRows(activityBuckets.included),
+      ].map((item) => item.id)
     }
 
     let finalExcludedIds = input.values.reports?.excludedMasterCodeIds ?? []
@@ -289,21 +327,53 @@ async function updateSettings(
       includedActivityCodes: bucketsFromApi.includedActivityCodes,
     }
 
+    const refreshedMcPickerIds = (
+      masterCodeExclusionMode === "include"
+        ? bucketsFromApi.includedMasterCodeIds
+        : bucketsFromApi.excludedMasterCodeIds
+    )
+      .map((id) => Number(id))
+      .filter((n) => Number.isFinite(n) && n >= 1)
+
+    await queryClient.fetchQuery({
+      queryKey: settingsKeys.reports.masterCodeBuckets(
+        refreshedMcPickerIds
+          .slice()
+          .sort((a, b) => a - b)
+          .join(","),
+        masterCodeExclusionMode,
+      ),
+      queryFn: () =>
+        fetchReportMasterCodeBuckets(refreshedMcPickerIds, masterCodeExclusionMode),
+    })
+
     const activityMasterIds = bucketsFromApi.includedMasterCodeIds
       .map((id) => Number(id))
       .filter((n) => Number.isFinite(n) && n >= 1)
 
+    const refreshedActivityPickerCodes =
+      activityExclusionMode === "include"
+        ? bucketsFromApi.includedActivityCodes
+        : bucketsFromApi.excludedActivityCodes
+
     if (activityMasterIds.length > 0) {
-      const activitiesQueryKey = [
-        ...settingsKeys.reports.activities(),
-        activityMasterIds
-          .slice()
-          .sort((a, b) => a - b)
-          .join(","),
-      ] as const
       await queryClient.fetchQuery({
-        queryKey: activitiesQueryKey,
-        queryFn: () => fetchMasterCodeActivities(activityMasterIds),
+        queryKey: settingsKeys.reports.activityBuckets(
+          activityMasterIds
+            .slice()
+            .sort((a, b) => a - b)
+            .join(","),
+          [...new Set(refreshedActivityPickerCodes.map((c) => c.trim()).filter(Boolean))]
+            .sort()
+            .join(","),
+          activityExclusionMode,
+        ),
+        queryFn: () =>
+          fetchReportActivityBuckets(
+            activityMasterIds,
+            refreshedActivityPickerCodes,
+            activityExclusionMode,
+          ),
       })
     }
   }
