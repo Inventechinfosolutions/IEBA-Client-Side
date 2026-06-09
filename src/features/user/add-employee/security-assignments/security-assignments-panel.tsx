@@ -541,7 +541,7 @@ export function SecurityAssignmentsPanel({
         next = hydratedEditRows
         hasHydratedRef.current = true
       }
-    } else if (isAddMode && assignedDeptsForMultiCodeRows.length > 0 && next.length === 0) {
+    } else if (assignedDeptsForMultiCodeRows.length > 0 && next.length === 0) {
       next = [emptyDepartmentMultiCodeRow()]
     }
 
