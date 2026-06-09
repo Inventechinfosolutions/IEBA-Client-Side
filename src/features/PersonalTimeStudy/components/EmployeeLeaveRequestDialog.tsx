@@ -40,7 +40,7 @@ import {
   pickDepartmentIdFromEntity,
 } from "../utils/multicodeDropdownUtils"
 
-import { partitionLeaveEntryIndexGroups, apiGetUserActivitiesForProgram, apiGetUserProgramsAndActivitiesMulticode } from "../api/personalTimeStudyApi"
+import { partitionLeaveEntryIndexGroups, apiGetUserActivitiesForProgram, apiGetUserProgramsAndActivitiesMulticode, apiDeleteUserLeave } from "../api/personalTimeStudyApi"
 
 const EMPTY = EMPLOYEE_LEAVE_EMPTY_SELECT_VALUE
 
@@ -1324,13 +1324,27 @@ export function EmployeeLeaveRequestDialog({
                               <Plus className="size-4" />
                             </Button>
                           )}
-                          {!isEditing && canRemoveParent && (
+                          {(isEditing ? !isApproved : canRemoveParent) && (
                             <Button
                               type="button"
                               size="icon"
                               variant="destructive"
                               className="size-10 shrink-0 rounded-[6px]"
-                              onClick={() => removeLeaveGroup(parentIndex)}
+                              onClick={async () => {
+                                const parentRowId = form.getValues(`entries.${parentIndex}`).id
+                                if (parentRowId && typeof parentRowId === "number") {
+                                  try {
+                                    await apiDeleteUserLeave(parentRowId)
+                                    toast.success("Leave request deleted successfully")
+                                    handleClose(false)
+                                    return
+                                  } catch (err) {
+                                    toast.error("Failed to delete leave request")
+                                    return
+                                  }
+                                }
+                                removeLeaveGroup(parentIndex)
+                              }}
                               aria-label="Remove this leave period"
                             >
                               <Trash2 className="size-4" />
@@ -1626,7 +1640,19 @@ export function EmployeeLeaveRequestDialog({
                                     size="icon"
                                     variant="ghost"
                                     className="size-9 shrink-0 text-destructive hover:bg-destructive/10"
-                                    onClick={() => remove(index)}
+                                    onClick={async () => {
+                                      const rowId = form.getValues(`entries.${index}`).id
+                                      if (rowId && typeof rowId === "number") {
+                                        try {
+                                          await apiDeleteUserLeave(rowId)
+                                          toast.success("Child leave deleted successfully")
+                                        } catch (err) {
+                                          toast.error("Failed to delete child leave")
+                                          return
+                                        }
+                                      }
+                                      remove(index)
+                                    }}
                                     aria-label="Remove multi-code row"
                                   >
                                     <Trash2 className="size-4" />
