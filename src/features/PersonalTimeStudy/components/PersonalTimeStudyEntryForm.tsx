@@ -900,8 +900,8 @@ export function PersonalTimeStudyEntryForm({
           userId,
           username,
           date: dateStr,
-          starttime: p.start,
-          endtime: p.end,
+          starttime: hideTime ? null : (p.start || null),
+          endtime: hideTime ? null : (p.end || null),
           activitytime: hideTime ? (Number(p.totalMin) || 0) : (Number(computeDurationMinutes(p.start, p.end)) || Number(p.totalMin) || 0),
           programid: p.tsProgram,
           activityid: p.serviceActivity,
@@ -919,8 +919,8 @@ export function PersonalTimeStudyEntryForm({
               activitytime: Number(s.totalMin) || Number(computeDurationMinutes(s.start, s.end)) || 0,
               description: s.description,
               departmentId: subDeptId,
-              starttime: s.start,
-              endtime: s.end,
+              starttime: hideTime ? null : (s.start || null),
+              endtime: hideTime ? null : (s.end || null),
               recordType: "MULTI_CODE",
               status: overrideStatus || s.status || p.status || "draft",
             }
@@ -1331,7 +1331,7 @@ export function PersonalTimeStudyEntryForm({
                     type="number"
                     min="0"
                     readOnly={isLocked || isLeaveRow || isApportionedRow || !hideTime}
-                    value={hideTime ? (parent.totalMin ?? "") : (totalDisplay || parent.totalMin || "")}
+                    value={hideTime ? (parent.totalMin ?? "") : ((!totalDisplay || totalDisplay === "0") ? (parent.totalMin || totalDisplay || "") : totalDisplay)}
                     placeholder="—"
                     className={cn(
                       "h-10 text-[11px]",

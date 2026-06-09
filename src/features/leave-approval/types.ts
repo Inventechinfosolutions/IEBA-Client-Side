@@ -145,8 +145,8 @@ export type UserLeaveMultiCodeRecordRequestDto = {
   activityname: string
   startdt?: string
   enddt?: string
-  starttime?: string
-  endtime?: string
+  starttime?: string | null
+  endtime?: string | null
   leaveTotalTime: number
   requestcomment?: string
   recordType?: UserLeaveRecordTypeDto
@@ -163,8 +163,8 @@ export type CreateUserLeaveRequestDto = {
   activityname: string
   startdt: string
   enddt: string
-  starttime: string
-  endtime: string
+  starttime: string | null
+  endtime: string | null
   leaveTotalTime: number
   requestcomment?: string
   status?: "requested" | "withdraw"

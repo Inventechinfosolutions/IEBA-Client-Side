@@ -26,19 +26,6 @@ import {
 } from "@/components/ui/tooltip"
 import { toTitleCase } from "@/lib/utils"
 
-function renderActivityName(value: string) {
-  const match = value.match(/^\(([^)]*)\)(.*)$/)
-  if (match) {
-    return (
-      <span className="whitespace-pre-wrap break-words">
-        <span className="font-semibold text-[#6C5DD3]">({match[1]})</span>
-        <span className="font-semibold text-[#111827]">{match[2]}</span>
-      </span>
-    )
-  }
-
-  return <span className="font-semibold text-[#111827]">{value}</span>
-}
 
 function VisualCheckbox({ checked }: CostPoolVisualCheckboxProps) {
   return (
