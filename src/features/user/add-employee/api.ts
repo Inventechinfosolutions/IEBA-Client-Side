@@ -763,15 +763,13 @@ function parseUserActivitiesOnlyBundle(raw: unknown): UserActivitiesOnlyDepartme
 
 function programActivityGroupToProgramWithAssignments(
   group: UserProgramsActivitiesProgramActivityGroup,
+  p: UserProgramsOnlyProgram,
 ): UserProgramsActivitiesProgramWithAssignments {
   return {
-    id: group.programId,
-    code: group.code,
-    name: group.name,
-    departmentId: group.departmentId,
+    ...p,
     children: group.children,
-    jobpoolId: group.jobpoolId ?? null,
-    jobpoolName: group.jobpoolName ?? null,
+    jobpoolId: group.jobpoolId ?? p.jobpoolId ?? null,
+    jobpoolName: group.jobpoolName ?? p.jobpoolName ?? null,
   }
 }
 
@@ -803,7 +801,7 @@ function attachProgramActivitiesToProgramsBundle(
     programs.map((p) => {
       const group = groups.find((g) => g.programId === p.id)
       return group
-        ? programActivityGroupToProgramWithAssignments(group)
+        ? programActivityGroupToProgramWithAssignments(group, p)
         : programOnlyToWithAssignments(p)
     })
 
