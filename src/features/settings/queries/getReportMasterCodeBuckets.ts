@@ -29,15 +29,17 @@ export async function fetchReportMasterCodeBuckets(
   mode: ReportTransferBucketMode = "include",
 ): Promise<MasterCodeTransferBuckets> {
   const ids = [...new Set(selectedIds)].filter((id) => Number.isFinite(id) && id >= 1)
-  const qs = new URLSearchParams({
+  const searchParams = new URLSearchParams({
     page: "1",
     limit: "1000",
     mode,
   })
+  /** Plain commas in the URL (URLSearchParams encodes them as %2C). */
+  let url = `/master-codes?${searchParams.toString()}`
   if (ids.length > 0) {
-    qs.set("selectedIds", ids.join(","))
+    url += `&selectedIds=${ids.join(",")}`
   }
-  const res = await api.get<unknown>(`/master-codes?${qs.toString()}`)
+  const res = await api.get<unknown>(url)
   return unwrapMasterCodeBuckets(res)
 }
 

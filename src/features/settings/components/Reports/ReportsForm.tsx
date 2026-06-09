@@ -26,8 +26,8 @@ type ReportsFormProps = {
 
 /**
  * Settings → Reports configuration.
- * Master codes: GET /master-codes?selectedIds=…&mode=include
- * Activities: GET /master-codes/activities?ids=…&selectedCodes=…&mode=include
+ * Assigned panel: GET …&mode=include (selectedIds / selectedCodes = assigned items).
+ * Unassigned panel: GET …&mode=exclude (selectedIds / selectedCodes = unassigned items).
  * Assign / unassign via arrow buttons triggers save immediately.
  */
 export function ReportsForm({ isSaving = false, isSectionOpen = false }: ReportsFormProps) {

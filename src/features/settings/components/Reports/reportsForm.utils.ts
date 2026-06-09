@@ -49,19 +49,18 @@ export function loadReportBucketsFromApiRow(
   applyReportBucketsToForm(setValue, buckets, mode, mode)
 }
 
-/** Load picker state from report row without requiring full catalogs (transfer GET APIs split buckets). */
+/** Load picker state from report row (assigned=include, unassigned=exclude transfer APIs). */
 export function loadReportBucketsFromReportOption(
   setValue: UseFormSetValue<SettingsFormValues>,
   report: ReportOption,
 ) {
-  const mode = report.type === "included" ? "include" : "exclude"
   const includedMcIds = (report.includedMasterCodeData?.masterCodeIds ?? []).map(String)
   const excludedMcIds = (report.excludedMasterCodeData?.masterCodeIds ?? []).map(String)
   const includedActs = report.includedMasterCodeData?.activityCodes ?? []
   const excludedActs = report.excludedMasterCodeData?.activityCodes ?? []
 
-  setValue("reports.masterCodeExclusionMode", mode)
-  setValue("reports.activityExclusionMode", mode)
+  setValue("reports.masterCodeExclusionMode", "include")
+  setValue("reports.activityExclusionMode", "include")
   setValue("reports.includedMasterCodeIds", includedMcIds)
   setValue("reports.excludedMasterCodeIds", excludedMcIds)
   setValue("reports.includedActivityCodes", includedActs)

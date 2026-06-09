@@ -32,17 +32,19 @@ export async function fetchReportActivityBuckets(
   const ids = [...new Set(masterCodeIds)].filter((id) => Number.isFinite(id) && id >= 1)
   if (ids.length === 0) return { excluded: [], included: [] }
 
-  const qs = new URLSearchParams({
-    ids: ids.join(","),
+  const codes = [...new Set(selectedCodes.map((c) => c.trim()).filter(Boolean))]
+
+  const searchParams = new URLSearchParams({
     mode,
     status: "active",
   })
-  const codes = [...new Set(selectedCodes.map((c) => c.trim()).filter(Boolean))]
+  /** Plain commas in the URL (URLSearchParams encodes them as %2C). */
+  let url = `/master-codes/activities?${searchParams.toString()}&ids=${ids.join(",")}`
   if (codes.length > 0) {
-    qs.set("selectedCodes", codes.join(","))
+    url += `&selectedCodes=${codes.join(",")}`
   }
 
-  const res = await api.get<unknown>(`/master-codes/activities?${qs.toString()}`)
+  const res = await api.get<unknown>(url)
   return unwrapActivityBuckets(res)
 }
 

@@ -22,26 +22,24 @@ export function flattenActivityBucketRows(rows: MasterCodeTransferRow[]): Report
   return items.sort((a, b) => a.name.localeCompare(b.name))
 }
 
-/**
- * Update the active picker bucket when moving items between excluded/included panels.
- * - include mode: picker = included; right arrow adds, left arrow removes
- * - exclude mode: picker = excluded; right arrow removes, left arrow adds
- */
-export function applyTransferPickerMove(
-  mode: "include" | "exclude",
-  selectedIds: string[],
+/** Assigned = include bucket; unassigned = exclude bucket. */
+export function applyTransferBucketMove(
+  assignedIds: string[],
+  unassignedIds: string[],
   idsToMove: string[],
-  direction: "toIncludedPanel" | "toExcludedPanel",
-): string[] {
+  direction: "toAssigned" | "toUnassigned",
+): { assignedIds: string[]; unassignedIds: string[] } {
   const moveSet = new Set(idsToMove)
-  if (direction === "toIncludedPanel") {
-    return mode === "include"
-      ? [...new Set([...selectedIds, ...idsToMove])]
-      : selectedIds.filter((id) => !moveSet.has(id))
+  if (direction === "toAssigned") {
+    return {
+      assignedIds: [...new Set([...assignedIds, ...idsToMove])],
+      unassignedIds: unassignedIds.filter((id) => !moveSet.has(id)),
+    }
   }
-  return mode === "include"
-    ? selectedIds.filter((id) => !moveSet.has(id))
-    : [...new Set([...selectedIds, ...idsToMove])]
+  return {
+    assignedIds: assignedIds.filter((id) => !moveSet.has(id)),
+    unassignedIds: [...new Set([...unassignedIds, ...idsToMove])],
+  }
 }
 
 export function filterReportsTransferItems(

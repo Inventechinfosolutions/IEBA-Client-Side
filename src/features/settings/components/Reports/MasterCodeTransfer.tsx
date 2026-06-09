@@ -6,7 +6,7 @@ import type { SettingsFormValues } from "@/features/settings/types"
 import { useReportMasterCodeBuckets } from "@/features/settings/queries/getReportMasterCodeBuckets"
 import { ReportsTransferPanel } from "@/features/settings/components/Reports/ReportsTransferPanel"
 import {
-  applyTransferPickerMove,
+  applyTransferBucketMove,
   filterReportsTransferItems,
   masterCodeRowToTransferItem,
 } from "@/features/settings/components/Reports/reportsTransfer.utils"
@@ -26,52 +26,52 @@ export function MasterCodeTransfer({
 }: MasterCodeTransferProps) {
   const { watch, setValue } = useFormContext<SettingsFormValues>()
 
-  const mode = watch("reports.masterCodeExclusionMode") === "exclude" ? "exclude" : "include"
-  const selectedIds =
-    mode === "include"
-      ? (watch("reports.includedMasterCodeIds") ?? [])
-      : (watch("reports.excludedMasterCodeIds") ?? [])
+  const assignedIds = watch("reports.includedMasterCodeIds") ?? []
+  const unassignedIds = watch("reports.excludedMasterCodeIds") ?? []
+  const queryEnabled = enabled && Boolean(reportKey)
 
-  const { data: buckets, isPending, isFetching } = useReportMasterCodeBuckets(
-    selectedIds,
-    mode,
-    enabled && Boolean(reportKey),
-  )
-  const isLoading = isPending || isFetching
+  const { data: assignedBuckets, isPending: isAssignedPending, isFetching: isAssignedFetching } =
+    useReportMasterCodeBuckets(assignedIds, "include", queryEnabled)
 
-  const excludedItems = useMemo(
-    () => (buckets?.excluded ?? []).map(masterCodeRowToTransferItem),
-    [buckets?.excluded],
-  )
+  const {
+    data: unassignedBuckets,
+    isPending: isUnassignedPending,
+    isFetching: isUnassignedFetching,
+  } = useReportMasterCodeBuckets(unassignedIds, "exclude", queryEnabled)
 
-  const includedItems = useMemo(
-    () => (buckets?.included ?? []).map(masterCodeRowToTransferItem),
-    [buckets?.included],
+  const isLoading =
+    isAssignedPending || isAssignedFetching || isUnassignedPending || isUnassignedFetching
+
+  const unassignedItems = useMemo(
+    () => (unassignedBuckets?.excluded ?? []).map(masterCodeRowToTransferItem),
+    [unassignedBuckets?.excluded],
   )
 
-  const [searchExcluded, setSearchExcluded] = useState("")
-  const [searchIncluded, setSearchIncluded] = useState("")
-  const [toggledExcluded, setToggledExcluded] = useState<string[]>([])
-  const [toggledIncluded, setToggledIncluded] = useState<string[]>([])
-
-  const filteredExcluded = useMemo(
-    () => filterReportsTransferItems(excludedItems, searchExcluded),
-    [excludedItems, searchExcluded],
+  const assignedItems = useMemo(
+    () => (assignedBuckets?.included ?? []).map(masterCodeRowToTransferItem),
+    [assignedBuckets?.included],
   )
 
-  const filteredIncluded = useMemo(
-    () => filterReportsTransferItems(includedItems, searchIncluded),
-    [includedItems, searchIncluded],
+  const [searchUnassigned, setSearchUnassigned] = useState("")
+  const [searchAssigned, setSearchAssigned] = useState("")
+  const [toggledUnassigned, setToggledUnassigned] = useState<string[]>([])
+  const [toggledAssigned, setToggledAssigned] = useState<string[]>([])
+
+  const filteredUnassigned = useMemo(
+    () => filterReportsTransferItems(unassignedItems, searchUnassigned),
+    [unassignedItems, searchUnassigned],
+  )
+
+  const filteredAssigned = useMemo(
+    () => filterReportsTransferItems(assignedItems, searchAssigned),
+    [assignedItems, searchAssigned],
   )
 
   const disabled = !reportKey || isSaving || isLoading
 
-  const syncFormAndSave = (nextSelectedIds: string[]) => {
-    if (mode === "include") {
-      setValue("reports.includedMasterCodeIds", nextSelectedIds, { shouldDirty: true })
-    } else {
-      setValue("reports.excludedMasterCodeIds", nextSelectedIds, { shouldDirty: true })
-    }
+  const syncFormAndSave = (nextAssignedIds: string[], nextUnassignedIds: string[]) => {
+    setValue("reports.includedMasterCodeIds", nextAssignedIds, { shouldDirty: true })
+    setValue("reports.excludedMasterCodeIds", nextUnassignedIds, { shouldDirty: true })
     setValue("reports.excludedActivityCodes", [])
     setValue("reports.includedActivityCodes", [])
     queueMicrotask(onSave)
@@ -81,29 +81,29 @@ export function MasterCodeTransfer({
     setState((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
   }
 
-  const moveToIncluded = (ids: string[]) => {
+  const moveToAssigned = (ids: string[]) => {
     if (ids.length === 0 || disabled) return
-    const next = applyTransferPickerMove(mode, selectedIds, ids, "toIncludedPanel")
-    setToggledExcluded([])
-    syncFormAndSave(next)
+    const next = applyTransferBucketMove(assignedIds, unassignedIds, ids, "toAssigned")
+    setToggledUnassigned([])
+    syncFormAndSave(next.assignedIds, next.unassignedIds)
   }
 
-  const moveToExcluded = (ids: string[]) => {
+  const moveToUnassigned = (ids: string[]) => {
     if (ids.length === 0 || disabled) return
-    const next = applyTransferPickerMove(mode, selectedIds, ids, "toExcludedPanel")
-    setToggledIncluded([])
-    syncFormAndSave(next)
+    const next = applyTransferBucketMove(assignedIds, unassignedIds, ids, "toUnassigned")
+    setToggledAssigned([])
+    syncFormAndSave(next.assignedIds, next.unassignedIds)
   }
 
-  const toggleAllExcluded = () => {
-    setToggledExcluded((prev) =>
-      prev.length === filteredExcluded.length ? [] : filteredExcluded.map((item) => item.id),
+  const toggleAllUnassigned = () => {
+    setToggledUnassigned((prev) =>
+      prev.length === filteredUnassigned.length ? [] : filteredUnassigned.map((item) => item.id),
     )
   }
 
-  const toggleAllIncluded = () => {
-    setToggledIncluded((prev) =>
-      prev.length === filteredIncluded.length ? [] : filteredIncluded.map((item) => item.id),
+  const toggleAllAssigned = () => {
+    setToggledAssigned((prev) =>
+      prev.length === filteredAssigned.length ? [] : filteredAssigned.map((item) => item.id),
     )
   }
 
@@ -111,13 +111,13 @@ export function MasterCodeTransfer({
     <div className="mt-4">
       <div className="grid max-w-[1120px] grid-cols-[1fr_60px_1fr] items-center gap-4">
         <ReportsTransferPanel
-          title="Excluded Master Codes"
-          items={filteredExcluded}
-          selectedIds={toggledExcluded}
-          onToggleItem={(id) => handleToggle(id, setToggledExcluded)}
-          onToggleAll={toggleAllExcluded}
-          searchValue={searchExcluded}
-          onSearchChange={setSearchExcluded}
+          title="Unassigned Master Codes"
+          items={filteredUnassigned}
+          selectedIds={toggledUnassigned}
+          onToggleItem={(id) => handleToggle(id, setToggledUnassigned)}
+          onToggleAll={toggleAllUnassigned}
+          searchValue={searchUnassigned}
+          onSearchChange={setSearchUnassigned}
           isLoading={isLoading}
           loadingLabel="Loading master codes…"
           disabled={disabled}
@@ -126,26 +126,26 @@ export function MasterCodeTransfer({
         <div className="flex flex-col gap-3 pt-10">
           <TransferListMoveButton
             direction="forward"
-            disabled={disabled || toggledExcluded.length === 0}
-            aria-label="Include selected master codes and save"
-            onClick={() => moveToIncluded(toggledExcluded)}
+            disabled={disabled || toggledUnassigned.length === 0}
+            aria-label="Assign selected master codes and save"
+            onClick={() => moveToAssigned(toggledUnassigned)}
           />
           <TransferListMoveButton
             direction="back"
-            disabled={disabled || toggledIncluded.length === 0}
-            aria-label="Exclude selected master codes and save"
-            onClick={() => moveToExcluded(toggledIncluded)}
+            disabled={disabled || toggledAssigned.length === 0}
+            aria-label="Unassign selected master codes and save"
+            onClick={() => moveToUnassigned(toggledAssigned)}
           />
         </div>
 
         <ReportsTransferPanel
-          title="Included Master Codes"
-          items={filteredIncluded}
-          selectedIds={toggledIncluded}
-          onToggleItem={(id) => handleToggle(id, setToggledIncluded)}
-          onToggleAll={toggleAllIncluded}
-          searchValue={searchIncluded}
-          onSearchChange={setSearchIncluded}
+          title="Assigned Master Codes"
+          items={filteredAssigned}
+          selectedIds={toggledAssigned}
+          onToggleItem={(id) => handleToggle(id, setToggledAssigned)}
+          onToggleAll={toggleAllAssigned}
+          searchValue={searchAssigned}
+          onSearchChange={setSearchAssigned}
           isLoading={isLoading}
           loadingLabel="Loading master codes…"
           disabled={disabled}
