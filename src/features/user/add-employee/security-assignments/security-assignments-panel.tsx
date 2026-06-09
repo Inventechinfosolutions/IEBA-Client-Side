@@ -5,7 +5,7 @@ import { toast } from "sonner"
 
 import { ArrowLeft, History, Trash2, Plus } from "lucide-react"
 import { queryClient } from "@/main"
-import { fetchSecurityDepartmentRoles, fetchUserDetailsTab } from "../api"
+import { fetchSecurityDepartmentRoles, fetchUserDetailsTab, deleteUserAllowMulticodeHistory } from "../api"
 import { TransferListMoveButton } from "@/components/ui/transfer-list-move-button"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -28,6 +28,7 @@ import {
   useGetSecurityDepartmentRoles,
   useGetUserDetailsTab,
   useGetUserAllowMulticodeHistory,
+  useGetUserAllowMulticodeTimeline,
   useGetUserTimeStudyDepartments,
 } from "../queries/get-add-employee"
 import {
@@ -250,13 +251,14 @@ export function SecurityAssignmentsPanel({
 
   const isAddMode = mode === "add"
   const historyQuery = useGetUserAllowMulticodeHistory(securityUserId, !isAddMode)
+  const timelineQuery = useGetUserAllowMulticodeTimeline(securityUserId, !isAddMode)
 
   const {
     watch,
     control,
     setValue,
     getValues,
-    formState: { dirtyFields },
+    formState: { dirtyFields, isSubmitSuccessful },
   } = useFormContext<UserModuleFormValues>()
 
   useLayoutEffect(() => {
@@ -317,6 +319,12 @@ export function SecurityAssignmentsPanel({
     hasHydratedRef.current = false
     prevUserIdRef.current = securityUserId
   }
+
+  const prevSubmitSuccessful = useRef(isSubmitSuccessful)
+  if (isSubmitSuccessful && !prevSubmitSuccessful.current) {
+    hasHydratedRef.current = false
+  }
+  prevSubmitSuccessful.current = isSubmitSuccessful
 
   /** Prefer GET /assignedDepartment/roles when loaded; form state for add-before-userId. */
   const assignedSnapshots = useMemo(() => {
@@ -458,15 +466,15 @@ export function SecurityAssignmentsPanel({
       assignedDeptsForMultiCodeRows.length > 0
         ? assignedDeptsForMultiCodeRows
         : Array.from(latestHistoryByDept.entries())
-            .map(([id]) => ({
-              id,
-              name: userDeptList.find((d) => d.departmentId === id)?.departmentName ?? `Department ${id}`,
-            }))
-            .filter((dept) => {
-              const userDept = userDeptList.find((d) => Number(d.departmentId) === Number(dept.id))
-              if (userDept == null) return false
-              return !departmentMultiCodeSupportFromApi(userDept, undefined).multiCodeNotAvailable
-            })
+          .map(([id]) => ({
+            id,
+            name: userDeptList.find((d) => d.departmentId === id)?.departmentName ?? `Department ${id}`,
+          }))
+          .filter((dept) => {
+            const userDept = userDeptList.find((d) => Number(d.departmentId) === Number(dept.id))
+            if (userDept == null) return false
+            return !departmentMultiCodeSupportFromApi(userDept, undefined).multiCodeNotAvailable
+          })
 
     return deptSeed.map((dept) => {
       const deptHistory = latestHistoryByDept.get(Number(dept.id))
@@ -485,6 +493,7 @@ export function SecurityAssignmentsPanel({
         : historyCodes
       const validAllowMultiCodes = deptHistory?.allowMultiCodes === true && validHistoryCodes.length > 0
       return {
+        id: deptHistory?.id,
         departmentId: Number(dept.id),
         departmentName: dept.name,
         allowMultiCodes: validAllowMultiCodes,
@@ -516,6 +525,8 @@ export function SecurityAssignmentsPanel({
     (userDeptsQuery.isSuccess && (userDeptsQuery.data?.length ?? 0) > 0) ||
     (departmentsQuery.isSuccess && (departmentsQuery.data?.items?.length ?? 0) > 0)
 
+
+
   if (deptSettingsReady || (!isAddMode && hydratedEditRows.length > 0)) {
     const current = getValues("departmentMultiCodes") ?? []
     let next = stripIneligibleDepartmentMultiCodeRows(current)
@@ -524,8 +535,9 @@ export function SecurityAssignmentsPanel({
       // Only hydrate once both user departments (multicode settings) AND history are loaded.
       // This ensures stale saved codes (e.g. MAA) are correctly filtered out against the
       // current department settings (e.g. only TCM is now allowed).
-      const deptDataReady = userDeptsQuery.isSuccess || departmentsQuery.isSuccess
-      if (!hasHydratedRef.current && deptDataReady) {
+      const deptDataReady = (userDeptsQuery.isSuccess && !userDeptsQuery.isFetching) || (departmentsQuery.isSuccess && !departmentsQuery.isFetching)
+      const isHistoryReady = historyQuery.isSuccess && !historyQuery.isFetching
+      if (!hasHydratedRef.current && deptDataReady && isHistoryReady) {
         next = hydratedEditRows
         hasHydratedRef.current = true
       }
@@ -830,7 +842,7 @@ export function SecurityAssignmentsPanel({
     if (departments.length === 0) {
       toast.error("Could not assign: invalid role selection.")
       return
-    } 
+    }
 
     if (canPersistTransfers) {
       try {
@@ -1083,562 +1095,532 @@ export function SecurityAssignmentsPanel({
         </>
       ) : (
         <>
-      <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex items-center gap-4">
-          {isAddMode ? (
-            <>
-              <label className="flex cursor-not-allowed items-center gap-2 text-[11px] select-none text-[#9ca3af]">
+          <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex items-center gap-4">
+              {isAddMode ? (
+                <>
+                  <label className="flex cursor-not-allowed items-center gap-2 text-[11px] select-none text-[#9ca3af]">
+                    <Controller
+                      name="copyUser"
+                      control={control}
+                      render={({ field }) => (
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={(checked) => field.onChange(checked === true)}
+                          disabled
+                          className="size-4 rounded-[3px] border-[#c2c6d1] data-[state=checked]:border-(--primary) data-[state=checked]:bg-(--primary) disabled:cursor-not-allowed disabled:bg-[#f3f4f6] disabled:border-[#e5e7eb] disabled:opacity-100"
+                        />
+                      )}
+                    />
+                    Copy User
+                  </label>
+
+                  <input
+                    type="text"
+                    readOnly
+                    disabled
+                    className="h-10 w-[280px] rounded-[10px] border border-[#e5e7eb] bg-[#f3f4f6] px-3 text-[11px] outline-none transition-colors cursor-not-allowed text-[#9ca3af]"
+                  />
+                </>
+              ) : (
+                <p className="text-[12px] font-semibold uppercase text-[#111827]">
+                  {fullName}
+                </p>
+              )}
+            </div>
+
+            <div className="flex min-w-0 flex-wrap items-center gap-3 sm:justify-end sm:gap-5 sm:pr-1 sm:pt-2">
+              <label className={`flex items-center gap-2 text-[11px] select-none ${isApportioningEnabled ? "cursor-pointer text-[#111827]" : "cursor-not-allowed text-[#9ca3af]"}`}>
                 <Controller
-                  name="copyUser"
+                  name="supervisorApportioning"
                   control={control}
                   render={({ field }) => (
                     <Checkbox
-                      checked={field.value}
+                      checked={
+                        isApportioningEnabled
+                          ? dirtyFields.supervisorApportioning
+                            ? field.value
+                            : field.value || (tab2Apportioning?.supervisorApportioning ?? false)
+                          : false
+                      }
                       onCheckedChange={(checked) => field.onChange(checked === true)}
-                      disabled
+                      disabled={!isApportioningEnabled}
                       className="size-4 rounded-[3px] border-[#c2c6d1] data-[state=checked]:border-(--primary) data-[state=checked]:bg-(--primary) disabled:cursor-not-allowed disabled:bg-[#f3f4f6] disabled:border-[#e5e7eb] disabled:opacity-100"
                     />
                   )}
                 />
-                Copy User
+                Supervisor Apportioning
               </label>
 
-              <input
-                type="text"
-                readOnly
-                disabled
-                className="h-10 w-[280px] rounded-[10px] border border-[#e5e7eb] bg-[#f3f4f6] px-3 text-[11px] outline-none transition-colors cursor-not-allowed text-[#9ca3af]"
-              />
-            </>
-          ) : (
-            <p className="text-[12px] font-semibold uppercase text-[#111827]">
-              {fullName}
-            </p>
-          )}
-        </div>
-
-        <div className="flex min-w-0 flex-wrap items-center gap-3 sm:justify-end sm:gap-5 sm:pr-1 sm:pt-2">
-          <label className={`flex items-center gap-2 text-[11px] select-none ${isApportioningEnabled ? "cursor-pointer text-[#111827]" : "cursor-not-allowed text-[#9ca3af]"}`}>
-            <Controller
-              name="supervisorApportioning"
-              control={control}
-              render={({ field }) => (
-                <Checkbox
-                  checked={
-                    isApportioningEnabled
-                      ? dirtyFields.supervisorApportioning
-                        ? field.value
-                        : field.value || (tab2Apportioning?.supervisorApportioning ?? false)
-                      : false
-                  }
-                  onCheckedChange={(checked) => field.onChange(checked === true)}
-                  disabled={!isApportioningEnabled}
-                  className="size-4 rounded-[3px] border-[#c2c6d1] data-[state=checked]:border-(--primary) data-[state=checked]:bg-(--primary) disabled:cursor-not-allowed disabled:bg-[#f3f4f6] disabled:border-[#e5e7eb] disabled:opacity-100"
-                />
-              )}
-            />
-            Supervisor Apportioning
-          </label>
-
-          {isSuperAdmin && (
-            <label className="flex cursor-pointer select-none items-center gap-2 text-[11px] text-[#111827]">
-              <Controller
-                name="clientAdmin"
-                control={control}
-                render={({ field }) => (
-                  <Checkbox
-                    checked={field.value}
-                    onCheckedChange={(checked) => field.onChange(checked === true)}
-                    className="size-4 cursor-pointer rounded-[3px] border-[#c2c6d1] data-[state=checked]:border-(--primary) data-[state=checked]:bg-(--primary)"
+              {isSuperAdmin && (
+                <label className="flex cursor-pointer select-none items-center gap-2 text-[11px] text-[#111827]">
+                  <Controller
+                    name="clientAdmin"
+                    control={control}
+                    render={({ field }) => (
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={(checked) => field.onChange(checked === true)}
+                        className="size-4 cursor-pointer rounded-[3px] border-[#c2c6d1] data-[state=checked]:border-(--primary) data-[state=checked]:bg-(--primary)"
+                      />
+                    )}
                   />
-                )}
+                  Client Admin
+                </label>
+              )}
+
+              {canPersistTransfers ? (
+                <Button
+                  type="button"
+                  className="inline-flex h-auto min-h-9 shrink cursor-pointer items-center gap-2 whitespace-normal rounded-[12px] border border-[#E5E7EB] bg-white px-3 py-2 text-[11px] font-semibold leading-snug text-[#6C5DD3] shadow-[0_1px_0_rgba(0,0,0,0.05)] hover:border-[#6C5DD3] hover:bg-[#F3F0FF] sm:text-[12px]"
+                  onClick={() => setShowSecurityDeptRoleHistory(true)}
+                >
+                  <History className="size-3.5 shrink-0" />
+                  Department Role History
+                </Button>
+              ) : null}
+            </div>
+          </div>
+
+          <div className="relative mt-3 grid grid-cols-[1fr_60px_1fr] items-center gap-4">
+            {(securityRolesQuery.isLoading ||
+              (Boolean(securityUserId) && tab2Query.isLoading) ||
+              transferBusy) && (
+                <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/60">
+                  <Spinner className="text-[#6C5DD3]" />
+                </div>
+              )}
+            <RoleTransferPanel
+              title="Select Department(Unassigned)"
+              items={unassignedItems}
+              selectedIds={toggledU}
+              onToggleItem={(id) => toggle(id, false)}
+              onToggleAll={toggleAllUnassigned}
+              onToggleDepartmentGroup={toggleDepartmentGroupU}
+            />
+
+            <div className="flex flex-col gap-3 pt-10">
+              <TransferListMoveButton
+                direction="forward"
+                onClick={() => void transferToAssigned()}
+                disabled={toggledU.length === 0 || transferBusy}
+                aria-label="Move selected to assigned"
               />
-              Client Admin
-            </label>
+              <TransferListMoveButton
+                direction="back"
+                onClick={() => void transferToUnassigned()}
+                disabled={toggledA.length === 0 || transferBusy}
+                aria-label="Move selected to unassigned"
+              />
+            </div>
+
+            <RoleTransferPanel
+              title="Select Department(Assigned)"
+              items={assignedItems}
+              selectedIds={toggledA}
+              onToggleItem={(id) => toggle(id, true)}
+              onToggleAll={toggleAllAssigned}
+              onToggleDepartmentGroup={toggleDepartmentGroupA}
+            />
+          </div>
+
+          {displaySupervisorApportioning && isApportioningEnabled && (
+            <div className="mt-8 overflow-hidden rounded-[10px] border border-[#e5e7eb] bg-white shadow-[0_4px_20px_rgba(0,0,0,0.05)] transition-all duration-300">
+              <table className="w-full text-left text-[12px] border-collapse">
+                <thead>
+                  <tr className="bg-(--primary) text-white">
+                    <th className="px-5 py-2.5 text-[10.5px] font-semibold uppercase tracking-wider">Department Name</th>
+                    <th className="px-5 py-2.5 text-[10.5px] font-semibold text-center uppercase tracking-wider">Apportioning</th>
+                    <th className="px-5 py-2.5 text-[10.5px] font-semibold text-center uppercase tracking-wider">Percentage of allocation</th>
+                    <th className="px-5 py-2.5 text-[10.5px] font-semibold text-center uppercase tracking-wider">Auto Apportioning</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(() => {
+                    const supervisorRoleName = "Time Study Supervisor"
+                    const deptsWithSupervisor = new Set(
+                      assignedSnapshots
+                        .filter(s => s.name.trim() === supervisorRoleName)
+                        .map(s => s.departmentId)
+                    )
+                    const deptsWithUser = new Set(
+                      assignedSnapshots
+                        .filter(s => s.name.trim() === "User")
+                        .map(s => s.departmentId)
+                    )
+                    const qualifiedDeptIds = Array.from(deptsWithSupervisor).filter(id => deptsWithUser.has(id))
+
+                    const assignedDepts = qualifiedDeptIds
+                      .map(id => {
+                        const snap = assignedSnapshots.find(s => s.departmentId === id)
+                        const deptInfo = departmentsQuery.data?.items.find(d => String(d.id) === String(id))
+                        return {
+                          id: String(id),
+                          name: snap?.department ?? deptInfo?.name ?? `Dept ${id}`,
+                          apportioning: deptInfo?.settings.apportioning ?? false,
+                          autoApportioning: deptInfo?.settings.autoApportioning ?? false,
+                        }
+                      })
+                      .filter(dept => dept.apportioning)
+
+                    if (assignedDepts.length === 0) {
+                      return (
+                        <tr>
+                          <td colSpan={4} className="px-4 py-12 text-center text-[#9ca3af] bg-[#f9fafb]">
+                            <p className="text-[13px]">No departments assigned yet.</p>
+                            <p className="mt-1 text-[11px]">Assign departments to manage apportioning allocations.</p>
+                          </td>
+                        </tr>
+                      )
+                    }
+
+                    return assignedDepts.map((dept) => (
+                      <tr key={dept.id} className="border-t border-[#f1f2f6] hover:bg-[#f8fafc] transition-colors duration-200">
+                        <td className="px-5 py-4 font-medium text-[#111827]">{dept.name}</td>
+                        <td className="px-5 py-4 text-center">
+                          <div className="flex justify-center items-center">
+                            {dept.apportioning ? (
+                              <img src={statusCheck} alt="Checked" className="size-5 object-contain" />
+                            ) : (
+                              <img src={statusCross} alt="Unchecked" className="size-5 object-contain" />
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-5 py-4 text-center">
+                          <div className="flex justify-center">
+                            <Controller
+                              name={`apportioningAllocations.${dept.id}`}
+                              control={control}
+                              render={({ field }) => (
+                                <div className="flex justify-center">
+                                  <input
+                                    {...field}
+                                    type="text"
+                                    value={
+                                      field.value ??
+                                      tab2Apportioning?.apportioningAllocations?.[dept.id] ??
+                                      ""
+                                    }
+                                    placeholder=""
+                                    className="h-8 w-20 rounded-[4px] border border-[#cbd5e1] bg-white px-2 text-center text-[12px] font-medium text-[#111827] outline-none transition-all focus:border-(--primary) focus:ring-1 focus:ring-(--primary)"
+                                    onChange={(e) => {
+                                      const val = e.target.value.replace(/[^0-9.]/g, "")
+                                      field.onChange(val)
+                                    }}
+                                  />
+                                </div>
+                              )}
+                            />
+                          </div>
+                        </td>
+                        <td className="px-5 py-4 text-center">
+                          <div className="flex justify-center items-center">
+                            {dept.autoApportioning ? (
+                              <img src={statusCheck} alt="Checked" className="size-5 object-contain" />
+                            ) : (
+                              <img src={statusCross} alt="Unchecked" className="size-5 object-contain" />
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  })()}
+                </tbody>
+              </table>
+            </div>
           )}
 
-          {canPersistTransfers ? (
-            <Button
-              type="button"
-              className="inline-flex h-auto min-h-9 shrink cursor-pointer items-center gap-2 whitespace-normal rounded-[12px] border border-[#E5E7EB] bg-white px-3 py-2 text-[11px] font-semibold leading-snug text-[#6C5DD3] shadow-[0_1px_0_rgba(0,0,0,0.05)] hover:border-[#6C5DD3] hover:bg-[#F3F0FF] sm:text-[12px]"
-              onClick={() => setShowSecurityDeptRoleHistory(true)}
-            >
-              <History className="size-3.5 shrink-0" />
-              Department Role History
-            </Button>
-          ) : null}
-        </div>
-      </div>
-
-      <div className="relative mt-3 grid grid-cols-[1fr_60px_1fr] items-center gap-4">
-        {(securityRolesQuery.isLoading ||
-          (Boolean(securityUserId) && tab2Query.isLoading) ||
-          transferBusy) && (
-          <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/60">
-            <Spinner className="text-[#6C5DD3]" />
-          </div>
-        )}
-        <RoleTransferPanel
-          title="Select Department(Unassigned)"
-          items={unassignedItems}
-          selectedIds={toggledU}
-          onToggleItem={(id) => toggle(id, false)}
-          onToggleAll={toggleAllUnassigned}
-          onToggleDepartmentGroup={toggleDepartmentGroupU}
-        />
-
-        <div className="flex flex-col gap-3 pt-10">
-          <TransferListMoveButton
-            direction="forward"
-            onClick={() => void transferToAssigned()}
-            disabled={toggledU.length === 0 || transferBusy}
-            aria-label="Move selected to assigned"
-          />
-          <TransferListMoveButton
-            direction="back"
-            onClick={() => void transferToUnassigned()}
-            disabled={toggledA.length === 0 || transferBusy}
-            aria-label="Move selected to unassigned"
-          />
-        </div>
-
-        <RoleTransferPanel
-          title="Select Department(Assigned)"
-          items={assignedItems}
-          selectedIds={toggledA}
-          onToggleItem={(id) => toggle(id, true)}
-          onToggleAll={toggleAllAssigned}
-          onToggleDepartmentGroup={toggleDepartmentGroupA}
-        />
-      </div>
-
-      {displaySupervisorApportioning && isApportioningEnabled && (
-        <div className="mt-8 overflow-hidden rounded-[10px] border border-[#e5e7eb] bg-white shadow-[0_4px_20px_rgba(0,0,0,0.05)] transition-all duration-300">
-          <table className="w-full text-left text-[12px] border-collapse">
-            <thead>
-              <tr className="bg-(--primary) text-white">
-                <th className="px-5 py-2.5 text-[10.5px] font-semibold uppercase tracking-wider">Department Name</th>
-                <th className="px-5 py-2.5 text-[10.5px] font-semibold text-center uppercase tracking-wider">Apportioning</th>
-                <th className="px-5 py-2.5 text-[10.5px] font-semibold text-center uppercase tracking-wider">Percentage of allocation</th>
-                <th className="px-5 py-2.5 text-[10.5px] font-semibold text-center uppercase tracking-wider">Auto Apportioning</th>
-              </tr>
-            </thead>
-            <tbody>
-              {(() => {
-                const supervisorRoleName = "Time Study Supervisor"
-                const deptsWithSupervisor = new Set(
-                  assignedSnapshots
-                    .filter(s => s.name.trim() === supervisorRoleName)
-                    .map(s => s.departmentId)
-                )
-                const deptsWithUser = new Set(
-                  assignedSnapshots
-                    .filter(s => s.name.trim() === "User")
-                    .map(s => s.departmentId)
-                )
-                const qualifiedDeptIds = Array.from(deptsWithSupervisor).filter(id => deptsWithUser.has(id))
-
-                const assignedDepts = qualifiedDeptIds
-                  .map(id => {
-                    const snap = assignedSnapshots.find(s => s.departmentId === id)
-                    const deptInfo = departmentsQuery.data?.items.find(d => String(d.id) === String(id))
-                    return {
-                      id: String(id),
-                      name: snap?.department ?? deptInfo?.name ?? `Dept ${id}`,
-                      apportioning: deptInfo?.settings.apportioning ?? false,
-                      autoApportioning: deptInfo?.settings.autoApportioning ?? false,
+          {assignedDeptsForMultiCodeRows.length > 0 ? (
+            <div className="mt-8 mb-6">
+              {/* Top-right + icon */}
+              <div className="flex justify-end mb-4 pr-1">
+                <button
+                  type="button"
+                  disabled={!(multiCodeFields.length < assignedDeptsForMultiCodeRows.length)}
+                  onClick={() => {
+                    if (multiCodeFields.length < assignedDeptsForMultiCodeRows.length) {
+                      appendMultiCode({
+                        departmentId: 0,
+                        departmentName: "",
+                        allowMultiCodes: false,
+                        assignedMultiCodes: "",
+                        activationStartDate: "",
+                        activationEndDate: "",
+                      })
                     }
-                  })
-                  .filter(dept => dept.apportioning)
+                  }}
+                  className={`flex items-center justify-center size-7 rounded-full border-2 transition-all bg-white ${multiCodeFields.length < assignedDeptsForMultiCodeRows.length
+                    ? "border-[#22c55e] text-[#22c55e] hover:bg-green-50/30 cursor-pointer"
+                    : "border-[#9ca3af] text-[#9ca3af] cursor-not-allowed"
+                    }`}
+                  title="Add another department"
+                >
+                  <Plus className="size-4" strokeWidth={3} />
+                </button>
+              </div>
 
-                if (assignedDepts.length === 0) {
-                  return (
-                    <tr>
-                      <td colSpan={4} className="px-4 py-12 text-center text-[#9ca3af] bg-[#f9fafb]">
-                        <p className="text-[13px]">No departments assigned yet.</p>
-                        <p className="mt-1 text-[11px]">Assign departments to manage apportioning allocations.</p>
-                      </td>
-                    </tr>
-                  )
-                }
+              <div className="flex flex-col gap-6">
+                {(() => {
+                  const currentMultiCodes = watch("departmentMultiCodes") || []
+                  const selectedDeptIds = currentMultiCodes
+                    .map((c: any) => Number(c.departmentId))
+                    .filter((id: number) => Number.isFinite(id) && id > 0)
 
-                return assignedDepts.map((dept) => (
-                  <tr key={dept.id} className="border-t border-[#f1f2f6] hover:bg-[#f8fafc] transition-colors duration-200">
-                    <td className="px-5 py-4 font-medium text-[#111827]">{dept.name}</td>
-                    <td className="px-5 py-4 text-center">
-                      <div className="flex justify-center items-center">
-                        {dept.apportioning ? (
-                          <img src={statusCheck} alt="Checked" className="size-5 object-contain" />
-                        ) : (
-                          <img src={statusCross} alt="Unchecked" className="size-5 object-contain" />
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-5 py-4 text-center">
-                      <div className="flex justify-center">
-                        <Controller
-                          name={`apportioningAllocations.${dept.id}`}
-                          control={control}
-                          render={({ field }) => (
-                        <div className="flex justify-center">
-                          <input
-                            {...field}
-                            type="text"
-                            value={
-                              field.value ??
-                              tab2Apportioning?.apportioningAllocations?.[dept.id] ??
-                              ""
-                            }
-                            placeholder=""
-                            className="h-8 w-20 rounded-[4px] border border-[#cbd5e1] bg-white px-2 text-center text-[12px] font-medium text-[#111827] outline-none transition-all focus:border-(--primary) focus:ring-1 focus:ring-(--primary)"
-                            onChange={(e) => {
-                              const val = e.target.value.replace(/[^0-9.]/g, "")
-                              field.onChange(val)
-                            }}
-                          />
-                        </div>
-                          )}
-                        />
-                      </div>
-                    </td>
-                    <td className="px-5 py-4 text-center">
-                      <div className="flex justify-center items-center">
-                        {dept.autoApportioning ? (
-                          <img src={statusCheck} alt="Checked" className="size-5 object-contain" />
-                        ) : (
-                          <img src={statusCross} alt="Unchecked" className="size-5 object-contain" />
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              })()}
-            </tbody>
-          </table>
-        </div>
-      )}
+                  return multiCodeFields.map((field, index) => {
+                    const isAllowEnabled = watch(`departmentMultiCodes.${index}.allowMultiCodes`)
+                    const currentDeptName = watch(`departmentMultiCodes.${index}.departmentName`)
+                    const currentAssignedMultiCodes = watch(`departmentMultiCodes.${index}.assignedMultiCodes`)
+                    const hasSelectedMultiCodes =
+                      parseMultiSelectStoredValues(currentAssignedMultiCodes ?? "").length > 0
 
-      {assignedDeptsForMultiCodeRows.length > 0 ? (
-      <div className="mt-8 mb-6">
-        {/* Top-right + icon */}
-        <div className="flex justify-end mb-4 pr-1">
-          <button
-            type="button"
-            disabled={!(multiCodeFields.length < assignedDeptsForMultiCodeRows.length)}
-            onClick={() => {
-              if (multiCodeFields.length < assignedDeptsForMultiCodeRows.length) {
-                appendMultiCode({
-                  departmentId: 0,
-                  departmentName: "",
-                  allowMultiCodes: false,
-                  assignedMultiCodes: "",
-                  activationStartDate: "",
-                  activationEndDate: "",
-                })
-              }
-            }}
-            className={`flex items-center justify-center size-7 rounded-full border-2 transition-all bg-white ${
-              multiCodeFields.length < assignedDeptsForMultiCodeRows.length
-                ? "border-[#22c55e] text-[#22c55e] hover:bg-green-50/30 cursor-pointer"
-                : "border-[#9ca3af] text-[#9ca3af] cursor-not-allowed"
-            }`}
-            title="Add another department"
-          >
-            <Plus className="size-4" strokeWidth={3} />
-          </button>
-        </div>
+                    // Resolve selected department settings from user time-study departments API response
+                    const currentDeptId = watch(`departmentMultiCodes.${index}.departmentId`)
+                    const userDeptConfig = userDeptsQuery.data?.find((d) => {
+                      if (currentDeptId) return String(d.departmentId) === String(currentDeptId)
+                      return d.departmentName === currentDeptName
+                    })
+                    const globalDeptConfig = departmentsQuery.data?.items.find(
+                      (d) =>
+                        String(d.id) === String(currentDeptId) ||
+                        d.name === currentDeptName,
+                    )?.settings
 
-        <div className="flex flex-col gap-6">
-          {(() => {
-            const currentMultiCodes = watch("departmentMultiCodes") || []
-            const selectedDeptIds = currentMultiCodes
-              .map((c: any) => Number(c.departmentId))
-              .filter((id: number) => Number.isFinite(id) && id > 0)
+                    const deptSelected = Number(currentDeptId) > 0 && Boolean(currentDeptName?.trim())
+                    const deptAllowsActivationDates = deptAllowsActivationDatesFromApi(
+                      userDeptConfig,
+                      globalDeptConfig,
+                    )
 
-            return multiCodeFields.map((field, index) => {
-              const isAllowEnabled = watch(`departmentMultiCodes.${index}.allowMultiCodes`)
-              const currentDeptName = watch(`departmentMultiCodes.${index}.departmentName`)
-              const currentAssignedMultiCodes = watch(`departmentMultiCodes.${index}.assignedMultiCodes`)
-              const hasSelectedMultiCodes =
-                parseMultiSelectStoredValues(currentAssignedMultiCodes ?? "").length > 0
-              
-              // Resolve selected department settings from user time-study departments API response
-              const currentDeptId = watch(`departmentMultiCodes.${index}.departmentId`)
-              const userDeptConfig = userDeptsQuery.data?.find((d) => {
-                if (currentDeptId) return String(d.departmentId) === String(currentDeptId)
-                return d.departmentName === currentDeptName
-              })
-              const globalDeptConfig = departmentsQuery.data?.items.find(
-                (d) =>
-                  String(d.id) === String(currentDeptId) ||
-                  d.name === currentDeptName,
-              )?.settings
+                    return (
+                      <div key={field.id} className="flex items-start gap-4 w-full relative">
 
-              const deptSelected = Number(currentDeptId) > 0 && Boolean(currentDeptName?.trim())
-              const deptAllowsActivationDates = deptAllowsActivationDatesFromApi(
-                userDeptConfig,
-                globalDeptConfig,
-              )
-
-              return (
-                <div key={field.id} className="flex items-start gap-4 w-full relative">
-                  
-                  {/* Department */}
-                  <div className="flex-[1.2] flex flex-col">
-                    <div className="h-[22px] mb-1 flex items-end">
-                      <label className="block text-[11px] font-normal text-[#374151]">
-                        Department <span className="text-red-500">*</span>
-                      </label>
-                    </div>
-                    <Controller
-                      name={`departmentMultiCodes.${index}.departmentId`}
-                      control={control}
-                      render={({ field: dFieldId }) => (
-                        <Select
-                          value={
-                            Number(dFieldId.value) > 0 ? String(dFieldId.value) : undefined
-                          }
-                          onValueChange={(val) => {
-                            const found = assignedDeptsForMultiCodeRows.find((d) => String(d.id) === val)
-                            if (found) {
-                              // Reset the fields for this row on department change
-                              setValue(`departmentMultiCodes.${index}.allowMultiCodes`, false)
-                              setValue(`departmentMultiCodes.${index}.assignedMultiCodes`, "")
-                              setValue(`departmentMultiCodes.${index}.activationStartDate`, "")
-                              setValue(`departmentMultiCodes.${index}.activationEndDate`, "")
-
-                              dFieldId.onChange(found.id)
-                              setValue(`departmentMultiCodes.${index}.departmentName`, found.name)
-                              void fetchUserDeptsForRow(index)
-                            }
-                          }}
-                        >
-                          <SelectTrigger className="!h-[40px] w-full rounded-[6px] border border-[#d1d5db] bg-white px-3 text-[12px] text-[#111827] focus:ring-1 focus:ring-[#3b82f6] shadow-sm disabled:cursor-not-allowed disabled:bg-gray-50">
-                            <SelectValue placeholder="Select Department" />
-                          </SelectTrigger>
-                          <SelectContent position="popper" className="z-[100] max-h-60 overflow-y-auto w-(--radix-select-trigger-width) bg-white rounded-[6px]">
-                            {assignedDeptsForMultiCodeRows
-                              .filter((d) => !selectedDeptIds.includes(Number(d.id)) || Number(dFieldId.value) === Number(d.id))
-                              .map((d) => (
-                                <SelectItem 
-                                  key={d.id} 
-                                  value={String(d.id)}
-                                  className="text-[12px] rounded-[4px] py-2"
-                                >
-                                  {d.name}
-                                </SelectItem>
-                              ))}
-                          </SelectContent>
-                        </Select>
-                      )}
-                    />
-                  </div>
-
-                  {/* Allow MultiCodes & MultiCodes Select Column */}
-                  <div className="flex-[1.5] flex flex-col">
-                    <div className="h-[22px] mb-1 flex items-end justify-between">
-                      <div className="flex items-center gap-2">
-                        <Controller
-                          name={`departmentMultiCodes.${index}.allowMultiCodes`}
-                          control={control}
-                          render={({ field: cField }) => {
-                            const allowCheckboxSupport = departmentMultiCodeSupportFromApi(
-                              userDeptConfig,
-                              globalDeptConfig,
-                            )
-                            const allowCheckboxBlocked =
-                              userDeptsQuery.isFetched &&
-                              Number(currentDeptId) > 0 &&
-                              allowCheckboxSupport.multiCodeNotAvailable
-                            const isCheckboxDisabled = allowCheckboxBlocked || !deptSelected
-                            return (
-                              <Checkbox
-                                id={`allow-multicodes-checkbox-${index}`}
-                                checked={cField.value === true}
-                                disabled={isCheckboxDisabled}
-                                onCheckedChange={(checked) => {
-                                  const on = checked === true
-                                  cField.onChange(on)
-                                  if (on) {
-                                    setValue(`departmentMultiCodes.${index}.activationEndDate`, "", {
-                                      shouldDirty: true,
-                                    })
-                                    const deptId = Number(
-                                      getValues(`departmentMultiCodes.${index}.departmentId`),
-                                    )
-                                    if (deptId > 0) {
-                                      void fetchUserDeptsForRow(index)
-                                    }
-                                  }
-                                }}
-                                className="size-4 cursor-pointer rounded-[3px] border-[#c2c6d1] data-[state=checked]:border-(--primary) data-[state=checked]:bg-(--primary) disabled:cursor-not-allowed disabled:opacity-60"
-                              />
-                            )
-                          }}
-                        />
-                        <label 
-                          htmlFor={`allow-multicodes-checkbox-${index}`} 
-                          className={`text-[11px] font-normal whitespace-nowrap select-none ${
-                            !deptSelected ? "text-[#9ca3af] cursor-not-allowed" : "text-[#374151] cursor-pointer"
-                          }`}
-                        >
-                          Allow MultiCodes
-                        </label>
-                      </div>
-                      {!isAddMode && (
-                        <HoverCard>
-                          <HoverCardTrigger asChild>
-                            <History className="size-[14px] text-(--primary) cursor-pointer hover:text-[#5244b2] transition-colors" />
-                          </HoverCardTrigger>
-                          <HoverCardContent className="w-auto p-4 z-[100] shadow-lg rounded-[8px]" align="center" side="top">
-                            <div className="text-[12px] font-bold text-[#111827] mb-3">MultiCodes History</div>
-                            <div className="overflow-x-auto max-h-[300px] overflow-y-auto">
-                              <table className="w-full text-left text-[12px] border-collapse whitespace-nowrap">
-                                <thead className="bg-[#6b5cd6] text-white sticky top-0 z-10">
-                                  <tr>
-                                    <th className="px-3 py-2 font-medium font-inter">Department</th>
-                                    <th className="px-3 py-2 font-medium font-inter border-l border-[#897ee0]">MultiCode</th>
-                                    <th className="px-3 py-2 font-medium font-inter border-l border-[#897ee0]">Activation Start Date</th>
-                                    <th className="px-3 py-2 font-medium font-inter border-l border-[#897ee0]">Activation End Date</th>
-                                    <th className="px-3 py-2 font-medium font-inter border-l border-[#897ee0]">Updated At</th>
-                                  </tr>
-                                </thead>
-                                <tbody className="divide-y divide-[#e5e7eb]">
-                                  {historyQuery.data?.filter((row) => {
-                                    const rowDeptId = Number(row.departmentId ?? 0)
-                                    if (rowDeptId > 0 && currentDeptId) {
-                                      return rowDeptId === Number(currentDeptId)
-                                    }
-                                    const rowDeptName = assignedDepts.find(d => Number(d.id) === rowDeptId)?.name ?? ""
-                                    return rowDeptName === currentDeptName
-                                  }).length ? historyQuery.data
-                                  ?.filter((row) => {
-                                    const rowDeptId = Number(row.departmentId ?? 0)
-                                    if (rowDeptId > 0 && currentDeptId) {
-                                      return rowDeptId === Number(currentDeptId)
-                                    }
-                                    const rowDeptName = assignedDepts.find(d => Number(d.id) === rowDeptId)?.name ?? ""
-                                    return rowDeptName === currentDeptName
-                                  })
-                                  .map((row, i) => {
-                                    const deptName = assignedDepts.find(d => d.id === row.departmentId)?.name ?? "-"
-                                    const multiCodes = row.multiCodeTypes?.join(", ") || "-"
-                                    const sDate = displayDate(row.startDate)
-                                    const eDate = row.endDate ? displayDate(row.endDate) : "-"
-                                    const uDate = displayDate(row.updatedAt)
-                                    return (
-                                      <tr key={i} className="hover:bg-gray-50 transition-colors">
-                                        <td className="px-3 py-2 text-[#374151]">{deptName}</td>
-                                        <td className="px-3 py-2 text-[#374151]">{multiCodes}</td>
-                                        <td className="px-3 py-2 text-[#374151]">{sDate}</td>
-                                        <td className="px-3 py-2 text-[#374151]">{eDate}</td>
-                                        <td className="px-3 py-2 text-[#374151]">{uDate}</td>
-                                      </tr>
-                                    )
-                                  }) : (
-                                    <tr>
-                                      <td colSpan={5} className="px-4 py-6 text-center text-[#6b7280]">
-                                        {historyQuery.isLoading ? "Loading history..." : "No history for selected department."}
-                                      </td>
-                                    </tr>
-                                  )}
-                                </tbody>
-                              </table>
-                            </div>
-                          </HoverCardContent>
-                        </HoverCard>
-                      )}
-                    </div>
-                    <div className="h-[40px] flex items-center w-full">
-                      <div className="w-full h-full">
-                        <Controller
-                          name={`departmentMultiCodes.${index}.assignedMultiCodes`}
-                          control={control}
-                          render={({ field: aField }) => {
-                            const deptSupport = departmentMultiCodeSupportFromApi(
-                              userDeptConfig,
-                              globalDeptConfig,
-                            )
-                            const availableCodes = deptSupport.allowedCodes
-                            const deptApiKnown =
-                              userDeptsQuery.isFetched && Number(currentDeptId) > 0
-                            const multiCodeBlocked =
-                              deptApiKnown && deptSupport.multiCodeNotAvailable
-                            const tokens = parseMultiSelectStoredValues(aField.value ?? "")
-                            const rowNames = new Set(availableCodes)
-                            const orphanTokens = multiCodeBlocked
-                              ? []
-                              : [...new Set(tokens.filter((t) => !rowNames.has(t)))]
-                            const options = [
-                              ...availableCodes.map((c) => ({ value: c, label: c })),
-                              ...orphanTokens.map((t) => ({ value: t, label: t })),
-                            ]
-                            const displayValue = multiCodeBlocked ? "" : (aField.value ?? "")
-                            return (
-                              <MultiSelectDropdown
-                                value={displayValue}
-                                onChange={(val) => {
-                                  aField.onChange(val)
-                                  // Reset date when multicode selection is cleared
-                                  if (!val) {
+                        {/* Department */}
+                        <div className="flex-[1.2] flex flex-col">
+                          <div className="h-[22px] mb-1 flex items-end">
+                            <label className="block text-[11px] font-normal text-[#374151]">
+                              Department <span className="text-red-500">*</span>
+                            </label>
+                          </div>
+                          <Controller
+                            name={`departmentMultiCodes.${index}.departmentId`}
+                            control={control}
+                            render={({ field: dFieldId }) => (
+                              <Select
+                                value={
+                                  Number(dFieldId.value) > 0 ? String(dFieldId.value) : undefined
+                                }
+                                onValueChange={(val) => {
+                                  const found = assignedDeptsForMultiCodeRows.find((d) => String(d.id) === val)
+                                  if (found) {
+                                    // Reset the fields for this row on department change
+                                    setValue(`departmentMultiCodes.${index}.allowMultiCodes`, false)
+                                    setValue(`departmentMultiCodes.${index}.assignedMultiCodes`, "")
                                     setValue(`departmentMultiCodes.${index}.activationStartDate`, "")
                                     setValue(`departmentMultiCodes.${index}.activationEndDate`, "")
-                                  }
-                                }}
-                                onBlur={aField.onBlur}
-                                placeholder="Select MultiCodes"
-                                options={options}
-                                isLoading={userDeptsQuery.isFetching}
-                                disabled={!isAllowEnabled || !deptSelected}
-                                onOpenChange={(open) => {
-                                  if (open && Number(currentDeptId) > 0) {
+
+                                    dFieldId.onChange(found.id)
+                                    setValue(`departmentMultiCodes.${index}.departmentName`, found.name)
                                     void fetchUserDeptsForRow(index)
                                   }
                                 }}
-                                className="!h-[40px] !min-h-[40px] py-1 shadow-sm"
-                              />
-                            )
-                          }}
-                        />
-                      </div>
-                    </div>
-                  </div>
+                              >
+                                <SelectTrigger className="!h-[40px] w-full rounded-[6px] border border-[#d1d5db] bg-white px-3 text-[12px] text-[#111827] focus:ring-1 focus:ring-[#3b82f6] shadow-sm disabled:cursor-not-allowed disabled:bg-gray-50">
+                                  <SelectValue placeholder="Select Department" />
+                                </SelectTrigger>
+                                <SelectContent position="popper" className="z-[100] max-h-60 overflow-y-auto w-(--radix-select-trigger-width) bg-white rounded-[6px]">
+                                  {assignedDeptsForMultiCodeRows
+                                    .filter((d) => !selectedDeptIds.includes(Number(d.id)) || Number(dFieldId.value) === Number(d.id))
+                                    .map((d) => (
+                                      <SelectItem
+                                        key={d.id}
+                                        value={String(d.id)}
+                                        className="text-[12px] rounded-[4px] py-2"
+                                      >
+                                        {d.name}
+                                      </SelectItem>
+                                    ))}
+                                </SelectContent>
+                              </Select>
+                            )}
+                          />
+                        </div>
 
-                  {/* Activation Dates */}
-                  {isAddMode ? (
-                    /* Add Mode: always show Activation Start Date */
-                    <div className="flex-1 flex flex-col">
-                      <div className="h-[22px] mb-1 flex items-end">
-                        <label className="text-[11px] font-normal text-[#374151] flex items-center gap-1">
-                          <span>Activation Start Date</span>
-                        </label>
-                      </div>
-                      <div className="h-[40px] flex items-center w-full">
-                        <Controller
-                          name={`departmentMultiCodes.${index}.activationStartDate`}
-                          control={control}
-                          render={({ field: sField }) => (
-                            <DatePickerField
-                              value={sField.value}
-                              onChange={(val) => {
-                                if (val && isActivationEndBeforeStart(val, watch(`departmentMultiCodes.${index}.activationEndDate`))) {
-                                  toast.error(ACTIVATION_END_BEFORE_START_MSG)
-                                  return
-                                }
-                                sField.onChange(val)
-                              }}
-                              disabled={!deptSelected || !isAllowEnabled || !hasSelectedMultiCodes || !deptAllowsActivationDates}
-                            />
-                          )}
-                        />
-                      </div>
-                    </div>
-                  ) : (
-                    /* Edit Mode: check deptAllowsActivationDates */
-                    <>
-                      {deptAllowsActivationDates ? (
-                        <>
-                          {/* Activation Start Date */}
+                        {/* Allow MultiCodes & MultiCodes Select Column */}
+                        <div className="flex-[1.5] flex flex-col">
+                          <div className="h-[22px] mb-1 flex items-end justify-between">
+                            <div className="flex items-center gap-2">
+                              <Controller
+                                name={`departmentMultiCodes.${index}.allowMultiCodes`}
+                                control={control}
+                                render={({ field: cField }) => {
+                                  const allowCheckboxSupport = departmentMultiCodeSupportFromApi(
+                                    userDeptConfig,
+                                    globalDeptConfig,
+                                  )
+                                  const allowCheckboxBlocked =
+                                    userDeptsQuery.isFetched &&
+                                    Number(currentDeptId) > 0 &&
+                                    allowCheckboxSupport.multiCodeNotAvailable
+                                  const isCheckboxDisabled = allowCheckboxBlocked || !deptSelected
+                                  return (
+                                    <Checkbox
+                                      id={`allow-multicodes-checkbox-${index}`}
+                                      checked={cField.value === true}
+                                      disabled={isCheckboxDisabled}
+                                      onCheckedChange={(checked) => {
+                                        const on = checked === true
+                                        cField.onChange(on)
+                                        if (on) {
+                                          setValue(`departmentMultiCodes.${index}.activationEndDate`, "", {
+                                            shouldDirty: true,
+                                          })
+                                          const deptId = Number(
+                                            getValues(`departmentMultiCodes.${index}.departmentId`),
+                                          )
+                                          if (deptId > 0) {
+                                            void fetchUserDeptsForRow(index)
+                                          }
+                                        } else {
+                                          setValue(`departmentMultiCodes.${index}.assignedMultiCodes`, "", { shouldDirty: true })
+                                          setValue(`departmentMultiCodes.${index}.activationStartDate`, "", { shouldDirty: true })
+                                          setValue(`departmentMultiCodes.${index}.activationEndDate`, "", { shouldDirty: true })
+                                        }
+                                      }}
+                                      className="size-4 cursor-pointer rounded-[3px] border-[#c2c6d1] data-[state=checked]:border-(--primary) data-[state=checked]:bg-(--primary) disabled:cursor-not-allowed disabled:opacity-60"
+                                    />
+                                  )
+                                }}
+                              />
+                              <label
+                                htmlFor={`allow-multicodes-checkbox-${index}`}
+                                className={`text-[11px] font-normal whitespace-nowrap select-none ${!deptSelected ? "text-[#9ca3af] cursor-not-allowed" : "text-[#374151] cursor-pointer"
+                                  }`}
+                              >
+                                Allow MultiCodes
+                              </label>
+                            </div>
+                            {!isAddMode && (
+                              <HoverCard>
+                                <HoverCardTrigger asChild>
+                                  <History className="size-[14px] text-(--primary) cursor-pointer hover:text-[#5244b2] transition-colors" />
+                                </HoverCardTrigger>
+                                <HoverCardContent className="w-auto p-4 z-[100] shadow-lg rounded-[8px]" align="center" side="top">
+                                  <div className="text-[12px] font-bold text-[#111827] mb-3">MultiCodes History</div>
+                                  <div className="overflow-x-auto max-h-[300px] overflow-y-auto">
+                                    <table className="w-full text-left text-[12px] border-collapse whitespace-nowrap">
+                                      <thead className="bg-[#6b5cd6] text-white sticky top-0 z-10">
+                                        <tr>
+                                          <th className="px-3 py-2 font-medium font-inter">Department</th>
+                                          <th className="px-3 py-2 font-medium font-inter border-l border-[#897ee0]">MultiCode</th>
+                                          <th className="px-3 py-2 font-medium font-inter border-l border-[#897ee0]">Activation Start Date</th>
+                                          <th className="px-3 py-2 font-medium font-inter border-l border-[#897ee0]">Activation End Date</th>
+                                          <th className="px-3 py-2 font-medium font-inter border-l border-[#897ee0]">Updated At</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody className="divide-y divide-[#e5e7eb]">
+                                        {timelineQuery.data?.filter((row) => {
+                                          const rowDeptId = Number(row.departmentId ?? 0)
+                                          if (rowDeptId > 0 && currentDeptId) {
+                                            return rowDeptId === Number(currentDeptId)
+                                          }
+                                          const rowDeptName = assignedDepts.find(d => Number(d.id) === rowDeptId)?.name ?? ""
+                                          return rowDeptName === currentDeptName
+                                        }).length ? timelineQuery.data
+                                          ?.filter((row) => {
+                                            const rowDeptId = Number(row.departmentId ?? 0)
+                                            if (rowDeptId > 0 && currentDeptId) {
+                                              return rowDeptId === Number(currentDeptId)
+                                            }
+                                            const rowDeptName = assignedDepts.find(d => Number(d.id) === rowDeptId)?.name ?? ""
+                                            return rowDeptName === currentDeptName
+                                          })
+                                          .map((row, i) => {
+                                            const deptName = assignedDepts.find(d => d.id === row.departmentId)?.name ?? "-"
+                                            const multiCodes = row.multiCodeTypes?.join(", ") || "-"
+                                            const sDate = displayDate(row.startDate)
+                                            const eDate = row.endDate ? displayDate(row.endDate) : "-"
+                                            const uDate = displayDate(row.updatedAt)
+                                            return (
+                                              <tr key={i} className="hover:bg-gray-50 transition-colors">
+                                                <td className="px-3 py-2 text-[#374151]">{deptName}</td>
+                                                <td className="px-3 py-2 text-[#374151]">{multiCodes}</td>
+                                                <td className="px-3 py-2 text-[#374151]">{sDate}</td>
+                                                <td className="px-3 py-2 text-[#374151]">{eDate}</td>
+                                                <td className="px-3 py-2 text-[#374151]">{uDate}</td>
+                                              </tr>
+                                            )
+                                          }) : (
+                                          <tr>
+                                            <td colSpan={5} className="px-4 py-6 text-center text-[#6b7280]">
+                                              {timelineQuery.isLoading ? "Loading history..." : "No history for selected department."}
+                                            </td>
+                                          </tr>
+                                        )}
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                </HoverCardContent>
+                              </HoverCard>
+                            )}
+                          </div>
+                          <div className="h-[40px] flex items-center w-full">
+                            <div className="w-full h-full">
+                              <Controller
+                                name={`departmentMultiCodes.${index}.assignedMultiCodes`}
+                                control={control}
+                                render={({ field: aField }) => {
+                                  const deptSupport = departmentMultiCodeSupportFromApi(
+                                    userDeptConfig,
+                                    globalDeptConfig,
+                                  )
+                                  const availableCodes = deptSupport.allowedCodes
+                                  const deptApiKnown =
+                                    userDeptsQuery.isFetched && Number(currentDeptId) > 0
+                                  const multiCodeBlocked =
+                                    deptApiKnown && deptSupport.multiCodeNotAvailable
+                                  const tokens = parseMultiSelectStoredValues(aField.value ?? "")
+                                  const rowNames = new Set(availableCodes)
+                                  const orphanTokens = multiCodeBlocked
+                                    ? []
+                                    : [...new Set(tokens.filter((t) => !rowNames.has(t)))]
+                                  const options = [
+                                    ...availableCodes.map((c) => ({ value: c, label: c })),
+                                    ...orphanTokens.map((t) => ({ value: t, label: t })),
+                                  ]
+                                  const displayValue = multiCodeBlocked ? "" : (aField.value ?? "")
+                                  return (
+                                    <MultiSelectDropdown
+                                      value={displayValue}
+                                      onChange={(val) => {
+                                        aField.onChange(val)
+                                        // Reset date when multicode selection is cleared
+                                        if (!val) {
+                                          setValue(`departmentMultiCodes.${index}.activationStartDate`, "")
+                                          setValue(`departmentMultiCodes.${index}.activationEndDate`, "")
+                                        }
+                                      }}
+                                      onBlur={aField.onBlur}
+                                      placeholder="Select MultiCodes"
+                                      options={options}
+                                      isLoading={userDeptsQuery.isFetching}
+                                      disabled={!isAllowEnabled || !deptSelected}
+                                      onOpenChange={(open) => {
+                                        if (open && Number(currentDeptId) > 0) {
+                                          void fetchUserDeptsForRow(index)
+                                        }
+                                      }}
+                                      className="!h-[40px] !min-h-[40px] py-1 shadow-sm"
+                                    />
+                                  )
+                                }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Activation Dates */}
+                        {isAddMode ? (
+                          /* Add Mode: always show Activation Start Date */
                           <div className="flex-1 flex flex-col">
                             <div className="h-[22px] mb-1 flex items-end">
                               <label className="text-[11px] font-normal text-[#374151] flex items-center gap-1">
@@ -1659,76 +1641,111 @@ export function SecurityAssignmentsPanel({
                                       }
                                       sField.onChange(val)
                                     }}
-                                    disabled={!deptSelected || !isAllowEnabled || !hasSelectedMultiCodes}
+                                    disabled={!deptSelected || !isAllowEnabled || !hasSelectedMultiCodes || !deptAllowsActivationDates}
                                   />
                                 )}
                               />
                             </div>
                           </div>
+                        ) : (
+                          /* Edit Mode: check deptAllowsActivationDates */
+                          <>
+                            {deptAllowsActivationDates ? (
+                              <>
+                                {/* Activation Start Date */}
+                                <div className="flex-1 flex flex-col">
+                                  <div className="h-[22px] mb-1 flex items-end">
+                                    <label className="text-[11px] font-normal text-[#374151] flex items-center gap-1">
+                                      <span>Activation Start Date</span>
+                                    </label>
+                                  </div>
+                                  <div className="h-[40px] flex items-center w-full">
+                                    <Controller
+                                      name={`departmentMultiCodes.${index}.activationStartDate`}
+                                      control={control}
+                                      render={({ field: sField }) => (
+                                        <DatePickerField
+                                          value={sField.value}
+                                          onChange={(val) => {
+                                            if (val && isActivationEndBeforeStart(val, watch(`departmentMultiCodes.${index}.activationEndDate`))) {
+                                              toast.error(ACTIVATION_END_BEFORE_START_MSG)
+                                              return
+                                            }
+                                            sField.onChange(val)
+                                          }}
+                                          disabled={!deptSelected || !isAllowEnabled || !hasSelectedMultiCodes}
+                                        />
+                                      )}
+                                    />
+                                  </div>
+                                </div>
 
-                          {/* Activation End Date */}
-                          <div className="flex-1 flex flex-col">
-                            <div className="h-[22px] mb-1 flex items-end">
-                              <label className="block text-[11px] font-normal text-[#374151]">Activation End Date</label>
-                            </div>
-                            <div className="h-[40px] flex items-center w-full">
-                              <Controller
-                                name={`departmentMultiCodes.${index}.activationEndDate`}
-                                control={control}
-                                render={({ field: eField }) => (
-                                  <DatePickerField
-                                    value={eField.value}
-                                    onChange={(val) => {
-                                      if (val && isActivationEndBeforeStart(watch(`departmentMultiCodes.${index}.activationStartDate`), val)) {
-                                        toast.error(ACTIVATION_END_BEFORE_START_MSG)
-                                        return
-                                      }
-                                      eField.onChange(val)
-                                    }}
-                                    disabled={isAllowEnabled}
-                                  />
-                                )}
-                              />
-                            </div>
-                          </div>
-                        </>
-                      ) : (
-                        <>
-                          {/* Keep grid alignment when dept does not allow activation dates */}
-                          <div className="flex-1 flex flex-col pointer-events-none opacity-0" />
-                          <div className="flex-1 flex flex-col pointer-events-none opacity-0" />
-                        </>
-                      )}
-                    </>
-                  )}
-                  
-                  {/* Delete Button */}
-                  <div className="w-10 flex flex-col flex-shrink-0 mt-[26px]">
-                    <button 
-                      type="button" 
-                      disabled={multiCodeFields.length <= 1}
-                      onClick={() => {
-                        if (multiCodeFields.length > 1) {
-                          removeMultiCode(index)
-                        }
-                      }}
-                      className={`flex size-10 flex-shrink-0 items-center justify-center transition-colors ${
-                        multiCodeFields.length <= 1 
-                          ? "text-[#c2c6d1] cursor-not-allowed opacity-50" 
-                          : "text-red-500 hover:text-red-600 cursor-pointer"
-                      }`}
-                      title="Remove row"
-                    >
-                      <Trash2 className="size-5" />
-                    </button>
-                  </div>
-                </div> 
-              )
-            })
-          })()}
-        </div>
-      </div>
-      ) : null}
+                                {/* Activation End Date */}
+                                <div className="flex-1 flex flex-col">
+                                  <div className="h-[22px] mb-1 flex items-end">
+                                    <label className="block text-[11px] font-normal text-[#374151]">Activation End Date</label>
+                                  </div>
+                                  <div className="h-[40px] flex items-center w-full">
+                                    <Controller
+                                      name={`departmentMultiCodes.${index}.activationEndDate`}
+                                      control={control}
+                                      render={({ field: eField }) => (
+                                        <DatePickerField
+                                          value={eField.value}
+                                          onChange={(val) => {
+                                            if (val && isActivationEndBeforeStart(watch(`departmentMultiCodes.${index}.activationStartDate`), val)) {
+                                              toast.error(ACTIVATION_END_BEFORE_START_MSG)
+                                              return
+                                            }
+                                            eField.onChange(val)
+                                          }}
+                                          disabled={!deptSelected || !isAllowEnabled || !hasSelectedMultiCodes}
+                                        />
+                                      )}
+                                    />
+                                  </div>
+                                </div>
+                              </>
+                            ) : (
+                              <>
+                                {/* Keep grid alignment when dept does not allow activation dates */}
+                                <div className="flex-1 flex flex-col pointer-events-none opacity-0" />
+                                <div className="flex-1 flex flex-col pointer-events-none opacity-0" />
+                              </>
+                            )}
+                          </>
+                        )}
+
+                        {/* Delete Button */}
+                        <div className="w-10 flex flex-col flex-shrink-0 mt-[26px]">
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              const multicodeId = getValues(`departmentMultiCodes.${index}.id`)
+                              if (multicodeId && securityUserId) {
+                                try {
+                                  await deleteUserAllowMulticodeHistory(Number(multicodeId))
+                                  toast.success("MultiCode settings removed successfully")
+                                } catch {
+                                  // Error is already toasted by API client
+                                  return
+                                }
+                              }
+                              removeMultiCode(index)
+                            }}
+                            className="flex size-10 flex-shrink-0 items-center justify-center transition-colors text-red-500 hover:text-red-600 cursor-pointer"
+                            title="Remove row"
+                          >
+                            <Trash2 className="size-5" />
+                          </button>
+                        </div>
+                      </div>
+                    )
+                  })
+                })()}
+              </div>
+            </div>
+          ) : null}
         </>
       )}
     </div>
