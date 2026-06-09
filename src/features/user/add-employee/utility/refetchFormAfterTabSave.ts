@@ -210,8 +210,8 @@ export function mergeTab1IntoFormValues(
     jobClassificationIds:
       tab1.jobClassificationIds !== undefined
         ? [...new Set(tab1.jobClassificationIds.filter((n) => Number.isInteger(n) && n >= 1))].sort(
-            (a, b) => a - b,
-          )
+          (a, b) => a - b,
+        )
         : previous.jobClassificationIds,
     claimingUnit: (tab1.claimingUnit ?? "").trim() || previous.claimingUnit,
     spmp: typeof tab1.spmp === "boolean" ? tab1.spmp : previous.spmp,

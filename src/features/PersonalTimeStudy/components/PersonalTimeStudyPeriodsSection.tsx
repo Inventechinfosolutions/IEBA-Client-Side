@@ -87,12 +87,15 @@ export function PersonalTimeStudyPeriodsSection({
                     <span className="text-[12px] font-bold text-foreground truncate" title={deptName}>
                       {deptName}
                     </span>
-                    {isNotAllowed && (
+                    {(isNotAllowed || (dept.allowed && dept.message)) && (
                       <HoverCard openDelay={0} closeDelay={100}>
                         <HoverCardTrigger asChild>
                           <span className="cursor-pointer shrink-0">
                             <AlertTriangle
-                              className={cn("size-3.5", isWarning ? "text-amber-500" : "text-slate-400")}
+                              className={cn(
+                                "size-3.5",
+                                isWarning || (dept.allowed && dept.message) ? "text-amber-500" : "text-slate-400"
+                              )}
                             />
                           </span>
                         </HoverCardTrigger>
@@ -102,7 +105,7 @@ export function PersonalTimeStudyPeriodsSection({
                           side="top"
                         >
                           <div className="font-medium text-[#111827]">
-                            {descriptionText}
+                            {(dept.allowed && dept.message) ? dept.message : descriptionText}
                           </div>
                         </HoverCardContent>
                       </HoverCard>

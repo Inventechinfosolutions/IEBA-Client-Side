@@ -154,6 +154,7 @@ const userModuleFormFieldsSchema = z.object({
   activationEndDate: z.string().trim().optional(),
   departmentMultiCodes: z.array(
     z.object({
+      id: z.number().optional(),
       departmentId: z.number(),
       departmentName: z.string(),
       allowMultiCodes: z.boolean(),
@@ -162,6 +163,7 @@ const userModuleFormFieldsSchema = z.object({
       activationEndDate: z.string().trim().optional(),
     })
   ).optional().default([]),
+
 })
 
 const passwordMatchRefine = {

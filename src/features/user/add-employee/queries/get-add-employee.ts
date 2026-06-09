@@ -21,6 +21,7 @@ import {
   fetchUserTimeStudyDepartments,
   fetchUserDetailsTab,
   fetchUserAllowMulticodeHistory,
+  fetchUserAllowMulticodeTimeline,
 } from "../api"
 import { addEmployeeLookupKeys } from "../keys"
 import type {
@@ -367,6 +368,20 @@ export function useGetUserAllowMulticodeHistory(userId: string | null | undefine
     queryFn: () => fetchUserAllowMulticodeHistory(id),
     enabled: Boolean(id) && enabled,
     staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
+  })
+}
+
+export function useGetUserAllowMulticodeTimeline(userId: string | null | undefined, enabled: boolean) {
+  const id = userId?.trim() ?? ""
+  return useQuery({
+    queryKey: [...addEmployeeLookupKeys.userAllowMulticodeHistory(id), "timeline"],
+    queryFn: () => fetchUserAllowMulticodeTimeline(id),
+    enabled: Boolean(id) && enabled,
+    staleTime: 0,
+    gcTime: 0,
     refetchOnMount: true,
     refetchOnWindowFocus: false,
   })
