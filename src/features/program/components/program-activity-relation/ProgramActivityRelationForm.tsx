@@ -1,8 +1,10 @@
 import type { Dispatch, SetStateAction } from "react"
 import { useMemo, useState } from "react"
+import { ArrowLeft, History } from "lucide-react"
 
 import { usePermissions } from "@/hooks/usePermissions"
 import tableEmptyIcon from "@/assets/icons/table-empty.png"
+import { Button } from "@/components/ui/button"
 import { SingleSelectSearchDropdown } from "@/components/ui/dropdown-search"
 import { TitleCaseInput } from "@/components/ui/title-case-input"
 import { TransferListMoveButton } from "@/components/ui/transfer-list-move-button"
@@ -23,6 +25,7 @@ import type {
   TransferItem,
 } from "../../types"
 import { TransferPanel } from "./TransferPanel"
+import { ProgramActivityRelationHistoryTable } from "./ProgramActivityRelationHistoryTable"
 
 export function ProgramActivityRelationForm({ form, departmentIds }: ProgramActivityRelationFormProps) {
 
@@ -80,6 +83,7 @@ export function ProgramActivityRelationForm({ form, departmentIds }: ProgramActi
     [selectedProgramName, timeStudyPrograms],
   )
   const selectedProgramId = selectedProgram?.id as number | undefined
+  const selectedProgramCode = String(selectedProgram?.code ?? "").trim()
 
   const programDisabled = !selectedDepartment.trim()
   const isProgramEmpty = !programDisabled && programOptions.length === 0
@@ -110,6 +114,9 @@ export function ProgramActivityRelationForm({ form, departmentIds }: ProgramActi
   const [searchA, setSearchA] = useState("")
   const [toggledU, setToggledU] = useState<string[]>([])
   const [toggledA, setToggledA] = useState<string[]>([])
+  const [showHistory, setShowHistory] = useState(false)
+  const [historyProgramCode, setHistoryProgramCode] = useState("")
+  const [historyActivityCode, setHistoryActivityCode] = useState("")
 
   const { assignMutation, unassignMutation, applyOptimisticTransfer } =
     useProgramActivityRelationMutations({
@@ -161,129 +168,196 @@ export function ProgramActivityRelationForm({ form, departmentIds }: ProgramActi
       <TitleCaseInput type="hidden" {...form.register("programActivityRelationSort")} />
 
       <div className="flex w-full items-end justify-between gap-3 py-0.5">
-        <div className="flex min-w-0 flex-1 items-end gap-3">
-          <div className="w-[180px] space-y-1">
-            <label className="block text-[10px] text-[#111827]" htmlFor="par-department-trigger">
-              Department
-            </label>
-            <SingleSelectSearchDropdown
-              value={form.watch("programActivityRelationDepartment") ?? ""}
-              onChange={(department) => {
-                form.setValue("programActivityRelationDepartment", department, {
-                  shouldDirty: true,
-                  shouldTouch: true,
-                  shouldValidate: true,
-                })
-                form.setValue("programActivityRelationProgram", "", {
-                  shouldDirty: true,
-                  shouldTouch: true,
-                  shouldValidate: true,
-                })
-              }}
-              onBlur={() => {}}
-              options={departmentOptions.map((d) => ({ value: d, label: d }))}
-              placeholder="Select Department"
-              className={cn(
-                "min-h-[41px]! h-[41px] w-full rounded-[10px]! border-[#d0d5df]! px-3! pr-9! text-[11px]! font-normal!",
-                "focus-within:border-[#6C5DD3]! focus-within:ring-1! focus-within:ring-[#6C5DD333]!",
-              )}
-              itemButtonClassName="rounded-[6px] border border-transparent px-3 py-2 hover:bg-[#f3f4f8]"
-              itemLabelClassName="text-[11px]! font-normal!"
-            />
-          </div>
-
-          <div className="w-[318px] space-y-1">
-            <label className="block text-[10px] text-[#111827]" htmlFor="par-program-trigger">
-              Program
-            </label>
-            {programDisabled ? (
+        {showHistory ? (
+          <div className="flex min-w-0 flex-1 flex-wrap items-end gap-3">
+            <div className="w-[220px] space-y-1">
+              <label className="block text-[10px] text-[#111827]" htmlFor="par-history-program-code">
+                Program Code
+              </label>
               <TitleCaseInput
-                id="par-program-trigger"
-                value={form.watch("programActivityRelationProgram") || ""}
-                disabled
-                readOnly
-                tabIndex={-1}
-                placeholder="Select Program"
-                className={programDisabledClass}
+                id="par-history-program-code"
+                value={historyProgramCode}
+                onChange={(e) => setHistoryProgramCode(e.target.value)}
+                placeholder="Search Program Code"
+                className="h-[41px] w-full rounded-[10px] border border-[#d0d5df] bg-white px-3 text-[11px] text-[#111827] shadow-none placeholder:text-[11px] placeholder:text-[#b0b8c8] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
               />
-            ) : (
+            </div>
+            <div className="w-[220px] space-y-1">
+              <label className="block text-[10px] text-[#111827]" htmlFor="par-history-activity-code">
+                Activity Code
+              </label>
+              <TitleCaseInput
+                id="par-history-activity-code"
+                value={historyActivityCode}
+                onChange={(e) => setHistoryActivityCode(e.target.value)}
+                placeholder="Search Activity Code"
+                className="h-[41px] w-full rounded-[10px] border border-[#d0d5df] bg-white px-3 text-[11px] text-[#111827] shadow-none placeholder:text-[11px] placeholder:text-[#b0b8c8] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
+              />
+            </div>
+          </div>
+        ) : (
+          <div className="flex min-w-0 flex-1 items-end gap-3">
+            <div className="w-[180px] space-y-1">
+              <label className="block text-[10px] text-[#111827]" htmlFor="par-department-trigger">
+                Department
+              </label>
               <SingleSelectSearchDropdown
-                value={form.watch("programActivityRelationProgram") ?? ""}
-                onChange={(name) => {
-                  form.setValue("programActivityRelationProgram", name, {
+                value={form.watch("programActivityRelationDepartment") ?? ""}
+                onChange={(department) => {
+                  form.setValue("programActivityRelationDepartment", department, {
+                    shouldDirty: true,
+                    shouldTouch: true,
+                    shouldValidate: true,
+                  })
+                  form.setValue("programActivityRelationProgram", "", {
                     shouldDirty: true,
                     shouldTouch: true,
                     shouldValidate: true,
                   })
                 }}
                 onBlur={() => {}}
-                options={programOptions}
-                placeholder="Select Program"
-                emptyListSlot={
-                  <div className="flex flex-col items-center justify-center rounded-[6px] border border-[#eceff5] bg-white px-3 py-4">
-                    <img src={tableEmptyIcon} alt="" className="h-[73px] w-[82px] object-contain" />
-                  </div>
-                }
+                options={departmentOptions.map((d) => ({ value: d, label: d }))}
+                placeholder="Select Department"
                 className={cn(
-                  "min-h-[41px]! h-[41px] w-full rounded-[10px]! bg-white px-3! pr-9! text-[11px]! font-normal!",
-                  isProgramEmpty
-                    ? "border-(--primary)! focus-within:border-(--primary)! focus-within:ring-1! focus-within:ring-[rgba(108,93,211,0.22)]!"
-                    : "border-[#d0d5df]! focus-within:border-[#6C5DD3]! focus-within:ring-1! focus-within:ring-[#6C5DD333]!",
+                  "min-h-[41px]! h-[41px] w-full rounded-[10px]! border-[#d0d5df]! px-3! pr-9! text-[11px]! font-normal!",
+                  "focus-within:border-[#6C5DD3]! focus-within:ring-1! focus-within:ring-[#6C5DD333]!",
                 )}
                 itemButtonClassName="rounded-[6px] border border-transparent px-3 py-2 hover:bg-[#f3f4f8]"
                 itemLabelClassName="text-[11px]! font-normal!"
               />
-            )}
-          </div>
-        </div>
+            </div>
 
-
-      </div>
-
-      <div className="mt-6 grid grid-cols-[1fr_60px_1fr] items-center gap-4">
-        <TransferPanel
-          title="Select Activities(Unassigned)"
-          items={filteredU}
-          selectedIds={toggledU}
-          onToggleItem={(id) => handleToggle(id, setToggledU)}
-          onToggleAll={toggleAllUnassigned}
-          searchValue={searchU}
-          onSearchChange={setSearchU}
-          count={filteredU.length}
-          isActivity
-          selectedDept={selectedDepartment}
-        />
-
-        {!isRestrictedRole && (
-          <div className="flex flex-col gap-3 pt-10">
-            <TransferListMoveButton
-              direction="forward"
-              disabled={toggledU.length === 0}
-              aria-label="Move selected to assigned"
-              onClick={() => handleTransfer(toggledU, true)}
-            />
-            <TransferListMoveButton
-              direction="back"
-              disabled={toggledA.length === 0}
-              aria-label="Move selected to unassigned"
-              onClick={() => handleTransfer(toggledA, false)}
-            />
+            <div className="w-[318px] space-y-1">
+              <label className="block text-[10px] text-[#111827]" htmlFor="par-program-trigger">
+                Program
+              </label>
+              {programDisabled ? (
+                <TitleCaseInput
+                  id="par-program-trigger"
+                  value={form.watch("programActivityRelationProgram") || ""}
+                  disabled
+                  readOnly
+                  tabIndex={-1}
+                  placeholder="Select Program"
+                  className={programDisabledClass}
+                />
+              ) : (
+                <SingleSelectSearchDropdown
+                  value={form.watch("programActivityRelationProgram") ?? ""}
+                  onChange={(name) => {
+                    form.setValue("programActivityRelationProgram", name, {
+                      shouldDirty: true,
+                      shouldTouch: true,
+                      shouldValidate: true,
+                    })
+                  }}
+                  onBlur={() => {}}
+                  options={programOptions}
+                  placeholder="Select Program"
+                  emptyListSlot={
+                    <div className="flex flex-col items-center justify-center rounded-[6px] border border-[#eceff5] bg-white px-3 py-4">
+                      <img src={tableEmptyIcon} alt="" className="h-[73px] w-[82px] object-contain" />
+                    </div>
+                  }
+                  className={cn(
+                    "min-h-[41px]! h-[41px] w-full rounded-[10px]! bg-white px-3! pr-9! text-[11px]! font-normal!",
+                    isProgramEmpty
+                      ? "border-(--primary)! focus-within:border-(--primary)! focus-within:ring-1! focus-within:ring-[rgba(108,93,211,0.22)]!"
+                      : "border-[#d0d5df]! focus-within:border-[#6C5DD3]! focus-within:ring-1! focus-within:ring-[#6C5DD333]!",
+                  )}
+                  itemButtonClassName="rounded-[6px] border border-transparent px-3 py-2 hover:bg-[#f3f4f8]"
+                  itemLabelClassName="text-[11px]! font-normal!"
+                />
+              )}
+            </div>
           </div>
         )}
 
-        <TransferPanel
-          title="Select Activities(Assigned)"
-          items={filteredA}
-          selectedIds={toggledA}
-          onToggleItem={(id) => handleToggle(id, setToggledA)}
-          onToggleAll={toggleAllAssigned}
-          searchValue={searchA}
-          onSearchChange={setSearchA}
-          count={filteredA.length}
-          isActivity
-          selectedDept={selectedDepartment}
-        />
+        <Button
+          type="button"
+          className={`h-9 shrink-0 cursor-pointer gap-2 rounded-[12px] px-3 text-[12px] font-semibold transition-all shadow-[0_1px_0_rgba(0,0,0,0.05)] ${
+            showHistory
+              ? "bg-[#6C5DD3] text-white hover:bg-[#6C5DD3]"
+              : "border border-[#E5E7EB] bg-white text-[#6C5DD3] hover:border-[#6C5DD3] hover:bg-[#F3F0FF]"
+          }`}
+          onClick={() => {
+            setShowHistory((prev) => {
+              if (prev) {
+                setHistoryProgramCode("")
+                setHistoryActivityCode("")
+                return false
+              }
+              if (selectedProgramCode) setHistoryProgramCode(selectedProgramCode)
+              return true
+            })
+          }}
+        >
+          {showHistory ? (
+            <>
+              <ArrowLeft className="size-3.5 animate-back-bounce" />
+              Back to Program Activity Relation
+            </>
+          ) : (
+            <>
+              <History className="size-3.5" />
+              History
+            </>
+          )}
+        </Button>
       </div>
+
+      {showHistory ? (
+        <ProgramActivityRelationHistoryTable
+          programCode={historyProgramCode}
+          activityCode={historyActivityCode}
+          departmentId={selectedDepartmentId}
+        />
+      ) : (
+        <div className="mt-6 grid grid-cols-[1fr_60px_1fr] items-center gap-4">
+          <TransferPanel
+            title="Select Activities(Unassigned)"
+            items={filteredU}
+            selectedIds={toggledU}
+            onToggleItem={(id) => handleToggle(id, setToggledU)}
+            onToggleAll={toggleAllUnassigned}
+            searchValue={searchU}
+            onSearchChange={setSearchU}
+            count={filteredU.length}
+            isActivity
+            selectedDept={selectedDepartment}
+          />
+
+          {!isRestrictedRole && (
+            <div className="flex flex-col gap-3 pt-10">
+              <TransferListMoveButton
+                direction="forward"
+                disabled={toggledU.length === 0}
+                aria-label="Move selected to assigned"
+                onClick={() => handleTransfer(toggledU, true)}
+              />
+              <TransferListMoveButton
+                direction="back"
+                disabled={toggledA.length === 0}
+                aria-label="Move selected to unassigned"
+                onClick={() => handleTransfer(toggledA, false)}
+              />
+            </div>
+          )}
+
+          <TransferPanel
+            title="Select Activities(Assigned)"
+            items={filteredA}
+            selectedIds={toggledA}
+            onToggleItem={(id) => handleToggle(id, setToggledA)}
+            onToggleAll={toggleAllAssigned}
+            searchValue={searchA}
+            onSearchChange={setSearchA}
+            count={filteredA.length}
+            isActivity
+            selectedDept={selectedDepartment}
+          />
+        </div>
+      )}
     </div>
   )
 }

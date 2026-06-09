@@ -108,7 +108,7 @@ export function DashboardPage() {
   const showUserManagement = isSuperAdmin || canCreateUser || canAlwaysViewUserCard
   const showPayrollCard = isSuperAdmin || hasPayrollAdminRole
   const showStaffStatsCard = isSuperAdmin || isPayrollAdmin || isDeptOrTSAdmin
-  const showPersonalTimeStudyCard = !hasSuperAdminRole
+  const showPersonalTimeStudyCard = !hasSuperAdminRole && !isDeptOrTSAdmin
   const row1TemplateColumns = showPersonalTimeStudyCard
     ? "0.86fr 0.7fr 1.24fr 1.2fr"
     : "0.7fr 1.24fr 1.2fr"

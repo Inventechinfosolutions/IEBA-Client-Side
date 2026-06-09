@@ -23,4 +23,12 @@ export const programActivityRelationKeys = {
     [...programActivityRelationKeys.root, "timestudyprograms", departmentId] as const,
   activitiesScope: (departmentId: number | undefined, programId: number | undefined) =>
     [...programActivityRelationKeys.root, "activities", departmentId, programId] as const,
+  /** `GET /timestudyprograms/history` — program activity relation audit log. */
+  history: (params: {
+    page: number
+    limit: number
+    programCode: string
+    activityCode: string
+    departmentId?: number
+  }) => [...programActivityRelationKeys.root, "history", params] as const,
 }
