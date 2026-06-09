@@ -298,6 +298,11 @@ export async function apiUpdateUserLeave(id: number, values: EmployeeLeaveReques
   return apiUpdateUserLeaveBase(id, records[0] as any)
 }
 
+/** Deletes a single user leave record by ID. */
+export async function apiDeleteUserLeave(id: number): Promise<void> {
+  await api.delete(`/usersleave/${id}`)
+}
+
 /** Fetches time entry summary (TS mins, MAA mins, balances) for a specific date. */
 export async function apiGetTimeEntrySummary(userId: string, date: string, screen?: string): Promise<any> {
   const screenParam = screen ? `&screen=${encodeURIComponent(screen)}` : ""

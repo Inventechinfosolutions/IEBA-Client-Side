@@ -878,8 +878,15 @@ export function PersonalTimeStudyEntryForm({
   }, [parents, resolveDepartmentIdForProgram, fetchMulticodeProgramsForDepartment, allowMulticodeUi, apportioningConfig?.userMultiCode])
 
   const removeSubRow = useCallback((parentId: string, subId: string) => {
-    setParents((prev) => prev.map((p) => (p.id === parentId ? { ...p, subRows: p.subRows.filter((s) => s.id !== subId) } : p)))
-  }, [])
+    const parent = parents.find((p) => p.id === parentId);
+    if (parent) {
+      const sub = parent.subRows.find((s) => s.id === subId);
+      if (sub?.dbId) {
+        onDelete?.(sub.dbId);
+      }
+    }
+    setParents((prev) => prev.map((p) => (p.id === parentId ? { ...p, subRows: p.subRows.filter((s) => s.id !== subId) } : p)));
+  }, [parents, onDelete])
 
   const canDeleteParent = (parentId: string) => {
     if (isLocked) return false
