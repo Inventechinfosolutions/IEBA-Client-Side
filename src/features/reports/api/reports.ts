@@ -5,12 +5,25 @@ import {
 } from "../lib/reportCatalog.utils"
 import {
   formatReportDisplayDate,
+  groupP110ByEmployee,
+  groupP110SSByEmployee,
+  groupP111ByEmployee,
+  getP130ProgramCodes,
   unwrapDssrpt1Employees,
   unwrapDssrpt2Response,
+  unwrapP110Records,
+  unwrapP110SSRecords,
+  unwrapP111Records,
+  unwrapP130Response,
   unwrapReportDataRecords,
 } from "../pdf/reportPdf"
 import { generateDSSRPT1ReportPdf } from "../pdf/DSSRPT1ReportPdf"
 import { generateDSSRPT2ReportPdf } from "../pdf/DSSRPT2ReportPdf"
+import { generateP101ReportPdf } from "../pdf/P101ReportPdf"
+import { generateP110ReportPdf } from "../pdf/P110ReportPdf"
+import { generateP110SSReportPdf } from "../pdf/P110SSReportPdf"
+import { generateP111ReportPdf } from "../pdf/P111ReportPdf.tsx"
+import { generateP130ReportPdf } from "../pdf/P130ReportPdf.tsx"
 import { generateP100ReportPdf } from "../pdf/P100ReportPdf"
 import type {
   ReportCatalogItem,
@@ -124,6 +137,53 @@ async function buildFrontendPdfReport(
         reportDetails: dssrpt2.reportDetails,
         periodStarting: dssrpt2.periodStarting,
         periodEnding: dssrpt2.periodEnding,
+        meta,
+      })
+    }
+
+    if (body.reportKey === "P101") {
+      return await generateP101ReportPdf({
+        records: unwrapReportDataRecords(response),
+        startDate,
+        endDate,
+        meta,
+      })
+    }
+
+    if (body.reportKey === "P110-SS") {
+      return await generateP110SSReportPdf({
+        employees: groupP110SSByEmployee(unwrapP110SSRecords(response)),
+        startDate,
+        endDate,
+        meta,
+      })
+    }
+
+    if (body.reportKey === "P111") {
+      return await generateP111ReportPdf({
+        employees: groupP111ByEmployee(unwrapP111Records(response)),
+        startDate,
+        endDate,
+        meta,
+      })
+    }
+
+    if (body.reportKey === "P130") {
+      const p130 = unwrapP130Response(response)
+      return await generateP130ReportPdf({
+        programs: p130.programs,
+        programCodes: getP130ProgramCodes(p130.programs),
+        startDate,
+        endDate,
+        meta,
+      })
+    }
+
+    if (body.reportKey === "P110") {
+      return await generateP110ReportPdf({
+        employees: groupP110ByEmployee(unwrapP110Records(response)),
+        startDate,
+        endDate,
         meta,
       })
     }
