@@ -248,7 +248,9 @@ function normalizeActivityDepartmentListRow(raw: unknown): AddEmployeeActivityDe
   const name = typeof r.name === "string" ? r.name.trim() : ""
   const status = typeof r.status === "string" ? r.status.trim() : ""
   if (!code && !name) return null
-  return { id, activityId, departmentId, code, name, status }
+  const parentIdRaw = r.parentId ?? r.parentActivityId ?? (r.parent as any)?.id
+  const parentId = parentIdRaw == null ? null : Number(parentIdRaw)
+  return { id, activityId, departmentId, code, name, status, parentId: Number.isFinite(parentId) ? parentId : null }
 }
 
 /**
@@ -421,11 +423,17 @@ function parseUserProgramsActivitiesActivityItem(
   if (!Number.isFinite(id) || !name) return null
   const code = typeof a.code === "string" ? a.code : ""
   const aid = typeof a.departmentId === "number" ? a.departmentId : Number(a.departmentId)
+  const parentIdRaw = a.parentId ?? a.parentActivityId ?? (a.parent as any)?.id
+  const parentId = parentIdRaw == null ? null : Number(parentIdRaw)
+  const actIdRaw = a.activityId ?? a.activity_id
+  const activityId = actIdRaw == null ? undefined : Number(actIdRaw)
   return {
     id,
     code,
     name,
     departmentId: Number.isFinite(aid) ? aid : fallbackDepartmentId,
+    parentId: Number.isFinite(parentId) ? parentId : null,
+    activityId: Number.isFinite(activityId) ? activityId : undefined,
   }
 }
 
@@ -775,15 +783,13 @@ function parseUserActivitiesOnlyBundle(raw: unknown): UserActivitiesOnlyDepartme
 
 function programActivityGroupToProgramWithAssignments(
   group: UserProgramsActivitiesProgramActivityGroup,
+  p: UserProgramsOnlyProgram,
 ): UserProgramsActivitiesProgramWithAssignments {
   return {
-    id: group.programId,
-    code: group.code,
-    name: group.name,
-    departmentId: group.departmentId,
+    ...p,
     children: group.children,
-    jobpoolId: group.jobpoolId ?? null,
-    jobpoolName: group.jobpoolName ?? null,
+    jobpoolId: group.jobpoolId ?? p.jobpoolId ?? null,
+    jobpoolName: group.jobpoolName ?? p.jobpoolName ?? null,
   }
 }
 
@@ -815,7 +821,7 @@ function attachProgramActivitiesToProgramsBundle(
     programs.map((p) => {
       const group = groups.find((g) => g.programId === p.id)
       return group
-        ? programActivityGroupToProgramWithAssignments(group)
+        ? programActivityGroupToProgramWithAssignments(group, p)
         : programOnlyToWithAssignments(p)
     })
 

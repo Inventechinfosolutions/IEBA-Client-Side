@@ -221,31 +221,229 @@ function pickDepartmentBundleById(
   return bundles.find((b) => Number(b.departmentId) === id)
 }
 
+/**
+ * Convert a single program to a basic transfer item (no level/ancestors — those are set by buildHierarchicalProgramItems).
+ */
 function mapBundleProgramToTransferItem(
   program: UserProgramsActivitiesProgramWithAssignments,
   departmentName: string,
-  allProgramsInDepartment: UserProgramsActivitiesProgramWithAssignments[],
 ): AddEmployeeTimeStudyTransferItem {
-  const byId = new Map(allProgramsInDepartment.map((p) => [p.id, p]))
-  const ancestors: { id: string; name: string; code?: string }[] = []
-  let parentId = program.parentId ?? null
-  let safety = 0
-  while (parentId != null && byId.has(parentId) && safety < 10) {
-    const parent = byId.get(parentId)!
-    ancestors.unshift({ id: String(parent.id), name: parent.name, code: parent.code })
-    parentId = parent.parentId ?? null
-    safety++
-  }
   return {
     id: String(program.id),
     department: departmentName,
     code: program.code,
     name: program.name,
-    level: ancestors.length + 1,
+    level: 1,
     parentId: program.parentId != null ? String(program.parentId) : undefined,
     isMultiCode: program.isMultiCode,
-    ancestors,
+    ancestors: [],
   }
+}
+
+/**
+ * Build a hierarchically sorted list from a flat programs array using the same DFS pattern
+ * as programActivityRelation.ts (mergeProgramActivityRelationTransferItems).
+ *
+ * - Builds a parentId → children map using string-converted IDs
+ * - Finds root items (no parentId, or parent not in the set)
+ * - DFS-traverses roots → sets level (1 = grandparent, 2 = parent, 3 = child)
+ * - Populates ancestors array for tooltip text in TransferRow
+ */
+function buildHierarchicalProgramItems(
+  programs: UserProgramsActivitiesProgramWithAssignments[],
+  departmentName: string,
+  allProgramsInDepartment?: UserProgramsActivitiesProgramWithAssignments[],
+): AddEmployeeTimeStudyTransferItem[] {
+  const dept = departmentName.trim()
+  if (!dept || programs.length === 0) return []
+
+  const lookupSource = allProgramsInDepartment && allProgramsInDepartment.length > 0
+    ? allProgramsInDepartment
+    : programs
+
+  // Step 1 — Map lookup list to build the complete lookup dictionary and relation mapping
+  const lookupItems = lookupSource.map((p) => mapBundleProgramToTransferItem(p, dept))
+  const byId = new Map(lookupItems.map((i) => [i.id, i]))
+
+  // Map the subset we want to return
+  const items = programs.map((p) => mapBundleProgramToTransferItem(p, dept))
+  const targetIds = new Set(items.map((i) => i.id))
+
+  // Step 2 — build parentToChildren map using lookupItems so all connections are preserved
+  const parentToChildren = new Map<string, AddEmployeeTimeStudyTransferItem[]>()
+  const roots: AddEmployeeTimeStudyTransferItem[] = []
+
+  for (const item of lookupItems) {
+    if (item.parentId && byId.has(item.parentId)) {
+      if (!parentToChildren.has(item.parentId)) {
+        parentToChildren.set(item.parentId, [])
+      }
+      parentToChildren.get(item.parentId)!.push(item)
+    } else {
+      roots.push(item)
+    }
+  }
+
+  // Step 3 — sort roots and children alphabetically by code+name
+  const sortKey = (i: AddEmployeeTimeStudyTransferItem) => {
+    const c = i.code ?? ""
+    return c ? `(${c}) ${i.name}` : i.name
+  }
+  roots.sort((a, b) => sortKey(a).localeCompare(sortKey(b), undefined, { sensitivity: "base", numeric: true }))
+  for (const childList of parentToChildren.values()) {
+    childList.sort((a, b) => sortKey(a).localeCompare(sortKey(b), undefined, { sensitivity: "base", numeric: true }))
+  }
+
+  // Step 4 — DFS traversal on all lookup items to assign correct level + ancestors
+  const enrichedMap = new Map<string, AddEmployeeTimeStudyTransferItem>()
+  const visited = new Set<string>()
+
+  function traverse(
+    node: AddEmployeeTimeStudyTransferItem,
+    depth: number,
+    ancestorChain: { id: string; name: string; code?: string }[],
+  ) {
+    if (visited.has(node.id)) return
+    visited.add(node.id)
+    const enriched: AddEmployeeTimeStudyTransferItem = {
+      ...node,
+      level: depth + 1,
+      ancestors: [...ancestorChain],
+    }
+    enrichedMap.set(node.id, enriched)
+    const children = parentToChildren.get(node.id) ?? []
+    const nextAncestors = [...ancestorChain, { id: node.id, name: node.name, code: node.code }]
+    for (const child of children) {
+      traverse(child, depth + 1, nextAncestors)
+    }
+  }
+
+  for (const root of roots) {
+    traverse(root, 0, [])
+  }
+
+  // Step 5 — Walk the sorted lookup trees and collect only items that were in the original 'programs' list
+  const result: AddEmployeeTimeStudyTransferItem[] = []
+  const collectedIds = new Set<string>()
+
+  function collect(nodeId: string) {
+    if (targetIds.has(nodeId) && !collectedIds.has(nodeId)) {
+      collectedIds.add(nodeId)
+      const item = enrichedMap.get(nodeId)
+      if (item) result.push(item)
+    }
+    const children = parentToChildren.get(nodeId) ?? []
+    for (const child of children) {
+      collect(child.id)
+    }
+  }
+
+  for (const root of roots) {
+    collect(root.id)
+  }
+
+  return result
+}
+
+function buildHierarchicalActivityItems(
+  activities: AddEmployeeTimeStudyTransferItem[],
+  departmentName: string,
+  allActivitiesInDepartment?: AddEmployeeTimeStudyTransferItem[],
+): AddEmployeeTimeStudyTransferItem[] {
+  const dept = departmentName.trim()
+  if (!dept || activities.length === 0) return []
+
+  const lookupSource = allActivitiesInDepartment && allActivitiesInDepartment.length > 0
+    ? allActivitiesInDepartment
+    : activities
+
+  // Step 1 — Map lookup list to build the complete lookup dictionary by activityId (master ID)
+  const byActivityId = new Map<number, AddEmployeeTimeStudyTransferItem>()
+  for (const item of lookupSource) {
+    if (item.activityId != null) {
+      byActivityId.set(item.activityId, item)
+    }
+  }
+
+  // Step 2 — build parentToChildren map using byActivityId
+  const parentToChildren = new Map<string, AddEmployeeTimeStudyTransferItem[]>()
+  const roots: AddEmployeeTimeStudyTransferItem[] = []
+
+  for (const item of lookupSource) {
+    const pId = item.parentId ? Number(item.parentId) : null
+    const parentItem = pId != null ? byActivityId.get(pId) : null
+
+    if (parentItem) {
+      const parentTransferId = parentItem.id // this is parent's ActivityDepartment.id
+      if (!parentToChildren.has(parentTransferId)) {
+        parentToChildren.set(parentTransferId, [])
+      }
+      parentToChildren.get(parentTransferId)!.push(item)
+    } else {
+      roots.push(item)
+    }
+  }
+
+  // Step 3 — sort roots and children alphabetically by code+name
+  const sortKey = (i: AddEmployeeTimeStudyTransferItem) => {
+    const c = i.code ?? ""
+    return c ? `(${c}) ${i.name}` : i.name
+  }
+  roots.sort((a, b) => sortKey(a).localeCompare(sortKey(b), undefined, { sensitivity: "base", numeric: true }))
+  for (const childList of parentToChildren.values()) {
+    childList.sort((a, b) => sortKey(a).localeCompare(sortKey(b), undefined, { sensitivity: "base", numeric: true }))
+  }
+
+  // Step 4 — DFS traversal on all lookup items to assign correct level + ancestors
+  const enrichedMap = new Map<string, AddEmployeeTimeStudyTransferItem>()
+  const visited = new Set<string>()
+
+  function traverse(
+    node: AddEmployeeTimeStudyTransferItem,
+    depth: number,
+    ancestorChain: { id: string; name: string; code?: string }[],
+  ) {
+    if (visited.has(node.id)) return
+    visited.add(node.id)
+    const enriched: AddEmployeeTimeStudyTransferItem = {
+      ...node,
+      level: depth + 1,
+      ancestors: [...ancestorChain],
+    }
+    enrichedMap.set(node.id, enriched)
+    const children = parentToChildren.get(node.id) ?? []
+    const nextAncestors = [...ancestorChain, { id: node.id, name: node.name, code: node.code }]
+    for (const child of children) {
+      traverse(child, depth + 1, nextAncestors)
+    }
+  }
+
+  for (const root of roots) {
+    traverse(root, 0, [])
+  }
+
+  // Step 5 — Walk the sorted lookup trees and collect only items that were in the original 'activities' list
+  const targetIds = new Set(activities.map((i) => i.id))
+  const result: AddEmployeeTimeStudyTransferItem[] = []
+  const collectedIds = new Set<string>()
+
+  function collect(nodeId: string) {
+    if (targetIds.has(nodeId) && !collectedIds.has(nodeId)) {
+      collectedIds.add(nodeId)
+      const item = enrichedMap.get(nodeId)
+      if (item) result.push(item)
+    }
+    const children = parentToChildren.get(nodeId) ?? []
+    for (const child of children) {
+      collect(child.id)
+    }
+  }
+
+  for (const root of roots) {
+    collect(root.id)
+  }
+
+  return result
 }
 
 function mapBundleProgramsToTransferItems(
@@ -253,11 +451,7 @@ function mapBundleProgramsToTransferItems(
   departmentName: string,
   allProgramsInDepartment: UserProgramsActivitiesProgramWithAssignments[],
 ): AddEmployeeTimeStudyTransferItem[] {
-  const dept = departmentName.trim()
-  if (!dept) return []
-  return sortTransferItems(
-    programs.map((p) => mapBundleProgramToTransferItem(p, dept, allProgramsInDepartment)),
-  )
+  return buildHierarchicalProgramItems(programs, departmentName, allProgramsInDepartment)
 }
 
 const EMPTY_ACTIVITY_SPLIT: UserProgramsActivitiesAssignedSplit<UserProgramsActivitiesActivityItem> =
@@ -387,15 +581,16 @@ function buildJobPoolTransferSection(
   bundle: UserProgramsActivitiesDepartmentBundle,
   kind: "programs" | "activities",
 ): AddEmployeeTimeStudyJobPoolSection | null {
-  const jobPoolPrograms = jobPoolOnlyAssignedPrograms(bundle)
-  if (jobPoolPrograms.length === 0) return null
-
   const departmentName = bundle.departmentName.trim()
   const sectionTitle = `${departmentName} (JobPool Assigned ${kind === "programs" ? "Programs" : "Activities"})`
 
   const items =
     kind === "programs"
-      ? sortTransferItems(jobPoolPrograms.map((parent) => mapJobPoolProgramToTransferItem(parent, bundle)))
+      ? sortTransferItems(
+          jobPoolOnlyAssignedPrograms(bundle).map((parent) =>
+            mapJobPoolProgramToTransferItem(parent, bundle),
+          ),
+        )
       : jobPoolAssignedActivities(bundle).map((child) =>
           mapJobPoolRowToTransferItem(child, departmentName, `jobpool-activity-${child.id}`),
         )
@@ -440,6 +635,8 @@ function mapBundleActivitiesToTransferItems(
       department: dept,
       code: activity.code,
       name: activity.name,
+      activityId: activity.activityId ?? activity.id,
+      parentId: activity.parentId != null ? String(activity.parentId) : undefined,
     })),
   )
 }
@@ -458,7 +655,7 @@ function collectBundleActivityTransferItems(
   if (allAssignedPrograms.length === 0 && orphanAssigned.length === 0 && orphanUnassigned.length === 0) return []
 
   const byId = new Map<string, AddEmployeeTimeStudyTransferItem>()
-  const addActivity = (activity: { id: number; code: string; name: string }) => {
+  const addActivity = (activity: UserProgramsActivitiesActivityItem) => {
     const id = String(activity.id)
     if (!byId.has(id)) {
       byId.set(id, {
@@ -466,6 +663,8 @@ function collectBundleActivityTransferItems(
         department: dept,
         code: activity.code,
         name: activity.name,
+        activityId: activity.activityId ?? activity.id,
+        parentId: activity.parentId != null ? String(activity.parentId) : undefined,
       })
     }
   }
@@ -957,19 +1156,17 @@ export function TimeStudyAssignmentsPanel({
    * Collect the set of master Activity IDs that are assigned to any of the user's programs.
    * These come from the last segment of each node's tree key (e.g. "dept-1-act-5" → "5").
    */
-  const { programAssignedActivityIds, activityLevels } = useMemo(() => {
+  const { programAssignedActivityIds } = useMemo(() => {
     const ids = new Set<string>()
-    const levels = new Map<string, number>()
 
-    const traverse = (nodes: any[], currentLevel: number) => {
+    const traverse = (nodes: any[]) => {
       for (const node of nodes) {
         const id = String(String(node.key ?? "").split("-").at(-1) ?? "")
         if (id) {
           ids.add(id)
-          levels.set(id, Math.max(levels.get(id) || 0, currentLevel))
         }
         if (Array.isArray(node.children)) {
-          traverse(node.children, currentLevel + 1)
+          traverse(node.children)
         }
       }
     }
@@ -980,9 +1177,9 @@ export function TimeStudyAssignmentsPanel({
       if (!Array.isArray(roots) || roots.length === 0) continue
       const activityNode = roots[0]?.activity?.[0]
       const children = Array.isArray(activityNode?.children) ? activityNode.children : []
-      traverse(children, 0)
+      traverse(children)
     }
-    return { programAssignedActivityIds: ids, activityLevels: levels }
+    return { programAssignedActivityIds: ids }
   }, [programActivityQueryResults])
 
   /** ActivityDepartment link ids per selected department (not master GET /activities ids). */
@@ -1002,16 +1199,41 @@ export function TimeStudyAssignmentsPanel({
       department: deptLabel,
       code: a.code,
       name: a.name,
-      level: activityLevels.get(String(a.id)) || 0,
+      activityId: a.activityId,
+      parentId: a.parentId != null ? String(a.parentId) : undefined,
     }))
-  }, [activityDepartmentsQuery.data, selectedDept, programsAssigned, programAssignedActivityIds, orphanActivityIds, activityLevels])
+  }, [activityDepartmentsQuery.data, selectedDept, programsAssigned, programAssignedActivityIds, orphanActivityIds])
+
+  const allActivitiesInDepartmentMapped = useMemo<AddEmployeeTimeStudyTransferItem[]>(() => {
+    const deptLabel = selectedDept.trim()
+    if (!deptLabel) return []
+    const rows = activityDepartmentsQuery.data ?? []
+    return rows
+      .filter((a) => isActiveActivityDepartmentStatus(a.status))
+      .map((a) => ({
+        id: String(a.id),
+        department: deptLabel,
+        code: a.code,
+        name: a.name,
+        activityId: a.activityId,
+        parentId: a.parentId != null ? String(a.parentId) : undefined,
+      }))
+  }, [activityDepartmentsQuery.data, selectedDept])
 
   const globalActivitiesForSelectedDepartment = useMemo(() => {
     if (hasUserTsBundle) {
-      return filterTransferItemsByDepartment(activityCatalogForUserBundle, selectedDept)
+      const items = filterTransferItemsByDepartment(activityCatalogForUserBundle, selectedDept)
+      return buildHierarchicalActivityItems(items, selectedDept, allActivitiesInDepartmentMapped)
     }
-    return filterTransferItemsByDepartment(globalActivityCatalogFromDepartments, selectedDept)
-  }, [hasUserTsBundle, activityCatalogForUserBundle, globalActivityCatalogFromDepartments, selectedDept])
+    const items = filterTransferItemsByDepartment(globalActivityCatalogFromDepartments, selectedDept)
+    return buildHierarchicalActivityItems(items, selectedDept, allActivitiesInDepartmentMapped)
+  }, [
+    hasUserTsBundle,
+    activityCatalogForUserBundle,
+    globalActivityCatalogFromDepartments,
+    selectedDept,
+    allActivitiesInDepartmentMapped,
+  ])
 
   const deptActivitiesAddMode = useMemo(() => {
     if (!selectedDept) return []

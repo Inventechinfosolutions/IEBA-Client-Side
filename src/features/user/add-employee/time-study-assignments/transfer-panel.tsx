@@ -4,7 +4,7 @@ import { Check, Search } from "lucide-react"
 import tableEmptyIcon from "@/assets/icons/table-empty.png"
 import { TitleCaseInput } from "@/components/ui/title-case-input"
 import { ScrollArea } from "@/components/ui/scroll-area"
-
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import type {
   AddEmployeeTimeStudyJobPoolSection,
   AddEmployeeTimeStudyTransferItem,
@@ -43,11 +43,10 @@ function RowCheckbox({ isSelected, readOnly }: { isSelected: boolean; readOnly?:
   if (readOnly) return <ReadOnlyCheckbox />
   return (
     <div
-      className={`flex size-4.5 shrink-0 items-center justify-center rounded-[6px] border shadow-sm transition-all ${
-        isSelected
+      className={`flex size-4.5 shrink-0 items-center justify-center rounded-[6px] border shadow-sm transition-all ${isSelected
           ? "border-[#6C5DD3] bg-[#6C5DD3] text-white"
           : "border-[#E5E7EB] bg-white text-transparent hover:border-[#D1D5DB]"
-      }`}
+        }`}
     >
       <Check className="size-3.5 stroke-3" />
     </div>
@@ -101,11 +100,41 @@ function RowLabel({
   )
 }
 
+/**
+ * Single numbered oval badge with a tooltip shown on hover.
+ * number: the oval label (1 or 2)
+ * tooltipText: the ancestor name shown on hover
+ */
+function OvalBadge({ number, tooltipText }: { number: number; tooltipText: string }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <div
+          className="flex shrink-0 h-[22px] w-[16px] cursor-help items-center justify-center rounded-full bg-white text-[10px] font-bold text-[#6C5DD3] border border-[#6C5DD3] select-none"
+        >
+          {number}
+        </div>
+      </TooltipTrigger>
+      <TooltipContent side="top" className="max-w-[220px] text-center text-[11px]">
+        {tooltipText || "—"}
+      </TooltipContent>
+    </Tooltip>
+  )
+}
+
+/**
+ * TransferRow — renders a single program row.
+ *
+ * Uses item.level (set by DFS in buildHierarchicalProgramItems) and item.ancestors
+ * for hierarchy display. Matches the target design from the reference screenshot:
+ *   - Grandparent (depth 0): no ovals, no indent, horizontal tree line tick
+ *   - Parent (depth 1): oval ① → tooltip = grandparent name, indented with line ticks
+ *   - Child (depth 2+): ovals ① ② → tooltip 1 = grandparent, tooltip 2 = direct parent, indented with line ticks
+ */
 function TransferRow({
   item,
   isSelected,
   readOnly,
-  minLevel,
   onToggle,
 }: {
   item: AddEmployeeTimeStudyTransferItem
@@ -114,20 +143,55 @@ function TransferRow({
   minLevel: number
   onToggle?: () => void
 }) {
-  const rawLevel = item.level ?? minLevel
-  const depth = Math.max(0, rawLevel - minLevel)
-  const indentPx = 35 + depth * 14
+  // Use absolute depth (relative to root level 1) to ensure ovals and indentation
+  // remain consistent even when list items are filtered or subsetted.
+  const depth = Math.max(0, (item.level ?? 1) - 1)
+
+  // ancestors[0] = grandparent, ancestors[last] = direct parent
+  const grandParentName = item.ancestors?.[0]?.name ?? ""
+  const directParentName =
+    item.ancestors && item.ancestors.length > 0
+      ? item.ancestors[item.ancestors.length - 1].name
+      : ""
+
+  const renderTreeConnectors = () => {
+    return (
+      <div className="flex shrink-0 items-center gap-[2px] h-full mr-1">
+        {/* Left Tick */}
+        <div className="w-[8px] h-px bg-[#E5E7EB] shrink-0" />
+        
+        {depth >= 1 && (
+          <>
+            {/* Oval 1 */}
+            <OvalBadge number={1} tooltipText={grandParentName} />
+            {/* Middle Tick */}
+            <div className="w-[4px] h-px bg-[#E5E7EB] shrink-0" />
+          </>
+        )}
+
+        {depth >= 2 && (
+          <>
+            {/* Oval 2 */}
+            <OvalBadge number={2} tooltipText={directParentName} />
+            {/* Right Tick */}
+            <div className="w-[4px] h-px bg-[#E5E7EB] shrink-0" />
+          </>
+        )}
+      </div>
+    )
+  }
 
   const rowBody = (
     <>
-     <div className="absolute left-4 top-0.5 flex h-full w-8 items-center justify-center">
-          <div className="absolute left-1 top-0 h-full w-px bg-[#E5E7EB]" />
-          <div className="absolute left-1 top-1/2 h-px w-3 bg-[#E5E7EB]" />
-        </div>
+      {/* Continuous Vertical Line */}
+      <div className="absolute left-4 top-0 h-full w-px bg-[#E5E7EB] z-10" />
+
       <div
-        className="flex min-w-0 flex-1 items-center gap-1 text-[10px] font-medium"
-        style={{ paddingLeft: indentPx }}
+        className="flex min-w-0 flex-1 items-center text-[10px] font-medium pl-4"
       >
+        <TooltipProvider>
+          {renderTreeConnectors()}
+        </TooltipProvider>
         <RowLabel item={item} isSelected={isSelected} readOnly={readOnly} />
       </div>
       <RowCheckbox isSelected={isSelected} readOnly={readOnly} />
@@ -137,7 +201,7 @@ function TransferRow({
   if (readOnly) {
     return (
       <div
-        className="group relative z-0 flex cursor-not-allowed items-center justify-between py-1 pr-3 text-left"
+        className="group relative z-0 flex cursor-not-allowed items-center justify-between py-0.5 pr-3 text-left"
         aria-disabled="true"
       >
         {rowBody}
@@ -149,9 +213,8 @@ function TransferRow({
     <button
       type="button"
       onClick={onToggle}
-      className={`group relative z-0 flex w-full cursor-pointer items-center justify-between py-1 pr-3 text-left transition-colors ${
-        isSelected ? "bg-[#F3F0FF]" : "hover:bg-[#F9FAFB]"
-      }`}
+      className={`group relative z-0 flex w-full cursor-pointer items-center justify-between py-0.5 pr-3 text-left transition-colors ${isSelected ? "bg-[#F3F0FF]" : "hover:bg-[#F9FAFB]"
+        }`}
     >
       {rowBody}
     </button>
@@ -264,8 +327,12 @@ export function TransferPanel({
   const hasMainContent = items.length > 0
   const hasAnyContent = hasMainContent || Boolean(filteredJobPoolSection)
   const allSelected = items.length > 0 && items.every((item) => selectedIds.includes(item.id))
-  const jobPoolItemLevels = filteredJobPoolSection?.items ?? []
-  const allLevels = [...items, ...jobPoolItemLevels].map((i) => i.level ?? 1)
+
+  // Compute minLevel from all visible items so depth is relative to the shallowest item shown
+  const allLevels = [
+    ...items.map((i) => i.level ?? 1),
+    ...(filteredJobPoolSection?.items ?? []).map((i) => i.level ?? 1),
+  ]
   const minLevel = allLevels.length > 0 ? Math.min(...allLevels) : 1
 
   return (
@@ -300,11 +367,10 @@ export function TransferPanel({
                   <button
                     type="button"
                     onClick={onToggleAll}
-                    className={`flex size-4.5 shrink-0 items-center justify-center rounded-[6px] border shadow-sm transition-all ${
-                      allSelected
+                    className={`flex size-4.5 shrink-0 items-center justify-center rounded-[6px] border shadow-sm transition-all ${allSelected
                         ? "border-[#6C5DD3] bg-white text-[#6C5DD3]"
                         : "border-[#E5E7EB] bg-white text-transparent hover:border-[#D1D5DB]"
-                    }`}
+                      }`}
                     aria-label={`Toggle all ${selectedDept}`}
                   >
                     <Check className="size-3.5 stroke-3" />
