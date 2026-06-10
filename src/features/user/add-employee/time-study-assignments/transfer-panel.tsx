@@ -156,16 +156,16 @@ function TransferRow({
 
   const renderTreeConnectors = () => {
     return (
-      <div className="flex shrink-0 items-center gap-[3px] h-full mr-1.5">
+      <div className="flex shrink-0 items-center gap-[2px] h-full mr-1">
         {/* Left Tick */}
-        <div className="w-[10px] h-px bg-[#E5E7EB] shrink-0" />
+        <div className="w-[8px] h-px bg-[#E5E7EB] shrink-0" />
         
         {depth >= 1 && (
           <>
             {/* Oval 1 */}
             <OvalBadge number={1} tooltipText={grandParentName} />
             {/* Middle Tick */}
-            <div className="w-1.5 h-px bg-[#E5E7EB] shrink-0" />
+            <div className="w-[4px] h-px bg-[#E5E7EB] shrink-0" />
           </>
         )}
 
@@ -174,7 +174,7 @@ function TransferRow({
             {/* Oval 2 */}
             <OvalBadge number={2} tooltipText={directParentName} />
             {/* Right Tick */}
-            <div className="w-1.5 h-px bg-[#E5E7EB] shrink-0" />
+            <div className="w-[4px] h-px bg-[#E5E7EB] shrink-0" />
           </>
         )}
       </div>
@@ -201,7 +201,7 @@ function TransferRow({
   if (readOnly) {
     return (
       <div
-        className="group relative z-0 flex cursor-not-allowed items-center justify-between py-1.5 pr-3 text-left"
+        className="group relative z-0 flex cursor-not-allowed items-center justify-between py-0.5 pr-3 text-left"
         aria-disabled="true"
       >
         {rowBody}
@@ -213,7 +213,7 @@ function TransferRow({
     <button
       type="button"
       onClick={onToggle}
-      className={`group relative z-0 flex w-full cursor-pointer items-center justify-between py-1.5 pr-3 text-left transition-colors ${isSelected ? "bg-[#F3F0FF]" : "hover:bg-[#F9FAFB]"
+      className={`group relative z-0 flex w-full cursor-pointer items-center justify-between py-0.5 pr-3 text-left transition-colors ${isSelected ? "bg-[#F3F0FF]" : "hover:bg-[#F9FAFB]"
         }`}
     >
       {rowBody}

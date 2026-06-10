@@ -57,6 +57,7 @@ export type AddEmployeeActivityDepartmentRow = {
   code: string
   name: string
   status: string
+  parentId?: number | null
 }
 
 export type AddEmployeeActivityListPayload = {
@@ -180,6 +181,8 @@ export type UserProgramsActivitiesActivityItem = {
   code: string
   name: string
   departmentId: number
+  parentId?: number | null
+  activityId?: number
 }
 
 export type UserProgramsActivitiesAssignedSplit<T> = {
@@ -463,6 +466,7 @@ export type AddEmployeeTimeStudyTransferItem = {
   code?: string
   level?: number
   parentId?: string
+  activityId?: number
   isMultiCode?: boolean
   ancestors?: { id: string; name: string; code?: string; isMultiCode?: boolean }[]
 }
