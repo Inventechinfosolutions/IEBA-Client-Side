@@ -85,6 +85,27 @@ export function ProgramActivityRelationForm({ form, departmentIds }: ProgramActi
   const selectedProgramId = selectedProgram?.id as number | undefined
   const selectedProgramCode = String(selectedProgram?.code ?? "").trim()
 
+  const programMultiCodeSuffix = useMemo(() => {
+    if (!selectedProgram || !selectedProgram.isMultiCode) return null
+
+    const mType = String(selectedProgram.multiCodeType ?? "").trim()
+    if (mType && mType.toUpperCase() !== "NORMAL") {
+      return mType.toLowerCase()
+    }
+
+    const code = String(selectedProgram.code ?? "").trim()
+    if (code.includes("-")) {
+      return code.split("-").pop()?.trim().toLowerCase() || null
+    }
+
+    const name = String(selectedProgram.name ?? "").trim()
+    if (name.includes("-")) {
+      return name.split("-").pop()?.trim().toLowerCase() || null
+    }
+
+    return mType ? mType.toLowerCase() : null
+  }, [selectedProgram])
+
   const programDisabled = !selectedDepartment.trim()
   const isProgramEmpty = !programDisabled && programOptions.length === 0
 
@@ -105,9 +126,18 @@ export function ProgramActivityRelationForm({ form, departmentIds }: ProgramActi
   )
 
   const allActivities = useMemo<TransferItem[]>(
-    () =>
-      activitiesPayload ? mergeProgramActivityRelationTransferItems(activitiesPayload) : [],
-    [activitiesPayload],
+    () => {
+      const rawActivities = activitiesPayload
+        ? mergeProgramActivityRelationTransferItems(activitiesPayload)
+        : []
+      if (programMultiCodeSuffix) {
+        return rawActivities.filter(
+          (act) => (act.masterCodeType || "").trim().toLowerCase() === programMultiCodeSuffix,
+        )
+      }
+      return rawActivities
+    },
+    [activitiesPayload, programMultiCodeSuffix],
   )
 
   const [searchU, setSearchU] = useState("")

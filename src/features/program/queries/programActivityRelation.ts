@@ -86,6 +86,7 @@ function activityNodeToTransferItem(node: ProgramActivityRelationActivityNode): 
     code: node.code ? String(node.code) : undefined,
     parentId: (node as any).parentId ? String((node as any).parentId) : undefined,
     activityId: (node as any).activityId ? String((node as any).activityId) : undefined,
+    masterCodeType: node.masterCodeType ? String(node.masterCodeType) : undefined,
   }
 }
 

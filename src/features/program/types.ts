@@ -333,6 +333,7 @@ export type TransferItem = {
   level?: number
   isChild?: boolean
   activityId?: string
+  masterCodeType?: string
 }
 
 export type TransferPanelProps = {
@@ -384,6 +385,8 @@ export type TimeStudyProgramOption = {
   name?: string
   status?: unknown
   type?: string
+  isMultiCode?: boolean
+  multiCodeType?: string
   department?: { id?: number; name?: string } | null
 }
 
