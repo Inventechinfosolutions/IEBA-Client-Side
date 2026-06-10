@@ -434,6 +434,8 @@ function parseUserProgramsActivitiesActivityItem(
     departmentId: Number.isFinite(aid) ? aid : fallbackDepartmentId,
     parentId: Number.isFinite(parentId) ? parentId : null,
     activityId: Number.isFinite(activityId) ? activityId : undefined,
+    assigned: a.assigned === true,
+    assignedByJobPool: a.assignedByJobPool === true,
   }
 }
 

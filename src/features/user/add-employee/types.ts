@@ -183,6 +183,8 @@ export type UserProgramsActivitiesActivityItem = {
   departmentId: number
   parentId?: number | null
   activityId?: number
+  assigned?: boolean
+  assignedByJobPool?: boolean
 }
 
 export type UserProgramsActivitiesAssignedSplit<T> = {
