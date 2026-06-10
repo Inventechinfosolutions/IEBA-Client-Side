@@ -53,6 +53,11 @@ export async function fetchUserAllowMulticodeHistory(userId: string): Promise<Us
   return unwrapSuccess(res, "Failed to load MultiCodes history")
 }
 
+export async function fetchUserAllowMulticodeTimeline(userId: string): Promise<UserAllowMultiCodeHistoryRow[]> {
+  const res = await api.get<ApiResponseDto<UserAllowMultiCodeHistoryRow[]>>(`/user/allow-multicode-history/${userId}/timeline`)
+  return unwrapSuccess(res, "Failed to load MultiCodes timeline history log")
+}
+
 export type RecordUserAllowMultiCodeHistoryPayload = {
   records: {
     userId: string
@@ -68,6 +73,13 @@ export async function postUserAllowMulticodeHistory(payload: RecordUserAllowMult
   const res = await api.post<ApiResponseDto<void>>(`/user/allow-multicode-history/record`, payload)
   unwrapSuccess(res, "Failed to record MultiCodes history")
 }
+
+export async function deleteUserAllowMulticodeHistory(id: number): Promise<void> {
+  const res = await api.delete<ApiResponseDto<void>>(`/user/allow-multicode-history/${id}`)
+  unwrapSuccess(res, "Failed to delete MultiCodes history")
+}
+
+
 
 function isJobPoolRow(row: unknown): row is AddEmployeeJobPoolRow {
   if (row === null || typeof row !== "object") return false
