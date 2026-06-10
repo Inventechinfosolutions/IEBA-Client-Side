@@ -32,6 +32,8 @@ import {
 } from "../queries/getDynamicFilters"
 import type { ReportsModuleApi } from "../hooks/useReportsModule"
 import { useGetReportDepartments, useGetReportsByDepartment } from "../queries/getReports"
+import { formatCountyDisplayName } from "@/features/department/lib/departmentReport.utils"
+import { useGetCountyClient } from "@/features/settings/queries/getCountyClient"
 import { useListFiscalYears } from "@/features/settings/queries/listFiscalYears"
 import {
   REPORT_DOWNLOAD_TYPES,
@@ -565,7 +567,9 @@ export function ReportForm({ module }: ReportFormProps) {
 
   const navState = location.state as any
   const { user } = useAuth()
-  const countyName = user?.countyName
+  const { data: countyClient } = useGetCountyClient(true)
+  const countyName = formatCountyDisplayName(countyClient?.name || user?.countyName)
+  const countyLogoDataUrl = countyClient?.logo?.trim() || undefined
 
   const formValues = useMemo((): ReportFormValues => {
     const stored = readStoredReportFormParams()
@@ -926,7 +930,11 @@ export function ReportForm({ module }: ReportFormProps) {
   }
 
   const onViewReport = handleSubmit((values) => {
-    const payload: ReportRunPayload = mapReportFormToRunPayload(values)
+    const payload: ReportRunPayload = {
+      ...mapReportFormToRunPayload(values),
+      ...(countyName ? { countyName } : {}),
+      ...(countyLogoDataUrl ? { countyLogoDataUrl } : {}),
+    }
     viewReport(payload, {
       onSuccess: (blobLike) => {
         const blob = asBlobResponse(blobLike)
@@ -952,10 +960,14 @@ export function ReportForm({ module }: ReportFormProps) {
       return
     }
 
-    const payload: ReportRunPayload = mapReportFormToRunPayload({
-      ...values,
-      fileName: parsedName.data,
-    })
+    const payload: ReportRunPayload = {
+      ...mapReportFormToRunPayload({
+        ...values,
+        fileName: parsedName.data,
+      }),
+      ...(countyName ? { countyName } : {}),
+      ...(countyLogoDataUrl ? { countyLogoDataUrl } : {}),
+    }
 
     downloadReport(payload, {
       onSuccess: (blobLike) => {

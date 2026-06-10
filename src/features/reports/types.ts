@@ -45,7 +45,7 @@ export type ReportCatalogItem = {
 /** Normalized payload sent to view/download APIs. */
 export type ReportRunPayload = {
   reportKey: string
-  selectMonthBy: "qtr" | "dates" | "month" | "year"
+  selectMonthBy: "qtr" | "dates" | "month" | "year" | "scheduled"
   month?: string
   year?: string
   weekId?: string
@@ -77,6 +77,9 @@ export type ReportRunPayload = {
   downloadType: ReportDownloadType
   fileName?: string
   maaTcmReportingPeriodType?: string
+  /** Passed to client-side PDF rendering (not sent to backend). */
+  countyName?: string
+  countyLogoDataUrl?: string
 }
 
 /** Mock catalog row with active/inactive filtering. */

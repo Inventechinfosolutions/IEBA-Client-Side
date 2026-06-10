@@ -3,6 +3,15 @@ import {
   mapRawReportsToCatalogItems,
   mergeReportCriteriaFromCatalog,
 } from "../lib/reportCatalog.utils"
+import {
+  formatReportDisplayDate,
+  unwrapDssrpt1Employees,
+  unwrapDssrpt2Response,
+  unwrapReportDataRecords,
+} from "../pdf/reportPdf"
+import { generateDSSRPT1ReportPdf } from "../pdf/DSSRPT1ReportPdf"
+import { generateDSSRPT2ReportPdf } from "../pdf/DSSRPT2ReportPdf"
+import { generateP100ReportPdf } from "../pdf/P100ReportPdf"
 import type {
   ReportCatalogItem,
   ReportRunPayload,
@@ -85,26 +94,72 @@ const reportFileHeaders = {
   Accept: "application/pdf, application/octet-stream, */*",
 }
 
-/** View report: POST /report/data, then POST /report/generate (PDF). */
+async function buildFrontendPdfReport(
+  body: ReportRunPayload,
+  signal?: AbortSignal,
+): Promise<Blob> {
+  const response = await api.post<unknown>("/report/data", buildBackendPayload(body), { signal })
+  const startDate = formatReportDisplayDate(body.dateFrom)
+  const endDate = formatReportDisplayDate(body.dateTo)
+  const meta = {
+    reportCode: body.reportKey,
+    countyName: body.countyName,
+    countyLogoSrc: body.countyLogoDataUrl,
+  }
+
+  try {
+    if (body.reportKey === "DSSRPT1") {
+      return await generateDSSRPT1ReportPdf({
+        employees: unwrapDssrpt1Employees(response),
+        startDate,
+        endDate,
+        meta,
+      })
+    }
+
+    if (body.reportKey === "DSSRPT2") {
+      const dssrpt2 = unwrapDssrpt2Response(response, { startDate, endDate })
+      return await generateDSSRPT2ReportPdf({
+        employees: dssrpt2.employees,
+        reportDetails: dssrpt2.reportDetails,
+        periodStarting: dssrpt2.periodStarting,
+        periodEnding: dssrpt2.periodEnding,
+        meta,
+      })
+    }
+
+    return await generateP100ReportPdf({
+      records: unwrapReportDataRecords(response),
+      startDate,
+      endDate,
+      meta,
+    })
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "PDF generation failed"
+    throw new Error(`Could not render report PDF: ${message}`)
+  }
+}
+
+/** View report: POST /report/data, then render PDF in the browser. */
 export async function apiPostViewReport(
   body: ReportRunPayload,
   options?: { signal?: AbortSignal },
 ): Promise<unknown> {
-  const signal = options?.signal
-  await api.post("/report/data", buildBackendPayload(body), { signal })
-  return api.post("/report/generate", buildBackendPayload(body, "PDF"), {
-    signal,
-    headers: reportFileHeaders,
-  })
+  return buildFrontendPdfReport(body, options?.signal)
 }
 
-/** Download report: POST /report/data, then POST /report/generate. */
+/** Download report: PDF is rendered in the browser; other types use /report/generate. */
 export async function apiPostDownloadReport(
   body: ReportRunPayload,
   options?: { type?: string; signal?: AbortSignal },
 ): Promise<unknown> {
   const downloadType = options?.type || body.downloadType
   const signal = options?.signal
+
+  if (downloadType === "PDF") {
+    return buildFrontendPdfReport(body, signal)
+  }
+
   await api.post("/report/data", buildBackendPayload(body), { signal })
   return api.post("/report/generate", buildBackendPayload(body, downloadType), {
     signal,
