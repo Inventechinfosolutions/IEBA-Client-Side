@@ -175,6 +175,29 @@ export function ReportPdfEmployeeSignature({ printedOn }: { printedOn?: string }
   )
 }
 
+function FixedSignatureFooter({ printedOn }: { printedOn: string }) {
+  return (
+    <View style={styles.footer} fixed>
+      <View style={styles.signatureRow}>
+        {SIGNATURE_SLOTS.map((slot, index) => (
+          <SignatureField
+            key={`${slot.label}-${index}`}
+            label={slot.label}
+            lineWidth={slot.lineWidth}
+          />
+        ))}
+      </View>
+      <View style={styles.pageMetaRow}>
+        <Text fixed>Printed on {printedOn}</Text>
+        <Text
+          fixed
+          render={({ pageNumber, totalPages }) => `Page ${pageNumber} of ${totalPages}`}
+        />
+      </View>
+    </View>
+  )
+}
+
 export function ReportPdfFooter({
   variant,
   printedOn,
@@ -183,6 +206,10 @@ export function ReportPdfFooter({
   printedOn?: string
 }) {
   const printedLabel = printedOn ?? formatPrintedOnLabel()
+
+  if (variant === "signaturePerPage") {
+    return <FixedSignatureFooter printedOn={printedLabel} />
+  }
 
   if (variant === "minimal" || variant === "signature") {
     return <View style={styles.footer} fixed />
@@ -201,6 +228,19 @@ export function ReportPdfFooter({
   )
 }
 
+/** Fixed page numbers on every page — used when inline footer has Printed on but chrome is minimal. */
+export function ReportPdfPageNumbers() {
+  return (
+    <View style={[styles.footer, { alignItems: "flex-end" }]} fixed>
+      <Text
+        style={{ fontSize: 10, fontFamily: "Helvetica-Bold", color: "#000000" }}
+        render={({ pageNumber, totalPages }) => `Page ${pageNumber} of ${totalPages}`}
+        fixed
+      />
+    </View>
+  )
+}
+
 export function resolvePagePadding(footerVariant: ReportPdfFooterVariant): {
   paddingTop: number
   paddingBottom: number
@@ -210,6 +250,8 @@ export function resolvePagePadding(footerVariant: ReportPdfFooterVariant): {
       return { paddingTop: 80, paddingBottom: 28 }
     case "signature":
       return { paddingTop: 80, paddingBottom: 32 }
+    case "signaturePerPage":
+      return { paddingTop: 80, paddingBottom: 108 }
     case "pageOnly":
       return { paddingTop: 80, paddingBottom: 52 }
     default:
