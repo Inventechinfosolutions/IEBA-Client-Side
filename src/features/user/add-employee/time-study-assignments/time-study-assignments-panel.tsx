@@ -677,22 +677,41 @@ function collectBundleActivityTransferItems(
   for (const activity of [...orphanAssigned, ...orphanUnassigned]) {
     addActivity(activity)
   }
+
+  // Also include any manually assigned activities from unassigned programs
+  const { normal, jobpoolautoassign } = getProgramsAssignedSplit(bundle)
+  const allProgramsInBundle = [...normal, ...jobpoolautoassign, ...programsBundleFor(bundle).unassigned]
+  for (const program of allProgramsInBundle) {
+    const children = program.children ?? EMPTY_ACTIVITY_SPLIT
+    for (const activity of children.assigned) {
+      addActivity(activity)
+    }
+  }
+
   return sortTransferItems([...byId.values()])
 }
 
 function collectNormalAssignedActivityItems(
   bundle: UserProgramsActivitiesDepartmentBundle,
-  assignedNormalPrograms: UserProgramsActivitiesProgramWithAssignments[],
 ): UserProgramsActivitiesActivityItem[] {
   const byId = new Map<number, UserProgramsActivitiesActivityItem>()
   const add = (activity: UserProgramsActivitiesActivityItem) => {
-    if (!byId.has(activity.id)) byId.set(activity.id, activity)
+    if (!activity.assignedByJobPool && !byId.has(activity.id)) {
+      byId.set(activity.id, activity)
+    }
   }
-  for (const program of assignedNormalPrograms) {
-    for (const activity of programChildrenAssigned(program)) {
+
+  // Gather from ALL programs in the bundle, because an activity can be assigned
+  // manually even if its program is unassigned or assigned via a job pool.
+  const { normal, jobpoolautoassign } = getProgramsAssignedSplit(bundle)
+  const allPrograms = [...normal, ...jobpoolautoassign, ...programsBundleFor(bundle).unassigned]
+  for (const program of allPrograms) {
+    const children = program.children?.assigned ?? []
+    for (const activity of children) {
       add(activity)
     }
   }
+
   for (const activity of orphanActivitiesFor(bundle).assigned) {
     add(activity)
   }
@@ -993,7 +1012,7 @@ export function TimeStudyAssignmentsPanel({
     for (const activity of jobPoolAssignedActivities(selectedBundle)) {
       ids.add(String(activity.id))
     }
-    for (const activity of collectNormalAssignedActivityItems(selectedBundle, uiAssignedNormalPrograms)) {
+    for (const activity of collectNormalAssignedActivityItems(selectedBundle)) {
       ids.add(String(activity.id))
     }
     return ids
@@ -1002,7 +1021,7 @@ export function TimeStudyAssignmentsPanel({
   const bundleAssignedActivityRows = useMemo(() => {
     if (!selectedBundle) return []
     return mapBundleActivitiesToTransferItems(
-      collectNormalAssignedActivityItems(selectedBundle, uiAssignedNormalPrograms),
+      collectNormalAssignedActivityItems(selectedBundle),
       selectedBundle.departmentName,
     )
   }, [selectedBundle, uiAssignedNormalPrograms])
