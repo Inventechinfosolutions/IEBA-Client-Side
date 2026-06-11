@@ -2,7 +2,8 @@ import { Image, StyleSheet, Text, View } from "@react-pdf/renderer"
 
 import { formatPrintedOnLabel, type ReportPdfFooterVariant } from "./reportPdf"
 
-const LOGO_SIZE = 36
+const HEADER_SIDE_WIDTH = 80
+const LOGO_SIZE = 52
 const SIGNATURE_ROW_WIDTH = 544
 
 const SIGNATURE_SLOTS = [
@@ -18,26 +19,35 @@ const styles = StyleSheet.create({
     top: 16,
     left: 20,
     right: 20,
+    minHeight: 58,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     borderBottomWidth: 2,
     borderBottomColor: "#000000",
-    paddingBottom: 6,
+    paddingBottom: 8,
     fontFamily: "Helvetica",
+  },
+  headerSide: {
+    width: HEADER_SIDE_WIDTH,
+    minHeight: LOGO_SIZE,
+    flexShrink: 0,
+    alignItems: "center",
+    justifyContent: "center",
   },
   headerCenter: {
     flex: 1,
+    flexShrink: 1,
     flexDirection: "column",
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 8,
+    paddingHorizontal: 12,
   },
   countyName: {
-    fontSize: 13,
-    fontFamily: "Helvetica-Bold",
+    fontSize: 14,
+    fontFamily: "Times-Bold",
     textAlign: "center",
-    marginBottom: 4,
+    marginBottom: 3,
     width: "100%",
   },
   reportTitle: {
@@ -46,15 +56,10 @@ const styles = StyleSheet.create({
     textAlign: "center",
     width: "100%",
   },
-  logoSlot: {
-    width: LOGO_SIZE,
-    height: LOGO_SIZE,
-    alignItems: "center",
-    justifyContent: "center",
-  },
   logo: {
     width: LOGO_SIZE,
     height: LOGO_SIZE,
+    objectFit: "contain",
   },
   footer: {
     position: "absolute",
@@ -126,7 +131,7 @@ export function ReportPdfHeader({
 }) {
   return (
     <View style={styles.header} fixed>
-      <View style={styles.logoSlot}>
+      <View style={styles.headerSide}>
         {countyLogoSrc ? <Image src={countyLogoSrc} style={styles.logo} /> : null}
       </View>
       <View style={styles.headerCenter}>
@@ -137,7 +142,7 @@ export function ReportPdfHeader({
           {reportTitle}
         </Text>
       </View>
-      <View style={styles.logoSlot}>
+      <View style={styles.headerSide}>
         {rightLogoSrc ? <Image src={rightLogoSrc} style={styles.logo} /> : null}
       </View>
     </View>
@@ -247,14 +252,14 @@ export function resolvePagePadding(footerVariant: ReportPdfFooterVariant): {
 } {
   switch (footerVariant) {
     case "minimal":
-      return { paddingTop: 80, paddingBottom: 28 }
+      return { paddingTop: 88, paddingBottom: 28 }
     case "signature":
       return { paddingTop: 80, paddingBottom: 32 }
     case "signaturePerPage":
       return { paddingTop: 80, paddingBottom: 108 }
     case "pageOnly":
-      return { paddingTop: 80, paddingBottom: 52 }
+      return { paddingTop: 88, paddingBottom: 52 }
     default:
-      return { paddingTop: 80, paddingBottom: 52 }
+      return { paddingTop: 88, paddingBottom: 52 }
   }
 }

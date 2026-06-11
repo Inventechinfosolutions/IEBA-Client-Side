@@ -27,6 +27,7 @@ import {
   wasExplicitLogout,
 } from "@/lib/auth-storage"
 import { clearStoredMimicSession } from "@/features/user/user-mimic/storage"
+import { clearStoredReportFormParams } from "@/features/reports/utils/reportFormSessionStorage"
 import { login as loginRequest } from "@/features/auth/api/login"
 import { logout as logoutRequest } from "@/features/auth/api/logout"
 import { getUserDetails } from "@/features/auth/api/getUserDetails"
@@ -160,6 +161,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     clearToken()
     clearStoredUser()
     clearStoredMimicSession()
+    clearStoredReportFormParams()
     localStorage.removeItem("SCREEN_INACTIVITY_TIME_IN_MIN")
     localStorage.removeItem("APP_LAST_ACTIVITY_TIME")
 

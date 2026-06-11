@@ -1,8 +1,7 @@
 import { Document, Page, StyleSheet, Text, View, pdf } from "@react-pdf/renderer"
 import type { ReactNode } from "react"
 
-import defaultCountyLogo from "@/assets/county-avatar.png"
-import pkiLogo from "@/assets/ieba-logo.png"
+import { REPORT_PDF_DEFAULT_LOGOS } from "./reportPdfAssets"
 
 import {
   ReportPdfEmployeeSignature,
@@ -329,10 +328,7 @@ function P100ReportDocument({
 
 export async function generateP100ReportPdf(props: P100ReportPdfProps): Promise<Blob> {
   const printedOn = props.printedOn ?? formatPrintedOnLabel()
-  const meta = await buildResolvedPdfMeta(props.meta, {
-    countyLogo: defaultCountyLogo,
-    rightLogo: pkiLogo,
-  })
+  const meta = await buildResolvedPdfMeta(props.meta, REPORT_PDF_DEFAULT_LOGOS)
   const footerVariant = resolveFooterVariant(meta.reportCode)
 
   const instance = pdf(

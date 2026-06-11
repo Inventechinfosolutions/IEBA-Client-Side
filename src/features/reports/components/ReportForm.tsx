@@ -33,7 +33,7 @@ import {
 import type { ReportsModuleApi } from "../hooks/useReportsModule"
 import { useGetReportDepartments, useGetReportsByDepartment } from "../queries/getReports"
 import { formatCountyDisplayName } from "@/features/department/lib/departmentReport.utils"
-import { useGetCountyClient } from "@/features/settings/queries/getCountyClient"
+import { resolveCountyClientLogoSrc, useGetCountyClient } from "@/features/settings/queries/getCountyClient"
 import { useListFiscalYears } from "@/features/settings/queries/listFiscalYears"
 import {
   REPORT_DOWNLOAD_TYPES,
@@ -53,7 +53,7 @@ import type {
   ReportSelectOption,
 } from "../types"
 import { mapReportFormToRunPayload } from "../utils/mapReportFormToRunPayload"
-import { readStoredReportFormParams, writeStoredReportFormParams } from "../utils/reportFormSessionStorage"
+import { readStoredReportFormParams, writeStoredReportFormParams, clearStoredReportFormParams } from "../utils/reportFormSessionStorage"
 
 function isTuolumneDisabledReport(label: string, countyName?: string | null): boolean {
   return (countyName ?? "").trim().toUpperCase() === "TUOLUMNE" && /start\/stop\/travel/i.test(label)
@@ -569,7 +569,7 @@ export function ReportForm({ module }: ReportFormProps) {
   const { user } = useAuth()
   const { data: countyClient } = useGetCountyClient(true)
   const countyName = formatCountyDisplayName(countyClient?.name || user?.countyName)
-  const countyLogoDataUrl = countyClient?.logo?.trim() || undefined
+  const countyLogoDataUrl = resolveCountyClientLogoSrc(countyClient)
 
   const formValues = useMemo((): ReportFormValues => {
     const stored = readStoredReportFormParams()
@@ -592,7 +592,6 @@ export function ReportForm({ module }: ReportFormProps) {
   const form = useForm<ReportFormValues>({
     resolver: zodResolver(reportFormSchema),
     defaultValues: formValues,
-    values: formValues,
     mode: "onTouched",
   })
 
@@ -926,7 +925,9 @@ export function ReportForm({ module }: ReportFormProps) {
   const persistIfRequested = (values: ReportFormValues) => {
     if (values.retainParameters) {
       writeStoredReportFormParams(values)
+      return
     }
+    clearStoredReportFormParams()
   }
 
   const onViewReport = handleSubmit((values) => {
@@ -1509,7 +1510,6 @@ const ReportFiltersBody = ({
                     value={field.value ?? ""}
                     onChange={(val) => {
                       if ((field.value ?? "") !== val) {
-                        form.setValue("departmentId", "")
                         form.setValue("employeeIds", "")
                         form.setValue("activityIds", "")
                         form.setValue("costPoolIds", "")
@@ -1758,7 +1758,13 @@ const ReportFiltersBody = ({
                 <label className="flex shrink-0 cursor-pointer items-center gap-2 text-[14px] text-[#111827]">
                   <Checkbox
                     checked={field.value}
-                    onCheckedChange={(v) => field.onChange(v === true)}
+                    onCheckedChange={(v) => {
+                      const checked = v === true
+                      field.onChange(checked)
+                      if (!checked) {
+                        clearStoredReportFormParams()
+                      }
+                    }}
                   />
                   Retain Parameters
                 </label>
@@ -1875,7 +1881,7 @@ const ReportFiltersBody = ({
               <iframe
                 title="Report preview"
                 src={reportPreviewUrl}
-                className="h-[640px] w-full"
+                className="h-[85vh] min-h-[720px] w-full"
               />
             </div>
           </div>

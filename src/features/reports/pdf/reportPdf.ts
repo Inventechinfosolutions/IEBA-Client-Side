@@ -260,7 +260,361 @@ export type DSSRPT2ReportPdfProps = {
   meta?: ReportPdfMeta
 }
 
-export type ReportPdfFooterVariant = "signature" | "signaturePerPage" | "pageOnly" | "minimal"
+export type Dssrpt3Activity = {
+  activityname: string
+  activitycode: string
+  caseworkeractivitytime: number
+  supervisoractivitytime: number
+  totalactivitytime: number
+  totalfte: number
+}
+
+export type Dssrpt3CostPool = {
+  costpoolname: string
+  activities: Dssrpt3Activity[]
+  caseworkertotalallochours: number
+  supervisortotalallochours: number
+  totalallochours: number
+  totalnonallochours: number
+  caseworkertotalfte: number
+  supervisortotalfte: number
+  totalfte: number
+}
+
+export type Dssrpt3ReportPayload = {
+  fiscalYear: string
+  costPools: Dssrpt3CostPool[]
+  granttotalcaseworkerallocable: number
+  granttotalsupervisorallocable: number
+  granttotal: number
+  granttotalnonallocable: number
+  grantotalcaseworkerfte: number
+  grantotalsupervisorfte: number
+  granttotalfte: number
+}
+
+export type DSSRPT3ReportPdfProps = {
+  payload: Dssrpt3ReportPayload
+  isMonthly: boolean
+  month?: string
+  dateFrom?: string
+  printedOn?: string
+  meta?: ReportPdfMeta
+}
+
+export type Dssrpt4Employee = {
+  empname: string
+  empalloc: number
+  empnonalloc: number
+  emptotal: number
+  empfte: number
+  empcost: number
+}
+
+export type Dssrpt4CostPool = {
+  costpoolname: string
+  employees: Dssrpt4Employee[]
+  totalcostpoolalloc: number
+  totalcostpoolnonalloc: number
+  totalcostpooltotal: number
+  totalfte: number
+  totalcost: number
+}
+
+export type Dssrpt4ReportPayload = {
+  costpools: Dssrpt4CostPool[]
+  grandtotalalloc: number
+  grandtotalnonalloc: number
+  grandtotal: number
+  grandtotalfte: number
+  grandtotalcosts: number
+}
+
+export type DSSRPT4ReportPdfProps = {
+  payload: Dssrpt4ReportPayload
+  periodStarting: string
+  periodEnding: string
+  printedOn?: string
+  meta?: ReportPdfMeta
+}
+
+export type Dssrpt5DateRow = {
+  date: string
+  empid: string
+  empname: string
+  salary: string | number
+  fica: string | number
+  pers: string | number
+  cafe: string | number
+  stdlife: string | number
+  defcomp: string | number
+  spa: string | number
+  cashout: string | number
+  cellstipend: string | number
+  ot: string | number
+  recruitingincentive: string | number
+  payout: string | number
+  subtotal: string | number
+  standbysalary: string | number
+  standbyfica: string | number
+  standbysubtotal: string | number
+  standbytotal: string | number
+}
+
+export type Dssrpt5ReportPayload = {
+  dates: Dssrpt5DateRow[]
+  gtsalary: string | number
+  gtfica: string | number
+  gtpers: string | number
+  gtcafe: string | number
+  gtstdLife: string | number
+  gtdefComp: string | number
+  gtspa: string | number
+  gtCashout: string | number
+  gtCellStipend: string | number
+  gtOt: string | number
+  gtRecruitingIncentive: string | number
+  gtPayout: string | number
+  gtsubTotal: string | number
+  gtGrandTotal: string | number
+  gtStandbySalary: string | number
+  gtStandbyFica: string | number
+  gtStandbySubtotal: string | number
+  gtStandbyGrandtotal: string | number
+  gtSalaryFicaSalary: string | number
+  gtSalaryFicaFica: string | number
+}
+
+export type DSSRPT5ReportPdfProps = {
+  payload: Dssrpt5ReportPayload
+  runDate: string
+  payrollQuarterFrom: string
+  payrollQuarterTo: string
+  printedOn?: string
+  meta?: ReportPdfMeta
+}
+
+export type Ac741Program = {
+  program: string
+  subactivity: string
+  activitytime: number
+}
+
+export type Ac741Employee = {
+  employeename: string
+  employeeno: string
+  programs: Ac741Program[]
+}
+
+export type AC741ReportPdfProps = {
+  employees: Ac741Employee[]
+  startDate: string
+  endDate: string
+  printedOn?: string
+  meta?: ReportPdfMeta
+}
+
+export type MaatcmActivity = {
+  activityname: string
+  code: string
+  total: number
+  totalper: string
+  dayValues: string[]
+}
+
+export type MaatcmEmployee = {
+  employeename: string
+  jobclassification: string
+  employeenumber: string
+  claimingunit: string
+  claimingunitlocation: string
+  totalhours: number
+  activities: MaatcmActivity[]
+  spmptotal: number
+  nonspmptotal: number
+  activityCodeTypes: string[]
+  noofdaysinmonth: number
+  month: number | string
+  year: number | string
+}
+
+export type MAATCMReportPdfProps = {
+  employees: MaatcmEmployee[]
+  isMonthly: boolean
+  dateFrom?: string
+  dateTo?: string
+  activityCodeTypes?: string[]
+  printedOn?: string
+  meta?: ReportPdfMeta
+}
+
+export type McahTvtsWeek = {
+  label: string
+  cat1: number
+  cat2: number
+  cat3: number
+  total: number
+}
+
+export type McahTvtsEmployee = {
+  employeename: string
+  month: string
+  budgetLine: string
+  jobClassificationName: string
+  department: string
+  weeks: McahTvtsWeek[]
+  category1Totals: number
+  category2Totals: number
+  category3Totals: number
+  totalTotals: number
+  category1Contribution: number
+  category2Contribution: number
+  category3Contribution: number
+  totalContribution: number
+}
+
+export type MCAHTVTSReportPdfProps = {
+  employees: McahTvtsEmployee[]
+  printedOn?: string
+  meta?: ReportPdfMeta
+}
+
+export type QtrMonthProgram = {
+  program: string
+  programcode: string
+  totalEnhancedPercentageOfProgram: number
+  totalnonEnhancedPercentageOfProgram: number
+  totalnonClaimablePercentageOfProgram: number
+  totalPercentageOfProgram: number
+  salaryEnhanced: number
+  salaryNonEnhanced: number
+  salaryNonClaimable: number
+  benefitsEnhanced: number
+  benefitsNonEnhanced: number
+  benefitsNonClaimable: number
+  percentageOfTimeWorked: number
+  totalProgramHrs: number
+}
+
+export type QtrMonthEmployee = {
+  employeeName: string
+  classification: string
+  programs: QtrMonthProgram[]
+  totalSalaryEnhanced: number
+  totalSalaryNonEnhanced: number
+  totalSalaryNonClaimable: number
+  totalBenefitsEnhanced: number
+  totalBenefitsNonEnhanced: number
+  totalBenefitsNonClaimable: number
+  totalPercentageOfTimeWorked: number
+  totalEmployeeSalary: number
+  totalEmployeeBenefits: number
+}
+
+export type QTRMONTHReportPdfProps = {
+  employees: QtrMonthEmployee[]
+  timeStudyPeriod: string
+  printedOn?: string
+  meta?: ReportPdfMeta
+}
+
+export type TcmMaaAdhocCategory = {
+  name: string
+}
+
+export type TcmMaaAdhocEmployee = {
+  employeename: string
+  jobclassification: string
+  category_hours: Record<string, number>
+}
+
+export type TcmMaaAdhocPayload = {
+  categories: TcmMaaAdhocCategory[]
+  employees: TcmMaaAdhocEmployee[]
+}
+
+export type TCMMAAADHOCReportPdfProps = {
+  payload: TcmMaaAdhocPayload
+  activityCodeTypes?: string[]
+  printedOn?: string
+  meta?: ReportPdfMeta
+}
+
+export type TscrProgramRecord = {
+  program_name: string
+  prog_nonm_hrs: number
+  prog_none_hrs: number
+  prog_enh_hrs: number
+  nonm_perc: number
+  none_perc: number
+  enh_perc: number
+  dis_nonm_hrs: number
+  dis_none_hrs: number
+  dis_enh_hrs: number
+  dis_nonm_perc: number
+  dis_none_perc: number
+  dis_enh_perc: number
+  salary_total: number
+  salary_nonm: number
+  salary_none: number
+  salary_enh: number
+  benefits_total: number
+  benefits_nonm: number
+  benefits_none: number
+  benefits_enh: number
+  proghrs: string | number
+  time_perc: number
+  medical_pct: number
+  budget_hrs: number
+  budget_perc: number
+}
+
+export type TscrEmployee = {
+  full_name: string
+  totalts: string
+  tsrecords: TscrProgramRecord[]
+}
+
+export type TSCRReportPdfProps = {
+  employees: TscrEmployee[]
+  startDate: string
+  endDate: string
+  printedOn?: string
+  meta?: ReportPdfMeta
+}
+
+export type WicDayRecord = {
+  date: string
+  BFPC: number
+  FMNP: number
+  NutritionalEducation: number
+  BreastfeedingSupport: number
+  ClientServices: number
+  GeneralAdministration: number
+  NonSpecificTravel: number
+  totalWicTime: number
+  others: number
+  paidTimeOff: number
+  TotalTime: number
+}
+
+export type WicEmployee = {
+  username: string
+  jobClassificationName: string
+  date: string
+  periodSubcaption: string
+  tsrecords: WicDayRecord[]
+  wic_others: number
+  final: number
+}
+
+export type WICReportPdfProps = {
+  employees: WicEmployee[]
+  printedOn?: string
+  meta?: ReportPdfMeta
+}
+
+export type ReportPdfFooterVariant = "signature" | "pageOnly" | "minimal"
 
 // --- unwrap /report/data ---
 
@@ -941,6 +1295,1140 @@ export function unwrapDssrpt2Response(raw: unknown, fallbackDates?: {
   }
 }
 
+// --- DSSRPT3 helpers ---
+
+function parseDssrpt3Activities(raw: unknown): Dssrpt3Activity[] {
+  if (!Array.isArray(raw)) return []
+  return raw.map((item) => {
+    const row = asRecord(item)
+    return {
+      activityname: String(row.activityname ?? row.activityName ?? ""),
+      activitycode: String(row.activitycode ?? row.activityCode ?? ""),
+      caseworkeractivitytime: toNumber(
+        (row.caseworkeractivitytime ?? row.caseworkerActivityTime ?? 0) as string | number,
+      ),
+      supervisoractivitytime: toNumber(
+        (row.supervisoractivitytime ?? row.supervisorActivityTime ?? 0) as string | number,
+      ),
+      totalactivitytime: toNumber(
+        (row.totalactivitytime ?? row.totalActivityTime ?? 0) as string | number,
+      ),
+      totalfte: toNumber((row.totalfte ?? row.totalFte ?? 0) as string | number),
+    }
+  })
+}
+
+function parseDssrpt3CostPool(raw: Record<string, unknown>): Dssrpt3CostPool {
+  return {
+    costpoolname: String(raw.costpoolname ?? raw.costPoolName ?? ""),
+    activities: parseDssrpt3Activities(raw.activities),
+    caseworkertotalallochours: toNumber(
+      (raw.caseworkertotalallochours ?? raw.caseWorkerTotalAllocHours ?? 0) as string | number,
+    ),
+    supervisortotalallochours: toNumber(
+      (raw.supervisortotalallochours ?? raw.supervisorTotalAllocHours ?? 0) as string | number,
+    ),
+    totalallochours: toNumber((raw.totalallochours ?? raw.totalAllocHours ?? 0) as string | number),
+    totalnonallochours: toNumber(
+      (raw.totalnonallochours ?? raw.totalNonAllocHours ?? 0) as string | number,
+    ),
+    caseworkertotalfte: toNumber(
+      (raw.caseworkertotalfte ?? raw.caseWorkerTotalFte ?? 0) as string | number,
+    ),
+    supervisortotalfte: toNumber(
+      (raw.supervisortotalfte ?? raw.supervisorTotalFte ?? 0) as string | number,
+    ),
+    totalfte: toNumber((raw.totalfte ?? raw.totalFte ?? 0) as string | number),
+  }
+}
+
+function parseDssrpt3Payload(raw: Record<string, unknown>): Dssrpt3ReportPayload {
+  const poolsRaw = raw.costPools ?? raw.costpools
+  const costPools = Array.isArray(poolsRaw)
+    ? poolsRaw.map((pool) => parseDssrpt3CostPool(asRecord(pool)))
+    : []
+
+  return {
+    fiscalYear: String(raw.fiscalYear ?? raw.fiscalyear ?? ""),
+    costPools,
+    granttotalcaseworkerallocable: toNumber(
+      (raw.granttotalcaseworkerallocable ?? raw.grandTotalCaseWorkerAllocable ?? 0) as string | number,
+    ),
+    granttotalsupervisorallocable: toNumber(
+      (raw.granttotalsupervisorallocable ?? raw.grandTotalSupervisorAllocable ?? 0) as string | number,
+    ),
+    granttotal: toNumber((raw.granttotal ?? raw.grandTotal ?? 0) as string | number),
+    granttotalnonallocable: toNumber(
+      (raw.granttotalnonallocable ?? raw.grandTotalNonAllocable ?? 0) as string | number,
+    ),
+    grantotalcaseworkerfte: toNumber(
+      (raw.grantotalcaseworkerfte ?? raw.grandTotalCaseWorkerFte ?? 0) as string | number,
+    ),
+    grantotalsupervisorfte: toNumber(
+      (raw.grantotalsupervisorfte ?? raw.grandTotalSupervisorFte ?? 0) as string | number,
+    ),
+    granttotalfte: toNumber((raw.granttotalfte ?? raw.grandTotalFte ?? 0) as string | number),
+  }
+}
+
+function unwrapDssrpt3Root(raw: unknown): Record<string, unknown> {
+  const list = unwrapListData(raw)
+  if (list.length === 1) {
+    const item = asRecord(list[0])
+    if (Array.isArray(item.costPools) || Array.isArray(item.costpools)) return item
+  }
+
+  const root = asRecord(raw)
+  const data = root.data
+  if (Array.isArray(data) && data.length === 1) {
+    const item = asRecord(data[0])
+    if (Array.isArray(item.costPools) || Array.isArray(item.costpools)) return item
+  }
+  if (data && typeof data === "object" && !Array.isArray(data)) {
+    const nested = asRecord(data)
+    if (Array.isArray(nested.costPools) || Array.isArray(nested.costpools)) return nested
+  }
+  if (Array.isArray(root.costPools) || Array.isArray(root.costpools)) return root
+
+  return list[0] ? asRecord(list[0]) : {}
+}
+
+export function unwrapDssrpt3Response(raw: unknown): Dssrpt3ReportPayload {
+  return parseDssrpt3Payload(unwrapDssrpt3Root(raw))
+}
+
+export function sortDssrpt3ByActivityCode(a: Dssrpt3Activity, b: Dssrpt3Activity): number {
+  return sortDssrpt2ByActivityCode(
+    { activityCode: a.activitycode, activityName: a.activityname, activityTime: 0, allocatedFte: 0 },
+    { activityCode: b.activitycode, activityName: b.activityname, activityTime: 0, allocatedFte: 0 },
+  )
+}
+
+export function formatDssrpt3MonthLabel(month?: string): string {
+  if (!month) return ""
+  const [year, monthNumber] = month.split("-")
+  const monthNames = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ]
+  const index = Number(monthNumber) - 1
+  const monthName = monthNames[index] ?? monthNumber
+  return `Timestudy Month: ${monthName} ${year}`
+}
+
+export function getDssrpt3FiscalQuarter(dateFrom?: string): string {
+  if (!dateFrom) return ""
+  const trimmed = dateFrom.trim()
+  const isoMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(trimmed)
+  const month = isoMatch ? Number(isoMatch[2]) : new Date(trimmed).getMonth() + 1
+  if (!Number.isFinite(month) || month <= 0) return ""
+
+  if (month >= 7 && month <= 9) return "Q1"
+  if (month >= 10 && month <= 12) return "Q2"
+  if (month >= 1 && month <= 3) return "Q3"
+  return "Q4"
+}
+
+// --- DSSRPT4 helpers ---
+
+function parseDssrpt4Employees(raw: unknown): Dssrpt4Employee[] {
+  if (!Array.isArray(raw)) return []
+  return raw.map((item) => {
+    const row = asRecord(item)
+    return {
+      empname: String(row.empname ?? row.employeeName ?? row.employeename ?? ""),
+      empalloc: toNumber((row.empalloc ?? row.empAlloc ?? 0) as string | number),
+      empnonalloc: toNumber((row.empnonalloc ?? row.empNonAlloc ?? 0) as string | number),
+      emptotal: toNumber((row.emptotal ?? row.empTotal ?? 0) as string | number),
+      empfte: toNumber((row.empfte ?? row.empFte ?? 0) as string | number),
+      empcost: toNumber((row.empcost ?? row.empCost ?? 0) as string | number),
+    }
+  })
+}
+
+function parseDssrpt4CostPool(raw: Record<string, unknown>): Dssrpt4CostPool {
+  return {
+    costpoolname: String(raw.costpoolname ?? raw.costPoolName ?? ""),
+    employees: parseDssrpt4Employees(raw.employees),
+    totalcostpoolalloc: toNumber(
+      (raw.totalcostpoolalloc ?? raw.totalCostPoolAlloc ?? 0) as string | number,
+    ),
+    totalcostpoolnonalloc: toNumber(
+      (raw.totalcostpoolnonalloc ?? raw.totalCostPoolNonAlloc ?? 0) as string | number,
+    ),
+    totalcostpooltotal: toNumber(
+      (raw.totalcostpooltotal ?? raw.totalCostPoolTotal ?? 0) as string | number,
+    ),
+    totalfte: toNumber((raw.totalfte ?? raw.totalFte ?? 0) as string | number),
+    totalcost: toNumber((raw.totalcost ?? raw.totalCost ?? 0) as string | number),
+  }
+}
+
+function parseDssrpt4Payload(raw: Record<string, unknown>): Dssrpt4ReportPayload {
+  const poolsRaw = raw.costpools ?? raw.costPools
+  const costpools = Array.isArray(poolsRaw)
+    ? poolsRaw.map((pool) => parseDssrpt4CostPool(asRecord(pool)))
+    : []
+
+  return {
+    costpools,
+    grandtotalalloc: toNumber((raw.grandtotalalloc ?? raw.grandTotalAlloc ?? 0) as string | number),
+    grandtotalnonalloc: toNumber(
+      (raw.grandtotalnonalloc ?? raw.grandTotalNonAlloc ?? 0) as string | number,
+    ),
+    grandtotal: toNumber((raw.grandtotal ?? raw.grandTotal ?? 0) as string | number),
+    grandtotalfte: toNumber((raw.grandtotalfte ?? raw.grandTotalFte ?? 0) as string | number),
+    grandtotalcosts: toNumber((raw.grandtotalcosts ?? raw.grandTotalCosts ?? 0) as string | number),
+  }
+}
+
+function unwrapDssrpt4Root(raw: unknown): Record<string, unknown> {
+  const list = unwrapListData(raw)
+  if (list.length === 1) {
+    const item = asRecord(list[0])
+    if (Array.isArray(item.costpools) || Array.isArray(item.costPools)) return item
+  }
+
+  const root = asRecord(raw)
+  const data = root.data
+  if (Array.isArray(data) && data.length === 1) {
+    const item = asRecord(data[0])
+    if (Array.isArray(item.costpools) || Array.isArray(item.costPools)) return item
+  }
+  if (data && typeof data === "object" && !Array.isArray(data)) {
+    const nested = asRecord(data)
+    if (Array.isArray(nested.costpools) || Array.isArray(nested.costPools)) return nested
+  }
+  if (Array.isArray(root.costpools) || Array.isArray(root.costPools)) return root
+
+  return list[0] ? asRecord(list[0]) : {}
+}
+
+export function unwrapDssrpt4Response(raw: unknown): Dssrpt4ReportPayload {
+  return parseDssrpt4Payload(unwrapDssrpt4Root(raw))
+}
+
+export function formatDssrpt4EmployeeName(rawName: string): string {
+  return String(rawName || "")
+    .split(" ")
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join(" ")
+}
+
+// --- DSSRPT5 helpers ---
+
+function parseDssrpt5DateRow(raw: Record<string, unknown>): Dssrpt5DateRow {
+  const money = (key: string, alt?: string) =>
+    (raw[key] ?? (alt ? raw[alt] : undefined) ?? 0) as string | number
+
+  return {
+    date: String(raw.date ?? ""),
+    empid: String(raw.empid ?? raw.empId ?? ""),
+    empname: String(raw.empname ?? raw.empName ?? ""),
+    salary: money("salary"),
+    fica: money("fica"),
+    pers: money("pers"),
+    cafe: money("cafe"),
+    stdlife: money("stdlife", "stdLife"),
+    defcomp: money("defcomp", "defComp"),
+    spa: money("spa"),
+    cashout: money("cashout", "cashOut"),
+    cellstipend: money("cellstipend", "cellStipend"),
+    ot: money("ot"),
+    recruitingincentive: money("recruitingincentive", "recruitingIncentive"),
+    payout: money("payout"),
+    subtotal: money("subtotal", "subTotal"),
+    standbysalary: money("standbysalary", "standbySalary"),
+    standbyfica: money("standbyfica", "standbyFica"),
+    standbysubtotal: money("standbysubtotal", "standbySubtotal"),
+    standbytotal: money("standbytotal", "standbyTotal"),
+  }
+}
+
+function parseDssrpt5Payload(raw: Record<string, unknown>): Dssrpt5ReportPayload {
+  const money = (key: string, alt?: string) =>
+    (raw[key] ?? (alt ? raw[alt] : undefined) ?? 0) as string | number
+
+  const datesRaw = raw.dates
+  const dates = Array.isArray(datesRaw)
+    ? datesRaw.map((row) => parseDssrpt5DateRow(asRecord(row)))
+    : []
+
+  return {
+    dates,
+    gtsalary: money("gtsalary", "gtSalary"),
+    gtfica: money("gtfica", "gtFica"),
+    gtpers: money("gtpers", "gtPers"),
+    gtcafe: money("gtcafe", "gtCafe"),
+    gtstdLife: money("gtstdLife", "gtStdLife"),
+    gtdefComp: money("gtdefComp"),
+    gtspa: money("gtspa", "gtSpa"),
+    gtCashout: money("gtCashout"),
+    gtCellStipend: money("gtCellStipend"),
+    gtOt: money("gtOt"),
+    gtRecruitingIncentive: money("gtRecruitingIncentive"),
+    gtPayout: money("gtPayout"),
+    gtsubTotal: money("gtsubTotal"),
+    gtGrandTotal: money("gtGrandTotal"),
+    gtStandbySalary: money("gtStandbySalary"),
+    gtStandbyFica: money("gtStandbyFica"),
+    gtStandbySubtotal: money("gtStandbySubtotal"),
+    gtStandbyGrandtotal: money("gtStandbyGrandtotal"),
+    gtSalaryFicaSalary: money("gtSalaryFicaSalary"),
+    gtSalaryFicaFica: money("gtSalaryFicaFica"),
+  }
+}
+
+function unwrapDssrpt5Root(raw: unknown): Record<string, unknown> {
+  const root = asRecord(raw)
+  const data = root.data
+
+  if (data && typeof data === "object") {
+    if (Array.isArray(data)) {
+      if (data.length === 1) {
+        const item = asRecord(data[0])
+        if (Array.isArray(item.dates)) return item
+      }
+    } else {
+      const nested = asRecord(data)
+      if (Array.isArray(nested.dates)) return nested
+    }
+  }
+
+  if (Array.isArray(root.dates)) return root
+
+  const list = unwrapListData(raw)
+  if (list.length === 1 && Array.isArray(asRecord(list[0]).dates)) {
+    return asRecord(list[0])
+  }
+
+  return { dates: [] }
+}
+
+export function unwrapDssrpt5Response(raw: unknown): Dssrpt5ReportPayload {
+  return parseDssrpt5Payload(unwrapDssrpt5Root(raw))
+}
+
+export function formatDssrpt5UsDate(raw?: string): string {
+  if (!raw) return ""
+  const trimmed = raw.trim()
+  const isoMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(trimmed)
+  if (isoMatch) {
+    const date = new Date(Number(isoMatch[1]), Number(isoMatch[2]) - 1, Number(isoMatch[3]))
+    return date.toLocaleDateString("en-US")
+  }
+  const parsed = new Date(trimmed)
+  if (!Number.isNaN(parsed.getTime())) return parsed.toLocaleDateString("en-US")
+  return trimmed
+}
+
+export function formatDssrpt5Money(value: string | number): string {
+  const parsed = typeof value === "number" ? value : parseFloat(String(value ?? "").replace(/,/g, ""))
+  const amount = Number.isFinite(parsed) ? parsed : 0
+  return `$${amount.toFixed(2)}`
+}
+
+// --- AC741 helpers ---
+
+function parseAc741Programs(raw: unknown): Ac741Program[] {
+  if (!Array.isArray(raw)) return []
+  return raw.map((item) => {
+    const row = asRecord(item)
+    return {
+      program: String(row.program ?? row.programcode ?? row.programCode ?? ""),
+      subactivity: String(row.subactivity ?? row.subActivity ?? row.activity ?? ""),
+      activitytime: toNumber((row.activitytime ?? row.activityTime ?? 0) as string | number),
+    }
+  })
+}
+
+export function unwrapAc741Employees(raw: unknown): Ac741Employee[] {
+  return unwrapListData(raw).map((item) => {
+    const row = asRecord(item)
+    return {
+      employeename: String(row.employeename ?? row.employeeName ?? ""),
+      employeeno: String(row.employeeno ?? row.employeeNo ?? row.employeenumber ?? ""),
+      programs: parseAc741Programs(row.programs),
+    }
+  })
+}
+
+export function getAc741EmployeeTotalHours(programs: Ac741Program[]): number {
+  return programs.reduce((sum, program) => sum + program.activitytime, 0)
+}
+
+// --- MAATCM helpers ---
+
+function parseMaatcmActivity(raw: Record<string, unknown>, daysInMonth: number): MaatcmActivity {
+  const dayValues: string[] = []
+  for (let i = 1; i <= daysInMonth; i += 1) {
+    const key = `day${i}`
+    const value = raw[key]
+    dayValues.push(value != null && value !== "" ? String(value) : "")
+  }
+
+  return {
+    activityname: String(raw.activityname ?? raw.activityName ?? ""),
+    code: String(raw.code ?? ""),
+    total: toNumber((raw.total ?? 0) as string | number),
+    totalper: String(raw.totalper ?? raw.totalPer ?? "0.00"),
+    dayValues,
+  }
+}
+
+function parseMaatcmEmployeeTypes(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return ["MAA"]
+  const types = raw
+    .map((value) => String(value || "").trim().toUpperCase())
+    .map((value) => (value === "TMC" ? "TCM" : value))
+    .filter(Boolean)
+  return types.length ? [...new Set(types)] : ["MAA"]
+}
+
+export function parseMaatcmActivityCodeTypesFromMasterCode(masterCode?: string): string[] | undefined {
+  if (!masterCode?.trim()) return undefined
+  if (masterCode === "BOTH") return ["MAA", "TCM"]
+  return masterCode
+    .split(",")
+    .map((part) => part.trim().toUpperCase())
+    .map((part) => (part === "TMC" ? "TCM" : part))
+    .filter(Boolean)
+}
+
+export function resolveMaatcmIsMonthly(body: {
+  selectMonthBy?: string
+  maaTcmReportingPeriodType?: string
+}): boolean {
+  const period = String(body.maaTcmReportingPeriodType ?? body.selectMonthBy ?? "")
+    .trim()
+    .toLowerCase()
+  return period === "month" || period === "monthly"
+}
+
+export function unwrapMaatcmEmployees(raw: unknown): MaatcmEmployee[] {
+  return unwrapListData(raw).map((item) => {
+    const row = asRecord(item)
+    const noofdaysinmonth = toNumber((row.noofdaysinmonth ?? row.noOfDaysInMonth ?? 31) as string | number) || 31
+    const activitiesRaw = row.activities
+    const activities = Array.isArray(activitiesRaw)
+      ? activitiesRaw.map((activity) => parseMaatcmActivity(asRecord(activity), noofdaysinmonth))
+      : []
+
+    return {
+      employeename: String(row.employeename ?? row.employeeName ?? ""),
+      jobclassification: String(row.jobclassification ?? row.jobClassification ?? ""),
+      employeenumber: String(row.employeenumber ?? row.employeeNumber ?? ""),
+      claimingunit: String(row.claimingunit ?? row.claimingUnit ?? ""),
+      claimingunitlocation: String(row.claimingunitlocation ?? row.claimingUnitLocation ?? ""),
+      totalhours: toNumber((row.totalhours ?? row.totalHours ?? 0) as string | number),
+      activities,
+      spmptotal: toNumber((row.spmptotal ?? row.spmpTotal ?? 0) as string | number),
+      nonspmptotal: toNumber((row.nonspmptotal ?? row.nonSpmpTotal ?? 0) as string | number),
+      activityCodeTypes: parseMaatcmEmployeeTypes(row.activityCodeTypes ?? row.activitycodetypes),
+      noofdaysinmonth,
+      month: (row.month ?? "") as number | string,
+      year: (row.year ?? "") as number | string,
+    }
+  })
+}
+
+export function normMaatcmEmployeeTypes(employee: MaatcmEmployee): string[] {
+  return employee.activityCodeTypes.length ? employee.activityCodeTypes : ["MAA"]
+}
+
+export function includeMaatcmActivityInPivot(activity: MaatcmActivity, types: string[]): boolean {
+  if (!(activity.total > 0)) return false
+  if (!types.includes("MAA")) return false
+  if (!types.includes("TCM")) return true
+  return !activity.activityname.toUpperCase().includes("TCM")
+}
+
+export function hoursByCodeForMaatcmEmployee(employee: MaatcmEmployee): Record<string, number> {
+  const types = normMaatcmEmployeeTypes(employee)
+  const byCode: Record<string, number> = {}
+
+  for (const activity of employee.activities) {
+    if (!includeMaatcmActivityInPivot(activity, types)) continue
+    const code = activity.code.trim()
+    if (!code) continue
+    byCode[code] = (byCode[code] ?? 0) + activity.total
+  }
+
+  return byCode
+}
+
+export function isMaatcmSummaryEmployee(employee: MaatcmEmployee): boolean {
+  const hours = hoursByCodeForMaatcmEmployee(employee)
+  return Object.values(hours).reduce((sum, value) => sum + value, 0) > 0
+}
+
+export function sortMaatcmCodesAsc(codes: string[]): string[] {
+  return [...codes].sort((a, b) => String(a).localeCompare(String(b), undefined, { numeric: true }))
+}
+
+export function buildMaatcmActivityNameByCode(employees: MaatcmEmployee[]): Record<string, string> {
+  const map: Record<string, string> = {}
+
+  for (const employee of employees) {
+    const types = normMaatcmEmployeeTypes(employee)
+    if (!types.includes("MAA")) continue
+
+    for (const activity of employee.activities) {
+      const code = activity.code.trim()
+      if (!code || map[code]) continue
+      if (types.includes("TCM") && activity.activityname.toUpperCase().includes("TCM")) continue
+      const name = activity.activityname.trim()
+      if (name) map[code] = name
+    }
+  }
+
+  return map
+}
+
+export function maatcmPivotPeriodDisplay(
+  employees: MaatcmEmployee[],
+  dateFrom?: string,
+  dateTo?: string,
+): { month: string; year: string } {
+  if (dateFrom && dateTo) {
+    const from = new Date(/^\d{4}-\d{2}-\d{2}$/.test(dateFrom) ? `${dateFrom}T00:00:00` : dateFrom)
+    const to = new Date(/^\d{4}-\d{2}-\d{2}$/.test(dateTo) ? `${dateTo}T00:00:00` : dateTo)
+    if (!Number.isNaN(from.getTime()) && !Number.isNaN(to.getTime())) {
+      const fmt = (date: Date) =>
+        `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`
+      return { month: `${fmt(from)} – ${fmt(to)}`, year: String(to.getFullYear()) }
+    }
+  }
+
+  const employee = employees[0]
+  return {
+    month: employee?.month != null ? String(employee.month) : "",
+    year: employee?.year != null ? String(employee.year) : "",
+  }
+}
+
+export function getMaatcmDayValue(activity: MaatcmActivity, day: number): string {
+  return activity.dayValues[day - 1] ?? ""
+}
+
+export function getMaatcmDayTotal(employee: MaatcmEmployee, day: number): string {
+  const total = employee.activities.reduce((sum, activity) => {
+    const value = getMaatcmDayValue(activity, day)
+    return sum + toNumber(value)
+  }, 0)
+  return total > 0 ? total.toFixed(2) : ""
+}
+
+export function getMaatcmGrandTotal(employee: MaatcmEmployee): number {
+  return employee.activities.reduce((sum, activity) => sum + activity.total, 0)
+}
+
+// --- MCAH-TVTS helpers ---
+
+function parseMcahTvtsWeek(row: Record<string, unknown>, week: number): McahTvtsWeek {
+  return {
+    label: String(row[`weekvalue${week}`] ?? row[`weekValue${week}`] ?? ""),
+    cat1: toNumber((row[`week${week}cat1`] ?? 0) as string | number),
+    cat2: toNumber((row[`week${week}cat2`] ?? 0) as string | number),
+    cat3: toNumber((row[`week${week}cat3`] ?? 0) as string | number),
+    total: toNumber((row[`week${week}total`] ?? 0) as string | number),
+  }
+}
+
+export function unwrapMcahTvtsEmployees(raw: unknown): McahTvtsEmployee[] {
+  return unwrapListData(raw).map((item) => {
+    const row = asRecord(item)
+    const weeks = [1, 2, 3, 4, 5].map((week) => parseMcahTvtsWeek(row, week))
+
+    const summedCat1 = weeks.reduce((sum, week) => sum + week.cat1, 0)
+    const summedCat2 = weeks.reduce((sum, week) => sum + week.cat2, 0)
+    const summedCat3 = weeks.reduce((sum, week) => sum + week.cat3, 0)
+    const summedTotal = weeks.reduce((sum, week) => sum + week.total, 0)
+
+    const category1Totals = toNumber(
+      (row.category1Totals ?? row.category1totals ?? summedCat1) as string | number,
+    )
+    const category2Totals = toNumber(
+      (row.category2Totals ?? row.category2totals ?? summedCat2) as string | number,
+    )
+    const category3Totals = toNumber(
+      (row.category3Totals ?? row.category3totals ?? summedCat3) as string | number,
+    )
+    const totalTotals = toNumber((row.totalTotals ?? row.totaltotals ?? summedTotal) as string | number)
+
+    return {
+      employeename: String(
+        row.employeename ?? row.employeeName ?? row.name ?? "",
+      ),
+      month: String(row.month ?? ""),
+      budgetLine: String(row.budgetLine ?? row.budgetline ?? ""),
+      jobClassificationName: String(
+        row.jobClassificationName ??
+          row.jobclassification ??
+          row.positionName ??
+          "",
+      ),
+      department: String(
+        row.department ?? row.departmentName ?? row.claimingunitlocation ?? "",
+      ),
+      weeks,
+      category1Totals,
+      category2Totals,
+      category3Totals,
+      totalTotals,
+      category1Contribution: toNumber(
+        (row.category1Contribution ?? row.category1contribution ?? 0) as string | number,
+      ),
+      category2Contribution: toNumber(
+        (row.category2Contribution ?? row.category2contribution ?? 0) as string | number,
+      ),
+      category3Contribution: toNumber(
+        (row.category3Contribution ?? row.category3contribution ?? 0) as string | number,
+      ),
+      totalContribution: toNumber(
+        (row.totalContribution ?? row.totalcontribution ?? (totalTotals > 0 ? 100 : 0)) as
+          | string
+          | number,
+      ),
+    }
+  })
+}
+
+export function formatMcahTvtsEmployeeName(rawName: string): string {
+  return String(rawName || "")
+    .split(" ")
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join(" ")
+}
+
+export function formatMcahTvtsHours(value: number): string {
+  return value ? value.toFixed(2) : "0.00"
+}
+
+export function formatMcahTvtsPercent(value: number): string {
+  return `${value ? value.toFixed(2) : "0.00"}%`
+}
+
+// --- QTR-MONTH helpers ---
+
+function normalizeQtrMonthEnhPercent(value: unknown): number {
+  if (value == null || value === "") return 0
+  const parsed = toNumber(value as string | number)
+  return parsed <= 1 ? parsed * 100 : parsed
+}
+
+function normalizeQtrMonthOtherPercent(value: unknown): number {
+  if (value == null || value === "") return 0
+  return toNumber(value as string | number)
+}
+
+function normalizeQtrMonthAllPercent(value: unknown): number {
+  if (value == null || value === "") return 0
+  const parsed = toNumber(value as string | number)
+  return parsed <= 1 ? parsed * 100 : parsed
+}
+
+function normalizeQtrMonthGrandTotalPercent(value: unknown): number {
+  if (value == null || value === "") return 0
+  const parsed = toNumber(value as string | number)
+  return parsed <= 1 ? parsed * 100 : parsed
+}
+
+function parseQtrMonthProgramRow(row: Record<string, unknown>): QtrMonthProgram {
+  const hasNewFormat = row.programName != null || row.programCode != null
+
+  if (hasNewFormat) {
+    return {
+      program: String(row.programName ?? "Unknown Program"),
+      programcode: String(row.programCode ?? ""),
+      totalEnhancedPercentageOfProgram: normalizeQtrMonthEnhPercent(row.enhFinalPer),
+      totalnonEnhancedPercentageOfProgram: normalizeQtrMonthOtherPercent(row.nonEnhFinalPer),
+      totalnonClaimablePercentageOfProgram: normalizeQtrMonthOtherPercent(row.nonClaimFinalPer),
+      totalPercentageOfProgram: normalizeQtrMonthAllPercent(row.allFinalPer),
+      salaryEnhanced: toNumber((row.enhSalary ?? 0) as string | number),
+      salaryNonEnhanced: toNumber((row.nonEnhSalary ?? 0) as string | number),
+      salaryNonClaimable: toNumber((row.nonClaimSalary ?? 0) as string | number),
+      benefitsEnhanced: toNumber((row.enhBenefits ?? 0) as string | number),
+      benefitsNonEnhanced: toNumber((row.nonEnhBenefits ?? 0) as string | number),
+      benefitsNonClaimable: toNumber((row.nonClaimBenefits ?? 0) as string | number),
+      percentageOfTimeWorked: normalizeQtrMonthOtherPercent(row.finalPerOfDistributedCostInProgram),
+      totalProgramHrs: toNumber((row.totalProgramHrs ?? 0) as string | number),
+    }
+  }
+
+  return {
+    program: String(row.program ?? "Unknown Program"),
+    programcode: String(row.programcode ?? row.programCode ?? ""),
+    totalEnhancedPercentageOfProgram: normalizeQtrMonthEnhPercent(row.totalEnhancedPercentageOfProgram),
+    totalnonEnhancedPercentageOfProgram: normalizeQtrMonthOtherPercent(
+      row.totalnonEnhancedPercentageOfProgram,
+    ),
+    totalnonClaimablePercentageOfProgram: normalizeQtrMonthOtherPercent(
+      row.totalnonClaimablePercentageOfProgram,
+    ),
+    totalPercentageOfProgram: normalizeQtrMonthAllPercent(row.totalPercentageOfProgram),
+    salaryEnhanced: toNumber((row.salaryEnhanced ?? 0) as string | number),
+    salaryNonEnhanced: toNumber((row.salaryNonEnhanced ?? 0) as string | number),
+    salaryNonClaimable: toNumber((row.salaryNonClaimable ?? 0) as string | number),
+    benefitsEnhanced: toNumber((row.benefitsEnhanced ?? 0) as string | number),
+    benefitsNonEnhanced: toNumber((row.benefitsNonEnhanced ?? 0) as string | number),
+    benefitsNonClaimable: toNumber((row.benefitsNonClaimable ?? 0) as string | number),
+    percentageOfTimeWorked: normalizeQtrMonthOtherPercent(row.percentageOfTimeWorked),
+    totalProgramHrs: toNumber(
+      (row.totalProgramHrs ??
+        (toNumber((row.totalDirAndAllocHoursEnhanced ?? 0) as string | number) +
+          toNumber((row.totalDirAndAllocHoursNonEnhanced ?? 0) as string | number) +
+          toNumber((row.totalDirAndAllocHoursNonClaimable ?? 0) as string | number))) as
+        | string
+        | number,
+    ),
+  }
+}
+
+function parseQtrMonthEmployeeRow(row: Record<string, unknown>): QtrMonthEmployee | null {
+  const records = Array.isArray(row.records) ? row.records : null
+  const legacyPrograms = Array.isArray(row.programs) ? row.programs : null
+  const programRows = records ?? legacyPrograms
+
+  if (!programRows?.length) return null
+
+  const programs = programRows.map((item) => parseQtrMonthProgramRow(asRecord(item)))
+
+  const totalSalaryEnhanced = toNumber(
+    (row.totalSalaryEnhanced ?? row.enhGrandTotalSalary ?? 0) as string | number,
+  )
+  const totalSalaryNonEnhanced = toNumber(
+    (row.totalSalaryNonEnhanced ?? row.nonEnhGrandTotalSalary ?? 0) as string | number,
+  )
+  const totalSalaryNonClaimable = toNumber(
+    (row.totalSalaryNonClaimable ?? row.nonClaimGrandTotalSalary ?? 0) as string | number,
+  )
+  const totalBenefitsEnhanced = toNumber(
+    (row.totalBenefitsEnhanced ?? row.enhGrandTotalBenefits ?? 0) as string | number,
+  )
+  const totalBenefitsNonEnhanced = toNumber(
+    (row.totalBenefitsNonEnhanced ?? row.nonEnhGrandTotalBenefits ?? 0) as string | number,
+  )
+  const totalBenefitsNonClaimable = toNumber(
+    (row.totalBenefitsNonClaimable ?? row.nonClaimGrandTotalBenefits ?? 0) as string | number,
+  )
+
+  const totalEmployeeSalary =
+    toNumber((row.salary ?? 0) as string | number) ||
+    totalSalaryEnhanced + totalSalaryNonEnhanced + totalSalaryNonClaimable
+  const totalEmployeeBenefits =
+    toNumber((row.Benefits ?? row.benefits ?? 0) as string | number) ||
+    totalBenefitsEnhanced + totalBenefitsNonEnhanced + totalBenefitsNonClaimable
+
+  return {
+    employeeName: String(
+      row.employeeName ?? row.empleeName ?? row.employeename ?? "",
+    ),
+    classification: String(
+      row.userJobclassifications ?? row.classification ?? row.jobClassification ?? "",
+    ),
+    programs,
+    totalSalaryEnhanced,
+    totalSalaryNonEnhanced,
+    totalSalaryNonClaimable,
+    totalBenefitsEnhanced,
+    totalBenefitsNonEnhanced,
+    totalBenefitsNonClaimable,
+    totalPercentageOfTimeWorked: normalizeQtrMonthGrandTotalPercent(
+      row.totalPercentageOfTimeWorked ?? row.grandTotalPercentageOfTimeWorked,
+    ),
+    totalEmployeeSalary,
+    totalEmployeeBenefits,
+  }
+}
+
+export function unwrapQtrMonthEmployees(raw: unknown): QtrMonthEmployee[] {
+  return unwrapListData(raw)
+    .map((item) => parseQtrMonthEmployeeRow(asRecord(item)))
+    .filter((employee): employee is QtrMonthEmployee => employee != null)
+}
+
+export function formatQtrMonthEmployeeName(rawName: string): string {
+  return String(rawName || "")
+    .split(" ")
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join(" ")
+}
+
+export function formatQtrMonthTimeStudyPeriod(options: {
+  month?: string
+  dateFrom?: string
+}): string {
+  const monthNames = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ]
+
+  if (options.month) {
+    const [year, month] = options.month.split("-")
+    const monthName = monthNames[parseInt(month, 10) - 1] || month
+    return `${monthName}-${year.slice(-2)}`
+  }
+
+  if (options.dateFrom) {
+    const fromDate = new Date(options.dateFrom)
+    if (!Number.isNaN(fromDate.getTime())) {
+      const monthName = monthNames[fromDate.getMonth()]
+      const yearShort = String(fromDate.getFullYear()).slice(-2)
+      return `${monthName}-${yearShort}`
+    }
+  }
+
+  return ""
+}
+
+export function formatQtrMonthMoney(value: number): string {
+  return formatDssrpt5Money(value)
+}
+
+export function formatQtrMonthPercentOne(value: number): string {
+  return `${parseFloat(String(value || 0)).toFixed(1)}%`
+}
+
+export function formatQtrMonthPercentTwo(value: number): string {
+  return `${parseFloat(String(value || 0)).toFixed(2)}%`
+}
+
+export function getQtrMonthBottomRowValues(
+  program: QtrMonthProgram,
+  employee: QtrMonthEmployee,
+): { percentage: number; salary: number; benefits: number } {
+  const percentage = program.percentageOfTimeWorked
+  const pctDecimal = percentage / 100
+  return {
+    percentage,
+    salary: pctDecimal * employee.totalEmployeeSalary,
+    benefits: pctDecimal * employee.totalEmployeeBenefits,
+  }
+}
+
+// --- TCM_MAA_ADHOC helpers ---
+
+const TCM_MAA_ADHOC_CHUNK_SIZE = 8
+
+export function unwrapTcmMaaAdhocPayload(raw: unknown): TcmMaaAdhocPayload {
+  const list = unwrapListData(raw)
+  const root =
+    list.length === 1 && list[0] && typeof list[0] === "object"
+      ? asRecord(list[0])
+      : asRecord(raw)
+
+  const categoriesRaw =
+    root.activityDetailsForAllActivityCodes ?? root.activitydetailsforallactivitycodes
+  const categories = Array.isArray(categoriesRaw)
+    ? categoriesRaw.map((item) => {
+        const row = asRecord(item)
+        return { name: String(row.name ?? "") }
+      })
+    : []
+
+  const employeesRaw = root.finalobjects ?? root.finalObjects
+  const employees = Array.isArray(employeesRaw)
+    ? employeesRaw.map((item) => {
+        const row = asRecord(item)
+        const hoursRaw = asRecord(row.category_hours ?? row.categoryHours)
+        const category_hours: Record<string, number> = {}
+        Object.entries(hoursRaw).forEach(([key, value]) => {
+          category_hours[key] = toNumber(value as string | number)
+        })
+        return {
+          employeename: String(row.employeename ?? row.employeeName ?? ""),
+          jobclassification: String(row.jobclassification ?? row.jobClassification ?? ""),
+          category_hours,
+        }
+      })
+    : []
+
+  return { categories, employees }
+}
+
+export function sortTcmMaaAdhocEmployees(employees: TcmMaaAdhocEmployee[]): TcmMaaAdhocEmployee[] {
+  return [...employees].sort((a, b) =>
+    (a.employeename || "").localeCompare(b.employeename || "", undefined, { sensitivity: "base" }),
+  )
+}
+
+export function chunkTcmMaaAdhocCategories(
+  categories: TcmMaaAdhocCategory[],
+  chunkSize = TCM_MAA_ADHOC_CHUNK_SIZE,
+): TcmMaaAdhocCategory[][] {
+  const chunks: TcmMaaAdhocCategory[][] = []
+  for (let index = 0; index < categories.length; index += chunkSize) {
+    chunks.push(categories.slice(index, index + chunkSize))
+  }
+  return chunks
+}
+
+export function computeTcmMaaAdhocTotals(
+  employees: TcmMaaAdhocEmployee[],
+  categories: TcmMaaAdhocCategory[],
+): {
+  employeeTotals: Record<string, number>
+  grandTotalHours: number
+} {
+  const employeeTotals: Record<string, number> = {}
+  let grandTotalHours = 0
+
+  employees.forEach((employee) => {
+    let employeeTotal = 0
+    categories.forEach((category) => {
+      const hours = employee.category_hours[category.name] ?? 0
+      employeeTotal += hours
+      grandTotalHours += hours
+    })
+    employeeTotals[employee.employeename] = employeeTotal
+  })
+
+  return { employeeTotals, grandTotalHours }
+}
+
+export function formatTcmMaaAdhocEmployeeName(rawName: string): string {
+  if (!rawName || typeof rawName !== "string") return ""
+  return rawName.toLowerCase().replace(/\b[a-z]/g, (char) => char.toUpperCase())
+}
+
+export function formatTcmMaaAdhocHours(value: number | null | undefined): string {
+  if (value === null || value === undefined) return ""
+  return Number(value).toFixed(2)
+}
+
+export function formatTcmMaaAdhocColumnNumber(index: number): string {
+  return index < 10 ? `0${index}` : String(index)
+}
+
+export function formatTcmMaaAdhocNspmp(value: number): string {
+  return value.toFixed(2)
+}
+
+// --- TSCR helpers ---
+
+function tscrNumber(value: unknown): number {
+  return toNumber(value as string | number)
+}
+
+function parseTscrProgramRecord(row: Record<string, unknown>): TscrProgramRecord {
+  const pick = (snake: string, camel?: string) =>
+    tscrNumber(row[snake] ?? (camel ? row[camel] : undefined))
+
+  return {
+    program_name: String(row.program_name ?? row.programName ?? ""),
+    prog_nonm_hrs: pick("prog_nonm_hrs", "progNonmHrs"),
+    prog_none_hrs: pick("prog_none_hrs", "progNoneHrs"),
+    prog_enh_hrs: pick("prog_enh_hrs", "progEnhHrs"),
+    nonm_perc: pick("nonm_perc", "nonmPerc"),
+    none_perc: pick("none_perc", "nonePerc"),
+    enh_perc: pick("enh_perc", "enhPerc"),
+    dis_nonm_hrs: pick("dis_nonm_hrs", "disNonmHrs"),
+    dis_none_hrs: pick("dis_none_hrs", "disNoneHrs"),
+    dis_enh_hrs: pick("dis_enh_hrs", "disEnhHrs"),
+    dis_nonm_perc: pick("dis_nonm_perc", "disNonmPerc"),
+    dis_none_perc: pick("dis_none_perc", "disNonePerc"),
+    dis_enh_perc: pick("dis_enh_perc", "disEnhPerc"),
+    salary_total: pick("salary_total", "salaryTotal") || pick("salary"),
+    salary_nonm: pick("salary_nonm", "salaryNonm"),
+    salary_none: pick("salary_none", "salaryNone"),
+    salary_enh: pick("salary_enh", "salaryEnh"),
+    benefits_total: pick("benefits_total", "benefitsTotal") || pick("benefits"),
+    benefits_nonm: pick("benefits_nonm", "benefitsNonm"),
+    benefits_none: pick("benefits_none", "benefitsNone"),
+    benefits_enh: pick("benefits_enh", "benefitsEnh"),
+    proghrs: (row.proghrs ?? row.progHrs ?? "") as string | number,
+    time_perc: pick("time_perc", "timePerc"),
+    medical_pct: pick("medical_pct", "medicalPct"),
+    budget_hrs: pick("budget_hrs", "budgetHrs"),
+    budget_perc: pick("budget_perc", "budgetPerc"),
+  }
+}
+
+export function unwrapTscrEmployees(raw: unknown): TscrEmployee[] {
+  return unwrapListData(raw)
+    .map((item) => {
+      const row = asRecord(item)
+      const tsrecordsRaw = row.tsrecords ?? row.tsRecords
+      const tsrecords = Array.isArray(tsrecordsRaw)
+        ? tsrecordsRaw.map((record) => parseTscrProgramRecord(asRecord(record)))
+        : []
+
+      return {
+        full_name: String(row.full_name ?? row.fullName ?? ""),
+        totalts: String(row.totalts ?? row.totalTs ?? "0.00"),
+        tsrecords,
+      }
+    })
+    .filter((employee) => employee.tsrecords.length > 0 || employee.full_name)
+}
+
+export function formatTscrPositiveNumber(value: number): string {
+  return value > 0 ? String(value) : ""
+}
+
+export function formatTscrPositiveSum(...values: number[]): string {
+  const sum = values.reduce((total, value) => total + value, 0)
+  return sum > 0 ? String(sum) : ""
+}
+
+export function formatTscrPositivePercent(value: number): string {
+  return value > 0 ? `${value}%` : ""
+}
+
+export function formatTscrPositivePercentSum(...values: number[]): string {
+  const sum = values.reduce((total, value) => total + value, 0)
+  return sum > 0 ? `${sum}%` : ""
+}
+
+export function formatTscrMoneyTotal(...values: number[]): string {
+  const sum = values.reduce((total, value) => total + value, 0)
+  return sum > 0 ? sum.toFixed(2) : ""
+}
+
+export function formatTscrBenefitsPercent(salaryTotal: number, benefitsTotal: number): string {
+  const total = salaryTotal + benefitsTotal
+  if (total <= 0) return "0%"
+  return `${((benefitsTotal / total) * 100).toFixed(2)}%`
+}
+
+export function formatTscrBudgetValue(value: number): string {
+  return value > 0 ? value.toFixed(2) : ""
+}
+
+export function chunkTscrProgramPairs(records: TscrProgramRecord[]): Array<[TscrProgramRecord, TscrProgramRecord | null]> {
+  const pairs: Array<[TscrProgramRecord, TscrProgramRecord | null]> = []
+  for (let index = 0; index < records.length; index += 2) {
+    pairs.push([records[index], records[index + 1] ?? null])
+  }
+  return pairs
+}
+
+// --- WIC helpers ---
+
+function parseWicDayRecord(row: Record<string, unknown>): WicDayRecord {
+  const pick = (snake: string, camel?: string) =>
+    tscrNumber(row[snake] ?? (camel ? row[camel] : undefined))
+
+  return {
+    date: String(row.date ?? ""),
+    BFPC: pick("BFPC", "bfpc"),
+    FMNP: pick("FMNP", "fmnp"),
+    NutritionalEducation: pick("NutritionalEducation", "nutritionalEducation"),
+    BreastfeedingSupport: pick("BreastfeedingSupport", "breastfeedingSupport"),
+    ClientServices: pick("ClientServices", "clientServices"),
+    GeneralAdministration: pick("GeneralAdministration", "generalAdministration"),
+    NonSpecificTravel: pick("NonSpecificTravel", "nonSpecificTravel"),
+    totalWicTime: pick("totalWicTime", "totalWicTime"),
+    others: pick("others"),
+    paidTimeOff: pick("paidTimeOff", "paidTimeOff"),
+    TotalTime: pick("TotalTime", "totalTime"),
+  }
+}
+
+export function unwrapWicEmployees(raw: unknown): WicEmployee[] {
+  return unwrapListData(raw).map((item) => {
+    const row = asRecord(item)
+    const tsrecordsRaw = row.tsrecords ?? row.tsRecords
+    const tsrecords = Array.isArray(tsrecordsRaw)
+      ? tsrecordsRaw.map((record) => parseWicDayRecord(asRecord(record)))
+      : []
+
+    return {
+      username: String(row.username ?? row.userName ?? ""),
+      jobClassificationName: String(
+        row.jobClassificationName ?? row.jobclassificationname ?? "",
+      ),
+      date: String(row.date ?? ""),
+      periodSubcaption: String(row.periodSubcaption ?? row.periodsubcaption ?? "Month/Year"),
+      tsrecords,
+      wic_others: tscrNumber((row.wic_others ?? row.wicOthers ?? 0) as string | number),
+      final: tscrNumber((row.final ?? 0) as string | number),
+    }
+  })
+}
+
+export function formatWicDisplayDate(iso: string): string {
+  if (!iso) return ""
+  const match = iso.trim().match(/^(\d{4})-(\d{2})-(\d{2})/)
+  if (!match) return iso
+  return `${match[2]}/${match[3]}/${match[1]}`
+}
+
+export function formatWicEmployeeName(rawName: string): string {
+  return String(rawName || "")
+    .split(" ")
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join(" ")
+}
+
+export function formatWicHours(value: number): string {
+  return String(value)
+}
+
+export function getWicSubTotal(record: WicDayRecord): number {
+  return (
+    record.FMNP +
+    record.NutritionalEducation +
+    record.BreastfeedingSupport +
+    record.ClientServices +
+    record.GeneralAdministration
+  )
+}
+
+export function computeWicColumnTotals(records: WicDayRecord[]) {
+  return records.reduce(
+    (totals, record) => ({
+      FMNP: totals.FMNP + record.FMNP,
+      NutritionalEducation: totals.NutritionalEducation + record.NutritionalEducation,
+      BreastfeedingSupport: totals.BreastfeedingSupport + record.BreastfeedingSupport,
+      ClientServices: totals.ClientServices + record.ClientServices,
+      GeneralAdministration: totals.GeneralAdministration + record.GeneralAdministration,
+      NonSpecificTravel: totals.NonSpecificTravel + record.NonSpecificTravel,
+      totalWicTime: totals.totalWicTime + record.totalWicTime,
+      others: totals.others + record.others,
+      paidTimeOff: totals.paidTimeOff + record.paidTimeOff,
+      TotalTime: totals.TotalTime + record.TotalTime,
+    }),
+    {
+      FMNP: 0,
+      NutritionalEducation: 0,
+      BreastfeedingSupport: 0,
+      ClientServices: 0,
+      GeneralAdministration: 0,
+      NonSpecificTravel: 0,
+      totalWicTime: 0,
+      others: 0,
+      paidTimeOff: 0,
+      TotalTime: 0,
+    },
+  )
+}
+
 // --- report titles / footers ---
 
 export function resolveReportTitle(
@@ -963,6 +2451,7 @@ export function resolveReportTitle(
     case "P130":
       return "P130 - TS Program Report"
     case "TSCR":
+    case "TSCR-MONTH":
       return "TIME STUDY CALCULATIONS REPORT"
     case "WIC":
       return "WIC TimeStudy"
@@ -998,6 +2487,7 @@ export function resolveReportTitle(
 export function resolveFooterVariant(reportCode: string): ReportPdfFooterVariant {
   switch (reportCode) {
     case "TSCR":
+    case "TSCR-MONTH":
     case "DSSRPT3":
     case "DSSRPT4":
     case "DSSRPT5":
@@ -1011,6 +2501,7 @@ export function resolveFooterVariant(reportCode: string): ReportPdfFooterVariant
       return "signaturePerPage"
     case "DSSRPT1":
     case "DSSRPT2":
+    case "QTR-MONTH":
     case "P101":
     case "P110":
     case "WIC":
@@ -1030,12 +2521,54 @@ export function formatPrintedOnLabel(date: Date = new Date()): string {
 
 // --- images ---
 
+function resolveImageFetchTarget(
+  src: string,
+  apiBaseUrl: string,
+): { url: string; useAuth: boolean } {
+  if (
+    src.startsWith("data:") ||
+    src.startsWith("blob:") ||
+    src.startsWith("http://") ||
+    src.startsWith("https://")
+  ) {
+    return {
+      url: src,
+      useAuth: src.includes("/client/documents/preview/"),
+    }
+  }
+
+  // Bundled/static assets from Vite — fetch from the app origin as-is.
+  if (src.startsWith("/assets/") || src.startsWith("/src/")) {
+    return { url: src, useAuth: false }
+  }
+
+  if (src.startsWith("/")) {
+    const apiRoot = apiBaseUrl.replace(/\/$/, "")
+    return {
+      url: apiRoot ? `${apiRoot}${src}` : src,
+      useAuth: src.includes("/client/documents/preview/") || src.startsWith("/client/"),
+    }
+  }
+
+  return { url: src, useAuth: false }
+}
+
 export async function resolvePdfImageSrc(src: string | undefined): Promise<string | undefined> {
   if (!src) return undefined
   if (src.startsWith("data:")) return src
 
   try {
-    const response = await fetch(src)
+    const { API_BASE_URL } = await import("@/lib/config")
+    const { getToken } = await import("@/lib/api")
+
+    const { url: requestUrl, useAuth } = resolveImageFetchTarget(src, API_BASE_URL)
+    const headers: Record<string, string> = {}
+    const token = getToken()
+    if (token && useAuth) {
+      headers.Authorization = `Bearer ${token}`
+    }
+
+    const response = await fetch(requestUrl, { headers, cache: "no-store" })
     if (!response.ok) return undefined
     const buffer = await response.arrayBuffer()
     const bytes = new Uint8Array(buffer)
@@ -1060,9 +2593,11 @@ export async function buildResolvedPdfMeta(
   defaults: { countyLogo: string; rightLogo: string },
 ): Promise<ResolvedReportPdfMeta> {
   const reportCode = meta?.reportCode ?? "P100"
+  const countyLogoInput = meta?.countyLogoSrc?.trim() || defaults.countyLogo
+  const rightLogoInput = meta?.rightLogoSrc?.trim() || defaults.rightLogo
   const [countyLogoSrc, rightLogoSrc] = await Promise.all([
-    resolvePdfImageSrc(meta?.countyLogoSrc || defaults.countyLogo),
-    resolvePdfImageSrc(meta?.rightLogoSrc || defaults.rightLogo),
+    resolvePdfImageSrc(countyLogoInput),
+    resolvePdfImageSrc(rightLogoInput),
   ])
 
   return {

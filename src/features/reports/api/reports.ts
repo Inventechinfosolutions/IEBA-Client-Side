@@ -11,6 +11,21 @@ import {
   getP130ProgramCodes,
   unwrapDssrpt1Employees,
   unwrapDssrpt2Response,
+  unwrapDssrpt3Response,
+  formatDssrpt5UsDate,
+  formatPrintedOnLabel,
+  parseMaatcmActivityCodeTypesFromMasterCode,
+  resolveMaatcmIsMonthly,
+  unwrapAc741Employees,
+  unwrapMaatcmEmployees,
+  unwrapMcahTvtsEmployees,
+  unwrapQtrMonthEmployees,
+  formatQtrMonthTimeStudyPeriod,
+  unwrapTcmMaaAdhocPayload,
+  unwrapTscrEmployees,
+  unwrapWicEmployees,
+  unwrapDssrpt4Response,
+  unwrapDssrpt5Response,
   unwrapP110Records,
   unwrapP110SSRecords,
   unwrapP111Records,
@@ -19,6 +34,16 @@ import {
 } from "../pdf/reportPdf"
 import { generateDSSRPT1ReportPdf } from "../pdf/DSSRPT1ReportPdf"
 import { generateDSSRPT2ReportPdf } from "../pdf/DSSRPT2ReportPdf"
+import { generateDSSRPT3ReportPdf } from "../pdf/DSSRPT3ReportPdf"
+import { generateDSSRPT4ReportPdf } from "../pdf/DSSRPT4ReportPdf"
+import { generateAC741ReportPdf } from "../pdf/AC741ReportPdf"
+import { generateMAATCMReportPdf } from "../pdf/MAATCMReportPdf"
+import { generateMCAHTVTSReportPdf } from "../pdf/MCAHTVTSReportPdf"
+import { generateQTRMONTHReportPdf } from "../pdf/QTRMONTHReportPdf"
+import { generateTCMMAAADHOCReportPdf } from "../pdf/TCMMAAADHOCReportPdf"
+import { generateTSCRReportPdf } from "../pdf/TSCRReportPdf"
+import { generateWICReportPdf } from "../pdf/WICReportPdf"
+import { generateDSSRPT5ReportPdf } from "../pdf/DSSRPT5ReportPdf"
 import { generateP101ReportPdf } from "../pdf/P101ReportPdf"
 import { generateP110ReportPdf } from "../pdf/P110ReportPdf"
 import { generateP110SSReportPdf } from "../pdf/P110SSReportPdf"
@@ -99,6 +124,11 @@ function buildBackendPayload(body: ReportRunPayload, overrideDownloadType?: stri
     downloadType: overrideDownloadType || body.downloadType,
     type: "newreports",
     maaTcmReportingPeriodType: body.maaTcmReportingPeriodType,
+    ...(["MAATCM", "TCM_MAA_ADHOC"].includes(body.reportKey)
+      ? {
+          activityCodeType: parseMaatcmActivityCodeTypesFromMasterCode(body.masterCode),
+        }
+      : {}),
   }
   return payload
 }
@@ -137,6 +167,99 @@ async function buildFrontendPdfReport(
         reportDetails: dssrpt2.reportDetails,
         periodStarting: dssrpt2.periodStarting,
         periodEnding: dssrpt2.periodEnding,
+        meta,
+      })
+    }
+
+    if (body.reportKey === "DSSRPT3") {
+      return await generateDSSRPT3ReportPdf({
+        payload: unwrapDssrpt3Response(response),
+        isMonthly: body.selectMonthBy === "month",
+        month: body.month,
+        dateFrom: body.dateFrom,
+        meta,
+      })
+    }
+
+    if (body.reportKey === "DSSRPT4") {
+      return await generateDSSRPT4ReportPdf({
+        payload: unwrapDssrpt4Response(response),
+        periodStarting: startDate,
+        periodEnding: endDate,
+        meta,
+      })
+    }
+
+    if (body.reportKey === "DSSRPT5") {
+      return await generateDSSRPT5ReportPdf({
+        payload: unwrapDssrpt5Response(response),
+        runDate: formatPrintedOnLabel(),
+        payrollQuarterFrom: formatDssrpt5UsDate(body.dateFrom),
+        payrollQuarterTo: formatDssrpt5UsDate(body.dateTo),
+        meta,
+      })
+    }
+
+    if (body.reportKey === "AC741") {
+      return await generateAC741ReportPdf({
+        employees: unwrapAc741Employees(response),
+        startDate,
+        endDate,
+        meta,
+      })
+    }
+
+    if (body.reportKey === "MAATCM") {
+      const activityCodeTypes = parseMaatcmActivityCodeTypesFromMasterCode(body.masterCode)
+      return await generateMAATCMReportPdf({
+        employees: unwrapMaatcmEmployees(response),
+        isMonthly: resolveMaatcmIsMonthly(body),
+        dateFrom: body.dateFrom,
+        dateTo: body.dateTo,
+        activityCodeTypes,
+        meta,
+      })
+    }
+
+    if (body.reportKey === "MCAH-TVTS") {
+      return await generateMCAHTVTSReportPdf({
+        employees: unwrapMcahTvtsEmployees(response),
+        meta,
+      })
+    }
+
+    if (body.reportKey === "QTR-MONTH") {
+      return await generateQTRMONTHReportPdf({
+        employees: unwrapQtrMonthEmployees(response),
+        timeStudyPeriod: formatQtrMonthTimeStudyPeriod({
+          month: monthFromDate(body.dateFrom),
+          dateFrom: body.dateFrom,
+        }),
+        meta,
+      })
+    }
+
+    if (body.reportKey === "TCM_MAA_ADHOC") {
+      const activityCodeTypes = parseMaatcmActivityCodeTypesFromMasterCode(body.masterCode)
+      return await generateTCMMAAADHOCReportPdf({
+        payload: unwrapTcmMaaAdhocPayload(response),
+        activityCodeTypes,
+        meta,
+      })
+    }
+
+    if (body.reportKey === "TSCR" || body.reportKey === "TSCR-MONTH") {
+      return await generateTSCRReportPdf({
+        employees: unwrapTscrEmployees(response),
+        startDate,
+        endDate,
+        meta: { ...meta, reportCode: body.reportKey },
+      })
+    }
+
+    if (body.reportKey === "WIC") {
+      return await generateWICReportPdf({
+        employees: unwrapWicEmployees(response),
         meta,
       })
     }
