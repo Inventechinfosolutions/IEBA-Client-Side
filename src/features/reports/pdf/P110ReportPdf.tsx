@@ -1,8 +1,7 @@
 import { Document, Page, StyleSheet, Text, View, pdf } from "@react-pdf/renderer"
 import type { ReactNode } from "react"
 
-import defaultCountyLogo from "@/assets/county-avatar.png"
-import pkiLogo from "@/assets/ieba-logo.png"
+import { REPORT_PDF_DEFAULT_LOGOS } from "./reportPdfAssets"
 
 import {
   ReportPdfFooter,
@@ -26,6 +25,11 @@ import {
 
 const TABLE_WIDTH = 544
 const ROW_MIN_HEIGHT = 14
+const TABLE_HEADER_TOP = 78
+const EMPLOYEE_NAME_HEIGHT = 20
+const TABLE_HEADER_HEIGHT = 24
+/** Clears county header + employee name (page 1) + column header in fixed chrome */
+const CONTENT_TOP = TABLE_HEADER_TOP + EMPLOYEE_NAME_HEIGHT + TABLE_HEADER_HEIGHT + 8
 
 const SIGNATURE_LABELS = [
   "Employee Signature",
@@ -72,6 +76,12 @@ const styles = StyleSheet.create({
   dateLabel: { width: 90, fontFamily: "Helvetica-Bold", fontSize: 7 },
   dateValue: { fontFamily: "Helvetica-Bold", fontSize: 7 },
   table: { width: TABLE_WIDTH, marginBottom: 8 },
+  tableHeaderFixed: {
+    position: "absolute",
+    top: TABLE_HEADER_TOP,
+    left: 20,
+    width: TABLE_WIDTH,
+  },
   row: {
     flexDirection: "row",
     width: TABLE_WIDTH,
@@ -239,6 +249,15 @@ function ColumnHeaderRow() {
   )
 }
 
+function EmployeeTableChrome({ employeeName }: { employeeName: string }) {
+  return (
+    <View style={styles.tableHeaderFixed} fixed>
+      <Text style={styles.employeeNameRow}>{employeeName}</Text>
+      <ColumnHeaderRow />
+    </View>
+  )
+}
+
 function DateSection({ dateGroup }: { dateGroup: P110DateGroup }) {
   return (
     <View style={styles.dateSection}>
@@ -306,13 +325,6 @@ function EmployeeTable({ employee }: { employee: P110GroupedEmployee }) {
 
   return (
     <View style={styles.table}>
-      <View style={styles.row}>
-        <View style={{ width: TABLE_WIDTH }}>
-          <Text style={styles.employeeNameRow}>{employee.employeename}</Text>
-        </View>
-      </View>
-      <ColumnHeaderRow />
-
       {employee.dates.map((dateGroup) => (
         <DateSection key={dateGroup.date} dateGroup={dateGroup} />
       ))}
@@ -348,14 +360,19 @@ function P110ReportPage({
   meta,
   footerVariant,
   printedOn,
+  employeeName,
   children,
 }: {
   meta: ResolvedReportPdfMeta
   footerVariant: ReportPdfFooterVariant
   printedOn?: string
+  employeeName?: string
   children: ReactNode
 }) {
-  const pagePadding = resolvePagePadding(footerVariant)
+  const pagePadding = {
+    ...resolvePagePadding(footerVariant),
+    paddingTop: employeeName ? CONTENT_TOP : resolvePagePadding(footerVariant).paddingTop,
+  }
 
   return (
     <Page size="LETTER" style={[styles.page, pagePadding]} wrap>
@@ -366,6 +383,7 @@ function P110ReportPage({
         rightLogoSrc={meta.rightLogoSrc}
       />
       <ReportPdfFooter variant={footerVariant} printedOn={printedOn} />
+      {employeeName ? <EmployeeTableChrome employeeName={employeeName} /> : null}
       <View style={styles.content}>{children}</View>
     </Page>
   )
@@ -402,6 +420,7 @@ function P110ReportDocument({
           meta={meta}
           footerVariant={footerVariant}
           printedOn={printedOn}
+          employeeName={employee.employeename}
         >
           {index === 0 ? <PeriodDates startDate={startDate} endDate={endDate} /> : null}
           <EmployeeTable employee={employee} />
@@ -416,7 +435,7 @@ export async function generateP110ReportPdf(props: P110ReportPdfProps): Promise<
   const printedOn = props.printedOn ?? formatPrintedOnLabel()
   const meta = await buildResolvedPdfMeta(
     { ...props.meta, reportCode: props.meta?.reportCode ?? "P110" },
-    { countyLogo: defaultCountyLogo, rightLogo: pkiLogo },
+    REPORT_PDF_DEFAULT_LOGOS,
   )
   const footerVariant = resolveFooterVariant(meta.reportCode)
 
