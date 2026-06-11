@@ -33,6 +33,25 @@ import {
 const AQUA = "#7FFFD4"
 const TABLE_WIDTH = 1150
 
+const INFO_COL = {
+  employee: 160,
+  jobClassification: 300,
+  employeeNumber: 100,
+  claimingUnit: 190,
+  claimingUnitLocation: 400,
+} as const
+
+function getMaatcmGridLayout(days: number) {
+  const codeWidth = 28
+  const totalWidth = 28
+  const percentWidth = 28
+  const nameWidthBase = 110
+  const dayBudget = TABLE_WIDTH - codeWidth - totalWidth - percentWidth - nameWidthBase
+  const dayWidth = Math.floor(dayBudget / days)
+  const nameWidth = nameWidthBase + (dayBudget - dayWidth * days)
+  return { codeWidth, nameWidth, dayWidth, totalWidth, percentWidth }
+}
+
 const styles = StyleSheet.create({
   page: {
     paddingHorizontal: 20,
@@ -43,18 +62,35 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   detailsRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 8,
+    position: "relative",
     width: TABLE_WIDTH,
+    minHeight: 72,
+    marginBottom: 6,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  detailsSide: {
+    position: "absolute",
+    left: 0,
+    top: 0,
+    width: 140,
+  },
+  detailsCenter: {
+    alignItems: "center",
+  },
+  monthYearAbsolute: {
+    position: "absolute",
+    right: 0,
+    top: 0,
   },
   detailsColumn: {
-    width: 250,
+    width: 130,
   },
   detailsLabel: {
     fontFamily: "Helvetica-Bold",
     fontSize: 7,
     marginBottom: 4,
+    textAlign: "center",
   },
   aquaBoxRow: {
     flexDirection: "row",
@@ -78,40 +114,55 @@ const styles = StyleSheet.create({
   aquaBoxLabel: {
     fontSize: 6.5,
   },
-  monthYearCol: {
-    alignItems: "flex-end",
-  },
-  monthYearBox: {
+  monthYearTable: {
     borderWidth: 1,
     borderColor: "#000000",
-    width: 72,
+  },
+  monthYearRow: {
+    flexDirection: "row",
+    borderBottomWidth: 1,
+    borderBottomColor: "#000000",
+  },
+  monthYearRowLast: {
+    flexDirection: "row",
+  },
+  monthYearCell: {
+    width: 52,
     paddingVertical: 2,
     paddingHorizontal: 4,
     fontSize: 6.5,
-    textAlign: "center",
+    borderRightWidth: 1,
+    borderRightColor: "#000000",
+  },
+  monthYearSpacer: {
+    width: 24,
+    minHeight: 14,
+    borderRightWidth: 1,
+    borderRightColor: "#000000",
+  },
+  monthYearCellLast: {
+    width: 52,
+    paddingVertical: 2,
+    paddingHorizontal: 4,
+    fontSize: 6.5,
   },
   infoTable: {
     width: TABLE_WIDTH,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: "#000000",
+    marginBottom: 6,
   },
   infoRow: {
     flexDirection: "row",
     width: TABLE_WIDTH,
   },
   infoHeader: {
-    flex: 1,
-    borderRightWidth: 1,
+    borderWidth: 1,
     borderColor: "#000000",
     padding: 4,
     fontFamily: "Helvetica-Bold",
     fontSize: 6.5,
   },
   infoCell: {
-    flex: 1,
-    borderRightWidth: 1,
-    borderTopWidth: 1,
+    borderWidth: 1,
     borderColor: "#000000",
     padding: 4,
     fontSize: 6.5,
@@ -128,6 +179,21 @@ const styles = StyleSheet.create({
     fontFamily: "Helvetica-Bold",
     fontSize: 5.5,
     textAlign: "center",
+  },
+  gridHeaderDay: {
+    borderWidth: 1,
+    borderColor: "#000000",
+    backgroundColor: AQUA,
+    padding: 3,
+    fontFamily: "Helvetica-Bold",
+    fontSize: 5.5,
+    textAlign: "center",
+  },
+  gridSpacerPlain: {
+    borderWidth: 1,
+    borderColor: "#000000",
+    padding: 4,
+    backgroundColor: "#ffffff",
   },
   gridCell: {
     borderWidth: 1,
@@ -157,9 +223,11 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   totalsLabel: {
+    borderWidth: 1,
+    borderColor: "#000000",
     fontFamily: "Helvetica-Bold",
     fontSize: 6.5,
-    textAlign: "center",
+    textAlign: "right",
     padding: 4,
   },
   pivotHeader: {
@@ -216,22 +284,26 @@ const styles = StyleSheet.create({
   },
   signatureCell: {
     width: TABLE_WIDTH / 2,
-    borderRightWidth: 1,
-    borderColor: "#000000",
-    padding: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 6,
     fontSize: 5.5,
+  },
+  signatureCellDivider: {
+    borderRightWidth: 1,
+    borderRightColor: "#000000",
   },
   signatureLineRow: {
     flexDirection: "row",
-    alignItems: "center",
-    marginTop: 20,
-    gap: 8,
+    alignItems: "flex-end",
+    marginTop: 16,
+    flexWrap: "wrap",
+    gap: 4,
   },
   signatureLine: {
     borderBottomWidth: 1,
     borderBottomColor: "#000000",
-    width: 120,
-    marginTop: 8,
+    width: 72,
+    marginBottom: 2,
   },
   emptyMessage: {
     fontSize: 9,
@@ -242,22 +314,22 @@ const styles = StyleSheet.create({
 function MaatcmSignatureBlock() {
   return (
     <View style={styles.signatureRow} wrap={false}>
-      <View style={styles.signatureCell}>
+      <View style={[styles.signatureCell, styles.signatureCellDivider]}>
         <Text>
           <Text style={{ fontFamily: "Helvetica-Bold" }}>Employee:</Text> I certify that this a true and
           accurate report of my time and the activities were performed as shown.
         </Text>
         <View style={styles.signatureLineRow}>
-          <Text style={{ fontFamily: "Helvetica-Bold" }}>Employee&apos;s Signature(BLUE INK ONLY):</Text>
+          <Text style={{ fontFamily: "Helvetica-Bold", fontSize: 5.5 }}>Employee&apos;s Signature(BLUE INK ONLY):</Text>
           <View style={styles.signatureLine} />
-          <Text style={{ fontFamily: "Helvetica-Bold" }}>Date:</Text>
+          <Text style={{ fontFamily: "Helvetica-Bold", fontSize: 5.5 }}>Date:</Text>
           <View style={styles.signatureLine} />
         </View>
       </View>
-      <View style={[styles.signatureCell, { borderRightWidth: 0 }]}>
+      <View style={styles.signatureCell}>
         <Text>
           <Text style={{ fontFamily: "Helvetica-Bold" }}>Supervisor:</Text> I certify that the employee&apos;s
-          time records have been examined and that,to the best of my knowledge and belief,this time record is
+          time records have been examined and that, to the best of my knowledge and belief, this time record is
           true and correct and the activities were performed as shown.
         </Text>
         <View style={styles.signatureLineRow}>
@@ -266,6 +338,29 @@ function MaatcmSignatureBlock() {
           <Text style={{ fontFamily: "Helvetica-Bold" }}>Date:</Text>
           <View style={styles.signatureLine} />
         </View>
+      </View>
+    </View>
+  )
+}
+
+function MonthYearBlock({
+  month,
+  year,
+}: {
+  month: string | number
+  year: string | number
+}) {
+  return (
+    <View style={styles.monthYearTable}>
+      <View style={styles.monthYearRow}>
+        <Text style={styles.monthYearCell}>Month</Text>
+        <View style={styles.monthYearSpacer} />
+        <Text style={styles.monthYearCellLast}>Year</Text>
+      </View>
+      <View style={styles.monthYearRowLast}>
+        <Text style={styles.monthYearCell}>{String(month)}</Text>
+        <View style={styles.monthYearSpacer} />
+        <Text style={styles.monthYearCellLast}>{String(year)}</Text>
       </View>
     </View>
   )
@@ -290,88 +385,75 @@ function MaatcmDetailsHeader({
 
   return (
     <View style={styles.detailsRow}>
-      {showMAA ? (
-        <View style={styles.detailsColumn}>
-          <Text style={styles.detailsLabel}>MAA</Text>
-          <View style={styles.aquaBoxRow}>
-            <View style={styles.aquaBox}>
-              <Text style={styles.aquaBoxText}>{formatReportTime(spmptotal)}</Text>
-            </View>
-            <Text style={styles.aquaBoxLabel}>SPMP</Text>
-          </View>
-          <View style={styles.aquaBoxRow}>
-            <View style={styles.aquaBox}>
-              <Text style={styles.aquaBoxText}>{formatReportTime(nonspmptotal)}</Text>
-            </View>
-            <Text style={styles.aquaBoxLabel}>Non-SPMP</Text>
-          </View>
-          <View style={styles.aquaBoxRow}>
-            <View style={styles.aquaBox} />
-            <Text style={styles.aquaBoxLabel}>CBO</Text>
-          </View>
-        </View>
-      ) : (
-        <View style={styles.detailsColumn} />
-      )}
-
       {showTCM ? (
-        <View style={styles.detailsColumn}>
-          <Text style={styles.detailsLabel}>TCM</Text>
-          <View style={styles.aquaBoxRow}>
-            <View style={styles.aquaBox} />
-            <Text style={styles.aquaBoxLabel}>Supervisor</Text>
-          </View>
-          <View style={styles.aquaBoxRow}>
-            <View style={styles.aquaBox} />
-            <Text style={styles.aquaBoxLabel}>Case Manager</Text>
-          </View>
-          <View style={styles.aquaBoxRow}>
-            <View style={styles.aquaBox} />
-            <Text style={styles.aquaBoxLabel}>Support Person to Case Mgr</Text>
+        <View style={styles.detailsSide}>
+          <View style={styles.detailsColumn}>
+            <Text style={styles.detailsLabel}>TCM</Text>
+            <View style={styles.aquaBoxRow}>
+              <View style={styles.aquaBox} />
+              <Text style={styles.aquaBoxLabel}>Supervisor</Text>
+            </View>
+            <View style={styles.aquaBoxRow}>
+              <View style={styles.aquaBox} />
+              <Text style={styles.aquaBoxLabel}>Case Manager</Text>
+            </View>
+            <View style={styles.aquaBoxRow}>
+              <View style={styles.aquaBox} />
+              <Text style={styles.aquaBoxLabel}>Support Person to Case Mgr</Text>
+            </View>
           </View>
         </View>
-      ) : (
-        <View style={styles.detailsColumn} />
-      )}
+      ) : null}
 
-      <View style={styles.monthYearCol}>
-        <View style={{ flexDirection: "row" }}>
-          <Text style={[styles.monthYearBox, { borderBottomWidth: 0 }]}>Month</Text>
-          <Text style={[styles.monthYearBox, { borderLeftWidth: 0, borderBottomWidth: 0 }]} />
+      {showMAA ? (
+        <View style={styles.detailsCenter}>
+          <View style={styles.detailsColumn}>
+            <Text style={styles.detailsLabel}>MAA</Text>
+            <View style={styles.aquaBoxRow}>
+              <View style={styles.aquaBox}>
+                <Text style={styles.aquaBoxText}>{formatReportTime(spmptotal)}</Text>
+              </View>
+              <Text style={styles.aquaBoxLabel}>SPMP</Text>
+            </View>
+            <View style={styles.aquaBoxRow}>
+              <View style={styles.aquaBox}>
+                <Text style={styles.aquaBoxText}>{formatReportTime(nonspmptotal)}</Text>
+              </View>
+              <Text style={styles.aquaBoxLabel}>Non-SPMP</Text>
+            </View>
+            <View style={styles.aquaBoxRow}>
+              <View style={styles.aquaBox} />
+              <Text style={styles.aquaBoxLabel}>CBO</Text>
+            </View>
+          </View>
         </View>
-        <View style={{ flexDirection: "row" }}>
-          <Text style={styles.monthYearBox}>{String(month)}</Text>
-          <Text style={[styles.monthYearBox, { borderLeftWidth: 0 }]} />
-        </View>
-        <View style={{ flexDirection: "row", marginTop: 4 }}>
-          <Text style={[styles.monthYearBox, { borderBottomWidth: 0 }]}>Year</Text>
-          <Text style={[styles.monthYearBox, { borderLeftWidth: 0, borderBottomWidth: 0 }]} />
-        </View>
-        <View style={{ flexDirection: "row" }}>
-          <Text style={styles.monthYearBox}>{String(year)}</Text>
-          <Text style={[styles.monthYearBox, { borderLeftWidth: 0 }]} />
-        </View>
+      ) : null}
+
+      <View style={styles.monthYearAbsolute}>
+        <MonthYearBlock month={month} year={year} />
       </View>
     </View>
   )
 }
 
 function MaatcmEmployeeInfoTable({ employee }: { employee: MaatcmEmployee }) {
+  const W = INFO_COL
+
   return (
     <View style={styles.infoTable}>
       <View style={styles.infoRow}>
-        <Text style={styles.infoHeader}>Employee</Text>
-        <Text style={styles.infoHeader}>Job classification</Text>
-        <Text style={styles.infoHeader}>Employee Number</Text>
-        <Text style={styles.infoHeader}>Claiming Unit</Text>
-        <Text style={[styles.infoHeader, { borderRightWidth: 0 }]}>Claiming Unit Location</Text>
+        <Text style={[styles.infoHeader, { width: W.employee }]}>Employee</Text>
+        <Text style={[styles.infoHeader, { width: W.jobClassification }]}>Job classification</Text>
+        <Text style={[styles.infoHeader, { width: W.employeeNumber }]}>Employee Number</Text>
+        <Text style={[styles.infoHeader, { width: W.claimingUnit }]}>Claiming Unit</Text>
+        <Text style={[styles.infoHeader, { width: W.claimingUnitLocation }]}>Claiming Unit Location</Text>
       </View>
       <View style={styles.infoRow}>
-        <Text style={styles.infoCell}>{employee.employeename}</Text>
-        <Text style={styles.infoCell}>{employee.jobclassification}</Text>
-        <Text style={styles.infoCell}>{employee.employeenumber}</Text>
-        <Text style={styles.infoCell}>{employee.claimingunit}</Text>
-        <Text style={[styles.infoCell, { borderRightWidth: 0 }]}>{employee.claimingunitlocation}</Text>
+        <Text style={[styles.infoCell, { width: W.employee }]}>{employee.employeename}</Text>
+        <Text style={[styles.infoCell, { width: W.jobClassification }]}>{employee.jobclassification}</Text>
+        <Text style={[styles.infoCell, { width: W.employeeNumber }]}>{employee.employeenumber}</Text>
+        <Text style={[styles.infoCell, { width: W.claimingUnit }]}>{employee.claimingunit}</Text>
+        <Text style={[styles.infoCell, { width: W.claimingUnitLocation }]}>{employee.claimingunitlocation}</Text>
       </View>
     </View>
   )
@@ -379,11 +461,7 @@ function MaatcmEmployeeInfoTable({ employee }: { employee: MaatcmEmployee }) {
 
 function MaatcmMonthlyGrid({ employee }: { employee: MaatcmEmployee }) {
   const days = employee.noofdaysinmonth
-  const codeWidth = 28
-  const nameWidth = 110
-  const dayWidth = Math.max(22, Math.floor((TABLE_WIDTH - codeWidth - nameWidth - 56) / days))
-  const totalWidth = 28
-  const percentWidth = 28
+  const { codeWidth, nameWidth, dayWidth, totalWidth, percentWidth } = getMaatcmGridLayout(days)
 
   return (
     <View style={{ width: TABLE_WIDTH }}>
@@ -391,7 +469,7 @@ function MaatcmMonthlyGrid({ employee }: { employee: MaatcmEmployee }) {
         <Text style={[styles.gridHeader, { width: codeWidth }]}>Code</Text>
         <Text style={[styles.gridHeader, { width: nameWidth }]}>Day of the Month</Text>
         {Array.from({ length: days }).map((_, index) => (
-          <Text key={`day-h-${index}`} style={[styles.gridHeader, { width: dayWidth }]}>
+          <Text key={`day-h-${index}`} style={[styles.gridHeaderDay, { width: dayWidth }]}>
             {index + 1}
           </Text>
         ))}
@@ -400,13 +478,13 @@ function MaatcmMonthlyGrid({ employee }: { employee: MaatcmEmployee }) {
       </View>
 
       <View style={styles.gridRow}>
-        <Text style={[styles.aquaSpacer, { width: codeWidth }]} />
-        <Text style={[styles.aquaSpacer, { width: nameWidth }]} />
+        <Text style={[styles.gridSpacerPlain, { width: codeWidth }]} />
+        <Text style={[styles.gridSpacerPlain, { width: nameWidth }]} />
         {Array.from({ length: days }).map((_, index) => (
           <Text key={`aqua-${index}`} style={[styles.aquaSpacer, { width: dayWidth }]} />
         ))}
-        <Text style={[styles.aquaSpacer, { width: totalWidth }]} />
-        <Text style={[styles.aquaSpacer, { width: percentWidth }]} />
+        <Text style={[styles.gridSpacerPlain, { width: totalWidth }]} />
+        <Text style={[styles.gridSpacerPlain, { width: percentWidth }]} />
       </View>
 
       {employee.activities.map((activity, index) => (

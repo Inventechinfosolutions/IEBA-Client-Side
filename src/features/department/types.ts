@@ -121,7 +121,7 @@ export const DEPARTMENT_SETTINGS_ROWS: readonly {
   { key: "removeDescriptionActivityNoteMultiCode", label: "Remove Description/Activity/Note MultiCode" },
   {
     key: "allowActivationStartDateAndEndDate",
-    label: "Allow Activation start date and end Date",
+    label: "Allow Multicode start date and end Date",
   },
   { key: "moveSaveSubmitToTop", label: "Move Save and Submit Button to Top" },
 ] as const

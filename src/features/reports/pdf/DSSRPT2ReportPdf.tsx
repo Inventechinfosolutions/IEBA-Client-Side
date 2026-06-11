@@ -1,4 +1,5 @@
 import { Document, Page, StyleSheet, Text, View, pdf } from "@react-pdf/renderer"
+import type { ReactNode } from "react"
 
 import { REPORT_PDF_DEFAULT_LOGOS } from "./reportPdfAssets"
 
@@ -21,6 +22,10 @@ import {
 } from "./reportPdf"
 
 const TABLE_WIDTH = 544
+const TABLE_HEADER_TOP = 78
+const TABLE_HEADER_HEIGHT = 24
+/** Clears county header + repeating column header on pages 2+ */
+const CONTENT_TOP = TABLE_HEADER_TOP + TABLE_HEADER_HEIGHT + 8
 
 const W = {
   activityCode: 82,
@@ -39,8 +44,17 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   reportMeta: {
-    marginBottom: 10,
+    marginBottom: 6,
     fontSize: 8,
+  },
+  pageOneIntro: {
+    marginBottom: 4,
+  },
+  tableHeaderFixed: {
+    position: "absolute",
+    top: TABLE_HEADER_TOP,
+    left: 20,
+    width: TABLE_WIDTH,
   },
   metaLine: {
     marginBottom: 2,
@@ -160,6 +174,25 @@ function TableHeaderRow() {
   )
 }
 
+function PageOneIntro({ children }: { children: ReactNode }) {
+  return (
+    <View
+      style={styles.pageOneIntro}
+      render={({ pageNumber }) => (pageNumber === 1 ? <View>{children}</View> : null)}
+    />
+  )
+}
+
+function RepeatingTableHeader() {
+  return (
+    <View
+      style={styles.tableHeaderFixed}
+      fixed
+      render={({ pageNumber }) => (pageNumber > 1 ? <TableHeaderRow /> : null)}
+    />
+  )
+}
+
 function EmployeeSection({ employee }: { employee: Dssrpt2GroupedEmployee }) {
   const sortedPrograms = [...employee.programs].sort(sortDssrpt2ByActivityCode)
 
@@ -210,7 +243,10 @@ function DSSRPT2ReportDocument({
   meta: ResolvedReportPdfMeta
   footerVariant: ReportPdfFooterVariant
 }) {
-  const pagePadding = resolvePagePadding(footerVariant)
+  const pagePadding = {
+    ...resolvePagePadding(footerVariant),
+    paddingTop: CONTENT_TOP,
+  }
 
   return (
     <Document>
@@ -222,19 +258,22 @@ function DSSRPT2ReportDocument({
           rightLogoSrc={meta.rightLogoSrc}
         />
         <ReportPdfFooter variant={footerVariant} printedOn={printedOn} />
+        <RepeatingTableHeader />
         <View style={styles.content}>
-          <ReportMeta
-            reportCode={reportDetails.reportCode}
-            runDate={reportDetails.runDate}
-            periodStarting={periodStarting}
-            periodEnding={periodEnding}
-          />
+          <PageOneIntro>
+            <ReportMeta
+              reportCode={reportDetails.reportCode}
+              runDate={reportDetails.runDate}
+              periodStarting={periodStarting}
+              periodEnding={periodEnding}
+            />
+          </PageOneIntro>
+          <View render={({ pageNumber }) => (pageNumber === 1 ? <TableHeaderRow /> : null)} />
 
           {employees.length === 0 ? (
             <Text style={styles.emptyMessage}>No data available for the selected period.</Text>
           ) : (
             <View style={styles.table}>
-              <TableHeaderRow />
               {employees.map((employee, index) => (
                 <EmployeeSection key={`${employee.employeeId}-${employee.employeename}-${index}`} employee={employee} />
               ))}

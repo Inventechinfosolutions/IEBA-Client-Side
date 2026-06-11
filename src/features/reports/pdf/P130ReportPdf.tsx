@@ -1,8 +1,7 @@
 import { Document, Page, StyleSheet, Text, View, pdf } from "@react-pdf/renderer"
 import type { ReactNode } from "react"
 
-import defaultCountyLogo from "@/assets/county-avatar.png"
-import pkiLogo from "@/assets/ieba-logo.png"
+import { REPORT_PDF_DEFAULT_LOGOS } from "./reportPdfAssets"
 
 import {
   ReportPdfFooter,
@@ -24,6 +23,10 @@ import {
 } from "./reportPdf"
 
 const TABLE_WIDTH = 544
+const TABLE_HEADER_TOP = 78
+const TABLE_HEADER_HEIGHT = 22
+/** Clears county header + repeating column header on pages 2+ */
+const CONTENT_TOP = TABLE_HEADER_TOP + TABLE_HEADER_HEIGHT + 8
 
 /** Normalized from template: 25% / 13% / 50% / 15% / 12% scaled to 544pt */
 const W = {
@@ -65,6 +68,15 @@ const styles = StyleSheet.create({
     fontFamily: "Helvetica-Bold",
     fontSize: 7,
   },
+  pageOneIntro: {
+    marginBottom: 4,
+  },
+  tableHeaderFixed: {
+    position: "absolute",
+    top: TABLE_HEADER_TOP,
+    left: 20,
+    width: TABLE_WIDTH,
+  },
   dates: { marginBottom: 10 },
   dateRow: {
     flexDirection: "row",
@@ -74,7 +86,7 @@ const styles = StyleSheet.create({
   },
   dateLabel: { fontFamily: "Helvetica-Bold", fontSize: 7 },
   dateValue: { fontFamily: "Helvetica-Bold", fontSize: 7 },
-  table: { width: TABLE_WIDTH },
+  table: { width: TABLE_WIDTH, marginTop: 4 },
   row: {
     flexDirection: "row",
     width: TABLE_WIDTH,
@@ -187,6 +199,25 @@ function TableHeaderRow() {
         </View>
       ))}
     </View>
+  )
+}
+
+function PageOneIntro({ children }: { children: ReactNode }) {
+  return (
+    <View
+      style={styles.pageOneIntro}
+      render={({ pageNumber }) => (pageNumber === 1 ? <View>{children}</View> : null)}
+    />
+  )
+}
+
+function RepeatingTableHeader() {
+  return (
+    <View
+      style={styles.tableHeaderFixed}
+      fixed
+      render={({ pageNumber }) => (pageNumber > 1 ? <TableHeaderRow /> : null)}
+    />
   )
 }
 
@@ -339,7 +370,10 @@ function P130ReportDocument({
   footerVariant: ReportPdfFooterVariant
   printedOn: string
 }) {
-  const pagePadding = resolvePagePadding(footerVariant)
+  const pagePadding = {
+    ...resolvePagePadding(footerVariant),
+    paddingTop: CONTENT_TOP,
+  }
   const grandTotalHours = getP130GrandTotalHours(programs)
 
   return (
@@ -352,14 +386,17 @@ function P130ReportDocument({
           rightLogoSrc={meta.rightLogoSrc}
         />
         <ReportPdfFooter variant={footerVariant} printedOn={printedOn} />
+        <RepeatingTableHeader />
         <View style={styles.content}>
-          <ReportMeta programCodes={programCodes} startDate={startDate} endDate={endDate} />
+          <PageOneIntro>
+            <ReportMeta programCodes={programCodes} startDate={startDate} endDate={endDate} />
+          </PageOneIntro>
+          <View render={({ pageNumber }) => (pageNumber === 1 ? <TableHeaderRow /> : null)} />
 
           {programs.length === 0 ? (
             <Text style={styles.emptyMessage}>No data available for the selected period.</Text>
           ) : (
             <View style={styles.table}>
-              <TableHeaderRow />
               {programs.map((program, index) => (
                 <ProgramSection key={`${program.programcode}-${program.program}-${index}`} program={program} />
               ))}
@@ -376,7 +413,7 @@ export async function generateP130ReportPdf(props: P130ReportPdfProps): Promise<
   const printedOn = props.printedOn ?? formatPrintedOnLabel()
   const meta = await buildResolvedPdfMeta(
     { ...props.meta, reportCode: props.meta?.reportCode ?? "P130" },
-    { countyLogo: defaultCountyLogo, rightLogo: pkiLogo },
+    REPORT_PDF_DEFAULT_LOGOS,
   )
   const footerVariant = resolveFooterVariant(meta.reportCode)
 

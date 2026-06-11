@@ -125,10 +125,20 @@ export function TransferPanel({
                           {item.code ? (
                             <>
                               <span className="text-[#6C5DD3] font-bold">({item.code})</span>
-                              <span className={isSelected ? "text-[#6C5DD3]" : "text-[#111827]"}> - {toTitleCase(item.name)}</span>
+                              {item.masterCodeType ? (
+                                <>
+                                  <span className="font-bold">-{item.masterCodeType.trim()}-</span>
+                                  <span className={isSelected ? "text-[#6C5DD3]" : "text-[#111827]"}> {toTitleCase(item.name)}</span>
+                                </>
+                              ) : (
+                                <span className={isSelected ? "text-[#6C5DD3]" : "text-[#111827]"}> - {toTitleCase(item.name)}</span>
+                              )}
                             </>
                           ) : (
                             <span className={isSelected ? "text-[#6C5DD3]" : "text-[#374151]"}>
+                              {item.masterCodeType ? (
+                                <span className="font-bold">-{item.masterCodeType.trim()}- </span>
+                              ) : null}
                               {toTitleCase(item.name)}
                             </span>
                           )}

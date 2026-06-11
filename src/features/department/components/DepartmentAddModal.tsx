@@ -249,6 +249,13 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
         const toastMode = opts?.toastMode ?? "createOrUpdate"
 
         const values = getValues()
+        if (values.settings.allowMultiCodes) {
+            const selectedCodes = (values.settings.multiCodes || "").split(",").filter(Boolean)
+            if (selectedCodes.length === 0) {
+                toast.error("Please select at least one multi-code when Allow MultiCodes is enabled.")
+                return null
+            }
+        }
         if (departmentId) {
             try {
                 await updateDeptMutation.mutateAsync({ id: departmentId, values })
@@ -323,6 +330,14 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
     const onSubmit = (_data: DepartmentUpsertValues) => {
         // If we're on the settings or report settings tab and submitting the main form
         if (activeTab === "settings" || activeTab === "reportSettings") {
+            const values = getValues()
+            if (values.settings.allowMultiCodes) {
+                const selectedCodes = (values.settings.multiCodes || "").split(",").filter(Boolean)
+                if (selectedCodes.length === 0) {
+                    toast.error("Please select at least one multi-code when Allow MultiCodes is enabled.")
+                    return
+                }
+            }
             if (id) {
                 void handleSave()
             } else {
@@ -415,6 +430,14 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
         if (!isValid) {
             setActiveTab("details")
             return
+        }
+        const values = getValues()
+        if (values.settings.allowMultiCodes) {
+            const selectedCodes = (values.settings.multiCodes || "").split(",").filter(Boolean)
+            if (selectedCodes.length === 0) {
+                toast.error("Please select at least one multi-code when Allow MultiCodes is enabled.")
+                return
+            }
         }
         if (id) {
             void handleSave()
