@@ -1647,7 +1647,7 @@ function parseAc741Programs(raw: unknown): Ac741Program[] {
     const row = asRecord(item)
     return {
       program: String(row.program ?? row.programcode ?? row.programCode ?? ""),
-      subactivity: String(row.subactivity ?? row.subActivity ?? row.activity ?? ""),
+      subactivity: String(row.subactivity ?? row.subActivity ?? ""),
       activitytime: toNumber((row.activitytime ?? row.activityTime ?? 0) as string | number),
     }
   })
