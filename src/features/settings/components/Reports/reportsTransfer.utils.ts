@@ -1,9 +1,28 @@
-import type { MasterCodeTransferRow } from "@/features/settings/components/Reports/reportsTransfer.api.types"
+import type {
+  MasterCodeActivityTransferItem,
+  MasterCodeTransferRow,
+} from "@/features/settings/components/Reports/reportsTransfer.api.types"
 
 import type { ReportsTransferItem } from "./reportsTransfer.types"
 
 export function masterCodeRowToTransferItem(row: MasterCodeTransferRow): ReportsTransferItem {
   return { id: String(row.id), name: row.name }
+}
+
+export function activityItemsToTransferItems(
+  items: MasterCodeActivityTransferItem[],
+): ReportsTransferItem[] {
+  const mapped: ReportsTransferItem[] = []
+  for (const act of items) {
+    const code = String(act.code ?? "").trim()
+    if (!code) continue
+    mapped.push({
+      id: code,
+      name: String(act.displayLabel ?? "").trim() || act.name || code,
+      code,
+    })
+  }
+  return mapped.sort((a, b) => a.name.localeCompare(b.name))
 }
 
 export function flattenActivityBucketRows(rows: MasterCodeTransferRow[]): ReportsTransferItem[] {

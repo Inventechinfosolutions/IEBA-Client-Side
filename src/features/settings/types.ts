@@ -63,11 +63,15 @@ export type SettingsResponse = SettingsModel
 
 export type ReportsSaveScope = "masterCodes" | "activities"
 
+export type ReportsBucketMode = "include" | "exclude"
+
 export type UpdateSettingsInput = {
   values: SettingsFormValues
   submitterSection?: SettingsFormSaveSection
   /** Which Reports row Save was clicked (master codes vs activities). */
   reportsSaveScope?: ReportsSaveScope
+  /** Bucket API mode to refetch after save (assign → include, unassign activity → exclude). */
+  reportsBucketMode?: ReportsBucketMode
 }
 
 export type SettingsFormDerivedFiscalYear = {
@@ -83,7 +87,11 @@ export type SettingsFormInnerProps = {
   isSaving: boolean
   onSubmitSettings: (
     values: SettingsFormValues,
-    meta?: { submitterSection?: SettingsFormSaveSection; reportsSaveScope?: ReportsSaveScope },
+    meta?: {
+      submitterSection?: SettingsFormSaveSection
+      reportsSaveScope?: ReportsSaveScope
+      reportsBucketMode?: ReportsBucketMode
+    },
   ) => void
 }
 

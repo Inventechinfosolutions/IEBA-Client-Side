@@ -35,6 +35,22 @@ export const settingsKeys = {
         selectedCodesKey,
         mode,
       ] as const,
+    transferFlags: (
+      masterCodeMode: string,
+      selectedIdsKey: string,
+      activityMode: string,
+      selectedCodesKey: string,
+      excludedCodesKey: string,
+    ) =>
+      [
+        ...settingsKeys.reports.all(),
+        "transfer-flags",
+        masterCodeMode,
+        selectedIdsKey,
+        activityMode,
+        selectedCodesKey,
+        excludedCodesKey,
+      ] as const,
     detail: () => [...settingsKeys.reports.all(), "detail"] as const,
   },
 

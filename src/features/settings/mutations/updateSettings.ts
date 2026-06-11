@@ -8,8 +8,7 @@ import { updatePayrollSettings } from "../payroll"
 import { api } from "@/lib/api"
 import { buildReportMasterCodeSavePayload } from "@/features/reports/lib/reportMasterCodeData.utils"
 import { mapRawReportsToReportOptions } from "@/features/settings/lib/reportOptions.utils"
-import { fetchReportActivityBuckets } from "@/features/settings/queries/getReportActivityBuckets"
-import { fetchReportMasterCodeBuckets } from "@/features/settings/queries/getReportMasterCodeBuckets"
+import { fetchReportTransferFlags } from "@/features/settings/queries/getReportTransferFlags"
 import {
   createCountyLocation,
   deleteCountyLocation,
@@ -149,9 +148,11 @@ async function updateSettings(
       throw new Error("Please select department and report before saving")
     }
 
-    const masterCodeExclusionMode = "include" as const
-    const activityExclusionMode = "include" as const
-    const inclusionType = selectedReport.type === "included" ? "included" : "excluded"
+    const masterCodeExclusionMode =
+      input.values.reports?.masterCodeExclusionMode === "include" ? "include" : "exclude"
+    const activityExclusionMode =
+      input.values.reports?.activityExclusionMode === "include" ? "include" : "exclude"
+    const inclusionType = masterCodeExclusionMode === "include" ? "included" : "excluded"
     const saveScope = input.reportsSaveScope
 
     const assignedMasterCodeIds = input.values.reports?.includedMasterCodeIds ?? []
@@ -215,77 +216,57 @@ async function updateSettings(
       includedActivityCodes: updatedReportOption.includedMasterCodeData?.activityCodes ?? [],
     }
 
-    const refreshedAssignedMcIds = reportsAfterSave.includedMasterCodeIds
+    const isMcInclude = masterCodeExclusionMode === "include"
+    const refreshedMcPickerIds = (
+      isMcInclude ? reportsAfterSave.includedMasterCodeIds : reportsAfterSave.excludedMasterCodeIds
+    )
       .map((id) => Number(id))
       .filter((n) => Number.isFinite(n) && n >= 1)
-    const refreshedUnassignedMcIds = reportsAfterSave.excludedMasterCodeIds
-      .map((id) => Number(id))
-      .filter((n) => Number.isFinite(n) && n >= 1)
 
-    await queryClient.fetchQuery({
-      queryKey: settingsKeys.reports.masterCodeBuckets(
-        refreshedAssignedMcIds
-          .slice()
-          .sort((a, b) => a - b)
-          .join(","),
-        "include",
-      ),
-      queryFn: () => fetchReportMasterCodeBuckets(refreshedAssignedMcIds, "include"),
-    })
-
-    await queryClient.fetchQuery({
-      queryKey: settingsKeys.reports.masterCodeBuckets(
-        refreshedUnassignedMcIds
-          .slice()
-          .sort((a, b) => a - b)
-          .join(","),
-        "exclude",
-      ),
-      queryFn: () => fetchReportMasterCodeBuckets(refreshedUnassignedMcIds, "exclude"),
-    })
-
+    const activityBucketMode = input.reportsBucketMode ?? activityExclusionMode
     const refreshedAssignedActCodes = reportsAfterSave.includedActivityCodes
     const refreshedUnassignedActCodes = reportsAfterSave.excludedActivityCodes
+    const refreshedActivityPickerCodes =
+      activityBucketMode === "include"
+        ? refreshedAssignedActCodes
+        : refreshedUnassignedActCodes
+    const refreshedActivityComplementCodes =
+      activityBucketMode === "include"
+        ? refreshedUnassignedActCodes
+        : refreshedAssignedActCodes
 
-    if (refreshedAssignedMcIds.length > 0) {
-      await queryClient.fetchQuery({
-        queryKey: settingsKeys.reports.activityBuckets(
-          refreshedAssignedMcIds
-            .slice()
-            .sort((a, b) => a - b)
-            .join(","),
-          [...new Set(refreshedAssignedActCodes.map((c) => c.trim()).filter(Boolean))]
-            .sort()
-            .join(","),
-          "include",
-        ),
-        queryFn: () =>
-          fetchReportActivityBuckets(
-            refreshedAssignedMcIds,
-            refreshedAssignedActCodes,
-            "include",
-          ),
-      })
+    const mcIdsKey = refreshedMcPickerIds
+      .slice()
+      .sort((a, b) => a - b)
+      .join(",")
+    const selectedCodesKey = [
+      ...new Set(refreshedActivityPickerCodes.map((c) => c.trim()).filter(Boolean)),
+    ]
+      .sort()
+      .join(",")
+    const excludedCodesKey = [
+      ...new Set(refreshedActivityComplementCodes.map((c) => c.trim()).filter(Boolean)),
+    ]
+      .sort()
+      .join(",")
 
-      await queryClient.fetchQuery({
-        queryKey: settingsKeys.reports.activityBuckets(
-          refreshedAssignedMcIds
-            .slice()
-            .sort((a, b) => a - b)
-            .join(","),
-          [...new Set(refreshedUnassignedActCodes.map((c) => c.trim()).filter(Boolean))]
-            .sort()
-            .join(","),
-          "exclude",
-        ),
-        queryFn: () =>
-          fetchReportActivityBuckets(
-            refreshedAssignedMcIds,
-            refreshedUnassignedActCodes,
-            "exclude",
-          ),
-      })
-    }
+    await queryClient.fetchQuery({
+      queryKey: settingsKeys.reports.transferFlags(
+        masterCodeExclusionMode,
+        mcIdsKey,
+        activityBucketMode,
+        selectedCodesKey,
+        excludedCodesKey,
+      ),
+      queryFn: () =>
+        fetchReportTransferFlags({
+          masterCodeMode: masterCodeExclusionMode,
+          selectedMasterCodeIds: refreshedMcPickerIds,
+          activityMode: activityBucketMode,
+          selectedActivityCodes: refreshedActivityPickerCodes,
+          excludedActivityCodes: refreshedActivityComplementCodes,
+        }),
+    })
   }
 
   if (input.submitterSection === SettingsFormSaveSection.Login) {

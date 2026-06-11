@@ -3,54 +3,34 @@ import { useFormContext } from "react-hook-form"
 
 import { TransferListMoveButton } from "@/components/ui/transfer-list-move-button"
 import type { SettingsFormValues } from "@/features/settings/types"
-import { useReportMasterCodeBuckets } from "@/features/settings/queries/getReportMasterCodeBuckets"
 import { ReportsTransferPanel } from "@/features/settings/components/Reports/ReportsTransferPanel"
+import type { ReportsTransferItem } from "@/features/settings/components/Reports/reportsTransfer.types"
 import {
   applyTransferBucketMove,
   filterReportsTransferItems,
-  masterCodeRowToTransferItem,
 } from "@/features/settings/components/Reports/reportsTransfer.utils"
 
 type MasterCodeTransferProps = {
-  reportKey: string
+  unassignedItems: ReportsTransferItem[]
+  assignedItems: ReportsTransferItem[]
+  isLoading?: boolean
   isSaving?: boolean
-  enabled?: boolean
+  disabled?: boolean
   onSave: () => void
 }
 
 export function MasterCodeTransfer({
-  reportKey,
+  unassignedItems,
+  assignedItems,
+  isLoading = false,
   isSaving = false,
-  enabled = true,
+  disabled = false,
   onSave,
 }: MasterCodeTransferProps) {
   const { watch, setValue } = useFormContext<SettingsFormValues>()
 
   const assignedIds = watch("reports.includedMasterCodeIds") ?? []
   const unassignedIds = watch("reports.excludedMasterCodeIds") ?? []
-  const queryEnabled = enabled && Boolean(reportKey)
-
-  const { data: assignedBuckets, isPending: isAssignedPending, isFetching: isAssignedFetching } =
-    useReportMasterCodeBuckets(assignedIds, "include", queryEnabled)
-
-  const {
-    data: unassignedBuckets,
-    isPending: isUnassignedPending,
-    isFetching: isUnassignedFetching,
-  } = useReportMasterCodeBuckets(unassignedIds, "exclude", queryEnabled)
-
-  const isLoading =
-    isAssignedPending || isAssignedFetching || isUnassignedPending || isUnassignedFetching
-
-  const unassignedItems = useMemo(
-    () => (unassignedBuckets?.excluded ?? []).map(masterCodeRowToTransferItem),
-    [unassignedBuckets?.excluded],
-  )
-
-  const assignedItems = useMemo(
-    () => (assignedBuckets?.included ?? []).map(masterCodeRowToTransferItem),
-    [assignedBuckets?.included],
-  )
 
   const [searchUnassigned, setSearchUnassigned] = useState("")
   const [searchAssigned, setSearchAssigned] = useState("")
@@ -67,7 +47,7 @@ export function MasterCodeTransfer({
     [assignedItems, searchAssigned],
   )
 
-  const disabled = !reportKey || isSaving || isLoading
+  const isDisabled = disabled || isSaving || isLoading
 
   const syncFormAndSave = (nextAssignedIds: string[], nextUnassignedIds: string[]) => {
     setValue("reports.includedMasterCodeIds", nextAssignedIds, { shouldDirty: true })
@@ -82,14 +62,14 @@ export function MasterCodeTransfer({
   }
 
   const moveToAssigned = (ids: string[]) => {
-    if (ids.length === 0 || disabled) return
+    if (ids.length === 0 || isDisabled) return
     const next = applyTransferBucketMove(assignedIds, unassignedIds, ids, "toAssigned")
     setToggledUnassigned([])
     syncFormAndSave(next.assignedIds, next.unassignedIds)
   }
 
   const moveToUnassigned = (ids: string[]) => {
-    if (ids.length === 0 || disabled) return
+    if (ids.length === 0 || isDisabled) return
     const next = applyTransferBucketMove(assignedIds, unassignedIds, ids, "toUnassigned")
     setToggledAssigned([])
     syncFormAndSave(next.assignedIds, next.unassignedIds)
@@ -120,19 +100,19 @@ export function MasterCodeTransfer({
           onSearchChange={setSearchUnassigned}
           isLoading={isLoading}
           loadingLabel="Loading master codes…"
-          disabled={disabled}
+          disabled={isDisabled}
         />
 
         <div className="flex flex-col gap-3 pt-10">
           <TransferListMoveButton
             direction="forward"
-            disabled={disabled || toggledUnassigned.length === 0}
+            disabled={isDisabled || toggledUnassigned.length === 0}
             aria-label="Assign selected master codes and save"
             onClick={() => moveToAssigned(toggledUnassigned)}
           />
           <TransferListMoveButton
             direction="back"
-            disabled={disabled || toggledAssigned.length === 0}
+            disabled={isDisabled || toggledAssigned.length === 0}
             aria-label="Unassign selected master codes and save"
             onClick={() => moveToUnassigned(toggledAssigned)}
           />
@@ -148,7 +128,7 @@ export function MasterCodeTransfer({
           onSearchChange={setSearchAssigned}
           isLoading={isLoading}
           loadingLabel="Loading master codes…"
-          disabled={disabled}
+          disabled={isDisabled}
         />
       </div>
     </div>

@@ -19,3 +19,13 @@ export type MasterCodeTransferBuckets = {
   excluded: MasterCodeTransferRow[]
   included: MasterCodeTransferRow[]
 }
+
+export type ActivityTransferBuckets = {
+  excluded: MasterCodeActivityTransferItem[]
+  included: MasterCodeActivityTransferItem[]
+}
+
+export type ReportTransferFlags = {
+  masterCodeFlag: MasterCodeTransferBuckets
+  activityFlag: ActivityTransferBuckets
+}
