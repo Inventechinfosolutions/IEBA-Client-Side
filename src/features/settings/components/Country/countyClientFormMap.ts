@@ -1,4 +1,7 @@
-import type { CountyClientDetailModel } from "@/features/settings/queries/getCountyClient"
+import {
+  resolveCountyClientLogoSrc,
+  type CountyClientDetailModel,
+} from "@/features/settings/queries/getCountyClient"
 import type { CountySettingsModel } from "@/features/settings/components/Country/types"
 
 /** Maps tenant client API payload to the county slice of `SettingsFormValues`. */
@@ -21,8 +24,7 @@ export function mapCountyClientDetailToCountySettings(
   const start = client.startTime ?? "00:00"
 
   return {
-    // Prefer document content (base64/data URL), then document URL, then legacy `logo`.
-    logoDataUrl: client.document?.content ?? client.document?.url ?? client.logo ?? null,
+    logoDataUrl: resolveCountyClientLogoSrc(client) ?? null,
     countyName: client.name ?? "",
     welcomeMessage: client.message ?? "",
     isTimeRangeEnabled: Boolean(client.timeRule),

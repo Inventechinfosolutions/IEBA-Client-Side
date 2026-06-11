@@ -223,6 +223,20 @@ async function fetchClientForCurrentCounty(countyName?: string, namespace?: stri
   throw new Error(`Client not found for county "${name}"`)
 }
 
+export function resolveCountyClientLogoSrc(
+  client: CountyClientDetailModel | undefined | null,
+): string | undefined {
+  if (!client) return undefined
+
+  const src =
+    client.document?.content?.trim() ||
+    client.document?.url?.trim() ||
+    client.logo?.trim() ||
+    ""
+
+  return src || undefined
+}
+
 /** Single client detail (includes `locations`). Use before save/delete diffing so the list matches the DB. */
 export async function fetchCountyClientById(clientId: number): Promise<CountyClientDetailModel> {
   const detailRes = await api.get<ApiResponseDto<CountyClientDetailModel>>(`/client/${clientId}`)
@@ -248,9 +262,13 @@ export async function fetchCountyClientById(clientId: number): Promise<CountyCli
     }
   }
 
-  if (typeof client.logo === "string" && client.logo.trim()) {
-    client.logo = normalizePossibleLogoToSrc(client.logo, client.document?.mimeType)
+  const logoSrc = resolveCountyClientLogoSrc(client)
+  if (logoSrc) {
+    client.logo = logoSrc.startsWith("blob:") || logoSrc.startsWith("data:")
+      ? logoSrc
+      : normalizePossibleLogoToSrc(logoSrc, client.document?.mimeType)
   }
+
   return client
 }
 

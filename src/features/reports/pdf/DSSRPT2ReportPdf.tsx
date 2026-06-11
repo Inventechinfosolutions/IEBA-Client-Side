@@ -1,7 +1,6 @@
 import { Document, Page, StyleSheet, Text, View, pdf } from "@react-pdf/renderer"
 
-import defaultCountyLogo from "@/assets/county-avatar.png"
-import pkiLogo from "@/assets/ieba-logo.png"
+import { REPORT_PDF_DEFAULT_LOGOS } from "./reportPdfAssets"
 
 import {
   ReportPdfFooter,
@@ -251,7 +250,7 @@ export async function generateDSSRPT2ReportPdf(props: DSSRPT2ReportPdfProps): Pr
   const printedOn = props.printedOn ?? formatPrintedOnLabel()
   const meta = await buildResolvedPdfMeta(
     { ...props.meta, reportCode: props.meta?.reportCode ?? "DSSRPT2" },
-    { countyLogo: defaultCountyLogo, rightLogo: pkiLogo },
+    REPORT_PDF_DEFAULT_LOGOS,
   )
   const footerVariant = resolveFooterVariant(meta.reportCode)
 
