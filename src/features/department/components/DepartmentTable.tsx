@@ -555,14 +555,20 @@ export function DepartmentTable({
                   </TableCell>
                   <TableCell className="border-r border-[#D1D5DB] px-[8px] py-[6px] text-center">
                     <div className="flex flex-col items-center gap-0 leading-tight">
-                      {dept.settings.multiCodes ? (
+                      {dept.settings.multiCodes && dept.settings.multiCodes.split(",").filter(Boolean).length > 0 ? (
                         dept.settings.multiCodes.split(",").filter(Boolean).map((code, idx) => (
                           <span key={idx} className="text-[13px] font-medium text-[#111827]">
                             {code}
                           </span>
                         ))
                       ) : (
-                        <span className="text-[13px] font-medium text-[#111827]">-</span>
+                        <div className="flex justify-center">
+                          <img 
+                            src={statusCrossImg} 
+                            alt="Cross" 
+                            className="h-[14px] w-[14px]" 
+                          />
+                        </div>
                       )}
                     </div>
                   </TableCell>

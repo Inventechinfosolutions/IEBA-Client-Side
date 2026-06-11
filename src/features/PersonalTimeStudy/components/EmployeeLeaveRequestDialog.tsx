@@ -783,6 +783,31 @@ export function EmployeeLeaveRequestDialog({
     return true
   }
 
+  const validateDates = () => {
+    const entries = form.getValues("entries")
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    for (let i = 0; i < entries.length; i++) {
+      const entry = entries[i]
+      if (entry.multicodeChild) continue
+      if (entry.date) {
+        const dateStr = entry.date.split("T")[0]
+        if (!dateStr) continue
+        const [year, month, day] = dateStr.split("-").map(Number)
+        const selectedDate = new Date(year, month - 1, day)
+        const isTodayOrFuture = selectedDate >= today
+        const isWithinCurrentMonth =
+          selectedDate.getMonth() === today.getMonth() &&
+          selectedDate.getFullYear() === today.getFullYear()
+        if (!isTodayOrFuture || !isWithinCurrentMonth) {
+          toast.error("Please select today's date or a future date within the current month")
+          return false
+        }
+      }
+    }
+    return true
+  }
+
   const handleSave = async () => {
     if (validateManualExceeds()) {
       toast.error("Total minutes cannot exceed the maximum allowed duration.")
@@ -791,6 +816,10 @@ export function EmployeeLeaveRequestDialog({
 
     if (!validateRequiredTimes()) {
       toast.error("Start time and End time are required.")
+      return
+    }
+
+    if (!validateDates()) {
       return
     }
 
@@ -822,6 +851,10 @@ export function EmployeeLeaveRequestDialog({
 
     if (!validateRequiredTimes()) {
       toast.error("Start time and End time are required.")
+      return
+    }
+
+    if (!validateDates()) {
       return
     }
 
@@ -935,9 +968,24 @@ export function EmployeeLeaveRequestDialog({
                                 ref={f.ref}
                                 onBlur={f.onBlur}
                                 onChange={(e) => {
-                                  f.onChange(e)
                                   if (e.target.value) {
-                                    fetchConfigForDate(e.target.value)
+                                    const today = new Date()
+                                    today.setHours(0, 0, 0, 0)
+                                    const [year, month, day] = e.target.value.split("-").map(Number)
+                                    const selectedDate = new Date(year, month - 1, day)
+                                    const isTodayOrFuture = selectedDate >= today
+                                    const isWithinCurrentMonth =
+                                      selectedDate.getMonth() === today.getMonth() &&
+                                      selectedDate.getFullYear() === today.getFullYear()
+                                    if (!isTodayOrFuture || !isWithinCurrentMonth) {
+                                      toast.error("Please select today's date or a future date within the current month")
+                                      f.onChange("")
+                                    } else {
+                                      f.onChange(e)
+                                      fetchConfigForDate(e.target.value)
+                                    }
+                                  } else {
+                                    f.onChange(e)
                                   }
                                   scheduleSyncMulticodeChildRowsFromParent(parentIndex)
                                 }}
