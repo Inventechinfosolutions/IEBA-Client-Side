@@ -160,7 +160,7 @@ export const DEPARTMENT_SETTING_LABELS: Record<string, string> = {
   removeDescriptionActivityNote: "Remove Description/Activity/Note",
   removeDescriptionActivityNoteAnchor: "Remove Description/Activity/Note Anchor",
   removeDescriptionActivityNoteMultiCode: "Remove Description/Activity/Note MultiCode",
-  allowActivationStartDateAndEndDate: "Allow Activation Start/End Date",
+  allowActivationStartDateAndEndDate: "Allow Multicode Start/End Date",
   moveSaveSubmitToTop: "Move Save and Submit to Top",
 }
 
