@@ -1,9 +1,10 @@
 import { useCallback, useRef } from "react"
 
 import { SettingsFormSaveSection } from "@/features/settings/enums/setting.enum"
+import type { ReportsTransferDirection } from "@/features/settings/components/Reports/reportsTransfer.types"
 import type { ReportsBucketMode, ReportsSaveScope } from "@/features/settings/types"
 
-export type ReportsTransferDirection = "assign" | "unassign"
+export type { ReportsTransferDirection }
 
 export function useReportsTransferSave() {
   const masterCodesBtnRef = useRef<HTMLButtonElement>(null)
@@ -23,12 +24,17 @@ export function useReportsTransferSave() {
     [],
   )
 
-  /** Master codes always refetch with mode=include. */
-  const saveMasterCodes = useCallback(() => {
-    clickSave(masterCodesBtnRef.current, "masterCodes", "include")
-  }, [clickSave])
+  const saveMasterCodes = useCallback(
+    (direction: ReportsTransferDirection) => {
+      clickSave(
+        masterCodesBtnRef.current,
+        "masterCodes",
+        direction === "assign" ? "include" : "exclude",
+      )
+    },
+    [clickSave],
+  )
 
-  /** Assign → include; unassign → exclude. */
   const saveActivities = useCallback(
     (direction: ReportsTransferDirection) => {
       clickSave(
@@ -38,14 +44,6 @@ export function useReportsTransferSave() {
       )
     },
     [clickSave],
-  )
-
-  const triggerSave = useCallback(
-    (scope: ReportsSaveScope, direction: ReportsTransferDirection = "assign") => {
-      if (scope === "masterCodes") saveMasterCodes()
-      else saveActivities(direction)
-    },
-    [saveActivities, saveMasterCodes],
   )
 
   function ReportsTransferSaveTriggers() {
@@ -75,5 +73,5 @@ export function useReportsTransferSave() {
     )
   }
 
-  return { triggerSave, saveMasterCodes, saveActivities, ReportsTransferSaveTriggers }
+  return { saveMasterCodes, saveActivities, ReportsTransferSaveTriggers }
 }

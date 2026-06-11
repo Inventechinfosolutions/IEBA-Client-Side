@@ -7,6 +7,7 @@ import type { PayrollBy, PayrollColumnSettingModel, PayrollSettingsModel } from 
 import { updatePayrollSettings } from "../payroll"
 import { api } from "@/lib/api"
 import { buildReportMasterCodeSavePayload } from "@/features/reports/lib/reportMasterCodeData.utils"
+import { buildActivityTransferQueryParams } from "@/features/settings/components/Reports/reportsTransfer.utils"
 import { mapRawReportsToReportOptions } from "@/features/settings/lib/reportOptions.utils"
 import { fetchReportTransferFlags } from "@/features/settings/queries/getReportTransferFlags"
 import {
@@ -216,55 +217,53 @@ async function updateSettings(
       includedActivityCodes: updatedReportOption.includedMasterCodeData?.activityCodes ?? [],
     }
 
-    const isMcInclude = masterCodeExclusionMode === "include"
+    const masterCodeBucketMode = input.reportsBucketMode ?? masterCodeExclusionMode
     const refreshedMcPickerIds = (
-      isMcInclude ? reportsAfterSave.includedMasterCodeIds : reportsAfterSave.excludedMasterCodeIds
+      masterCodeBucketMode === "include"
+        ? reportsAfterSave.includedMasterCodeIds
+        : reportsAfterSave.excludedMasterCodeIds
     )
       .map((id) => Number(id))
       .filter((n) => Number.isFinite(n) && n >= 1)
 
-    const activityBucketMode = input.reportsBucketMode ?? activityExclusionMode
-    const refreshedAssignedActCodes = reportsAfterSave.includedActivityCodes
-    const refreshedUnassignedActCodes = reportsAfterSave.excludedActivityCodes
-    const refreshedActivityPickerCodes =
-      activityBucketMode === "include"
-        ? refreshedAssignedActCodes
-        : refreshedUnassignedActCodes
-    const refreshedActivityComplementCodes =
-      activityBucketMode === "include"
-        ? refreshedUnassignedActCodes
-        : refreshedAssignedActCodes
+    const activityBucketMode =
+      saveScope === "activities"
+        ? (input.reportsBucketMode ?? activityExclusionMode)
+        : activityExclusionMode
+    const savedIncludedActCodes = input.values.reports?.includedActivityCodes ?? []
+    const savedExcludedActCodes = input.values.reports?.excludedActivityCodes ?? []
+    const refreshedActivityQuery = buildActivityTransferQueryParams(
+      activityBucketMode,
+      savedIncludedActCodes,
+      savedExcludedActCodes,
+    )
 
     const mcIdsKey = refreshedMcPickerIds
       .slice()
       .sort((a, b) => a - b)
       .join(",")
-    const selectedCodesKey = [
-      ...new Set(refreshedActivityPickerCodes.map((c) => c.trim()).filter(Boolean)),
-    ]
+    const selectedCodesKey = [...new Set(refreshedActivityQuery.selectedActivityCodes)]
       .sort()
       .join(",")
-    const excludedCodesKey = [
-      ...new Set(refreshedActivityComplementCodes.map((c) => c.trim()).filter(Boolean)),
-    ]
+    const excludedCodesKey = [...new Set(refreshedActivityQuery.excludedActivityCodes)]
       .sort()
       .join(",")
 
     await queryClient.fetchQuery({
       queryKey: settingsKeys.reports.transferFlags(
-        masterCodeExclusionMode,
+        masterCodeBucketMode,
         mcIdsKey,
-        activityBucketMode,
+        refreshedActivityQuery.queryActivityMode,
         selectedCodesKey,
         excludedCodesKey,
       ),
       queryFn: () =>
         fetchReportTransferFlags({
-          masterCodeMode: masterCodeExclusionMode,
+          masterCodeMode: masterCodeBucketMode,
           selectedMasterCodeIds: refreshedMcPickerIds,
-          activityMode: activityBucketMode,
-          selectedActivityCodes: refreshedActivityPickerCodes,
-          excludedActivityCodes: refreshedActivityComplementCodes,
+          activityMode: refreshedActivityQuery.queryActivityMode,
+          selectedActivityCodes: refreshedActivityQuery.selectedActivityCodes,
+          excludedActivityCodes: refreshedActivityQuery.excludedActivityCodes,
         }),
     })
   }

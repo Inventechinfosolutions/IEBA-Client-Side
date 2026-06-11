@@ -1,6 +1,7 @@
 import type {
   MasterCodeActivityTransferItem,
   MasterCodeTransferRow,
+  ReportTransferBucketMode,
 } from "@/features/settings/components/Reports/reportsTransfer.api.types"
 
 import type { ReportsTransferItem } from "./reportsTransfer.types"
@@ -25,23 +26,6 @@ export function activityItemsToTransferItems(
   return mapped.sort((a, b) => a.name.localeCompare(b.name))
 }
 
-export function flattenActivityBucketRows(rows: MasterCodeTransferRow[]): ReportsTransferItem[] {
-  const items: ReportsTransferItem[] = []
-  for (const row of rows) {
-    for (const act of row.activities ?? []) {
-      const code = String(act.code ?? "").trim()
-      if (!code) continue
-      items.push({
-        id: code,
-        name: String(act.displayLabel ?? "").trim() || act.name || code,
-        code,
-      })
-    }
-  }
-  return items.sort((a, b) => a.name.localeCompare(b.name))
-}
-
-/** Assigned = include bucket; unassigned = exclude bucket. */
 export function applyTransferBucketMove(
   assignedIds: string[],
   unassignedIds: string[],
@@ -58,6 +42,32 @@ export function applyTransferBucketMove(
   return {
     assignedIds: assignedIds.filter((id) => !moveSet.has(id)),
     unassignedIds: [...new Set([...unassignedIds, ...idsToMove])],
+  }
+}
+
+function uniqActivityCodes(codes: string[]): string[] {
+  return [...new Set(codes.map((c) => c.trim()).filter(Boolean))]
+}
+
+export type ActivityTransferQueryParams = {
+  queryActivityMode: ReportTransferBucketMode
+  selectedActivityCodes: string[]
+  excludedActivityCodes: string[]
+}
+
+export function buildActivityTransferQueryParams(
+  activityMode: ReportTransferBucketMode,
+  includedActivityCodes: string[],
+  excludedActivityCodes: string[],
+): ActivityTransferQueryParams {
+  const included = uniqActivityCodes(includedActivityCodes)
+  const excluded = uniqActivityCodes(excludedActivityCodes)
+  const bothExplicit = activityMode === "exclude" && included.length > 0 && excluded.length > 0
+
+  return {
+    queryActivityMode: bothExplicit ? "include" : activityMode,
+    selectedActivityCodes: activityMode === "exclude" && !bothExplicit ? [] : included,
+    excludedActivityCodes: excluded,
   }
 }
 

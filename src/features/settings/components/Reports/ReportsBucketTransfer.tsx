@@ -4,33 +4,52 @@ import { useFormContext } from "react-hook-form"
 import { TransferListMoveButton } from "@/components/ui/transfer-list-move-button"
 import type { SettingsFormValues } from "@/features/settings/types"
 import { ReportsTransferPanel } from "@/features/settings/components/Reports/ReportsTransferPanel"
-import type { ReportsTransferItem } from "@/features/settings/components/Reports/reportsTransfer.types"
+import type {
+  ReportsTransferDirection,
+  ReportsTransferItem,
+} from "@/features/settings/components/Reports/reportsTransfer.types"
 import {
   applyTransferBucketMove,
   filterReportsTransferItems,
 } from "@/features/settings/components/Reports/reportsTransfer.utils"
 
-type MasterCodeTransferProps = {
+type ReportsBucketTransferProps = {
+  unassignedTitle: string
+  assignedTitle: string
+  loadingLabel: string
+  includedField: "reports.includedMasterCodeIds" | "reports.includedActivityCodes"
+  excludedField: "reports.excludedMasterCodeIds" | "reports.excludedActivityCodes"
   unassignedItems: ReportsTransferItem[]
   assignedItems: ReportsTransferItem[]
   isLoading?: boolean
   isSaving?: boolean
   disabled?: boolean
-  onSave: () => void
+  clearActivitiesOnMove?: boolean
+  containerClassName?: string
+  onSave: (direction: ReportsTransferDirection) => void
+  onFetchModeChange: (direction: ReportsTransferDirection) => void
 }
 
-export function MasterCodeTransfer({
+export function ReportsBucketTransfer({
+  unassignedTitle,
+  assignedTitle,
+  loadingLabel,
+  includedField,
+  excludedField,
   unassignedItems,
   assignedItems,
   isLoading = false,
   isSaving = false,
   disabled = false,
+  clearActivitiesOnMove = false,
+  containerClassName = "mt-4",
   onSave,
-}: MasterCodeTransferProps) {
+  onFetchModeChange,
+}: ReportsBucketTransferProps) {
   const { watch, setValue } = useFormContext<SettingsFormValues>()
 
-  const assignedIds = watch("reports.includedMasterCodeIds") ?? []
-  const unassignedIds = watch("reports.excludedMasterCodeIds") ?? []
+  const assignedIds = watch(includedField) ?? []
+  const unassignedIds = watch(excludedField) ?? []
 
   const [searchUnassigned, setSearchUnassigned] = useState("")
   const [searchAssigned, setSearchAssigned] = useState("")
@@ -49,12 +68,19 @@ export function MasterCodeTransfer({
 
   const isDisabled = disabled || isSaving || isLoading
 
-  const syncFormAndSave = (nextAssignedIds: string[], nextUnassignedIds: string[]) => {
-    setValue("reports.includedMasterCodeIds", nextAssignedIds, { shouldDirty: true })
-    setValue("reports.excludedMasterCodeIds", nextUnassignedIds, { shouldDirty: true })
-    setValue("reports.excludedActivityCodes", [])
-    setValue("reports.includedActivityCodes", [])
-    queueMicrotask(onSave)
+  const syncFormAndSave = (
+    nextAssignedIds: string[],
+    nextUnassignedIds: string[],
+    direction: ReportsTransferDirection,
+  ) => {
+    setValue(includedField, nextAssignedIds, { shouldDirty: true })
+    setValue(excludedField, nextUnassignedIds, { shouldDirty: true })
+    if (clearActivitiesOnMove) {
+      setValue("reports.excludedActivityCodes", [])
+      setValue("reports.includedActivityCodes", [])
+    }
+    onFetchModeChange(direction)
+    queueMicrotask(() => onSave(direction))
   }
 
   const handleToggle = (id: string, setState: Dispatch<SetStateAction<string[]>>) => {
@@ -65,14 +91,14 @@ export function MasterCodeTransfer({
     if (ids.length === 0 || isDisabled) return
     const next = applyTransferBucketMove(assignedIds, unassignedIds, ids, "toAssigned")
     setToggledUnassigned([])
-    syncFormAndSave(next.assignedIds, next.unassignedIds)
+    syncFormAndSave(next.assignedIds, next.unassignedIds, "assign")
   }
 
   const moveToUnassigned = (ids: string[]) => {
     if (ids.length === 0 || isDisabled) return
     const next = applyTransferBucketMove(assignedIds, unassignedIds, ids, "toUnassigned")
     setToggledAssigned([])
-    syncFormAndSave(next.assignedIds, next.unassignedIds)
+    syncFormAndSave(next.assignedIds, next.unassignedIds, "unassign")
   }
 
   const toggleAllUnassigned = () => {
@@ -88,10 +114,10 @@ export function MasterCodeTransfer({
   }
 
   return (
-    <div className="mt-4">
+    <div className={containerClassName}>
       <div className="grid max-w-[1120px] grid-cols-[1fr_60px_1fr] items-center gap-4">
         <ReportsTransferPanel
-          title="Unassigned Master Codes"
+          title={unassignedTitle}
           items={filteredUnassigned}
           selectedIds={toggledUnassigned}
           onToggleItem={(id) => handleToggle(id, setToggledUnassigned)}
@@ -99,7 +125,7 @@ export function MasterCodeTransfer({
           searchValue={searchUnassigned}
           onSearchChange={setSearchUnassigned}
           isLoading={isLoading}
-          loadingLabel="Loading master codes…"
+          loadingLabel={loadingLabel}
           disabled={isDisabled}
         />
 
@@ -107,19 +133,19 @@ export function MasterCodeTransfer({
           <TransferListMoveButton
             direction="forward"
             disabled={isDisabled || toggledUnassigned.length === 0}
-            aria-label="Assign selected master codes and save"
+            aria-label={`Assign selected ${assignedTitle.toLowerCase()} and save`}
             onClick={() => moveToAssigned(toggledUnassigned)}
           />
           <TransferListMoveButton
             direction="back"
             disabled={isDisabled || toggledAssigned.length === 0}
-            aria-label="Unassign selected master codes and save"
+            aria-label={`Unassign selected ${assignedTitle.toLowerCase()} and save`}
             onClick={() => moveToUnassigned(toggledAssigned)}
           />
         </div>
 
         <ReportsTransferPanel
-          title="Assigned Master Codes"
+          title={assignedTitle}
           items={filteredAssigned}
           selectedIds={toggledAssigned}
           onToggleItem={(id) => handleToggle(id, setToggledAssigned)}
@@ -127,7 +153,7 @@ export function MasterCodeTransfer({
           searchValue={searchAssigned}
           onSearchChange={setSearchAssigned}
           isLoading={isLoading}
-          loadingLabel="Loading master codes…"
+          loadingLabel={loadingLabel}
           disabled={isDisabled}
         />
       </div>

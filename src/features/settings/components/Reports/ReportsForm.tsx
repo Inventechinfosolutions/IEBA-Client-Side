@@ -10,12 +10,12 @@ import {
   useSettingsReportDepartments,
 } from "@/features/settings/queries/getSettingsDepartmentReports"
 import { useReportTransferFlags } from "@/features/settings/queries/getReportTransferFlags"
-import { ActivityTransfer } from "@/features/settings/components/Reports/ActivityTransfer"
-import { MasterCodeTransfer } from "@/features/settings/components/Reports/MasterCodeTransfer"
-import { ReportsExclusionToggle } from "@/features/settings/components/Reports/ReportsExclusionSaveControls"
+import { ReportsBucketTransfer } from "@/features/settings/components/Reports/ReportsBucketTransfer"
+import { ReportsExclusionToggle } from "@/features/settings/components/Reports/ReportsExclusionToggle"
 import { useReportsTransferSave } from "@/features/settings/components/Reports/useReportsTransferSave"
 import {
   activityItemsToTransferItems,
+  buildActivityTransferQueryParams,
   masterCodeRowToTransferItem,
 } from "@/features/settings/components/Reports/reportsTransfer.utils"
 import {
@@ -37,32 +37,34 @@ type ReportsFormProps = {
   isSectionOpen?: boolean
 }
 
-/**
- * Settings → Reports configuration.
- * Single GET /master-codes/activities returns masterCodeFlag + activityFlag.
- * Exclusion/Inclusion toggle drives masterCodeMode / activityMode on the API.
- */
 export function ReportsForm({ isSaving = false, isSectionOpen = false }: ReportsFormProps) {
   const { control, watch, setValue, getValues } = useFormContext<SettingsFormValues>()
   const { saveMasterCodes, saveActivities, ReportsTransferSaveTriggers } = useReportsTransferSave()
 
   const departmentId = watch("reports.departmentId") ?? ""
   const reportKey = watch("reports.reportKey") ?? ""
-  const masterCodeExclusionMode = watch("reports.masterCodeExclusionMode")
-  const isIncludeMode = masterCodeExclusionMode === "include"
 
   const includedMasterCodeIds = watch("reports.includedMasterCodeIds") ?? []
   const excludedMasterCodeIds = watch("reports.excludedMasterCodeIds") ?? []
   const includedActivityCodes = watch("reports.includedActivityCodes") ?? []
   const excludedActivityCodes = watch("reports.excludedActivityCodes") ?? []
 
+  const [masterCodeFetchMode, setMasterCodeFetchMode] =
+    useState<ReportTransferBucketMode>("include")
   const [activityFetchMode, setActivityFetchMode] = useState<ReportTransferBucketMode>("include")
 
-  const masterCodePickerIds = isIncludeMode ? includedMasterCodeIds : excludedMasterCodeIds
-  const masterCodeMode: ReportTransferBucketMode = isIncludeMode ? "include" : "exclude"
+  const masterCodePickerIds =
+    masterCodeFetchMode === "include" ? includedMasterCodeIds : excludedMasterCodeIds
 
-  const activityPickerCodes =
-    activityFetchMode === "include" ? includedActivityCodes : excludedActivityCodes
+  const activityQueryParams = useMemo(
+    () =>
+      buildActivityTransferQueryParams(
+        activityFetchMode,
+        includedActivityCodes,
+        excludedActivityCodes,
+      ),
+    [activityFetchMode, includedActivityCodes, excludedActivityCodes],
+  )
 
   const masterCodeNumericIds = useMemo(
     () =>
@@ -78,12 +80,11 @@ export function ReportsForm({ isSaving = false, isSectionOpen = false }: Reports
 
   const { data: transferFlags, isPending, isFetching } = useReportTransferFlags(
     {
-      masterCodeMode,
+      masterCodeMode: masterCodeFetchMode,
       selectedMasterCodeIds: masterCodeNumericIds,
-      activityMode: activityFetchMode,
-      selectedActivityCodes: activityPickerCodes,
-      excludedActivityCodes:
-        activityFetchMode === "include" ? excludedActivityCodes : includedActivityCodes,
+      activityMode: activityQueryParams.queryActivityMode,
+      selectedActivityCodes: activityQueryParams.selectedActivityCodes,
+      excludedActivityCodes: activityQueryParams.excludedActivityCodes,
     },
     transferEnabled,
   )
@@ -155,7 +156,17 @@ export function ReportsForm({ isSaving = false, isSectionOpen = false }: Reports
     setValue("reports.includedMasterCodeIds", mcReassigned.includedMasterCodeIds)
     setValue("reports.excludedActivityCodes", actReassigned.excludedActivityCodes)
     setValue("reports.includedActivityCodes", actReassigned.includedActivityCodes)
+    setMasterCodeFetchMode(nextMode)
     setActivityFetchMode(nextMode)
+  }
+
+  const handleMasterCodeFetchModeChange = (direction: "assign" | "unassign") => {
+    setMasterCodeFetchMode(direction === "assign" ? "include" : "exclude")
+    setActivityFetchMode("include")
+  }
+
+  const handleActivityFetchModeChange = (direction: "assign" | "unassign") => {
+    setActivityFetchMode(direction === "assign" ? "include" : "exclude")
   }
 
   return (
@@ -177,6 +188,7 @@ export function ReportsForm({ isSaving = false, isSectionOpen = false }: Reports
                     setValue("reports.masterCodeExclusionMode", "exclude")
                     setValue("reports.activityExclusionMode", "exclude")
                     clearReportBuckets(setValue)
+                    setMasterCodeFetchMode("exclude")
                     setActivityFetchMode("exclude")
                   }
                   field.onChange(val)
@@ -214,9 +226,11 @@ export function ReportsForm({ isSaving = false, isSectionOpen = false }: Reports
                   if (report) {
                     loadReportBucketsFromReportOption(setValue, report)
                     const mode = report.type === "included" ? "include" : "exclude"
+                    setMasterCodeFetchMode(mode)
                     setActivityFetchMode(mode)
                   } else if ((field.value ?? "") !== val) {
                     clearReportBuckets(setValue)
+                    setMasterCodeFetchMode("exclude")
                     setActivityFetchMode("exclude")
                   }
                 }}
@@ -247,12 +261,19 @@ export function ReportsForm({ isSaving = false, isSectionOpen = false }: Reports
       </div>
 
       {reportKey ? (
-        <MasterCodeTransfer
+        <ReportsBucketTransfer
+          unassignedTitle="Unassigned Master Codes"
+          assignedTitle="Assigned Master Codes"
+          loadingLabel="Loading master codes…"
+          includedField="reports.includedMasterCodeIds"
+          excludedField="reports.excludedMasterCodeIds"
+          clearActivitiesOnMove
           unassignedItems={unassignedMasterCodes}
           assignedItems={assignedMasterCodes}
           isLoading={isTransferLoading}
           isSaving={isSaving}
           disabled={!transferEnabled}
+          onFetchModeChange={handleMasterCodeFetchModeChange}
           onSave={saveMasterCodes}
         />
       ) : null}
@@ -264,17 +285,21 @@ export function ReportsForm({ isSaving = false, isSectionOpen = false }: Reports
       ) : null}
 
       {reportKey && hasMasterCodeScope ? (
-        <ActivityTransfer
-          key={`${reportKey}:${masterCodePickerIds.join(",")}:${masterCodeExclusionMode}`}
+        <ReportsBucketTransfer
+          key={`${reportKey}:${masterCodePickerIds.join(",")}`}
+          containerClassName="mt-6"
+          unassignedTitle="Unassigned Activities"
+          assignedTitle="Assigned Activities"
+          loadingLabel="Loading activities…"
+          includedField="reports.includedActivityCodes"
+          excludedField="reports.excludedActivityCodes"
           unassignedItems={unassignedActivities}
           assignedItems={assignedActivities}
           isLoading={isTransferLoading}
           isSaving={isSaving}
           disabled={!activitiesEnabled}
+          onFetchModeChange={handleActivityFetchModeChange}
           onSave={saveActivities}
-          onActivityFetchModeChange={(direction) =>
-            setActivityFetchMode(direction === "assign" ? "include" : "exclude")
-          }
         />
       ) : null}
     </div>

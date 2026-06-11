@@ -1,3 +1,5 @@
+export type ReportsTransferDirection = "assign" | "unassign"
+
 export type ReportsTransferItem = {
   id: string
   name: string
