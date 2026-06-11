@@ -140,10 +140,13 @@ export function PayrollDetailsSection({
     ? [...filterOptions.departments]
     : filterOptions.departments.filter(d => assignedDepartmentIds.has(d.value))
 
-  const employeeOptions: SingleSelectOption[] = (departmentUsers as DepartmentUser[]).map((u) => ({
-    value: String(u.employeeId || u.id),
-    label: u.name || `${u.firstName || ""} ${u.lastName || ""}`.trim() || String(u.employeeId || u.id),
-  }))
+  const employeeOptions: SingleSelectOption[] = (departmentUsers as DepartmentUser[]).map((u) => {
+    const fullName = u.name || `${u.firstName || ""} ${u.lastName || ""}`.trim() || String(u.employeeId || u.id)
+    return {
+      value: String(u.employeeId || u.id),
+      label: u.employeeId ? `${u.employeeId} (${fullName})` : fullName,
+    }
+  })
 
   const handleGetSubmit = form.handleSubmit((values) => {
     onGetRows(mapPayrollDetailsFormToQueryParams(values, filterOptions))
