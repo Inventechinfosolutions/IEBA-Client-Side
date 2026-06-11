@@ -1188,10 +1188,12 @@ export function PersonalTimeStudyEntryForm({
                                   <span className="text-muted-foreground font-medium">Supervisor Consumed:</span>{" "}
                                   <span className="font-semibold text-[#6C5DD3]">{item.supervisorConsumedMinutes ?? 0} Min.</span>
                                 </div>
-                                <div>
-                                  <span className="text-muted-foreground font-medium">Reportee Minutes:</span>{" "}
-                                  <span className="font-semibold text-[#6C5DD3]">{item.enteredMinutes} Min.</span>
-                                </div>
+                                {item.apportioningType !== "manual" && (
+                                  <div>
+                                    <span className="text-muted-foreground font-medium">Reportee Minutes:</span>{" "}
+                                    <span className="font-semibold text-[#6C5DD3]">{item.enteredMinutes} Min.</span>
+                                  </div>
+                                )}
                                 <div>
                                   <span className="text-muted-foreground font-medium">Remaining:</span>{" "}
                                   <span className="font-semibold text-[#6C5DD3]">{item.remainingMinutes} Min.</span>
