@@ -89,6 +89,9 @@ function SettingsFormInner({ settings, isSaving, onSubmitSettings }: SettingsFor
     const scopeAttr = submitter?.getAttribute("data-reports-save-scope")
     const reportsSaveScope =
       scopeAttr === "masterCodes" || scopeAttr === "activities" ? scopeAttr : undefined
+    const bucketModeAttr = submitter?.getAttribute("data-reports-bucket-mode")
+    const reportsBucketMode =
+      bucketModeAttr === "include" || bucketModeAttr === "exclude" ? bucketModeAttr : undefined
 
     // Clear previous errors so validation state is fresh for the current section
     form.clearErrors()
@@ -106,7 +109,7 @@ function SettingsFormInner({ settings, isSaving, onSubmitSettings }: SettingsFor
       return
     }
 
-    onSubmitSettings(form.getValues(), { submitterSection, reportsSaveScope })
+    onSubmitSettings(form.getValues(), { submitterSection, reportsSaveScope, reportsBucketMode })
   }
 
   return (
@@ -145,6 +148,7 @@ export function SettingsForm() {
             values,
             submitterSection: meta?.submitterSection,
             reportsSaveScope: meta?.reportsSaveScope,
+            reportsBucketMode: meta?.reportsBucketMode,
           },
           {
             onSuccess: () => {

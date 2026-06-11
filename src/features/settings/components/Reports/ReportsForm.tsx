@@ -1,35 +1,35 @@
+import { useMemo, useState } from "react"
 import { Controller, useFormContext } from "react-hook-form"
-import { useMemo } from "react"
 
 import { SingleSelectDropdown } from "@/components/ui/dropdown"
-import { parseMultiSelectStoredValues } from "@/components/ui/multi-select-dropdown"
-import { MultiSelectSearchDropdown } from "@/components/ui/multi-select-search-dropdown"
 import { cn, sortSelectOptionsByLabel } from "@/lib/utils"
+import type { ReportTransferBucketMode } from "@/features/settings/components/Reports/reportsTransfer.api.types"
 import type { SettingsFormValues } from "@/features/settings/types"
 import {
   useSettingsDepartmentReports,
   useSettingsReportDepartments,
 } from "@/features/settings/queries/getSettingsDepartmentReports"
-import { useSettingsMasterCodes } from "@/features/settings/queries/getSettingsMasterCodes"
-import { useMasterCodeActivities } from "@/features/settings/queries/getMasterCodeActivities"
+import { useReportTransferFlags } from "@/features/settings/queries/getReportTransferFlags"
+import { ReportsBucketTransfer } from "@/features/settings/components/Reports/ReportsBucketTransfer"
+import { ReportsExclusionToggle } from "@/features/settings/components/Reports/ReportsExclusionToggle"
+import { useReportsTransferSave } from "@/features/settings/components/Reports/useReportsTransferSave"
 import {
-  previewActivityBuckets,
-  previewMasterCodeBuckets,
+  activityItemsToTransferItems,
+  buildActivityTransferQueryParams,
+  masterCodeRowToTransferItem,
+} from "@/features/settings/components/Reports/reportsTransfer.utils"
+import {
+  clearReportBuckets,
+  loadReportBucketsFromReportOption,
+} from "@/features/settings/components/Reports/reportsForm.utils"
+import {
   reassignActiveActivitiesForModeChange,
   reassignActiveMasterCodesForModeChange,
 } from "@/features/reports/lib/reportMasterCodeData.utils"
-import { ReportsExclusionSaveControls } from "@/features/settings/components/Reports/ReportsExclusionSaveControls"
-import { SavedBucketPanel } from "@/features/settings/components/Reports/SavedBucketPanel"
-import {
-  clearReportBuckets,
-  loadReportBucketsFromApiRow,
-} from "@/features/settings/components/Reports/reportsForm.utils"
 
 const labelClassName = "mb-2 block text-[12px] font-normal text-[#2a2f3a]"
 const selectTriggerClassName =
   "!h-[38px] !w-[260px] !rounded-[8px] border border-[#d6d7dc] bg-white px-[11px] !text-[12px] text-[#111827] shadow-none placeholder:!text-[12px] focus-visible:border-[#6C5DD3] focus-visible:ring-0"
-const activityMultiSelectClassName =
-  "!min-h-[38px] !h-[38px] !w-[600px] !max-w-[600px] !rounded-[8px] !border-[#d6d7dc] !px-[11px] !py-0 !pr-9 !text-[12px] !font-normal !leading-normal overflow-hidden"
 
 type ReportsFormProps = {
   isSaving?: boolean
@@ -37,33 +37,79 @@ type ReportsFormProps = {
   isSectionOpen?: boolean
 }
 
-/**
- * Settings → Reports configuration.
- * - TanStack Query for API data (departments, mapped reports, master codes, activities).
- * - React Hook Form for state; no useEffect (hydration on dropdown / toggle handlers only).
- * - Summary panels use derived previews (useMemo), not live complement writes.
- */
 export function ReportsForm({ isSaving = false, isSectionOpen = false }: ReportsFormProps) {
   const { control, watch, setValue, getValues } = useFormContext<SettingsFormValues>()
+  const { saveMasterCodes, saveActivities, ReportsTransferSaveTriggers } = useReportsTransferSave()
 
   const departmentId = watch("reports.departmentId") ?? ""
   const reportKey = watch("reports.reportKey") ?? ""
-  const masterCodeExclusionMode = watch("reports.masterCodeExclusionMode")
-  const activityExclusionMode = watch("reports.activityExclusionMode")
-  const isMasterCodeIncludeMode = masterCodeExclusionMode === "include"
-  const isActivityIncludeMode = activityExclusionMode === "include"
 
-  const excludedMasterCodeIds = watch("reports.excludedMasterCodeIds") ?? []
   const includedMasterCodeIds = watch("reports.includedMasterCodeIds") ?? []
-  const excludedActivityCodes = watch("reports.excludedActivityCodes") ?? []
+  const excludedMasterCodeIds = watch("reports.excludedMasterCodeIds") ?? []
   const includedActivityCodes = watch("reports.includedActivityCodes") ?? []
+  const excludedActivityCodes = watch("reports.excludedActivityCodes") ?? []
 
-  const masterCodeField = isMasterCodeIncludeMode
-    ? ("reports.includedMasterCodeIds" as const)
-    : ("reports.excludedMasterCodeIds" as const)
-  const activityField = isActivityIncludeMode
-    ? ("reports.includedActivityCodes" as const)
-    : ("reports.excludedActivityCodes" as const)
+  const [masterCodeFetchMode, setMasterCodeFetchMode] =
+    useState<ReportTransferBucketMode>("include")
+  const [activityFetchMode, setActivityFetchMode] = useState<ReportTransferBucketMode>("include")
+
+  const masterCodePickerIds =
+    masterCodeFetchMode === "include" ? includedMasterCodeIds : excludedMasterCodeIds
+
+  const activityQueryParams = useMemo(
+    () =>
+      buildActivityTransferQueryParams(
+        activityFetchMode,
+        includedActivityCodes,
+        excludedActivityCodes,
+      ),
+    [activityFetchMode, includedActivityCodes, excludedActivityCodes],
+  )
+
+  const masterCodeNumericIds = useMemo(
+    () =>
+      masterCodePickerIds
+        .map((id) => Number(id))
+        .filter((n) => Number.isFinite(n) && n >= 1),
+    [masterCodePickerIds],
+  )
+
+  const transferEnabled = isSectionOpen && Boolean(reportKey)
+  const hasMasterCodeScope = masterCodeNumericIds.length > 0
+  const activitiesEnabled = transferEnabled && hasMasterCodeScope
+
+  const { data: transferFlags, isPending, isFetching } = useReportTransferFlags(
+    {
+      masterCodeMode: masterCodeFetchMode,
+      selectedMasterCodeIds: masterCodeNumericIds,
+      activityMode: activityQueryParams.queryActivityMode,
+      selectedActivityCodes: activityQueryParams.selectedActivityCodes,
+      excludedActivityCodes: activityQueryParams.excludedActivityCodes,
+    },
+    transferEnabled,
+  )
+
+  const isTransferLoading = transferEnabled && (isPending || isFetching)
+
+  const unassignedMasterCodes = useMemo(
+    () => (transferFlags?.masterCodeFlag.excluded ?? []).map(masterCodeRowToTransferItem),
+    [transferFlags?.masterCodeFlag.excluded],
+  )
+
+  const assignedMasterCodes = useMemo(
+    () => (transferFlags?.masterCodeFlag.included ?? []).map(masterCodeRowToTransferItem),
+    [transferFlags?.masterCodeFlag.included],
+  )
+
+  const unassignedActivities = useMemo(
+    () => activityItemsToTransferItems(transferFlags?.activityFlag.excluded ?? []),
+    [transferFlags?.activityFlag.excluded],
+  )
+
+  const assignedActivities = useMemo(
+    () => activityItemsToTransferItems(transferFlags?.activityFlag.included ?? []),
+    [transferFlags?.activityFlag.included],
+  )
 
   const { data: departmentsData, isLoading: isDeptsLoading } =
     useSettingsReportDepartments(isSectionOpen)
@@ -73,96 +119,6 @@ export function ReportsForm({ isSaving = false, isSectionOpen = false }: Reports
     isFetching: isReportsFetching,
   } = useSettingsDepartmentReports(departmentId, isSectionOpen && !!departmentId)
   const reportsLoading = isReportsPending || isReportsFetching
-
-  const {
-    data: masterCodeOptions = [],
-    isPending: isMasterCodesPending,
-    isFetching: isMasterCodesFetching,
-  } = useSettingsMasterCodes(isSectionOpen && !!reportKey)
-  const masterCodesLoading = isMasterCodesPending || isMasterCodesFetching
-
-  const masterCatalogIds = useMemo(
-    () =>
-      masterCodeOptions
-        .map((o) => Number(o.value))
-        .filter((n) => Number.isFinite(n) && n >= 1),
-    [masterCodeOptions],
-  )
-
-  const includedMasterCodeIdsForActivities = useMemo(
-    () =>
-      previewMasterCodeBuckets(
-        isMasterCodeIncludeMode ? "include" : "exclude",
-        excludedMasterCodeIds,
-        includedMasterCodeIds,
-        masterCatalogIds,
-      ).includedMasterCodeIds,
-    [
-      isMasterCodeIncludeMode,
-      excludedMasterCodeIds,
-      includedMasterCodeIds,
-      masterCatalogIds,
-    ],
-  )
-
-  const activitiesApiEnabled =
-    Boolean(reportKey) && includedMasterCodeIdsForActivities.length > 0
-
-  const {
-    data: activityOptions = [],
-    isPending: isActivitiesPending,
-    isFetching: isActivitiesFetching,
-  } = useMasterCodeActivities(
-    includedMasterCodeIdsForActivities,
-    activitiesApiEnabled && isSectionOpen,
-  )
-  const activitiesLoading = activitiesApiEnabled && (isActivitiesPending || isActivitiesFetching)
-
-  const activityCatalogCodes = useMemo(
-    () => activityOptions.map((o) => o.code),
-    [activityOptions],
-  )
-
-  const activityPickerLabel = isActivityIncludeMode
-    ? "Select Included Activities"
-    : "Select Excluded Activities"
-  const masterCodePickerLabel = isMasterCodeIncludeMode
-    ? "Select Included Master Codes"
-    : "Select Excluded Master Codes"
-
-  const handleMasterCodeExclusionModeChange = (checked: boolean) => {
-    const previousMode =
-      getValues("reports.masterCodeExclusionMode") === "include" ? "include" : "exclude"
-    const nextMode = checked ? "include" : "exclude"
-    if (previousMode === nextMode) return
-
-    const reassigned = reassignActiveMasterCodesForModeChange(
-      previousMode,
-      nextMode,
-      getValues("reports.excludedMasterCodeIds") ?? [],
-      getValues("reports.includedMasterCodeIds") ?? [],
-    )
-    setValue("reports.masterCodeExclusionMode", nextMode)
-    setValue("reports.excludedMasterCodeIds", reassigned.excludedMasterCodeIds)
-    setValue("reports.includedMasterCodeIds", reassigned.includedMasterCodeIds)
-  }
-
-  const handleActivityExclusionModeChange = (checked: boolean) => {
-    const previousMode =
-      getValues("reports.activityExclusionMode") === "include" ? "include" : "exclude"
-    const nextMode = checked ? "include" : "exclude"
-    if (previousMode === nextMode) return
-
-    const reassigned = reassignActiveActivitiesForModeChange(
-      previousMode,
-      nextMode,
-      getValues("reports.excludedActivityCodes") ?? [],
-      getValues("reports.includedActivityCodes") ?? [],
-    )
-    setValue("reports.activityExclusionMode", nextMode)
-    setValue("reports.excludedActivityCodes", reassigned.excludedActivityCodes)
-    setValue("reports.includedActivityCodes", reassigned.includedActivityCodes)
-  }
 
   const departmentOptions = sortSelectOptionsByLabel(
     (departmentsData?.items ?? []).map((d) => ({
@@ -175,102 +131,49 @@ export function ReportsForm({ isSaving = false, isSectionOpen = false }: Reports
     departmentReportItems.map((item) => ({ value: item.key, label: item.label })),
   )
 
-  const masterCodeLabelById = useMemo(() => {
-    const map = new Map<string, string>()
-    for (const opt of masterCodeOptions) {
-      map.set(opt.value, opt.label)
-    }
-    return map
-  }, [masterCodeOptions])
+  const handleExclusionModeChange = (checked: boolean) => {
+    const previousMode =
+      getValues("reports.masterCodeExclusionMode") === "include" ? "include" : "exclude"
+    const nextMode = checked ? "include" : "exclude"
+    if (previousMode === nextMode) return
 
-  const mapMasterCodeIdsToDisplay = (ids: string[]) =>
-    ids.map((id) => ({
-      code: id,
-      label: masterCodeLabelById.get(id) ?? id,
-    }))
+    const mcReassigned = reassignActiveMasterCodesForModeChange(
+      previousMode,
+      nextMode,
+      getValues("reports.excludedMasterCodeIds") ?? [],
+      getValues("reports.includedMasterCodeIds") ?? [],
+    )
+    const actReassigned = reassignActiveActivitiesForModeChange(
+      previousMode,
+      nextMode,
+      getValues("reports.excludedActivityCodes") ?? [],
+      getValues("reports.includedActivityCodes") ?? [],
+    )
 
-  const masterCodeBucketPreview = useMemo(
-    () =>
-      previewMasterCodeBuckets(
-        isMasterCodeIncludeMode ? "include" : "exclude",
-        excludedMasterCodeIds,
-        includedMasterCodeIds,
-        masterCatalogIds,
-      ),
-    [
-      isMasterCodeIncludeMode,
-      excludedMasterCodeIds,
-      includedMasterCodeIds,
-      masterCatalogIds,
-    ],
-  )
+    setValue("reports.masterCodeExclusionMode", nextMode)
+    setValue("reports.activityExclusionMode", nextMode)
+    setValue("reports.excludedMasterCodeIds", mcReassigned.excludedMasterCodeIds)
+    setValue("reports.includedMasterCodeIds", mcReassigned.includedMasterCodeIds)
+    setValue("reports.excludedActivityCodes", actReassigned.excludedActivityCodes)
+    setValue("reports.includedActivityCodes", actReassigned.includedActivityCodes)
+    setMasterCodeFetchMode(nextMode)
+    setActivityFetchMode(nextMode)
+  }
 
-  const excludedMasterCodesDisplay = mapMasterCodeIdsToDisplay(
-    masterCodeBucketPreview.excludedMasterCodeIds,
-  )
-  const includedMasterCodesDisplay = mapMasterCodeIdsToDisplay(
-    masterCodeBucketPreview.includedMasterCodeIds,
-  )
-  const masterCodeExcludedPanelHint = isMasterCodeIncludeMode
-    ? "All other master codes (auto)"
-    : "Your excluded selection"
-  const masterCodeIncludedPanelHint = isMasterCodeIncludeMode
-    ? "Your included selection"
-    : "All other master codes (auto)"
+  const handleMasterCodeFetchModeChange = (direction: "assign" | "unassign") => {
+    setMasterCodeFetchMode(direction === "assign" ? "include" : "exclude")
+    setActivityFetchMode("include")
+  }
 
-  const showSavedBucketsSummary = Boolean(reportKey) && !masterCodesLoading
-
-  const activityLabelByCode = useMemo(() => {
-    const map = new Map<string, string>()
-    for (const opt of activityOptions) {
-      map.set(opt.code, opt.label)
-    }
-    return map
-  }, [activityOptions])
-
-  const mapActivityCodesToDisplay = (codes: string[]) =>
-    codes.map((code) => ({
-      code,
-      label: activityLabelByCode.get(code) ?? code,
-    }))
-
-  const activityBucketPreview = useMemo(
-    () =>
-      previewActivityBuckets(
-        isActivityIncludeMode ? "include" : "exclude",
-        excludedActivityCodes,
-        includedActivityCodes,
-        activityCatalogCodes,
-      ),
-    [
-      isActivityIncludeMode,
-      excludedActivityCodes,
-      includedActivityCodes,
-      activityCatalogCodes,
-    ],
-  )
-
-  const excludedActivitiesDisplay = mapActivityCodesToDisplay(
-    activityBucketPreview.excludedActivityCodes,
-  )
-  const includedActivitiesDisplay = mapActivityCodesToDisplay(
-    activityBucketPreview.includedActivityCodes,
-  )
-  const activityExcludedPanelHint = isActivityIncludeMode
-    ? "All other activities (auto)"
-    : "Your excluded selection"
-  const activityIncludedPanelHint = isActivityIncludeMode
-    ? "Your included selection"
-    : "All other activities (auto)"
-
-  const activityMultiSelectOptions = activityOptions.map((opt) => ({
-    value: opt.code,
-    label: opt.label,
-  }))
+  const handleActivityFetchModeChange = (direction: "assign" | "unassign") => {
+    setActivityFetchMode(direction === "assign" ? "include" : "exclude")
+  }
 
   return (
     <div className="bg-transparent px-2 py-1">
-      <div className="grid grid-cols-[260px_260px_260px_180px] items-start gap-2">
+      <ReportsTransferSaveTriggers />
+
+      <div className="grid grid-cols-[260px_260px_180px] items-start gap-2">
         <div>
           <label className={labelClassName}>Department</label>
           <Controller
@@ -285,6 +188,8 @@ export function ReportsForm({ isSaving = false, isSectionOpen = false }: Reports
                     setValue("reports.masterCodeExclusionMode", "exclude")
                     setValue("reports.activityExclusionMode", "exclude")
                     clearReportBuckets(setValue)
+                    setMasterCodeFetchMode("exclude")
+                    setActivityFetchMode("exclude")
                   }
                   field.onChange(val)
                 }}
@@ -319,14 +224,14 @@ export function ReportsForm({ isSaving = false, isSectionOpen = false }: Reports
                   field.onChange(val)
                   const report = departmentReportItems.find((r) => r.key === val)
                   if (report) {
-                    loadReportBucketsFromApiRow(
-                      setValue,
-                      report,
-                      masterCatalogIds,
-                      activityCatalogCodes,
-                    )
+                    loadReportBucketsFromReportOption(setValue, report)
+                    const mode = report.type === "included" ? "include" : "exclude"
+                    setMasterCodeFetchMode(mode)
+                    setActivityFetchMode(mode)
                   } else if ((field.value ?? "") !== val) {
                     clearReportBuckets(setValue)
+                    setMasterCodeFetchMode("exclude")
+                    setActivityFetchMode("exclude")
                   }
                 }}
                 onBlur={field.onBlur}
@@ -348,123 +253,54 @@ export function ReportsForm({ isSaving = false, isSectionOpen = false }: Reports
           />
         </div>
 
-        <div>
-          <label className={labelClassName}>{masterCodePickerLabel}</label>
-          <Controller
-            key={masterCodeField}
-            name={masterCodeField}
-            control={control}
-            render={({ field }) => (
-              <MultiSelectSearchDropdown
-                value={(field.value ?? []).join(", ")}
-                onChange={(next) => {
-                  const selected = parseMultiSelectStoredValues(next)
-                  field.onChange(selected)
-                  setValue("reports.excludedActivityCodes", [])
-                  setValue("reports.includedActivityCodes", [])
-                }}
-                onBlur={field.onBlur}
-                placeholder={masterCodePickerLabel}
-                disabled={!reportKey || masterCodesLoading}
-                isLoading={masterCodesLoading}
-                loadingLabel="Loading master codes…"
-                maxVisibleItems={2}
-                options={masterCodeOptions}
-                className={cn(
-                  activityMultiSelectClassName,
-                  "!w-[260px] !max-w-[260px] !min-h-[38px] !h-auto",
-                  "[&_input]:!text-[12px] [&_span]:!text-[12px]",
-                  (!reportKey || masterCodesLoading) && "cursor-not-allowed opacity-70",
-                )}
-              />
-            )}
-          />
-        </div>
-
-        <ReportsExclusionSaveControls
+        <ReportsExclusionToggle
           control={control}
-          modeField="reports.masterCodeExclusionMode"
-          isSaving={isSaving}
-          saveDisabled={isSaving || !departmentId || !reportKey}
-          saveScope="masterCodes"
-          onExclusionModeChange={handleMasterCodeExclusionModeChange}
+          disabled={!reportKey || isSaving}
+          onExclusionModeChange={handleExclusionModeChange}
         />
       </div>
 
-      {showSavedBucketsSummary ? (
-        <div className="mt-4 grid max-w-[1120px] grid-cols-2 gap-4">
-          <SavedBucketPanel
-            title="Excluded Master Codes"
-            subtitle={masterCodeExcludedPanelHint}
-            items={excludedMasterCodesDisplay}
-          />
-          <SavedBucketPanel
-            title="Included Master Codes"
-            subtitle={masterCodeIncludedPanelHint}
-            items={includedMasterCodesDisplay}
-          />
-        </div>
+      {reportKey ? (
+        <ReportsBucketTransfer
+          unassignedTitle="Unassigned Master Codes"
+          assignedTitle="Assigned Master Codes"
+          loadingLabel="Loading master codes…"
+          includedField="reports.includedMasterCodeIds"
+          excludedField="reports.excludedMasterCodeIds"
+          clearActivitiesOnMove
+          unassignedItems={unassignedMasterCodes}
+          assignedItems={assignedMasterCodes}
+          isLoading={isTransferLoading}
+          isSaving={isSaving}
+          disabled={!transferEnabled}
+          onFetchModeChange={handleMasterCodeFetchModeChange}
+          onSave={saveMasterCodes}
+        />
       ) : null}
 
-      <div className="mt-4 flex items-start gap-2">
-        <div>
-          <label className={labelClassName}>{activityPickerLabel}</label>
-          <Controller
-            key={activityField}
-            name={activityField}
-            control={control}
-            render={({ field }) => (
-              <MultiSelectSearchDropdown
-                value={(field.value ?? []).join(", ")}
-                onChange={(next) => {
-                  const selected = parseMultiSelectStoredValues(next)
-                  field.onChange(selected)
-                }}
-                onBlur={field.onBlur}
-                placeholder={
-                  !activitiesApiEnabled
-                    ? "Save included master codes first"
-                    : activityPickerLabel
-                }
-                disabled={!activitiesApiEnabled || !reportKey || activitiesLoading}
-                isLoading={activitiesLoading}
-                loadingLabel="Loading activities…"
-                maxVisibleItems={2}
-                options={activitiesApiEnabled ? activityMultiSelectOptions : []}
-                className={cn(
-                  activityMultiSelectClassName,
-                  "!min-h-[38px] !h-auto",
-                  "[&_input]:!text-[12px] [&_span]:!text-[12px] [&_button_span]:!text-[12px]",
-                  (!activitiesApiEnabled || !reportKey || activitiesLoading) &&
-                    "cursor-not-allowed opacity-70",
-                )}
-              />
-            )}
-          />
-        </div>
-        <ReportsExclusionSaveControls
-          control={control}
-          modeField="reports.activityExclusionMode"
-          isSaving={isSaving}
-          saveDisabled={isSaving || !departmentId || !reportKey}
-          saveScope="activities"
-          onExclusionModeChange={handleActivityExclusionModeChange}
-        />
-      </div>
+      {reportKey && !hasMasterCodeScope ? (
+        <p className="mt-6 text-[12px] text-[#6B7280]">
+          Select at least one master code to load activities.
+        </p>
+      ) : null}
 
-      {showSavedBucketsSummary && activitiesApiEnabled ? (
-        <div className="mt-4 grid max-w-[1120px] grid-cols-2 gap-4">
-          <SavedBucketPanel
-            title="Excluded Activities"
-            subtitle={activityExcludedPanelHint}
-            items={excludedActivitiesDisplay}
-          />
-          <SavedBucketPanel
-            title="Included Activities"
-            subtitle={activityIncludedPanelHint}
-            items={includedActivitiesDisplay}
-          />
-        </div>
+      {reportKey && hasMasterCodeScope ? (
+        <ReportsBucketTransfer
+          key={`${reportKey}:${masterCodePickerIds.join(",")}`}
+          containerClassName="mt-6"
+          unassignedTitle="Unassigned Activities"
+          assignedTitle="Assigned Activities"
+          loadingLabel="Loading activities…"
+          includedField="reports.includedActivityCodes"
+          excludedField="reports.excludedActivityCodes"
+          unassignedItems={unassignedActivities}
+          assignedItems={assignedActivities}
+          isLoading={isTransferLoading}
+          isSaving={isSaving}
+          disabled={!activitiesEnabled}
+          onFetchModeChange={handleActivityFetchModeChange}
+          onSave={saveActivities}
+        />
       ) : null}
     </div>
   )
