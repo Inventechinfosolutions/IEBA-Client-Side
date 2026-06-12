@@ -165,10 +165,6 @@ async function deleteCountyActivityDepartmentLink(linkId: number): Promise<void>
 
 async function createCountyActivityDepartmentLinks(
   input: PostActivityDepartmentLinksInput,
-  /** Map of departmentId → whether that department has apportioning enabled in master */
-  deptApportioningMap?: Map<number, boolean>,
-  /** Map of departmentId → whether that department has manual apportioning enabled in master */
-  deptManualApportioningMap?: Map<number, boolean>,
 ): Promise<void> {
   const ids = input.departmentIds.filter(
     (id) => typeof id === "number" && !Number.isNaN(id) && id > 0,
@@ -176,17 +172,11 @@ async function createCountyActivityDepartmentLinks(
   if (ids.length === 0) return
 
   if (ids.length > 1) {
-    const links = ids.map((departmentId) => {
-      const deptAllowsApportioning = deptApportioningMap?.get(departmentId) ?? true
-      const deptAllowsManualApportioning = deptManualApportioningMap?.get(departmentId) ?? true
-      const effectiveApportioning = input.apportioning && deptAllowsApportioning
-      const effectiveManualApportioning = input.manualApportioning && deptAllowsManualApportioning
-      return {
-        departmentId,
-        apportioning: effectiveApportioning,
-        manualApportioning: effectiveManualApportioning,
-      }
-    })
+    const links = ids.map((departmentId) => ({
+      departmentId,
+      apportioning: null,
+      manualApportioning: null,
+    }))
 
     const body = {
       activityId: input.activityId,
@@ -202,10 +192,6 @@ async function createCountyActivityDepartmentLinks(
     await api.post<unknown>("/activity-departments/bulk", body)
   } else {
     const departmentId = ids[0]
-    const deptAllowsApportioning = deptApportioningMap?.get(departmentId) ?? true
-    const deptAllowsManualApportioning = deptManualApportioningMap?.get(departmentId) ?? true
-    const effectiveApportioning = input.apportioning && deptAllowsApportioning
-    const effectiveManualApportioning = input.manualApportioning && deptAllowsManualApportioning
     await postCountyActivityDepartmentLink({
       activityId: input.activityId,
       departmentId,
@@ -214,16 +200,14 @@ async function createCountyActivityDepartmentLinks(
       type: input.type,
       leavecode: input.leavecode,
       parentId: input.parentActivityId,
-      apportioning: effectiveApportioning,
-      manualApportioning: effectiveManualApportioning,
+      apportioning: null as any,
+      manualApportioning: null as any,
     })
   }
 }
 
 async function syncCountyActivityDepartmentLinks(
   input: SyncActivityDepartmentLinksInput,
-  deptApportioningMap?: Map<number, boolean>,
-  deptManualApportioningMap?: Map<number, boolean>,
   existingLinks?: ApiActivityDepartmentResDto[],
 ): Promise<void> {
   const desired = new Set<number>(
@@ -240,49 +224,35 @@ async function syncCountyActivityDepartmentLinks(
 
   const have = new Set<number>(existing.map((row) => row.departmentId))
   const toAdd = [...desired].filter((id) => !have.has(id))
-  await createCountyActivityDepartmentLinks(
-    {
-      activityId: input.activityId,
-      departmentIds: toAdd,
-      activityCode: input.activityCode,
-      activityName: input.activityName,
-      type: input.type,
-      leavecode: input.leavecode,
-      parentActivityId: input.parentActivityId,
-      apportioning: input.apportioning,
-      manualApportioning: input.manualApportioning,
-    },
-    deptApportioningMap,
-    deptManualApportioningMap,
-  )
+  await createCountyActivityDepartmentLinks({
+    activityId: input.activityId,
+    departmentIds: toAdd,
+    activityCode: input.activityCode,
+    activityName: input.activityName,
+    type: input.type,
+    leavecode: input.leavecode,
+    parentActivityId: input.parentActivityId,
+    apportioning: false,
+    manualApportioning: false,
+  })
 
-  // Also update existing links if their apportioning status changed
+  // Update existing links to null/null if they aren't already
   const toUpdate = existing.filter((row) => desired.has(row.departmentId))
   await Promise.all(
     toUpdate.map((row) => {
-      const deptAllowsApportioning = deptApportioningMap?.get(row.departmentId) ?? true
-      const deptAllowsManualApportioning = deptManualApportioningMap?.get(row.departmentId) ?? true
-      const effectiveApportioning = input.apportioning && deptAllowsApportioning
-      const effectiveManualApportioning = input.manualApportioning && deptAllowsManualApportioning
-
-      // Only call API if apportioning status actually changed
-      if (
-        row.apportioning !== effectiveApportioning ||
-        row.manualApportioning !== effectiveManualApportioning
-      ) {
+      if (row.apportioning !== null || row.manualApportioning !== null) {
         return api.put<unknown>(`/activity-departments/${row.id}`, {
           code: input.activityCode.trim(),
           name: input.activityName.trim(),
           type: input.type,
           leavecode: input.leavecode,
           parentId: input.parentActivityId,
-          apportioning: effectiveApportioning,
-          manualApportioning: effectiveManualApportioning,
+          apportioning: null,
+          manualApportioning: null,
         })
       }
       return Promise.resolve()
     }),
-
   )
 }
 
@@ -803,9 +773,8 @@ export async function apiPostCountyActivity(
   input: CreateCountyActivityApiInput,
 ): Promise<ApiCountyActivityCreateResponse> {
   const { values, tab, parentId, masterCatalog, departmentLinks } = input
-  const { apportioning, manualApportioning } = normalizeCountyActivityApportioningFlags(
-    values.apportioning,
-  )
+  // Apportioning is always null when creating from county activity modal.
+  // Auto-creation via dept settings (ensureManualApportioningActivityForDepartment) is separate.
   const status = values.active ? ActivityStatusEnum.ACTIVE : ActivityStatusEnum.INACTIVE
 
   if (tab === CountyActivityGridRowType.PRIMARY) {
@@ -823,8 +792,8 @@ export async function apiPostCountyActivity(
       docrequired: values.docRequired,
       status,
       isActivityAssignableToMultipleJobPools: values.multipleJobPools,
-      apportioning,
-      manualApportioning,
+      apportioning: null,
+      manualApportioning: null,
     }
     // Department links use `POST /activity-departments` (separate table). Nested `departments` on
     // `POST /activities` is often not transformed by the API, which yields undefined `departmentId`
@@ -835,15 +804,6 @@ export async function apiPostCountyActivity(
       throw new Error("Create response missing id")
     }
 
-    // Build a per-dept apportioning map from the departmentLinks metadata if available
-    // This ensures only departments where apportioning=true in dept master get apportioning=true in the link
-    const deptApportioningMap = new Map<number, boolean>(
-      departmentLinks.map((d) => [d.id, (d as any).apportioning ?? true])
-    )
-    const deptManualApportioningMap = new Map<number, boolean>(
-      departmentLinks.map((d) => [d.id, (d as any).manualApportioning ?? true])
-    )
-
     await createCountyActivityDepartmentLinks({
       activityId: data.id,
       departmentIds: departmentLinks.map((d) => d.id),
@@ -852,9 +812,9 @@ export async function apiPostCountyActivity(
       type: ApiActivityTypeEnum.PRIMARY,
       leavecode: values.leaveCode,
       parentActivityId: null,
-      apportioning,
-      manualApportioning,
-    }, deptApportioningMap, deptManualApportioningMap)
+      apportioning: null,
+      manualApportioning: null,
+    })
 
     return data
   }
@@ -874,8 +834,8 @@ export async function apiPostCountyActivity(
     docrequired: values.docRequired,
     status,
     isActivityAssignableToMultipleJobPools: values.multipleJobPools,
-    apportioning,
-    manualApportioning,
+    apportioning: null,
+    manualApportioning: null,
   }
 
   const raw = await api.post<unknown>("/activities", body)
@@ -895,9 +855,8 @@ export async function apiPutCountyActivity(input: UpdateCountyActivityApiInput):
   }
 
   const { values, rowType, masterCatalog, departmentLinks, existingActivityDepartments } = input
-  const { apportioning, manualApportioning } = normalizeCountyActivityApportioningFlags(
-    values.apportioning,
-  )
+  // Apportioning is always null when editing from county activity modal.
+  // Auto-creation via dept settings (ensureManualApportioningActivityForDepartment) is separate.
   const status = values.active ? ActivityStatusEnum.ACTIVE : ActivityStatusEnum.INACTIVE
 
   const body: Record<string, unknown> = {
@@ -908,8 +867,8 @@ export async function apiPutCountyActivity(input: UpdateCountyActivityApiInput):
     docrequired: values.docRequired,
     status,
     isActivityAssignableToMultipleJobPools: values.multipleJobPools,
-    apportioning,
-    manualApportioning,
+    apportioning: null,
+    manualApportioning: null,
   }
 
   if (rowType === CountyActivityGridRowType.PRIMARY && masterCatalog?.code?.trim() && masterCatalog.type?.trim()) {
@@ -921,12 +880,6 @@ export async function apiPutCountyActivity(input: UpdateCountyActivityApiInput):
 
   // Sync department links via /activity-departments for primary rows (diff add/remove/update).
   if (rowType === CountyActivityGridRowType.PRIMARY && departmentLinks != null) {
-    const deptApportioningMap = new Map<number, boolean>(
-      departmentLinks.map((d) => [d.id, d.apportioning ?? true]),
-    )
-    const deptManualApportioningMap = new Map<number, boolean>(
-      departmentLinks.map((d) => [d.id, d.manualApportioning ?? true]),
-    )
     await syncCountyActivityDepartmentLinks(
       {
         activityId: id,
@@ -936,11 +889,9 @@ export async function apiPutCountyActivity(input: UpdateCountyActivityApiInput):
         type: ApiActivityTypeEnum.PRIMARY,
         leavecode: values.leaveCode,
         parentActivityId: null,
-        apportioning,
-        manualApportioning,
+        apportioning: false,
+        manualApportioning: false,
       },
-      deptApportioningMap,
-      deptManualApportioningMap,
       existingActivityDepartments,
     )
   }

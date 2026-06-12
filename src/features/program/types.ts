@@ -45,6 +45,8 @@ export type ProgramRow = {
   costAllocation?: boolean
   isMultiCode?: boolean
   multiCodeType?: string
+  apportioning?: boolean
+  manualApportioning?: boolean
 }
 
 export type GetProgramsParams = {
@@ -153,6 +155,8 @@ export type TimeStudyProgramResDto = {
   budgetProgram?: TimeStudyProgramBudgetProgramResDto | null
   department?: TimeStudyProgramDepartmentResDto | null
   parentId?: number | null
+  apportioning?: boolean | null
+  manualApportioning?: boolean | null
 }
 
 export type TimeStudyProgramListResponseDto = {
@@ -261,6 +265,7 @@ export type TimeStudyProgramFormProps = {
   budgetProgramNameOptions: string[]
   budgetProgramLookup: Record<string, { code: string; department: string }>
   isQuickAdd?: boolean
+  readOnly?: boolean
 }
 
 export type TimeStudyFieldLabelProps = { text: string }

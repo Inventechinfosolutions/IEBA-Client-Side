@@ -89,6 +89,7 @@ function mergeCountyActivityAddFormForSubmit(
 
 export function CountyActivityCodeAddPage({
   form,
+  readOnly = false,
   onAddSave,
   onEditSave,
   onClose,
@@ -108,7 +109,7 @@ export function CountyActivityCodeAddPage({
   readOnlyPrimaryPicker = false,
   isEditSourceLoading = false,
   subParentActivityDetail = null,
-  apportioningDepartments = [],
+  apportioningDepartments: _apportioningDepartments = [],
   isSubmitting = false,
   onCodeDropdownOpen,
   onCodeTypeDropdownOpen,
@@ -118,6 +119,7 @@ export function CountyActivityCodeAddPage({
     CountyActivityGridRowType.PRIMARY,
   )
   const tab = controlledTab ?? uncontrolledTab
+  const isReadOnly = readOnly === true
   const setTab = (next: CountyActivityGridRowType) => {
     onTabChange?.(next)
     if (controlledTab === undefined) setUncontrolledTab(next)
@@ -149,10 +151,7 @@ export function CountyActivityCodeAddPage({
     enabled: copyFromMasterEnabled,
   })
 
-  const masterRowForCopy =
-    copyFromMasterEnabled && masterActivityQuery.isSuccess
-      ? masterActivityQuery.data
-      : undefined
+  const masterRowForCopy = masterActivityQuery.data
 
   const primaryFieldsLocked = tab === CountyActivityGridRowType.PRIMARY && copyCode
 
@@ -244,6 +243,7 @@ export function CountyActivityCodeAddPage({
     setSelectedRight([])
   }
   const handleCountyActivityAddOrEditSave = () => {
+    if (isReadOnly) return
     // Copy-from-master shows master values in the UI but RHF state can still be empty; Zod runs
     // inside handleSubmit before our merge callback, so we sync master row into the form first.
     if (tab === CountyActivityGridRowType.PRIMARY && copyFromMasterEnabled) {
@@ -328,8 +328,8 @@ export function CountyActivityCodeAddPage({
           disabled={disabledTabs?.primary === true}
           onClick={() => setTab(CountyActivityGridRowType.PRIMARY)}
           className={`h-[62px] text-[18px] font-normal ${tab === CountyActivityGridRowType.PRIMARY
-              ? "bg-[#6C5DD3] text-white"
-              : "bg-white text-[#6C5DD3]"
+            ? "bg-[#6C5DD3] text-white"
+            : "bg-white text-[#6C5DD3]"
             } rounded-tl-[10px] ${disabledTabs?.primary === true ? "cursor-not-allowed opacity-60" : ""
             }`}
         >
@@ -340,8 +340,8 @@ export function CountyActivityCodeAddPage({
           disabled={disabledTabs?.sub === true}
           onClick={() => setTab(CountyActivityGridRowType.SUB)}
           className={`h-[62px] text-[18px] font-normal ${tab === CountyActivityGridRowType.SUB
-              ? "bg-[#6C5DD3] text-white"
-              : "bg-white text-[#6C5DD3]"
+            ? "bg-[#6C5DD3] text-white"
+            : "bg-white text-[#6C5DD3]"
             } rounded-tr-[18px] ${disabledTabs?.sub === true ? "cursor-not-allowed opacity-60" : ""
             }`}
         >
@@ -373,6 +373,7 @@ export function CountyActivityCodeAddPage({
               {tab === CountyActivityGridRowType.PRIMARY && (
                 <label className="flex cursor-pointer items-center gap-2">
                   <Checkbox
+                    disabled={isReadOnly}
                     checked={copyCode}
                     onCheckedChange={(checked) => form.setValue("copyCode", checked === true)}
                   />
@@ -388,12 +389,13 @@ export function CountyActivityCodeAddPage({
               ) : null}
             </div>
             <h3 className="whitespace-nowrap text-center text-[22px] max-[1024px]:text-[22px] max-[768px]:text-[18px] font-normal text-[#1F2937]">
-              {mode === CountyActivityAddPageMode.EDIT ? "Edit" : "Add"}{" "}
+              {isReadOnly ? "View" : mode === CountyActivityAddPageMode.EDIT ? "Edit" : "Add"}{" "}
               {tab === CountyActivityGridRowType.PRIMARY ? "Primary" : "Sub"} County Activity
             </h3>
             <div className="flex justify-end">
               <label className="flex items-center gap-2 text-[16px] text-[#1F2937]">
                 <Checkbox
+                  disabled={isReadOnly}
                   checked={form.watch("active")}
                   onCheckedChange={(checked) => form.setValue("active", checked === true)}
                 />
@@ -402,12 +404,22 @@ export function CountyActivityCodeAddPage({
             </div>
           </div>
 
+          {isReadOnly && (
+            <div className="mx-auto w-[500px] mt-4 rounded-[8px] bg-amber-50 border border-amber-200 p-3 text-amber-800 text-[14px] font-medium flex items-center justify-center gap-2">
+              <svg className="h-5 w-5 shrink-0 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              Auto-created manual activity cannot be modified
+            </div>
+          )}
+
           {tab === CountyActivityGridRowType.PRIMARY ? (
             <div className="mt-[35px] grid min-w-0 grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)_minmax(0,1fr)_minmax(0,1fr)] gap-3">
               <div className="min-w-0 space-y-1">
                 <label className="text-[14px] font-normal text-[#1F2937]">Code Type</label>
                 <Select
                   value={masterCodeType.trim() === "" ? undefined : masterCodeType}
+                  disabled={isReadOnly}
                   onValueChange={(value) => {
                     form.setValue("masterCodeType", value)
                     form.setValue("masterCode", 0)
@@ -475,7 +487,7 @@ export function CountyActivityCodeAddPage({
                   placeholder="Select code"
                   isLoading={isMasterCodeOptionsLoading}
                   loadingLabel="Loading codes…"
-                  disabled={!isMasterCodeOptionsLoading && masterCodeOptions.length === 0}
+                  disabled={isReadOnly || (!isMasterCodeOptionsLoading && masterCodeOptions.length === 0)}
                   className="h-[48px] rounded-[10px] border-[#D9D9D9] text-[14px]"
                   contentClassName="z-[200]"
                 />
@@ -485,12 +497,12 @@ export function CountyActivityCodeAddPage({
                   Activity Code
                 </label>
                 <TitleCaseInput
-                  readOnly={primaryFieldsLocked}
-                  className={`h-[48px] w-full rounded-[10px] border-[#D9D9D9] ${primaryFieldsLocked ? "cursor-not-allowed bg-muted/50" : ""
+                  readOnly={isReadOnly || primaryFieldsLocked}
+                  className={`h-[48px] w-full rounded-[10px] border-[#D9D9D9] ${(isReadOnly || primaryFieldsLocked) ? "cursor-not-allowed bg-muted/50" : ""
                     }`}
                   value={displayCountyActivityCode}
                   onChange={(event) =>
-                    primaryFieldsLocked
+                    (isReadOnly || primaryFieldsLocked)
                       ? undefined
                       : form.setValue("countyActivityCode", event.target.value)
                   }
@@ -506,12 +518,12 @@ export function CountyActivityCodeAddPage({
                   Activity Name
                 </label>
                 <TitleCaseInput
-                  readOnly={primaryFieldsLocked}
-                  className={`h-[48px] w-full rounded-[10px] border-[#D9D9D9] ${primaryFieldsLocked ? "cursor-not-allowed bg-muted/50" : ""
+                  readOnly={isReadOnly || primaryFieldsLocked}
+                  className={`h-[48px] w-full rounded-[10px] border-[#D9D9D9] ${(isReadOnly || primaryFieldsLocked) ? "cursor-not-allowed bg-muted/50" : ""
                     }`}
                   value={displayCountyActivityName}
                   onChange={(event) =>
-                    primaryFieldsLocked
+                    (isReadOnly || primaryFieldsLocked)
                       ? undefined
                       : form.setValue("countyActivityName", event.target.value)
                   }
@@ -532,7 +544,7 @@ export function CountyActivityCodeAddPage({
                 <Select
                   value={selectedPrimaryId ?? ""}
                   onValueChange={(value) => onSelectedPrimaryIdChange?.(value)}
-                  disabled={readOnlyPrimaryPicker}
+                  disabled={isReadOnly || readOnlyPrimaryPicker}
                   onOpenChange={(open) => {
                     if (open) onPrimaryPickerDropdownOpen?.()
                   }}
@@ -577,9 +589,10 @@ export function CountyActivityCodeAddPage({
                   Secondary Code
                 </label>
                 <TitleCaseInput
-                  className="h-[48px] w-full rounded-[10px] border-[#D9D9D9]"
+                  readOnly={isReadOnly}
+                  className={`h-[48px] w-full rounded-[10px] border-[#D9D9D9] ${isReadOnly ? "cursor-not-allowed bg-muted/50" : ""}`}
                   value={form.watch("countyActivityCode")}
-                  onChange={(event) => form.setValue("countyActivityCode", event.target.value)}
+                  onChange={(event) => isReadOnly ? undefined : form.setValue("countyActivityCode", event.target.value)}
                 />
               </div>
               <div className="min-w-0 space-y-1">
@@ -587,9 +600,10 @@ export function CountyActivityCodeAddPage({
                   Activity Name
                 </label>
                 <TitleCaseInput
-                  className="h-[48px] w-full rounded-[10px] border-[#D9D9D9]"
+                  readOnly={isReadOnly}
+                  className={`h-[48px] w-full rounded-[10px] border-[#D9D9D9] ${isReadOnly ? "cursor-not-allowed bg-muted/50" : ""}`}
                   value={form.watch("countyActivityName")}
-                  onChange={(event) => form.setValue("countyActivityName", event.target.value)}
+                  onChange={(event) => isReadOnly ? undefined : form.setValue("countyActivityName", event.target.value)}
                 />
               </div>
             </div>
@@ -598,12 +612,12 @@ export function CountyActivityCodeAddPage({
           <div className="mt-[30px] space-y-1">
             <label className="text-[14px] font-normal text-[#1F2937]">Description</label>
             <textarea
-              readOnly={primaryFieldsLocked}
-              className={`min-h-[100px] w-full rounded-[10px] border border-[#D9D9D9] px-4 py-3 text-[15px] outline-none ${primaryFieldsLocked ? "cursor-not-allowed bg-muted/50" : ""
+              readOnly={isReadOnly || primaryFieldsLocked}
+              className={`min-h-[100px] w-full rounded-[10px] border border-[#D9D9D9] px-4 py-3 text-[15px] outline-none ${(isReadOnly || primaryFieldsLocked) ? "cursor-not-allowed bg-muted/50" : ""
                 }`}
               value={displayDescription}
               onChange={(event) =>
-                primaryFieldsLocked
+                (isReadOnly || primaryFieldsLocked)
                   ? undefined
                   : form.setValue("description", event.target.value)
               }
@@ -639,6 +653,7 @@ export function CountyActivityCodeAddPage({
                         className="flex items-center gap-2 text-[14px] font-normal text-[#1F2937]"
                       >
                         <Checkbox
+                          disabled={isReadOnly}
                           checked={selectedLeft.includes(item)}
                           onCheckedChange={(checked) =>
                             setSelectedLeft((prev) =>
@@ -659,6 +674,7 @@ export function CountyActivityCodeAddPage({
                 <Button
                   type="button"
                   size="icon"
+                  disabled={isReadOnly}
                   onClick={assignCountyActivityDepartmentsFromPicker}
                   className="h-[38px] w-[62px] rounded-[12px] bg-[#6C5DD3] hover:bg-[#5B4DC5]"
                 >
@@ -667,6 +683,7 @@ export function CountyActivityCodeAddPage({
                 <Button
                   type="button"
                   size="icon"
+                  disabled={isReadOnly}
                   onClick={removeCountyActivityDepartmentsFromPicker}
                   className="h-[38px] w-[62px] rounded-[12px] bg-[#6C5DD3] hover:bg-[#5B4DC5]"
                 >
@@ -699,6 +716,7 @@ export function CountyActivityCodeAddPage({
                           className="flex items-center gap-2 text-[14px] font-normal text-[#1F2937]"
                         >
                           <Checkbox
+                            disabled={isReadOnly}
                             checked={selectedRight.includes(item)}
                             onCheckedChange={(checked) =>
                               setSelectedRight((prev) =>
@@ -724,6 +742,7 @@ export function CountyActivityCodeAddPage({
             <div className="flex items-center gap-5">
               <label className="flex items-center gap-2 text-[14px] text-[#1F2937]">
                 <Checkbox
+                  disabled={isReadOnly}
                   checked={form.watch("leaveCode")}
                   onCheckedChange={(checked) => form.setValue("leaveCode", checked === true)}
                 />
@@ -731,49 +750,16 @@ export function CountyActivityCodeAddPage({
               </label>
               <label className="flex items-center gap-2 text-[14px] text-[#1F2937]">
                 <Checkbox
+                  disabled={isReadOnly}
                   checked={form.watch("docRequired")}
                   onCheckedChange={(checked) => form.setValue("docRequired", checked === true)}
                 />
                 <span>Documents Required?</span>
               </label>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <label className="flex cursor-default items-center gap-2 text-[14px] text-[#1F2937]">
-                      <Checkbox
-                        checked={form.watch("apportioning")}
-                        onCheckedChange={(checked) => {
-                          const isChecked = checked === true
-                          form.setValue("apportioning", isChecked)
-                          form.setValue("manualApportioning", isChecked)
-                        }}
-                      />
-                      <span>Apportioning?</span>
-                    </label>
-                  </TooltipTrigger>
-                  {apportioningDepartments && apportioningDepartments.length > 0 && (
-                    <TooltipContent
-                      side="top"
-                      align="center"
-                      sideOffset={6}
-                      className="z-[300] !inline-block max-h-[min(20rem,70vh)] max-w-[min(20rem,70vw)] overflow-y-auto rounded-[8px] border-0 bg-black px-3 py-2.5 text-left text-[12px] font-medium leading-relaxed text-white shadow-lg"
-                    >
-                      <span className="block text-center whitespace-normal break-words font-semibold mb-1">
-                        Apportioning :
-                      </span>
-                      <ul className="list-disc pl-4 space-y-1 m-0">
-                        {apportioningDepartments.map((dept, idx) => (
-                          <li key={idx}>
-                            {dept.name} - {dept.apportioning ? "Yes" : "No"}
-                          </li>
-                        ))}
-                      </ul>
-                    </TooltipContent>
-                  )}
-                </Tooltip>
-              </TooltipProvider>
+
               <label className="flex items-center gap-2 text-[14px] text-[#A1A1AA]">
                 <Checkbox
+                  disabled={isReadOnly}
                   checked={form.watch("multipleJobPools")}
                   onCheckedChange={(checked) =>
                     form.setValue("multipleJobPools", checked === true)
@@ -783,13 +769,15 @@ export function CountyActivityCodeAddPage({
               </label>
             </div>
             <div className="flex items-center gap-2">
-              <Button
-                type="submit"
-                disabled={isSubmitting || (mode === CountyActivityAddPageMode.EDIT && isEditSourceLoading)}
-                className="h-[45px] rounded-[14px] bg-[#6C5DD3] px-[25px] text-[16px] font-normal text-white hover:bg-[#5B4DC5]"
-              >
-                Save
-              </Button>
+              {!isReadOnly && (
+                <Button
+                  type="submit"
+                  disabled={isSubmitting || (mode === CountyActivityAddPageMode.EDIT && isEditSourceLoading)}
+                  className="h-[45px] rounded-[14px] bg-[#6C5DD3] px-[25px] text-[16px] font-normal text-white hover:bg-[#5B4DC5]"
+                >
+                  Save
+                </Button>
+              )}
               <Button
                 type="button"
                 variant="secondary"

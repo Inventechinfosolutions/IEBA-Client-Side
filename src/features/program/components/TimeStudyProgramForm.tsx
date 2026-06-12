@@ -36,8 +36,10 @@ export function TimeStudyProgramForm({
   budgetProgramNameOptions,
   budgetProgramLookup,
   isQuickAdd = false,
+  readOnly = false,
 }: TimeStudyProgramFormProps) {
   const isEditMode = formMode === "edit"
+  const isReadOnly = readOnly === true
   const defaultValues = form.formState.defaultValues
   const initialBudgetProgram = defaultValues?.buProgramBudgetUnitName ?? ""
   const hasSavedBudgetProgram = Boolean(initialBudgetProgram.trim())
@@ -55,7 +57,7 @@ export function TimeStudyProgramForm({
             onBlur={() => {}}
             options={departmentOptions.map((o) => ({ value: o, label: o }))}
             placeholder="Select Department"
-            disabled={isEditMode}
+            disabled={isEditMode || isReadOnly}
             className="!min-h-[44px] h-[44px] !rounded-[7px] !border-[#c6cedd] !px-3 !pr-9 !text-[14px] !font-normal"
             itemButtonClassName="rounded-[4px] px-2.5 py-1.5"
             itemLabelClassName="!text-[14px]"
@@ -71,7 +73,7 @@ export function TimeStudyProgramForm({
             onBlur={() => {}}
             options={budgetProgramNameOptions.map((o) => ({ value: o, label: o }))}
             placeholder="Select Budget (BU) Program"
-            disabled={isEditMode && (!form.watch("isMultiCode") || hasSavedBudgetProgram)}
+            disabled={(isEditMode && (!form.watch("isMultiCode") || hasSavedBudgetProgram)) || isReadOnly}
             className="!min-h-[44px] h-[44px] !rounded-[7px] !border-[#c6cedd] !px-3 !pr-9 !text-[14px] !font-normal"
             itemButtonClassName="rounded-[4px] px-2.5 py-1.5"
             itemLabelClassName="!text-[14px]"
@@ -84,6 +86,7 @@ export function TimeStudyProgramForm({
             onChange={(value) =>
               form.setValue("buProgramProgramName", value, { shouldDirty: true, shouldValidate: true })
             }
+            disabled={isReadOnly}
             placeholder="Enter TS Program"
           />
         </div>
@@ -94,12 +97,14 @@ export function TimeStudyProgramForm({
             onChange={(value) =>
               form.setValue("buProgramProgramCode", value, { shouldDirty: true, shouldValidate: true })
             }
+            disabled={isReadOnly}
             placeholder="Enter TS Program Code"
           />
         </div>
         <label className="mt-2 inline-flex items-center gap-2 text-[14px] text-[#111827]">
           <Checkbox
             checked={form.watch("costAllocation")}
+            disabled={isReadOnly}
             onCheckedChange={(checked) =>
               form.setValue("costAllocation", checked === true, {
                 shouldDirty: true,
@@ -139,7 +144,7 @@ export function TimeStudyProgramForm({
             onBlur={() => {}}
             options={budgetProgramNameOptions.map((o) => ({ value: o, label: o }))}
             placeholder="Select TS Program"
-            disabled={isEditMode}
+            disabled={isEditMode || isReadOnly}
             className="!min-h-[44px] h-[44px] !rounded-[7px] !border-[#c6cedd] !px-3 !pr-9 !text-[14px] !font-normal"
             itemButtonClassName="rounded-[4px] px-2.5 py-1.5"
             itemLabelClassName="!text-[14px]"
@@ -168,6 +173,7 @@ export function TimeStudyProgramForm({
             onChange={(value) =>
               form.setValue("buSubProgramName", value, { shouldDirty: true, shouldValidate: true })
             }
+            disabled={isReadOnly}
             placeholder="Enter TS Sub-Program One Name"
           />
         </div>
@@ -178,12 +184,14 @@ export function TimeStudyProgramForm({
             onChange={(value) =>
               form.setValue("buSubProgramCode", value, { shouldDirty: true, shouldValidate: true })
             }
+            disabled={isReadOnly}
             placeholder="Enter TS Sub-Program One Code"
           />
         </div>
         <label className="mt-2 inline-flex items-center gap-2 text-[14px] text-[#111827]">
           <Checkbox
             checked={form.watch("costAllocation")}
+            disabled={isReadOnly}
             onCheckedChange={(checked) =>
               form.setValue("costAllocation", checked === true, {
                 shouldDirty: true,
@@ -220,7 +228,7 @@ export function TimeStudyProgramForm({
           onBlur={() => {}}
           options={budgetProgramNameOptions.map((o) => ({ value: o, label: o }))}
           placeholder="Select TS Program"
-          disabled={isEditMode || isQuickAdd}
+          disabled={isEditMode || isQuickAdd || isReadOnly}
           className="!min-h-[44px] h-[44px] !rounded-[7px] !border-[#c6cedd] !px-3 !pr-9 !text-[14px] !font-normal"
           itemButtonClassName="rounded-[4px] px-2.5 py-1.5"
           itemLabelClassName="!text-[14px]"
@@ -257,6 +265,7 @@ export function TimeStudyProgramForm({
           onChange={(value) =>
             form.setValue("buProgramProgramName", value, { shouldDirty: true, shouldValidate: true })
           }
+          disabled={isReadOnly}
           placeholder="Enter TS Sub-Program Two Name"
         />
       </div>
@@ -267,12 +276,14 @@ export function TimeStudyProgramForm({
           onChange={(value) =>
             form.setValue("buProgramProgramCode", value, { shouldDirty: true, shouldValidate: true })
           }
+          disabled={isReadOnly}
           placeholder="Enter TS Sub-Program Two Code"
         />
       </div>
       <label className="mt-2 inline-flex items-center gap-2 text-[14px] text-[#111827]">
         <Checkbox
           checked={form.watch("costAllocation")}
+          disabled={isReadOnly}
           onCheckedChange={(checked) =>
             form.setValue("costAllocation", checked === true, {
               shouldDirty: true,

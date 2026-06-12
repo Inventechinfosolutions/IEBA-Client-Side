@@ -125,6 +125,8 @@ function mapTimeStudyProgramToProgramRow(raw: TimeStudyProgramResDto): ProgramRo
     costAllocation: raw.costAllocation === true,
     isMultiCode: raw.isMultiCode === true,
     multiCodeType: typeof raw.multiCodeType === "string" ? raw.multiCodeType : undefined,
+    apportioning: raw.apportioning === true,
+    manualApportioning: raw.manualApportioning === true,
   }
 }
 
