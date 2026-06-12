@@ -24,21 +24,23 @@ import {
   type ResolvedReportPdfMeta,
 } from "./reportPdf"
 
-const TABLE_WIDTH = 544
+const TABLE_WIDTH = 752
+const PROGRAM_CODES_WIDTH = 168
+const BOTTOM_TABLE_WIDTH = TABLE_WIDTH - PROGRAM_CODES_WIDTH - 12
 
 const W = {
-  program: 62,
-  pct: 38,
-  salary: 38,
-  benefits: 38,
-  time: 102,
+  program: 88,
+  pct: 52,
+  salary: 53,
+  benefits: 53,
+  time: 138,
 } as const
 
 const BOTTOM_W = {
-  program: 150,
-  percentage: 118,
-  salary: 138,
-  benefits: 138,
+  program: 158,
+  percentage: 124,
+  salary: 145,
+  benefits: 145,
 } as const
 
 const styles = StyleSheet.create({
@@ -96,24 +98,23 @@ const styles = StyleSheet.create({
     fontSize: 6.5,
     textAlign: "center",
   },
-  bodyCell: {
+  tableCell: {
     borderWidth: 1,
     borderColor: "#000000",
-    padding: 4,
+    paddingVertical: 4,
+    paddingHorizontal: 3,
+    minHeight: 14,
+    justifyContent: "center",
+  },
+  bodyCellText: {
     fontSize: 6.5,
     textAlign: "left",
   },
-  rightCell: {
-    borderWidth: 1,
-    borderColor: "#000000",
-    padding: 4,
+  rightCellText: {
     fontSize: 6.5,
     textAlign: "right",
   },
-  centerCell: {
-    borderWidth: 1,
-    borderColor: "#000000",
-    padding: 4,
+  centerCellText: {
     fontSize: 6.5,
     textAlign: "center",
   },
@@ -123,18 +124,19 @@ const styles = StyleSheet.create({
   },
   bottomSection: {
     flexDirection: "row",
-    gap: 12,
+    width: TABLE_WIDTH,
     marginTop: 8,
   },
   bottomLeft: {
-    flexGrow: 1,
-    maxWidth: BOTTOM_W.program + BOTTOM_W.percentage + BOTTOM_W.salary + BOTTOM_W.benefits,
+    width: BOTTOM_TABLE_WIDTH,
+    marginRight: 12,
   },
   bottomTable: {
-    width: BOTTOM_W.program + BOTTOM_W.percentage + BOTTOM_W.salary + BOTTOM_W.benefits,
+    width: BOTTOM_TABLE_WIDTH,
   },
   programCodesBox: {
-    width: 170,
+    width: PROGRAM_CODES_WIDTH,
+    flexShrink: 0,
     borderWidth: 1,
     borderColor: "#000000",
     padding: 8,
@@ -162,6 +164,41 @@ const styles = StyleSheet.create({
     padding: 12,
   },
 })
+
+function TableCell({
+  width,
+  children,
+  align = "left",
+  bold,
+  shaded,
+}: {
+  width: number
+  children?: ReactNode
+  align?: "left" | "center" | "right"
+  bold?: boolean
+  shaded?: boolean
+}) {
+  const textStyle =
+    align === "right"
+      ? styles.rightCellText
+      : align === "center"
+        ? styles.centerCellText
+        : styles.bodyCellText
+
+  return (
+    <View
+      style={[
+        styles.tableCell,
+        { width },
+        shaded ? styles.totalRow : null,
+      ]}
+    >
+      {children != null && children !== "" ? (
+        <Text style={bold ? [textStyle, { fontFamily: "Helvetica-Bold" }] : textStyle}>{children}</Text>
+      ) : null}
+    </View>
+  )
+}
 
 function MainTableHeader() {
   const pctWidth = W.pct * 4
@@ -217,69 +254,73 @@ function MainTable({ employee }: { employee: QtrMonthEmployee }) {
       <MainTableHeader />
       {employee.programs.map((program, index) => (
         <View key={`${program.programcode}-${index}`} style={styles.row}>
-          <Text style={[styles.bodyCell, { width: W.program, fontFamily: "Helvetica-Bold" }]}>
+          <TableCell width={W.program} bold>
             {program.program}
-          </Text>
-          <Text style={[styles.rightCell, { width: W.pct }]}>
+          </TableCell>
+          <TableCell width={W.pct} align="right">
             {formatQtrMonthPercentOne(program.totalEnhancedPercentageOfProgram)}
-          </Text>
-          <Text style={[styles.rightCell, { width: W.pct }]}>
+          </TableCell>
+          <TableCell width={W.pct} align="right">
             {formatQtrMonthPercentOne(program.totalnonEnhancedPercentageOfProgram)}
-          </Text>
-          <Text style={[styles.rightCell, { width: W.pct }]}>
+          </TableCell>
+          <TableCell width={W.pct} align="right">
             {formatQtrMonthPercentOne(program.totalnonClaimablePercentageOfProgram)}
-          </Text>
-          <Text style={[styles.rightCell, { width: W.pct }]}>
+          </TableCell>
+          <TableCell width={W.pct} align="right">
             {formatQtrMonthPercentOne(program.totalPercentageOfProgram)}
-          </Text>
-          <Text style={[styles.rightCell, { width: W.salary }]}>{formatQtrMonthMoney(program.salaryEnhanced)}</Text>
-          <Text style={[styles.rightCell, { width: W.salary }]}>
+          </TableCell>
+          <TableCell width={W.salary} align="right">
+            {formatQtrMonthMoney(program.salaryEnhanced)}
+          </TableCell>
+          <TableCell width={W.salary} align="right">
             {formatQtrMonthMoney(program.salaryNonEnhanced)}
-          </Text>
-          <Text style={[styles.rightCell, { width: W.salary }]}>
+          </TableCell>
+          <TableCell width={W.salary} align="right">
             {formatQtrMonthMoney(program.salaryNonClaimable)}
-          </Text>
-          <Text style={[styles.rightCell, { width: W.benefits }]}>
+          </TableCell>
+          <TableCell width={W.benefits} align="right">
             {formatQtrMonthMoney(program.benefitsEnhanced)}
-          </Text>
-          <Text style={[styles.rightCell, { width: W.benefits }]}>
+          </TableCell>
+          <TableCell width={W.benefits} align="right">
             {formatQtrMonthMoney(program.benefitsNonEnhanced)}
-          </Text>
-          <Text style={[styles.rightCell, { width: W.benefits }]}>
+          </TableCell>
+          <TableCell width={W.benefits} align="right">
             {formatQtrMonthMoney(program.benefitsNonClaimable)}
-          </Text>
-          <Text style={[styles.rightCell, { width: W.time }]}>
+          </TableCell>
+          <TableCell width={W.time} align="right">
             {formatQtrMonthPercentTwo(program.percentageOfTimeWorked)}
-          </Text>
+          </TableCell>
         </View>
       ))}
-      <View style={[styles.row, styles.totalRow]}>
-        <Text style={[styles.bodyCell, { width: W.program, fontFamily: "Helvetica-Bold" }]}>Total</Text>
-        <Text style={[styles.rightCell, { width: W.pct }]} />
-        <Text style={[styles.rightCell, { width: W.pct }]} />
-        <Text style={[styles.rightCell, { width: W.pct }]} />
-        <Text style={[styles.rightCell, { width: W.pct }]} />
-        <Text style={[styles.rightCell, { width: W.salary }]}>
+      <View style={styles.row}>
+        <TableCell width={W.program} bold shaded>
+          Total
+        </TableCell>
+        <TableCell width={W.pct} align="right" shaded />
+        <TableCell width={W.pct} align="right" shaded />
+        <TableCell width={W.pct} align="right" shaded />
+        <TableCell width={W.pct} align="right" shaded />
+        <TableCell width={W.salary} align="right" shaded>
           {formatQtrMonthMoney(employee.totalSalaryEnhanced)}
-        </Text>
-        <Text style={[styles.rightCell, { width: W.salary }]}>
+        </TableCell>
+        <TableCell width={W.salary} align="right" shaded>
           {formatQtrMonthMoney(employee.totalSalaryNonEnhanced)}
-        </Text>
-        <Text style={[styles.rightCell, { width: W.salary }]}>
+        </TableCell>
+        <TableCell width={W.salary} align="right" shaded>
           {formatQtrMonthMoney(employee.totalSalaryNonClaimable)}
-        </Text>
-        <Text style={[styles.rightCell, { width: W.benefits }]}>
+        </TableCell>
+        <TableCell width={W.benefits} align="right" shaded>
           {formatQtrMonthMoney(employee.totalBenefitsEnhanced)}
-        </Text>
-        <Text style={[styles.rightCell, { width: W.benefits }]}>
+        </TableCell>
+        <TableCell width={W.benefits} align="right" shaded>
           {formatQtrMonthMoney(employee.totalBenefitsNonEnhanced)}
-        </Text>
-        <Text style={[styles.rightCell, { width: W.benefits }]}>
+        </TableCell>
+        <TableCell width={W.benefits} align="right" shaded>
           {formatQtrMonthMoney(employee.totalBenefitsNonClaimable)}
-        </Text>
-        <Text style={[styles.rightCell, { width: W.time }]}>
+        </TableCell>
+        <TableCell width={W.time} align="right" shaded>
           {formatQtrMonthPercentTwo(employee.totalPercentageOfTimeWorked)}
-        </Text>
+        </TableCell>
       </View>
     </View>
   )
@@ -300,63 +341,76 @@ function BottomSection({ employee }: { employee: QtrMonthEmployee }) {
   })
 
   return (
-    <View style={styles.bottomSection}>
+    <View style={styles.bottomSection} wrap={false}>
       <View style={styles.bottomLeft}>
         <View style={styles.bottomTable}>
           <View style={styles.row}>
-            <Text
+            <View
               style={[
                 styles.headerCell,
-                {
-                  width:
-                    BOTTOM_W.program + BOTTOM_W.percentage + BOTTOM_W.salary + BOTTOM_W.benefits,
-                },
+                { width: BOTTOM_TABLE_WIDTH, minHeight: 24, justifyContent: "center" },
               ]}
             >
-              Total time spent in each program: (For use by agencies without daily record of program
-              time for entire invoice period)
-            </Text>
+              <Text style={{ fontSize: 6.5, textAlign: "center", fontFamily: "Helvetica-Bold" }}>
+                Total time spent in each program: (For use by agencies without daily record of
+                program time for entire invoice period)
+              </Text>
+            </View>
           </View>
           <View style={styles.row}>
-            <Text style={[styles.headerCell, { width: BOTTOM_W.program }]}>Program</Text>
-            <Text style={[styles.headerCell, { width: BOTTOM_W.percentage }]}>
-              Percentage of time worked in Program
-            </Text>
-            <Text style={[styles.headerCell, { width: BOTTOM_W.salary }]}>Salary</Text>
-            <Text style={[styles.headerCell, { width: BOTTOM_W.benefits }]}>Benefits</Text>
+            <View style={[styles.headerCell, { width: BOTTOM_W.program }]}>
+              <Text style={{ fontSize: 6.5, textAlign: "center", fontFamily: "Helvetica-Bold" }}>
+                Program
+              </Text>
+            </View>
+            <View style={[styles.headerCell, { width: BOTTOM_W.percentage }]}>
+              <Text style={{ fontSize: 6.5, textAlign: "center", fontFamily: "Helvetica-Bold" }}>
+                Percentage of time worked in Program
+              </Text>
+            </View>
+            <View style={[styles.headerCell, { width: BOTTOM_W.salary }]}>
+              <Text style={{ fontSize: 6.5, textAlign: "center", fontFamily: "Helvetica-Bold" }}>
+                Salary
+              </Text>
+            </View>
+            <View style={[styles.headerCell, { width: BOTTOM_W.benefits }]}>
+              <Text style={{ fontSize: 6.5, textAlign: "center", fontFamily: "Helvetica-Bold" }}>
+                Benefits
+              </Text>
+            </View>
           </View>
           {employee.programs.map((program, index) => {
             const row = getQtrMonthBottomRowValues(program, employee)
             return (
               <View key={`bottom-${program.programcode}-${index}`} style={styles.row}>
-                <Text style={[styles.bodyCell, { width: BOTTOM_W.program, fontFamily: "Helvetica-Bold" }]}>
+                <TableCell width={BOTTOM_W.program} bold>
                   {program.program}
-                </Text>
-                <Text style={[styles.rightCell, { width: BOTTOM_W.percentage }]}>
+                </TableCell>
+                <TableCell width={BOTTOM_W.percentage} align="right">
                   {formatQtrMonthPercentTwo(row.percentage)}
-                </Text>
-                <Text style={[styles.rightCell, { width: BOTTOM_W.salary }]}>
+                </TableCell>
+                <TableCell width={BOTTOM_W.salary} align="right">
                   {formatQtrMonthMoney(row.salary)}
-                </Text>
-                <Text style={[styles.rightCell, { width: BOTTOM_W.benefits }]}>
+                </TableCell>
+                <TableCell width={BOTTOM_W.benefits} align="right">
                   {formatQtrMonthMoney(row.benefits)}
-                </Text>
+                </TableCell>
               </View>
             )
           })}
-          <View style={[styles.row, styles.totalRow]}>
-            <Text style={[styles.bodyCell, { width: BOTTOM_W.program, fontFamily: "Helvetica-Bold" }]}>
+          <View style={styles.row}>
+            <TableCell width={BOTTOM_W.program} bold shaded>
               Total
-            </Text>
-            <Text style={[styles.rightCell, { width: BOTTOM_W.percentage }]}>
+            </TableCell>
+            <TableCell width={BOTTOM_W.percentage} align="right" shaded>
               {formatQtrMonthPercentOne(totalPercentage)}
-            </Text>
-            <Text style={[styles.rightCell, { width: BOTTOM_W.salary }]}>
+            </TableCell>
+            <TableCell width={BOTTOM_W.salary} align="right" shaded>
               {formatQtrMonthMoney(totalSalary)}
-            </Text>
-            <Text style={[styles.rightCell, { width: BOTTOM_W.benefits }]}>
+            </TableCell>
+            <TableCell width={BOTTOM_W.benefits} align="right" shaded>
               {formatQtrMonthMoney(totalBenefits)}
-            </Text>
+            </TableCell>
           </View>
         </View>
       </View>
@@ -377,12 +431,17 @@ function BottomSection({ employee }: { employee: QtrMonthEmployee }) {
 function EmployeeSection({
   employee,
   timeStudyPeriod,
+  countyName,
 }: {
   employee: QtrMonthEmployee
   timeStudyPeriod: string
+  countyName: string
 }) {
   return (
     <View>
+      {countyName ? (
+        <Text style={styles.reportHeaderLine}>County: {countyName}</Text>
+      ) : null}
       <Text style={styles.reportHeaderLine}>Time Study Period: {timeStudyPeriod}</Text>
       <Text style={styles.reportHeaderLine}>
         Name of Employee: {formatQtrMonthEmployeeName(employee.employeeName)}
@@ -418,7 +477,7 @@ function QTRMONTHReportPage({
   const pagePadding = resolvePagePadding(footerVariant)
 
   return (
-    <Page size="LETTER" style={[styles.page, pagePadding]} wrap>
+    <Page size="LETTER" orientation="landscape" style={[styles.page, pagePadding]} wrap>
       <ReportPdfHeader
         countyName={meta.countyName}
         reportTitle={meta.reportTitle}
@@ -460,7 +519,11 @@ function QTRMONTHReportDocument({
           footerVariant={footerVariant}
           printedOn={printedOn}
         >
-          <EmployeeSection employee={employee} timeStudyPeriod={timeStudyPeriod} />
+          <EmployeeSection
+            employee={employee}
+            timeStudyPeriod={timeStudyPeriod}
+            countyName={meta.countyName}
+          />
         </QTRMONTHReportPage>
       ))}
     </Document>
