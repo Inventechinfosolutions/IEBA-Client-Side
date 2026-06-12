@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod"
-import { ArrowLeft, ChevronDown, ChevronRight, History, OctagonXIcon, PlusIcon, SearchIcon } from "lucide-react"
+import { ArrowLeft, ChevronDown, ChevronRight, History, OctagonXIcon, PlusIcon, SearchIcon, Eye } from "lucide-react"
 
 import { useQueryClient } from "@tanstack/react-query"
 import { useForm } from "react-hook-form"
@@ -353,19 +353,45 @@ function CountyActivitySubTableRowsRenderer({
           </TableCell>
           {canUpdateCountyActivity && (
             <TableCell className="px-[14px] py-[5px] align-middle text-center">
-              <Button
-                type="button"
-                size="icon"
-                variant="ghost"
-                className="text-[#6C5DD3] hover:bg-[#6C5DD3]/10"
-                onClick={() => onEditRow(child)}
-              >
-                <img
-                  src={editIconImg}
-                  alt="Edit"
-                  className="h-4 w-4 object-contain"
-                />
-              </Button>
+              {child.apportioning === true && child.manualApportioning === true ? (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        className="text-[#6C5DD3] hover:bg-[#6C5DD3]/10"
+                        onClick={() => onEditRow(child)}
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent
+                      side="top"
+                      align="center"
+                      sideOffset={6}
+                      className="z-50 !inline-block rounded-[8px] border-0 bg-black px-3 py-2.5 text-left text-[12px] font-medium leading-relaxed text-white shadow-lg"
+                    >
+                      Auto-created manual activity cannot be modified
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              ) : (
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="ghost"
+                  className="text-[#6C5DD3] hover:bg-[#6C5DD3]/10"
+                  onClick={() => onEditRow(child)}
+                >
+                  <img
+                    src={editIconImg}
+                    alt="Edit"
+                    className="h-4 w-4 object-contain"
+                  />
+                </Button>
+              )}
             </TableCell>
           )}
         </TableRow>
@@ -413,12 +439,6 @@ export function CountyActivityCodeTable({
   const [showHistory, setShowHistory] = useState(false)
   const [historyActivityCode, setHistoryActivityCode] = useState("")
   const [historyActivityName, setHistoryActivityName] = useState("")
-
-  // Apportioning confirmation dialog state
-  const [apportioningConfirmOpen, setApportioningConfirmOpen] = useState(false)
-  const [apportioningDeptNames, setApportioningDeptNames] = useState<string[]>([])
-  const [nonApportioningDeptNames, setNonApportioningDeptNames] = useState<string[]>([])
-  const [pendingSaveCallback, setPendingSaveCallback] = useState<(() => void) | null>(null)
 
   const [addOpen, setAddOpen] = useState(false)
   const [hasCreatedNew, setHasCreatedNew] = useState(false)
@@ -927,52 +947,6 @@ export function CountyActivityCodeTable({
       return
     }
 
-    // If apportioning is checked, verify department data using already loaded departments (or fetch on-demand)
-    if (values.apportioning && tab === CountyActivityGridRowType.PRIMARY && departmentLinks.length > 0) {
-      try {
-        const assignedIds = new Set(departmentLinks.map(link => link.id))
-        let freshDepts = departments.filter(d => assignedIds.has(Number(d.id)))
-
-        if (freshDepts.length < departmentLinks.length) {
-          const deptsResult = await getAllDepartments({ status: "active" })
-          freshDepts = deptsResult.items.filter(d => assignedIds.has(Number(d.id)))
-        }
-
-        const apportioningNames = freshDepts
-          .filter(d => d.settings?.apportioning === true)
-          .map(d => d.name.trim())
-
-        const nonApportioningNames = freshDepts
-          .filter(d => d.settings?.apportioning !== true)
-          .map(d => d.name.trim())
-
-        // Build enriched links with per-dept apportioning flag
-        const enrichedLinks = freshDepts.map(d => ({
-          id: Number(d.id),
-          apportioning: d.settings?.apportioning === true,
-          manualApportioning: d.settings?.manualApportioning === true,
-        }))
-
-        // ONLY show popup if there's a mismatch (some departments don't have apportioning enabled)
-        if (apportioningNames.length < assignedNames.length) {
-          setApportioningDeptNames(apportioningNames)
-          setNonApportioningDeptNames(nonApportioningNames)
-          setPendingSaveCallback(() => () => {
-            doCreateCountyActivity(tab, values, enrichedLinks, masterCatalog)
-          })
-          setApportioningConfirmOpen(true)
-          return
-        }
-
-        // All departments support apportioning — save with enriched links
-        doCreateCountyActivity(tab, values, enrichedLinks, masterCatalog)
-        return
-      } catch (error) {
-        console.error("Failed to verify department apportioning status:", error)
-        // Fallback: proceed with regular save if API check fails
-      }
-    }
-
     doCreateCountyActivity(tab, values, departmentLinks, masterCatalog)
   }
 
@@ -1155,51 +1129,6 @@ export function CountyActivityCodeTable({
           { icon: <OctagonXIcon className="size-5 text-red-600" /> }
         )
         return
-      }
-    }
-
-    // If apportioning is checked on a primary row, verify department data using already loaded departments (or fetch on-demand)
-    if (values.apportioning && editingRow.rowType === CountyActivityGridRowType.PRIMARY && editDepartmentLinks.length > 0) {
-      try {
-        const assignedIds = new Set(editDepartmentLinks.map(link => link.id))
-        let freshDepts = departments.filter(d => assignedIds.has(Number(d.id)))
-
-        if (freshDepts.length < editDepartmentLinks.length) {
-          const deptsResult = await getAllDepartments({ status: "active" })
-          freshDepts = deptsResult.items.filter(d => assignedIds.has(Number(d.id)))
-        }
-
-        const apportioningNames = freshDepts
-          .filter(d => d.settings?.apportioning === true)
-          .map(d => d.name.trim())
-
-        const nonApportioningNames = freshDepts
-          .filter(d => d.settings?.apportioning !== true)
-          .map(d => d.name.trim())
-
-        // Build enriched links with per-dept apportioning flag
-        const enrichedLinks = freshDepts.map(d => ({
-          id: Number(d.id),
-          apportioning: d.settings?.apportioning === true,
-          manualApportioning: d.settings?.manualApportioning === true,
-        }))
-
-        // ONLY show popup if there's a mismatch
-        if (apportioningNames.length < editAssignedNames.length) {
-          setApportioningDeptNames(apportioningNames)
-          setNonApportioningDeptNames(nonApportioningNames)
-          setPendingSaveCallback(() => () => {
-            doUpdateCountyActivity(editingRow, values, masterCatalog, enrichedLinks)
-          })
-          setApportioningConfirmOpen(true)
-          return
-        }
-
-        // All departments support apportioning — save with enriched links
-        doUpdateCountyActivity(editingRow, values, masterCatalog, enrichedLinks)
-        return
-      } catch (error) {
-        console.error("Failed to verify department apportioning status:", error)
       }
     }
 
@@ -1702,25 +1631,57 @@ export function CountyActivityCodeTable({
                         </TableCell>
                         {canUpdateCountyActivity && (
                           <TableCell className="px-[14px] py-[5px] align-middle text-center">
-                            <Button
-                              type="button"
-                              size="icon"
-                              variant="ghost"
-                              className="text-[#6C5DD3] hover:bg-[#6C5DD3]/10"
-                              onClick={() => {
-                                setRowToEdit(row)
-                                setEditMasterCodesDropdownOpened(false)
-                                setCodeTypeDropdownOpened(false)
-                                setEditSelectedPrimaryId(null)
-                                setEditOpen(true)
-                              }}
-                            >
-                              <img
-                                src={editIconImg}
-                                alt="Edit"
-                                className="h-4 w-4 object-contain"
-                              />
-                            </Button>
+                            {row.apportioning === true && row.manualApportioning === true ? (
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      type="button"
+                                      size="icon"
+                                      variant="ghost"
+                                      className="text-[#6C5DD3] hover:bg-[#6C5DD3]/10"
+                                      onClick={() => {
+                                        setRowToEdit(row)
+                                        setEditMasterCodesDropdownOpened(false)
+                                        setCodeTypeDropdownOpened(false)
+                                        setEditSelectedPrimaryId(null)
+                                        setEditOpen(true)
+                                      }}
+                                    >
+                                      <Eye className="h-4 w-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent
+                                    side="top"
+                                    align="center"
+                                    sideOffset={6}
+                                    className="z-50 !inline-block rounded-[8px] border-0 bg-black px-3 py-2.5 text-left text-[12px] font-medium leading-relaxed text-white shadow-lg"
+                                  >
+                                    Auto-created manual activity cannot be modified
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            ) : (
+                              <Button
+                                type="button"
+                                size="icon"
+                                variant="ghost"
+                                className="text-[#6C5DD3] hover:bg-[#6C5DD3]/10"
+                                onClick={() => {
+                                  setRowToEdit(row)
+                                  setEditMasterCodesDropdownOpened(false)
+                                  setCodeTypeDropdownOpened(false)
+                                  setEditSelectedPrimaryId(null)
+                                  setEditOpen(true)
+                                }}
+                              >
+                                <img
+                                  src={editIconImg}
+                                  alt="Edit"
+                                  className="h-4 w-4 object-contain"
+                                />
+                              </Button>
+                            )}
                           </TableCell>
                         )}
                       </TableRow>
@@ -1884,6 +1845,7 @@ export function CountyActivityCodeTable({
                 primary: rowToEdit.rowType === CountyActivityGridRowType.SUB,
                 sub: rowToEdit.rowType !== CountyActivityGridRowType.SUB,
               }}
+              readOnly={rowToEdit.apportioning === true && rowToEdit.manualApportioning === true}
               primaryActivityCodeOptions={editModalPrimaryActivityOptions}
               selectedPrimaryId={
                 rowToEdit.rowType === CountyActivityGridRowType.SUB
@@ -1953,127 +1915,6 @@ export function CountyActivityCodeTable({
               isSubmitting={updateCountyActivityCode.isPending}
             />
           ) : null}
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Apportioning Confirmation Dialog */}
-      <Dialog open={apportioningConfirmOpen} onOpenChange={setApportioningConfirmOpen}>
-        <DialogContent
-          showClose={false}
-          className="w-[480px] max-w-[calc(100vw-2rem)] rounded-[14px] border border-[#E5E7EB] bg-white p-0 shadow-xl"
-          overlayClassName="bg-black/50"
-        >
-          <div className="p-6 space-y-4">
-            {/* Header */}
-            <div className="flex items-start gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#EDE9FF]">
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                  <path d="M10 2a8 8 0 100 16A8 8 0 0010 2zm0 4a1 1 0 011 1v3a1 1 0 11-2 0V7a1 1 0 011-1zm0 8a1 1 0 110-2 1 1 0 010 2z" fill="#6C5DD3" />
-                </svg>
-              </div>
-              <div>
-                <h3 className="text-[17px] font-semibold text-[#111827]">
-                  {apportioningDeptNames.length === 0
-                    ? "Apportioning Not Supported"
-                    : "Apportioning Setup Conflict"}
-                </h3>
-                <p className="mt-1 text-[13px] text-[#6B7280] leading-relaxed">
-                  {apportioningDeptNames.length === 0
-                    ? "None of the assigned departments have apportioning enabled in their settings."
-                    : "Some assigned departments do not support apportioning."}
-                </p>
-              </div>
-            </div>
-
-            {/* Scenario: Some have it, some don't */}
-            {apportioningDeptNames.length > 0 && (
-              <div className="space-y-4">
-                <div className="rounded-[12px] border border-green-200 bg-green-50/40 p-4 shadow-sm">
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-                    <p className="text-[12px] font-bold text-green-700 uppercase tracking-widest">
-                      Will be saved with Apportioning
-                    </p>
-                  </div>
-                  <ul className="grid grid-cols-1 gap-2 pl-1">
-                    {apportioningDeptNames.map((name) => (
-                      <li key={name} className="flex items-center gap-2 text-[14px] font-medium text-[#1F2937]">
-                        <svg width="14" height="14" viewBox="0 0 20 20" fill="none" className="text-green-600">
-                          <path d="M16.667 5l-9.167 9.167L3.333 10" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                        {name}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                <div className="rounded-[12px] border border-red-200 bg-red-50/40 p-4 shadow-sm">
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="h-2 w-2 rounded-full bg-red-500" />
-                    <p className="text-[12px] font-bold text-red-700 uppercase tracking-widest">
-                      Will NOT be saved with Apportioning
-                    </p>
-                  </div>
-                  <ul className="grid grid-cols-1 gap-2 pl-1 mb-3">
-                    {nonApportioningDeptNames.map((name) => (
-                      <li key={name} className="flex items-center gap-2 text-[14px] font-medium text-[#1F2937]">
-                        <svg width="14" height="14" viewBox="0 0 20 20" fill="none" className="text-red-500">
-                          <path d="M15 5L5 15M5 5l10 10" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                        {name}
-                      </li>
-                    ))}
-                  </ul>
-                  <div className="border-t border-red-100 pt-2">
-                    <p className="text-[11px] text-red-600 font-medium italic">
-                      <strong>Note:</strong> {nonApportioningDeptNames.length === 1 ? "This department has" : "These departments have"} apportioning false.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Scenario: None have it */}
-            {apportioningDeptNames.length === 0 && (
-              <div className="rounded-[10px] border border-red-200 bg-red-50 px-4 py-4 text-center">
-                <p className="text-[14px] font-medium text-red-800">
-                  No apportioning will be saved for this activity.
-                </p>
-              </div>
-            )}
-
-            <p className="text-[13px] text-[#6B7280] leading-relaxed">
-              Do you want to proceed with saving this activity anyway?
-            </p>
-
-            {/* Action buttons */}
-            <div className="flex justify-end gap-3 pt-1">
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => {
-                  setApportioningConfirmOpen(false)
-                  setPendingSaveCallback(null)
-                }}
-                className="h-[40px] rounded-[10px] bg-[#E5E7EB] px-5 text-[14px] font-normal text-[#111827] hover:bg-[#D1D5DB]"
-              >
-                Cancel
-              </Button>
-              <Button
-                type="button"
-                onClick={() => {
-                  setApportioningConfirmOpen(false)
-                  if (pendingSaveCallback) {
-                    pendingSaveCallback()
-                    setPendingSaveCallback(null)
-                  }
-                }}
-                className="h-[40px] rounded-[10px] bg-[#6C5DD3] px-5 text-[14px] font-normal text-white hover:bg-[#5B4DC5]"
-              >
-                OK, Proceed
-              </Button>
-            </div>
           </div>
         </DialogContent>
       </Dialog>

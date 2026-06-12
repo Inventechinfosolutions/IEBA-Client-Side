@@ -8,6 +8,15 @@ function extractMasterCodeListItems(res: unknown): unknown[] {
   if (d !== null && typeof d === "object") {
     const inner = (d as Record<string, unknown>).data
     if (Array.isArray(inner)) return inner
+    const rawObj = d as Record<string, unknown>
+    const list: unknown[] = []
+    if (Array.isArray(rawObj.excluded)) {
+      list.push(...rawObj.excluded)
+    }
+    if (Array.isArray(rawObj.included)) {
+      list.push(...rawObj.included)
+    }
+    if (list.length > 0) return list
   }
   return []
 }

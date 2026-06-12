@@ -311,6 +311,7 @@ export type CountyActivityDescriptionTableCellProps = {
 
 export type CountyActivityCodeAddPageProps = {
   form: UseFormReturn<CountyActivityAddFormValues>
+  readOnly?: boolean
   /** Add flow: validated + merged values (copy-from-master, sub parent detail). */
   onAddSave?: (tab: CountyActivityGridRowType, values: CountyActivityAddFormValues) => void
   /** Edit flow: submit handler from `editForm.handleSubmit`. */

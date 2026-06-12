@@ -45,6 +45,7 @@ export const ProgramFormModal = forwardRef<ProgramFormModalHandle, ProgramFormMo
   selectedRow,
 }: ProgramFormModalProps, ref) {
   const isTimeStudyContext = contextTab === "Time Study programs"
+  const isReadOnly = mode === "edit" && selectedRow?.apportioning === true && selectedRow?.manualApportioning === true
   const sections: ProgramFormSection[] = isTimeStudyContext
     ? ["BU Program", "BU Sub-Program", "Budget Unit"]
     : ["Budget Unit", "BU Program", "BU Sub-Program"]
@@ -229,6 +230,7 @@ export const ProgramFormModal = forwardRef<ProgramFormModalHandle, ProgramFormMo
   }
 
   const handleSubmit = form.handleSubmit((values) => {
+    if (isReadOnly) return
     onSave(
       { ...values, formSection: activeSection },
       {
@@ -303,8 +305,8 @@ export const ProgramFormModal = forwardRef<ProgramFormModalHandle, ProgramFormMo
                 onClick={() => handleSectionChange(section)}
                 className={`h-[58px] rounded-[8px] border text-[12px] ${
                   activeSection === section
-                    ? "border-[var(--primary)] bg-[var(--primary)] font-medium text-white"
-                    : "border-[#e8e9ef] bg-white text-[#4f5970]"
+                     ? "border-[var(--primary)] bg-[var(--primary)] font-medium text-white"
+                     : "border-[#e8e9ef] bg-white text-[#4f5970]"
                 } ${lockSectionTabs ? "cursor-not-allowed" : "cursor-pointer"}`}
               >
                 {sectionLabelMap[section]}
@@ -320,17 +322,23 @@ export const ProgramFormModal = forwardRef<ProgramFormModalHandle, ProgramFormMo
           <DialogHeader className="mx-auto w-[500px] pb-5">
             <DialogTitle className="text-center text-[22px] font-semibold text-[#111827]">
               {isTimeStudyContext
-                ? mode === "edit"
+                ? isReadOnly
                   ? activeSection === "BU Program"
-                    ? "Edit Time Study Primary Program"
+                    ? "View Time Study Primary Program"
                     : activeSection === "BU Sub-Program"
-                      ? "Edit Time Study Sub Program One"
-                      : "Edit Time Study Sub Program Two"
-                  : activeSection === "BU Program"
-                    ? "Add Time Study Primary Program"
-                    : activeSection === "BU Sub-Program"
-                      ? "Add Time Study Sub Program One"
-                      : "Add Time Study Sub Program Two"
+                      ? "View Time Study Sub Program One"
+                      : "View Time Study Sub Program Two"
+                  : mode === "edit"
+                    ? activeSection === "BU Program"
+                      ? "Edit Time Study Primary Program"
+                      : activeSection === "BU Sub-Program"
+                        ? "Edit Time Study Sub Program One"
+                        : "Edit Time Study Sub Program Two"
+                    : activeSection === "BU Program"
+                      ? "Add Time Study Primary Program"
+                      : activeSection === "BU Sub-Program"
+                        ? "Add Time Study Sub Program One"
+                        : "Add Time Study Sub Program Two"
                 : mode === "edit"
                 ? activeSection === "Budget Unit"
                   ? "Edit Budget Unit (BU) Name"
@@ -348,6 +356,7 @@ export const ProgramFormModal = forwardRef<ProgramFormModalHandle, ProgramFormMo
             <div className="mt-2 flex justify-end">
               <label className="inline-flex cursor-pointer items-center gap-1.5 text-[14px] font-medium text-[#20263a]">
                 <Checkbox
+                  disabled={isReadOnly}
                   checked={form.watch("active")}
                   onCheckedChange={(checked) => form.setValue("active", checked === true)}
                   className="size-4 rounded-[3px] border-[#b8bbcc] bg-white data-[state=checked]:border-[var(--primary)] data-[state=checked]:bg-[var(--primary)] [&_svg]:size-3.5"
@@ -356,6 +365,14 @@ export const ProgramFormModal = forwardRef<ProgramFormModalHandle, ProgramFormMo
               </label>
             </div>
           </DialogHeader>
+          {isReadOnly && (
+            <div className="mx-auto w-[500px] mb-5 rounded-[8px] bg-amber-50 border border-amber-200 p-3 text-amber-800 text-[14px] font-medium flex items-center justify-center gap-2">
+              <svg className="h-5 w-5 shrink-0 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              Auto-created manual program cannot be modified
+            </div>
+          )}
           {isTimeStudyContext ? (
             <TimeStudyProgramForm
               form={form}
@@ -365,6 +382,7 @@ export const ProgramFormModal = forwardRef<ProgramFormModalHandle, ProgramFormMo
               budgetProgramNameOptions={budgetProgramNameOptions}
               budgetProgramLookup={budgetProgramLookup}
               isQuickAdd={hideSectionTabs && activeSection === "Budget Unit"}
+              readOnly={isReadOnly}
             />
           ) : (
             <BudgetUnitsForm
@@ -380,13 +398,15 @@ export const ProgramFormModal = forwardRef<ProgramFormModalHandle, ProgramFormMo
             />
           )}
           <div className="mx-auto mt-6 flex w-[500px] items-center justify-end gap-4">
-            <Button
-              type="submit"
-              disabled={isSubmitting}
-              className="h-[44px] min-w-[117px] cursor-pointer rounded-[10px] bg-[#6C5DD3] px-6 text-[15px] font-medium text-white hover:bg-[#6C5DD3]"
-            >
-              {isSubmitting ? "Saving..." : "Save"}
-            </Button>
+            {!isReadOnly && (
+              <Button
+                type="submit"
+                disabled={isSubmitting}
+                className="h-[44px] min-w-[117px] cursor-pointer rounded-[10px] bg-[#6C5DD3] px-6 text-[15px] font-medium text-white hover:bg-[#6C5DD3]"
+              >
+                {isSubmitting ? "Saving..." : "Save"}
+              </Button>
+            )}
             <Button
               type="button"
               disabled={isSubmitting}

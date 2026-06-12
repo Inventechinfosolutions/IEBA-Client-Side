@@ -1,5 +1,5 @@
 import React, { forwardRef, useImperativeHandle, useMemo, useRef, useState } from "react"
-import { ChevronDown, ChevronRight, ChevronUp, EllipsisVertical, Pencil, Plus } from "lucide-react"
+import { ChevronDown, ChevronRight, ChevronUp, EllipsisVertical, Pencil, Plus, Eye } from "lucide-react"
 
 import tableCheckIcon from "@/assets/icons/table-check.png"
 import tableCloseIcon from "@/assets/icons/table-close.png"
@@ -232,6 +232,8 @@ export const TimeStudyProgramTable = forwardRef<TimeStudyProgramTableHandle, Tim
       timeStudyBudgetProgramId,
       costAllocation: raw.costAllocation === true,
       isMultiCode: raw.isMultiCode === true,
+      apportioning: raw.apportioning === true,
+      manualApportioning: raw.manualApportioning === true,
     }
   }
 
@@ -554,7 +556,7 @@ export const TimeStudyProgramTable = forwardRef<TimeStudyProgramTableHandle, Tim
                     sideOffset={6}
                     className="w-[92px]! min-w-[92px]! rounded-[6px] border border-[#edf0f6] p-1 shadow-[0_8px_20px_rgba(17,24,39,0.14)]"
                   >
-                    {canAddTsProgram && row.active && (
+                    {canAddTsProgram && row.active && !(row.apportioning === true && row.manualApportioning === true) && (
                       <DropdownMenuItem
                         onClick={() => onAddSubProgramFromParent?.(row)}
                         className="cursor-pointer gap-1.5 rounded-[8px] px-1.5 py-1 text-[12px] text-[#111827]"
@@ -568,8 +570,17 @@ export const TimeStudyProgramTable = forwardRef<TimeStudyProgramTableHandle, Tim
                         onClick={() => onEditRow(row)}
                         className="cursor-pointer gap-1.5 rounded-[8px] px-1.5 py-1 text-[12px] text-[#111827]"
                       >
-                        <Pencil className="size-[13px] text-(--primary)" />
-                        Edit
+                        {row.apportioning === true && row.manualApportioning === true ? (
+                          <>
+                            <Eye className="size-[13px] text-(--primary)" />
+                            View
+                          </>
+                        ) : (
+                          <>
+                            <Pencil className="size-[13px] text-(--primary)" />
+                            Edit
+                          </>
+                        )}
                       </DropdownMenuItem>
                     )}
                   </DropdownMenuContent>
@@ -578,18 +589,38 @@ export const TimeStudyProgramTable = forwardRef<TimeStudyProgramTableHandle, Tim
             )
           : // Primary (level 0) and Sub-Program Two (level 2): plain edit icon only
             canUpdateTsProgram && (
-              <button
-                type="button"
-                onClick={() => onEditRow(row)}
-                className="inline-flex cursor-pointer items-center opacity-80 drop-shadow-[0_1px_0_rgba(108,93,211,0.35)] transition-opacity hover:opacity-100"
-              >
-                <img
-                  src={tableEditIcon}
-                  alt=""
-                  aria-hidden="true"
-                  className="size-[11px] object-contain"
-                />
-              </button>
+              row.apportioning === true && row.manualApportioning === true ? (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        onClick={() => onEditRow(row)}
+                        className="inline-flex cursor-pointer items-center opacity-80 drop-shadow-[0_1px_0_rgba(108,93,211,0.35)] transition-opacity hover:opacity-100"
+                        aria-label="View TS program"
+                      >
+                        <Eye className="size-[13px] text-(--primary)" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" sideOffset={6} className="z-50 !inline-block rounded-[8px] border-0 bg-black px-3 py-2.5 text-left text-[12px] font-medium leading-relaxed text-white shadow-lg">
+                      Auto-created manual program cannot be modified
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => onEditRow(row)}
+                  className="inline-flex cursor-pointer items-center opacity-80 drop-shadow-[0_1px_0_rgba(108,93,211,0.35)] transition-opacity hover:opacity-100"
+                >
+                  <img
+                    src={tableEditIcon}
+                    alt=""
+                    aria-hidden="true"
+                    className="size-[11px] object-contain"
+                  />
+                </button>
+              )
             )}
       </TableCell>
       )}
