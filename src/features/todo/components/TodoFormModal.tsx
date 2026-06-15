@@ -2,6 +2,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { Check } from "lucide-react"
 import { toast } from "sonner"
+import { guardNoChanges } from "@/lib/formGuard"
 
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
@@ -17,7 +18,21 @@ import { TodoStatusEnum } from "../enums/todoStatus"
 import { todoFormSchema } from "../schemas"
 import { useGetTodoById } from "../queries/getTodos"
 import { TODO_STATUS_LABEL, TODO_STATUS_OPTIONS } from "../types"
-import type { TodoFormValues, TodoFormModalProps } from "../types"
+import type { TodoFormValues, TodoFormModalProps, TodoRow } from "../types"
+
+/**
+ * Picks only the fields the form cares about from a TodoRow (API response).
+ * Needed because apiGetTodoById returns a full TodoRow (id, createdDate, etc.)
+ * but the form only tracks { title, description, status }.
+ * Without this, the guard's deep-equal comparison would always fail (shape mismatch).
+ */
+function serverDataToFormValues(row: TodoRow): TodoFormValues {
+  return {
+    title: row.title,
+    description: row.description,
+    status: row.status,
+  }
+}
 
 export function TodoFormModal({
   open,
@@ -34,17 +49,29 @@ export function TodoFormModal({
     isEditMode ? todoId : undefined
   )
 
+  // Derive a clean TodoFormValues from serverData (which is a full TodoRow).
+  // This ensures the form and the guard always work with the same shape.
+  const formSnapshot: TodoFormValues | undefined = serverData
+    ? serverDataToFormValues(serverData)
+    : undefined
+
   const isNewStatusDisabled = isEditMode && initialValues.status !== TodoStatusEnum.NEW
 
   const form = useForm<TodoFormValues>({
     resolver: zodResolver(todoFormSchema),
-    values: serverData || initialValues,
+    values: formSnapshot ?? initialValues,
   })
 
   const selectedStatus = form.watch("status")
   const isDescriptionDisabled = isEditMode && selectedStatus === TodoStatusEnum.COMPLETED
 
   const handleSubmit = form.handleSubmit((values) => {
+    // Guard: block save if nothing has changed.
+    // Edit mode  → compare against clean form-shaped API snapshot (formSnapshot).
+    // Create mode → compare against the empty initialValues passed as prop.
+    const reference = formSnapshot ?? initialValues
+    if (guardNoChanges(values, reference)) return
+
     onSave(values)
   }, () => {
     const titleError = form.formState.errors.title?.message

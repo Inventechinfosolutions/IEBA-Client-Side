@@ -18,5 +18,9 @@ export function useGetTodoById(id: string | undefined) {
       return await apiGetTodoById(id)
     },
     enabled: !!id,
+    // Override global staleTime — edit modal must always fetch fresh data.
+    // Without this, the global 1-minute staleTime causes React Query to reuse
+    // a cached (possibly partial) record and skip the API call on reopen.
+    staleTime: 0,
   })
 }
