@@ -5,6 +5,7 @@ import { useQueryClient } from "@tanstack/react-query"
 import { useForm } from "react-hook-form"
 import { useMemo, useRef, useState } from "react"
 import { toast } from "sonner"
+import { guardNoChanges, getChangedFields } from "@/lib/formGuard"
 
 import { Spinner } from "@/components/ui/spinner"
 
@@ -80,7 +81,6 @@ import {
 } from "../api/countyActivityApi"
 import { usePermissions } from "@/hooks/usePermissions"
 import { useGetAllDepartments } from "@/features/department/queries/getDepartments"
-import { getAllDepartments } from "@/features/department/api/departments"
 
 
 function stripHtmlTags(html: string): string {
@@ -952,18 +952,19 @@ export function CountyActivityCodeTable({
 
   const doUpdateCountyActivity = (
     editingRow: CountyActivityCodeRow,
-    values: CountyActivityAddFormValues,
+    values: Partial<CountyActivityAddFormValues>,
     masterCatalog: { code: string; type: string } | undefined,
-    editDepartmentLinks: { id: number; apportioning?: boolean; manualApportioning?: boolean }[],
+    editDepartmentLinks: { id: number; apportioning?: boolean; manualApportioning?: boolean }[] | undefined,
   ) => {
     const isPrimary = editingRow.rowType === CountyActivityGridRowType.PRIMARY
     const wasActive = editingRow.active
-    const isBecomingActive = values.active
+    const isBecomingActive = values.active !== undefined ? values.active : wasActive
 
     updateCountyActivityCode.mutate(
       {
         id: editingRow.id,
         values,
+        originalValues: editFormValuesFromServer,
         rowType: editingRow.rowType,
         parentId: editingRow.parentId,
         masterCatalog,
@@ -995,6 +996,7 @@ export function CountyActivityCodeTable({
                       await apiPutCountyActivity({
                         id: child.id,
                         values: childValues,
+                        originalValues: mapCountyActivityRowToFormValues(child),
                         rowType: child.rowType,
                       })
                     } catch (err) {
@@ -1023,6 +1025,7 @@ export function CountyActivityCodeTable({
                         await apiPutCountyActivity({
                           id: child.id,
                           values: childValues,
+                          originalValues: mapCountyActivityRowToFormValues(child),
                           rowType: child.rowType,
                         })
                       } catch (err) {
@@ -1036,9 +1039,7 @@ export function CountyActivityCodeTable({
                 sessionStorage.removeItem(storageKey)
               }
             }
-            void queryClient.invalidateQueries({ queryKey: countyActivityCodeKeys.all })
           }
-
           toast.success(
             editingRow.rowType === CountyActivityGridRowType.PRIMARY
               ? "Primary county activity updated successfully."
@@ -1050,6 +1051,20 @@ export function CountyActivityCodeTable({
           setEditMasterCodesDropdownOpened(false)
           setCodeTypeDropdownOpened(false)
           setEditSelectedPrimaryId(null)
+
+          if (isPrimary && wasActive !== isBecomingActive) {
+            setTimeout(() => {
+              void queryClient.invalidateQueries({
+                predicate: (query) => {
+                  const key = query.queryKey
+                  if (!Array.isArray(key) || key[0] !== "countyActivityCode") return false
+                  // Exclude paged lists (already invalidated by default onSuccess) and activity details (modal is closed)
+                  if (key[1] === "paged" || key[1] === "activity-detail") return false
+                  return true
+                },
+              })
+            }, 0)
+          }
         },
         onError: (err) => {
           toastCountyActivityCodeApiError(
@@ -1066,7 +1081,18 @@ export function CountyActivityCodeTable({
   const submitCountyActivityEditFromEditModal = editForm.handleSubmit(async (values) => {
     if (!rowToEdit) return
 
-    // Block saving if the user changed the Primary Activity Code (parentId) on a sub activity.
+    // Guard: block save if the user hasn't changed anything.
+    // editFormValuesFromServer is the API-loaded snapshot that drives the form via `values:`.
+    if (guardNoChanges(
+      values as Record<string, unknown>,
+      editFormValuesFromServer as Record<string, unknown>,
+    )) return
+
+    const changedFields = getChangedFields(
+      values as Record<string, unknown>,
+      editFormValuesFromServer as Record<string, unknown>,
+    ) as Partial<CountyActivityAddFormValues>
+
     // The parent cannot be changed via edit — show a clear error and stop.
     if (rowToEdit.rowType === CountyActivityGridRowType.SUB) {
       const originalParentId = (
@@ -1086,7 +1112,8 @@ export function CountyActivityCodeTable({
     }
 
     let masterCatalog: { code: string; type: string } | undefined
-    if (rowToEdit.rowType === CountyActivityGridRowType.PRIMARY) {
+    const masterCodeChanged = changedFields.masterCode !== undefined || changedFields.masterCodeType !== undefined
+    if (rowToEdit.rowType === CountyActivityGridRowType.PRIMARY && masterCodeChanged) {
       let catalogId = values.masterCode
       let catalog = editMasterCodeOptions.find((o) => o.value === catalogId)
 
@@ -1106,20 +1133,24 @@ export function CountyActivityCodeTable({
       masterCatalog = { code: catalog.code, type: values.masterCodeType }
     }
 
-    const editAssignedNames = values.department
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean)
-    const editDepartmentLinks = editAssignedNames
-      .map((name) => departmentIdByName[name])
-      .filter((id): id is number => typeof id === "number" && !Number.isNaN(id))
-      .map((id) => ({ id }))
+    let editDepartmentLinks: { id: number; apportioning?: boolean; manualApportioning?: boolean }[] | undefined
+    if (changedFields.department !== undefined) {
+      const editAssignedNames = values.department
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean)
+      editDepartmentLinks = editAssignedNames
+        .map((name) => departmentIdByName[name])
+        .filter((id): id is number => typeof id === "number" && !Number.isNaN(id))
+        .map((id) => ({ id }))
+    }
 
     const editingRow = rowToEdit
+    const isBecomingActive = changedFields.active !== undefined ? changedFields.active : editingRow.active
 
     if (
       editingRow.rowType === CountyActivityGridRowType.SUB &&
-      values.active &&
+      isBecomingActive &&
       editingRow.parentId
     ) {
       const parent = primaryRows.find((r) => r.id === editingRow.parentId)
@@ -1132,7 +1163,7 @@ export function CountyActivityCodeTable({
       }
     }
 
-    doUpdateCountyActivity(editingRow, values, masterCatalog, editDepartmentLinks)
+    doUpdateCountyActivity(editingRow, changedFields, masterCatalog, editDepartmentLinks)
   }, (errors) => {
     console.error("Edit validation errors:", errors)
     toast.error("Please fill all required fields correctly.")
