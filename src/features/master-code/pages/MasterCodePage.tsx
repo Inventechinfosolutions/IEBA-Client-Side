@@ -1,5 +1,6 @@
 import { Check } from "lucide-react"
 import { toast } from "sonner"
+import { guardNoChanges, getChangedFields } from "@/lib/formGuard"
 import { useState } from "react"
 
 import { MasterCodeFormModal } from "../components/MasterCodeFormModal"
@@ -64,8 +65,28 @@ export function MasterCodePage() {
     if (!ui.activeTab) return
     setIsSaving(true)
     if (ui.modalMode === "edit" && ui.selectedRow) {
+      if (
+        guardNoChanges(
+          values as unknown as Record<string, unknown>,
+          ui.modalInitialValues as unknown as Record<string, unknown>
+        )
+      ) {
+        setIsSaving(false)
+        return
+      }
+
+      const changedFields = getChangedFields(
+        values as unknown as Record<string, unknown>,
+        ui.modalInitialValues as unknown as Record<string, unknown>
+      ) as Partial<MasterCodeFormValues>
+
       masterCodes.updateMasterCode(
-        { id: ui.selectedRow.id, codeType: ui.activeTab, values },
+        {
+          id: ui.selectedRow.id,
+          codeType: ui.activeTab,
+          values: changedFields,
+          originalValues: ui.modalInitialValues,
+        },
         {
           onSuccess: () => {
             toast.success(`${ui.activeTab} updated successfully`, successToastOptions)
