@@ -50,9 +50,6 @@ function deepEqual(a: unknown, b: unknown): boolean {
   return a === b
 }
 
-// ---------------------------------------------------------------------------
-// Public API
-// ---------------------------------------------------------------------------
 
 /**
  * Checks whether the current form values differ from the reference snapshot.
