@@ -88,46 +88,66 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: "row",
     width: TABLE_WIDTH,
+    minHeight: 14,
   },
   cell: {
     borderWidth: 1,
     borderColor: "lightslategray",
-    padding: 3,
+    paddingVertical: 3,
+    paddingHorizontal: 3,
+    minHeight: 14,
+    justifyContent: "center",
+  },
+  cellText: {
     fontSize: 6,
     textAlign: "right",
   },
   headerCell: {
     borderWidth: 1,
     borderColor: "lightslategray",
-    padding: 3,
+    paddingVertical: 3,
+    paddingHorizontal: 3,
+    minHeight: 14,
+    justifyContent: "center",
+    backgroundColor: GRAY,
+  },
+  headerText: {
     fontSize: 6.5,
     fontFamily: "Helvetica-Bold",
     textAlign: "center",
-    backgroundColor: GRAY,
   },
   groupHeader: {
     borderWidth: 1,
     borderColor: "lightslategray",
-    padding: 3,
-    fontSize: 6.5,
-    fontFamily: "Helvetica-Bold",
-    textAlign: "center",
+    paddingVertical: 3,
+    paddingHorizontal: 3,
+    minHeight: 14,
+    justifyContent: "center",
     backgroundColor: GRAY,
   },
   grayCell: {
     borderWidth: 1,
     borderColor: "lightslategray",
-    padding: 3,
-    fontSize: 6,
-    textAlign: "right",
+    paddingVertical: 3,
+    paddingHorizontal: 3,
+    minHeight: 14,
+    justifyContent: "center",
     backgroundColor: GRAY,
   },
   leftCell: {
     borderWidth: 1,
     borderColor: "lightslategray",
-    padding: 3,
+    paddingVertical: 3,
+    paddingHorizontal: 3,
+    minHeight: 14,
+    justifyContent: "center",
+  },
+  leftCellText: {
     fontSize: 6,
     textAlign: "left",
+  },
+  metaBlock: {
+    marginBottom: 8,
   },
   note: {
     marginTop: 14,
@@ -158,39 +178,50 @@ const styles = StyleSheet.create({
   },
 })
 
-function WicDataRow({
-  gray,
+function WicTableCell({
   width,
   value,
+  align = "right",
+  gray,
+  bold,
 }: {
-  gray?: boolean
   width: number
   value: string | number
+  align?: "left" | "center" | "right"
+  gray?: boolean
+  bold?: boolean
 }) {
-  const style = gray ? styles.grayCell : styles.cell
+  const boxStyle = gray ? styles.grayCell : align === "left" ? styles.leftCell : styles.cell
+  const textStyle =
+    align === "left"
+      ? styles.leftCellText
+      : align === "center"
+        ? [styles.headerText, { textAlign: "center" as const }]
+        : styles.cellText
+
   return (
-    <Text style={[style, { width }]}>
-      {value}
-    </Text>
+    <View style={[boxStyle, { width }]}>
+      <Text style={bold ? [textStyle, { fontFamily: "Helvetica-Bold" }] : textStyle}>{value}</Text>
+    </View>
   )
 }
 
 function WicDayRow({ record }: { record: WicDayRecord }) {
   return (
     <View style={styles.row}>
-      <Text style={[styles.leftCell, { width: W.date }]}>{formatWicDisplayDate(record.date)}</Text>
-      <WicDataRow width={W.bfpc} value={formatWicHours(record.BFPC)} gray />
-      <WicDataRow width={W.fmnp} value={formatWicHours(record.FMNP)} gray />
-      <WicDataRow width={W.nutritional} value={formatWicHours(record.NutritionalEducation)} />
-      <WicDataRow width={W.breastfeeding} value={formatWicHours(record.BreastfeedingSupport)} />
-      <WicDataRow width={W.client} value={formatWicHours(record.ClientServices)} />
-      <WicDataRow width={W.generalAdmin} value={formatWicHours(record.GeneralAdministration)} />
-      <WicDataRow width={W.subTotal} value={formatWicHours(getWicSubTotal(record))} gray />
-      <WicDataRow width={W.nonSpecific} value={formatWicHours(record.NonSpecificTravel)} />
-      <WicDataRow width={W.totalWic} value={formatWicHours(record.totalWicTime)} gray />
-      <WicDataRow width={W.others} value={formatWicHours(record.others)} />
-      <WicDataRow width={W.pto} value={formatWicHours(record.paidTimeOff)} />
-      <WicDataRow width={W.totalTime} value={formatWicHours(record.TotalTime)} gray />
+      <WicTableCell width={W.date} value={formatWicDisplayDate(record.date)} align="left" />
+      <WicTableCell width={W.bfpc} value={formatWicHours(record.BFPC)} gray />
+      <WicTableCell width={W.fmnp} value={formatWicHours(record.FMNP)} gray />
+      <WicTableCell width={W.nutritional} value={formatWicHours(record.NutritionalEducation)} />
+      <WicTableCell width={W.breastfeeding} value={formatWicHours(record.BreastfeedingSupport)} />
+      <WicTableCell width={W.client} value={formatWicHours(record.ClientServices)} />
+      <WicTableCell width={W.generalAdmin} value={formatWicHours(record.GeneralAdministration)} />
+      <WicTableCell width={W.subTotal} value={formatWicHours(getWicSubTotal(record))} gray />
+      <WicTableCell width={W.nonSpecific} value={formatWicHours(record.NonSpecificTravel)} />
+      <WicTableCell width={W.totalWic} value={formatWicHours(record.totalWicTime)} gray />
+      <WicTableCell width={W.others} value={formatWicHours(record.others)} />
+      <WicTableCell width={W.pto} value={formatWicHours(record.paidTimeOff)} />
+      <WicTableCell width={W.totalTime} value={formatWicHours(record.TotalTime)} gray />
     </View>
   )
 }
@@ -206,10 +237,12 @@ function WicMainTable({ records }: { records: WicDayRecord[] }) {
 
   return (
     <View style={styles.table}>
-      <View style={styles.row}>
-        <Text style={[styles.groupHeader, { width: W.date }]} />
-        <Text style={[styles.groupHeader, { width: W.bfpc + W.fmnp }]}>NON_NSA GRANTS</Text>
-        <Text
+      <View style={styles.row} wrap={false}>
+        <View style={[styles.groupHeader, { width: W.date }]} />
+        <View style={[styles.groupHeader, { width: W.bfpc + W.fmnp, justifyContent: "center" }]}>
+          <Text style={styles.headerText}>NON_NSA GRANTS</Text>
+        </View>
+        <View
           style={[
             styles.groupHeader,
             {
@@ -219,60 +252,79 @@ function WicMainTable({ records }: { records: WicDayRecord[] }) {
                 W.client +
                 W.generalAdmin +
                 W.subTotal,
+              justifyContent: "center",
             },
           ]}
         >
-          NSA COST OBJECTIVES
-        </Text>
-        <Text style={[styles.groupHeader, { width: W.nonSpecific }]} />
-        <Text style={[styles.groupHeader, { width: W.totalWic }]} />
-        <Text style={[styles.groupHeader, { width: W.others }]} />
-        <Text style={[styles.groupHeader, { width: W.pto }]} />
-        <Text style={[styles.groupHeader, { width: W.totalTime }]} />
+          <Text style={styles.headerText}>NSA COST OBJECTIVES</Text>
+        </View>
+        <View style={[styles.groupHeader, { width: W.nonSpecific }]} />
+        <View style={[styles.groupHeader, { width: W.totalWic }]} />
+        <View style={[styles.groupHeader, { width: W.others }]} />
+        <View style={[styles.groupHeader, { width: W.pto }]} />
+        <View style={[styles.groupHeader, { width: W.totalTime }]} />
       </View>
 
-      <View style={styles.row}>
-        <Text style={[styles.headerCell, { width: W.date, textAlign: "left" }]}>Date</Text>
-        <Text style={[styles.headerCell, { width: W.bfpc }]}>BFPC</Text>
-        <Text style={[styles.headerCell, { width: W.fmnp }]}>FMNP</Text>
-        <Text style={[styles.headerCell, { width: W.nutritional }]}>Nutritional Education</Text>
-        <Text style={[styles.headerCell, { width: W.breastfeeding }]}>Breastfeeding Support</Text>
-        <Text style={[styles.headerCell, { width: W.client }]}>Client Services</Text>
-        <Text style={[styles.headerCell, { width: W.generalAdmin }]}>General Administration</Text>
-        <Text style={[styles.headerCell, { width: W.subTotal }]}>SUB Total</Text>
-        <Text style={[styles.headerCell, { width: W.nonSpecific }]}>Non Specific</Text>
-        <Text style={[styles.headerCell, { width: W.totalWic }]}>Total WIC Time</Text>
-        <Text style={[styles.headerCell, { width: W.others }]}>Others</Text>
-        <Text style={[styles.headerCell, { width: W.pto }]}>Paid Time Off</Text>
-        <Text style={[styles.headerCell, { width: W.totalTime }]}>Total Time (matches Time card)</Text>
+      <View style={styles.row} wrap={false}>
+        <View style={[styles.headerCell, { width: W.date }]}>
+          <Text style={[styles.headerText, { textAlign: "left" }]}>Date</Text>
+        </View>
+        <View style={[styles.headerCell, { width: W.bfpc }]}>
+          <Text style={styles.headerText}>BFPC</Text>
+        </View>
+        <View style={[styles.headerCell, { width: W.fmnp }]}>
+          <Text style={styles.headerText}>FMNP</Text>
+        </View>
+        <View style={[styles.headerCell, { width: W.nutritional }]}>
+          <Text style={styles.headerText}>Nutritional Education</Text>
+        </View>
+        <View style={[styles.headerCell, { width: W.breastfeeding }]}>
+          <Text style={styles.headerText}>Breastfeeding Support</Text>
+        </View>
+        <View style={[styles.headerCell, { width: W.client }]}>
+          <Text style={styles.headerText}>Client Services</Text>
+        </View>
+        <View style={[styles.headerCell, { width: W.generalAdmin }]}>
+          <Text style={styles.headerText}>General Administration</Text>
+        </View>
+        <View style={[styles.headerCell, { width: W.subTotal }]}>
+          <Text style={styles.headerText}>SUB Total</Text>
+        </View>
+        <View style={[styles.headerCell, { width: W.nonSpecific }]}>
+          <Text style={styles.headerText}>Non Specific</Text>
+        </View>
+        <View style={[styles.headerCell, { width: W.totalWic }]}>
+          <Text style={styles.headerText}>Total WIC Time</Text>
+        </View>
+        <View style={[styles.headerCell, { width: W.others }]}>
+          <Text style={styles.headerText}>Others</Text>
+        </View>
+        <View style={[styles.headerCell, { width: W.pto }]}>
+          <Text style={styles.headerText}>Paid Time Off</Text>
+        </View>
+        <View style={[styles.headerCell, { width: W.totalTime }]}>
+          <Text style={styles.headerText}>Total Time (matches Time card)</Text>
+        </View>
       </View>
 
       {records.map((record, index) => (
         <WicDayRow key={`${record.date}-${index}`} record={record} />
       ))}
 
-      <View style={styles.row}>
-        <Text style={[styles.leftCell, { width: W.date, fontFamily: "Helvetica-Bold" }]}>Total Hours</Text>
-        <Text style={[styles.grayCell, { width: W.bfpc }]}>**</Text>
-        <Text style={[styles.grayCell, { width: W.fmnp }]}>{formatWicHours(totals.FMNP)}</Text>
-        <Text style={[styles.grayCell, { width: W.nutritional }]}>
-          {formatWicHours(totals.NutritionalEducation)}
-        </Text>
-        <Text style={[styles.grayCell, { width: W.breastfeeding }]}>
-          {formatWicHours(totals.BreastfeedingSupport)}
-        </Text>
-        <Text style={[styles.grayCell, { width: W.client }]}>{formatWicHours(totals.ClientServices)}</Text>
-        <Text style={[styles.grayCell, { width: W.generalAdmin }]}>
-          {formatWicHours(totals.GeneralAdministration)}
-        </Text>
-        <Text style={[styles.grayCell, { width: W.subTotal }]}>{formatWicHours(subTotalGrand)}</Text>
-        <Text style={[styles.grayCell, { width: W.nonSpecific }]}>
-          {formatWicHours(totals.NonSpecificTravel)}
-        </Text>
-        <Text style={[styles.grayCell, { width: W.totalWic }]}>{formatWicHours(totals.totalWicTime)}</Text>
-        <Text style={[styles.grayCell, { width: W.others }]}>{formatWicHours(totals.others)}</Text>
-        <Text style={[styles.grayCell, { width: W.pto }]}>{formatWicHours(totals.paidTimeOff)}</Text>
-        <Text style={[styles.grayCell, { width: W.totalTime }]}>{formatWicHours(totals.TotalTime)}</Text>
+      <View style={styles.row} wrap={false}>
+        <WicTableCell width={W.date} value="Total Hours" align="left" bold />
+        <WicTableCell width={W.bfpc} value="**" gray />
+        <WicTableCell width={W.fmnp} value={formatWicHours(totals.FMNP)} gray />
+        <WicTableCell width={W.nutritional} value={formatWicHours(totals.NutritionalEducation)} gray />
+        <WicTableCell width={W.breastfeeding} value={formatWicHours(totals.BreastfeedingSupport)} gray />
+        <WicTableCell width={W.client} value={formatWicHours(totals.ClientServices)} gray />
+        <WicTableCell width={W.generalAdmin} value={formatWicHours(totals.GeneralAdministration)} gray />
+        <WicTableCell width={W.subTotal} value={formatWicHours(subTotalGrand)} gray />
+        <WicTableCell width={W.nonSpecific} value={formatWicHours(totals.NonSpecificTravel)} gray />
+        <WicTableCell width={W.totalWic} value={formatWicHours(totals.totalWicTime)} gray />
+        <WicTableCell width={W.others} value={formatWicHours(totals.others)} gray />
+        <WicTableCell width={W.pto} value={formatWicHours(totals.paidTimeOff)} gray />
+        <WicTableCell width={W.totalTime} value={formatWicHours(totals.TotalTime)} gray />
       </View>
     </View>
   )
@@ -289,19 +341,23 @@ function EmployeeSection({
   const countyLabel = countyName || "Trinity"
 
   return (
-    <View wrap={false}>
-      <Text style={styles.metaLine}>{countyLabel} County Health & Human Services</Text>
-      <Text style={styles.metaCaption}>Local Agency Name</Text>
+    <View>
+      <View style={styles.metaBlock}>
+        <Text style={styles.metaLine}>{countyLabel} County Health & Human Services</Text>
+        <Text style={styles.metaCaption}>Local Agency Name</Text>
+      </View>
 
-      <Text style={styles.metaLine}>{countyLabel} County WIC Program</Text>
-      <Text style={styles.metaCaption}>Office Name</Text>
+      <View style={styles.metaBlock}>
+        <Text style={styles.metaLine}>{countyLabel} County WIC Program</Text>
+        <Text style={styles.metaCaption}>Office Name</Text>
+      </View>
 
-      <View style={{ width: "30%", marginBottom: 8 }}>
+      <View style={[styles.metaBlock, { width: "30%" }]}>
         <Text style={styles.underlineField}>{formatWicEmployeeName(employee.username)}</Text>
         <Text style={styles.metaCaption}>Employee</Text>
       </View>
 
-      <View style={styles.titleRow}>
+      <View style={[styles.titleRow, styles.metaBlock]}>
         <View style={styles.titleLeft}>
           <Text style={styles.underlineField}>{employee.jobClassificationName}</Text>
           <Text style={styles.metaCaption}>Title</Text>
@@ -318,7 +374,7 @@ function EmployeeSection({
         Overtime Hours should be included, if applicable, on this timesheet.
       </Text>
 
-      <View style={styles.totalsTable}>
+      <View style={styles.totalsTable} wrap={false}>
         <View style={styles.row}>
           <Text style={[styles.totalsHeader, { width: "33%" }]}>TL WIC</Text>
           <Text style={[styles.totalsHeader, { width: "34%" }]}>TL WIC & Others</Text>
