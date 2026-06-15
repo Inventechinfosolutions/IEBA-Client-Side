@@ -37,6 +37,7 @@ import type {
   ParticipantsListFormProps,
   ParticipantsListFormValues,
 } from "../types"
+import { cn } from "@/lib/utils"
 
 const participantGroupSuccessToastOptions = {
   position: "top-center" as const,
@@ -48,6 +49,8 @@ const participantGroupSuccessToastOptions = {
   className:
     "!w-fit !max-w-[340px] !min-h-[35px] !rounded-[8px] !border-0 !px-3 !py-2 !text-[12px] !whitespace-nowrap !shadow-[0_8px_22px_rgba(17,24,39,0.18)]",
 }
+
+
 
 export function ParticipantsListForm({
   open,
@@ -61,17 +64,17 @@ export function ParticipantsListForm({
 }: ParticipantsListFormProps) {
   const initialValues: ParticipantsListFormValues = editingRow
     ? {
-        groupName: editingRow.groupName,
-        department: selectedDepartment,
-        studyYear: selectedStudyYear,
-        selectedUserBy:
-          editingRow.grouptype === RmtsGroupType.User ? "user" : "job-pool",
-      }
+      groupName: editingRow.groupName,
+      department: selectedDepartment,
+      studyYear: selectedStudyYear,
+      selectedUserBy:
+        editingRow.grouptype === RmtsGroupType.User ? "user" : "job-pool",
+    }
     : {
-        ...participantsListFormDefaultValues,
-        department: selectedDepartment,
-        studyYear: selectedStudyYear,
-      }
+      ...participantsListFormDefaultValues,
+      department: selectedDepartment,
+      studyYear: selectedStudyYear,
+    }
 
   const form = useForm<ParticipantsListFormValues>({
     resolver: zodResolver(participantsListFormSchema),
@@ -182,7 +185,7 @@ export function ParticipantsListForm({
       }
     })
   }
- 
+
   const toggleUserOne = (userId: string, jobPoolId?: string) => {
     if (selectedUserBy === "job-pool") {
       setManualJobPoolUserIds((prev) => {
@@ -211,6 +214,16 @@ export function ParticipantsListForm({
 
     const grouptype =
       values.selectedUserBy === "user" ? RmtsGroupType.User : RmtsGroupType.JobPool
+
+    const isSelectionEmpty =
+      values.selectedUserBy === "user"
+        ? selectedUserIds.length === 0
+        : selectedJobPoolIds.length === 0
+
+    if (isSelectionEmpty) {
+      toast.error("At least one user or job pool must be assigned.")
+      return
+    }
 
     const payload = {
       name: values.groupName.trim(),
@@ -253,8 +266,8 @@ export function ParticipantsListForm({
   })
 
   return (
-    <Dialog 
-      open={open} 
+    <Dialog
+      open={open}
       onOpenChange={(isOpen) => {
         if (!isOpen) {
           setManualUserIds(null)
@@ -284,9 +297,8 @@ export function ParticipantsListForm({
             <div className="w-[180px] space-y-1">
               <Label className="text-[14px] font-normal text-black">Group Name</Label>
               <TitleCaseInput
-                className={`!h-12 w-full rounded-[10px] border-[#D1D5DB] text-[14px] ${
-                  form.formState.errors.groupName ? "border-red-500" : ""
-                }`}
+                className={`!h-12 w-full rounded-[10px] border-[#D1D5DB] text-[14px] ${form.formState.errors.groupName ? "border-red-500" : ""
+                  }`}
                 value={groupName}
                 onChange={(event) =>
                   form.setValue("groupName", event.target.value, {
@@ -318,7 +330,10 @@ export function ParticipantsListForm({
                   form.setValue("studyYear", value, { shouldValidate: true })
                 }
               >
-                <SelectTrigger className="!h-12 w-full rounded-[10px] border-[#D1D5DB] px-[11px] py-0 text-[14px] data-[size=default]:!h-12">
+                <SelectTrigger className={cn(
+                  "!h-12 w-full rounded-[10px] border-[#D1D5DB] px-[11px] py-0 text-[14px] data-[size=default]:!h-12",
+                  form.formState.errors.studyYear && "border-red-500 focus:border-red-500 focus:ring-red-500"
+                )}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent
@@ -336,6 +351,11 @@ export function ParticipantsListForm({
                   ))}
                 </SelectContent>
               </Select>
+              {form.formState.errors.studyYear && (
+                <p className="text-[11px] text-red-500">
+                  {form.formState.errors.studyYear.message}
+                </p>
+              )}
             </div>
 
             <div className="w-[180px] space-y-2">
@@ -353,28 +373,28 @@ export function ParticipantsListForm({
                 className="flex h-12 items-center gap-5"
               >
                 <div className="flex items-center space-x-2">
-                  <RadioGroupItem 
-                    value="job-pool" 
-                    id="job-pool" 
+                  <RadioGroupItem
+                    value="job-pool"
+                    id="job-pool"
                     disabled={!!editingRow}
                     className={editingRow ? "cursor-not-allowed opacity-50" : ""}
                   />
-                  <Label 
-                    htmlFor="job-pool" 
+                  <Label
+                    htmlFor="job-pool"
                     className={`text-[14px] font-normal text-black ${editingRow ? "cursor-not-allowed opacity-50" : ""}`}
                   >
                     Job Pool
                   </Label>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <RadioGroupItem 
-                    value="user" 
-                    id="user" 
+                  <RadioGroupItem
+                    value="user"
+                    id="user"
                     disabled={!!editingRow}
                     className={editingRow ? "cursor-not-allowed opacity-50" : ""}
                   />
-                  <Label 
-                    htmlFor="user" 
+                  <Label
+                    htmlFor="user"
                     className={`text-[14px] font-normal text-black ${editingRow ? "cursor-not-allowed opacity-50" : ""}`}
                   >
                     User
@@ -444,80 +464,77 @@ export function ParticipantsListForm({
                 </div>
               ) : (
                 <div className="p-4">
-                    {/* Department row */}
-                    <div className="grid h-7 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 bg-[#F3F4F6] pl-4 pr-5 text-[12px] font-semibold text-[#374151]">
-                      <span className="min-w-0">{selectedDepartmentLabel || "—"}</span>
-                      <button
-                        type="button"
-                        aria-label={
-                          selectedUserIds.length === departmentUsers.length
-                            ? "Deselect all users"
-                            : "Select all users"
-                        }
-                        onClick={() =>
-                          toggleUserAll(selectedUserIds.length !== departmentUsers.length)
-                        }
-                        className={`flex size-4.5 shrink-0 items-center justify-center rounded-[6px] border shadow-sm transition-all ${
-                          departmentUsers.length > 0 &&
-                          selectedUserIds.length === departmentUsers.length
-                            ? "border-[#6C5DD3] bg-[#6C5DD3] text-white"
-                            : "border-[#E5E7EB] bg-white text-transparent hover:border-[#D1D5DB]"
+                  {/* Department row */}
+                  <div className="grid h-7 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 bg-[#F3F4F6] pl-4 pr-5 text-[12px] font-semibold text-[#374151]">
+                    <span className="min-w-0">{selectedDepartmentLabel || "—"}</span>
+                    <button
+                      type="button"
+                      aria-label={
+                        selectedUserIds.length === departmentUsers.length
+                          ? "Deselect all users"
+                          : "Select all users"
+                      }
+                      onClick={() =>
+                        toggleUserAll(selectedUserIds.length !== departmentUsers.length)
+                      }
+                      className={`flex size-4.5 shrink-0 items-center justify-center rounded-[6px] border shadow-sm transition-all ${departmentUsers.length > 0 &&
+                        selectedUserIds.length === departmentUsers.length
+                        ? "border-[#6C5DD3] bg-[#6C5DD3] text-white"
+                        : "border-[#E5E7EB] bg-white text-transparent hover:border-[#D1D5DB]"
                         }`}
-                      >
-                        <Check className="size-3.5 stroke-[3]" />
-                      </button>
-                    </div>
+                    >
+                      <Check className="size-3.5 stroke-[3]" />
+                    </button>
+                  </div>
 
-                    {/* Roles list */}
-                    <div className="border-t border-[#E5E7EB] bg-white">
-                      <ScrollArea className="h-[360px] pb-2">
-                        <div className="flex flex-col">
-                          <div className="px-6 py-0.5">
-                            <span className="inline-flex items-center justify-center rounded-[6px] border border-[#E5E7EB] bg-white px-3 py-1 text-[12px] font-bold text-[#374151] shadow-sm">
-                              Users
-                            </span>
-                          </div>
-                          {departmentUsers.map((u) => {
-                            const label =
-                              (u.name ?? "").trim() ||
-                              `${u.firstName ?? ""} ${u.lastName ?? ""}`.trim() ||
-                              (u.user?.loginId ?? "").trim() ||
-                              "—"
-                            return (
-                              <button
-                                key={u.id}
-                                type="button"
-                                onClick={() => toggleUserOne(u.id)}
-                                className={`group relative grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-2 py-1 pl-[60px] pr-5 text-left transition-colors ${
-                                  selectedUserIds.includes(u.id)
-                                    ? "bg-[#F3F0FF]"
-                                    : "hover:bg-[#F9FAFB]"
-                                }`}
-                              >
-                                <div className="min-w-0 pr-2">
-                                  <div className="absolute left-6 top-0.5 flex h-full w-8 items-center justify-center">
-                                    <div className="absolute left-4 top-0 h-full w-[1.5px] bg-[#D1D5DB]" />
-                                    <div className="absolute left-4 top-1/2 h-[1.5px] w-3 bg-[#D1D5DB]" />
-                                  </div>
-                                  <div className=" text-[14px] font-normal text-[#111827] whitespace-normal break-words">
-                                    {label}
-                                  </div>
-                                </div>
-                                <div
-                                  className={`flex size-4.5 shrink-0 items-center justify-center rounded-[6px] border shadow-sm transition-all ${
-                                    selectedUserIds.includes(u.id)
-                                      ? "border-[#6C5DD3] bg-[#6C5DD3] text-white"
-                                      : "border-[#E5E7EB] bg-white text-transparent hover:border-[#D1D5DB]"
-                                  }`}
-                                >
-                                  <Check className="size-3.5 stroke-[3]" />
-                                </div>
-                              </button>
-                            )
-                          })}
+                  {/* Roles list */}
+                  <div className="border-t border-[#E5E7EB] bg-white">
+                    <ScrollArea className="h-[360px] pb-2">
+                      <div className="flex flex-col">
+                        <div className="px-6 py-0.5">
+                          <span className="inline-flex items-center justify-center rounded-[6px] border border-[#E5E7EB] bg-white px-3 py-1 text-[12px] font-bold text-[#374151] shadow-sm">
+                            Users
+                          </span>
                         </div>
-                      </ScrollArea>
-                    </div>
+                        {departmentUsers.map((u) => {
+                          const label =
+                            (u.name ?? "").trim() ||
+                            `${u.firstName ?? ""} ${u.lastName ?? ""}`.trim() ||
+                            (u.user?.loginId ?? "").trim() ||
+                            "—"
+                          return (
+                            <button
+                              key={u.id}
+                              type="button"
+                              onClick={() => toggleUserOne(u.id)}
+                              className={`group relative grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-2 py-1 pl-[60px] pr-5 text-left transition-colors ${selectedUserIds.includes(u.id)
+                                ? "bg-[#F3F0FF]"
+                                : "hover:bg-[#F9FAFB]"
+                                }`}
+                            >
+                              <div className="min-w-0 pr-2">
+                                <div className="absolute left-6 top-0.5 flex h-full w-8 items-center justify-center">
+                                  <div className="absolute left-4 top-0 h-full w-[1.5px] bg-[#D1D5DB]" />
+                                  <div className="absolute left-4 top-1/2 h-[1.5px] w-3 bg-[#D1D5DB]" />
+                                </div>
+                                <div className=" text-[14px] font-normal text-[#111827] whitespace-normal break-words">
+                                  {label}
+                                </div>
+                              </div>
+                              <div
+                                className={`flex size-4.5 shrink-0 items-center justify-center rounded-[6px] border shadow-sm transition-all ${selectedUserIds.includes(u.id)
+                                  ? "border-[#6C5DD3] bg-[#6C5DD3] text-white"
+                                  : "border-[#E5E7EB] bg-white text-transparent hover:border-[#D1D5DB]"
+                                  }`}
+                              >
+                                <Check className="size-3.5 stroke-[3]" />
+                              </div>
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </ScrollArea>
+                  </div>
                 </div>
               )}
             </div>
@@ -588,43 +605,43 @@ export function ParticipantUsersModal({
               </div>
             ) : (
               <div className="p-4">
-                  <div className="grid h-7 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 bg-[#F3F4F6] pl-4 pr-5 text-[12px] font-semibold text-[#374151]">
-                    <span className="min-w-0">{dept}</span>
-                    <Checkbox
-                      checked={false}
-                      className="size-4.5 shrink-0 rounded-[6px] border-[#E5E7EB] bg-white opacity-60 pointer-events-none"
-                    />
-                  </div>
-                  <div className="border-t border-[#E5E7EB] bg-white">
-                    <ScrollArea className="h-[360px] pb-2">
-                      <div className="flex flex-col">
-                        <div className="px-6 py-0.5">
-                          <span className="inline-flex items-center justify-center rounded-[6px] border border-[#E5E7EB] bg-white px-3 py-1 text-[11px] font-bold text-[#374151] shadow-sm">
-                            {grouptype === "job-pool" ? "Job Pool" : "Users"}
-                          </span>
-                        </div>
-                        {list.map((u) => (
-                          <div
-                            key={u.id}
-                            className="relative grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-2 py-1 pl-[60px] pr-5 text-left"
-                          >
-                            <div className="min-w-0 pr-2">
-                              <div className="absolute left-6 top-0.5 flex h-full w-8 items-center justify-center">
-                                <div className="absolute left-4 top-0 h-full w-[1.5px] bg-[#D1D5DB]" />
-                                <div className="absolute left-4 top-1/2 h-[1.5px] w-3 bg-[#D1D5DB]" />
-                              </div>
-                              <div className=" text-[14px] font-normal text-[#111827] whitespace-normal break-words">
-                                {u.label}
-                              </div>
+                <div className="grid h-7 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 bg-[#F3F4F6] pl-4 pr-5 text-[12px] font-semibold text-[#374151]">
+                  <span className="min-w-0">{dept}</span>
+                  <Checkbox
+                    checked={false}
+                    className="size-4.5 shrink-0 rounded-[6px] border-[#E5E7EB] bg-white opacity-60 pointer-events-none"
+                  />
+                </div>
+                <div className="border-t border-[#E5E7EB] bg-white">
+                  <ScrollArea className="h-[360px] pb-2">
+                    <div className="flex flex-col">
+                      <div className="px-6 py-0.5">
+                        <span className="inline-flex items-center justify-center rounded-[6px] border border-[#E5E7EB] bg-white px-3 py-1 text-[11px] font-bold text-[#374151] shadow-sm">
+                          {grouptype === "job-pool" ? "Job Pool" : "Users"}
+                        </span>
+                      </div>
+                      {list.map((u) => (
+                        <div
+                          key={u.id}
+                          className="relative grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-2 py-1 pl-[60px] pr-5 text-left"
+                        >
+                          <div className="min-w-0 pr-2">
+                            <div className="absolute left-6 top-0.5 flex h-full w-8 items-center justify-center">
+                              <div className="absolute left-4 top-0 h-full w-[1.5px] bg-[#D1D5DB]" />
+                              <div className="absolute left-4 top-1/2 h-[1.5px] w-3 bg-[#D1D5DB]" />
                             </div>
-                            <div className="flex size-4.5 shrink-0 items-center justify-center rounded-[6px] border border-[#6C5DD3] bg-[#6C5DD3] text-white shadow-sm">
-                              <Check className="size-3.5 stroke-[3]" />
+                            <div className=" text-[14px] font-normal text-[#111827] whitespace-normal break-words">
+                              {u.label}
                             </div>
                           </div>
-                        ))}
-                      </div>
-                    </ScrollArea>
-                  </div>
+                          <div className="flex size-4.5 shrink-0 items-center justify-center rounded-[6px] border border-[#6C5DD3] bg-[#6C5DD3] text-white shadow-sm">
+                            <Check className="size-3.5 stroke-[3]" />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                </div>
               </div>
             )}
           </div>
