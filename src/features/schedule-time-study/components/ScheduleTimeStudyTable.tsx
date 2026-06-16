@@ -189,6 +189,7 @@ export function ScheduledTimeStudyTable({
                         {row.statusRaw === SchedulePayPeriodGroupStatus.DRAFT && canUpdateSchedule ? (
                           <button
                             type="button"
+                            className="cursor-pointer"
                             onClick={() => {
                               setEditingScheduledRow(row)
                               setFormMountKey((k) => k + 1)
@@ -204,8 +205,6 @@ export function ScheduledTimeStudyTable({
                           disabled={deleteRow.isPending || row.statusRaw !== SchedulePayPeriodGroupStatus.DRAFT}
                           onClick={async () => {
                             if (row.statusRaw !== SchedulePayPeriodGroupStatus.DRAFT) return
-                            const ok = window.confirm("Delete this scheduled time study row?")
-                            if (!ok) return
                             const id = Number(row.id)
                             if (!Number.isFinite(id) || id <= 0) return
                             try {
@@ -215,7 +214,7 @@ export function ScheduledTimeStudyTable({
                               // Error toast handled at higher-level API wrapper patterns elsewhere; keep silent here.
                             }
                           }}
-                          className="flex h-5 w-5 items-center justify-center disabled:cursor-not-allowed disabled:opacity-60"
+                          className="flex h-5 w-5 cursor-pointer items-center justify-center disabled:cursor-not-allowed disabled:opacity-60"
                           aria-label="Delete scheduled row"
                         >
                           {deleteRow.isPending ? (

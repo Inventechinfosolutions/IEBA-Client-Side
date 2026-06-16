@@ -241,7 +241,7 @@ export function ParticipantsListTable({
                           <>
                             <button
                               type="button"
-                              className="inline-flex shrink-0 rounded p-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#6C5DD3]"
+                              className="inline-flex shrink-0 cursor-pointer rounded p-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#6C5DD3]"
                               aria-label={`Edit ${row.groupName}`}
                               onClick={() => {
                                 setEditingParticipantRow(row)
@@ -252,16 +252,12 @@ export function ParticipantsListTable({
                             </button>
                             <button
                               type="button"
-                              className="inline-flex shrink-0 rounded p-0.5 text-[#DC2626] transition-colors hover:text-[#B91C1C] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#DC2626] disabled:cursor-not-allowed disabled:opacity-40"
+                              className="inline-flex shrink-0 cursor-pointer rounded p-0.5 text-[#DC2626] transition-colors hover:text-[#B91C1C] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#DC2626] disabled:cursor-not-allowed disabled:opacity-40"
                               disabled={deleteGroup.isPending}
                               aria-label={`Delete ${row.groupName}`}
                               onClick={() => {
                                 const id = Number(row.id)
                                 if (!Number.isFinite(id) || id <= 0) return
-                                const ok = window.confirm(
-                                  `Delete participant group "${row.groupName}"? This cannot be undone.`,
-                                )
-                                if (!ok) return
                                 void deleteGroup
                                   .mutateAsync(id)
                                   .then(() => {

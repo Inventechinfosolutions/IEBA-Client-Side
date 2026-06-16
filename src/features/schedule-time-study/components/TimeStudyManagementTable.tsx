@@ -442,7 +442,7 @@ function ScheduleTimeStudyTableLoaded({
                             <>
                               <button
                                 type="button"
-                                className="text-[#6C5DD3]"
+                                className="text-[#6C5DD3] cursor-pointer"
                                 onClick={() => {
                                   setEditingPeriodRow(row)
                                   setPeriodsFormMountKey((k) => k + 1)
@@ -457,7 +457,7 @@ function ScheduleTimeStudyTableLoaded({
                               </button>
                               <button
                                 type="button"
-                                className="flex size-4 items-center justify-center text-[#DC2626] disabled:cursor-not-allowed disabled:opacity-40"
+                                className="flex size-4 cursor-pointer items-center justify-center text-[#DC2626] disabled:cursor-not-allowed disabled:opacity-40"
                                 disabled={deletePayPeriod.isPending}
                                 onClick={() => {
                                   const id = Number(row.id)

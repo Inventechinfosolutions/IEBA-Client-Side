@@ -72,6 +72,7 @@ function extractOption(item: unknown): string | null {
 
 async function fetchMasterCodeOptions(): Promise<string[]> {
   // Use the non-paginated endpoint to retrieve all master codes at once.
+  // Backend validates `limit <= 100`
   const res = await api.get<unknown>("/master-codes/all")
   const items = extractMasterCodeListItems(res)
 
