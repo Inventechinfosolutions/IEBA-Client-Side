@@ -301,7 +301,7 @@ export function CostPoolAddPage({
                     <VisualCheckbox checked={allUnassignedSelected} />
                   </button>
                   <span className="inline-flex min-w-6 items-center justify-center rounded-[6px] bg-white/15 px-2 py-0.5 text-[11px]">
-                    {departmentCount}
+                    {filteredUnassigned.length}
                   </span>
                 </div>
               </div>
@@ -488,7 +488,7 @@ export function CostPoolAddPage({
                     <VisualCheckbox checked={allAssignedSelected} />
                   </button>
                   <span className="inline-flex min-w-6 items-center justify-center rounded-[6px] bg-white/15 px-2 py-0.5 text-[11px]">
-                    {departmentCount}
+                    {filteredAssigned.length}
                   </span>
                 </div>
               </div>

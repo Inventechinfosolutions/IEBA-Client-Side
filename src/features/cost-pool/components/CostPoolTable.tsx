@@ -4,6 +4,8 @@ import { ArrowLeft, History, PlusIcon, SearchIcon } from "lucide-react"
 import { useMemo, useState } from "react"
 import { useForm } from "react-hook-form"
 
+import { guardNoChanges } from "@/lib/formGuard"
+
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
@@ -143,6 +145,7 @@ function CostPoolCreateDialogContent({
   const createMutation = useCreateCostPool()
 
   const submit = form.handleSubmit((values) => {
+    if (guardNoChanges(values, costPoolUpsertDefaultValues)) return
     createMutation.mutate(
       { values },
       {
@@ -204,18 +207,24 @@ function CostPoolEditFormBody({
   allowUserOrCostpoolDirect: boolean
   isLoadingDetails?: boolean
 }) {
+  const initialValues = useMemo(() => detailToUpsertFormValues(detail), [detail])
+
   const form = useForm<CostPoolUpsertFormValues>({
     resolver: zodResolver(costPoolUpsertFormSchema),
-    values: detailToUpsertFormValues(detail),
+    values: initialValues,
   })
 
   const updateMutation = useUpdateCostPool()
 
   const submit = form.handleSubmit((values) => {
+    if (guardNoChanges(values, initialValues)) {
+      return
+    }
     updateMutation.mutate(
       { 
         id: costPoolId, 
         values, 
+        initialValues,
         oldAssignedUsers: detail.assignedUsers,
         oldAssignedActivities: detail.assignedActivities,
       },
