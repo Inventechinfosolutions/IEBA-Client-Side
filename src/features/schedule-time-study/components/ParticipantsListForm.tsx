@@ -38,6 +38,7 @@ import type {
   ParticipantsListFormValues,
 } from "../types"
 import { cn } from "@/lib/utils"
+import { guardNoChanges, getChangedFields } from "@/lib/formGuard"
 
 const participantGroupSuccessToastOptions = {
   position: "top-center" as const,
@@ -114,6 +115,7 @@ export function ParticipantsListForm({
 
   const groupDetailsQuery = useGetRmtsGroupById({
     id: editingRow?.id ? Number(editingRow.id) : null,
+    enabled: open && editingRow != null,
   })
 
   const selectedUserIds = useMemo(() => {
@@ -165,15 +167,19 @@ export function ParticipantsListForm({
     const jp = jobPools.find((j) => j.id === jobPoolId)
     const userIdsInPool = (jp?.userprofiles ?? []).map((u) => u.id)
 
+    // Capture resolved state BEFORE entering the setters (avoids stale closure on raw API names)
+    const currentResolvedPools = selectedJobPoolIds
+    const currentResolvedUsers = selectedJobPoolUserIds
+
     setManualJobPoolIds((prev) => {
-      const current = prev ?? (editingRow?.grouptype === RmtsGroupType.JobPool ? (groupDetailsQuery.data?.jobPools ?? []).map((jp) => jp.id) : [])
+      const current = prev ?? currentResolvedPools
       const has = current.includes(jobPoolId)
       if (checked) return has ? current : [...current, jobPoolId]
       return has ? current.filter((x) => x !== jobPoolId) : current
     })
 
     setManualJobPoolUserIds((prev) => {
-      const current = prev ?? (editingRow?.grouptype === RmtsGroupType.JobPool ? groupDetailsQuery.data?.users ?? [] : [])
+      const current = prev ?? currentResolvedUsers
       if (checked) {
         const next = [...current]
         userIdsInPool.forEach((id) => {
@@ -188,19 +194,25 @@ export function ParticipantsListForm({
 
   const toggleUserOne = (userId: string, jobPoolId?: string) => {
     if (selectedUserBy === "job-pool") {
+      // IMPORTANT: use selectedJobPoolUserIds (already UUID-mapped) as the fallback.
+      const currentResolvedUsers = selectedJobPoolUserIds
       setManualJobPoolUserIds((prev) => {
-        const current = prev ?? (editingRow?.grouptype === RmtsGroupType.JobPool ? groupDetailsQuery.data?.users ?? [] : [])
+        const current = prev ?? currentResolvedUsers
         return current.includes(userId) ? current.filter((id) => id !== userId) : [...current, userId]
       })
       if (jobPoolId) {
+        const currentResolvedPools = selectedJobPoolIds
         setManualJobPoolIds((prev) => {
-          const current = prev ?? (editingRow?.grouptype === RmtsGroupType.JobPool ? (groupDetailsQuery.data?.jobPools ?? []).map((jp) => jp.id) : [])
+          const current = prev ?? currentResolvedPools
           return current.includes(jobPoolId) ? current : [...current, jobPoolId]
         })
       }
     } else {
+      // IMPORTANT: use selectedUserIds (already UUID-mapped) as the fallback — NOT
+      // groupDetailsQuery.data?.users which contains display names, causing UUID mismatches.
+      const currentResolved = selectedUserIds
       setManualUserIds((prev) => {
-        const current = prev ?? (editingRow?.grouptype === RmtsGroupType.User ? groupDetailsQuery.data?.users ?? [] : [])
+        const current = prev ?? currentResolved
         return current.includes(userId) ? current.filter((id) => id !== userId) : [...current, userId]
       })
     }
@@ -241,9 +253,48 @@ export function ParticipantsListForm({
         if (!Number.isFinite(id) || id <= 0) {
           throw new Error("Invalid participant group id")
         }
+
+        const initialUsersRaw = groupDetailsQuery.data?.users ?? []
+        const initialUsersMapped = initialUsersRaw.map((item) => {
+          const match = departmentUsers.find(
+            (du) =>
+              du.id === item ||
+              (du.name ?? "").trim().toLowerCase() === item.trim().toLowerCase() ||
+              `${du.firstName ?? ""} ${du.lastName ?? ""}`.trim().toLowerCase() === item.trim().toLowerCase()
+          )
+          return match ? match.id : item
+        })
+
+        const initialJobPoolsMapped = groupDetailsQuery.data?.jobPools?.map((jp) => jp.id) ?? []
+
+        const currentUsers = [...(values.selectedUserBy === "user" ? selectedUserIds : selectedJobPoolUserIds)].sort()
+        const currentJobPools = [...(values.selectedUserBy === "job-pool" ? selectedJobPoolIds : [])].sort()
+
+        const currentPayload = {
+          name: values.groupName.trim(),
+          fiscalyear: values.studyYear,
+          grouptype,
+          users: currentUsers,
+          jobPools: currentJobPools,
+        }
+
+        const referencePayload = {
+          name: initialValues.groupName.trim(),
+          fiscalyear: initialValues.studyYear,
+          grouptype: editingRow.grouptype,
+          users: [...initialUsersMapped].sort(),
+          jobPools: [...initialJobPoolsMapped].sort(),
+        }
+
+        if (guardNoChanges(currentPayload, referencePayload)) {
+          return
+        }
+
+        const changedFields = getChangedFields(currentPayload, referencePayload)
+
         await updateGroup.mutateAsync({
           id,
-          body: payload,
+          body: changedFields,
         })
         toast.success("Participant group updated successfully", participantGroupSuccessToastOptions)
       } else {

@@ -17,6 +17,8 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
+import { guardNoChanges, getChangedFields } from "@/lib/formGuard"
+
 import { scheduleTimeStudyKeys } from "../keys"
 import { useCreateRmtsPayPeriod } from "../mutations/createRmtsPayPeriod"
 import { useUpdateRmtsPayPeriod } from "../mutations/updateRmtsPayPeriod"
@@ -332,7 +334,37 @@ export function TimeStudyPeriodsForm({
           if (!Number.isFinite(id) || id <= 0) {
             throw new Error("Invalid pay period id")
           }
-          await updatePayPeriod.mutateAsync({ id, body: payload })
+
+          const currentCompare = {
+            name: autoPeriodLabel.trim(),
+            startdt: values.startDate,
+            enddt: values.endDate,
+            hours: toNumber(values.hours),
+            holidayhours: holidayDayCount,
+            allocatetime: toNumber(values.allocable),
+            nonallocatetime: toNumber(values.nonAllocable),
+            fiscalyear: values.fiscalYear,
+          }
+
+          const initialName = initialFormValues.timeStudyPeriod.trim() || `${initialFormValues.fiscalYear} Time Study`.trim()
+          const referenceCompare = {
+            name: initialName,
+            startdt: initialFormValues.startDate,
+            enddt: initialFormValues.endDate,
+            hours: toNumber(initialFormValues.hours),
+            holidayhours: toNumber(initialFormValues.holidays),
+            allocatetime: toNumber(initialFormValues.allocable),
+            nonallocatetime: toNumber(initialFormValues.nonAllocable),
+            fiscalyear: initialFormValues.fiscalYear,
+          }
+
+          if (guardNoChanges(currentCompare, referenceCompare)) {
+            return
+          }
+
+          const changedFields = getChangedFields(currentCompare, referenceCompare)
+
+          await updatePayPeriod.mutateAsync({ id, body: changedFields })
           toast.success("Pay periods updated successfully", payPeriodUpdateSuccessToastOptions)
         } else {
           await createPayPeriod.mutateAsync(payload)
