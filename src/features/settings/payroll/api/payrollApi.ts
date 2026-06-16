@@ -4,8 +4,7 @@ import type {
   PayrollColumnSettingModel, 
   PayrollSettingsModel,
   BackendPayrollSettingItem,
-  PayrollSettingsBulkUpdateInput,
-  PayrollSettingsBulkUpdateColumn
+  PayrollSettingsBulkUpdateInput
 } from "../types"
 
 export async function getPayrollSettings(): Promise<PayrollSettingsModel> {
@@ -55,23 +54,19 @@ function payrollByToBackendValue(payrollBy: PayrollBy): string {
 
 /**
  * Update payroll column settings.
- * Uses individual PUT /payrollmanagement/settings/:id per changed column so the
- * backend only updates isEnable/isEditable/displayOrder — it never deletes records.
- *
- * NOTE: The bulk endpoint (/payrollmanagement/settings/bulk) was intentionally
- * removed because it was deleting rows from the DB instead of updating them.
- * Individual per-id PUTs are safe and correct.
+ * Uses a single bulk PUT /payrollmanagement/settings/bulk request to update
+ * all changed columns atomically.
  */
 export async function updatePayrollSettings(data: PayrollSettingsBulkUpdateInput): Promise<void> {
-  // 1) Update each changed column individually via its own PUT request.
-  //    This guarantees the backend only mutates the specified fields (isEnable,
-  //    isEditable, displayOrder) without removing any records.
+  // 1) Update changed columns. Use individual PUT if only one column changed,
+  //    otherwise use the bulk endpoint.
   if (Array.isArray(data.columns) && data.columns.length > 0) {
-    await Promise.all(
-      data.columns.map(({ id, ...patch }: PayrollSettingsBulkUpdateColumn) =>
-        api.put(`/payrollmanagement/settings/${id}`, patch),
-      ),
-    )
+    if (data.columns.length === 1) {
+      const { id, ...patch } = data.columns[0]
+      await api.put(`/payrollmanagement/settings/${id}`, patch)
+    } else {
+      await api.put("/payrollmanagement/settings/bulk", data.columns)
+    }
   }
 
   // 2) Update Payroll Period only if included
