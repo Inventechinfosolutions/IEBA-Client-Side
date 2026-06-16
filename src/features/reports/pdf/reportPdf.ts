@@ -614,7 +614,7 @@ export type WICReportPdfProps = {
   meta?: ReportPdfMeta
 }
 
-export type ReportPdfFooterVariant = "signature" | "pageOnly" | "minimal"
+export type ReportPdfFooterVariant = "signature" | "signaturePerPage" | "pageOnly" | "minimal"
 
 // --- unwrap /report/data ---
 
@@ -2268,22 +2268,112 @@ function parseTscrProgramRecord(row: Record<string, unknown>): TscrProgramRecord
   }
 }
 
-export function unwrapTscrEmployees(raw: unknown): TscrEmployee[] {
-  return unwrapListData(raw)
-    .map((item) => {
-      const row = asRecord(item)
-      const tsrecordsRaw = row.tsrecords ?? row.tsRecords
-      const tsrecords = Array.isArray(tsrecordsRaw)
-        ? tsrecordsRaw.map((record) => parseTscrProgramRecord(asRecord(record)))
-        : []
+function resolveTscrEmployeeName(row: Record<string, unknown>): string {
+  return String(
+    row.full_name ??
+      row.fullName ??
+      row.employeename ??
+      row.employeeName ??
+      row.empname ??
+      row.username ??
+      row.userName ??
+      row.name ??
+      "",
+  ).trim()
+}
 
-      return {
-        full_name: String(row.full_name ?? row.fullName ?? ""),
-        totalts: String(row.totalts ?? row.totalTs ?? "0.00"),
-        tsrecords,
+function resolveTscrTotalTs(row: Record<string, unknown>): string {
+  return String(row.totalts ?? row.totalTs ?? row.total_ts ?? "0.00")
+}
+
+function unwrapTscrSourceRows(raw: unknown): unknown[] {
+  const list = unwrapListData(raw)
+  if (list.length) return list
+
+  const root = asRecord(raw)
+  const data = asRecord(root.data)
+
+  const employees = root.employees ?? data.employees
+  if (Array.isArray(employees)) return employees
+
+  if (Array.isArray(root.tsrecords ?? root.tsRecords)) return [root]
+  if (Array.isArray(data.tsrecords ?? data.tsRecords)) return [data]
+
+  return []
+}
+
+function parseTscrEmployeeRow(row: Record<string, unknown>): TscrEmployee {
+  const tsrecordsRaw = row.tsrecords ?? row.tsRecords
+  const tsrecords = Array.isArray(tsrecordsRaw)
+    ? tsrecordsRaw.map((record) => parseTscrProgramRecord(asRecord(record)))
+    : []
+
+  let full_name = resolveTscrEmployeeName(row)
+  if (!full_name && Array.isArray(tsrecordsRaw)) {
+    for (const record of tsrecordsRaw) {
+      const nestedName = resolveTscrEmployeeName(asRecord(record))
+      if (nestedName) {
+        full_name = nestedName
+        break
       }
+    }
+  }
+
+  return {
+    full_name,
+    totalts: resolveTscrTotalTs(row),
+    tsrecords,
+  }
+}
+
+export function formatTscrEmployeeName(rawName: string): string {
+  return String(rawName || "").trim()
+}
+
+export function unwrapTscrEmployees(raw: unknown): TscrEmployee[] {
+  const list = unwrapTscrSourceRows(raw)
+  if (!list.length) return []
+
+  const hasNestedTsrecords = list.some((item) => {
+    const row = asRecord(item)
+    return Array.isArray(row.tsrecords ?? row.tsRecords)
+  })
+
+  if (hasNestedTsrecords) {
+    return list
+      .map((item) => parseTscrEmployeeRow(asRecord(item)))
+      .filter((employee) => employee.tsrecords.length > 0 || employee.full_name)
+  }
+
+  const grouped = new Map<string, TscrEmployee>()
+
+  list.forEach((item) => {
+    const row = asRecord(item)
+    const name = resolveTscrEmployeeName(row)
+    const key = name || `__unknown__${grouped.size}`
+    const existing = grouped.get(key)
+
+    if (existing) {
+      existing.tsrecords.push(parseTscrProgramRecord(row))
+      if (row.totalts ?? row.totalTs ?? row.total_ts) {
+        existing.totalts = resolveTscrTotalTs(row)
+      }
+      if (!existing.full_name && name) {
+        existing.full_name = name
+      }
+      return
+    }
+
+    grouped.set(key, {
+      full_name: name,
+      totalts: resolveTscrTotalTs(row),
+      tsrecords: [parseTscrProgramRecord(row)],
     })
-    .filter((employee) => employee.tsrecords.length > 0 || employee.full_name)
+  })
+
+  return [...grouped.values()].filter(
+    (employee) => employee.tsrecords.length > 0 || employee.full_name,
+  )
 }
 
 export function formatTscrPositiveNumber(value: number): string {
