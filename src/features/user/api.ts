@@ -122,6 +122,39 @@ function mapUserListItemToRow(item: UserListItemApiDto): UserModuleRow {
     ? multi.filter((x): x is string => typeof x === "string" && x.trim().length > 0).join(", ")
     : ""
 
+  const assignedMultiCodesDetailed: Array<{ departmentName: string; codes: string }> = []
+  const deptMultiCodeParts: string[] = []
+  if (Array.isArray(item.userMultiCode) && item.userMultiCode.length > 0) {
+    for (const dmc of item.userMultiCode) {
+      if (Array.isArray(dmc.multiCodes) && dmc.multiCodes.length > 0) {
+        const codesStr = dmc.multiCodes.filter((x): x is string => typeof x === "string" && x.trim().length > 0).join(", ")
+        if (codesStr) {
+          const matchedDept = item.departments?.find(d => d.id === dmc.departmentId)
+          const deptRaw = matchedDept?.code?.trim() || dmc.departmentName?.trim() || matchedDept?.name?.trim() || `Dept ${dmc.departmentId}`
+          const deptDisplay = deptRaw.split("-")[0].trim()
+          deptMultiCodeParts.push(`${deptDisplay}: ${codesStr}`)
+          assignedMultiCodesDetailed.push({ departmentName: deptDisplay, codes: codesStr })
+        }
+      }
+    }
+  } else if (Array.isArray(item.departments)) {
+    for (const dept of item.departments) {
+      if (Array.isArray(dept.multiCodes) && dept.multiCodes.length > 0) {
+        const codesStr = dept.multiCodes.filter((x): x is string => typeof x === "string" && x.trim().length > 0).join(", ")
+        if (codesStr) {
+          const deptRaw = dept.code?.trim() || dept.name?.trim() || `Dept ${dept.id}`
+          const deptDisplay = deptRaw.split("-")[0].trim()
+          deptMultiCodeParts.push(`${deptDisplay}: ${codesStr}`)
+          assignedMultiCodesDetailed.push({ departmentName: deptDisplay, codes: codesStr })
+        }
+      }
+    }
+  }
+
+  const assignedMultiCodesDisplay = deptMultiCodeParts.length > 0
+    ? deptMultiCodeParts.join("; ")
+    : undefined
+
   return {
     id: item.id,
     employee: displayName,
@@ -148,6 +181,8 @@ function mapUserListItemToRow(item: UserListItemApiDto): UserModuleRow {
     multicodesEnabled: item.allowMultiCodes ?? false,
     allowMultiCodes: item.allowMultiCodes ?? false,
     assignedMultiCodes,
+    assignedMultiCodesDisplay,
+    assignedMultiCodesDetailed,
     active: true,
   }
 }
