@@ -58,6 +58,8 @@ export type UserModuleRow = {
   clientAdmin: boolean
   multicodesEnabled: boolean
   assignedMultiCodes: string
+  assignedMultiCodesDisplay?: string
+  assignedMultiCodesDetailed?: Array<{ departmentName: string; codes: string }>
   activationStartDate?: string
   activationEndDate?: string
   active: boolean
@@ -130,11 +132,23 @@ export type UserListItemApiDto = {
   primarySupervisor?: { id: string; name: string } | null
   backupSupervisor?: { id: string; name: string } | null
   location?: { id: number; name: string } | null
-  departments: Array<{ id: number; code: string; name: string }>
+  departments: Array<{
+    id: number
+    code: string
+    name: string
+    allowMultiCodes?: boolean
+    multiCodes?: string[]
+  }>
   roles: Array<{ id: number; name: string }>
   departmentsRoles: UserListDepartmentRoleItemDto[]
   allowMultiCodes: boolean
   multiCodes?: string[] | null
+  userMultiCode?: Array<{
+    departmentId: number
+    departmentName?: string | null
+    allowMultiCodes: boolean
+    multiCodes: string[]
+  }>
 }
 
 /** @deprecated Use `UserListItemApiDto` */
