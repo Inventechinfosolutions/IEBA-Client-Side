@@ -23,6 +23,7 @@ import { Spinner } from "@/components/ui/spinner"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { toast } from "sonner"
 import { usePermissions } from "@/hooks/usePermissions"
+import { guardNoChanges } from "@/lib/formGuard"
 import { useCreateDepartment } from "../mutations/createDepartment"
 import { useUpdateDepartment } from "../mutations/updateDepartment"
 import { useGetDepartmentById } from "../queries/getDepartmentById"
@@ -258,12 +259,29 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
         }
         if (departmentId) {
             try {
-                await updateDeptMutation.mutateAsync({ id: departmentId, values })
-                if (toastMode === "createOrUpdate") {
+                const reference = valuesFromDepartmentQuery ?? DEPARTMENT_FORM_DEFAULT_VALUES
+                if (guardNoChanges(values, reference)) {
+                    return null
+                }
+                await updateDeptMutation.mutateAsync({
+                    id: departmentId,
+                    values,
+                    referenceValues: reference,
+                    addressChanged: modifiedContacts.address,
+                })
+                const referenceActive = reference.active !== undefined ? reference.active : true
+                const statusChanged = referenceActive !== values.active
+                if (toastMode === "createOrUpdate" || statusChanged) {
+                    const toastMsg = statusChanged
+                        ? values.active
+                            ? "Department Activated Successfully"
+                            : "Department Deactivated Successfully"
+                        : "Department Updated Successfully"
+
                     toast(
                         <div className="flex items-center gap-2 text-[14px]">
                             <CheckCircle2 className="w-4 h-4 text-green-500" />
-                            Department Updated Successfully
+                            {toastMsg}
                         </div>
                     )
                 }
@@ -358,42 +376,56 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
 
         if (!isValid) return
 
+        const reference = valuesFromDepartmentQuery ?? DEPARTMENT_FORM_DEFAULT_VALUES
+        const values = getValues()
+        const referenceActive = reference.active !== undefined ? reference.active : true
+        const statusChanged = referenceActive !== values.active
+
+        if (departmentId) {
+            const savedDeptId = await handleSave({ toastMode: "none" })
+            if (!savedDeptId) return
+        }
+
         const titleCaseTab = detailsTab.charAt(0).toUpperCase() + detailsTab.slice(1)
         const contactToastMessage =
             departmentId != null
                 ? `${titleCaseTab} contact ${id ? "updated" : "saved"} successfully`
                 : `${titleCaseTab} contact step completed (not saved until you create the department)`
-        toast(
-            <div className="flex items-center gap-2 text-[14px]">
-                <CheckCircle2 className="w-4 h-4 text-green-500" />
-                {contactToastMessage}
-            </div>
-        )
+        if (!statusChanged) {
+            toast(
+                <div className="flex items-center gap-2 text-[14px]">
+                    <CheckCircle2 className="w-4 h-4 text-green-500" />
+                    {contactToastMessage}
+                </div>
+            )
+        }
         setModifiedContacts((prev: ModifiedContacts) => ({ ...prev, [detailsTab]: false }))
         
         if (detailsTab === "primary") setDetailsTab("secondary")
         else if (detailsTab === "secondary") setDetailsTab("billing")
-
-        // Only persist to backend after the department exists (created) or in edit mode.
-        if (departmentId) {
-            void handleSave({ toastMode: "none" })
-        }
     }
 
     const onAddressSave = async () => {
         const isValid = await validateDetailsTab()
         if (!isValid) return
 
+        const reference = valuesFromDepartmentQuery ?? DEPARTMENT_FORM_DEFAULT_VALUES
+        const values = getValues()
+        const referenceActive = reference.active !== undefined ? reference.active : true
+        const statusChanged = referenceActive !== values.active
+
         const hasExistingDepartment = id != null || departmentId != null
         if (hasExistingDepartment) {
             const savedDeptId = await handleSave({ toastMode: "none" })
             if (!savedDeptId) return
-            toast(
-                <div className="flex items-center gap-2 text-[14px]">
-                    <CheckCircle2 className="w-4 h-4 text-green-500" />
-                    Address updated successfully
-                </div>
-            )
+            if (!statusChanged) {
+                toast(
+                    <div className="flex items-center gap-2 text-[14px]">
+                        <CheckCircle2 className="w-4 h-4 text-green-500" />
+                        Address updated successfully
+                    </div>
+                )
+            }
         }
 
         setModifiedContacts((prev: ModifiedContacts) => ({ ...prev, address: false }))
