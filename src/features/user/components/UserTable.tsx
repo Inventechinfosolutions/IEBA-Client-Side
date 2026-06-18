@@ -314,7 +314,7 @@ export function UserTable({ rows, isLoading, onEditRow, onSwitchUser, sortState,
                                 {detail.departmentName}
                               </button>
                               {isExpanded ? (
-                                <div className="mt-1 pl-4 flex flex-wrap gap-1">
+                                <div className="mt-1 pl-0 flex flex-wrap gap-1">
                                   {detail.codes.split(", ").map((code) => (
                                     <span
                                       key={code}
