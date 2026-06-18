@@ -149,6 +149,8 @@ export type UserListItemApiDto = {
     allowMultiCodes: boolean
     multiCodes: string[]
   }>
+  programs?: boolean
+  activities?: boolean
 }
 
 /** @deprecated Use `UserListItemApiDto` */
