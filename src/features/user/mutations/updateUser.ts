@@ -43,7 +43,7 @@ function mapUpdateInput(input: UpdateUserModuleInput): UpdateUserRequestDto {
     pki: input.values.pkiUser,
     spmp: input.values.spmp,
     multilingual: input.values.multilingual,
-    allowMultiCodes: input.values.allowMultiCodes,
+    allowMultiCodes: input.values.allowMultiCodes ? true : null,
     tsMinPerDay: toTsMinPerDay(input.values.tsMinDay),
     claimingUnit: input.values.claimingUnit.trim(),
     assignedMultiCodes: toAssignedMultiCodes(input.values.assignedMultiCodes),

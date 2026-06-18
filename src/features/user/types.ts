@@ -149,6 +149,8 @@ export type UserListItemApiDto = {
     allowMultiCodes: boolean
     multiCodes: string[]
   }>
+  programs?: boolean
+  activities?: boolean
 }
 
 /** @deprecated Use `UserListItemApiDto` */
@@ -172,7 +174,7 @@ export type CreateUserRequestDto = {
   pki?: boolean
   spmp?: boolean
   multilingual?: boolean
-  allowMultiCodes?: boolean
+  allowMultiCodes?: boolean | null
   tsMinPerDay?: number
   claimingUnit?: string
   assignedMultiCodes?: string[]
@@ -205,7 +207,7 @@ export type UpdateUserRequestDto = {
   pki?: boolean
   spmp?: boolean
   multilingual?: boolean
-  allowMultiCodes?: boolean
+  allowMultiCodes?: boolean | null
   tsMinPerDay?: number
   claimingUnit?: string
   assignedMultiCodes?: string[]

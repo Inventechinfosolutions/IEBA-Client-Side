@@ -69,7 +69,7 @@ export function UserTable({ rows, isLoading, onEditRow, onSwitchUser, sortState,
           <col style={{ width: "65px" }} />
           <col style={{ width: "95px" }} />
           <col style={{ width: "95px" }} />
-          <col style={{ width: "75px" }} />
+          <col style={{ width: "90px" }} />
           {canUpdateUser ? <col style={{ width: "70px" }} /> : null}
           {showSwitchUser ? <col style={{ width: "70px" }} /> : null}
         </colgroup>
@@ -288,7 +288,7 @@ export function UserTable({ rows, isLoading, onEditRow, onSwitchUser, sortState,
                       />
                     )}
                   </TableCell>
-                  <TableCell className="align-top border-r border-[#eff0f5] px-[14px] py-[5px] text-[12px] text-[#232735] whitespace-normal break-words">
+                  <TableCell className="align-top border-r border-[#eff0f5] px-2 py-[5px] text-[12px] text-[#232735] whitespace-normal break-words">
                     {row.assignedMultiCodesDetailed && row.assignedMultiCodesDetailed.length > 0 ? (
                       <div className="flex flex-col items-start gap-1.5">
                         {row.assignedMultiCodesDetailed.map((detail, idx) => {
@@ -314,7 +314,7 @@ export function UserTable({ rows, isLoading, onEditRow, onSwitchUser, sortState,
                                 {detail.departmentName}
                               </button>
                               {isExpanded ? (
-                                <div className="mt-1 pl-4 flex flex-wrap gap-1">
+                                <div className="mt-1 pl-0 flex flex-wrap gap-1">
                                   {detail.codes.split(", ").map((code) => (
                                     <span
                                       key={code}
