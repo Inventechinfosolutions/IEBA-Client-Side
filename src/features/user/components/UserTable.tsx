@@ -32,6 +32,7 @@ export function UserTable({ rows, isLoading, onEditRow, onSwitchUser, sortState,
   const { canUpdate } = usePermissions()
   const canUpdateUser = canUpdate("user")
   const [expandedRowIds, setExpandedRowIds] = useState<Record<string, boolean>>({})
+  const [expandedMultiCodeRowIds, setExpandedMultiCodeRowIds] = useState<Record<string, boolean>>({})
   const [isEmployeeTooltipOpen, setIsEmployeeTooltipOpen] = useState(false)
   const showSwitchUser = typeof onSwitchUser === "function"
   const headers = [
@@ -68,7 +69,7 @@ export function UserTable({ rows, isLoading, onEditRow, onSwitchUser, sortState,
           <col style={{ width: "65px" }} />
           <col style={{ width: "95px" }} />
           <col style={{ width: "95px" }} />
-          <col style={{ width: "75px" }} />
+          <col style={{ width: "90px" }} />
           {canUpdateUser ? <col style={{ width: "70px" }} /> : null}
           {showSwitchUser ? <col style={{ width: "70px" }} /> : null}
         </colgroup>
@@ -287,8 +288,50 @@ export function UserTable({ rows, isLoading, onEditRow, onSwitchUser, sortState,
                       />
                     )}
                   </TableCell>
-                  <TableCell className="align-top border-r border-[#eff0f5] px-[14px] py-[5px] text-center text-[12px] text-[#232735] whitespace-normal break-words">
-                    {row.assignedMultiCodes}
+                  <TableCell className="align-top border-r border-[#eff0f5] px-2 py-[5px] text-[12px] text-[#232735] whitespace-normal break-words">
+                    {row.assignedMultiCodesDetailed && row.assignedMultiCodesDetailed.length > 0 ? (
+                      <div className="flex flex-col items-start gap-1.5">
+                        {row.assignedMultiCodesDetailed.map((detail, idx) => {
+                          const key = `${row.id}-${detail.departmentName}`
+                          const isExpanded = expandedMultiCodeRowIds[key]
+                          return (
+                            <div key={key} className="flex flex-col items-start">
+                              <button
+                                type="button"
+                                className="inline-flex cursor-pointer items-start gap-1 text-left"
+                                onClick={() =>
+                                  setExpandedMultiCodeRowIds((prev) => ({
+                                    ...prev,
+                                    [key]: !prev[key],
+                                  }))
+                                }
+                              >
+                                {isExpanded ? (
+                                  <ChevronDown className="mt-px size-3 shrink-0 text-[var(--primary)]" aria-hidden />
+                                ) : (
+                                  <ChevronRight className="mt-px size-3 shrink-0 text-[var(--primary)]" aria-hidden />
+                                )}
+                                {detail.departmentName}
+                              </button>
+                              {isExpanded ? (
+                                <div className="mt-1 pl-0 flex flex-wrap gap-1">
+                                  {detail.codes.split(", ").map((code) => (
+                                    <span
+                                      key={code}
+                                      className="rounded-[6px] border border-[#d7dbe7] bg-white px-2 py-0.5 text-[10px] text-[#555f76] whitespace-nowrap"
+                                    >
+                                      {code}
+                                    </span>
+                                  ))}
+                                </div>
+                              ) : null}
+                            </div>
+                          )
+                        })}
+                      </div>
+                    ) : (
+                      row.assignedMultiCodes
+                    )}
                   </TableCell>
                   {canUpdateUser && (
                     <TableCell className="border-r border-[#eff0f5] px-[14px] py-[5px] text-center">
