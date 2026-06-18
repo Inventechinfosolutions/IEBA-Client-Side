@@ -4,6 +4,7 @@ import { FormProvider, useForm } from "react-hook-form"
 import { toast } from "sonner"
 import { Check, X } from "lucide-react"
 
+import { guardNoChanges } from "@/lib/formGuard"
 import { SettingsFiscalYearUiProvider } from "@/features/settings/context/SettingsFiscalYearUiProvider"
 import { SettingsFormSaveSection, isSettingsFormSaveSection } from "@/features/settings/enums/setting.enum"
 import { useSettingsFormData } from "@/features/settings/hooks/useSettingsFormData"
@@ -107,6 +108,12 @@ function SettingsFormInner({ settings, isSaving, onSubmitSettings }: SettingsFor
         : getSettingsFormFirstErrorMessage(form.formState.errors)
       showSettingsFormErrorToast(message)
       return
+    }
+
+    if (submitterSection === SettingsFormSaveSection.County) {
+      if (guardNoChanges(form.getValues().county, formValues.county)) {
+        return
+      }
     }
 
     onSubmitSettings(form.getValues(), { submitterSection, reportsSaveScope, reportsBucketMode })

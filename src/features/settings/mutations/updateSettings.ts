@@ -16,14 +16,16 @@ import {
   uploadCountyLogo,
   updateCountyClient,
   updateCountyLocation,
+  deleteCountyLogo,
+  type UpdateCountyClientBody,
+  type CountyLocationPayload,
 } from "@/features/settings/components/Country/api"
 import { parseLocationId } from "@/features/settings/components/Country/locationUtils"
 import {
   settingsCountyClientQueryKey,
-  type ClientLocation,
+  type CountyClientDetailModel,
 } from "@/features/settings/queries/getCountyClient"
-
-type LocationModel = ClientLocation
+import { mapCountyClientDetailToCountySettings } from "@/features/settings/components/Country/countyClientFormMap"
 
 function normalizeCountyLocations(values: UpdateSettingsInput["values"]): Array<{
   locationId?: number
@@ -54,7 +56,7 @@ async function saveCountyToBackend(
 ): Promise<void> {
   const cached = queryClient.getQueriesData({ queryKey: settingsCountyClientQueryKey })
   const first = cached.find(([, data]) => Boolean(data))?.[1] as
-    | { id: number; locations?: LocationModel[] | null }
+    | CountyClientDetailModel
     | undefined
 
   if (!first?.id) {
@@ -64,20 +66,47 @@ async function saveCountyToBackend(
   const clientId = first.id
   const existingLocations = first.locations ?? []
 
-  await updateCountyClient(clientId, {
-    name: input.values.county.countyName,
-    message: input.values.county.welcomeMessage ?? "",
-    timeRule: Boolean(input.values.county.isTimeRangeEnabled),
-    startTime: input.values.county.startTime2,
-    endTime: input.values.county.endTime,
-    autoApproval: Boolean(input.values.county.autoApproval),
-    apportioning: Boolean(input.values.county.supervisorApportioning),
-    include_weekend: Boolean(input.values.county.includedWeekends),
-  })
+  const initialCounty = mapCountyClientDetailToCountySettings(first)
+  const currentCounty = input.values.county
+
+  const updatePayload: Partial<UpdateCountyClientBody> = {}
+
+  if (currentCounty.countyName !== initialCounty.countyName) {
+    updatePayload.name = currentCounty.countyName
+  }
+  if (currentCounty.welcomeMessage !== initialCounty.welcomeMessage) {
+    updatePayload.message = currentCounty.welcomeMessage
+  }
+  if (currentCounty.isTimeRangeEnabled !== initialCounty.isTimeRangeEnabled) {
+    updatePayload.timeRule = Boolean(currentCounty.isTimeRangeEnabled)
+  }
+  if (currentCounty.startTime2 !== initialCounty.startTime2) {
+    updatePayload.startTime = currentCounty.startTime2
+  }
+  if (currentCounty.endTime !== initialCounty.endTime) {
+    updatePayload.endTime = currentCounty.endTime
+  }
+  if (currentCounty.autoApproval !== initialCounty.autoApproval) {
+    updatePayload.autoApproval = Boolean(currentCounty.autoApproval)
+  }
+  if (currentCounty.supervisorApportioning !== initialCounty.supervisorApportioning) {
+    updatePayload.apportioning = Boolean(currentCounty.supervisorApportioning)
+  }
+  if (currentCounty.includedWeekends !== initialCounty.includedWeekends) {
+    updatePayload.include_weekend = Boolean(currentCounty.includedWeekends)
+  }
+
+  if (Object.keys(updatePayload).length > 0) {
+    await updateCountyClient(clientId, updatePayload)
+  }
 
   const nextLogoDataUrl = (input.values.county.logoDataUrl ?? "").trim()
+  const prevLogoDataUrl = (initialCounty.logoDataUrl ?? "").trim()
+
   if (nextLogoDataUrl.startsWith("data:")) {
     await uploadCountyLogo(clientId, nextLogoDataUrl)
+  } else if (!nextLogoDataUrl && prevLogoDataUrl) {
+    await deleteCountyLogo(clientId)
   }
 
   const desired = normalizeCountyLocations(input.values)
@@ -108,18 +137,50 @@ async function saveCountyToBackend(
 
     if (row.locationId !== undefined && existingIds.has(row.locationId)) {
       const current = existingById.get(row.locationId)
-      const same =
-        !!current &&
-        (current.name ?? "").trim() === payload.name.trim() &&
-        (current.street ?? "").trim() === (payload.street ?? "").trim() &&
-        (current.city ?? "").trim() === (payload.city ?? "").trim() &&
-        (current.state ?? "").trim() === (payload.state ?? "").trim() &&
-        (current.zip ?? "").trim() === (payload.zip ?? "").trim() &&
-        Boolean(current.primary) === Boolean(payload.primary) &&
-        (current.status ?? "active") === payload.status
+      if (current) {
+        const patch: Partial<CountyLocationPayload> = {}
 
-      if (!same) {
-        await updateCountyLocation(row.locationId, payload)
+        const trimmedCurrentName = (current.name ?? "").trim()
+        const trimmedPayloadName = payload.name.trim()
+        if (trimmedCurrentName !== trimmedPayloadName) {
+          patch.name = trimmedPayloadName
+        }
+
+        const trimmedCurrentStreet = (current.street ?? "").trim()
+        const trimmedPayloadStreet = (payload.street ?? "").trim()
+        if (trimmedCurrentStreet !== trimmedPayloadStreet) {
+          patch.street = trimmedPayloadStreet || undefined
+        }
+
+        const trimmedCurrentCity = (current.city ?? "").trim()
+        const trimmedPayloadCity = (payload.city ?? "").trim()
+        if (trimmedCurrentCity !== trimmedPayloadCity) {
+          patch.city = trimmedPayloadCity || undefined
+        }
+
+        const trimmedCurrentState = (current.state ?? "").trim()
+        const trimmedPayloadState = (payload.state ?? "").trim()
+        if (trimmedCurrentState !== trimmedPayloadState) {
+          patch.state = trimmedPayloadState || undefined
+        }
+
+        const trimmedCurrentZip = (current.zip ?? "").trim()
+        const trimmedPayloadZip = (payload.zip ?? "").trim()
+        if (trimmedCurrentZip !== trimmedPayloadZip) {
+          patch.zip = trimmedPayloadZip || undefined
+        }
+
+        if (Boolean(current.primary) !== Boolean(payload.primary)) {
+          patch.primary = Boolean(payload.primary)
+        }
+
+        if ((current.status ?? "active") !== payload.status) {
+          patch.status = payload.status
+        }
+
+        if (Object.keys(patch).length > 0) {
+          await updateCountyLocation(row.locationId, patch)
+        }
       }
     } else {
       await createCountyLocation(payload)
