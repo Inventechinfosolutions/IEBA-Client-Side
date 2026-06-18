@@ -23,10 +23,10 @@ const buildDefaultMom = (): Record<Month, number> => ({
 
 type UserBudgetProgramApiRow = {
   id: number
-  budgetedfte: string
-  allocatedfte: string
-  program: string
-  code: string
+  budgetedfte?: string | number | null
+  allocatedfte?: string | number | null
+  name: string
+  code: string | null
 }
 
 function parseFte(s: unknown): number {
@@ -47,13 +47,19 @@ async function fetchPrograms(
   if (!res?.success) {
     throw new Error(res?.message ?? "Failed to load programs")
   }
-  const rows = Array.isArray(res.data) ? (res.data as unknown[]) : []
+  let assignedPrograms: unknown[] = []
+  if (res.data && typeof res.data === "object" && "assignedPrograms" in res.data) {
+    const dataObj = res.data as { assignedPrograms?: unknown }
+    if (Array.isArray(dataObj.assignedPrograms)) {
+      assignedPrograms = dataObj.assignedPrograms
+    }
+  }
   const out: ProgramRow[] = []
-  for (const raw of rows) {
+  for (const raw of assignedPrograms) {
     if (raw === null || typeof raw !== "object") continue
     const r = raw as Partial<UserBudgetProgramApiRow>
     const id = typeof r.id === "number" ? String(r.id) : ""
-    const program = typeof r.program === "string" ? r.program.trim() : ""
+    const program = typeof r.name === "string" ? r.name.trim() : ""
     if (!id || !program) continue
     out.push({
       id,
@@ -77,6 +83,9 @@ export function useGetPrograms(
     ),
     queryFn: () => fetchPrograms(fiscalYearId, employeeId!),
     enabled: !!fiscalYearId && !!employeeId,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
   })
 }
 
