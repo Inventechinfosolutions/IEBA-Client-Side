@@ -2,6 +2,7 @@ import { useState } from "react"
 import { toast } from "sonner"
 
 import {
+  computeChangedDepartmentReportIds,
   formatCountyDisplayName,
   parseDepartmentReportIdsForSave,
   serializeDepartmentReportIds,
@@ -35,9 +36,26 @@ export function useDepartmentReportSettings({
   const multiSelectKey = `${departmentId ?? "new"}-${departmentNameTrimmed}`
 
   const saveMappedReports = async () => {
-    const reportIds = parseDepartmentReportIdsForSave(selectedReportIdsCsv)
-    if (reportIds.length === 0) {
+    if (departmentId && mappedReports === undefined) {
+      toast.error("Report mappings are still loading. Please try again.")
+      return
+    }
+
+    const existingReportIds = mappedReports?.reportIds ?? []
+    const selectedReportIds = parseDepartmentReportIdsForSave(selectedReportIdsCsv)
+
+    if (selectedReportIds.length === 0) {
       toast.error("Please select at least one report")
+      return
+    }
+
+    const reportIds =
+      existingReportIds.length > 0
+        ? computeChangedDepartmentReportIds(existingReportIds, selectedReportIds)
+        : selectedReportIds
+
+    if (existingReportIds.length > 0 && reportIds.length === 0) {
+      toast.message("No report changes to save")
       return
     }
 

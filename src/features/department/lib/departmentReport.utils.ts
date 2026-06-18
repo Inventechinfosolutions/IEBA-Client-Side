@@ -19,6 +19,29 @@ export function parseDepartmentReportIdsForSave(csv: string): number[] {
     .filter((id) => Number.isFinite(id) && id > 0)
 }
 
+/** Report ids added or removed since the last server mapping (edit saves only send this diff). */
+export function computeChangedDepartmentReportIds(
+  existingIds: readonly number[],
+  selectedIds: readonly number[],
+): number[] {
+  const existingSet = new Set(existingIds)
+  const selectedSet = new Set(selectedIds)
+  const changed: number[] = []
+
+  for (const id of selectedIds) {
+    if (!existingSet.has(id)) {
+      changed.push(id)
+    }
+  }
+  for (const id of existingIds) {
+    if (!selectedSet.has(id)) {
+      changed.push(id)
+    }
+  }
+
+  return [...new Set(changed)]
+}
+
 export function toDepartmentReportOptions(items: unknown[]): DepartmentReportOption[] {
   if (!Array.isArray(items)) return []
 
