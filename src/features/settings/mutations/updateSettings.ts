@@ -330,18 +330,45 @@ async function updateSettings(
   }
 
   if (input.submitterSection === SettingsFormSaveSection.Login) {
-    const twoFactorAuth = Boolean(input.values.login?.twoFactorAuthentication)
-    const otpTimer = input.values.login?.otpValidationTimerSeconds ?? 120
-    
-    await Promise.all([
-      api.put(`/setting/TWO_FA_ENABLED`, { value: String(twoFactorAuth) }),
-      api.put(`/setting/OTP_VALIDATION_TIMEOUT`, { value: String(otpTimer) }),
-    ])
+    const initialSettings = queryClient.getQueryData<SettingsModel>(settingsKeys.detail()) ?? DEFAULT_SETTINGS
+    const initialLogin = initialSettings.login
+    const currentLogin = input.values.login
+
+    const promises: Promise<unknown>[] = []
+
+    const currentTwoFactorAuth = Boolean(currentLogin?.twoFactorAuthentication)
+    const initialTwoFactorAuth = Boolean(initialLogin?.twoFactorAuthentication)
+    if (currentTwoFactorAuth !== initialTwoFactorAuth) {
+      promises.push(api.put(`/setting/TWO_FA_ENABLED`, { value: String(currentTwoFactorAuth) }))
+    }
+
+    const currentOtpTimer = currentLogin?.otpValidationTimerSeconds ?? 120
+    const initialOtpTimer = initialLogin?.otpValidationTimerSeconds ?? 120
+    if (Number(currentOtpTimer) !== Number(initialOtpTimer)) {
+      promises.push(api.put(`/setting/OTP_VALIDATION_TIMEOUT`, { value: String(currentOtpTimer) }))
+    }
+
+    if (promises.length > 0) {
+      await Promise.all(promises)
+    }
   }
 
   if (input.submitterSection === SettingsFormSaveSection.General) {
-    const minutes = input.values.general?.screenInactivityTimeMinutes ?? 120
-    await api.put(`/setting/SCREEN_INACTIVITY_TIME_IN_MIN`, { value: String(minutes) })
+    const initialSettings = queryClient.getQueryData<SettingsModel>(settingsKeys.detail()) ?? DEFAULT_SETTINGS
+    const initialGeneral = initialSettings.general
+    const currentGeneral = input.values.general
+
+    const minutes = currentGeneral?.screenInactivityTimeMinutes ?? 120
+    const initialMinutes = initialGeneral?.screenInactivityTimeMinutes ?? 120
+    if (Number(minutes) !== Number(initialMinutes)) {
+      await api.put(`/setting/SCREEN_INACTIVITY_TIME_IN_MIN`, { value: String(minutes) })
+    }
+
+    localStorage.setItem("SCREEN_INACTIVITY_TIME_IN_MIN", String(minutes))
+    window.dispatchEvent(new StorageEvent("storage", {
+      key: "SCREEN_INACTIVITY_TIME_IN_MIN",
+      newValue: String(minutes),
+    }))
   }
 
   if (input.submitterSection === SettingsFormSaveSection.Payroll) {
@@ -483,13 +510,13 @@ export function useUpdateSettings() {
 
   return useMutation({
     mutationFn: (input: UpdateSettingsInput) => updateSettings(queryClient, input),
-    onSuccess: (_data, variables) => {
+    onSuccess: (data, variables) => {
       if (variables.submitterSection === SettingsFormSaveSection.Payroll) {
         // Only invalidate payroll query — does NOT trigger general settings refetch
         void queryClient.invalidateQueries({ queryKey: settingsKeys.payroll.detail() })
       } else {
-        // All other sections invalidate settings detail only
-        void queryClient.invalidateQueries({ queryKey: settingsKeys.detail() })
+        // All other sections update the cached settings data directly
+        queryClient.setQueryData(settingsKeys.detail(), data)
         // County also needs the county client refreshed
         if (variables.submitterSection === SettingsFormSaveSection.County) {
           void queryClient.invalidateQueries({ queryKey: settingsCountyClientQueryKey })
