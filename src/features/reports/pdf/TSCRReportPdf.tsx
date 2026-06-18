@@ -15,6 +15,7 @@ import {
   formatPrintedOnLabel,
   formatTscrBenefitsPercent,
   formatTscrBudgetValue,
+  formatTscrEmployeeName,
   formatTscrMoneyTotal,
   formatTscrPositiveNumber,
   formatTscrPositivePercent,
@@ -29,16 +30,16 @@ import {
 } from "./reportPdf"
 
 const CONTENT_WIDTH = 544
-const CARD_WIDTH = 266
-const CARD_GAP = 12
+const CARD_WIDTH = CONTENT_WIDTH / 2
+/** Header rule ends ~78pt; keep content tight underneath */
+const TSCR_CONTENT_TOP = 80
 
 const W = {
-  label: 98,
-  total: 42,
-  nonMatch: 42,
-  nonEnh: 42,
-  enh: 42,
+  label: 112,
+  col: 40,
 } as const
+
+const CARD_BG = "rgb(245, 245, 245)"
 
 const styles = StyleSheet.create({
   page: {
@@ -48,143 +49,185 @@ const styles = StyleSheet.create({
   },
   content: {
     flexGrow: 1,
+    marginTop: 0,
   },
-  employeeHeader: {
+  employeeBar: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 10,
-    maxWidth: CONTENT_WIDTH,
+    width: CONTENT_WIDTH * 0.95,
+    paddingVertical: 0,
+    marginBottom: 2,
+  },
+  employeeNameText: {
+    fontFamily: "Helvetica-Bold",
+    fontSize: 8,
+    paddingHorizontal: 2,
+    maxWidth: "32%",
+    flexShrink: 0,
+  },
+  totalHrsGroup: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    flexShrink: 1,
   },
   bold: {
     fontFamily: "Helvetica-Bold",
     fontSize: 8,
   },
+  dateRange: {
+    fontFamily: "Helvetica-Bold",
+    fontSize: 8,
+    paddingHorizontal: 2,
+    textAlign: "right",
+    maxWidth: "32%",
+  },
   totalBox: {
-    borderWidth: 1,
-    borderColor: "#000000",
-    borderTopWidth: 1,
-    paddingRight: 16,
-    paddingTop: 2,
-    paddingBottom: 4,
+    paddingRight: 8,
     fontSize: 8,
     fontFamily: "Helvetica-Bold",
+    textAlign: "left",
+    minWidth: 40,
   },
-  gridRow: {
+  dataGrid: {
     flexDirection: "row",
-    gap: CARD_GAP,
-    marginBottom: 10,
-    width: CONTENT_WIDTH,
+    flexWrap: "wrap",
+    width: CONTENT_WIDTH * 0.99,
   },
   card: {
     width: CARD_WIDTH,
-    backgroundColor: "rgb(245, 245, 245)",
-    borderWidth: 1,
+    backgroundColor: CARD_BG,
+    borderTopWidth: 0.5,
+    borderBottomWidth: 0.25,
+    borderLeftWidth: 0.5,
+    borderRightWidth: 0.4,
     borderColor: "#000000",
-    padding: 4,
   },
   cardRow: {
     flexDirection: "row",
-    width: CARD_WIDTH - 8,
-    borderTopWidth: 1,
-    borderTopColor: "#000000",
+    width: CARD_WIDTH,
+    alignItems: "stretch",
   },
-  cardHeaderRow: {
-    flexDirection: "row",
-    width: CARD_WIDTH - 8,
-    marginBottom: 2,
-  },
-  programName: {
+  programNameCell: {
     width: W.label,
     fontFamily: "Helvetica-Bold",
     fontSize: 7,
-    paddingRight: 4,
+    paddingVertical: 3,
+    paddingHorizontal: 3,
     borderRightWidth: 1,
     borderRightColor: "#000000",
+    justifyContent: "center",
   },
-  headerMetric: {
-    width: W.total,
+  metricHeadCell: {
+    width: W.col,
     fontSize: 7,
     textAlign: "center",
+    justifyContent: "center",
+    paddingVertical: 3,
   },
   labelCell: {
     width: W.label,
     fontSize: 7,
+    paddingVertical: 4,
+    paddingHorizontal: 3,
     justifyContent: "center",
-    paddingVertical: 2,
+    textAlign: "left",
   },
   labelCellBold: {
     width: W.label,
     fontSize: 7,
     fontFamily: "Helvetica-Bold",
+    paddingVertical: 4,
+    paddingHorizontal: 3,
     justifyContent: "center",
-    paddingVertical: 2,
+    textAlign: "left",
   },
   valueCell: {
-    width: W.total,
+    width: W.col,
     fontSize: 7,
     textAlign: "center",
     justifyContent: "center",
-    paddingVertical: 2,
+    paddingVertical: 4,
   },
-  grayHeaderCell: {
-    width: W.total,
-    fontSize: 7,
-    fontFamily: "Helvetica-Bold",
-    textAlign: "center",
-    backgroundColor: "rgb(219, 219, 219)",
-    paddingVertical: 3,
-    borderWidth: 1,
-    borderColor: "#000000",
+  rowTopBorder: {
+    borderTopWidth: 1,
+    borderTopColor: "#000000",
   },
-  grayHeaderLabel: {
+  rowBottomBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: "#000000",
+  },
+  rowTopBottomBorder: {
+    borderTopWidth: 1,
+    borderTopColor: "#000000",
+    borderBottomWidth: 1,
+    borderBottomColor: "#000000",
+  },
+  discountHeaderLabel: {
     width: W.label,
-    fontSize: 7,
     fontFamily: "Helvetica-Bold",
-    backgroundColor: "rgb(219, 219, 219)",
+    fontSize: 7,
     paddingVertical: 3,
-    borderWidth: 1,
-    borderColor: "#000000",
+    paddingHorizontal: 3,
+    justifyContent: "center",
+    textAlign: "left",
   },
-  tsBox: {
-    width: W.nonMatch + W.nonEnh,
+  discountHeaderValue: {
+    width: W.col,
+    fontFamily: "Helvetica-Bold",
+    fontSize: 7,
+    textAlign: "center",
+    justifyContent: "center",
+    paddingVertical: 3,
+  },
+  tsLabelCell: {
+    width: W.col,
+    fontSize: 5.5,
+    paddingVertical: 2,
+    paddingHorizontal: 2,
+    justifyContent: "center",
+  },
+  tsValueBox: {
+    width: W.col,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderLeftWidth: 1,
+    borderColor: "#000000",
+    paddingVertical: 10,
+    paddingHorizontal: 4,
     fontSize: 9,
     textAlign: "center",
     justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "#000000",
-    paddingVertical: 8,
-    paddingHorizontal: 4,
   },
   tsPercentBox: {
-    width: W.enh,
+    width: W.col,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderLeftWidth: 1,
+    borderColor: "#000000",
+    paddingVertical: 10,
+    paddingHorizontal: 4,
     fontSize: 9,
     textAlign: "center",
     justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "#000000",
-    paddingVertical: 8,
-    paddingHorizontal: 4,
   },
-  budgetBox: {
-    width: W.nonMatch + W.nonEnh,
-    fontSize: 6,
+  budgetLabelCell: {
+    width: W.col,
+    fontSize: 5.5,
+    paddingVertical: 2,
+    paddingHorizontal: 2,
+    justifyContent: "center",
+  },
+  budgetValueBox: {
+    width: W.col,
+    borderLeftWidth: 1,
+    borderColor: "#000000",
+    paddingVertical: 14,
+    paddingHorizontal: 4,
+    fontSize: 5.5,
     textAlign: "center",
     justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "#000000",
-    paddingVertical: 10,
-    paddingHorizontal: 4,
-  },
-  budgetPercentBox: {
-    width: W.enh,
-    fontSize: 6,
-    textAlign: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "#000000",
-    paddingVertical: 10,
-    paddingHorizontal: 4,
   },
   emptyMessage: {
     fontSize: 9,
@@ -195,10 +238,10 @@ const styles = StyleSheet.create({
 function MetricHeader() {
   return (
     <>
-      <Text style={[styles.headerMetric, { width: W.total }]}>TOT HRS</Text>
-      <Text style={[styles.headerMetric, { width: W.nonMatch }]}>Non Match</Text>
-      <Text style={[styles.headerMetric, { width: W.nonEnh }]}>Non Enh</Text>
-      <Text style={[styles.headerMetric, { width: W.enh }]}>Enh</Text>
+      <Text style={styles.metricHeadCell}>TOT HRS</Text>
+      <Text style={styles.metricHeadCell}>Non Match</Text>
+      <Text style={styles.metricHeadCell}>Non Enh</Text>
+      <Text style={styles.metricHeadCell}>Enh</Text>
     </>
   )
 }
@@ -207,32 +250,43 @@ function DataRow({
   label,
   values,
   boldLabel = false,
+  rowStyle,
 }: {
   label: string
   values: [string, string, string, string]
   boldLabel?: boolean
+  rowStyle?:
+    | typeof styles.rowTopBorder
+    | typeof styles.rowBottomBorder
+    | typeof styles.rowTopBottomBorder
 }) {
   const labelStyle = boldLabel ? styles.labelCellBold : styles.labelCell
   return (
-    <View style={styles.cardRow}>
+    <View style={rowStyle ? [styles.cardRow, rowStyle] : styles.cardRow}>
       <Text style={labelStyle}>{label}</Text>
-      <Text style={[styles.valueCell, { width: W.total }]}>{values[0]}</Text>
-      <Text style={[styles.valueCell, { width: W.nonMatch }]}>{values[1]}</Text>
-      <Text style={[styles.valueCell, { width: W.nonEnh }]}>{values[2]}</Text>
-      <Text style={[styles.valueCell, { width: W.enh }]}>{values[3]}</Text>
+      <Text style={styles.valueCell}>{values[0]}</Text>
+      <Text style={styles.valueCell}>{values[1]}</Text>
+      <Text style={styles.valueCell}>{values[2]}</Text>
+      <Text style={styles.valueCell}>{values[3]}</Text>
     </View>
   )
 }
 
 function ProgramCard({ record }: { record: TscrProgramRecord }) {
+  const proghrs =
+    record.proghrs !== null && record.proghrs !== undefined ? String(record.proghrs) : ""
+  const timePerc =
+    record.time_perc !== null && record.time_perc !== undefined ? `${record.time_perc}%` : ""
+
   return (
     <View style={styles.card} wrap={false}>
-      <View style={styles.cardHeaderRow}>
-        <Text style={styles.programName}>{record.program_name}</Text>
+      <View style={styles.cardRow}>
+        <Text style={styles.programNameCell}>{record.program_name}</Text>
         <MetricHeader />
       </View>
 
       <DataRow
+        rowStyle={styles.rowTopBorder}
         label="Total Hours="
         values={[
           formatTscrPositiveSum(record.prog_nonm_hrs, record.prog_none_hrs, record.prog_enh_hrs),
@@ -242,6 +296,7 @@ function ProgramCard({ record }: { record: TscrProgramRecord }) {
         ]}
       />
       <DataRow
+        rowStyle={styles.rowBottomBorder}
         label="% of Prog Hours="
         values={[
           formatTscrPositivePercentSum(record.nonm_perc, record.none_perc, record.enh_perc),
@@ -271,12 +326,12 @@ function ProgramCard({ record }: { record: TscrProgramRecord }) {
         ]}
       />
 
-      <View style={styles.cardRow}>
-        <Text style={styles.grayHeaderLabel}>Discount S&B&apos;s</Text>
-        <Text style={styles.grayHeaderCell}>Total</Text>
-        <Text style={[styles.grayHeaderCell, { width: W.nonMatch }]}>Non Match</Text>
-        <Text style={[styles.grayHeaderCell, { width: W.nonEnh }]}>Non Enh</Text>
-        <Text style={[styles.grayHeaderCell, { width: W.enh }]}>Enh</Text>
+      <View style={[styles.cardRow, styles.rowTopBottomBorder]}>
+        <Text style={styles.discountHeaderLabel}>Discount S&B&apos;s</Text>
+        <Text style={styles.discountHeaderValue}>Total</Text>
+        <Text style={styles.discountHeaderValue}>Non Match</Text>
+        <Text style={styles.discountHeaderValue}>Non Enh</Text>
+        <Text style={styles.discountHeaderValue}>Enh</Text>
       </View>
 
       <DataRow
@@ -289,6 +344,7 @@ function ProgramCard({ record }: { record: TscrProgramRecord }) {
         ]}
       />
       <DataRow
+        rowStyle={styles.rowBottomBorder}
         label="BENEFITS"
         values={[
           formatTscrPositiveNumber(record.benefits_total),
@@ -309,22 +365,20 @@ function ProgramCard({ record }: { record: TscrProgramRecord }) {
 
       <View style={styles.cardRow}>
         <Text style={styles.labelCell}>% of Ben:</Text>
-        <Text style={[styles.valueCell, { width: W.total }]}>
+        <Text style={styles.valueCell}>
           {formatTscrBenefitsPercent(record.salary_total, record.benefits_total)}
         </Text>
-        <Text style={[styles.labelCell, { width: W.nonMatch, fontSize: 6 }]}>TS hrs & % time:</Text>
-        <Text style={styles.tsBox}>{record.proghrs !== null && record.proghrs !== undefined ? String(record.proghrs) : ""}</Text>
-        <Text style={styles.tsPercentBox}>
-          {record.time_perc !== null && record.time_perc !== undefined ? `${record.time_perc}%` : ""}
-        </Text>
+        <Text style={styles.tsLabelCell}>TS hrs & % time:</Text>
+        <Text style={styles.tsValueBox}>{proghrs}</Text>
+        <Text style={styles.tsPercentBox}>{timePerc}</Text>
       </View>
 
       <View style={styles.cardRow}>
         <Text style={styles.labelCell}>MC Factor:</Text>
-        <Text style={[styles.valueCell, { width: W.total }]}>{`${record.medical_pct}%`}</Text>
-        <Text style={[styles.labelCell, { width: W.nonMatch, fontSize: 6 }]}>Budgeted hrs and % time:</Text>
-        <Text style={styles.budgetBox}>{formatTscrBudgetValue(record.budget_hrs)}</Text>
-        <Text style={styles.budgetPercentBox}>{formatTscrBudgetValue(record.budget_perc)}</Text>
+        <Text style={styles.valueCell}>{`${record.medical_pct}%`}</Text>
+        <Text style={styles.budgetLabelCell}>Budgeted hrs and % time:</Text>
+        <Text style={styles.budgetValueBox}>{formatTscrBudgetValue(record.budget_hrs)}</Text>
+        <Text style={styles.budgetValueBox}>{formatTscrBudgetValue(record.budget_perc)}</Text>
       </View>
     </View>
   )
@@ -343,23 +397,27 @@ function EmployeeSection({
 
   return (
     <View>
-      <View style={styles.employeeHeader}>
-        <Text style={styles.bold}>{employee.full_name}</Text>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+      <View style={styles.employeeBar}>
+        <Text style={styles.employeeNameText}>
+          {formatTscrEmployeeName(employee.full_name)}
+        </Text>
+        <View style={styles.totalHrsGroup}>
           <Text style={styles.bold}>Total. Hrs Time Studied:</Text>
           <Text style={styles.totalBox}>{employee.totalts}</Text>
         </View>
-        <Text style={styles.bold}>
+        <Text style={styles.dateRange}>
           {startDate} - {endDate}
         </Text>
       </View>
 
-      {pairs.map(([left, right], index) => (
-        <View key={`pair-${index}`} style={styles.gridRow}>
-          <ProgramCard record={left} />
-          {right ? <ProgramCard record={right} /> : <View style={{ width: CARD_WIDTH }} />}
-        </View>
-      ))}
+      <View style={styles.dataGrid}>
+        {pairs.map(([left, right], index) => (
+          <View key={`pair-${index}`} style={{ flexDirection: "row", width: CONTENT_WIDTH * 0.99 }}>
+            <ProgramCard record={left} />
+            {right ? <ProgramCard record={right} /> : <View style={{ width: CARD_WIDTH }} />}
+          </View>
+        ))}
+      </View>
     </View>
   )
 }
@@ -378,7 +436,11 @@ function TSCRReportPage({
   const pagePadding = resolvePagePadding(footerVariant)
 
   return (
-    <Page size="LETTER" style={[styles.page, pagePadding]} wrap>
+    <Page
+      size="LETTER"
+      style={[styles.page, pagePadding, { paddingTop: TSCR_CONTENT_TOP }]}
+      wrap
+    >
       <ReportPdfHeader
         countyName={meta.countyName}
         reportTitle={meta.reportTitle}
