@@ -12,7 +12,7 @@ export function PersonalLeaveCard({
   isLoading,
 }: PersonalLeaveCardProps) {
   return (
-    <Link to="/leave-approval" className="block h-full">
+    <Link to="/personal-time-study?focus=leave" className="block h-full">
       <div className="flex h-full flex-col rounded-[10px] border border-[#E8EAF6] bg-white shadow-[0_0_20px_0_#0000001a] hover:shadow-[0_4px_16px_rgba(108,93,211,0.10)] transition-shadow duration-200">
 
         {/* Header */}
