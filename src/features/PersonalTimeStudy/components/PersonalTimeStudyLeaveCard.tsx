@@ -56,7 +56,9 @@ export function PersonalTimeStudyLeaveCard({
 }: PersonalTimeStudyLeaveCardProps) {
   const [searchParams] = useSearchParams()
   const highlight = searchParams.get("focus") === "leave"
-  const [leaveDialogOpen, setLeaveDialogOpen] = useState(false)
+  const activeStatus = searchParams.get("status")
+  const isStatusParamValid = activeStatus === "approved" || activeStatus === "open" || activeStatus === "rejected"
+  const [leaveDialogOpen, setLeaveDialogOpen] = useState(highlight && !isStatusParamValid)
   const { user } = useAuth()
   const userId = user?.id ?? ""
 
@@ -65,8 +67,10 @@ export function PersonalTimeStudyLeaveCard({
   const updateMutation = useUpdatePersonalLeave(userId, dateStr, month, year)
   const withdrawMutation = useWithdrawPersonalLeave(userId, dateStr, month, year)
 
-  const [listDialogOpen, setListDialogOpen] = useState(false)
-  const [selectedStatus, setSelectedStatus] = useState<"approved" | "open" | "rejected" | null>(null)
+  const [listDialogOpen, setListDialogOpen] = useState(highlight && isStatusParamValid)
+  const [selectedStatus, setSelectedStatus] = useState<"approved" | "open" | "rejected" | null>(
+    (highlight && isStatusParamValid) ? (activeStatus as any) : null
+  )
   const [editingLeave, setEditingLeave] = useState<UserLeaveDaySnapshotResDto | null>(null)
   const [isFetchingDetail, setIsFetchingDetail] = useState(false)
 
@@ -182,10 +186,93 @@ export function PersonalTimeStudyLeaveCard({
         .animate-leave-blink {
           animation: purple-blink 1s ease-in-out 5;
         }
+        /* Approved blink */
+        @keyframes text-approved-blink {
+          0%, 100% {
+            transform: scale(1);
+            background-color: transparent;
+            box-shadow: none;
+          }
+          50% {
+            transform: scale(1.05);
+            background-color: rgba(22, 163, 74, 0.08);
+            box-shadow: 0 0 10px rgba(22, 163, 74, 0.3);
+          }
+        }
+        @keyframes color-approved-blink {
+          0%, 100% {
+            color: inherit;
+          }
+          50% {
+            color: #16a34a !important;
+          }
+        }
+        .animate-approved-blink {
+          animation: text-approved-blink 1s ease-in-out 5;
+        }
+        .animate-approved-blink span {
+          animation: color-approved-blink 1s ease-in-out 5;
+        }
+
+        /* Open blink */
+        @keyframes text-open-blink {
+          0%, 100% {
+            transform: scale(1);
+            background-color: transparent;
+            box-shadow: none;
+          }
+          50% {
+            transform: scale(1.05);
+            background-color: rgba(245, 158, 11, 0.08);
+            box-shadow: 0 0 10px rgba(245, 158, 11, 0.3);
+          }
+        }
+        @keyframes color-open-blink {
+          0%, 100% {
+            color: inherit;
+          }
+          50% {
+            color: #d97706 !important;
+          }
+        }
+        .animate-open-blink {
+          animation: text-open-blink 1s ease-in-out 5;
+        }
+        .animate-open-blink span {
+          animation: color-open-blink 1s ease-in-out 5;
+        }
+
+        /* Rejected blink */
+        @keyframes text-rejected-blink {
+          0%, 100% {
+            transform: scale(1);
+            background-color: transparent;
+            box-shadow: none;
+          }
+          50% {
+            transform: scale(1.05);
+            background-color: rgba(220, 38, 38, 0.08);
+            box-shadow: 0 0 10px rgba(220, 38, 38, 0.3);
+          }
+        }
+        @keyframes color-rejected-blink {
+          0%, 100% {
+            color: inherit;
+          }
+          50% {
+            color: #dc2626 !important;
+          }
+        }
+        .animate-rejected-blink {
+          animation: text-rejected-blink 1s ease-in-out 5;
+        }
+        .animate-rejected-blink span {
+          animation: color-rejected-blink 1s ease-in-out 5;
+        }
       `}</style>
       <Card
         className={cn(
-          "flex flex-col gap-0 rounded-[10px] border border-transparent bg-white py-0 shadow-[0_4px_16px_rgba(16,24,40,0.12)] ring-0 transition-all duration-500",
+          "flex flex-col gap-0 rounded-[10px] border border-transparent bg-white py-0 shadow-[0_4px_16px_rgba(16,24,40,0.12)] ring-0 transition-all duration-500 overflow-visible",
           highlight && "animate-leave-blink",
           className,
         )}
@@ -196,10 +283,13 @@ export function PersonalTimeStudyLeaveCard({
             Leave Status ({leaveCount})
           </CardTitle>
         </CardHeader>
-        <CardContent className="flex flex-col gap-2 px-3 pb-3 pt-0">
-          <ul className="flex flex-col text-[12px] divide-y divide-[#E5E7EB]">
+        <CardContent className="flex flex-col gap-2 px-3 pb-3 pt-0 overflow-visible">
+          <ul className="flex flex-col text-[12px] divide-y divide-[#E5E7EB] overflow-visible">
             <li
-              className="flex cursor-pointer items-center justify-between gap-2 rounded-[4px] px-1 py-1.5 transition-colors hover:bg-gray-50"
+              className={cn(
+                "flex cursor-pointer items-center justify-between gap-2 rounded-[4px] px-1 py-1.5 transition-all duration-300 hover:bg-gray-50",
+                activeStatus === "approved" && "animate-approved-blink"
+              )}
               onClick={() => handleStatusClick("approved")}
             >
               <span className="flex items-center gap-1.5 text-foreground">
@@ -209,7 +299,10 @@ export function PersonalTimeStudyLeaveCard({
               <span className="tabular-nums text-muted-foreground font-medium">{approved}</span>
             </li>
             <li
-              className="flex cursor-pointer items-center justify-between gap-2 rounded-[4px] px-1 py-1.5 transition-colors hover:bg-gray-50"
+              className={cn(
+                "flex cursor-pointer items-center justify-between gap-2 rounded-[4px] px-1 py-1.5 transition-all duration-300 hover:bg-gray-50",
+                activeStatus === "open" && "animate-open-blink"
+              )}
               onClick={() => handleStatusClick("open")}
             >
               <span className="flex items-center gap-1.5 text-foreground">
@@ -219,7 +312,10 @@ export function PersonalTimeStudyLeaveCard({
               <span className="tabular-nums text-muted-foreground font-medium">{open}</span>
             </li>
             <li
-              className="flex cursor-pointer items-center justify-between gap-2 rounded-[4px] px-1 py-1.5 transition-colors hover:bg-gray-50"
+              className={cn(
+                "flex cursor-pointer items-center justify-between gap-2 rounded-[4px] px-1 py-1.5 transition-all duration-300 hover:bg-gray-50",
+                activeStatus === "rejected" && "animate-rejected-blink"
+              )}
               onClick={() => handleStatusClick("rejected")}
             >
               <span className="flex items-center gap-1.5 text-foreground">
