@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Check, Plus, Search } from "lucide-react"
+import { Check, Plus, Search, X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { TitleCaseInput } from "@/components/ui/title-case-input"
@@ -39,12 +39,24 @@ export function UserToolbar({
             value={searchTerm}
             onChange={(event) => onSearchChange(event.target.value)}
             placeholder="Search here"
-            className={`h-9 rounded-[8px] bg-white pl-9 text-[11px]! md:text-[11px]! text-[#232735] shadow-[0_1px_3px_rgba(35,39,53,0.08)] placeholder:text-[11px] placeholder:text-[#b7bccb] focus-visible:ring-0 ${
+            className={`h-9 rounded-[8px] bg-white pl-9 pr-8 text-[11px]! md:text-[11px]! text-[#232735] shadow-[0_1px_3px_rgba(35,39,53,0.08)] placeholder:text-[11px] placeholder:text-[#b7bccb] focus-visible:ring-0 ${
               isSearchFocused || searchTerm.trim()
                 ? "border-[#6C5DD3]"
                 : "border-[#e1e4ec]"
             }`}
           />
+          {searchTerm.length > 0 && (
+            <button
+              type="button"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#232735] cursor-pointer"
+              onMouseDown={(event) => {
+                event.preventDefault()
+              }}
+              onClick={() => onSearchChange("")}
+            >
+              <X className="size-3.5" />
+            </button>
+          )}
           {shouldShowSuggestions ? (
             <div className="absolute left-0 top-[calc(100%+4px)] z-30 w-full overflow-hidden rounded-[8px] bg-white shadow-[0_6px_16px_rgba(35,39,53,0.16)]">
               {visibleSuggestions.map((name) => (
