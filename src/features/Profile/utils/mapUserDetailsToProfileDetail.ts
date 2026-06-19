@@ -1,4 +1,4 @@
-import { phoneDigitsOnly } from "@/features/user/add-employee/schemas"
+import { normalizePhoneForFormDisplay, phoneDigitsOnly } from "@/features/user/add-employee/schemas"
 import type { UserDetailsDto } from "@/features/user/types"
 import { jobClassificationIdsToMultiSelectString } from "@/features/user/utility/mapUserDetailsToForm"
 
@@ -63,7 +63,7 @@ function emergencyContactFromDetails(details: UserDetailsDto) {
     firstName: (ec.firstName ?? "").trim(),
     lastName: (ec.lastName ?? "").trim(),
     areaCode: phone.areaCode,
-    telephoneNumber: phone.telephoneNumber,
+    telephoneNumber: normalizePhoneForFormDisplay(phone.telephoneNumber),
     relationship: normalizeRelationship(ec.relationship),
   }
 }
@@ -102,10 +102,9 @@ export function mapUserDetailsToProfileDetailData(details: UserDetailsDto): Prof
     id: details.id,
     persist,
     firstName: details.firstName?.trim() || "",
-    mi: "",
     lastName: details.lastName?.trim() || "",
     areaCode: primary.areaCode,
-    telephoneNumber: primary.telephoneNumber,
+    telephoneNumber: normalizePhoneForFormDisplay(primary.telephoneNumber),
     emergencyContact: emergencyContactFromDetails(details),
     onRecords: {
       employeeId: nonEmptyDigitsEmployeeId(details.employeeId, details.id),

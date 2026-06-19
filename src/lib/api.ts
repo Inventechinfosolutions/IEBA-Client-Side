@@ -138,7 +138,7 @@ async function apiRequest<T>(
     throw new Error(message)
   }
 
-  const contentType = response.headers.get("content-type") ?? ""
+  const contentType = (response.headers.get("content-type") ?? "").toLowerCase()
 
   if (
     contentType.includes("application/pdf") ||

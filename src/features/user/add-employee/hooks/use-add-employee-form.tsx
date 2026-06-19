@@ -514,7 +514,12 @@ export function useEmployeeLoginDetailsUi(userId?: string | null) {
         toast.success("Document deleted successfully")
       } catch (error) {
         console.error("Delete failed", error)
+        const message = error instanceof Error ? error.message : "Failed to delete document"
+        toast.error(message)
+        return
       }
+    } else {
+      toast.success("Document deleted successfully")
     }
     setLocalFileLabel("")
     setValue("jobDutyStatement", "", { shouldDirty: true })
@@ -524,6 +529,7 @@ export function useEmployeeLoginDetailsUi(userId?: string | null) {
 
   const onPreviewJobDutyFile = useCallback(async () => {
     const fileId = watch("jobDutyFileId")
+    const localFile = watch("jobDutyFile")
     if (fileId) {
       try {
         const blob = await api.get<Blob>(`/user-documents/${fileId}/download`)
@@ -537,7 +543,25 @@ export function useEmployeeLoginDetailsUi(userId?: string | null) {
         window.URL.revokeObjectURL(url)
       } catch (error) {
         console.error("Download failed", error)
+        const message = error instanceof Error ? error.message : "Failed to download job duty statement"
+        toast.error(message)
       }
+    } else if (localFile instanceof File) {
+      try {
+        const url = window.URL.createObjectURL(localFile)
+        const a = document.createElement("a")
+        a.href = url
+        a.download = localFile.name
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        window.URL.revokeObjectURL(url)
+      } catch (error) {
+        console.error("Preview failed", error)
+        toast.error("Failed to preview local file")
+      }
+    } else {
+      toast.info("No file available to preview")
     }
   }, [watch])
 
