@@ -571,6 +571,13 @@ export function ReportForm({ module }: ReportFormProps) {
   const countyName = formatCountyDisplayName(countyClient?.name || user?.countyName)
   const countyLogoDataUrl = resolveCountyClientLogoSrc(countyClient)
 
+  const isSuperAdmin = !!user?.permissions?.includes("superadmin:all")
+  const { data: departmentsData, isLoading: isDeptsLoading } = useGetReportDepartments(user?.id, isSuperAdmin, true)
+
+  const rawDepartmentOptions = useMemo(() => {
+    return departmentsData?.items ? mapIdNameRowsToSelectOptions(departmentsData.items) : []
+  }, [departmentsData])
+
   const formValues = useMemo((): ReportFormValues => {
     const stored = readStoredReportFormParams()
     const base = stored ? { ...REPORT_FORM_DEFAULT_VALUES, ...stored } : { ...REPORT_FORM_DEFAULT_VALUES }
@@ -586,12 +593,20 @@ export function ReportForm({ module }: ReportFormProps) {
     if (!base.employeeIds?.trim() && typeof legacyId === "string" && legacyId.trim() !== "") {
       base.employeeIds = legacyId.trim()
     }
+
+    if (!base.departmentId && rawDepartmentOptions.length === 1) {
+      base.departmentId = rawDepartmentOptions[0].value
+    }
+
     return base
-  }, [navState])
+  }, [navState, rawDepartmentOptions])
 
   const form = useForm<ReportFormValues>({
     resolver: zodResolver(reportFormSchema),
-    defaultValues: formValues,
+    values: formValues,
+    resetOptions: {
+      keepDirtyValues: true,
+    },
     mode: "onTouched",
   })
 
@@ -600,14 +615,14 @@ export function ReportForm({ module }: ReportFormProps) {
   const reportKey = useWatch({ control, name: "reportKey" }) ?? ""
   const departmentId = useWatch({ control, name: "departmentId" }) ?? ""
 
-  const { data: departmentsData, isLoading: isDeptsLoading } = useGetReportDepartments(true)
+
   const {
     data: departmentReportItems = [],
     isPending: isDeptReportsPending,
     isFetching: isDeptReportsFetching,
   } = useGetReportsByDepartment(departmentId, !!departmentId)
   const hasSelectedReportType = reportKey.trim().length > 0
-  const deptReportsLoading = isDeptReportsPending || isDeptReportsFetching
+  const deptReportsLoading = !!departmentId && (isDeptReportsPending || isDeptReportsFetching)
 
   const selectMonthBy = useWatch({ control, name: "selectMonthBy" })
   const fiscalYearId = useWatch({ control, name: "fiscalYearId" }) ?? ""
@@ -870,12 +885,11 @@ export function ReportForm({ module }: ReportFormProps) {
   )
 
   const departmentOptions = useMemo(() => {
-    const all = departmentsData?.items ? mapIdNameRowsToSelectOptions(departmentsData.items) : []
     if (reportKey === "P110-SS") {
-      return all.filter((opt) => opt.label === "Social Services")
+      return rawDepartmentOptions.filter((opt) => opt.label === "Social Services")
     }
-    return all
-  }, [departmentsData, reportKey])
+    return rawDepartmentOptions
+  }, [rawDepartmentOptions, reportKey])
 
   const employeeOptions = useMemo(() => {
     if (shouldFetchCostPoolUsers && costPoolUsersData) {
@@ -1429,6 +1443,7 @@ const ReportFiltersBody = ({
                     placeholder="Select Department"
                     className={departmentSelectTrigger}
                     isLoading={isDeptsLoading}
+                    disabled={rawDepartmentOptions.length === 1}
                     contentClassName="max-h-[220px]"
                     itemButtonClassName="rounded-[6px] px-3 py-2"
                     itemLabelClassName="!text-[14px] !font-normal"
