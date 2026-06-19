@@ -408,6 +408,7 @@ export function PersonalTimeStudyPage() {
                             onSuccess: () => setDraftNotes(null)
                           })}
                           isSaving={notesMutation.isPending}
+                          disabled={settingChecksQuery.data?.allowUserEntry === false}
                         />
                         <PersonalTimeStudyPeriodsSection
                           timestudyAllowed={settingChecksQuery.data?.timestudyAllowedRaw ?? []}
