@@ -265,6 +265,8 @@ export function useHolidays(options?: { enabled?: boolean }) {
 export function useReportsByRole(params?: {
   departmentId?: number
   roleId?: number
+  isSuperAdmin?: boolean
+  departmentIds?: number[]
   enabled?: boolean
 }) {
   return useQuery({
