@@ -14,6 +14,7 @@ type DepartmentReportMultiSelectFieldProps = {
   serverMappedReportIds: string
   isLoading: boolean
   onSelectedReportIdsChange: (reportIdsCsv: string) => void
+  onImmediateUpdate?: (reportIds: number[]) => void
 }
 
 function DepartmentReportMultiSelectField({
@@ -21,6 +22,7 @@ function DepartmentReportMultiSelectField({
   serverMappedReportIds,
   isLoading,
   onSelectedReportIdsChange,
+  onImmediateUpdate,
 }: DepartmentReportMultiSelectFieldProps) {
   const [userReportIds, setUserReportIds] = useState<string | null>(null)
   const [searchAvailable, setSearchAvailable] = useState("")
@@ -99,6 +101,9 @@ function DepartmentReportMultiSelectField({
     setUserReportIds(csv)
     onSelectedReportIdsChange(csv)
     setToggledAvailable([])
+    if (onImmediateUpdate) {
+      onImmediateUpdate(nextIds.map(Number))
+    }
   }
 
   const handleMoveBack = () => {
@@ -108,6 +113,9 @@ function DepartmentReportMultiSelectField({
     setUserReportIds(csv)
     onSelectedReportIdsChange(csv)
     setToggledSelected([])
+    if (onImmediateUpdate) {
+      onImmediateUpdate(nextIds.map(Number))
+    }
   }
 
   if (isLoading) {
@@ -177,6 +185,7 @@ export function DepartmentReportSettingsPanel({
     isSaving,
     setPendingReportIds,
     saveMappedReports,
+    handleImmediateUpdate,
   } = useDepartmentReportSettings({
     departmentId,
     departmentName,
@@ -201,23 +210,24 @@ export function DepartmentReportSettingsPanel({
       <div className="py-8 min-h-[220px]">
         <label className={labelClassName}>Reports</label>
         <DepartmentReportMultiSelectField
-          key={multiSelectKey}
+          key={`${multiSelectKey}-${serverMappedReportIds}`}
           reportOptions={reportOptions}
           serverMappedReportIds={serverMappedReportIds}
           isLoading={isReportDataLoading}
           onSelectedReportIdsChange={setPendingReportIds}
+          onImmediateUpdate={handleImmediateUpdate}
         />
       </div>
 
       <div className="flex justify-end gap-4 pt-4">
-        <Button
+        {/* <Button
           type="button"
           disabled={saveDisabled}
           onClick={() => void saveMappedReports()}
           className="w-[140px] h-[50px] bg-[#6C5DD3] hover:bg-[#5B4DC5] rounded-[8px] text-[16px] font-[500]"
         >
           Save
-        </Button>
+        </Button> */}
         <Button
           type="button"
           disabled={saveDisabled}
