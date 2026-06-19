@@ -92,15 +92,12 @@ export function PersonalTimeStudyPeriodsSection({
                         <HoverCardTrigger asChild>
                           <span className="cursor-pointer shrink-0">
                             <AlertTriangle
-                              className={cn(
-                                "size-3.5",
-                                isWarning || (dept.allowed && dept.message) ? "text-amber-500" : "text-slate-400"
-                              )}
+                              className="size-3.5 text-amber-500 animate-bounce transition-transform duration-700 hover:animate-none hover:rotate-[360deg] hover:scale-125 -translate-y-[2px]"
                             />
                           </span>
                         </HoverCardTrigger>
                         <HoverCardContent
-                          className="w-fit max-w-[280px] p-2 z-[100] bg-white border border-gray-100 shadow-xl rounded-[8px] text-[#111827] text-[11px]"
+                          className="w-fit max-w-[360px] p-3 z-[100] bg-white border border-gray-100 shadow-xl rounded-[8px] text-[#111827] text-[13px]"
                           align="start"
                           side="top"
                         >
