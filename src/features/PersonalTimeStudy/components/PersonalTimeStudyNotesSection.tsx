@@ -10,6 +10,7 @@ type PersonalTimeStudyNotesSectionProps = {
   onSave: () => void
   className?: string
   isSaving?: boolean
+  disabled?: boolean
 }
 
 export function PersonalTimeStudyNotesSection({
@@ -18,6 +19,7 @@ export function PersonalTimeStudyNotesSection({
   onSave,
   className,
   isSaving = false,
+  disabled = false,
 }: PersonalTimeStudyNotesSectionProps) {
   return (
     <section
@@ -44,7 +46,7 @@ export function PersonalTimeStudyNotesSection({
         placeholder="Add notes…"
         className="flex-1 w-full min-h-0 h-[88px] resize-none rounded-[8px] border border-[#E5E7EB] text-[12px] placeholder:text-[11px] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD3] overflow-y-auto"
         style={{ fieldSizing: "normal" } as any}
-        disabled={isSaving}
+        disabled={isSaving || disabled}
       />
       <div className="mt-2 flex shrink-0 justify-end">
         <Button
@@ -52,7 +54,7 @@ export function PersonalTimeStudyNotesSection({
           size="sm"
           className="h-8 rounded-[8px] bg-[#6C5DD3] px-4 text-[12px] hover:bg-[#6C5DD3]/90"
           onClick={onSave}
-          disabled={isSaving}
+          disabled={isSaving || disabled}
         >
           Save Notes
         </Button>

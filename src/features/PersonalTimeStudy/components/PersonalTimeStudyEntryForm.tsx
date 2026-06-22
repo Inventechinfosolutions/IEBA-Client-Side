@@ -1129,14 +1129,18 @@ export function PersonalTimeStudyEntryForm({
                 <span className="text-gray-700">TS Balance:</span>
                 <span className="font-semibold text-[#6C5DD3]">{balanceTotal || 0}</span>
               </div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-gray-700">Entered MAA Minutes:</span>
-                <span className="font-semibold text-[#6C5DD3]">{actualMultiTotal || 0}</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-gray-700">MAA Balance:</span>
-                <span className="font-semibold text-[#6C5DD3]">{multiBalanceTotal || 0}</span>
-              </div>
+              {actualMultiTotal !== null && actualMultiTotal !== undefined && (
+                <div className="flex items-center gap-1.5">
+                  <span className="text-gray-700">Entered MAA Minutes:</span>
+                  <span className="font-semibold text-[#6C5DD3]">{actualMultiTotal || 0}</span>
+                </div>
+              )}
+              {multiBalanceTotal !== null && multiBalanceTotal !== undefined && (
+                <div className="flex items-center gap-1.5">
+                  <span className="text-gray-700">MAA Balance:</span>
+                  <span className="font-semibold text-[#6C5DD3]">{multiBalanceTotal || 0}</span>
+                </div>
+              )}
             </div>
           )}
 
