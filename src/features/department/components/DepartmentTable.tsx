@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react"
-import { ArrowLeft, History, User, Phone, Mail, MapPin } from "lucide-react"
+import { ArrowLeft, History, User, Phone, Mail, MapPin, X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -241,7 +241,7 @@ export function DepartmentTable({
             />
           </div>
         ) : (
-          <div className="w-[300px]">
+          <div className="relative w-[300px]">
             <TitleCaseInput
               value={filters.search || ""}
               onChange={(e) => {
@@ -251,8 +251,23 @@ export function DepartmentTable({
                 setSortDirection(null)
               }}
               placeholder="Search here"
-              className="h-[48px] w-full rounded-[8px] border-[#E5E7EB] bg-white px-[15px] py-[12px] text-[14px] shadow-sm focus-visible:ring-1 focus-visible:ring-[#6C5DD3]"
+              className="h-[48px] w-full rounded-[8px] border-[#E5E7EB] bg-white pl-[15px] pr-[35px] py-[12px] text-[14px] shadow-sm focus-visible:ring-1 focus-visible:ring-[#6C5DD3]"
             />
+            {(filters.search || "").length > 0 && (
+              <button
+                type="button"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#111827] cursor-pointer"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => {
+                  onSearchChange("")
+                  onPageChange(1)
+                  setSortBy(null)
+                  setSortDirection(null)
+                }}
+              >
+                <X className="size-4" />
+              </button>
+            )}
           </div>
         )}
 

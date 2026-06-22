@@ -52,6 +52,7 @@ export type CostPoolUserSummaryResDto = {
   id: string
   firstName: string
   lastName: string
+  name?: string | null
   status: string
 }
 

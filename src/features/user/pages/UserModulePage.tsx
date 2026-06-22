@@ -365,6 +365,7 @@ export function UserModulePage() {
         roles: nextRoles,
         permissions: nextPerms,
         departmentRoles: deptRoles,
+        isPasswordChangeRequired: !!details.isPasswordChangeRequired,
       })
       setStoredMimicSession({
         originalToken,
