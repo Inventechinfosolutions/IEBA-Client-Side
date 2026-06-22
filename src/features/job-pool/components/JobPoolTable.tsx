@@ -113,11 +113,11 @@ export function JobPoolTable({
         <Table className="table-fixed">
           <colgroup>
             <col style={{ width: showActionColumn ? "12%" : "13.5%" }} />
-            <col style={{ width: showActionColumn ? "42%" : "46.5%" }} />
+            <col style={{ width: showActionColumn ? "39%" : "46.5%" }} />
             <col style={{ width: showActionColumn ? "19%" : "21%" }} />
             <col style={{ width: showActionColumn ? "12%" : "13%" }} />
-            <col style={{ width: showActionColumn ? "7.5%" : "6%" }} />
-            {showActionColumn && <col style={{ width: "7.5%" }} />}
+            <col style={{ width: showActionColumn ? "8%" : "6%" }} />
+            {showActionColumn && <col style={{ width: "10%" }} />}
           </colgroup>
           <TableHeader className="[&_tr]:border-b-0">
             <TableRow className="hover:bg-transparent">
@@ -251,11 +251,11 @@ export function JobPoolTable({
         <Table className="table-fixed">
           <colgroup>
             <col style={{ width: showActionColumn ? "12%" : "13.5%" }} />
-            <col style={{ width: showActionColumn ? "42%" : "46.5%" }} />
+            <col style={{ width: showActionColumn ? "39%" : "46.5%" }} />
             <col style={{ width: showActionColumn ? "19%" : "21%" }} />
             <col style={{ width: showActionColumn ? "12%" : "13%" }} />
-            <col style={{ width: showActionColumn ? "7.5%" : "6%" }} />
-            {showActionColumn && <col style={{ width: "7.5%" }} />}
+            <col style={{ width: showActionColumn ? "8%" : "6%" }} />
+            {showActionColumn && <col style={{ width: "10%" }} />}
           </colgroup>
           <TableBody>
             {isLoading
@@ -365,7 +365,7 @@ export function JobPoolTable({
 
                   {/* Action - only render cell if user has permission */}
                   {showActionColumn && (
-                    <TableCell className="align-middle px-4 py-2.5 text-center whitespace-normal">
+                    <TableCell className="align-middle px-2 py-2.5 text-center whitespace-normal">
                       <div className="inline-flex items-center justify-center gap-0.5">
                         {onHistoryRow && canViewJobPool ? (
                           <button
