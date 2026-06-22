@@ -55,9 +55,7 @@ import type {
 import { mapReportFormToRunPayload } from "../utils/mapReportFormToRunPayload"
 import { readStoredReportFormParams, writeStoredReportFormParams, clearStoredReportFormParams } from "../utils/reportFormSessionStorage"
 
-function isTuolumneDisabledReport(label: string, countyName?: string | null): boolean {
-  return (countyName ?? "").trim().toUpperCase() === "TUOLUMNE" && /start\/stop\/travel/i.test(label)
-}
+
 
 /**
  * Progress bar driven by TanStack mutation's isPending — no useEffect.
@@ -818,10 +816,9 @@ export function ReportForm({ module }: ReportFormProps) {
         departmentReportItems.map((item) => ({
           value: item.key,
           label: item.label,
-          disabled: isTuolumneDisabledReport(item.label, countyName),
         })),
       ),
-    [departmentReportItems, countyName],
+    [departmentReportItems],
   )
 
   const shouldFilterProgramsByUser = useMemo(() => {
