@@ -50,6 +50,12 @@ export type CountyActivityCodeRow = {
   rowType: CountyActivityGridRowType
   parentId?: string | null
   hasChild?: boolean
+  bhsaApplicable: boolean
+  expenditureClassification: string | null
+  bhccCategory: string | null
+  ageGroup: string | null
+  otherCountyExpenditureType: string | null
+  bhsaNotes: string | null
 }
 
 /** Nested on `GET /activities/hierarchy` and `GET /activities/:id` (backend `ActivityNestedDepartmentResDto`). */
@@ -109,6 +115,12 @@ export type ApiActivityResDto = {
   activityDepartments?: ApiActivityDepartmentResDto[]
   apportioningDepartments?: any[]
   hasChild?: boolean
+  bhsaApplicable?: boolean
+  expenditureClassification?: string | null
+  bhccCategory?: string | null
+  ageGroup?: string | null
+  otherCountyExpenditureType?: string | null
+  bhsaNotes?: string | null
 }
 
 export type ApiActivityTreeResDto = ApiActivityResDto & {

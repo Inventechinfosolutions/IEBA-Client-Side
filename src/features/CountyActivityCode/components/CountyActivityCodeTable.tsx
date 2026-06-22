@@ -170,6 +170,12 @@ function mapCountyActivityRowToFormValues(row: CountyActivityCodeRow): CountyAct
     department: row.department,
     apportioning: row.apportioning,
     manualApportioning: row.apportioning,
+    bhsaApplicable: row.bhsaApplicable,
+    expenditureClassification: row.expenditureClassification ?? "",
+    bhccCategory: row.bhccCategory ?? "",
+    ageGroup: row.ageGroup ?? "",
+    otherCountyExpenditureType: row.otherCountyExpenditureType ?? "",
+    bhsaNotes: row.bhsaNotes ?? "",
   }
 }
 
@@ -592,6 +598,12 @@ export function CountyActivityCodeTable({
         department: editDeptNames.join(", "),
         apportioning,
         manualApportioning,
+        bhsaApplicable: activity.bhsaApplicable ?? false,
+        expenditureClassification: activity.expenditureClassification ?? "",
+        bhccCategory: activity.bhccCategory ?? "",
+        ageGroup: activity.ageGroup ?? "",
+        otherCountyExpenditureType: activity.otherCountyExpenditureType ?? "",
+        bhsaNotes: activity.bhsaNotes ?? "",
       }
     }
 
@@ -614,6 +626,12 @@ export function CountyActivityCodeTable({
           : rowToEdit.department,
       apportioning,
       manualApportioning,
+      bhsaApplicable: activity.bhsaApplicable ?? false,
+      expenditureClassification: activity.expenditureClassification ?? "",
+      bhccCategory: activity.bhccCategory ?? "",
+      ageGroup: activity.ageGroup ?? "",
+      otherCountyExpenditureType: activity.otherCountyExpenditureType ?? "",
+      bhsaNotes: activity.bhsaNotes ?? "",
     }
   }, [
     editOpen,
