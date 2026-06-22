@@ -283,11 +283,11 @@ function CostPoolEditDialogContent({
     
     const detailAssigned = (detailQuery.data.assignedUsers ?? []).map((u) => ({
       userId: String(u.id),
-      displayName: [u.firstName, u.lastName].filter(Boolean).join(" ") || String(u.id),
+      displayName: u.name?.trim() || [u.firstName, u.lastName].filter(Boolean).join(" ") || String(u.id),
     }))
     const detailUnassigned = (detailQuery.data.unassignedUsers ?? []).map((u) => ({
       userId: String(u.id),
-      displayName: [u.firstName, u.lastName].filter(Boolean).join(" ") || String(u.id),
+      displayName: u.name?.trim() || [u.firstName, u.lastName].filter(Boolean).join(" ") || String(u.id),
     }))
 
     const combined = [...detailAssigned, ...detailUnassigned]
