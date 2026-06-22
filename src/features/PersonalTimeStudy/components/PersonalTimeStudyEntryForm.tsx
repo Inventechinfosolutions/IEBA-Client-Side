@@ -1166,39 +1166,45 @@ export function PersonalTimeStudyEntryForm({
                       >
                         <div className="text-[11px] font-medium space-y-2">
                           {apportioningSummary.map((item) => (
-                            <div key={item.departmentId} className="border-b last:border-b-0 pb-1.5 last:pb-0 border-gray-100">
+                            <div key={item.departmentId} className="border-b last:border-b-0 pb-2 last:pb-0 border-gray-100">
                               <div className="font-bold text-[#6C5DD3] text-[12px] flex items-center justify-between gap-2">
-                                <span>{item.departmentName}</span>
+                                <span className="flex-1">{item.departmentName}</span>
                                 {item.apportioningType && item.apportioningType !== "none" && (
-                                  <span className="text-[9px] uppercase font-semibold px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 border border-gray-200 font-mono">
+                                  <span className="text-[9px] uppercase font-semibold px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 border border-gray-200 font-mono shrink-0">
                                     {item.apportioningType}
                                   </span>
                                 )}
                               </div>
-                              <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 mt-1 text-[#344054]">
-                                <div>
-                                  <span className="text-muted-foreground font-medium">Percent:</span>{" "}
-                                  <span className="font-semibold text-foreground">{item.apportioningPercent}%</span>
-                                </div>
-                                <div>
-                                  <span className="text-muted-foreground font-medium">Allocated:</span>{" "}
-                                  <span className="font-semibold text-foreground">{item.allocatedMinutes} Min.</span>
-                                </div>
-                                <div>
-                                  <span className="text-muted-foreground font-medium">Supervisor Consumed:</span>{" "}
-                                  <span className="font-semibold text-[#6C5DD3]">{item.supervisorConsumedMinutes ?? 0} Min.</span>
-                                </div>
-                                {item.apportioningType !== "manual" && (
+                              {item.outOfDateRange ? (
+                                <p className="mt-1.5 mb-1 text-[11px] text-amber-600 font-medium leading-snug w-full">
+                                  Selected date doesn&apos;t fall within the department apportioning start and end date
+                                </p>
+                              ) : (
+                                <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 mt-1 text-[#344054]">
                                   <div>
-                                    <span className="text-muted-foreground font-medium">Reportee Minutes:</span>{" "}
-                                    <span className="font-semibold text-[#6C5DD3]">{item.enteredMinutes} Min.</span>
+                                    <span className="text-muted-foreground font-medium">Percent:</span>{" "}
+                                    <span className="font-semibold text-foreground">{item.apportioningPercent}%</span>
                                   </div>
-                                )}
-                                <div>
-                                  <span className="text-muted-foreground font-medium">Remaining:</span>{" "}
-                                  <span className="font-semibold text-[#6C5DD3]">{item.remainingMinutes} Min.</span>
+                                  <div>
+                                    <span className="text-muted-foreground font-medium">Allocated:</span>{" "}
+                                    <span className="font-semibold text-foreground">{item.allocatedMinutes} Min.</span>
+                                  </div>
+                                  <div>
+                                    <span className="text-muted-foreground font-medium">Supervisor Consumed:</span>{" "}
+                                    <span className="font-semibold text-[#6C5DD3]">{item.supervisorConsumedMinutes ?? 0} Min.</span>
+                                  </div>
+                                  {item.apportioningType !== "manual" && (
+                                    <div>
+                                      <span className="text-muted-foreground font-medium">Reportee Minutes:</span>{" "}
+                                      <span className="font-semibold text-[#6C5DD3]">{item.enteredMinutes} Min.</span>
+                                    </div>
+                                  )}
+                                  <div>
+                                    <span className="text-muted-foreground font-medium">Remaining:</span>{" "}
+                                    <span className="font-semibold text-[#6C5DD3]">{item.remainingMinutes} Min.</span>
+                                  </div>
                                 </div>
-                              </div>
+                              )}
                             </div>
                           ))}
                         </div>

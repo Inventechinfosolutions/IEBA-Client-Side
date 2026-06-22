@@ -178,6 +178,8 @@ function toDepartmentUI(dto: DepartmentResDto, options?: ToDepartmentUIOptions):
       removeDescriptionActivityNoteMultiCode: dto.removeDescriptionActivityNoteMultiCode ?? false,
       allowActivationStartDateAndEndDate: dto.allowActivationStartDateAndEndDate ?? false,
       moveSaveSubmitToTop: dto.moveSaveSubmitToTop ?? false,
+      apportioningStartDate: dto.apportioningStartDate ?? null,
+      apportioningEndDate: dto.apportioningEndDate ?? null,
     },
     canEdit: (dto as any).action === "edit",
   }
@@ -211,6 +213,8 @@ function toCreateUpdateDto(values: DepartmentUpsertValues): CreateDepartmentReqD
     costallocation: values.settings.costAllocation,
     autoApportioning: values.settings.autoApportioning,
     manualApportioning: values.settings.manualApportioning,
+    apportioningStartDate: values.settings.apportioning ? (values.settings.apportioningStartDate || null) : null,
+    apportioningEndDate: values.settings.apportioning ? (values.settings.apportioningEndDate || null) : null,
     allowUserOrCostpoolDirect: values.settings.allowUserCostpoolDirect,
     allowMultiCodes: values.settings.allowMultiCodes,
     multiCodes: codes,
