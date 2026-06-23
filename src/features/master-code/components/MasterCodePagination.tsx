@@ -46,8 +46,8 @@ export function MasterCodePagination({
   })()
 
   return (
-    <div className="mt-4 flex items-center rounded-[6px] bg-white px-5 py-3 shadow-[0_4px_16px_rgba(16,24,40,0.12)]">
-      <div className="ml-auto flex items-center gap-4">
+    <div className="mt-4 flex flex-col sm:flex-row items-center justify-between rounded-[6px] bg-white px-4 py-3 gap-3 shadow-[0_4px_16px_rgba(16,24,40,0.12)] w-full">
+      <div className="w-full sm:w-auto ml-auto flex flex-wrap items-center justify-center sm:justify-end gap-3 sm:gap-4">
         <p className="text-[12px] text-[#8f93a1]">Total {totalItems} items</p>
         <Pagination className="mx-0 w-auto justify-start">
           <PaginationContent className="gap-2 text-xs">

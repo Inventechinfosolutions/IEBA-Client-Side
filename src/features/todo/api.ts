@@ -109,7 +109,8 @@ export async function apiCreateTodo(input: {
     userId: input.userId,
     status: input.status,
   })
-  return normalizeTodoRow(raw)
+  const res = raw as { data?: unknown }
+  return normalizeTodoRow(res?.data ?? raw)
 }
 
 export async function apiUpdateTodo(input: {
@@ -125,7 +126,8 @@ export async function apiUpdateTodo(input: {
     userId: input.userId,
     status: input.status,
   })
-  return normalizeTodoRow(raw)
+  const res = raw as { data?: unknown }
+  return normalizeTodoRow(res?.data ?? raw)
 }
 
 export async function apiGetTodoById(id: string) {

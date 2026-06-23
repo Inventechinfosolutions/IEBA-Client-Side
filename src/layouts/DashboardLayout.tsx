@@ -77,20 +77,23 @@ export function DashboardLayout() {
       )}
       <AppSidebar />
       <SidebarInset className="bg-[#F4F5FB] h-svh overflow-hidden">
-        <header className="sticky top-0 z-50 flex h-[72px] shrink-0 items-center justify-between gap-4 bg-white px-6 shadow-[0_2px_10px_rgba(0,0,0,0.06)]">
-          <div className="flex items-center gap-3">
+        <header className="sticky top-0 z-50 flex h-[72px] shrink-0 items-center justify-between gap-2 sm:gap-4 bg-white px-3 sm:px-6 shadow-[0_2px_10px_rgba(0,0,0,0.06)]">
+          <div className="flex items-center gap-2 sm:gap-3">
             <SidebarTrigger className="-ml-2 rounded-full border border-[#E5E7EB] bg-white text-[#4B5563] hover:bg-[#F3F4F6]" />
-            <span className="text-[17px] text-[#6C5DD3]">
+            <span className="hidden md:inline text-[17px] text-[#6C5DD3]">
               {countyName
                 ? `Bits of Time Welcome To ${countyName}`
                 : "Bits of Time"}
             </span>
+            <span className="inline md:hidden text-[16px] text-[#6C5DD3] font-medium truncate max-w-[200px]">
+              {countyName ? `Welcome To ${countyName}` : "Welcome"}
+            </span>
           </div>
-          <div className="flex flex-1 justify-center -translate-60 -translate-y-3">
+          <div className="hidden md:flex flex-1 justify-center -translate-60 -translate-y-3">
             <MimicBanner inline />
           </div>
-          <div className="flex items-center gap-6">
-            {!isSuperAdmin && <div className="flex items-center gap-4" />}
+          <div className="flex items-center gap-3 sm:gap-6">
+            {!isSuperAdmin && <div className="flex items-center gap-2 sm:gap-4" />}
             {user && (
               <>
                 <button
@@ -117,7 +120,7 @@ export function DashboardLayout() {
                           <UserIcon className="h-6 w-6 text-gray-400" />
                         </AvatarFallback>
                       </Avatar>
-                      <div className="flex flex-col items-start leading-tight">
+                      <div className="hidden sm:flex flex-col items-start leading-tight">
                         <span className="text-[14px] font-medium text-[#111827]">
                           {user.name}
                         </span>
@@ -129,7 +132,7 @@ export function DashboardLayout() {
                               : "User"}
                         </span>
                       </div>
-                      <ChevronDown className="ml-1 h-4 w-4 text-[#9CA3AF]" />
+                      <ChevronDown className="ml-1 h-4 w-4 text-[#9CA3AF] hidden sm:block" />
                     </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent
