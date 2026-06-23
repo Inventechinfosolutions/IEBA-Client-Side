@@ -47,6 +47,7 @@ export type UserLeaveStatusDto =
 export type UserLeavePersonNameDto = {
   firstName: string
   lastName: string
+  name?: string
 }
 
 // --- Backend: `dto/response/user-leave.res.dto.ts` → `UserLeaveListItemDto` ---
@@ -126,8 +127,8 @@ export type UserLeave = {
   supervisoruserId: string | null
   updatedOn: string
   status: UserLeaveStatusDto
-  user?: { firstName: string; lastName: string }
-  supervisor?: { firstName: string; lastName: string }
+  user?: { firstName: string; lastName: string; name?: string }
+  supervisor?: { firstName: string; lastName: string; name?: string }
 }
 
 // --- Backend: `UserLeaveRecordType` (same string values as time-study `NORMAL` / `MULTI_CODE`) ---

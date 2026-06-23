@@ -25,7 +25,7 @@ export function useCostPoolUserPicklistQuery(
       return {
         users: (res.userDetails ?? []).map((u: any) => ({
           userId: String(u.id),
-          displayName: [u.firstName, u.lastName].filter(Boolean).join(" ") || String(u.id),
+          displayName: u.name?.trim() || [u.firstName, u.lastName].filter(Boolean).join(" ") || String(u.id),
         })),
         allowUserOrCostpoolDirect: res.allowUserOrCostpoolDirect ?? false
       }
