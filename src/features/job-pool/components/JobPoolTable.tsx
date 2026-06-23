@@ -113,8 +113,8 @@ export function JobPoolTable({
         <Table className="table-fixed">
           <colgroup>
             <col style={{ width: showActionColumn ? "12%" : "13.5%" }} />
-            <col style={{ width: showActionColumn ? "39%" : "46.5%" }} />
-            <col style={{ width: showActionColumn ? "19%" : "21%" }} />
+            <col style={{ width: showActionColumn ? "34%" : "41.5%" }} />
+            <col style={{ width: showActionColumn ? "24%" : "26%" }} />
             <col style={{ width: showActionColumn ? "12%" : "13%" }} />
             <col style={{ width: showActionColumn ? "8%" : "6%" }} />
             {showActionColumn && <col style={{ width: "10%" }} />}
@@ -251,8 +251,8 @@ export function JobPoolTable({
         <Table className="table-fixed">
           <colgroup>
             <col style={{ width: showActionColumn ? "12%" : "13.5%" }} />
-            <col style={{ width: showActionColumn ? "39%" : "46.5%" }} />
-            <col style={{ width: showActionColumn ? "19%" : "21%" }} />
+            <col style={{ width: showActionColumn ? "34%" : "41.5%" }} />
+            <col style={{ width: showActionColumn ? "24%" : "26%" }} />
             <col style={{ width: showActionColumn ? "12%" : "13%" }} />
             <col style={{ width: showActionColumn ? "8%" : "6%" }} />
             {showActionColumn && <col style={{ width: "10%" }} />}
@@ -295,7 +295,7 @@ export function JobPoolTable({
                   </TableCell>
 
                   {/* Job Classification tags */}
-                  <TableCell className="align-middle border-r border-[#eff0f5] px-3 py-2.5 text-[11px] text-[#232735] wrap-break-word whitespace-normal text-center">
+                  <TableCell className="align-middle border-r border-[#eff0f5] px-1.5 py-2.5 text-[11px] text-[#232735] wrap-break-word whitespace-normal text-center">
                     <div className="flex flex-wrap gap-2 justify-center">
                       {row.jobClassifications.map((tag, idx) => (
                         <span
@@ -312,7 +312,7 @@ export function JobPoolTable({
                   </TableCell>
 
                   {/* Users */}
-                  <TableCell className="align-middle border-r border-[#eff0f5] px-3 py-2.5 text-[11px] text-[#232735] wrap-break-word whitespace-normal text-center">
+                  <TableCell className="align-middle border-r border-[#eff0f5] px-1.5 py-2.5 text-[11px] text-[#232735] wrap-break-word whitespace-normal text-center">
                     {row.userprofiles && row.userprofiles.length > 0 ? (
                       <div className="flex flex-wrap gap-2 justify-center">
                         {row.userprofiles
