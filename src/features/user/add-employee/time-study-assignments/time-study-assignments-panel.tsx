@@ -8,6 +8,7 @@ import { toast } from "sonner"
 import { SingleSelectDropdown } from "@/components/ui/dropdown"
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
+import { usePermissions } from "@/hooks/usePermissions"
 import { TitleCaseInput } from "@/components/ui/title-case-input"
 import { TransferListMoveButton } from "@/components/ui/transfer-list-move-button"
 
@@ -815,6 +816,7 @@ export function TimeStudyAssignmentsPanel({
   const [tsHistoryActivityCode, setTsHistoryActivityCode] = useState("")
   const [tsHistoryActivityName, setTsHistoryActivityName] = useState("")
 
+  const { isSuperAdmin } = usePermissions()
   const canShowTsHistory = mode === "edit" && Boolean(userIdForTs)
 
   // Reset all local states when switching users or when a new user is created
@@ -1717,7 +1719,7 @@ export function TimeStudyAssignmentsPanel({
                   </Button>
                 </div>
               </div>
-              {canShowTsHistory ? (
+              {canShowTsHistory && isSuperAdmin ? (
                 <div className="flex w-full min-w-0 flex-wrap content-end gap-2 sm:w-auto sm:max-w-full sm:justify-end">
                   <Button
                     type="button"
