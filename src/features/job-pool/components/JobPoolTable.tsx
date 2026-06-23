@@ -325,7 +325,8 @@ export function JobPoolTable({
                           .map((u) => (
                             <span
                               key={u.id}
-                              className={`inline-flex items-center rounded-[6px] border bg-[#f8f9fa] px-2 py-1 text-[10px] text-[#232735] ${u.status?.toLowerCase() === "inactive"
+                              title={u.label}
+                              className={`inline-flex items-center justify-center rounded-[6px] border bg-[#f8f9fa] px-2 py-1 text-[10px] text-[#232735] w-[calc(50%-4px)] text-center ${u.status?.toLowerCase() === "inactive"
                                 ? "border-red-400"
                                 : "border-[#d8dae3]"
                                 }`}
