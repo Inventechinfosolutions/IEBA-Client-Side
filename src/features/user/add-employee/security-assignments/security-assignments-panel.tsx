@@ -258,6 +258,7 @@ export function SecurityAssignmentsPanel({
     control,
     setValue,
     getValues,
+    reset,
     formState: { dirtyFields, isSubmitSuccessful },
   } = useFormContext<UserModuleFormValues>()
 
@@ -292,7 +293,10 @@ export function SecurityAssignmentsPanel({
     ])
     syncSecurityAssignmentsForm(setValue, refreshed)
     syncSecurityTab2Form(setValue, parseUserDetailsTab2(tab2Raw))
-  }, [securityUserId, setValue])
+    setTimeout(() => {
+      reset(getValues())
+    }, 0)
+  }, [securityUserId, setValue, reset, getValues])
 
   const tab2Apportioning = useMemo(
     () => (tab2Data ? apportioningFieldsFromTab2(tab2Data) : null),
@@ -540,6 +544,9 @@ export function SecurityAssignmentsPanel({
       if (!hasHydratedRef.current && deptDataReady && isHistoryReady) {
         next = hydratedEditRows
         hasHydratedRef.current = true
+        setTimeout(() => {
+          reset(getValues())
+        }, 0)
       }
     } else if (assignedDeptsForMultiCodeRows.length > 0 && next.length === 0) {
       next = [emptyDepartmentMultiCodeRow()]

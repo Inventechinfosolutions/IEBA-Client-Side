@@ -14,7 +14,16 @@ import {
 export async function persistSecurityApportioningOnSave(
   userId: string,
   values: UserModuleFormValues,
+  defaultValues?: Partial<UserModuleFormValues>,
 ): Promise<void> {
+  const apportioningChanged =
+    values.supervisorApportioning !== defaultValues?.supervisorApportioning ||
+    JSON.stringify(values.apportioningAllocations ?? {}) !== JSON.stringify(defaultValues?.apportioningAllocations ?? {})
+
+  if (defaultValues && !apportioningChanged) {
+    return
+  }
+
   const snapshots = resolveAssignedSnapshotsForSecuritySave(
     userId,
     values.securityAssignedSnapshots ?? [],
@@ -62,12 +71,28 @@ function parseMultiCodes(raw: string | undefined): string[] | undefined {
 export async function persistUserAllowMultiCodeHistoryOnSave(
   userId: string,
   values: UserModuleFormValues,
+  defaultValues?: Partial<UserModuleFormValues>,
 ): Promise<void> {
   const configs = values.departmentMultiCodes ?? []
   
   // We only send records for departments that are present in the form configuration.
   const records = configs
-    .filter((c) => c.departmentId > 0)
+    .filter((c) => {
+      if (c.departmentId <= 0) return false
+      if (!defaultValues) return true
+
+      const def = defaultValues.departmentMultiCodes?.find((d) => d.departmentId === c.departmentId)
+      if (!def) return true
+
+      const codesVal = (c.assignedMultiCodes ?? "").trim()
+      const codesDef = (def.assignedMultiCodes ?? "").trim()
+      return (
+        c.allowMultiCodes !== def.allowMultiCodes ||
+        (c.activationStartDate || "") !== (def.activationStartDate || "") ||
+        (c.activationEndDate || "") !== (def.activationEndDate || "") ||
+        codesVal !== codesDef
+      )
+    })
     .map((c) => ({
       userId,
       departmentId: c.departmentId,

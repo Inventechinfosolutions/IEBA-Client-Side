@@ -767,7 +767,7 @@ export function TimeStudyAssignmentsPanel({
     hasUserTsBundle,
   )
 
-  const { register, watch, setValue } = useFormContext<UserModuleFormValues>()
+  const { register, watch, setValue, formState, resetField } = useFormContext<UserModuleFormValues>()
   const isAddMode = mode === "add"
   const employeeName = `${watch("firstName") ?? ""} ${watch("lastName") ?? ""}`.trim()
   const securityAssignedSnapshots = watch("securityAssignedSnapshots") ?? []
@@ -841,6 +841,16 @@ export function TimeStudyAssignmentsPanel({
     }
 
     const val = watch("tsMinDay")?.trim()
+    const def = (formState.defaultValues?.tsMinDay ?? "").trim()
+    if (val === def) {
+      toast.warning("No changes to save", {
+        position: "top-center",
+        className:
+          "!w-fit !max-w-none !min-h-[35px] !rounded-[8px] !px-3 !py-2 !text-[12px] !whitespace-nowrap !shadow-[0_8px_22px_rgba(17,24,39,0.18)]",
+      })
+      return
+    }
+
     const n = Number.parseInt(val ?? "", 10)
     if (val !== "" && (!Number.isFinite(n) || n < 0)) {
       toast.error("Please enter a valid number of minutes.")
@@ -851,6 +861,8 @@ export function TimeStudyAssignmentsPanel({
     try {
       await apiUpdateUser(userId, { tsMinPerDay: Number.isFinite(n) ? n : undefined })
       toast.success("TS Minutes/Day updated successfully.", addEmployeeTransferSuccessToastOptions)
+      
+      resetField("tsMinDay", { defaultValue: val })
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed to update TS Minutes/Day")
     } finally {

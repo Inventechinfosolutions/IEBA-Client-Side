@@ -58,6 +58,35 @@ function getErrorMessage(value: unknown): string | null {
   return null
 }
 
+function hasFieldChanged(dirty: Record<string, any>, field: string): boolean {
+  const value = dirty[field];
+  if (!value) return false;
+  if (Array.isArray(value)) {
+    return value.some((item) => {
+      if (item && typeof item === "object") {
+        return Object.keys(item).some((key) => {
+          const subVal = (item as any)[key];
+          if (subVal && typeof subVal === "object") {
+            return Object.keys(subVal).some((subKey) => Boolean((subVal as any)[subKey]));
+          }
+          return Boolean(subVal);
+        });
+      }
+      return Boolean(item);
+    });
+  }
+  if (typeof value === "object") {
+    return Object.keys(value).some((key) => {
+      const subVal = value[key];
+      if (subVal && typeof subVal === "object") {
+        return Object.keys(subVal).some((subKey) => Boolean((subVal as any)[subKey]));
+      }
+      return Boolean(subVal);
+    });
+  }
+  return Boolean(value);
+}
+
 /**
  * React Hook Form instance, tab state, and handlers for the add/edit employee multi-step form.
  */
@@ -256,8 +285,32 @@ export function useAddEmployeeForm({
         return
       }
 
+      // Edit mode guard: block save when none of this tab's fields have actually changed.
+      // formState.dirtyFields is computed by RHF against defaultValues (= server state after reset).
+      if (isEditMode) {
+        const dirty = formState.dirtyFields as Record<string, unknown>
+        const tabFields = addEmployeeTabFieldKeys[tabWhenSaving] as readonly string[]
+        const hasTabChanges = tabFields.some((f) => hasFieldChanged(dirty, f))
+        if (!hasTabChanges) {
+          toast.warning("No changes to save", {
+            position: "top-center",
+            className:
+              "!w-fit !max-w-none !min-h-[35px] !rounded-[8px] !px-3 !py-2 !text-[12px] !whitespace-nowrap !shadow-[0_8px_22px_rgba(17,24,39,0.18)]",
+          })
+          return
+        }
+      }
+
       try {
-        const sync = await Promise.resolve(onSave({ values, sourceTab: tabWhenSaving }))
+        const sync = await Promise.resolve(
+          onSave({
+            values,
+            sourceTab: tabWhenSaving,
+            defaultValues: isEditMode
+              ? (methods.formState.defaultValues as Partial<UserModuleFormValues>)
+              : undefined,
+          }),
+        )
         if (!isEditMode && (tabWhenSaving === "employee" || tabWhenSaving === "supervisor")) {
           setTabSaved((prev) => ({ ...prev, [tabWhenSaving]: true }))
         }
