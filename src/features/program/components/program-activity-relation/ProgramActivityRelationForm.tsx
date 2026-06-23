@@ -303,37 +303,39 @@ export function ProgramActivityRelationForm({ form, departmentIds }: ProgramActi
           </div>
         )}
 
-        <Button
-          type="button"
-          className={`h-9 shrink-0 cursor-pointer gap-2 rounded-[12px] px-3 text-[12px] font-semibold transition-all shadow-[0_1px_0_rgba(0,0,0,0.05)] ${
-            showHistory
-              ? "bg-[#6C5DD3] text-white hover:bg-[#6C5DD3]"
-              : "border border-[#E5E7EB] bg-white text-[#6C5DD3] hover:border-[#6C5DD3] hover:bg-[#F3F0FF]"
-          }`}
-          onClick={() => {
-            setShowHistory((prev) => {
-              if (prev) {
-                setHistoryProgramCode("")
-                setHistoryActivityCode("")
-                return false
-              }
-              if (selectedProgramCode) setHistoryProgramCode(selectedProgramCode)
-              return true
-            })
-          }}
-        >
-          {showHistory ? (
-            <>
-              <ArrowLeft className="size-3.5 animate-back-bounce" />
-              Back to Program Activity Relation
-            </>
-          ) : (
-            <>
-              <History className="size-3.5" />
-              History
-            </>
-          )}
-        </Button>
+        {isSuperAdmin && (
+          <Button
+            type="button"
+            className={`h-9 shrink-0 cursor-pointer gap-2 rounded-[12px] px-3 text-[12px] font-semibold transition-all shadow-[0_1px_0_rgba(0,0,0,0.05)] ${
+              showHistory
+                ? "bg-[#6C5DD3] text-white hover:bg-[#6C5DD3]"
+                : "border border-[#E5E7EB] bg-white text-[#6C5DD3] hover:border-[#6C5DD3] hover:bg-[#F3F0FF]"
+            }`}
+            onClick={() => {
+              setShowHistory((prev) => {
+                if (prev) {
+                  setHistoryProgramCode("")
+                  setHistoryActivityCode("")
+                  return false
+                }
+                if (selectedProgramCode) setHistoryProgramCode(selectedProgramCode)
+                return true
+              })
+            }}
+          >
+            {showHistory ? (
+              <>
+                <ArrowLeft className="size-3.5 animate-back-bounce" />
+                Back to Program Activity Relation
+              </>
+            ) : (
+              <>
+                <History className="size-3.5" />
+                History
+              </>
+            )}
+          </Button>
+        )}
       </div>
 
       {showHistory ? (

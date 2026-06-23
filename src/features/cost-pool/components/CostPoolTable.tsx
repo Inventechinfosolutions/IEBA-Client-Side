@@ -358,7 +358,7 @@ export function CostPoolTable({
   onPageChange,
   onPageSizeChange,
 }: CostPoolTableProps) {
-  const { canAdd, canUpdate } = usePermissions()
+  const { canAdd, canUpdate, isSuperAdmin } = usePermissions()
   const canAddCostPool = canAdd("costpool")
   const canUpdateCostPool = canUpdate("costpool")
   const filterForm = useForm<CostPoolFilterFormValues>({
@@ -518,37 +518,39 @@ export function CostPoolTable({
         )}
 
         <div className="flex items-center gap-3 ml-auto">
-          <button
-            type="button"
-            className={`flex h-12 items-center gap-2 rounded-[12px] px-4 text-[14px] font-normal transition-colors ${
-              showHistory
-                ? "bg-[#6C5DD3] text-white"
-                : "border border-[#6C5DD3] bg-white text-[#6C5DD3] hover:bg-[#F3F0FF]"
-            }`}
-            onClick={() => {
-              setShowHistory((prev) => {
-                if (prev) {
-                  filterForm.setValue("search", "")
-                  onSearchChange("")
-                  setHistoryActivityCode("")
-                  setHistoryAssignmentKind("")
-                }
-                return !prev
-              })
-            }}
-          >
-            {showHistory ? (
-              <>
-                <ArrowLeft className="size-4 animate-back-bounce" />
-                Back to Cost Pool
-              </>
-            ) : (
-              <>
-                <History className="size-4" />
-                History
-              </>
-            )}
-          </button>
+          {isSuperAdmin && (
+            <button
+              type="button"
+              className={`flex h-12 items-center gap-2 rounded-[12px] px-4 text-[14px] font-normal transition-colors ${
+                showHistory
+                  ? "bg-[#6C5DD3] text-white"
+                  : "border border-[#6C5DD3] bg-white text-[#6C5DD3] hover:bg-[#F3F0FF]"
+              }`}
+              onClick={() => {
+                setShowHistory((prev) => {
+                  if (prev) {
+                    filterForm.setValue("search", "")
+                    onSearchChange("")
+                    setHistoryActivityCode("")
+                    setHistoryAssignmentKind("")
+                  }
+                  return !prev
+                })
+              }}
+            >
+              {showHistory ? (
+                <>
+                  <ArrowLeft className="size-4 animate-back-bounce" />
+                  Back to Cost Pool
+                </>
+              ) : (
+                <>
+                  <History className="size-4" />
+                  History
+                </>
+              )}
+            </button>
+          )}
 
           {!showHistory && (
             <button

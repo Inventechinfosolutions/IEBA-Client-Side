@@ -153,7 +153,7 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
     const [multiCodesSearch, setMultiCodesSearch] = useState("")
     const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false)
 
-    const { canUpdate: hasUpdatePerm, isDepartmentAdmin } = usePermissions()
+    const { canUpdate: hasUpdatePerm, isDepartmentAdmin, isSuperAdmin } = usePermissions()
     const canUpdateDepartment = hasUpdatePerm("department")
 
     const usersQuery = useGetDepartmentUsers(isUserDropdownOpen)
@@ -525,7 +525,7 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
         <>
             <Dialog open onOpenChange={(open) => { if (!open) handleExit() }}>
             <DialogContent className="max-w-[893px] p-0 max-h-[90vh] overflow-y-auto border-none shadow-2xl rounded-[12px] bg-white [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-                {historyDepartmentId ? (
+                {historyDepartmentId && isSuperAdmin ? (
                     <button
                         type="button"
                         className="absolute right-12 top-4 z-10 cursor-pointer rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"

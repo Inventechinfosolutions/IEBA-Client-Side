@@ -1279,36 +1279,38 @@ export function CountyActivityCodeTable({
         )}
         <div className="flex items-center gap-3 ml-auto">
           {/* History toggle button */}
-          <button
-            type="button"
-            className={`flex h-12 items-center gap-2 rounded-[10px] px-4 text-[14px] font-normal transition-colors ${showHistory
-              ? "bg-[#6C5DD3] text-white"
-              : "border border-[#6C5DD3] bg-white text-[#6C5DD3] hover:bg-[#F3F0FF]"
-              }`}
-            onClick={() => {
-              setShowHistory((prev) => {
-                if (prev) {
-                  filterForm.setValue("search", "")
-                  onSearchChange("")
-                  setHistoryActivityCode("")
-                  setHistoryActivityName("")
-                }
-                return !prev
-              })
-            }}
-          >
-            {showHistory ? (
-              <>
-                <ArrowLeft className="size-4 animate-back-bounce" />
-                Back to County Activity
-              </>
-            ) : (
-              <>
-                <History className="size-4" />
-                History
-              </>
-            )}
-          </button>
+          {isSuperAdmin && (
+            <button
+              type="button"
+              className={`flex h-12 items-center gap-2 rounded-[10px] px-4 text-[14px] font-normal transition-colors ${showHistory
+                ? "bg-[#6C5DD3] text-white"
+                : "border border-[#6C5DD3] bg-white text-[#6C5DD3] hover:bg-[#F3F0FF]"
+                }`}
+              onClick={() => {
+                setShowHistory((prev) => {
+                  if (prev) {
+                    filterForm.setValue("search", "")
+                    onSearchChange("")
+                    setHistoryActivityCode("")
+                    setHistoryActivityName("")
+                  }
+                  return !prev
+                })
+              }}
+            >
+              {showHistory ? (
+                <>
+                  <ArrowLeft className="size-4 animate-back-bounce" />
+                  Back to County Activity
+                </>
+              ) : (
+                <>
+                  <History className="size-4" />
+                  History
+                </>
+              )}
+            </button>
+          )}
 
           {/* Inactive toggle — hidden while in history view */}
           {!showHistory && (
