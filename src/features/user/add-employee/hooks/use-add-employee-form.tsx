@@ -287,7 +287,7 @@ export function useAddEmployeeForm({
 
       // Edit mode guard: block save when none of this tab's fields have actually changed.
       // formState.dirtyFields is computed by RHF against defaultValues (= server state after reset).
-      if (isEditMode) {
+      if (isEditMode || securityContextUserId) {
         const dirty = formState.dirtyFields as Record<string, unknown>
         const tabFields = addEmployeeTabFieldKeys[tabWhenSaving] as readonly string[]
         const hasTabChanges = tabFields.some((f) => hasFieldChanged(dirty, f))
@@ -306,7 +306,7 @@ export function useAddEmployeeForm({
           onSave({
             values,
             sourceTab: tabWhenSaving,
-            defaultValues: isEditMode
+            defaultValues: (isEditMode || securityContextUserId)
               ? (methods.formState.defaultValues as Partial<UserModuleFormValues>)
               : undefined,
           }),
