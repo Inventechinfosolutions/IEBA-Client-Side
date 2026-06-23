@@ -229,25 +229,65 @@ export async function getJpCpTotals(): Promise<JpCpTotals | null> {
 
 
 
-export async function getReportsByRole(_params?: {
+export async function getReportsByRole(params?: {
   departmentId?: number
   roleId?: number
+  isSuperAdmin?: boolean
+  departmentIds?: number[]
 }): Promise<ReportItem[]> {
   try {
-    const search = new URLSearchParams()
-    search.set("status", "active")
+    if (params?.isSuperAdmin) {
+      const search = new URLSearchParams()
+      search.set("status", "active")
+      const res = await api.get<ApiEnvelope<ReportItem[]>>(`/report?${search.toString()}`)
+      const payload = (res?.data ?? res) as any
+      const apiData = Array.isArray(payload) ? payload : (payload?.data ?? [])
 
-    const res = await api.get<ApiEnvelope<ReportItem[]>>(`/report?${search.toString()}`)
+      return apiData.map((r: any) => ({
+        id: r.id,
+        code: r.code,
+        name: r.name,
+        filename: r.filename,
+        path: r.path,
+        criteria: r.criteria,
+      }))
+    }
+
+    const deptIds = params?.departmentIds && params.departmentIds.length > 0
+      ? params.departmentIds
+      : params?.departmentId
+        ? [params.departmentId]
+        : []
+
+    const uniqueDeptIds = Array.from(new Set(deptIds))
+
+    if (uniqueDeptIds.length === 0) {
+      return []
+    }
+
+    const res = await api.get<ApiEnvelope<any[]>>(`/dashboard/department/${uniqueDeptIds.join(",")}/reports`)
     const payload = (res?.data ?? res) as any
     const apiData = Array.isArray(payload) ? payload : (payload?.data ?? [])
 
-    return apiData.map((r: any) => ({
+    const uniqueReportsMap = new Map<number, any>()
+    for (const dept of apiData) {
+      if (Array.isArray(dept.reports)) {
+        for (const report of dept.reports) {
+          if (report.status === "active") {
+            uniqueReportsMap.set(report.id, report)
+          }
+        }
+      }
+    }
+
+    const matchedReports = Array.from(uniqueReportsMap.values())
+    return matchedReports.map((r: any) => ({
       id: r.id,
       code: r.code,
       name: r.name,
       filename: r.filename,
       path: r.path,
-      criteria: r.criteria
+      criteria: r.criteria,
     }))
   } catch (error) {
     console.error("Failed to fetch reports:", error)

@@ -137,6 +137,8 @@ export function DashboardPage() {
   const reports = useReportsByRole({ 
     departmentId, 
     roleId,
+    isSuperAdmin,
+    departmentIds: Array.from(new Set(deptRoles.map((dr) => dr.departmentId))),
     enabled: canViewAdminLayout,
   })
   

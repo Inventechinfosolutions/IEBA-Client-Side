@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useQuery } from "@tanstack/react-query"
-import { ArrowLeft, History, PlusIcon, SearchIcon } from "lucide-react"
+import { ArrowLeft, History, PlusIcon, SearchIcon, X } from "lucide-react"
 import { useMemo, useState } from "react"
 import { useForm } from "react-hook-form"
 
@@ -292,11 +292,11 @@ function CostPoolEditDialogContent({
     
     const detailAssigned = (detailQuery.data.assignedUsers ?? []).map((u) => ({
       userId: String(u.id),
-      displayName: [u.firstName, u.lastName].filter(Boolean).join(" ") || String(u.id),
+      displayName: u.name?.trim() || [u.firstName, u.lastName].filter(Boolean).join(" ") || String(u.id),
     }))
     const detailUnassigned = (detailQuery.data.unassignedUsers ?? []).map((u) => ({
       userId: String(u.id),
-      displayName: [u.firstName, u.lastName].filter(Boolean).join(" ") || String(u.id),
+      displayName: u.name?.trim() || [u.firstName, u.lastName].filter(Boolean).join(" ") || String(u.id),
     }))
 
     const combined = [...detailAssigned, ...detailUnassigned]
@@ -474,7 +474,7 @@ export function CostPoolTable({
                 <SearchIcon className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#9CA3AF]" />
                 <TitleCaseInput
                   placeholder="Search here"
-                  className="h-12 rounded-[8px] border border-[#D9D9D9] bg-white pl-9 text-[16px] text-[#1F2937] placeholder:text-[#9CA3AF]"
+                  className="h-12 rounded-[8px] border border-[#D9D9D9] bg-white pl-9 pr-9 text-[16px] text-[#1F2937] placeholder:text-[#9CA3AF]"
                   {...filterForm.register("search")}
                   value={searchValue}
                   onChange={(event) => {
@@ -483,6 +483,20 @@ export function CostPoolTable({
                     onPageChange(1)
                   }}
                 />
+                {searchValue && searchValue.length > 0 && (
+                  <button
+                    type="button"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#111827] cursor-pointer"
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={() => {
+                      filterForm.setValue("search", "")
+                      onSearchChange("")
+                      onPageChange(1)
+                    }}
+                  >
+                    <X className="size-4" />
+                  </button>
+                )}
               </form>
             </div>
 

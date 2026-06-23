@@ -397,7 +397,7 @@ export function PersonalTimeStudyPage() {
                           allocatedMinutes={summaryQuery.data?.tsmins ?? 0}
                           actualMinutes={summaryQuery.data?.actualnormalactivitytime ?? 0}
                           balanceMinutes={summaryQuery.data?.actualnormalactivityTimebalance ?? 0}
-                          totalMAAMinutes={summaryQuery.data?.actualmultiactivitytime ?? 0}
+                          totalMAAMinutes={summaryQuery.data?.actualmultiactivitytime}
                           apportioningSummary={summaryQuery.data?.apportioningSummary}
                         />
                       </div>
@@ -414,6 +414,7 @@ export function PersonalTimeStudyPage() {
                             })
                           }}
                           isSaving={notesMutation.isPending}
+                          disabled={settingChecksQuery.data?.allowUserEntry === false}
                         />
                         <PersonalTimeStudyPeriodsSection
                           timestudyAllowed={settingChecksQuery.data?.timestudyAllowedRaw ?? []}

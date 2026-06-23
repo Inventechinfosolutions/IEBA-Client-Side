@@ -273,7 +273,7 @@ export function LeaveApprovalTable({
                       </>
                     ) : (
                       <span>
-                        {`${r.user?.firstName ?? ""} ${r.user?.lastName ?? ""}`.trim() || r.userId}
+                        {r.user?.name?.trim() || `${r.user?.firstName ?? ""} ${r.user?.lastName ?? ""}`.trim() || r.userId}
                       </span>
                     )}
                   </TableCell>

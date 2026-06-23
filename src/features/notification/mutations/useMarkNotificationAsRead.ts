@@ -11,15 +11,35 @@ export function useMarkNotificationAsRead() {
       queryClient.setQueriesData({ queryKey: notificationKeys.all }, (old: any) => {
         if (!old) return old
 
+        let wasUnread = false
         const updateItems = (items: any[]) =>
-          items.map((item: any) =>
-            item.id === id ? { ...item, read: true } : item
-          )
+          items.map((item: any) => {
+            if (item.id === id) {
+              if (!item.read) {
+                wasUnread = true
+              }
+              return { ...item, read: true }
+            }
+            return item
+          })
 
         if (old.data?.items) {
+          const updatedItems = updateItems(old.data.items)
+          const currentUnreadCount = old.data?.meta?.unreadCount
+          const nextUnreadCount =
+            typeof currentUnreadCount === "number" && wasUnread
+              ? Math.max(0, currentUnreadCount - 1)
+              : currentUnreadCount
+
           return {
             ...old,
-            data: { ...old.data, items: updateItems(old.data.items) },
+            data: {
+              ...old.data,
+              items: updatedItems,
+              meta: old.data.meta
+                ? { ...old.data.meta, unreadCount: nextUnreadCount }
+                : undefined,
+            },
           }
         }
 

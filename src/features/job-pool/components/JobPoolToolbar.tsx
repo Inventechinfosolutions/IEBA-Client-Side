@@ -1,4 +1,4 @@
-import { ArrowLeft, Check, History, Plus } from "lucide-react"
+import { ArrowLeft, Check, History, Plus, X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { TitleCaseInput } from "@/components/ui/title-case-input"
@@ -18,12 +18,24 @@ export function JobPoolToolbar({
   const canAddJobPool = canAdd("jobpool")
   return (
     <div className="flex items-center justify-between gap-3">
-      <TitleCaseInput
-        value={searchValue}
-        onChange={(e) => onSearchChange(e.target.value)}
-        placeholder={showHistory ? "Search Assignment Kind" : "Search here"}
-        className="h-[50px] w-[270px] rounded-[10px] border border-[#d0d5df] bg-white px-3.5 text-[11px] text-[#111827] shadow-[0_4px_10px_rgba(15,23,42,0.08)] placeholder:text-[10px] placeholder:text-[#a7afbf] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
-      />
+      <div className="relative">
+        <TitleCaseInput
+          value={searchValue}
+          onChange={(e) => onSearchChange(e.target.value)}
+          placeholder={showHistory ? "Search Assignment Kind" : "Search here"}
+          className="h-[50px] w-[270px] rounded-[10px] border border-[#d0d5df] bg-white pl-3.5 pr-9 text-[11px] text-[#111827] shadow-[0_4px_10px_rgba(15,23,42,0.08)] placeholder:text-[10px] placeholder:text-[#a7afbf] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
+        />
+        {searchValue.length > 0 && (
+          <button
+            type="button"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#111827] cursor-pointer"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => onSearchChange("")}
+          >
+            <X className="size-4" />
+          </button>
+        )}
+      </div>
       <div className="flex items-center gap-2">
         <Button
           type="button"

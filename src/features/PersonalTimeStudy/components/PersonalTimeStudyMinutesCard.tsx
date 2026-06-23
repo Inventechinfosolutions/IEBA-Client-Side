@@ -7,7 +7,7 @@ type PersonalTimeStudyMinutesCardProps = {
   allocatedMinutes: number
   actualMinutes: number
   balanceMinutes: number
-  totalMAAMinutes?: number
+  totalMAAMinutes?: number | null
   className?: string
   apportioningSummary?: Array<{
     departmentId: number
@@ -29,7 +29,7 @@ export function PersonalTimeStudyMinutesCard({
   className,
   apportioningSummary,
 }: PersonalTimeStudyMinutesCardProps) {
-  const maaBalance = actualMinutes - (totalMAAMinutes || 0);
+  const maaBalance = totalMAAMinutes !== null && totalMAAMinutes !== undefined ? actualMinutes - totalMAAMinutes : null;
 
   return (
     <Card
@@ -64,20 +64,23 @@ export function PersonalTimeStudyMinutesCard({
           </span>
         </div>
 
-        <hr className="my-0.5 border-[#E5E7EB]" />
-
-        <div className="flex items-center justify-between gap-2 text-[12px]">
-          <span className="font-semibold text-[#111827]">Entered MAA Minutes:</span>
-          <span className="shrink-0 font-semibold tabular-nums text-[#6C5DD3]">
-            {totalMAAMinutes}
-          </span>
-        </div>
-        <div className="flex items-center justify-between gap-2 text-[12px]">
-          <span className="font-semibold text-[#111827]">MAA Balance:</span>
-          <span className="shrink-0 font-semibold tabular-nums text-[#6C5DD3]">
-            {maaBalance}
-          </span>
-        </div>
+        {totalMAAMinutes !== null && totalMAAMinutes !== undefined && (
+          <>
+            <hr className="my-0.5 border-[#E5E7EB]" />
+            <div className="flex items-center justify-between gap-2 text-[12px]">
+              <span className="font-semibold text-[#111827]">Entered MAA Minutes:</span>
+              <span className="shrink-0 font-semibold tabular-nums text-[#6C5DD3]">
+                {totalMAAMinutes}
+              </span>
+            </div>
+            <div className="flex items-center justify-between gap-2 text-[12px]">
+              <span className="font-semibold text-[#111827]">MAA Balance:</span>
+              <span className="shrink-0 font-semibold tabular-nums text-[#6C5DD3]">
+                {maaBalance}
+              </span>
+            </div>
+          </>
+        )}
 
         {apportioningSummary && apportioningSummary.length > 0 && (
           <>

@@ -341,7 +341,9 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
 
     /** Exit always discards without calling the API. Persist only via Save / OK on create confirm / contact Save when a row exists. */
     const handleExit = () => {
-        void queryClient.invalidateQueries({ queryKey: departmentKeys.all })
+        void queryClient.invalidateQueries({ queryKey: ["departments", "table-all"] })
+        void queryClient.invalidateQueries({ queryKey: ["departments", "list"] })
+        void queryClient.invalidateQueries({ queryKey: ["departments", "all-unpaginated"] })
         onClose()
     }
 
