@@ -14,7 +14,7 @@ export function JobPoolToolbar({
   showHistory,
   onToggleHistory,
 }: JobPoolToolbarProps & { showHistory: boolean; onToggleHistory: () => void }) {
-  const { canAdd } = usePermissions()
+  const { canAdd, isSuperAdmin } = usePermissions()
   const canAddJobPool = canAdd("jobpool")
   return (
     <div className="flex items-center justify-between gap-3">
@@ -37,27 +37,29 @@ export function JobPoolToolbar({
         )}
       </div>
       <div className="flex items-center gap-2">
-        <Button
-          type="button"
-          className={`h-11 cursor-pointer gap-2 rounded-[10px] px-3 text-[12px] font-semibold shadow-[0_1px_0_rgba(0,0,0,0.05)] transition-colors ${
-            showHistory
-              ? "bg-[#6C5DD3] text-white hover:bg-[#6C5DD3]"
-              : "border border-[#6C5DD3] bg-white text-[#6C5DD3] hover:bg-[#F3F0FF]"
-          }`}
-          onClick={onToggleHistory}
-        >
-          {showHistory ? (
-            <>
-              <ArrowLeft className="size-3.5 animate-back-bounce" />
-              Back to Job Pool
-            </>
-          ) : (
-            <>
-              <History className="size-3.5" />
-              History
-            </>
-          )}
-        </Button>
+        {isSuperAdmin && (
+          <Button
+            type="button"
+            className={`h-11 cursor-pointer gap-2 rounded-[10px] px-3 text-[12px] font-semibold shadow-[0_1px_0_rgba(0,0,0,0.05)] transition-colors ${
+              showHistory
+                ? "bg-[#6C5DD3] text-white hover:bg-[#6C5DD3]"
+                : "border border-[#6C5DD3] bg-white text-[#6C5DD3] hover:bg-[#F3F0FF]"
+            }`}
+            onClick={onToggleHistory}
+          >
+            {showHistory ? (
+              <>
+                <ArrowLeft className="size-3.5 animate-back-bounce" />
+                Back to Job Pool
+              </>
+            ) : (
+              <>
+                <History className="size-3.5" />
+                History
+              </>
+            )}
+          </Button>
+        )}
 
         {!showHistory && (
           <Button

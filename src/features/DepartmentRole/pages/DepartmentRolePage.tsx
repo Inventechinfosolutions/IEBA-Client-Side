@@ -14,6 +14,7 @@ import { useUpdateDepartmentRoleChild } from "../mutations/updateDepartmentRoleC
 import { DepartmentRoleHistoryTable } from "../components/DepartmentRoleHistoryTable"
 import { useGetAllDepartments } from "@/features/department/queries/getDepartments"
 import { TitleCaseInput } from "@/components/ui/title-case-input"
+import { usePermissions } from "@/hooks/usePermissions"
 
 import { useDepartmentRoleDetailQuery } from "../queries/getDepartmentRoleById"
 import type {
@@ -50,6 +51,8 @@ export function DepartmentRolePage() {
   const [historyDeptName, setHistoryDeptName] = useState("")
   const [historyDeptCode, setHistoryDeptCode] = useState("")
   const [historyRoleName, setHistoryRoleName] = useState("")
+
+  const { isSuperAdmin } = usePermissions()
 
   const {
     data,
@@ -365,35 +368,37 @@ export function DepartmentRolePage() {
           </div>
         )}
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            className={`flex h-12 items-center gap-2 rounded-[10px] px-4 text-[14px] font-normal transition-colors ${showHistory
-                ? "bg-[#6C5DD3] text-white"
-                : "border border-[#6C5DD3] bg-white text-[#6C5DD3] hover:bg-[#F3F0FF]"
-              }`}
-            onClick={() => {
-              setShowHistory((prev) => {
-                if (prev) {
-                  setHistoryDeptName("")
-                  setHistoryDeptCode("")
-                  setHistoryRoleName("")
-                }
-                return !prev
-              })
-            }}
-          >
-            {showHistory ? (
-              <>
-                <ArrowLeft className="size-4 animate-back-bounce" />
-                Back to Department Role
-              </>
-            ) : (
-              <>
-                <History className="size-4" />
-                History
-              </>
-            )}
-          </button>
+          {isSuperAdmin && (
+            <button
+              type="button"
+              className={`flex h-12 items-center gap-2 rounded-[10px] px-4 text-[14px] font-normal transition-colors ${showHistory
+                  ? "bg-[#6C5DD3] text-white"
+                  : "border border-[#6C5DD3] bg-white text-[#6C5DD3] hover:bg-[#F3F0FF]"
+                }`}
+              onClick={() => {
+                setShowHistory((prev) => {
+                  if (prev) {
+                    setHistoryDeptName("")
+                    setHistoryDeptCode("")
+                    setHistoryRoleName("")
+                  }
+                  return !prev
+                })
+              }}
+            >
+              {showHistory ? (
+                <>
+                  <ArrowLeft className="size-4 animate-back-bounce" />
+                  Back to Department Role
+                </>
+              ) : (
+                <>
+                  <History className="size-4" />
+                  History
+                </>
+              )}
+            </button>
+          )}
         </div>
       </div>
 
