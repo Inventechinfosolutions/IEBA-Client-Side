@@ -26,7 +26,7 @@ import type { TodoRow, TodoTableProps } from "../types"
 
 const headers: { label: string; className?: string }[] = [
   { label: "Title", className: "w-[160px]" },
-  { label: "Description", className: "w-[360px]" },
+  { label: "Description", className: "w-[220px]" },
   { label: "Created Date", className: "w-[160px]" },
   { label: "Completed Date", className: "w-[160px]" },
   { label: "Status", className: "w-[120px]" },
@@ -140,7 +140,7 @@ export function TodoTable({
                   <TableCell className="h-[35px] w-[160px] border-r border-[#eff0f5] bg-[#FAFAFA] px-3 py-1 align-middle">
                     <div className="h-4 w-full animate-pulse rounded bg-[#f0f2f8]" />
                   </TableCell>
-                  <TableCell className="h-[35px] w-[360px] border-r border-[#eff0f5] px-3 py-1 align-middle">
+                  <TableCell className="h-[35px] w-[220px] border-r border-[#eff0f5] px-3 py-1 align-middle">
                     <div className="h-4 w-full animate-pulse rounded bg-[#f0f2f8]" />
                   </TableCell>
                   <TableCell className="h-[35px] w-[160px] border-r border-[#eff0f5] px-3 py-1 align-middle">
@@ -185,7 +185,7 @@ export function TodoTable({
                     <TableCell className="h-[35px] w-[160px] border-r border-[#eff0f5] bg-[#FAFAFA] px-3 py-1 align-middle text-[12px] leading-[14px] text-[#111827] whitespace-normal wrap-break-word">
                       {row.title}
                     </TableCell>
-                    <TableCell className="h-[35px] w-[360px] max-w-[360px] border-r border-[#eff0f5] px-3 py-1 align-middle text-[12px] leading-[14px] text-[#111827] whitespace-normal wrap-break-word">
+                    <TableCell className="h-[35px] w-[220px] max-w-[220px] border-r border-[#eff0f5] px-3 py-1 align-middle text-[12px] leading-[14px] text-[#111827] whitespace-normal wrap-break-word">
                       {row.description || "-"}
                     </TableCell>
                     <TableCell className="h-[35px] w-[160px] border-r border-[#eff0f5] px-3 py-1 align-middle text-center text-[12px] leading-[14px] text-[#111827]">
