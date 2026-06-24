@@ -3,6 +3,8 @@ import { X, Lock, Check } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 
+import { guardNoChanges } from "@/lib/formGuard"
+
 import { useAuth } from "@/contexts/AuthContext"
 import { usePermissions } from "@/hooks/usePermissions"
 import { PersonalTimeStudyCalendarCard } from "../components/PersonalTimeStudyCalendarCard"
@@ -404,9 +406,13 @@ export function PersonalTimeStudyPage() {
                         <PersonalTimeStudyNotesSection
                           value={localNotes}
                           onChange={setDraftNotes}
-                          onSave={() => notesMutation.mutate(localNotes, {
-                            onSuccess: () => setDraftNotes(null)
-                          })}
+                          onSave={() => {
+                            const serverNotes = dayQuery.data?.notes || ""
+                            if (guardNoChanges(localNotes, serverNotes)) return
+                            notesMutation.mutate(localNotes, {
+                              onSuccess: () => setDraftNotes(null)
+                            })
+                          }}
                           isSaving={notesMutation.isPending}
                           disabled={settingChecksQuery.data?.allowUserEntry === false}
                         />

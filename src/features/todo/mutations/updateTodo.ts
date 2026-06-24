@@ -21,11 +21,11 @@ export function useUpdateTodo() {
 
   return useMutation({
     mutationFn: async (input: UpdateTodoInput) => await updateTodo(input, user?.id ?? ""),
-    onSuccess: async (updatedTodo, variables) => {
-      // Manually update the detail cache to avoid a redundant GET fetch
-      queryClient.setQueryData(todoKeys.detail(variables.id), updatedTodo)
-      
-      // Invalidate lists to ensure consistency across the UI
+    onSuccess: async () => {
+      // Invalidate lists so the table reflects the update.
+      // Note: we do NOT invalidate the detail key here — that would trigger
+      // an unnecessary GET /todos/:id while the modal is still mounted.
+      // staleTime:0 on useGetTodoById guarantees fresh data on the next edit open.
       await queryClient.invalidateQueries({ queryKey: todoKeys.lists() })
     },
   })

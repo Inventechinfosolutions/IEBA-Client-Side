@@ -198,7 +198,8 @@ export type CreateProgramInput = {
 export type UpdateProgramInput = {
   id: string
   tab: ProgramTab
-  values: ProgramFormValues
+  values: Partial<ProgramFormValues>
+  originalValues?: ProgramFormValues
   lookups?: {
     departmentIdByName?: Record<string, number>
     budgetUnitIdByName?: Record<string, number>

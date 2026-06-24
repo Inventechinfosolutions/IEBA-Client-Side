@@ -283,7 +283,9 @@ export function applyCountyActivityQueryCacheAfterUpdate(
   }
 
   const nextActivity = mergeCountyActivityDtoAfterUpdate(prevDetail.activity, input)
-  const departmentNames = sortDepartmentNamesFromForm(input.values.department)
+  const departmentNames = input.values.department !== undefined
+    ? sortDepartmentNamesFromForm(input.values.department)
+    : prevDetail.departmentNames
 
   queryClient.setQueryData<CountyActivityEditPayload>(detailKey, {
     activity: { ...nextActivity, departments: undefined },

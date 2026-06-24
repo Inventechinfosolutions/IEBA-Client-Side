@@ -2,6 +2,8 @@ import { useCallback, useMemo, useState } from "react"
 import { useForm, useWatch } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 
+import { guardNoChanges } from "@/lib/formGuard"
+
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -90,14 +92,16 @@ export function DepartmentRoleAdd({
     }
   }, [mode, editDetail, globalCatalog])
 
+  const safeInitialValues = editFormValues || {
+    department: initialDepartment ?? departments[0] ?? "",
+    roleName: "",
+    active: true,
+    assignedPermissions: [],
+  }
+
   const form = useForm<AddRoleFormSchema>({
     resolver: zodResolver(addRoleFormSchema),
-    defaultValues: {
-      department: initialDepartment ?? departments[0] ?? "",
-      roleName: "",
-      active: true,
-      assignedPermissions: [],
-    },
+    defaultValues: safeInitialValues,
     ...(editFormValues ? { values: editFormValues } : {}),
   })
 
@@ -303,6 +307,21 @@ export function DepartmentRoleAdd({
   }
 
   const handleSubmit = form.handleSubmit((values) => {
+    const normalizedValues = {
+      ...values,
+      roleName: values.roleName.trim(),
+      assignedPermissions: [...values.assignedPermissions].sort(),
+    }
+    const normalizedReference = {
+      ...safeInitialValues,
+      roleName: safeInitialValues.roleName.trim(),
+      assignedPermissions: [...safeInitialValues.assignedPermissions].sort(),
+    }
+
+    if (guardNoChanges(normalizedValues, normalizedReference)) {
+      return
+    }
+
     setSelectedAvailable(new Set())
     setSelectedAssigned(new Set())
     if (mode === "edit" && editRoleId && editDetail) {

@@ -14,7 +14,7 @@ import { usePayrollRows } from "../hooks/usePayrollRows"
 import { PayrollFrequency, type PayrollFrequencyType } from "../enums/payrollFrequency"
 import { usePayrollSettings } from "@/features/settings/payroll"
 import { cn } from "@/lib/utils"
-import { updatePayrollRow } from "../api/payrollApi"
+import { updatePayrollRow, fetchPayrollRows } from "../api/payrollApi"
 import { MasterCodePagination } from "@/features/master-code/components/MasterCodePagination"
 import { Spinner } from "@/components/ui/spinner"
 
@@ -89,14 +89,27 @@ export function PayrollPage() {
   )
 
   const handleDownloadCurrentRows = useCallback(async () => {
+    if (!activeQueryParams) {
+      toast.error("Please search/get rows first before downloading.")
+      return
+    }
     setIsDownloadingRows(true)
     try {
-      const blob = await buildPayrollRowsXlsxBlob(enabledColumnLabels, rowsModule.rows)
+      const limit = Math.max(rowsModule.total, 2000)
+      const allRowsRes = await fetchPayrollRows({
+        ...activeQueryParams,
+        page: 1,
+        limit,
+      })
+      const blob = await buildPayrollRowsXlsxBlob(enabledColumnLabels, allRowsRes.items)
       triggerBrowserDownloadBlob("payroll-details-export.xlsx", blob)
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Download failed."
+      toast.error(msg)
     } finally {
       setIsDownloadingRows(false)
     }
-  }, [enabledColumnLabels, rowsModule.rows])
+  }, [enabledColumnLabels, activeQueryParams, rowsModule.total])
 
   const handleDelete = useCallback(
     (params: GetPayrollRowsParams) => {

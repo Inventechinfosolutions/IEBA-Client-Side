@@ -195,7 +195,7 @@ export function DepartmentReportSettingsPanel({
 
   const showDepartmentSummary = Boolean(departmentCode?.trim() || departmentName?.trim())
   const isReportDataLoading = isReportOptionsLoading || isMappedReportsLoading
-  const saveDisabled = isSubmitting || isSaving
+  const saveDisabled = isSubmitting || isSaving || isReportDataLoading
 
   return (
     <div className="px-6 pb-6">
