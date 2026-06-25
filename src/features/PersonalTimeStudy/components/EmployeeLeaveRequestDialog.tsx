@@ -6,6 +6,7 @@ import { Controller, useFieldArray, useForm } from "react-hook-form"
 import { toast } from "sonner"
 import { useAuth } from "@/contexts/AuthContext"
 import { api } from "@/lib/api"
+import { guardNoChanges } from "@/lib/formGuard"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -829,6 +830,8 @@ export function EmployeeLeaveRequestDialog({
 
     await form.handleSubmit(
       async (data) => {
+        // Guard: in edit mode, if nothing changed vs the initial values, block the save.
+        if (isEditing && initialValues && guardNoChanges(data, initialValues)) return
         await onSave?.(data, mergedLookupDropdown ?? dropdownData)
         toast.success("Leave request saved")
         handleClose(false)

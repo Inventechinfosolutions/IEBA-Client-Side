@@ -113,7 +113,6 @@ export function useGetCountyActivityNested(parentId: number | null, enabled: boo
     enabled: enabled && parentId != null,
     staleTime: 30_000,
     gcTime: 10 * 60_000,
-    refetchOnMount: "always",
     refetchOnWindowFocus: false,
     refetchOnReconnect: true,
   })
@@ -192,8 +191,7 @@ export function useGetCountyActivityForEdit(activityId: string | null, enabled: 
       : [...countyActivityCodeKeys.all, "activity-detail", "idle"] as const,
     queryFn: () => apiGetCountyActivityForEdit(Number(activityId)),
     enabled: Boolean(enabled && activityId),
-    staleTime: 0,
-    refetchOnMount: "always",
+    staleTime: 10_000,
     refetchOnWindowFocus: false,
   })
 }

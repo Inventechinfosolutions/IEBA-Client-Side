@@ -569,25 +569,35 @@ export async function apiUpdateProgram(input: UpdateProgramInput & {
     budgetProgramIdByName?: Record<string, number>
   }
 }): Promise<ProgramRow> {
-  const { id, tab, values } = input
+  const { id, tab, values, originalValues } = input
+  const formSection = values.formSection ?? originalValues?.formSection
 
-  if (tab === "Budget Units" && values.formSection === "Budget Unit") {
+  if (tab === "Budget Units" && formSection === "Budget Unit") {
     // We omit departmentId because it is locked in the UI during edit mode
     // and the backend will preserve the existing relation.
-    const body: Record<string, unknown> = {
-      code: values.budgetUnitCode.trim(),
-      name: values.budgetUnitName.trim(),
-      description: values.budgetUnitDescription.trim(),
-      status: toStatus(values.active),
-      medicalpercent: parsePercent(values.budgetUnitMedicalPct),
+    const body: Record<string, unknown> = {}
+    if (values.budgetUnitCode !== undefined && (originalValues === undefined || values.budgetUnitCode.trim() !== originalValues.budgetUnitCode.trim())) {
+      body.code = values.budgetUnitCode.trim()
     }
-    // Some backend update responses do not hydrate the nested department object,
-    // which would leave `department` blank in the table until a full refetch.
-    // To keep the UI consistent with a page refresh, load the updated entity.
-    await api.put<ApiEnvelope<BudgetUnitResDto>>(
-      `/budgetunits/${encodeURIComponent(id)}`,
-      body
-    )
+    if (values.budgetUnitName !== undefined && (originalValues === undefined || values.budgetUnitName.trim() !== originalValues.budgetUnitName.trim())) {
+      body.name = values.budgetUnitName.trim()
+    }
+    if (values.budgetUnitDescription !== undefined && (originalValues === undefined || values.budgetUnitDescription.trim() !== originalValues.budgetUnitDescription.trim())) {
+      body.description = values.budgetUnitDescription.trim()
+    }
+    if (values.active !== undefined && (originalValues === undefined || values.active !== originalValues.active)) {
+      body.status = toStatus(values.active)
+    }
+    if (values.budgetUnitMedicalPct !== undefined && (originalValues === undefined || values.budgetUnitMedicalPct !== originalValues.budgetUnitMedicalPct)) {
+      body.medicalpercent = parsePercent(values.budgetUnitMedicalPct)
+    }
+
+    if (Object.keys(body).length > 0) {
+      await api.put<ApiEnvelope<BudgetUnitResDto>>(
+        `/budgetunits/${encodeURIComponent(id)}`,
+        body
+      )
+    }
     const detail = await api.get<ApiEnvelope<BudgetUnitResDto>>(
       `/budgetunits/${encodeURIComponent(id)}`
     )
@@ -596,23 +606,33 @@ export async function apiUpdateProgram(input: UpdateProgramInput & {
     return mapBudgetUnitToProgramRow(entity as BudgetUnitResDto)
   }
 
-  if (tab === "Budget Units" && values.formSection === "BU Program") {
+  if (tab === "Budget Units" && formSection === "BU Program") {
     // We omit departmentId and budgetUnitId because they are locked.
-    const body: Record<string, unknown> = {
-      code: values.buProgramProgramCode.trim(),
-      name: values.buProgramProgramName.trim(),
-      description: values.buProgramDescription.trim(),
-      status: toStatus(values.active),
-      type: "program",
-      medicalpercent: parsePercent(values.buProgramMedicalPct),
+    const body: Record<string, unknown> = {}
+    if (values.buProgramProgramCode !== undefined && (originalValues === undefined || values.buProgramProgramCode.trim() !== originalValues.buProgramProgramCode.trim())) {
+      body.code = values.buProgramProgramCode.trim()
     }
-    // Similar to Budget Units, the update response may not hydrate nested
-    // department/budgetUnit relations. Do a follow-up GET to ensure the row
-    // has a fully populated shape for the table.
-    await api.put<ApiEnvelope<BudgetProgramResDto>>(
-      `/budgetprograms/${encodeURIComponent(id)}`,
-      body
-    )
+    if (values.buProgramProgramName !== undefined && (originalValues === undefined || values.buProgramProgramName.trim() !== originalValues.buProgramProgramName.trim())) {
+      body.name = values.buProgramProgramName.trim()
+    }
+    if (values.buProgramDescription !== undefined && (originalValues === undefined || values.buProgramDescription.trim() !== originalValues.buProgramDescription.trim())) {
+      body.description = values.buProgramDescription.trim()
+    }
+    if (values.active !== undefined && (originalValues === undefined || values.active !== originalValues.active)) {
+      body.status = toStatus(values.active)
+    }
+    if (values.buProgramMedicalPct !== undefined && (originalValues === undefined || values.buProgramMedicalPct !== originalValues.buProgramMedicalPct)) {
+      body.medicalpercent = parsePercent(values.buProgramMedicalPct)
+    }
+    body.type = "program"
+
+    const hasModifications = Object.keys(body).some(k => k !== "type")
+    if (hasModifications) {
+      await api.put<ApiEnvelope<BudgetProgramResDto>>(
+        `/budgetprograms/${encodeURIComponent(id)}`,
+        body
+      )
+    }
     const detail = await api.get<ApiEnvelope<BudgetProgramResDto>>(
       `/budgetprograms/${encodeURIComponent(id)}`
     )
@@ -623,22 +643,34 @@ export async function apiUpdateProgram(input: UpdateProgramInput & {
   }
 
   // BU Sub-Program update (from Budget Units tab "BU Sub-Program" section)
-  if (tab === "Budget Units" && values.formSection === "BU Sub-Program") {
+  if (tab === "Budget Units" && formSection === "BU Sub-Program") {
     // In edit mode we do NOT allow changing parent program / BU / department,
     // so we only update editable fields and keep existing relations.
-    const body: Record<string, unknown> = {
-      code: values.buSubProgramCode.trim(),
-      name: values.buSubProgramName.trim(),
-      description: values.buSubProgramDescription.trim(),
-      status: toStatus(values.active),
-      type: BudgetProgramTypeEnum.SUBPROGRAM,
-      medicalpercent: parsePercent(values.buSubProgramMedicalPct),
+    const body: Record<string, unknown> = {}
+    if (values.buSubProgramCode !== undefined && (originalValues === undefined || values.buSubProgramCode.trim() !== originalValues.buSubProgramCode.trim())) {
+      body.code = values.buSubProgramCode.trim()
     }
+    if (values.buSubProgramName !== undefined && (originalValues === undefined || values.buSubProgramName.trim() !== originalValues.buSubProgramName.trim())) {
+      body.name = values.buSubProgramName.trim()
+    }
+    if (values.buSubProgramDescription !== undefined && (originalValues === undefined || values.buSubProgramDescription.trim() !== originalValues.buSubProgramDescription.trim())) {
+      body.description = values.buSubProgramDescription.trim()
+    }
+    if (values.active !== undefined && (originalValues === undefined || values.active !== originalValues.active)) {
+      body.status = toStatus(values.active)
+    }
+    if (values.buSubProgramMedicalPct !== undefined && (originalValues === undefined || values.buSubProgramMedicalPct !== originalValues.buSubProgramMedicalPct)) {
+      body.medicalpercent = parsePercent(values.buSubProgramMedicalPct)
+    }
+    body.type = BudgetProgramTypeEnum.SUBPROGRAM
 
-    await api.put<ApiEnvelope<BudgetProgramResDto>>(
-      `/budgetprograms/${encodeURIComponent(id)}`,
-      body
-    )
+    const hasModifications = Object.keys(body).some(k => k !== "type")
+    if (hasModifications) {
+      await api.put<ApiEnvelope<BudgetProgramResDto>>(
+        `/budgetprograms/${encodeURIComponent(id)}`,
+        body
+      )
+    }
     const detail = await api.get<ApiEnvelope<BudgetProgramResDto>>(
       `/budgetprograms/${encodeURIComponent(id)}`
     )
@@ -649,49 +681,64 @@ export async function apiUpdateProgram(input: UpdateProgramInput & {
   }
 
   if (tab === "Time Study programs") {
-    const isPrimary = values.formSection === "BU Program"
-    const isSecondary = values.formSection === "BU Sub-Program"
+    const isPrimary = formSection === "BU Program"
+    const isSecondary = formSection === "BU Sub-Program"
     const type = isPrimary ? "primary" : isSecondary ? "secondary" : "subprogram"
 
-    const code = isPrimary
-      ? values.buProgramProgramCode.trim()
-      : isSecondary
-        ? values.buSubProgramCode.trim()
-        : values.buProgramProgramCode.trim() // TS Sub-Program Two uses buProgramProgramCode
+    const body: Record<string, unknown> = {}
 
-    const name = isPrimary
-      ? values.buProgramProgramName.trim()
-      : isSecondary
-        ? values.buSubProgramName.trim()
-        : values.buProgramProgramName.trim() // TS Sub-Program Two uses buProgramProgramName
-
-    // We omit departmentId because it is locked.
-    const body: Record<string, unknown> = {
-      code,
-      name,
-      status: toStatus(values.active),
-      type,
-      costAllocation: values.costAllocation,
+    if (values.active !== undefined && (originalValues === undefined || values.active !== originalValues.active)) {
+      body.status = toStatus(values.active)
     }
-
-    if (values.isMultiCode !== undefined) {
+    if (values.costAllocation !== undefined && (originalValues === undefined || values.costAllocation !== originalValues.costAllocation)) {
+      body.costAllocation = values.costAllocation
+    }
+    if (values.isMultiCode !== undefined && (originalValues === undefined || values.isMultiCode !== originalValues.isMultiCode)) {
       body.isMultiCode = values.isMultiCode
     }
-
-    if (values.multiCodeType !== undefined) {
+    if (values.multiCodeType !== undefined && (originalValues === undefined || values.multiCodeType !== originalValues.multiCodeType)) {
       body.multiCodeType = values.multiCodeType
     }
 
-    if (isPrimary && values.buProgramBudgetUnitName) {
+    const resolvedCodeField = isPrimary
+      ? values.buProgramProgramCode !== undefined ? values.buProgramProgramCode : originalValues?.buProgramProgramCode
+      : isSecondary
+        ? values.buSubProgramCode !== undefined ? values.buSubProgramCode : originalValues?.buSubProgramCode
+        : values.buProgramProgramCode !== undefined ? values.buProgramProgramCode : originalValues?.buProgramProgramCode
+
+    if (resolvedCodeField !== undefined && (values.buProgramProgramCode !== undefined || values.buSubProgramCode !== undefined)) {
+      body.code = resolvedCodeField.trim()
+    }
+
+    const resolvedNameField = isPrimary
+      ? values.buProgramProgramName !== undefined ? values.buProgramProgramName : originalValues?.buProgramProgramName
+      : isSecondary
+        ? values.buSubProgramName !== undefined ? values.buSubProgramName : originalValues?.buSubProgramName
+        : values.buProgramProgramName !== undefined ? values.buProgramProgramName : originalValues?.buProgramProgramName
+
+    if (resolvedNameField !== undefined && (values.buProgramProgramName !== undefined || values.buSubProgramName !== undefined)) {
+      body.name = resolvedNameField.trim()
+    }
+
+    if (isPrimary && values.buProgramBudgetUnitName !== undefined) {
       const budgetProgramId = input.lookups?.budgetProgramIdByName?.[values.buProgramBudgetUnitName]
       if (budgetProgramId) {
         body.budgetProgramId = budgetProgramId
       }
     }
-    await api.put<ApiEnvelope<TimeStudyProgramResDto>>(
-      `/timestudyprograms/${encodeURIComponent(id)}`,
-      body
-    )
+
+    body.type = type
+
+    const hasModifications = Object.keys(body).some(k => k !== "type" && k !== "code" && k !== "name") || 
+      (body.code !== undefined && (originalValues === undefined || body.code !== (isPrimary ? originalValues.buProgramProgramCode?.trim() : isSecondary ? originalValues.buSubProgramCode?.trim() : originalValues.buProgramProgramCode?.trim()))) ||
+      (body.name !== undefined && (originalValues === undefined || body.name !== (isPrimary ? originalValues.buProgramProgramName?.trim() : isSecondary ? originalValues.buSubProgramName?.trim() : originalValues.buProgramProgramName?.trim())))
+
+    if (hasModifications) {
+      await api.put<ApiEnvelope<TimeStudyProgramResDto>>(
+        `/timestudyprograms/${encodeURIComponent(id)}`,
+        body
+      )
+    }
     const detail = await api.get<ApiEnvelope<TimeStudyProgramResDto>>(
       `/timestudyprograms/${encodeURIComponent(id)}`
     )

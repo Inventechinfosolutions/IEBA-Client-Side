@@ -15,6 +15,7 @@ import {
 
 import { programsUpdateFormSchema } from "../schemas"
 import type { ProgramTableProps, ProgramsUpdateFormValues } from "../types"
+import { guardNoChanges } from "@/lib/formGuard"
 
 const EmptyState = () => (
   <div className="flex flex-col items-center justify-center gap-2 py-[58px]">
@@ -215,7 +216,31 @@ export function ProgramTable({
       <div className="flex items-center justify-end rounded-[8px] border border-[#E5E7EB] bg-white px-4 py-[12px] shadow-[0_0_20px_0_#0000001a]">
         <Button
           type="button"
-          onClick={form.handleSubmit((values) => onUpdate(values))}
+          onClick={form.handleSubmit((values) => {
+            const initialValues = {
+              programs: programs.map((p) => ({
+                ...p,
+                budgetedFte: Number(p.budgetedFte),
+                allocatedFte: Number(p.allocatedFte),
+              })),
+            }
+
+            if (guardNoChanges(values, initialValues)) {
+              return
+            }
+
+            // Filter only changed programs to pass in the payload
+            const changedPrograms = values.programs.filter((p) => {
+              const original = initialValues.programs.find((orig) => orig.id === p.id)
+              if (!original) return true
+              return (
+                p.budgetedFte !== original.budgetedFte ||
+                p.allocatedFte !== original.allocatedFte
+              )
+            })
+
+            onUpdate({ programs: changedPrograms })
+          })}
           disabled={!selectedEmployeeId || isSaving}
           className="h-[44px] min-w-[120px] rounded-[10px] bg-[#6C5DD3] px-8 text-[14px] font-[400] text-white hover:bg-[#5B4DC5] disabled:opacity-50"
         >
