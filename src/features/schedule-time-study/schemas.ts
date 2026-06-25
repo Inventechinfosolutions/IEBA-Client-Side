@@ -28,7 +28,7 @@ export const scheduleTimeStudyDefaultValues: ScheduleTimeStudyFormValues = {
 export const timeStudyPeriodsFormSchema = z.object({
   fiscalYear: z.string().min(1, "Fiscal year is required"),
   department: z.string().min(1, "Department is required"),
-  timeStudyPeriod: z.string().trim(),
+  timeStudyPeriod: z.string().trim().min(1, "Time study period is required"),
   startDate: z.string().min(1, "Start date is required"),
   endDate: z.string().min(1, "End date is required"),
   hours: z.string(),

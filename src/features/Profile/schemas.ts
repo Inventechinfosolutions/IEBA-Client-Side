@@ -43,7 +43,6 @@ function emergencyContactPhoneDigits(areaCode: string, telephoneNumber: string):
 
 export const profileDetailFormSchema = z.object({
   firstName: requiredNonEmptyString("First Name"),
-  mi: z.string().trim().max(2),
   lastName: requiredNonEmptyString("Last Name"),
   areaCode: optionalDigitsWithLen("Area Code", 3),
   telephoneNumber: optionalPhoneDigitsLen("Telephone Number", 10),
@@ -103,7 +102,6 @@ export const profileDetailMessages = {
 
 export const profileDetailDefaultValues: ProfileDetailFormValues = {
   firstName: "",
-  mi: "",
   lastName: "",
   areaCode: "",
   telephoneNumber: "",

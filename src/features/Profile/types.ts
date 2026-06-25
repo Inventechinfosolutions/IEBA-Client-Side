@@ -27,7 +27,6 @@ export type OnRecordsValues = {
 
 export type ProfileDetailFormValues = {
   firstName: string
-  mi: string
   lastName: string
   areaCode: string
   telephoneNumber: string
@@ -51,6 +50,13 @@ export type ProfileDetailData = {
 export type UpdateProfileDetailInput = {
   id: string
   values: ProfileDetailFormValues
+  persist?: ProfilePersistFields
+}
+
+/** Used when only the fields that actually changed are sent to the server. */
+export type UpdateProfileDetailPartialInput = {
+  id: string
+  values: Partial<ProfileDetailFormValues>
   persist?: ProfilePersistFields
 }
 

@@ -4,6 +4,8 @@ import { Bold, Italic, List, X, Check } from "lucide-react"
 import { Controller, useForm } from "react-hook-form"
 import { toast } from "sonner"
 
+import { guardNoChanges } from "@/lib/formGuard"
+
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -130,22 +132,12 @@ export function JobClassificationFormModal({
       const nextValues = editor
         ? { ...values, activityDescription: editor.innerHTML }
         : values
+      
+      if (guardNoChanges(nextValues, safeInitialValues)) {
+        return
+      }
+
       onSave(nextValues)
-      toast.success(
-        mode === "edit"
-          ? "Job classification updated successfully"
-          : "Job classification saved successfully",
-        {
-          position: "top-center",
-          icon: (
-            <span className="inline-flex size-4 items-center justify-center rounded-full bg-[#10b981] text-white">
-              <Check className="size-3 stroke-[3]" />
-            </span>
-          ),
-          className:
-            "!w-fit !max-w-[340px] !min-h-[35px] !rounded-[8px] !border-0 !px-3 !py-2 !text-[12px] !shadow-[0_8px_22px_rgba(17,24,39,0.18)]",
-        }
-      )
     },
     (formErrors) => {
       const firstInvalidField = fieldOrder.find((field) => Boolean(formErrors[field]))

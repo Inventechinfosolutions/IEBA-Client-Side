@@ -151,9 +151,19 @@ export async function createJobClassification(
 
 export async function updateJobClassification(
   id: string,
-  values: JobClassificationFormValues,
+  values: Partial<JobClassificationFormValues>,
 ): Promise<JobClassificationRow> {
-  const body: UpdateJobClassificationReqDto = toCreateUpdateDto(values)
+  const body: UpdateJobClassificationReqDto = {}
+
+  if (values.code !== undefined) body.code = values.code.trim()
+  if (values.name !== undefined) body.name = values.name.trim()
+  if (values.active !== undefined) body.status = values.active ? "active" : "inactive"
+  if (values.activityDescription !== undefined) {
+    body.description =
+      values.activityDescription && values.activityDescription.trim()
+        ? values.activityDescription.trim()
+        : null
+  }
 
   const res = await api.put<JobClassificationApiEnvelope<JobClassificationResDto> | JobClassificationResDto>(
     `/jobclassification/${id}`,

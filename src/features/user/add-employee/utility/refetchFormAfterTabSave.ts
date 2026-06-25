@@ -152,6 +152,29 @@ export function syncTab1EmployeeLoginFields(
       })
     }
   }
+
+  const documents = tab1Payload.documents as Array<any> | null | undefined
+  if (Array.isArray(documents)) {
+    const jobDutyDoc = documents.find(
+      (d) => d && (d.docType === "job_duty" || d.docType === "jobdutystatement") && d.status !== "inactive"
+    )
+    if (jobDutyDoc) {
+      if (getValues("jobDutyFileId") == null) {
+        setValue("jobDutyFileId", jobDutyDoc.id, {
+          shouldDirty: false,
+          shouldTouch: false,
+          shouldValidate: true,
+        })
+      }
+      if (!(getValues("jobDutyStatement") ?? "").trim()) {
+        setValue("jobDutyStatement", jobDutyDoc.fileName ?? "", {
+          shouldDirty: false,
+          shouldTouch: false,
+          shouldValidate: true,
+        })
+      }
+    }
+  }
 }
 
 /** Applies GET /users/:id/details/required?method=tab3 onto Supervisor tab form fields. */

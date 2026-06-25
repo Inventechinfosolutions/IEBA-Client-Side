@@ -399,6 +399,7 @@ export type AddEmployeeSaveSync = {
 export type AddEmployeeSavePayload = {
   values: UserModuleFormValues
   sourceTab: AddEmployeeFormTab
+  defaultValues?: Partial<UserModuleFormValues>
 }
 
 export type SaveGatedTab = "employee" | "security" | "supervisor"

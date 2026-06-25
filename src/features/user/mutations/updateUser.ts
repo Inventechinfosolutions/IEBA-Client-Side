@@ -29,32 +29,134 @@ function clampPositionName(raw: string): string {
 }
 
 function mapUpdateInput(input: UpdateUserModuleInput): UpdateUserRequestDto {
-  const passwordTrimmed = input.values.password.trim()
-  const locationId = normalizeLocationId(input.values.locationId)
-  const jcIds = input.values.jobClassificationIds ?? []
-  return {
-    firstName: input.values.firstName.trim(),
-    lastName: input.values.lastName.trim(),
-    ...(passwordTrimmed !== "" ? { password: passwordTrimmed } : {}),
-    employeeId: input.values.employeeNo.trim(),
-    positionName: clampPositionName(input.values.positionNo ?? ""),
-    jobClassificationIds: jcIds,
-    active: input.values.active,
-    pki: input.values.pkiUser,
-    spmp: input.values.spmp,
-    multilingual: input.values.multilingual,
-    allowMultiCodes: input.values.allowMultiCodes ? true : null,
-    tsMinPerDay: toTsMinPerDay(input.values.tsMinDay),
-    claimingUnit: input.values.claimingUnit.trim(),
-    assignedMultiCodes: toAssignedMultiCodes(input.values.assignedMultiCodes),
-    ...(locationId != null ? { locationId } : {}),
-    contacts: contactsPayloadForUpdate(input.values.phone),
-    primarySupervisorId: (input.values.supervisorPrimaryId ?? "").trim(),
-    backupSupervisorId: (input.values.supervisorSecondaryId ?? "").trim(),
-    supervisorApportioning: input.values.supervisorApportioning,
-    activationStartDate: input.values.activationStartDate || undefined,
-    activationEndDate: input.values.activationEndDate || undefined,
+  const { values, defaultValues } = input
+  
+  if (!defaultValues) {
+    const passwordTrimmed = values.password.trim()
+    const locationId = normalizeLocationId(values.locationId)
+    const jcIds = values.jobClassificationIds ?? []
+    return {
+      firstName: values.firstName.trim(),
+      lastName: values.lastName.trim(),
+      ...(passwordTrimmed !== "" ? { password: passwordTrimmed } : {}),
+      employeeId: values.employeeNo.trim(),
+      positionName: clampPositionName(values.positionNo ?? ""),
+      jobClassificationIds: jcIds,
+      active: values.active,
+      pki: values.pkiUser,
+      spmp: values.spmp,
+      multilingual: values.multilingual,
+      allowMultiCodes: values.allowMultiCodes ? true : null,
+      tsMinPerDay: toTsMinPerDay(values.tsMinDay),
+      claimingUnit: values.claimingUnit.trim(),
+      assignedMultiCodes: toAssignedMultiCodes(values.assignedMultiCodes),
+      ...(locationId != null ? { locationId } : {}),
+      contacts: contactsPayloadForUpdate(values.phone),
+      primarySupervisorId: (values.supervisorPrimaryId ?? "").trim(),
+      backupSupervisorId: (values.supervisorSecondaryId ?? "").trim(),
+      supervisorApportioning: values.supervisorApportioning,
+      activationStartDate: values.activationStartDate || undefined,
+      activationEndDate: values.activationEndDate || undefined,
+    }
   }
+
+  const dto: UpdateUserRequestDto = {}
+
+  if (values.firstName.trim() !== (defaultValues.firstName ?? "").trim()) {
+    dto.firstName = values.firstName.trim()
+  }
+  if (values.lastName.trim() !== (defaultValues.lastName ?? "").trim()) {
+    dto.lastName = values.lastName.trim()
+  }
+  
+  const passwordTrimmed = values.password.trim()
+  if (passwordTrimmed !== "" && passwordTrimmed !== (defaultValues.password ?? "").trim()) {
+    dto.password = passwordTrimmed
+  }
+  if (values.employeeNo.trim() !== (defaultValues.employeeNo ?? "").trim()) {
+    dto.employeeId = values.employeeNo.trim()
+  }
+  
+  const posVal = clampPositionName(values.positionNo ?? "")
+  const posDef = clampPositionName(defaultValues.positionNo ?? "")
+  if (posVal !== posDef) {
+    dto.positionName = posVal
+  }
+
+  const currentJcIds = values.jobClassificationIds ?? []
+  const defaultJcIds = defaultValues.jobClassificationIds ?? []
+  const jcIdsChanged =
+    currentJcIds.length !== defaultJcIds.length ||
+    currentJcIds.some((id, idx) => id !== defaultJcIds[idx])
+  if (jcIdsChanged) {
+    dto.jobClassificationIds = currentJcIds
+  }
+
+  if (values.active !== defaultValues.active) {
+    dto.active = values.active
+  }
+  if (values.pkiUser !== defaultValues.pkiUser) {
+    dto.pki = values.pkiUser
+  }
+  if (values.spmp !== defaultValues.spmp) {
+    dto.spmp = values.spmp
+  }
+  if (values.multilingual !== defaultValues.multilingual) {
+    dto.multilingual = values.multilingual
+  }
+  if (values.allowMultiCodes !== defaultValues.allowMultiCodes) {
+    dto.allowMultiCodes = values.allowMultiCodes ? true : null
+  }
+  
+  const currentTsMin = toTsMinPerDay(values.tsMinDay)
+  const defaultTsMin = toTsMinPerDay(defaultValues.tsMinDay)
+  if (currentTsMin !== defaultTsMin) {
+    dto.tsMinPerDay = currentTsMin
+  }
+
+  if (values.claimingUnit.trim() !== (defaultValues.claimingUnit ?? "").trim()) {
+    dto.claimingUnit = values.claimingUnit.trim()
+  }
+
+  const currentMultiCodes = toAssignedMultiCodes(values.assignedMultiCodes)
+  const defaultMultiCodes = toAssignedMultiCodes(defaultValues.assignedMultiCodes)
+  const multiCodesChanged =
+    JSON.stringify(currentMultiCodes) !== JSON.stringify(defaultMultiCodes)
+  if (multiCodesChanged) {
+    dto.assignedMultiCodes = currentMultiCodes
+  }
+
+  const locVal = normalizeLocationId(values.locationId)
+  const locDef = normalizeLocationId(defaultValues.locationId)
+  if (locVal !== locDef) {
+    dto.locationId = locVal ?? undefined
+  }
+
+  if (values.phone.trim() !== (defaultValues.phone ?? "").trim()) {
+    dto.contacts = contactsPayloadForUpdate(values.phone)
+  }
+
+  if ((values.supervisorPrimaryId ?? "").trim() !== (defaultValues.supervisorPrimaryId ?? "").trim()) {
+    dto.primarySupervisorId = (values.supervisorPrimaryId ?? "").trim()
+  }
+
+  if ((values.supervisorSecondaryId ?? "").trim() !== (defaultValues.supervisorSecondaryId ?? "").trim()) {
+    dto.backupSupervisorId = (values.supervisorSecondaryId ?? "").trim()
+  }
+
+  if (values.supervisorApportioning !== defaultValues.supervisorApportioning) {
+    dto.supervisorApportioning = values.supervisorApportioning
+  }
+
+  if ((values.activationStartDate || "") !== (defaultValues.activationStartDate || "")) {
+    dto.activationStartDate = values.activationStartDate || undefined
+  }
+
+  if ((values.activationEndDate || "") !== (defaultValues.activationEndDate || "")) {
+    dto.activationEndDate = values.activationEndDate || undefined
+  }
+
+  return dto
 }
 
 export function useUpdateUserModuleRow() {

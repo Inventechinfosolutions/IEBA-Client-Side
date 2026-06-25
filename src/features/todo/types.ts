@@ -51,7 +51,7 @@ export type CreateTodoInput = {
 
 export type UpdateTodoInput = {
   id: string
-  values: TodoFormValues
+  values: Partial<TodoFormValues>  // Only the fields that actually changed
 }
 
 export type TodoFormModalProps = {

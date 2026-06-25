@@ -15,6 +15,9 @@ export function useGetRmtsGroupById(params: RmtsEntityByIdQueryParams) {
       return fetchRmtsGroupById(id)
     },
     enabled: enabled && id != null && id > 0,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
   })
 }
 

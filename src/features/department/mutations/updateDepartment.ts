@@ -7,11 +7,26 @@ import { mergeDepartmentDetail } from "../lib/mergeDepartmentDetail"
 
 export function useUpdateDepartment() {
   return useMutation({
-    mutationFn: (payload: { id: string; values: DepartmentUpsertValues }) =>
-      updateDepartmentApi(payload.id, payload.values),
+    mutationFn: (payload: {
+      id: string
+      values: DepartmentUpsertValues
+      referenceValues?: DepartmentUpsertValues
+      addressChanged?: boolean
+    }) => updateDepartmentApi(payload.id, payload.values, payload.referenceValues, payload.addressChanged),
     onSuccess: async (fresh, payload) => {
       const prev = queryClient.getQueryData<Department>(departmentKeys.detail(payload.id))
-      const merged = mergeDepartmentDetail(prev, fresh)
+      const freshWithSubmitted: Department = {
+        ...fresh,
+        active: payload.values.active,
+        settings: {
+          ...fresh.settings,
+          ...payload.values.settings,
+        },
+        primaryContactId: payload.values.primaryContactId ?? null,
+        secondaryContactId: payload.values.secondaryContactId ?? null,
+        billingContactId: payload.values.billingContactId ?? null,
+      }
+      const merged = mergeDepartmentDetail(prev, freshWithSubmitted)
       queryClient.setQueryData(departmentKeys.detail(payload.id), merged)
       await queryClient.invalidateQueries({ queryKey: departmentKeys.lists() })
     },
