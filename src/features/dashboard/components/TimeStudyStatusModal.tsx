@@ -18,6 +18,8 @@ import { MasterCodePagination } from "@/features/master-code/components/MasterCo
 import { useDashboardStatusUsers, useDashboardTimeStudyRecords } from "../queries/dashboardQueries"
 import { Spinner } from "@/components/ui/spinner"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { useActionUserTimeRecord } from "@/features/PersonalTimeStudy/TimeStudyMGT/mutations/updateActionUserTimeRecord"
+import { toIsoYmdFromDate } from "@/lib/dates"
 
 
 
@@ -94,6 +96,8 @@ export function TimeStudyStatusModal({
   const [detailPage, setDetailPage] = useState(1)
   const [detailPageSize, setDetailPageSize] = useState(5)
 
+  const { mutate: notifyUser } = useActionUserTimeRecord()
+
   const statusMap: Record<ModalVariant, "approved" | "submitted" | "draft"> = {
     approved: "approved",
     pending: "submitted",
@@ -127,6 +131,7 @@ export function TimeStudyStatusModal({
   const rows = data?.data ?? []
   const totalItems = data?.meta?.totalItems ?? 0
   const isNotSubmitted = variant === "notSubmitted"
+  const showDate = false
 
   const handleSearchChange = (val: string) => {
     setSearchQuery(val)
@@ -365,15 +370,17 @@ export function TimeStudyStatusModal({
               <Table>
                 <TableHeader className={`${config.headerBg} border-b-0 sticky top-0 z-10`}>
                   <TableRow className="border-0 hover:bg-transparent">
-                    <TableHead className="h-10 px-4 text-left font-bold text-[11px] uppercase tracking-wider text-white w-[35%]">
+                    <TableHead className={`h-10 px-4 text-left font-bold text-[11px] uppercase tracking-wider text-white ${showDate ? "w-[35%]" : "w-[44%]"}`}>
                       User Name
                     </TableHead>
-                    <TableHead className="h-10 px-4 text-left font-bold text-[11px] uppercase tracking-wider text-white w-[35%]">
+                    <TableHead className={`h-10 px-4 text-left font-bold text-[11px] uppercase tracking-wider text-white ${showDate ? "w-[35%]" : "w-[44%]"}`}>
                       Department
                     </TableHead>
-                    <TableHead className="h-10 px-4 text-center font-bold text-[11px] uppercase tracking-wider text-white w-[18%]">
-                      Date
-                    </TableHead>
+                    {showDate && (
+                      <TableHead className="h-10 px-4 text-center font-bold text-[11px] uppercase tracking-wider text-white w-[18%]">
+                        Date
+                      </TableHead>
+                    )}
                     <TableHead className="h-10 px-4 text-center font-bold text-[11px] uppercase tracking-wider text-white w-[12%]">
                       View Records
                     </TableHead>
@@ -382,13 +389,13 @@ export function TimeStudyStatusModal({
                 <TableBody>
                   {isLoading ? (
                     <TableRow>
-                      <TableCell colSpan={4} className="text-center py-12">
+                      <TableCell colSpan={showDate ? 4 : 3} className="text-center py-12">
                         <Spinner className="mx-auto h-8 w-8 text-[#6C5DD3]" />
                       </TableCell>
                     </TableRow>
                   ) : rows.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={4} className="text-center py-12 text-[#9ca3af]">
+                      <TableCell colSpan={showDate ? 4 : 3} className="text-center py-12 text-[#9ca3af]">
                         <AlertCircle className="mx-auto mb-2 h-8 w-8 opacity-30" />
                         <p className="text-sm font-medium">No records found</p>
                       </TableCell>
@@ -404,16 +411,18 @@ export function TimeStudyStatusModal({
                         <TableCell className="px-4 py-3 text-[13px] font-medium text-[#374151] whitespace-nowrap">
                           {user.name}
                         </TableCell>
-
+ 
                         {/* Department */}
                         <TableCell className="px-4 py-3 text-[13px] text-[#6b7280] whitespace-nowrap">
                           {user.department}
                         </TableCell>
-
+ 
                         {/* Date */}
-                        <TableCell className="px-4 py-3 text-[13px] text-[#374151] text-center whitespace-nowrap">
-                          {user.date || "—"}
-                        </TableCell>
+                        {showDate && (
+                          <TableCell className="px-4 py-3 text-[13px] text-[#374151] text-center whitespace-nowrap">
+                            {user.date || "—"}
+                          </TableCell>
+                        )}
 
                         {/* Action */}
                         <TableCell className="px-4 py-3 whitespace-nowrap">
@@ -430,6 +439,22 @@ export function TimeStudyStatusModal({
                               <button
                                 type="button"
                                 title="Send Notification"
+                                onClick={() => {
+                                  if (!user.date) return
+                                  const dateObj = new Date(user.date)
+                                  const day = dateObj.getDay()
+                                  const diff = dateObj.getDate() - day + (day === 0 ? -6 : 1)
+                                  const start = new Date(dateObj.setDate(diff))
+                                  const end = new Date(start)
+                                  end.setDate(start.getDate() + 6)
+
+                                  notifyUser({
+                                    userId: String(user.id),
+                                    startDate: toIsoYmdFromDate(start),
+                                    endDate: toIsoYmdFromDate(end),
+                                    status: "notify",
+                                  })
+                                }}
                                 className="flex h-7 w-7 items-center justify-center rounded-lg border border-[#e5e7eb] bg-white text-[#d97706] transition-all hover:border-[#d97706] hover:bg-[#d97706] hover:text-white active:scale-95 shadow-sm"
                               >
                                 <Bell className="h-3.5 w-3.5" />
