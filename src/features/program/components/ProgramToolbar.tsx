@@ -29,7 +29,7 @@ export function ProgramToolbar({
   showHistory = false,
   onToggleHistory,
 }: ProgramToolbarProps) {
-  const { canAdd } = usePermissions()
+  const { canAdd, isSuperAdmin } = usePermissions()
 
   const getModuleKey = (tab: string) => {
     if (tab === "Budget Units") return "budgetprogram"
@@ -60,7 +60,7 @@ export function ProgramToolbar({
         )}
       </div>
       <div className="flex items-center gap-2">
-        {onToggleHistory && (
+        {onToggleHistory && isSuperAdmin && (
           <Button
             type="button"
             className={`h-9 cursor-pointer gap-2 rounded-[12px] px-3 text-[12px] font-semibold transition-all shadow-[0_1px_0_rgba(0,0,0,0.05)] ${

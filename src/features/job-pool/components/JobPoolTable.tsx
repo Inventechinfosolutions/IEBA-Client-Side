@@ -55,10 +55,9 @@ export function JobPoolTable({
   onEditRow,
   onHistoryRow,
 }: JobPoolTableProps) {
-  const { canView, canUpdate } = usePermissions()
-  const canViewJobPool = canView("jobpool")
+  const { canUpdate, isSuperAdmin } = usePermissions()
   const canUpdateJobPool = canUpdate("jobpool")
-  const showActionColumn = canUpdateJobPool || Boolean(onHistoryRow && canViewJobPool)
+  const showActionColumn = canUpdateJobPool || Boolean(onHistoryRow && isSuperAdmin)
   const [sortState, setSortState] = useState<JobPoolTableSortState>({
     key: "name",
     direction: "none",
@@ -113,8 +112,8 @@ export function JobPoolTable({
         <Table className="table-fixed">
           <colgroup>
             <col style={{ width: showActionColumn ? "12%" : "13.5%" }} />
-            <col style={{ width: showActionColumn ? "39%" : "46.5%" }} />
-            <col style={{ width: showActionColumn ? "19%" : "21%" }} />
+            <col style={{ width: showActionColumn ? "34%" : "41.5%" }} />
+            <col style={{ width: showActionColumn ? "24%" : "26%" }} />
             <col style={{ width: showActionColumn ? "12%" : "13%" }} />
             <col style={{ width: showActionColumn ? "8%" : "6%" }} />
             {showActionColumn && <col style={{ width: "10%" }} />}
@@ -251,8 +250,8 @@ export function JobPoolTable({
         <Table className="table-fixed">
           <colgroup>
             <col style={{ width: showActionColumn ? "12%" : "13.5%" }} />
-            <col style={{ width: showActionColumn ? "39%" : "46.5%" }} />
-            <col style={{ width: showActionColumn ? "19%" : "21%" }} />
+            <col style={{ width: showActionColumn ? "34%" : "41.5%" }} />
+            <col style={{ width: showActionColumn ? "24%" : "26%" }} />
             <col style={{ width: showActionColumn ? "12%" : "13%" }} />
             <col style={{ width: showActionColumn ? "8%" : "6%" }} />
             {showActionColumn && <col style={{ width: "10%" }} />}
@@ -295,12 +294,12 @@ export function JobPoolTable({
                   </TableCell>
 
                   {/* Job Classification tags */}
-                  <TableCell className="align-middle border-r border-[#eff0f5] px-3 py-2.5 text-[11px] text-[#232735] wrap-break-word whitespace-normal text-center">
+                  <TableCell className="align-middle border-r border-[#eff0f5] px-1.5 py-2.5 text-[11px] text-[#232735] wrap-break-word whitespace-normal text-center">
                     <div className="flex flex-wrap gap-2 justify-center">
                       {row.jobClassifications.map((tag, idx) => (
                         <span
                           key={idx}
-                          className={`inline-flex items-center rounded-[6px] bg-[#f8f9fa] px-2 py-1 text-[10px] text-[#232735] ${tag.status?.toLowerCase() === "inactive"
+                          className={`inline-flex items-center rounded-[7px] bg-[#f8f9fa] px-1.5 py-0.5 text-[10px] text-[#232735] ${tag.status?.toLowerCase() === "inactive"
                             ? "border border-red-300"
                             : "border border-[#d8dae3]"
                             }`}
@@ -312,7 +311,7 @@ export function JobPoolTable({
                   </TableCell>
 
                   {/* Users */}
-                  <TableCell className="align-middle border-r border-[#eff0f5] px-3 py-2.5 text-[11px] text-[#232735] wrap-break-word whitespace-normal text-center">
+                  <TableCell className="align-middle border-r border-[#eff0f5] px-1.5 py-2.5 text-[11px] text-[#232735] wrap-break-word whitespace-normal text-center">
                     {row.userprofiles && row.userprofiles.length > 0 ? (
                       <div className="flex flex-wrap gap-2 justify-center">
                         {row.userprofiles
@@ -325,7 +324,8 @@ export function JobPoolTable({
                           .map((u) => (
                             <span
                               key={u.id}
-                              className={`inline-flex items-center rounded-[6px] border bg-[#f8f9fa] px-2 py-1 text-[10px] text-[#232735] ${u.status?.toLowerCase() === "inactive"
+                              title={u.label}
+                              className={`inline-flex items-center justify-center rounded-[7px] border bg-[#f8f9fa] px-1.5 py-0.5 text-[10px] text-[#232735] w-[calc(50%-4px)] text-center ${u.status?.toLowerCase() === "inactive"
                                 ? "border-red-400"
                                 : "border-[#d8dae3]"
                                 }`}
@@ -367,7 +367,7 @@ export function JobPoolTable({
                   {showActionColumn && (
                     <TableCell className="align-middle px-2 py-2.5 text-center whitespace-normal">
                       <div className="inline-flex items-center justify-center gap-0.5">
-                        {onHistoryRow && canViewJobPool ? (
+                        {onHistoryRow && isSuperAdmin ? (
                           <button
                             type="button"
                             onClick={() => onHistoryRow(row)}

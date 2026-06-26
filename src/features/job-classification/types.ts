@@ -51,7 +51,7 @@ export type CreateJobClassificationInput = {
 
 export type UpdateJobClassificationInput = {
   id: string
-  values: JobClassificationFormValues
+  values: Partial<JobClassificationFormValues>
 }
 
 export type JobClassificationTableSortState = {

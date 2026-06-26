@@ -395,6 +395,7 @@ export function UserModulePage() {
   const handleSaveForm = async ({
     values,
     sourceTab,
+    defaultValues,
   }: AddEmployeeSavePayload): Promise<AddEmployeeSaveSync | void> => {
     // 1. Validation for Supervisor Apportioning Total Percentage (must be exactly 100%)
     if (sourceTab === "security" && values.supervisorApportioning) {
@@ -424,11 +425,11 @@ export function UserModulePage() {
     try {
       if (formMode === "edit" && selectedRow) {
         if (sourceTab === "security") {
-          await persistSecurityApportioningOnSave(selectedRow.id, values)
-          await persistUserAllowMultiCodeHistoryOnSave(selectedRow.id, values)
+          await persistSecurityApportioningOnSave(selectedRow.id, values, defaultValues)
+          await persistUserAllowMultiCodeHistoryOnSave(selectedRow.id, values, defaultValues)
         }
 
-        await userModule.updateRowAsync({ id: selectedRow.id, values })
+        await userModule.updateRowAsync({ id: selectedRow.id, values, defaultValues })
         toast.success("User Saved Successfully", successToastOptions)
         invalidateUserTabCaches(queryClient, selectedRow.id, sourceTab)
         const merged = await refetchFormAfterTabSave(
@@ -442,10 +443,10 @@ export function UserModulePage() {
 
       if (draftUserId) {
         if (sourceTab === "security") {
-          await persistSecurityApportioningOnSave(draftUserId, values)
-          await persistUserAllowMultiCodeHistoryOnSave(draftUserId, values)
+          await persistSecurityApportioningOnSave(draftUserId, values, defaultValues)
+          await persistUserAllowMultiCodeHistoryOnSave(draftUserId, values, defaultValues)
         }
-        await userModule.updateRowAsync({ id: draftUserId, values })
+        await userModule.updateRowAsync({ id: draftUserId, values, defaultValues })
         toast.success("Employee saved successfully", successToastOptions)
         invalidateUserTabCaches(queryClient, draftUserId, sourceTab)
         const merged = await refetchFormAfterTabSave(queryClient, draftUserId, sourceTab, values)

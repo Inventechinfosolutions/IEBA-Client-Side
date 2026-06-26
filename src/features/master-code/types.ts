@@ -82,7 +82,8 @@ export type CreateMasterCodeInput = {
 export type UpdateMasterCodeInput = {
   id: string
   codeType: MasterCodeTab
-  values: MasterCodeFormValues
+  values: Partial<MasterCodeFormValues>
+  originalValues?: MasterCodeFormValues
 }
 
 export type ActiveTools = {

@@ -2,6 +2,8 @@ import { useState, useRef } from "react"
 import { Check } from "lucide-react"
 import { toast } from "sonner"
 
+import { guardNoChanges, getChangedFields } from "@/lib/formGuard"
+
 import {
   Dialog,
   DialogContent,
@@ -110,7 +112,11 @@ export function JobPoolPage() {
   async function handleSave(values: JobPoolFormValues) {
     try {
       if (modalMode === "edit" && selectedRow) {
-        await updateJobPoolAsync({ id: selectedRow.id, values })
+        if (guardNoChanges(values, initialValues)) {
+          return
+        }
+        const changedFields = getChangedFields(values, initialValues)
+        await updateJobPoolAsync({ id: selectedRow.id, values: changedFields })
         toast.success("Job Pool updated successfully", successToastOptions)
       } else {
         await createJobPoolAsync({ values })

@@ -261,7 +261,8 @@ export type CreateCountyActivityApiInput = {
 
 export type UpdateCountyActivityApiInput = {
   id: string
-  values: CountyActivityAddFormValues
+  values: Partial<CountyActivityAddFormValues>
+  originalValues?: CountyActivityAddFormValues
   rowType: CountyActivityGridRowType
   parentId?: string | null
   masterCatalog?: { code: string; type: string }

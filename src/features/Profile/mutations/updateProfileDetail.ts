@@ -2,14 +2,14 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 import { updateProfileDetail } from "../api"
 import { profileKeys } from "../keys"
-import type { UpdateProfileDetailInput } from "../types"
+import type { UpdateProfileDetailInput, UpdateProfileDetailPartialInput } from "../types"
 
 export function useUpdateProfileDetail() {
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationKey: [...profileKeys.all, "update"],
-    mutationFn: (input: UpdateProfileDetailInput) => updateProfileDetail(input),
+    mutationFn: (input: UpdateProfileDetailInput | UpdateProfileDetailPartialInput) => updateProfileDetail(input),
     onSuccess: (data, variables) => {
       const uid = variables.id.trim()
       if (uid) {

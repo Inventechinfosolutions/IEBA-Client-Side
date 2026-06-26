@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react"
 import { Spinner } from "@/components/ui/spinner"
+import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -97,6 +98,10 @@ export function EditPayrollDataDialog({
       const next = effectiveValues[k] ?? ""
       const prev = initialValues[k] ?? ""
       if (next !== prev) patch[col.rowKey] = next
+    }
+    if (Object.keys(patch).length === 0) {
+      toast.warning("No changes to save.")
+      return
     }
     await onSave(patch)
   }

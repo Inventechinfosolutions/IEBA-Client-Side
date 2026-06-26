@@ -416,9 +416,61 @@ export async function createDepartment(
 
 export async function updateDepartment(
   id: string,
-  values: DepartmentUpsertValues
+  values: DepartmentUpsertValues,
+  referenceValues?: DepartmentUpsertValues,
+  addressChanged?: boolean
 ): Promise<Department> {
-  const body: UpdateDepartmentReqDto = toCreateUpdateDto(values)
+  let body: UpdateDepartmentReqDto = toCreateUpdateDto(values)
+
+  if (referenceValues) {
+    const currentDto = body
+    const referenceDto = toCreateUpdateDto(referenceValues)
+    const diff: UpdateDepartmentReqDto = {}
+
+    const keys = Object.keys(currentDto) as (keyof CreateDepartmentReqDto)[]
+    for (const key of keys) {
+      if (key === "address") continue
+
+      const valA = currentDto[key]
+      const valB = referenceDto[key]
+
+      if (key === "multiCodes") {
+        const arrA = Array.isArray(valA) ? valA : []
+        const arrB = Array.isArray(valB) ? valB : []
+        if (
+          arrA.length !== arrB.length ||
+          !arrA.every((x, i) => x === arrB[i])
+        ) {
+          diff.multiCodes = arrA
+        }
+      } else {
+        if (valA !== valB) {
+          diff[key] = valA as any
+        }
+      }
+    }
+
+    const shouldSendAddress = addressChanged !== false && (addressChanged === true || (() => {
+      const addrA = currentDto.address
+      const addrB = referenceDto.address
+      if (!addrA && !addrB) return false
+      return (
+        !addrA ||
+        !addrB ||
+        addrA.addressLine1 !== addrB.addressLine1 ||
+        addrA.city !== addrB.city ||
+        addrA.state !== addrB.state ||
+        addrA.zipCode !== addrB.zipCode
+      )
+    })())
+
+    if (shouldSendAddress && currentDto.address) {
+      diff.address = currentDto.address
+    }
+
+    body = diff
+  }
+
   const res = await api.put<DepartmentApiEnvelope<DepartmentResDto>>(
     `/departments/${id}`,
     body
@@ -426,6 +478,7 @@ export async function updateDepartment(
   const payload = (res?.data ?? res) as DepartmentResDto
   return toDepartmentUI(payload, { includeAddress: false })
 }
+
 
 export async function deleteDepartment(id: string): Promise<void> {
   await api.delete<void>(`/departments/${id}`)

@@ -14,32 +14,35 @@ import type {
   ProfileDetailData,
   ProfileDetailFormValues,
   UpdateProfileDetailInput,
+  UpdateProfileDetailPartialInput,
   UploadProfileImageResponse,
   UploadProfileImageInput,
 } from "./types"
 import { mapUserDetailsToProfileDetailData } from "./utils/mapUserDetailsToProfileDetail"
 
-function clampPositionName(raw: string): string {
-  const t = raw.trim()
-  if (t.length <= 255) return t
-  return t.slice(0, 255)
-}
 
 function buildPrimaryPhoneDigits(areaCode: string, telephoneNumber: string): string {
   const a = phoneDigitsOnly(areaCode)
   const t = phoneDigitsOnly(telephoneNumber)
   if (a.length === 3 && t.length === 7) return `${a}${t}`
-  if (t.length === 10) return t
+  if (t.length === 10) {
+    if (a.length === 3) {
+      return `${a}${t.slice(3)}`
+    }
+    return t
+  }
   return `${a}${t}`
 }
 
 function buildEmergencyContactPayload(values: ProfileDetailFormValues): EmergencyContactUpsertDto {
   const ec = values.emergencyContact
-  const phoneDigits = buildPrimaryPhoneDigits(ec.areaCode, ec.telephoneNumber)
-  const areaDigits = phoneDigitsOnly(ec.areaCode).slice(0, 5)
+  const areaCode = ec.areaCode ?? ""
+  const telephoneNumber = ec.telephoneNumber ?? ""
+  const phoneDigits = buildPrimaryPhoneDigits(areaCode, telephoneNumber)
+  const areaDigits = phoneDigitsOnly(areaCode).slice(0, 5)
   return {
-    firstName: ec.firstName.trim(),
-    lastName: ec.lastName.trim(),
+    firstName: (ec.firstName ?? "").trim(),
+    lastName: (ec.lastName ?? "").trim(),
     countryCode: areaDigits || phoneDigits.slice(0, 3),
     phone: phoneDigits,
     relationship: ec.relationship,
@@ -60,32 +63,35 @@ export async function fetchProfileDetail(userId: string): Promise<ProfileDetailD
   return mapUserDetailsToProfileDetailData(details)
 }
 
-export async function updateProfileDetail(input: UpdateProfileDetailInput): Promise<ProfileDetailData> {
+export async function updateProfileDetail(
+  input: UpdateProfileDetailInput | UpdateProfileDetailPartialInput
+): Promise<ProfileDetailData> {
   const { id, values, persist } = input
-  const phoneDigits = buildPrimaryPhoneDigits(values.areaCode, values.telephoneNumber)
 
-  const payload: UpdateUserRequestDto = {
-    firstName: values.firstName.trim(),
-    lastName: values.lastName.trim(),
-    employeeId: values.onRecords.employeeId.trim(),
-    positionName: clampPositionName(values.onRecords.positionId),
-    contacts: contactsPayloadForUpdate(phoneDigits),
-    emergencyContact: buildEmergencyContactPayload(values),
+  const payload: UpdateUserRequestDto = {}
+
+  // Only include firstName/lastName if they were changed
+  if (values.firstName !== undefined) payload.firstName = values.firstName.trim()
+  if (values.lastName !== undefined) payload.lastName = values.lastName.trim()
+
+  // Only include phone/contacts if areaCode or telephoneNumber changed
+  if (values.areaCode !== undefined || values.telephoneNumber !== undefined) {
+    const areaCode = values.areaCode ?? ""
+    const telephoneNumber = values.telephoneNumber ?? ""
+    const phoneDigits = buildPrimaryPhoneDigits(areaCode, telephoneNumber)
+    payload.contacts = contactsPayloadForUpdate(phoneDigits)
   }
 
-  const pid = persist?.primarySupervisorUserId?.trim()
-  const bid = persist?.backupSupervisorUserId?.trim()
-  if (pid) payload.primarySupervisorId = pid
-  if (bid) payload.backupSupervisorId = bid
 
-  const loc = persist?.locationId
-  if (loc != null && Number.isInteger(loc) && loc >= 1) {
-    payload.locationId = loc
+
+  // Only include emergencyContact if it changed
+  if (values.emergencyContact !== undefined) {
+    payload.emergencyContact = buildEmergencyContactPayload(
+      values as ProfileDetailFormValues
+    )
   }
 
-  if (persist?.jobClassificationIds !== undefined) {
-    payload.jobClassificationIds = persist.jobClassificationIds
-  }
+
 
   await apiUpdateUser(id, payload)
   const details = await apiGetUserDetails(id)

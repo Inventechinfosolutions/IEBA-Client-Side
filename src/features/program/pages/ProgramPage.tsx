@@ -3,6 +3,8 @@ import { Check } from "lucide-react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { toast } from "sonner"
+import { guardNoChanges, getChangedFields } from "@/lib/formGuard"
+
 
 import { usePermissions } from "@/hooks/usePermissions"
 import { queryClient } from "@/main"
@@ -468,11 +470,26 @@ export function ProgramPage() {
     }
 
     if (modalMode === "edit" && selectedRow) {
+      if (
+        guardNoChanges(
+          values as unknown as Record<string, unknown>,
+          modalInitialValues as unknown as Record<string, unknown>
+        )
+      ) {
+        return
+      }
+
+      const changedFields = getChangedFields(
+        values as unknown as Record<string, unknown>,
+        modalInitialValues as unknown as Record<string, unknown>
+      ) as Partial<ProgramFormValues>
+
       programModule.updateProgram(
         {
           id: selectedRow.id,
           tab: targetTab,
-          values,
+          values: changedFields,
+          originalValues: modalInitialValues,
           lookups: {
             departmentIdByName: modalLookups?.departmentIdByName ?? formOptionsQuery.data?.departmentIdByName,
             budgetUnitIdByName: modalLookups?.budgetUnitIdByName ?? formOptionsQuery.data?.budgetUnitIdByName,

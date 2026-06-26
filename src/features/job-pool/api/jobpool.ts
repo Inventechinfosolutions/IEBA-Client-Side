@@ -345,8 +345,21 @@ export async function createJobPool(values: JobPoolFormValues): Promise<JobPoolR
   return toJobPoolRow(payload as JobPoolResDto)
 }
 
-export async function updateJobPool(id: string, values: JobPoolFormValues): Promise<JobPoolRow> {
-  const body: UpdateJobPoolReqDto = toCreateUpdateDto(values)
+export async function updateJobPool(id: string, values: Partial<JobPoolFormValues>): Promise<JobPoolRow> {
+  const body: UpdateJobPoolReqDto = {}
+
+  if (values.name !== undefined) body.name = values.name.trim()
+  if (values.active !== undefined) body.status = values.active ? "active" : "inactive"
+  if (values.department !== undefined) body.departmentId = normalizeDepartmentId(values.department)
+  if (values.assignedJobClassificationIds !== undefined) {
+    body.jobClassifications = values.assignedJobClassificationIds.map((id) => Number(id))
+  }
+  if (values.assignedActivityIds !== undefined) {
+    body.activities = values.assignedActivityIds.map((id) => Number(id))
+  }
+  if (values.assignedEmployeeIds !== undefined) {
+    body.users = values.assignedEmployeeIds
+  }
 
   const res = await api.put<ApiEnvelope<JobPoolResDto> | JobPoolResDto>(
     `/jobpool/${id}`,

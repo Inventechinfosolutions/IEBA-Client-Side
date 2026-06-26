@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react"
-import { useForm, type Path } from "react-hook-form"
+import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import {
     DEPARTMENT_FORM_DEFAULT_VALUES,
@@ -16,17 +16,17 @@ import { TitleCaseInput } from "@/components/ui/title-case-input"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { HelpCircle, CheckCircle2, X, Search, ChevronDown, Check, History } from "lucide-react"
+import { HelpCircle, CheckCircle2, History } from "lucide-react"
 import { Spinner } from "@/components/ui/spinner"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { toast } from "sonner"
 import { usePermissions } from "@/hooks/usePermissions"
+import { guardNoChanges } from "@/lib/formGuard"
 import { useCreateDepartment } from "../mutations/createDepartment"
 import { useUpdateDepartment } from "../mutations/updateDepartment"
 import { useGetDepartmentById } from "../queries/getDepartmentById"
-import { useGetMasterCodeOptions } from "../queries/getMasterCodeOptions"
+
 import { useDepartmentReportSettingsTabQueries } from "../hooks/useDepartmentReportSettingsTabQueries"
 import { departmentKeys } from "../keys"
 import { queryClient } from "@/main"
@@ -34,9 +34,9 @@ import { apiGetUserDetails } from "@/features/user/api"
 import type { UserDetailsDto } from "@/features/user/types"
 import type { DepartmentContactUser } from "../queries/getDepartmentUsers"
 import { useGetDepartmentUsers } from "../queries/getDepartmentUsers"
-import { DepartmentEditContextHeader } from "./DepartmentEditContextHeader"
 import { DepartmentHistoryTable } from "./DepartmentHistoryTable"
 import { DepartmentReportSettingsPanel } from "./DepartmentReportSettingsPanel"
+import { DepartmentSettingsPanel } from "./DepartmentSettingsPanel"
 import {
     type Department,
     type DepartmentAddPageProps,
@@ -50,7 +50,6 @@ import {
     type HandleDetailsTabChange,
     DEPARTMENT_CONTACT_FORM_PREFIX,
     DEPARTMENT_CONTACT_ID_FIELD,
-    DEPARTMENT_SETTINGS_ROWS,
     DETAIL_TABS,
 } from "../types"
 
@@ -148,11 +147,9 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
         address: false, primary: false, secondary: false, billing: false
     })
 
-    const [isMultiCodesOpen, setIsMultiCodesOpen] = useState(false)
-    const [multiCodesSearch, setMultiCodesSearch] = useState("")
     const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false)
 
-    const { canUpdate: hasUpdatePerm, isDepartmentAdmin } = usePermissions()
+    const { canUpdate: hasUpdatePerm, isDepartmentAdmin, isSuperAdmin } = usePermissions()
     const canUpdateDepartment = hasUpdatePerm("department")
 
     const usersQuery = useGetDepartmentUsers(isUserDropdownOpen)
@@ -171,6 +168,7 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
             : masterCodesQuery.isError
                 ? "Failed to load master codes"
                 : null
+
 
     const valuesFromDepartmentQuery = useMemo((): DepartmentUpsertValues | undefined => {
         if (!departmentId || !existingDept) return undefined
@@ -258,12 +256,29 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
         }
         if (departmentId) {
             try {
-                await updateDeptMutation.mutateAsync({ id: departmentId, values })
-                if (toastMode === "createOrUpdate") {
+                const reference = valuesFromDepartmentQuery ?? DEPARTMENT_FORM_DEFAULT_VALUES
+                if (guardNoChanges(values, reference)) {
+                    return null
+                }
+                await updateDeptMutation.mutateAsync({
+                    id: departmentId,
+                    values,
+                    referenceValues: reference,
+                    addressChanged: modifiedContacts.address,
+                })
+                const referenceActive = reference.active !== undefined ? reference.active : true
+                const statusChanged = referenceActive !== values.active
+                if (toastMode === "createOrUpdate" || statusChanged) {
+                    const toastMsg = statusChanged
+                        ? values.active
+                            ? "Department Activated Successfully"
+                            : "Department Deactivated Successfully"
+                        : "Department Updated Successfully"
+
                     toast(
                         <div className="flex items-center gap-2 text-[14px]">
                             <CheckCircle2 className="w-4 h-4 text-green-500" />
-                            Department Updated Successfully
+                            {toastMsg}
                         </div>
                     )
                 }
@@ -360,42 +375,56 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
 
         if (!isValid) return
 
+        const reference = valuesFromDepartmentQuery ?? DEPARTMENT_FORM_DEFAULT_VALUES
+        const values = getValues()
+        const referenceActive = reference.active !== undefined ? reference.active : true
+        const statusChanged = referenceActive !== values.active
+
+        if (departmentId) {
+            const savedDeptId = await handleSave({ toastMode: "none" })
+            if (!savedDeptId) return
+        }
+
         const titleCaseTab = detailsTab.charAt(0).toUpperCase() + detailsTab.slice(1)
         const contactToastMessage =
             departmentId != null
                 ? `${titleCaseTab} contact ${id ? "updated" : "saved"} successfully`
                 : `${titleCaseTab} contact step completed (not saved until you create the department)`
-        toast(
-            <div className="flex items-center gap-2 text-[14px]">
-                <CheckCircle2 className="w-4 h-4 text-green-500" />
-                {contactToastMessage}
-            </div>
-        )
+        if (!statusChanged) {
+            toast(
+                <div className="flex items-center gap-2 text-[14px]">
+                    <CheckCircle2 className="w-4 h-4 text-green-500" />
+                    {contactToastMessage}
+                </div>
+            )
+        }
         setModifiedContacts((prev: ModifiedContacts) => ({ ...prev, [detailsTab]: false }))
 
         if (detailsTab === "primary") setDetailsTab("secondary")
         else if (detailsTab === "secondary") setDetailsTab("billing")
-
-        // Only persist to backend after the department exists (created) or in edit mode.
-        if (departmentId) {
-            void handleSave({ toastMode: "none" })
-        }
     }
 
     const onAddressSave = async () => {
         const isValid = await validateDetailsTab()
         if (!isValid) return
 
+        const reference = valuesFromDepartmentQuery ?? DEPARTMENT_FORM_DEFAULT_VALUES
+        const values = getValues()
+        const referenceActive = reference.active !== undefined ? reference.active : true
+        const statusChanged = referenceActive !== values.active
+
         const hasExistingDepartment = id != null || departmentId != null
         if (hasExistingDepartment) {
             const savedDeptId = await handleSave({ toastMode: "none" })
             if (!savedDeptId) return
-            toast(
-                <div className="flex items-center gap-2 text-[14px]">
-                    <CheckCircle2 className="w-4 h-4 text-green-500" />
-                    Address updated successfully
-                </div>
-            )
+            if (!statusChanged) {
+                toast(
+                    <div className="flex items-center gap-2 text-[14px]">
+                        <CheckCircle2 className="w-4 h-4 text-green-500" />
+                        Address updated successfully
+                    </div>
+                )
+            }
         }
 
         setModifiedContacts((prev: ModifiedContacts) => ({ ...prev, address: false }))
@@ -497,7 +526,7 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
         <>
             <Dialog open onOpenChange={(open) => { if (!open) handleExit() }}>
                 <DialogContent className="max-w-[893px] p-0 max-h-[90vh] overflow-y-auto border-none shadow-2xl rounded-[12px] bg-white [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-                    {historyDepartmentId ? (
+                    {historyDepartmentId && isSuperAdmin ? (
                         <button
                             type="button"
                             className="absolute right-12 top-4 z-10 cursor-pointer rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"

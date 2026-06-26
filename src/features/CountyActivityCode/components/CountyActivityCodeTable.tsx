@@ -5,6 +5,7 @@ import { useQueryClient } from "@tanstack/react-query"
 import { useForm } from "react-hook-form"
 import { useMemo, useRef, useState } from "react"
 import { toast } from "sonner"
+import { guardNoChanges, getChangedFields } from "@/lib/formGuard"
 
 import { Spinner } from "@/components/ui/spinner"
 
@@ -80,7 +81,6 @@ import {
 } from "../api/countyActivityApi"
 import { usePermissions } from "@/hooks/usePermissions"
 import { useGetAllDepartments } from "@/features/department/queries/getDepartments"
-import { getAllDepartments } from "@/features/department/api/departments"
 
 
 function stripHtmlTags(html: string): string {
@@ -113,19 +113,19 @@ type CountyActivityTableColumnConfig = {
 }
 
 const COUNTY_ACTIVITY_TABLE_COLUMNS: CountyActivityTableColumnConfig[] = [
-  { key: "code", labelLines: ["County Activity", "Code"], widthWithAction: "w-[9%]", widthWithoutAction: "w-[11%]", sortKey: "countyActivityCode" },
+  { key: "code", labelLines: ["County Activity", "Code"], widthWithAction: "w-[13%]", widthWithoutAction: "w-[15%]", sortKey: "countyActivityCode" },
   { key: "name", labelLines: ["County Activity", "Name"], widthWithAction: "w-[11%]", widthWithoutAction: "w-[11%]", sortKey: "countyActivityName" },
   { key: "description", labelLines: ["Description"], widthWithAction: "w-[8%]", widthWithoutAction: "w-[9%]" },
   { key: "department", labelLines: ["Department"], widthWithAction: "w-[8%]", widthWithoutAction: "w-[9%]" },
-  { key: "masterCodeType", labelLines: ["Master Code", "Type"], widthWithAction: "w-[7%]", widthWithoutAction: "w-[9%]" },
-  { key: "masterCode", labelLines: ["Master", "Code"], widthWithAction: "w-[6%]", widthWithoutAction: "w-[8%]" },
-  { key: "spmp", labelLines: ["SPMP"], widthWithAction: "w-[5%]", widthWithoutAction: "w-[4%]", align: "center" },
-  { key: "match", labelLines: ["Match"], widthWithAction: "w-[5%]", widthWithoutAction: "w-[4%]", align: "center" },
-  { key: "percent", labelLines: ["%"], widthWithAction: "w-[5%]", widthWithoutAction: "w-[3%]", align: "center" },
-  { key: "active", labelLines: ["Active"], widthWithAction: "w-[5%]", widthWithoutAction: "w-[4%]", align: "center" },
-  { key: "leaveCode", labelLines: ["Leave", "Code"], widthWithAction: "w-[7%]", widthWithoutAction: "w-[8%]" },
+  { key: "masterCodeType", labelLines: ["Master Code", "Type"], widthWithAction: "w-[9%]", widthWithoutAction: "w-[10%]" },
+  { key: "masterCode", labelLines: ["Master", "Code"], widthWithAction: "w-[9%]", widthWithoutAction: "w-[10%]" },
+  { key: "spmp", labelLines: ["SPMP"], widthWithAction: "w-[4%]", widthWithoutAction: "w-[3%]", align: "center" },
+  { key: "match", labelLines: ["Match"], widthWithAction: "w-[4%]", widthWithoutAction: "w-[3%]", align: "center" },
+  { key: "percent", labelLines: ["%"], widthWithAction: "w-[4%]", widthWithoutAction: "w-[3%]", align: "center" },
+  { key: "active", labelLines: ["Active"], widthWithAction: "w-[4%]", widthWithoutAction: "w-[3%]", align: "center" },
+  { key: "leaveCode", labelLines: ["Leave", "Code"], widthWithAction: "w-[5%]", widthWithoutAction: "w-[5%]" },
   { key: "apportioning", labelLines: ["Apportioning"], widthWithAction: "w-[8%]", widthWithoutAction: "w-[10%]" },
-  { key: "multipleJobPools", labelLines: ["Multiple Job", "Pools"], widthWithAction: "w-[9%]", widthWithoutAction: "w-[10%]" },
+  { key: "multipleJobPools", labelLines: ["Multiple Job", "Pools"], widthWithAction: "w-[8%]", widthWithoutAction: "w-[9%]" },
 ]
 
 const COUNTY_ACTIVITY_ACTION_COLUMN: CountyActivityTableColumnConfig = {
@@ -256,8 +256,13 @@ function CountyActivitySubTableRowsRenderer({
           key={child.id}
           className="ieba-data-row border-b border-[#E5E7EB] bg-[#F6F5FF]"
         >
-          <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0] whitespace-normal break-all">
-            <span className="ml-7">{child.countyActivityCode}</span>
+          <TableCell className="border-r border-[#E5E7EB] px-[10px] py-[5px] align-middle text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0] whitespace-nowrap">
+            <div className="flex items-start gap-1">
+              <div className="w-7 shrink-0" />
+              <span className="flex-1 whitespace-nowrap">
+                {child.countyActivityCode}
+              </span>
+            </div>
           </TableCell>
           <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-left text-[14px] leading-[1.4] whitespace-normal break-words font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
             {child.countyActivityName}
@@ -272,12 +277,12 @@ function CountyActivitySubTableRowsRenderer({
               }
             />
           </TableCell>
-          <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
+          <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0] whitespace-normal break-words">
             {child.rowType === CountyActivityGridRowType.SUB
               ? ""
               : child.masterCodeType}
           </TableCell>
-          <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
+          <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0] whitespace-normal break-all">
             {child.rowType === CountyActivityGridRowType.SUB
               ? ""
               : child.catalogActivityCode || "—"}
@@ -952,18 +957,19 @@ export function CountyActivityCodeTable({
 
   const doUpdateCountyActivity = (
     editingRow: CountyActivityCodeRow,
-    values: CountyActivityAddFormValues,
+    values: Partial<CountyActivityAddFormValues>,
     masterCatalog: { code: string; type: string } | undefined,
-    editDepartmentLinks: { id: number; apportioning?: boolean; manualApportioning?: boolean }[],
+    editDepartmentLinks: { id: number; apportioning?: boolean; manualApportioning?: boolean }[] | undefined,
   ) => {
     const isPrimary = editingRow.rowType === CountyActivityGridRowType.PRIMARY
     const wasActive = editingRow.active
-    const isBecomingActive = values.active
+    const isBecomingActive = values.active !== undefined ? values.active : wasActive
 
     updateCountyActivityCode.mutate(
       {
         id: editingRow.id,
         values,
+        originalValues: editFormValuesFromServer,
         rowType: editingRow.rowType,
         parentId: editingRow.parentId,
         masterCatalog,
@@ -995,6 +1001,7 @@ export function CountyActivityCodeTable({
                       await apiPutCountyActivity({
                         id: child.id,
                         values: childValues,
+                        originalValues: mapCountyActivityRowToFormValues(child),
                         rowType: child.rowType,
                       })
                     } catch (err) {
@@ -1023,6 +1030,7 @@ export function CountyActivityCodeTable({
                         await apiPutCountyActivity({
                           id: child.id,
                           values: childValues,
+                          originalValues: mapCountyActivityRowToFormValues(child),
                           rowType: child.rowType,
                         })
                       } catch (err) {
@@ -1036,9 +1044,7 @@ export function CountyActivityCodeTable({
                 sessionStorage.removeItem(storageKey)
               }
             }
-            void queryClient.invalidateQueries({ queryKey: countyActivityCodeKeys.all })
           }
-
           toast.success(
             editingRow.rowType === CountyActivityGridRowType.PRIMARY
               ? "Primary county activity updated successfully."
@@ -1050,6 +1056,20 @@ export function CountyActivityCodeTable({
           setEditMasterCodesDropdownOpened(false)
           setCodeTypeDropdownOpened(false)
           setEditSelectedPrimaryId(null)
+
+          if (isPrimary && wasActive !== isBecomingActive) {
+            setTimeout(() => {
+              void queryClient.invalidateQueries({
+                predicate: (query) => {
+                  const key = query.queryKey
+                  if (!Array.isArray(key) || key[0] !== "countyActivityCode") return false
+                  // Exclude paged lists (already invalidated by default onSuccess) and activity details (modal is closed)
+                  if (key[1] === "paged" || key[1] === "activity-detail") return false
+                  return true
+                },
+              })
+            }, 0)
+          }
         },
         onError: (err) => {
           toastCountyActivityCodeApiError(
@@ -1066,7 +1086,18 @@ export function CountyActivityCodeTable({
   const submitCountyActivityEditFromEditModal = editForm.handleSubmit(async (values) => {
     if (!rowToEdit) return
 
-    // Block saving if the user changed the Primary Activity Code (parentId) on a sub activity.
+    // Guard: block save if the user hasn't changed anything.
+    // editFormValuesFromServer is the API-loaded snapshot that drives the form via `values:`.
+    if (guardNoChanges(
+      values as Record<string, unknown>,
+      editFormValuesFromServer as Record<string, unknown>,
+    )) return
+
+    const changedFields = getChangedFields(
+      values as Record<string, unknown>,
+      editFormValuesFromServer as Record<string, unknown>,
+    ) as Partial<CountyActivityAddFormValues>
+
     // The parent cannot be changed via edit — show a clear error and stop.
     if (rowToEdit.rowType === CountyActivityGridRowType.SUB) {
       const originalParentId = (
@@ -1086,7 +1117,8 @@ export function CountyActivityCodeTable({
     }
 
     let masterCatalog: { code: string; type: string } | undefined
-    if (rowToEdit.rowType === CountyActivityGridRowType.PRIMARY) {
+    const masterCodeChanged = changedFields.masterCode !== undefined || changedFields.masterCodeType !== undefined
+    if (rowToEdit.rowType === CountyActivityGridRowType.PRIMARY && masterCodeChanged) {
       let catalogId = values.masterCode
       let catalog = editMasterCodeOptions.find((o) => o.value === catalogId)
 
@@ -1106,20 +1138,24 @@ export function CountyActivityCodeTable({
       masterCatalog = { code: catalog.code, type: values.masterCodeType }
     }
 
-    const editAssignedNames = values.department
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean)
-    const editDepartmentLinks = editAssignedNames
-      .map((name) => departmentIdByName[name])
-      .filter((id): id is number => typeof id === "number" && !Number.isNaN(id))
-      .map((id) => ({ id }))
+    let editDepartmentLinks: { id: number; apportioning?: boolean; manualApportioning?: boolean }[] | undefined
+    if (changedFields.department !== undefined) {
+      const editAssignedNames = values.department
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean)
+      editDepartmentLinks = editAssignedNames
+        .map((name) => departmentIdByName[name])
+        .filter((id): id is number => typeof id === "number" && !Number.isNaN(id))
+        .map((id) => ({ id }))
+    }
 
     const editingRow = rowToEdit
+    const isBecomingActive = changedFields.active !== undefined ? changedFields.active : editingRow.active
 
     if (
       editingRow.rowType === CountyActivityGridRowType.SUB &&
-      values.active &&
+      isBecomingActive &&
       editingRow.parentId
     ) {
       const parent = primaryRows.find((r) => r.id === editingRow.parentId)
@@ -1132,7 +1168,7 @@ export function CountyActivityCodeTable({
       }
     }
 
-    doUpdateCountyActivity(editingRow, values, masterCatalog, editDepartmentLinks)
+    doUpdateCountyActivity(editingRow, changedFields, masterCatalog, editDepartmentLinks)
   }, (errors) => {
     console.error("Edit validation errors:", errors)
     toast.error("Please fill all required fields correctly.")
@@ -1248,36 +1284,38 @@ export function CountyActivityCodeTable({
         )}
         <div className="flex items-center gap-3 ml-auto">
           {/* History toggle button */}
-          <button
-            type="button"
-            className={`flex h-12 items-center gap-2 rounded-[10px] px-4 text-[14px] font-normal transition-colors ${showHistory
-              ? "bg-[#6C5DD3] text-white"
-              : "border border-[#6C5DD3] bg-white text-[#6C5DD3] hover:bg-[#F3F0FF]"
-              }`}
-            onClick={() => {
-              setShowHistory((prev) => {
-                if (prev) {
-                  filterForm.setValue("search", "")
-                  onSearchChange("")
-                  setHistoryActivityCode("")
-                  setHistoryActivityName("")
-                }
-                return !prev
-              })
-            }}
-          >
-            {showHistory ? (
-              <>
-                <ArrowLeft className="size-4 animate-back-bounce" />
-                Back to County Activity
-              </>
-            ) : (
-              <>
-                <History className="size-4" />
-                History
-              </>
-            )}
-          </button>
+          {isSuperAdmin && (
+            <button
+              type="button"
+              className={`flex h-12 items-center gap-2 rounded-[10px] px-4 text-[14px] font-normal transition-colors ${showHistory
+                ? "bg-[#6C5DD3] text-white"
+                : "border border-[#6C5DD3] bg-white text-[#6C5DD3] hover:bg-[#F3F0FF]"
+                }`}
+              onClick={() => {
+                setShowHistory((prev) => {
+                  if (prev) {
+                    filterForm.setValue("search", "")
+                    onSearchChange("")
+                    setHistoryActivityCode("")
+                    setHistoryActivityName("")
+                  }
+                  return !prev
+                })
+              }}
+            >
+              {showHistory ? (
+                <>
+                  <ArrowLeft className="size-4 animate-back-bounce" />
+                  Back to County Activity
+                </>
+              ) : (
+                <>
+                  <History className="size-4" />
+                  History
+                </>
+              )}
+            </button>
+          )}
 
           {/* Inactive toggle — hidden while in history view */}
           {!showHistory && (
@@ -1354,7 +1392,9 @@ export function CountyActivityCodeTable({
               ].map((column) => (
                 <TableHead
                   key={column.key}
-                  className="h-[72px] align-middle border-r border-[#FFFFFF66] bg-[#6C5DD3] px-[8px] py-[6px] text-[13px] font-[500] leading-tight text-white font-['Roboto',sans-serif] last:border-r-0 text-center"
+                  className={`h-[72px] align-middle border-r border-[#FFFFFF66] bg-[#6C5DD3] px-[8px] py-[6px] text-[13px] font-[500] leading-tight text-white font-['Roboto',sans-serif] last:border-r-0 ${
+                    column.align === "center" ? "text-center" : "text-left"
+                  }`}
                 >
                   {column.sortKey ? (
                     <TooltipProvider>
@@ -1381,7 +1421,9 @@ export function CountyActivityCodeTable({
                               setIsSortTooltipOpen(true)
                             }}
                             onBlur={() => setIsSortTooltipOpen(false)}
-                            className="mx-auto flex h-full max-w-full cursor-pointer items-center justify-center gap-2 text-center font-[400]"
+                            className={`flex max-w-full cursor-pointer items-center gap-2 font-[400] h-auto ${
+                              column.align === "center" ? "mx-auto justify-center text-center" : "justify-start text-left"
+                            }`}
                           >
                             <span className="leading-tight font-normal whitespace-normal break-words">
                               {renderCountyActivityHeaderLabel(column.labelLines)}
@@ -1411,7 +1453,9 @@ export function CountyActivityCodeTable({
                       </Tooltip>
                     </TooltipProvider>
                   ) : (
-                    <div className="flex h-full items-center justify-center leading-tight font-[400]">
+                    <div className={`flex items-center leading-tight font-[400] ${
+                      column.align === "center" ? "justify-center" : "justify-start"
+                    }`}>
                       {renderCountyActivityHeaderLabel(column.labelLines)}
                     </div>
                   )}
@@ -1498,29 +1542,33 @@ export function CountyActivityCodeTable({
 
                     const countyActivityPrimaryTableRow = (
                       <TableRow key={row.id} className="ieba-data-row border-b border-[#E5E7EB]">
-                        <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0] whitespace-normal break-all">
-                          <button
-                            type="button"
-                            className={`mr-1 inline-flex size-5 shrink-0 items-center justify-center rounded-[6px] align-middle ${hasChildren ? "text-[#6C5DD3] hover:bg-[#6C5DD3]/10" : "opacity-0"
-                              }`}
-                            aria-label={isExpanded ? "Collapse" : "Expand"}
-                            onClick={() => {
-                              if (!hasChildren) return
-                              setExpandedRowIds((prev) => ({
-                                ...prev,
-                                [row.id]: !prev[row.id],
-                              }))
-                            }}
-                          >
-                            {hasChildren ? (
-                              isExpanded ? (
-                                <ChevronDown className="size-4" />
-                              ) : (
-                                <ChevronRight className="size-4" />
-                              )
-                            ) : null}
-                          </button>
-                          {row.countyActivityCode}
+                        <TableCell className="border-r border-[#E5E7EB] px-[10px] py-[5px] align-middle text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0] whitespace-nowrap">
+                          <div className="flex items-start gap-1">
+                            <button
+                              type="button"
+                              className={`inline-flex size-5 shrink-0 items-center justify-center rounded-[6px] ${hasChildren ? "text-[#6C5DD3] hover:bg-[#6C5DD3]/10" : "opacity-0 pointer-events-none"
+                                }`}
+                              aria-label={isExpanded ? "Collapse" : "Expand"}
+                              onClick={() => {
+                                if (!hasChildren) return
+                                setExpandedRowIds((prev) => ({
+                                  ...prev,
+                                  [row.id]: !prev[row.id],
+                                }))
+                              }}
+                            >
+                              {hasChildren ? (
+                                isExpanded ? (
+                                  <ChevronDown className="size-4" />
+                                ) : (
+                                  <ChevronRight className="size-4" />
+                                )
+                              ) : null}
+                            </button>
+                            <span className="flex-1 whitespace-nowrap">
+                              {row.countyActivityCode}
+                            </span>
+                          </div>
                         </TableCell>
                         <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-left text-[14px] leading-[1.4] whitespace-normal break-words font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
                           {row.countyActivityName}
@@ -1529,10 +1577,10 @@ export function CountyActivityCodeTable({
                         <TableCell className="min-w-0 border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-left text-[14px] leading-[1.4] whitespace-normal break-words font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
                           <CountyActivityDepartmentStackCell label={getCountyActivityCodeRowDepartmentLabel(row)} />
                         </TableCell>
-                        <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
+                        <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0] whitespace-normal break-words">
                           {row.masterCodeType}
                         </TableCell>
-                        <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0]">
+                        <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-left text-[14px] font-[400] font-['Roboto',sans-serif] text-[#000000E0] whitespace-normal break-all">
                           {row.catalogActivityCode || "—"}
                         </TableCell>
                         <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[5px] align-middle text-center text-[13px] text-[#C4C4C4]">

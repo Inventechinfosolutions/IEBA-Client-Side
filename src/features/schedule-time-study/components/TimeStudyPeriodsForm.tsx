@@ -17,6 +17,8 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
+import { guardNoChanges, getChangedFields } from "@/lib/formGuard"
+
 import { scheduleTimeStudyKeys } from "../keys"
 import { useCreateRmtsPayPeriod } from "../mutations/createRmtsPayPeriod"
 import { useUpdateRmtsPayPeriod } from "../mutations/updateRmtsPayPeriod"
@@ -332,7 +334,37 @@ export function TimeStudyPeriodsForm({
           if (!Number.isFinite(id) || id <= 0) {
             throw new Error("Invalid pay period id")
           }
-          await updatePayPeriod.mutateAsync({ id, body: payload })
+
+          const currentCompare = {
+            name: autoPeriodLabel.trim(),
+            startdt: values.startDate,
+            enddt: values.endDate,
+            hours: toNumber(values.hours),
+            holidayhours: holidayDayCount,
+            allocatetime: toNumber(values.allocable),
+            nonallocatetime: toNumber(values.nonAllocable),
+            fiscalyear: values.fiscalYear,
+          }
+
+          const initialName = initialFormValues.timeStudyPeriod.trim() || `${initialFormValues.fiscalYear} Time Study`.trim()
+          const referenceCompare = {
+            name: initialName,
+            startdt: initialFormValues.startDate,
+            enddt: initialFormValues.endDate,
+            hours: toNumber(initialFormValues.hours),
+            holidayhours: toNumber(initialFormValues.holidays),
+            allocatetime: toNumber(initialFormValues.allocable),
+            nonallocatetime: toNumber(initialFormValues.nonAllocable),
+            fiscalyear: initialFormValues.fiscalYear,
+          }
+
+          if (guardNoChanges(currentCompare, referenceCompare)) {
+            return
+          }
+
+          const changedFields = getChangedFields(currentCompare, referenceCompare)
+
+          await updatePayPeriod.mutateAsync({ id, body: changedFields })
           toast.success("Pay periods updated successfully", payPeriodUpdateSuccessToastOptions)
         } else {
           await createPayPeriod.mutateAsync(payload)
@@ -544,7 +576,10 @@ export function TimeStudyPeriodsForm({
                 <div className="space-y-1">
                   <Label className="text-[14px] font-normal text-black">Time Study Period</Label>
                   <TitleCaseInput
-                    className="h-10 rounded-[14px] border-[#D1D5DB]"
+                    className={cn(
+                      "h-10 rounded-[14px] border-[#D1D5DB]",
+                      form.formState.errors.timeStudyPeriod && "border-red-500 focus:border-red-500 focus:ring-red-500"
+                    )}
                     value={timeStudyPeriod}
                     onChange={(event) =>
                       form.setValue("timeStudyPeriod", event.target.value, {
@@ -552,6 +587,11 @@ export function TimeStudyPeriodsForm({
                       })
                     }
                   />
+                  {form.formState.errors.timeStudyPeriod && (
+                    <p className="text-[11px] text-red-500">
+                      {form.formState.errors.timeStudyPeriod.message}
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-1">
@@ -614,10 +654,10 @@ export function TimeStudyPeriodsForm({
                     Hours <span className="text-[12px]">(8 hrs/day)</span>
                   </Label>
                   <TitleCaseInput
-                    disabled={!isCreateMode}
+                    disabled={true}
                     className={cn(
                       "h-10 rounded-[14px] border-[#D1D5DB]",
-                      !isCreateMode && "cursor-not-allowed bg-[#F9FAFB]"
+                      "cursor-not-allowed bg-[#F9FAFB]"
                     )}
                     value={hours}
                     onChange={(event) => form.setValue("hours", event.target.value)}
@@ -627,10 +667,10 @@ export function TimeStudyPeriodsForm({
                 <div className="space-y-1">
                   <Label className="text-[14px] font-normal text-black">Holidays</Label>
                   <TitleCaseInput
-                    disabled={!isCreateMode}
+                    disabled={true}
                     className={cn(
                       "h-10 rounded-[14px] border-[#D1D5DB]",
-                      !isCreateMode && "cursor-not-allowed bg-[#F9FAFB]"
+                      "cursor-not-allowed bg-[#F9FAFB]"
                     )}
                     value={holidays}
                     onChange={(event) => form.setValue("holidays", event.target.value)}
@@ -640,10 +680,10 @@ export function TimeStudyPeriodsForm({
                 <div className="space-y-1">
                   <Label className="text-[14px] font-normal text-black">Allocable</Label>
                   <TitleCaseInput
-                    disabled={!isCreateMode}
+                    disabled={true}
                     className={cn(
                       "h-10 rounded-[14px] border-[#D1D5DB]",
-                      !isCreateMode && "cursor-not-allowed bg-[#F9FAFB]"
+                      "cursor-not-allowed bg-[#F9FAFB]"
                     )}
                     value={allocable}
                     onChange={(event) => form.setValue("allocable", event.target.value)}
@@ -653,10 +693,10 @@ export function TimeStudyPeriodsForm({
                 <div className="space-y-1">
                   <Label className="text-[14px] font-normal text-black">Non-Allocable</Label>
                   <TitleCaseInput
-                    disabled={!isCreateMode}
+                    disabled={true}
                     className={cn(
                       "h-10 rounded-[14px] border-[#D1D5DB]",
-                      !isCreateMode && "cursor-not-allowed bg-[#F9FAFB]"
+                      "cursor-not-allowed bg-[#F9FAFB]"
                     )}
                     value={nonAllocable}
                     onChange={(event) => form.setValue("nonAllocable", event.target.value)}

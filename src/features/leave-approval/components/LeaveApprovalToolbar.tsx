@@ -85,7 +85,7 @@ export function LeaveApprovalToolbar({
         <Button
           type="submit"
           disabled={isSubmitting}
-          className="h-[40px] min-w-[110px] cursor-pointer rounded-[10px] bg-[#6C5DD3] px-8 text-[12px] font-medium text-white hover:bg-[#6C5DD3] disabled:cursor-not-allowed disabled:opacity-70"
+          className="h-[40px] min-w-[111px] cursor-pointer rounded-[10px] bg-[#6C5DD3] px-8 text-[12px] font-medium text-white hover:bg-[#6C5DD3] disabled:cursor-not-allowed disabled:opacity-70"
         >
           Search
         </Button>

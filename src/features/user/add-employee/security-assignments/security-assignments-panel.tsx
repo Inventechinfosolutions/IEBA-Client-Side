@@ -249,6 +249,7 @@ export function SecurityAssignmentsPanel({
   const unassignMutation = useUnassignUserDepartmentRoles()
   const transferBusy = assignMutation.isPending || unassignMutation.isPending
 
+  const { isSuperAdmin, user } = usePermissions()
   const isAddMode = mode === "add"
   const historyQuery = useGetUserAllowMulticodeHistory(securityUserId, !isAddMode)
   const timelineQuery = useGetUserAllowMulticodeTimeline(securityUserId, !isAddMode)
@@ -258,6 +259,7 @@ export function SecurityAssignmentsPanel({
     control,
     setValue,
     getValues,
+    reset,
     formState: { dirtyFields, isSubmitSuccessful },
   } = useFormContext<UserModuleFormValues>()
 
@@ -292,7 +294,10 @@ export function SecurityAssignmentsPanel({
     ])
     syncSecurityAssignmentsForm(setValue, refreshed)
     syncSecurityTab2Form(setValue, parseUserDetailsTab2(tab2Raw))
-  }, [securityUserId, setValue])
+    setTimeout(() => {
+      reset(getValues())
+    }, 0)
+  }, [securityUserId, setValue, reset, getValues])
 
   const tab2Apportioning = useMemo(
     () => (tab2Data ? apportioningFieldsFromTab2(tab2Data) : null),
@@ -540,6 +545,9 @@ export function SecurityAssignmentsPanel({
       if (!hasHydratedRef.current && deptDataReady && isHistoryReady) {
         next = hydratedEditRows
         hasHydratedRef.current = true
+        setTimeout(() => {
+          reset(getValues())
+        }, 0)
       }
     } else if (assignedDeptsForMultiCodeRows.length > 0 && next.length === 0) {
       next = [emptyDepartmentMultiCodeRow()]
@@ -560,8 +568,6 @@ export function SecurityAssignmentsPanel({
       multiCodeRowsSyncStampRef.current = stamp
     }
   }
-
-  const { isSuperAdmin, user } = usePermissions()
   // All non-super-admin roles are restricted to their assigned departments only
   const isRestrictedNonSuperAdmin = !isSuperAdmin
 
@@ -1033,7 +1039,7 @@ export function SecurityAssignmentsPanel({
 
   return (
     <div className="relative min-w-0 pt-1">
-      {showSecurityDeptRoleHistory && canPersistTransfers ? (
+      {showSecurityDeptRoleHistory && canPersistTransfers && isSuperAdmin ? (
         <>
           <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
             {isAddMode ? (
@@ -1184,7 +1190,7 @@ export function SecurityAssignmentsPanel({
                 </label>
               )}
 
-              {canPersistTransfers ? (
+              {canPersistTransfers && isSuperAdmin ? (
                 <Button
                   type="button"
                   className="inline-flex h-auto min-h-9 shrink cursor-pointer items-center gap-2 whitespace-normal rounded-[12px] border border-[#E5E7EB] bg-white px-3 py-2 text-[11px] font-semibold leading-snug text-[#6C5DD3] shadow-[0_1px_0_rgba(0,0,0,0.05)] hover:border-[#6C5DD3] hover:bg-[#F3F0FF] sm:text-[12px]"
@@ -1525,7 +1531,7 @@ export function SecurityAssignmentsPanel({
                                 Allow MultiCodes
                               </label>
                             </div>
-                            {!isAddMode && (
+                            {!isAddMode && isSuperAdmin && (
                               <HoverCard>
                                 <HoverCardTrigger asChild>
                                   <History className="size-[14px] text-(--primary) cursor-pointer hover:text-[#5244b2] transition-colors" />

@@ -17,5 +17,8 @@ export function useGetRmtsPayPeriodById(params: RmtsEntityByIdQueryParams) {
       return fetchRmtsPayPeriodById(id)
     },
     enabled: enabled && id != null && id > 0,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
   })
 }

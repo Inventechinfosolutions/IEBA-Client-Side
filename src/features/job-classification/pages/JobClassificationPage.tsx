@@ -1,6 +1,9 @@
 import { useState } from "react"
+import { Check } from "lucide-react"
+import { toast } from "sonner"
 
 import { MasterCodePagination } from "@/features/master-code/components/MasterCodePagination"
+import { getChangedFields } from "@/lib/formGuard"
 import { JobClassificationFormModal } from "../components/JobClassificationFormModal"
 import { JobClassificationTable } from "../components/JobClassificationTable"
 import { JobClassificationToolbar } from "../components/JobClassificationToolbar"
@@ -62,13 +65,42 @@ export function JobClassificationPage() {
     setModalOpen(true)
   }
 
+  function handleOpenChange(open: boolean) {
+    setModalOpen(open)
+    if (!open) {
+      setSelectedRow(null)
+      setEditingId(null)
+    }
+  }
+
   async function handleSave(values: JobClassificationFormValues) {
     if (modalMode === "edit" && selectedRow) {
-      await updateJobClassificationAsync({ id: selectedRow.id, values })
+      const changedFields = getChangedFields(values, initialValues)
+      await updateJobClassificationAsync({ id: selectedRow.id, values: changedFields })
+      toast.success("Job classification updated successfully", {
+        position: "top-center",
+        icon: (
+          <span className="inline-flex size-4 items-center justify-center rounded-full bg-[#10b981] text-white">
+            <Check className="size-3 stroke-[3]" />
+          </span>
+        ),
+        className:
+          "!w-fit !max-w-[340px] !min-h-[35px] !rounded-[8px] !border-0 !px-3 !py-2 !text-[12px] !shadow-[0_8px_22px_rgba(17,24,39,0.18)]",
+      })
     } else {
       await createJobClassificationAsync({ values })
+      toast.success("Job classification saved successfully", {
+        position: "top-center",
+        icon: (
+          <span className="inline-flex size-4 items-center justify-center rounded-full bg-[#10b981] text-white">
+            <Check className="size-3 stroke-[3]" />
+          </span>
+        ),
+        className:
+          "!w-fit !max-w-[340px] !min-h-[35px] !rounded-[8px] !border-0 !px-3 !py-2 !text-[12px] !shadow-[0_8px_22px_rgba(17,24,39,0.18)]",
+      })
     }
-    setModalOpen(false)
+    handleOpenChange(false)
     setPage(1)
   }
 
@@ -123,7 +155,7 @@ export function JobClassificationPage() {
         initialValues={initialValues}
         isSubmitting={isCreating || isUpdating}
         isLoadingDetails={isFetchingDetail}
-        onOpenChange={setModalOpen}
+        onOpenChange={handleOpenChange}
         onSave={handleSave}
       />
     </section>
