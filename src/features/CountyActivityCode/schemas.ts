@@ -35,6 +35,43 @@ export const countyActivityAddFormSchema = z.object({
   multipleJobPools: z.boolean(),
   apportioning: z.boolean(),
   manualApportioning: z.boolean(),
+  bhsaApplicable: z.boolean(),
+  expenditureClassification: z.string(),
+  bhccCategory: z.string(),
+  ageGroup: z.string(),
+  otherCountyExpenditureType: z.string(),
+  bhsaNotes: z.string(),
+}).superRefine((data, ctx) => {
+  if (data.bhsaApplicable) {
+    if (!data.expenditureClassification || data.expenditureClassification.trim() === "") {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Please select Expenditure Classification",
+        path: ["expenditureClassification"],
+      });
+    }
+    if (!data.bhccCategory || data.bhccCategory.trim() === "") {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Please select BHCC Category",
+        path: ["bhccCategory"],
+      });
+    }
+    if (!data.ageGroup || data.ageGroup.trim() === "") {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Please select Age Group",
+        path: ["ageGroup"],
+      });
+    }
+    if (!data.otherCountyExpenditureType || data.otherCountyExpenditureType.trim() === "") {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Please select Other County Expenditure Type",
+        path: ["otherCountyExpenditureType"],
+      });
+    }
+  }
 })
 
 export const countyActivityAddDefaultValues = {
@@ -53,6 +90,12 @@ export const countyActivityAddDefaultValues = {
   multipleJobPools: true,
   apportioning: false,
   manualApportioning: false,
+  bhsaApplicable: false,
+  expenditureClassification: "",
+  bhccCategory: "",
+  ageGroup: "",
+  otherCountyExpenditureType: "",
+  bhsaNotes: "",
 } satisfies z.infer<typeof countyActivityAddFormSchema>
 
 export const countyActivityFilterDefaultValues = {
