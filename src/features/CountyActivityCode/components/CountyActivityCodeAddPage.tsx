@@ -209,6 +209,24 @@ export function CountyActivityCodeAddPage({
     [assignedDepartmentRows],
   )
 
+  const showBhsaSection = useMemo(() => {
+    if (tab === CountyActivityGridRowType.SUB) {
+      if (mode === CountyActivityAddPageMode.EDIT) {
+        return assignedDepartments.some(
+          (name) => name.trim().toLowerCase() === "behavioral health",
+        )
+      } else {
+        const parentDepts = subParentActivityDetail?.departmentNames ?? []
+        return parentDepts.some(
+          (name) => name.trim().toLowerCase() === "behavioral health",
+        )
+      }
+    }
+    return assignedDepartments.some(
+      (name) => name.trim().toLowerCase() === "behavioral health",
+    )
+  }, [tab, mode, assignedDepartments, subParentActivityDetail])
+
   const unassignedDepartments = useMemo(
     () => unassignedDepartmentRows.map((d) => d.name),
     [unassignedDepartmentRows],
@@ -736,7 +754,150 @@ export function CountyActivityCodeAddPage({
             </div>
           )}
 
+          {showBhsaSection && (
+            <div className="mt-8 rounded-[12px] border border-[#E5E7EB] p-5 space-y-4">
+              <div className={`flex items-center justify-between ${form.watch("bhsaApplicable") ? "border-b border-[#F3F4F6] pb-3" : ""}`}>
+                <h4 className="text-[18px] font-medium text-[#1F2937]">BHSA Configuration</h4>
+                <label className="flex cursor-pointer items-center gap-2 text-[14px] text-[#1F2937]">
+                  <Checkbox
+                    disabled={isReadOnly}
+                    checked={form.watch("bhsaApplicable")}
+                    onCheckedChange={(checked) => {
+                      form.setValue("bhsaApplicable", checked === true)
+                      if (checked !== true) {
+                        form.setValue("expenditureClassification", "")
+                        form.setValue("bhccCategory", "")
+                        form.setValue("ageGroup", "")
+                        form.setValue("otherCountyExpenditureType", "")
+                        form.setValue("bhsaNotes", "")
+                      }
+                    }}
+                  />
+                  <span className="font-medium text-[#1F2937]">BHSA Applicable</span>
+                </label>
+              </div>
 
+              {form.watch("bhsaApplicable") && (
+                <>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <label className="text-[14px] font-normal text-[#1F2937]">
+                        Expenditure Classification {form.watch("bhsaApplicable") && <span className="text-red-500">*</span>}
+                      </label>
+                      <Select
+                        value={form.watch("expenditureClassification") || undefined}
+                        disabled={isReadOnly || !form.watch("bhsaApplicable")}
+                        onValueChange={(value) => form.setValue("expenditureClassification", value, { shouldValidate: true })}
+                      >
+                        <SelectTrigger className="h-[48px] w-full rounded-[10px] border-[#D9D9D9]">
+                          <SelectValue placeholder="Select classification" />
+                        </SelectTrigger>
+                        <SelectContent className="z-[300]">
+                          <SelectItem value="BHCC">BHCC</SelectItem>
+                          <SelectItem value="Other County Expenditure">Other County Expenditure</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {form.formState.errors.expenditureClassification && (
+                        <p className="text-[12px] text-red-500">
+                          {form.formState.errors.expenditureClassification.message}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[14px] font-normal text-[#1F2937]">
+                        BHCC Category {form.watch("bhsaApplicable") && <span className="text-red-500">*</span>}
+                      </label>
+                      <Select
+                        value={form.watch("bhccCategory") || undefined}
+                        disabled={isReadOnly || !form.watch("bhsaApplicable")}
+                        onValueChange={(value) => form.setValue("bhccCategory", value, { shouldValidate: true })}
+                      >
+                        <SelectTrigger className="h-[48px] w-full rounded-[10px] border-[#D9D9D9]">
+                          <SelectValue placeholder="Select category" />
+                        </SelectTrigger>
+                        <SelectContent className="z-[300]">
+                          <SelectItem value="MH">MH</SelectItem>
+                          <SelectItem value="SUD">SUD</SelectItem>
+                          <SelectItem value="Both / Split in Fiscal">Both / Split in Fiscal</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {form.formState.errors.bhccCategory && (
+                        <p className="text-[12px] text-red-500">
+                          {form.formState.errors.bhccCategory.message}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[14px] font-normal text-[#1F2937]">
+                        Age Group {form.watch("bhsaApplicable") && <span className="text-red-500">*</span>}
+                      </label>
+                      <Select
+                        value={form.watch("ageGroup") || undefined}
+                        disabled={isReadOnly || !form.watch("bhsaApplicable")}
+                        onValueChange={(value) => form.setValue("ageGroup", value, { shouldValidate: true })}
+                      >
+                        <SelectTrigger className="h-[48px] w-full rounded-[10px] border-[#D9D9D9]">
+                          <SelectValue placeholder="Select age group" />
+                        </SelectTrigger>
+                        <SelectContent className="z-[300]">
+                          <SelectItem value="<21">&lt;21</SelectItem>
+                          <SelectItem value="21+">21+</SelectItem>
+                          <SelectItem value="Both / Split in Fiscal">Both / Split in Fiscal</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {form.formState.errors.ageGroup && (
+                        <p className="text-[12px] text-red-500">
+                          {form.formState.errors.ageGroup.message}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[14px] font-normal text-[#1F2937]">
+                        Other County Expenditure Type {form.watch("bhsaApplicable") && <span className="text-red-500">*</span>}
+                      </label>
+                      <Select
+                        value={form.watch("otherCountyExpenditureType") || undefined}
+                        disabled={isReadOnly || !form.watch("bhsaApplicable")}
+                        onValueChange={(value) => form.setValue("otherCountyExpenditureType", value, { shouldValidate: true })}
+                      >
+                        <SelectTrigger className="h-[48px] w-full rounded-[10px] border-[#D9D9D9]">
+                          <SelectValue placeholder="Select type" />
+                        </SelectTrigger>
+                        <SelectContent className="z-[300]">
+                          <SelectItem value="Workforce">Workforce</SelectItem>
+                          <SelectItem value="Capital Infrastructure">Capital Infrastructure</SelectItem>
+                          <SelectItem value="Admin / Plan Mgmt / Data / Quality">Admin / Plan Mgmt / Data / Quality</SelectItem>
+                          <SelectItem value="Other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {form.formState.errors.otherCountyExpenditureType && (
+                        <p className="text-[12px] text-red-500">
+                          {form.formState.errors.otherCountyExpenditureType.message}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[14px] font-normal text-[#1F2937]">BHSA Notes</label>
+                    <textarea
+                      readOnly={isReadOnly}
+                      disabled={!form.watch("bhsaApplicable")}
+                      className={`min-h-[80px] w-full rounded-[10px] border border-[#D9D9D9] px-4 py-3 text-[15px] outline-none ${
+                        (isReadOnly || !form.watch("bhsaApplicable")) ? "cursor-not-allowed bg-muted/50" : ""
+                      }`}
+                      value={form.watch("bhsaNotes") || ""}
+                      onChange={(event) => form.setValue("bhsaNotes", event.target.value)}
+                      placeholder="Enter any notes related to BHSA classification"
+                    />
+                  </div>
+                </>
+              )}
+            </div>
+          )}
 
           <div className="mt-[70px] flex flex-wrap items-center justify-between gap-3 pt-4">
             <div className="flex items-center gap-5">
