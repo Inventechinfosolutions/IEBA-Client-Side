@@ -12,6 +12,10 @@ import {
   getTodos,
   getDashboardOverview,
   getDashboardAllUsersCount,
+  getDashboardStatusUsers,
+  type DashboardStatusUsersParams,
+  getDashboardTimeStudyRecords,
+  type DashboardTimeStudyRecordsParams,
 } from "../api/dashboard"
 import type {
   DashboardOverview,
@@ -311,3 +315,24 @@ export function useDashboardUserCount(options?: { enabled?: boolean }) {
     ...staleOptions,
   })
 }
+
+export function useDashboardStatusUsers(params: DashboardStatusUsersParams & { enabled?: boolean }) {
+  const { enabled, ...apiParams } = params
+  return useQuery({
+    queryKey: dashboardKeys.statusUsers(apiParams),
+    queryFn: () => getDashboardStatusUsers(apiParams),
+    enabled: enabled !== false,
+    ...staleOptions,
+  })
+}
+
+export function useDashboardTimeStudyRecords(params: DashboardTimeStudyRecordsParams & { enabled?: boolean }) {
+  const { enabled, ...apiParams } = params
+  return useQuery({
+    queryKey: dashboardKeys.timeStudyRecords(apiParams),
+    queryFn: () => getDashboardTimeStudyRecords(apiParams),
+    enabled: enabled !== false && !!apiParams.userId,
+    ...staleOptions,
+  })
+}
+
