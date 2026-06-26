@@ -690,14 +690,6 @@ export function SecurityAssignmentsPanel({
           return false
         }
 
-        const start = dept.settings.apportioningStartDate
-        const end = dept.settings.apportioningEndDate
-        if (start && end) {
-          const today = toIsoYmd(new Date())
-          if (today < start || today > end) {
-            return false
-          }
-        }
         return true
       }
     )
@@ -1286,12 +1278,6 @@ export function SecurityAssignmentsPanel({
                       })
                       .filter(dept => {
                         if (!dept.apportioning) return false
-                        const start = dept.apportioningStartDate
-                        const end = dept.apportioningEndDate
-                        if (start && end) {
-                          const today = toIsoYmd(new Date())
-                          if (today < start || today > end) return false
-                        }
                         return true
                       })
 

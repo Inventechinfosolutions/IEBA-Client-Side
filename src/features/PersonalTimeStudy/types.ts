@@ -138,6 +138,9 @@ export type UserDayLegendDetailResDto = {
     remainingMinutes: number
     apportioningType?: string
     supervisorConsumedMinutes?: number
+    startDate?: string | null
+    endDate?: string | null
+    message?: string | null
   }>
 }
 

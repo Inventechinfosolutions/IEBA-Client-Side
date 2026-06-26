@@ -19,7 +19,11 @@ type PersonalTimeStudyMinutesCardProps = {
     apportioningType?: string
     supervisorConsumedMinutes?: number
     outOfDateRange?: boolean
+    startDate?: string | null
+    endDate?: string | null
+    message?: string | null
   }>
+  hideApportionedMinutes?: boolean
 }
 
 export function PersonalTimeStudyMinutesCard({
@@ -29,6 +33,7 @@ export function PersonalTimeStudyMinutesCard({
   totalMAAMinutes,
   className,
   apportioningSummary,
+  hideApportionedMinutes = false,
 }: PersonalTimeStudyMinutesCardProps) {
   const maaBalance = totalMAAMinutes !== null && totalMAAMinutes !== undefined ? actualMinutes - totalMAAMinutes : null;
 
@@ -83,7 +88,7 @@ export function PersonalTimeStudyMinutesCard({
           </>
         )}
 
-        {apportioningSummary && apportioningSummary.length > 0 && (
+        {!hideApportionedMinutes && apportioningSummary && apportioningSummary.length > 0 && (
           <>
             <hr className="my-0.5 border-[#E5E7EB]" />
             <div className="flex items-center justify-between gap-2 text-[12px]">
@@ -111,11 +116,36 @@ export function PersonalTimeStudyMinutesCard({
                           )}
                         </div>
                         {item.outOfDateRange ? (
-                          <p className="mt-1.5 mb-1 text-[11px] text-amber-600 font-medium leading-snug w-full">
-                            Selected date doesn&apos;t fall within the department apportioning start and end date
-                          </p>
+                          <div className="w-full">
+                            <div className="col-span-2 mt-1 mb-1.5 text-[#344054]">
+                              <span className="text-muted-foreground font-medium">Period:</span>{" "}
+                              <span className="font-semibold text-foreground">
+                                {item.startDate ?? <span className="text-gray-400 italic text-[11px]">Not Configured</span>}
+                                {" to "}
+                                {item.endDate ?? <span className="text-gray-400 italic text-[11px]">Not Configured</span>}
+                              </span>
+                            </div>
+                            <p
+                              className="mt-1.5 mb-1 text-[12px] text-gray-700 font-medium leading-snug w-full"
+                              dangerouslySetInnerHTML={{ __html: `<b>Note:</b> ${item.message}` }}
+                            />
+                          </div>
                         ) : (
                           <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 mt-1 text-[#344054]">
+                            <div>
+                              <span className="text-muted-foreground font-medium">Start Date:</span>{" "}
+                              {item.startDate
+                                ? <span className="font-semibold text-foreground">{item.startDate}</span>
+                                : <span className="text-gray-400 italic text-[11px]">Not Configured</span>
+                              }
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground font-medium">End Date:</span>{" "}
+                              {item.endDate
+                                ? <span className="font-semibold text-foreground">{item.endDate}</span>
+                                : <span className="text-gray-400 italic text-[11px]">Not Configured</span>
+                              }
+                            </div>
                             <div>
                               <span className="text-muted-foreground font-medium">Percent:</span>{" "}
                               <span className="font-semibold text-foreground">{item.apportioningPercent}%</span>
@@ -124,17 +154,17 @@ export function PersonalTimeStudyMinutesCard({
                               <span className="text-muted-foreground font-medium">Allocated:</span>{" "}
                               <span className="font-semibold text-foreground">{item.allocatedMinutes} Min.</span>
                             </div>
-                            <div>
+                            <div className="col-span-2">
                               <span className="text-muted-foreground font-medium">Supervisor Consumed:</span>{" "}
                               <span className="font-semibold text-[#6C5DD3]">{item.supervisorConsumedMinutes ?? 0} Min.</span>
                             </div>
                             {item.apportioningType !== "manual" && (
-                              <div>
+                              <div className="col-span-2">
                                 <span className="text-muted-foreground font-medium">Reportee Minutes:</span>{" "}
                                 <span className="font-semibold text-[#6C5DD3]">{item.enteredMinutes} Min.</span>
                               </div>
                             )}
-                            <div>
+                            <div className="col-span-2 border-t border-gray-100 pt-1 mt-0.5">
                               <span className="text-muted-foreground font-medium">Remaining:</span>{" "}
                               <span className="font-semibold text-[#6C5DD3]">{item.remainingMinutes} Min.</span>
                             </div>
