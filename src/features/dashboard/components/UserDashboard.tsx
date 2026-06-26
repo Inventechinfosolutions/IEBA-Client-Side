@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from "react"
 import { useAuth } from "@/contexts/AuthContext"
+import { usePermissions } from "@/hooks/usePermissions"
 import { useReportsByRole, useDashboardOverview } from "../queries/dashboardQueries"
 import { PersonalTimeStudyCard } from "../components/PersonalTimeStudyCard"
 import { PersonalLeaveCard } from "../components/PersonalLeaveCard"
@@ -41,6 +42,7 @@ function getWeeklyStatus(days: string[], totalMinutes: number, targetMinutes: nu
 
 export function UserDashboard() {
   const { user } = useAuth()
+  const { isSuperAdmin, assignedDepartmentIds } = usePermissions()
   const userId = user?.id ?? ""
 
   const deptRoles = user?.departmentRoles ?? []
@@ -54,7 +56,12 @@ export function UserDashboard() {
     roleId, 
     enabled: true 
   })
-  const reports = useReportsByRole({ departmentId, roleId })
+  const reports = useReportsByRole({
+    departmentId,
+    roleId,
+    isSuperAdmin,
+    departmentIds: assignedDepartmentIds,
+  })
 
   const tsApproved = overview.data?.timeStudyRecordByUserStatusCounts?.find((s: any) => s.status === 'approved')?.count ?? 0
   const tsSubmitted = overview.data?.timeStudyRecordByUserStatusCounts?.find((s: any) => s.status === 'submitted')?.count ?? 0

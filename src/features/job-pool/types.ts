@@ -72,7 +72,7 @@ export type CreateJobPoolInput = {
 
 export type UpdateJobPoolInput = {
   id: string
-  values: JobPoolFormValues
+  values: Partial<JobPoolFormValues>
 }
 
 export type JobPoolTableSortState = {

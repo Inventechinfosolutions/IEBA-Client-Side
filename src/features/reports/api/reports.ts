@@ -529,3 +529,9 @@ export async function apiGetRmtsPayPeriods(
     }))
     .filter((o: ReportSelectOption) => o.value.trim() !== "")
 }
+
+export async function apiGetReportsDepartments(userId: string): Promise<any[]> {
+  const data = await api.get<any>(`/report/reportsdepartment?userId=${encodeURIComponent(userId)}`)
+  return Array.isArray(data) ? data : Array.isArray(data.data) ? data.data : []
+}
+

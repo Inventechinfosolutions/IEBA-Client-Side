@@ -9,6 +9,7 @@ import type {
   MasterCodeRow,
   MasterCodeTab,
   TenantMasterCodeRow,
+  UpdateMasterCodeInput,
 } from "./types"
 
 function formatPercent(value: number): string {
@@ -187,17 +188,57 @@ export async function apiCreateMasterCode(input: {
   }
 }
 
-export async function apiUpdateMasterCode(input: {
-  id: string
-  codeType: MasterCodeTab
-  values: MasterCodeFormValues
-}): Promise<MasterCodeRow> {
-  const raw = await api.put<{ data?: ApiActivityCode }>(
-    `/activity-codes/${encodeURIComponent(input.id)}`,
-    buildUpdateBody(input.codeType, input.values)
-  )
-  const entity = (raw as { data?: ApiActivityCode })?.data
-  if (!entity) throw new Error("Update response missing data")
+export async function apiUpdateMasterCode(input: UpdateMasterCodeInput): Promise<MasterCodeRow> {
+  const { id, codeType, values, originalValues } = input
+  const body: Record<string, unknown> = {}
+
+  if (values.code !== undefined && (originalValues === undefined || values.code.trim() !== (originalValues.code ?? "").trim())) {
+    body.code = values.code.trim()
+  }
+  if (values.name !== undefined && (originalValues === undefined || values.name.trim() !== (originalValues.name ?? "").trim())) {
+    body.name = values.name.trim()
+  }
+  if (values.activityDescription !== undefined && (originalValues === undefined || values.activityDescription.trim() !== (originalValues.activityDescription ?? "").trim())) {
+    body.description = values.activityDescription.trim()
+  }
+  if (values.ffpPercent !== undefined && (originalValues === undefined || values.ffpPercent.trim() !== (originalValues.ffpPercent ?? "").trim())) {
+    const percent = Number.parseFloat(values.ffpPercent.trim() || "0")
+    body.percent = Number.isNaN(percent) ? 0 : percent
+  }
+  if (values.spmp !== undefined && (originalValues === undefined || values.spmp !== originalValues.spmp)) {
+    body.spmp = values.spmp
+  }
+  if (values.allocable !== undefined && (originalValues === undefined || values.allocable !== originalValues.allocable)) {
+    body.allocable = values.allocable
+  }
+  if (values.active !== undefined && (originalValues === undefined || values.active !== originalValues.active)) {
+    body.status = values.active ? ActivityStatusEnum.ACTIVE : ActivityStatusEnum.INACTIVE
+  }
+  if (values.match !== undefined) {
+    const m = String(values.match).trim()
+    const origM = String(originalValues?.match ?? "").trim()
+    if (originalValues === undefined || m !== origM) {
+      body.match = /^[a-z]+$/i.test(m) ? m.toUpperCase() : m
+    }
+  }
+
+  let entity: ApiActivityCode | undefined
+
+  if (Object.keys(body).length > 0) {
+    body.type = codeType
+    const raw = await api.put<{ data?: ApiActivityCode }>(
+      `/activity-codes/${encodeURIComponent(id)}`,
+      body
+    )
+    entity = raw?.data
+  } else {
+    const detail = await api.get<{ data?: ApiActivityCode }>(
+      `/activity-codes/${encodeURIComponent(id)}`
+    )
+    entity = detail?.data
+  }
+
+  if (!entity) throw new Error("Activity code not found")
   return normalizeActivityCodeRow(entity)
 }
 

@@ -4,6 +4,7 @@ import { FormProvider, useForm } from "react-hook-form"
 import { toast } from "sonner"
 import { Check, X } from "lucide-react"
 
+import { guardNoChanges } from "@/lib/formGuard"
 import { SettingsFiscalYearUiProvider } from "@/features/settings/context/SettingsFiscalYearUiProvider"
 import { SettingsFormSaveSection, isSettingsFormSaveSection } from "@/features/settings/enums/setting.enum"
 import { useSettingsFormData } from "@/features/settings/hooks/useSettingsFormData"
@@ -52,6 +53,32 @@ function getSettingsSaveSuccessMessage(submitterSection?: SettingsFormSaveSectio
     (submitterSection && SETTINGS_FORM_SECTION_SUCCESS_MESSAGES[submitterSection]) ||
     SETTINGS_FORM_SECTION_SUCCESS_MESSAGES[SettingsFormSaveSection.County]
   )
+}
+
+function normalizeCountyForComparison(val: any) {
+  if (!val) return null
+  const addresses = (val.addresses ?? [])
+    .map((addr: any) => ({
+      location: (addr.location ?? "").trim(),
+      street: (addr.street ?? "").trim(),
+      city: (addr.city ?? "").trim(),
+      state: (addr.state ?? "").trim(),
+      zip: (addr.zip ?? "").trim(),
+    }))
+    .filter((addr: any) => addr.location.length > 0)
+
+  return {
+    logoDataUrl: val.logoDataUrl || null,
+    countyName: (val.countyName ?? "").trim(),
+    welcomeMessage: (val.welcomeMessage ?? "").trim(),
+    isTimeRangeEnabled: Boolean(val.isTimeRangeEnabled),
+    startTime2: val.startTime2 ?? "00:00",
+    endTime: val.endTime ?? "00:00",
+    includedWeekends: Boolean(val.includedWeekends),
+    autoApproval: Boolean(val.autoApproval),
+    supervisorApportioning: Boolean(val.supervisorApportioning),
+    addresses,
+  }
 }
 
 function SettingsFormInner({ settings, isSaving, onSubmitSettings }: SettingsFormInnerProps) {
@@ -107,6 +134,61 @@ function SettingsFormInner({ settings, isSaving, onSubmitSettings }: SettingsFor
         : getSettingsFormFirstErrorMessage(form.formState.errors)
       showSettingsFormErrorToast(message)
       return
+    }
+
+    if (submitterSection) {
+      let currentCompare: any = form.getValues()[submitterSection]
+      let referenceCompare: any = formValues[submitterSection]
+
+      if (submitterSection === SettingsFormSaveSection.County) {
+        currentCompare = normalizeCountyForComparison(currentCompare)
+        referenceCompare = normalizeCountyForComparison(referenceCompare)
+      } else if (submitterSection === SettingsFormSaveSection.Payroll) {
+        const normalizePayroll = (val: any) => ({
+          payrollBy: val?.payrollBy,
+          columns: (val?.columns ?? []).map((c: any) => ({
+            key: String(c.key ?? ""),
+            label: String(c.label ?? ""),
+            enabled: Boolean(c.enabled),
+            editable: Boolean(c.editable),
+          }))
+        })
+        currentCompare = normalizePayroll(currentCompare)
+        referenceCompare = normalizePayroll(referenceCompare)
+      } else if (submitterSection === SettingsFormSaveSection.Reports) {
+        const normalizeReports = (val: any) => {
+          const sortStrArray = (arr: any) => Array.isArray(arr) ? arr.map(String).sort() : []
+          return {
+            departmentId: (val?.departmentId ?? "").trim(),
+            reportKey: (val?.reportKey ?? "").trim(),
+            masterCodeExclusionMode: val?.masterCodeExclusionMode ?? "exclude",
+            activityExclusionMode: val?.activityExclusionMode ?? "exclude",
+            excludedMasterCodeIds: sortStrArray(val?.excludedMasterCodeIds),
+            includedMasterCodeIds: sortStrArray(val?.includedMasterCodeIds),
+            excludedActivityCodes: sortStrArray(val?.excludedActivityCodes),
+            includedActivityCodes: sortStrArray(val?.includedActivityCodes),
+          }
+        }
+        currentCompare = normalizeReports(currentCompare)
+        referenceCompare = normalizeReports(referenceCompare)
+      } else if (submitterSection === SettingsFormSaveSection.Login) {
+        const normalizeLogin = (val: any) => ({
+          twoFactorAuthentication: Boolean(val?.twoFactorAuthentication),
+          otpValidationTimerSeconds: Number(val?.otpValidationTimerSeconds ?? 120),
+        })
+        currentCompare = normalizeLogin(currentCompare)
+        referenceCompare = normalizeLogin(referenceCompare)
+      } else if (submitterSection === SettingsFormSaveSection.General) {
+        const normalizeGeneral = (val: any) => ({
+          screenInactivityTimeMinutes: Number(val?.screenInactivityTimeMinutes ?? 120),
+        })
+        currentCompare = normalizeGeneral(currentCompare)
+        referenceCompare = normalizeGeneral(referenceCompare)
+      }
+
+      if (guardNoChanges(currentCompare, referenceCompare)) {
+        return
+      }
     }
 
     onSubmitSettings(form.getValues(), { submitterSection, reportsSaveScope, reportsBucketMode })

@@ -5,6 +5,7 @@ import { Controller, useForm, type FieldErrors } from "react-hook-form"
 import { useCallback, useMemo, useState } from "react"
 import { api } from "@/lib/api"
 import { useNavigate } from "react-router-dom"
+import { guardNoChanges, getChangedFields } from "@/lib/formGuard"
 
 import profileAvatar from "@/assets/profile-avatar.png"
 import { Button } from "@/components/ui/button"
@@ -270,7 +271,7 @@ function ProfileDetailForm({
           />
 
           <div className="flex-1 space-y-4">
-            <div className="grid grid-cols-3 gap-6">
+            <div className="grid grid-cols-2 gap-6">
               <div>
                 <label className={labelClassName}>
                   *First Name
@@ -287,10 +288,6 @@ function ProfileDetailForm({
                     />
                   )}
                 />
-              </div>
-              <div>
-                <label className={labelClassName}>MI</label>
-                <TitleCaseInput {...register("mi")} className={inputClassName} placeholder="" />
               </div>
               <div>
                 <label className={labelClassName}>*Last Name</label>
@@ -332,7 +329,7 @@ function ProfileDetailForm({
                           ? `${inputClassName} border-[#ef4444]`
                           : inputClassName
                       }
-                      placeholder="____-____-____"
+                      placeholder="___-___-____"
                       inputMode="numeric"
                     />
                   )}
@@ -480,23 +477,17 @@ function ProfileDetailForm({
               <label className={labelClassName}>Employee ID</label>
               <TitleCaseInput
                 {...register("onRecords.employeeId")}
-                className={
-                  errors.onRecords?.employeeId
-                    ? `${inputClassName} border-[#ef4444]`
-                    : inputClassName
-                }
+                readOnly
+                className={`${inputClassName} cursor-not-allowed bg-[#f3f4f6] text-[#374151]`}
                 placeholder="Employee ID"
               />
             </div>
             <div>
-              <label className={labelClassName}>*Position ID</label>
+              <label className={labelClassName}>Position ID</label>
               <TitleCaseInput
                 {...register("onRecords.positionId")}
-                className={
-                  errors.onRecords?.positionId
-                    ? `${inputClassName} border-[#ef4444]`
-                    : inputClassName
-                }
+                readOnly
+                className={`${inputClassName} cursor-not-allowed bg-[#f3f4f6] text-[#374151]`}
                 placeholder="Position ID"
               />
             </div>
@@ -504,11 +495,8 @@ function ProfileDetailForm({
               <label className={labelClassName}>Job Classification</label>
               <TitleCaseInput
                 {...register("onRecords.jobClassification")}
-                className={
-                  errors.onRecords?.jobClassification
-                    ? `${inputClassName} border-[#ef4444]`
-                    : inputClassName
-                }
+                readOnly
+                className={`${inputClassName} cursor-not-allowed bg-[#f3f4f6] text-[#374151]`}
                 placeholder="Job Classification"
               />
             </div>
@@ -533,11 +521,8 @@ function ProfileDetailForm({
               <label className={labelClassName}>Primary Supervisor</label>
               <TitleCaseInput
                 {...register("onRecords.primarySupervisor")}
-                className={
-                  errors.onRecords?.primarySupervisor
-                    ? `${inputClassName} border-[#ef4444]`
-                    : inputClassName
-                }
+                readOnly
+                className={`${inputClassName} cursor-not-allowed bg-[#f3f4f6] text-[#374151]`}
                 placeholder="Primary Supervisor"
               />
             </div>
@@ -545,11 +530,8 @@ function ProfileDetailForm({
               <label className={labelClassName}>Secondary Supervisor</label>
               <TitleCaseInput
                 {...register("onRecords.secondarySupervisor")}
-                className={
-                  errors.onRecords?.secondarySupervisor
-                    ? `${inputClassName} border-[#ef4444]`
-                    : inputClassName
-                }
+                readOnly
+                className={`${inputClassName} cursor-not-allowed bg-[#f3f4f6] text-[#374151]`}
                 placeholder="Secondary Supervisor"
               />
             </div>
@@ -557,11 +539,8 @@ function ProfileDetailForm({
               <label className={labelClassName}>Email ID / Login Id</label>
               <TitleCaseInput
                 {...register("onRecords.emailLoginId")}
-                className={
-                  errors.onRecords?.emailLoginId
-                    ? `${inputClassName} border-[#ef4444]`
-                    : inputClassName
-                }
+                readOnly
+                className={`${inputClassName} cursor-not-allowed bg-[#f3f4f6] text-[#374151]`}
                 placeholder="Email / Login Id"
               />
             </div>
@@ -569,14 +548,14 @@ function ProfileDetailForm({
               <label className={labelClassName}>Location</label>
               <TitleCaseInput
                 {...register("onRecords.location")}
-                className={
-                  errors.onRecords?.location ? `${inputClassName} border-[#ef4444]` : inputClassName
-                }
+                readOnly
+                className={`${inputClassName} cursor-not-allowed bg-[#f3f4f6] text-[#374151]`}
                 placeholder="Location"
               />
             </div>
           </div>
         </div>
+
 
         <div className="flex items-center justify-end gap-3 pt-2">
           <Button
@@ -652,13 +631,36 @@ export function ProfileDetail() {
       }}
       isSaving={updateProfile.isPending}
       onSubmit={async (values) => {
+        // Normalize initialValues through the schema to strip server-only
+        // fields (e.g. jobDutyFileId) that are never part of the submitted
+        // form values — otherwise deepEqual always finds a difference.
+        const normalizedInitial = profileDetailFormSchema.safeParse(initialValues).success
+          ? (profileDetailFormSchema.parse(initialValues) as ProfileDetailFormValues)
+          : initialValues
+
+        // Guard: block save when nothing has changed
+        if (guardNoChanges(values, normalizedInitial)) return
+
+        // Only send the top-level keys that actually changed
+        const changedFields = getChangedFields(
+          values as Record<string, unknown>,
+          normalizedInitial as Record<string, unknown>,
+        )
+
+        // If either areaCode or telephoneNumber changed, make sure both are in the patch
+        // so that buildPrimaryPhoneDigits gets the complete phone number.
+        if (changedFields.areaCode !== undefined || changedFields.telephoneNumber !== undefined) {
+          changedFields.areaCode = values.areaCode
+          changedFields.telephoneNumber = values.telephoneNumber
+        }
+
         try {
           await updateProfile.mutateAsync({
             id: profileId,
-            values,
+            values: changedFields,
             persist: profileQuery.data?.persist,
           })
-          
+
           if (user) {
             establishDashboardSession({
               ...user,

@@ -11,25 +11,25 @@ export type ApiResponseDto<T> = {
 }
 
 export type UpdateCountyClientBody = {
-  name: string
-  message: string
-  timeRule: boolean
-  startTime: string
-  endTime: string
-  autoApproval: boolean
-  apportioning: boolean
-  include_weekend: boolean
+  name?: string
+  message?: string
+  timeRule?: boolean
+  startTime?: string
+  endTime?: string
+  autoApproval?: boolean
+  apportioning?: boolean
+  include_weekend?: boolean
 }
 
 export type CountyLocationPayload = {
-  name: string
-  clientId: number
+  name?: string
+  clientId?: number
   street?: string
   city?: string
   state?: string
   zip?: string
-  primary: boolean
-  status: string
+  primary?: boolean
+  status?: string
 }
 
 export type UploadClientDocumentResponseDto = {

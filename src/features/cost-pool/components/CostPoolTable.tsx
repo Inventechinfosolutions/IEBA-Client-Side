@@ -1,8 +1,10 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useQuery } from "@tanstack/react-query"
-import { ArrowLeft, History, PlusIcon, SearchIcon } from "lucide-react"
+import { ArrowLeft, History, PlusIcon, SearchIcon, X } from "lucide-react"
 import { useMemo, useState } from "react"
 import { useForm } from "react-hook-form"
+
+import { guardNoChanges } from "@/lib/formGuard"
 
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -143,6 +145,7 @@ function CostPoolCreateDialogContent({
   const createMutation = useCreateCostPool()
 
   const submit = form.handleSubmit((values) => {
+    if (guardNoChanges(values, costPoolUpsertDefaultValues)) return
     createMutation.mutate(
       { values },
       {
@@ -204,18 +207,24 @@ function CostPoolEditFormBody({
   allowUserOrCostpoolDirect: boolean
   isLoadingDetails?: boolean
 }) {
+  const initialValues = useMemo(() => detailToUpsertFormValues(detail), [detail])
+
   const form = useForm<CostPoolUpsertFormValues>({
     resolver: zodResolver(costPoolUpsertFormSchema),
-    values: detailToUpsertFormValues(detail),
+    values: initialValues,
   })
 
   const updateMutation = useUpdateCostPool()
 
   const submit = form.handleSubmit((values) => {
+    if (guardNoChanges(values, initialValues)) {
+      return
+    }
     updateMutation.mutate(
       { 
         id: costPoolId, 
         values, 
+        initialValues,
         oldAssignedUsers: detail.assignedUsers,
         oldAssignedActivities: detail.assignedActivities,
       },
@@ -283,11 +292,11 @@ function CostPoolEditDialogContent({
     
     const detailAssigned = (detailQuery.data.assignedUsers ?? []).map((u) => ({
       userId: String(u.id),
-      displayName: [u.firstName, u.lastName].filter(Boolean).join(" ") || String(u.id),
+      displayName: u.name?.trim() || [u.firstName, u.lastName].filter(Boolean).join(" ") || String(u.id),
     }))
     const detailUnassigned = (detailQuery.data.unassignedUsers ?? []).map((u) => ({
       userId: String(u.id),
-      displayName: [u.firstName, u.lastName].filter(Boolean).join(" ") || String(u.id),
+      displayName: u.name?.trim() || [u.firstName, u.lastName].filter(Boolean).join(" ") || String(u.id),
     }))
 
     const combined = [...detailAssigned, ...detailUnassigned]
@@ -349,7 +358,7 @@ export function CostPoolTable({
   onPageChange,
   onPageSizeChange,
 }: CostPoolTableProps) {
-  const { canAdd, canUpdate } = usePermissions()
+  const { canAdd, canUpdate, isSuperAdmin } = usePermissions()
   const canAddCostPool = canAdd("costpool")
   const canUpdateCostPool = canUpdate("costpool")
   const filterForm = useForm<CostPoolFilterFormValues>({
@@ -465,7 +474,7 @@ export function CostPoolTable({
                 <SearchIcon className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#9CA3AF]" />
                 <TitleCaseInput
                   placeholder="Search here"
-                  className="h-12 rounded-[8px] border border-[#D9D9D9] bg-white pl-9 text-[16px] text-[#1F2937] placeholder:text-[#9CA3AF]"
+                  className="h-12 rounded-[8px] border border-[#D9D9D9] bg-white pl-9 pr-9 text-[16px] text-[#1F2937] placeholder:text-[#9CA3AF]"
                   {...filterForm.register("search")}
                   value={searchValue}
                   onChange={(event) => {
@@ -474,6 +483,20 @@ export function CostPoolTable({
                     onPageChange(1)
                   }}
                 />
+                {searchValue && searchValue.length > 0 && (
+                  <button
+                    type="button"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#111827] cursor-pointer"
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={() => {
+                      filterForm.setValue("search", "")
+                      onSearchChange("")
+                      onPageChange(1)
+                    }}
+                  >
+                    <X className="size-4" />
+                  </button>
+                )}
               </form>
             </div>
 
@@ -495,37 +518,39 @@ export function CostPoolTable({
         )}
 
         <div className="flex items-center gap-3 ml-auto">
-          <button
-            type="button"
-            className={`flex h-12 items-center gap-2 rounded-[12px] px-4 text-[14px] font-normal transition-colors ${
-              showHistory
-                ? "bg-[#6C5DD3] text-white"
-                : "border border-[#6C5DD3] bg-white text-[#6C5DD3] hover:bg-[#F3F0FF]"
-            }`}
-            onClick={() => {
-              setShowHistory((prev) => {
-                if (prev) {
-                  filterForm.setValue("search", "")
-                  onSearchChange("")
-                  setHistoryActivityCode("")
-                  setHistoryAssignmentKind("")
-                }
-                return !prev
-              })
-            }}
-          >
-            {showHistory ? (
-              <>
-                <ArrowLeft className="size-4 animate-back-bounce" />
-                Back to Cost Pool
-              </>
-            ) : (
-              <>
-                <History className="size-4" />
-                History
-              </>
-            )}
-          </button>
+          {isSuperAdmin && (
+            <button
+              type="button"
+              className={`flex h-12 items-center gap-2 rounded-[12px] px-4 text-[14px] font-normal transition-colors ${
+                showHistory
+                  ? "bg-[#6C5DD3] text-white"
+                  : "border border-[#6C5DD3] bg-white text-[#6C5DD3] hover:bg-[#F3F0FF]"
+              }`}
+              onClick={() => {
+                setShowHistory((prev) => {
+                  if (prev) {
+                    filterForm.setValue("search", "")
+                    onSearchChange("")
+                    setHistoryActivityCode("")
+                    setHistoryAssignmentKind("")
+                  }
+                  return !prev
+                })
+              }}
+            >
+              {showHistory ? (
+                <>
+                  <ArrowLeft className="size-4 animate-back-bounce" />
+                  Back to Cost Pool
+                </>
+              ) : (
+                <>
+                  <History className="size-4" />
+                  History
+                </>
+              )}
+            </button>
+          )}
 
           {!showHistory && (
             <button

@@ -395,6 +395,11 @@ export function PersonalTimeStudyEntryForm({
   const [localFetchingDepartments, setLocalFetchingDepartments] = useState<Record<string, boolean>>({})
   const localFetchedMulticodesRef = useRef<Set<string>>(new Set())
 
+  // Snapshot of server-loaded parents — used to detect changes and build changed-only payload.
+  // Only rows that came from the server (have a dbId) are stored here.
+  // Leave rows, apportioning rows, and brand-new rows (no dbId) are never in the snapshot.
+  const parentsSnapshotRef = useRef<TimeEntryParentRow[]>([])
+
   const departmentMulticodes = propDepartmentMulticodes ?? localDepartmentMulticodes
   const fetchingDepartments = propFetchingDepartments ?? localFetchingDepartments
 
@@ -707,6 +712,9 @@ export function PersonalTimeStudyEntryForm({
 
       const combined = [...sorted, ...leaveRows]
       const final = combined.length > 0 ? combined : [createParent()]
+      // Freeze snapshot of server-loaded rows so handleSave can detect what changed.
+      // Only rows with a dbId (came from the server) are snapshotted.
+      parentsSnapshotRef.current = final.filter(p => !!p.dbId && !p.isLeave && !p.apportioning && !p.leaveid)
       setParents(final)
 
     }
@@ -895,10 +903,52 @@ export function PersonalTimeStudyEntryForm({
     return parents.length > 1 || !!parent?.dbId
   }
 
-  const mapToPayload = (overrideStatus?: string): any[] => {
+  /**
+   * Returns true when a parent row's editable fields differ from its server snapshot.
+   * Supporting doc pending uploads (file instanceof File) are also treated as a change.
+   * Sub-rows (multicode children) are compared field-by-field.
+   */
+  const isParentChanged = (current: TimeEntryParentRow, snapshot: TimeEntryParentRow | undefined): boolean => {
+    if (!snapshot) return true // no matching snapshot → treat as changed
+    if (
+      current.start !== snapshot.start ||
+      current.end !== snapshot.end ||
+      current.totalMin !== snapshot.totalMin ||
+      current.tsProgram !== snapshot.tsProgram ||
+      current.serviceActivity !== snapshot.serviceActivity ||
+      current.description !== snapshot.description ||
+      current.subRows.length !== snapshot.subRows.length ||
+      current.supportingDocs.some(d => d.file instanceof File)
+    ) return true
+    return current.subRows.some((sr, i) => {
+      const snapSr = snapshot.subRows[i]
+      if (!snapSr) return true
+      return (
+        sr.studyProgram !== snapSr.studyProgram ||
+        sr.serviceActivity !== snapSr.serviceActivity ||
+        sr.totalMin !== snapSr.totalMin ||
+        sr.description !== snapSr.description ||
+        sr.start !== snapSr.start ||
+        sr.end !== snapSr.end
+      )
+    })
+  }
+
+  /**
+   * @param overrideStatus  - Force a specific status on all records (e.g. "draft", "submitted").
+   * @param changedOnly     - When true, only include rows that are new (no dbId) or differ from
+   *                          the server snapshot. Leave/apportioning rows are always excluded.
+   */
+  const mapToPayload = (overrideStatus?: string, changedOnly = false): any[] => {
     const deptId = dropdownData?.[0]?.departmentId
     return parents
       .filter((p) => !p.isLeave && !p.leaveid && !p.apportioning)
+      .filter((p) => {
+        if (!changedOnly) return true
+        if (!p.dbId) return true // brand-new row → always send
+        const snap = parentsSnapshotRef.current.find(s => s.dbId === p.dbId)
+        return isParentChanged(p, snap)
+      })
       .map((p) => {
         const rowSettings = getRowSettings(p)
         const hideTime = rowSettings.hideTime
@@ -1015,7 +1065,30 @@ export function PersonalTimeStudyEntryForm({
 
   const handleSave = () => {
     if (!validateEntries()) return
-    const payload = mapToPayload("draft")
+
+    // Guard: only relevant when there are server-loaded records in the snapshot.
+    // If the day has no saved records yet (fresh entry), skip the guard entirely.
+    const hasServerRecords = parentsSnapshotRef.current.length > 0
+    if (hasServerRecords) {
+      const editableParents = parents.filter(p => !p.isLeave && !p.leaveid && !p.apportioning)
+      const hasChanges = editableParents.some(p => {
+        if (!p.dbId) return true // new row → always counts as a change
+        const snap = parentsSnapshotRef.current.find(s => s.dbId === p.dbId)
+        return isParentChanged(p, snap)
+      })
+      if (!hasChanges) {
+        toast.warning("No changes to save", {
+          position: "top-center",
+          className:
+            "!w-fit !max-w-none !min-h-[35px] !rounded-[8px] !px-3 !py-2 !text-[12px] !whitespace-nowrap !text-[#111827] !shadow-[0_8px_22px_rgba(17,24,39,0.18)]",
+        })
+        return
+      }
+    }
+
+    // changedOnly=true when server records exist → only send new/changed rows.
+    // changedOnly=false for a fresh day → send everything (all rows are new).
+    const payload = mapToPayload("draft", hasServerRecords)
     if (payload.length === 0) {
       toast.error("Please add at least one time entry")
       return
@@ -1129,14 +1202,18 @@ export function PersonalTimeStudyEntryForm({
                 <span className="text-gray-700">TS Balance:</span>
                 <span className="font-semibold text-[#6C5DD3]">{balanceTotal || 0}</span>
               </div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-gray-700">Entered MAA Minutes:</span>
-                <span className="font-semibold text-[#6C5DD3]">{actualMultiTotal || 0}</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-gray-700">MAA Balance:</span>
-                <span className="font-semibold text-[#6C5DD3]">{multiBalanceTotal || 0}</span>
-              </div>
+              {actualMultiTotal !== null && actualMultiTotal !== undefined && (
+                <div className="flex items-center gap-1.5">
+                  <span className="text-gray-700">Entered MAA Minutes:</span>
+                  <span className="font-semibold text-[#6C5DD3]">{actualMultiTotal || 0}</span>
+                </div>
+              )}
+              {multiBalanceTotal !== null && multiBalanceTotal !== undefined && (
+                <div className="flex items-center gap-1.5">
+                  <span className="text-gray-700">MAA Balance:</span>
+                  <span className="font-semibold text-[#6C5DD3]">{multiBalanceTotal || 0}</span>
+                </div>
+              )}
             </div>
           )}
 

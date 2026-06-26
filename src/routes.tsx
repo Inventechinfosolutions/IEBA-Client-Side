@@ -24,7 +24,7 @@ const ProfilePage = lazy(() => import("@/features/Profile/pages/ProfilePage"))
 const CostPoolPage = lazy(() => import("@/features/cost-pool/pages/CostPoolPage"))
 const JobClassificationPage = lazy(() => import("@/features/job-classification/pages/JobClassificationPage"))
 const JobPoolPage = lazy(() => import("@/features/job-pool/pages/JobPoolPage"))
-const FteAllocationPage = lazy(() => import("@/features/fte-allocation/pages/FteAllocationPage"))
+// const FteAllocationPage = lazy(() => import("@/features/fte-allocation/pages/FteAllocationPage"))
 const DepartmentPage = lazy(() => import("@/features/department/pages/DepartmentPage"))
 const PayrollPage = lazy(() => import("@/features/payroll/pages/PayrollPage"))
 import { userModuleKeys } from "@/features/user/keys"
@@ -155,10 +155,10 @@ export function createAppRouter(queryClient: QueryClient) {
           path: "costpool",
           element: <PermissionRoute permission="costpool"><CostPoolPage /></PermissionRoute>,
         },
-        {
-          path: "fte-allocation",
-          element: <PermissionRoute permission="superadmin"><FteAllocationPage /></PermissionRoute>,
-        },
+        // {
+        //   path: "fte-allocation",
+        //   element: <PermissionRoute permission="superadmin"><FteAllocationPage /></PermissionRoute>,
+        // },
         {
           path: "department",
           element: <PermissionRoute permission="department"><DepartmentPage /></PermissionRoute>,

@@ -114,17 +114,19 @@ export async function apiCreateTodo(input: {
 
 export async function apiUpdateTodo(input: {
   id: string
-  title: string
-  description: string
+  title?: string
+  description?: string
   userId?: string
-  status: TodoStatusEnum
+  status?: TodoStatusEnum
 }) {
-  const raw = await api.put<unknown>(`/todos/${encodeURIComponent(input.id)}`, {
-    title: input.title,
-    description: input.description,
-    userId: input.userId,
-    status: input.status,
-  })
+  // Build body with only the fields that were actually changed.
+  // Undefined fields are omitted — backend treats them as "no change".
+  const body: Record<string, unknown> = { userId: input.userId }
+  if (input.title !== undefined) body.title = input.title
+  if (input.description !== undefined) body.description = input.description
+  if (input.status !== undefined) body.status = input.status
+
+  const raw = await api.put<unknown>(`/todos/${encodeURIComponent(input.id)}`, body)
   return normalizeTodoRow(raw)
 }
 

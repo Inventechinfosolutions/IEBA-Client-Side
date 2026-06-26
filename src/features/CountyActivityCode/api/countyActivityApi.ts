@@ -585,17 +585,20 @@ export function mergeCountyActivityDtoAfterUpdate(
   input: UpdateCountyActivityApiInput,
 ): ApiActivityResDto {
   const v = input.values
-  const { apportioning, manualApportioning } = normalizeCountyActivityApportioningFlags(v.apportioning)
-  const status = v.active ? ActivityStatusEnum.ACTIVE : ActivityStatusEnum.INACTIVE
+  const apportioningVal = v.apportioning !== undefined ? v.apportioning : prev.apportioning
+  const { apportioning, manualApportioning } = normalizeCountyActivityApportioningFlags(apportioningVal)
+  const status = v.active !== undefined
+    ? (v.active ? ActivityStatusEnum.ACTIVE : ActivityStatusEnum.INACTIVE)
+    : prev.status
   const next: ApiActivityResDto = {
     ...prev,
-    code: v.countyActivityCode.trim(),
-    name: v.countyActivityName.trim(),
-    description: v.description.trim() || null,
-    leavecode: v.leaveCode,
-    docrequired: v.docRequired,
+    code: v.countyActivityCode !== undefined ? v.countyActivityCode.trim() : prev.code,
+    name: v.countyActivityName !== undefined ? v.countyActivityName.trim() : prev.name,
+    description: v.description !== undefined ? (v.description.trim() || null) : prev.description,
+    leavecode: v.leaveCode !== undefined ? v.leaveCode : prev.leavecode,
+    docrequired: v.docRequired !== undefined ? v.docRequired : prev.docrequired,
     status,
-    isActivityAssignableToMultipleJobPools: v.multipleJobPools,
+    isActivityAssignableToMultipleJobPools: v.multipleJobPools !== undefined ? v.multipleJobPools : prev.isActivityAssignableToMultipleJobPools,
     apportioning,
     manualApportioning,
     bhsaApplicable: v.bhsaApplicable,
@@ -622,7 +625,8 @@ export function buildCountyActivityGridRowAfterUpdate(
   enrichment: ReadonlyMap<string, ActivityCatalogEnrichmentValue>,
 ): CountyActivityCodeRow {
   const v = input.values
-  const { apportioning, manualApportioning } = normalizeCountyActivityApportioningFlags(v.apportioning)
+  const apportioningVal = v.apportioning !== undefined ? v.apportioning : prevRow.apportioning
+  const { apportioning, manualApportioning } = normalizeCountyActivityApportioningFlags(apportioningVal)
   const type =
     input.rowType === CountyActivityGridRowType.PRIMARY && input.masterCatalog?.type?.trim()
       ? input.masterCatalog.type.trim()
@@ -651,10 +655,10 @@ export function buildCountyActivityGridRowAfterUpdate(
 
   return {
     ...prevRow,
-    countyActivityCode: v.countyActivityCode.trim(),
-    countyActivityName: v.countyActivityName.trim(),
-    description: v.description.trim(),
-    department: "",
+    countyActivityCode: v.countyActivityCode !== undefined ? v.countyActivityCode.trim() : prevRow.countyActivityCode,
+    countyActivityName: v.countyActivityName !== undefined ? v.countyActivityName.trim() : prevRow.countyActivityName,
+    description: v.description !== undefined ? v.description.trim() : prevRow.description,
+    department: v.department !== undefined ? v.department : prevRow.department,
     linkedDepartmentIds,
     masterCodeType: type,
     masterCode: parseMasterCodeDisplay(catalogCode),
@@ -662,10 +666,10 @@ export function buildCountyActivityGridRowAfterUpdate(
     spmp: masterChanged ? enr.spmp : prevRow.spmp,
     match: masterChanged ? enr.match : prevRow.match,
     percentage: masterChanged ? enr.percentage : prevRow.percentage,
-    active: v.active,
-    leaveCode: v.leaveCode,
-    docRequired: v.docRequired,
-    multipleJobPools: v.multipleJobPools,
+    active: v.active !== undefined ? v.active : prevRow.active,
+    leaveCode: v.leaveCode !== undefined ? v.leaveCode : prevRow.leaveCode,
+    docRequired: v.docRequired !== undefined ? v.docRequired : prevRow.docRequired,
+    multipleJobPools: v.multipleJobPools !== undefined ? v.multipleJobPools : prevRow.multipleJobPools,
     apportioning,
     manualApportioning,
     bhsaApplicable: v.bhsaApplicable,
@@ -854,8 +858,8 @@ export async function apiPostCountyActivity(
       type: ApiActivityTypeEnum.PRIMARY,
       leavecode: values.leaveCode,
       parentActivityId: null,
-      apportioning: null,
-      manualApportioning: null,
+      apportioning: false,
+      manualApportioning: false,
     })
 
     return data
@@ -903,26 +907,54 @@ export async function apiPutCountyActivity(input: UpdateCountyActivityApiInput):
   }
 
   const { values, rowType, masterCatalog, departmentLinks, existingActivityDepartments } = input
-  // Apportioning is always null when editing from county activity modal.
-  // Auto-creation via dept settings (ensureManualApportioningActivityForDepartment) is separate.
-  const status = values.active ? ActivityStatusEnum.ACTIVE : ActivityStatusEnum.INACTIVE
 
-  const body: Record<string, unknown> = {
-    code: values.countyActivityCode.trim(),
-    name: values.countyActivityName.trim(),
-    description: values.description.trim(),
-    leavecode: values.leaveCode,
-    docrequired: values.docRequired,
-    status,
-    isActivityAssignableToMultipleJobPools: values.multipleJobPools,
-    apportioning: null,
-    manualApportioning: null,
-    bhsaApplicable: values.bhsaApplicable,
-    expenditureClassification: values.expenditureClassification || null,
-    bhccCategory: values.bhccCategory || null,
-    ageGroup: values.ageGroup || null,
-    otherCountyExpenditureType: values.otherCountyExpenditureType || null,
-    bhsaNotes: values.bhsaNotes || null,
+  const body: Record<string, unknown> = {}
+
+  if (values.countyActivityCode !== undefined) {
+    body.code = values.countyActivityCode.trim()
+  }
+  if (values.countyActivityName !== undefined) {
+    body.name = values.countyActivityName.trim()
+  }
+  if (values.description !== undefined) {
+    body.description = values.description.trim()
+  }
+  if (values.leaveCode !== undefined) {
+    body.leavecode = values.leaveCode
+  }
+  if (values.docRequired !== undefined) {
+    body.docrequired = values.docRequired
+  }
+  if (values.active !== undefined) {
+    body.status = values.active ? ActivityStatusEnum.ACTIVE : ActivityStatusEnum.INACTIVE
+  }
+  if (values.multipleJobPools !== undefined) {
+    body.isActivityAssignableToMultipleJobPools = values.multipleJobPools
+  }
+
+  // Apportioning is always null when editing from county activity modal.
+  if (values.apportioning !== undefined || values.manualApportioning !== undefined) {
+    body.apportioning = null
+    body.manualApportioning = null
+  }
+
+  if (values.bhsaApplicable !== undefined) {
+    body.bhsaApplicable = values.bhsaApplicable
+  }
+  if (values.expenditureClassification !== undefined) {
+    body.expenditureClassification = values.expenditureClassification || null
+  }
+  if (values.bhccCategory !== undefined) {
+    body.bhccCategory = values.bhccCategory || null
+  }
+  if (values.ageGroup !== undefined) {
+    body.ageGroup = values.ageGroup || null
+  }
+  if (values.otherCountyExpenditureType !== undefined) {
+    body.otherCountyExpenditureType = values.otherCountyExpenditureType || null
+  }
+  if (values.bhsaNotes !== undefined) {
+    body.bhsaNotes = values.bhsaNotes || null
   }
 
   if (rowType === CountyActivityGridRowType.PRIMARY && masterCatalog?.code?.trim() && masterCatalog.type?.trim()) {
@@ -930,18 +962,34 @@ export async function apiPutCountyActivity(input: UpdateCountyActivityApiInput):
     body.activityCodeType = masterCatalog.type.trim()
   }
 
-  await api.put<unknown>(`/activities/${id}`, body)
+  // If there is at least one field to update on the activity, send the PUT request.
+  // This avoids a 400 Bad Request error from the backend when only department links are modified.
+  if (Object.keys(body).length > 0) {
+    await api.put<unknown>(`/activities/${id}`, body)
+  }
 
   // Sync department links via /activity-departments for primary rows (diff add/remove/update).
   if (rowType === CountyActivityGridRowType.PRIMARY && departmentLinks != null) {
+    const resolvedCode = values.countyActivityCode !== undefined
+      ? values.countyActivityCode
+      : input.originalValues?.countyActivityCode ?? ""
+
+    const resolvedName = values.countyActivityName !== undefined
+      ? values.countyActivityName
+      : input.originalValues?.countyActivityName ?? ""
+
+    const resolvedLeaveCode = values.leaveCode !== undefined
+      ? values.leaveCode
+      : input.originalValues?.leaveCode ?? false
+
     await syncCountyActivityDepartmentLinks(
       {
         activityId: id,
         desiredDepartmentIds: departmentLinks.map((d) => d.id),
-        activityCode: values.countyActivityCode,
-        activityName: values.countyActivityName,
+        activityCode: resolvedCode,
+        activityName: resolvedName,
         type: ApiActivityTypeEnum.PRIMARY,
-        leavecode: values.leaveCode,
+        leavecode: resolvedLeaveCode,
         parentActivityId: null,
         apportioning: false,
         manualApportioning: false,

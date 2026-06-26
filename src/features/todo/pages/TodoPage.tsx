@@ -9,6 +9,7 @@ import { TodoToolbar } from "../components/TodoToolbar"
 import { useTodoModule } from "../hooks/useTodoModule"
 import { useTodoUI } from "../hooks/useTodoUi"
 import type { TodoFormValues } from "../types"
+import { getChangedFields } from "@/lib/formGuard"
 import { useAuth } from "@/contexts/AuthContext"
 
 export function TodoPage() {
@@ -50,8 +51,14 @@ export function TodoPage() {
 
   const handleSaveForm = (values: TodoFormValues) => {
     if (ui.modalMode === "edit" && ui.selectedRow) {
+      // Compute only the fields the user actually changed.
+      // ui.modalInitialValues holds the original row values (title, description, status).
+      const changedFields = getChangedFields(
+        values as Record<string, unknown>,
+        ui.modalInitialValues as Record<string, unknown>,
+      )
       todoModule.updateTodo(
-        { id: ui.selectedRow.id, values },
+        { id: ui.selectedRow.id, values: changedFields },
         {
           onSuccess: () => {
             toast.success("To Do updated successfully", getToastOptions())

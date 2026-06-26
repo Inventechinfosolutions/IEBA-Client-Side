@@ -9,6 +9,22 @@ export function matchPayPeriodListQueries(query: { queryKey: readonly unknown[] 
   )
 }
 
+/**
+ * Matches only the group LIST query — excludes `groupById` and `groupsByIds`.
+ * Use with `invalidateQueries({ predicate: matchGroupListQueries })` so that
+ * mutations only refresh the table, not the detail GET-by-id.
+ */
+export function matchGroupListQueries(query: { queryKey: readonly unknown[] }): boolean {
+  const k = query.queryKey
+  return (
+    k.length >= 3 &&
+    k[0] === "scheduleTimeStudy" &&
+    k[1] === "groups" &&
+    k[2] !== "byId" &&
+    k[2] !== "byIds"
+  )
+}
+
 export const scheduleTimeStudyKeys = {
   all: ["scheduleTimeStudy"] as const,
   holidayList: (startmonth: string, endmonth: string) =>

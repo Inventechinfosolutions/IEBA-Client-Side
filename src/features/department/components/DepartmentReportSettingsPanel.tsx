@@ -1,21 +1,20 @@
-import { useState } from "react"
+import { useState, useMemo } from "react"
 
 import { Button } from "@/components/ui/button"
-import { MultiSelectDropdown } from "@/components/ui/multi-select-dropdown"
-import { cn } from "@/lib/utils"
+import { TransferListMoveButton } from "@/components/ui/transfer-list-move-button"
 import { useDepartmentReportSettings } from "../hooks/useDepartmentReportSettings"
 import type { DepartmentReportOption, DepartmentReportSettingsPanelProps } from "../types"
 import { DepartmentEditContextHeader } from "./DepartmentEditContextHeader"
+import { TransferPanel } from "./TransferPanel"
 
 const labelClassName = "mb-2 block text-[13px] font-[500] text-[#374151]"
-const multiSelectClassName =
-  "!min-h-[57px] !w-full !max-w-[600px] !rounded-[8px] !border-[#E5E7EB] !px-[11px] !py-2 !pr-9 !text-[14px] !font-normal !leading-normal"
 
 type DepartmentReportMultiSelectFieldProps = {
   reportOptions: DepartmentReportOption[]
   serverMappedReportIds: string
   isLoading: boolean
   onSelectedReportIdsChange: (reportIdsCsv: string) => void
+  onImmediateUpdate?: (reportIds: number[]) => void
 }
 
 function DepartmentReportMultiSelectField({
@@ -23,34 +22,147 @@ function DepartmentReportMultiSelectField({
   serverMappedReportIds,
   isLoading,
   onSelectedReportIdsChange,
+  onImmediateUpdate,
 }: DepartmentReportMultiSelectFieldProps) {
   const [userReportIds, setUserReportIds] = useState<string | null>(null)
-  const selectedValue = userReportIds ?? serverMappedReportIds
+  const [searchAvailable, setSearchAvailable] = useState("")
+  const [searchSelected, setSearchSelected] = useState("")
+  const [toggledAvailable, setToggledAvailable] = useState<string[]>([])
+  const [toggledSelected, setToggledSelected] = useState<string[]>([])
 
-  const handleChange = (next: string) => {
-    setUserReportIds(next)
-    onSelectedReportIdsChange(next)
+  const selectedIds = useMemo(() => {
+    const raw = userReportIds ?? serverMappedReportIds
+    return raw
+      .split(/[,;\n]+/g)
+      .map((p) => p.trim())
+      .filter(Boolean)
+  }, [userReportIds, serverMappedReportIds])
+
+  const { availableReports, selectedReports } = useMemo(() => {
+    const selected = reportOptions.filter((opt) => selectedIds.includes(String(opt.id)))
+    const available = reportOptions.filter((opt) => !selectedIds.includes(String(opt.id)))
+    return { availableReports: available, selectedReports: selected }
+  }, [reportOptions, selectedIds])
+
+  const filteredAvailable = useMemo(() => {
+    if (!searchAvailable.trim()) return availableReports
+    const query = searchAvailable.toLowerCase()
+    return availableReports.filter(
+      (r) =>
+        r.label.toLowerCase().includes(query) ||
+        r.name.toLowerCase().includes(query) ||
+        r.code.toLowerCase().includes(query)
+    )
+  }, [availableReports, searchAvailable])
+
+  const filteredSelected = useMemo(() => {
+    if (!searchSelected.trim()) return selectedReports
+    const query = searchSelected.toLowerCase()
+    return selectedReports.filter(
+      (r) =>
+        r.label.toLowerCase().includes(query) ||
+        r.name.toLowerCase().includes(query) ||
+        r.code.toLowerCase().includes(query)
+    )
+  }, [selectedReports, searchSelected])
+
+  const handleToggleAvailable = (id: string) => {
+    setToggledAvailable((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    )
+  }
+
+  const handleToggleSelected = (id: string) => {
+    setToggledSelected((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    )
+  }
+
+  const handleSelectAllAvailable = (checked: boolean) => {
+    if (checked) {
+      setToggledAvailable(filteredAvailable.map((r) => String(r.id)))
+    } else {
+      setToggledAvailable([])
+    }
+  }
+
+  const handleSelectAllSelected = (checked: boolean) => {
+    if (checked) {
+      setToggledSelected(filteredSelected.map((r) => String(r.id)))
+    } else {
+      setToggledSelected([])
+    }
+  }
+
+  const handleMoveForward = () => {
+    if (toggledAvailable.length === 0) return
+    const nextIds = [...new Set([...selectedIds, ...toggledAvailable])]
+    const csv = nextIds.join(", ")
+    setUserReportIds(csv)
+    onSelectedReportIdsChange(csv)
+    setToggledAvailable([])
+    if (onImmediateUpdate) {
+      onImmediateUpdate(nextIds.map(Number))
+    }
+  }
+
+  const handleMoveBack = () => {
+    if (toggledSelected.length === 0) return
+    const nextIds = selectedIds.filter((id) => !toggledSelected.includes(id))
+    const csv = nextIds.join(", ")
+    setUserReportIds(csv)
+    onSelectedReportIdsChange(csv)
+    setToggledSelected([])
+    if (onImmediateUpdate) {
+      onImmediateUpdate(nextIds.map(Number))
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex h-[150px] w-full items-center justify-center rounded-[8px] border border-[#E5E7EB] bg-[#FAFBFD] px-3 py-2 text-sm text-gray-400">
+        Loading reports…
+      </div>
+    )
   }
 
   return (
-    <MultiSelectDropdown
-      value={selectedValue}
-      onChange={handleChange}
-      onBlur={() => {}}
-      options={reportOptions.map((r) => ({
-        value: String(r.id),
-        label: r.label,
-      }))}
-      placeholder="Select reports"
-      disabled={isLoading}
-      isLoading={isLoading}
-      maxVisibleItems={4}
-      className={cn(
-        multiSelectClassName,
-        "[&_span]:!text-[13px]",
-        isLoading && "cursor-not-allowed bg-[#F9FAFB] opacity-100",
-      )}
-    />
+    <div className="grid grid-cols-[1fr_60px_1fr] items-center gap-4 w-full">
+      <TransferPanel
+        title="Select Reports(Available)"
+        items={filteredAvailable}
+        selectedIds={toggledAvailable}
+        onToggleItem={handleToggleAvailable}
+        onSelectAll={handleSelectAllAvailable}
+        searchValue={searchAvailable}
+        onSearchChange={setSearchAvailable}
+      />
+
+      <div className="flex flex-col gap-3 justify-center items-center pt-8">
+        <TransferListMoveButton
+          direction="forward"
+          disabled={toggledAvailable.length === 0}
+          aria-label="Move selected to assigned"
+          onClick={handleMoveForward}
+        />
+        <TransferListMoveButton
+          direction="back"
+          disabled={toggledSelected.length === 0}
+          aria-label="Move selected to unassigned"
+          onClick={handleMoveBack}
+        />
+      </div>
+
+      <TransferPanel
+        title="Select Reports(Selected)"
+        items={filteredSelected}
+        selectedIds={toggledSelected}
+        onToggleItem={handleToggleSelected}
+        onSelectAll={handleSelectAllSelected}
+        searchValue={searchSelected}
+        onSearchChange={setSearchSelected}
+      />
+    </div>
   )
 }
 
@@ -73,6 +185,7 @@ export function DepartmentReportSettingsPanel({
     isSaving,
     setPendingReportIds,
     saveMappedReports,
+    handleImmediateUpdate,
   } = useDepartmentReportSettings({
     departmentId,
     departmentName,
@@ -82,7 +195,7 @@ export function DepartmentReportSettingsPanel({
 
   const showDepartmentSummary = Boolean(departmentCode?.trim() || departmentName?.trim())
   const isReportDataLoading = isReportOptionsLoading || isMappedReportsLoading
-  const saveDisabled = isSubmitting || isSaving
+  const saveDisabled = isSubmitting || isSaving || isReportDataLoading
 
   return (
     <div className="px-6 pb-6">
@@ -97,23 +210,24 @@ export function DepartmentReportSettingsPanel({
       <div className="py-8 min-h-[220px]">
         <label className={labelClassName}>Reports</label>
         <DepartmentReportMultiSelectField
-          key={multiSelectKey}
+          key={`${multiSelectKey}-${serverMappedReportIds}`}
           reportOptions={reportOptions}
           serverMappedReportIds={serverMappedReportIds}
           isLoading={isReportDataLoading}
           onSelectedReportIdsChange={setPendingReportIds}
+          onImmediateUpdate={handleImmediateUpdate}
         />
       </div>
 
       <div className="flex justify-end gap-4 pt-4">
-        <Button
+        {/* <Button
           type="button"
           disabled={saveDisabled}
           onClick={() => void saveMappedReports()}
           className="w-[140px] h-[50px] bg-[#6C5DD3] hover:bg-[#5B4DC5] rounded-[8px] text-[16px] font-[500]"
         >
           Save
-        </Button>
+        </Button> */}
         <Button
           type="button"
           disabled={saveDisabled}

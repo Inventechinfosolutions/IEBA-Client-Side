@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react"
-import { ArrowLeft, History, User, Phone, Mail, MapPin } from "lucide-react"
+import { ArrowLeft, History, User, Phone, Mail, MapPin, X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -154,11 +154,10 @@ export function DepartmentTable({
   onAdd,
   onEdit,
 }: DepartmentTableProps) {
-  const { isSuperAdmin, canAdd, canUpdate, canView } = usePermissions()
+  const { isSuperAdmin, canAdd, canUpdate } = usePermissions()
   const canUpdateDepartment = isSuperAdmin || canUpdate("department")
-  const canViewDepartment = isSuperAdmin || canView("department")
   const canAddDepartment = isSuperAdmin || canAdd("department")
-  const showActionColumn = canUpdateDepartment || canViewDepartment
+  const showActionColumn = canUpdateDepartment || isSuperAdmin
   const tableColumnCount = canUpdateDepartment ? 10 : showActionColumn ? 7 : 6
 
   const usersById = useMemo(() => new Map<string, any>(), [])
@@ -241,7 +240,7 @@ export function DepartmentTable({
             />
           </div>
         ) : (
-          <div className="w-[300px]">
+          <div className="relative w-[300px]">
             <TitleCaseInput
               value={filters.search || ""}
               onChange={(e) => {
@@ -251,46 +250,63 @@ export function DepartmentTable({
                 setSortDirection(null)
               }}
               placeholder="Search here"
-              className="h-[48px] w-full rounded-[8px] border-[#E5E7EB] bg-white px-[15px] py-[12px] text-[14px] shadow-sm focus-visible:ring-1 focus-visible:ring-[#6C5DD3]"
+              className="h-[48px] w-full rounded-[8px] border-[#E5E7EB] bg-white pl-[15px] pr-[35px] py-[12px] text-[14px] shadow-sm focus-visible:ring-1 focus-visible:ring-[#6C5DD3]"
             />
-          </div>
-        )}
-
-        <div className="flex items-center gap-[12px]">
-          <button
-            type="button"
-            className={`flex h-[48px] items-center gap-2 rounded-[10px] px-4 text-[14px] font-medium transition-colors ${
-              showHistory
-                ? "bg-[#6C5DD3] text-white"
-                : "border border-[#6C5DD3] bg-white text-[#6C5DD3] hover:bg-[#F3F0FF]"
-            }`}
-            onClick={() => {
-              setShowHistory((prev) => {
-                if (prev) {
-                  setHistoryDepartmentCode("")
-                  setHistoryDepartmentName("")
-                } else {
+            {(filters.search || "").length > 0 && (
+              <button
+                type="button"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#111827] cursor-pointer"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => {
                   onSearchChange("")
                   onPageChange(1)
                   setSortBy(null)
                   setSortDirection(null)
-                }
-                return !prev
-              })
-            }}
-          >
-            {showHistory ? (
-              <>
-                <ArrowLeft className="size-4 animate-back-bounce" />
-                Back to Department
-              </>
-            ) : (
-              <>
-                <History className="size-4" />
-                History
-              </>
+                }}
+              >
+                <X className="size-4" />
+              </button>
             )}
-          </button>
+          </div>
+        )}
+
+        <div className="flex items-center gap-[12px]">
+          {isSuperAdmin && (
+            <button
+              type="button"
+              className={`flex h-[48px] items-center gap-2 rounded-[10px] px-4 text-[14px] font-medium transition-colors ${
+                showHistory
+                  ? "bg-[#6C5DD3] text-white"
+                  : "border border-[#6C5DD3] bg-white text-[#6C5DD3] hover:bg-[#F3F0FF]"
+              }`}
+              onClick={() => {
+                setShowHistory((prev) => {
+                  if (prev) {
+                    setHistoryDepartmentCode("")
+                    setHistoryDepartmentName("")
+                  } else {
+                    onSearchChange("")
+                    onPageChange(1)
+                    setSortBy(null)
+                    setSortDirection(null)
+                  }
+                  return !prev
+                })
+              }}
+            >
+              {showHistory ? (
+                <>
+                  <ArrowLeft className="size-4 animate-back-bounce" />
+                  Back to Department
+                </>
+              ) : (
+                <>
+                  <History className="size-4" />
+                  History
+                </>
+              )}
+            </button>
+          )}
 
           {!showHistory && (
             <button
@@ -584,7 +600,7 @@ export function DepartmentTable({
                   {showActionColumn && (
                     <TableCell className="px-[4px] py-[6px] text-center">
                       <div className="inline-flex items-center justify-center gap-0.5">
-                        {canViewDepartment ? (
+                        {isSuperAdmin ? (
                           <button
                             type="button"
                             onClick={() =>

@@ -1,12 +1,12 @@
 import { useCallback, useMemo, useState } from "react"
 
 import { useDepartmentRolesListQuery } from "../queries/getDepartmentRoles"
-import type { DepartmentRolesListFilters, PaginationState } from "../types"
+import type { DepartmentRolesListFilters } from "../types"
 
 const DEFAULT_PAGE_SIZE = 10
 const LIST_STATUS = undefined
 
-export function useDepartmentRoles() {
+export function useDepartmentRoles(search?: string) {
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
 
@@ -21,17 +21,20 @@ export function useDepartmentRoles() {
 
   const query = useDepartmentRolesListQuery(listFilters)
 
-  const data = query.data?.items ?? []
-  const totalItems = query.data?.totalItems ?? 0
+  const rawData = query.data?.items ?? []
 
-  const pagination: PaginationState = useMemo(
-    () => ({
-      page,
-      pageSize,
-      totalItems,
-    }),
-    [page, pageSize, totalItems]
-  )
+  const filteredData = useMemo(() => {
+    if (!search?.trim()) return rawData
+    const q = search.toLowerCase().trim()
+    return rawData.filter((row) => {
+      const matchDept = row.departmentName.toLowerCase().includes(q)
+      const matchRoles = row.roles.some((r) => r.toLowerCase().includes(q))
+      const matchChildren = row.children?.some((c) => c.roleName.toLowerCase().includes(q))
+      return matchDept || matchRoles || matchChildren
+    })
+  }, [rawData, search])
+
+  const totalItems = query.data?.totalItems ?? 0
 
   const handlePageChange = useCallback((nextPage: number) => {
     setPage(nextPage)
@@ -43,12 +46,19 @@ export function useDepartmentRoles() {
   }, [])
 
   return {
-    data,
+    data: filteredData,
     isLoading: query.isLoading,
     isError: query.isError,
     error: query.error,
     refetch: query.refetch,
-    pagination,
+    pagination: useMemo(
+      () => ({
+        page,
+        pageSize,
+        totalItems,
+      }),
+      [page, pageSize, totalItems]
+    ),
     listFilters,
     onPageChange: handlePageChange,
     onPageSizeChange: handlePageSizeChange,

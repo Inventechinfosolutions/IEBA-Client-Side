@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from "react"
 import { toast } from "sonner"
-import { ArrowLeft, Check, History } from "lucide-react"
+import { ArrowLeft, Check, History, X } from "lucide-react"
 
 import { useDepartmentRoles } from "../hooks/useDepartmentRoles"
 import { DepartmenRoleTable } from "../components/DepartmenRoleTable"
@@ -14,6 +14,7 @@ import { useUpdateDepartmentRoleChild } from "../mutations/updateDepartmentRoleC
 import { DepartmentRoleHistoryTable } from "../components/DepartmentRoleHistoryTable"
 import { useGetAllDepartments } from "@/features/department/queries/getDepartments"
 import { TitleCaseInput } from "@/components/ui/title-case-input"
+import { usePermissions } from "@/hooks/usePermissions"
 
 import { useDepartmentRoleDetailQuery } from "../queries/getDepartmentRoleById"
 import type {
@@ -51,6 +52,8 @@ export function DepartmentRolePage() {
   const [historyDeptCode, setHistoryDeptCode] = useState("")
   const [historyRoleName, setHistoryRoleName] = useState("")
 
+  const { isSuperAdmin } = usePermissions()
+
   const {
     data,
     isLoading,
@@ -58,7 +61,7 @@ export function DepartmentRolePage() {
     listFilters,
     onPageChange,
     onPageSizeChange,
-  } = useDepartmentRoles()
+  } = useDepartmentRoles(listSearchQuery)
 
   const viewDetailQuery = useDepartmentRoleDetailQuery(viewRoleId, {
     enabled: viewOpen && Boolean(viewRoleId),
@@ -201,12 +204,12 @@ export function DepartmentRolePage() {
       values:
         | AddRoleFormValues
         | {
-            childId: string
-            roleName: string
-            active: boolean
-            permIdsToAdd?: string[]
-            permIdsToRemove?: string[]
-          }
+          childId: string
+          roleName: string
+          active: boolean
+          permIdsToAdd?: string[]
+          permIdsToRemove?: string[]
+        }
     ) => {
       // Handle Update Case (Batched)
       if ("childId" in values) {
@@ -339,44 +342,63 @@ export function DepartmentRolePage() {
             />
           </div>
         ) : (
-          <TitleCaseInput
-            placeholder="Search here"
-            value={listSearchQuery}
-            onChange={(e) => setListSearchQuery(e.target.value)}
-            className="h-12 w-[270px] rounded-[10px] border border-[#D9D9D9] bg-white px-3.5 text-[11px] text-[#111827] shadow-[0_4px_10px_rgba(15,23,42,0.08)] placeholder:text-[10px] placeholder:text-[#9CA3AF] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
-          />
+          <div className="relative">
+            <TitleCaseInput
+              placeholder="Search here"
+              value={listSearchQuery}
+              onChange={(e) => {
+                setListSearchQuery(e.target.value)
+                onPageChange(1)
+              }}
+              className="h-12 w-[270px] rounded-[10px] border border-[#D9D9D9] bg-white pl-3.5 pr-9 text-[11px] text-[#111827] shadow-[0_4px_10px_rgba(15,23,42,0.08)] placeholder:text-[10px] placeholder:text-[#9CA3AF] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
+            />
+            {listSearchQuery.length > 0 && (
+              <button
+                type="button"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#111827] cursor-pointer"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => {
+                  setListSearchQuery("")
+                  onPageChange(1)
+                }}
+              >
+                <X className="size-4" />
+              </button>
+            )}
+          </div>
         )}
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            className={`flex h-12 items-center gap-2 rounded-[10px] px-4 text-[14px] font-normal transition-colors ${
-              showHistory
-                ? "bg-[#6C5DD3] text-white"
-                : "border border-[#6C5DD3] bg-white text-[#6C5DD3] hover:bg-[#F3F0FF]"
-            }`}
-            onClick={() => {
-              setShowHistory((prev) => {
-                if (prev) {
-                  setHistoryDeptName("")
-                  setHistoryDeptCode("")
-                  setHistoryRoleName("")
-                }
-                return !prev
-              })
-            }}
-          >
-            {showHistory ? (
-              <>
-                <ArrowLeft className="size-4 animate-back-bounce" />
-                Back to Department Role
-              </>
-            ) : (
-              <>
-                <History className="size-4" />
-                History
-              </>
-            )}
-          </button>
+          {isSuperAdmin && (
+            <button
+              type="button"
+              className={`flex h-12 items-center gap-2 rounded-[10px] px-4 text-[14px] font-normal transition-colors ${showHistory
+                  ? "bg-[#6C5DD3] text-white"
+                  : "border border-[#6C5DD3] bg-white text-[#6C5DD3] hover:bg-[#F3F0FF]"
+                }`}
+              onClick={() => {
+                setShowHistory((prev) => {
+                  if (prev) {
+                    setHistoryDeptName("")
+                    setHistoryDeptCode("")
+                    setHistoryRoleName("")
+                  }
+                  return !prev
+                })
+              }}
+            >
+              {showHistory ? (
+                <>
+                  <ArrowLeft className="size-4 animate-back-bounce" />
+                  Back to Department Role
+                </>
+              ) : (
+                <>
+                  <History className="size-4" />
+                  History
+                </>
+              )}
+            </button>
+          )}
         </div>
       </div>
 
