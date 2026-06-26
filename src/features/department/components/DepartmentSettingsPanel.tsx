@@ -38,7 +38,6 @@ export function DepartmentSettingsPanel({
     onSave,
     onExit,
 }: DepartmentSettingsPanelProps) {
-    const [isAddPanelOpen, setIsAddPanelOpen] = useState(false)
     const [isMultiCodesOpen, setIsMultiCodesOpen] = useState(false)
     const [multiCodesSearch, setMultiCodesSearch] = useState("")
 
@@ -95,13 +94,89 @@ export function DepartmentSettingsPanel({
                 />
             )}
 
-            {/* Split-panel layout */}
-            <div className="py-4 flex gap-3 transition-all duration-300 min-h-[320px]">
+            {/* Split-panel layout — always show both panels */}
+            <div className="py-4 flex gap-3 min-h-[320px]">
 
-                {/* LEFT — Selected Settings panel */}
-                <div className={`flex flex-col rounded-[12px] border border-[#6C5DD3] overflow-hidden shadow-[0_4px_20px_#6C5DD320] transition-all duration-300 ${isAddPanelOpen ? "w-1/2" : "w-full"}`}>
+                {/* LEFT — Unassigned Settings panel */}
+                <div className="w-1/2 flex flex-col rounded-[12px] border border-[#6C5DD3] overflow-hidden shadow-[0_4px_20px_#6C5DD320]">
                     {/* Header */}
-                    <div className="flex h-12 items-center justify-between px-4 bg-[#6C5DD3]">
+                    <div className="flex h-12 items-center px-4 bg-[#6C5DD3]">
+                        <div className="flex items-center gap-2">
+                            <span className="text-[13px] font-[600] text-white tracking-wide">Unassigned Settings</span>
+                            {remainingRows.length > 0 && (
+                                <span className="inline-flex items-center justify-center h-5 min-w-[20px] rounded-full bg-white text-[#6C5DD3] text-[11px] font-[700] px-1.5">
+                                    {remainingRows.length}
+                                </span>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Body — unselected rows only */}
+                    <div className="flex-1 divide-y divide-[#F3F4F6] overflow-y-auto bg-white">
+                        {remainingRows.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center py-10 gap-2 text-[#9CA3AF]">
+                                <span className="text-[13px] italic">All settings are assigned</span>
+                            </div>
+                        ) : (
+                            remainingRows.map((setting) => {
+                                const isDisabled =
+                                    (setting.key === "removeAutoFillEndTime" && !!settings.removeStartEndTime) ||
+                                    (setting.key === "allowActivationStartDateAndEndDate" && !settings.allowMultiCodes)
+                                return (
+                                    <div
+                                        key={setting.key}
+                                        className={`px-4 py-3 bg-white transition-colors duration-200 ${
+                                            isDisabled ? "opacity-40" : "hover:bg-[#F5F3FF]"
+                                        }`}
+                                    >
+                                        <div className="flex items-center justify-between gap-3">
+                                            <div className="flex items-center gap-3">
+                                                <Checkbox
+                                                    id={`rem-${setting.key}`}
+                                                    checked={false}
+                                                    disabled={isDisabled}
+                                                    onCheckedChange={() => addSetting(setting.key)}
+                                                    className="h-[16px] w-[16px] border-[#D1D5DB] shrink-0 cursor-pointer"
+                                                />
+                                                <Label
+                                                    htmlFor={`rem-${setting.key}`}
+                                                    className={`text-[13px] font-[500] text-[#374151] ${isDisabled ? "cursor-not-allowed" : "cursor-pointer"}`}
+                                                >
+                                                    {setting.label}
+                                                </Label>
+                                            </div>
+                                            <TooltipProvider delayDuration={100}>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <button
+                                                            type="button"
+                                                            disabled={isDisabled}
+                                                            onClick={() => {
+                                                                if (isDisabled) return
+                                                                addSetting(setting.key)
+                                                            }}
+                                                            className="shrink-0 rounded-full p-0.5 text-[#9CA3AF] hover:text-green-500 hover:bg-green-50 transition-colors disabled:cursor-not-allowed"
+                                                        >
+                                                            <Plus className="size-3.5" />
+                                                        </button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>
+                                                        <p>Add</p>
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </TooltipProvider>
+                                        </div>
+                                    </div>
+                                )
+                            })
+                        )}
+                    </div>
+                </div>
+
+                {/* RIGHT — Assigned Settings panel */}
+                <div className="w-1/2 flex flex-col rounded-[12px] border border-[#6C5DD3] overflow-hidden shadow-[0_4px_20px_#6C5DD320]">
+                    {/* Header */}
+                    <div className="flex h-12 items-center px-4 bg-[#6C5DD3]">
                         <div className="flex items-center gap-2">
                             <span className="text-[13px] font-[600] text-white tracking-wide">Assigned Settings</span>
                             {selectedRows.length > 0 && (
@@ -110,21 +185,6 @@ export function DepartmentSettingsPanel({
                                 </span>
                             )}
                         </div>
-                        <button
-                            type="button"
-                            onClick={() => setIsAddPanelOpen(prev => !prev)}
-                            className={`flex items-center gap-1.5 rounded-[8px] px-2.5 py-1 text-[13px] font-[500] transition-colors border ${
-                                isAddPanelOpen
-                                    ? "border-white/20 bg-white/10 text-white hover:bg-white/20"
-                                    : "border-white bg-white text-[#6C5DD3] hover:bg-white/90"
-                            }`}
-                        >
-                            {isAddPanelOpen ? (
-                                <><ChevronDown className="size-3.5 rotate-90" />Close</>
-                            ) : (
-                                <><Plus className="size-3.5" />Add</>
-                            )}
-                        </button>
                     </div>
 
                     {/* Body — selected rows only */}
@@ -132,7 +192,7 @@ export function DepartmentSettingsPanel({
                         {selectedRows.length === 0 ? (
                             <div className="flex flex-col items-center justify-center py-10 gap-2 text-[#9CA3AF]">
                                 <span className="text-[13px] italic">No settings selected</span>
-                                <span className="text-[12px]">Click &ldquo;+ Add&rdquo; to configure</span>
+                                <span className="text-[12px]">Click &ldquo;+&rdquo; on the left to configure</span>
                             </div>
                         ) : (
                             selectedRows.map((setting) => (
@@ -273,93 +333,6 @@ export function DepartmentSettingsPanel({
                         )}
                     </div>
                 </div>
-
-                {/* RIGHT — Remaining Settings panel */}
-                {isAddPanelOpen && (
-                    <div className="w-1/2 flex flex-col rounded-[12px] border border-[#6C5DD3] overflow-hidden shadow-[0_4px_20px_#6C5DD320]">
-                        {/* Header */}
-                        <div className="flex h-12 items-center justify-between px-4 bg-[#6C5DD3]">
-                            <div className="flex items-center gap-2">
-                                <span className="text-[13px] font-[600] text-white tracking-wide">Unassigned Settings</span>
-                                {remainingRows.length > 0 && (
-                                    <span className="inline-flex items-center justify-center h-5 min-w-[20px] rounded-full bg-white text-[#6C5DD3] text-[11px] font-[700] px-1.5">
-                                        {remainingRows.length}
-                                    </span>
-                                )}
-                            </div>
-                            <button
-                                type="button"
-                                onClick={() => setIsAddPanelOpen(false)}
-                                className="rounded-full p-0.5 text-white/70 hover:text-white hover:bg-white/20 transition-colors"
-                            >
-                                <X className="size-4" />
-                            </button>
-                        </div>
-
-                        {/* Body — unselected rows only */}
-                        <div className="flex-1 divide-y divide-[#F3F4F6] overflow-y-auto bg-white">
-                            {remainingRows.length === 0 ? (
-                                <div className="flex flex-col items-center justify-center py-10 gap-2 text-[#9CA3AF]">
-                                    <span className="text-[13px] italic">All settings are selected</span>
-                                </div>
-                            ) : (
-                                remainingRows.map((setting) => {
-                                    const isDisabled =
-                                        (setting.key === "removeAutoFillEndTime" && !!settings.removeStartEndTime) ||
-                                        (setting.key === "allowActivationStartDateAndEndDate" && !settings.allowMultiCodes)
-                                    return (
-                                        <div
-                                            key={setting.key}
-                                            className={`px-4 py-3 bg-white transition-colors duration-200 ${
-                                                isDisabled
-                                                    ? "opacity-40"
-                                                    : "hover:bg-[#F5F3FF]"
-                                            }`}
-                                        >
-                                            <div className="flex items-center justify-between gap-3">
-                                                <div className="flex items-center gap-3">
-                                                    <Checkbox
-                                                        id={`rem-${setting.key}`}
-                                                        checked={false}
-                                                        disabled={isDisabled}
-                                                        onCheckedChange={() => addSetting(setting.key)}
-                                                        className="h-[16px] w-[16px] border-[#D1D5DB] shrink-0 cursor-pointer"
-                                                    />
-                                                    <Label
-                                                        htmlFor={`rem-${setting.key}`}
-                                                        className={`text-[13px] font-[500] text-[#374151] ${isDisabled ? "cursor-not-allowed" : "cursor-pointer"}`}
-                                                    >
-                                                        {setting.label}
-                                                    </Label>
-                                                </div>
-                                                <TooltipProvider delayDuration={100}>
-                                                    <Tooltip>
-                                                        <TooltipTrigger asChild>
-                                                            <button
-                                                                type="button"
-                                                                disabled={isDisabled}
-                                                                onClick={() => {
-                                                                    if (isDisabled) return
-                                                                    addSetting(setting.key)
-                                                                }}
-                                                                className="shrink-0 rounded-full p-0.5 text-[#9CA3AF] hover:text-green-500 hover:bg-green-50 transition-colors disabled:cursor-not-allowed"
-                                                            >
-                                                                <Plus className="size-3.5" />
-                                                            </button>
-                                                        </TooltipTrigger>
-                                                        <TooltipContent>
-                                                            <p>Add</p>
-                                                        </TooltipContent>
-                                                    </Tooltip>
-                                                </TooltipProvider>
-                                            </div>
-                                        </div>
-                                    )
-                                })
-                            )}
-                        </div>
-                    </div>
-                )}
             </div>
 
             {/* Actions */}

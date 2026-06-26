@@ -129,7 +129,7 @@ export function UserModulePage() {
   const [selectedDepartmentId, setSelectedDepartmentId] = useState<string | undefined>()
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
-  const [sortState, setSortState] = useState<UserTableSortState>("none")
+  const [sortState, setSortState] = useState<UserTableSortState>("asc")
   const [showForm, setShowForm] = useState(false)
   const [formMode, setFormMode] = useState<UserModuleFormMode>("add")
 
