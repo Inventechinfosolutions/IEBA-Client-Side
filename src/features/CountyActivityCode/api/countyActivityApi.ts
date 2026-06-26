@@ -363,6 +363,12 @@ export function buildCountyActivityCodeRowsFromHierarchy(
       apportioningDepartments,
       rowType,
       parentId,
+      bhsaApplicable: node.bhsaApplicable ?? false,
+      expenditureClassification: node.expenditureClassification ?? null,
+      bhccCategory: node.bhccCategory ?? null,
+      ageGroup: node.ageGroup ?? null,
+      otherCountyExpenditureType: node.otherCountyExpenditureType ?? null,
+      bhsaNotes: node.bhsaNotes ?? null,
     })
 
     const children = node.children ?? []
@@ -447,6 +453,12 @@ export function mapCountyActivityListItemToGridRow(
     parentId:
       dto.parent?.id != null ? String(dto.parent.id) : null,
     hasChild: dto.hasChild ?? false,
+    bhsaApplicable: dto.bhsaApplicable ?? false,
+    expenditureClassification: dto.expenditureClassification ?? null,
+    bhccCategory: dto.bhccCategory ?? null,
+    ageGroup: dto.ageGroup ?? null,
+    otherCountyExpenditureType: dto.otherCountyExpenditureType ?? null,
+    bhsaNotes: dto.bhsaNotes ?? null,
   }
 }
 
@@ -502,6 +514,12 @@ export function buildCountyActivityPrimaryGridRowAfterCreate(
     apportioningDepartments,
     rowType: CountyActivityGridRowType.PRIMARY,
     parentId: null,
+    bhsaApplicable: v.bhsaApplicable,
+    expenditureClassification: v.expenditureClassification || null,
+    bhccCategory: v.bhccCategory || null,
+    ageGroup: v.ageGroup || null,
+    otherCountyExpenditureType: v.otherCountyExpenditureType || null,
+    bhsaNotes: v.bhsaNotes || null,
   }
 }
 
@@ -553,6 +571,12 @@ export function buildCountyActivitySubGridRowAfterCreate(
     apportioningDepartments: [],
     rowType: CountyActivityGridRowType.SUB,
     parentId: pid,
+    bhsaApplicable: v.bhsaApplicable,
+    expenditureClassification: v.expenditureClassification || null,
+    bhccCategory: v.bhccCategory || null,
+    ageGroup: v.ageGroup || null,
+    otherCountyExpenditureType: v.otherCountyExpenditureType || null,
+    bhsaNotes: v.bhsaNotes || null,
   }
 }
 
@@ -577,6 +601,12 @@ export function mergeCountyActivityDtoAfterUpdate(
     isActivityAssignableToMultipleJobPools: v.multipleJobPools !== undefined ? v.multipleJobPools : prev.isActivityAssignableToMultipleJobPools,
     apportioning,
     manualApportioning,
+    bhsaApplicable: v.bhsaApplicable,
+    expenditureClassification: v.expenditureClassification || null,
+    bhccCategory: v.bhccCategory || null,
+    ageGroup: v.ageGroup || null,
+    otherCountyExpenditureType: v.otherCountyExpenditureType || null,
+    bhsaNotes: v.bhsaNotes || null,
   }
   if (
     input.rowType === CountyActivityGridRowType.PRIMARY &&
@@ -642,6 +672,12 @@ export function buildCountyActivityGridRowAfterUpdate(
     multipleJobPools: v.multipleJobPools !== undefined ? v.multipleJobPools : prevRow.multipleJobPools,
     apportioning,
     manualApportioning,
+    bhsaApplicable: v.bhsaApplicable,
+    expenditureClassification: v.expenditureClassification || null,
+    bhccCategory: v.bhccCategory || null,
+    ageGroup: v.ageGroup || null,
+    otherCountyExpenditureType: v.otherCountyExpenditureType || null,
+    bhsaNotes: v.bhsaNotes || null,
   }
 }
 
@@ -798,6 +834,12 @@ export async function apiPostCountyActivity(
       isActivityAssignableToMultipleJobPools: values.multipleJobPools,
       apportioning: null,
       manualApportioning: null,
+      bhsaApplicable: values.bhsaApplicable,
+      expenditureClassification: values.expenditureClassification || null,
+      bhccCategory: values.bhccCategory || null,
+      ageGroup: values.ageGroup || null,
+      otherCountyExpenditureType: values.otherCountyExpenditureType || null,
+      bhsaNotes: values.bhsaNotes || null,
     }
     // Department links use `POST /activity-departments` (separate table). Nested `departments` on
     // `POST /activities` is often not transformed by the API, which yields undefined `departmentId`
@@ -840,6 +882,12 @@ export async function apiPostCountyActivity(
     isActivityAssignableToMultipleJobPools: values.multipleJobPools,
     apportioning: null,
     manualApportioning: null,
+    bhsaApplicable: values.bhsaApplicable,
+    expenditureClassification: values.expenditureClassification || null,
+    bhccCategory: values.bhccCategory || null,
+    ageGroup: values.ageGroup || null,
+    otherCountyExpenditureType: values.otherCountyExpenditureType || null,
+    bhsaNotes: values.bhsaNotes || null,
   }
 
   const raw = await api.post<unknown>("/activities", body)
@@ -859,7 +907,7 @@ export async function apiPutCountyActivity(input: UpdateCountyActivityApiInput):
   }
 
   const { values, rowType, masterCatalog, departmentLinks, existingActivityDepartments } = input
-  
+
   const body: Record<string, unknown> = {}
 
   if (values.countyActivityCode !== undefined) {
@@ -888,6 +936,25 @@ export async function apiPutCountyActivity(input: UpdateCountyActivityApiInput):
   if (values.apportioning !== undefined || values.manualApportioning !== undefined) {
     body.apportioning = null
     body.manualApportioning = null
+  }
+
+  if (values.bhsaApplicable !== undefined) {
+    body.bhsaApplicable = values.bhsaApplicable
+  }
+  if (values.expenditureClassification !== undefined) {
+    body.expenditureClassification = values.expenditureClassification || null
+  }
+  if (values.bhccCategory !== undefined) {
+    body.bhccCategory = values.bhccCategory || null
+  }
+  if (values.ageGroup !== undefined) {
+    body.ageGroup = values.ageGroup || null
+  }
+  if (values.otherCountyExpenditureType !== undefined) {
+    body.otherCountyExpenditureType = values.otherCountyExpenditureType || null
+  }
+  if (values.bhsaNotes !== undefined) {
+    body.bhsaNotes = values.bhsaNotes || null
   }
 
   if (rowType === CountyActivityGridRowType.PRIMARY && masterCatalog?.code?.trim() && masterCatalog.type?.trim()) {
