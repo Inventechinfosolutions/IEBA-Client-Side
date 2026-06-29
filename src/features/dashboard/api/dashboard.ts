@@ -320,3 +320,114 @@ export async function getDashboardOverview(params?: {
     }
   )
 }
+
+export interface DashboardStatusUsersParams {
+  status: "approved" | "submitted" | "draft"
+  userId?: string | number
+  month?: string
+  year?: string
+  quarter?: string
+  page?: number
+  limit?: number
+  order?: "ASC" | "DESC" | "asc" | "desc"
+  search?: string
+}
+
+export interface DashboardStatusUsersListRes {
+  data: {
+    id: string | number
+    name: string
+    department: string
+    date?: string
+  }[]
+  meta: {
+    itemCount: number
+    totalItems: number
+    itemsPerPage: number
+    totalPages: number
+    currentPage: number
+  }
+}
+
+export async function getDashboardStatusUsers(
+  params: DashboardStatusUsersParams,
+): Promise<DashboardStatusUsersListRes> {
+  const search = new URLSearchParams()
+  search.set("status", params.status)
+  if (params.userId !== undefined) search.set("userId", String(params.userId))
+  if (params.month) search.set("month", params.month)
+  if (params.year) search.set("year", params.year)
+  if (params.quarter) search.set("quarter", params.quarter)
+  if (params.page !== undefined) search.set("page", String(params.page))
+  if (params.limit !== undefined) search.set("limit", String(params.limit))
+  if (params.order) search.set("order", params.order)
+  if (params.search) search.set("search", params.search)
+
+  const res = await api.get<ApiEnvelope<DashboardStatusUsersListRes>>(
+    `/dashboard/status-users?${search.toString()}`,
+  )
+  const payload = (res?.data ?? res) as DashboardStatusUsersListRes
+  return payload
+}
+
+export interface DashboardTimeStudyRecordsParams {
+  userId: string | number
+  status: "approved" | "submitted" | "draft"
+  page?: number
+  limit?: number
+  order?: "ASC" | "DESC" | "asc" | "desc"
+}
+
+export interface DashboardTimeStudyRecordRow {
+  id: number
+  programid: string
+  programcode?: string
+  programname?: string
+  activityid: string
+  activitycode?: string
+  activityname?: string
+  starttime?: string
+  endtime?: string
+  activitytime: number
+  comments?: string
+  description?: string
+  notes?: string
+  leave?: string
+  leaveid?: number
+  recordType?: string
+  parentId?: number
+  date: string
+  program?: { name: string; code: string }
+  activity?: { name: string; code: string }
+  supportingDocs?: Array<{ id?: number; fileName: string; url?: string }>
+}
+
+export interface DashboardTimeStudyRecordsRes {
+  data: DashboardTimeStudyRecordRow[]
+  meta: {
+    itemCount: number
+    totalItems: number
+    itemsPerPage: number
+    totalPages: number
+    currentPage: number
+  }
+}
+
+export async function getDashboardTimeStudyRecords(
+  params: DashboardTimeStudyRecordsParams,
+): Promise<DashboardTimeStudyRecordsRes> {
+  const search = new URLSearchParams()
+  search.set("userId", String(params.userId))
+  search.set("status", params.status)
+  if (params.page !== undefined) search.set("page", String(params.page))
+  if (params.limit !== undefined) search.set("limit", String(params.limit))
+  if (params.order) search.set("order", params.order)
+
+  const res = await api.get<ApiEnvelope<DashboardTimeStudyRecordsRes>>(
+    `/dashboard/time-study-records?${search.toString()}`,
+  )
+  const payload = (res?.data ?? res) as DashboardTimeStudyRecordsRes
+  return payload
+}
+
+

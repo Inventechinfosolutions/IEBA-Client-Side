@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState } from "react"
+import { useLocation } from "react-router-dom"
 import { Lock, Check, X, AlertTriangle } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
@@ -76,13 +77,19 @@ function getWeeklyStatus(days: string[], totalMinutes: number, targetMinutes: nu
 export function PersonalTimeStudyPage() {
   const { user } = useAuth()
   const userId = user?.id ?? ""
+  const location = useLocation()
 
 
   const { canReview, isTimeStudySupervisor } = usePermissions()
   const canReviewMgt = canReview("timestudysupervisor")
 
   // Tab state
-  const [activeTab, setActiveTab] = useState<ActiveTab>("personal")
+  const [activeTab, setActiveTab] = useState<ActiveTab>(() => {
+    if (location.state && typeof location.state === "object" && "tab" in location.state) {
+      return (location.state.tab as ActiveTab) || "personal"
+    }
+    return "personal"
+  })
   const [periodsSheetOpen, setPeriodsSheetOpen] = useState(false)
 
   // 1. Date state
