@@ -73,6 +73,18 @@ export function DashboardPage() {
   const hasPayrollAdminRole = normalizedRoleNames.some(
     (role) => role === "payrolladmin" || role === "payroll"
   )
+  const hasDeptAdminRole = normalizedRoleNames.some((role) =>
+    role === "departmentadmin" ||
+    role === "departmentadministrator" ||
+    role === "deptadmin" ||
+    (role.includes("department") && role.includes("admin"))
+  )
+  const hasTSSupervisorOrAdminRole = normalizedRoleNames.some((role) =>
+    role === "timestudysupervisor" ||
+    role === "timestudyadmin" ||
+    role === "timestudyadministrator" ||
+    (role.includes("timestudy") && (role.includes("admin") || role.includes("supervisor")))
+  )
   const hasDeptTsRole = normalizedRoleNames.some(isDepartmentAdminLikeRole)
   const hasDepartmentAndPayrollRole = hasDeptTsRole && hasPayrollAdminRole
   const hasUserRole = normalizedRoleNames.some((role) => role === "user")
@@ -108,19 +120,22 @@ export function DashboardPage() {
   const showUserManagement = isSuperAdmin || canCreateUser || canAlwaysViewUserCard
   const showPayrollCard = isSuperAdmin || hasPayrollAdminRole
   const showStaffStatsCard = isSuperAdmin || isPayrollAdmin || isDeptOrTSAdmin
-  const showPersonalTimeStudyCard = !hasSuperAdminRole && !isDeptOrTSAdmin
-  const row1TemplateColumns = showPersonalTimeStudyCard
-    ? "0.86fr 0.7fr 1.24fr 1.2fr"
-    : "0.7fr 1.24fr 1.2fr"
+  const showPersonalTimeStudyCard = !hasSuperAdminRole
+  const showTimeStudyStatusCard = isSuperAdmin || (hasTSSupervisorOrAdminRole && !hasDeptAdminRole && !hasPayrollAdminRole)
+  let row1TemplateColumns = "1fr 1fr 1fr"
+  if (showPersonalTimeStudyCard && showTimeStudyStatusCard) {
+    row1TemplateColumns = "0.86fr 0.7fr 1.24fr 1.2fr"
+  } else if (showTimeStudyStatusCard) {
+    row1TemplateColumns = "0.7fr 1.24fr 1.2fr"
+  } else if (showPersonalTimeStudyCard) {
+    row1TemplateColumns = "0.86fr 0.7fr 1.2fr"
+  }
   const row2TemplateColumns = showPayrollCard
     ? "0.90fr 1.10fr 1.23fr 0.81fr"
     : showStaffStatsCard
       ? "0.90fr 1.23fr 0.81fr"
       : "0.90fr 1.23fr"
 
-
-  const payrollType = PayrollPeriod.Monthly
-  const { label: periodLabel } = getPayrollDateRange(payrollType)
 
   const selectedDeptRoleIdx = "0"
 
@@ -175,8 +190,7 @@ export function DashboardPage() {
 
   const tsApproved = overview.data?.timeStudyRecordByUserStatusCounts?.find((s: any) => s.status === 'approved')?.count ?? 0
   const tsSubmitted = overview.data?.timeStudyRecordByUserStatusCounts?.find((s: any) => s.status === 'submitted')?.count ?? 0
-  const tsReqMins = 480 * 22
-  const tsPercent = tsReqMins > 0 ? ((tsApproved / tsReqMins) * 100).toFixed(2) : "0.00"
+  const tsDraft = overview.data?.timeStudyRecordByUserStatusCounts?.find((s: any) => s.status === 'draft')?.count ?? 0
 
   const trApproved = isSuperAdminLikeDashboard
     ? (overview.data?.timeStudyRecordStatusCounts?.find((s: any) => s.status === 'approved')?.count ?? 0)
@@ -309,9 +323,9 @@ export function DashboardPage() {
             <PersonalTimeStudyCard
               totalApproved={tsApproved}
               totalSubmitted={tsSubmitted}
-              percent={tsPercent}
-              periodLabel={periodLabel}
+              totalDraft={tsDraft}
               isLoading={overview.isLoading}
+              noBlur={true}
             />
           </div>
         )}
@@ -329,15 +343,17 @@ export function DashboardPage() {
         </div>
 
         {/* Time Study Status */}
-        <div className="h-full overflow-hidden">
-          <TimeStudyStatusCard
-            approved={trApproved}
-            pendingApproval={trPending}
-            notSubmitted={trNotSubmitted}
-            isLoading={overview.isLoading}
-            userId={userId}
-          />
-        </div>
+        {showTimeStudyStatusCard && (
+          <div className="h-full overflow-hidden">
+            <TimeStudyStatusCard
+              approved={trApproved}
+              pendingApproval={trPending}
+              notSubmitted={trNotSubmitted}
+              isLoading={overview.isLoading}
+              userId={isSuperAdmin ? undefined : userId}
+            />
+          </div>
+        )}
 
 
         <div className="h-full overflow-hidden">
