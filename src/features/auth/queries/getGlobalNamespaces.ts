@@ -123,7 +123,10 @@ export async function fetchGlobalNamespaces(): Promise<GlobalNamespaceItem[]> {
     throw new Error(res.message ?? "Failed to load users")
   }
   const rows = extractRows(res.data)
-  return rows.map(parseItem).filter((item): item is GlobalNamespaceItem => item != null)
+  return rows
+    .map(parseItem)
+    .filter((item): item is GlobalNamespaceItem => item != null)
+    .sort((a, b) => a.countyName.localeCompare(b.countyName))
 }
 
 export function useGlobalNamespaces(enabled: boolean) {
