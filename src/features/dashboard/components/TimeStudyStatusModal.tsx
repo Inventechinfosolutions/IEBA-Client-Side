@@ -93,11 +93,11 @@ export function TimeStudyStatusModal({
   userId,
 }: TimeStudyStatusModalProps) {
   const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(5)
+  const [pageSize, setPageSize] = useState(10)
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedUser, setSelectedUser] = useState<TimeStudyStatusUser | null>(null)
   const [detailPage, setDetailPage] = useState(1)
-  const [detailPageSize, setDetailPageSize] = useState(5)
+  const [detailPageSize, setDetailPageSize] = useState(10)
 
   const { mutate: notifyUser } = useActionUserTimeRecord()
   const navigate = useNavigate()
