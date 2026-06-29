@@ -123,7 +123,7 @@ export function TimeStudyMGTPage() {
                       <>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <button onClick={() => handleAction("approved")} className="inline-flex size-4 items-center justify-center rounded-full bg-[#22c55e] hover:bg-[#16a34a] shrink-0 transition-colors shadow-sm cursor-pointer">
+                            <button onClick={() => handleAction("approved")} className="inline-flex size-4 items-center justify-center rounded-full bg-[#22c55e] hover:bg-[#16a34a] shrink-0 transition-colors shadow-sm cursor-pointer animate-zoom-in-out z-10 relative">
                               <Check className="size-2.5 text-white" />
                             </button>
                           </TooltipTrigger>

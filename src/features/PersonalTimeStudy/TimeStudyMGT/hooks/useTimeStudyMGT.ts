@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react"
+import { useLocation } from "react-router-dom"
 import { useGetMGTEmployeeList } from "../queries/getMGTEmployeeList"
 import { useGetMGTMonthLegend } from "../queries/getMGTMonthLegend"
 import { useGetMGTDayDetail } from "../queries/getMGTDayDetail"
@@ -24,14 +25,25 @@ function getWeekStartKey(dateStr: string): string {
  * Encapsulates: employee selection, month navigation, search, and data fetching.
  */
 export function useTimeStudyMGT() {
+  const location = useLocation()
+  const initialUserId = (location.state && typeof location.state === "object" && "userId" in location.state)
+    ? (location.state.userId as string)
+    : null
+
+  const initialDateStr = (location.state && typeof location.state === "object" && "date" in location.state)
+    ? (location.state.date as string)
+    : null
+
+  const parsedInitialDate = initialDateStr ? new Date(initialDateStr) : null;
+  const validInitialDate = parsedInitialDate && !isNaN(parsedInitialDate.getTime()) ? parsedInitialDate : todayLocal();
+
   const [search, setSearch]                           = useState("")
-  const [selectedUserId, setSelectedUserId]           = useState<string | null>(null)
+  const [selectedUserId, setSelectedUserId]           = useState<string | null>(initialUserId)
   const [selectedEmployee, setSelectedEmployee]       = useState<MgtEmployeeRow | null>(null)
   const [currentDate, setCurrentDate] = useState(() => {
-    const now = new Date()
-    return new Date(now.getFullYear(), now.getMonth(), 1)
+    return new Date(validInitialDate.getFullYear(), validInitialDate.getMonth(), 1)
   })
-  const [selectedDate, setSelectedDate] = useState<Date | null>(todayLocal)
+  const [selectedDate, setSelectedDate] = useState<Date | null>(validInitialDate)
 
   const month = currentDate.getMonth() + 1
   const year  = currentDate.getFullYear()
@@ -203,12 +215,18 @@ export function useTimeStudyMGT() {
     return records.filter((r: any) => r.apportioning === true)
   }, [dayDetailQuery.data])
 
+  const activeEmployee = useMemo(() => {
+    if (selectedEmployee) return selectedEmployee
+    if (!selectedUserId) return null
+    return employees.find(e => String(e.id) === String(selectedUserId)) || null
+  }, [selectedEmployee, selectedUserId, employees])
+
   return {
     // State
     search,
     setSearch,
     selectedUserId,
-    selectedEmployee,
+    selectedEmployee: activeEmployee,
     currentDate,
     setCurrentDate,
     selectedDate,

@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { useNavigate } from "react-router-dom"
 import { X, Eye, Bell, CheckCircle, Clock, AlertCircle, Search, ArrowLeft, Plus, ChevronDown } from "lucide-react"
 import {
   Dialog,
@@ -97,6 +98,7 @@ export function TimeStudyStatusModal({
   const [detailPageSize, setDetailPageSize] = useState(5)
 
   const { mutate: notifyUser } = useActionUserTimeRecord()
+  const navigate = useNavigate()
 
   const statusMap: Record<ModalVariant, "approved" | "submitted" | "draft"> = {
     approved: "approved",
@@ -430,7 +432,20 @@ export function TimeStudyStatusModal({
                             <button
                               type="button"
                               title="View"
-                              onClick={() => setSelectedUser(user)}
+                              onClick={() => {
+                                if (variant === "pending") {
+                                  navigate("/personal-time-study", {
+                                    state: { 
+                                      tab: "mgt", 
+                                      userId: String(user.id),
+                                      date: user.date
+                                    }
+                                  })
+                                  handleClose()
+                                } else {
+                                  setSelectedUser(user)
+                                }
+                              }}
                               className="flex h-7 w-7 items-center justify-center rounded-lg border border-[#e5e7eb] bg-white text-[#6C5DD3] transition-all hover:border-[#6C5DD3] hover:bg-[#6C5DD3] hover:text-white active:scale-95 shadow-sm"
                             >
                               <Eye className="h-3.5 w-3.5" />

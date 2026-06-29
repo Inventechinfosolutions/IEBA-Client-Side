@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { Search, ChevronUp, ChevronDown } from "lucide-react"
 import tableEmptyIcon from "@/assets/icons/table-empty.png"
 import type { MgtEmployeeRow } from "../types"
@@ -29,6 +29,8 @@ export function MgtEmployeePanel({
   const [isOpen, setIsOpen] = useState(false)
   const [tooltipOpen, setTooltipOpen] = useState(false)
   const [sortOrder, setSortOrder] = useState<"asc" | "desc" | null>(null)
+
+  const lastScrolledIdRef = useRef<string | null>(null)
 
   const handleSearch = () => {
     onSearchChange(localSearch)
@@ -146,6 +148,16 @@ export function MgtEmployeePanel({
             <button
               key={emp.id}
               id={`mgt-employee-${emp.id}`}
+              ref={
+                selectedUserId === emp.id
+                  ? (el) => {
+                      if (el && lastScrolledIdRef.current !== emp.id) {
+                        lastScrolledIdRef.current = emp.id;
+                        el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+                      }
+                    }
+                  : undefined
+              }
               onClick={() => onSelect(emp)}
               className={`w-full cursor-pointer pl-3 pr-4 py-2.5 text-left text-[14px] transition-colors ${
                 selectedUserId === emp.id
