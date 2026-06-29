@@ -178,6 +178,8 @@ function toDepartmentUI(dto: DepartmentResDto, options?: ToDepartmentUIOptions):
       removeDescriptionActivityNoteMultiCode: dto.removeDescriptionActivityNoteMultiCode ?? false,
       allowActivationStartDateAndEndDate: dto.allowActivationStartDateAndEndDate ?? false,
       moveSaveSubmitToTop: dto.moveSaveSubmitToTop ?? false,
+      apportioningStartDate: dto.apportioningStartDate ?? null,
+      apportioningEndDate: dto.apportioningEndDate ?? null,
     },
     canEdit: (dto as any).action === "edit",
   }
@@ -211,6 +213,8 @@ function toCreateUpdateDto(values: DepartmentUpsertValues): CreateDepartmentReqD
     costallocation: values.settings.costAllocation,
     autoApportioning: values.settings.autoApportioning,
     manualApportioning: values.settings.manualApportioning,
+    apportioningStartDate: values.settings.apportioning ? (values.settings.apportioningStartDate || null) : null,
+    apportioningEndDate: values.settings.apportioning ? (values.settings.apportioningEndDate || null) : null,
     allowUserOrCostpoolDirect: values.settings.allowUserCostpoolDirect,
     allowMultiCodes: values.settings.allowMultiCodes,
     multiCodes: codes,
@@ -499,4 +503,34 @@ export async function getDepartmentUsers(
   )
   return (res?.data ?? res) as DepartmentUsersUnderDepartmentResDto
 }
+
+export type ApportioningHistoryItem = {
+  id: number
+  departmentId: number
+  departmentCode: string | null
+  departmentName: string | null
+  action: string
+  apportioning: boolean
+  autoApportioning: boolean
+  manualApportioning: boolean
+  apportioningStartDate: string | null
+  apportioningEndDate: string | null
+  createdAt: string
+  createdBy: string | null
+  updatedAt: string
+  updatedBy: string | null
+}
+
+export async function getApportioningHistory(
+  departmentId: string
+): Promise<ApportioningHistoryItem[]> {
+  const res = await api.get<DepartmentApiEnvelope<ApportioningHistoryItem[]>>(
+    `/departments/${departmentId}/apportioning-history`
+  )
+  
+  const envelope = (res?.data ?? res) as any
+  const payload = envelope?.data ?? envelope
+  return Array.isArray(payload) ? payload : []
+}
+
 

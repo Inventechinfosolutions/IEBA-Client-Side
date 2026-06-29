@@ -12,6 +12,8 @@ import { DEPARTMENT_SETTINGS_ROWS } from "../types"
 import type { DepartmentUpsertValues } from "../types"
 import { DepartmentEditContextHeader } from "./DepartmentEditContextHeader"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { toast } from "sonner"
+import { ApportioningHistoryPopover } from "./ApportioningHistoryPopover"
 
 type Settings = DepartmentUpsertValues["settings"]
 
@@ -125,9 +127,8 @@ export function DepartmentSettingsPanel({
                                 return (
                                     <div
                                         key={setting.key}
-                                        className={`px-4 py-3 bg-white transition-colors duration-200 ${
-                                            isDisabled ? "opacity-40" : "hover:bg-[#F5F3FF]"
-                                        }`}
+                                        className={`px-4 py-3 bg-white transition-colors duration-200 ${isDisabled ? "opacity-40" : "hover:bg-[#F5F3FF]"
+                                            }`}
                                     >
                                         <div className="flex items-center justify-between gap-3">
                                             <div className="flex items-center gap-3">
@@ -205,8 +206,11 @@ export function DepartmentSettingsPanel({
                                                 onCheckedChange={() => removeSetting(setting.key)}
                                                 className="h-[16px] w-[16px] data-[state=checked]:bg-[#6C5DD3] data-[state=checked]:border-[#6C5DD3] shrink-0"
                                             />
-                                            <Label htmlFor={`sel-${setting.key}`} className="text-[13px] font-[500] text-[#374151] cursor-pointer">
+                                            <Label htmlFor={`sel-${setting.key}`} className="text-[13px] font-[500] text-[#374151] cursor-pointer flex items-center">
                                                 {setting.label}
+                                                {setting.key === "apportioning" && departmentId && (
+                                                    <ApportioningHistoryPopover departmentId={departmentId} />
+                                                )}
                                             </Label>
                                         </div>
                                         <TooltipProvider delayDuration={100}>
@@ -250,7 +254,46 @@ export function DepartmentSettingsPanel({
                                         </div>
                                     )}
 
-                                    {/* MultiCodes picker */}
+                                    {/* Apportioning start/end date */}
+                                    {setting.key === "apportioning" && (
+                                        <div className="ml-7 mt-3 space-y-2">
+                                            <div className="grid grid-cols-2 gap-4 max-w-[380px]">
+                                                <div className="space-y-1.5">
+                                                    <Label className="text-[13px] font-[500] text-[#374151]">Start Date</Label>
+                                                    <TitleCaseInput
+                                                        type="date"
+                                                        className="h-9 text-sm rounded-[6px] border-[#D1D5DB] bg-white px-3 w-full"
+                                                        value={settings.apportioningStartDate || ""}
+                                                        onChange={(e) => {
+                                                            const val = e.target.value || null
+                                                            setValue("settings.apportioningStartDate", val)
+                                                            if (val && settings.apportioningEndDate && settings.apportioningEndDate < val) {
+                                                                setValue("settings.apportioningEndDate", null)
+                                                                toast.error("End date must be equal or greater than start date")
+                                                            }
+                                                        }}
+                                                    />
+                                                </div>
+                                                <div className="space-y-1.5">
+                                                    <Label className="text-[13px] font-[500] text-[#374151]">End Date</Label>
+                                                    <TitleCaseInput
+                                                        type="date"
+                                                        className="h-9 text-sm rounded-[6px] border-[#D1D5DB] bg-white px-3 w-full"
+                                                        value={settings.apportioningEndDate || ""}
+                                                        onChange={(e) => {
+                                                            const val = e.target.value || null
+                                                            setValue("settings.apportioningEndDate", val)
+                                                            if (val && settings.apportioningStartDate && val < settings.apportioningStartDate) {
+                                                                setValue("settings.apportioningEndDate", null)
+                                                                toast.error("End date must be equal or greater than start date")
+                                                            }
+                                                        }}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
                                     {setting.key === "allowMultiCodes" && (
                                         <div className="ml-7 mt-2">
                                             <div className="relative w-full max-w-[280px]">
@@ -355,4 +398,4 @@ export function DepartmentSettingsPanel({
             </div>
         </div>
     )
-}
+} 
