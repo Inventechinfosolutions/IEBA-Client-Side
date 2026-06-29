@@ -18,6 +18,7 @@ export function TimeStudyStatusCard({
   pendingApproval,
   notSubmitted,
   isLoading,
+  userId,
 }: TimeStudyStatusCardProps) {
   const [activeModal, setActiveModal] = useState<ModalVariant | null>(null)
   
@@ -133,6 +134,7 @@ export function TimeStudyStatusCard({
           month={selectedMonth}
           year={selectedYear}
           quarter={selectedQuarter}
+          userId={userId}
         />
       )}
     </>

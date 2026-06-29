@@ -323,6 +323,7 @@ export async function getDashboardOverview(params?: {
 
 export interface DashboardStatusUsersParams {
   status: "approved" | "submitted" | "draft"
+  userId?: string | number
   month?: string
   year?: string
   quarter?: string
@@ -353,6 +354,7 @@ export async function getDashboardStatusUsers(
 ): Promise<DashboardStatusUsersListRes> {
   const search = new URLSearchParams()
   search.set("status", params.status)
+  if (params.userId !== undefined) search.set("userId", String(params.userId))
   if (params.month) search.set("month", params.month)
   if (params.year) search.set("year", params.year)
   if (params.quarter) search.set("quarter", params.quarter)

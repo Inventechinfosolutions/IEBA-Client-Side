@@ -40,6 +40,7 @@ export interface TimeStudyStatusModalProps {
   month?: string
   year?: string
   quarter?: string
+  userId?: string | number
 }
 
 
@@ -89,6 +90,7 @@ export function TimeStudyStatusModal({
   month,
   year,
   quarter,
+  userId,
 }: TimeStudyStatusModalProps) {
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(5)
@@ -120,6 +122,7 @@ export function TimeStudyStatusModal({
 
   const { data, isLoading } = useDashboardStatusUsers({
     status,
+    userId,
     month: month === "all" ? undefined : month,
     year: year === "all" ? undefined : year,
     quarter: quarter === "all" ? undefined : quarter,

@@ -151,6 +151,7 @@ export interface TimeStudyStatusCardProps {
   pendingApproval: number
   notSubmitted: number
   isLoading?: boolean
+  userId?: string | number
 }
 
 export interface TodoCardProps {

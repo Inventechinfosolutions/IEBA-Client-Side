@@ -180,15 +180,15 @@ export function DashboardPage() {
 
   const trApproved = isSuperAdminLikeDashboard
     ? (overview.data?.timeStudyRecordStatusCounts?.find((s: any) => s.status === 'approved')?.count ?? 0)
-    : tsApproved
+    : (overview.data?.timeStudyRecordReporteesStatusCounts?.find((s: any) => s.status === 'approved')?.count ?? 0)
 
   const trPending = isSuperAdminLikeDashboard
     ? (overview.data?.timeStudyRecordStatusCounts?.find((s: any) => s.status === 'submitted')?.count ?? 0)
-    : tsSubmitted
+    : (overview.data?.timeStudyRecordReporteesStatusCounts?.find((s: any) => s.status === 'submitted')?.count ?? 0)
 
   const trNotSubmitted = isSuperAdminLikeDashboard
     ? (overview.data?.timeStudyRecordStatusCounts?.find((s: any) => s.status === 'draft')?.count ?? 0)
-    : (overview.data?.timeStudyRecordByUserStatusCounts?.find((s: any) => s.status === 'draft')?.count ?? 0)
+    : (overview.data?.timeStudyRecordReporteesStatusCounts?.find((s: any) => s.status === 'draft')?.count ?? 0)
 
   const selfLeaveTotal = overview.data?.personalLeaveTotal ?? 0
   
@@ -335,6 +335,7 @@ export function DashboardPage() {
             pendingApproval={trPending}
             notSubmitted={trNotSubmitted}
             isLoading={overview.isLoading}
+            userId={userId}
           />
         </div>
 
