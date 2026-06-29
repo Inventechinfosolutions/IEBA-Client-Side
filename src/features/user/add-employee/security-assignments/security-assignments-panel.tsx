@@ -681,10 +681,17 @@ export function SecurityAssignmentsPanel({
         .map((s) => String(s.departmentId))
     )
     return departmentsQuery.data.items.some(
-      (dept) =>
-        supervisorDeptIds.has(String(dept.id)) &&
-        userDeptIds.has(String(dept.id)) &&
-        dept.settings.apportioning,
+      (dept) => {
+        if (
+          !supervisorDeptIds.has(String(dept.id)) ||
+          !userDeptIds.has(String(dept.id)) ||
+          !dept.settings.apportioning
+        ) {
+          return false
+        }
+
+        return true
+      }
     )
   }, [assignedSnapshots, hasTimeStudySupervisorRole, departmentsQuery.data?.items])
 
@@ -1265,9 +1272,14 @@ export function SecurityAssignmentsPanel({
                           name: snap?.department ?? deptInfo?.name ?? `Dept ${id}`,
                           apportioning: deptInfo?.settings.apportioning ?? false,
                           autoApportioning: deptInfo?.settings.autoApportioning ?? false,
+                          apportioningStartDate: deptInfo?.settings.apportioningStartDate ?? null,
+                          apportioningEndDate: deptInfo?.settings.apportioningEndDate ?? null,
                         }
                       })
-                      .filter(dept => dept.apportioning)
+                      .filter(dept => {
+                        if (!dept.apportioning) return false
+                        return true
+                      })
 
                     if (assignedDepts.length === 0) {
                       return (
