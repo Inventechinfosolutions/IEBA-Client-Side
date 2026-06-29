@@ -504,3 +504,33 @@ export async function getDepartmentUsers(
   return (res?.data ?? res) as DepartmentUsersUnderDepartmentResDto
 }
 
+export type ApportioningHistoryItem = {
+  id: number
+  departmentId: number
+  departmentCode: string | null
+  departmentName: string | null
+  action: string
+  apportioning: boolean
+  autoApportioning: boolean
+  manualApportioning: boolean
+  apportioningStartDate: string | null
+  apportioningEndDate: string | null
+  createdAt: string
+  createdBy: string | null
+  updatedAt: string
+  updatedBy: string | null
+}
+
+export async function getApportioningHistory(
+  departmentId: string
+): Promise<ApportioningHistoryItem[]> {
+  const res = await api.get<DepartmentApiEnvelope<ApportioningHistoryItem[]>>(
+    `/departments/${departmentId}/apportioning-history`
+  )
+  
+  const envelope = (res?.data ?? res) as any
+  const payload = envelope?.data ?? envelope
+  return Array.isArray(payload) ? payload : []
+}
+
+

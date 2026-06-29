@@ -13,6 +13,7 @@ import type { DepartmentUpsertValues } from "../types"
 import { DepartmentEditContextHeader } from "./DepartmentEditContextHeader"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { toast } from "sonner"
+import { ApportioningHistoryPopover } from "./ApportioningHistoryPopover"
 
 type Settings = DepartmentUpsertValues["settings"]
 
@@ -205,8 +206,11 @@ export function DepartmentSettingsPanel({
                                                 onCheckedChange={() => removeSetting(setting.key)}
                                                 className="h-[16px] w-[16px] data-[state=checked]:bg-[#6C5DD3] data-[state=checked]:border-[#6C5DD3] shrink-0"
                                             />
-                                            <Label htmlFor={`sel-${setting.key}`} className="text-[13px] font-[500] text-[#374151] cursor-pointer">
+                                            <Label htmlFor={`sel-${setting.key}`} className="text-[13px] font-[500] text-[#374151] cursor-pointer flex items-center">
                                                 {setting.label}
+                                                {setting.key === "apportioning" && departmentId && (
+                                                    <ApportioningHistoryPopover departmentId={departmentId} />
+                                                )}
                                             </Label>
                                         </div>
                                         <TooltipProvider delayDuration={100}>
