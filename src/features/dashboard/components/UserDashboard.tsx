@@ -65,6 +65,7 @@ export function UserDashboard() {
 
   const tsApproved = overview.data?.timeStudyRecordByUserStatusCounts?.find((s: any) => s.status === 'approved')?.count ?? 0
   const tsSubmitted = overview.data?.timeStudyRecordByUserStatusCounts?.find((s: any) => s.status === 'submitted')?.count ?? 0
+  const tsDraft = overview.data?.timeStudyRecordByUserStatusCounts?.find((s: any) => s.status === 'draft')?.count ?? 0
 
   const selfLeaveTotal = overview.data?.personalLeaveTotal ?? 0
   
@@ -266,17 +267,16 @@ export function UserDashboard() {
           <div className="lg:col-span-5 flex flex-col gap-4">
 
             <div className="grid grid-cols-2 gap-4">
-              <div className="h-[210px]">
+              <div className="h-[250px]">
                 <PersonalTimeStudyCard
                   totalApproved={tsApproved}
                   totalSubmitted={tsSubmitted}
-                  percent="0 %"
-                  periodLabel="Bi Weekly"
+                  totalDraft={tsDraft}
                   isLoading={overview.isLoading}
                   noBlur={true}
                 />
               </div>
-              <div className="h-[210px]">
+              <div className="h-[250px]">
                 <PersonalLeaveCard
                   total={selfLeaveTotal}
                   approved={selfLeaveApproved}
@@ -301,7 +301,7 @@ export function UserDashboard() {
 
 
           <div className="lg:col-span-3">
-            <div className="h-[406px]">
+            <div className="h-[446px]">
               <TodoCard items={todoItems} isLoading={overview.isLoading} />
             </div>
           </div>
