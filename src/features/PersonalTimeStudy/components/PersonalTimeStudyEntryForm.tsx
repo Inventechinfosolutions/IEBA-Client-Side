@@ -1,4 +1,4 @@
-import { ChevronDown, Clock, Eye, Plus, Trash2, Check, AlertCircle } from "lucide-react"
+import { ChevronDown, Clock, Eye, Plus, Trash2, Check, AlertCircle, AlertTriangle } from "lucide-react"
 import { useCallback, useMemo, useRef, useState } from "react"
 import type { UserAssignedDepartmentsSettingChecks } from "../queries/getUserAssignedDepartmentsSettingChecks"
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card"
@@ -189,6 +189,8 @@ type PersonalTimeStudyEntryFormProps = {
   fetchingDepartments?: Record<string, boolean>
   onFetchMulticodeDept?: (deptId: string | number | undefined) => Promise<void>
   refetchConfig?: () => void
+  hideApportioningInfo?: boolean
+  onOpenPeriodsSheet?: () => void
 }
 
 function TimePicker24h({
@@ -349,6 +351,8 @@ export function PersonalTimeStudyEntryForm({
   onFetchMulticodeDept,
   apportioningRecords,
   refetchConfig,
+  hideApportioningInfo = false,
+  onOpenPeriodsSheet,
 }: PersonalTimeStudyEntryFormProps) {
   const { user } = useAuth()
   const userId = propsUserId || user?.id || ""
@@ -1218,7 +1222,7 @@ export function PersonalTimeStudyEntryForm({
           )}
 
           <div className="flex items-center gap-3">
-            {apportioningConfig?.supervisorApportioning && (
+            {apportioningConfig?.supervisorApportioning && !hideApportioningInfo && (
               <div className="flex items-center gap-2 bg-[#F8F9FA] border border-[#E2E8F0] px-3 py-1.5 rounded-[6px] h-9">
                 <div className="flex size-4 shrink-0 items-center justify-center rounded-[4px] border border-[#6C5DD3] bg-[#6C5DD3] text-white opacity-50 cursor-not-allowed">
                   <Check className="size-3 stroke-[3]" />
@@ -1243,39 +1247,58 @@ export function PersonalTimeStudyEntryForm({
                       >
                         <div className="text-[11px] font-medium space-y-2">
                           {apportioningSummary.map((item) => (
-                            <div key={item.departmentId} className="border-b last:border-b-0 pb-1.5 last:pb-0 border-gray-100">
+                            <div key={item.departmentId} className="border-b last:border-b-0 pb-2 last:pb-0 border-gray-100">
                               <div className="font-bold text-[#6C5DD3] text-[12px] flex items-center justify-between gap-2">
-                                <span>{item.departmentName}</span>
+                                <span className="flex-1">{item.departmentName}</span>
                                 {item.apportioningType && item.apportioningType !== "none" && (
-                                  <span className="text-[9px] uppercase font-semibold px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 border border-gray-200 font-mono">
+                                  <span className="text-[9px] uppercase font-semibold px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 border border-gray-200 font-mono shrink-0">
                                     {item.apportioningType}
                                   </span>
                                 )}
                               </div>
-                              <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 mt-1 text-[#344054]">
-                                <div>
-                                  <span className="text-muted-foreground font-medium">Percent:</span>{" "}
-                                  <span className="font-semibold text-foreground">{item.apportioningPercent}%</span>
-                                </div>
-                                <div>
-                                  <span className="text-muted-foreground font-medium">Allocated:</span>{" "}
-                                  <span className="font-semibold text-foreground">{item.allocatedMinutes} Min.</span>
-                                </div>
-                                <div>
-                                  <span className="text-muted-foreground font-medium">Supervisor Consumed:</span>{" "}
-                                  <span className="font-semibold text-[#6C5DD3]">{item.supervisorConsumedMinutes ?? 0} Min.</span>
-                                </div>
-                                {item.apportioningType !== "manual" && (
+                              {item.outOfDateRange ? (
+                                <p
+                                  className="mt-1.5 mb-1 text-[12px] text-gray-700 font-medium leading-snug w-full"
+                                  dangerouslySetInnerHTML={{ __html: `<b>Note:</b> ${item.message}` }}
+                                />
+                              ) : (
+                                <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 mt-1 text-[#344054]">
+                                  {item.startDate && (
+                                    <div>
+                                      <span className="text-muted-foreground font-medium">Start Date:</span>{" "}
+                                      <span className="font-semibold text-foreground">{item.startDate}</span>
+                                    </div>
+                                  )}
+                                  {item.endDate && (
+                                    <div>
+                                      <span className="text-muted-foreground font-medium">End Date:</span>{" "}
+                                      <span className="font-semibold text-foreground">{item.endDate}</span>
+                                    </div>
+                                  )}
                                   <div>
-                                    <span className="text-muted-foreground font-medium">Reportee Minutes:</span>{" "}
-                                    <span className="font-semibold text-[#6C5DD3]">{item.enteredMinutes} Min.</span>
+                                    <span className="text-muted-foreground font-medium">Percent:</span>{" "}
+                                    <span className="font-semibold text-foreground">{item.apportioningPercent}%</span>
                                   </div>
-                                )}
-                                <div>
-                                  <span className="text-muted-foreground font-medium">Remaining:</span>{" "}
-                                  <span className="font-semibold text-[#6C5DD3]">{item.remainingMinutes} Min.</span>
+                                  <div>
+                                    <span className="text-muted-foreground font-medium">Allocated:</span>{" "}
+                                    <span className="font-semibold text-foreground">{item.allocatedMinutes} Min.</span>
+                                  </div>
+                                  <div>
+                                    <span className="text-muted-foreground font-medium">Supervisor Consumed:</span>{" "}
+                                    <span className="font-semibold text-[#6C5DD3]">{item.supervisorConsumedMinutes ?? 0} Min.</span>
+                                  </div>
+                                  {item.apportioningType !== "manual" && (
+                                    <div>
+                                      <span className="text-muted-foreground font-medium">Reportee Minutes:</span>{" "}
+                                      <span className="font-semibold text-[#6C5DD3]">{item.enteredMinutes} Min.</span>
+                                    </div>
+                                  )}
+                                  <div>
+                                    <span className="text-muted-foreground font-medium">Remaining:</span>{" "}
+                                    <span className="font-semibold text-[#6C5DD3]">{item.remainingMinutes} Min.</span>
+                                  </div>
                                 </div>
-                              </div>
+                              )}
                             </div>
                           ))}
                         </div>
@@ -1304,14 +1327,33 @@ export function PersonalTimeStudyEntryForm({
               </div>
             )}
             {!readonly && (
-              <Button
-                size="icon"
-                disabled={isLocked}
-                className={cn("size-9 bg-[#6C5DD3] hover:bg-[#6C5DD3]/90", isLocked && "cursor-not-allowed")}
-                onClick={addParentAtTop}
-              >
-                <Plus className="size-4" />
-              </Button>
+              <div className="flex items-center gap-2 shrink-0">
+                {apportioningConfig?.allowUserEntry === false && (
+                  hideApportioningInfo ? (
+                    onOpenPeriodsSheet && (
+                      <button
+                        type="button"
+                        onClick={onOpenPeriodsSheet}
+                        className="h-9 flex items-center gap-3.5 rounded-[8px] bg-white text-[#6C5DD3] border border-gray-200 shadow-sm hover:bg-gray-50 cursor-pointer transition-colors shrink-0 px-3 py-1.5"
+                        title="Clicked to view Time Study Period and Apportioning"
+                      >
+                        <span className="text-[11px] font-semibold text-gray-500 select-none">
+                          Note: Click on the warning icon to view why the time entry is blocked
+                        </span>
+                        <AlertTriangle className="size-6 text-[#F97316] animate-pulse shrink-0" />
+                      </button>
+                    )
+                  ) : null
+                )}
+                <Button
+                  size="icon"
+                  disabled={isLocked}
+                  className={cn("size-9 bg-[#6C5DD3] hover:bg-[#6C5DD3]/90", isLocked && "cursor-not-allowed")}
+                  onClick={addParentAtTop}
+                >
+                  <Plus className="size-4" />
+                </Button>
+              </div>
             )}
           </div>
         </div>

@@ -181,6 +181,8 @@ export type DepartmentResDto = Record<string, unknown> & {
   apportioning?: boolean;
   autoApportioning?: boolean;
   manualApportioning?: boolean;
+  apportioningStartDate?: string | null;
+  apportioningEndDate?: string | null;
   removeAutoFillEndTime?: boolean;
   startorEndTime?: boolean;
   supportingDoc?: boolean;
@@ -207,6 +209,8 @@ export type CreateDepartmentReqDto = {
   costallocation?: boolean;
   autoApportioning?: boolean;
   manualApportioning?: boolean;
+  apportioningStartDate?: string | null;
+  apportioningEndDate?: string | null;
   allowUserOrCostpoolDirect?: boolean;
   allowMultiCodes?: boolean;
   multiCodes?: string[];

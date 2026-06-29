@@ -152,6 +152,8 @@ export const DEPARTMENT_SETTING_LABELS: Record<string, string> = {
   costallocation: "Cost Allocation",
   autoApportioning: "Auto Apportioning",
   manualApportioning: "Manual Apportioning",
+  apportioningStartDate: "Apportioning Start Date",
+  apportioningEndDate: "Apportioning End Date",
   allowUserOrCostpoolDirect: "Allow User/Costpool Direct",
   allowMultiCodes: "Allow Multi Codes",
   startorEndTime: "Remove Start and End Time",
@@ -201,6 +203,9 @@ function formatDepartmentHistoryFieldValue(field: string, value: unknown): strin
   }
   if (field.endsWith("ContactId") && typeof value === "string") {
     return formatContactIdShort(value)
+  }
+  if (field.endsWith("Date") && typeof value === "string") {
+    return formatDepartmentHistoryDateShort(value)
   }
   if (Array.isArray(value)) {
     if (value.length === 0) return "None"
@@ -278,6 +283,30 @@ export function getDepartmentHistorySnapshotSections(
   })
   if (toggleItems.length > 0) {
     sections.push({ title: "Department Settings", items: toggleItems })
+  }
+
+  const dateItems: DepartmentHistorySnapshotItem[] = []
+  if (snapshot.apportioningStartDate) {
+    dateItems.push({
+      label: "Apportioning Start Date",
+      value: formatDepartmentHistoryDateShort(snapshot.apportioningStartDate),
+      kind: "text",
+    })
+  }
+  if (snapshot.apportioningEndDate) {
+    dateItems.push({
+      label: "Apportioning End Date",
+      value: formatDepartmentHistoryDateShort(snapshot.apportioningEndDate),
+      kind: "text",
+    })
+  }
+  if (dateItems.length > 0) {
+    const settingsSection = sections.find(s => s.title === "Department Settings")
+    if (settingsSection) {
+       settingsSection.items.push(...dateItems)
+    } else {
+       sections.push({ title: "Department Settings", items: dateItems })
+    }
   }
 
   const contactItems: DepartmentHistorySnapshotItem[] = []

@@ -1,8 +1,9 @@
 import { useCallback, useMemo, useState } from "react"
 import { useLocation } from "react-router-dom"
-import { X, Lock, Check } from "lucide-react"
+import { Lock, Check, X, AlertTriangle } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
+import { ApportioningDrawer } from "../components/ApportioningDrawer"
 
 import { guardNoChanges } from "@/lib/formGuard"
 
@@ -78,7 +79,8 @@ export function PersonalTimeStudyPage() {
   const userId = user?.id ?? ""
   const location = useLocation()
 
-  const { canReview } = usePermissions()
+
+  const { canReview, isTimeStudySupervisor } = usePermissions()
   const canReviewMgt = canReview("timestudysupervisor")
 
   // Tab state
@@ -88,6 +90,7 @@ export function PersonalTimeStudyPage() {
     }
     return "personal"
   })
+  const [periodsSheetOpen, setPeriodsSheetOpen] = useState(false)
 
   // 1. Date state
   const [selectedDate, setSelectedDate] = useState<Date>(todayLocal)
@@ -405,11 +408,13 @@ export function PersonalTimeStudyPage() {
                           balanceMinutes={summaryQuery.data?.actualnormalactivityTimebalance ?? 0}
                           totalMAAMinutes={summaryQuery.data?.actualmultiactivitytime}
                           apportioningSummary={summaryQuery.data?.apportioningSummary}
+                          hideApportionedMinutes={isTimeStudySupervisor}
                         />
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 h-[180px]">
+                      <div className={cn("grid gap-2 h-[180px]", isTimeStudySupervisor ? "grid-cols-[1fr_auto]" : "grid-cols-1 md:grid-cols-2")}>
                         <PersonalTimeStudyNotesSection
+                          className="animate-in fade-in slide-in-from-right-12 duration-500 ease-out"
                           value={localNotes}
                           onChange={setDraftNotes}
                           onSave={() => {
@@ -422,11 +427,36 @@ export function PersonalTimeStudyPage() {
                           isSaving={notesMutation.isPending}
                           disabled={settingChecksQuery.data?.allowUserEntry === false}
                         />
-                        <PersonalTimeStudyPeriodsSection
-                          timestudyAllowed={settingChecksQuery.data?.timestudyAllowedRaw ?? []}
-                          dropdownData={dropdownQuery.data ?? []}
-                        />
+                        {isTimeStudySupervisor ? (
+                          <button
+                            type="button"
+                            onClick={() => setPeriodsSheetOpen(true)}
+                            className="animate-in fade-in slide-in-from-right-12 duration-500 ease-out flex flex-col gap-2 h-full w-32 items-center justify-center rounded-[10px] bg-white text-[#6C5DD3] border border-gray-200 shadow-[0_4px_16px_rgba(16,24,40,0.12)] transition-colors hover:bg-gray-50 cursor-pointer p-3"
+                            aria-label="Open Time Study Periods"
+                          >
+                            <AlertTriangle className="size-6 text-[#F97316] animate-pulse shrink-0" />
+                            <span className="text-[11px] font-bold text-center leading-snug">
+                              Clicked to view Time Study Period and Apportioning
+                            </span>
+                          </button>
+                        ) : (
+                          <PersonalTimeStudyPeriodsSection
+                            className="animate-in fade-in slide-in-from-right-12 duration-500 ease-out"
+                            timestudyAllowed={settingChecksQuery.data?.timestudyAllowedRaw ?? []}
+                            dropdownData={dropdownQuery.data ?? []}
+                          />
+                        )}
                       </div>
+
+                      {isTimeStudySupervisor && (
+                        <ApportioningDrawer
+                          open={periodsSheetOpen}
+                          onClose={() => setPeriodsSheetOpen(false)}
+                          timestudyAllowedRaw={settingChecksQuery.data?.timestudyAllowedRaw}
+                          apportioningSummary={summaryQuery.data?.apportioningSummary}
+                          dropdownData={dropdownQuery.data}
+                        />
+                      )}
                     </div>
                   </div>
 
@@ -456,6 +486,8 @@ export function PersonalTimeStudyPage() {
                       fetchingDepartments={fetchingDepartments}
                       onFetchMulticodeDept={fetchMulticodeProgramsForDepartment}
                       refetchConfig={settingChecksQuery.refetch}
+                      hideApportioningInfo={isTimeStudySupervisor}
+                      onOpenPeriodsSheet={() => setPeriodsSheetOpen(true)}
                     />
                   </div>
                 </>
