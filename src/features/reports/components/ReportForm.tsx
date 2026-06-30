@@ -33,7 +33,8 @@ import {
 import type { ReportsModuleApi } from "../hooks/useReportsModule"
 import { useGetReportDepartments, useGetReportsByDepartment } from "../queries/getReports"
 import { formatCountyDisplayName } from "@/features/department/lib/departmentReport.utils"
-import { resolveCountyClientLogoSrc, useGetCountyClient } from "@/features/settings/queries/getCountyClient"
+import { resolveCountyClientLogoSrc, useGetCountyClient, fetchClientForCurrentCounty, settingsCountyClientQueryKey } from "@/features/settings/queries/getCountyClient"
+import { useQueryClient } from "@tanstack/react-query"
 import { useListFiscalYears } from "@/features/settings/queries/listFiscalYears"
 import {
   REPORT_DOWNLOAD_TYPES,
@@ -565,9 +566,7 @@ export function ReportForm({ module }: ReportFormProps) {
 
   const navState = location.state as any
   const { user } = useAuth()
-  const { data: countyClient } = useGetCountyClient(true)
-  const countyName = formatCountyDisplayName(countyClient?.name || user?.countyName)
-  const countyLogoDataUrl = resolveCountyClientLogoSrc(countyClient)
+  const { data: countyClient } = useGetCountyClient(false)
 
   const isSuperAdmin = !!user?.permissions?.includes("superadmin:all")
   const { data: departmentsData, isLoading: isDeptsLoading } = useGetReportDepartments(user?.id, isSuperAdmin, true)
@@ -941,11 +940,29 @@ export function ReportForm({ module }: ReportFormProps) {
     clearStoredReportFormParams()
   }
 
-  const onViewReport = handleSubmit((values) => {
+  const queryClient = useQueryClient()
+
+  const fetchCountyClientOnDemand = async () => {
+    let currentCountyClient = countyClient
+    if (!currentCountyClient) {
+      currentCountyClient = await queryClient.fetchQuery({
+        queryKey: [...settingsCountyClientQueryKey, user?.countyName ?? "", user?.namespace ?? ""],
+        queryFn: () => fetchClientForCurrentCounty(user?.countyName, user?.namespace),
+        staleTime: 60_000,
+      }).catch(() => undefined)
+    }
+    return {
+      resolvedCountyName: formatCountyDisplayName(currentCountyClient?.name || user?.countyName),
+      resolvedLogoSrc: resolveCountyClientLogoSrc(currentCountyClient),
+    }
+  }
+
+  const onViewReport = handleSubmit(async (values) => {
+    const { resolvedCountyName, resolvedLogoSrc } = await fetchCountyClientOnDemand()
     const payload: ReportRunPayload = {
       ...mapReportFormToRunPayload(values),
-      ...(countyName ? { countyName } : {}),
-      ...(countyLogoDataUrl ? { countyLogoDataUrl } : {}),
+      ...(resolvedCountyName ? { countyName: resolvedCountyName } : {}),
+      ...(resolvedLogoSrc ? { countyLogoDataUrl: resolvedLogoSrc } : {}),
     }
     viewReport(payload, {
       onSuccess: (blobLike) => {
@@ -964,7 +981,7 @@ export function ReportForm({ module }: ReportFormProps) {
     })
   })
 
-  const onDownloadReport = handleSubmit((values) => {
+  const onDownloadReport = handleSubmit(async (values) => {
     const parsedName = reportDownloadFileNameSchema.safeParse(values.fileName)
     if (!parsedName.success) {
       const msg = parsedName.error.issues[0]?.message ?? "Enter a file name"
@@ -972,13 +989,14 @@ export function ReportForm({ module }: ReportFormProps) {
       return
     }
 
+    const { resolvedCountyName, resolvedLogoSrc } = await fetchCountyClientOnDemand()
     const payload: ReportRunPayload = {
       ...mapReportFormToRunPayload({
         ...values,
         fileName: parsedName.data,
       }),
-      ...(countyName ? { countyName } : {}),
-      ...(countyLogoDataUrl ? { countyLogoDataUrl } : {}),
+      ...(resolvedCountyName ? { countyName: resolvedCountyName } : {}),
+      ...(resolvedLogoSrc ? { countyLogoDataUrl: resolvedLogoSrc } : {}),
     }
 
     downloadReport(payload, {
