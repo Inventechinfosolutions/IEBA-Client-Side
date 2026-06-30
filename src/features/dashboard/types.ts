@@ -135,8 +135,7 @@ export interface PersonalLeaveCardProps {
 export interface PersonalTimeStudyCardProps {
   totalApproved: number
   totalSubmitted: number
-  percent: string
-  periodLabel: string
+  totalDraft: number
   isLoading?: boolean
   noBlur?: boolean
 }
@@ -151,6 +150,7 @@ export interface TimeStudyStatusCardProps {
   pendingApproval: number
   notSubmitted: number
   isLoading?: boolean
+  userId?: string | number
 }
 
 export interface TodoCardProps {
@@ -244,8 +244,15 @@ export interface DashboardOverview {
   totalTimeStudyProgramCount: number;
   totalActivityCount: number;
   totalActivityDepartmentCount: number;
+  timeStudyRecordTotal?: number;
   timeStudyRecordStatusCounts?: Array<{ status: string; count: number }>;
+  timeStudyRecordOverallTotal?: number;
+  timeStudyRecordOverallStatusCounts?: Array<{ status: string; count: number }>;
+  timeStudyRecordByUserTotal?: number;
   timeStudyRecordByUserStatusCounts?: Array<{ status: string; count: number }>;
+  timeStudyRecordReporteesTotal?: number;
+  timeStudyRecordReporteesStatusCounts?: Array<{ status: string; count: number }>;
+  timeStudyRecordByUserId?: string | null;
   todoTotal?: number;
   todoStatusCounts?: Array<{ status: string; count: number }>;
   personalLeaveTotal?: number;
