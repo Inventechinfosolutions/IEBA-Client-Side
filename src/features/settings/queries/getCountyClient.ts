@@ -184,7 +184,7 @@ async function fetchClientLogoObjectUrlFromClientDocuments(clientId: number): Pr
   return null
 }
 
-async function fetchClientForCurrentCounty(countyName?: string, namespace?: string): Promise<CountyClientDetailModel> {
+export async function fetchClientForCurrentCounty(countyName?: string, namespace?: string): Promise<CountyClientDetailModel> {
   const name = countyName?.trim()
   if (!name) {
     throw new Error("County name is required to load county settings.")
