@@ -76,12 +76,7 @@ export async function apiGetReportsByDepartment(departmentId: string): Promise<R
   const body =
     (res as { data?: { reports?: unknown[] } })?.data ?? (res as { reports?: unknown[] })
   const reports = Array.isArray(body?.reports) ? body.reports : []
-  let items = mapRawReportsToCatalogItems(reports)
-  // Mapped rows are often id/code/name only; merge criteria so filters (cost pool, activities, etc.) work.
-  if (items.length > 0 && items.some((item) => !item.criteria)) {
-    const catalog = await apiGetReportCatalog()
-    items = mergeReportCriteriaFromCatalog(items, catalog)
-  }
+  const items = mapRawReportsToCatalogItems(reports)
   return items
 }
 

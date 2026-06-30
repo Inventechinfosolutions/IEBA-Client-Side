@@ -30,9 +30,10 @@ export function mapRawReportsToCatalogItems(data: unknown[]): ReportCatalogItem[
       try {
         criteria =
           typeof r.criteria === "string"
-            ? (JSON.parse(r.criteria) as ReportCatalogItem["criteria"])
+            ? (JSON.parse(r.criteria.replace(/\u00A0/g, " ")) as ReportCatalogItem["criteria"])
             : (r.criteria as ReportCatalogItem["criteria"])
-      } catch {
+      } catch (error) {
+        console.error(`Failed to parse criteria for report ${code}:`, r.criteria, error)
         criteria = undefined
       }
     }
