@@ -518,6 +518,7 @@ export function SecurityAssignmentsPanel({
       replaceMultiCodeRows([])
       multiCodeRowsSyncStampRef.current = ""
       multiCodeRowsModeRef.current = "none"
+      hasHydratedRef.current = false
     }
   } else if (multiCodeRowsModeRef.current === "none" && multiCodeFields.length === 0) {
     if (isAddMode) {
@@ -536,13 +537,13 @@ export function SecurityAssignmentsPanel({
     const current = getValues("departmentMultiCodes") ?? []
     let next = stripIneligibleDepartmentMultiCodeRows(current)
 
-    if (!isAddMode && assignedDeptsForMultiCodeRows.length > 0 && hydratedEditRows.length > 0) {
+    if (!isAddMode && assignedDeptsForMultiCodeRows.length > 0 && hydratedEditRows.length > 0 && !hasHydratedRef.current) {
       // Only hydrate once both user departments (multicode settings) AND history are loaded.
       // This ensures stale saved codes (e.g. MAA) are correctly filtered out against the
       // current department settings (e.g. only TCM is now allowed).
       const deptDataReady = (userDeptsQuery.isSuccess && !userDeptsQuery.isFetching) || (departmentsQuery.isSuccess && !departmentsQuery.isFetching)
       const isHistoryReady = historyQuery.isSuccess && !historyQuery.isFetching
-      if (!hasHydratedRef.current && deptDataReady && isHistoryReady) {
+      if (deptDataReady && isHistoryReady) {
         next = hydratedEditRows
         hasHydratedRef.current = true
         setTimeout(() => {
@@ -550,7 +551,16 @@ export function SecurityAssignmentsPanel({
         }, 0)
       }
     } else if (assignedDeptsForMultiCodeRows.length > 0 && next.length === 0) {
-      next = [emptyDepartmentMultiCodeRow()]
+      if (assignedDeptsForMultiCodeRows.length === 1) {
+        const d = assignedDeptsForMultiCodeRows[0]
+        next = [{
+          ...emptyDepartmentMultiCodeRow(),
+          departmentId: Number(d.id),
+          departmentName: d.name,
+        }]
+      } else {
+        next = [emptyDepartmentMultiCodeRow()]
+      }
     }
 
     const eligibleDeptKey = assignedDeptsForMultiCodeRows.map((d) => d.id).join(",")
@@ -623,6 +633,9 @@ export function SecurityAssignmentsPanel({
     userDeptsLoadPromiseRef.current = null
     void queryClient.invalidateQueries({
       queryKey: addEmployeeLookupKeys.userDepartments(securityUserId, "timestudy"),
+    })
+    void queryClient.invalidateQueries({
+      queryKey: addEmployeeLookupKeys.userAllowMulticodeHistory(securityUserId),
     })
   }, [securityUserId])
 
@@ -1500,8 +1513,14 @@ export function SecurityAssignmentsPanel({
                                           }
                                         } else {
                                           setValue(`departmentMultiCodes.${index}.assignedMultiCodes`, "", { shouldDirty: true })
-                                          setValue(`departmentMultiCodes.${index}.activationStartDate`, "", { shouldDirty: true })
-                                          setValue(`departmentMultiCodes.${index}.activationEndDate`, "", { shouldDirty: true })
+                                          const deptAllowsDates = deptAllowsActivationDatesFromApi(userDeptConfig, globalDeptConfig)
+                                          if (deptAllowsDates) {
+                                            const todayStr = new Date().toISOString().split("T")[0]
+                                            setValue(`departmentMultiCodes.${index}.activationEndDate`, todayStr, { shouldDirty: true })
+                                          } else {
+                                            setValue(`departmentMultiCodes.${index}.activationStartDate`, "", { shouldDirty: true })
+                                            setValue(`departmentMultiCodes.${index}.activationEndDate`, "", { shouldDirty: true })
+                                          }
                                         }
                                       }}
                                       className="size-4 cursor-pointer rounded-[3px] border-[#c2c6d1] data-[state=checked]:border-(--primary) data-[state=checked]:bg-(--primary) disabled:cursor-not-allowed disabled:opacity-60"
