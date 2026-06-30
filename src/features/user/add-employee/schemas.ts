@@ -161,6 +161,20 @@ const userModuleFormFieldsSchema = z.object({
       assignedMultiCodes: z.string().trim().optional(),
       activationStartDate: z.string().trim().optional(),
       activationEndDate: z.string().trim().optional(),
+    }).superRefine((val, ctx) => {
+      if (val.activationStartDate && val.activationEndDate) {
+        const start = new Date(val.activationStartDate)
+        const end = new Date(val.activationEndDate)
+        if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
+          if (start.getTime() >= end.getTime()) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: "startDate must be on or before endDate",
+              path: ["activationEndDate"],
+            })
+          }
+        }
+      }
     })
   ).optional().default([]),
 
