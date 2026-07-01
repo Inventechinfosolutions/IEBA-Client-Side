@@ -90,7 +90,7 @@ export function PersonalTimeStudyPeriodsSection({
   return (
     <section
       className={cn(
-        "relative flex w-full flex-col rounded-[6px] border-0 ring-0 bg-white p-3 shadow-[0_4px_16px_rgba(16,24,40,0.12)] h-[180px]",
+        "relative flex w-full flex-col rounded-[6px] border-0 ring-0 bg-white p-3 shadow-[0_4px_16px_rgba(16,24,40,0.12)] h-auto md:h-[180px]",
         className
       )}
     >

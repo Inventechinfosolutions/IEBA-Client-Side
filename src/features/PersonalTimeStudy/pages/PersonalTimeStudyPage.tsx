@@ -333,7 +333,7 @@ export function PersonalTimeStudyPage() {
                   type="button"
                   onClick={() => setActiveTab("personal")}
                   className={cn(
-                    "flex h-[63px] cursor-pointer items-center justify-center rounded-[6px] border px-3 text-[17px] leading-none font-medium tracking-wide",
+                    "flex h-12 lg:h-[63px] cursor-pointer items-center justify-center rounded-[6px] border px-3 text-sm lg:text-[17px] leading-none font-medium tracking-wide",
                     activeTab === "personal"
                       ? "border-[#6C5DD3] bg-[#6C5DD3] text-white"
                       : "border-[#e8e9ef] bg-white text-[#6C5DD3]"
@@ -347,7 +347,7 @@ export function PersonalTimeStudyPage() {
                     type="button"
                     onClick={() => setActiveTab("mgt")}
                     className={cn(
-                      "flex h-[63px] cursor-pointer items-center justify-center rounded-[6px] border px-3 text-[17px] leading-none font-medium tracking-wide",
+                      "flex h-12 lg:h-[63px] cursor-pointer items-center justify-center rounded-[6px] border px-3 text-sm lg:text-[17px] leading-none font-medium tracking-wide",
                       activeTab === "mgt"
                         ? "border-[#6C5DD3] bg-[#6C5DD3] text-white"
                         : "border-[#e8e9ef] bg-white text-[#6C5DD3]"
@@ -364,8 +364,8 @@ export function PersonalTimeStudyPage() {
               {/* ── Personal Time Study Tab ── */}
               {activeTab === "personal" && (
                 <>
-                  <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:gap-4">
-                    <div className="min-w-0 shrink-0 lg:w-[40%] lg:max-w-[40%]">
+                  <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:gap-4">
+                    <div className="min-w-0 shrink-0 xl:w-[42%] xl:max-w-[42%]">
                       <PersonalTimeStudyCalendarCard
                         weekRows={weekRows}
                         selectedDate={selectedDate}
@@ -412,7 +412,7 @@ export function PersonalTimeStudyPage() {
                         />
                       </div>
 
-                      <div className={cn("grid gap-2 h-[180px]", isTimeStudySupervisor ? "grid-cols-[1fr_auto]" : "grid-cols-1 md:grid-cols-2")}>
+                      <div className={cn("grid gap-2 h-auto md:h-[180px]", isTimeStudySupervisor ? "grid-cols-[1fr_auto]" : "grid-cols-1 md:grid-cols-2")}>
                         <PersonalTimeStudyNotesSection
                           className="animate-in fade-in slide-in-from-right-12 duration-500 ease-out"
                           value={localNotes}

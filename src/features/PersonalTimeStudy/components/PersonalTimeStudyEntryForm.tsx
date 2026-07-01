@@ -252,6 +252,7 @@ function SupportingDocField({
   onDownload,
   isLeave = false,
   isApportioned = false,
+  className,
 }: {
   parentId: string
   docs: Array<{ name: string; url: string; file?: File; docId?: number }>
@@ -262,6 +263,7 @@ function SupportingDocField({
   onDownload: (parentId: string, doc: { name: string; url: string; file?: File; docId?: number }) => void
   isLeave?: boolean
   isApportioned?: boolean
+  className?: string
 }) {
   const [open, setOpen] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
@@ -269,7 +271,7 @@ function SupportingDocField({
   const extraCount = docs.length > 1 ? docs.length - 1 : 0
 
   return (
-    <div className={cn("min-w-[90px] flex-1 space-y-0.5 relative")}>
+    <div className={cn("min-w-[90px] flex-1 space-y-0.5 relative", className)}>
       <Label className="text-[11px] text-muted-foreground">Supporting doc</Label>
       <input ref={fileRef} type="file" className="hidden" multiple onChange={(e) => { if (e.target.files?.length) { onAdd(parentId, e.target.files); e.target.value = ""; } }} />
       <div className={cn(
@@ -320,7 +322,7 @@ function SupportingDocField({
   )
 }
 
-const parentFieldRowClass = "flex flex-row items-end gap-2 flex-nowrap"
+const parentFieldRowClass = "flex flex-wrap items-end gap-2"
 
 export function PersonalTimeStudyEntryForm({
   dateStr,
@@ -1193,7 +1195,7 @@ export function PersonalTimeStudyEntryForm({
           </div>
 
           {!hideSummaryHeader && (
-            <div className="flex flex-wrap items-center justify-end gap-x-6 gap-y-2 text-[14px] flex-1">
+            <div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-2 text-[12px] lg:text-[14px] flex-1">
               <div className="flex items-center gap-1.5">
                 <span className="text-gray-700">Allocated TS Minutes:</span>
                 <span className="font-semibold text-[#6C5DD3]">{allocatedTotal || 0}</span>
@@ -1221,7 +1223,7 @@ export function PersonalTimeStudyEntryForm({
             </div>
           )}
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3 ml-auto justify-end">
             {apportioningConfig?.supervisorApportioning && !hideApportioningInfo && (
               <div className="flex items-center gap-2 bg-[#F8F9FA] border border-[#E2E8F0] px-3 py-1.5 rounded-[6px] h-9">
                 <div className="flex size-4 shrink-0 items-center justify-center rounded-[4px] border border-[#6C5DD3] bg-[#6C5DD3] text-white opacity-50 cursor-not-allowed">
@@ -1308,43 +1310,43 @@ export function PersonalTimeStudyEntryForm({
                 </div>
               </div>
             )}
-            {!readonly && moveSaveSubmitToTop && (
-              <div className="flex items-center gap-2 mr-2">
-                <Button
-                  disabled={isLocked || allIsLeave}
-                  className={cn("h-9 px-4 bg-[#6C5DD3] hover:bg-[#5B4DBF] text-[12px]", (isLocked || allIsLeave) && "cursor-not-allowed")}
-                  onClick={handleSave}
-                >
-                  Save
-                </Button>
-                <Button
-                  disabled={isLocked || allIsLeave}
-                  className={cn("h-9 px-4 bg-green-600 hover:bg-green-700 text-white text-[12px]", (isLocked || allIsLeave) && "cursor-not-allowed")}
-                  onClick={() => setShowSubmitConfirm(true)}
-                >
-                  Submit
-                </Button>
-              </div>
+            {apportioningConfig?.allowUserEntry === false && (
+              hideApportioningInfo ? (
+                onOpenPeriodsSheet && (
+                  <button
+                    type="button"
+                    onClick={onOpenPeriodsSheet}
+                    className="h-auto min-h-9 flex items-center gap-3.5 rounded-[8px] bg-white text-[#6C5DD3] border border-gray-200 shadow-sm hover:bg-gray-50 cursor-pointer transition-colors w-full lg:w-auto lg:shrink-0 px-3 py-1.5"
+                    title="Clicked to view Time Study Period and Apportioning"
+                  >
+                    <span className="text-[11px] font-semibold text-gray-500 select-none whitespace-normal break-words">
+                      Note: Click on the warning icon to view why the time entry is blocked
+                    </span>
+                    <AlertTriangle className="size-6 text-[#F97316] animate-pulse shrink-0 ml-auto" />
+                  </button>
+                )
+              ) : null
             )}
-            {!readonly && (
-              <div className="flex items-center gap-2 shrink-0">
-                {apportioningConfig?.allowUserEntry === false && (
-                  hideApportioningInfo ? (
-                    onOpenPeriodsSheet && (
-                      <button
-                        type="button"
-                        onClick={onOpenPeriodsSheet}
-                        className="h-9 flex items-center gap-3.5 rounded-[8px] bg-white text-[#6C5DD3] border border-gray-200 shadow-sm hover:bg-gray-50 cursor-pointer transition-colors shrink-0 px-3 py-1.5"
-                        title="Clicked to view Time Study Period and Apportioning"
-                      >
-                        <span className="text-[11px] font-semibold text-gray-500 select-none">
-                          Note: Click on the warning icon to view why the time entry is blocked
-                        </span>
-                        <AlertTriangle className="size-6 text-[#F97316] animate-pulse shrink-0" />
-                      </button>
-                    )
-                  ) : null
-                )}
+            <div className="flex items-center gap-2 ml-auto lg:ml-0">
+              {!readonly && moveSaveSubmitToTop && (
+                <>
+                  <Button
+                    disabled={isLocked || allIsLeave}
+                    className={cn("h-9 px-4 bg-[#6C5DD3] hover:bg-[#5B4DBF] text-[12px]", (isLocked || allIsLeave) && "cursor-not-allowed")}
+                    onClick={handleSave}
+                  >
+                    Save
+                  </Button>
+                  <Button
+                    disabled={isLocked || allIsLeave}
+                    className={cn("h-9 px-4 bg-green-600 hover:bg-green-700 text-white text-[12px]", (isLocked || allIsLeave) && "cursor-not-allowed")}
+                    onClick={() => setShowSubmitConfirm(true)}
+                  >
+                    Submit
+                  </Button>
+                </>
+              )}
+              {!readonly && (
                 <Button
                   size="icon"
                   disabled={isLocked}
@@ -1353,8 +1355,8 @@ export function PersonalTimeStudyEntryForm({
                 >
                   <Plus className="size-4" />
                 </Button>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -1453,7 +1455,7 @@ export function PersonalTimeStudyEntryForm({
                 {!hideTime && (
                   <TimePicker24h label="End" value={parent.end} disabled={isLocked || isLeaveRow || isApportionedRow || !parent.start} isLeave={isLeaveRow} isApportioned={isApportionedRow} onChange={(v) => updateParent(parent.id, { end: v })} />
                 )}
-                <div className="w-[60px] space-y-0.5">
+                <div className="flex-1 xl:flex-none xl:w-[60px] space-y-0.5">
                   <Label className="text-[11px] text-muted-foreground">Min. <RequiredMark /></Label>
                   <TitleCaseInput
                     type="number"
@@ -1475,7 +1477,7 @@ export function PersonalTimeStudyEntryForm({
                   />
                 </div>
                 {!hideNotes && (
-                  <div className="flex-[1.5] space-y-0.5">
+                  <div className="w-full md:w-[calc(50%-8px)] xl:w-auto xl:flex-[1.5] space-y-0.5">
                     <Label className="text-[11px] text-muted-foreground">Notes </Label>
                     <TitleCaseInput
                       value={parent.description}
@@ -1497,9 +1499,10 @@ export function PersonalTimeStudyEntryForm({
                     onAdd={handleAddDocs}
                     onDelete={handleDeleteDoc}
                     onDownload={handleDownloadDoc}
+                    className="w-full md:w-[calc(50%-8px)] xl:w-auto xl:flex-1"
                   />
                 )}
-                <div className="flex items-end gap-1 pb-0.5">
+                <div className="flex items-end gap-1 pb-0.5 w-auto justify-end xl:w-auto xl:justify-start">
                   {!readonly && canDeleteParent(parent.id) && (
                     <Button
                       size="icon"

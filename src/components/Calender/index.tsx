@@ -397,7 +397,10 @@ const AppCalender = ({
                   <div key={day}>{day}</div>
                 ))}
               </div>
-              <div className="week-summary-header">TOTAL(MIN.)</div>
+              <div className="week-summary-header leading-tight">
+                <span className="sm:hidden">TOTAL<br />MIN.</span>
+                <span className="hidden sm:inline">TOTAL(MIN.)</span>
+              </div>
               <div className="week-summary-header">STATUS</div>
               {showActionColumn && <div className="week-summary-header">ACTION</div>}
 
