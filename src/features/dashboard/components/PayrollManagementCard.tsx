@@ -25,7 +25,7 @@ export function PayrollManagementCard({ canViewPayroll, onDownloadTemplate }: Pa
   if (!canViewPayroll) return null
 
   return (
-    <div className="flex flex-col rounded-[10px] bg-white p-6 shadow-[0px_4px_20px_0px_#0000000D] border border-transparent">
+    <div className="flex h-full flex-col rounded-[10px] bg-white p-6 shadow-[0px_4px_20px_0px_#0000000D] border border-transparent">
       <div className="mb-6 text-center">
         <h3 className="text-[16px] font-medium text-[#1a1a2e]">Payroll Management</h3>
       </div>

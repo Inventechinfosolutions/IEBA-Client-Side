@@ -244,12 +244,12 @@ export function UserDashboard() {
 
   return (
     <TooltipProvider>
-      <div className="flex flex-col gap-4 w-full">
+      <div className="flex flex-col gap-4 w-full pb-6">
         {/* Top Section: Calendar + Stats */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch">
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 items-stretch">
 
           {/* Left: Calendar Widget (4/12 width) */}
-          <div className="lg:col-span-4 xl:col-span-4 flex">
+          <div className="xl:col-span-4 flex">
             <PersonalTimeStudyCalendarCard
               weekRows={[]}
               selectedDate={selectedDate}
@@ -264,10 +264,10 @@ export function UserDashboard() {
           </div>
 
 
-          <div className="lg:col-span-5 flex flex-col gap-4">
+          <div className="xl:col-span-5 flex flex-col gap-4">
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="h-[250px]">
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+              <div className="h-[220px] xl:h-[250px]">
                 <PersonalTimeStudyCard
                   totalApproved={tsApproved}
                   totalSubmitted={tsSubmitted}
@@ -276,7 +276,7 @@ export function UserDashboard() {
                   noBlur={true}
                 />
               </div>
-              <div className="h-[250px]">
+              <div className="h-[220px] xl:h-[250px]">
                 <PersonalLeaveCard
                   total={selfLeaveTotal}
                   approved={selfLeaveApproved}
@@ -289,26 +289,20 @@ export function UserDashboard() {
               </div>
             </div>
 
-
-
-            <div className="grid grid-cols-12 gap-4 h-[180px] min-h-0">
-              <div className="col-span-12 h-full min-h-0 overflow-hidden">
-                <ReportsCard reports={reportsData} isLoading={reports.isLoading} />
-              </div>
+            <div className="h-[180px] min-h-0">
+              <ReportsCard reports={reportsData} isLoading={reports.isLoading} />
             </div>
           </div>
 
-
-
-          <div className="lg:col-span-3">
-            <div className="h-[446px]">
+          <div className="xl:col-span-3">
+            <div className="h-[350px] xl:h-[446px]">
               <TodoCard items={todoItems} isLoading={overview.isLoading} />
             </div>
           </div>
         </div>
 
         <Card className="p-0 overflow-hidden rounded-[15px] shadow-[0_4px_16px_rgba(0,0,0,0.04)] border-[#E8EAF6] bg-white">
-          <div className="p-3 bg-white flex justify-end gap-8">
+          <div className="flex flex-wrap items-center justify-between sm:justify-end gap-3 sm:gap-8 p-3.5 bg-white border-b border-[#E8EAF6]">
             <div className="text-[13px] flex items-center gap-2">
               <span className="text-[#6B7280] font-medium">Allocated TS Minutes:</span>
               <span className="font-bold text-[#111827]">{summaryQuery.data?.tsmins ?? 0}</span>
@@ -518,6 +512,7 @@ export function UserDashboard() {
             </div>
           </div>
         </Card>
+        <div className="h-8 w-full shrink-0" />
       </div>
     </TooltipProvider>
   )

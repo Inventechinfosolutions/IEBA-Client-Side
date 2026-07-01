@@ -22,10 +22,6 @@ import {
   useReportsByRole,
 } from "../queries/dashboardQueries"
 import { downloadPayrollTemplate } from "@/features/payroll/api/payrollApi"
-import { getPayrollDateRange } from "../api/dashboard"
-
-
-import { PayrollPeriod } from "../enums/dashboard.enum"
 
 function hasPermission(permissions: string[] | undefined, key: string): boolean {
   if (!permissions) return false
@@ -264,7 +260,7 @@ export function DashboardPage() {
   }
 
   return (
-    <div className="flex flex-col gap-4 w-full min-h-0">
+    <div className="flex flex-col gap-4 w-full min-h-0 pb-6">
       {/* Header / Toolbar */}
       {isSuperAdmin && (
         <div className="flex items-center justify-between mb-2 gap-3">
@@ -314,12 +310,12 @@ export function DashboardPage() {
       ) : (
         <>
           <div
-            className="grid gap-4 h-[250px]"
-            style={{ gridTemplateColumns: row1TemplateColumns }}
+            className="grid gap-4 grid-cols-1 xl:grid-cols-[var(--row1-cols)] h-auto xl:h-[250px]"
+            style={{ "--row1-cols": row1TemplateColumns } as React.CSSProperties}
           >
 
         {showPersonalTimeStudyCard && (
-          <div className="h-full overflow-hidden">
+          <div className="h-[250px] xl:h-full overflow-hidden">
             <PersonalTimeStudyCard
               totalApproved={tsApproved}
               totalSubmitted={tsSubmitted}
@@ -330,7 +326,7 @@ export function DashboardPage() {
           </div>
         )}
 
-        <div className="h-full overflow-hidden">
+        <div className="h-[250px] xl:h-full overflow-hidden">
           <PersonalLeaveCard
             total={selfLeaveTotal}
             approved={selfLeaveApproved}
@@ -344,7 +340,7 @@ export function DashboardPage() {
 
         {/* Time Study Status */}
         {showTimeStudyStatusCard && (
-          <div className="h-full overflow-hidden">
+          <div className="h-[250px] xl:h-full overflow-hidden">
             <TimeStudyStatusCard
               approved={trApproved}
               pendingApproval={trPending}
@@ -356,17 +352,20 @@ export function DashboardPage() {
         )}
 
 
-        <div className="h-full overflow-hidden">
+        <div className="h-[250px] xl:h-full overflow-hidden">
           <TodoCard items={todoItems} isLoading={overview.isLoading} />
         </div>
       </div>
 
-      {/* ── Row 2: h-[285px] ── */}
-      <div className="grid gap-4 h-[285px]" style={{ gridTemplateColumns: row2TemplateColumns }}>
+      {/* ── Row 2 ── */}
+      <div
+        className="grid gap-4 grid-cols-1 xl:grid-cols-[var(--row2-cols)] h-auto xl:h-[420px]"
+        style={{ "--row2-cols": row2TemplateColumns } as React.CSSProperties}
+      >
 
 
         {showUserManagement ? (
-          <div className="flex flex-col gap-3 h-full min-h-0">
+          <div className="flex flex-col gap-3 h-[420px] xl:h-full min-h-0">
             <UsersCard
               userCount={userCountVal}
                 activeUsers={shouldShowExtendedStats ? activeUsersVal : undefined}
@@ -378,21 +377,23 @@ export function DashboardPage() {
             </div>
           </div>
         ) : (
-          <div className="h-full min-h-0 overflow-hidden">
+          <div className="h-[420px] xl:h-full min-h-0 overflow-hidden">
             <HolidayListCard list={holidaysList} isLoading={overview.isLoading} />
           </div>
         )}
 
         {/* Payroll Management */}
         {showPayrollCard && (
-          <PayrollManagementCard 
-            canViewPayroll 
-            onDownloadTemplate={handleDownloadTemplate} 
-          />
+          <div className="h-[420px] xl:h-full">
+            <PayrollManagementCard 
+              canViewPayroll 
+              onDownloadTemplate={handleDownloadTemplate} 
+            />
+          </div>
         )}
 
         {/* Reports */}
-        <div className="h-full overflow-hidden min-h-0">
+        <div className="h-[420px] xl:h-full overflow-hidden min-h-0">
           <ReportsCard reports={reportsData} isLoading={reports.isLoading} />
         </div>
 
@@ -411,6 +412,7 @@ export function DashboardPage() {
           />
         )}
       </div>
+      <div className="h-8 w-full shrink-0" />
     </>
   )}
 </div>

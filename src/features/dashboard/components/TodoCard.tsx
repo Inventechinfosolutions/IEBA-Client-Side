@@ -73,18 +73,18 @@ export function TodoCard({ items = [], isLoading }: TodoCardProps) {
                 <TooltipTrigger asChild>
                   <Link 
                     to="/to-do"
-                    className="relative flex items-center px-4 py-3 hover:bg-[#FAFAFA] cursor-pointer"
+                    className="flex items-center justify-between px-4 py-3 hover:bg-[#FAFAFA] cursor-pointer gap-2"
                   >
-                    <div className="flex items-center flex-1 min-w-0 pr-4">
-                      <span className="text-[#9CA3AF]  text-xl w-[24px] shrink-0">⋮</span>
-                      <span className="text-base  text-[#1a1a2e] whitespace-normal break-all truncate">
+                    <div className="flex items-center flex-1 min-w-0 gap-1">
+                      <span className="text-[#9CA3AF] text-xl w-4 shrink-0">⋮</span>
+                      <span className="text-[14px] font-medium text-[#1a1a2e] truncate">
                         {item.title}
                       </span>
                     </div>
-                    <div className="absolute left-1/2 -translate-x-1/2 text-sm  text-gray-500">
+                    <div className="text-[12px] font-medium text-gray-500 shrink-0 px-2">
                       {formatTodoDate(item)}
                     </div>
-                    <div className="w-[24px] shrink-0 flex justify-end">
+                    <div className="w-5 shrink-0 flex justify-end">
                       <Check className={`h-4 w-4 ${getStatusColor(item.status)}`} />
                     </div>
                   </Link>
