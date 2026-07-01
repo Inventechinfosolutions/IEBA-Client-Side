@@ -96,14 +96,14 @@ export function TodoFormModal({
       <DialogContent
         showClose={false}
         overlayClassName="bg-black/55"
-        className="w-full max-w-[800px] rounded-[4px] border border-[#e2e5ee] p-0 translate-y-[-80%] shadow-[0_12px_28px_rgba(17,24,39,0.16)]"
+        className="w-[calc(100%-2rem)] sm:w-full max-w-[800px] rounded-[4px] border border-[#e2e5ee] p-0 translate-y-[-50%] md:translate-y-[-80%] shadow-[0_12px_28px_rgba(17,24,39,0.16)]"
       >
         <DialogHeader className="px-8 pb-2 pt-6">
           <DialogTitle className="text-center text-[24px] font-medium text-[#111827]">
             {mode === "edit" ? "Edit To Do" : "Add To Do"}
           </DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="relative px-12 pb-12 pt-1">
+        <form onSubmit={handleSubmit} className="relative px-6 sm:px-12 pb-6 sm:pb-12 pt-1">
           {isSubmitting && (
             <div className="absolute inset-0 z-50 flex items-center justify-center rounded-b-[4px] bg-white/60">
               <Spinner className="text-[#6C5DD3]" />
@@ -119,7 +119,7 @@ export function TodoFormModal({
             <>
               <div className="space-y-8">
                 {isEditMode ? (
-                  <div className="grid grid-cols-[minmax(0,1fr)_270px] items-start gap-10">
+                  <div className="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_270px] items-start gap-6 md:gap-10">
                     <div>
                       <label className="mb-1 block text-[12px] text-[#111827]">
                         *Title
@@ -128,12 +128,12 @@ export function TodoFormModal({
                         {...form.register("title")}
                         disabled={isEditMode}
                         placeholder="Enter To Do Title"
-                        className="h-[46px] w-[300px] rounded-[8px] border-[#dfe3ee] text-[12px] placeholder:text-[12px] placeholder:text-gray-400 disabled:pointer-events-auto disabled:cursor-not-allowed disabled:border-[0.8px]! disabled:border-[#cfd4dd]! disabled:bg-[#d2d4d9]/20! disabled:text-black! disabled:opacity-100 focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
+                        className="h-[46px] w-full md:w-[300px] rounded-[8px] border-[#dfe3ee] text-[12px] placeholder:text-[12px] placeholder:text-gray-400 disabled:pointer-events-auto disabled:cursor-not-allowed disabled:border-[0.8px]! disabled:border-[#cfd4dd]! disabled:bg-[#d2d4d9]/20! disabled:text-black! disabled:opacity-100 focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
                       />
                     </div>
                     <div>
                       <label className="mb-2 block text-[12px] text-[#111827]">*Status</label>
-                      <div className="flex h-[46px] items-center gap-4">
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 h-auto py-2 md:h-[46px] md:py-0">
                         {TODO_STATUS_OPTIONS.map((statusOption) => {
                           const isDisabledOption =
                             statusOption === "new" && isNewStatusDisabled
@@ -183,7 +183,7 @@ export function TodoFormModal({
                     <TitleCaseInput
                       {...form.register("title")}
                       placeholder="Enter To Do Title"
-                      className="h-[46px] w-[282px] rounded-[8px] border-[#dfe3ee] text-[12px] placeholder:text-[12px] placeholder:text-gray-400 focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
+                      className="h-[46px] w-full md:w-[282px] rounded-[8px] border-[#dfe3ee] text-[12px] placeholder:text-[12px] placeholder:text-gray-400 focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
                     />
                   </div>
                 )}

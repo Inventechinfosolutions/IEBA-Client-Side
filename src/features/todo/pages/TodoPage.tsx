@@ -34,7 +34,7 @@ export function TodoPage() {
 
   const ui = useTodoUI()
   const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(10)
+  const [pageSize, setPageSize] = useState(5)
   const todoModule = useTodoModule({ page, pageSize, userId })
 
   const isTableLoading = todoModule.isLoading || todoModule.isCreating || todoModule.isUpdating
@@ -84,9 +84,8 @@ export function TodoPage() {
 
   return (
     <section
-      className="font-roboto *:font-roboto w-full"
+      className="font-roboto *:font-roboto w-full max-w-full min-w-0 animate-fade-in todo-zoom-container"
       style={{
-        zoom: 1.2,
         "--primary": "#6C5DD3",
       } as React.CSSProperties}
     >

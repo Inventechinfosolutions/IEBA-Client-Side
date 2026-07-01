@@ -453,3 +453,16 @@
   opacity: 0;
   animation: ieba-fade-in 100ms forwards 200ms;
 }
+
+/* Responsive zoom container for TodoPage */
+.todo-zoom-container {
+  zoom: 1.0;
+  padding-bottom: 1.5rem;
+}
+
+@media (min-width: 1280px) {
+  .todo-zoom-container {
+    zoom: 1.2;
+    padding-bottom: 8rem; /* Extra padding to fix scroll height clipping bug in browsers when zoomed */
+  }
+}

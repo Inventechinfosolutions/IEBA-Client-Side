@@ -78,12 +78,17 @@ export function DashboardLayout() {
       <AppSidebar />
       <SidebarInset className="bg-[#F4F5FB] h-svh overflow-hidden">
         <header className="sticky top-0 z-50 flex h-[72px] shrink-0 items-center justify-between gap-4 bg-white px-6 shadow-[0_2px_10px_rgba(0,0,0,0.06)]">
-          <div className="flex items-center gap-3">
-            <SidebarTrigger className="-ml-2 rounded-full border border-[#E5E7EB] bg-white text-[#4B5563] hover:bg-[#F3F4F6]" />
-            <span className="text-[17px] text-[#6C5DD3]">
-              {countyName
-                ? `Bits of Time Welcome To ${countyName}`
-                : "Bits of Time"}
+          <div className="flex items-center gap-3 min-w-0">
+            <SidebarTrigger className="-ml-2 rounded-full border border-[#E5E7EB] bg-white text-[#4B5563] hover:bg-[#F3F4F6] shrink-0" />
+            <span className="text-[12px] sm:text-[15px] md:text-[17px] font-semibold text-[#6C5DD3] leading-[1.2] whitespace-normal break-words block">
+              {countyName ? (
+                <>
+                  <span className="hidden sm:inline">Bits of Time Welcome To {countyName}</span>
+                  <span className="sm:hidden">Welcome To {countyName}</span>
+                </>
+              ) : (
+                "Bits of Time"
+              )}
             </span>
           </div>
           <div className="flex flex-1 justify-center -translate-60 -translate-y-3">
@@ -211,7 +216,7 @@ export function DashboardLayout() {
             )}
           </div>
         </header>
-        <div className="flex flex-1 min-h-0 flex-col gap-4 overflow-auto bg-[#f5f5f5] p-4 md:gap-6 md:p-6">
+        <div className="flex flex-1 min-w-0 min-h-0 flex-col gap-4 overflow-auto bg-[#f5f5f5] p-4 md:gap-6 md:p-6">
           <Suspense
             fallback={
               <div className="flex min-h-[300px] flex-1 items-center justify-center">
