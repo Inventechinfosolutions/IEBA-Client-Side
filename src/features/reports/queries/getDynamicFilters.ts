@@ -9,9 +9,25 @@ import {
   apiGetCostPoolsByDepartment,
   apiGetTimeStudyProgramsForUsers,
   apiGetRmtsPayPeriods,
+  apiGetCheckDatesFromPayroll,
 } from "../api/reports"
 import { reportKeys } from "../keys"
 import { reportQueryOptions } from "../queryOptions"
+
+export function useGetCheckDatesFromPayroll(
+  departmentId: string | undefined,
+  fromDate: string | undefined,
+  toDate: string | undefined,
+  enabled: boolean,
+  reportKey: string,
+) {
+  return useQuery({
+    queryKey: [...reportKeys.all, "check-dates-from-payroll", reportKey, { departmentId, fromDate, toDate }],
+    queryFn: () => apiGetCheckDatesFromPayroll(departmentId!, fromDate!, toDate!),
+    enabled: enabled && !!departmentId && !!fromDate && !!toDate,
+    ...reportQueryOptions,
+  })
+}
 
 export function useGetMaaEmployees(
   activityTypes: string[],

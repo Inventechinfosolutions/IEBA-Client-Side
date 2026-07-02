@@ -22,6 +22,7 @@ export type DepartmentHistorySettingsSnapshot = {
   allowMultiCodes?: boolean
   autoApportioning?: boolean
   manualApportioning?: boolean
+  standByCostpool?: boolean
   apportioningStartDate?: string | null
   apportioningEndDate?: string | null
   billingContactId?: string | null
