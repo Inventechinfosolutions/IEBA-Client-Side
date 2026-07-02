@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useQuery } from "@tanstack/react-query"
-import { ArrowLeft, History, PlusIcon, SearchIcon, X } from "lucide-react"
+import { ArrowLeft, History, PlusIcon, SearchIcon, X, Eye } from "lucide-react"
 import { useMemo, useState } from "react"
 import { useForm } from "react-hook-form"
 
@@ -193,6 +193,7 @@ function CostPoolEditFormBody({
   onUpdated,
   allowUserOrCostpoolDirect,
   isLoadingDetails,
+  readOnly,
 }: {
   costPoolId: number
   detail: CostPoolDetailResDto
@@ -206,6 +207,7 @@ function CostPoolEditFormBody({
   onUpdated: () => void
   allowUserOrCostpoolDirect: boolean
   isLoadingDetails?: boolean
+  readOnly?: boolean
 }) {
   const initialValues = useMemo(() => detailToUpsertFormValues(detail), [detail])
 
@@ -252,6 +254,7 @@ function CostPoolEditFormBody({
       allowUserOrCostpoolDirect={allowUserOrCostpoolDirect}
       isSubmitting={updateMutation.isPending}
       isLoadingDetails={isLoadingDetails}
+      readOnly={readOnly}
     />
   )
 }
@@ -311,6 +314,10 @@ function CostPoolEditDialogContent({
     return (detailQuery.data?.department as any)?.allowUserOrCostpoolDirect ?? true
   }, [detailQuery.data])
 
+  const readOnly = useMemo(() => {
+    return detailQuery.data?.name?.endsWith("StandbyCostPool") ?? false
+  }, [detailQuery.data])
+
   if (detailQuery.isError) {
     return (
       <div className="flex min-h-[240px] w-full max-w-[1150px] items-center justify-center rounded-[10px] bg-white p-8 shadow-[0_0_20px_0_#0000001a]">
@@ -342,6 +349,7 @@ function CostPoolEditDialogContent({
       departmentsLoading={false}
       onClose={onClose}
       onUpdated={onUpdated}
+      readOnly={readOnly}
     />
   )
 }
@@ -743,11 +751,15 @@ export function CostPoolTable({
                           setEditOpen(true)
                         }}
                       >
-                        <img
-                          src={editIconImg}
-                          alt="Edit"
-                          className="h-4 w-4 object-contain"
-                        />
+                        {row.costPool.endsWith("StandbyCostPool") ? (
+                          <Eye className="h-4 w-4" />
+                        ) : (
+                          <img
+                            src={editIconImg}
+                            alt="Edit"
+                            className="h-4 w-4 object-contain"
+                          />
+                        )}
                       </Button>
                     )}
                   </TableCell>

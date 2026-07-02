@@ -38,6 +38,8 @@ export const reportFormSchema = z
     includeActivePrograms: z.boolean(),
     includeInactivePrograms: z.boolean(),
     includeUnapprovedTime: z.boolean(),
+    /** Selected payroll check date for DSSRPT5. */
+    checkDateId: z.string().optional(),
     scheduleTime: z.boolean().optional(),
     timeStudyPeriodId: z.string().optional(),
     retainParameters: z.boolean(),
@@ -133,6 +135,7 @@ export const REPORT_FORM_DEFAULT_VALUES: z.infer<typeof reportFormSchema> = {
   includeActivePrograms: true,
   includeInactivePrograms: false,
   includeUnapprovedTime: true,
+  checkDateId: "",
   scheduleTime: false,
   timeStudyPeriodId: "",
   retainParameters: false,
