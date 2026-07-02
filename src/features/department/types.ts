@@ -124,6 +124,7 @@ export const DEPARTMENT_SETTINGS_ROWS: readonly {
     label: "Allow Multicode start date and end Date",
   },
   { key: "moveSaveSubmitToTop", label: "Move Save and Submit Button to Top" },
+  { key: "standByCostpool", label: "Standby Cost Pool" },
 ] as const
 
 /** Resolved contact row for the department table when the list API has richer data than the department DTO. */
@@ -191,6 +192,7 @@ export type DepartmentResDto = Record<string, unknown> & {
   removeDescriptionActivityNoteMultiCode?: boolean;
   allowActivationStartDateAndEndDate?: boolean;
   moveSaveSubmitToTop?: boolean;
+  standByCostpool?: boolean;
 }
 
 export type DepartmentAddressCreateDto = {
@@ -222,6 +224,7 @@ export type CreateDepartmentReqDto = {
   removeDescriptionActivityNoteMultiCode?: boolean;
   allowActivationStartDateAndEndDate?: boolean;
   moveSaveSubmitToTop?: boolean;
+  standByCostpool?: boolean;
   primaryContactId?: string | null;
   secondaryContactId?: string | null;
   billingContactId?: string | null;

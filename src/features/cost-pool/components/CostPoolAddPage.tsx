@@ -56,6 +56,7 @@ export function CostPoolAddPage({
   allowUserOrCostpoolDirect,
   isSubmitting = false,
   isLoadingDetails = false,
+  readOnly = false,
 }: CostPoolAddPageProps) {
   const [unassignedSearch, setUnassignedSearch] = useState("")
   const [assignedSearch, setAssignedSearch] = useState("")
@@ -193,11 +194,12 @@ export function CostPoolAddPage({
 
         <div className="flex items-center justify-end gap-2">
           <Checkbox
+            disabled={readOnly}
             checked={form.watch("active")}
             onCheckedChange={(checked: boolean | "indeterminate") =>
               form.setValue("active", Boolean(checked))
             }
-            className="border-[#6C5DD3] data-[state=checked]:bg-[#6C5DD3] data-[state=checked]:text-white"
+            className="border-[#6C5DD3] data-[state=checked]:bg-[#6C5DD3] data-[state=checked]:text-white disabled:opacity-50"
           />
           <span className="text-[13px] text-[#111827]">Active</span>
         </div>
@@ -214,7 +216,7 @@ export function CostPoolAddPage({
           <div className="col-span-5 space-y-2">
             <Label className="text-[13px] text-[#111827]">Department</Label>
             <Select
-              disabled={departmentsLoading}
+              disabled={departmentsLoading || readOnly}
               value={departmentId > 0 ? String(departmentId) : ""}
               onValueChange={(value) => {
                 form.setValue("departmentId", Number(value), { shouldValidate: true })
@@ -264,7 +266,7 @@ export function CostPoolAddPage({
             >
               <TitleCaseInput
                 placeholder="Cost Pool Name"
-                disabled={!hasDepartment}
+                disabled={!hasDepartment || readOnly}
                 className={[
                   "h-14 rounded-[8px] border-[#E5E7EB]",
                   !hasDepartment
@@ -290,7 +292,8 @@ export function CostPoolAddPage({
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
-                    className="inline-flex items-center gap-2"
+                    disabled={readOnly}
+                    className="inline-flex items-center gap-2 disabled:opacity-50"
                     onClick={() =>
                       setSelectedUnassignedIds(
                         allUnassignedSelected ? [] : filteredUnassigned.map((a) => a.activityDepartmentId),
@@ -324,7 +327,8 @@ export function CostPoolAddPage({
                       <span>{departmentLabel}</span>
                       <button
                         type="button"
-                        className="inline-flex cursor-pointer"
+                        disabled={readOnly}
+                        className="inline-flex cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                         onClick={() =>
                           setSelectedUnassignedIds(
                             allUnassignedSelected ? [] : filteredUnassigned.map((a) => a.activityDepartmentId),
@@ -340,7 +344,8 @@ export function CostPoolAddPage({
                       </span>
                       <button
                         type="button"
-                        className="inline-flex cursor-pointer"
+                        disabled={readOnly}
+                        className="inline-flex cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                         onClick={() =>
                           setSelectedUnassignedIds(
                             allUnassignedSelected ? [] : filteredUnassigned.map((a) => a.activityDepartmentId),
@@ -368,14 +373,15 @@ export function CostPoolAddPage({
                                 key={a.activityDepartmentId}
                                 role="button"
                                 tabIndex={0}
-                                className="flex w-full cursor-pointer items-center justify-between gap-3 px-3 py-1 text-left text-[12px] leading-4"
-                                onClick={() =>
+                                className={`flex w-full items-center justify-between gap-3 px-3 py-1 text-left text-[12px] leading-4 ${readOnly ? "cursor-not-allowed opacity-70" : "cursor-pointer"}`}
+                                onClick={() => {
+                                  if (readOnly) return
                                   setSelectedUnassignedIds((prev) =>
                                     prev.includes(a.activityDepartmentId)
                                       ? prev.filter((x) => x !== a.activityDepartmentId)
                                       : [...prev, a.activityDepartmentId],
                                   )
-                                }
+                                }}
                                 onKeyDown={(e) => {
                                   if (e.key !== "Enter" && e.key !== " ") return
                                   e.preventDefault()
@@ -455,16 +461,16 @@ export function CostPoolAddPage({
             <Button
               type="button"
               onClick={moveToAssigned}
-              className="h-11 w-17 rounded-[10px] bg-[#6C5DD3] px-0 text-white shadow-[0_10px_18px_rgba(108,93,211,0.25)] hover:bg-[#5B4DC5] disabled:opacity-100 disabled:bg-[#6C5DD3]"
-              disabled={selectedUnassignedIds.length === 0}
+              className="h-11 w-17 rounded-[10px] bg-[#6C5DD3] px-0 text-white shadow-[0_10px_18px_rgba(108,93,211,0.25)] hover:bg-[#5B4DC5] disabled:opacity-50 disabled:bg-[#6C5DD3]"
+              disabled={selectedUnassignedIds.length === 0 || readOnly}
             >
               <PlayIcon className="size-3 fill-white text-white" />
             </Button>
             <Button
               type="button"
               onClick={moveToUnassigned}
-              className="h-11 w-17 rounded-[10px] bg-[#6C5DD3] px-0 text-white shadow-[0_10px_18px_rgba(108,93,211,0.25)] hover:bg-[#5B4DC5] disabled:opacity-100 disabled:bg-[#6C5DD3]"
-              disabled={selectedAssignedIds.length === 0}
+              className="h-11 w-17 rounded-[10px] bg-[#6C5DD3] px-0 text-white shadow-[0_10px_18px_rgba(108,93,211,0.25)] hover:bg-[#5B4DC5] disabled:opacity-50 disabled:bg-[#6C5DD3]"
+              disabled={selectedAssignedIds.length === 0 || readOnly}
             >
               <PlayIcon className="size-3 rotate-180 fill-white text-white" />
             </Button>
@@ -477,7 +483,8 @@ export function CostPoolAddPage({
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
-                    className="inline-flex items-center gap-2"
+                    disabled={readOnly}
+                    className="inline-flex items-center gap-2 disabled:opacity-50"
                     onClick={() =>
                       setSelectedAssignedIds(
                         allAssignedSelected ? [] : filteredAssigned.map((a) => a.activityDepartmentId),
@@ -511,7 +518,8 @@ export function CostPoolAddPage({
                       <span>{departmentLabel}</span>
                       <button
                         type="button"
-                        className="inline-flex cursor-pointer"
+                        disabled={readOnly}
+                        className="inline-flex cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                         onClick={() =>
                           setSelectedAssignedIds(
                             allAssignedSelected ? [] : filteredAssigned.map((a) => a.activityDepartmentId),
@@ -527,7 +535,8 @@ export function CostPoolAddPage({
                       </span>
                       <button
                         type="button"
-                        className="inline-flex cursor-pointer"
+                        disabled={readOnly}
+                        className="inline-flex cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                         onClick={() =>
                           setSelectedAssignedIds(
                             allAssignedSelected ? [] : filteredAssigned.map((a) => a.activityDepartmentId),
@@ -555,14 +564,15 @@ export function CostPoolAddPage({
                                 key={a.activityDepartmentId}
                                 role="button"
                                 tabIndex={0}
-                                className="flex w-full cursor-pointer items-center justify-between gap-3 px-3 py-1 text-left text-[12px] leading-4"
-                                onClick={() =>
+                                className={`flex w-full items-center justify-between gap-3 px-3 py-1 text-left text-[12px] leading-4 ${readOnly ? "cursor-not-allowed opacity-70" : "cursor-pointer"}`}
+                                onClick={() => {
+                                  if (readOnly) return
                                   setSelectedAssignedIds((prev) =>
                                     prev.includes(a.activityDepartmentId)
                                       ? prev.filter((x) => x !== a.activityDepartmentId)
                                       : [...prev, a.activityDepartmentId],
                                   )
-                                }
+                                }}
                                 onKeyDown={(e) => {
                                   if (e.key !== "Enter" && e.key !== " ") return
                                   e.preventDefault()
@@ -691,14 +701,15 @@ export function CostPoolAddPage({
                             key={u.userId}
                             role="button"
                             tabIndex={0}
-                            className="flex cursor-pointer items-center justify-between rounded-[8px] px-3 py-2.5 transition-colors hover:bg-[#F9FAFB]"
-                            onClick={() =>
+                            className={`flex items-center justify-between rounded-[8px] px-3 py-2.5 transition-colors hover:bg-[#F9FAFB] ${readOnly ? "cursor-not-allowed opacity-70" : "cursor-pointer"}`}
+                            onClick={() => {
+                              if (readOnly) return
                               setSelectedUnassignedUserIds((prev) =>
                                 prev.includes(u.userId)
                                   ? prev.filter((x) => x !== u.userId)
                                   : [...prev, u.userId],
                               )
-                            }
+                            }}
                             onKeyDown={(e) => {
                               if (e.key !== "Enter" && e.key !== " ") return
                               e.preventDefault()
@@ -731,16 +742,16 @@ export function CostPoolAddPage({
             <Button
               type="button"
               onClick={moveToAssignedUsers}
-              disabled={selectedUnassignedUserIds.length === 0}
-              className="h-11 w-17 rounded-[10px] bg-[#6C5DD3] px-0 text-white shadow-[0_10px_18px_rgba(108,93,211,0.25)] hover:bg-[#5B4DC5] disabled:opacity-100 disabled:bg-[#6C5DD3]"
+              disabled={selectedUnassignedUserIds.length === 0 || readOnly}
+              className="h-11 w-17 rounded-[10px] bg-[#6C5DD3] px-0 text-white shadow-[0_10px_18px_rgba(108,93,211,0.25)] hover:bg-[#5B4DC5] disabled:opacity-50 disabled:bg-[#6C5DD3]"
             >
               <PlayIcon className="size-3 fill-white text-white" />
             </Button>
             <Button
               type="button"
               onClick={moveToUnassignedUsers}
-              disabled={selectedAssignedUserIds.length === 0}
-              className="h-11 w-17 rounded-[10px] bg-[#6C5DD3] px-0 text-white shadow-[0_10px_18px_rgba(108,93,211,0.25)] hover:bg-[#5B4DC5] disabled:opacity-100 disabled:bg-[#6C5DD3]"
+              disabled={selectedAssignedUserIds.length === 0 || readOnly}
+              className="h-11 w-17 rounded-[10px] bg-[#6C5DD3] px-0 text-white shadow-[0_10px_18px_rgba(108,93,211,0.25)] hover:bg-[#5B4DC5] disabled:opacity-50 disabled:bg-[#6C5DD3]"
             >
               <PlayIcon className="size-3 rotate-180 fill-white text-white" />
             </Button>
@@ -789,14 +800,15 @@ export function CostPoolAddPage({
                             key={u.userId}
                             role="button"
                             tabIndex={0}
-                            className="flex cursor-pointer items-center justify-between rounded-[8px] px-3 py-2.5 transition-colors hover:bg-[#F9FAFB]"
-                            onClick={() =>
+                            className={`flex items-center justify-between rounded-[8px] px-3 py-2.5 transition-colors hover:bg-[#F9FAFB] ${readOnly ? "cursor-not-allowed opacity-70" : "cursor-pointer"}`}
+                            onClick={() => {
+                              if (readOnly) return
                               setSelectedAssignedUserIds((prev) =>
                                 prev.includes(u.userId)
                                   ? prev.filter((x) => x !== u.userId)
                                   : [...prev, u.userId],
                               )
-                            }
+                            }}
                             onKeyDown={(e) => {
                               if (e.key !== "Enter" && e.key !== " ") return
                               e.preventDefault()
@@ -828,13 +840,15 @@ export function CostPoolAddPage({
       )}
 
         <div className="flex items-center justify-end gap-3 pt-2">
-          <Button
-            type="submit"
-            disabled={isSubmitting}
-            className="h-10 rounded-[10px] bg-[#6C5DD3] px-6 text-white hover:bg-[#5B4DC5]"
-          >
-            Save
-          </Button>
+          {!readOnly && (
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              className="h-10 rounded-[10px] bg-[#6C5DD3] px-6 text-white hover:bg-[#5B4DC5]"
+            >
+              Save
+            </Button>
+          )}
           <Button
             type="button"
             variant="secondary"

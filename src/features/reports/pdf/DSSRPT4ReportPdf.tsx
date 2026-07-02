@@ -24,12 +24,12 @@ import {
 const TABLE_WIDTH = 544
 
 const W = {
-  employeeName: 152,
-  alloc: 98,
-  nonAlloc: 49,
-  totalHours: 65,
-  fte: 49,
-  cost: 131,
+  employeeName: 141,
+  alloc: 76,
+  nonAlloc: 87,
+  totalHours: 76,
+  fte: 54,
+  cost: 110,
 } as const
 
 const styles = StyleSheet.create({
@@ -146,11 +146,11 @@ function TableHeaderRow() {
   return (
     <View style={styles.row}>
       <Text style={[styles.headerCell, { width: W.employeeName, textAlign: "left" }]}>Employee Name</Text>
-      <Text style={[styles.headerCell, { width: W.alloc }]}>Alloc.</Text>
-      <Text style={[styles.headerCell, { width: W.nonAlloc }]}>Non-Alloc Hours</Text>
-      <Text style={[styles.headerCell, { width: W.totalHours }]}>Total Hours</Text>
-      <Text style={[styles.headerCell, { width: W.fte }]}>FTE</Text>
-      <Text style={[styles.headerCell, { width: W.cost }]}>Cost</Text>
+      <Text style={[styles.headerCell, { width: W.alloc, textAlign: "right" }]}>Alloc.</Text>
+      <Text style={[styles.headerCell, { width: W.nonAlloc, textAlign: "right" }]}>Non-Alloc Hours</Text>
+      <Text style={[styles.headerCell, { width: W.totalHours, textAlign: "right" }]}>Total Hours</Text>
+      <Text style={[styles.headerCell, { width: W.fte, textAlign: "right" }]}>FTE</Text>
+      <Text style={[styles.headerCell, { width: W.cost, textAlign: "right" }]}>Cost</Text>
     </View>
   )
 }

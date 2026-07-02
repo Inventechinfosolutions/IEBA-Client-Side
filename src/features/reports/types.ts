@@ -77,6 +77,8 @@ export type ReportRunPayload = {
   downloadType: ReportDownloadType
   fileName?: string
   maaTcmReportingPeriodType?: string
+  /** Selected payroll check date for DSSRPT5. */
+  checkDateId?: string
   /** Passed to client-side PDF rendering (not sent to backend). */
   countyName?: string
   countyLogoDataUrl?: string
