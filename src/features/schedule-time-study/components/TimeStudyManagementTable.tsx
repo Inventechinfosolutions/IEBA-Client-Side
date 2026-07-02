@@ -222,7 +222,7 @@ function ScheduleTimeStudyTableLoaded({
         onValueChange={(value) => setActiveTab(value as ScheduleTimeStudyTab)}
         className="w-full"
       >
-        <TabsList className="grid !h-[62px] w-full grid-cols-3 items-stretch gap-0 overflow-hidden rounded-[6px] border border-[#E5E7EB] bg-white p-0">
+        <TabsList className="flex flex-col gap-2 h-auto w-full bg-transparent p-0 border-0 mt-4 mb-4 md:mt-0 md:mb-0 md:grid md:!h-[62px] md:grid-cols-3 md:items-stretch md:gap-0 md:rounded-[6px] md:border md:border-[#E5E7EB] md:bg-white">
           <TimeStudyTab
             value="time-study-period-management"
             label="Time Study Period Management"
@@ -242,8 +242,8 @@ function ScheduleTimeStudyTableLoaded({
             Time Study Period MGMT
           </h3>
 
-          <div className="flex items-center justify-between gap-3">
-            <div className="space-y-1">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="w-full sm:w-auto">
               <SingleSelectDropdown
                 value={selectedStudyYear}
                 onChange={(value) => {
@@ -262,7 +262,7 @@ function ScheduleTimeStudyTableLoaded({
                 onBlur={() => {}}
                 options={fiscalYearOptions.map((fy) => ({ value: fy.id, label: fy.label }))}
                 placeholder="Select year"
-                className="h-10 w-[170px] rounded-[10px] border-[#D1D5DB] px-[12px] text-[14px] font-normal text-[#111827] focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+                className="h-10 w-full sm:w-[170px] rounded-[10px] border-[#D1D5DB] px-[12px] text-[14px] font-normal text-[#111827] focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0"
               />
               {form.formState.errors.studyYear ? (
                 <p className="text-xs text-destructive">{form.formState.errors.studyYear.message}</p>
@@ -271,7 +271,7 @@ function ScheduleTimeStudyTableLoaded({
 
             <form
               onSubmit={(event: FormEvent<HTMLFormElement>) => event.preventDefault()}
-              className="flex items-center gap-5"
+              className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto"
             >
               <div className="w-full sm:w-[220px]">
                 <TitleCaseInput
@@ -302,7 +302,7 @@ function ScheduleTimeStudyTableLoaded({
               </div>
               <Button
                 type="button"
-                className="h-10 w-[180px] rounded-[6px] bg-[#6C5DD3] px-[15px] text-[14px] font-normal text-white hover:bg-[#5D4FC4]"
+                className="h-10 w-full sm:w-[180px] rounded-[6px] bg-[#6C5DD3] px-[15px] text-[14px] font-normal text-white hover:bg-[#5D4FC4]"
                 onClick={() => {
                   setEditingPeriodRow(null)
                   setPeriodsFormMountKey((k) => k + 1)
@@ -314,7 +314,7 @@ function ScheduleTimeStudyTableLoaded({
             </form>
           </div>
 
-          <div className="relative overflow-hidden rounded-[10px] border border-[#E5E7EB]">
+          <div className="hidden md:block relative overflow-hidden rounded-[10px] border border-[#E5E7EB]">
             {isFetching && (
               <div className="absolute top-[60px] inset-x-0 bottom-0 flex items-center justify-center bg-white/50 z-[50]">
                 <Spinner className="text-[#6C5DD3]" />
@@ -494,8 +494,144 @@ function ScheduleTimeStudyTableLoaded({
             </Table>
           </div>
 
-          <div className="mt-6 flex min-h-[64px] w-full items-center justify-end rounded-[15px] bg-white px-4 py-4 shadow-[0_0_20px_0_#0000001a]">
-            <Pagination className="mx-0 w-auto justify-end">
+          <div className="block md:hidden space-y-4">
+            {isFetching && (
+              <div className="flex items-center justify-center p-4">
+                <Spinner className="text-[#6C5DD3]" />
+              </div>
+            )}
+            {isLoading ? (
+              Array.from({ length: 3 }).map((_, index) => (
+                <div key={`period-card-skeleton-${index}`} className="p-4 border border-[#E5E7EB] rounded-[10px] bg-white space-y-3">
+                  <Skeleton className="h-5 w-2/3" />
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div><Skeleton className="h-3 w-16" /></div>
+                    <div><Skeleton className="h-3 w-20" /></div>
+                    <div><Skeleton className="h-3 w-16" /></div>
+                    <div><Skeleton className="h-3 w-20" /></div>
+                  </div>
+                  <div className="flex justify-end gap-2 border-t border-[#E5E7EB] pt-2">
+                    <Skeleton className="h-8 w-16" />
+                    <Skeleton className="h-8 w-16" />
+                  </div>
+                </div>
+              ))
+            ) : periodRows.length === 0 ? (
+              <div className="p-8 border border-[#E5E7EB] rounded-[10px] bg-white text-center">
+                <img src={tableEmptyIcon} alt="" className="mx-auto size-[80px] object-contain" />
+              </div>
+            ) : (
+              periodRows.map((row) => (
+                <div key={row.id} className="border border-[#E5E7EB] rounded-[10px] bg-white overflow-hidden shadow-sm flex flex-col text-[13px] text-[#111827]">
+                  {/* Header */}
+                  <div className="bg-[#6C5DD3] px-5 py-3 text-white flex items-center justify-between">
+                    <span className="font-bold text-[14px] leading-none">{row.timeStudyPeriod}</span>
+                    <div className="flex items-center gap-1.5">
+                      {row.isUsed === true ? (
+                        <span className="text-xs text-white/70 italic px-1">In Use</span>
+                      ) : (
+                        <>
+                          <button
+                            type="button"
+                            className="inline-flex cursor-pointer items-center justify-center p-1 rounded hover:bg-white/10"
+                            onClick={() => {
+                              setEditingPeriodRow(row)
+                              setPeriodsFormMountKey((k) => k + 1)
+                              setCreatePeriodsOpen(true)
+                            }}
+                            aria-label="Edit period row"
+                          >
+                            <img src={editIconImg} alt="Edit" className="size-[16px] object-contain brightness-0 invert" />
+                          </button>
+                          <button
+                            type="button"
+                            disabled={deletePayPeriod.isPending}
+                            className="inline-flex cursor-pointer items-center justify-center p-1 rounded hover:bg-white/10 text-white disabled:opacity-40"
+                            onClick={() => {
+                              const id = Number(row.id)
+                              if (!Number.isFinite(id) || id <= 0) return
+                              void deletePayPeriod
+                                .mutateAsync(id)
+                                .then(() => {
+                                  toast.success("Deleted successfully", payPeriodDeleteSuccessToastOptions)
+                                })
+                                .catch((error: unknown) => {
+                                  toast.error(error instanceof Error ? error.message : "Delete failed")
+                                })
+                            }}
+                            aria-label="Delete period row"
+                          >
+                            {deletePayPeriod.isPending ? (
+                              <Spinner className="size-3.5 text-white" />
+                            ) : (
+                              <Trash2 className="size-[15px] text-white" />
+                            )}
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Body */}
+                  <div className="p-5 space-y-3.5 flex-1">
+                    <div className="flex justify-between items-center border-b border-gray-100 pb-2">
+                      <span className="text-[#111827] font-bold uppercase text-[11px] tracking-wider">Start Date:</span>
+                      <span className="font-normal text-gray-600 text-right text-[13px]">
+                        {dayjs(row.startDate).isValid() && row.startDate.includes("T")
+                          ? dayjs(row.startDate).format("MM-DD-YYYY")
+                          : row.startDate}
+                      </span>
+                    </div>
+
+                    <div className="flex justify-between items-center border-b border-gray-100 pb-2">
+                      <span className="text-[#111827] font-bold uppercase text-[11px] tracking-wider">End Date:</span>
+                      <span className="font-normal text-gray-600 text-right text-[13px]">
+                        {dayjs(row.endDate).isValid() && row.endDate.includes("T")
+                          ? dayjs(row.endDate).format("MM-DD-YYYY")
+                          : row.endDate}
+                      </span>
+                    </div>
+
+                    <div className="flex justify-between items-center border-b border-gray-100 pb-2">
+                      <span className="text-[#111827] font-bold uppercase text-[11px] tracking-wider">Hours:</span>
+                      <span className="font-normal text-gray-600 text-right text-[13px]">{row.hours}</span>
+                    </div>
+
+                    <div className="flex justify-between items-center border-b border-gray-100 pb-2">
+                      <span className="text-[#111827] font-bold uppercase text-[11px] tracking-wider">Holidays:</span>
+                      <span className="font-normal text-gray-600 text-right text-[13px]">{row.holidays}</span>
+                    </div>
+
+                    <div className="flex justify-between items-center border-b border-gray-100 pb-2">
+                      <span className="text-[#111827] font-bold uppercase text-[11px] tracking-wider">Allocable:</span>
+                      <span className="font-normal text-gray-600 text-right text-[13px]">{row.allocable}</span>
+                    </div>
+
+                    <div className="flex justify-between items-center border-b border-gray-100 pb-2">
+                      <span className="text-[#111827] font-bold uppercase text-[11px] tracking-wider">Non-Alloc:</span>
+                      <span className="font-normal text-gray-600 text-right text-[13px]">{row.nonAllocable}</span>
+                    </div>
+
+                    <div className="flex justify-between items-center pb-1">
+                      <span className="text-[#111827] font-bold uppercase text-[11px] tracking-wider">Status:</span>
+                      {row.isUsed ? (
+                        <span className="inline-flex items-center rounded-full border border-green-200 bg-green-50 px-2.5 py-0.5 text-[11px] font-normal text-green-700">
+                          In Use
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center rounded-full border border-yellow-200 bg-yellow-50 px-2.5 py-0.5 text-[11px] font-normal text-yellow-700">
+                          Unused
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          <div className="mt-6 flex min-h-[64px] w-full items-center justify-center sm:justify-end rounded-[15px] bg-white px-4 py-4 shadow-[0_0_20px_0_#0000001a]">
+            <Pagination className="mx-0 w-auto justify-center sm:justify-end">
               <PaginationContent className="gap-0">
                 <PaginationItem>
                   <PaginationPrevious

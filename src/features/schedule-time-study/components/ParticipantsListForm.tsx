@@ -330,7 +330,7 @@ export function ParticipantsListForm({
     >
       <DialogContent
         showClose={false}
-        className="min-h-[520px] w-[980px] max-w-[calc(100vw-2rem)] rounded-[6px] border border-[#E5E7EB] bg-white p-[18px_26px_24px]"
+        className="min-h-[520px] max-h-[90vh] overflow-y-auto w-[980px] max-w-[calc(100vw-2rem)] rounded-[6px] border border-[#E5E7EB] bg-white p-4 sm:p-[18px_26px_24px]"
         overlayClassName="bg-black/45"
       >
         <DialogTitle className="text-center text-[17px] font-medium text-[#6C5DD3]">
@@ -344,8 +344,8 @@ export function ParticipantsListForm({
         )}
 
         <form onSubmit={onSubmit} className="space-y-5">
-          <div className="mx-auto mt-4 flex w-fit items-end justify-center gap-5">
-            <div className="w-[180px] space-y-1">
+          <div className="mx-auto mt-4 flex flex-col md:flex-row w-full md:w-fit items-stretch md:items-end justify-center gap-4 md:gap-5">
+            <div className="w-full md:w-[180px] space-y-1">
               <Label className="text-[14px] font-normal text-black">Group Name</Label>
               <TitleCaseInput
                 className={`!h-12 w-full rounded-[10px] border-[#D1D5DB] text-[14px] ${form.formState.errors.groupName ? "border-red-500" : ""
@@ -364,7 +364,7 @@ export function ParticipantsListForm({
               )}
             </div>
 
-            <div className="w-[180px] space-y-1">
+            <div className="w-full md:w-[180px] space-y-1">
               <Label className="text-[14px] font-normal text-black">Select Department</Label>
               <TitleCaseInput
                 readOnly
@@ -373,7 +373,7 @@ export function ParticipantsListForm({
               />
             </div>
 
-            <div className="w-[180px] space-y-1">
+            <div className="w-full md:w-[180px] space-y-1">
               <Label className="text-[14px] font-normal text-black">Select Year</Label>
               <Select
                 value={studyYear}
@@ -409,7 +409,7 @@ export function ParticipantsListForm({
               )}
             </div>
 
-            <div className="w-[180px] space-y-2">
+            <div className="w-full md:w-[180px] space-y-2">
               <Label className="text-[14px] font-normal text-black">Select User By</Label>
               <RadioGroup
                 value={selectedUserBy}
@@ -455,7 +455,7 @@ export function ParticipantsListForm({
             </div>
           </div>
 
-          <div className="mx-auto w-[600px] overflow-hidden rounded-[8px] border border-[#E5E7EB]">
+          <div className="mx-auto w-full max-w-[600px] overflow-hidden rounded-[8px] border border-[#E5E7EB]">
             <div className="h-10 bg-[#6C5DD3] px-4 py-2 text-[15px] font-medium text-white">
               {selectedUserBy === "user"
                 ? "All User List (Assigned)"
@@ -591,18 +591,18 @@ export function ParticipantsListForm({
             </div>
           </div>
 
-          <div className="flex justify-end gap-3">
+          <div className="flex flex-col sm:flex-row justify-end gap-3">
             <Button
               type="submit"
               disabled={createGroup.isPending || updateGroup.isPending}
-              className="h-10 w-[86px] rounded-[6px] bg-[#6C5DD3] text-[14px] font-medium text-white hover:bg-[#5D4FC4]"
+              className="h-10 w-full sm:w-[86px] order-1 sm:order-2 rounded-[6px] bg-[#6C5DD3] text-[14px] font-medium text-white hover:bg-[#5D4FC4]"
             >
               {createGroup.isPending || updateGroup.isPending ? <Spinner className="size-4 text-white" /> : "Save"}
             </Button>
             <Button
               type="button"
               variant="secondary"
-              className="h-10 w-[86px] rounded-[6px] bg-[#D9D9D9] text-[14px] font-medium text-black hover:bg-[#CDCDCD]"
+              className="h-10 w-full sm:w-[86px] order-2 sm:order-1 rounded-[6px] bg-[#D9D9D9] text-[14px] font-medium text-black hover:bg-[#CDCDCD]"
               onClick={() => onOpenChange(false)}
             >
               Exit

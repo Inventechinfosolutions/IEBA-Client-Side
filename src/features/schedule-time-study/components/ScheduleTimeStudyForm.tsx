@@ -104,14 +104,14 @@ export function ScheduleTimeStudyForm({
       studyYear: selectedStudyYear,
       ...(editingRow
         ? {
-            entries: [
-              {
-                timeStudyPeriod: editingRow.timeStudyPeriod,
-                groups: editingRow.groups,
-                status: SchedulePayPeriodGroupStatus.DRAFT,
-              },
-            ],
-          }
+          entries: [
+            {
+              timeStudyPeriod: editingRow.timeStudyPeriod,
+              groups: editingRow.groups,
+              status: SchedulePayPeriodGroupStatus.DRAFT,
+            },
+          ],
+        }
         : {}),
     },
   })
@@ -184,73 +184,73 @@ export function ScheduleTimeStudyForm({
   const handleSubmitWithStatus = (targetStatus: SchedulePayPeriodGroupStatus) =>
     form.handleSubmit(
       async (values) => {
-      if (departmentId == null || departmentId <= 0) {
-        toast.error("Department is not ready for saving. Try again in a moment.")
-        return
-      }
-
-      const items: Array<{
-        ppId: number
-        departmentId: number
-        groupIds: string
-        status: SchedulePayPeriodGroupStatus
-        fiscalyear: string
-      }> = []
-
-      for (const entry of values.entries) {
-        if (!entry.timeStudyPeriod.trim()) continue
-        const matchedPeriod = periodRows.find(
-          (row) => row.timeStudyPeriod === entry.timeStudyPeriod,
-        )
-        if (!matchedPeriod) {
-          toast.error("Selected pay period was not found.")
+        if (departmentId == null || departmentId <= 0) {
+          toast.error("Department is not ready for saving. Try again in a moment.")
           return
         }
-        const ppId = Number(matchedPeriod.id)
-        if (!Number.isFinite(ppId) || ppId <= 0) {
-          toast.error("Invalid pay period id.")
-          return
-        }
-        const groupIds = mapGroupNamesToIds(entry.groups, groupsDetailed)
-        if (groupIds == null) {
-          toast.error("Could not resolve one or more groups. Pick groups from the list.")
-          return
-        }
-        items.push({
-          ppId,
-          departmentId,
-          groupIds,
-          status: targetStatus,
-          fiscalyear: values.studyYear,
-        })
-      }
 
-      if (items.length === 0) {
-        toast.error("Add at least one scheduling row with a pay period and groups.")
-        return
-      }
+        const items: Array<{
+          ppId: number
+          departmentId: number
+          groupIds: string
+          status: SchedulePayPeriodGroupStatus
+          fiscalyear: string
+        }> = []
 
-      try {
-        if (editingRow?.id) {
-          const id = Number(editingRow.id)
-          if (Number.isFinite(id) && id > 0) {
-            await deleteScheduledRow.mutateAsync(id)
+        for (const entry of values.entries) {
+          if (!entry.timeStudyPeriod.trim()) continue
+          const matchedPeriod = periodRows.find(
+            (row) => row.timeStudyPeriod === entry.timeStudyPeriod,
+          )
+          if (!matchedPeriod) {
+            toast.error("Selected pay period was not found.")
+            return
           }
+          const ppId = Number(matchedPeriod.id)
+          if (!Number.isFinite(ppId) || ppId <= 0) {
+            toast.error("Invalid pay period id.")
+            return
+          }
+          const groupIds = mapGroupNamesToIds(entry.groups, groupsDetailed)
+          if (groupIds == null) {
+            toast.error("Could not resolve one or more groups. Pick groups from the list.")
+            return
+          }
+          items.push({
+            ppId,
+            departmentId,
+            groupIds,
+            status: targetStatus,
+            fiscalyear: values.studyYear,
+          })
         }
-        await createBatch.mutateAsync({ items })
-        toast.success(
-          editingRow ? "Scheduling updated successfully" : "Scheduling created successfully",
-          participantGroupSuccessToastOptions,
-        )
-        onOpenChange(false)
-        form.reset({
-          ...scheduleTimeStudyModalDefaultValues,
-          department: selectedDepartment,
-          studyYear: selectedStudyYear,
-        })
-      } catch (error) {
-        toast.error(error instanceof Error ? error.message : "Save failed")
-      }
+
+        if (items.length === 0) {
+          toast.error("Add at least one scheduling row with a pay period and groups.")
+          return
+        }
+
+        try {
+          if (editingRow?.id) {
+            const id = Number(editingRow.id)
+            if (Number.isFinite(id) && id > 0) {
+              await deleteScheduledRow.mutateAsync(id)
+            }
+          }
+          await createBatch.mutateAsync({ items })
+          toast.success(
+            editingRow ? "Scheduling updated successfully" : "Scheduling created successfully",
+            participantGroupSuccessToastOptions,
+          )
+          onOpenChange(false)
+          form.reset({
+            ...scheduleTimeStudyModalDefaultValues,
+            department: selectedDepartment,
+            studyYear: selectedStudyYear,
+          })
+        } catch (error) {
+          toast.error(error instanceof Error ? error.message : "Save failed")
+        }
       },
       (errors) => {
         toast.error(getFirstNestedFormError(errors) ?? "Please fix the errors in the form")
@@ -279,7 +279,7 @@ export function ScheduleTimeStudyForm({
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent
           showClose={false}
-          className="min-h-[460px] w-[1120px] max-w-[calc(100vw-2rem)] rounded-[8px] border border-[#E5E7EB] bg-white p-[16px_16px_18px]"
+          className="min-h-[460px] max-h-[90vh] overflow-y-auto w-[1120px] max-w-[calc(100vw-2rem)] rounded-[8px] border border-[#E5E7EB] bg-white p-4 sm:p-[16px_16px_18px]"
           overlayClassName="bg-black/45"
         >
           <DialogTitle className="text-center text-[20px] font-normal text-black">
@@ -293,9 +293,9 @@ export function ScheduleTimeStudyForm({
           )}
 
           <form onSubmit={(e) => e.preventDefault()} className="space-y-5">
-            <div className="flex items-end justify-between">
-              <div className="flex items-end gap-6">
-                <div className="space-y-1">
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+              <div className="flex flex-col sm:flex-row sm:items-end gap-4 sm:gap-6 w-full sm:w-auto">
+                <div className="space-y-1 w-full sm:w-auto">
                   <Label className="text-[14px] font-normal text-black">Select Year</Label>
                   <Select
                     value={studyYear}
@@ -303,7 +303,7 @@ export function ScheduleTimeStudyForm({
                       form.setValue("studyYear", value, { shouldValidate: true })
                     }
                   >
-                    <SelectTrigger className="!h-12 w-[140px] rounded-[10px] border-[#D1D5DB] px-[11px] py-0 text-[14px] data-[size=default]:!h-12">
+                    <SelectTrigger className="!h-12 w-full sm:w-[140px] rounded-[10px] border-[#D1D5DB] px-[11px] py-0 text-[14px] data-[size=default]:!h-12">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent
@@ -323,19 +323,19 @@ export function ScheduleTimeStudyForm({
                   </Select>
                 </div>
 
-                <div className="space-y-1">
+                <div className="space-y-1 w-full sm:w-auto">
                   <Label className="text-[14px] font-normal text-black">Select Department</Label>
                   <TitleCaseInput
                     readOnly
                     value={selectedDepartmentLabel}
-                    className="!h-12 w-[160px] cursor-not-allowed rounded-[10px] border-[#D1D5DB] bg-[#F9FAFB] px-[11px] text-[14px] text-[#111827]"
+                    className="!h-12 w-full sm:w-[160px] cursor-not-allowed rounded-[10px] border-[#D1D5DB] bg-[#F9FAFB] px-[11px] text-[14px] text-[#111827]"
                   />
                 </div>
               </div>
 
               <Button
                 type="button"
-                className="h-10 w-[92px] rounded-[10px] bg-[#6C5DD3] text-[14px] font-medium text-white hover:bg-[#5D4FC4]"
+                className="h-10 w-full sm:w-[92px] rounded-[10px] bg-[#6C5DD3] text-[14px] font-medium text-white hover:bg-[#5D4FC4]"
                 onClick={() =>
                   append({
                     timeStudyPeriod: "",
@@ -357,7 +357,7 @@ export function ScheduleTimeStudyForm({
                     key={field.id}
                     className="rounded-[10px] border border-[#E5E7EB] p-[18px_20px]"
                   >
-                    <div className="grid grid-cols-[190px_1fr_70px_90px_28px] gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-[190px_1fr_70px_90px_28px] gap-4 items-end">
                       <div className="space-y-1">
                         <Label className="text-[14px] font-normal text-black">
                           Select Time Study Period
@@ -480,8 +480,8 @@ export function ScheduleTimeStudyForm({
                                     <span className="ml-2 text-sm text-gray-500">Loading...</span>
                                   </div>
                                 ) : groupOptions.filter((g) =>
-                                    g.toLowerCase().includes(groupsSearch.toLowerCase())
-                                  ).length === 0 ? (
+                                  g.toLowerCase().includes(groupsSearch.toLowerCase())
+                                ).length === 0 ? (
                                   <div className="px-3 py-4 text-center text-[14px] text-[#9CA3AF]">
                                     No groups found
                                   </div>
@@ -522,9 +522,9 @@ export function ScheduleTimeStudyForm({
                         </div>
                       </div>
 
-                      <div className="space-y-1">
-                        <Label className="text-[14px] font-normal text-black">Users</Label>
-                        <div className="flex h-[40px] items-center px-2 text-[#6C5DD3]">
+                      <div className="flex md:flex-col md:space-y-1 justify-between md:justify-start items-center md:items-start border-b border-gray-100 md:border-0 pb-2 md:pb-0">
+                        <Label className="text-[14px] font-normal text-black">Users:</Label>
+                        <div className="flex h-auto md:h-[40px] items-center px-2 text-[#6C5DD3]">
                           <button
                             type="button"
                             onClick={() => {
@@ -539,9 +539,9 @@ export function ScheduleTimeStudyForm({
                         </div>
                       </div>
 
-                      <div className="space-y-1">
-                        <Label className="text-[14px] font-normal text-black">Status</Label>
-                        <div className="flex h-[40px] items-center text-[14px] text-[#111827]">
+                      <div className="flex md:flex-col md:space-y-1 justify-between md:justify-start items-center md:items-start border-b border-gray-100 md:border-0 pb-2 md:pb-0">
+                        <Label className="text-[14px] font-normal text-black">Status:</Label>
+                        <div className="flex h-auto md:h-[40px] items-center text-[14px] text-[#111827]">
                           {entry?.status
                             ? `${entry.status.charAt(0).toUpperCase()}${entry.status.slice(1).toLowerCase()}`
                             : ""}
@@ -568,10 +568,10 @@ export function ScheduleTimeStudyForm({
               })}
             </div>
 
-            <div className="flex justify-end gap-5 pr-8">
+            <div className="flex flex-col sm:flex-row justify-end gap-3 sm:gap-5 pr-0 sm:pr-8">
               <Button
                 type="button"
-                className="h-[42px] w-[88px] rounded-[10px] bg-[#6C5DD3] text-[16px] font-normal text-white hover:bg-[#5D4FC4]"
+                className="h-[42px] w-full sm:w-[88px] order-1 sm:order-1 rounded-[10px] bg-[#6C5DD3] text-[16px] font-normal text-white hover:bg-[#5D4FC4]"
                 disabled={createBatch.isPending || deleteScheduledRow.isPending}
                 onClick={() => void handleSubmitWithStatus(SchedulePayPeriodGroupStatus.PUBLISHED)()}
               >
@@ -579,7 +579,7 @@ export function ScheduleTimeStudyForm({
               </Button>
               <Button
                 type="button"
-                className="h-[42px] w-[88px] rounded-[10px] bg-[#6C5DD3] text-[16px] font-normal text-white hover:bg-[#5D4FC4]"
+                className="h-[42px] w-full sm:w-[88px] order-2 sm:order-2 rounded-[10px] bg-[#6C5DD3] text-[16px] font-normal text-white hover:bg-[#5D4FC4]"
                 disabled={createBatch.isPending || deleteScheduledRow.isPending}
                 onClick={() => void handleSubmitWithStatus(SchedulePayPeriodGroupStatus.DRAFT)()}
               >
@@ -588,7 +588,7 @@ export function ScheduleTimeStudyForm({
               <Button
                 type="button"
                 variant="secondary"
-                className="h-[42px] w-[70px] rounded-[10px] bg-[#D9D9D9] text-[16px] font-normal text-black hover:bg-[#CDCDCD]"
+                className="h-[42px] w-full sm:w-[70px] order-3 sm:order-3 rounded-[10px] bg-[#D9D9D9] text-[16px] font-normal text-black hover:bg-[#CDCDCD]"
                 onClick={() => onOpenChange(false)}
               >
                 Exit

@@ -470,7 +470,7 @@ export function TimeStudyPeriodsForm({
     >
       <DialogContent
         showClose={false}
-        className="min-h-[460px] w-[1220px] max-w-[calc(100vw-2rem)] rounded-[12px] border border-[#E5E7EB] bg-white p-[20px_24px]"
+        className="min-h-[460px] max-h-[90vh] overflow-y-auto w-[1220px] max-w-[calc(100vw-2rem)] rounded-[12px] border border-[#E5E7EB] bg-white p-4 sm:p-[20px_24px]"
         overlayClassName="bg-black/45"
       >
         <DialogTitle className="text-center text-[20px] font-medium text-black">
@@ -499,8 +499,8 @@ export function TimeStudyPeriodsForm({
             </div>
 
             <div className="space-y-3">
-              <div className="flex items-end gap-6">
-                <div className="space-y-1">
+              <div className="flex flex-col md:flex-row md:items-end gap-4 md:gap-6">
+                <div className="space-y-1 w-full md:w-auto">
                   <Label className="text-[14px] font-normal text-black">Select Fiscal Year</Label>
                   <Select
                     value={fiscalYear || undefined}
@@ -530,7 +530,7 @@ export function TimeStudyPeriodsForm({
                       void fetchHolidaysAndApply(dateRange.startDate, dateRange.endDate)
                     }}
                   >
-                    <SelectTrigger className="h-12 min-w-[160px] rounded-[10px] border-[#D1D5DB] px-[11px] text-[14px]">
+                    <SelectTrigger className="h-12 w-full md:min-w-[160px] rounded-[10px] border-[#D1D5DB] px-[11px] text-[14px]">
                       <SelectValue placeholder="Select fiscal year" />
                     </SelectTrigger>
                     <SelectContent
@@ -562,17 +562,17 @@ export function TimeStudyPeriodsForm({
                   </Select>
                 </div>
 
-                <div className="space-y-1">
+                <div className="space-y-1 w-full md:w-auto">
                   <Label className="text-[14px] font-normal text-black">Select Department</Label>
                   <TitleCaseInput
                     value={departmentLabel}
                     readOnly
-                    className="h-12 w-[150px] cursor-not-allowed rounded-[10px] border-[#D1D5DB] bg-[#F9FAFB] px-[11px] text-[14px]"
+                    className="h-12 w-full md:w-[150px] cursor-not-allowed rounded-[10px] border-[#D1D5DB] bg-[#F9FAFB] px-[11px] text-[14px]"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-7 gap-2">
+              <div className="grid grid-cols-1 md:grid-cols-7 gap-4 md:gap-2">
                 <div className="space-y-1">
                   <Label className="text-[14px] font-normal text-black">Time Study Period</Label>
                   <TitleCaseInput
@@ -708,18 +708,18 @@ export function TimeStudyPeriodsForm({
             </div>
           </div>
 
-          <div className="flex justify-end gap-4">
+          <div className="flex flex-col sm:flex-row justify-end gap-3 sm:gap-4">
             <Button
               type="submit"
               disabled={createPayPeriod.isPending || updatePayPeriod.isPending}
-              className="h-[54px] w-[101px] rounded-[14px] bg-[#6C5DD3] text-[14px] font-medium text-white hover:bg-[#5D4FC4]"
+              className="h-[54px] w-full sm:w-[101px] order-1 sm:order-2 rounded-[14px] bg-[#6C5DD3] text-[14px] font-medium text-white hover:bg-[#5D4FC4]"
             >
               {createPayPeriod.isPending || updatePayPeriod.isPending ? <Spinner className="size-4 text-white" /> : "Save"}
             </Button>
             <Button
               type="button"
               variant="secondary"
-              className="h-[54px] w-[120px] rounded-[14px] bg-[#D9D9D9] text-[14px] font-medium text-black hover:bg-[#CFCFCF]"
+              className="h-[54px] w-full sm:w-[120px] order-2 sm:order-1 rounded-[14px] bg-[#D9D9D9] text-[14px] font-medium text-[#111827] hover:bg-[#CFCFCF]"
               onClick={() => onOpenChange(false)}
             >
               Exit
