@@ -101,120 +101,163 @@ export function PayrollDataTable({ rows, isLoading, columns, onEditRow, showEdit
       : []
 
   const colCount = derivedColumns.length + 1
-  const showEmptyBody = !isLoading && rows.length === 0
-
-  if (showEmptyBody) {
-    return (
-      <div className={cn(tableScrollClass, payrollTableCardClass)}>
-        <table className="w-max min-w-full border-collapse text-left text-[12px]">
-          <PayrollHeaderRow columns={derivedColumns} />
-          <TableBody>
-            <TableRow className="border-0 hover:bg-transparent">
-              <TableCell colSpan={colCount} className="border-0 p-0 align-middle">
-                <div
-                  className="grid min-h-[220px] w-full min-w-full grid-cols-3 items-center border-t border-[#eef0f5] bg-white py-12"
-                  role="status"
-                  aria-label="No payroll data"
-                >
-                  <div className="flex justify-start pl-9 sm:pl-170">
-                    <img
-                      src={tableEmptyIcon}
-                      alt=""
-                      aria-hidden
-                      className="size-27 object-contain opacity-80 sm:size-27"
-                    />
-                  </div>
-                  <div className="flex justify-end pl-9 sm:pl-2-0">
-                    <img
-                      src={tableEmptyIcon}
-                      alt=""
-                      aria-hidden
-                      className="size-27 object-contain opacity-80 sm:size-27"
-                    />
-                  </div>
-                </div>
-              </TableCell>
-            </TableRow>
-          </TableBody>
-        </table>
-      </div>
-    )
-  }
 
   return (
-    <div className={cn(tableScrollClass, payrollTableCardClass, "relative")}>
-      {isLoading && (
-        <div className="absolute inset-x-0 bottom-0 top-[44px] z-20 flex items-center justify-center bg-white/40 backdrop-blur-[1px]">
-          <Spinner className="text-[#6C5DD3]" />
-        </div>
-      )}
-      <table className="w-max min-w-full border-collapse text-left text-[12px]">
-        <PayrollHeaderRow columns={derivedColumns} />
-        <TableBody aria-busy={isLoading}>
-          {isLoading ? (
-            Array.from({ length: SKELETON_ROW_COUNT }, (_, rowIndex) => (
-              <TableRow
-                key={`payroll-skeleton-${rowIndex}`}
-                className="border-[#eef0f5] hover:bg-transparent"
-              >
-                {derivedColumns.map((col, colIndex) => {
-                  const isLastCol = colIndex === derivedColumns.length - 1
-                  return (
-                    <TableCell
-                      key={`${col.dataKey}-${colIndex}`}
-                      className={cn(
-                        tdBaseClass,
-                        isLastCol ? "border-r-0" : "border-r border-[#eff0f5]",
-                      )}
-                    >
-                      <Skeleton className={payrollSkeletonBarClass(colIndex, rowIndex)} aria-hidden />
-                    </TableCell>
-                  )
-                })}
-                <TableCell className={cn(tdBaseClass, actionTdClass, "border-r-0")}>
-                  <Skeleton className={cn("h-7 w-7 rounded-[6px] bg-[#e8eaf2] mx-auto")} aria-hidden />
-                </TableCell>
-              </TableRow>
-            ))
-          ) : (
-            rows.map((row, index) => (
-              <TableRow key={rowKey(row, index)} className="border-[#eef0f5] hover:bg-[#fafafa]">
-                {derivedColumns.map((col, colIndex) => {
-                  const isLastCol = colIndex === derivedColumns.length - 1
-                  return (
-                    <TableCell
-                      key={`${col.dataKey}-${colIndex}`}
-                      className={cn(
-                        tdBaseClass,
-                        isLastCol ? "border-r-0" : "border-r border-[#eff0f5]",
-                      )}
-                    >
-                      {toCellText((row as unknown as Record<string, unknown>)[col.dataKey])}
-                    </TableCell>
-                  )
-                })}
-                <TableCell className={cn(tdBaseClass, actionTdClass, "border-r-0")}>
-                  {showEditAction ? (
-                    <button
-                      type="button"
-                      onClick={() => onEditRow?.(row)}
-                      className={cn(
-                        "inline-flex items-center justify-center rounded-[6px] bg-transparent p-1",
-                        "hover:bg-[#f7f7fb] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]/25",
-                        onEditRow ? "cursor-pointer" : "opacity-60 cursor-default hover:bg-transparent",
-                      )}
-                      aria-label="Edit row"
-                      disabled={!onEditRow}
-                    >
-                      <img src={tableEditIcon} alt="" aria-hidden className="size-4 object-contain" />
-                    </button>
-                  ) : null}
-                </TableCell>
-              </TableRow>
-            ))
+    <div className="space-y-4">
+      {/* Desktop View Table */}
+      <div className="hidden xl:block">
+        <div className={cn(tableScrollClass, payrollTableCardClass, "relative")}>
+          {isLoading && (
+            <div className="absolute inset-x-0 bottom-0 top-[44px] z-20 flex items-center justify-center bg-white/40 backdrop-blur-[1px]">
+              <Spinner className="text-[#6C5DD3]" />
+            </div>
           )}
-        </TableBody>
-      </table>
+          <table className="w-max min-w-full border-collapse text-left text-[12px]">
+            <PayrollHeaderRow columns={derivedColumns} />
+            <TableBody aria-busy={isLoading}>
+              {isLoading ? (
+                Array.from({ length: SKELETON_ROW_COUNT }, (_, rowIndex) => (
+                  <TableRow
+                    key={`payroll-skeleton-${rowIndex}`}
+                    className="border-[#eef0f5] hover:bg-transparent"
+                  >
+                    {derivedColumns.map((col, colIndex) => {
+                      const isLastCol = colIndex === derivedColumns.length - 1
+                      return (
+                        <TableCell
+                          key={`${col.dataKey}-${colIndex}`}
+                          className={cn(
+                            tdBaseClass,
+                            isLastCol ? "border-r-0" : "border-r border-[#eff0f5]",
+                          )}
+                        >
+                          <Skeleton className={payrollSkeletonBarClass(colIndex, rowIndex)} aria-hidden />
+                        </TableCell>
+                      )
+                    })}
+                    <TableCell className={cn(tdBaseClass, actionTdClass, "border-r-0")}>
+                      <Skeleton className={cn("h-7 w-7 rounded-[6px] bg-[#e8eaf2] mx-auto")} aria-hidden />
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : rows.length === 0 ? (
+                <TableRow className="h-[220px] bg-white hover:bg-white transition-none">
+                  <TableCell colSpan={colCount} className="text-center align-middle">
+                    <div className="flex flex-col items-center justify-center py-12">
+                      <img
+                        src={tableEmptyIcon}
+                        alt="No data"
+                        aria-hidden="true"
+                        className="mx-auto h-[85px] w-auto object-contain opacity-80"
+                      />
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                rows.map((row, index) => (
+                  <TableRow key={rowKey(row, index)} className="border-[#eef0f5] hover:bg-[#fafafa]">
+                    {derivedColumns.map((col, colIndex) => {
+                      const isLastCol = colIndex === derivedColumns.length - 1
+                      return (
+                        <TableCell
+                          key={`${col.dataKey}-${colIndex}`}
+                          className={cn(
+                            tdBaseClass,
+                            isLastCol ? "border-r-0" : "border-r border-[#eff0f5]",
+                          )}
+                        >
+                          {toCellText((row as unknown as Record<string, unknown>)[col.dataKey])}
+                        </TableCell>
+                      )
+                    })}
+                    <TableCell className={cn(tdBaseClass, actionTdClass, "border-r-0")}>
+                      {showEditAction ? (
+                        <button
+                          type="button"
+                          onClick={() => onEditRow?.(row)}
+                          className={cn(
+                            "inline-flex items-center justify-center rounded-[6px] bg-transparent p-1",
+                            "hover:bg-[#f7f7fb] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]/25",
+                            onEditRow ? "cursor-pointer" : "opacity-60 cursor-default hover:bg-transparent",
+                          )}
+                          aria-label="Edit row"
+                          disabled={!onEditRow}
+                        >
+                          <img src={tableEditIcon} alt="" aria-hidden className="size-4 object-contain" />
+                        </button>
+                      ) : null}
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </table>
+        </div>
+      </div>
+
+      {/* Mobile/Tablet Cards View */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 xl:hidden bg-[#F9FAFB] p-4 rounded-[8px] border border-[#e7e9f2]">
+        {isLoading ? (
+          Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="rounded-[10px] border border-[#E5E7EB] bg-white p-5 space-y-4 animate-pulse">
+              <Skeleton className="h-6 w-1/3 rounded bg-gray-200 animate-pulse" />
+              <Skeleton className="h-4 w-2/3 rounded bg-gray-200 animate-pulse" />
+              <Skeleton className="h-4 w-full rounded bg-gray-200 animate-pulse" />
+            </div>
+          ))
+        ) : rows.length === 0 ? (
+          <div className="rounded-[10px] border border-[#E5E7EB] bg-white p-8 text-center flex flex-col items-center justify-center min-h-[150px] w-full col-span-full">
+            <img
+              src={tableEmptyIcon}
+              alt="No data"
+              aria-hidden="true"
+              className="mx-auto h-[85px] w-auto object-contain opacity-80"
+            />
+          </div>
+        ) : (
+          rows.map((row, index) => (
+            <div
+              key={rowKey(row, index)}
+              className="rounded-[10px] border border-[#E5E7EB] bg-white shadow-sm overflow-hidden text-[13px] text-[#111827] flex flex-col"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between bg-[#6C5DD3] px-5 py-3 text-white">
+                <span className="font-bold text-[14px]">
+                  {toCellText((row as unknown as Record<string, unknown>)[derivedColumns[0]?.dataKey]) || "Payroll Record"}
+                </span>
+                {showEditAction && onEditRow && (
+                  <button
+                    type="button"
+                    onClick={() => onEditRow?.(row)}
+                    className="inline-flex cursor-pointer items-center justify-center p-1 rounded hover:bg-white/10"
+                    aria-label="Edit row"
+                  >
+                    <img
+                      src={tableEditIcon}
+                      alt="Edit"
+                      aria-hidden="true"
+                      className="size-[16px] object-contain brightness-0 invert"
+                    />
+                  </button>
+                )}
+              </div>
+
+              {/* Body */}
+              <div className="p-5 space-y-3.5 flex-1">
+                {derivedColumns.slice(1).map((col, colIndex) => {
+                  const val = toCellText((row as unknown as Record<string, unknown>)[col.dataKey])
+                  return (
+                    <div key={`${col.dataKey}-${colIndex}`} className="flex justify-between items-center border-b border-gray-100 pb-2 last:border-b-0 last:pb-0">
+                      <span className="text-[#111827] font-bold uppercase text-[11px] tracking-wider">{col.label}:</span>
+                      <span className="font-normal text-gray-600 text-right text-[13px] whitespace-normal break-words max-w-[60%]">{val || "—"}</span>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          ))
+        )}
+      </div>
     </div>
   )
 }

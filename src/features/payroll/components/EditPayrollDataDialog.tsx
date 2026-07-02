@@ -111,7 +111,7 @@ export function EditPayrollDataDialog({
       onOpenChange(next)
       if (!next) setValues({})
     }}>
-      <DialogContent className="max-w-4xl overflow-hidden p-4 sm:p-6">
+      <DialogContent className="w-[calc(100%-32px)] sm:w-full sm:max-w-4xl overflow-hidden p-4 sm:p-6">
         {(isSaving || !row) && (
           <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/60 backdrop-blur-[1px]">
             <Spinner className="text-[#6C5DD3]" />
@@ -124,7 +124,7 @@ export function EditPayrollDataDialog({
         {visibleColumns.length === 0 ? (
           <div className="text-[13px] text-[#6b7280]">No enabled columns are available.</div>
         ) : (
-          <div className="max-h-[70vh] overflow-y-auto pr-1">
+          <div className="max-h-[50vh] sm:max-h-[70vh] overflow-y-auto pr-1">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {visibleColumns.map((col) => (
                 <div key={col.dataKey} className="min-w-0">
@@ -145,12 +145,13 @@ export function EditPayrollDataDialog({
           </div>
         )}
 
-        <DialogFooter className="pt-2">
+        <DialogFooter className="grid grid-cols-2 gap-2 sm:flex sm:flex-row sm:justify-end pt-2">
           <Button
             type="button"
             variant="outline"
             onClick={() => onOpenChange(false)}
             disabled={isSaving}
+            className="w-full sm:w-auto"
           >
             Cancel
           </Button>
@@ -158,7 +159,7 @@ export function EditPayrollDataDialog({
             type="button"
             onClick={handleSave}
             disabled={!canSave}
-            className="bg-[var(--primary)] hover:bg-[var(--primary)]"
+            className="w-full sm:w-auto bg-[var(--primary)] hover:bg-[var(--primary)]"
           >
             {isSaving ? "Saving..." : "Save"}
           </Button>

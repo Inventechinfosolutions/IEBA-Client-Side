@@ -195,8 +195,8 @@ export function PayrollDetailsSection({
           ) : null}
         </div>
 
-        <div className="flex min-w-0 max-w-full flex-wrap items-start gap-6">
-          <div className="w-[min(100%,200px)] shrink-0 sm:w-[200px]">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:flex xl:flex-row xl:flex-wrap xl:items-start gap-4 xl:gap-6 min-w-0 max-w-full">
+          <div className="w-full xl:w-[200px] xl:shrink-0">
             <PurpleFieldLabel required>Fiscal Year:</PurpleFieldLabel>
             <Controller
               name="fiscalYearId"
@@ -226,7 +226,7 @@ export function PayrollDetailsSection({
             ) : null}
           </div>
 
-          <div>
+          <div className="w-full xl:w-auto">
             <PurpleFieldLabel required>Period:</PurpleFieldLabel>
             <Controller
               name="periodType"
@@ -259,7 +259,7 @@ export function PayrollDetailsSection({
             />
           </div>
 
-          <div className="w-[min(100%,200px)] shrink-0 sm:w-[200px]">
+          <div className="w-full xl:w-[200px] xl:shrink-0">
             <PurpleFieldLabel required>
               {periodType === "month" ? "Month:" : "Quarter:"}
             </PurpleFieldLabel>
@@ -288,7 +288,7 @@ export function PayrollDetailsSection({
             ) : null}
           </div>
 
-          <div className="w-full min-w-0 shrink-0 sm:w-[min(100%,280px)]">
+          <div className="w-full xl:w-[280px] xl:shrink-0">
             <PurpleFieldLabel>Department:</PurpleFieldLabel>
             <Controller
               name="departmentId"
@@ -318,7 +318,7 @@ export function PayrollDetailsSection({
             ) : null}
           </div>
 
-          <div className="w-full min-w-0 shrink-0 sm:w-[min(100%,280px)]">
+          <div className="w-full xl:w-[280px] xl:shrink-0">
             <PurpleFieldLabel>Employees:</PurpleFieldLabel>
             <Controller
               name="employeeIdsSerialized"
@@ -340,19 +340,19 @@ export function PayrollDetailsSection({
           </div>
         </div>
 
-        <div className="flex min-w-0 max-w-full flex-row flex-wrap items-center justify-start gap-3">
+        <div className="grid grid-cols-3 md:flex gap-2 md:gap-3 w-full md:w-auto">
           <Button
             type="button"
             disabled={isRowsLoading}
             onClick={handleGetSubmit}
-            className="h-[44px] min-w-[100px] rounded-[8px] border-0 bg-(--primary) px-8 text-[12px] font-medium text-white hover:bg-(--primary) disabled:opacity-70"
+            className="h-[44px] px-2 md:px-8 md:min-w-[100px] rounded-[8px] border-0 bg-(--primary) text-[12px] font-medium text-white hover:bg-(--primary) disabled:opacity-70"
           >
             Get
           </Button>
           <Button
             type="button"
             onClick={onDownloadCurrentRows}
-            className="h-[44px] min-w-[120px] rounded-[8px] border-0 bg-(--primary) px-6 text-[12px] font-medium text-white hover:bg-(--primary)/90"
+            className="h-[44px] px-2 md:px-6 md:min-w-[120px] rounded-[8px] border-0 bg-(--primary) text-[12px] font-medium text-white hover:bg-(--primary)/90"
           >
             Download
           </Button>
@@ -360,7 +360,7 @@ export function PayrollDetailsSection({
             type="button"
             disabled={activeQueryParams === null}
             onClick={handleDeleteClick}
-            className="h-[44px] min-w-[100px] rounded-[8px] border-0 bg-[#ef4444] px-6 text-[12px] font-medium text-white hover:bg-[#dc2626] disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-[#ef4444] disabled:opacity-100 disabled:hover:bg-[#ef4444]"
+            className="h-[44px] px-2 md:px-6 md:min-w-[100px] rounded-[8px] border-0 bg-[#ef4444] text-[12px] font-medium text-white hover:bg-[#dc2626] disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-[#ef4444] disabled:opacity-100 disabled:hover:bg-[#ef4444]"
           >
             Delete
           </Button>
