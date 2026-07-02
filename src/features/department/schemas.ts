@@ -30,6 +30,7 @@ export const departmentSettingsSchema = z.object({
   removeDescriptionActivityNoteMultiCode: z.boolean(),
   allowActivationStartDateAndEndDate: z.boolean(),
   moveSaveSubmitToTop: z.boolean(),
+  standByCostpool: z.boolean(),
   apportioningStartDate: z.string().optional().nullable(),
   apportioningEndDate: z.string().optional().nullable(),
 }).refine((data) => {
@@ -103,6 +104,7 @@ export const DEPARTMENT_FORM_DEFAULT_VALUES: z.infer<typeof departmentUpsertSche
     removeDescriptionActivityNoteMultiCode: false,
     allowActivationStartDateAndEndDate: false,
     moveSaveSubmitToTop: false,
+    standByCostpool: false,
     apportioningStartDate: null,
     apportioningEndDate: null,
   },

@@ -219,6 +219,7 @@ export type CostPoolUpsertDialogProps = {
   allowUserOrCostpoolDirect?: boolean
   isSubmitting?: boolean
   isLoadingDetails?: boolean
+  readOnly?: boolean
 }
 
 export type CostPoolAddPageProps = CostPoolUpsertDialogProps

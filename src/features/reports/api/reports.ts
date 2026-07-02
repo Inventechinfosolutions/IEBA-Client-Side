@@ -116,6 +116,7 @@ function buildBackendPayload(body: ReportRunPayload, overrideDownloadType?: stri
     activityCodes: body.activityIds?.length ? body.activityIds : undefined,
     costPoolIds: body.costPoolIds?.length ? body.costPoolIds.map(Number) : undefined,
     unApproved: body.includeUnapprovedTime,
+    checkDateId: body.checkDateId,
     downloadType: overrideDownloadType || body.downloadType,
     type: "newreports",
     maaTcmReportingPeriodType: body.maaTcmReportingPeriodType,
@@ -529,4 +530,22 @@ export async function apiGetReportsDepartments(userId: string): Promise<any[]> {
   const data = await api.get<any>(`/report/reportsdepartment?userId=${encodeURIComponent(userId)}`)
   return Array.isArray(data) ? data : Array.isArray(data.data) ? data.data : []
 }
+
+export async function apiGetCheckDatesFromPayroll(
+  departmentId: string,
+  fromDate: string,
+  toDate: string
+): Promise<ReportSelectOption[]> {
+  const params = new URLSearchParams()
+  params.append("departmentId", departmentId)
+  params.append("fromDate", fromDate)
+  params.append("toDate", toDate)
+  const data = await api.get<any>(`/report/getcheckdateFrompayroll?${params.toString()}`)
+  const list = unwrapListData(data)
+  return list.map((r: any) => ({
+    value: String(r.checkDateId || r.checkDate || r.checkdate || r.id || ""),
+    label: r.checkDate || r.checkdate || String(r.id || ""),
+  }))
+}
+
 

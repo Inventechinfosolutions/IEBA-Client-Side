@@ -68,6 +68,9 @@ export function mapReportFormToRunPayload(values: ReportFormValues): ReportRunPa
         : {
             dateFrom: values.dateFrom?.trim(),
             dateTo: values.dateTo?.trim(),
+            ...(values.fiscalYearId?.trim()
+              ? { fiscalYearId: values.fiscalYearId.trim() }
+              : {}),
           }),
     ...(departmentId ? { departmentId } : {}),
     ...(employeeIds.length > 0 ? { employeeIds } : {}),
@@ -83,6 +86,7 @@ export function mapReportFormToRunPayload(values: ReportFormValues): ReportRunPa
     includeActivePrograms: values.includeActivePrograms,
     includeInactivePrograms: values.includeInactivePrograms,
     includeUnapprovedTime: values.includeUnapprovedTime,
+    ...(values.checkDateId?.trim() ? { checkDateId: values.checkDateId.trim() } : {}),
     downloadType: values.downloadType,
     ...(values.fileName?.trim() ? { fileName: values.fileName.trim() } : {}),
     ...(values.masterCode?.trim() ? { masterCode: values.masterCode.trim() } : {}),
