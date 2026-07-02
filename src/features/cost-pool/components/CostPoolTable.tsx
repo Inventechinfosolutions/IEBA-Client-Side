@@ -450,31 +450,31 @@ export function CostPoolTable({
 
   return (
     <div className="space-y-4 rounded-[10px] border border-[#E5E7EB] bg-white p-4">
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-[8px] p-3">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 rounded-[8px] p-3">
         {showHistory ? (
-          <div className="flex flex-1 items-center gap-2">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full lg:w-auto">
             <TitleCaseInput
               placeholder="Search Activity Code"
               value={historyActivityCode}
               onChange={(e) => setHistoryActivityCode(e.target.value)}
-              className="h-12 w-[220px] rounded-[10px] border border-[#D9D9D9] bg-white px-3.5 text-[11px] text-[#111827] shadow-[0_4px_10px_rgba(15,23,42,0.08)] placeholder:text-[10px] placeholder:text-[#9CA3AF] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
+              className="h-12 w-full sm:w-[220px] rounded-[10px] border border-[#D9D9D9] bg-white px-3.5 text-[11px] text-[#111827] shadow-[0_4px_10px_rgba(15,23,42,0.08)] placeholder:text-[10px] placeholder:text-[#9CA3AF] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
             />
             <TitleCaseInput
               placeholder="Search Assignment Kind"
               value={historyAssignmentKind}
               onChange={(e) => setHistoryAssignmentKind(e.target.value)}
-              className="h-12 w-[220px] rounded-[10px] border border-[#D9D9D9] bg-white px-3.5 text-[11px] text-[#111827] shadow-[0_4px_10px_rgba(15,23,42,0.08)] placeholder:text-[10px] placeholder:text-[#9CA3AF] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
+              className="h-12 w-full sm:w-[220px] rounded-[10px] border border-[#D9D9D9] bg-white px-3.5 text-[11px] text-[#111827] shadow-[0_4px_10px_rgba(15,23,42,0.08)] placeholder:text-[10px] placeholder:text-[#9CA3AF] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
             />
           </div>
         ) : (
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full lg:w-auto">
             {/* Search bar */}
-            <div className="w-full max-w-[260px]">
+            <div className="w-full sm:w-[260px]">
               <form onSubmit={(event) => event.preventDefault()} className="relative">
                 <SearchIcon className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#9CA3AF]" />
                 <TitleCaseInput
                   placeholder="Search here"
-                  className="h-12 rounded-[8px] border border-[#D9D9D9] bg-white pl-9 pr-9 text-[16px] text-[#1F2937] placeholder:text-[#9CA3AF]"
+                  className="h-12 w-full rounded-[8px] border border-[#D9D9D9] bg-white pl-9 pr-9 text-[16px] text-[#1F2937] placeholder:text-[#9CA3AF]"
                   {...filterForm.register("search")}
                   value={searchValue}
                   onChange={(event) => {
@@ -501,27 +501,29 @@ export function CostPoolTable({
             </div>
 
             {/* Department filter dropdown */}
-            <SingleSelectDropdown
-              value={filters.departmentId !== undefined ? String(filters.departmentId) : ""}
-              onChange={(val) => {
-                const deptId = val === "__all__" || val === "" ? undefined : val
-                onDepartmentChange(deptId)
-                onPageChange(1)
-              }}
-              onBlur={() => {}}
-              options={departmentOptions}
-              placeholder="Filter by Department"
-              isLoading={allDepartmentsQuery.isPending && deptFetchEnabled}
-              onOpenChange={handleDeptOpenChange}
-            />
+            <div className="w-full sm:w-auto">
+              <SingleSelectDropdown
+                value={filters.departmentId !== undefined ? String(filters.departmentId) : ""}
+                onChange={(val) => {
+                  const deptId = val === "__all__" || val === "" ? undefined : val
+                  onDepartmentChange(deptId)
+                  onPageChange(1)
+                }}
+                onBlur={() => {}}
+                options={departmentOptions}
+                placeholder="Filter by Department"
+                isLoading={allDepartmentsQuery.isPending && deptFetchEnabled}
+                onOpenChange={handleDeptOpenChange}
+              />
+            </div>
           </div>
         )}
 
-        <div className="flex items-center gap-3 ml-auto">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center sm:justify-end gap-3 w-full lg:w-auto lg:ml-auto">
           {isSuperAdmin && (
             <button
               type="button"
-              className={`flex h-12 items-center gap-2 rounded-[12px] px-4 text-[14px] font-normal transition-colors ${
+              className={`flex h-12 items-center justify-center gap-2 rounded-[12px] px-4 text-[14px] font-normal transition-colors w-full sm:w-auto ${
                 showHistory
                   ? "bg-[#6C5DD3] text-white"
                   : "border border-[#6C5DD3] bg-white text-[#6C5DD3] hover:bg-[#F3F0FF]"
@@ -555,7 +557,7 @@ export function CostPoolTable({
           {!showHistory && (
             <button
               type="button"
-              className="flex h-12 items-center gap-2 rounded-[12px] bg-[#6C5DD3] px-4 text-white"
+              className="flex h-12 items-center justify-center gap-2 rounded-[12px] bg-[#6C5DD3] px-4 text-white w-full sm:w-auto"
               onClick={() => {
                 const nextValue = !showInactive
                 filterForm.setValue("inactive", nextValue)
@@ -575,7 +577,7 @@ export function CostPoolTable({
             <Button
               type="button"
               onClick={() => setAddOpen(true)}
-              className="h-12 rounded-[12px] bg-[#6C5DD3] px-6 text-[14px] font-normal text-white hover:bg-[#5B4DC5]"
+              className="h-12 rounded-[12px] bg-[#6C5DD3] px-6 text-[14px] font-normal text-white hover:bg-[#5B4DC5] w-full sm:w-auto"
             >
               <PlusIcon className="mr-2 size-4" />
               Add Cost Pool
@@ -591,7 +593,8 @@ export function CostPoolTable({
         />
       )}
 
-      <div className={`overflow-hidden rounded-[8px] border border-[#E5E7EB] ${showHistory ? "hidden" : ""}`}>
+      {/* Desktop Table View */}
+      <div className={`hidden xl:block overflow-hidden rounded-[8px] border border-[#E5E7EB] ${showHistory ? "hidden" : ""}`}>
         <Table className="w-full table-fixed border-collapse">
           <colgroup>
             <col className="w-[33%]" />
@@ -753,6 +756,69 @@ export function CostPoolTable({
             )}
           </TableBody>
         </Table>
+      </div>
+
+      {/* Mobile/Tablet Card Grid View */}
+      <div className={`grid grid-cols-1 sm:grid-cols-2 gap-4 xl:hidden ${showHistory ? "hidden" : ""}`}>
+        {isLoading ? (
+          Array.from({ length: pagination.pageSize }).map((_, i) => (
+            <div key={i} className="rounded-[10px] border border-[#E5E7EB] bg-white p-5 space-y-4 animate-pulse">
+              <Skeleton className="h-6 w-1/3 rounded bg-gray-200" />
+              <Skeleton className="h-4 w-2/3 rounded bg-gray-200" />
+            </div>
+          ))
+        ) : sortedRows.length === 0 ? (
+          <div className="col-span-1 sm:col-span-2 h-20 flex items-center justify-center text-sm text-muted-foreground bg-white rounded-[8px] border border-[#E5E7EB]">
+            No cost pools found.
+          </div>
+        ) : (
+          sortedRows.map((row) => (
+            <div
+              key={row.id}
+              className="rounded-[10px] border border-[#E5E7EB] bg-white shadow-sm overflow-hidden text-[13px] text-[#111827] flex flex-col"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between bg-[#6C5DD3] px-5 py-3 text-white">
+                <span className="font-bold text-[14px]">{row.costPool}</span>
+                {canUpdateCostPool && (
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8 text-white hover:bg-white/10 hover:text-white shrink-0 cursor-pointer"
+                    onClick={() => {
+                      setRowToEdit(row)
+                      setEditOpen(true)
+                    }}
+                  >
+                    <img
+                      src={editIconImg}
+                      alt="Edit"
+                      className="h-4 w-4 object-contain brightness-0 invert"
+                    />
+                  </Button>
+                )}
+              </div>
+
+              {/* Body */}
+              <div className="p-5 space-y-3 flex-1">
+                <div className="flex justify-between items-center border-b border-gray-100 pb-2">
+                  <span className="text-[#111827] font-bold uppercase text-[11px] tracking-wider">Department:</span>
+                  <span className="font-normal text-gray-600 text-right">{row.department}</span>
+                </div>
+
+                <div className="flex justify-between items-center pb-1">
+                  <span className="text-[#111827] font-bold uppercase text-[11px] tracking-wider">Status:</span>
+                  <span
+                    className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-normal ${row.active ? "bg-green-50 text-green-700 border border-green-200" : "bg-red-50 text-red-700 border border-red-200"}`}
+                  >
+                    {row.active ? "Active" : "Inactive"}
+                  </span>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
       </div>
       {!showHistory && (
         <div className="mt-4">

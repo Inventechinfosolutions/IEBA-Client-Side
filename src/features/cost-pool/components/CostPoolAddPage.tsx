@@ -180,7 +180,7 @@ export function CostPoolAddPage({
   }
 
   return (
-    <div className="relative w-[1150px] max-w-[calc(100vw-2rem)] rounded-[10px] bg-white px-11 py-7 shadow-[0_0_20px_0_#0000001a]">
+    <div className="relative w-full max-w-[1150px] rounded-[10px] bg-white px-4 sm:px-11 py-7 shadow-[0_0_20px_0_#0000001a]">
       {(isSubmitting || isLoadingDetails) && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/60">
           <Spinner className="text-[#6C5DD3]" />
@@ -210,8 +210,8 @@ export function CostPoolAddPage({
         }}
         className="mt-6 space-y-6"
       >
-        <div className="grid grid-cols-12 items-start gap-6">
-          <div className="col-span-5 space-y-2">
+        <div className="flex flex-col md:grid md:grid-cols-12 items-start gap-6">
+          <div className="w-full md:col-span-5 space-y-2">
             <Label className="text-[13px] text-[#111827]">Department</Label>
             <Select
               disabled={departmentsLoading}
@@ -254,9 +254,9 @@ export function CostPoolAddPage({
             ) : null}
           </div>
 
-          <div className="col-span-2" />
+          <div className="hidden md:block md:col-span-2" />
 
-          <div className="col-span-5 space-y-2">
+          <div className="w-full md:col-span-5 space-y-2">
             <Label className="text-[13px] text-[#111827]">Cost Pool</Label>
             <div
               className={!hasDepartment ? "cursor-not-allowed" : ""}
@@ -282,8 +282,8 @@ export function CostPoolAddPage({
           </div>
         </div>
 
-        <div className="grid grid-cols-12 items-start gap-6">
-          <div className="col-span-5">
+        <div className="flex flex-col md:grid md:grid-cols-12 items-start gap-6">
+          <div className="w-full md:col-span-5">
             <div className="rounded-[8px] border border-[#E5E7EB] bg-white">
               <div className="flex h-11 items-center justify-between rounded-t-[8px] bg-[#6C5DD3] px-3 text-[14px] text-white">
                 <span>Select Activity(Unassigned)</span>
@@ -451,14 +451,14 @@ export function CostPoolAddPage({
             </div>
           </div>
 
-          <div className="col-span-2 flex flex-col items-center justify-center gap-3 pt-40">
+          <div className="flex flex-row md:flex-col items-center justify-center gap-3 pt-2 md:pt-40 w-full md:col-span-2">
             <Button
               type="button"
               onClick={moveToAssigned}
               className="h-11 w-17 rounded-[10px] bg-[#6C5DD3] px-0 text-white shadow-[0_10px_18px_rgba(108,93,211,0.25)] hover:bg-[#5B4DC5] disabled:opacity-100 disabled:bg-[#6C5DD3]"
               disabled={selectedUnassignedIds.length === 0}
             >
-              <PlayIcon className="size-3 fill-white text-white" />
+              <PlayIcon className="size-3 fill-white text-white rotate-90 md:rotate-0" />
             </Button>
             <Button
               type="button"
@@ -466,11 +466,11 @@ export function CostPoolAddPage({
               className="h-11 w-17 rounded-[10px] bg-[#6C5DD3] px-0 text-white shadow-[0_10px_18px_rgba(108,93,211,0.25)] hover:bg-[#5B4DC5] disabled:opacity-100 disabled:bg-[#6C5DD3]"
               disabled={selectedAssignedIds.length === 0}
             >
-              <PlayIcon className="size-3 rotate-180 fill-white text-white" />
+              <PlayIcon className="size-3 rotate-[270deg] md:rotate-180 fill-white text-white" />
             </Button>
           </div>
 
-          <div className="col-span-5">
+          <div className="w-full md:col-span-5">
             <div className="rounded-[8px] border border-[#E5E7EB] bg-white">
               <div className="flex h-11 items-center justify-between rounded-t-[8px] bg-[#6C5DD3] px-3 text-[14px] text-white">
                 <span>Select Activity(Assigned)</span>
@@ -641,8 +641,8 @@ export function CostPoolAddPage({
 
         {/* Employee Section — show when allowUserCostpoolDirect is true for the selected department */}
         {hasDepartment && allowUserCostPoolDirect && (
-        <div className="grid grid-cols-12 items-start gap-6 pt-10">
-          <div className="col-span-5">
+        <div className="flex flex-col md:grid md:grid-cols-12 items-start gap-6 pt-10">
+          <div className="w-full md:col-span-5">
             <div className="rounded-[10px] border border-[#E5E7EB] bg-white shadow-[0_4px_14px_rgba(17,24,39,0.05)]">
               <div className="flex h-[42px] items-center justify-between rounded-t-[10px] bg-[#6C5DD3] px-4 text-[13px] font-medium text-white">
                 <span>{filteredUnassignedUsers.length} item</span>
@@ -727,14 +727,14 @@ export function CostPoolAddPage({
             </div>
           </div>
 
-          <div className="col-span-2 flex flex-col items-center justify-center gap-3 pt-32">
+          <div className="flex flex-row md:flex-col items-center justify-center gap-3 pt-2 md:pt-32 w-full md:col-span-2">
             <Button
               type="button"
               onClick={moveToAssignedUsers}
               disabled={selectedUnassignedUserIds.length === 0}
               className="h-11 w-17 rounded-[10px] bg-[#6C5DD3] px-0 text-white shadow-[0_10px_18px_rgba(108,93,211,0.25)] hover:bg-[#5B4DC5] disabled:opacity-100 disabled:bg-[#6C5DD3]"
             >
-              <PlayIcon className="size-3 fill-white text-white" />
+              <PlayIcon className="size-3 fill-white text-white rotate-90 md:rotate-0" />
             </Button>
             <Button
               type="button"
@@ -742,11 +742,11 @@ export function CostPoolAddPage({
               disabled={selectedAssignedUserIds.length === 0}
               className="h-11 w-17 rounded-[10px] bg-[#6C5DD3] px-0 text-white shadow-[0_10px_18px_rgba(108,93,211,0.25)] hover:bg-[#5B4DC5] disabled:opacity-100 disabled:bg-[#6C5DD3]"
             >
-              <PlayIcon className="size-3 rotate-180 fill-white text-white" />
+              <PlayIcon className="size-3 rotate-[270deg] md:rotate-180 fill-white text-white" />
             </Button>
           </div>
 
-          <div className="col-span-5">
+          <div className="w-full md:col-span-5">
             <div className="rounded-[10px] border border-[#E5E7EB] bg-white shadow-[0_4px_14px_rgba(17,24,39,0.05)]">
               <div className="flex h-[42px] items-center justify-between rounded-t-[10px] bg-[#6C5DD3] px-4 text-[13px] font-medium text-white">
                 <span>{filteredAssignedUsers.length} item</span>
@@ -827,11 +827,11 @@ export function CostPoolAddPage({
         </div>
       )}
 
-        <div className="flex items-center justify-end gap-3 pt-2">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3 pt-2">
           <Button
             type="submit"
             disabled={isSubmitting}
-            className="h-10 rounded-[10px] bg-[#6C5DD3] px-6 text-white hover:bg-[#5B4DC5]"
+            className="h-10 w-full sm:w-auto rounded-[10px] bg-[#6C5DD3] px-6 text-white hover:bg-[#5B4DC5]"
           >
             Save
           </Button>
@@ -839,7 +839,7 @@ export function CostPoolAddPage({
             type="button"
             variant="secondary"
             disabled={isSubmitting}
-            className="h-10 rounded-[10px] px-6"
+            className="h-10 w-full sm:w-auto rounded-[10px] px-6"
             onClick={onClose}
           >
             Exit

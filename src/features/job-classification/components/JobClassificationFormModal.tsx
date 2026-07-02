@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { Bold, Italic, List, X, Check } from "lucide-react"
+import { Bold, Italic, List, X } from "lucide-react"
 import { Controller, useForm } from "react-hook-form"
 import { toast } from "sonner"
 
