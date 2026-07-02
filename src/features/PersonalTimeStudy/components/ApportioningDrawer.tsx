@@ -50,25 +50,38 @@ export function ApportioningDrawer({
     <Sheet open={open} onOpenChange={(v) => { if (!v) onClose() }}>
       <SheetContent
         showCloseButton={false}
-        className="w-full sm:max-w-[462px] p-0 bg-white z-[40] border-l border-gray-100 shadow-xl !top-[72px] !h-[calc(100vh-72px)] flex flex-col gap-0"
-        overlayClassName="top-[72px] z-[40]"
+        className="data-[side=right]:w-full sm:max-w-[462px] p-0 bg-white z-[60] sm:z-[40] border-l border-gray-100 shadow-xl !top-0 sm:!top-[72px] !h-full sm:!h-[calc(100vh-72px)] flex flex-col gap-0"
+        overlayClassName="top-0 sm:top-[72px] z-[50] sm:z-[40]"
         side="right"
       >
         <SheetHeader className="p-6 pb-4 border-b border-[#E5E7EB] shrink-0 flex flex-row items-center justify-between space-y-0">
           <SheetTitle className="text-[20px] font-bold text-[#6C5DD3]">
             Time Study Details
           </SheetTitle>
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-1 rounded-md text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors cursor-pointer"
-            aria-label="Close drawer"
-          >
-            <X className="size-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="group flex sm:hidden items-center gap-1 text-[15px] font-semibold text-[#6C5DD3] hover:text-[#5B4DBF] transition-colors cursor-pointer"
+              aria-label="Back"
+            >
+              <span className="transform group-hover:-translate-x-0.5 transition-transform duration-200 text-[18px] font-bold leading-none -mt-[2px]">
+                &lsaquo;
+              </span>
+              <span>Back</span>
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-1 rounded-md text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors cursor-pointer"
+              aria-label="Close drawer"
+            >
+              <X className="size-5" />
+            </button>
+          </div>
         </SheetHeader>
 
-        <ScrollArea className="flex-1 h-[calc(100vh-140px)]">
+        <ScrollArea className="flex-1 h-[calc(100vh-68px)] sm:h-[calc(100vh-140px)]">
           <div className="p-6 space-y-6">
             <div>
               <h3 className="text-[13px] font-bold text-[#6C5DD3] uppercase tracking-wider mb-3">
@@ -231,7 +244,7 @@ export function ApportioningDrawer({
                 )}
               </div>
             </div>
-            
+
             <div className="mt-8 pt-4 border-t border-[#E5E7EB] flex items-center justify-center gap-2">
               <AlertCircle className="size-4 text-[#F97316] shrink-0" />
               <span className="text-[12px] text-gray-500 font-medium italic">
