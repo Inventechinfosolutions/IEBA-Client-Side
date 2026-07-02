@@ -95,290 +95,470 @@ export function MasterCodeTable({
   }
 
   const skeletonRows = Array.from({ length: 10 }, (_, index) => `skeleton-row-${index}`)
+  const colCount = headers.length
 
   return (
-    <div className="overflow-hidden rounded-[4px] border border-[#e6e7ef]">
-      <Table className="table-fixed">
-        <colgroup>
-          <col style={{ width: "120px" }} />
-          <col style={{ width: canEdit ? "470px" : "548px" }} />
-          <col style={{ width: "74px" }} />
-          <col style={{ width: "84px" }} />
-          <col style={{ width: "84px" }} />
-          <col style={{ width: "74px" }} />
-          <col style={{ width: "74px" }} />
-          {canEdit && <col style={{ width: "78px" }} />}
-        </colgroup>
-        <TableHeader className="[&_tr]:border-b-0">
-          <TableRow className="hover:bg-transparent">
-            {headers.map((header, idx) => (
-              <TableHead
-                key={header}
-                className={`h-10 bg-(--primary) px-3 text-[12px] font-medium text-white ${
-                  idx === headers.length - 1 ? "border-r-0" : "border-r border-white/50"
-                } ${
-                  idx === 0
-                    ? "text-left"
-                    : idx === 2 ||
-                      idx === 3 ||
-                      idx === 4 ||
-                      idx === 5 ||
-                      idx === 6 ||
-                      idx === 7
-                    ? "text-center"
-                    : ""
-                }`}
-              >
-                {idx < 2 ? (
-                  (() => {
-                    const key: MasterCodeSortKey = idx === 0 ? "code" : "name"
-                    const isActive = sortState.key === key
-                    const isOpen = idx === 0 ? isCodeTooltipOpen : isNameTooltipOpen
-                    const setIsOpen = idx === 0 ? setIsCodeTooltipOpen : setIsNameTooltipOpen
-                    const tooltipText =
-                      sortState.key === key
-                        ? sortState.direction === "asc"
-                          ? "Click to sort descending"
-                          : "Click to sort ascending"
-                        : "Click to sort ascending"
-
-                    return (
-                      <TooltipProvider>
-                        <Tooltip open={isOpen}>
-                          <TooltipTrigger asChild>
-                            <button
-                              type="button"
-                              onClick={() => handleSort(key)}
-                              onMouseEnter={() => setIsOpen(true)}
-                              onMouseLeave={() => setIsOpen(false)}
-                              onFocus={() => setIsOpen(true)}
-                              onBlur={() => setIsOpen(false)}
-                              className="inline-flex w-full cursor-pointer items-center gap-1.5"
-                            >
-                              <span>{header}</span>
-                              {isActive ? (
-                                <Triangle
-                                  className={`size-[5px] fill-white text-white transition-transform ${
-                                    sortState.direction === "asc" ? "" : "rotate-180"
-                                  }`}
-                                />
-                              ) : (
-                                <Triangle className="size-[5px] fill-white text-white" />
-                              )}
-                            </button>
-                          </TooltipTrigger>
-                          <TooltipContent side="top" sideOffset={6}>
-                            {tooltipText}
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    )
-                  })()
-                ) : (
-                  <span
-                    className={`inline-flex items-center gap-1 ${
-                      idx === 2 ||
-                      idx === 3 ||
-                      idx === 4 ||
-                      idx === 5 ||
-                      idx === 6 ||
-                      idx === 7
-                        ? "w-full justify-center"
+    <div className="space-y-4">
+      {/* Desktop View Table */}
+      <div className="hidden xl:block">
+        <div className="overflow-hidden rounded-[4px] border border-[#e6e7ef]">
+          <Table className="table-fixed">
+            <colgroup>
+              <col style={{ width: "120px" }} />
+              <col style={{ width: canEdit ? "470px" : "548px" }} />
+              <col style={{ width: "74px" }} />
+              <col style={{ width: "84px" }} />
+              <col style={{ width: "84px" }} />
+              <col style={{ width: "74px" }} />
+              <col style={{ width: "74px" }} />
+              {canEdit && <col style={{ width: "78px" }} />}
+            </colgroup>
+            <TableHeader className="[&_tr]:border-b-0">
+              <TableRow className="hover:bg-transparent">
+                {headers.map((header, idx) => (
+                  <TableHead
+                    key={header}
+                    className={`h-10 bg-(--primary) px-3 text-[12px] font-medium text-white ${
+                      idx === headers.length - 1 ? "border-r-0" : "border-r border-white/50"
+                    } ${
+                      idx === 0
+                        ? "text-left"
+                        : idx === 2 ||
+                          idx === 3 ||
+                          idx === 4 ||
+                          idx === 5 ||
+                          idx === 6 ||
+                          idx === 7
+                        ? "text-center"
                         : ""
                     }`}
                   >
-                    {header}
-                  </span>
-                )}
-              </TableHead>
-            ))}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {isLoading
-            ? skeletonRows.map((rowId) => (
-                <TableRow key={rowId} className="h-10 border-b border-[#eff0f5] hover:bg-transparent">
-                  <TableCell className="border-r border-[#eff0f5] px-3 py-2 text-left">
-                    <div className="flex items-center justify-start gap-3">
-                      <Skeleton className="h-3.5 w-3.5 rounded-sm" />
-                      <Skeleton className="h-3.5 w-8" />
-                    </div>
-                  </TableCell>
-                  <TableCell className="border-r border-[#eff0f5] px-3 py-2">
-                    <Skeleton className="h-3.5 w-[80%]" />
-                  </TableCell>
-                  <TableCell className="border-r border-[#eff0f5] px-3 py-2 text-center">
-                    <Skeleton className="mx-auto h-4 w-4 rounded-sm" />
-                  </TableCell>
-                  <TableCell className="border-r border-[#eff0f5] px-3 py-2 text-center">
-                    <Skeleton className="mx-auto h-4 w-4 rounded-sm" />
-                  </TableCell>
-                  <TableCell className="border-r border-[#eff0f5] px-3 py-2 text-center">
-                    <Skeleton className="mx-auto h-3.5 w-10" />
-                  </TableCell>
-                  <TableCell className="border-r border-[#eff0f5] px-3 py-2 text-center">
-                    <Skeleton className="mx-auto h-3.5 w-4" />
-                  </TableCell>
-                  <TableCell className="border-r border-[#eff0f5] px-3 py-2 text-center">
-                    <Skeleton className="mx-auto h-4 w-4 rounded-sm" />
-                  </TableCell>
-                  {canEdit && (
-                    <TableCell className="border-r border-[#eff0f5] px-3 py-2 text-center">
-                      <Skeleton className="mx-auto h-3.5 w-3.5 rounded-sm" />
-                    </TableCell>
-                  )}
-                </TableRow>
-              ))
-            : sortedRows.map((row) => {
-                const isExpanded = expandedRowId === row.id
-                const sanitizedActivityDescription = DOMPurify.sanitize(
-                  row.activityDescription ?? "",
-                  {
-                    ALLOWED_TAGS: [
-                      "ul",
-                      "ol",
-                      "li",
-                      "b",
-                      "strong",
-                      "i",
-                      "em",
-                      "br",
-                      "p",
-                    ],
-                  }
-                )
+                    {idx < 2 ? (
+                      (() => {
+                        const key: MasterCodeSortKey = idx === 0 ? "code" : "name"
+                        const isActive = sortState.key === key
+                        const isOpen = idx === 0 ? isCodeTooltipOpen : isNameTooltipOpen
+                        const setIsOpen = idx === 0 ? setIsCodeTooltipOpen : setIsNameTooltipOpen
+                        const tooltipText =
+                          sortState.key === key
+                            ? sortState.direction === "asc"
+                              ? "Click to sort descending"
+                              : "Click to sort ascending"
+                            : "Click to sort ascending"
 
-                return (
-                  <Fragment key={row.id}>
-                    <TableRow className="min-h-[40px] border-b border-[#eff0f5] hover:bg-transparent">
-                      <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-left text-[12px] text-[#232735] whitespace-normal wrap-break-word">
+                        return (
+                          <TooltipProvider>
+                            <Tooltip open={isOpen}>
+                              <TooltipTrigger asChild>
+                                <button
+                                  type="button"
+                                  onClick={() => handleSort(key)}
+                                  onMouseEnter={() => setIsOpen(true)}
+                                  onMouseLeave={() => setIsOpen(false)}
+                                  onFocus={() => setIsOpen(true)}
+                                  onBlur={() => setIsOpen(false)}
+                                  className="inline-flex w-full cursor-pointer items-center gap-1.5"
+                                >
+                                  <span>{header}</span>
+                                  {isActive ? (
+                                    <Triangle
+                                      className={`size-[5px] fill-white text-white transition-transform ${
+                                        sortState.direction === "asc" ? "" : "rotate-180"
+                                      }`}
+                                    />
+                                  ) : (
+                                    <Triangle className="size-[5px] fill-white text-white" />
+                                  )}
+                                </button>
+                              </TooltipTrigger>
+                              <TooltipContent side="top" sideOffset={6}>
+                                {tooltipText}
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        )
+                      })()
+                    ) : (
+                      <span
+                        className={`inline-flex items-center gap-1 ${
+                          idx === 2 ||
+                          idx === 3 ||
+                          idx === 4 ||
+                          idx === 5 ||
+                          idx === 6 ||
+                          idx === 7
+                            ? "w-full justify-center"
+                            : ""
+                        }`}
+                      >
+                        {header}
+                      </span>
+                    )}
+                  </TableHead>
+                ))}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {isLoading
+                ? skeletonRows.map((rowId) => (
+                    <TableRow key={rowId} className="h-10 border-b border-[#eff0f5] hover:bg-transparent">
+                      <TableCell className="border-r border-[#eff0f5] px-3 py-2 text-left">
                         <div className="flex items-center justify-start gap-3">
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setExpandedRowId((prev) => (prev === row.id ? null : row.id))
-                            }
-                            className="inline-flex cursor-pointer items-center text-(--primary)"
-                          >
-                            {isExpanded ? (
-                              <ChevronDown className="size-3.5" />
-                            ) : (
-                              <ChevronRight className="size-3.5" />
-                            )}
-                          </button>
-                          <span>{row.code ?? ""}</span>
+                          <Skeleton className="h-3.5 w-3.5 rounded-sm" />
+                          <Skeleton className="h-3.5 w-8" />
                         </div>
                       </TableCell>
-                      <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-[12px] whitespace-normal break-all text-[#262a35]">
-                        {row.name}
+                      <TableCell className="border-r border-[#eff0f5] px-3 py-2">
+                        <Skeleton className="h-3.5 w-[80%]" />
                       </TableCell>
                       <TableCell className="border-r border-[#eff0f5] px-3 py-2 text-center">
-                        {row.spmp ? (
-                          <img
-                            src={tableCheckIcon}
-                            alt=""
-                            aria-hidden="true"
-                            className="mx-auto size-[12px] object-contain"
-                          />
-                        ) : (
-                          <img
-                            src={tableCloseIcon}
-                            alt=""
-                            aria-hidden="true"
-                            className="mx-auto size-[12px] object-contain"
-                          />
-                        )}
+                        <Skeleton className="mx-auto h-4 w-4 rounded-sm" />
                       </TableCell>
                       <TableCell className="border-r border-[#eff0f5] px-3 py-2 text-center">
-                        {row.allocable ? (
-                          <img
-                            src={tableCheckIcon}
-                            alt=""
-                            aria-hidden="true"
-                            className="mx-auto size-[12px] object-contain"
-                          />
-                        ) : (
-                          <img
-                            src={tableCloseIcon}
-                            alt=""
-                            aria-hidden="true"
-                            className="mx-auto size-[12px] object-contain"
-                          />
-                        )}
+                        <Skeleton className="mx-auto h-4 w-4 rounded-sm" />
                       </TableCell>
-                      <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-center text-[12px] text-[#262a35] whitespace-normal wrap-break-word">
-                        {row.ffpPercent}
+                      <TableCell className="border-r border-[#eff0f5] px-3 py-2 text-center">
+                        <Skeleton className="mx-auto h-3.5 w-10" />
                       </TableCell>
-                      <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-center text-[12px] text-[#262a35] whitespace-normal wrap-break-word">
-                        {row.match}
+                      <TableCell className="border-r border-[#eff0f5] px-3 py-2 text-center">
+                        <Skeleton className="mx-auto h-3.5 w-4" />
                       </TableCell>
+                      <TableCell className="border-r border-[#eff0f5] px-3 py-2 text-center">
+                        <Skeleton className="mx-auto h-4 w-4 rounded-sm" />
+                      </TableCell>
+                      {canEdit && (
                         <TableCell className="border-r border-[#eff0f5] px-3 py-2 text-center">
-                          {row.status ? (
-                            <img
-                              src={tableCheckIcon}
-                              alt=""
-                              aria-hidden="true"
-                              className="mx-auto size-[12px] object-contain"
-                            />
-                          ) : (
-                            <img
-                              src={tableCloseIcon}
-                              alt=""
-                              aria-hidden="true"
-                              className="mx-auto size-[12px] object-contain"
-                            />
-                          )}
+                          <Skeleton className="mx-auto h-3.5 w-3.5 rounded-sm" />
                         </TableCell>
-                        {canEdit && (
+                      )}
+                    </TableRow>
+                  ))
+                : sortedRows.map((row) => {
+                    const isExpanded = expandedRowId === row.id
+                    const sanitizedActivityDescription = DOMPurify.sanitize(
+                      row.activityDescription ?? "",
+                      {
+                        ALLOWED_TAGS: [
+                          "ul",
+                          "ol",
+                          "li",
+                          "b",
+                          "strong",
+                          "i",
+                          "em",
+                          "br",
+                          "p",
+                        ],
+                      }
+                    )
+
+                    return (
+                      <Fragment key={row.id}>
+                        <TableRow className="min-h-[40px] border-b border-[#eff0f5] hover:bg-transparent">
+                          <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-left text-[12px] text-[#232735] whitespace-normal wrap-break-word">
+                            <div className="flex items-center justify-start gap-3">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setExpandedRowId((prev) => (prev === row.id ? null : row.id))
+                                }
+                                className="inline-flex cursor-pointer items-center text-(--primary)"
+                              >
+                                {isExpanded ? (
+                                  <ChevronDown className="size-3.5" />
+                                ) : (
+                                  <ChevronRight className="size-3.5" />
+                                )}
+                              </button>
+                              <span>{row.code ?? ""}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-[12px] whitespace-normal break-all text-[#262a35]">
+                            {row.name}
+                          </TableCell>
                           <TableCell className="border-r border-[#eff0f5] px-3 py-2 text-center">
-                            <button
-                              type="button"
-                              onClick={() => onEditRow(row)}
-                              className="inline-flex cursor-pointer items-center opacity-80 drop-shadow-[0_1px_0_rgba(108,93,211,0.35)] transition-opacity hover:opacity-100"
-                            >
+                            {row.spmp ? (
                               <img
-                                src={tableEditIcon}
+                                src={tableCheckIcon}
                                 alt=""
                                 aria-hidden="true"
-                                className="size-[11px] object-contain"
+                                className="mx-auto size-[12px] object-contain"
                               />
-                            </button>
+                            ) : (
+                              <img
+                                src={tableCloseIcon}
+                                alt=""
+                                aria-hidden="true"
+                                className="mx-auto size-[12px] object-contain"
+                              />
+                            )}
                           </TableCell>
-                        )}
-                      </TableRow>
-                    {isExpanded ? (
-                      <TableRow className="border-b border-[#eff0f5] hover:bg-transparent">
-                        <TableCell colSpan={canEdit ? 8 : 7} className="px-4 py-3 text-left">
-                          <p className="text-[12px] font-medium text-(--primary)">
-                            Activity Description
-                          </p>
-                          <div
-                            className="mt-1.5 pl-20 max-w-[1110px] whitespace-normal wrap-break-word text-[12px] leading-5 text-[#4b5563] [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:my-0.5"
-                            dangerouslySetInnerHTML={{
-                              __html: sanitizedActivityDescription,
-                            }}
-                          />
-                        </TableCell>
-                      </TableRow>
-                    ) : null}
-                  </Fragment>
-                )
-              })}
-          {!isLoading && sortedRows.length === 0 ? (
-            <TableRow className="h-[210px] hover:bg-transparent">
-              <TableCell colSpan={canEdit ? 8 : 7} className="text-center">
-                <img
-                  src={tableEmptyIcon}
-                  alt=""
-                  aria-hidden="true"
-                  className="mx-auto h-[73px] w-[82px] object-contain opacity-80"
-                />
-              </TableCell>
-            </TableRow>
-          ) : null}
-        </TableBody>
-      </Table>
+                          <TableCell className="border-r border-[#eff0f5] px-3 py-2 text-center">
+                            {row.allocable ? (
+                              <img
+                                src={tableCheckIcon}
+                                alt=""
+                                aria-hidden="true"
+                                className="mx-auto size-[12px] object-contain"
+                              />
+                            ) : (
+                              <img
+                                src={tableCloseIcon}
+                                alt=""
+                                aria-hidden="true"
+                                className="mx-auto size-[12px] object-contain"
+                              />
+                            )}
+                          </TableCell>
+                          <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-center text-[12px] text-[#262a35] whitespace-normal wrap-break-word">
+                            {row.ffpPercent}
+                          </TableCell>
+                          <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-center text-[12px] text-[#262a35] whitespace-normal wrap-break-word">
+                            {row.match}
+                          </TableCell>
+                          <TableCell className="border-r border-[#eff0f5] px-3 py-2 text-center">
+                            {row.status ? (
+                              <img
+                                src={tableCheckIcon}
+                                alt=""
+                                aria-hidden="true"
+                                className="mx-auto size-[12px] object-contain"
+                              />
+                            ) : (
+                              <img
+                                src={tableCloseIcon}
+                                alt=""
+                                aria-hidden="true"
+                                className="mx-auto size-[12px] object-contain"
+                              />
+                            )}
+                          </TableCell>
+                          {canEdit && (
+                            <TableCell className="border-r border-[#eff0f5] px-3 py-2 text-center">
+                              <button
+                                type="button"
+                                onClick={() => onEditRow(row)}
+                                className="inline-flex cursor-pointer items-center opacity-80 drop-shadow-[0_1px_0_rgba(108,93,211,0.35)] transition-opacity hover:opacity-100"
+                              >
+                                <img
+                                  src={tableEditIcon}
+                                  alt=""
+                                  aria-hidden="true"
+                                  className="size-[11px] object-contain"
+                                />
+                              </button>
+                            </TableCell>
+                          )}
+                        </TableRow>
+                        {isExpanded ? (
+                          <TableRow className="border-b border-[#eff0f5] hover:bg-transparent">
+                            <TableCell colSpan={colCount} className="px-4 py-3 text-left">
+                              <p className="text-[12px] font-medium text-(--primary)">
+                                Activity Description
+                              </p>
+                              <div
+                                className="mt-1.5 pl-20 max-w-[1110px] whitespace-normal wrap-break-word text-[12px] leading-5 text-[#4b5563] [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:my-0.5"
+                                dangerouslySetInnerHTML={{
+                                  __html: sanitizedActivityDescription,
+                                }}
+                              />
+                            </TableCell>
+                          </TableRow>
+                        ) : null}
+                      </Fragment>
+                    )
+                  })}
+              {!isLoading && sortedRows.length === 0 ? (
+                <TableRow className="h-[210px] hover:bg-transparent">
+                  <TableCell colSpan={colCount} className="text-center">
+                    <img
+                      src={tableEmptyIcon}
+                      alt=""
+                      aria-hidden="true"
+                      className="mx-auto h-[73px] w-[82px] object-contain opacity-80"
+                    />
+                  </TableCell>
+                </TableRow>
+              ) : null}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+
+      {/* Mobile/Tablet Cards View */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 xl:hidden bg-[#F9FAFB] p-4 rounded-[8px] border border-[#e6e7ef]">
+        {isLoading ? (
+          Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="rounded-[10px] border border-[#E5E7EB] bg-white p-5 space-y-4 animate-pulse">
+              <Skeleton className="h-6 w-1/3 rounded bg-gray-200 animate-pulse" />
+              <Skeleton className="h-4 w-2/3 rounded bg-gray-200 animate-pulse" />
+              <Skeleton className="h-4 w-full rounded bg-gray-200 animate-pulse" />
+            </div>
+          ))
+        ) : sortedRows.length === 0 ? (
+          <div className="rounded-[10px] border border-[#E5E7EB] bg-white p-8 text-center flex flex-col items-center justify-center min-h-[150px] w-full col-span-full">
+            <img
+              src={tableEmptyIcon}
+              alt="No data"
+              aria-hidden="true"
+              className="mx-auto h-[73px] w-[82px] object-contain opacity-80"
+            />
+          </div>
+        ) : (
+          sortedRows.map((row) => {
+            const isExpanded = expandedRowId === row.id
+            const sanitizedActivityDescription = DOMPurify.sanitize(
+              row.activityDescription ?? "",
+              {
+                ALLOWED_TAGS: [
+                  "ul",
+                  "ol",
+                  "li",
+                  "b",
+                  "strong",
+                  "i",
+                  "em",
+                  "br",
+                  "p",
+                ],
+              }
+            )
+
+            return (
+              <div
+                key={row.id}
+                className="rounded-[10px] border border-[#E5E7EB] bg-white shadow-sm overflow-hidden text-[13px] text-[#111827] flex flex-col"
+              >
+                {/* Header */}
+                <div className="flex items-center justify-between bg-[#6C5DD3] px-5 py-3 text-white">
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setExpandedRowId((prev) => (prev === row.id ? null : row.id))
+                      }
+                      className="inline-flex cursor-pointer items-center text-white"
+                    >
+                      {isExpanded ? (
+                        <ChevronDown className="size-4" />
+                      ) : (
+                        <ChevronRight className="size-4" />
+                      )}
+                    </button>
+                    <span className="font-bold text-[14px]">
+                      {codeType} Code: {row.code ?? "—"}
+                    </span>
+                  </div>
+                  {canEdit && onEditRow && (
+                    <button
+                      type="button"
+                      onClick={() => onEditRow(row)}
+                      className="inline-flex cursor-pointer items-center justify-center p-1 rounded hover:bg-white/10"
+                      aria-label="Edit row"
+                    >
+                      <img
+                        src={tableEditIcon}
+                        alt="Edit"
+                        aria-hidden="true"
+                        className="size-[16px] object-contain brightness-0 invert"
+                      />
+                    </button>
+                  )}
+                </div>
+
+                {/* Body */}
+                <div className="p-5 space-y-3.5 flex-1">
+                  <div className="flex flex-col gap-1 border-b border-gray-100 pb-2">
+                    <span className="text-[#111827] font-bold uppercase text-[11px] tracking-wider">{codeType} Name:</span>
+                    <span className="font-normal text-gray-600 text-left text-[13px] whitespace-normal break-words w-full">{row.name || "—"}</span>
+                  </div>
+
+                  <div className="flex justify-between items-center border-b border-gray-100 pb-2">
+                    <span className="text-[#111827] font-bold uppercase text-[11px] tracking-wider">SPMP:</span>
+                    <span className="font-normal text-gray-600 text-right text-[13px]">
+                      {row.spmp ? (
+                        <img
+                          src={tableCheckIcon}
+                          alt="Yes"
+                          className="size-[12px] object-contain inline-block"
+                        />
+                      ) : (
+                        <img
+                          src={tableCloseIcon}
+                          alt="No"
+                          className="size-[12px] object-contain inline-block"
+                        />
+                      )}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between items-center border-b border-gray-100 pb-2">
+                    <span className="text-[#111827] font-bold uppercase text-[11px] tracking-wider">Allocable:</span>
+                    <span className="font-normal text-gray-600 text-right text-[13px]">
+                      {row.allocable ? (
+                        <img
+                          src={tableCheckIcon}
+                          alt="Yes"
+                          className="size-[12px] object-contain inline-block"
+                        />
+                      ) : (
+                        <img
+                          src={tableCloseIcon}
+                          alt="No"
+                          className="size-[12px] object-contain inline-block"
+                        />
+                      )}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between items-center border-b border-gray-100 pb-2">
+                    <span className="text-[#111827] font-bold uppercase text-[11px] tracking-wider">{codeType} (%):</span>
+                    <span className="font-normal text-gray-600 text-right text-[13px]">{row.ffpPercent}</span>
+                  </div>
+
+                  <div className="flex justify-between items-center border-b border-gray-100 pb-2">
+                    <span className="text-[#111827] font-bold uppercase text-[11px] tracking-wider">Match:</span>
+                    <span className="font-normal text-gray-600 text-right text-[13px]">{row.match}</span>
+                  </div>
+
+                  <div className="flex justify-between items-center border-b border-gray-100 pb-2 last:border-b-0 last:pb-0">
+                    <span className="text-[#111827] font-bold uppercase text-[11px] tracking-wider">Status:</span>
+                    <span className="font-normal text-gray-600 text-right text-[13px]">
+                      {row.status ? (
+                        <img
+                          src={tableCheckIcon}
+                          alt="Active"
+                          className="size-[12px] object-contain inline-block"
+                        />
+                      ) : (
+                        <img
+                          src={tableCloseIcon}
+                          alt="Inactive"
+                          className="size-[12px] object-contain inline-block"
+                        />
+                      )}
+                    </span>
+                  </div>
+
+                  {isExpanded && (
+                    <div className="mt-4 pt-4 border-t border-gray-200">
+                      <p className="text-[12px] font-bold text-[#6C5DD3] uppercase tracking-wider mb-1.5">
+                        Activity Description
+                      </p>
+                      <div
+                        className="text-[12px] leading-5 text-[#4b5563] [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:my-0.5"
+                        dangerouslySetInnerHTML={{
+                          __html: sanitizedActivityDescription,
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+            )
+          })
+        )}
+      </div>
     </div>
   )
 }
-

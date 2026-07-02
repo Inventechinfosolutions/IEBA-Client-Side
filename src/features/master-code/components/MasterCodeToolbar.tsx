@@ -13,7 +13,7 @@ export function MasterCodeToolbar({
   canAdd,
 }: MasterCodeToolbarProps) {
   return (
-    <div className="mb-2 flex items-center justify-end gap-2">
+    <div className="mb-2 flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2 w-full sm:w-auto">
       {canAdd && (
         <Button
           type="button"

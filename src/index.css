@@ -487,3 +487,14 @@
     margin-left: 0 !important;
   }
 }
+
+/* Responsive zoom container for Master Code Page */
+.master-code-container {
+  zoom: 1.0;
+}
+
+@media (min-width: 1280px) {
+  .master-code-container {
+    zoom: 1.2;
+  }
+}

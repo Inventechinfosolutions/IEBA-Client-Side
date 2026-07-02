@@ -241,165 +241,166 @@ export function MasterCodeFormModal({
             </label>
           </DialogHeader>
 
-          <div
-            className={`grid items-end gap-5 ${
-              showPercentAndMatch
-                ? "grid-cols-[92px_minmax(0,1fr)_92px_92px]"
-                : "grid-cols-[128px_minmax(0,50%)]"
-            }`}
-          >
-            <div className="space-y-1">
-              <label className="block whitespace-nowrap text-[12px] text-[#111827]">{`*${codeType} Code`}</label>
-              <TitleCaseInput
-                {...register("code")}
-                className="h-[40px] select-text rounded-[9px] border border-[#c5cad5] bg-white px-2.5 text-[13px] text-[#111827] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="block text-[12px] text-[#111827]">{`*${codeType} Name`}</label>
-              <TitleCaseInput
-                {...register("name")}
-                className="h-[40px] select-text rounded-[9px] border border-[#c5cad5] bg-white px-2.5 text-[13px] text-[#111827] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
-              />
-            </div>
-            {showPercentAndMatch ? (
-              <>
-                <div className="space-y-1">
-                  <label className="block text-[12px] text-[#111827]">{`*${codeType} (%)`}</label>
-                  <div className="group/percent relative rounded-[9px]">
-                    <TitleCaseInput
-                      {...register("ffpPercent")}
-                      type="number"
-                      step="0.50"
-                      min="0"
-                      max="100"
-                      className="h-[40px] select-text rounded-[9px] border border-[#c5cad5] bg-white px-2.5 pr-6 text-[13px] text-[#111827] [appearance:textfield] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333] group-focus-within/percent:border-[#6C5DD3] group-focus-within/percent:ring-1 group-focus-within/percent:ring-[#6C5DD333] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                    />
-                    <button
-                      type="button"
-                      aria-label="Increase percent"
-                      onClick={() => handlePercentStep("up")}
-                      className="absolute right-0 top-0 z-10 inline-flex h-1/2 w-[18px] cursor-pointer items-center justify-center rounded-tr-[9px] border-l border-b border-[#c9ced8] bg-[#eef0f4] text-[#7f8796] opacity-0 transition-opacity group-hover/percent:opacity-100 group-focus-within/percent:opacity-100"
-                    >
-                      <ChevronUp className="size-[11px]" />
-                    </button>
-                    <button
-                      type="button"
-                      aria-label="Decrease percent"
-                      onClick={() => handlePercentStep("down")}
-                      className="absolute bottom-0 right-0 z-10 inline-flex h-1/2 w-[18px] cursor-pointer items-center justify-center rounded-br-[9px] border-l border-t border-[#c9ced8] bg-[#eef0f4] text-[#7f8796] opacity-0 transition-opacity group-hover/percent:opacity-100 group-focus-within/percent:opacity-100"
-                    >
-                      <ChevronDown className="size-[11px]" />
-                    </button>
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  <label className="block text-[12px] text-[#111827]">Match</label>
-                  <TitleCaseInput
-                    {...register("match")}
-                    className="h-[40px] select-text rounded-[9px] border border-[#c5cad5] bg-white px-2.5 text-[13px] text-[#111827] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
-                  />
-                </div>
-              </>
-            ) : null}
-          </div>
-
-          <div className="mt-3 flex flex-col items-start gap-1.5">
-            <label className="flex items-center gap-2 text-[12px] leading-none text-[#111827]">
-              <Controller
-                name="spmp"
-                control={control}
-                render={({ field }) => (
-                  <Checkbox
-                    checked={field.value}
-                    onCheckedChange={(checked) => field.onChange(checked === true)}
-                    className="size-3.5 rounded-[3px] border-[#c2c6d1] bg-white data-[state=checked]:border-(--primary) data-[state=checked]:bg-(--primary) [&_svg]:size-3"
-                  />
-                )}
-              />
-              SPMP
-            </label>
-            <label className="flex items-center gap-2 text-[12px] leading-none text-[#111827]">
-              <Controller
-                name="allocable"
-                control={control}
-                render={({ field }) => (
-                  <Checkbox
-                    checked={field.value}
-                    onCheckedChange={(checked) => field.onChange(checked === true)}
-                    className="size-3.5 rounded-[3px] border-[#c2c6d1] bg-white data-[state=checked]:border-(--primary) data-[state=checked]:bg-(--primary) [&_svg]:size-3"
-                  />
-                )}
-              />
-              Allocable
-            </label>
-          </div>
-
-          <div className="mt-2">
-            <label className="block text-[12px] text-[#111827]">*Activity Description</label>
+          <div className="max-h-[50vh] sm:max-h-none overflow-y-auto overflow-x-hidden pr-1.5 -mr-1.5 space-y-4 pb-2">
             <div
-              key={detail?.id || "new"}
-              className="relative mt-1.5 overflow-hidden rounded-[10px] border border-[#c5cad5] bg-white"
+              className={`grid items-end gap-3 sm:gap-5 ${
+                showPercentAndMatch
+                  ? "grid-cols-1 sm:grid-cols-[92px_minmax(0,1fr)_92px_92px]"
+                  : "grid-cols-1 sm:grid-cols-[128px_minmax(0,50%)]"
+              }`}
             >
-              <div className="flex h-8 items-center gap-4 border-b border-[#d3d8e2] px-3 text-[#4b5563]">
-                <button
-                  type="button"
-                  onClick={() => applyCommand("bold")}
-                  className={`inline-flex cursor-pointer items-center text-[13px] transition-colors ${
-                    activeTools.bold
-                      ? "scale-110 font-extrabold text-(--primary)"
-                      : "text-[#374151]"
-                  }`}
-                >
-                  <Bold className={activeTools.bold ? "size-4.5" : "size-4"} />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => applyCommand("insertUnorderedList")}
-                  className={`inline-flex cursor-pointer items-center text-[13px] transition-colors ${
-                    activeTools.bullet
-                      ? "scale-110 font-extrabold text-(--primary)"
-                      : "text-[#374151]"
-                  }`}
-                >
-                  <List className={activeTools.bullet ? "size-4.5" : "size-4"} />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => applyCommand("italic")}
-                  className={`inline-flex cursor-pointer items-center text-[13px] transition-colors ${
-                    activeTools.italic
-                      ? "scale-110 font-extrabold text-(--primary)"
-                      : "text-[#374151]"
-                  }`}
-                >
-                  <Italic className={activeTools.italic ? "size-4.5" : "size-4"} />
-                </button>
+              <div className="space-y-1">
+                <label className="block whitespace-nowrap text-[12px] text-[#111827]">{`*${codeType} Code`}</label>
+                <TitleCaseInput
+                  {...register("code")}
+                  className="h-[40px] select-text rounded-[9px] border border-[#c5cad5] bg-white px-2.5 text-[13px] text-[#111827] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
+                />
               </div>
-              <div
-                ref={setDescriptionEditorRef}
-                contentEditable
-                suppressContentEditableWarning
-                onInput={syncEditorValue}
-                onClick={refreshActiveTools}
-                onKeyUp={refreshActiveTools}
-                className="program-table-scroll max-h-[201px] min-h-[201px] select-text overflow-y-scroll overflow-x-hidden whitespace-pre-wrap break-all wrap-anywhere bg-white px-3 py-2 pr-5 text-[13px] leading-6 text-[#111827] outline-none [&_ul]:list-disc [&_ul]:pl-5 [&_li]:my-0.5"
-              />
+              <div className="space-y-1">
+                <label className="block text-[12px] text-[#111827]">{`*${codeType} Name`}</label>
+                <TitleCaseInput
+                  {...register("name")}
+                  className="h-[40px] select-text rounded-[9px] border border-[#c5cad5] bg-white px-2.5 text-[13px] text-[#111827] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
+                />
+              </div>
+              {showPercentAndMatch ? (
+                <>
+                  <div className="space-y-1">
+                    <label className="block text-[12px] text-[#111827]">{`*${codeType} (%)`}</label>
+                    <div className="group/percent relative rounded-[9px]">
+                      <TitleCaseInput
+                        {...register("ffpPercent")}
+                        type="number"
+                        step="0.50"
+                        min="0"
+                        max="100"
+                        className="h-[40px] select-text rounded-[9px] border border-[#c5cad5] bg-white px-2.5 pr-6 text-[13px] text-[#111827] [appearance:textfield] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333] group-focus-within/percent:border-[#6C5DD3] group-focus-within/percent:ring-1 group-focus-within/percent:ring-[#6C5DD333] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                      />
+                      <button
+                        type="button"
+                        aria-label="Increase percent"
+                        onClick={() => handlePercentStep("up")}
+                        className="absolute right-0 top-0 z-10 inline-flex h-1/2 w-[18px] cursor-pointer items-center justify-center rounded-tr-[9px] border-l border-b border-[#c9ced8] bg-[#eef0f4] text-[#7f8796] opacity-0 transition-opacity group-hover/percent:opacity-100 group-focus-within/percent:opacity-100"
+                      >
+                        <ChevronUp className="size-[11px]" />
+                      </button>
+                      <button
+                        type="button"
+                        aria-label="Decrease percent"
+                        onClick={() => handlePercentStep("down")}
+                        className="absolute bottom-0 right-0 z-10 inline-flex h-1/2 w-[18px] cursor-pointer items-center justify-center rounded-br-[9px] border-l border-t border-[#c9ced8] bg-[#eef0f4] text-[#7f8796] opacity-0 transition-opacity group-hover/percent:opacity-100 group-focus-within/percent:opacity-100"
+                      >
+                        <ChevronDown className="size-[11px]" />
+                      </button>
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="block text-[12px] text-[#111827]">Match</label>
+                    <TitleCaseInput
+                      {...register("match")}
+                      className="h-[40px] select-text rounded-[9px] border border-[#c5cad5] bg-white px-2.5 text-[13px] text-[#111827] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
+                    />
+                  </div>
+                </>
+              ) : null}
+            </div>
 
+            <div className="flex flex-col items-start gap-1.5">
+              <label className="flex items-center gap-2 text-[12px] leading-none text-[#111827]">
+                <Controller
+                  name="spmp"
+                  control={control}
+                  render={({ field }) => (
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={(checked) => field.onChange(checked === true)}
+                      className="size-3.5 rounded-[3px] border-[#c2c6d1] bg-white data-[state=checked]:border-(--primary) data-[state=checked]:bg-(--primary) [&_svg]:size-3"
+                    />
+                  )}
+                />
+                SPMP
+              </label>
+              <label className="flex items-center gap-2 text-[12px] leading-none text-[#111827]">
+                <Controller
+                  name="allocable"
+                  control={control}
+                  render={({ field }) => (
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={(checked) => field.onChange(checked === true)}
+                      className="size-3.5 rounded-[3px] border-[#c2c6d1] bg-white data-[state=checked]:border-(--primary) data-[state=checked]:bg-(--primary) [&_svg]:size-3"
+                    />
+                  )}
+                />
+                Allocable
+              </label>
+            </div>
+
+            <div>
+              <label className="block text-[12px] text-[#111827]">*Activity Description</label>
+              <div
+                key={detail?.id || "new"}
+                className="relative mt-1.5 overflow-hidden rounded-[10px] border border-[#c5cad5] bg-white"
+              >
+                <div className="flex h-8 items-center gap-4 border-b border-[#d3d8e2] px-3 text-[#4b5563]">
+                  <button
+                    type="button"
+                    onClick={() => applyCommand("bold")}
+                    className={`inline-flex cursor-pointer items-center text-[13px] transition-colors ${
+                      activeTools.bold
+                        ? "scale-110 font-extrabold text-(--primary)"
+                        : "text-[#374151]"
+                    }`}
+                  >
+                    <Bold className={activeTools.bold ? "size-4.5" : "size-4"} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => applyCommand("insertUnorderedList")}
+                    className={`inline-flex cursor-pointer items-center text-[13px] transition-colors ${
+                      activeTools.bullet
+                        ? "scale-110 font-extrabold text-(--primary)"
+                        : "text-[#374151]"
+                    }`}
+                  >
+                    <List className={activeTools.bullet ? "size-4.5" : "size-4"} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => applyCommand("italic")}
+                    className={`inline-flex cursor-pointer items-center text-[13px] transition-colors ${
+                      activeTools.italic
+                        ? "scale-110 font-extrabold text-(--primary)"
+                        : "text-[#374151]"
+                    }`}
+                  >
+                    <Italic className={activeTools.italic ? "size-4.5" : "size-4"} />
+                  </button>
+                </div>
+                <div
+                  ref={setDescriptionEditorRef}
+                  contentEditable
+                  suppressContentEditableWarning
+                  onInput={syncEditorValue}
+                  onClick={refreshActiveTools}
+                  onKeyUp={refreshActiveTools}
+                  className="program-table-scroll max-h-[201px] min-h-[201px] select-text overflow-y-scroll overflow-x-hidden whitespace-pre-wrap break-all wrap-anywhere bg-white px-3 py-2 pr-5 text-[13px] leading-6 text-[#111827] outline-none [&_ul]:list-disc [&_ul]:pl-5 [&_li]:my-0.5"
+                />
+              </div>
             </div>
           </div>
 
-          <div className="mt-5 flex items-center justify-end gap-3">
+          <div className="mt-5 grid grid-cols-2 gap-3 sm:flex sm:items-center sm:justify-end">
             <Button
               type="submit"
-              className="h-[44px] min-w-[117px] cursor-pointer rounded-[10px] bg-[#6C5DD3] px-6 text-[13px] font-medium text-white hover:bg-[#6C5DD3]"
+              className="h-[44px] w-full sm:w-auto sm:min-w-[117px] cursor-pointer rounded-[10px] bg-[#6C5DD3] px-6 text-[13px] font-medium text-white hover:bg-[#6C5DD3]"
             >
               Save
             </Button>
             <Button
               type="button"
               onClick={closeModal}
-              className="h-[44px] min-w-[111px] cursor-pointer rounded-[10px] bg-[#d2d4d9] px-6 text-[13px] font-medium text-[#111827] hover:bg-[#d2d4d9]"
+              className="h-[44px] w-full sm:w-auto sm:min-w-[111px] cursor-pointer rounded-[10px] bg-[#d2d4d9] px-6 text-[13px] font-medium text-[#111827] hover:bg-[#d2d4d9]"
             >
               Exit
             </Button>

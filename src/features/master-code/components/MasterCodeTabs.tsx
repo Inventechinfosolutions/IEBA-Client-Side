@@ -9,9 +9,9 @@ export function MasterCodeTabs({
   if (tabs.length === 0) return null
 
   return (
-    <div className="border-b border-[#eef0f5]">
+    <div className="border-b border-[#eef0f5] overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
       <div
-        className="grid select-none gap-0 bg-white"
+        className="grid select-none gap-0 bg-white min-w-[500px] sm:min-w-0"
         style={{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))` }}
       >
         {tabs.map((tab) => (
