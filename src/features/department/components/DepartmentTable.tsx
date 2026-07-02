@@ -223,24 +223,24 @@ export function DepartmentTable({
   return (
     <div className="flex flex-1 flex-col gap-[24px]">
   
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row gap-4 sm:items-center sm:justify-between">
         {showHistory ? (
-          <div className="flex flex-1 items-center gap-2">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
             <TitleCaseInput
               placeholder="Search Department Code"
               value={historyDepartmentCode}
               onChange={(e) => setHistoryDepartmentCode(e.target.value)}
-              className="h-[48px] w-[220px] rounded-[8px] border-[#E5E7EB] bg-white px-[15px] py-[12px] text-[14px] shadow-sm focus-visible:ring-1 focus-visible:ring-[#6C5DD3]"
+              className="h-[48px] w-full sm:w-[220px] rounded-[8px] border-[#E5E7EB] bg-white px-[15px] py-[12px] text-[14px] shadow-sm focus-visible:ring-1 focus-visible:ring-[#6C5DD3]"
             />
             <TitleCaseInput
               placeholder="Search Department Name"
               value={historyDepartmentName}
               onChange={(e) => setHistoryDepartmentName(e.target.value)}
-              className="h-[48px] w-[260px] rounded-[8px] border-[#E5E7EB] bg-white px-[15px] py-[12px] text-[14px] shadow-sm focus-visible:ring-1 focus-visible:ring-[#6C5DD3]"
+              className="h-[48px] w-full sm:w-[260px] rounded-[8px] border-[#E5E7EB] bg-white px-[15px] py-[12px] text-[14px] shadow-sm focus-visible:ring-1 focus-visible:ring-[#6C5DD3]"
             />
           </div>
         ) : (
-          <div className="relative w-[300px]">
+          <div className="relative w-full sm:w-[300px]">
             <TitleCaseInput
               value={filters.search || ""}
               onChange={(e) => {
@@ -270,11 +270,11 @@ export function DepartmentTable({
           </div>
         )}
 
-        <div className="flex items-center gap-[12px]">
+        <div className="flex flex-wrap items-center gap-[12px] w-full sm:w-auto">
           {isSuperAdmin && (
             <button
               type="button"
-              className={`flex h-[48px] items-center gap-2 rounded-[10px] px-4 text-[14px] font-medium transition-colors ${
+              className={`flex h-[48px] items-center justify-center gap-2 rounded-[10px] px-4 text-[14px] font-medium transition-colors w-full sm:w-auto ${
                 showHistory
                   ? "bg-[#6C5DD3] text-white"
                   : "border border-[#6C5DD3] bg-white text-[#6C5DD3] hover:bg-[#F3F0FF]"
@@ -311,7 +311,7 @@ export function DepartmentTable({
           {!showHistory && (
             <button
               type="button"
-              className="flex h-[48px] items-center gap-2 rounded-[10px] bg-[#6C5DD3] px-4 text-white"
+              className="flex h-[48px] items-center justify-center gap-2 rounded-[10px] bg-[#6C5DD3] px-4 text-white w-full sm:w-auto"
               onClick={() => {
                 onInactiveChange(!filters.inactive)
                 onPageChange(1)
@@ -332,7 +332,7 @@ export function DepartmentTable({
           {!showHistory && canAddDepartment && (
             <Button
               onClick={onAdd}
-              className="h-[48px] rounded-[8px] bg-[#6C5DD3] px-[20px] text-[14px] font-medium hover:bg-[#5B4DC5]"
+              className="h-[48px] rounded-[8px] bg-[#6C5DD3] px-[20px] text-[14px] font-medium hover:bg-[#5B4DC5] w-full sm:w-auto justify-center"
             >
               <span className="mr-2 text-[18px]">+</span> Add Department
             </Button>
@@ -347,13 +347,12 @@ export function DepartmentTable({
         />
       ) : null}
 
-      {/* ── Table ───────────────────────────────────────────────────────── */}
       <div
-        className={`overflow-hidden rounded-[8px] border border-[#E5E7EB] bg-white ${
-          showHistory ? "hidden" : ""
+        className={`hidden xl:block overflow-x-auto rounded-[8px] border border-[#E5E7EB] bg-white ${
+          showHistory ? "!hidden" : ""
         }`}
       >
-        <Table className="w-full table-fixed border-collapse">
+        <Table className="w-full min-w-[1200px] table-fixed border-collapse">
           <colgroup>
             <col className={canUpdateDepartment ? "w-[7%]" : "w-[18%]"} /> { /* Code */ }
             <col className={canUpdateDepartment ? "w-[9%]" : "w-[20%]"} /> { /* Name/Department */ }
@@ -634,6 +633,139 @@ export function DepartmentTable({
             )}
           </TableBody>
         </Table>
+      </div>
+
+      {/* ── Mobile/Tablet Cards View (Visible below xl breakpoint) ── */}
+      <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 xl:hidden ${showHistory ? "hidden" : ""}`}>
+        {isLoading ? (
+          Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="rounded-[8px] border border-[#E5E7EB] bg-white p-5 space-y-4 animate-pulse">
+              <Skeleton className="h-6 w-1/3 rounded bg-gray-200" />
+              <Skeleton className="h-4 w-2/3 rounded bg-gray-200" />
+              <Skeleton className="h-4 w-full rounded bg-gray-200" />
+            </div>
+          ))
+        ) : sortedDepartments.length === 0 ? (
+          <div className="py-12 text-center text-[14px] text-[#6B7280] bg-white rounded-[8px] border border-[#E5E7EB]">
+            No data found
+          </div>
+        ) : (
+          sortedDepartments.map((dept) => (
+            <div
+              key={dept.id}
+              className="rounded-[10px] border border-[#E5E7EB] bg-white shadow-sm overflow-hidden text-[13px] text-[#111827] flex flex-col"
+            >
+              {/* Header: Code & Active Status */}
+              <div className="flex items-center justify-between bg-[#6C5DD3] px-5 py-3 text-white">
+                <span className="font-bold text-[14px] tracking-wide">Code: {dept.code}</span>
+                <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase shadow-sm ${dept.active ? "bg-[#28A745] text-white" : "bg-[#DC3545] text-white"}`}>
+                  {dept.active ? "Active" : "Inactive"}
+                </span>
+              </div>
+
+              {/* Card Body */}
+              <div className="p-5 space-y-4 flex-1">
+                {/* Department Name */}
+                <div className="space-y-0.5">
+                  <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider block">Department</span>
+                  <span className="font-bold text-[15px] text-[#1a1a2e]">{dept.name}</span>
+                </div>
+
+                {/* Address */}
+                <div className="space-y-0.5">
+                  <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider block">Address</span>
+                  <div className="text-gray-600 leading-relaxed font-medium">
+                    {dept.address.street} <br />
+                    {dept.address.city}, {dept.address.state} {dept.address.zip}
+                  </div>
+                </div>
+
+                {/* Contacts */}
+                <div className="space-y-3 pt-1">
+                  {/* Primary Contact */}
+                  <div className="border border-[#E5E7EB] rounded-lg p-3 bg-gray-50/30">
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-2">Primary Contact</span>
+                    <ContactInfo
+                      contactId={dept.primaryContactId}
+                      contact={dept.primaryContact}
+                      resolved={dept.primaryContactId ? usersById.get(dept.primaryContactId) ?? null : null}
+                    />
+                  </div>
+
+                  {/* Secondary Contact */}
+                  <div className="border border-[#E5E7EB] rounded-lg p-3 bg-gray-50/30">
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-2">Secondary Contact</span>
+                    <ContactInfo
+                      contactId={dept.secondaryContactId}
+                      contact={dept.secondaryContact}
+                      resolved={dept.secondaryContactId ? usersById.get(dept.secondaryContactId) ?? null : null}
+                    />
+                  </div>
+
+                  {/* Billing Contact */}
+                  <div className="border border-[#E5E7EB] rounded-lg p-3 bg-gray-50/30">
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-2">Billing Contact</span>
+                    <ContactInfo
+                      contactId={dept.billingContactId}
+                      contact={dept.billingContact}
+                      resolved={dept.billingContactId ? usersById.get(dept.billingContactId) ?? null : null}
+                    />
+                  </div>
+                </div>
+
+                {/* Multi Codes Settings */}
+                <div className="flex flex-col gap-2.5 border-t border-[#F0F0F0] pt-3 text-xs">
+                  <div className="flex items-center gap-1.5 justify-between">
+                    <span className="text-gray-400 font-bold uppercase text-[10px] tracking-wider">Allow Multi:</span>
+                    <img 
+                      src={dept.settings.allowMultiCodes ? statusCheckImg : statusCrossImg} 
+                      alt={dept.settings.allowMultiCodes ? "Check" : "Cross"} 
+                      className="h-4 w-4" 
+                    />
+                  </div>
+                  <div className="flex items-center gap-1.5 justify-between">
+                    <span className="text-gray-400 font-bold uppercase text-[10px] tracking-wider">Multi Codes:</span>
+                    <span className="font-semibold text-gray-700 bg-gray-100 px-2 py-0.5 rounded">
+                      {dept.settings.multiCodes ? dept.settings.multiCodes.split(",").filter(Boolean).join(", ") : "None"}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Action Toolbar */}
+                {showActionColumn && (
+                  <div className="flex flex-col gap-2 border-t border-[#F0F0F0] pt-3 w-full">
+                    {isSuperAdmin && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleHistoryRow({
+                            id: dept.id,
+                            code: dept.code,
+                            name: dept.name,
+                          })
+                        }
+                        className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-[#E5E7EB] text-[#6C5DD3] hover:bg-[#6C5DD3]/5 text-[12px] font-bold transition-all duration-150 active:scale-95 shadow-sm w-full"
+                      >
+                        <History className="size-3.5" strokeWidth={2.5} />
+                        History
+                      </button>
+                    )}
+                    {(canUpdateDepartment || dept.canEdit) && (
+                      <button
+                        type="button"
+                        onClick={() => onEdit?.(dept.id)}
+                        className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-[#E5E7EB] hover:bg-gray-50 text-[12px] font-bold transition-all duration-150 active:scale-95 shadow-sm w-full"
+                      >
+                        <img src={editIconImg} alt="Edit" className="h-3.5 w-3.5" />
+                        Edit
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          ))
+        )}
       </div>
 
       {!showHistory ? (

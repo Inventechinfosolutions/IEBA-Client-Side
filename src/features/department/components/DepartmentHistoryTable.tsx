@@ -58,14 +58,16 @@ const LIST_HEADERS = [
 function ExpandButton({
   isExpanded,
   onClick,
+  className = "text-[#6C5DD3]",
 }: {
   isExpanded: boolean
   onClick: () => void
+  className?: string
 }) {
   return (
     <button
       type="button"
-      className="inline-flex items-center justify-center text-[#6C5DD3] hover:opacity-80"
+      className={`inline-flex items-center justify-center hover:opacity-80 ${className}`}
       onClick={onClick}
       aria-label={isExpanded ? "Hide details" : "View details"}
     >
@@ -169,7 +171,8 @@ export function DepartmentHistoryTable({
 
   return (
     <div className={`flex flex-col gap-4 ${isScopedView ? "" : "pt-3"}`}>
-      <div className="overflow-hidden rounded-[10px] border border-[#E5E7EB]">
+      {/* Desktop view Table */}
+      <div className="hidden md:block overflow-hidden rounded-[10px] border border-[#E5E7EB]">
         <div className="overflow-x-auto">
           <Table className="w-full border-collapse min-w-[760px]">
             <TableHeader className="bg-[#6C5DD3] [&_tr]:border-b-0">
@@ -241,6 +244,94 @@ export function DepartmentHistoryTable({
           </Table>
         </div>
       </div>
+
+      {/* Mobile view cards */}
+      <div className="grid grid-cols-1 gap-4 md:hidden">
+        {isLoading
+          ? skeletonRows.map((rowId) => (
+              <div key={rowId} className="rounded-[10px] border border-[#E5E7EB] bg-white p-5 space-y-4 animate-pulse">
+                <Skeleton className="h-6 w-1/3 rounded bg-gray-200" />
+                <Skeleton className="h-4 w-2/3 rounded bg-gray-200" />
+                <Skeleton className="h-4 w-full rounded bg-gray-200" />
+              </div>
+            ))
+          : historyData.map((row, idx) => {
+              const rowKey = String(row.id ?? idx)
+              const isExpanded = Boolean(expandedRowIds[rowKey])
+              return (
+                <div
+                  key={rowKey}
+                  className="rounded-[10px] border border-[#E5E7EB] bg-white shadow-sm overflow-hidden text-[13px] text-[#111827] flex flex-col"
+                >
+                  {/* Header */}
+                  <div className="flex items-center justify-between bg-[#6C5DD3] px-5 py-3 text-white">
+                    <div className="flex items-center gap-2">
+                      <ExpandButton
+                        isExpanded={isExpanded}
+                        onClick={() => toggleRow(rowKey)}
+                        className="text-white"
+                      />
+                      <span className="font-bold text-[14px]">
+                        {getDepartmentHistoryEventDisplay(row)}
+                      </span>
+                    </div>
+                    <span className="text-[12px] opacity-90 font-medium">
+                      {getDepartmentHistoryUpdatedAtDisplay(row)}
+                    </span>
+                  </div>
+
+                  {/* Body */}
+                  <div className="p-5 space-y-3.5 flex-1">
+                    {!isScopedView && (
+                      <>
+                        <div className="flex justify-between items-center border-b border-gray-100 pb-2">
+                          <span className="text-gray-400 font-bold uppercase text-[10px] tracking-wider">Code:</span>
+                          <span className="font-semibold text-gray-800">{getDepartmentHistoryCodeDisplay(row)}</span>
+                        </div>
+                        <div className="flex justify-between items-center border-b border-gray-100 pb-2">
+                          <span className="text-gray-400 font-bold uppercase text-[10px] tracking-wider">Department:</span>
+                          <span className="font-semibold text-gray-800">{getDepartmentHistoryNameDisplay(row)}</span>
+                        </div>
+                      </>
+                    )}
+                    <div className="flex justify-between items-center border-b border-gray-100 pb-2">
+                      <span className="text-gray-400 font-bold uppercase text-[10px] tracking-wider">Effective From:</span>
+                      <span className="font-semibold text-gray-800">{getDepartmentHistoryEffectiveFromDisplay(row)}</span>
+                    </div>
+                    <div className="flex justify-between items-center border-b border-gray-100 pb-2">
+                      <span className="text-gray-400 font-bold uppercase text-[10px] tracking-wider">Effective To:</span>
+                      <span className="font-semibold text-gray-800">{getDepartmentHistoryEffectiveToDisplay(row)}</span>
+                    </div>
+                    <div className="flex justify-between items-center border-b border-gray-100 pb-2">
+                      <span className="text-gray-400 font-bold uppercase text-[10px] tracking-wider">Updated By:</span>
+                      <span className="font-semibold text-gray-800">{getDepartmentHistoryUpdatedByDisplay(row)}</span>
+                    </div>
+                    <div className="flex flex-col gap-1.5 border-b border-gray-100 pb-2">
+                      <span className="text-gray-400 font-bold uppercase text-[10px] tracking-wider">Reports:</span>
+                      <span className="font-semibold text-gray-700 leading-relaxed">{getDepartmentHistoryReportsDisplay(row)}</span>
+                    </div>
+                  </div>
+
+                  {/* Expanded details */}
+                  {isExpanded && (
+                    <div className="border-t border-[#E5E7EB] bg-[#FAFAFC] p-5 overflow-x-auto text-[12px]">
+                      <DepartmentHistoryDetailPanel row={row} />
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+      </div>
+
+      {!isLoading && historyData.length === 0 && (
+        <div className="h-[180px] flex items-center justify-center border border-[#E5E7EB] rounded-[10px] bg-white md:hidden">
+          <img
+            src={tableEmptyIcon}
+            alt="No history found"
+            className="mx-auto h-[73px] w-[82px] object-contain opacity-80"
+          />
+        </div>
+      )}
 
       {!isLoading && totalItems > 0 ? (
         <MasterCodePagination

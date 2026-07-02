@@ -127,7 +127,7 @@ function DepartmentReportMultiSelectField({
   }
 
   return (
-    <div className="grid grid-cols-[1fr_60px_1fr] items-center gap-4 w-full">
+    <div className="flex flex-col md:grid md:grid-cols-[1fr_60px_1fr] items-stretch md:items-center gap-4 w-full">
       <TransferPanel
         title="Select Reports(Available)"
         items={filteredAvailable}
@@ -138,7 +138,7 @@ function DepartmentReportMultiSelectField({
         onSearchChange={setSearchAvailable}
       />
 
-      <div className="flex flex-col gap-3 justify-center items-center pt-8">
+      <div className="flex flex-row md:flex-col gap-3 justify-center items-center py-2 md:pt-8">
         <TransferListMoveButton
           direction="forward"
           disabled={toggledAvailable.length === 0}
@@ -184,7 +184,6 @@ export function DepartmentReportSettingsPanel({
     multiSelectKey,
     isSaving,
     setPendingReportIds,
-    saveMappedReports,
     handleImmediateUpdate,
   } = useDepartmentReportSettings({
     departmentId,
@@ -219,12 +218,12 @@ export function DepartmentReportSettingsPanel({
         />
       </div>
 
-      <div className="flex justify-end gap-4 pt-4">
+      <div className="flex flex-col sm:flex-row justify-end gap-4 pt-4">
         {/* <Button
           type="button"
           disabled={saveDisabled}
           onClick={() => void saveMappedReports()}
-          className="w-[140px] h-[50px] bg-[#6C5DD3] hover:bg-[#5B4DC5] rounded-[8px] text-[16px] font-[500]"
+          className="w-full sm:w-[140px] h-[50px] bg-[#6C5DD3] hover:bg-[#5B4DC5] rounded-[8px] text-[16px] font-[500]"
         >
           Save
         </Button> */}
@@ -232,7 +231,7 @@ export function DepartmentReportSettingsPanel({
           type="button"
           disabled={saveDisabled}
           onClick={onExit}
-          className="w-[140px] h-[50px] bg-[#E5E7EB] hover:bg-[#D1D5DB] text-[#374151] rounded-[8px] text-[16px] font-[500]"
+          className="w-full sm:w-[140px] h-[50px] bg-[#E5E7EB] hover:bg-[#D1D5DB] text-[#374151] rounded-[8px] text-[16px] font-[500]"
         >
           Exit
         </Button>

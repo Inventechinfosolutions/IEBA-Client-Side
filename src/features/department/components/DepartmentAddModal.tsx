@@ -512,7 +512,7 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
     return (
         <>
             <Dialog open onOpenChange={(open) => { if (!open) handleExit() }}>
-                <DialogContent className="max-w-[893px] p-0 max-h-[90vh] overflow-y-auto border-none shadow-2xl rounded-[12px] bg-white [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                <DialogContent className="w-[95vw] sm:max-w-[893px] p-0 max-h-[90vh] overflow-y-auto border-none shadow-2xl rounded-[12px] bg-white [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                     {historyDepartmentId && isSuperAdmin ? (
                         <button
                             type="button"
@@ -542,24 +542,24 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                             <form onSubmit={handleSubmit(onSubmit)}>
                                 <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
                                     <div className="px-6 py-4">
-                                        <TabsList className="grid !h-[62px] w-full grid-cols-3 items-stretch gap-0 overflow-hidden rounded-[6px] border border-[#E5E7EB] bg-white p-0">
+                                        <TabsList className="flex flex-col sm:grid sm:grid-cols-3 !h-auto sm:!h-[62px] w-full items-stretch gap-0 overflow-hidden rounded-[6px] border border-[#E5E7EB] bg-white p-0">
                                             <TabsTrigger
                                                 value="details"
-                                                className="h-full rounded-[8px] border-0 data-[state=active]:bg-[#6C5DD3] data-[state=active]:text-white data-[state=inactive]:text-[#9CA3AF] font-[500] text-[15px] transition-all shadow-none"
+                                                className="!h-[54px] sm:!h-full rounded-[8px] border-0 data-[state=active]:bg-[#6C5DD3] data-[state=active]:text-white data-[state=inactive]:text-[#9CA3AF] font-[500] text-[15px] transition-all shadow-none"
                                             >
                                                 Department Details
                                             </TabsTrigger>
                                             <TabsTrigger
                                                 value="settings"
                                                 disabled={isLoadingDept}
-                                                className="h-full rounded-[8px] border-0 data-[state=active]:bg-[#6C5DD3] data-[state=active]:text-white data-[state=inactive]:text-[#9CA3AF] font-[500] text-[15px] transition-all shadow-none disabled:opacity-50 disabled:cursor-not-allowed"
+                                                className="!h-[54px] sm:!h-full rounded-[8px] border-0 data-[state=active]:bg-[#6C5DD3] data-[state=active]:text-white data-[state=inactive]:text-[#9CA3AF] font-[500] text-[15px] transition-all shadow-none disabled:opacity-50 disabled:cursor-not-allowed"
                                             >
                                                 Department Settings
                                             </TabsTrigger>
                                             <TabsTrigger
                                                 value="reportSettings"
                                                 disabled={isLoadingDept}
-                                                className="h-full rounded-[8px] border-0 px-2 data-[state=active]:bg-[#6C5DD3] data-[state=active]:text-white data-[state=inactive]:text-[#9CA3AF] font-[500] text-[14px] leading-tight transition-all shadow-none disabled:opacity-50 disabled:cursor-not-allowed"
+                                                className="!h-[54px] sm:!h-full rounded-[8px] border-0 px-2 data-[state=active]:bg-[#6C5DD3] data-[state=active]:text-white data-[state=inactive]:text-[#9CA3AF] font-[500] text-[14px] leading-tight transition-all shadow-none disabled:opacity-50 disabled:cursor-not-allowed"
                                             >
                                                 Department Report Setting
                                             </TabsTrigger>
@@ -567,10 +567,10 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                                     </div>
 
                                     <TabsContent value="details" className="mt-0">
-                                        <div className="px-8 pb-8 space-y-6">
+                                        <div className="px-6 sm:px-8 pb-8 space-y-6">
                                             {/* Header Row: Code, Name, Active */}
-                                            <div className="flex items-start justify-between gap-6 relative">
-                                                <div className="w-[180px] space-y-2 mt-15">
+                                            <div className="flex flex-col sm:flex-row items-stretch sm:items-start justify-between gap-4 sm:gap-6 relative">
+                                                <div className="w-full sm:w-[180px] space-y-2">
                                                     <Label htmlFor="code" className="text-[13px] font-[500] text-[#374151]">
                                                         *Code
                                                     </Label>
@@ -583,8 +583,8 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                                                     />
                                                     {errors.code && <p className="text-[12px] text-red-500">{errors.code.message}</p>}
                                                 </div>
-                                                <div className="flex-1 space-y-2">
-                                                    <Label htmlFor="name" className="text-[13px] font-[500] text-[#374151] mt-15">
+                                                <div className="w-full sm:flex-1 space-y-2">
+                                                    <Label htmlFor="name" className="text-[13px] font-[500] text-[#374151]">
                                                         *Department
                                                     </Label>
                                                     <TitleCaseInput
@@ -596,7 +596,7 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                                                     />
                                                     {errors.name && <p className="text-[12px] text-red-500">{errors.name.message}</p>}
                                                 </div>
-                                                <div className="pt-10 flex items-center gap-2">
+                                                <div className="pt-2 sm:pt-10 flex items-center gap-2">
                                                     <Checkbox
                                                         id="active"
                                                         checked={active}
@@ -615,14 +615,14 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
 
                                             {/* Sub-Tabs: Address, Contacts */}
                                             <div className="space-y-6 pt-4">
-                                                <div className="flex gap-2 p-1 bg-transparent w-full">
+                                                <div className="flex flex-col sm:flex-row gap-2 p-1 bg-transparent w-full">
                                                     {DETAIL_TABS.map((tab) => (
                                                         <button
                                                             key={tab.id}
                                                             type="button"
                                                             onClick={() => handleDetailsTabChange(tab.id)}
-                                                            style={{ width: tab.width }}
-                                                            className={`h-[60px] rounded-[6px] text-[15px] font-[500] flex items-center justify-center gap-2 transition-all ${detailsTab === tab.id
+                                                            style={{ "--btn-width": tab.width } as React.CSSProperties}
+                                                            className={`h-[60px] rounded-[6px] text-[15px] font-[500] flex items-center justify-center gap-2 transition-all w-full sm:w-[var(--btn-width)] ${detailsTab === tab.id
                                                                 ? "bg-[#6C5DD3] text-white shadow-md cursor-default"
                                                                 : (tab.id !== "address" && !isDepartmentSaved) ? "bg-[#F3F4F6] text-[#6C5DD3] border border-[#E5E7EB] cursor-not-allowed" : "bg-white text-[#6C5DD3] border border-[#E5E7EB] cursor-pointer"
                                                                 }`}
@@ -653,7 +653,7 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                                                 {/* Sub-Tab Content */}
                                                 <div className="min-h-[220px] pt-4">
                                                     {detailsTab === "address" && (
-                                                        <div className="grid grid-cols-2 gap-x-8 gap-y-6">
+                                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-6">
                                                             <div className="space-y-2">
                                                                 <Label className="text-[14px] font-[500] text-[#374151]">*Street</Label>
                                                                 <TitleCaseInput
@@ -707,7 +707,7 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                                                     )}
 
                                                     {(detailsTab === "primary" || detailsTab === "secondary" || detailsTab === "billing") && (
-                                                        <div key={detailsTab} className="grid grid-cols-2 gap-x-8 gap-y-6">
+                                                        <div key={detailsTab} className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-6">
                                                             <div className="space-y-2">
                                                                 <Label className="text-[14px] font-[500] text-[#374151]">
                                                                     {detailsTab.charAt(0).toUpperCase() + detailsTab.slice(1)} Contact Name
@@ -820,7 +820,7 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                                                 </div>
                                             )}
 
-                                            <div className="flex justify-end gap-4 pt-8">
+                                            <div className="flex flex-col sm:flex-row justify-end gap-4 pt-8">
                                                 <Button
                                                     type="button"
                                                     disabled={isSubmitting}
@@ -828,14 +828,14 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                                                         if (detailsTab === "address") onAddressSave()
                                                         else onContactSave()
                                                     }}
-                                                    className="w-[140px] h-[50px] bg-[#6C5DD3] hover:bg-[#5B4DC5] rounded-[8px] text-[16px] font-[500]"
+                                                    className="w-full sm:w-[140px] h-[50px] bg-[#6C5DD3] hover:bg-[#5B4DC5] rounded-[8px] text-[16px] font-[500]"
                                                 >
                                                     {detailsTab === "address" && !departmentId ? "Next" : "Save"}
                                                 </Button>
                                                 <Button
                                                     type="button"
                                                     onClick={handleExit}
-                                                    className="w-[140px] h-[50px] bg-[#E5E7EB] hover:bg-[#D1D5DB] text-[#374151] rounded-[8px] text-[16px] font-[500]"
+                                                    className="w-full sm:w-[140px] h-[50px] bg-[#E5E7EB] hover:bg-[#D1D5DB] text-[#374151] rounded-[8px] text-[16px] font-[500]"
                                                 >
                                                     Exit
                                                 </Button>
