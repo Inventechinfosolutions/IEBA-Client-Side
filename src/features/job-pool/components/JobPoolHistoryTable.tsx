@@ -22,6 +22,7 @@ import {
   useJobPoolHistoryQuery,
   type JobPoolHistoryRecord,
 } from "../queries/jobPoolHistory"
+import { cn } from "@/lib/utils"
 
 type JobPoolHistoryTableProps = {
   assignmentKind?: string
@@ -32,10 +33,12 @@ function ExpandButton({
   isExpanded,
   onClick,
   disabled,
+  className,
 }: {
   isExpanded: boolean
   onClick: () => void
   disabled?: boolean
+  className?: string
 }) {
   if (disabled) {
     return <span className="inline-block w-4" aria-hidden="true" />
@@ -44,7 +47,10 @@ function ExpandButton({
   return (
     <button
       type="button"
-      className="inline-flex items-center justify-center text-[#6C5DD3] hover:opacity-80"
+      className={cn(
+        "inline-flex items-center justify-center text-[#6C5DD3] hover:opacity-80",
+        className
+      )}
       onClick={onClick}
       aria-label={isExpanded ? "Hide details" : "View details"}
     >
@@ -96,7 +102,8 @@ export function JobPoolHistoryTable({
 
   return (
     <div className="flex flex-col gap-4 pt-3">
-      <div className="overflow-hidden rounded-[10px] border border-[#E5E7EB]">
+      {/* Desktop Table View */}
+      <div className="hidden xl:block overflow-hidden rounded-[10px] border border-[#E5E7EB]">
         <div className="overflow-x-auto">
           <Table className="w-full table-fixed border-collapse min-w-[920px]">
             <colgroup>
@@ -201,6 +208,84 @@ export function JobPoolHistoryTable({
             </TableBody>
           </Table>
         </div>
+      </div>
+
+      {/* Mobile/Tablet Cards View */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 xl:hidden">
+        {isLoading
+          ? skeletonRows.map((rowId) => (
+              <div key={rowId} className="rounded-[10px] border border-[#E5E7EB] bg-white p-5 space-y-4 animate-pulse">
+                <Skeleton className="h-6 w-1/3 rounded bg-gray-200" />
+                <Skeleton className="h-4 w-2/3 rounded bg-gray-200" />
+              </div>
+            ))
+          : historyData.map((row, idx) => {
+              const rowKey = String(row.id ?? idx)
+              const isExpanded = Boolean(expandedRowIds[rowKey])
+              const hasDetail = jobPoolHistoryRowHasDetail(row)
+
+              // Determine event pill/title value
+              const firstCol = columns[0]
+              const eventTitle = firstCol ? firstCol.getValue(row) : "Event"
+
+              return (
+                <div
+                  key={rowKey}
+                  className="rounded-[10px] border border-[#E5E7EB] bg-white shadow-sm overflow-hidden text-[13px] text-[#111827] flex flex-col"
+                >
+                  {/* Header */}
+                  <div className="flex items-center justify-between bg-[#6C5DD3] px-5 py-3 text-white">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-[14px]">{eventTitle}</span>
+                    </div>
+                    {hasDetail && (
+                      <ExpandButton
+                        isExpanded={isExpanded}
+                        className="text-white hover:text-white/80"
+                        onClick={() => toggleRow(rowKey)}
+                      />
+                    )}
+                  </div>
+
+                  {/* Body */}
+                  <div className="p-5 space-y-3.5 flex-1">
+                    {columns.slice(1).map((column) => {
+                      const value = column.getValue(row)
+                      const isEvent = Boolean(column.isEvent)
+                      return (
+                        <div key={column.key} className="flex justify-between items-center border-b border-gray-100 pb-2">
+                          <span className="text-[#111827] font-bold uppercase text-[11px] tracking-wider">{column.header}:</span>
+                          {isEvent ? (
+                            <span className="inline-flex rounded-full bg-[#F5F3FF] px-2.5 py-0.5 text-[11px] font-normal text-[#6C5DD3]">
+                              {value}
+                            </span>
+                          ) : (
+                            <span className="font-normal text-gray-600 text-right">{value}</span>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+
+                  {/* Detail Panel */}
+                  {isExpanded && hasDetail && (
+                    <div className="border-t border-[#E5E7EB] bg-[#FAFAFC] p-4">
+                      <JobPoolHistoryDetailPanel row={row} />
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+
+        {!isLoading && historyData.length === 0 && (
+          <div className="h-[150px] flex items-center justify-center border border-[#E5E7EB] rounded-[10px] bg-white">
+            <img
+              src={tableEmptyIcon}
+              alt="No history found"
+              className="mx-auto h-[73px] w-[82px] object-contain opacity-80"
+            />
+          </div>
+        )}
       </div>
 
       {!isLoading && totalItems > 0 && (

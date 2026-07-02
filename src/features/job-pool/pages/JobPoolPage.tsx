@@ -198,45 +198,51 @@ export function JobPoolPage() {
         )}
       </div>
 
-      <JobPoolFormModal
-        key={`${modalMode}-${selectedRow?.id ?? "new"}`}
-        open={modalOpen}
-        mode={modalMode}
-        initialValues={initialValues}
-        isSubmitting={isCreating || isUpdating}
-        isLoadingDetails={isFetchingDetail}
-        onOpenChange={setModalOpen}
-        onSave={handleSave}
-        formRef={formRef}
-        assignedActivityDetails={sourceRow?.assignedActivityDetails}
-        unassignedActivityDetails={sourceRow?.unassignedActivityDetails}
-        assignedJobClassificationDetails={sourceRow?.assignedJobClassificationDetails}
-        unassignedJobClassificationDetails={sourceRow?.unassignedJobClassificationDetails}
-        assignedUserDetails={sourceRow?.assignedUserDetails}
-        unassignedUserDetails={sourceRow?.unassignedUserDetails}
-        assigned={sourceRow?.assigned}
-        assignedToOtherPoolsInDept={sourceRow?.assignedToOtherPoolsInDept}
-        unassigned={sourceRow?.unassigned}
-        departmentName={sourceRow?.departmentName}
-      />
+      {modalOpen && (
+        <JobPoolFormModal
+          key={`${modalMode}-${selectedRow?.id ?? "new"}`}
+          open={modalOpen}
+          mode={modalMode}
+          initialValues={initialValues}
+          isSubmitting={isCreating || isUpdating}
+          isLoadingDetails={isFetchingDetail}
+          onOpenChange={setModalOpen}
+          onSave={handleSave}
+          formRef={formRef}
+          assignedActivityDetails={sourceRow?.assignedActivityDetails}
+          unassignedActivityDetails={sourceRow?.unassignedActivityDetails}
+          assignedJobClassificationDetails={sourceRow?.assignedJobClassificationDetails}
+          unassignedJobClassificationDetails={sourceRow?.unassignedJobClassificationDetails}
+          assignedUserDetails={sourceRow?.assignedUserDetails}
+          unassignedUserDetails={sourceRow?.unassignedUserDetails}
+          assigned={sourceRow?.assigned}
+          assignedToOtherPoolsInDept={sourceRow?.assignedToOtherPoolsInDept}
+          unassigned={sourceRow?.unassigned}
+          departmentName={sourceRow?.departmentName}
+        />
+      )}
 
-      <Dialog open={historyDialogOpen} onOpenChange={setHistoryDialogOpen}>
-        <DialogContent className="max-h-[92vh] max-w-[980px] overflow-hidden rounded-[12px] border border-[#E5E7EB] p-0 shadow-2xl">
-          <DialogHeader className="border-b border-[#E5E7EB] bg-[#FAFAFC] px-6 py-4 text-left">
-            <DialogTitle className="text-[18px] font-[600] text-[#111827]">
-              Job Pool History
-            </DialogTitle>
-            {historyJobPool?.name ? (
-              <p className="text-[13px] text-[#6B7280]">{historyJobPool.name}</p>
-            ) : null}
-          </DialogHeader>
-          <div className="max-h-[calc(92vh-88px)] overflow-y-auto px-6 py-4">
-            {historyDialogOpen && historyJobPool?.id ? (
-              <JobPoolHistoryTable jobPoolId={historyJobPool.id} />
-            ) : null}
-          </div>
-        </DialogContent>
-      </Dialog>
+      {historyDialogOpen && (
+        <Dialog open={historyDialogOpen} onOpenChange={setHistoryDialogOpen}>
+          <DialogContent className="max-h-[92vh] w-[95vw] sm:max-w-[980px] overflow-hidden rounded-[12px] border border-[#E5E7EB] p-0 shadow-2xl">
+            <DialogHeader className="border-b border-[#E5E7EB] bg-[#FAFAFC] px-6 py-4 text-left">
+              <DialogTitle className="text-[18px] font-[600] text-[#111827]">
+                Job Pool History
+              </DialogTitle>
+              {historyJobPool?.name ? (
+                <p className="text-[13px] text-[#6B7280]">{historyJobPool.name}</p>
+              ) : null}
+            </DialogHeader>
+            <div className="max-h-[calc(92vh-88px)] overflow-y-auto px-6 py-4">
+              {historyJobPool?.id ? (
+                <JobPoolHistoryTable jobPoolId={historyJobPool.id} />
+              ) : null}
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      <div className="h-8 w-full shrink-0" />
     </section>
   )
 }

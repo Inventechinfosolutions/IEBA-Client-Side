@@ -123,7 +123,7 @@ export function ActivitySection({ form, departmentName, assignedActivityDetails,
   }
 
   return (
-    <div className="grid grid-cols-[1fr_60px_1fr] items-center gap-4">
+    <div className="flex flex-col md:grid md:grid-cols-[1fr_60px_1fr] md:items-center gap-4">
       <TransferPanel
         title="Select Activity(Unassigned)"
         items={filteredU}
@@ -136,14 +136,14 @@ export function ActivitySection({ form, departmentName, assignedActivityDetails,
         count={filteredU.length}
         selectedDept={departmentName}
       />
-      <div className="flex flex-col gap-3 pt-12">
+      <div className="flex flex-row md:flex-col justify-center items-center gap-3 pt-2 md:pt-12">
         <button
           type="button"
           onClick={() => handleTransfer(toggledU, true)}
           disabled={toggledU.length === 0}
           className="flex size-11 cursor-pointer items-center justify-center rounded-[10px] bg-[#6C5DD3] text-white shadow-lg shadow-[#6C5DD3]/20 hover:brightness-110 active:scale-95 transition-all disabled:cursor-not-allowed"
         >
-          <ChevronRight className="size-5 stroke-[2.5]" />
+          <ChevronRight className="size-5 stroke-[2.5] rotate-90 md:rotate-0" />
         </button>
         <button
           type="button"
@@ -151,7 +151,7 @@ export function ActivitySection({ form, departmentName, assignedActivityDetails,
           disabled={toggledA.length === 0}
           className="flex size-11 cursor-pointer items-center justify-center rounded-[10px] bg-[#6C5DD3] text-white shadow-lg shadow-[#6C5DD3]/20 hover:brightness-110 active:scale-95 transition-all disabled:cursor-not-allowed"
         >
-          <ChevronLeft className="size-5 stroke-[2.5]" />
+          <ChevronLeft className="size-5 stroke-[2.5] rotate-90 md:rotate-0" />
         </button>
       </div>
       <TransferPanel

@@ -17,13 +17,13 @@ export function JobPoolToolbar({
   const { canAdd, isSuperAdmin } = usePermissions()
   const canAddJobPool = canAdd("jobpool")
   return (
-    <div className="flex items-center justify-between gap-3">
-      <div className="relative">
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="relative w-full sm:w-[270px]">
         <TitleCaseInput
           value={searchValue}
           onChange={(e) => onSearchChange(e.target.value)}
           placeholder={showHistory ? "Search Assignment Kind" : "Search here"}
-          className="h-[50px] w-[270px] rounded-[10px] border border-[#d0d5df] bg-white pl-3.5 pr-9 text-[11px] text-[#111827] shadow-[0_4px_10px_rgba(15,23,42,0.08)] placeholder:text-[10px] placeholder:text-[#a7afbf] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
+          className="h-[50px] w-full rounded-[10px] border border-[#d0d5df] bg-white pl-3.5 pr-9 text-[11px] text-[#111827] shadow-[0_4px_10px_rgba(15,23,42,0.08)] placeholder:text-[10px] placeholder:text-[#a7afbf] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
         />
         {searchValue.length > 0 && (
           <button
@@ -36,13 +36,13 @@ export function JobPoolToolbar({
           </button>
         )}
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
         {isSuperAdmin && (
           <Button
             type="button"
-            className={`h-11 cursor-pointer gap-2 rounded-[10px] px-3 text-[12px] font-semibold shadow-[0_1px_0_rgba(0,0,0,0.05)] transition-colors ${
+            className={`h-11 cursor-pointer gap-2 rounded-[10px] px-3 text-[12px] font-semibold shadow-[0_1px_0_rgba(0,0,0,0.05)] transition-colors w-full sm:w-auto ${
               showHistory
-                ? "bg-[#6C5DD3] text-white hover:bg-[#6C5DD3]"
+                ? "bg-[#6C5DD3] text-white hover:bg-[#5b4ebf]"
                 : "border border-[#6C5DD3] bg-white text-[#6C5DD3] hover:bg-[#F3F0FF]"
             }`}
             onClick={onToggleHistory}
@@ -64,7 +64,7 @@ export function JobPoolToolbar({
         {!showHistory && (
           <Button
             type="button"
-            className="h-11 cursor-pointer gap-2 rounded-[10px] bg-[#6C5DD3] px-3 text-[12px] font-semibold text-white shadow-[0_1px_0_rgba(0,0,0,0.05)] hover:bg-[#6C5DD3]"
+            className="h-11 cursor-pointer gap-2 rounded-[10px] bg-[#6C5DD3] px-3 text-[12px] font-semibold text-white shadow-[0_1px_0_rgba(0,0,0,0.05)] hover:bg-[#5b4ebf] w-full sm:w-auto"
             onClick={onToggleInactiveOnly}
           >
             {inactiveOnly ? (
@@ -79,7 +79,7 @@ export function JobPoolToolbar({
         {!showHistory && canAddJobPool && (
           <Button
             type="button"
-            className="h-11 cursor-pointer gap-1 rounded-[10px] bg-[#6C5DD3] px-3 text-[12px] font-semibold text-white shadow-[0_1px_0_rgba(0,0,0,0.05)] hover:bg-[#6C5DD3]"
+            className="h-11 cursor-pointer gap-1 rounded-[10px] bg-[#6C5DD3] px-3 text-[12px] font-semibold text-white shadow-[0_1px_0_rgba(0,0,0,0.05)] hover:bg-[#5b4ebf] w-full sm:w-auto"
             onClick={onAdd}
           >
             <Plus className="size-3.5" />

@@ -94,7 +94,7 @@ export function JobPoolFormModal({
       <DialogContent 
         showClose={false}
         overlayClassName="bg-black/35"
-        className="max-w-[1000px] w-[80vw] h-[90vh] p-0 flex flex-col overflow-hidden rounded-[10px]! bg-white"
+        className="w-[95vw] sm:max-w-[1000px] h-[90vh] max-h-[90vh] p-0 flex flex-col overflow-hidden rounded-[10px]! bg-white"
       >
         <form 
           onSubmit={form.handleSubmit(onSave)} 
@@ -106,12 +106,12 @@ export function JobPoolFormModal({
             </div>
           )}
           {/* Header Section */}
-          <div className="flex flex-col">
-            <div className="relative flex items-center justify-center px-8 py-4">
-              <h2 className="text-[24px] font-semibold text-[#111827]">
+          <div className="flex flex-col border-b border-gray-100">
+            <div className="relative flex flex-col sm:flex-row items-center justify-center sm:justify-between px-8 py-4 gap-2">
+              <h2 className="text-[24px] font-semibold text-[#111827] text-center sm:text-left">
                 {mode === "add" ? "Add Job Pool" : "Edit Job Pool"}
               </h2>
-              <div className="absolute right-8">
+              <div className="sm:absolute sm:right-8 sm:top-1/2 sm:-translate-y-1/2">
                 <Controller
                   control={form.control}
                   name="active"
@@ -135,7 +135,7 @@ export function JobPoolFormModal({
             <div className="p-6">
               {/* Top Row: Department and Job Pool Name */}
               <div
-                className="grid grid-cols-[minmax(0,2fr)_60px_minmax(0,2fr)] gap-4"
+                className="flex flex-col sm:grid sm:grid-cols-[minmax(0,2fr)_60px_minmax(0,2fr)] gap-4"
                 onMouseDownCapture={(event) => {
                   const targetNode = event.target as Node
                   if (
@@ -202,7 +202,7 @@ export function JobPoolFormModal({
                               const label = dept.name ?? ""
 
                               return (
-                                <li key={id}>
+                                <li>
                                   <button
                                     type="button"
                                     className="w-full rounded-[5px] px-3 py-1.5 text-left text-[12px] text-[#111827] hover:bg-[#f3f4ff]"
@@ -235,7 +235,7 @@ export function JobPoolFormModal({
                 </div>
 
                 {/* Spacer matching the arrows column */}
-                <div />
+                <div className="hidden sm:block" />
 
                 <div className="space-y-2">
                   <label className="text-[13px] font-semibold text-[#374151]">Job Pool</label>
@@ -291,18 +291,18 @@ export function JobPoolFormModal({
           </div>
 
           {/* Footer Actions */}
-          <div className="flex items-center justify-end gap-3 px-8 py-5">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3 px-8 py-5">
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="h-11 min-w-[100px] cursor-pointer rounded-[8px] bg-[#6C5DD3] text-white hover:bg-[#5B4DC5] disabled:cursor-not-allowed disabled:opacity-60"
+              className="h-11 w-full sm:w-[100px] cursor-pointer rounded-[8px] bg-[#6C5DD3] text-white hover:bg-[#5B4DC5] disabled:cursor-not-allowed disabled:opacity-60"
             >
               Save
             </Button>
             <Button
               type="button"
               onClick={handleClose}
-              className="h-11 min-w-[100px] cursor-pointer rounded-[10px] bg-[#F3F4F6] text-[#111827] hover:bg-[#E5E7EB]"
+              className="h-11 w-full sm:w-[100px] cursor-pointer rounded-[10px] bg-[#F3F4F6] text-[#111827] hover:bg-[#E5E7EB]"
             >
               Exit
             </Button>
