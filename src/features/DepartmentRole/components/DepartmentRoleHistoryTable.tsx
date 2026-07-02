@@ -94,7 +94,8 @@ export function DepartmentRoleHistoryTable({
 
   return (
     <div className="flex flex-col gap-4 pt-3">
-      <div className="overflow-hidden rounded-[10px] border border-[#E5E7EB]">
+      {/* Desktop view Table */}
+      <div className="hidden xl:block overflow-hidden rounded-[10px] border border-[#E5E7EB]">
         <div className="overflow-x-auto">
           <Table className="w-full table-fixed border-collapse">
             <colgroup>
@@ -210,6 +211,87 @@ export function DepartmentRoleHistoryTable({
           </Table>
         </div>
       </div>
+
+      {/* Mobile/Tablet view cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 xl:hidden">
+        {isLoading
+          ? skeletonRows.map((rowId) => (
+              <div key={rowId} className="rounded-[10px] border border-[#E5E7EB] bg-white p-5 space-y-4 animate-pulse">
+                <Skeleton className="h-6 w-1/3 rounded bg-gray-200" />
+                <Skeleton className="h-4 w-2/3 rounded bg-gray-200" />
+                <Skeleton className="h-4 w-full rounded bg-gray-200" />
+              </div>
+            ))
+          : historyData.map((row, idx) => (
+              <div
+                key={`${row.id}-${idx}`}
+                className="rounded-[10px] border border-[#E5E7EB] bg-white shadow-sm overflow-hidden text-[13px] text-[#111827] flex flex-col"
+              >
+                {/* Header */}
+                <div className="flex items-center justify-between bg-[#6C5DD3] px-5 py-3 text-white">
+                  <span className="font-bold text-[14px]">
+                    {row.roleName || "—"}
+                  </span>
+                  <span className="text-[12px] opacity-90 font-medium">
+                    {isAssignmentLayout ? "" : getDepartmentRoleHistoryUpdatedAtDisplay(row)}
+                  </span>
+                </div>
+
+                {/* Body */}
+                <div className="p-5 space-y-3.5 flex-1">
+                  {isAssignmentLayout ? (
+                    <>
+                      <div className="flex justify-between items-center border-b border-gray-100 pb-2">
+                        <span className="text-gray-400 font-bold uppercase text-[10px] tracking-wider">Department Name:</span>
+                        <span className="font-semibold text-gray-800">{row.departmentName || "—"}</span>
+                      </div>
+                      <div className="flex justify-between items-center border-b border-gray-100 pb-2">
+                        <span className="text-gray-400 font-bold uppercase text-[10px] tracking-wider">Effective From:</span>
+                        <span className="font-semibold text-gray-800">{getDepartmentRoleHistoryEffectiveFromDisplay(row)}</span>
+                      </div>
+                      <div className="flex justify-between items-center border-b border-gray-100 pb-2">
+                        <span className="text-gray-400 font-bold uppercase text-[10px] tracking-wider">Effective To:</span>
+                        <span className="font-semibold text-gray-800">{getDepartmentRoleHistoryEffectiveToDisplay(row)}</span>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex justify-between items-center border-b border-gray-100 pb-2">
+                        <span className="text-gray-400 font-bold uppercase text-[10px] tracking-wider">Department Code:</span>
+                        <span className="font-semibold text-gray-800">{row.departmentCode || "—"}</span>
+                      </div>
+                      <div className="flex justify-between items-center border-b border-gray-100 pb-2">
+                        <span className="text-gray-400 font-bold uppercase text-[10px] tracking-wider">Department Name:</span>
+                        <span className="font-semibold text-gray-800">{row.departmentName || "—"}</span>
+                      </div>
+                      <div className="flex justify-between items-center border-b border-gray-100 pb-2">
+                        <span className="text-gray-400 font-bold uppercase text-[10px] tracking-wider">Created By:</span>
+                        <span className="font-semibold text-gray-800">{getDepartmentRoleHistoryCreatedByDisplay(row)}</span>
+                      </div>
+                      <div className="flex justify-between items-center border-b border-gray-100 pb-2">
+                        <span className="text-gray-400 font-bold uppercase text-[10px] tracking-wider">Updated By:</span>
+                        <span className="font-semibold text-gray-800">{getDepartmentRoleHistoryUpdatedByDisplay(row)}</span>
+                      </div>
+                      <div className="flex justify-between items-center border-b border-gray-100 pb-2">
+                        <span className="text-gray-400 font-bold uppercase text-[10px] tracking-wider">Created At:</span>
+                        <span className="font-semibold text-gray-800">{getDepartmentRoleHistoryCreatedAtDisplay(row)}</span>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            ))}
+      </div>
+
+      {!isLoading && historyData.length === 0 && (
+        <div className="h-[210px] flex items-center justify-center border border-[#E5E7EB] rounded-[10px] bg-white xl:hidden">
+          <img
+            src={tableEmptyIcon}
+            alt="No history found"
+            className="mx-auto h-[73px] w-[82px] object-contain opacity-80"
+          />
+        </div>
+      )}
 
       {!isLoading && totalItems > 0 && (
         <MasterCodePagination

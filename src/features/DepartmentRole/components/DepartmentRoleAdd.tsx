@@ -452,7 +452,7 @@ export function DepartmentRoleAdd({
         className="fixed inset-0 z-50 overflow-y-auto grid place-items-center bg-transparent border-none shadow-none p-0 left-0 top-0 translate-x-0 translate-y-0 max-w-none w-screen h-screen"
         overlayClassName="bg-black/40"
       >
-        <div className="relative my-8 w-[1000px] max-w-[95vw] bg-white rounded-lg border p-[2%_5%] shadow-lg flex flex-col">
+        <div className="relative my-8 w-[1000px] max-w-[95vw] max-h-[90vh] overflow-y-auto bg-white rounded-lg border p-[2%_5%] shadow-lg flex flex-col [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           <DialogClose className="absolute right-6 top-6 cursor-pointer rounded-sm opacity-70 hover:opacity-100">
             <X className="size-4 text-black" />
           </DialogClose>
@@ -509,8 +509,8 @@ export function DepartmentRoleAdd({
                 </div>
               )}
               <div className="space-y-4 pt-10 pb-2 pr-1">
-                <div className="grid grid-cols-[1fr_auto_1fr] gap-2 px-1">
-                  <div className="min-w-0 space-y-2">
+                <div className="flex flex-col sm:grid sm:grid-cols-[1fr_auto_1fr] gap-4 sm:gap-2 px-1">
+                  <div className="min-w-0 space-y-2 w-full">
                     <Label htmlFor="department" className="text-black">
                       Department
                     </Label>
@@ -544,8 +544,8 @@ export function DepartmentRoleAdd({
                       </p>
                     )}
                   </div>
-                  <div className="w-[62px] shrink-0" aria-hidden />
-                  <div className="min-w-0 space-y-2">
+                  <div className="hidden sm:block w-[62px] shrink-0" aria-hidden />
+                  <div className="min-w-0 space-y-2 w-full">
                     <Label htmlFor="roleName" className="text-black">
                       Role Name
                     </Label>
@@ -568,7 +568,7 @@ export function DepartmentRoleAdd({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-[1fr_auto_1fr] gap-2 py-4">
+                <div className="flex flex-col sm:grid sm:grid-cols-[1fr_auto_1fr] gap-4 sm:gap-2 py-4">
                   <TransferPanel
                     title="All permissions"
                     items={availableItems}
@@ -583,7 +583,7 @@ export function DepartmentRoleAdd({
                     onSelectAll={selectAllAvailable}
                   />
 
-                  <div className="flex flex-col items-center justify-center gap-3">
+                  <div className="flex flex-row sm:flex-col items-center justify-center gap-3 py-2">
                     <TransferListMoveButton
                       direction="forward"
                       onClick={() => void transferToAssigned()}
@@ -612,11 +612,11 @@ export function DepartmentRoleAdd({
                     onSelectAll={selectAllAssigned}
                   />
                 </div>
-                <div className="flex justify-end gap-2 p-1">
+                <div className="flex flex-col sm:flex-row justify-end gap-4 sm:gap-2 p-1">
                   <Button
                     type="button"
                     variant="outline"
-                    className="min-h-[50px] min-w-[98px] border-[#DADADA] bg-[#DADADA] px-5 py-2.5 text-black hover:bg-[#d1d1d1]"
+                    className="w-full sm:w-[98px] min-h-[50px] border-[#DADADA] bg-[#DADADA] px-5 py-2.5 text-black hover:bg-[#d1d1d1]"
                     onClick={() => handleOpenChange(false)}
                   >
                     Exit
@@ -624,7 +624,7 @@ export function DepartmentRoleAdd({
                   <Button
                     type="submit"
                     disabled={submitDisabled}
-                    className="min-h-[50px] min-w-[98px] bg-[rgb(108,93,211)] px-5 py-2.5 text-white hover:bg-[rgb(108,93,211)]/90"
+                    className="w-full sm:w-[98px] min-h-[50px] bg-[rgb(108,93,211)] px-5 py-2.5 text-white hover:bg-[rgb(108,93,211)]/90"
                   >
                     Save
                   </Button>

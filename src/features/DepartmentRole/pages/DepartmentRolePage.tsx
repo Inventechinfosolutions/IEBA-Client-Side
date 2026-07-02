@@ -319,30 +319,30 @@ export function DepartmentRolePage() {
   return (
     <div className="space-y-6">
       {/* Toolbar */}
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         {showHistory ? (
-          <div className="flex flex-1 items-center gap-2">
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 w-full lg:w-auto flex-1">
             <TitleCaseInput
               placeholder="Search Department Name"
               value={historyDeptName}
               onChange={(e) => setHistoryDeptName(e.target.value)}
-              className="h-12 w-[220px] rounded-[10px] border border-[#D9D9D9] bg-white px-3.5 text-[11px] text-[#111827] shadow-[0_4px_10px_rgba(15,23,42,0.08)] placeholder:text-[10px] placeholder:text-[#9CA3AF] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
+              className="h-12 w-full rounded-[10px] border border-[#D9D9D9] bg-white px-3.5 text-[11px] text-[#111827] shadow-[0_4px_10px_rgba(15,23,42,0.08)] placeholder:text-[10px] placeholder:text-[#9CA3AF] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
             />
             <TitleCaseInput
               placeholder="Search Department Code"
               value={historyDeptCode}
               onChange={(e) => setHistoryDeptCode(e.target.value)}
-              className="h-12 w-[180px] rounded-[10px] border border-[#D9D9D9] bg-white px-3.5 text-[11px] text-[#111827] shadow-[0_4px_10px_rgba(15,23,42,0.08)] placeholder:text-[10px] placeholder:text-[#9CA3AF] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
+              className="h-12 w-full rounded-[10px] border border-[#D9D9D9] bg-white px-3.5 text-[11px] text-[#111827] shadow-[0_4px_10px_rgba(15,23,42,0.08)] placeholder:text-[10px] placeholder:text-[#9CA3AF] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
             />
             <TitleCaseInput
               placeholder="Search Role Name"
               value={historyRoleName}
               onChange={(e) => setHistoryRoleName(e.target.value)}
-              className="h-12 w-[180px] rounded-[10px] border border-[#D9D9D9] bg-white px-3.5 text-[11px] text-[#111827] shadow-[0_4px_10px_rgba(15,23,42,0.08)] placeholder:text-[10px] placeholder:text-[#9CA3AF] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
+              className="h-12 w-full col-span-2 lg:col-span-1 rounded-[10px] border border-[#D9D9D9] bg-white px-3.5 text-[11px] text-[#111827] shadow-[0_4px_10px_rgba(15,23,42,0.08)] placeholder:text-[10px] placeholder:text-[#9CA3AF] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
             />
           </div>
         ) : (
-          <div className="relative">
+          <div className="relative w-full lg:w-[270px]">
             <TitleCaseInput
               placeholder="Search here"
               value={listSearchQuery}
@@ -350,7 +350,7 @@ export function DepartmentRolePage() {
                 setListSearchQuery(e.target.value)
                 onPageChange(1)
               }}
-              className="h-12 w-[270px] rounded-[10px] border border-[#D9D9D9] bg-white pl-3.5 pr-9 text-[11px] text-[#111827] shadow-[0_4px_10px_rgba(15,23,42,0.08)] placeholder:text-[10px] placeholder:text-[#9CA3AF] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
+              className="h-12 w-full rounded-[10px] border border-[#D9D9D9] bg-white pl-3.5 pr-9 text-[11px] text-[#111827] shadow-[0_4px_10px_rgba(15,23,42,0.08)] placeholder:text-[10px] placeholder:text-[#9CA3AF] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
             />
             {listSearchQuery.length > 0 && (
               <button
@@ -367,11 +367,11 @@ export function DepartmentRolePage() {
             )}
           </div>
         )}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center justify-end w-full lg:w-auto shrink-0 gap-2">
           {isSuperAdmin && (
             <button
               type="button"
-              className={`flex h-12 items-center gap-2 rounded-[10px] px-4 text-[14px] font-normal transition-colors ${showHistory
+              className={`flex h-12 items-center justify-center gap-2 rounded-[10px] px-4 text-[14px] font-normal transition-colors w-full lg:w-auto ${showHistory
                   ? "bg-[#6C5DD3] text-white"
                   : "border border-[#6C5DD3] bg-white text-[#6C5DD3] hover:bg-[#F3F0FF]"
                 }`}
@@ -456,6 +456,7 @@ export function DepartmentRolePage() {
           Boolean(viewRoleId)
         }
       />
+      <div className="h-8 w-full shrink-0" />
     </div>
   )
 }

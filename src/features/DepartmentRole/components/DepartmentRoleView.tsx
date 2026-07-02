@@ -38,11 +38,11 @@ export function DepartmentRoleView({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showClose={false}
-        className="fixed inset-0 z-50 overflow-y-auto grid place-items-center bg-transparent border-none shadow-none p-0 left-0 top-0 translate-x-0 translate-y-0 max-w-none w-screen h-screen"
+        className="w-[95vw] sm:max-w-[1000px] py-5 px-6 sm:px-[50px] max-h-[90vh] overflow-y-auto border-none shadow-2xl rounded-lg bg-white [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
         overlayClassName="bg-black/40"
       >
-        <div className="relative my-8 w-[1000px] max-w-[95vw] bg-white rounded-lg border py-5 px-[50px] shadow-lg flex flex-col">
-          <DialogClose className="absolute right-6 top-6 cursor-pointer rounded-sm opacity-70 hover:opacity-100">
+        <div className="relative flex flex-col w-full">
+          <DialogClose className="absolute right-0 top-0 cursor-pointer rounded-sm opacity-70 hover:opacity-100">
             <X className="size-4 text-black" />
           </DialogClose>
 
@@ -75,7 +75,7 @@ export function DepartmentRoleView({
                 <Spinner className="text-[#6C5DD3]" />
               </div>
             )}
-            <div className="grid w-full grid-cols-2 gap-6 pb-4">
+            <div className="grid w-full grid-cols-1 sm:grid-cols-2 gap-6 pb-4">
               <div className="min-w-0 space-y-2">
                 <Label className="text-black">Department</Label>
                 {isLoading ? (
@@ -196,7 +196,7 @@ export function DepartmentRoleView({
               <Button
                 type="button"
                 onClick={() => onOpenChange(false)}
-                className="h-[50px] min-w-[140px] rounded-lg bg-[#DADADA] px-5 py-2.5 text-black hover:bg-[#d1d1d1]"
+                className="w-full sm:w-[140px] h-[50px] rounded-lg bg-[#DADADA] px-5 py-2.5 text-black hover:bg-[#d1d1d1]"
               >
                 Exit
               </Button>
