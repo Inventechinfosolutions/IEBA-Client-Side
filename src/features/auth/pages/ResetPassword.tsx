@@ -86,7 +86,7 @@ export function ResetPassword() {
   }
 
   return (
-    <div className="relative flex min-h-svh w-full flex-col items-center justify-center overflow-hidden bg-white px-4 py-8 sm:px-6 sm:py-12">
+    <div className="relative flex min-h-svh w-full flex-col items-center justify-start overflow-x-hidden bg-white px-4 py-8 sm:justify-center sm:px-6 sm:py-12">
       <div
         className="pointer-events-none absolute inset-0 bg-cover bg-center bg-no-repeat opacity-30 [filter:invert(1)]"
         style={{ backgroundImage: `url(${forgotPasswordBg})` }}
@@ -101,15 +101,15 @@ export function ResetPassword() {
         <span className="font">I E B A</span>
       </Link>
 
-      <div className="relative z-10 flex w-full max-w-[420px] min-w-0 shrink-0 justify-center">
-        <Card className="flex w-full min-w-0 flex-col rounded-[6px] border-gray-100 bg-white px-5 py-7 shadow-login-card font-[Roboto,sans-serif]">
+      <div className="relative z-10 mt-[80px] flex w-full max-w-[420px] min-w-0 shrink-0 justify-center sm:mt-0">
+        <Card className="flex w-full min-w-0 flex-col rounded-[6px] border-gray-100 bg-white px-4 py-7 sm:px-5 shadow-login-card font-[Roboto,sans-serif]">
           <CardHeader className="space-y-0 px-0 pt-2 text-center">
             <div className="mb-4 flex w-full justify-center">
               <div className="flex h-14 w-14 items-center justify-center rounded-[12px] bg-[#EEF0FF]">
                 <img src={passwordIcon} alt="" className="h-7 w-7 object-contain opacity-90" />
               </div>
             </div>
-            <CardTitle className="mb-2 font-normal tracking-tight text-[#212529] text-[35.465px] leading-tight">
+            <CardTitle className="mb-2 font-normal tracking-tight text-[#212529] text-[28px] sm:text-[35.465px] leading-tight">
               Set password
             </CardTitle>
             <CardDescription className="mb-2 text-[20px] text-[#C4BEBE]">

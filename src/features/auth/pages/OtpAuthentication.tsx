@@ -326,10 +326,10 @@ export function OtpAuthentication() {
       </div>
 
       {/* OTP card: narrower width, taller min height; max-width keeps centering stable */}
-      <div className="relative z-10 flex w-full max-w-[420px] min-w-0 shrink-0 justify-center">
-        <Card className="flex min-h-[430px] w-full min-w-0 flex-col rounded-[6px] border-gray-100 bg-white py-7 px-5 shadow-login-card font-[Roboto,sans-serif]">
+      <div className="relative z-10 mt-[80px] flex w-full max-w-[420px] min-w-0 shrink-0 justify-center sm:mt-0">
+        <Card className="flex min-h-[430px] w-full min-w-0 flex-col rounded-[6px] border-gray-100 bg-white py-7 px-4 sm:px-5 shadow-login-card font-[Roboto,sans-serif]">
         <CardHeader className="space-y-0 text-center px-0 pt-4">
-          <CardTitle className="mb-2 font-normal tracking-tight text-[#212529] text-[39.465px] leading-tight font-['Roboto',sans-serif]">
+          <CardTitle className="mb-2 font-normal tracking-tight text-[#212529] text-[28px] sm:text-[39.465px] leading-tight font-['Roboto',sans-serif]">
             OTP Authentication
           </CardTitle>
           <CardDescription className="mb-4 text-[20px] text-[#C4BEBE]">

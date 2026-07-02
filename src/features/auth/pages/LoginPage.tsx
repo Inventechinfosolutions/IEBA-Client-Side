@@ -62,16 +62,16 @@ export function LoginPage() {
     loginMutation.error instanceof Error ? loginMutation.error.message : null
 
   return (
-    <div className="flex min-h-svh w-full flex-nowrap overflow-hidden bg-white">
+    <div className="flex min-h-svh w-full flex-col overflow-hidden bg-white md:flex-row">
       <div
-        className="relative flex min-h-svh shrink-0 flex-col items-center justify-center overflow-hidden border-0 bg-white bg-cover p-6 pt-[6vh] md:w-[40%] md:p-10 md:pt-[8vh]"
+        className="relative flex min-h-svh w-full flex-col items-center justify-start overflow-hidden border-0 bg-white bg-cover p-4 sm:p-6 md:w-[40%] md:shrink-0 md:justify-center md:p-10 md:pt-[8vh]"
         style={{
           backgroundImage: `url(${loginLogo})`,
           backgroundPosition: "center top",
         }}
       >
-        <div className="relative z-10 flex w-full max-w-[450px] flex-col items-center pt-[23vh]">
-          <div className="w-[110%] min-h-[480px] max-h-[60vh] overflow-y-auto rounded-[5px] bg-white p-8 shadow-login-card">
+        <div className="relative z-10 flex w-full max-w-[420px] flex-col items-center pt-[33vh] md:pt-[23vh]">
+          <div className="w-full min-h-[460px] overflow-y-auto rounded-[5px] bg-white p-6 sm:p-8 shadow-login-card">
             <div className="text-center">
               <h1 className="mb-2 tracking-tight text-[#212529] font-[Roboto,sans-serif] text-[38.465px] leading-tight">
                 Login
