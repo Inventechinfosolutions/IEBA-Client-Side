@@ -40,10 +40,10 @@ export function TimeStudyMGTPage() {
       <div className="flex flex-col gap-4">
 
         {/* 3-column layout: Employee Panel | Calendar | Legend */}
-        <div className="grid grid-cols-1 gap-6 px-3 sm:grid-cols-2 2xl:flex 2xl:flex-row 2xl:gap-8 2xl:items-stretch">
+        <div className="grid grid-cols-1 gap-6 px-3 sm:grid-cols-2 xl:flex xl:flex-row xl:gap-4 xl:items-stretch">
 
           {/* Left: Employee list */}
-          <div className="w-full order-1 sm:order-1 sm:col-span-1 2xl:order-1 2xl:w-[420px] 2xl:shrink-0 flex">
+          <div className="w-full order-1 sm:order-1 sm:col-span-1 xl:order-1 xl:w-[360px] xl:shrink-0 flex">
             <MgtEmployeePanel
               search={search}
               onSearchChange={setSearch}
@@ -55,7 +55,7 @@ export function TimeStudyMGTPage() {
           </div>
 
           {/* Middle: Calendar */}
-          <div className="w-full min-w-0 order-2 sm:order-3 sm:col-span-2 2xl:order-2 2xl:flex-1 2xl:px-3">
+          <div className="w-full min-w-0 order-2 sm:order-3 sm:col-span-2 xl:order-2 xl:flex-1 xl:px-3">
             <PersonalTimeStudyCalendarCard
               weekRows={[]}
               variant="management"
@@ -196,7 +196,7 @@ export function TimeStudyMGTPage() {
           </div>
 
           {/* Right: Legend */}
-          <div className="w-full order-3 sm:order-2 sm:col-span-1 2xl:order-3 2xl:w-[220px] 2xl:shrink-0 2xl:self-start">
+          <div className="w-full order-3 sm:order-2 sm:col-span-1 xl:order-3 xl:w-[220px] xl:shrink-0 xl:self-start">
             <MgtLegendCard />
           </div>
 
