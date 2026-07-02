@@ -1519,14 +1519,15 @@ export function ReportForm({ module }: ReportFormProps) {
                     value={field.value ?? ""}
                     onChange={(val) => {
                       if ((field.value ?? "") !== val) {
-                        setValue("reportKey", "")
-                        setValue("fileName", "")
-                        setValue("employeeIds", "")
-                        setValue("activityIds", "")
-                        setValue("costPoolIds", "")
-                        setValue("programIds", "")
+                        form.reset({
+                          ...REPORT_FORM_DEFAULT_VALUES,
+                          departmentId: val,
+                        }, {
+                          keepDirtyValues: false,
+                        })
+                      } else {
+                        field.onChange(val)
                       }
-                      field.onChange(val)
                     }}
                     onBlur={field.onBlur}
                     options={departmentOptions}
@@ -1565,6 +1566,8 @@ export function ReportForm({ module }: ReportFormProps) {
                       departmentId: getValues("departmentId"),
                       reportKey: val,
                       fileName: label,
+                    }, {
+                      keepDirtyValues: false,
                     })
 
                     if (!item) return
