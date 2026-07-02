@@ -40,20 +40,22 @@ export function TimeStudyMGTPage() {
       <div className="flex flex-col gap-4">
 
         {/* 3-column layout: Employee Panel | Calendar | Legend */}
-        <div className="flex gap-8 items-stretch px-3">
+        <div className="grid grid-cols-1 gap-6 px-3 sm:grid-cols-2 2xl:flex 2xl:flex-row 2xl:gap-8 2xl:items-stretch">
 
           {/* Left: Employee list */}
-          <MgtEmployeePanel
-            search={search}
-            onSearchChange={setSearch}
-            employees={filteredEmployees}
-            selectedUserId={selectedUserId}
-            onSelect={selectEmployee}
-            isLoading={isEmployeeListLoading}
-          />
+          <div className="w-full order-1 sm:order-1 sm:col-span-1 2xl:order-1 2xl:w-[420px] 2xl:shrink-0 flex">
+            <MgtEmployeePanel
+              search={search}
+              onSearchChange={setSearch}
+              employees={filteredEmployees}
+              selectedUserId={selectedUserId}
+              onSelect={selectEmployee}
+              isLoading={isEmployeeListLoading}
+            />
+          </div>
 
           {/* Middle: Calendar */}
-          <div className="flex-1 min-w-0 px-3">
+          <div className="w-full min-w-0 order-2 sm:order-3 sm:col-span-2 2xl:order-2 2xl:flex-1 2xl:px-3">
             <PersonalTimeStudyCalendarCard
               weekRows={[]}
               variant="management"
@@ -117,7 +119,7 @@ export function TimeStudyMGTPage() {
                 }
 
                 return (
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-0.5 sm:gap-1.5">
                     {/* If Submitted: Show Approve/Reject ONLY */}
                     {isSubmitted && (
                       <>
@@ -194,7 +196,7 @@ export function TimeStudyMGTPage() {
           </div>
 
           {/* Right: Legend */}
-          <div className="w-[220px] shrink-0 self-start">
+          <div className="w-full order-3 sm:order-2 sm:col-span-1 2xl:order-3 2xl:w-[220px] 2xl:shrink-0 2xl:self-start">
             <MgtLegendCard />
           </div>
 

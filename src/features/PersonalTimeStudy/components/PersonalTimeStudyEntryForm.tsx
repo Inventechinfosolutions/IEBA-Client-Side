@@ -1,5 +1,5 @@
 import { ChevronDown, Clock, Eye, Plus, Trash2, Check, AlertCircle, AlertTriangle } from "lucide-react"
-import { useCallback, useMemo, useRef, useState } from "react"
+import { useCallback, Fragment, useMemo, useRef, useState } from "react"
 import type { UserAssignedDepartmentsSettingChecks } from "../queries/getUserAssignedDepartmentsSettingChecks"
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card"
 
@@ -1372,7 +1372,8 @@ export function PersonalTimeStudyEntryForm({
           const hideNotes = rowSettings.hideDescriptionActivityNote
 
           return (
-            <div key={parent.id} className={cn("rounded-md", !isLeaveRow && !isApportionedRow && "bg-card/50 p-2 border border-border/50")}>
+            <Fragment key={parent.id}>
+            <div className={cn("rounded-md", !isLeaveRow && !isApportionedRow && "bg-card/50 p-2 border border-border/50")}>
               <div className={cn(parentFieldRowClass, (isLeaveRow || isApportionedRow) && "p-2")}>
                 <div className="flex-1 space-y-0.5">
                   <Label className="text-[11px] text-[#6C5DD3] font-medium">TS Program <RequiredMark /></Label>
@@ -1666,6 +1667,8 @@ export function PersonalTimeStudyEntryForm({
                 </div>
               )}
             </div>
+              <hr className="sm:hidden border-gray-200" />
+            </Fragment>
           )
         })}
       </div>

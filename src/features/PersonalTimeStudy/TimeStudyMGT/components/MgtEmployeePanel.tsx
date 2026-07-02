@@ -60,7 +60,7 @@ export function MgtEmployeePanel({
 
   return (
     <TooltipProvider>
-      <div className="flex w-[420px] shrink-0 flex-col rounded-[6px] bg-white shadow-[0_4px_16px_rgba(16,24,40,0.12)] overflow-hidden">
+      <div className="flex w-full 2xl:w-[420px] 2xl:shrink-0 flex-col rounded-[6px] bg-white shadow-[0_4px_16px_rgba(16,24,40,0.12)] overflow-hidden">
         {/* Purple header */}
         <div className="flex h-[52px] items-center justify-between bg-[#6C5DD3] px-3 py-2">
           <div className="flex-1 h-full pr-2">
@@ -134,7 +134,7 @@ export function MgtEmployeePanel({
       </div>
 
       {/* Scrollable list — fixed height so panel never shrinks */}
-      <div className="overflow-y-auto divide-y divide-gray-200 h-[430px]">
+      <div className="overflow-y-auto divide-y divide-gray-200 h-[430px] sm:h-[330px] 2xl:h-[430px]">
         {isLoading ? (
           <div className="flex h-full items-center justify-center">
             <Spinner className="size-8 text-[#6C5DD3]" />

@@ -51,7 +51,7 @@ const ACTION_ITEMS = [
 
 export function MgtLegendCard() {
   return (
-    <div className="rounded-[6px] bg-white p-6 shadow-[0_4px_16px_rgba(16,24,40,0.12)]">
+    <div className="rounded-[6px] bg-white p-6 shadow-[0_4px_16px_rgba(16,24,40,0.12)] w-full 2xl:w-[220px]">
       <div className="flex flex-col gap-3">
         {/* Status dot items */}
         {LEGEND_ITEMS.map((item) => (
