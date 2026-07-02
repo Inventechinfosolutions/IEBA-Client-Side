@@ -46,11 +46,11 @@ export function MasterCodePagination({
   })()
 
   return (
-    <div className="mt-4 flex items-center rounded-[6px] bg-white px-5 py-3 shadow-[0_4px_16px_rgba(16,24,40,0.12)] w-full">
+    <div className="mt-4 flex items-center rounded-[6px] bg-transparent sm:bg-white px-0 sm:px-5 py-3 shadow-none sm:shadow-[0_4px_16px_rgba(16,24,40,0.12)] w-full">
       <div className="ml-auto flex flex-col sm:flex-row items-center gap-3 sm:gap-4 w-full sm:w-auto justify-center sm:justify-end">
         <p className="text-[12px] text-[#8f93a1]">Total {totalItems} items</p>
         <Pagination className="mx-0 w-auto justify-start">
-          <PaginationContent className="gap-2 text-xs">
+          <PaginationContent className="gap-1 sm:gap-2 text-xs">
             <PaginationItem>
               <PaginationLink
                 href="#"
@@ -73,7 +73,7 @@ export function MasterCodePagination({
                     href="#"
                     size="icon"
                     isActive={page === currentPage}
-                    className={`inline-flex size-7 items-center justify-center rounded border text-xs no-underline ${
+                    className={`inline-flex size-6 sm:size-7 items-center justify-center rounded border text-xs no-underline ${
                       page === currentPage
                         ? "border-[#d8dae3] bg-white font-medium text-[#1f2937]"
                         : "border-transparent text-[#8f93a1] hover:border-[#d8dae3]"
@@ -88,7 +88,7 @@ export function MasterCodePagination({
                 </PaginationItem>
               ) : (
                 <PaginationItem key={`${page}-${index}`}>
-                  <span className="inline-flex size-7 items-center justify-center text-xs text-[#8f93a1]">
+                  <span className="inline-flex size-6 sm:size-7 items-center justify-center text-xs text-[#8f93a1]">
                     ...
                   </span>
                 </PaginationItem>

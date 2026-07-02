@@ -66,6 +66,7 @@ export function JobClassificationFormModal({
       .replaceAll("\n", "<br>")
   }
 
+
   const setDescriptionEditorRef = useCallback(
     (node: HTMLDivElement | null) => {
       descriptionEditorRef.current = node
@@ -174,19 +175,19 @@ export function JobClassificationFormModal({
       <DialogContent
         showClose={false}
         overlayClassName="bg-black/40"
-        className="left-1/2 top-[8%] w-[880px] max-w-[calc(100vw-40px)] -translate-x-1/2 translate-y-0 gap-0 overflow-hidden rounded-[4px] border border-[#f4f6fb] bg-white p-0 text-[#0f172a] subpixel-antialiased shadow-[0_6px_18px_rgba(22,29,45,0.12)]"
+        className="w-[95vw] sm:max-w-[880px] max-h-[90vh] overflow-y-auto border-none shadow-2xl rounded-lg bg-white [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] p-0 text-[#0f172a]"
       >
-        <form onSubmit={handleSave} className="relative select-none bg-white px-11 pb-8 pt-7">
+        <form onSubmit={handleSave} className="relative select-none bg-white px-5 sm:px-11 pb-8 pt-7">
           {(isSubmitting || isLoadingDetails) && (
             <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/60">
               <Spinner className="text-[#6C5DD3]" />
             </div>
           )}
-          <DialogHeader className="relative items-center pb-8">
-            <DialogTitle className="text-[22px] font-semibold text-[#111827]">
+          <DialogHeader className="relative flex flex-col items-center pb-6 sm:pb-8">
+            <DialogTitle className="text-[22px] font-semibold text-[#111827] text-center">
               {title}
             </DialogTitle>
-            <label className="absolute right-0 top-[35px] inline-flex cursor-pointer items-center gap-1.5 text-[16px] font-medium text-[#20263a]">
+            <label className="mt-2 sm:mt-0 sm:absolute sm:right-0 sm:top-[35px] inline-flex cursor-pointer items-center gap-1.5 text-[16px] font-medium text-[#20263a]">
               <Controller
                 name="active"
                 control={control}
@@ -202,8 +203,8 @@ export function JobClassificationFormModal({
             </label>
           </DialogHeader>
 
-          <div className="grid grid-cols-[220px_minmax(0,1fr)] items-end gap-5">
-            <div className="space-y-1">
+          <div className="flex flex-col sm:grid sm:grid-cols-[220px_minmax(0,1fr)] items-end gap-5">
+            <div className="space-y-1 w-full">
               <label className="block text-[14px] text-[#111827] mb-1">*Code</label>
               <TitleCaseInput
                 {...register("code")}
@@ -211,7 +212,7 @@ export function JobClassificationFormModal({
                 className="h-[52px] select-text rounded-[9px] border border-[#c5cad5] bg-white px-3 text-[14px] text-[#111827] placeholder:text-[#a7afbf] placeholder:text-[12px] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
               />
             </div>
-            <div className="space-y-1">
+            <div className="space-y-1 w-full">
               <label className="block text-[14px] text-[#111827] mb-1">*Name</label>
               <TitleCaseInput
                 {...register("name")}
@@ -272,11 +273,11 @@ export function JobClassificationFormModal({
             </div>
           </div>
 
-          <div className="mt-5 flex items-center justify-end gap-3">
+          <div className="mt-5 flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3">
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="h-[50px] min-w-[100px] cursor-pointer rounded-[10px] bg-[#6C5DD3] px-6 text-[14px] font-medium text-white hover:bg-[#6C5DD3] disabled:opacity-50"
+              className="h-[50px] w-full sm:w-[100px] cursor-pointer rounded-[10px] bg-[#6C5DD3] px-6 text-[14px] font-medium text-white hover:bg-[#6C5DD3] disabled:opacity-50"
             >
               Save
             </Button>
@@ -284,7 +285,7 @@ export function JobClassificationFormModal({
               type="button"
               onClick={closeModal}
               disabled={isSubmitting}
-              className="h-[50px] min-w-[100px] cursor-pointer rounded-[10px] bg-[#d2d4d9] px-6 text-[14px] font-medium text-[#111827] hover:bg-[#d2d4d9] disabled:opacity-50"
+              className="h-[50px] w-full sm:w-[100px] cursor-pointer rounded-[10px] bg-[#d2d4d9] px-6 text-[14px] font-medium text-[#111827] hover:bg-[#d2d4d9] disabled:opacity-50"
             >
               Exit
             </Button>

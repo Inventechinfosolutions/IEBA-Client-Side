@@ -149,15 +149,19 @@ export function JobClassificationPage() {
         />
       </div>
 
-      <JobClassificationFormModal
-        open={modalOpen}
-        mode={modalMode}
-        initialValues={initialValues}
-        isSubmitting={isCreating || isUpdating}
-        isLoadingDetails={isFetchingDetail}
-        onOpenChange={handleOpenChange}
-        onSave={handleSave}
-      />
+      {modalOpen && (
+        <JobClassificationFormModal
+          key={`${modalMode}-${selectedRow?.id ?? "new"}`}
+          open={modalOpen}
+          mode={modalMode}
+          initialValues={initialValues}
+          isSubmitting={isCreating || isUpdating}
+          isLoadingDetails={isFetchingDetail}
+          onOpenChange={handleOpenChange}
+          onSave={handleSave}
+        />
+      )}
+      <div className="h-8 w-full shrink-0" />
     </section>
   )
 }
