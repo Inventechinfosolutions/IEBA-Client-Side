@@ -6,14 +6,7 @@ import editIconImg from "@/assets/edit-icon.png"
 import { Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { usePermissions } from "@/hooks/usePermissions"
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination"
+import { MasterCodePagination } from "@/features/master-code/components/MasterCodePagination"
 import {
   Table,
   TableBody,
@@ -65,6 +58,18 @@ export function ScheduledTimeStudyTable({
   const deleteRow = useDeleteRmtsPpGroupList()
 
   const scheduledRows: ScheduledTimeStudyRowEnriched[] = scheduledQuery.data ?? []
+
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
+
+  const [prevQueryKey, setPrevQueryKey] = useState("")
+  const queryKey = `${departmentId}-${selectedStudyYear}`
+  if (queryKey !== prevQueryKey) {
+    setCurrentPage(1)
+    setPrevQueryKey(queryKey)
+  }
+
+  const paginatedRows = scheduledRows.slice((currentPage - 1) * pageSize, currentPage * pageSize)
 
   const [createScheduledOpen, setCreateScheduledOpen] = useState(false)
   const [editingScheduledRow, setEditingScheduledRow] = useState<ScheduledTimeStudyRowEnriched | null>(
@@ -162,7 +167,7 @@ export function ScheduledTimeStudyTable({
                       </div>
                     </TableCell>
                   </TableRow>
-                ) : scheduledRows.map((row) => (
+                ) : paginatedRows.map((row) => (
                   <TableRow key={row.id} className="h-[44px] border-[#EDEDED] hover:bg-[#fafafa]">
                     <TableCell className="border-r border-[#E5E7EB] px-4 py-2 text-[13px] text-[#111827] break-words">
                       {row.timeStudyPeriod}
@@ -233,38 +238,16 @@ export function ScheduledTimeStudyTable({
         </Table>
       </div>
 
-      <div className="mt-6 flex min-h-[64px] w-full items-center justify-end rounded-[15px] bg-white px-4 py-4 shadow-[0_0_20px_0_#0000001a]">
-        <Pagination className="mx-0 w-auto justify-end">
-          <PaginationContent className="gap-0">
-            <PaginationItem>
-              <PaginationPrevious
-                href="#"
-                text=""
-                onClick={(event) => event.preventDefault()}
-                className="h-9 w-9 rounded-[8px] border border-transparent px-0 text-[#9CA3AF] pointer-events-none opacity-60"
-              />
-            </PaginationItem>
-            <PaginationItem>
-              <PaginationLink
-                href="#"
-                isActive
-                onClick={(event) => event.preventDefault()}
-                className="h-9 w-9 rounded-[8px] border border-[#D1D5DB] bg-white px-0 text-[18px] font-normal text-[#4B5563]"
-              >
-                1
-              </PaginationLink>
-            </PaginationItem>
-            <PaginationItem>
-              <PaginationNext
-                href="#"
-                text=""
-                onClick={(event) => event.preventDefault()}
-                className="h-9 w-9 rounded-[8px] border border-transparent px-0 text-[#9CA3AF] pointer-events-none opacity-60"
-              />
-            </PaginationItem>
-          </PaginationContent>
-        </Pagination>
-      </div>
+      <MasterCodePagination
+        totalItems={scheduledRows.length}
+        currentPage={currentPage}
+        pageSize={pageSize}
+        onPageChange={setCurrentPage}
+        onPageSizeChange={(size) => {
+          setPageSize(size)
+          setCurrentPage(1)
+        }}
+      />
 
       <ScheduleTimeStudyForm
         key={`sched-form-${formMountKey}-${editingScheduledRow?.id ?? "new"}`}

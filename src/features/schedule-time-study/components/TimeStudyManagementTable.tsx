@@ -17,14 +17,7 @@ import { Label } from "@/components/ui/label"
 import { Skeleton } from "@/components/ui/skeleton"
 import { SingleSelectDropdown } from "@/components/ui/dropdown"
 import { Spinner } from "@/components/ui/spinner"
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination"
+import { MasterCodePagination } from "@/features/master-code/components/MasterCodePagination"
 import {
   Table,
   TableBody,
@@ -183,6 +176,18 @@ function ScheduleTimeStudyTableLoaded({
   const [periodsFormMountKey, setPeriodsFormMountKey] = useState(0)
   const [editingPeriodRow, setEditingPeriodRow] = useState<ScheduleTimeStudyPeriodRow | null>(null)
   const periodRows = rows
+
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
+
+  const [prevQueryKey, setPrevQueryKey] = useState("")
+  const queryKey = `${departmentId}-${selectedStudyYear}`
+  if (queryKey !== prevQueryKey) {
+    setCurrentPage(1)
+    setPrevQueryKey(queryKey)
+  }
+
+  const paginatedPeriodRows = periodRows.slice((currentPage - 1) * pageSize, currentPage * pageSize)
 
   return (
     <section className="font-roboto *:font-roboto min-h-[743px] space-y-5 rounded-[10px] border border-[#E5E7EB] bg-white p-6">
@@ -391,7 +396,7 @@ function ScheduleTimeStudyTableLoaded({
                     </TableCell>
                   </TableRow>
                 ) : (
-                  periodRows.map((row) => (
+                  paginatedPeriodRows.map((row) => (
                     <TableRow key={row.id} className="h-[44px] border-[#EDEDED] hover:bg-[#fafafa]">
                       <TableCell className="border-r border-[#E5E7EB] px-4 py-2 text-[13px] text-[#111827] break-words whitespace-normal">
                         {row.timeStudyPeriod}
@@ -494,38 +499,16 @@ function ScheduleTimeStudyTableLoaded({
             </Table>
           </div>
 
-          <div className="mt-6 flex min-h-[64px] w-full items-center justify-end rounded-[15px] bg-white px-4 py-4 shadow-[0_0_20px_0_#0000001a]">
-            <Pagination className="mx-0 w-auto justify-end">
-              <PaginationContent className="gap-0">
-                <PaginationItem>
-                  <PaginationPrevious
-                    href="#"
-                    text=""
-                    onClick={(event) => event.preventDefault()}
-                    className="h-9 w-9 rounded-[8px] border border-transparent px-0 text-[#9CA3AF] pointer-events-none opacity-60"
-                  />
-                </PaginationItem>
-                <PaginationItem>
-                  <PaginationLink
-                    href="#"
-                    isActive
-                    onClick={(event) => event.preventDefault()}
-                    className="h-9 w-9 rounded-[8px] border border-[#D1D5DB] bg-white px-0 text-[18px] font-normal text-[#4B5563]"
-                  >
-                    1
-                  </PaginationLink>
-                </PaginationItem>
-                <PaginationItem>
-                  <PaginationNext
-                    href="#"
-                    text=""
-                    onClick={(event) => event.preventDefault()}
-                    className="h-9 w-9 rounded-[8px] border border-transparent px-0 text-[#9CA3AF] pointer-events-none opacity-60"
-                  />
-                </PaginationItem>
-              </PaginationContent>
-            </Pagination>
-          </div>
+          <MasterCodePagination
+            totalItems={periodRows.length}
+            currentPage={currentPage}
+            pageSize={pageSize}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={(size) => {
+              setPageSize(size)
+              setCurrentPage(1)
+            }}
+          />
             </>
           )}
         </TabsContent>
