@@ -127,7 +127,7 @@ function DepartmentReportMultiSelectField({
   }
 
   return (
-    <div className="flex flex-col md:grid md:grid-cols-[1fr_60px_1fr] items-stretch md:items-center gap-4 w-full">
+    <div className="flex flex-col md:grid md:grid-cols-[1fr_60px_1fr] items-stretch md:items-center gap-4 w-full min-w-0">
       <TransferPanel
         title="Select Reports(Available)"
         items={filteredAvailable}
@@ -136,6 +136,7 @@ function DepartmentReportMultiSelectField({
         onSelectAll={handleSelectAllAvailable}
         searchValue={searchAvailable}
         onSearchChange={setSearchAvailable}
+        className="w-full max-w-[320px] md:max-w-none mx-auto"
       />
 
       <div className="flex flex-row md:flex-col gap-3 justify-center items-center py-2 md:pt-8">
@@ -144,12 +145,14 @@ function DepartmentReportMultiSelectField({
           disabled={toggledAvailable.length === 0}
           aria-label="Move selected to assigned"
           onClick={handleMoveForward}
+          className="rotate-90 md:rotate-0"
         />
         <TransferListMoveButton
           direction="back"
           disabled={toggledSelected.length === 0}
           aria-label="Move selected to unassigned"
           onClick={handleMoveBack}
+          className="rotate-90 md:rotate-0"
         />
       </div>
 
@@ -161,6 +164,7 @@ function DepartmentReportMultiSelectField({
         onSelectAll={handleSelectAllSelected}
         searchValue={searchSelected}
         onSearchChange={setSearchSelected}
+        className="w-full max-w-[320px] md:max-w-none mx-auto"
       />
     </div>
   )
@@ -197,7 +201,7 @@ export function DepartmentReportSettingsPanel({
   const saveDisabled = isSubmitting || isSaving || isReportDataLoading
 
   return (
-    <div className="px-6 pb-6">
+    <div className="px-6 pb-6 min-w-0 w-full">
       {showDepartmentSummary && (
         <DepartmentEditContextHeader
           countyName={countyNameDisplay}
@@ -206,7 +210,7 @@ export function DepartmentReportSettingsPanel({
         />
       )}
 
-      <div className="py-8 min-h-[220px]">
+      <div className="py-8 min-h-[220px] min-w-0 w-full">
         <label className={labelClassName}>Reports</label>
         <DepartmentReportMultiSelectField
           key={`${multiSelectKey}-${serverMappedReportIds}`}
