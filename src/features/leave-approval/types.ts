@@ -234,7 +234,7 @@ export type GetLeaveApprovalsParams = {
   page: number
   pageSize: number
   filters: LeaveApprovalFilters
-  sort: LeaveApprovalSortState
+  sort?: LeaveApprovalSortState
   enabled?: boolean
   supervisorUserId?: string
 }

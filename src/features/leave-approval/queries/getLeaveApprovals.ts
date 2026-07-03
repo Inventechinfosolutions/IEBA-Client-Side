@@ -62,7 +62,7 @@ export function useGetLeaveApprovals(params: GetLeaveApprovalsParams) {
         const uid = typeof r.userId === "string" ? r.userId.trim() : ""
         if (!uid || uid === "all") continue
         if (labelByUserId.has(uid)) continue
-        const displayName = `${r.user?.firstName ?? ""} ${r.user?.lastName ?? ""}`.trim()
+        const displayName = r.user?.name?.trim() || `${r.user?.lastName ?? ""} ${r.user?.firstName ?? ""}`.trim() || r.userId
         labelByUserId.set(uid, displayName || uid)
       }
 
