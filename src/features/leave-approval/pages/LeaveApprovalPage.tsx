@@ -32,8 +32,8 @@ function nextSortState(prev: LeaveApprovalSortState, key: LeaveApprovalSortKey):
 }
 
 export function LeaveApprovalPage() {
-  const { 
-    isSuperAdmin, 
+  const {
+    isSuperAdmin,
     canReview
   } = usePermissions()
   const { user } = useAuth()
@@ -66,6 +66,14 @@ export function LeaveApprovalPage() {
     supervisorUserId: isSuperAdmin ? undefined : user?.id,
   })
 
+  const userOptionsModule = useLeaveApprovals({
+    page: 1,
+    pageSize: 100,
+    filters: { type: "All", userId: "all" },
+    enabled: hasAccess,
+    supervisorUserId: isSuperAdmin ? undefined : user?.id,
+  })
+
   if (!hasAccess) {
     return null
   }
@@ -73,7 +81,7 @@ export function LeaveApprovalPage() {
 
   const isTableLoading = leaveModule.isLoading || leaveModule.isFetching
 
-  const safeUserOptions = leaveModule.userOptions
+  const safeUserOptions = userOptionsModule.userOptions
 
   return (
     <section
@@ -165,7 +173,7 @@ export function LeaveApprovalPage() {
                   position: "top-center",
                   icon: (
                     <span className="inline-flex size-4 items-center justify-center rounded-full bg-[#22c55e] text-white">
-                    <Check className="size-3 stroke-3" />
+                      <Check className="size-3 stroke-3" />
                     </span>
                   ),
                 })
