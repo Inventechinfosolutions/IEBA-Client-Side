@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { X, Eye, Bell, CheckCircle, Clock, AlertCircle, Search, ArrowLeft, Plus, ChevronDown } from "lucide-react"
+import { X, Eye, Bell, CheckCircle, Clock, AlertCircle, Search, ArrowLeft, Download } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -21,6 +21,8 @@ import { Spinner } from "@/components/ui/spinner"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { useActionUserTimeRecord } from "@/features/PersonalTimeStudy/TimeStudyMGT/mutations/updateActionUserTimeRecord"
 import { toIsoYmdFromDate } from "@/lib/dates"
+import { apiDownloadSupportingDoc } from "@/features/PersonalTimeStudy/api/personalTimeStudyApi"
+import { toast } from "sonner"
 
 
 
@@ -149,6 +151,32 @@ export function TimeStudyStatusModal({
     setSelectedUser(null)
     setDetailPage(1)
     onClose()
+  }
+
+  const handleDownloadDoc = async (recordId: number, docId?: number, fileName?: string) => {
+    try {
+      const blob = await apiDownloadSupportingDoc(recordId, docId)
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = fileName || "supporting-document"
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      window.URL.revokeObjectURL(url)
+    } catch (err: any) {
+      toast.error(err.message || "Download failed")
+    }
+  }
+
+  const handleViewDoc = async (recordId: number, docId?: number) => {
+    try {
+      const blob = await apiDownloadSupportingDoc(recordId, docId)
+      const url = window.URL.createObjectURL(blob)
+      window.open(url, "_blank")
+    } catch (err: any) {
+      toast.error(err.message || "Failed to view document")
+    }
   }
 
   return (
@@ -304,7 +332,9 @@ export function TimeStudyStatusModal({
                       const startVal = entry.starttime || "—";
                       const endVal = entry.endtime || "—";
                       const minVal = entry.activitytime ?? 0;
-                      const docVal = entry.supportingDocs?.[0]?.fileName || "—";
+                      const firstDoc = entry.supportingDocs?.[0];
+                      const docVal = firstDoc?.fileName || "—";
+                      const hasDoc = !!firstDoc;
 
                       return (
                         <TableRow
@@ -343,8 +373,34 @@ export function TimeStudyStatusModal({
                           <TableCell className="px-4 py-2.5 text-[12px] text-[#6b7280] truncate" title={notesVal}>
                             {notesVal}
                           </TableCell>
-                          <TableCell className="px-4 py-2.5 text-[12px] text-[#6b7280] truncate" title={docVal}>
-                            {docVal}
+                          <TableCell className="px-4 py-2.5 text-[12px] text-[#6b7280]" title={docVal}>
+                            {hasDoc && firstDoc ? (
+                              <div className="flex items-center gap-1.5 max-w-full">
+                                <span className="truncate text-[#374151] font-medium max-w-[calc(100%-36px)]" title={docVal}>
+                                  {docVal}
+                                </span>
+                                <div className="flex items-center gap-1 shrink-0">
+                                  <button
+                                    type="button"
+                                    title="View"
+                                    onClick={() => handleViewDoc(entry.id, firstDoc.id)}
+                                    className="p-1 rounded hover:bg-gray-100 text-[#6C5DD3] hover:text-[#5B4DBF] transition-colors"
+                                  >
+                                    <Eye className="size-3.5" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    title="Download"
+                                    onClick={() => handleDownloadDoc(entry.id, firstDoc.id, firstDoc.fileName)}
+                                    className="p-1 rounded hover:bg-gray-100 text-[#6C5DD3] hover:text-[#5B4DBF] transition-colors"
+                                  >
+                                    <Download className="size-3.5" />
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              docVal
+                            )}
                           </TableCell>
                         </TableRow>
                       );
@@ -506,3 +562,4 @@ export function TimeStudyStatusModal({
     </Dialog>
   )
 }
+
