@@ -13,7 +13,10 @@ import type {
   UserModuleRow,
 } from "./types"
 
+export const DEFAULT_DIRECT_RESET_PASSWORD = "User@123456!"
 
+export const DEFAULT_DIRECT_RESET_SUCCESS_MESSAGE =
+  `Password Reset Successfully by default the password will be: ${DEFAULT_DIRECT_RESET_PASSWORD}`
 
 /** Department rows with `roles: { id?, name }[]` (assigned / unassigned list payloads). */
 function getDepartmentRowsWithRolesFromPayload(payload: unknown): unknown[] {
@@ -292,7 +295,7 @@ export async function apiUpdateUser(id: string, input: UpdateUserRequestDto): Pr
 }
 
 /**
- * PUT /users/:id/reset — resets the user's password to the system default (`Password1-2`)
+ * PUT /users/:id/reset — resets the user's password to the system default (`User@123456!`)
  * and sets `changePasswordRequired = true`. Other profile fields in `input` are also persisted.
  */
 export async function apiResetUser(id: string, input: UpdateUserRequestDto): Promise<CreateUserResponseDto> {
