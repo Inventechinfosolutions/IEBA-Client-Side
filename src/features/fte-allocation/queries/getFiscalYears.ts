@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 
 import { api } from "@/lib/api"
+import { sortFiscalYearRowsByIdDesc } from "@/lib/utils"
 import type { ApiResponseDto } from "@/features/user/types"
 
 import { fteAllocationKeys } from "../keys"
@@ -43,8 +44,7 @@ function normalizeFiscalYearsPayload(payload: unknown): FiscalYear[] {
     out.push({ id, label })
   }
 
-  // newest first if it's "YYYY-YYYY" strings
-  return out.sort((a, b) => b.label.localeCompare(a.label))
+  return sortFiscalYearRowsByIdDesc(out)
 }
 
 async function fetchFiscalYears(): Promise<FiscalYear[]> {

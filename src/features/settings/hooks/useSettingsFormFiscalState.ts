@@ -4,6 +4,7 @@ import { normalizeFiscalDateToIso } from "@/features/settings/components/FiscalY
 import type { SettingsFiscalYearUiValue } from "@/features/settings/components/FiscalYear/types"
 import { useListFiscalYears } from "@/features/settings/queries/listFiscalYears"
 import type { SettingsFormDerivedFiscalYear, SettingsFormValues } from "@/features/settings/types"
+import { sortFiscalYearRowsByIdDesc } from "@/lib/utils"
 
 export function useSettingsFormFiscalState(): {
   derivedFiscalYear: SettingsFormDerivedFiscalYear
@@ -14,7 +15,7 @@ export function useSettingsFormFiscalState(): {
 
   const fiscalYearsComplete = useMemo(() => {
     const rows = fiscalYearsQuery.data ?? []
-    return rows.filter((r) => r.start.trim() && r.end.trim())
+    return sortFiscalYearRowsByIdDesc(rows.filter((r) => r.start.trim() && r.end.trim()))
   }, [fiscalYearsQuery.data])
 
   const derivedFiscalYear = useMemo((): SettingsFormDerivedFiscalYear => {
@@ -27,11 +28,11 @@ export function useSettingsFormFiscalState(): {
         holidays: [] as SettingsFormValues["fiscalYear"]["holidays"],
       }
     }
-    const sorted = [...fiscalYearsComplete].sort((a, b) => a.id.localeCompare(b.id))
+    const sorted = sortFiscalYearRowsByIdDesc(fiscalYearsComplete)
     const effectiveId =
       selectedFiscalYearId && sorted.some((x) => x.id === selectedFiscalYearId)
         ? selectedFiscalYearId
-        : sorted[sorted.length - 1]!.id
+        : sorted[0]!.id
     const row = sorted.find((x) => x.id === effectiveId)!
     return {
       fiscalYearStartMonth: normalizeFiscalDateToIso(row.start),
