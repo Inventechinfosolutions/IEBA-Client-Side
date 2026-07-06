@@ -21,6 +21,25 @@ export function sortSelectOptionsByLabel<T extends { label: string }>(options: r
   )
 }
 
+/** Fiscal year labels/ids like `2025-2026` — newest first for dropdowns. */
+export function compareFiscalYearLabelsDesc(a: string, b: string): number {
+  return b.localeCompare(a, undefined, { sensitivity: "base", numeric: true })
+}
+
+export function sortFiscalYearSelectOptionsByLabel<T extends { label: string }>(
+  options: readonly T[],
+): T[] {
+  return [...options].sort((a, b) => compareFiscalYearLabelsDesc(a.label, b.label))
+}
+
+export function sortFiscalYearIdsDesc(ids: readonly string[]): string[] {
+  return [...ids].sort(compareFiscalYearLabelsDesc)
+}
+
+export function sortFiscalYearRowsByIdDesc<T extends { id: string }>(rows: readonly T[]): T[] {
+  return [...rows].sort((a, b) => compareFiscalYearLabelsDesc(a.id, b.id))
+}
+
 /** Converts ID/Name rows to select options. */
 export function mapIdNameRowsToSelectOptions<T extends { id: string | number; name?: string; label?: string; code?: string }>(
   rows: readonly T[],
