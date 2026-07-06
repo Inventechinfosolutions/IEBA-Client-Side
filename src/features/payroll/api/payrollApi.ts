@@ -9,6 +9,7 @@ import type {
 } from "../types"
 import { getAllDepartments } from "@/features/department/api/departments"
 import { fetchListFiscalYears } from "@/features/settings/queries/listFiscalYears"
+import { sortFiscalYearSelectOptionsByLabel } from "@/lib/utils"
 
 const BASE = API_BASE_URL
 
@@ -71,10 +72,12 @@ export async function fetchPayrollFilterOptions(): Promise<PayrollFilterOptionsR
     getAllDepartments({ sort: "ASC", status: "active" }),
   ])
 
-  const fiscalYears = fiscalYearRows.map((fy) => ({
-    value: fy.id,
-    label: fy.label,
-  }))
+  const fiscalYears = sortFiscalYearSelectOptionsByLabel(
+    fiscalYearRows.map((fy) => ({
+      value: fy.id,
+      label: fy.label,
+    })),
+  )
 
   const departments = deptRes.items.map((d) => ({
     value: String(d.id),
