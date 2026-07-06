@@ -788,6 +788,21 @@ export function ReportForm({ module }: ReportFormProps) {
     (!isMaaReport || showMasterCodes) &&
     !shouldShowCostPool &&
     employeeStatusArr.length > 0
+
+  const activityStartDate = useMemo(() => {
+    if (!actualDateFrom) return undefined
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(actualDateFrom)
+    return m ? `${m[2]}-${m[3]}-${m[1]}` : actualDateFrom
+  }, [actualDateFrom])
+  const activityEndDate = useMemo(() => {
+    if (!actualDateTo) return undefined
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(actualDateTo)
+    return m ? `${m[2]}-${m[3]}-${m[1]}` : actualDateTo
+  }, [actualDateTo])
+  const hasReportPeriodDates = !!activityStartDate && !!activityEndDate
+  const shouldLoadDepartmentUsers =
+    shouldFetchDepartmentUsers && (!showMasterCodes || hasReportPeriodDates)
+
   const shouldFetchMaaEmployees =
     hasSelectedReportType && isMaaReport && !!departmentId && !showMasterCodes
   const { data: maaEmployeesData, isFetching: isMaaEmployeesFetching } = useGetMaaEmployees(
@@ -808,22 +823,13 @@ export function ReportForm({ module }: ReportFormProps) {
     user?.id ?? "",
     showMasterCodes ? masterCode : undefined,
     employeeStatusArr,
-    shouldFetchDepartmentUsers,
+    shouldLoadDepartmentUsers,
     reportKey,
+    activityStartDate,
+    activityEndDate,
   )
-  // Format dates from ISO (YYYY-MM-DD) to backend format (MM-DD-YYYY) for the activities API
-  const activityStartDate = useMemo(() => {
-    if (!actualDateFrom) return undefined
-    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(actualDateFrom)
-    return m ? `${m[2]}-${m[3]}-${m[1]}` : actualDateFrom
-  }, [actualDateFrom])
-  const activityEndDate = useMemo(() => {
-    if (!actualDateTo) return undefined
-    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(actualDateTo)
-    return m ? `${m[2]}-${m[3]}-${m[1]}` : actualDateTo
-  }, [actualDateTo])
 
-  const hasActivityDateRange = !!activityStartDate && !!activityEndDate
+  const hasActivityDateRange = hasReportPeriodDates
   const shouldFetchActivities =
     hasSelectedReportType &&
     showActivitySelect &&
