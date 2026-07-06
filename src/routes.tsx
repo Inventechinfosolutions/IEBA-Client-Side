@@ -1,5 +1,5 @@
 import type { QueryClient } from "@tanstack/react-query"
-import { lazy, Suspense } from "react"
+import { lazy } from "react"
 import { createBrowserRouter, Navigate } from "react-router-dom"
 import { GuestOnlyRoute } from "@/components/GuestOnlyRoute"
 import { ProtectedRoute } from "@/components/ProtectedRoute"
@@ -179,15 +179,13 @@ export function createAppRouter(queryClient: QueryClient) {
           path: "job-pool",
           element: <PermissionRoute permission="jobpool"><JobPoolPage /></PermissionRoute>,
         },
-        { 
-          path: "reports", 
+        {
+          path: "reports",
           element: (
             <PermissionRoute permission="report">
-              <Suspense fallback={null}>
-                <ReportsPage />
-              </Suspense>
+              <ReportsPage />
             </PermissionRoute>
-          ) 
+          ),
         },
         {
           path: "payroll",

@@ -5,7 +5,7 @@ import { useForm, useFormContext, type FieldErrors, type FieldValues } from "rea
 import { AlertTriangle, Check, X } from "lucide-react"
 import { toast } from "sonner"
 import { useUploadUserDocument } from "../mutations/upload-user-document"
-import { apiResetUser } from "../../api"
+import { apiResetUser, DEFAULT_DIRECT_RESET_PASSWORD } from "../../api"
 import { mapFormValuesToUpdateDto } from "../../utility/mapUserDetailsToForm"
 
 import type {
@@ -465,7 +465,7 @@ export function useAddEmployeeForm({
       toast.success(
         <span>
           Password Reset Successfully by default the password will be:{" "}
-          <span className="text-[#ef4444]">Password1-2</span>
+          <span className="text-[#ef4444]">{DEFAULT_DIRECT_RESET_PASSWORD}</span>
         </span>,
         {
           icon: (

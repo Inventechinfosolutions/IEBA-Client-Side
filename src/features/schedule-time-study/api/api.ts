@@ -1,6 +1,7 @@
 import type { JobClassificationTag, JobPoolRow } from "@/features/job-pool/types"
 import type { ApiResponseDto, UserListItemApiDto, UserListResponseDto } from "@/features/user/types"
 import { api } from "@/lib/api"
+import { sortFiscalYearRowsByIdDesc } from "@/lib/utils"
 
 import type {
   CreateRmtsGroupPayload,
@@ -77,7 +78,7 @@ function normalizeFiscalYearsPayload(payload: unknown): ScheduleTimeStudyFiscalY
     })
   }
 
-  return out.sort((a, b) => b.label.localeCompare(a.label))
+  return sortFiscalYearRowsByIdDesc(out)
 }
 
 export async function fetchScheduleTimeStudyFiscalYears(): Promise<ScheduleTimeStudyFiscalYearOption[]> {

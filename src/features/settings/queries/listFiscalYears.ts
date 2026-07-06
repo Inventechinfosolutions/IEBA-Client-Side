@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query"
 import type { SettingsFiscalYearRow } from "@/features/settings/components/FiscalYear/types"
 import { settingsKeys } from "@/features/settings/keys"
 import { api } from "@/lib/api"
+import { sortFiscalYearRowsByIdDesc } from "@/lib/utils"
 import type { ApiResponseDto } from "@/features/user/types"
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -45,7 +46,7 @@ function normalizeListFiscalYearsPayload(payload: unknown): SettingsFiscalYearRo
     out.push({ id, label, start, end })
   }
 
-  return out.sort((a, b) => a.id.localeCompare(b.id))
+  return sortFiscalYearRowsByIdDesc(out)
 }
 
 export async function fetchListFiscalYears(): Promise<SettingsFiscalYearRow[]> {
