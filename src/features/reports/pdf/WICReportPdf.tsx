@@ -208,7 +208,7 @@ function WicTableCell({
 
 function WicDayRow({ record }: { record: WicDayRecord }) {
   return (
-    <View style={styles.row}>
+    <View style={styles.row} wrap={false}>
       <WicTableCell width={W.date} value={formatWicDisplayDate(record.date)} align="left" />
       <WicTableCell width={W.bfpc} value={formatWicHours(record.BFPC)} gray />
       <WicTableCell width={W.fmnp} value={formatWicHours(record.FMNP)} gray />
@@ -313,7 +313,7 @@ function WicMainTable({ records }: { records: WicDayRecord[] }) {
 
       <View style={styles.row} wrap={false}>
         <WicTableCell width={W.date} value="Total Hours" align="left" bold />
-        <WicTableCell width={W.bfpc} value="**" gray />
+        <WicTableCell width={W.bfpc} value={formatWicHours(totals.BFPC)} gray />
         <WicTableCell width={W.fmnp} value={formatWicHours(totals.FMNP)} gray />
         <WicTableCell width={W.nutritional} value={formatWicHours(totals.NutritionalEducation)} gray />
         <WicTableCell width={W.breastfeeding} value={formatWicHours(totals.BreastfeedingSupport)} gray />

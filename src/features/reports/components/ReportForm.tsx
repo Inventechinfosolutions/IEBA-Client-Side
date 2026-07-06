@@ -19,7 +19,7 @@ import { parseMultiSelectStoredValues } from "@/components/ui/multi-select-dropd
 import { TitleCaseInput } from "@/components/ui/title-case-input"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { cn, sortSelectOptionsByLabel } from "@/lib/utils"
+import { cn, sortFiscalYearSelectOptionsByLabel, sortSelectOptionsByLabel } from "@/lib/utils"
 import {
   useGetCostPoolUsers,
   useGetMaaEmployees,
@@ -934,7 +934,9 @@ export function ReportForm({ module }: ReportFormProps) {
   const fiscalYearOptions = useMemo(
     () =>
       fiscalYearsData
-        ? sortSelectOptionsByLabel(fiscalYearsData.map((fy) => ({ value: fy.id, label: fy.id })))
+        ? sortFiscalYearSelectOptionsByLabel(
+            fiscalYearsData.map((fy) => ({ value: fy.id, label: fy.id })),
+          )
         : [],
     [fiscalYearsData],
   )
@@ -1506,8 +1508,15 @@ export function ReportForm({ module }: ReportFormProps) {
   }
 
 
-  return (
+  if (isDeptsLoading) {
+    return (
+      <div className="flex min-h-[400px] flex-1 items-center justify-center">
+        <Spinner className="size-8 text-[#6C5DD3]" />
+      </div>
+    )
+  }
 
+  return (
     <div className="w-full max-w-none rounded-[10px] border border-[#E5E7EB] bg-white px-[19px] pb-8 pt-5 shadow-sm sm:px-8 sm:pb-10 sm:pt-6">
       <form className="space-y-5" onSubmit={(e) => e.preventDefault()}>
         {/* Row 1: Department + Reports + period selection */}

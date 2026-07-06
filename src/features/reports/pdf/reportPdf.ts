@@ -2588,6 +2588,7 @@ export function getWicSubTotal(record: WicDayRecord): number {
 export function computeWicColumnTotals(records: WicDayRecord[]) {
   return records.reduce(
     (totals, record) => ({
+      BFPC: totals.BFPC + record.BFPC,
       FMNP: totals.FMNP + record.FMNP,
       NutritionalEducation: totals.NutritionalEducation + record.NutritionalEducation,
       BreastfeedingSupport: totals.BreastfeedingSupport + record.BreastfeedingSupport,
@@ -2600,6 +2601,7 @@ export function computeWicColumnTotals(records: WicDayRecord[]) {
       TotalTime: totals.TotalTime + record.TotalTime,
     }),
     {
+      BFPC: 0,
       FMNP: 0,
       NutritionalEducation: 0,
       BreastfeedingSupport: 0,
