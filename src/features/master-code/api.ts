@@ -310,7 +310,7 @@ export async function apiUpdateTenantMasterCode(input: {
 }
 
 export async function apiGetActivityCodeTypes(): Promise<string[]> {
-  const raw = await api.get<{ success: boolean; data: string[] }>("/activity-codes/types")
+  const raw = await api.get<{ success: boolean; data: string[] }>("/master-codes/types")
   if (!raw.success || !Array.isArray(raw.data)) {
     throw new Error("Failed to load activity code types")
   }
