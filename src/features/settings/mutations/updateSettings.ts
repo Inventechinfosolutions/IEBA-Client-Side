@@ -26,6 +26,9 @@ import {
   type CountyClientDetailModel,
 } from "@/features/settings/queries/getCountyClient"
 import { mapCountyClientDetailToCountySettings } from "@/features/settings/components/Country/countyClientFormMap"
+import { parseMasterCodeIdsFromSelection } from "@/features/settings/components/MasterCode/masterCodeForm.utils"
+import { apiSaveClientMasterCodes } from "@/features/master-code/api/clientMasterCodeApi"
+import { masterCodeKeys } from "@/features/master-code/keys"
 
 function normalizeCountyLocations(values: UpdateSettingsInput["values"]): Array<{
   locationId?: number
@@ -371,6 +374,23 @@ async function updateSettings(
     }))
   }
 
+  if (input.submitterSection === SettingsFormSaveSection.MasterCode) {
+    const cached = queryClient.getQueriesData({ queryKey: settingsCountyClientQueryKey })
+    const countyClient = cached.find(([, data]) => Boolean(data))?.[1] as
+      | CountyClientDetailModel
+      | undefined
+
+    if (!countyClient?.id) {
+      throw new Error("County client is not loaded yet. Please refresh and try again.")
+    }
+
+    const masterCodeIds = parseMasterCodeIdsFromSelection(
+      input.values.masterCode?.selectedMasterCodeIds,
+    )
+
+    await apiSaveClientMasterCodes(countyClient.id, masterCodeIds)
+  }
+
   if (input.submitterSection === SettingsFormSaveSection.Payroll) {
     const payrollPayload: PayrollSettingsModel = {
       payrollBy: (input.values.payroll?.payrollBy ?? "Weekly") as PayrollBy,
@@ -500,6 +520,10 @@ async function updateSettings(
           })
         : [],
     },
+    masterCode: {
+      ...DEFAULT_SETTINGS.masterCode,
+      selectedMasterCodeIds: String(input.values.masterCode?.selectedMasterCodeIds ?? ""),
+    },
   }
 
   return next
@@ -526,6 +550,23 @@ export function useUpdateSettings() {
           if (deptId) {
             void queryClient.invalidateQueries({
               queryKey: settingsKeys.reports.byDepartment(deptId),
+            })
+          }
+        }
+        if (variables.submitterSection === SettingsFormSaveSection.MasterCode) {
+          const cached = queryClient.getQueriesData({ queryKey: settingsCountyClientQueryKey })
+          const countyClient = cached.find(([, data]) => Boolean(data))?.[1] as
+            | CountyClientDetailModel
+            | undefined
+          if (countyClient?.id) {
+            void queryClient.invalidateQueries({
+              queryKey: settingsKeys.masterCode.list(countyClient.id),
+            })
+            void queryClient.invalidateQueries({
+              queryKey: masterCodeKeys.clientTabs(countyClient.id),
+            })
+            void queryClient.invalidateQueries({
+              queryKey: masterCodeKeys.clientMasterCodes(countyClient.id),
             })
           }
         }
