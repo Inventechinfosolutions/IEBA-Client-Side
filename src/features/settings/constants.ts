@@ -43,6 +43,9 @@ export const DEFAULT_SETTINGS: SettingsModel = {
     payrollBy: "Weekly",
     columns: [],
   },
+  masterCode: {
+    selectedMasterCodeIds: "",
+  },
 }
 
 // These are for UI/UX demonstration until real report/activity lists are fully integrated

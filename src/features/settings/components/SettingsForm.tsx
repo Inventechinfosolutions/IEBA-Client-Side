@@ -18,8 +18,10 @@ import {
 import { settingsFormSchema } from "@/features/settings/schemas"
 import type { SettingsFormInnerProps, SettingsFormValues } from "@/features/settings/types"
 import { mapCountyClientDetailToCountySettings } from "@/features/settings/components/Country/countyClientFormMap"
+import { normalizeMasterCodeSelection } from "@/features/settings/components/MasterCode/masterCodeForm.utils"
 import { SettingsAccordion } from "@/features/settings/components/SettingsAccordion"
 import { useGetCountyClient } from "@/features/settings/queries/getCountyClient"
+import { useSettingsMasterCodeList } from "@/features/settings/queries/getSettingsMasterCodeList"
 import { Spinner } from "@/components/ui/spinner"
 
 function showSettingsFormErrorToast(message: string) {
@@ -84,16 +86,38 @@ function normalizeCountyForComparison(val: any) {
 function SettingsFormInner({ settings, isSaving, onSubmitSettings }: SettingsFormInnerProps) {
   const { derivedFiscalYear, fiscalYearUi } = useSettingsFormFiscalState()
   const [openSection, setOpenSection] = useState<string | undefined>(undefined)
-  const countyClientQuery = useGetCountyClient(openSection === "County")
+  const isMasterCodeSectionOpen = openSection === "Master Code"
+  const countyClientQuery = useGetCountyClient(
+    openSection === "County" || isMasterCodeSectionOpen,
+  )
+  const masterCodeListQuery = useSettingsMasterCodeList(
+    countyClientQuery.data?.id,
+    isMasterCodeSectionOpen,
+  )
 
   const formValues = useMemo((): SettingsFormValues => {
     const base = mapToSettingsFormValues(settings, derivedFiscalYear)
-    if (!countyClientQuery.data) return base
+    const withCounty =
+      openSection === "County" && countyClientQuery.data
+        ? { ...base, county: mapCountyClientDetailToCountySettings(countyClientQuery.data) }
+        : base
+
+    if (!isMasterCodeSectionOpen || !masterCodeListQuery.data) return withCounty
+
     return {
-      ...base,
-      county: mapCountyClientDetailToCountySettings(countyClientQuery.data),
+      ...withCounty,
+      masterCode: {
+        selectedMasterCodeIds: masterCodeListQuery.data.selectedMasterCodeIds,
+      },
     }
-  }, [settings, derivedFiscalYear, countyClientQuery.data])
+  }, [
+    settings,
+    derivedFiscalYear,
+    openSection,
+    isMasterCodeSectionOpen,
+    countyClientQuery.data,
+    masterCodeListQuery.data,
+  ])
 
   const form = useForm<SettingsFormValues>({
     resolver: zodResolver(settingsFormSchema),
@@ -184,6 +208,11 @@ function SettingsFormInner({ settings, isSaving, onSubmitSettings }: SettingsFor
         })
         currentCompare = normalizeGeneral(currentCompare)
         referenceCompare = normalizeGeneral(referenceCompare)
+      } else if (submitterSection === SettingsFormSaveSection.MasterCode) {
+        const normalizeMasterCode = (val: { selectedMasterCodeIds?: string } | undefined) =>
+          normalizeMasterCodeSelection(val?.selectedMasterCodeIds)
+        currentCompare = normalizeMasterCode(currentCompare)
+        referenceCompare = normalizeMasterCode(referenceCompare)
       }
 
       if (guardNoChanges(currentCompare, referenceCompare)) {
@@ -202,6 +231,15 @@ function SettingsFormInner({ settings, isSaving, onSubmitSettings }: SettingsFor
             isSaving={isSaving}
             openSection={openSection}
             onOpenSectionChange={setOpenSection}
+            countyClientId={countyClientQuery.data?.id}
+            masterCodeOptions={masterCodeListQuery.data?.options ?? []}
+            isMasterCodeLoading={
+              isMasterCodeSectionOpen &&
+              (countyClientQuery.isPending ||
+                countyClientQuery.isFetching ||
+                masterCodeListQuery.isPending ||
+                masterCodeListQuery.isFetching)
+            }
           />
         </form>
       </FormProvider>
