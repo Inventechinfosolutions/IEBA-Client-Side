@@ -1,5 +1,63 @@
 import type { ReportCatalogItem } from "../types"
 
+type SelectMonthByValue = "qtr" | "dates" | "month" | "year" | "scheduled"
+
+function isCriteriaTrue(val: unknown): boolean {
+  return val === true || val === "true"
+}
+
+/** `showYear` → Year inside Select Month By; `showFiscalYear` → Fiscal Year in top row. */
+export function resolveReportMonthByFlags(criteria?: ReportCatalogItem["criteria"]) {
+  const monthByOpts = criteria?.showMonthBy?.map((o) => o.type)
+  return {
+    showQtr: monthByOpts
+      ? monthByOpts.includes("qtr")
+      : isCriteriaTrue(criteria?.showQuarterSelect) || isCriteriaTrue(criteria?.showQtr),
+    showDates: monthByOpts
+      ? monthByOpts.includes("dates")
+      : isCriteriaTrue(criteria?.showDate) || isCriteriaTrue(criteria?.showDates),
+    showMonth: monthByOpts
+      ? monthByOpts.includes("month")
+      : isCriteriaTrue(criteria?.monthly) || isCriteriaTrue(criteria?.showMonthly),
+    showYear: monthByOpts
+      ? monthByOpts.includes("year") || isCriteriaTrue(criteria?.showYear)
+      : isCriteriaTrue(criteria?.showYear),
+    showScheduled: isCriteriaTrue(criteria?.showScheduleTime),
+  }
+}
+
+export function resolveShowTopLevelFiscalYear(criteria?: ReportCatalogItem["criteria"]): boolean {
+  return isCriteriaTrue(criteria?.showFiscalYear) || isCriteriaTrue(criteria?.showFiscalYearSelect)
+}
+
+export function resolveAllowedSelectMonthByValues(
+  criteria?: ReportCatalogItem["criteria"],
+): SelectMonthByValue[] {
+  const monthByOpts = criteria?.showMonthBy?.map((o) => o.type)
+  if (monthByOpts && monthByOpts.length > 0) {
+    const allowed = [...monthByOpts] as SelectMonthByValue[]
+    if (isCriteriaTrue(criteria?.showYear) && !allowed.includes("year")) {
+      allowed.push("year")
+    }
+    return allowed
+  }
+  const flags = resolveReportMonthByFlags(criteria)
+  const allowed: SelectMonthByValue[] = []
+  if (flags.showMonth) allowed.push("month")
+  if (flags.showQtr) allowed.push("qtr")
+  if (flags.showDates) allowed.push("dates")
+  if (flags.showYear) allowed.push("year")
+  if (flags.showScheduled) allowed.push("scheduled")
+  return allowed
+}
+
+export function resolveDefaultSelectMonthBy(
+  criteria?: ReportCatalogItem["criteria"],
+): SelectMonthByValue | undefined {
+  const allowed = resolveAllowedSelectMonthByValues(criteria)
+  return allowed[0]
+}
+
 /** Attach filter `criteria` from the full catalog when mapped rows omit it. */
 export function mergeReportCriteriaFromCatalog(
   items: ReportCatalogItem[],
