@@ -9,6 +9,7 @@ export const SETTINGS_FORM_SECTION_SUCCESS_MESSAGES: Record<SaveSection, string>
   [SettingsFormSaveSection.General]: "General settings updated successfully",
   [SettingsFormSaveSection.Payroll]: "Payroll updated successfully",
   [SettingsFormSaveSection.FiscalYear]: "Fiscal Year updated successfully",
+  [SettingsFormSaveSection.MasterCode]: "Master codes updated successfully",
 }
 
 export const SETTINGS_FORM_SAVE_SECTION_ORDER: SaveSection[] = [
@@ -18,4 +19,5 @@ export const SETTINGS_FORM_SAVE_SECTION_ORDER: SaveSection[] = [
   SettingsFormSaveSection.General,
   SettingsFormSaveSection.Payroll,
   SettingsFormSaveSection.FiscalYear,
+  SettingsFormSaveSection.MasterCode,
 ]

@@ -1,3 +1,5 @@
+import { sortMasterCodeSelectOptions } from "@/features/master-code/lib/masterCodeTabOrder.utils"
+
 export type MasterCodeSelectOption = { value: string; label: string }
 
 function extractMasterCodeListItems(res: unknown): unknown[] {
@@ -66,5 +68,5 @@ export function mapMasterCodesResponseToOptions(res: unknown): MasterCodeSelectO
     options.push({ value, label })
   }
 
-  return options.sort((a, b) => a.label.localeCompare(b.label))
+  return sortMasterCodeSelectOptions(options)
 }

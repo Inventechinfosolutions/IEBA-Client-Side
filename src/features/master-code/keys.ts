@@ -16,6 +16,10 @@ export const masterCodeKeys = {
   /** `GET /master-codes/by-name?name=` — current tab row (id, allowMulticode, …) */
   tenantByName: (name: string) =>
     [...masterCodeKeys.all, "tenant-by-name", name] as const,
+  clientTabs: (clientId: number) =>
+    [...masterCodeKeys.all, "client-tabs", clientId] as const,
+  clientMasterCodes: (clientId: number) =>
+    [...masterCodeKeys.all, "client-master-codes", clientId] as const,
   details: () => [...masterCodeKeys.all, "detail"] as const,
   detail: (id: string) => [...masterCodeKeys.details(), id] as const,
 }
