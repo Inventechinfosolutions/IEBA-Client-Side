@@ -1,3 +1,3 @@
 export const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ??
-  (import.meta.env.DEV ? "" : "http://localhost:3006") + "/api/v1"
+  (import.meta.env.DEV ? "" : "http://localhost:3008") + "/api/v1"
