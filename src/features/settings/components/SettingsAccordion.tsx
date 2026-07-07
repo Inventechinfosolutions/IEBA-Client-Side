@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils"
 import { ACTIVE_DEPARTMENTS_PAGE_PARAMS } from "@/features/department/constants"
 import { departmentKeys } from "@/features/department/keys"
 import { SETTINGS_ACCORDION_SECTIONS } from "@/features/settings/types"
+import type { MasterCodeSelectOption } from "@/features/settings/lib/masterCodeOptions.utils"
 import { CountyForm } from "@/features/settings/components/Country/CountyForm"
 import { AutoGenerateCodeForm } from "@/features/settings/components/AutoGenerateCode/AutoGenerateCodeForm"
 import { PayrollForm } from "@/features/settings/payroll"
@@ -15,15 +16,22 @@ import { FiscalYearForm } from "@/features/settings/components/FiscalYear/Fiscal
 import { ReportsForm } from "@/features/settings/components/Reports/ReportsForm"
 import { GeneralForm } from "@/features/settings/components/General/GeneralForm"
 import { LoginForm } from "@/features/settings/components/Login/LoginForm"
+import { MasterCodeForm } from "@/features/settings/components/MasterCode/MasterCodeForm"
 
 export function SettingsAccordion({
   isSaving,
   openSection,
   onOpenSectionChange,
+  countyClientId,
+  masterCodeOptions = [],
+  isMasterCodeLoading = false,
 }: {
   isSaving: boolean
   openSection: string | undefined
   onOpenSectionChange: (next: string | undefined) => void
+  countyClientId?: number
+  masterCodeOptions?: MasterCodeSelectOption[]
+  isMasterCodeLoading?: boolean
 }) {
   const queryClient = useQueryClient()
   const [loadingSection, setLoadingSection] = useState<string | null>(null)
@@ -101,6 +109,13 @@ export function SettingsAccordion({
                     <ReportsForm isSaving={isSaving} isSectionOpen={openSection === "Reports"} />
                   ) : section === "General" ? (
                     <GeneralForm isSaving={isSaving} />
+                  ) : section === "Master Code" ? (
+                    <MasterCodeForm
+                      isSaving={isSaving}
+                      clientId={countyClientId}
+                      options={masterCodeOptions}
+                      isLoading={isMasterCodeLoading}
+                    />
                   ) : (
                     <LoginForm isSaving={isSaving} />
                   )}

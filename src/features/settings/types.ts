@@ -10,6 +10,7 @@ import type { GeneralSettingsModel } from "@/features/settings/components/Genera
 import type { ReportsSettingsModel } from "@/features/settings/components/Reports/types"
 import type { FiscalYearSettingsModel } from "@/features/settings/components/FiscalYear/types"
 import type { PayrollSettingsModel } from "./payroll"
+import type { MasterCodeSettingsModel } from "@/features/settings/components/MasterCode/types"
 
 import type { ReportMasterCodeData } from "@/features/reports/lib/reportMasterCodeData.utils"
 
@@ -36,6 +37,7 @@ export type SettingsSection =
   | "Reports"
   | "General"
   | "Login"
+  | "Master Code"
 
 export const SETTINGS_ACCORDION_SECTIONS = [
   "County",
@@ -45,6 +47,7 @@ export const SETTINGS_ACCORDION_SECTIONS = [
   "Reports",
   "General",
   "Login",
+  "Master Code",
 ] as const satisfies readonly SettingsSection[]
 
 export type SettingsModel = {
@@ -55,6 +58,7 @@ export type SettingsModel = {
   login: LoginSettingsModel
   fiscalYear: FiscalYearSettingsModel
   payroll: PayrollSettingsModel
+  masterCode: MasterCodeSettingsModel
 }
 
 export type SettingsFormValues = z.input<typeof settingsFormSchema>

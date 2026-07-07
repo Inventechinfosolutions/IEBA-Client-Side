@@ -102,5 +102,8 @@ export function mapToSettingsFormValues(
               editable: false,
             })),
     },
+    masterCode: {
+      selectedMasterCodeIds: settings.masterCode?.selectedMasterCodeIds ?? "",
+    },
   }
 }
