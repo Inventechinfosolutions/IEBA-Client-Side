@@ -1,5 +1,5 @@
 import { ChevronDown, Clock, Eye, Plus, Trash2, Check, AlertCircle, AlertTriangle } from "lucide-react"
-import { useCallback, useMemo, useRef, useState } from "react"
+import { useCallback, useMemo, useRef, useState, type ReactNode } from "react"
 import type { UserAssignedDepartmentsSettingChecks } from "../queries/getUserAssignedDepartmentsSettingChecks"
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card"
 
@@ -19,11 +19,69 @@ import { API_BASE_URL } from "@/lib/config"
 import { apiDownloadSupportingDoc, apiDeleteSupportingDoc, apiGetUserActivitiesForProgram, apiGetUserProgramsAndActivitiesMulticode } from "../api/personalTimeStudyApi"
 import { Spinner } from "@/components/ui/spinner"
 import { normalizeMulticodeDropdownPayload } from "../utils/multicodeDropdownUtils"
+import { buildDecimalMinMessage, DecimalActivityTimeHint } from "../utils/decimalTimeHint.tsx"
 
 
 /** Inline required-field asterisk — available to all components in this module. */
 function RequiredMark() {
   return <span className="text-destructive">*</span>
+}
+
+type MinDecimalFieldProps = {
+  label: ReactNode
+  labelClassName?: string
+  value: string
+  onChange?: (value: string) => void
+  readOnly?: boolean
+  showDecimalHint?: boolean
+  hintMessage?: string | null
+  inputClassName?: string
+  heightClass?: string
+}
+
+function MinDecimalField({
+  label,
+  labelClassName,
+  value,
+  onChange,
+  readOnly,
+  showDecimalHint,
+  hintMessage,
+  inputClassName,
+  heightClass = "h-10",
+}: MinDecimalFieldProps) {
+  const displayMessage = showDecimalHint ? hintMessage ?? buildDecimalMinMessage(value) : null
+
+  return (
+    <div className={cn("space-y-0.5", showDecimalHint ? "w-[92px]" : "w-[60px]")}>
+      <Label className={labelClassName}>{label}</Label>
+      <div className="relative">
+        <TitleCaseInput
+          type="number"
+          min="0"
+          step={showDecimalHint ? "0.25" : "1"}
+          readOnly={readOnly}
+          value={value}
+          placeholder={showDecimalHint ? "0.25" : "—"}
+          className={cn(
+            heightClass,
+            "text-[11px]",
+            displayMessage && "pr-8",
+            readOnly && "bg-[#F2F4F7] cursor-not-allowed",
+            inputClassName,
+          )}
+          onChange={(e) => onChange?.(e.target.value)}
+        />
+        {displayMessage ? (
+          <div className="pointer-events-none absolute inset-y-0 right-1 flex items-center">
+            <div className="pointer-events-auto">
+              <DecimalActivityTimeHint message={displayMessage} />
+            </div>
+          </div>
+        ) : null}
+      </div>
+    </div>
+  )
 }
 
 function newId(): string {
@@ -38,6 +96,7 @@ export type TimeEntrySubRow = {
   studyProgram: string
   serviceActivity: string
   totalMin: string
+  activityTimeMessage?: string | null
   description: string
   start: string
   end: string
@@ -56,6 +115,7 @@ export type TimeEntryParentRow = {
   start: string
   end: string
   totalMin?: string
+  activityTimeMessage?: string | null
   tsProgram: string
   serviceActivity: string
   description: string
@@ -587,6 +647,19 @@ export function PersonalTimeStudyEntryForm({
     return activeParents.every(p => getRowSettings(p).moveSaveSubmitToTop)
   }, [parents, getRowSettings, apportioningConfig?.departments])
 
+  const allDepartmentsUseDecimalTime = useMemo(() => {
+    const depts = apportioningConfig?.departments ?? []
+    return depts.length > 0 && depts.every((d) => d.requiresStartEndTime === false)
+  }, [apportioningConfig?.departments])
+
+  const resolveEffectiveHideTime = useCallback(
+    (parent: TimeEntryParentRow) => {
+      const hideTime = getRowSettings(parent).hideTime
+      return hideTime || !!parent.activityTimeMessage || allDepartmentsUseDecimalTime
+    },
+    [getRowSettings, allDepartmentsUseDecimalTime],
+  )
+
   if (initialRecords !== prevInitialRecords || leaveRecords !== prevLeaveRecords) {
     setPrevInitialRecords(initialRecords)
     setPrevLeaveRecords(leaveRecords)
@@ -615,6 +688,7 @@ export function PersonalTimeStudyEntryForm({
             start: rec.starttime ?? "",
             end: rec.endtime ?? "",
             totalMin: String(rec.activitytime ?? ""),
+            activityTimeMessage: rec.message ?? null,
             tsProgram: rec.programid ? String(rec.programid) : "",
             serviceActivity: String(rec.activityid ?? ""),
             description: rec.description ?? "",
@@ -636,6 +710,7 @@ export function PersonalTimeStudyEntryForm({
               studyProgram: m.programid ? String(m.programid) : "",
               serviceActivity: String(m.activityid ?? ""),
               totalMin: String(m.activitytime ?? ""),
+              activityTimeMessage: m.message ?? null,
               description: m.description ?? "",
               start: m.starttime ?? "",
               end: m.endtime ?? "",
@@ -1365,7 +1440,7 @@ export function PersonalTimeStudyEntryForm({
           const isLeaveRow = parent.isLeave
           const isApportionedRow = parent.apportioning === true
           const rowSettings = getRowSettings(parent)
-          const hideTime = rowSettings.hideTime
+          const effectiveHideTime = resolveEffectiveHideTime(parent)
           const hideDocs = rowSettings.hideSupportingDoc
           const hideNotes = rowSettings.hideDescriptionActivityNote
 
@@ -1447,33 +1522,47 @@ export function PersonalTimeStudyEntryForm({
                     className={cn("h-10 text-[11px]", (isLocked || isLeaveRow || isApportionedRow || !parent.tsProgram) && "bg-[#F2F4F7] cursor-not-allowed", isLeaveRow && "border-yellow-400", isApportionedRow && "border-[#6C5DD3]")}
                   />
                 </div>
-                {!hideTime && (
+                {!effectiveHideTime && (
                   <TimePicker24h label="Start" value={parent.start} disabled={isLocked || isLeaveRow || isApportionedRow} isLeave={isLeaveRow} isApportioned={isApportionedRow} onChange={(v) => updateParent(parent.id, { start: v })} />
                 )}
-                {!hideTime && (
+                {!effectiveHideTime && (
                   <TimePicker24h label="End" value={parent.end} disabled={isLocked || isLeaveRow || isApportionedRow || !parent.start} isLeave={isLeaveRow} isApportioned={isApportionedRow} onChange={(v) => updateParent(parent.id, { end: v })} />
                 )}
-                <div className="w-[60px] space-y-0.5">
-                  <Label className="text-[11px] text-muted-foreground">Min. <RequiredMark /></Label>
-                  <TitleCaseInput
-                    type="number"
-                    min="0"
-                    readOnly={isLocked || isLeaveRow || isApportionedRow || !hideTime}
-                    value={hideTime ? (parent.totalMin ?? "") : ((!totalDisplay || totalDisplay === "0") ? (parent.totalMin || totalDisplay || "") : totalDisplay)}
-                    placeholder="—"
-                    className={cn(
-                      "h-10 text-[11px]",
-                      (isLocked || isLeaveRow || isApportionedRow || !hideTime) && "bg-[#F2F4F7] cursor-not-allowed",
+                {effectiveHideTime ? (
+                  <MinDecimalField
+                    label={
+                      <>
+                        Min. <RequiredMark />
+                      </>
+                    }
+                    labelClassName="text-[11px] text-muted-foreground"
+                    value={parent.totalMin ?? ""}
+                    readOnly={isLocked || isLeaveRow || isApportionedRow}
+                    showDecimalHint
+                    hintMessage={parent.activityTimeMessage}
+                    inputClassName={cn(
                       isLeaveRow && "border-yellow-400",
-                      isApportionedRow && "border-[#6C5DD3]"
+                      isApportionedRow && "border-[#6C5DD3]",
                     )}
-                    onChange={(e) => {
-                      if (hideTime) {
-                        updateParent(parent.id, { totalMin: e.target.value })
-                      }
-                    }}
+                    onChange={(v) => updateParent(parent.id, { totalMin: v })}
                   />
-                </div>
+                ) : (
+                  <div className="w-[60px] space-y-0.5">
+                    <Label className="text-[11px] text-muted-foreground">Min. <RequiredMark /></Label>
+                    <TitleCaseInput
+                      type="number"
+                      min="0"
+                      readOnly={isLocked || isLeaveRow || isApportionedRow}
+                      value={(!totalDisplay || totalDisplay === "0") ? (parent.totalMin || totalDisplay || "") : totalDisplay}
+                      placeholder="—"
+                      className={cn(
+                        "h-10 text-[11px] bg-[#F2F4F7] cursor-not-allowed",
+                        isLeaveRow && "border-yellow-400",
+                        isApportionedRow && "border-[#6C5DD3]",
+                      )}
+                    />
+                  </div>
+                )}
                 {!hideNotes && (
                   <div className="flex-[1.5] space-y-0.5">
                     <Label className="text-[11px] text-muted-foreground">Notes </Label>
@@ -1613,18 +1702,24 @@ export function PersonalTimeStudyEntryForm({
                           className={cn("h-9 text-[11px]", (isLocked || isLeaveRow || isApportionedRow || !sub.studyProgram) && "bg-[#F2F4F7] cursor-not-allowed", isLeaveRow && "border-yellow-400", isApportionedRow && "border-[#6C5DD3]")}
                         />
                       </div>
-                      <div className="w-[60px] space-y-1">
-                        <Label className="text-[11px] text-[#6C5DD3] font-medium">Min. <RequiredMark /></Label>
-                        <TitleCaseInput
-                          type="number"
-                          min="0"
-                          value={sub.totalMin}
-                          readOnly={isLocked || isLeaveRow || isApportionedRow}
-                          placeholder="0"
-                          className={cn("h-9 text-[11px]", (isLocked || isLeaveRow || isApportionedRow) && "bg-[#F2F4F7] cursor-not-allowed", isLeaveRow && "border-yellow-400", isApportionedRow && "border-[#6C5DD3]")}
-                          onChange={(e) => updateSubRow(parent.id, sub.id, { totalMin: e.target.value })}
-                        />
-                      </div>
+                      <MinDecimalField
+                        label={
+                          <>
+                            Min. <RequiredMark />
+                          </>
+                        }
+                        labelClassName="text-[11px] text-[#6C5DD3] font-medium"
+                        value={sub.totalMin}
+                        readOnly={isLocked || isLeaveRow || isApportionedRow}
+                        showDecimalHint={effectiveHideTime || !!sub.activityTimeMessage}
+                        hintMessage={sub.activityTimeMessage}
+                        heightClass="h-9"
+                        inputClassName={cn(
+                          isLeaveRow && "border-yellow-400",
+                          isApportionedRow && "border-[#6C5DD3]",
+                        )}
+                        onChange={(v) => updateSubRow(parent.id, sub.id, { totalMin: v })}
+                      />
                       {(() => {
                         const hideSubNotes = getRowSettings(parent).hideDescriptionActivityNote
                         if (hideSubNotes) return null
