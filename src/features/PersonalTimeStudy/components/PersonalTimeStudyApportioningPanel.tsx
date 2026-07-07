@@ -4,6 +4,7 @@ import { SingleSelectSearchDropdown } from "@/components/ui/dropdown-search"
 import type { UserAssignedDepartmentsSettingChecks } from "../queries/getUserAssignedDepartmentsSettingChecks"
 import { AlertCircle } from "lucide-react"
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card"
+import { buildDecimalMinMessage, DecimalActivityTimeHint } from "../utils/decimalTimeHint"
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -186,7 +187,7 @@ export function PersonalTimeStudyApportioningPanel({
       <h4 className="mb-3 text-[13px] font-semibold text-[#6C5DD3]">Apportioning</h4>
 
       {/* Column headers */}
-      <div className="mb-1 grid grid-cols-[110px_150px_1fr_1fr_140px] items-end gap-2">
+      <div className="mb-1 grid grid-cols-[110px_150px_1fr_1fr_160px] items-end gap-2">
         <span className="text-[11px] font-medium text-muted-foreground"></span>
         <span className="text-[11px] font-medium text-muted-foreground">Auto Apportioning</span>
         <span className="text-[11px] font-medium text-[#6C5DD3]">
@@ -252,10 +253,19 @@ export function PersonalTimeStudyApportioningPanel({
               ? 0
               : Math.round((supervisorOwnMinutesToday * row.apportioningPercent) / 100)
 
+          const rowDept = apportioningConfig?.departments?.find(
+            (d) => Number(d.departmentId) === row.deptId,
+          )
+          const showDecimalHint =
+            !!rec?.message || rowDept?.requiresStartEndTime === false
+          const decimalHintMessage = showDecimalHint
+            ? rec?.message ?? buildDecimalMinMessage(remainingMinutes)
+            : null
+
           return (
             <div
               key={row.rowKey}
-              className="grid grid-cols-[110px_150px_1fr_1fr_140px] items-end gap-2"
+              className="grid grid-cols-[110px_150px_1fr_1fr_160px] items-end gap-2"
             >
               {/* Department name */}
               <span className="text-[12px] font-bold text-[#111827] leading-snug pb-3">
@@ -314,18 +324,23 @@ export function PersonalTimeStudyApportioningPanel({
               {/* Remaining Time (Min.) — read-only, icon inside box on the right */}
               <div className="pb-0.5">
                 <RemainingTimeDisplay minutes={remainingMinutes}>
-                  <HoverCard openDelay={0} closeDelay={100}>
-                    <HoverCardTrigger asChild>
-                      <div className="cursor-pointer text-blue-500 hover:text-blue-600 transition-colors flex items-center shrink-0">
-                        <AlertCircle className="size-3.5" />
-                      </div>
-                    </HoverCardTrigger>
-                    <HoverCardContent className="w-fit max-w-xs p-3 z-[100] bg-white border border-gray-100 shadow-xl rounded-[8px] text-[#111827]" align="end" side="top">
-                      <div className="text-[12px] font-medium leading-relaxed">
-                        {rec?.apportioningDesc || "No description available"}
-                      </div>
-                    </HoverCardContent>
-                  </HoverCard>
+                  <div className="flex items-center gap-1 shrink-0">
+                    {decimalHintMessage ? (
+                      <DecimalActivityTimeHint message={decimalHintMessage} />
+                    ) : null}
+                    <HoverCard openDelay={0} closeDelay={100}>
+                      <HoverCardTrigger asChild>
+                        <div className="cursor-pointer text-blue-500 hover:text-blue-600 transition-colors flex items-center shrink-0">
+                          <AlertCircle className="size-3.5" />
+                        </div>
+                      </HoverCardTrigger>
+                      <HoverCardContent className="w-fit max-w-xs p-3 z-[100] bg-white border border-gray-100 shadow-xl rounded-[8px] text-[#111827]" align="end" side="top">
+                        <div className="text-[12px] font-medium leading-relaxed">
+                          {rec?.apportioningDesc || "No description available"}
+                        </div>
+                      </HoverCardContent>
+                    </HoverCard>
+                  </div>
                 </RemainingTimeDisplay>
               </div>
             </div>
