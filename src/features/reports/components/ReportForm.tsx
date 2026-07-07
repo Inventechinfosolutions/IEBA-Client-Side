@@ -56,6 +56,12 @@ import type {
 } from "../types"
 import { mapReportFormToRunPayload } from "../utils/mapReportFormToRunPayload"
 import { readStoredReportFormParams, writeStoredReportFormParams, clearStoredReportFormParams } from "../utils/reportFormSessionStorage"
+import {
+  resolveAllowedSelectMonthByValues,
+  resolveDefaultSelectMonthBy,
+  resolveReportMonthByFlags,
+  resolveShowTopLevelFiscalYear,
+} from "../lib/reportCatalog.utils"
 
 
 
@@ -616,20 +622,7 @@ export function ReportForm({ module }: ReportFormProps) {
 
     const selectedItem = departmentReportItems.find((i) => i.key === base.reportKey)
     if (selectedItem?.criteria) {
-      const criteria = selectedItem.criteria
-      const monthByOpts = criteria.showMonthBy?.map((o: any) => o.type)
-      const allowed: ("qtr" | "dates" | "month" | "year" | "scheduled")[] = []
-
-      if (monthByOpts && monthByOpts.length > 0) {
-        allowed.push(...(monthByOpts as any))
-      } else {
-        if (isTrue(criteria.monthly) || isTrue(criteria.showMonthly)) allowed.push("month")
-        if (isTrue(criteria.showYear)) allowed.push("year")
-        if (isTrue(criteria.showQuarterSelect) || isTrue(criteria.showQtr)) allowed.push("qtr")
-        if (isTrue(criteria.showDate) || isTrue(criteria.showDates)) allowed.push("dates")
-        if (isTrue(criteria.showScheduleTime)) allowed.push("scheduled")
-      }
-
+      const allowed = resolveAllowedSelectMonthByValues(selectedItem.criteria)
       if (allowed.length > 0 && !allowed.includes(base.selectMonthBy)) {
         base.selectMonthBy = allowed[0]
       }
@@ -771,12 +764,16 @@ export function ReportForm({ module }: ReportFormProps) {
   )
   const showMasterCodes = isTrue(criteria?.showmasterCodes)
 
-  const showTopLevelFiscalYear = showScheduleTime || isTrue(criteria?.showFiscalYearSelect) || isTrue(criteria?.showFiscalYear) || isTrue(criteria?.showYear)
-  const topLevelFiscalYearLabel = isTrue(criteria?.showYear) ? "Year" : "Fiscal Year"
+  const showTopLevelFiscalYear = resolveShowTopLevelFiscalYear(criteria)
+  const topLevelFiscalYearLabel = "Fiscal Year"
 
   const shouldLoadFiscalYears =
     hasSelectedReportType &&
-    (showTopLevelFiscalYear || selectMonthBy === "qtr" || selectMonthBy === "year" || selectMonthBy === "scheduled")
+    (showTopLevelFiscalYear ||
+      selectMonthBy === "qtr" ||
+      selectMonthBy === "year" ||
+      selectMonthBy === "scheduled" ||
+      showScheduleTime)
   const shouldFetchCostPoolsByDepartment =
     hasSelectedReportType && shouldShowCostPool && !!departmentId
   const shouldFetchCostPoolUsers =
@@ -1169,16 +1166,11 @@ export function ReportForm({ module }: ReportFormProps) {
               >
                 {(() => {
                   const criteria = currentReportItem?.criteria
-                  const monthByOpts = criteria?.showMonthBy?.map((o: any) => o.type)
-
-                  const showQtr = monthByOpts ? monthByOpts.includes("qtr") : (isTrue(criteria?.showQuarterSelect) || isTrue(criteria?.showQtr))
-                  const showDates = monthByOpts ? monthByOpts.includes("dates") : (isTrue(criteria?.showDate) || isTrue(criteria?.showDates))
-                  const showMonth = monthByOpts ? monthByOpts.includes("month") : (isTrue(criteria?.monthly) || isTrue(criteria?.showMonthly))
-                  const showYearOption = monthByOpts ? monthByOpts.includes("year") : false
+                  const monthByFlags = resolveReportMonthByFlags(criteria)
 
                   return (
                     <>
-                      {showQtr && (
+                      {monthByFlags.showQtr && (
                         <div className="flex items-center gap-2">
                           <RadioGroupItem value="qtr" id="reports-month-qtr" />
                           <Label htmlFor="reports-month-qtr" className="text-[14px] font-normal">
@@ -1186,7 +1178,7 @@ export function ReportForm({ module }: ReportFormProps) {
                           </Label>
                         </div>
                       )}
-                      {showDates && (
+                      {monthByFlags.showDates && (
                         <div className="flex items-center gap-2">
                           <RadioGroupItem value="dates" id="reports-month-dates" />
                           <Label htmlFor="reports-month-dates" className="text-[14px] font-normal">
@@ -1194,7 +1186,7 @@ export function ReportForm({ module }: ReportFormProps) {
                           </Label>
                         </div>
                       )}
-                      {showMonth && (
+                      {monthByFlags.showMonth && (
                         <div className="flex items-center gap-2">
                           <RadioGroupItem value="month" id="reports-month-only" />
                           <Label htmlFor="reports-month-only" className="text-[14px] font-normal">
@@ -1202,7 +1194,7 @@ export function ReportForm({ module }: ReportFormProps) {
                           </Label>
                         </div>
                       )}
-                      {showYearOption && (
+                      {monthByFlags.showYear && (
                         <div className="flex items-center gap-2">
                           <RadioGroupItem value="year" id="reports-year-only" />
                           <Label htmlFor="reports-year-only" className="text-[14px] font-normal">
@@ -1210,7 +1202,7 @@ export function ReportForm({ module }: ReportFormProps) {
                           </Label>
                         </div>
                       )}
-                      {isTrue(criteria?.showScheduleTime) && (
+                      {monthByFlags.showScheduled && (
                         <div className="flex items-center gap-2">
                           <RadioGroupItem value="scheduled" id="reports-scheduled-time" />
                           <Label htmlFor="reports-scheduled-time" className="text-[14px] font-normal">
@@ -1314,37 +1306,33 @@ export function ReportForm({ module }: ReportFormProps) {
             )}
           </>
         ) : selectMonthBy === "year" ? (
-          <>
-            {!isTrue(currentReportItem?.criteria?.showScheduleTime) && (
-              <div className="w-[180px] shrink-0">
-                <label className={labelClassName} htmlFor="reports-year-input">
-                  Year
-                </label>
-                <Controller
-                  name="year"
-                  control={control}
-                  render={({ field }) => (
-                    <SingleSelectDropdown
-                      value={field.value ?? ""}
-                      onChange={field.onChange}
-                      onBlur={field.onBlur}
-                      options={fiscalYearOptions}
-                      placeholder="Select Year"
-                      className={yearQuarterSelectTrigger}
-                      contentClassName="max-h-[220px]"
-                      itemButtonClassName="rounded-[6px] px-3 py-2"
-                      itemLabelClassName="!text-[14px] !font-normal"
-                    />
-                  )}
+          <div className="w-[180px] shrink-0">
+            <label className={labelClassName} htmlFor="reports-year-input">
+              Year
+            </label>
+            <Controller
+              name="year"
+              control={control}
+              render={({ field }) => (
+                <SingleSelectDropdown
+                  value={field.value ?? ""}
+                  onChange={field.onChange}
+                  onBlur={field.onBlur}
+                  options={fiscalYearOptions}
+                  placeholder="Select Year"
+                  className={yearQuarterSelectTrigger}
+                  contentClassName="max-h-[220px]"
+                  itemButtonClassName="rounded-[6px] px-3 py-2"
+                  itemLabelClassName="!text-[14px] !font-normal"
                 />
-                {formState.errors.year?.message ? (
-                  <p className="mt-1 text-[13px] text-red-500" role="alert">
-                    {formState.errors.year.message}
-                  </p>
-                ) : null}
-              </div>
-            )}
-          </>
+              )}
+            />
+            {formState.errors.year?.message ? (
+              <p className="mt-1 text-[13px] text-red-500" role="alert">
+                {formState.errors.year.message}
+              </p>
+            ) : null}
+          </div>
         ) : selectMonthBy === "month" ? (
           <div className="w-[180px] shrink-0">
             <label className={labelClassName} htmlFor="reports-month-input">
@@ -1372,6 +1360,30 @@ export function ReportForm({ module }: ReportFormProps) {
           </div>
         ) : selectMonthBy === "scheduled" ? (
           <>
+            {!showTopLevelFiscalYear && isTrue(currentReportItem?.criteria?.showScheduleTime) && (
+              <div className="w-[180px] shrink-0">
+                <label className={labelClassName} htmlFor="reports-scheduled-fiscal-year">
+                  Fiscal Year
+                </label>
+                <Controller
+                  name="fiscalYearId"
+                  control={control}
+                  render={({ field }) => (
+                    <SingleSelectDropdown
+                      value={field.value ?? ""}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      options={fiscalYearOptions}
+                      placeholder="Select Fiscal Year"
+                      className={yearQuarterSelectTrigger}
+                      contentClassName="max-h-[220px]"
+                      itemButtonClassName="rounded-[6px] px-3 py-2"
+                      itemLabelClassName="!text-[14px] !font-normal"
+                    />
+                  )}
+                />
+              </div>
+            )}
             <div className="w-[min(350px,40vw)] min-w-[200px] shrink-0">
               <label className={labelClassName} htmlFor="reports-time-study-period">
                 Time Study Period
@@ -1587,17 +1599,9 @@ export function ReportForm({ module }: ReportFormProps) {
 
                     if (!item) return
 
-                    const monthByOpts = item.criteria?.showMonthBy?.map((o) => o.type)
-                    if (monthByOpts && monthByOpts.length > 0) {
-                      form.setValue("selectMonthBy", monthByOpts[0] as "qtr" | "dates" | "month" | "year")
-                    } else if (isTrue(item.criteria?.monthly) || isTrue(item.criteria?.showMonthly)) {
-                      form.setValue("selectMonthBy", "month")
-                    } else if (isTrue(item.criteria?.showQuarterSelect) || isTrue(item.criteria?.showQtr)) {
-                      form.setValue("selectMonthBy", "qtr")
-                    } else if (isTrue(item.criteria?.showDate) || isTrue(item.criteria?.showDates)) {
-                      form.setValue("selectMonthBy", "dates")
-                    } else if (isTrue(item.criteria?.showScheduleTime)) {
-                      form.setValue("selectMonthBy", "scheduled")
+                    const defaultSelectMonthBy = resolveDefaultSelectMonthBy(item.criteria)
+                    if (defaultSelectMonthBy) {
+                      form.setValue("selectMonthBy", defaultSelectMonthBy)
                     }
                   }}
                   onBlur={field.onBlur}
