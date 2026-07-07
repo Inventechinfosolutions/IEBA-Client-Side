@@ -331,6 +331,7 @@ export type DSSRPT3ReportPdfProps = {
   isMonthly: boolean
   month?: string
   dateFrom?: string
+  dateTo?: string
   printedOn?: string
   meta?: ReportPdfMeta
 }

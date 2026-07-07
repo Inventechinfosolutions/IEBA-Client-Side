@@ -176,6 +176,7 @@ async function buildFrontendPdfReport(
         isMonthly: body.selectMonthBy === "month",
         month: body.month,
         dateFrom: body.dateFrom,
+        dateTo: body.dateTo,
         meta,
       })
     }
