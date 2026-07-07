@@ -98,10 +98,8 @@ export function JobPoolUsersAssignedTree({
                       <button
                         key={`${jp.id}-${u.id}`}
                         type="button"
-                        onClick={() => onToggleUser(u.id, jp.id)}
-                        className={`group relative grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-2 py-1 pl-[60px] pr-5 text-left transition-colors ${
-                          checked ? "bg-[#F3F0FF]" : "hover:bg-[#F9FAFB]"
-                        }`}
+                        onClick={() => onToggleJobPool(jp.id, !poolSelected)}
+                        className="group relative grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-2 py-1 pl-[60px] pr-5 text-left select-none cursor-pointer hover:bg-[#F9FAFB] transition-colors"
                       >
                         <div className="min-w-0 pr-2">
                           <div className="absolute left-6 top-0.5 flex h-full w-8 items-center justify-center">
