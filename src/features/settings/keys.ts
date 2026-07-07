@@ -59,6 +59,11 @@ export const settingsKeys = {
     detail: () => [...settingsKeys.autoGenerateCode.all(), "detail"] as const,
   },
 
+  masterCode: {
+    all: () => [...settingsKeys.all, "master-code"] as const,
+    list: (clientId: number) => [...settingsKeys.masterCode.all(), "list", clientId] as const,
+  },
+
   payroll: {
     all: () => [...settingsKeys.all, "payroll"] as const,
     detail: () => [...settingsKeys.payroll.all(), "detail"] as const,
