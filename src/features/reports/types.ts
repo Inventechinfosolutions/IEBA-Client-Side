@@ -26,6 +26,7 @@ export type ReportCatalogItem = {
     showCostPool?: boolean
     showDepartmentSelect?: boolean
     showFiscalYearSelect?: boolean
+    showFiscalYear?: boolean
     showQuarterSelect?: boolean
     showYear?: boolean
     showDate?: boolean
