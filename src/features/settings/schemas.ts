@@ -6,6 +6,7 @@ import { reportsSettingsSchema } from "@/features/settings/components/Reports/sc
 import { countySettingsSchema } from "@/features/settings/components/Country/schema"
 import { fiscalYearSettingsSchema } from "@/features/settings/components/FiscalYear/schema"
 import { payrollSettingsSchema } from "@/features/settings/payroll/components/schema"
+import { masterCodeSettingsSchema } from "@/features/settings/components/MasterCode/schema"
 
 export const settingsFormSchema = z.object({
   county: countySettingsSchema,
@@ -14,5 +15,6 @@ export const settingsFormSchema = z.object({
   login: loginSettingsSchema,
   fiscalYear: fiscalYearSettingsSchema,
   payroll: payrollSettingsSchema,
+  masterCode: masterCodeSettingsSchema,
 })
 

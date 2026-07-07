@@ -6,6 +6,7 @@ export const SettingsFormSaveSection = {
   General: "general",
   Payroll: "payroll",
   FiscalYear: "fiscalYear",
+  MasterCode: "masterCode",
 } as const
 
 export type SettingsFormSaveSection =
