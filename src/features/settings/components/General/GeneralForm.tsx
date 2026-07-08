@@ -50,7 +50,7 @@ export function GeneralForm({ isSaving = false }: { isSaving?: boolean }) {
       <AppLogout />
 
       <div className="space-y-3">
-        <div className="flex items-center gap-20">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-20">
           <div className="w-[230px] pl-0">
             <label className={labelClassName}>Screen Inactivity Time</label>
           </div>

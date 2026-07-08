@@ -9,7 +9,7 @@ import type { SettingsFormValues } from "@/features/settings/types"
 
 const labelClassName = "mb-2 block text-[12px] font-normal text-[#2a2f3a]"
 const selectTriggerClassName =
-  "min-h-[43px] !w-[360px] !rounded-[8px] border border-[#d6d7dc] bg-white px-[11px] !text-[12px] text-[#111827] shadow-none"
+  "min-h-[43px] w-full sm:!w-[360px] !rounded-[8px] border border-[#d6d7dc] bg-white px-[11px] !text-[12px] text-[#111827] shadow-none"
 
 type MasterCodeFormProps = {
   isSaving?: boolean
@@ -32,7 +32,7 @@ export function MasterCodeForm({
 
   return (
     <div className="bg-transparent px-6 py-3">
-      <div className="flex items-start gap-20">
+      <div className="flex flex-col sm:flex-row sm:items-start gap-4 sm:gap-20">
         <div className="w-[230px] pl-0">
           <label className={labelClassName}>Master Code</label>
         </div>

@@ -44,7 +44,7 @@ export function LoginForm({ isSaving = false }: { isSaving?: boolean }) {
     <div className={cn("bg-transparent px-6 py-3", readOnly && "pointer-events-none opacity-60")}>
       <div className="space-y-4">
         <div className="space-y-3">
-          <div className="flex items-center gap-20">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-20">
             <div className="w-[230px] pl-0">
               <label className={labelClassName}>Two-Factor Authentication</label>
             </div>
@@ -62,8 +62,8 @@ export function LoginForm({ isSaving = false }: { isSaving?: boolean }) {
             />
           </div>
 
-          <div className="flex items-center gap-20">
-            <div className="w-[230px] pl-6">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-20">
+            <div className="w-[230px] pl-0 sm:pl-6">
               <label className={labelClassName}>OTP Validation Timer</label>
             </div>
             <div className={otpGroupClassName}>

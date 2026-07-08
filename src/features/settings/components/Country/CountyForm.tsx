@@ -20,11 +20,11 @@ import { deleteCountyLogo } from "@/features/settings/components/Country/api"
 import { settingsCountyClientQueryKey } from "@/features/settings/queries/getCountyClient"
 
 const labelClassName =
-  "mb-1 block select-none text-[12px] font-normal text-[#2a2f3a] lg:min-h-[2.75rem]"
+  "mb-1 block select-none text-[12px] font-normal text-[#2a2f3a] xl:min-h-[2.75rem]"
 const sectionHeadingClassName = "mb-2 text-[14px] font-black text-[var(--primary)]"
 /** Matches reference layout: name, wide welcome, time toggle, start, end, two toggles — one row; weekends under col 1. */
 const countyFieldsGridClassName =
-  "grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,2.1fr)_minmax(0,5.5rem)_minmax(0,6.25rem)_minmax(0,6.25rem)_minmax(0,1fr)_minmax(0,1.15fr)] lg:items-start lg:gap-x-4 lg:gap-y-4"
+  "grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-[minmax(0,1.05fr)_minmax(0,2.1fr)_minmax(0,5.5rem)_minmax(0,6.25rem)_minmax(0,6.25rem)_minmax(0,1fr)_minmax(0,1.15fr)] xl:items-start xl:gap-x-4 xl:gap-y-4"
 const controlRowClassName = "flex h-[49px] items-center"
 const inputClassName =
   "h-[49px] rounded-[7px] border border-[#e4e7ef] bg-white px-3 text-[12px] text-[#1f2937] shadow-none placeholder:text-[12px] placeholder:font-normal placeholder:text-[#c2c7d3] focus-visible:border-[#6C5DD3] focus-visible:ring-0"
@@ -95,7 +95,7 @@ export function CountyForm({ isSaving }: CountyFormProps) {
       <div className="flex flex-col gap-6">
         {/* Logo first; all fields and address below */}
         <div className="w-full">
-          <label className="mb-1 block select-none text-[12px] font-normal text-[#111827]">
+          <label className="mb-1 block select-none text-[12px] font-normal text-[#111827] text-center sm:text-left">
             <span className="text-[#ef4444]">*</span>County Logo
           </label>
           <ImageCropUploadDialog
@@ -114,7 +114,7 @@ export function CountyForm({ isSaving }: CountyFormProps) {
               setValue("county.logoDataUrl", cropped, { shouldDirty: true })
             }}
             renderTrigger={({ openDialog }) => (
-              <div className="mt-2">
+              <div className="mt-2 flex justify-center sm:justify-start">
                 <div className="relative w-fit">
                   <div className="size-[160px] overflow-hidden rounded-full bg-white shadow-[0_8px_30px_rgba(17,24,39,0.08)]">
                     <img
@@ -147,7 +147,7 @@ export function CountyForm({ isSaving }: CountyFormProps) {
               <TitleCaseInput {...register("county.countyName")} className={inputClassName} />
             </div>
 
-            <div className="min-w-0 sm:col-span-1 lg:col-span-1">
+            <div className="min-w-0 sm:col-span-1 xl:col-span-1">
               <label className={labelClassName}>Welcome Message</label>
               <TitleCaseInput
                 {...register("county.welcomeMessage")}
@@ -176,32 +176,35 @@ export function CountyForm({ isSaving }: CountyFormProps) {
               </div>
             </div>
 
-            <div className="min-w-0">
-              <label className={labelClassName}>
-                <RequiredLabel>Start Time</RequiredLabel>
-              </label>
-              <TimeSelectionUI
-                disabled={!isTimeRangeEnabled}
-                value={startTime2Value ?? ""}
-                onValueChange={(next) => setValue("county.startTime2", next, { shouldDirty: true })}
-                inputWidthClassName="w-[100px]"
-                dropdownWidthClassName="w-[155px]"
-              />
-            </div>
-
-            <div className="min-w-0">
-              <label className={labelClassName}>
-                <RequiredLabel>End Time</RequiredLabel>
-              </label>
-              <div className="relative w-[100px] cursor-not-allowed">
-                <TitleCaseInput
-                  type="text"
-                  disabled
-                  value={endTimeValue ?? "00:00"}
-                  className={timeInputDisabledClassName}
-                  readOnly
+            {/* Start and End Time inputs grouped inline on mobile/tablet, but acting as direct grid columns on desktop */}
+            <div className="flex items-start gap-4 col-span-1 sm:col-span-2 md:col-span-3 xl:contents">
+              <div className="min-w-0">
+                <label className={labelClassName}>
+                  <RequiredLabel>Start Time</RequiredLabel>
+                </label>
+                <TimeSelectionUI
+                  disabled={!isTimeRangeEnabled}
+                  value={startTime2Value ?? ""}
+                  onValueChange={(next) => setValue("county.startTime2", next, { shouldDirty: true })}
+                  inputWidthClassName="w-[100px]"
+                  dropdownWidthClassName="w-[155px]"
                 />
-                <Clock className="pointer-events-none absolute right-2 top-1/2 size-4 -translate-y-1/2 text-[#9ca3af]" />
+              </div>
+
+              <div className="min-w-0">
+                <label className={labelClassName}>
+                  <RequiredLabel>End Time</RequiredLabel>
+                </label>
+                <div className="relative w-[100px] cursor-not-allowed">
+                  <TitleCaseInput
+                    type="text"
+                    disabled
+                    value={endTimeValue ?? "00:00"}
+                    className={timeInputDisabledClassName}
+                    readOnly
+                  />
+                  <Clock className="pointer-events-none absolute right-2 top-1/2 size-4 -translate-y-1/2 text-[#9ca3af]" />
+                </div>
               </div>
             </div>
 
@@ -244,7 +247,7 @@ export function CountyForm({ isSaving }: CountyFormProps) {
             </div>
 
             {/* Row 2: under County Name only */}
-            <div className="min-w-0 lg:col-span-1">
+            <div className="min-w-0 xl:col-span-1">
               <label className={labelClassName}>
                 <RequiredLabel>Include Weekends</RequiredLabel>
               </label>

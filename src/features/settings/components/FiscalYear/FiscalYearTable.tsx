@@ -125,53 +125,147 @@ export function FiscalYearTable({
     </>
   )
 
-  return (
-    <div className="mt-3 overflow-hidden rounded-[6px] border border-[#e7e9f2] bg-white">
-      <div className="overflow-x-auto overflow-y-auto" style={scrollWrapStyle}>
-        <table className="w-full min-w-[600px] border-collapse text-[12px] table-fixed">
-          <HolidayTableColGroup />
-          <TableHeader className="sticky top-0 z-10 bg-[var(--primary)] [&_tr]:border-b">
-            <TableRow className="border-0 hover:bg-[var(--primary)]">
-              <TableHead
-                className={cn(
-                  holidayTableHeadClassName,
-                  headCellBorder,
-                  "rounded-tl-[6px] px-3 py-2 text-center text-[12px] font-medium text-white",
-                )}
+  const cards = (
+    <div className="mt-3 lg:hidden">
+      {isLoading ? (
+        <div className="rounded-[6px] border border-[#e2e8f0] bg-white p-6 shadow-sm text-center">
+          <div className="flex items-center justify-center gap-2">
+            <Spinner className="text-[#6C5DD3]" />
+            <span className="text-[12px] text-[#6b7280]">Loading holidays…</span>
+          </div>
+        </div>
+      ) : holidays.length === 0 ? (
+        <div className="rounded-[6px] border border-[#e2e8f0] bg-white p-6 shadow-sm text-center text-[12px] text-[#6b7280]">
+          No holidays added
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {holidays.map((row) => {
+            const showHolidayActions = isHolidayIsoDateTodayOrFuture(row.dateIso)
+            return (
+              <div
+                key={row.id}
+                className="rounded-[6px] border border-[#e2e8f0] bg-white shadow-sm overflow-hidden hover:border-[#6C5DD3]/50 transition-colors flex flex-col"
               >
-                Date
-              </TableHead>
-              <TableHead
-                className={cn(
-                  holidayTableHeadClassName,
-                  headCellBorder,
-                  "px-3 py-2 text-center text-[12px] font-medium text-white",
-                )}
-              >
-                Holiday
-              </TableHead>
-              <TableHead
-                className={cn(
-                  holidayTableHeadClassName,
-                  headCellBorder,
-                  "px-3 py-2 text-center text-[12px] font-medium text-white",
-                )}
-              >
-                Optional
-              </TableHead>
-              <TableHead
-                className={cn(
-                  holidayTableHeadClassName,
-                  "rounded-tr-[6px] px-3 py-2 text-center text-[12px] font-medium text-white",
-                )}
-              >
-                Action
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody className="bg-white">{bodyRows}</TableBody>
-        </table>
-      </div>
+                {/* Header: Date */}
+                <div className="flex items-center justify-between bg-[#6C5DD3] px-4 py-2.5">
+                  <div className="flex items-baseline gap-1.5 min-w-0">
+                    <span className="text-[10px] font-bold uppercase tracking-wide text-white shrink-0">
+                      Date:
+                    </span>
+                    <span className="text-[13px] font-normal text-white/80 truncate">
+                      {isoYmdToDisplayDdMmYyyy(row.dateIso)}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Card Body */}
+                <div className="p-4 space-y-3 flex-1 flex flex-col justify-between">
+                  <div className="space-y-2">
+                    {/* Holiday description */}
+                    <div className="flex flex-wrap items-baseline gap-x-1.5">
+                      <span className="text-[10px] uppercase tracking-wider text-gray-800 font-bold shrink-0">Holiday:</span>
+                      <span className="text-[13px] text-gray-600 font-normal break-words min-w-0">
+                        {row.description}
+                      </span>
+                    </div>
+
+                    {/* Optional status */}
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px] uppercase tracking-wider text-gray-800 font-bold">Optional:</span>
+                      <span className="inline-flex size-6 items-center justify-center rounded-md bg-gray-50 border border-gray-100">
+                        <img
+                          src={row.optional ? tableCheckIcon : tableCloseIcon}
+                          alt=""
+                          className="size-3.5 object-contain"
+                          aria-hidden
+                        />
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  {showHolidayActions && (
+                    <div className="flex items-center justify-end gap-3 pt-2 border-t border-gray-100">
+                      <button
+                        type="button"
+                        onClick={() => onEditRow(row)}
+                        className="inline-flex h-8 cursor-pointer items-center justify-center gap-1.5 rounded-[6px] border border-[#e2e8f0] bg-white px-3 text-[12px] font-medium text-[#111827] hover:bg-gray-50 transition-colors"
+                        aria-label="Edit holiday row"
+                      >
+                        <img src={tableEditIcon} alt="Edit row" className="size-3.5" />
+                        <span>Edit</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onRemoveRow(row.id)}
+                        className="inline-flex h-8 cursor-pointer items-center justify-center gap-1.5 rounded-[6px] border border-red-100 bg-white px-3 text-[12px] font-medium text-red-600 hover:bg-red-50 transition-colors"
+                        aria-label="Delete holiday row"
+                      >
+                        <Trash2 className="size-3.5 stroke-[1.75]" aria-hidden />
+                        <span>Delete</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
     </div>
+  )
+
+  return (
+    <>
+      {cards}
+      <div className="hidden lg:block mt-3 overflow-hidden rounded-[6px] border border-[#e7e9f2] bg-white">
+        <div className="overflow-x-auto overflow-y-auto" style={scrollWrapStyle}>
+          <table className="w-full min-w-[600px] border-collapse text-[12px] table-fixed">
+            <HolidayTableColGroup />
+            <TableHeader className="sticky top-0 z-10 bg-[var(--primary)] [&_tr]:border-b">
+              <TableRow className="border-0 hover:bg-[var(--primary)]">
+                <TableHead
+                  className={cn(
+                    holidayTableHeadClassName,
+                    headCellBorder,
+                    "rounded-tl-[6px] px-3 py-2 text-center text-[12px] font-medium text-white",
+                  )}
+                >
+                  Date
+                </TableHead>
+                <TableHead
+                  className={cn(
+                    holidayTableHeadClassName,
+                    headCellBorder,
+                    "px-3 py-2 text-center text-[12px] font-medium text-white",
+                  )}
+                >
+                  Holiday
+                </TableHead>
+                <TableHead
+                  className={cn(
+                    holidayTableHeadClassName,
+                    headCellBorder,
+                    "px-3 py-2 text-center text-[12px] font-medium text-white",
+                  )}
+                >
+                  Optional
+                </TableHead>
+                <TableHead
+                  className={cn(
+                    holidayTableHeadClassName,
+                    "rounded-tr-[6px] px-3 py-2 text-center text-[12px] font-medium text-white",
+                  )}
+                >
+                  Action
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody className="bg-white">{bodyRows}</TableBody>
+          </table>
+        </div>
+      </div>
+    </>
   )
 }

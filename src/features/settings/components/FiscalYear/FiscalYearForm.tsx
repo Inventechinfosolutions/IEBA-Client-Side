@@ -575,7 +575,7 @@ export function FiscalYearForm({ isSaving = false }: { isSaving?: boolean }) {
       <Dialog open={isHolidayDialogOpen} onOpenChange={setIsHolidayDialogOpen}>
         <DialogContent
           showClose={false}
-          className="top-[26%] max-w-[560px] rounded-[6px] border border-[#e6e8ef] bg-white p-6 text-[14px] sm:top-[22%]"
+          className="max-w-[560px] rounded-[6px] border border-[#e6e8ef] bg-white p-6 text-[14px]"
           overlayClassName="bg-black/30"
         >
           <DialogHeader className="space-y-0">
@@ -590,7 +590,7 @@ export function FiscalYearForm({ isSaving = false }: { isSaving?: boolean }) {
             </div>
           )}
 
-          <div className="mt-6 grid grid-cols-2 gap-8 text-[14px]">
+          <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-8 text-[14px]">
             <div className="space-y-2">
               <label className="mb-2 block text-[14px] font-normal text-[#2a2f3a]">Date</label>
               <HolidayDatePicker

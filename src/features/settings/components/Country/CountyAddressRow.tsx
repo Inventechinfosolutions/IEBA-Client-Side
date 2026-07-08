@@ -20,7 +20,7 @@ export function CountyAddressRow({
   const { control, register } = useFormContext<SettingsFormValues>()
 
   return (
-    <div className="grid w-full grid-cols-[minmax(0,0.85fr)_minmax(0,1.35fr)_minmax(0,0.75fr)_minmax(0,0.45fr)_minmax(0,0.55fr)_auto] items-end gap-x-4 gap-y-2">
+    <div className="grid w-full grid-cols-1 sm:grid-cols-2 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.35fr)_minmax(0,0.75fr)_minmax(0,0.45fr)_minmax(0,0.55fr)_auto] items-end gap-x-4 gap-y-3 border-b border-[#e4e7ef] pb-4 lg:border-b-0 lg:pb-0">
       <Controller
         control={control}
         name={`county.addresses.${index}.locationId`}
@@ -87,21 +87,21 @@ export function CountyAddressRow({
           placeholder="Zip"
         />
       </div>
-      <div className="pb-[2px]">
+      <div className="flex items-center justify-end lg:pb-[2px]">
         {canRemove ? (
           <Button
             type="button"
             variant="ghost"
-            size="icon"
             onClick={onRemove}
             disabled={removeDisabled}
-            className="size-8 cursor-pointer rounded-[4px] text-[#ff0000] hover:bg-transparent hover:text-[#ff0000] disabled:opacity-50"
+            className="flex items-center gap-1.5 h-[49px] text-[#ff0000] hover:bg-transparent hover:text-[#ff0000] disabled:opacity-50 lg:size-8 lg:p-0"
             aria-label="Remove address row"
           >
             <Trash2 className="size-4" />
+            <span className="lg:hidden text-[13px] font-medium">Remove</span>
           </Button>
         ) : (
-          <div className="size-8" />
+          <div className="hidden lg:block size-8" />
         )}
       </div>
     </div>

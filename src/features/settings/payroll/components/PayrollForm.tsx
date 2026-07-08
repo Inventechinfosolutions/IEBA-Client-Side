@@ -209,8 +209,8 @@ export function PayrollForm({ isSaving = false }: { isSaving?: boolean }) {
 
   return (
     <div className="bg-transparent px-6 py-3">
-      <div className="flex items-start gap-8">
-        <div className="min-w-0 w-[55%] max-w-full shrink">
+      <div className="flex flex-col lg:flex-row items-start gap-6 lg:gap-8">
+        <div className="min-w-0 w-full lg:w-[60%] xl:w-[55%] max-w-full shrink">
           <div className="overflow-hidden rounded-[6px] border border-[#e7e9f2] bg-white">
             <div className="overflow-hidden [scrollbar-gutter:stable]">
               <table className="w-full border-collapse table-fixed text-[12px]">
@@ -327,7 +327,7 @@ export function PayrollForm({ isSaving = false }: { isSaving?: boolean }) {
           </div>
         </div>
 
-        <div className="w-[280px] shrink-0">
+        <div className="w-full lg:w-[280px] shrink-0">
           <label className="mb-2 block text-[12px] font-medium text-[#111827]">Payroll By</label>
           <Controller
             name="payroll.payrollBy"
@@ -341,7 +341,7 @@ export function PayrollForm({ isSaving = false }: { isSaving?: boolean }) {
                 onBlur={field.onBlur}
                 options={PAYROLL_BY_OPTIONS.map((opt) => ({ value: opt, label: opt }))}
                 placeholder="Payroll by"
-                className="!h-[46px] !min-h-[46px] w-[160px] shrink-0 !rounded-[6px] !border-[#d6d7dc] !pl-3 !pr-9 !text-[14px] !font-normal hover:bg-[#f2f2f2]"
+                className="!h-[46px] !min-h-[46px] w-full sm:w-[160px] shrink-0 !rounded-[6px] !border-[#d6d7dc] !pl-3 !pr-9 !text-[14px] !font-normal hover:bg-[#f2f2f2]"
                 itemButtonClassName="rounded-[6px] px-1.5 py-2"
                 itemLabelClassName="!text-[14px] !font-normal"
               />
