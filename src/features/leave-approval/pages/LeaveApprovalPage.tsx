@@ -88,13 +88,12 @@ export function LeaveApprovalPage() {
       className="font-roboto *:font-roboto w-full"
       style={
         {
-          zoom: 1.2,
           "--primary": "#6C5DD3",
         } as React.CSSProperties
       }
     >
-      <div className="rounded-[8px] bg-white p-4 border border-[#E5E7EB]">
-        <div className="mb-5">
+      <div className="rounded-[8px] bg-white p-3 sm:p-4 border border-[#E5E7EB]">
+        <div className="mb-4 sm:mb-5">
           <LeaveApprovalToolbar
             defaultValues={filters}
             userOptions={safeUserOptions}

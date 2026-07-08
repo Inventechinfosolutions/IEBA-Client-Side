@@ -41,7 +41,7 @@ export function LeaveApprovalCommentsModal({
       <DialogContent
         showClose={false}
         overlayClassName="bg-black/30"
-        className="top-[24%] max-w-[560px] rounded-[6px] border border-[#e6e8ef] bg-white p-6 text-[14px]"
+        className="max-w-[560px] rounded-[6px] border border-[#e6e8ef] bg-white p-6 text-[14px]"
       >
         {isSubmitting && (
           <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/60">
