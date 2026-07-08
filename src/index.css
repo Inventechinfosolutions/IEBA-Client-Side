@@ -380,6 +380,30 @@
   background: #d1d5db;
 }
 
+.report-month-picker-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #6C5DD3 #ede9fe;
+}
+
+.report-month-picker-scroll::-webkit-scrollbar {
+  width: 10px;
+}
+
+.report-month-picker-scroll::-webkit-scrollbar-track {
+  background: #ede9fe;
+}
+
+.report-month-picker-scroll::-webkit-scrollbar-thumb {
+  background: #6C5DD3;
+  border-radius: 9999px;
+  border: 2px solid #ede9fe;
+  background-clip: content-box;
+}
+
+.report-month-picker-scroll::-webkit-scrollbar-thumb:hover {
+  background: #5b4fc2;
+}
+
 @keyframes back-bounce {
 
   0%,

@@ -42,6 +42,7 @@ import {
 } from "../utils/multicodeDropdownUtils"
 
 import { partitionLeaveEntryIndexGroups, apiGetUserActivitiesForProgram, apiGetUserProgramsAndActivitiesMulticode, apiDeleteUserLeave } from "../api/personalTimeStudyApi"
+import { formatTimeInput, normalizeTimeOnBlur } from "../utils/timeUtils"
 
 const EMPTY = EMPLOYEE_LEAVE_EMPTY_SELECT_VALUE
 
@@ -110,11 +111,11 @@ const getHeaderGridClass = (isEditing: boolean, allowMulticodeUi: boolean, showT
     "grid min-w-[950px] items-end gap-2.5 text-[14px] font-normal text-[#4A4A4A] whitespace-nowrap",
     showTime
       ? (isEditing && !allowMulticodeUi
-          ? "grid-cols-[minmax(7.5rem,1fr)_minmax(8.5rem,1.3fr)_minmax(8.5rem,1.3fr)_minmax(5rem,0.8fr)_minmax(5rem,0.8fr)_minmax(6.5rem,0.8fr)_minmax(8.5rem,1.1fr)]"
-          : "grid-cols-[minmax(7.5rem,1fr)_minmax(8.5rem,1.3fr)_minmax(8.5rem,1.3fr)_minmax(5rem,0.8fr)_minmax(5rem,0.8fr)_minmax(6.5rem,0.8fr)_minmax(8.5rem,1.1fr)_7.5rem]")
+        ? "grid-cols-[minmax(7.5rem,1fr)_minmax(8.5rem,1.3fr)_minmax(8.5rem,1.3fr)_minmax(5rem,0.8fr)_minmax(5rem,0.8fr)_minmax(6.5rem,0.8fr)_minmax(8.5rem,1.1fr)]"
+        : "grid-cols-[minmax(7.5rem,1fr)_minmax(8.5rem,1.3fr)_minmax(8.5rem,1.3fr)_minmax(5rem,0.8fr)_minmax(5rem,0.8fr)_minmax(6.5rem,0.8fr)_minmax(8.5rem,1.1fr)_7.5rem]")
       : (isEditing && !allowMulticodeUi
-          ? "grid-cols-[minmax(7.5rem,1fr)_minmax(8.5rem,1.3fr)_minmax(8.5rem,1.3fr)_minmax(6.5rem,0.8fr)_minmax(8.5rem,1.1fr)]"
-          : "grid-cols-[minmax(7.5rem,1fr)_minmax(8.5rem,1.3fr)_minmax(8.5rem,1.3fr)_minmax(6.5rem,0.8fr)_minmax(8.5rem,1.1fr)_7.5rem]")
+        ? "grid-cols-[minmax(7.5rem,1fr)_minmax(8.5rem,1.3fr)_minmax(8.5rem,1.3fr)_minmax(6.5rem,0.8fr)_minmax(8.5rem,1.1fr)]"
+        : "grid-cols-[minmax(7.5rem,1fr)_minmax(8.5rem,1.3fr)_minmax(8.5rem,1.3fr)_minmax(6.5rem,0.8fr)_minmax(8.5rem,1.1fr)_7.5rem]")
   )
 
 const getRowGridClass = (isEditing: boolean, allowMulticodeUi: boolean, showTime: boolean) =>
@@ -122,11 +123,11 @@ const getRowGridClass = (isEditing: boolean, allowMulticodeUi: boolean, showTime
     "grid min-w-[950px] items-end gap-2.5 py-2",
     showTime
       ? (isEditing && !allowMulticodeUi
-          ? "grid-cols-[minmax(7.5rem,1fr)_minmax(8.5rem,1.3fr)_minmax(8.5rem,1.3fr)_minmax(5rem,0.8fr)_minmax(5rem,0.8fr)_minmax(6.5rem,0.8fr)_minmax(8.5rem,1.1fr)]"
-          : "grid-cols-[minmax(7.5rem,1fr)_minmax(8.5rem,1.3fr)_minmax(8.5rem,1.3fr)_minmax(5rem,0.8fr)_minmax(5rem,0.8fr)_minmax(6.5rem,0.8fr)_minmax(8.5rem,1.1fr)_7.5rem]")
+        ? "grid-cols-[minmax(7.5rem,1fr)_minmax(8.5rem,1.3fr)_minmax(8.5rem,1.3fr)_minmax(5rem,0.8fr)_minmax(5rem,0.8fr)_minmax(6.5rem,0.8fr)_minmax(8.5rem,1.1fr)]"
+        : "grid-cols-[minmax(7.5rem,1fr)_minmax(8.5rem,1.3fr)_minmax(8.5rem,1.3fr)_minmax(5rem,0.8fr)_minmax(5rem,0.8fr)_minmax(6.5rem,0.8fr)_minmax(8.5rem,1.1fr)_7.5rem]")
       : (isEditing && !allowMulticodeUi
-          ? "grid-cols-[minmax(7.5rem,1fr)_minmax(8.5rem,1.3fr)_minmax(8.5rem,1.3fr)_minmax(6.5rem,0.8fr)_minmax(8.5rem,1.1fr)]"
-          : "grid-cols-[minmax(7.5rem,1fr)_minmax(8.5rem,1.3fr)_minmax(8.5rem,1.3fr)_minmax(6.5rem,0.8fr)_minmax(8.5rem,1.1fr)_7.5rem]")
+        ? "grid-cols-[minmax(7.5rem,1fr)_minmax(8.5rem,1.3fr)_minmax(8.5rem,1.3fr)_minmax(6.5rem,0.8fr)_minmax(8.5rem,1.1fr)]"
+        : "grid-cols-[minmax(7.5rem,1fr)_minmax(8.5rem,1.3fr)_minmax(8.5rem,1.3fr)_minmax(6.5rem,0.8fr)_minmax(8.5rem,1.1fr)_7.5rem]")
   )
 
 function TimePicker24h({
@@ -159,7 +160,8 @@ function TimePicker24h({
                 value={value}
                 disabled={disabled}
                 placeholder="--:--"
-                onChange={(e) => onChange(e.target.value)}
+                onChange={(e) => onChange(formatTimeInput(e.target.value))}
+                onBlur={(e) => onChange(normalizeTimeOnBlur(e.target.value))}
                 onFocus={openMenu}
                 className={cn(
                   "h-10 pr-8 text-sm font-normal rounded-[6px] cursor-pointer w-full",
@@ -469,7 +471,6 @@ export function EmployeeLeaveRequestDialog({
 
   const isMulticodeAllowedForLeaveParent = useCallback(
     (parentIndex: number) => {
-      if (!allowMulticodeUi) return false
       const parentRow = formEntries?.[parentIndex]
       if (!parentRow) return false
       const dateStr = parentRow.date?.split("T")[0]
@@ -477,13 +478,17 @@ export function EmployeeLeaveRequestDialog({
       const parentProgramId = parentRow.programCode
       if (!parentProgramId || parentProgramId === EMPTY) return false
 
-      const deptId = resolveDepartmentIdForProgram(parentProgramId)
+      const parentRowAny = parentRow as any
+      const deptId = parentRowAny.departmentId
+        ? Number(parentRowAny.departmentId)
+        : resolveDepartmentIdForProgram(parentProgramId)
+
       if (!deptId) return false
 
       const userMultiCode = dateConfigs[dateStr]?.userMultiCode ?? []
-      return userMultiCode.some(item => item.departmentId === deptId)
+      return userMultiCode.some(item => Number(item.departmentId) === Number(deptId))
     },
-    [allowMulticodeUi, formEntries, resolveDepartmentIdForProgram, dateConfigs]
+    [formEntries, resolveDepartmentIdForProgram, dateConfigs]
   )
 
   const formatLeaveProgramOption = useCallback((p: any) => {
@@ -761,7 +766,7 @@ export function EmployeeLeaveRequestDialog({
         if (currentTotal > diff) return true
       }
 
-      if (isApproved && initialValues?.entries) {
+      if (!entry.multicodeChild && isApproved && initialValues?.entries) {
         const originalTotal = Number(initialValues.entries[i]?.totalMinApplied || 0)
         if (originalTotal > 0 && currentTotal > originalTotal) return true
       }
@@ -1228,10 +1233,8 @@ export function EmployeeLeaveRequestDialog({
                                 </div>
                               )
                             }
-                            // removeAutoFill=false → auto-filled, field disabled
-                            // removeAutoFill=true → user sets manually, field enabled
-                            const removeAutoFill = settings.removeAutoFillEndTime
-                            const endTimeDisabled = isApproved ? false : !removeAutoFill
+                            const startTime = form.getValues(`entries.${parentIndex}.startTime`)
+                            const endTimeDisabled = !startTime
                             return (
                               <div className="space-y-1">
                                 <TimePicker24h
@@ -1598,8 +1601,7 @@ export function EmployeeLeaveRequestDialog({
                                       initialValues?.entries?.[index]?.totalMinApplied || 0,
                                     )
                                     const currentTotal = Number(f.value || 0)
-                                    const exceedsOriginal =
-                                      isApproved && originalTotal > 0 && currentTotal > originalTotal
+                                    const exceedsOriginal = false
                                     const startTime = formEntries?.[index]?.startTime
                                     const endTime = formEntries?.[index]?.endTime
                                     const diff =

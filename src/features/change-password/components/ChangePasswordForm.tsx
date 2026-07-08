@@ -16,6 +16,7 @@ import {
 import { Input } from "@/components/ui/input"
 
 import { useChangePassword } from "../mutations/changePassword"
+import { useDismissPasswordChange } from "../mutations/dismissPasswordChange"
 import { changePasswordSchema } from "../schemas"
 import type {
   ChangePasswordFormModalProps,
@@ -92,8 +93,10 @@ export function ChangePasswordFormModal({
   onOpenChange,
   required = false,
   onSuccess,
+  onDismiss,
 }: ChangePasswordFormModalProps) {
   const mutation = useChangePassword()
+  const dismissMutation = useDismissPasswordChange()
   const [visibility, setVisibility] = useState<PasswordVisibilityState>({
     oldPassword: false,
     newPassword: false,
@@ -121,6 +124,26 @@ export function ChangePasswordFormModal({
     setVisibility({ oldPassword: false, newPassword: false, confirmPassword: false })
     onOpenChange(false)
   }
+
+  const handleCancel = () => {
+    if (!required) {
+      closeModal()
+      return
+    }
+
+    dismissMutation.mutate(undefined, {
+      onSuccess: () => {
+        reset()
+        setVisibility({ oldPassword: false, newPassword: false, confirmPassword: false })
+        onDismiss?.()
+      },
+      onError: (err) => {
+        toast.error(err.message, { position: "top-center" })
+      },
+    })
+  }
+
+  const isBusy = isSubmitting || mutation.isPending || dismissMutation.isPending
 
   const onValid = (v: ChangePasswordFormValues) => {
     mutation.mutate(
@@ -207,21 +230,20 @@ export function ChangePasswordFormModal({
 
           <div className="mt-7 flex w-full items-center justify-end gap-[16.99px] pr-4">
             <Button
+              type="button"
+              onClick={handleCancel}
+              disabled={isBusy}
+              className="h-[50px] w-[130px] cursor-pointer rounded-[10px] bg-[#DADADA] px-[21.2344px] text-[16px] font-medium text-[#111827] hover:bg-[#DADADA] disabled:opacity-60"
+            >
+              Cancel
+            </Button>
+            <Button
               type="submit"
-              disabled={isSubmitting || mutation.isPending}
+              disabled={isBusy}
               className="h-[50px] w-[130px] cursor-pointer rounded-[10px] bg-[#6C5DD3] px-[21.2344px] text-[16px] font-medium text-white hover:bg-[#6C5DD3] disabled:opacity-60"
             >
               Submit
             </Button>
-            {!required && (
-              <Button
-                type="button"
-                onClick={closeModal}
-                className="h-[50px] w-[130px] cursor-pointer rounded-[10px] bg-[#DADADA] px-[21.2344px] text-[16px] font-medium text-[#111827] hover:bg-[#DADADA]"
-              >
-                Cancel
-              </Button>
-            )}
           </div>
         </form>
       </DialogContent>
