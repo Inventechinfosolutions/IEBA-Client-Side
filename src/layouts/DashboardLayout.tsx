@@ -196,6 +196,12 @@ export function DashboardLayout() {
                     markPasswordChangedForUser(user.id)
                     establishDashboardSession({ ...user, isPasswordChangeRequired: false })
                   }}
+                  onDismiss={() => {
+                    if (!user) return
+                    markPasswordChangedForUser(user.id)
+                    establishDashboardSession({ ...user, isPasswordChangeRequired: false })
+                    setChangePasswordOpen(false)
+                  }}
                 />
                 <NotificationSheet
                   open={notificationsOpen}
