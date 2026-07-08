@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 import { SingleSelectSearchDropdown } from "@/components/ui/dropdown-search"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Popover, PopoverContent, PopoverAnchor } from "@/components/ui/popover"
 import { TimePickerDropdown } from "@/components/ui/time-picker"
 import { PersonalTimeStudyApportioningPanel } from "./PersonalTimeStudyApportioningPanel"
 import { useAuth } from "@/contexts/AuthContext"
@@ -26,6 +26,8 @@ import {
   roundDecimalHoursToQuarterHour,
 } from "../utils/decimalTimeHint.tsx"
 
+
+import { formatTimeInput, normalizeTimeOnBlur } from "../utils/timeUtils"
 
 /** Inline required-field asterisk — available to all components in this module. */
 function RequiredMark() {
@@ -55,15 +57,25 @@ function MinDecimalField({
   inputClassName,
   heightClass = "h-10",
 }: MinDecimalFieldProps) {
-  const needsRounding = showDecimalHint && !!value.trim() && !isQuarterHourDecimal(value)
+  const [originalValue, setOriginalValue] = useState<string | null>(null)
+
+  const needsRounding = showDecimalHint && (
+    (!!value.trim() && !isQuarterHourDecimal(value)) ||
+    originalValue !== null
+  )
   const displayMessage = showDecimalHint
-    ? hintMessage ?? (needsRounding ? buildDecimalMinMessage(value) : null)
+    ? hintMessage ?? (
+        originalValue !== null
+          ? `${originalValue} hrs rounded to ${value} hrs (${Math.round(Number(value) * 60)} mins)`
+          : (needsRounding ? buildDecimalMinMessage(value) : null)
+      )
     : null
 
   const handleBlur = () => {
     if (!showDecimalHint || readOnly || !value.trim()) return
     const rounded = roundDecimalHoursToQuarterHour(value)
     if (rounded !== value) {
+      setOriginalValue(value)
       onChange?.(rounded)
     }
   }
@@ -86,7 +98,10 @@ function MinDecimalField({
             readOnly && "bg-[#F2F4F7] cursor-not-allowed",
             inputClassName,
           )}
-          onChange={(e) => onChange?.(e.target.value)}
+          onChange={(e) => {
+            setOriginalValue(null)
+            onChange?.(e.target.value)
+          }}
           onBlur={handleBlur}
         />
         {displayMessage ? (
@@ -288,32 +303,52 @@ function TimePicker24h({
   isApportioned?: boolean
 }) {
   const [open, setOpen] = useState(false)
+
+  const openMenu = () => {
+    if (!disabled) setOpen(true)
+  }
+
   return (
     <div className="flex flex-col gap-1 w-[80px] shrink-0">
       <Label className="text-[11px] text-muted-foreground">
         {label} {required && <RequiredMark />}
       </Label>
-      <Popover open={open} onOpenChange={(val) => !disabled && setOpen(val)}>
-        <PopoverTrigger asChild>
-          <div className={cn("relative", disabled ? "cursor-not-allowed" : "cursor-pointer")}>
-            <TitleCaseInput
-              value={value}
-              readOnly
-              placeholder="--:--"
-              className={cn(
-                "h-10 pr-8 text-[11px] font-normal rounded-[6px] text-[#344054] bg-white",
-                disabled && "bg-[#F2F4F7] cursor-not-allowed",
-                isLeave && "border-yellow-400",
-                isApportioned && "border-[#6C5DD3]"
-              )}
-              onClick={() => !disabled && setOpen(true)}
-            />
-            <Clock className="absolute right-3 top-1/2 size-4 -translate-y-1/2 opacity-70 pointer-events-none text-gray-500" />
-          </div>
-        </PopoverTrigger>
-        <PopoverContent className="p-0 w-auto" align="start" side="top" sideOffset={5}>
-          <TimePickerDropdown value={value} onChange={(v) => { onChange(v); setOpen(false); }} minuteStep={15} />
-        </PopoverContent>
+      <Popover modal={false} open={open} onOpenChange={(val) => !disabled && setOpen(val)}>
+        <div className="relative">
+          <PopoverAnchor asChild>
+            <div
+              className={cn("relative cursor-pointer", disabled && "cursor-not-allowed")}
+              onClick={openMenu}
+            >
+              <TitleCaseInput
+                value={value}
+                disabled={disabled}
+                placeholder="--:--"
+                onChange={(e) => onChange(formatTimeInput(e.target.value))}
+                onBlur={() => onChange(normalizeTimeOnBlur(value))}
+                onFocus={openMenu}
+                className={cn(
+                  "h-10 pr-8 text-[11px] font-normal rounded-[6px] text-[#344054] bg-white w-full",
+                  disabled && "bg-[#F2F4F7] cursor-not-allowed pointer-events-none !opacity-100",
+                  isLeave && "border-yellow-400",
+                  isApportioned && "border-[#6C5DD3]"
+                )}
+              />
+              <Clock className="absolute right-3 top-1/2 size-4 -translate-y-1/2 opacity-70 pointer-events-none text-gray-500" />
+            </div>
+          </PopoverAnchor>
+          <PopoverContent
+            className="p-0 w-auto"
+            align="start"
+            side="top"
+            sideOffset={5}
+            onOpenAutoFocus={(e) => {
+              e.preventDefault()
+            }}
+          >
+            <TimePickerDropdown value={value} onChange={(v) => { onChange(v); setOpen(false); }} minuteStep={15} />
+          </PopoverContent>
+        </div>
       </Popover>
     </div>
   )
@@ -566,13 +601,15 @@ export function PersonalTimeStudyEntryForm({
 
   const isMulticodeAllowedForParent = useCallback(
     (parent: TimeEntryParentRow) => {
-      if (!allowMulticodeUi) return false
-      const deptId = resolveDepartmentIdForProgram(parent.tsProgram)
+      const deptId = parent.departmentId
+        ? Number(parent.departmentId)
+        : resolveDepartmentIdForProgram(parent.tsProgram)
+
       if (!deptId) return false
       const userMultiCode = apportioningConfig?.userMultiCode ?? []
-      return userMultiCode.some(item => item.departmentId === deptId)
+      return userMultiCode.some(item => Number(item.departmentId) === Number(deptId))
     },
-    [allowMulticodeUi, resolveDepartmentIdForProgram, apportioningConfig?.userMultiCode],
+    [resolveDepartmentIdForProgram, apportioningConfig?.userMultiCode],
   )
 
   const refetchedDeptsRef = useRef<Set<number>>(new Set())
@@ -702,8 +739,8 @@ export function PersonalTimeStudyEntryForm({
           const parentRow: TimeEntryParentRow = {
             id: String(rec.id),
             dbId: rec.id,
-            start: rec.starttime ?? "",
-            end: rec.endtime ?? "",
+            start: rec.starttime ? String(rec.starttime).slice(0, 5) : "",
+            end: rec.endtime ? String(rec.endtime).slice(0, 5) : "",
             totalMin: String(rec.activitytime ?? ""),
             activityTimeMessage: rec.message ?? null,
             tsProgram: rec.programid ? String(rec.programid) : "",
@@ -729,8 +766,8 @@ export function PersonalTimeStudyEntryForm({
               totalMin: String(m.activitytime ?? ""),
               activityTimeMessage: m.message ?? null,
               description: m.description ?? "",
-              start: m.starttime ?? "",
-              end: m.endtime ?? "",
+              start: m.starttime ? String(m.starttime).slice(0, 5) : "",
+              end: m.endtime ? String(m.endtime).slice(0, 5) : "",
               programCode: m.programcode,
               programName: m.programname,
               activityCode: m.activitycode,
@@ -963,9 +1000,11 @@ export function PersonalTimeStudyEntryForm({
     const parent = parents.find((p) => p.id === parentId)
     if (!parent) return
 
-    const deptId = resolveDepartmentIdForProgram(parent.tsProgram)
+    const deptId = parent.departmentId
+      ? Number(parent.departmentId)
+      : resolveDepartmentIdForProgram(parent.tsProgram)
     const userMultiCode = apportioningConfig?.userMultiCode ?? []
-    if (!allowMulticodeUi || !deptId || !userMultiCode.some(item => item.departmentId === deptId)) {
+    if (!deptId || !userMultiCode.some(item => Number(item.departmentId) === Number(deptId))) {
       return
     }
 
@@ -979,7 +1018,7 @@ export function PersonalTimeStudyEntryForm({
         subRows: [...p.subRows, createSubRow()]
       }
     }))
-  }, [parents, resolveDepartmentIdForProgram, fetchMulticodeProgramsForDepartment, allowMulticodeUi, apportioningConfig?.userMultiCode])
+  }, [parents, resolveDepartmentIdForProgram, fetchMulticodeProgramsForDepartment, apportioningConfig?.userMultiCode])
 
   const removeSubRow = useCallback((parentId: string, subId: string) => {
     const parent = parents.find((p) => p.id === parentId);
