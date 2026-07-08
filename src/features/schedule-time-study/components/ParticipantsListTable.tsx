@@ -6,14 +6,7 @@ import editIconImg from "@/assets/edit-icon.png"
 import statusCheckImg from "@/assets/status-check.png"
 import statusCrossImg from "@/assets/status-cross.png"
 import { Button } from "@/components/ui/button"
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination"
+import { MasterCodePagination } from "@/features/master-code/components/MasterCodePagination"
 import {
   Table,
   TableBody,
@@ -56,6 +49,18 @@ export function ParticipantsListTable({
   const participantsQuery = useGetRmtsGroups({ departmentId, fiscalyear: studyYear })
   const deleteGroup = useDeleteRmtsGroup()
   const rows = participantsQuery.data?.rows ?? []
+
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
+
+  const [prevQueryKey, setPrevQueryKey] = useState("")
+  const queryKey = `${departmentId}-${studyYear}`
+  if (queryKey !== prevQueryKey) {
+    setCurrentPage(1)
+    setPrevQueryKey(queryKey)
+  }
+
+  const paginatedRows = rows.slice((currentPage - 1) * pageSize, currentPage * pageSize)
 
   const [createGroupOpen, setCreateGroupOpen] = useState(false)
   const [usersModalOpen, setUsersModalOpen] = useState(false)
@@ -156,7 +161,7 @@ export function ParticipantsListTable({
                       </div>
                     </TableCell>
                   </TableRow>
-                ) : rows.map((row) => (
+                ) : paginatedRows.map((row) => (
                   <TableRow key={row.id} className="h-[44px] border-[#EDEDED]">
                     <TableCell className="border-r border-[#E5E7EB] px-4 py-2 text-[13px] text-[#111827]">
                       {row.groupName}
@@ -283,176 +288,16 @@ export function ParticipantsListTable({
         </Table>
       </div>
 
-      <div className="block md:hidden space-y-4">
-        {participantsQuery.isFetching && (
-          <div className="flex items-center justify-center p-4">
-            <Spinner className="text-[#6C5DD3]" />
-          </div>
-        )}
-        {participantsQuery.isLoading ? (
-          Array.from({ length: 3 }).map((_, index) => (
-            <div key={`participants-card-skeleton-${index}`} className="p-4 border border-[#E5E7EB] rounded-[10px] bg-white space-y-3">
-              <Skeleton className="h-5 w-2/3" />
-              <div className="grid grid-cols-3 gap-2 text-center text-xs">
-                <div><Skeleton className="h-3 w-10 mx-auto" /></div>
-                <div><Skeleton className="h-3 w-10 mx-auto" /></div>
-                <div><Skeleton className="h-3 w-10 mx-auto" /></div>
-              </div>
-              <div className="flex justify-end gap-2 border-t border-[#E5E7EB] pt-2">
-                <Skeleton className="h-8 w-16" />
-                <Skeleton className="h-8 w-16" />
-              </div>
-            </div>
-          ))
-        ) : rows.length === 0 ? (
-          <div className="p-8 border border-[#E5E7EB] rounded-[10px] bg-white text-center">
-            <img src={tableEmptyIcon} alt="" className="mx-auto size-[80px] object-contain" />
-          </div>
-        ) : (
-          rows.map((row) => (
-            <div key={row.id} className="border border-[#E5E7EB] rounded-[10px] bg-white overflow-hidden shadow-sm flex flex-col text-[13px] text-[#111827]">
-              {/* Header */}
-              <div className="bg-[#6C5DD3] px-5 py-3 text-white flex items-center justify-between">
-                <span className="font-bold text-[14px] leading-none">{row.groupName}</span>
-                <div className="flex items-center gap-1.5">
-                  {row.isUsed === true ? (
-                    <button
-                      type="button"
-                      className="inline-flex cursor-pointer items-center justify-center p-1 rounded hover:bg-white/10 text-white"
-                      onClick={() => {
-                        const id = Number(row.id)
-                        if (!Number.isFinite(id) || id <= 0) return
-                        setViewGroupId(id)
-                        setUsersModalOpen(true)
-                      }}
-                      aria-label="View users"
-                    >
-                      <Eye className="size-[15px]" />
-                    </button>
-                  ) : (
-                    <>
-                      <button
-                        type="button"
-                        className="inline-flex cursor-pointer items-center justify-center p-1 rounded hover:bg-white/10"
-                        onClick={() => {
-                          setEditingParticipantRow(row)
-                          setCreateGroupOpen(true)
-                        }}
-                        aria-label="Edit participant group"
-                      >
-                        <img src={editIconImg} alt="Edit" className="size-[16px] object-contain brightness-0 invert" />
-                      </button>
-                      <button
-                        type="button"
-                        disabled={deleteGroup.isPending}
-                        className="inline-flex cursor-pointer items-center justify-center p-1 rounded hover:bg-white/10 text-white disabled:opacity-40"
-                        onClick={() => {
-                          const id = Number(row.id)
-                          if (!Number.isFinite(id) || id <= 0) return
-                          void deleteGroup
-                            .mutateAsync(id)
-                            .then(() => {
-                              toast.success(
-                                "Deleted successfully",
-                                participantGroupSuccessToastOptions,
-                              )
-                            })
-                            .catch((error: unknown) => {
-                              toast.error(formatRmtsGroupMutationError(error))
-                            })
-                        }}
-                        aria-label="Delete participant group"
-                      >
-                        {deleteGroup.isPending ? (
-                          <Spinner className="size-3.5 text-white" />
-                        ) : (
-                          <Trash2 className="size-[15px] text-white" />
-                        )}
-                      </button>
-                    </>
-                  )}
-                </div>
-              </div>
-
-              {/* Body */}
-              <div className="p-5 space-y-3.5 flex-1">
-                <div className="flex justify-between items-center border-b border-gray-100 pb-2">
-                  <span className="text-[#111827] font-bold uppercase text-[11px] tracking-wider">Job Pool:</span>
-                  <img
-                    src={row.jobPool ? statusCheckImg : statusCrossImg}
-                    alt={row.jobPool ? "Yes" : "No"}
-                    className="h-4 w-4 object-contain"
-                  />
-                </div>
-
-                <div className="flex justify-between items-center border-b border-gray-100 pb-2">
-                  <span className="text-[#111827] font-bold uppercase text-[11px] tracking-wider">Cost Pool:</span>
-                  <img
-                    src={row.costPool ? statusCheckImg : statusCrossImg}
-                    alt={row.costPool ? "Yes" : "No"}
-                    className="h-4 w-4 object-contain"
-                  />
-                </div>
-
-                <div className="flex justify-between items-center border-b border-gray-100 pb-2">
-                  <span className="text-[#111827] font-bold uppercase text-[11px] tracking-wider">User:</span>
-                  <img
-                    src={row.user ? statusCheckImg : statusCrossImg}
-                    alt={row.user ? "Yes" : "No"}
-                    className="h-4 w-4 object-contain"
-                  />
-                </div>
-
-                <div className="flex justify-between items-center pb-1">
-                  <span className="text-[#111827] font-bold uppercase text-[11px] tracking-wider">Status:</span>
-                  {row.isUsed ? (
-                    <span className="inline-flex items-center rounded-full border border-green-200 bg-green-50 px-2.5 py-0.5 text-[11px] font-normal text-green-700">
-                      In Use
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center rounded-full border border-yellow-200 bg-yellow-50 px-2.5 py-0.5 text-[11px] font-normal text-yellow-700">
-                      Unused
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
-          ))
-        )}
-      </div>
-
-      <div className="mt-8 flex min-h-[64px] w-full items-center justify-center sm:justify-end rounded-[15px] bg-white px-4 py-4 shadow-[0_0_20px_0_#0000001a]">
-        <Pagination className="mx-0 w-auto justify-center sm:justify-end">
-          <PaginationContent className="gap-0">
-            <PaginationItem>
-              <PaginationPrevious
-                href="#"
-                text=""
-                onClick={(event) => event.preventDefault()}
-                className="h-9 w-9 rounded-[8px] border border-transparent px-0 text-[#9CA3AF] pointer-events-none opacity-60"
-              />
-            </PaginationItem>
-            <PaginationItem>
-              <PaginationLink
-                href="#"
-                isActive
-                onClick={(event) => event.preventDefault()}
-                className="h-9 w-9 rounded-[8px] border border-[#D1D5DB] bg-white px-0 text-[18px] font-normal text-[#4B5563]"
-              >
-                1
-              </PaginationLink>
-            </PaginationItem>
-            <PaginationItem>
-              <PaginationNext
-                href="#"
-                text=""
-                onClick={(event) => event.preventDefault()}
-                className="h-9 w-9 rounded-[8px] border border-transparent px-0 text-[#9CA3AF] pointer-events-none opacity-60"
-              />
-            </PaginationItem>
-          </PaginationContent>
-        </Pagination>
-      </div>
+      <MasterCodePagination
+        totalItems={rows.length}
+        currentPage={currentPage}
+        pageSize={pageSize}
+        onPageChange={setCurrentPage}
+        onPageSizeChange={(size) => {
+          setPageSize(size)
+          setCurrentPage(1)
+        }}
+      />
 
       <ParticipantsListForm
         key={editingParticipantRow ? `edit-${editingParticipantRow.id}` : "create-participant"}

@@ -5,7 +5,7 @@ import {
   type MasterCodeRow,
   type MasterCodeTab,
 } from "../types"
-import { useGetActivityCodeTypes } from "../queries/getMasterCodes"
+import { useGetClientMasterCodeTabs } from "../queries/getClientMasterCodeTabs"
 
 const emptyFormValues: MasterCodeFormValues = {
   code: "",
@@ -19,7 +19,7 @@ const emptyFormValues: MasterCodeFormValues = {
 }
 
 export function useMasterCodeUI() {
-  const { data: dbTypes = [], isLoading: isTypesLoading } = useGetActivityCodeTypes()
+  const { data: dbTypes = [], isLoading: isTypesLoading } = useGetClientMasterCodeTabs()
   const tabs = useMemo<MasterCodeTab[]>(
     () => dbTypes as MasterCodeTab[],
     [dbTypes],

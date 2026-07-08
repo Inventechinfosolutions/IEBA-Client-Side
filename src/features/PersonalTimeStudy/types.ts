@@ -22,6 +22,7 @@ export type TimeStudyRecordResDto = {
   starttime?: string
   endtime?: string
   activitytime: number
+  message?: string | null
   traveltime: number 
   status: TimeStudyRecordStatus
   comments?: string
@@ -58,6 +59,7 @@ export type TimeStudyRecordResDto = {
     activitycode?: string
     activityname?: string
     activitytime?: number | string
+    message?: string | null
     totalmin?: number | string
     description?: string
     status?: string

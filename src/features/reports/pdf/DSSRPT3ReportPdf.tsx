@@ -12,6 +12,7 @@ import {
   ensurePdfBlob,
   formatDssrpt3MonthLabel,
   formatPrintedOnLabel,
+  formatReportDisplayDate,
   formatReportTime,
   getDssrpt3FiscalQuarter,
   resolveFooterVariant,
@@ -169,23 +170,40 @@ function PeriodLabel({
   month,
   fiscalYear,
   dateFrom,
+  dateTo,
 }: {
   isMonthly: boolean
   month?: string
   fiscalYear: string
   dateFrom?: string
+  dateTo?: string
 }) {
   if (isMonthly) {
     return <Text style={styles.periodLabel}>{formatDssrpt3MonthLabel(month)}</Text>
   }
 
   const quarter = getDssrpt3FiscalQuarter(dateFrom)
+  const periodStart = formatReportDisplayDate(dateFrom)
+  const periodEnd = formatReportDisplayDate(dateTo)
+
   return (
     <View style={styles.periodRow}>
       <Text style={styles.periodLabelText}>FY/QTR:</Text>
       <Text style={styles.periodValue}>
         {fiscalYear}/{quarter}
       </Text>
+      {periodStart ? (
+        <>
+          <Text style={styles.periodLabelText}>Start Date:</Text>
+          <Text style={styles.periodValue}>{periodStart}</Text>
+        </>
+      ) : null}
+      {periodEnd ? (
+        <>
+          <Text style={styles.periodLabelText}>End Date:</Text>
+          <Text style={styles.periodValue}>{periodEnd}</Text>
+        </>
+      ) : null}
     </View>
   )
 }
@@ -344,6 +362,7 @@ function DSSRPT3ReportDocument({
   isMonthly,
   month,
   dateFrom,
+  dateTo,
   printedOn,
   meta,
   footerVariant,
@@ -372,6 +391,7 @@ function DSSRPT3ReportDocument({
             month={month}
             fiscalYear={payload.fiscalYear}
             dateFrom={dateFrom}
+            dateTo={dateTo}
           />
 
           {sortedCostPools.length === 0 ? (

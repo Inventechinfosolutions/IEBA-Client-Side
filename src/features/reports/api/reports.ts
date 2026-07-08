@@ -8,6 +8,7 @@ import {
   groupP110ByEmployee,
   groupP110SSByEmployee,
   groupP111ByEmployee,
+  groupP112ByEmployee,
   getP130ProgramCodes,
   unwrapDssrpt1Employees,
   unwrapDssrpt2Response,
@@ -29,6 +30,7 @@ import {
   unwrapP110Records,
   unwrapP110SSRecords,
   unwrapP111Records,
+  unwrapP112Records,
   unwrapP130Response,
   unwrapReportDataRecords,
 } from "../pdf/reportPdf"
@@ -48,6 +50,7 @@ import { generateP101ReportPdf } from "../pdf/P101ReportPdf"
 import { generateP110ReportPdf } from "../pdf/P110ReportPdf"
 import { generateP110SSReportPdf } from "../pdf/P110SSReportPdf"
 import { generateP111ReportPdf } from "../pdf/P111ReportPdf.tsx"
+import { generateP112ReportPdf } from "../pdf/P112ReportPdf.tsx"
 import { generateP130ReportPdf } from "../pdf/P130ReportPdf.tsx"
 import { generateP100ReportPdf } from "../pdf/P100ReportPdf"
 import type {
@@ -173,6 +176,7 @@ async function buildFrontendPdfReport(
         isMonthly: body.selectMonthBy === "month",
         month: body.month,
         dateFrom: body.dateFrom,
+        dateTo: body.dateTo,
         meta,
       })
     }
@@ -281,6 +285,15 @@ async function buildFrontendPdfReport(
     if (body.reportKey === "P111") {
       return await generateP111ReportPdf({
         employees: groupP111ByEmployee(unwrapP111Records(response)),
+        startDate,
+        endDate,
+        meta,
+      })
+    }
+
+    if (body.reportKey === "P112") {
+      return await generateP112ReportPdf({
+        employees: groupP112ByEmployee(unwrapP112Records(response)),
         startDate,
         endDate,
         meta,
@@ -422,7 +435,14 @@ export async function apiGetListAllPrograms(): Promise<ReportSelectOption[]> {
   }))
 }
 
-export async function apiGetUsersUnderDepartment(departmentId: string, currentUserId: string, masterCode?: string, departmentStatus = "active"): Promise<ReportSelectOption[]> {
+export async function apiGetUsersUnderDepartment(
+  departmentId: string,
+  currentUserId: string,
+  masterCode?: string,
+  departmentStatus = "active",
+  fromDate?: string,
+  toDate?: string,
+): Promise<ReportSelectOption[]> {
   const parts = [
     "type=getusersunderdepartmentbystatus",
     `departmentId=${encodeURIComponent(departmentId)}`,
@@ -433,6 +453,12 @@ export async function apiGetUsersUnderDepartment(departmentId: string, currentUs
     const codeToSend = masterCode === "BOTH" ? "MAA,TCM" : masterCode
     const encodedCode = codeToSend.split(",").map(encodeURIComponent).join(",")
     parts.push(`masterCode=${encodedCode}`)
+  }
+  if (fromDate?.trim()) {
+    parts.push(`fromDate=${encodeURIComponent(fromDate.trim())}`)
+  }
+  if (toDate?.trim()) {
+    parts.push(`toDate=${encodeURIComponent(toDate.trim())}`)
   }
 
   const data = await api.get<any>(`/users?${parts.join("&")}`)

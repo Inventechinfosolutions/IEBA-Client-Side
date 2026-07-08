@@ -17,14 +17,7 @@ import { Label } from "@/components/ui/label"
 import { Skeleton } from "@/components/ui/skeleton"
 import { SingleSelectDropdown } from "@/components/ui/dropdown"
 import { Spinner } from "@/components/ui/spinner"
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination"
+import { MasterCodePagination } from "@/features/master-code/components/MasterCodePagination"
 import {
   Table,
   TableBody,
@@ -183,6 +176,18 @@ function ScheduleTimeStudyTableLoaded({
   const [periodsFormMountKey, setPeriodsFormMountKey] = useState(0)
   const [editingPeriodRow, setEditingPeriodRow] = useState<ScheduleTimeStudyPeriodRow | null>(null)
   const periodRows = rows
+
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
+
+  const [prevQueryKey, setPrevQueryKey] = useState("")
+  const queryKey = `${departmentId}-${selectedStudyYear}`
+  if (queryKey !== prevQueryKey) {
+    setCurrentPage(1)
+    setPrevQueryKey(queryKey)
+  }
+
+  const paginatedPeriodRows = periodRows.slice((currentPage - 1) * pageSize, currentPage * pageSize)
 
   return (
     <section className="font-roboto *:font-roboto min-h-[743px] space-y-5 rounded-[10px] border border-[#E5E7EB] bg-white p-6">
@@ -391,7 +396,7 @@ function ScheduleTimeStudyTableLoaded({
                     </TableCell>
                   </TableRow>
                 ) : (
-                  periodRows.map((row) => (
+                  paginatedPeriodRows.map((row) => (
                     <TableRow key={row.id} className="h-[44px] border-[#EDEDED] hover:bg-[#fafafa]">
                       <TableCell className="border-r border-[#E5E7EB] px-4 py-2 text-[13px] text-[#111827] break-words whitespace-normal">
                         {row.timeStudyPeriod}
@@ -494,174 +499,16 @@ function ScheduleTimeStudyTableLoaded({
             </Table>
           </div>
 
-          <div className="block md:hidden space-y-4">
-            {isFetching && (
-              <div className="flex items-center justify-center p-4">
-                <Spinner className="text-[#6C5DD3]" />
-              </div>
-            )}
-            {isLoading ? (
-              Array.from({ length: 3 }).map((_, index) => (
-                <div key={`period-card-skeleton-${index}`} className="p-4 border border-[#E5E7EB] rounded-[10px] bg-white space-y-3">
-                  <Skeleton className="h-5 w-2/3" />
-                  <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div><Skeleton className="h-3 w-16" /></div>
-                    <div><Skeleton className="h-3 w-20" /></div>
-                    <div><Skeleton className="h-3 w-16" /></div>
-                    <div><Skeleton className="h-3 w-20" /></div>
-                  </div>
-                  <div className="flex justify-end gap-2 border-t border-[#E5E7EB] pt-2">
-                    <Skeleton className="h-8 w-16" />
-                    <Skeleton className="h-8 w-16" />
-                  </div>
-                </div>
-              ))
-            ) : periodRows.length === 0 ? (
-              <div className="p-8 border border-[#E5E7EB] rounded-[10px] bg-white text-center">
-                <img src={tableEmptyIcon} alt="" className="mx-auto size-[80px] object-contain" />
-              </div>
-            ) : (
-              periodRows.map((row) => (
-                <div key={row.id} className="border border-[#E5E7EB] rounded-[10px] bg-white overflow-hidden shadow-sm flex flex-col text-[13px] text-[#111827]">
-                  {/* Header */}
-                  <div className="bg-[#6C5DD3] px-5 py-3 text-white flex items-center justify-between">
-                    <span className="font-bold text-[14px] leading-none">{row.timeStudyPeriod}</span>
-                    <div className="flex items-center gap-1.5">
-                      {row.isUsed === true ? (
-                        <span className="text-xs text-white/70 italic px-1">In Use</span>
-                      ) : (
-                        <>
-                          <button
-                            type="button"
-                            className="inline-flex cursor-pointer items-center justify-center p-1 rounded hover:bg-white/10"
-                            onClick={() => {
-                              setEditingPeriodRow(row)
-                              setPeriodsFormMountKey((k) => k + 1)
-                              setCreatePeriodsOpen(true)
-                            }}
-                            aria-label="Edit period row"
-                          >
-                            <img src={editIconImg} alt="Edit" className="size-[16px] object-contain brightness-0 invert" />
-                          </button>
-                          <button
-                            type="button"
-                            disabled={deletePayPeriod.isPending}
-                            className="inline-flex cursor-pointer items-center justify-center p-1 rounded hover:bg-white/10 text-white disabled:opacity-40"
-                            onClick={() => {
-                              const id = Number(row.id)
-                              if (!Number.isFinite(id) || id <= 0) return
-                              void deletePayPeriod
-                                .mutateAsync(id)
-                                .then(() => {
-                                  toast.success("Deleted successfully", payPeriodDeleteSuccessToastOptions)
-                                })
-                                .catch((error: unknown) => {
-                                  toast.error(error instanceof Error ? error.message : "Delete failed")
-                                })
-                            }}
-                            aria-label="Delete period row"
-                          >
-                            {deletePayPeriod.isPending ? (
-                              <Spinner className="size-3.5 text-white" />
-                            ) : (
-                              <Trash2 className="size-[15px] text-white" />
-                            )}
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Body */}
-                  <div className="p-5 space-y-3.5 flex-1">
-                    <div className="flex justify-between items-center border-b border-gray-100 pb-2">
-                      <span className="text-[#111827] font-bold uppercase text-[11px] tracking-wider">Start Date:</span>
-                      <span className="font-normal text-gray-600 text-right text-[13px]">
-                        {dayjs(row.startDate).isValid() && row.startDate.includes("T")
-                          ? dayjs(row.startDate).format("MM-DD-YYYY")
-                          : row.startDate}
-                      </span>
-                    </div>
-
-                    <div className="flex justify-between items-center border-b border-gray-100 pb-2">
-                      <span className="text-[#111827] font-bold uppercase text-[11px] tracking-wider">End Date:</span>
-                      <span className="font-normal text-gray-600 text-right text-[13px]">
-                        {dayjs(row.endDate).isValid() && row.endDate.includes("T")
-                          ? dayjs(row.endDate).format("MM-DD-YYYY")
-                          : row.endDate}
-                      </span>
-                    </div>
-
-                    <div className="flex justify-between items-center border-b border-gray-100 pb-2">
-                      <span className="text-[#111827] font-bold uppercase text-[11px] tracking-wider">Hours:</span>
-                      <span className="font-normal text-gray-600 text-right text-[13px]">{row.hours}</span>
-                    </div>
-
-                    <div className="flex justify-between items-center border-b border-gray-100 pb-2">
-                      <span className="text-[#111827] font-bold uppercase text-[11px] tracking-wider">Holidays:</span>
-                      <span className="font-normal text-gray-600 text-right text-[13px]">{row.holidays}</span>
-                    </div>
-
-                    <div className="flex justify-between items-center border-b border-gray-100 pb-2">
-                      <span className="text-[#111827] font-bold uppercase text-[11px] tracking-wider">Allocable:</span>
-                      <span className="font-normal text-gray-600 text-right text-[13px]">{row.allocable}</span>
-                    </div>
-
-                    <div className="flex justify-between items-center border-b border-gray-100 pb-2">
-                      <span className="text-[#111827] font-bold uppercase text-[11px] tracking-wider">Non-Alloc:</span>
-                      <span className="font-normal text-gray-600 text-right text-[13px]">{row.nonAllocable}</span>
-                    </div>
-
-                    <div className="flex justify-between items-center pb-1">
-                      <span className="text-[#111827] font-bold uppercase text-[11px] tracking-wider">Status:</span>
-                      {row.isUsed ? (
-                        <span className="inline-flex items-center rounded-full border border-green-200 bg-green-50 px-2.5 py-0.5 text-[11px] font-normal text-green-700">
-                          In Use
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center rounded-full border border-yellow-200 bg-yellow-50 px-2.5 py-0.5 text-[11px] font-normal text-yellow-700">
-                          Unused
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-
-          <div className="mt-6 flex min-h-[64px] w-full items-center justify-center sm:justify-end rounded-[15px] bg-white px-4 py-4 shadow-[0_0_20px_0_#0000001a]">
-            <Pagination className="mx-0 w-auto justify-center sm:justify-end">
-              <PaginationContent className="gap-0">
-                <PaginationItem>
-                  <PaginationPrevious
-                    href="#"
-                    text=""
-                    onClick={(event) => event.preventDefault()}
-                    className="h-9 w-9 rounded-[8px] border border-transparent px-0 text-[#9CA3AF] pointer-events-none opacity-60"
-                  />
-                </PaginationItem>
-                <PaginationItem>
-                  <PaginationLink
-                    href="#"
-                    isActive
-                    onClick={(event) => event.preventDefault()}
-                    className="h-9 w-9 rounded-[8px] border border-[#D1D5DB] bg-white px-0 text-[18px] font-normal text-[#4B5563]"
-                  >
-                    1
-                  </PaginationLink>
-                </PaginationItem>
-                <PaginationItem>
-                  <PaginationNext
-                    href="#"
-                    text=""
-                    onClick={(event) => event.preventDefault()}
-                    className="h-9 w-9 rounded-[8px] border border-transparent px-0 text-[#9CA3AF] pointer-events-none opacity-60"
-                  />
-                </PaginationItem>
-              </PaginationContent>
-            </Pagination>
-          </div>
+          <MasterCodePagination
+            totalItems={periodRows.length}
+            currentPage={currentPage}
+            pageSize={pageSize}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={(size) => {
+              setPageSize(size)
+              setCurrentPage(1)
+            }}
+          />
             </>
           )}
         </TabsContent>

@@ -161,6 +161,39 @@ export type P111ReportPdfProps = {
   meta?: ReportPdfMeta
 }
 
+export type P112Record = {
+  employeename: string
+  date: string
+  starttime: string
+  endtime: string
+  program: string
+  subactivity: string
+  description: string
+  mastercode: string
+  activitytime: string | number
+  traveltime: string | number
+}
+
+export type P112DateGroup = {
+  date: string
+  records: P112Record[]
+  totalActivityTime: number
+  totalTravelTime: number
+}
+
+export type P112GroupedEmployee = {
+  employeename: string
+  dates: P112DateGroup[]
+}
+
+export type P112ReportPdfProps = {
+  employees: P112GroupedEmployee[]
+  startDate: string
+  endDate: string
+  printedOn?: string
+  meta?: ReportPdfMeta
+}
+
 export type P130Activity = {
   subactivity: string
   activitytime: number
@@ -298,6 +331,7 @@ export type DSSRPT3ReportPdfProps = {
   isMonthly: boolean
   month?: string
   dateFrom?: string
+  dateTo?: string
   printedOn?: string
   meta?: ReportPdfMeta
 }
@@ -992,6 +1026,68 @@ export function groupP111ByEmployee(records: P111Record[]): P111GroupedEmployee[
 
 export function getP111GrandTotal(employee: P111GroupedEmployee): number {
   return employee.dates.reduce((sum, dateGroup) => sum + dateGroup.totalActivityTime, 0)
+}
+
+// --- P112 unwrap / grouping ---
+
+export function unwrapP112Records(raw: unknown): P112Record[] {
+  return unwrapListData(raw).map((row) => {
+    const record = asRecord(row)
+    return {
+      employeename: String(record.employeename ?? record.employeeName ?? ""),
+      date: String(record.date ?? ""),
+      starttime: String(record.starttime ?? record.startTime ?? ""),
+      endtime: String(record.endtime ?? record.endTime ?? ""),
+      program: String(record.program ?? ""),
+      subactivity: String(record.subactivity ?? record.subActivity ?? record.activity ?? ""),
+      description: String(record.description ?? record.comments ?? ""),
+      mastercode: String(record.mastercode ?? record.masterCode ?? ""),
+      activitytime: (record.activitytime ?? record.activityTime ?? 0) as string | number,
+      traveltime: (record.traveltime ?? record.travelTime ?? 0) as string | number,
+    }
+  })
+}
+
+export function groupP112ByEmployee(records: P112Record[]): P112GroupedEmployee[] {
+  const grouped: Record<
+    string,
+    { employeename: string; dates: Record<string, P112DateGroup> }
+  > = {}
+
+  for (const record of records) {
+    if (!grouped[record.employeename]) {
+      grouped[record.employeename] = { employeename: record.employeename, dates: {} }
+    }
+
+    const employee = grouped[record.employeename]
+    if (!employee.dates[record.date]) {
+      employee.dates[record.date] = {
+        date: record.date,
+        records: [],
+        totalActivityTime: 0,
+        totalTravelTime: 0,
+      }
+    }
+
+    const dateGroup = employee.dates[record.date]
+    dateGroup.records.push(record)
+    dateGroup.totalActivityTime += toNumber(record.activitytime)
+    dateGroup.totalTravelTime += toNumber(record.traveltime)
+  }
+
+  return Object.values(grouped).map((employee) => ({
+    employeename: employee.employeename,
+    dates: Object.values(employee.dates),
+  }))
+}
+
+export function getP112GrandTotals(employee: P112GroupedEmployee): {
+  activityTime: number
+  travelTime: number
+} {
+  const activityTime = employee.dates.reduce((sum, dateGroup) => sum + dateGroup.totalActivityTime, 0)
+  const travelTime = employee.dates.reduce((sum, dateGroup) => sum + dateGroup.totalTravelTime, 0)
+  return { activityTime, travelTime }
 }
 
 // --- P130 unwrap ---
@@ -2493,6 +2589,7 @@ export function getWicSubTotal(record: WicDayRecord): number {
 export function computeWicColumnTotals(records: WicDayRecord[]) {
   return records.reduce(
     (totals, record) => ({
+      BFPC: totals.BFPC + record.BFPC,
       FMNP: totals.FMNP + record.FMNP,
       NutritionalEducation: totals.NutritionalEducation + record.NutritionalEducation,
       BreastfeedingSupport: totals.BreastfeedingSupport + record.BreastfeedingSupport,
@@ -2505,6 +2602,7 @@ export function computeWicColumnTotals(records: WicDayRecord[]) {
       TotalTime: totals.TotalTime + record.TotalTime,
     }),
     {
+      BFPC: 0,
       FMNP: 0,
       NutritionalEducation: 0,
       BreastfeedingSupport: 0,
@@ -2583,6 +2681,7 @@ export function resolveFooterVariant(reportCode: string): ReportPdfFooterVariant
     case "DSSRPT5":
     case "MCAH-TVTS":
     case "P111":
+    case "P112":
     case "P110-SS":
     case "MAATCM":
     case "TCM_MAA_ADHOC":
