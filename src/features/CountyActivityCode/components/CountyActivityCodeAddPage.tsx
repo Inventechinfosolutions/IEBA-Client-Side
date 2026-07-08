@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, SearchIcon } from "lucide-react"
+import { ChevronLeft, ChevronRight, ChevronDown, ChevronUp, SearchIcon } from "lucide-react"
 import { useMemo, useState } from "react"
 import { flushSync } from "react-dom"
 import { toast } from "sonner"
@@ -345,7 +345,7 @@ export function CountyActivityCodeAddPage({
           type="button"
           disabled={disabledTabs?.primary === true}
           onClick={() => setTab(CountyActivityGridRowType.PRIMARY)}
-          className={`h-[62px] text-[18px] font-normal ${tab === CountyActivityGridRowType.PRIMARY
+          className={`h-[50px] sm:h-[62px] text-[14px] sm:text-[18px] font-normal ${tab === CountyActivityGridRowType.PRIMARY
             ? "bg-[#6C5DD3] text-white"
             : "bg-white text-[#6C5DD3]"
             } rounded-tl-[10px] ${disabledTabs?.primary === true ? "cursor-not-allowed opacity-60" : ""
@@ -357,7 +357,7 @@ export function CountyActivityCodeAddPage({
           type="button"
           disabled={disabledTabs?.sub === true}
           onClick={() => setTab(CountyActivityGridRowType.SUB)}
-          className={`h-[62px] text-[18px] font-normal ${tab === CountyActivityGridRowType.SUB
+          className={`h-[50px] sm:h-[62px] text-[14px] sm:text-[18px] font-normal ${tab === CountyActivityGridRowType.SUB
             ? "bg-[#6C5DD3] text-white"
             : "bg-white text-[#6C5DD3]"
             } rounded-tr-[18px] ${disabledTabs?.sub === true ? "cursor-not-allowed opacity-60" : ""
@@ -386,7 +386,7 @@ export function CountyActivityCodeAddPage({
               : ""
           }
         >
-          <div className="grid grid-cols-3 items-center gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 items-center gap-4">
             <div className="flex flex-col gap-1 text-[16px] text-[#1F2937]">
               {tab === CountyActivityGridRowType.PRIMARY && (
                 <label className="flex cursor-pointer items-center gap-2">
@@ -406,11 +406,11 @@ export function CountyActivityCodeAddPage({
                 </p>
               ) : null}
             </div>
-            <h3 className="whitespace-nowrap text-center text-[22px] max-[1024px]:text-[22px] max-[768px]:text-[18px] font-normal text-[#1F2937]">
+            <h3 className="whitespace-nowrap text-center text-[18px] sm:text-[22px] font-normal text-[#1F2937]">
               {isReadOnly ? "View" : mode === CountyActivityAddPageMode.EDIT ? "Edit" : "Add"}{" "}
               {tab === CountyActivityGridRowType.PRIMARY ? "Primary" : "Sub"} County Activity
             </h3>
-            <div className="flex justify-end">
+            <div className="flex sm:justify-end">
               <label className="flex items-center gap-2 text-[16px] text-[#1F2937]">
                 <Checkbox
                   disabled={isReadOnly}
@@ -432,7 +432,7 @@ export function CountyActivityCodeAddPage({
           )}
 
           {tab === CountyActivityGridRowType.PRIMARY ? (
-            <div className="mt-[35px] grid min-w-0 grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)_minmax(0,1fr)_minmax(0,1fr)] gap-3">
+            <div className="mt-[35px] grid min-w-0 grid-cols-1 sm:grid-cols-2 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)_minmax(0,1fr)_minmax(0,1fr)] gap-3">
               <div className="min-w-0 space-y-1">
                 <label className="text-[14px] font-normal text-[#1F2937]">Code Type</label>
                 <Select
@@ -554,7 +554,7 @@ export function CountyActivityCodeAddPage({
               </div>
             </div>
           ) : (
-            <div className="mt-[40px] grid min-w-0 grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] gap-3">
+            <div className="mt-[40px] grid min-w-0 grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="min-w-0 overflow-hidden space-y-1">
                 <label className="text-[14px] font-normal text-[#1F2937]">
                   Primary Activity Code
@@ -648,7 +648,7 @@ export function CountyActivityCodeAddPage({
           </div>
 
           {tab === CountyActivityGridRowType.PRIMARY && (
-            <div className="grid grid-cols-[minmax(0,1fr)_74px_minmax(0,1fr)] gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_74px_minmax(0,1fr)] gap-4">
               <div className="w-full overflow-hidden rounded-[12px] border border-[#E5E7EB]">
                 <div className="flex h-[44px] items-center justify-between bg-[#6C5DD3] px-4 font-normal text-white">
                   <span className="font-normal">{filteredUnassigned.length} item</span>
@@ -688,15 +688,17 @@ export function CountyActivityCodeAddPage({
                 </div>
               </div>
 
-              <div className="flex min-w-[74px] flex-col items-center justify-center gap-3">
+              <div className="flex md:flex-col flex-row items-center justify-center gap-3">
                 <Button
                   type="button"
                   size="icon"
                   disabled={isReadOnly}
                   onClick={assignCountyActivityDepartmentsFromPicker}
                   className="h-[38px] w-[62px] rounded-[12px] bg-[#6C5DD3] hover:bg-[#5B4DC5]"
+                  aria-label="Assign departments"
                 >
-                  <ChevronRight className="size-5" />
+                  <ChevronRight className="size-5 hidden md:block" />
+                  <ChevronDown className="size-5 md:hidden" />
                 </Button>
                 <Button
                   type="button"
@@ -704,8 +706,10 @@ export function CountyActivityCodeAddPage({
                   disabled={isReadOnly}
                   onClick={removeCountyActivityDepartmentsFromPicker}
                   className="h-[38px] w-[62px] rounded-[12px] bg-[#6C5DD3] hover:bg-[#5B4DC5]"
+                  aria-label="Unassign departments"
                 >
-                  <ChevronLeft className="size-5" />
+                  <ChevronLeft className="size-5 hidden md:block" />
+                  <ChevronUp className="size-5 md:hidden" />
                 </Button>
               </div>
 
@@ -899,8 +903,8 @@ export function CountyActivityCodeAddPage({
             </div>
           )}
 
-          <div className="mt-[70px] flex flex-wrap items-center justify-between gap-3 pt-4">
-            <div className="flex items-center gap-5">
+          <div className="mt-[40px] sm:mt-[70px] flex flex-col md:flex-row md:items-center justify-between gap-4 pt-4 border-t border-[#E5E7EB]">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-5">
               <label className="flex items-center gap-2 text-[14px] text-[#1F2937]">
                 <Checkbox
                   disabled={isReadOnly}

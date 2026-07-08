@@ -411,6 +411,108 @@ function CountyActivitySubTableRowsRenderer({
   )
 }
 
+/** Mobile card renderer for secondary (sub) county activity rows */
+function CountyActivitySubCardsRenderer({
+  parentId,
+  canUpdateCountyActivity,
+  onEditRow,
+}: {
+  parentId: string
+  canUpdateCountyActivity: boolean
+  onEditRow: (child: CountyActivityCodeRow) => void
+}) {
+  const query = useGetCountyActivityNested(Number(parentId), true)
+  const children = query.data ?? []
+
+  if (query.isLoading) {
+    return (
+      <div className="col-span-full rounded-[8px] border border-[#E5E7EB] bg-[#F6F5FF] p-4 text-center">
+        <Spinner className="text-[#6C5DD3] mx-auto" />
+      </div>
+    )
+  }
+
+  if (children.length === 0) return null
+
+  return (
+    <>
+      {children.map((child) => (
+        <div
+          key={`sub-card-${child.id}`}
+          className="rounded-[8px] border border-[#C4B5FD]/60 border-l-4 border-l-[#8B7FD4] bg-[#F6F5FF] shadow-sm overflow-hidden flex flex-col"
+        >
+          {/* Sub-card header — lighter purple */}
+          <div className="flex items-center gap-2 bg-[#8B7FD4] px-3 py-2">
+            <span className="text-[10px] font-bold uppercase tracking-wide text-white/80 shrink-0">Sub:</span>
+            <span className="text-[12px] font-semibold text-white truncate">{child.countyActivityCode}</span>
+          </div>
+
+          {/* Sub-card body */}
+          <div className="p-3 space-y-1.5 flex-1 flex flex-col justify-between">
+            <div className="space-y-1.5 text-[12px]">
+              {/* Name */}
+              <div className="flex flex-wrap items-baseline gap-x-1.5">
+                <span className="text-[10px] uppercase tracking-wider text-gray-700 font-bold shrink-0">Name:</span>
+                <span className="text-gray-600 font-normal break-words min-w-0">{child.countyActivityName || "—"}</span>
+              </div>
+              {/* Description */}
+              {child.description && (
+                <div className="flex flex-wrap items-baseline gap-x-1.5">
+                  <span className="text-[10px] uppercase tracking-wider text-gray-700 font-bold shrink-0">Desc:</span>
+                  <span className="text-gray-500 font-normal text-[11px] break-words min-w-0 line-clamp-2">{child.description}</span>
+                </div>
+              )}
+              {/* Flags */}
+              <div className="flex flex-wrap gap-2 pt-0.5">
+                {[
+                  { label: "Active", val: child.active },
+                  { label: "Leave", val: child.leaveCode },
+                  { label: "Multi-Pool", val: child.multipleJobPools },
+                ].map(({ label, val }) => (
+                  <div key={label} className="flex items-center gap-1">
+                    <span className="text-[10px] uppercase tracking-wider text-gray-700 font-bold">{label}:</span>
+                    <img
+                      src={val ? statusCheckImg : statusCrossImg}
+                      alt={val ? "Yes" : "No"}
+                      className="h-3 w-3 object-contain"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Edit action */}
+            {canUpdateCountyActivity && (
+              <div className="flex justify-end pt-2 border-t border-[#C4B5FD]/40 mt-1">
+                {child.apportioning === true && child.manualApportioning === true ? (
+                  <button
+                    type="button"
+                    disabled
+                    className="inline-flex h-7 items-center gap-1 rounded-[6px] border border-[#e2e8f0] bg-white px-2.5 text-[11px] font-medium text-gray-400 cursor-not-allowed opacity-70"
+                  >
+                    <Eye className="h-3 w-3" />
+                    <span>View Only</span>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => onEditRow(child)}
+                    className="inline-flex h-7 items-center gap-1 rounded-[6px] border border-[#e2e8f0] bg-white px-2.5 text-[11px] font-medium text-[#6C5DD3] hover:bg-[#F3F0FF] transition-colors"
+                  >
+                    <img src={editIconImg} alt="Edit" className="h-3 w-3 object-contain" />
+                    <span>Edit</span>
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      ))}
+    </>
+  )
+}
+
+
 export function CountyActivityCodeTable({
   rows,
   primaryRows,
@@ -1236,7 +1338,7 @@ export function CountyActivityCodeTable({
 
   return (
     <div className="space-y-4 rounded-[12px] border border-[#E5E7EB] bg-white p-4">
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-[10px] p-3">
+      <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center justify-between gap-3 rounded-[10px] p-3">
         {showHistory ? (
           <div className="flex flex-1 flex-col gap-3">
             <div className="flex flex-wrap items-center gap-2">
@@ -1244,18 +1346,18 @@ export function CountyActivityCodeTable({
                 placeholder="Search County Activity Code"
                 value={historyActivityCode}
                 onChange={(e) => setHistoryActivityCode(e.target.value)}
-                className="h-12 w-[220px] rounded-[10px] border border-[#D9D9D9] bg-white px-3.5 text-[11px] text-[#111827] shadow-[0_4px_10px_rgba(15,23,42,0.08)] placeholder:text-[10px] placeholder:text-[#9CA3AF] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
+                className="h-12 w-full sm:w-[220px] rounded-[10px] border border-[#D9D9D9] bg-white px-3.5 text-[11px] text-[#111827] shadow-[0_4px_10px_rgba(15,23,42,0.08)] placeholder:text-[10px] placeholder:text-[#9CA3AF] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
               />
               <TitleCaseInput
                 placeholder="Search County Activity Name"
                 value={historyActivityName}
                 onChange={(e) => setHistoryActivityName(e.target.value)}
-                className="h-12 w-[250px] rounded-[10px] border border-[#D9D9D9] bg-white px-3.5 text-[11px] text-[#111827] shadow-[0_4px_10px_rgba(15,23,42,0.08)] placeholder:text-[10px] placeholder:text-[#9CA3AF] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
+                className="h-12 w-full sm:w-[250px] rounded-[10px] border border-[#D9D9D9] bg-white px-3.5 text-[11px] text-[#111827] shadow-[0_4px_10px_rgba(15,23,42,0.08)] placeholder:text-[10px] placeholder:text-[#9CA3AF] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
               />
             </div>
           </div>
         ) : (
-          <div className="w-full max-w-[300px]">
+          <div className="w-full sm:max-w-[300px]">
             <form
               onSubmit={(event) => event.preventDefault()}
               className="relative"
@@ -1300,7 +1402,7 @@ export function CountyActivityCodeTable({
             </form>
           </div>
         )}
-        <div className="flex items-center gap-3 ml-auto">
+        <div className="flex flex-wrap items-center gap-3 sm:ml-auto">
           {/* History toggle button */}
           {isSuperAdmin && (
             <button
@@ -1389,8 +1491,173 @@ export function CountyActivityCodeTable({
         </div>
       )}
 
-      <div className={`overflow-hidden rounded-[10px] border border-[#E5E7EB] ${showHistory ? "hidden" : ""}`}>
-        <Table className="w-full table-fixed border-collapse">
+      {/* ── Mobile card view (hidden on xl+) ────────────────────── */}
+      {!showHistory && (
+        <div className="block xl:hidden">
+          {isLoading ? (
+            <div className="rounded-[10px] border border-[#E5E7EB] bg-white p-8 text-center">
+              <Spinner className="text-[#6C5DD3] mx-auto" />
+            </div>
+          ) : sortedRows.length === 0 ? (
+            <div className="rounded-[10px] border border-[#E5E7EB] bg-white p-8 text-center text-[13px] text-[#6B7280]">
+              No county activity codes found.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+              {sortedRows.map((row) => {
+                const isExpanded = Boolean(expandedRowIds[row.id])
+                const hasChildren = row.hasChild
+
+                return (
+                  <div key={`card-group-${row.id}`} className="space-y-2">
+                    {/* Primary card */}
+                    <div className="rounded-[10px] border border-[#E5E7EB] bg-white shadow-sm overflow-hidden hover:border-[#6C5DD3]/40 transition-colors flex flex-col">
+                      {/* Card header */}
+                      <div className="flex items-center justify-between bg-[#6C5DD3] px-4 py-2.5 gap-2">
+                        <div className="flex items-baseline gap-1.5 min-w-0 flex-1">
+                          <span className="text-[10px] font-bold uppercase tracking-wide text-white shrink-0">Code:</span>
+                          <span className="text-[13px] font-semibold text-white truncate">{row.countyActivityCode}</span>
+                        </div>
+                        {hasChildren && (
+                          <button
+                            type="button"
+                            className="inline-flex size-6 shrink-0 items-center justify-center rounded-[6px] bg-white/20 text-white hover:bg-white/30"
+                            onClick={() =>
+                              setExpandedRowIds((prev) => ({ ...prev, [row.id]: !prev[row.id] }))
+                            }
+                          >
+                            {isExpanded ? <ChevronDown className="size-3.5" /> : <ChevronRight className="size-3.5" />}
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Card body */}
+                      <div className="p-4 space-y-2 flex-1 flex flex-col justify-between">
+                        <div className="space-y-2 text-[13px]">
+                          {/* Name */}
+                          <div className="flex flex-wrap items-baseline gap-x-1.5">
+                            <span className="text-[10px] uppercase tracking-wider text-gray-800 font-bold shrink-0">Name:</span>
+                            <span className="text-gray-600 font-normal break-words min-w-0">{row.countyActivityName || "—"}</span>
+                          </div>
+                          {/* Department */}
+                          <div className="flex flex-wrap items-baseline gap-x-1.5">
+                            <span className="text-[10px] uppercase tracking-wider text-gray-800 font-bold shrink-0">Dept:</span>
+                            <span className="text-gray-600 font-normal break-words min-w-0">{getCountyActivityCodeRowDepartmentLabel(row)}</span>
+                          </div>
+                          {/* Master Code Type */}
+                          {row.masterCodeType && (
+                            <div className="flex flex-wrap items-baseline gap-x-1.5">
+                              <span className="text-[10px] uppercase tracking-wider text-gray-800 font-bold shrink-0">Code Type:</span>
+                              <span className="text-gray-600 font-normal break-words min-w-0">{row.masterCodeType}</span>
+                            </div>
+                          )}
+                          {/* Master Code */}
+                          {row.catalogActivityCode && (
+                            <div className="flex flex-wrap items-baseline gap-x-1.5">
+                              <span className="text-[10px] uppercase tracking-wider text-gray-800 font-bold shrink-0">Master Code:</span>
+                              <span className="text-gray-600 font-normal break-all min-w-0">{row.catalogActivityCode}</span>
+                            </div>
+                          )}
+                          {/* Flags row */}
+                          <div className="flex flex-wrap gap-3 pt-1">
+                            {[
+                              { label: "SPMP", val: row.spmp },
+                              { label: "Active", val: row.active },
+                              { label: "Leave", val: row.leaveCode },
+                              { label: "Apport.", val: row.apportioning },
+                              { label: "Multi-Pool", val: row.multipleJobPools },
+                            ].map(({ label, val }) => (
+                              <div key={label} className="flex items-center gap-1">
+                                <span className="text-[10px] uppercase tracking-wider text-gray-800 font-bold">{label}:</span>
+                                <img
+                                  src={val ? statusCheckImg : statusCrossImg}
+                                  alt={val ? "Yes" : "No"}
+                                  className="h-3.5 w-3.5 object-contain"
+                                />
+                              </div>
+                            ))}
+                            {row.match && (
+                              <div className="flex items-center gap-1">
+                                <span className="text-[10px] uppercase tracking-wider text-gray-800 font-bold">Match:</span>
+                                <span className="text-gray-600 text-[12px]">{row.match}</span>
+                              </div>
+                            )}
+                            {row.percentage > 0 && (
+                              <div className="flex items-center gap-1">
+                                <span className="text-[10px] uppercase tracking-wider text-gray-800 font-bold">%:</span>
+                                <span className="text-gray-600 text-[12px]">{row.percentage.toFixed(2)}</span>
+                              </div>
+                            )}
+                          </div>
+                          {/* Description */}
+                          {row.description && (
+                            <div className="flex flex-wrap items-baseline gap-x-1.5 border-t border-gray-100 pt-2">
+                              <span className="text-[10px] uppercase tracking-wider text-gray-800 font-bold shrink-0">Desc:</span>
+                              <span className="text-gray-500 font-normal text-[12px] break-words min-w-0 line-clamp-2">{row.description}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Edit action */}
+                        {canUpdateCountyActivity && (
+                          <div className="flex justify-end pt-2 border-t border-gray-100 mt-2">
+                            {row.apportioning === true && row.manualApportioning === true ? (
+                              <button
+                                type="button"
+                                className="inline-flex h-8 items-center justify-center gap-1.5 rounded-[6px] border border-[#e2e8f0] bg-white px-3 text-[12px] font-medium text-gray-500 cursor-not-allowed opacity-70"
+                                disabled
+                              >
+                                <Eye className="h-3.5 w-3.5" />
+                                <span>View Only</span>
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setRowToEdit(row)
+                                  setEditMasterCodesDropdownOpened(false)
+                                  setCodeTypeDropdownOpened(false)
+                                  setEditSelectedPrimaryId(null)
+                                  setEditOpen(true)
+                                }}
+                                className="inline-flex h-8 items-center justify-center gap-1.5 rounded-[6px] border border-[#e2e8f0] bg-white px-3 text-[12px] font-medium text-[#6C5DD3] hover:bg-[#F3F0FF] transition-colors"
+                              >
+                                <img src={editIconImg} alt="Edit" className="h-3.5 w-3.5 object-contain" />
+                                <span>Edit</span>
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Sub-cards — rendered inside the parent card container when expanded */}
+                      {isExpanded && hasChildren && (
+                        <div className="bg-[#F8FAFC] border-t border-[#E5E7EB] p-4 space-y-3">
+                          <CountyActivitySubCardsRenderer
+                            parentId={row.id}
+                            canUpdateCountyActivity={canUpdateCountyActivity}
+                            onEditRow={(child) => {
+                              setRowToEdit(child)
+                              setEditMasterCodesDropdownOpened(false)
+                              setCodeTypeDropdownOpened(false)
+                              setEditSelectedPrimaryId(null)
+                              setEditOpen(true)
+                            }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Desktop table (hidden below xl) ─────────────────────── */}
+      <div className={`hidden xl:block overflow-x-auto rounded-[10px] border border-[#E5E7EB] ${showHistory ? "!hidden" : ""}`}>
+        <Table className="w-full min-w-[900px] table-fixed border-collapse">
           <colgroup>
             {COUNTY_ACTIVITY_TABLE_COLUMNS.map((column) => (
               <col
@@ -1829,7 +2096,7 @@ export function CountyActivityCodeTable({
           className="fixed inset-0 z-50 overflow-y-auto grid place-items-center bg-transparent border-none shadow-none p-0 left-0 top-0 translate-x-0 translate-y-0 max-w-none w-screen h-screen"
           overlayClassName="bg-black/50"
         >
-          <div className="relative my-8 w-[900px] max-w-[calc(100vw-2rem)]">
+          <div className="relative my-4 sm:my-8 w-full px-2 sm:px-0 sm:w-[900px] max-w-[calc(100vw-1rem)] sm:max-w-[calc(100vw-2rem)]">
             <CountyActivityCodeAddPage
             key={addFormMountKey}
             form={addForm}
@@ -1909,7 +2176,7 @@ export function CountyActivityCodeTable({
           className="fixed inset-0 z-50 overflow-y-auto grid place-items-center bg-transparent border-none shadow-none p-0 left-0 top-0 translate-x-0 translate-y-0 max-w-none w-screen h-screen"
           overlayClassName="bg-black/50"
         >
-          <div className="relative my-8 w-[1000px] max-w-[calc(100vw-2rem)]">
+          <div className="relative my-4 sm:my-8 w-full px-2 sm:px-0 sm:w-[1000px] max-w-[calc(100vw-1rem)] sm:max-w-[calc(100vw-2rem)]">
             {editDetailQuery.isLoading && editOpen ? (
               <div className="flex h-[500px] w-full items-center justify-center rounded-[10px] bg-white border border-[#EBEDF0]">
                 <Spinner className="text-[#6C5DD3]" />
