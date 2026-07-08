@@ -25,6 +25,10 @@ export type ChangePasswordFormModalProps = {
    * Called after a successful password change (after dialog closes).
    */
   onSuccess?: () => void
+  /**
+   * Called after the user cancels a required password change and the backend clears the flag.
+   */
+  onDismiss?: () => void
 }
 
 export type ChangePasswordFieldName = "oldPassword" | "newPassword" | "confirmPassword"
