@@ -26,7 +26,7 @@ import type {
 
 const labelClassName = "mb-1 block text-[14px] leading-[22px] font-normal text-[#000000e0]"
 const inputClassName =
-  "h-[50px] w-[420px] rounded-[7px] border border-[#e4e7ef] bg-white px-[11px] py-[4px] pr-10 text-[14px] leading-[22px] text-[#1f2937] shadow-none placeholder:text-[14px] placeholder:leading-[22px] placeholder:font-normal placeholder:text-[#c2c7d3] hover:border-[#6C5DD3] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333] max-w-[calc(100vw-80px)]"
+  "h-[50px] w-full sm:w-[420px] rounded-[7px] border border-[#e4e7ef] bg-white px-[11px] py-[4px] pr-10 text-[14px] leading-[22px] text-[#1f2937] shadow-none placeholder:text-[14px] placeholder:leading-[22px] placeholder:font-normal placeholder:text-[#c2c7d3] hover:border-[#6C5DD3] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333] max-w-[calc(100vw-64px)]"
 
 const PasswordField = ({
   name,
@@ -38,7 +38,7 @@ const PasswordField = ({
   onToggleVisible,
   maxLength,
 }: PasswordFieldProps) => (
-  <div className="w-[420px] max-w-[calc(100vw-80px)]">
+  <div className="w-full sm:w-[420px] max-w-[calc(100vw-64px)]">
     <label className={labelClassName}>
       {label.trimStart().startsWith("*") ? (
         <>
@@ -154,11 +154,11 @@ export function ChangePasswordFormModal({
       <DialogContent
         showClose={false}
         overlayClassName="bg-black/40"
-        className="left-1/2 top-[41%] min-h-[490px] w-[510px] max-w-[calc(100vw-40px)] -translate-x-1/2 -translate-y-1/2 gap-0 overflow-hidden rounded-[4px] border border-[#f4f6fb] bg-white p-0 text-[#0f172a] subpixel-antialiased shadow-[0_10px_25px_rgba(22,29,45,0.18)]"
+        className="left-1/2 top-1/2 min-h-[490px] w-[510px] max-w-[calc(100vw-32px)] sm:max-w-[calc(100vw-40px)] -translate-x-1/2 -translate-y-1/2 gap-0 overflow-hidden rounded-[4px] border border-[#f4f6fb] bg-white p-0 text-[#0f172a] subpixel-antialiased shadow-[0_10px_25px_rgba(22,29,45,0.18)]"
       >
         <form
           onSubmit={handleSubmit(onValid)}
-          className="select-none bg-white px-6 py-5"
+          className="select-none bg-white px-4 sm:px-6 py-5"
         >
           <DialogHeader className="items-center pb-6">
             <DialogTitle className="text-[18px] font-semibold text-[#111827]">
@@ -205,11 +205,11 @@ export function ChangePasswordFormModal({
             />
           </div>
 
-          <div className="mt-7 flex w-full items-center justify-end gap-[16.99px] pr-4">
+          <div className="mt-7 flex w-full items-center justify-center sm:justify-end gap-3 px-2 sm:px-4">
             <Button
               type="submit"
               disabled={isSubmitting || mutation.isPending}
-              className="h-[50px] w-[130px] cursor-pointer rounded-[10px] bg-[#6C5DD3] px-[21.2344px] text-[16px] font-medium text-white hover:bg-[#6C5DD3] disabled:opacity-60"
+              className="h-[50px] flex-1 sm:flex-initial sm:w-[130px] cursor-pointer rounded-[10px] bg-[#6C5DD3] px-4 text-[16px] font-medium text-white hover:bg-[#6C5DD3] disabled:opacity-60"
             >
               Submit
             </Button>
@@ -217,7 +217,7 @@ export function ChangePasswordFormModal({
               <Button
                 type="button"
                 onClick={closeModal}
-                className="h-[50px] w-[130px] cursor-pointer rounded-[10px] bg-[#DADADA] px-[21.2344px] text-[16px] font-medium text-[#111827] hover:bg-[#DADADA]"
+                className="h-[50px] flex-1 sm:flex-initial sm:w-[130px] cursor-pointer rounded-[10px] bg-[#DADADA] px-4 text-[16px] font-medium text-[#111827] hover:bg-[#DADADA]"
               >
                 Cancel
               </Button>
