@@ -45,6 +45,7 @@ import {
   reportFormSchema,
 } from "../schemas"
 import { ReportWeekCalendarPicker } from "./ReportWeekCalendarPicker"
+import { ReportMonthPicker } from "./ReportMonthPicker"
 import type {
   ReportEmployeeMultiSelectProps,
   ReportCatalogItem,
@@ -1342,10 +1343,8 @@ export function ReportForm({ module }: ReportFormProps) {
               name="month"
               control={control}
               render={({ field }) => (
-                <TitleCaseInput
+                <ReportMonthPicker
                   id="reports-month-input"
-                  type="month"
-                  className={dateInputInRowClassName}
                   value={field.value ?? ""}
                   onChange={field.onChange}
                   onBlur={field.onBlur}

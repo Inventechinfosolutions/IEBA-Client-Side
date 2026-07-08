@@ -19,7 +19,12 @@ import { API_BASE_URL } from "@/lib/config"
 import { apiDownloadSupportingDoc, apiDeleteSupportingDoc, apiGetUserActivitiesForProgram, apiGetUserProgramsAndActivitiesMulticode } from "../api/personalTimeStudyApi"
 import { Spinner } from "@/components/ui/spinner"
 import { normalizeMulticodeDropdownPayload } from "../utils/multicodeDropdownUtils"
-import { buildDecimalMinMessage, DecimalActivityTimeHint } from "../utils/decimalTimeHint.tsx"
+import {
+  buildDecimalMinMessage,
+  DecimalActivityTimeHint,
+  isQuarterHourDecimal,
+  roundDecimalHoursToQuarterHour,
+} from "../utils/decimalTimeHint.tsx"
 
 
 /** Inline required-field asterisk — available to all components in this module. */
@@ -50,7 +55,18 @@ function MinDecimalField({
   inputClassName,
   heightClass = "h-10",
 }: MinDecimalFieldProps) {
-  const displayMessage = showDecimalHint ? hintMessage ?? buildDecimalMinMessage(value) : null
+  const needsRounding = showDecimalHint && !!value.trim() && !isQuarterHourDecimal(value)
+  const displayMessage = showDecimalHint
+    ? hintMessage ?? (needsRounding ? buildDecimalMinMessage(value) : null)
+    : null
+
+  const handleBlur = () => {
+    if (!showDecimalHint || readOnly || !value.trim()) return
+    const rounded = roundDecimalHoursToQuarterHour(value)
+    if (rounded !== value) {
+      onChange?.(rounded)
+    }
+  }
 
   return (
     <div className={cn("space-y-0.5", showDecimalHint ? "w-[92px]" : "w-[60px]")}>
@@ -62,7 +78,7 @@ function MinDecimalField({
           step={showDecimalHint ? "0.25" : "1"}
           readOnly={readOnly}
           value={value}
-          placeholder={showDecimalHint ? "0.25" : "—"}
+          placeholder="—"
           className={cn(
             heightClass,
             "text-[11px]",
@@ -71,6 +87,7 @@ function MinDecimalField({
             inputClassName,
           )}
           onChange={(e) => onChange?.(e.target.value)}
+          onBlur={handleBlur}
         />
         {displayMessage ? (
           <div className="pointer-events-none absolute inset-y-0 right-1 flex items-center">
@@ -1029,8 +1046,8 @@ export function PersonalTimeStudyEntryForm({
         return isParentChanged(p, snap)
       })
       .map((p) => {
-        const rowSettings = getRowSettings(p)
-        const hideTime = rowSettings.hideTime
+        const hideTime = resolveEffectiveHideTime(p)
+        const decimalTotalMin = hideTime ? roundDecimalHoursToQuarterHour(p.totalMin ?? "") : p.totalMin
         return {
           id: p.dbId,
           userId,
@@ -1038,7 +1055,9 @@ export function PersonalTimeStudyEntryForm({
           date: dateStr,
           starttime: hideTime ? null : (p.start || null),
           endtime: hideTime ? null : (p.end || null),
-          activitytime: hideTime ? (Number(p.totalMin) || 0) : (Number(computeDurationMinutes(p.start, p.end)) || Number(p.totalMin) || 0),
+          activitytime: hideTime
+            ? (Number(decimalTotalMin) || 0)
+            : (Number(computeDurationMinutes(p.start, p.end)) || Number(p.totalMin) || 0),
           programid: p.tsProgram,
           activityid: p.serviceActivity,
           description: p.description,
@@ -1048,11 +1067,13 @@ export function PersonalTimeStudyEntryForm({
           recordType: p.recordType || "NORMAL",
           multiCodeRecords: p.subRows.map((s) => {
             const subDeptId = resolveDepartmentIdForProgram(s.studyProgram)
+            const subUsesDecimal = hideTime || !!s.activityTimeMessage
+            const decimalSubMin = subUsesDecimal ? roundDecimalHoursToQuarterHour(s.totalMin) : s.totalMin
             return {
               id: s.dbId,
               programid: s.studyProgram,
               activityid: s.serviceActivity,
-              activitytime: Number(s.totalMin) || Number(computeDurationMinutes(s.start, s.end)) || 0,
+              activitytime: Number(subUsesDecimal ? decimalSubMin : s.totalMin) || Number(computeDurationMinutes(s.start, s.end)) || 0,
               description: s.description,
               departmentId: subDeptId,
               starttime: hideTime ? null : (s.start || null),
@@ -1068,8 +1089,7 @@ export function PersonalTimeStudyEntryForm({
   const validateEntries = () => {
     for (const p of parents) {
       if (p.isLeave || p.leaveid || p.apportioning) continue
-      const rowSettings = getRowSettings(p)
-      const hideTime = rowSettings.hideTime
+      const hideTime = resolveEffectiveHideTime(p)
       if (hideTime) {
         if (!p.totalMin || !p.tsProgram || !p.serviceActivity) {
           toast.error("Please fill all the required fields")
@@ -1532,7 +1552,7 @@ export function PersonalTimeStudyEntryForm({
                   <MinDecimalField
                     label={
                       <>
-                        Min. <RequiredMark />
+                        Hrs. <RequiredMark />
                       </>
                     }
                     labelClassName="text-[11px] text-muted-foreground"
@@ -1705,7 +1725,8 @@ export function PersonalTimeStudyEntryForm({
                       <MinDecimalField
                         label={
                           <>
-                            Min. <RequiredMark />
+                            {(effectiveHideTime || !!sub.activityTimeMessage) ? "Hrs." : "Min."}{" "}
+                            <RequiredMark />
                           </>
                         }
                         labelClassName="text-[11px] text-[#6C5DD3] font-medium"
