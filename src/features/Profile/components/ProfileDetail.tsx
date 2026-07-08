@@ -84,47 +84,46 @@ const profileErrorToastIcon = (
 function ProfileDetailSkeleton() {
   return (
     <div className="space-y-6">
-      <div className="flex items-start gap-8">
-        <Skeleton className="size-[122px] rounded-full" />
-        <div className="flex-1 space-y-4">
-          <div className="grid grid-cols-3 gap-6">
-            <Skeleton className="h-[44px] rounded-[7px]" />
-            <Skeleton className="h-[44px] rounded-[7px]" />
-            <Skeleton className="h-[44px] rounded-[7px]" />
+      <div className="flex flex-col md:flex-row items-center md:items-start gap-6 md:gap-8">
+        <Skeleton className="size-[180px] rounded-full shrink-0" />
+        <div className="flex-1 w-full space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
+            <Skeleton className="h-[58px] rounded-[7px]" />
+            <Skeleton className="h-[58px] rounded-[7px]" />
           </div>
-          <div className="grid grid-cols-2 gap-6">
-            <Skeleton className="h-[44px] rounded-[7px]" />
-            <Skeleton className="h-[44px] rounded-[7px]" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
+            <Skeleton className="h-[58px] rounded-[7px]" />
+            <Skeleton className="h-[58px] rounded-[7px]" />
           </div>
         </div>
       </div>
 
       <div className="space-y-4">
         <Skeleton className="h-4 w-[160px]" />
-        <div className="grid grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
           {Array.from({ length: 5 }).map((_, idx) => (
-            <Skeleton key={idx} className="h-[44px] rounded-[7px]" />
+            <Skeleton key={idx} className="h-[58px] rounded-[7px]" />
           ))}
         </div>
       </div>
 
       <div className="space-y-4">
         <Skeleton className="h-4 w-[120px]" />
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
           {Array.from({ length: 4 }).map((_, idx) => (
-            <Skeleton key={idx} className="h-[44px] rounded-[7px]" />
+            <Skeleton key={idx} className="h-[58px] rounded-[7px]" />
           ))}
         </div>
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
           {Array.from({ length: 4 }).map((_, idx) => (
-            <Skeleton key={idx} className="h-[44px] rounded-[7px]" />
+            <Skeleton key={idx} className="h-[58px] rounded-[7px]" />
           ))}
         </div>
       </div>
 
       <div className="flex justify-end gap-3">
-        <Skeleton className="h-9 w-[100px] rounded-[8px]" />
-        <Skeleton className="h-9 w-[100px] rounded-[8px]" />
+        <Skeleton className="h-[52px] w-[100px] rounded-[8px]" />
+        <Skeleton className="h-[52px] w-[100px] rounded-[8px]" />
       </div>
     </div>
   )
@@ -208,7 +207,7 @@ function ProfileDetailForm({
   return (
     <>
       <form onSubmit={handleSave} className="space-y-6">
-        <div className="flex items-start gap-8">
+        <div className="flex flex-col md:flex-row items-center md:items-start gap-6 md:gap-8">
           <ImageCropUploadDialog
             title="Profile Update"
             initialImageSrc={profileImageQuery.data ?? null}
@@ -251,7 +250,7 @@ function ProfileDetailForm({
               }
             }}
             renderTrigger={({ openDialog }) => (
-              <div className="mt-2 flex h-[200px] w-[200px] items-center justify-center rounded-full bg-white">
+              <div className="mt-2 flex h-[180px] w-[180px] shrink-0 items-center justify-center rounded-full bg-white">
                 <Avatar
                   className={profilePicClassName}
                   role="button"
@@ -270,8 +269,8 @@ function ProfileDetailForm({
             )}
           />
 
-          <div className="flex-1 space-y-4">
-            <div className="grid grid-cols-2 gap-6">
+          <div className="flex-1 w-full space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
               <div>
                 <label className={labelClassName}>
                   *First Name
@@ -306,7 +305,7 @@ function ProfileDetailForm({
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
               <div>
                 <label className={labelClassName}>Area Code</label>
                 <TitleCaseInput
@@ -326,7 +325,7 @@ function ProfileDetailForm({
                       onChange={(e) => field.onChange(formatPhone(e.target.value))}
                       className={
                         errors.telephoneNumber
-                          ? `${inputClassName} border-[#ef4444]`
+                           ? `${inputClassName} border-[#ef4444]`
                           : inputClassName
                       }
                       placeholder="___-___-____"
@@ -347,7 +346,7 @@ function ProfileDetailForm({
             <div className="h-px flex-1 bg-[#e6e7ef]" aria-hidden />
           </div>
 
-          <div className="grid grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
             <div>
               <label className={labelClassName}>First Name</label>
               <Controller
@@ -472,7 +471,7 @@ function ProfileDetailForm({
             <div className="h-px flex-1 bg-[#e6e7ef]" aria-hidden />
           </div>
 
-          <div className="grid grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
             <div>
               <label className={labelClassName}>Employee ID</label>
               <TitleCaseInput
@@ -516,7 +515,7 @@ function ProfileDetailForm({
             </div>
           </div>
 
-          <div className="mt-4 grid grid-cols-4 gap-4">
+          <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
             <div>
               <label className={labelClassName}>Primary Supervisor</label>
               <TitleCaseInput
@@ -557,7 +556,7 @@ function ProfileDetailForm({
         </div>
 
 
-        <div className="flex items-center justify-end gap-3 pt-2">
+        <div className="flex flex-wrap items-center justify-end gap-3 pt-2">
           <Button
             type="submit"
             disabled={isSaving}
