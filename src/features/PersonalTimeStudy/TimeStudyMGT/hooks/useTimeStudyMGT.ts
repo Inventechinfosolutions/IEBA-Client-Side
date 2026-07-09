@@ -3,21 +3,37 @@ import { useLocation } from "react-router-dom"
 import { useGetMGTEmployeeList } from "../queries/getMGTEmployeeList"
 import { useGetMGTMonthLegend } from "../queries/getMGTMonthLegend"
 import { useGetMGTDayDetail } from "../queries/getMGTDayDetail"
+import { getCalendarWeekStartKeyFromIso } from "@/components/Calender"
 import { toIsoYmdFromDate, todayLocal } from "@/lib/dates"
 import { usePermissions } from "@/hooks/usePermissions"
 import type { MgtEmployeeRow, MgtDayStatusMap, MgtWeekSummary } from "../types"
 import { useGetUserAssignedDepartmentsSettingChecks } from "../../queries/getUserAssignedDepartmentsSettingChecks"
 
-/**
- * Helper to get the start of the week (Sunday) for a given YYYY-MM-DD date string.
- */
-function getWeekStartKey(dateStr: string): string {
-  const [y, m, d] = dateStr.split('-').map(Number)
-  const date = new Date(y, m - 1, d)
-  const day = date.getDay()
-  const diff = date.getDate() - day
-  const sunday = new Date(date.getFullYear(), date.getMonth(), diff)
-  return toIsoYmdFromDate(sunday)
+/** Derive week STATUS/ACTION from backend monthlegend day statuses (any single day qualifies). */
+function resolveWeekStatusFromBackendDays(days: string[]): string {
+  const lowerDays = days.map((d) => String(d || "").toLowerCase())
+
+  if (lowerDays.some((d) => d === "approved")) {
+    return "approved"
+  }
+  if (
+    lowerDays.some(
+      (d) =>
+        d.startsWith("submitted") ||
+        d.includes("target met") ||
+        d.includes("equal hours") ||
+        d === "less_hours" ||
+        d === "more_hours" ||
+        d === "equal_hours" ||
+        d === "submitted",
+    )
+  ) {
+    return "submitted"
+  }
+  if (lowerDays.some((d) => d === "rejected")) {
+    return "rejected"
+  }
+  return "notsubmitted"
 }
 
 /**
@@ -99,7 +115,7 @@ export function useTimeStudyMGT() {
       }
 
       // Roll up to week summary
-      const weekKey = getWeekStartKey(d.date)
+      const weekKey = getCalendarWeekStartKeyFromIso(d.date)
       if (!weekMap[weekKey]) {
         weekMap[weekKey] = { totalMinutes: 0, status: "notsubmitted", days: [] }
       }
@@ -123,31 +139,13 @@ export function useTimeStudyMGT() {
       balanceTotal = allocatedTotal - actualTotal
     }
 
-    // Determine week status
+    // Week status comes from backend day statuses — one qualifying day in the row is enough.
     const finalWeekSummaries: Record<string, MgtWeekSummary> = {}
     for (const [key, val] of Object.entries(weekMap)) {
-      let finalStatus = "notsubmitted"
-      const lowerDays = val.days.map(d => String(d).toLowerCase())
-      
-      const hasSubmitted = lowerDays.some(d => 
-        d.startsWith("submitted") || 
-        d.includes("target met") || 
-        d.includes("equal hours") ||
-        d === "less_hours" ||
-        d === "more_hours" ||
-        d === "equal_hours" ||
-        d === "submitted"
-      )
-
-      if (hasSubmitted) {
-        finalStatus = "submitted"
-      } else if (lowerDays.includes("rejected")) {
-        finalStatus = "rejected"
-      } else if (lowerDays.length > 0 && lowerDays.every(d => d === "approved" || d === "holiday" || d === "weekend")) {
-        finalStatus = "approved"
+      finalWeekSummaries[key] = {
+        totalMinutes: val.totalMinutes,
+        status: resolveWeekStatusFromBackendDays(val.days),
       }
-      
-      finalWeekSummaries[key] = { totalMinutes: val.totalMinutes, status: finalStatus }
     }
 
 
