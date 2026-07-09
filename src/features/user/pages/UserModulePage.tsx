@@ -526,9 +526,8 @@ export function UserModulePage() {
   return (
     <section
       key={location.key}
-      className="font-roboto *:font-roboto w-full"
+      className="font-roboto *:font-roboto w-full animate-fade-in"
       style={{
-        zoom: 1.2,
         "--primary": "#6C5DD3",
       } as React.CSSProperties}
     >

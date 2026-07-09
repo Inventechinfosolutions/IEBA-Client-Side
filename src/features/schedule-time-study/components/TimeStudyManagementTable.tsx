@@ -499,6 +499,136 @@ function ScheduleTimeStudyTableLoaded({
             </Table>
           </div>
 
+          {/* Mobile card view */}
+          <div className="md:hidden space-y-3">
+            {isLoading ? (
+              Array.from({ length: 4 }, (_, index) => (
+                <div
+                  key={`mobile-period-skeleton-${index}`}
+                  className="rounded-[10px] border border-[#E5E7EB] bg-white p-4 space-y-2"
+                >
+                  <Skeleton className="h-4 w-[60%]" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-full" />
+                </div>
+              ))
+            ) : periodRows.length === 0 ? (
+              <div className="flex flex-col items-center justify-center gap-2 py-10 text-[#9CA3AF]">
+                <img src={tableEmptyIcon} alt="" className="size-[80px] object-contain" />
+              </div>
+            ) : (
+              paginatedPeriodRows.map((row) => (
+                <div
+                  key={row.id}
+                  className="rounded-[10px] border border-[#E5E7EB] bg-[#6C5DD3] overflow-hidden"
+                >
+                  {/* Header */}
+                  <div className="flex items-center justify-between px-4 py-2.5">
+                    <span className="font-bold text-[14px] leading-none text-white">{row.timeStudyPeriod}</span>
+                    <div className="flex items-center gap-1.5">
+                      {row.isUsed === true ? (
+                        <span className="text-xs text-white/70 italic px-1">In Use</span>
+                      ) : (
+                        <>
+                          <button
+                            type="button"
+                            className="inline-flex cursor-pointer items-center justify-center p-1 rounded hover:bg-white/10"
+                            onClick={() => {
+                              setEditingPeriodRow(row)
+                              setPeriodsFormMountKey((k) => k + 1)
+                              setCreatePeriodsOpen(true)
+                            }}
+                            aria-label="Edit period row"
+                          >
+                            <img src={editIconImg} alt="Edit" className="size-[16px] object-contain brightness-0 invert" />
+                          </button>
+                          <button
+                            type="button"
+                            disabled={deletePayPeriod.isPending}
+                            className="inline-flex cursor-pointer items-center justify-center p-1 rounded hover:bg-white/10 text-white disabled:opacity-40"
+                            onClick={() => {
+                              const id = Number(row.id)
+                              if (!Number.isFinite(id) || id <= 0) return
+                              void deletePayPeriod
+                                .mutateAsync(id)
+                                .then(() => {
+                                  toast.success("Deleted successfully", payPeriodDeleteSuccessToastOptions)
+                                })
+                                .catch((error: unknown) => {
+                                  toast.error(error instanceof Error ? error.message : "Delete failed")
+                                })
+                            }}
+                            aria-label="Delete period row"
+                          >
+                            {deletePayPeriod.isPending ? (
+                              <Spinner className="size-3.5 text-white" />
+                            ) : (
+                              <Trash2 className="size-[15px] text-white" />
+                            )}
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Body */}
+                  <div className="p-5 space-y-3.5 flex-1 bg-white">
+                    <div className="flex justify-between items-center border-b border-gray-100 pb-2">
+                      <span className="text-[#111827] font-bold uppercase text-[11px] tracking-wider">Start Date:</span>
+                      <span className="font-normal text-gray-600 text-right text-[13px]">
+                        {dayjs(row.startDate).isValid() && row.startDate.includes("T")
+                          ? dayjs(row.startDate).format("MM-DD-YYYY")
+                          : row.startDate}
+                      </span>
+                    </div>
+
+                    <div className="flex justify-between items-center border-b border-gray-100 pb-2">
+                      <span className="text-[#111827] font-bold uppercase text-[11px] tracking-wider">End Date:</span>
+                      <span className="font-normal text-gray-600 text-right text-[13px]">
+                        {dayjs(row.endDate).isValid() && row.endDate.includes("T")
+                          ? dayjs(row.endDate).format("MM-DD-YYYY")
+                          : row.endDate}
+                      </span>
+                    </div>
+
+                    <div className="flex justify-between items-center border-b border-gray-100 pb-2">
+                      <span className="text-[#111827] font-bold uppercase text-[11px] tracking-wider">Hours:</span>
+                      <span className="font-normal text-gray-600 text-right text-[13px]">{row.hours}</span>
+                    </div>
+
+                    <div className="flex justify-between items-center border-b border-gray-100 pb-2">
+                      <span className="text-[#111827] font-bold uppercase text-[11px] tracking-wider">Holidays:</span>
+                      <span className="font-normal text-gray-600 text-right text-[13px]">{row.holidays}</span>
+                    </div>
+
+                    <div className="flex justify-between items-center border-b border-gray-100 pb-2">
+                      <span className="text-[#111827] font-bold uppercase text-[11px] tracking-wider">Allocable:</span>
+                      <span className="font-normal text-gray-600 text-right text-[13px]">{row.allocable}</span>
+                    </div>
+
+                    <div className="flex justify-between items-center border-b border-gray-100 pb-2">
+                      <span className="text-[#111827] font-bold uppercase text-[11px] tracking-wider">Non-Alloc:</span>
+                      <span className="font-normal text-gray-600 text-right text-[13px]">{row.nonAllocable}</span>
+                    </div>
+
+                    <div className="flex justify-between items-center pb-1">
+                      <span className="text-[#111827] font-bold uppercase text-[11px] tracking-wider">Status:</span>
+                      {row.isUsed ? (
+                        <span className="inline-flex items-center rounded-full border border-green-200 bg-green-50 px-2.5 py-0.5 text-[11px] font-normal text-green-700">
+                          In Use
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center rounded-full border border-yellow-200 bg-yellow-50 px-2.5 py-0.5 text-[11px] font-normal text-yellow-700">
+                          Unused
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
           <MasterCodePagination
             totalItems={periodRows.length}
             currentPage={currentPage}

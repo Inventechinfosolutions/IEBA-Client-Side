@@ -1208,7 +1208,7 @@ export function SecurityAssignmentsPanel({
             </div>
           </div>
 
-          <div className="relative mt-3 grid grid-cols-[1fr_60px_1fr] items-center gap-4">
+          <div className="relative mt-3 grid grid-cols-1 lg:grid-cols-[1fr_60px_1fr] items-center gap-4">
             {(securityRolesQuery.isLoading ||
               (Boolean(securityUserId) && tab2Query.isLoading) ||
               transferBusy) && (
@@ -1225,7 +1225,7 @@ export function SecurityAssignmentsPanel({
               onToggleDepartmentGroup={toggleDepartmentGroupU}
             />
 
-            <div className="flex flex-col gap-3 pt-10">
+            <div className="flex flex-row lg:flex-col justify-center gap-3 pt-4 lg:pt-10">
               <TransferListMoveButton
                 direction="forward"
                 onClick={() => void transferToAssigned()}
@@ -1250,80 +1250,75 @@ export function SecurityAssignmentsPanel({
             />
           </div>
 
-          {displaySupervisorApportioning && isApportioningEnabled && (
-            <div className="mt-8 overflow-hidden rounded-[10px] border border-[#e5e7eb] bg-white shadow-[0_4px_20px_rgba(0,0,0,0.05)] transition-all duration-300">
-              <table className="w-full text-left text-[12px] border-collapse">
-                <thead>
-                  <tr className="bg-(--primary) text-white">
-                    <th className="px-5 py-2.5 text-[10.5px] font-semibold uppercase tracking-wider">Department Name</th>
-                    <th className="px-5 py-2.5 text-[10.5px] font-semibold text-center uppercase tracking-wider">Apportioning</th>
-                    <th className="px-5 py-2.5 text-[10.5px] font-semibold text-center uppercase tracking-wider">Percentage of allocation</th>
-                    <th className="px-5 py-2.5 text-[10.5px] font-semibold text-center uppercase tracking-wider">Auto Apportioning</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(() => {
-                    const supervisorRoleName = "Time Study Supervisor"
-                    const deptsWithSupervisor = new Set(
-                      assignedSnapshots
-                        .filter(s => s.name.trim() === supervisorRoleName)
-                        .map(s => s.departmentId)
-                    )
-                    const deptsWithUser = new Set(
-                      assignedSnapshots
-                        .filter(s => s.name.trim() === "User")
-                        .map(s => s.departmentId)
-                    )
-                    const qualifiedDeptIds = Array.from(deptsWithSupervisor).filter(id => deptsWithUser.has(id))
+          {displaySupervisorApportioning && isApportioningEnabled && (() => {
+            const supervisorRoleName = "Time Study Supervisor"
+            const deptsWithSupervisor = new Set(
+              assignedSnapshots
+                .filter(s => s.name.trim() === supervisorRoleName)
+                .map(s => s.departmentId)
+            )
+            const deptsWithUser = new Set(
+              assignedSnapshots
+                .filter(s => s.name.trim() === "User")
+                .map(s => s.departmentId)
+            )
+            const qualifiedDeptIds = Array.from(deptsWithSupervisor).filter(id => deptsWithUser.has(id))
 
-                    const assignedDepts = qualifiedDeptIds
-                      .map(id => {
-                        const snap = assignedSnapshots.find(s => s.departmentId === id)
-                        const deptInfo = departmentsQuery.data?.items.find(d => String(d.id) === String(id))
-                        return {
-                          id: String(id),
-                          name: snap?.department ?? deptInfo?.name ?? `Dept ${id}`,
-                          apportioning: deptInfo?.settings.apportioning ?? false,
-                          autoApportioning: deptInfo?.settings.autoApportioning ?? false,
-                          apportioningStartDate: deptInfo?.settings.apportioningStartDate ?? null,
-                          apportioningEndDate: deptInfo?.settings.apportioningEndDate ?? null,
-                        }
-                      })
-                      .filter(dept => {
-                        if (!dept.apportioning) return false
-                        return true
-                      })
+            const assignedDepts = qualifiedDeptIds
+              .map(id => {
+                const snap = assignedSnapshots.find(s => s.departmentId === id)
+                const deptInfo = departmentsQuery.data?.items.find(d => String(d.id) === String(id))
+                return {
+                  id: String(id),
+                  name: snap?.department ?? deptInfo?.name ?? `Dept ${id}`,
+                  apportioning: deptInfo?.settings.apportioning ?? false,
+                  autoApportioning: deptInfo?.settings.autoApportioning ?? false,
+                  apportioningStartDate: deptInfo?.settings.apportioningStartDate ?? null,
+                  apportioningEndDate: deptInfo?.settings.apportioningEndDate ?? null,
+                }
+              })
+              .filter(dept => {
+                if (!dept.apportioning) return false
+                return true
+              })
 
-                    if (assignedDepts.length === 0) {
-                      return (
-                        <tr>
-                          <td colSpan={4} className="px-4 py-12 text-center text-[#9ca3af] bg-[#f9fafb]">
-                            <p className="text-[13px]">No departments assigned yet.</p>
-                            <p className="mt-1 text-[11px]">Assign departments to manage apportioning allocations.</p>
-                          </td>
-                        </tr>
-                      )
-                    }
-
-                    return assignedDepts.map((dept) => (
-                      <tr key={dept.id} className="border-t border-[#f1f2f6] hover:bg-[#f8fafc] transition-colors duration-200">
-                        <td className="px-5 py-4 font-medium text-[#111827]">{dept.name}</td>
-                        <td className="px-5 py-4 text-center">
-                          <div className="flex justify-center items-center">
-                            {dept.apportioning ? (
-                              <img src={statusCheck} alt="Checked" className="size-5 object-contain" />
-                            ) : (
-                              <img src={statusCross} alt="Unchecked" className="size-5 object-contain" />
-                            )}
+            return (
+              <>
+                {/* Mobile Apportioning Card View */}
+                <div className="md:hidden mt-8 space-y-3.5">
+                  {assignedDepts.length === 0 ? (
+                    <div className="rounded-[10px] border border-[#E5E7EB] bg-white p-6 text-center text-[#9ca3af]">
+                      <p className="text-[13px] font-medium">No departments assigned yet.</p>
+                      <p className="mt-1 text-[11px]">Assign departments to manage apportioning allocations.</p>
+                    </div>
+                  ) : (
+                    assignedDepts.map((dept) => (
+                      <div key={dept.id} className="rounded-[10px] border border-[#E5E7EB] bg-[#6C5DD3] overflow-hidden shadow-sm">
+                        {/* Header */}
+                        <div className="px-4 py-2.5 flex items-center justify-between">
+                          <span className="font-semibold text-[14px] text-white">{dept.name}</span>
+                        </div>
+                        {/* Body */}
+                        <div className="p-4 space-y-3 bg-white text-[12px]">
+                          {/* Apportioning */}
+                          <div className="flex justify-between items-center border-b border-gray-100 pb-2">
+                            <span className="text-[#111827] font-bold uppercase text-[10px] tracking-wider">Apportioning</span>
+                            <div className="flex items-center">
+                              {dept.apportioning ? (
+                                <img src={statusCheck} alt="Checked" className="size-4.5 object-contain" />
+                              ) : (
+                                <img src={statusCross} alt="Unchecked" className="size-4.5 object-contain" />
+                              )}
+                            </div>
                           </div>
-                        </td>
-                        <td className="px-5 py-4 text-center">
-                          <div className="flex justify-center">
-                            <Controller
-                              name={`apportioningAllocations.${dept.id}`}
-                              control={control}
-                              render={({ field }) => (
-                                <div className="flex justify-center">
+                          {/* Percentage of allocation */}
+                          <div className="flex justify-between items-center border-b border-gray-100 pb-2">
+                            <span className="text-[#111827] font-bold uppercase text-[10px] tracking-wider">Percentage of allocation</span>
+                            <div className="flex items-center">
+                              <Controller
+                                name={`apportioningAllocations.${dept.id}`}
+                                control={control}
+                                render={({ field }) => (
                                   <input
                                     {...field}
                                     type="text"
@@ -1339,27 +1334,104 @@ export function SecurityAssignmentsPanel({
                                       field.onChange(val)
                                     }}
                                   />
-                                </div>
+                                )}
+                              />
+                            </div>
+                          </div>
+                          {/* Auto Apportioning */}
+                          <div className="flex justify-between items-center">
+                            <span className="text-[#111827] font-bold uppercase text-[10px] tracking-wider">Auto Apportioning</span>
+                            <div className="flex items-center">
+                              {dept.autoApportioning ? (
+                                <img src={statusCheck} alt="Checked" className="size-4.5 object-contain" />
+                              ) : (
+                                <img src={statusCross} alt="Unchecked" className="size-4.5 object-contain" />
                               )}
-                            />
+                            </div>
                           </div>
-                        </td>
-                        <td className="px-5 py-4 text-center">
-                          <div className="flex justify-center items-center">
-                            {dept.autoApportioning ? (
-                              <img src={statusCheck} alt="Checked" className="size-5 object-contain" />
-                            ) : (
-                              <img src={statusCross} alt="Unchecked" className="size-5 object-contain" />
-                            )}
-                          </div>
-                        </td>
-                      </tr>
+                        </div>
+                      </div>
                     ))
-                  })()}
-                </tbody>
-              </table>
-            </div>
-          )}
+                  )}
+                </div>
+
+                {/* Desktop Apportioning Table View */}
+                <div className="hidden md:block mt-8 overflow-x-auto w-full rounded-[10px] border border-[#e5e7eb] bg-white shadow-[0_4px_20px_rgba(0,0,0,0.05)] transition-all duration-300">
+                  <table className="w-full min-w-[550px] text-left text-[12px] border-collapse">
+                    <thead>
+                      <tr className="bg-(--primary) text-white">
+                        <th className="px-5 py-2.5 text-[10.5px] font-semibold uppercase tracking-wider">Department Name</th>
+                        <th className="px-5 py-2.5 text-[10.5px] font-semibold text-center uppercase tracking-wider">Apportioning</th>
+                        <th className="px-5 py-2.5 text-[10.5px] font-semibold text-center uppercase tracking-wider">Percentage of allocation</th>
+                        <th className="px-5 py-2.5 text-[10.5px] font-semibold text-center uppercase tracking-wider">Auto Apportioning</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {assignedDepts.length === 0 ? (
+                        <tr>
+                          <td colSpan={4} className="px-4 py-12 text-center text-[#9ca3af] bg-[#f9fafb]">
+                            <p className="text-[13px]">No departments assigned yet.</p>
+                            <p className="mt-1 text-[11px]">Assign departments to manage apportioning allocations.</p>
+                          </td>
+                        </tr>
+                      ) : (
+                        assignedDepts.map((dept) => (
+                          <tr key={dept.id} className="border-t border-[#f1f2f6] hover:bg-[#f8fafc] transition-colors duration-200">
+                            <td className="px-5 py-4 font-medium text-[#111827]">{dept.name}</td>
+                            <td className="px-5 py-4 text-center">
+                              <div className="flex justify-center items-center">
+                                {dept.apportioning ? (
+                                  <img src={statusCheck} alt="Checked" className="size-5 object-contain" />
+                                ) : (
+                                  <img src={statusCross} alt="Unchecked" className="size-5 object-contain" />
+                                )}
+                              </div>
+                            </td>
+                            <td className="px-5 py-4 text-center">
+                              <div className="flex justify-center">
+                                <Controller
+                                  name={`apportioningAllocations.${dept.id}`}
+                                  control={control}
+                                  render={({ field }) => (
+                                    <div className="flex justify-center">
+                                      <input
+                                        {...field}
+                                        type="text"
+                                        value={
+                                          field.value ??
+                                          tab2Apportioning?.apportioningAllocations?.[dept.id] ??
+                                          ""
+                                        }
+                                        placeholder=""
+                                        className="h-8 w-20 rounded-[4px] border border-[#cbd5e1] bg-white px-2 text-center text-[12px] font-medium text-[#111827] outline-none transition-all focus:border-(--primary) focus:ring-1 focus:ring-(--primary)"
+                                        onChange={(e) => {
+                                          const val = e.target.value.replace(/[^0-9.]/g, "")
+                                          field.onChange(val)
+                                        }}
+                                      />
+                                    </div>
+                                  )}
+                                />
+                              </div>
+                            </td>
+                            <td className="px-5 py-4 text-center">
+                              <div className="flex justify-center items-center">
+                                {dept.autoApportioning ? (
+                                  <img src={statusCheck} alt="Checked" className="size-5 object-contain" />
+                                ) : (
+                                  <img src={statusCross} alt="Unchecked" className="size-5 object-contain" />
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )
+          })()}
 
           {assignedDeptsForMultiCodeRows.length > 0 ? (
             <div className="mt-8 mb-6">
@@ -1423,10 +1495,12 @@ export function SecurityAssignmentsPanel({
                     )
 
                     return (
-                      <div key={field.id} className="flex items-start gap-4 w-full relative">
-
+                      <div
+                        key={field.id}
+                        className="grid grid-cols-1 lg:flex lg:items-start gap-4 w-full relative border border-gray-200/80 rounded-[10px] p-4 lg:border-0 lg:p-0 lg:rounded-none bg-gray-50/30 lg:bg-transparent"
+                      >
                         {/* Department */}
-                        <div className="flex-[1.2] flex flex-col">
+                        <div className="w-full lg:flex-[1.2] flex flex-col">
                           <div className="h-[22px] mb-1 flex items-end">
                             <label className="block text-[11px] font-normal text-[#374151]">
                               Department <span className="text-red-500">*</span>
@@ -1447,6 +1521,7 @@ export function SecurityAssignmentsPanel({
                                     setValue(`departmentMultiCodes.${index}.allowMultiCodes`, false)
                                     setValue(`departmentMultiCodes.${index}.assignedMultiCodes`, "")
                                     setValue(`departmentMultiCodes.${index}.activationStartDate`, "")
+                                    setValue(`departmentMultiCodes.${index}.activationEndDate`, "")
                                     setValue(`departmentMultiCodes.${index}.activationEndDate`, "")
 
                                     dFieldId.onChange(found.id)
@@ -1477,8 +1552,8 @@ export function SecurityAssignmentsPanel({
                         </div>
 
                         {/* Allow MultiCodes & MultiCodes Select Column */}
-                        <div className="flex-[1.5] flex flex-col">
-                          <div className="h-[22px] mb-1 flex items-end justify-between">
+                        <div className="w-full lg:flex-[1.5] flex flex-col">
+                          <div className="h-auto lg:h-[22px] mb-1 flex items-center justify-between gap-2">
                             <div className="flex items-center gap-2">
                               <Controller
                                 name={`departmentMultiCodes.${index}.allowMultiCodes`}
@@ -1658,7 +1733,7 @@ export function SecurityAssignmentsPanel({
                         {/* Activation Dates */}
                         {isAddMode ? (
                           /* Add Mode: always show Activation Start Date */
-                          <div className="flex-1 flex flex-col">
+                          <div className="w-full lg:flex-1 flex flex-col">
                             <div className="h-[22px] mb-1 flex items-end">
                               <label className="text-[11px] font-normal text-[#374151] flex items-center gap-1">
                                 <span>Activation Start Date</span>
@@ -1688,9 +1763,9 @@ export function SecurityAssignmentsPanel({
                           /* Edit Mode: check deptAllowsActivationDates */
                           <>
                             {deptAllowsActivationDates ? (
-                              <>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 lg:flex lg:flex-row gap-3 w-full lg:flex-1">
                                 {/* Activation Start Date */}
-                                <div className="flex-1 flex flex-col">
+                                <div className="w-full lg:flex-1 flex flex-col">
                                   <div className="h-[22px] mb-1 flex items-end">
                                     <label className="text-[11px] font-normal text-[#374151] flex items-center gap-1">
                                       <span>Activation Start Date</span>
@@ -1718,7 +1793,7 @@ export function SecurityAssignmentsPanel({
                                 </div>
 
                                 {/* Activation End Date */}
-                                <div className="flex-1 flex flex-col">
+                                <div className="w-full lg:flex-1 flex flex-col">
                                   <div className="h-[22px] mb-1 flex items-end">
                                     <label className="block text-[11px] font-normal text-[#374151]">Activation End Date</label>
                                   </div>
@@ -1742,19 +1817,19 @@ export function SecurityAssignmentsPanel({
                                     />
                                   </div>
                                 </div>
-                              </>
+                              </div>
                             ) : (
-                              <>
+                              <div className="hidden lg:flex lg:flex-1 lg:flex-row gap-3">
                                 {/* Keep grid alignment when dept does not allow activation dates */}
                                 <div className="flex-1 flex flex-col pointer-events-none opacity-0" />
                                 <div className="flex-1 flex flex-col pointer-events-none opacity-0" />
-                              </>
+                              </div>
                             )}
                           </>
                         )}
 
                         {/* Delete Button */}
-                        <div className="w-10 flex flex-col flex-shrink-0 mt-[26px]">
+                        <div className="flex justify-end lg:w-10 lg:flex-col lg:flex-shrink-0 mt-2 lg:mt-[26px]">
                           <button
                             type="button"
                             onClick={async () => {

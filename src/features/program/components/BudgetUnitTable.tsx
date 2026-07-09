@@ -91,7 +91,7 @@ export const BudgetUnitTable = forwardRef<BudgetUnitTableHandle, BudgetUnitTable
   const budgetProgramsByBudgetUnitIdRef = useRef(budgetProgramsByBudgetUnitId)
   budgetProgramsByBudgetUnitIdRef.current = budgetProgramsByBudgetUnitId
 
-  const [, setBudgetProgramsLoading] = useState<Record<string, boolean>>({})
+  const [budgetProgramsLoading, setBudgetProgramsLoading] = useState<Record<string, boolean>>({})
   const [subProgramLoadingProgramId, setSubProgramLoadingProgramId] = useState<string | null>(null)
   const budgetProgramsInFlightRef = useRef(new Set<string>())
 
@@ -602,8 +602,335 @@ export const BudgetUnitTable = forwardRef<BudgetUnitTableHandle, BudgetUnitTable
 
   const skeletonRows = Array.from({ length: 8 }, (_, index) => `program-skeleton-${index}`)
 
-  return (    <div className="overflow-hidden rounded-[4px] border border-[#e6e7ef]">
-      <div className="overflow-x-auto">
+  interface BuNode {
+    buRow: ProgramRow;
+    groupExpanded: boolean;
+    groupLabel?: string;
+    programs: ProgramNode[];
+  }
+
+  interface ProgramNode {
+    programRow: ProgramRow;
+    subPrograms: ProgramRow[];
+  }
+
+  const buCards = useMemo(() => {
+    const cards: BuNode[] = [];
+    let currentBu: BuNode | null = null;
+    let currentProgram: ProgramNode | null = null;
+
+    for (const item of hierarchyRows) {
+      if (item.kind === "data") {
+        if (item.row.hierarchyLevel === 0) {
+          currentBu = {
+            buRow: item.row,
+            groupExpanded: false,
+            programs: [],
+          };
+          cards.push(currentBu);
+          currentProgram = null;
+        } else if (item.row.hierarchyLevel === 2) {
+          if (currentBu) {
+            currentProgram = {
+              programRow: item.row,
+              subPrograms: [],
+            };
+            currentBu.programs.push(currentProgram);
+          }
+        } else if (item.row.hierarchyLevel === 3) {
+          if (currentProgram) {
+            currentProgram.subPrograms.push(item.row);
+          }
+        }
+      } else if (item.kind === "group") {
+        if (currentBu && item.budgetUnitId === currentBu.buRow.id) {
+          currentBu.groupExpanded = true;
+          currentBu.groupLabel = item.label;
+        }
+      }
+    }
+    return cards;
+  }, [hierarchyRows]);
+
+  return (
+    <>
+      {/* Mobile/Tablet Card View */}
+      <div className="block xl:hidden space-y-4">
+        {isLoading ? (
+          skeletonRows.map((rowId) => (
+            <div
+              key={`skeleton-card-${rowId}`}
+              className="rounded-[10px] border border-[#E5E7EB] bg-white p-4 space-y-2.5 shadow-sm"
+            >
+              <Skeleton className="h-4 w-[40%]" />
+              <Skeleton className="h-4 w-[80%]" />
+              <Skeleton className="h-4 w-[60%]" />
+            </div>
+          ))
+        ) : buCards.length === 0 ? (
+          <div className="rounded-[10px] border border-[#E5E7EB] bg-white p-8 text-center text-[13px] text-[#6B7280] shadow-sm">
+            <img
+              src={tableEmptyIcon}
+              alt=""
+              aria-hidden="true"
+              className="mx-auto h-[73px] w-[82px] object-contain opacity-80"
+            />
+            <p className="mt-2 text-gray-500">No records found.</p>
+          </div>
+        ) : (
+          buCards.map((buCard) => (
+            <div
+              key={`bu-card-${buCard.buRow.id}`}
+              className="rounded-[10px] border border-[#E5E7EB] bg-white shadow-sm overflow-hidden flex flex-col hover:border-[#6C5DD3]/40 transition-colors"
+            >
+              {/* Parent BU Header */}
+              <div className="flex items-center justify-between bg-[#6C5DD3] px-4 py-2.5 gap-2">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      toggleBudgetUnit(buCard.buRow.id)
+                    }}
+                    className="text-white hover:bg-white/10 p-0.5 rounded shrink-0"
+                    aria-label="Toggle budget unit children"
+                  >
+                    {expandedBudgetUnits[buCard.buRow.id] ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
+                  </button>
+                  <span className="text-[13px] font-bold text-white shrink-0">
+                    {buCard.buRow.code}
+                  </span>
+                  <span className="text-[12px] text-white/80 truncate">
+                    - {buCard.buRow.name}
+                  </span>
+                </div>
+                {!readonly && canUpdateBudgetProgram && (
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      onEditRow(buCard.buRow)
+                    }}
+                    className="inline-flex size-6 cursor-pointer items-center justify-center rounded-[6px] bg-white/20 text-white hover:bg-white/30 shrink-0"
+                    aria-label="Edit row"
+                  >
+                    <Pencil className="size-3.5" />
+                  </button>
+                )}
+              </div>
+
+              {/* Parent BU Body */}
+              <div className="p-4 bg-white text-[12.5px] text-gray-700 space-y-2.5">
+                <div className="flex justify-between items-baseline gap-x-2 border-b border-gray-50 pb-1.5">
+                  <span className="text-[10px] uppercase tracking-wider text-gray-800 font-bold">Medical Pct:</span>
+                  <span className="font-medium text-gray-600">{buCard.buRow.medicalPct}</span>
+                </div>
+                <div className="flex justify-between items-baseline gap-x-2 border-b border-gray-50 pb-1.5">
+                  <span className="text-[10px] uppercase tracking-wider text-gray-800 font-bold">Description:</span>
+                  <span className="font-normal text-gray-600 text-right break-words min-w-0 max-w-[70%]">{buCard.buRow.description || "—"}</span>
+                </div>
+                <div className="flex justify-between items-baseline gap-x-2 border-b border-gray-50 pb-1.5">
+                  <span className="text-[10px] uppercase tracking-wider text-gray-800 font-bold">Department:</span>
+                  <span className="font-normal text-gray-600 text-right break-words min-w-0 max-w-[70%]">{buCard.buRow.department || "—"}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] uppercase tracking-wider text-gray-800 font-bold">Active:</span>
+                  <img
+                    src={buCard.buRow.active ? tableCheckIcon : tableCloseIcon}
+                    alt=""
+                    className="size-3.5 object-contain"
+                  />
+                </div>
+
+                {/* Nested Children Inside Parent Card */}
+                {expandedBudgetUnits[buCard.buRow.id] && (
+                  <div className="mt-4 pt-3 border-t border-gray-100 space-y-3">
+                    {/* BU Program Group Toggle Header */}
+                    <div
+                      className="flex items-center justify-between py-2 px-3 bg-[#f8fafc] border border-dashed border-[#e2e8f0] rounded-[8px] cursor-pointer"
+                      onClick={() => toggleProgramGroup(buCard.buRow.id)}
+                    >
+                      <span className="text-[12px] font-semibold text-(--primary)">BU Program</span>
+                      {expandedProgramGroups[buCard.buRow.id] ? (
+                        <ChevronDown className="size-4 text-(--primary)" />
+                      ) : (
+                        <ChevronRight className="size-4 text-(--primary)" />
+                      )}
+                    </div>
+
+                    {/* Program List */}
+                    {expandedProgramGroups[buCard.buRow.id] && (
+                      <div className="space-y-3 pl-2.5 border-l border-dashed border-gray-200 mt-2">
+                        {budgetProgramsLoading[buCard.buRow.id] && buCard.programs.length === 0 ? (
+                          <div className="p-3 space-y-2">
+                            <Skeleton className="h-3 w-[50%]" />
+                            <Skeleton className="h-3 w-[70%]" />
+                          </div>
+                        ) : buCard.programs.length === 0 ? (
+                          <div className="text-center py-2 text-[11.5px] text-gray-400">No programs loaded.</div>
+                        ) : (
+                          buCard.programs.map((progNode) => {
+                            const programExpandKey = `${buCard.buRow.id}:${progNode.programRow.id}`
+                            return (
+                              <div
+                                key={`nested-prog-${progNode.programRow.id}`}
+                                className="rounded-[8px] border border-gray-100 bg-[#fbfbfe] overflow-hidden flex flex-col shadow-xs"
+                              >
+                                {/* Program Header */}
+                                <div className="flex items-center justify-between bg-[#6C5DD3]/10 px-3 py-1.5 gap-2">
+                                  <div className="flex items-center gap-1.5 min-w-0">
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        toggleProgram(buCard.buRow.id, progNode.programRow.id)
+                                      }}
+                                      className="text-(--primary) hover:bg-(--primary)/5 p-0.5 rounded shrink-0"
+                                      aria-label="Toggle program children"
+                                    >
+                                      {expandedPrograms[programExpandKey] ? <ChevronDown className="size-3.5" /> : <ChevronRight className="size-3.5" />}
+                                    </button>
+                                    <span className="text-[12px] font-bold text-(--primary) shrink-0">
+                                      {progNode.programRow.code}
+                                    </span>
+                                    <span className="text-[11.5px] text-gray-700 truncate">
+                                      - {progNode.programRow.name}
+                                    </span>
+                                  </div>
+                                  {!readonly && (canAddBudgetProgram || canUpdateBudgetProgram) && (
+                                    <DropdownMenu>
+                                      <DropdownMenuTrigger asChild>
+                                        <button
+                                          type="button"
+                                          onClick={(event) => event.stopPropagation()}
+                                          className="inline-flex size-5 cursor-pointer items-center justify-center rounded-[4px] bg-white/60 text-(--primary) hover:bg-white/90 shadow-xs border border-gray-100 outline-none"
+                                          aria-label="Open row actions"
+                                        >
+                                          <EllipsisVertical className="size-3" />
+                                        </button>
+                                      </DropdownMenuTrigger>
+                                      <DropdownMenuContent
+                                        align="end"
+                                        side="bottom"
+                                        className="w-[92px] rounded-[6px] border border-[#edf0f6] p-1 shadow-lg bg-white z-[150]"
+                                      >
+                                        {canAddBudgetProgram && progNode.programRow.active && (
+                                          <DropdownMenuItem
+                                            onClick={(event) => {
+                                              event.stopPropagation()
+                                              onAddSubProgramFromProgram?.(progNode.programRow)
+                                            }}
+                                            className="cursor-pointer gap-1.5 rounded-[8px] px-1.5 py-1 text-[11.5px] text-[#111827]"
+                                          >
+                                            <Plus className="size-[12px] text-(--primary)" />
+                                            Add
+                                          </DropdownMenuItem>
+                                        )}
+                                        {canUpdateBudgetProgram && (
+                                          <DropdownMenuItem
+                                            onClick={(event) => {
+                                              event.stopPropagation()
+                                              onEditRow(progNode.programRow)
+                                            }}
+                                            className="cursor-pointer gap-1.5 rounded-[8px] px-1.5 py-1 text-[11.5px] text-[#111827]"
+                                          >
+                                            <Pencil className="size-[12px] text-(--primary)" />
+                                            Edit
+                                          </DropdownMenuItem>
+                                        )}
+                                      </DropdownMenuContent>
+                                    </DropdownMenu>
+                                  )}
+                                </div>
+
+                                {/* Program Body */}
+                                <div className="p-3 space-y-2 text-[11.5px] text-gray-600 bg-white/50">
+                                  <div className="flex justify-between items-baseline border-b border-gray-50/50 pb-1">
+                                    <span className="font-semibold text-gray-500">Medical Pct:</span>
+                                    <span>{progNode.programRow.medicalPct}</span>
+                                  </div>
+                                  <div className="flex justify-between items-baseline border-b border-gray-50/50 pb-1">
+                                    <span className="font-semibold text-gray-500">Description:</span>
+                                    <span className="text-right max-w-[70%] truncate">{progNode.programRow.description || "—"}</span>
+                                  </div>
+                                  <div className="flex justify-between items-baseline border-b border-gray-50/50 pb-1">
+                                    <span className="font-semibold text-gray-500">Department:</span>
+                                    <span className="text-right max-w-[70%] truncate">{progNode.programRow.department || "—"}</span>
+                                  </div>
+                                  <div className="flex justify-between items-center">
+                                    <span className="font-semibold text-gray-500">Active:</span>
+                                    <img
+                                      src={progNode.programRow.active ? tableCheckIcon : tableCloseIcon}
+                                      alt=""
+                                      className="size-3 object-contain"
+                                    />
+                                  </div>
+
+                                  {/* Sub-Programs Nested Inside Program */}
+                                  {expandedPrograms[programExpandKey] && (
+                                    <div className="mt-2.5 pt-2 border-t border-gray-100/50 space-y-2">
+                                      <div className="text-[10px] uppercase font-bold tracking-wider text-gray-400">Sub-Programs</div>
+                                      <div className="space-y-2 pl-2 border-l border-gray-100">
+                                        {progNode.subPrograms.map((subProg) => (
+                                          <div
+                                            key={`nested-sub-${subProg.id}`}
+                                            className="p-2 rounded-[6px] border border-gray-50 bg-gray-50/40 flex flex-col gap-1.5"
+                                          >
+                                            {/* Sub-Program Header */}
+                                            <div className="flex justify-between items-center gap-1.5">
+                                              <span className="text-[11.5px] font-bold text-gray-700 truncate">
+                                                {subProg.code} - {subProg.name}
+                                              </span>
+                                              {!readonly && canUpdateBudgetProgram && (
+                                                <button
+                                                  type="button"
+                                                  onClick={(event) => {
+                                                    event.stopPropagation()
+                                                    onEditRow(subProg)
+                                                  }}
+                                                  className="text-gray-400 hover:text-(--primary) p-0.5 rounded"
+                                                  aria-label="Edit sub-program"
+                                                >
+                                                  <Pencil className="size-3" />
+                                                </button>
+                                              )}
+                                            </div>
+                                            {/* Sub-Program Fields */}
+                                            <div className="grid grid-cols-2 gap-x-2 text-[10.5px] text-gray-500">
+                                              <div>Medical Pct: {subProg.medicalPct}</div>
+                                              <div>Active: {subProg.active ? "Yes" : "No"}</div>
+                                              <div className="col-span-2 truncate">Desc: {subProg.description || "—"}</div>
+                                            </div>
+                                          </div>
+                                        ))}
+
+                                        {subProgramLoadingProgramId === progNode.programRow.id && (
+                                          <div className="p-2 space-y-1 bg-gray-50/40 rounded">
+                                            <Skeleton className="h-2.5 w-[40%]" />
+                                            <Skeleton className="h-2.5 w-[80%]" />
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )
+                          })
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Desktop Table View */}
+      <div className="hidden xl:block overflow-hidden rounded-[4px] border border-[#e6e7ef]">
+        <div className="overflow-x-auto">
         <div className="program-table-scroll [scrollbar-gutter:stable]">
           <Table className="table-fixed min-w-[1000px]">
             <colgroup>
@@ -954,6 +1281,7 @@ export const BudgetUnitTable = forwardRef<BudgetUnitTableHandle, BudgetUnitTable
         </div>
       </div>
     </div>
+  </>
   )
 })
 

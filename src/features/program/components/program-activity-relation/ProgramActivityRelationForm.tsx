@@ -197,10 +197,10 @@ export function ProgramActivityRelationForm({ form, departmentIds }: ProgramActi
       <TitleCaseInput type="hidden" {...form.register("programActivityRelationProgram")} />
       <TitleCaseInput type="hidden" {...form.register("programActivityRelationSort")} />
 
-      <div className="flex w-full items-end justify-between gap-3 py-0.5">
+      <div className="flex flex-col lg:flex-row w-full items-stretch lg:items-end justify-between gap-3 py-0.5">
         {showHistory ? (
-          <div className="flex min-w-0 flex-1 flex-wrap items-end gap-3">
-            <div className="w-[220px] space-y-1">
+          <div className="flex flex-col sm:flex-row min-w-0 flex-1 items-stretch sm:items-end gap-3">
+            <div className="w-full sm:w-[220px] space-y-1">
               <label className="block text-[10px] text-[#111827]" htmlFor="par-history-program-code">
                 Program Code
               </label>
@@ -212,7 +212,7 @@ export function ProgramActivityRelationForm({ form, departmentIds }: ProgramActi
                 className="h-[41px] w-full rounded-[10px] border border-[#d0d5df] bg-white px-3 text-[11px] text-[#111827] shadow-none placeholder:text-[11px] placeholder:text-[#b0b8c8] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
               />
             </div>
-            <div className="w-[220px] space-y-1">
+            <div className="w-full sm:w-[220px] space-y-1">
               <label className="block text-[10px] text-[#111827]" htmlFor="par-history-activity-code">
                 Activity Code
               </label>
@@ -226,8 +226,8 @@ export function ProgramActivityRelationForm({ form, departmentIds }: ProgramActi
             </div>
           </div>
         ) : (
-          <div className="flex min-w-0 flex-1 items-end gap-3">
-            <div className="w-[180px] space-y-1">
+          <div className="flex flex-col sm:flex-row min-w-0 flex-1 items-stretch sm:items-end gap-3">
+            <div className="w-full sm:w-[220px] space-y-1">
               <label className="block text-[10px] text-[#111827]" htmlFor="par-department-trigger">
                 Department
               </label>
@@ -256,8 +256,8 @@ export function ProgramActivityRelationForm({ form, departmentIds }: ProgramActi
                 itemLabelClassName="text-[11px]! font-normal!"
               />
             </div>
-
-            <div className="w-[318px] space-y-1">
+ 
+            <div className="w-full sm:w-[318px] space-y-1">
               <label className="block text-[10px] text-[#111827]" htmlFor="par-program-trigger">
                 Program
               </label>
@@ -302,11 +302,11 @@ export function ProgramActivityRelationForm({ form, departmentIds }: ProgramActi
             </div>
           </div>
         )}
-
+ 
         {isSuperAdmin && (
           <Button
             type="button"
-            className={`h-9 shrink-0 cursor-pointer gap-2 rounded-[12px] px-3 text-[12px] font-semibold transition-all shadow-[0_1px_0_rgba(0,0,0,0.05)] ${
+            className={`h-9 shrink-0 cursor-pointer gap-2 rounded-[12px] px-3 text-[12px] font-semibold transition-all shadow-[0_1px_0_rgba(0,0,0,0.05)] w-full lg:w-auto justify-center ${
               showHistory
                 ? "bg-[#6C5DD3] text-white hover:bg-[#6C5DD3]"
                 : "border border-[#E5E7EB] bg-white text-[#6C5DD3] hover:border-[#6C5DD3] hover:bg-[#F3F0FF]"
@@ -345,7 +345,7 @@ export function ProgramActivityRelationForm({ form, departmentIds }: ProgramActi
           departmentId={selectedDepartmentId}
         />
       ) : (
-        <div className="mt-6 grid grid-cols-[1fr_60px_1fr] items-center gap-4">
+        <div className="mt-6 grid grid-cols-1 lg:grid-cols-[1fr_60px_1fr] items-center gap-4">
           <TransferPanel
             title="Select Activities(Unassigned)"
             items={filteredU}
@@ -360,7 +360,7 @@ export function ProgramActivityRelationForm({ form, departmentIds }: ProgramActi
           />
 
           {!isRestrictedRole && (
-            <div className="flex flex-col gap-3 pt-10">
+            <div className="flex flex-row lg:flex-col justify-center items-center gap-3 pt-2 lg:pt-10">
               <TransferListMoveButton
                 direction="forward"
                 disabled={toggledU.length === 0}

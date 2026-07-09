@@ -107,7 +107,100 @@ export function ProgramActivityRelationHistoryTable({
 
   return (
     <div className="flex flex-col gap-4 pt-3">
-      <div className="overflow-hidden rounded-[10px] border border-[#E5E7EB]">
+      {/* Mobile Card View */}
+      <div className="block xl:hidden space-y-3">
+        {isDataLoading && historyData.length === 0 ? (
+          skeletonRows.map((rowId) => (
+            <div
+              key={`skeleton-history-${rowId}`}
+              className="rounded-[10px] border border-[#E5E7EB] bg-white p-4 space-y-2.5 shadow-sm"
+            >
+              <Skeleton className="h-4 w-[30%]" />
+              <Skeleton className="h-4 w-[85%]" />
+              <Skeleton className="h-4 w-[60%]" />
+            </div>
+          ))
+        ) : historyData.length === 0 ? (
+          <div className="rounded-[10px] border border-[#E5E7EB] bg-white p-8 text-center text-[13px] text-[#6B7280] shadow-sm">
+            <img
+              src={tableEmptyIcon}
+              alt=""
+              aria-hidden="true"
+              className="mx-auto h-[73px] w-[82px] object-contain opacity-80"
+            />
+            <p className="mt-2 text-gray-500">No history records found.</p>
+          </div>
+        ) : (
+          historyData.map((row, idx) => {
+            const rowKey = String(row.id ?? idx)
+            const isExpanded = Boolean(expandedRowIds[rowKey])
+            const hasDetail = parHistoryRowHasDetail(row)
+
+            return (
+              <div
+                key={`history-card-${rowKey}`}
+                className="rounded-[10px] border border-[#E5E7EB] bg-white shadow-sm overflow-hidden flex flex-col hover:border-[#6C5DD3]/40 transition-colors"
+              >
+                {/* Header */}
+                <div className="flex items-center justify-between bg-[#f8fafc] px-4 py-2.5 border-b border-[#E5E7EB] gap-2">
+                  <div className="flex items-center gap-2">
+                    {hasDetail && (
+                      <ExpandButton
+                        isExpanded={isExpanded}
+                        onClick={() => toggleRow(rowKey)}
+                      />
+                    )}
+                    <span className="inline-flex rounded-full bg-[#F5F3FF] px-2.5 py-0.5 text-[11px] font-semibold text-[#6C5DD3]">
+                      {getParHistoryEventDisplay(row)}
+                    </span>
+                  </div>
+                  <span className="text-[11px] text-gray-500 font-medium">
+                    {getParHistoryUpdatedAtDisplay(row)}
+                  </span>
+                </div>
+
+                {/* Body */}
+                <div className="p-4 space-y-2 text-[12px] text-gray-700">
+                  <div className="flex justify-between items-baseline gap-x-2 border-b border-gray-50 pb-1.5">
+                    <span className="text-[10px] uppercase tracking-wider text-gray-800 font-bold">Department:</span>
+                    <span className="font-normal text-gray-600 text-right break-words min-w-0 max-w-[70%]">{getParHistoryDepartmentDisplay(row) || "—"}</span>
+                  </div>
+                  <div className="flex justify-between items-baseline gap-x-2 border-b border-gray-50 pb-1.5">
+                    <span className="text-[10px] uppercase tracking-wider text-gray-800 font-bold">Program Code:</span>
+                    <span className="font-medium text-gray-600">{getParHistoryProgramCodeDisplay(row) || "—"}</span>
+                  </div>
+                  <div className="flex justify-between items-baseline gap-x-2 border-b border-gray-50 pb-1.5">
+                    <span className="text-[10px] uppercase tracking-wider text-gray-800 font-bold">Program Name:</span>
+                    <span className="font-normal text-gray-600 text-right break-words min-w-0 max-w-[70%]">{getParHistoryProgramNameDisplay(row) || "—"}</span>
+                  </div>
+                  <div className="flex justify-between items-baseline gap-x-2 border-b border-gray-50 pb-1.5">
+                    <span className="text-[10px] uppercase tracking-wider text-gray-800 font-bold">Activity Code:</span>
+                    <span className="font-medium text-gray-600">{getParHistoryActivityCodeDisplay(row) || "—"}</span>
+                  </div>
+                  <div className="flex justify-between items-baseline gap-x-2 border-b border-gray-50 pb-1.5">
+                    <span className="text-[10px] uppercase tracking-wider text-gray-800 font-bold">Activity Name:</span>
+                    <span className="font-normal text-gray-600 text-right break-words min-w-0 max-w-[70%]">{getParHistoryActivityNameDisplay(row) || "—"}</span>
+                  </div>
+                  <div className="flex justify-between items-baseline">
+                    <span className="text-[10px] uppercase tracking-wider text-gray-800 font-bold">Updated By:</span>
+                    <span className="font-medium text-gray-600">{getParHistoryUpdatedByDisplay(row) || "—"}</span>
+                  </div>
+
+                  {/* Expanded Detail Panel */}
+                  {isExpanded && hasDetail && (
+                    <div className="mt-3 pt-3 border-t border-gray-100 bg-[#FAFAFC] -mx-4 -mb-4 p-4">
+                      <ProgramActivityRelationHistoryDetailPanel row={row} />
+                    </div>
+                  )}
+                </div>
+              </div>
+            )
+          })
+        )}
+      </div>
+
+      {/* Desktop Table View */}
+      <div className="hidden xl:block overflow-hidden rounded-[10px] border border-[#E5E7EB]">
         <div className="relative overflow-x-auto">
           {isDataLoading && historyData.length === 0 && (
             <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/60">

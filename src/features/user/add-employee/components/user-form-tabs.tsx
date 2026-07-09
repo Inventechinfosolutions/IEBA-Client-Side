@@ -3,7 +3,7 @@ import type { AddEmployeeFormTabsProps } from "../types"
 
 export function UserFormTabs({ activeTab, onTabChange, disabledTabs = [] }: AddEmployeeFormTabsProps) {
   return (
-    <div className="grid select-none grid-cols-4 gap-px rounded-[8px] border border-[#e8ebf2] bg-white p-px text-[12px] text-[#596077]">
+    <div className="grid select-none grid-cols-2 md:grid-cols-4 gap-1 md:gap-px rounded-[8px] border border-[#e8ebf2] bg-white p-1 md:p-px text-[12px] text-[#596077]">
       {addEmployeeTabs.map((tab) => {
         const isDisabled = disabledTabs.includes(tab.id)
         return (

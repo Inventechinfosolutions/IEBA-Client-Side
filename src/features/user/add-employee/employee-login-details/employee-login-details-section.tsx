@@ -136,7 +136,7 @@ export function EmployeeLoginDetailsSection({
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
         <div>
           <label className={labelClassName}>*Employee #</label>
           <TitleCaseInput
@@ -500,7 +500,7 @@ export function EmployeeLoginDetailsSection({
             placeholder="Enter claiming unit"
           />
         </div>
-        <div className="col-span-2 flex items-center gap-6 pt-6">
+        <div className="col-span-full sm:col-span-2 flex items-center gap-6 pt-4 sm:pt-6">
           <label className="flex cursor-pointer select-none items-center gap-2 text-[12px] text-[#111827]">
             <Controller
               name="spmp"
@@ -533,7 +533,7 @@ export function EmployeeLoginDetailsSection({
       </div>
 
       {showDeptAutoAssign && !isEditMode && (
-        <div className="mt-4 grid grid-cols-3 gap-3">
+        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
           <div>
             <label className={labelClassName}>*Department Assignment</label>
             <Controller

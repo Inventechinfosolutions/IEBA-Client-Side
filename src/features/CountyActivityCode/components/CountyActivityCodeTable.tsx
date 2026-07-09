@@ -1402,60 +1402,63 @@ export function CountyActivityCodeTable({
             </form>
           </div>
         )}
-        <div className="flex flex-wrap items-center gap-3 sm:ml-auto">
-          {/* History toggle button */}
-          {isSuperAdmin && (
-            <button
-              type="button"
-              className={`flex h-12 items-center gap-2 rounded-[10px] px-4 text-[14px] font-normal transition-colors ${showHistory
-                ? "bg-[#6C5DD3] text-white"
-                : "border border-[#6C5DD3] bg-white text-[#6C5DD3] hover:bg-[#F3F0FF]"
-                }`}
-              onClick={() => {
-                setShowHistory((prev) => {
-                  if (prev) {
-                    filterForm.setValue("search", "")
-                    onSearchChange("")
-                    setHistoryActivityCode("")
-                    setHistoryActivityName("")
-                  }
-                  return !prev
-                })
-              }}
-            >
-              {showHistory ? (
-                <>
-                  <ArrowLeft className="size-4 animate-back-bounce" />
-                  Back to County Activity
-                </>
-              ) : (
-                <>
-                  <History className="size-4" />
-                  History
-                </>
-              )}
-            </button>
-          )}
+        <div className="w-full sm:w-auto flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:ml-auto">
+          <div className="flex items-center gap-3 w-full sm:w-auto">
+            {/* History toggle button */}
+            {isSuperAdmin && (
+              <button
+                type="button"
+                className={`flex-1 sm:flex-initial flex h-12 items-center justify-center gap-2 rounded-[10px] px-4 text-[14px] font-normal transition-colors ${showHistory
+                  ? "bg-[#6C5DD3] text-white"
+                  : "border border-[#6C5DD3] bg-white text-[#6C5DD3] hover:bg-[#F3F0FF]"
+                  }`}
+                onClick={() => {
+                  setShowHistory((prev) => {
+                    if (prev) {
+                      filterForm.setValue("search", "")
+                      onSearchChange("")
+                      setHistoryActivityCode("")
+                      setHistoryActivityName("")
+                    }
+                    return !prev
+                  })
+                }}
+              >
+                {showHistory ? (
+                  <>
+                    <ArrowLeft className="size-4 animate-back-bounce" />
+                    Back to County Activity
+                  </>
+                ) : (
+                  <>
+                    <History className="size-4" />
+                    History
+                  </>
+                )}
+              </button>
+            )}
 
-          {/* Inactive toggle — hidden while in history view */}
-          {!showHistory && (
-            <button
-              type="button"
-              className="flex h-12 items-center gap-2 rounded-[10px] bg-[#6C5DD3] px-4 text-white"
-              onClick={() => {
-                const nextValue = !showInactive
-                filterForm.setValue("inactive", nextValue)
-                onInactiveChange(nextValue)
-                onPageChange(1)
-              }}
-            >
-              <Checkbox
-                checked={showInactive}
-                className="size-5 rounded-[6px] border-white bg-white data-[state=checked]:border-white data-[state=checked]:bg-[#6C5DD3] data-[state=checked]:text-white"
-              />
-              <span className="text-[14px] font-normal">Inactive</span>
-            </button>
-          )}
+            {/* Inactive toggle — hidden while in history view */}
+            {!showHistory && (
+              <button
+                type="button"
+                className="flex-1 sm:flex-initial flex h-12 items-center justify-center gap-2 rounded-[10px] bg-[#6C5DD3] px-4 text-white"
+                onClick={() => {
+                  const nextValue = !showInactive
+                  filterForm.setValue("inactive", nextValue)
+                  onInactiveChange(nextValue)
+                  onPageChange(1)
+                }}
+              >
+                <Checkbox
+                  checked={showInactive}
+                  className="size-5 rounded-[6px] border-white bg-white data-[state=checked]:border-white data-[state=checked]:bg-[#6C5DD3] data-[state=checked]:text-white"
+                />
+                <span className="text-[14px] font-normal">Inactive</span>
+              </button>
+            )}
+          </div>
+
           {!showHistory && canAddCountyActivity && (
             <Button
               type="button"
@@ -1471,7 +1474,7 @@ export function CountyActivityCodeTable({
                 setCodeTypeDropdownOpened(false)
                 setAddOpen(true)
               }}
-              className="h-12 rounded-[10px] bg-[#6C5DD3] px-6 text-[14px] font-normal text-white hover:bg-[#5B4DC5]"
+              className="w-full sm:w-auto h-12 rounded-[10px] bg-[#6C5DD3] px-6 text-[14px] font-normal text-white hover:bg-[#5B4DC5]"
             >
               <PlusIcon className="mr-2 size-4" />
               Add County Activity

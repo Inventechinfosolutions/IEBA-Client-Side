@@ -27,10 +27,10 @@ export function UserToolbar({
     isSearchFocused && searchTerm.trim().length > 0 && visibleSuggestions.length > 0
 
   return (
-    <div className="mb-2 flex items-center justify-between gap-3">
-      <div className="flex items-center gap-3">
+    <div className="mb-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
         <div
-          className="relative w-[240px]"
+          className="relative w-full sm:w-[240px]"
           onFocusCapture={() => setIsSearchFocused(true)}
           onBlurCapture={() => setIsSearchFocused(false)}
         >
@@ -39,7 +39,7 @@ export function UserToolbar({
             value={searchTerm}
             onChange={(event) => onSearchChange(event.target.value)}
             placeholder="Search here"
-            className={`h-9 rounded-[8px] bg-white pl-9 pr-8 text-[11px]! md:text-[11px]! text-[#232735] shadow-[0_1px_3px_rgba(35,39,53,0.08)] placeholder:text-[11px] placeholder:text-[#b7bccb] focus-visible:ring-0 ${
+            className={`h-9 w-full rounded-[8px] bg-white pl-9 pr-8 text-[11px]! md:text-[11px]! text-[#232735] shadow-[0_1px_3px_rgba(35,39,53,0.08)] placeholder:text-[11px] placeholder:text-[#b7bccb] focus-visible:ring-0 ${
               isSearchFocused || searchTerm.trim()
                 ? "border-[#6C5DD3]"
                 : "border-[#e1e4ec]"
@@ -81,7 +81,7 @@ export function UserToolbar({
           ) : null}
         </div>
 
-        <div className="w-[200px]">
+        <div className="w-full sm:w-[200px]">
           <SingleSelectDropdown
             value={departmentId ?? "all"}
             onChange={(val) => onDepartmentChange(val === "all" ? undefined : val)}
@@ -94,15 +94,15 @@ export function UserToolbar({
               })),
             ]}
             placeholder="All Departments"
-            className="h-9! shadow-[0_1px_3px_rgba(35,39,53,0.08)] border-[#e1e4ec]"
+            className="h-9! w-full shadow-[0_1px_3px_rgba(35,39,53,0.08)] border-[#e1e4ec]"
           />
         </div>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 w-full md:w-auto">
         <Button
           type="button"
-          className="h-9 cursor-pointer gap-2 rounded-[12px] bg-[#6C5DD3] px-3 text-[12px] font-semibold text-white shadow-[0_1px_0_rgba(0,0,0,0.05)] hover:bg-[#6C5DD3]"
+          className="flex-1 md:flex-initial h-9 cursor-pointer gap-2 rounded-[12px] bg-[#6C5DD3] px-3 text-[12px] font-semibold text-white shadow-[0_1px_0_rgba(0,0,0,0.05)] hover:bg-[#6C5DD3]"
           onClick={onToggleInactiveOnly}
         >
           {inactiveOnly ? (
@@ -115,7 +115,7 @@ export function UserToolbar({
         {canAddUser && (
           <Button
             type="button"
-            className="h-9 cursor-pointer gap-1 rounded-[12px] bg-[#6C5DD3] px-3 text-[12px] font-semibold text-white shadow-[0_1px_0_rgba(0,0,0,0.05)] hover:bg-[#6C5DD3]"
+            className="flex-1 md:flex-initial h-9 cursor-pointer gap-1 rounded-[12px] bg-[#6C5DD3] px-3 text-[12px] font-semibold text-white shadow-[0_1px_0_rgba(0,0,0,0.05)] hover:bg-[#6C5DD3]"
             onClick={onAddEmployee}
           >
             <Plus className="size-3.5" />

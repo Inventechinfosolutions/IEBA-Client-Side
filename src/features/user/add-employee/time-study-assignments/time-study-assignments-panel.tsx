@@ -1725,28 +1725,28 @@ export function TimeStudyAssignmentsPanel({
                     type="button"
                     onClick={handleSaveTsMinDay}
                     disabled={!canPersistTsTransfers || isSavingTsMinDay}
-                    className="h-[46px] rounded-[7px] bg-[#6C5DD3] px-5 text-[12px] font-medium text-white hover:bg-[#6C5DD3] disabled:opacity-50"
+                    className="!h-[46px] rounded-[7px] bg-[#6C5DD3] px-5 text-[12px] font-medium text-white hover:bg-[#6C5DD3] disabled:opacity-50"
                   >
                     {isSavingTsMinDay ? "Saving..." : "Save"}
                   </Button>
                 </div>
               </div>
               {canShowTsHistory && isSuperAdmin ? (
-                <div className="flex w-full min-w-0 flex-wrap content-end gap-2 sm:w-auto sm:max-w-full sm:justify-end">
+                <div className="flex flex-col sm:flex-row w-full gap-2 items-stretch sm:items-end sm:w-auto sm:max-w-full sm:justify-end mt-2 sm:mt-0">
                   <Button
                     type="button"
-                    className="inline-flex h-auto min-h-9 shrink cursor-pointer items-start gap-2 whitespace-normal rounded-[12px] border border-[#E5E7EB] bg-white px-3 py-2 text-left text-[11px] font-semibold leading-snug text-[#6C5DD3] shadow-[0_1px_0_rgba(0,0,0,0.05)] hover:border-[#6C5DD3] hover:bg-[#F3F0FF] sm:text-[12px]"
+                    className="inline-flex h-auto min-h-9 shrink cursor-pointer items-center justify-center gap-2 whitespace-normal rounded-[12px] border border-[#E5E7EB] bg-white px-3 py-2 text-center text-[11px] font-semibold leading-snug text-[#6C5DD3] shadow-[0_1px_0_rgba(0,0,0,0.05)] hover:border-[#6C5DD3] hover:bg-[#F3F0FF] sm:text-[12px] w-full sm:w-auto"
                     onClick={() => setTsHistoryView("program")}
                   >
-                    <History className="mt-0.5 size-3.5 shrink-0" />
+                    <History className="size-3.5 shrink-0" />
                     <span>User Program History</span>
                   </Button>
                   <Button
                     type="button"
-                    className="inline-flex h-auto min-h-9 shrink cursor-pointer items-start gap-2 whitespace-normal rounded-[12px] border border-[#E5E7EB] bg-white px-3 py-2 text-left text-[11px] font-semibold leading-snug text-[#6C5DD3] shadow-[0_1px_0_rgba(0,0,0,0.05)] hover:border-[#6C5DD3] hover:bg-[#F3F0FF] sm:text-[12px]"
+                    className="inline-flex h-auto min-h-9 shrink cursor-pointer items-center justify-center gap-2 whitespace-normal rounded-[12px] border border-[#E5E7EB] bg-white px-3 py-2 text-center text-[11px] font-semibold leading-snug text-[#6C5DD3] shadow-[0_1px_0_rgba(0,0,0,0.05)] hover:border-[#6C5DD3] hover:bg-[#F3F0FF] sm:text-[12px] w-full sm:w-auto"
                     onClick={() => setTsHistoryView("activity")}
                   >
-                    <ClipboardList className="mt-0.5 size-3.5 shrink-0" />
+                    <ClipboardList className="size-3.5 shrink-0" />
                     <span>User Activity History</span>
                   </Button>
                 </div>
@@ -1754,7 +1754,7 @@ export function TimeStudyAssignmentsPanel({
             </div>
           </div>
 
-          <div className="mt-6 grid grid-cols-[1fr_60px_1fr] items-center gap-4">
+          <div className="mt-6 grid grid-cols-1 lg:grid-cols-[1fr_60px_1fr] items-center gap-4">
             <TransferPanel
               title="Select TS Programs(Unassigned)"
               items={filteredProgramsU}
@@ -1766,7 +1766,7 @@ export function TimeStudyAssignmentsPanel({
               selectedDept={selectedDept}
             />
 
-            <div className="flex flex-col gap-3 pt-10">
+            <div className="flex flex-row lg:flex-col justify-center gap-3 pt-4 lg:pt-10">
               <TransferListMoveButton
                 direction="forward"
                 onClick={() => void moveSelectedProgramsToAssignedColumn()}
@@ -1804,7 +1804,7 @@ export function TimeStudyAssignmentsPanel({
             />
           </div>
 
-          <div className="mt-4 grid grid-cols-[1fr_60px_1fr] items-center gap-4">
+          <div className="mt-4 grid grid-cols-1 lg:grid-cols-[1fr_60px_1fr] items-center gap-4">
             <TransferPanel
               title="Select Activities(Unassigned)"
               items={filteredActivitiesU}
@@ -1816,7 +1816,7 @@ export function TimeStudyAssignmentsPanel({
               selectedDept={selectedDept}
             />
 
-            <div className="flex flex-col gap-3 pt-10">
+            <div className="flex flex-row lg:flex-col justify-center gap-3 pt-4 lg:pt-10">
               <TransferListMoveButton
                 direction="forward"
                 onClick={() => void moveSelectedActivitiesToAssignedColumn()}

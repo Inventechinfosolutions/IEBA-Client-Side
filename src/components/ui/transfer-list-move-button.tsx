@@ -32,8 +32,11 @@ export function TransferListMoveButton({
     >
       <Play
         className={cn(
-          "size-3 shrink-0 fill-white stroke-white stroke-[1.25]",
-          direction === "back" && "rotate-180",
+          "size-3 shrink-0 fill-white stroke-white stroke-[1.25] transition-transform",
+          // Mobile view (default): point down for forward, up for back
+          direction === "forward" ? "rotate-90" : "-rotate-90",
+          // Desktop view (lg and up): point right for forward, left for back
+          direction === "forward" ? "lg:rotate-0" : "lg:rotate-180",
         )}
         aria-hidden
       />
