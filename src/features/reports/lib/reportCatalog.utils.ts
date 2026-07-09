@@ -2,6 +2,18 @@ import type { ReportCatalogItem } from "../types"
 
 type SelectMonthByValue = "qtr" | "dates" | "month" | "year" | "scheduled"
 
+const SELECT_MONTH_BY_ORDER: SelectMonthByValue[] = [
+  "month",
+  "qtr",
+  "year",
+  "dates",
+  "scheduled",
+]
+
+function sortSelectMonthByValues(values: SelectMonthByValue[]): SelectMonthByValue[] {
+  return SELECT_MONTH_BY_ORDER.filter((value) => values.includes(value))
+}
+
 function isCriteriaTrue(val: unknown): boolean {
   return val === true || val === "true"
 }
@@ -35,7 +47,7 @@ export function resolveAllowedSelectMonthByValues(
 ): SelectMonthByValue[] {
   const monthByOpts = criteria?.showMonthBy?.map((o) => o.type)
   if (monthByOpts && monthByOpts.length > 0) {
-    const allowed = [...monthByOpts] as SelectMonthByValue[]
+    const allowed = sortSelectMonthByValues([...monthByOpts] as SelectMonthByValue[])
     if (isCriteriaTrue(criteria?.showYear) && !allowed.includes("year")) {
       allowed.push("year")
     }

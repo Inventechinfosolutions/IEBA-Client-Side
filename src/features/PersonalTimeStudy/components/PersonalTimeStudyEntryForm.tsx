@@ -1624,12 +1624,12 @@ export function PersonalTimeStudyEntryForm({
                 )}
                 {!hideNotes && (
                   <div className="flex-[1.5] space-y-0.5">
-                    <Label className="text-[11px] text-muted-foreground">Notes </Label>
+                    <Label className="text-[11px] text-muted-foreground">Description</Label>
                     <TitleCaseInput
                       value={parent.description}
                       readOnly={isLocked || isLeaveRow || isApportionedRow}
                       onChange={(e) => updateParent(parent.id, { description: e.target.value })}
-                      placeholder="Notes"
+                      placeholder="Add description here..."
                       className={cn("h-10 text-[11px] text-[#344054] font-normal", (isLocked || isLeaveRow || isApportionedRow) && "bg-[#F2F4F7] cursor-not-allowed", isLeaveRow && "border-yellow-400", isApportionedRow && "border-[#6C5DD3]")}
                     />
                   </div>
@@ -1787,14 +1787,14 @@ export function PersonalTimeStudyEntryForm({
                           <div className="flex-1 space-y-1">
                             <div className="flex items-center gap-2">
                               <Label className="text-[11px] text-muted-foreground whitespace-nowrap">
-                                Notes
+                                Description
                               </Label>
                             </div>
                             <TitleCaseInput
                               value={sub.description}
                               readOnly={isLocked || isLeaveRow || isApportionedRow}
                               onChange={(e) => updateSubRow(parent.id, sub.id, { description: e.target.value })}
-                              placeholder="Notes"
+                              placeholder="Add description here..."
                               className={cn("h-9 text-[11px] text-[#344054] font-normal", (isLocked || isLeaveRow || isApportionedRow) && "bg-[#F2F4F7] cursor-not-allowed", isLeaveRow && "border-yellow-400", isApportionedRow && "border-[#6C5DD3]")}
                             />
                           </div>

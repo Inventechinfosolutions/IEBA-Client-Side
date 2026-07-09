@@ -7,6 +7,7 @@ import { Eye, EyeOff } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useAuth } from "@/contexts/AuthContext"
+import { AUTH_DEFAULT_LANDING_PATH } from "@/features/auth/constants"
 import { useLogin } from "@/features/auth/mutations/login"
 import { type LoginFormValues } from "@/features/auth/types"
 import { loginSchema } from "@/features/auth/schemas"
@@ -51,8 +52,7 @@ export function LoginPage() {
         return
       }
       
-      // If we reach here, it was a 'dashboard' flow
-      navigate("/", { replace: true })
+      navigate(AUTH_DEFAULT_LANDING_PATH, { replace: true })
     } catch (err: any) {
       // Handle login error
     }
