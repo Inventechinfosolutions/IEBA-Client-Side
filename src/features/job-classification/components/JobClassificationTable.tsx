@@ -226,7 +226,7 @@ export function JobClassificationTable({
                         {row.users.map((user) => (
                           <span
                             key={user.id}
-                            className={`inline-flex items-center rounded-[6px] border bg-[#f8f9fa] px-2 py-1 text-[10px] text-[#232735] ${user.status?.toLowerCase() === "inactive" ? "border-red-400" : "border-[#d8dae3]"}`}
+                            className={`inline-flex items-center rounded-[6px] border bg-[#f8f9fa] dark:bg-[#1c192d] px-2 py-1 text-[10px] text-[#232735] dark:text-[#e4e4e7] ${user.status?.toLowerCase() === "inactive" ? "border-red-400" : "border-[#d8dae3] dark:border-[rgba(108,93,211,0.5)]!"}`}
                           >
                             {user.name}
                           </span>

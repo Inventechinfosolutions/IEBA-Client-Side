@@ -782,7 +782,7 @@ export function CostPoolTable({
         <DialogContent
           showClose={false}
           overlayClassName="bg-black/50"
-          className="max-h-[90vh] w-[1240px] max-w-[calc(100vw-2rem)] overflow-y-auto border-0 bg-transparent p-0 shadow-none outline-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden focus-visible:outline-none"
+          className="max-h-[90vh] w-[1240px] max-w-[calc(100vw-2rem)] overflow-y-auto border-none! bg-transparent! p-0 shadow-none! outline-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden focus-visible:outline-none"
         >
           <div className="flex w-full justify-center">
             <CostPoolCreateDialogContent
@@ -805,7 +805,7 @@ export function CostPoolTable({
         <DialogContent
           showClose={false}
           overlayClassName="bg-black/50"
-          className="max-h-[90vh] w-[1240px] max-w-[calc(100vw-2rem)] overflow-y-auto border-0 bg-transparent p-0 shadow-none outline-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden focus-visible:outline-none"
+          className="max-h-[90vh] w-[1240px] max-w-[calc(100vw-2rem)] overflow-y-auto border-none! bg-transparent! p-0 shadow-none! outline-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden focus-visible:outline-none"
         >
           {rowToEdit ? (
             <div className="flex w-full justify-center">

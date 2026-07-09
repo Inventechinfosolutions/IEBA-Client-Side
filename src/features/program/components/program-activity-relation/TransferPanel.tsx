@@ -51,11 +51,11 @@ export function TransferPanel({
                     disabled={!onToggleAll}
                     className={`flex size-4.5 items-center justify-center rounded-[6px] border shadow-sm transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 ${
                       allSelected
-                        ? "border-[#6C5DD3] bg-white text-[#6C5DD3]"
-                        : "border-[#E5E7EB] bg-white text-transparent hover:border-[#D1D5DB]"
+                        ? "border-[#6C5DD3] bg-[#6C5DD3] text-white"
+                        : "border-[#E5E7EB] bg-white dark:bg-[#09090b] dark:border-[#3f3f46] hover:border-[#D1D5DB]"
                     }`}
                   >
-                    <Check className="size-3.5 stroke-[3]" />
+                    {allSelected && <Check className="size-3.5 stroke-[3]" />}
                   </button>
                 </div>
                 <div className="px-3 py-0.5">
@@ -128,14 +128,14 @@ export function TransferPanel({
                               {item.masterCodeType ? (
                                 <>
                                   <span className="font-bold">-{item.masterCodeType.trim()}-</span>
-                                  <span className={isSelected ? "text-[#6C5DD3]" : "text-[#111827]"}> {toTitleCase(item.name)}</span>
+                                  <span className={isSelected ? "text-[#6C5DD3] dark:text-[#a78bfa]" : "text-[#111827] dark:text-[#a1a1aa]"}> {toTitleCase(item.name)}</span>
                                 </>
                               ) : (
-                                <span className={isSelected ? "text-[#6C5DD3]" : "text-[#111827]"}> - {toTitleCase(item.name)}</span>
+                                <span className={isSelected ? "text-[#6C5DD3] dark:text-[#a78bfa]" : "text-[#111827] dark:text-[#a1a1aa]"}> - {toTitleCase(item.name)}</span>
                               )}
                             </>
                           ) : (
-                            <span className={isSelected ? "text-[#6C5DD3]" : "text-[#374151]"}>
+                            <span className={isSelected ? "text-[#6C5DD3] dark:text-[#a78bfa]" : "text-[#374151] dark:text-[#a1a1aa]"}>
                               {item.masterCodeType ? (
                                 <span className="font-bold">-{item.masterCodeType.trim()}- </span>
                               ) : null}
@@ -150,10 +150,10 @@ export function TransferPanel({
                       className={`flex size-4.5 shrink-0 items-center justify-center rounded-[6px] border shadow-sm transition-all mt-0.5 ${
                         isSelected
                           ? "border-[#6C5DD3] bg-[#6C5DD3] text-white"
-                          : "border-[#E5E7EB] bg-white text-transparent hover:border-[#D1D5DB]"
+                          : "border-[#E5E7EB] bg-white dark:bg-[#09090b] dark:border-[#3f3f46] hover:border-[#D1D5DB]"
                       }`}
                     >
-                      <Check className="size-3.5 stroke-[3]" />
+                      {isSelected && <Check className="size-3.5 stroke-[3]" />}
                     </div>
                   </button>
                 )

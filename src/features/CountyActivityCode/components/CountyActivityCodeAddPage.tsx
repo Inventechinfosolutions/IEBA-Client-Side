@@ -387,7 +387,7 @@ export function CountyActivityCodeAddPage({
           }
         >
           <div className="grid grid-cols-3 items-center gap-4">
-            <div className="flex flex-col gap-1 text-[16px] text-[#1F2937]">
+            <div className="flex flex-col gap-1 text-[16px] text-[#1F2937] dark:text-[#e4e4e7]">
               {tab === CountyActivityGridRowType.PRIMARY && (
                 <label className="flex cursor-pointer items-center gap-2">
                   <Checkbox
@@ -406,12 +406,12 @@ export function CountyActivityCodeAddPage({
                 </p>
               ) : null}
             </div>
-            <h3 className="whitespace-nowrap text-center text-[22px] max-[1024px]:text-[22px] max-[768px]:text-[18px] font-normal text-[#1F2937]">
+            <h3 className="whitespace-nowrap text-center text-[22px] max-[1024px]:text-[22px] max-[768px]:text-[18px] font-normal text-[#1F2937] dark:text-[#f4f4f5]">
               {isReadOnly ? "View" : mode === CountyActivityAddPageMode.EDIT ? "Edit" : "Add"}{" "}
               {tab === CountyActivityGridRowType.PRIMARY ? "Primary" : "Sub"} County Activity
             </h3>
             <div className="flex justify-end">
-              <label className="flex items-center gap-2 text-[16px] text-[#1F2937]">
+              <label className="flex items-center gap-2 text-[16px] text-[#1F2937] dark:text-[#e4e4e7]">
                 <Checkbox
                   disabled={isReadOnly}
                   checked={form.watch("active")}
@@ -567,7 +567,7 @@ export function CountyActivityCodeAddPage({
                     if (open) onPrimaryPickerDropdownOpen?.()
                   }}
                 >
-                  <SelectTrigger className="data-[size=default]:h-[48px] data-[size=sm]:h-[48px] h-[48px] w-full max-w-full min-w-0 rounded-[10px] border-[#D9D9D9] [&_[data-slot=select-value]]:line-clamp-none [&_[data-slot=select-value]]:block [&_[data-slot=select-value]]:min-w-0 [&_[data-slot=select-value]]:flex-1 [&_[data-slot=select-value]]:overflow-hidden [&_[data-slot=select-value]]:text-ellipsis [&_[data-slot=select-value]]:whitespace-nowrap [&_[data-slot=select-value]]:text-left">
+                  <SelectTrigger className="data-[size=default]:h-[48px] data-[size=sm]:h-[48px] h-[48px] w-full max-w-full min-w-0 rounded-[10px] border-[#D9D9D9] dark:border-[rgba(108,93,211,0.5)] dark:bg-[#09090b] dark:text-[#e4e4e7] [&_[data-slot=select-value]]:line-clamp-none [&_[data-slot=select-value]]:block [&_[data-slot=select-value]]:min-w-0 [&_[data-slot=select-value]]:flex-1 [&_[data-slot=select-value]]:overflow-hidden [&_[data-slot=select-value]]:text-ellipsis [&_[data-slot=select-value]]:whitespace-nowrap [&_[data-slot=select-value]]:text-left">
                     <SelectValue placeholder="Select primary activity code" />
                   </SelectTrigger>
                   <SelectContent
@@ -576,7 +576,7 @@ export function CountyActivityCodeAddPage({
                     align="start"
                     sideOffset={1}
                     avoidCollisions={false}
-                    className="w-(--radix-select-trigger-width) max-h-[280px] [&_[data-slot=select-scroll-up-button]]:hidden [&_[data-slot=select-scroll-down-button]]:hidden"
+                    className="w-(--radix-select-trigger-width) max-h-[280px] bg-white dark:bg-[#18181b] border border-[#e5e7eb] dark:border-[rgba(108,93,211,0.4)] [&_[data-slot=select-scroll-up-button]]:hidden [&_[data-slot=select-scroll-down-button]]:hidden"
                   >
                     <TooltipProvider delayDuration={100}>
                       {(primaryActivityCodeOptions ?? []).map((item) => (

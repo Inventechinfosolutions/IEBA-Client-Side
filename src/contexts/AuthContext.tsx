@@ -141,6 +141,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setSigningOut(true)
     markExplicitLogout()
 
+    // Reset theme to light mode on logout
+    if (typeof window !== "undefined") {
+      localStorage.setItem("theme", "light")
+      document.documentElement.classList.remove("dark")
+      document.documentElement.style.colorScheme = "light"
+    }
+
     // Call logout while access token is still in sessionStorage (backend requires Bearer).
     const logoutPromise = logoutRequest()
       .then(() => {

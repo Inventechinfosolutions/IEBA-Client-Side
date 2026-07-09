@@ -152,7 +152,7 @@ const employeeMultiSelectClassName =
   "!h-[45px] !min-h-[45px] !max-h-[45px] w-full max-w-full min-w-0 overflow-hidden rounded-[8px] border border-[#dcd6f7] bg-white !py-0 !text-[14px] leading-normal text-[#111827] shadow-none focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD3]/25 [&_.truncate]:!text-[14px]"
 
 const reportEmployeeListPanelClassName =
-  "rounded-[7px] border border-[#d9deea] bg-white shadow-[0_8px_18px_rgba(17,24,39,0.12)]"
+  "rounded-[7px] border border-[#d9deea] bg-white dark:bg-[#18181b] dark:border-[rgba(108,93,211,0.4)] shadow-[0_8px_18px_rgba(17,24,39,0.12)]"
 
 const reportEmployeeListScrollClassName = "max-h-[240px] overflow-auto p-1"
 
@@ -381,15 +381,15 @@ function ReportEmployeeMultiSelect({
         onCloseAutoFocus={(e) => e.preventDefault()}
       >
         {/* Search input */}
-        <div className="border-b border-[#e5e7eb] px-3 py-2">
-          <div className="flex items-center gap-2 rounded-[6px] border border-[#d6d7dc] bg-[#f9fafb] px-2.5 py-1.5">
+        <div className="border-b border-[#e5e7eb] dark:border-[rgba(108,93,211,0.3)] px-3 py-2">
+          <div className="flex items-center gap-2 rounded-[6px] border border-[#d6d7dc] dark:border-[#3f3f46] bg-[#f9fafb] dark:bg-[#09090b] px-2.5 py-1.5">
             <Search className="size-3.5 shrink-0 text-[#9ca3af]" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search..."
-              className="min-w-0 flex-1 border-0 bg-transparent text-[13px] text-[#111827] placeholder-[#9ca3af] outline-none"
+              className="min-w-0 flex-1 border-0 bg-transparent text-[13px] text-[#111827] dark:text-[#e4e4e7] placeholder-[#9ca3af] outline-none"
               autoFocus
               onClick={(e) => e.stopPropagation()}
               onKeyDown={(e) => e.stopPropagation()}
@@ -416,8 +416,8 @@ function ReportEmployeeMultiSelect({
           <div className={reportEmployeeListScrollClassName}>
             <label
               className={cn(
-                "flex w-full cursor-pointer items-center gap-3 border-b border-[#e5e7eb] px-3 py-2.5 hover:bg-[#f3f4f8]",
-                allFilteredSelected ? "bg-[#eef8ff]" : "bg-transparent",
+                "flex w-full cursor-pointer items-center gap-3 border-b border-[#e5e7eb] dark:border-[rgba(108,93,211,0.3)] px-3 py-2.5 hover:bg-[#f3f4f8] dark:hover:bg-[#2a1f52]",
+                allFilteredSelected ? "bg-[#eef8ff] dark:bg-[#1c1538]" : "bg-transparent",
               )}
             >
               <Checkbox
@@ -425,7 +425,7 @@ function ReportEmployeeMultiSelect({
                 onCheckedChange={() => toggleSelectAll()}
                 className="shrink-0"
               />
-              <span className="truncate text-[14px] font-medium text-[#111827]">Select All</span>
+              <span className="truncate text-[14px] font-medium text-[#111827] dark:text-[#e4e4e7]">Select All</span>
             </label>
             {filteredOptions.map((opt) => {
               const selected = selectedValues.includes(opt.value)
@@ -433,8 +433,8 @@ function ReportEmployeeMultiSelect({
                 <label
                   key={opt.value}
                   className={cn(
-                    "flex w-full cursor-pointer items-center gap-3 px-3 py-2.5 hover:bg-[#f3f4f8]",
-                    selected ? "bg-[#eef8ff]" : "bg-transparent",
+                    "flex w-full cursor-pointer items-center gap-3 px-3 py-2.5 hover:bg-[#f3f4f8] dark:hover:bg-[#2a1f52]",
+                    selected ? "bg-[#eef8ff] dark:bg-[#1c1538]" : "bg-transparent",
                   )}
                 >
                   <Checkbox
@@ -442,7 +442,7 @@ function ReportEmployeeMultiSelect({
                     onCheckedChange={() => toggle(opt.value)}
                     className="shrink-0"
                   />
-                  <span className="min-w-0 flex-1 truncate text-[14px] font-normal text-[#111827]">
+                  <span className="min-w-0 flex-1 truncate text-[14px] font-normal text-[#111827] dark:text-[#e4e4e7]">
                     {opt.label}
                   </span>
                 </label>

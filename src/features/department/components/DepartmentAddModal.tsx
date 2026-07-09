@@ -748,10 +748,10 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                                                                         })()
                                                                     }}
                                                                 >
-                                                                    <SelectTrigger style={{ height: '57px' }} className="w-full rounded-[8px] border-[#E5E7EB] text-[#111827] focus:ring-1 focus:ring-[#3B82F6] data-[state=open]:border-[#3B82F6]">
+                                                                    <SelectTrigger style={{ height: '57px' }} className="w-full rounded-[8px] border-[#E5E7EB] dark:border-[rgba(108,93,211,0.5)] bg-white dark:bg-[#09090b] text-[#111827] dark:text-[#e4e4e7] focus:ring-1 focus:ring-[#6C5DD3] data-[state=open]:border-[#6C5DD3]">
                                                                         <SelectValue placeholder={id ? "Not Assigned" : "Select Contact Name"} />
                                                                     </SelectTrigger>
-                                                                    <SelectContent position="popper" sideOffset={8} className="w-[var(--radix-select-trigger-width)] bg-white rounded-[8px] shadow-[0_4px_16px_#00000024] p-1 border-[#E5E7EB] z-50">
+                                                                    <SelectContent position="popper" sideOffset={8} className="w-[var(--radix-select-trigger-width)] bg-white dark:bg-[#18181b] rounded-[8px] shadow-[0_4px_16px_#00000024] p-1 border border-[#E5E7EB] dark:border-[rgba(108,93,211,0.4)] z-50">
                                                                         {usersQuery.isLoading && (
                                                                             <div className="flex items-center justify-center px-3 py-2">
                                                                                 <Spinner className="size-4 text-[#6C5DD3]" />
@@ -771,7 +771,7 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                                                                             <SelectItem
                                                                                 key={u.id}
                                                                                 value={u.id}
-                                                                                className="h-[42px] px-3 font-[400] text-[14px] text-[#111827] focus:bg-[#EBF5FF] focus:text-[#111827] cursor-pointer rounded-[6px]"
+                                                                                className="h-[42px] px-3 font-[400] text-[14px] text-[#111827] dark:text-[#e4e4e7] focus:bg-[#EBF5FF] dark:focus:bg-[#2a1f52] focus:text-[#111827] dark:focus:text-[#e4e4e7] cursor-pointer rounded-[6px]"
                                                                             >
                                                                                 {u.name}
                                                                             </SelectItem>

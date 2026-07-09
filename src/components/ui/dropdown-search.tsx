@@ -207,7 +207,7 @@ export function SingleSelectSearchDropdown({
         className={cn(
           "z-[1000] p-0",
           "w-[var(--radix-popover-trigger-width)]",
-          "max-h-[260px] overflow-auto rounded-[7px] border border-[#d9deea] bg-white shadow-[0_8px_18px_rgba(17,24,39,0.12)]",
+          "max-h-[260px] overflow-auto rounded-[7px] border border-[#d9deea] bg-white dark:bg-[#18181b] dark:border-[rgba(108,93,211,0.4)] shadow-[0_8px_18px_rgba(17,24,39,0.12)]",
           contentClassName,
         )}
         // Keep focus on input when interacting with the list
@@ -246,8 +246,8 @@ export function SingleSelectSearchDropdown({
                           selectingRef.current = false
                         }}
                         className={cn(
-                          "w-full cursor-pointer rounded px-3 py-2 text-left hover:bg-[#f3f4f8]",
-                          selected ? "bg-[#eef8ff]" : "bg-transparent",
+                          "w-full cursor-pointer rounded px-3 py-2 text-left hover:bg-[#f3f4f8] dark:hover:bg-[#2a1f52] dark:text-[#e4e4e7]",
+                          selected ? "bg-[#eef8ff] dark:bg-[#1c1538]" : "bg-transparent",
                           itemButtonClassName,
                         )}
                       >
