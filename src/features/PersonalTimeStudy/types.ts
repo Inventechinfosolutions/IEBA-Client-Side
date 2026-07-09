@@ -113,6 +113,7 @@ export type UserLeaveDaySnapshotResDto = {
   supervisorcomment?: string | null
   parentId?: number | null
   recordType?: string
+  message?: string | null
   multiCodeRecords?: UserLeaveMultiCodeFragment[]
 }
 

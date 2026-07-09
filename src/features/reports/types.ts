@@ -1,4 +1,4 @@
-import type { Control, Path } from "react-hook-form"
+import type { Control, Path, UseFormSetValue } from "react-hook-form"
 import { z } from "zod"
 
 import {
@@ -132,6 +132,7 @@ export type ReportEmployeeMultiSelectProps = {
 
 export type ReportSecondaryPickBlockProps = {
   control: Control<ReportFormValues>
+  setValue: UseFormSetValue<ReportFormValues>
   title: string
   activeLabel: string
   inactiveLabel: string

@@ -36,6 +36,7 @@ import {
   useMimicSession,
   useMimicUser,
 } from "../user-mimic"
+import { AUTH_DEFAULT_LANDING_PATH } from "@/features/auth/constants"
 import { mimicKeys } from "../user-mimic/keys"
 import { setStoredMimicSession } from "../user-mimic/storage"
 import {
@@ -382,7 +383,7 @@ export function UserModulePage() {
         targetLoginId: details.user?.loginId?.trim() || row.loginId || undefined,
       })
       queryClient.clear()
-      navigate("/", { replace: true })
+      navigate(AUTH_DEFAULT_LANDING_PATH, { replace: true })
     } catch (error) {
       const message =
         error instanceof Error
