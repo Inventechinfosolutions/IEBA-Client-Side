@@ -45,10 +45,12 @@ export const employeeLeaveRequestRowSchema = z
     totalMinApplied: z
       .string()
       .trim()
-      .min(1, "Total minutes is required")
-      .refine((v) => /^\d+$/.test(v), "Enter whole minutes")
-      .refine((v) => parseInt(v, 10) >= 0, "Minutes cannot be negative"),
+      .min(1, "Total time is required")
+      .refine((v) => /^\d+(\.\d+)?$/.test(v), "Enter a valid number")
+      .refine((v) => Number(v) >= 0, "Cannot be negative"),
     comment: z.string().trim(),
+    /** Decimal-time hint from API (e.g. "0.25 = 15 mins"). */
+    leaveTimeMessage: z.string().optional(),
     /** True when row was added via multi-code + (same date/times as row 0); drives program/activity lists. */
     multicodeChild: z.boolean().optional(),
   })

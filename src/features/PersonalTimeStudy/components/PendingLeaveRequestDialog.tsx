@@ -30,7 +30,6 @@ import {
 import { ChevronDown, ChevronRight, Edit2, MessageCircleMore, MoreVertical, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
-  assignSyntheticParentIdsByTimeSlot,
   groupUserLeaveRows,
   type UserLeaveMultiCodeFragment,
 } from "@/lib/groupUserLeaveRows"
@@ -90,10 +89,9 @@ export function PendingLeaveRequestDialog({
   const isRejected = title.toLowerCase().includes("rejected")
   const [expandedByParentId, setExpandedByParentId] = useState<Record<number, boolean>>({})
 
-  const preparedLeaves = useMemo(() => assignSyntheticParentIdsByTimeSlot(leaves), [leaves])
   const groupedLeaves = useMemo(
-    () => groupUserLeaveRows(preparedLeaves, { synthesizeChild: syntheticSnapshotChild }),
-    [preparedLeaves],
+    () => groupUserLeaveRows(leaves, { synthesizeChild: syntheticSnapshotChild }),
+    [leaves],
   )
 
   const toggleExpanded = (parentId: number) => {

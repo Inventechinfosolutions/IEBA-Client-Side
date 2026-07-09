@@ -194,7 +194,7 @@ function mapLeaveEntryToDto(
     enddt: entry.date,
     starttime: normalizeLeaveTimeString(entry.startTime),
     endtime: normalizeLeaveTimeString(entry.endTime),
-    leaveTotalTime: parseInt(entry.totalMinApplied, 10) || 0,
+    leaveTotalTime: Number(entry.totalMinApplied) || 0,
     requestcomment: entry.comment || undefined,
     status: status as any,
   }
@@ -217,7 +217,7 @@ function mapMulticodeChildToRecord(
     programname: program?.name ?? child.programCode,
     activitycode: activity?.code ?? child.activityCode,
     activityname: activity?.name ?? child.activityCode,
-    leaveTotalTime: parseInt(child.totalMinApplied, 10) || 0,
+    leaveTotalTime: Number(child.totalMinApplied) || 0,
     requestcomment: child.comment || undefined,
   }
 }
