@@ -29,6 +29,7 @@ import { useGlobalNamespaces } from "@/features/auth/queries/getGlobalNamespaces
 import { useValidateLoginOtp } from "@/features/auth/mutations/useValidateLoginOtp"
 import { getUserDetails } from "@/features/auth/api/getUserDetails"
 import { buildAuthUserFromDetails } from "@/features/auth/utils/buildAuthUser"
+import { AUTH_DEFAULT_LANDING_PATH } from "@/features/auth/constants"
 import { AuthJourney } from "@/features/auth/enums/auth.enum"
 import {
   type OtpFormValues,
@@ -204,7 +205,7 @@ export function OtpAuthentication() {
               <CircleCheckIcon className="size-4 shrink-0 text-green-600 dark:text-green-400" />
             ),
           })
-          navigate("/", { replace: true })
+          navigate(AUTH_DEFAULT_LANDING_PATH, { replace: true })
         },
         onError: (error) => {
           setIsLoggingIn(false)

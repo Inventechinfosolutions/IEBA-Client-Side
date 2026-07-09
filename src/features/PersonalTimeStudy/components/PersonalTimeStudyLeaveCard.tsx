@@ -147,6 +147,7 @@ export function PersonalTimeStudyLeaveCard({
       programCode: String((editingLeave as any).programid ?? ""),
       activityCode: String((editingLeave as any).activityid ?? ""),
       totalMinApplied: String((editingLeave as any).leaveTotalTime ?? "0"),
+      leaveTimeMessage: (editingLeave as any).message ?? undefined,
       comment: (editingLeave as any).requestcomment || "",
       multicodeChild: false,
     }
@@ -159,6 +160,7 @@ export function PersonalTimeStudyLeaveCard({
       programCode: String(c.programid ?? ""),
       activityCode: String(c.activityid ?? ""),
       totalMinApplied: String(c.leaveTotalTime ?? "0"),
+      leaveTimeMessage: c.message ?? undefined,
       comment: c.requestcomment || "",
       multicodeChild: true,
     }))

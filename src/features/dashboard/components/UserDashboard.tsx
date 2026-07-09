@@ -329,15 +329,15 @@ export function UserDashboard() {
                 <thead>
                   <tr className="bg-[#6C5DD3] text-white text-[12px] font-bold uppercase">
                     <th className="w-10 px-3 py-3 border-r border-white/20 first:rounded-tl-[15px]"></th>
-                    <th className="px-5 py-3 border-r border-white/20 last:border-0 text-center">Program</th>
-                    <th className="px-5 py-3 border-r border-white/20 last:border-0 text-center">Activity</th>
-                    <th className="px-5 py-3 border-r border-white/20 last:border-0 text-center">Start</th>
-                    <th className="px-5 py-3 border-r border-white/20 last:border-0 text-center">End</th>
-                    <th className="px-5 py-3 border-r border-white/20 last:border-0 text-center">Travel</th>
-                    <th className="px-5 py-3 border-r border-white/20 last:border-0 text-center">Total</th>
-                    <th className="px-5 py-3 border-r border-white/20 last:border-0 text-center">Notes</th>
-                    <th className="px-5 py-3 border-r border-white/20 last:border-0 text-center">Desc</th>
-                    <th className="px-5 py-3 border-r border-white/20 last:border-0 text-center last:rounded-tr-[15px]">Status</th>
+                    <th className="px-5 py-3 border-r border-white/20 last:border-0 text-center normal-case">Program</th>
+                    <th className="px-5 py-3 border-r border-white/20 last:border-0 text-center normal-case">Activity</th>
+                    <th className="px-5 py-3 border-r border-white/20 last:border-0 text-center normal-case">Start</th>
+                    <th className="px-5 py-3 border-r border-white/20 last:border-0 text-center normal-case">End</th>
+                    <th className="px-5 py-3 border-r border-white/20 last:border-0 text-center normal-case">Travel</th>
+                    <th className="px-5 py-3 border-r border-white/20 last:border-0 text-center normal-case">Total</th>
+                    <th className="px-5 py-3 border-r border-white/20 last:border-0 text-center normal-case">notes</th>
+                    <th className="px-5 py-3 border-r border-white/20 last:border-0 text-center normal-case">Description</th>
+                    <th className="px-5 py-3 border-r border-white/20 last:border-0 text-center normal-case last:rounded-tr-[15px]">Status</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white">
@@ -446,7 +446,7 @@ export function UserDashboard() {
                                         <th className="px-4 py-2 border-r border-white/20 text-center">Program</th>
                                         <th className="px-4 py-2 border-r border-white/20 text-center">Activity</th>
                                         <th className="px-4 py-2 border-r border-white/20 text-center">Total</th>
-                                        <th className="px-4 py-2 border-r border-white/20 text-center">Desc</th>
+                                        <th className="px-4 py-2 border-r border-white/20 text-center normal-case">Description</th>
                                         <th className="px-4 py-2 last:border-0 text-center">Status</th>
                                       </tr>
                                     </thead>
