@@ -1,6 +1,7 @@
 import { Navigate } from "react-router-dom"
 import { useAuth } from "@/contexts/AuthContext"
 import { Spinner } from "@/components/ui/spinner"
+import { AUTH_DEFAULT_LANDING_PATH } from "@/features/auth/constants"
 
 type GuestOnlyRouteProps = {
   children: React.ReactNode
@@ -18,7 +19,7 @@ export function GuestOnlyRoute({ children }: GuestOnlyRouteProps) {
   }
 
   if (isAuthenticated) {
-    return <Navigate to="/" replace />
+    return <Navigate to={AUTH_DEFAULT_LANDING_PATH} replace />
   }
 
   return <>{children}</>

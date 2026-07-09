@@ -29,9 +29,13 @@ export type GroupedUserLeaveRow<T extends UserLeaveGroupable> = {
 }
 
 /**
- * When the API returns multiple rows for the same user + date + start/end without
- * `parentId`, treat the lowest `id` in each slot as parent and assign synthetic
- * `parentId` on the rest so grouping + chevrons work.
+ * Legacy helper: when the API returns multiple flat rows for the same user + date +
+ * start/end without `parentId`, treat the lowest `id` as parent.
+ *
+ * Do NOT use for leave-approval or pending-leave lists: the API returns independent
+ * parent rows (`parentId` null) per submission. Same-day decimal-hour leaves have
+ * empty start/end times, so this wrongly merges separate requests (e.g. approved CD
+ * + requested Clinic) into one expandable group.
  */
 export function assignSyntheticParentIdsByTimeSlot<
   T extends {

@@ -10,7 +10,7 @@ import type { MgtEmployeeRow } from "../types"
  */
 export async function apiMgtGetEmployeeList(_search?: string, _departmentIds?: string): Promise<MgtEmployeeRow[]> {
   const res = await api.get<any>(
-    `/timestudyrecords/users/eligible?status=active`
+   `/timestudyrecords/users/eligible-all?status=active`
   )
   const items = res.data?.data ?? []
   return items.map((u: any) => ({

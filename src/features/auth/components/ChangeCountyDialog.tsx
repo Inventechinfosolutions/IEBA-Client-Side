@@ -17,6 +17,7 @@ import { setToken } from "@/lib/api"
 
 import iebaLogo from "@/assets/ieba-logo.png"
 import { useGlobalNamespaces } from "../queries/getGlobalNamespaces"
+import { AUTH_DEFAULT_LANDING_PATH } from "../constants"
 import { useChangeCounty } from "../mutations/useChangeCounty"
 import { getUserDetails } from "../api/getUserDetails"
 import type { ChangeCountyDialogProps } from "../types"
@@ -128,7 +129,7 @@ export function ChangeCountyDialog({
 
           // Fast "refresh": clear cached data so screens refetch using the new token/tenant.
           queryClient.clear()
-          navigate("/", { replace: true })
+          navigate(AUTH_DEFAULT_LANDING_PATH, { replace: true })
         },
         onError: (error) => {
           toast.error(error.message || "Failed to change county")
