@@ -298,6 +298,7 @@ export type UserDetailsDto = {
   supervisorApportioning: boolean
   activationStartDate?: string | null
   activationEndDate?: string | null
+  theme?: boolean
 }
 
 export type UserModuleListResponse = {

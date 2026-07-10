@@ -364,6 +364,7 @@ export function UserModulePage() {
         avatar: user.avatar,
         roles: nextRoles,
         permissions: nextPerms,
+        theme: details.theme,
         departmentRoles: deptRoles,
         isPasswordChangeRequired: !!details.isPasswordChangeRequired,
       })

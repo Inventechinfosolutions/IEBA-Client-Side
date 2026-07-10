@@ -1,6 +1,8 @@
 import { useTheme } from "next-themes"
 import { Sun, Moon } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useAuth } from "@/contexts/AuthContext"
+import { apiUpdateUserTheme } from "@/features/user/api"
 
 interface ThemeToggleProps {
   className?: string
@@ -8,13 +10,22 @@ interface ThemeToggleProps {
 
 export function ThemeToggle({ className }: ThemeToggleProps) {
   const { theme, setTheme } = useTheme()
+  const { user } = useAuth()
 
   const isDark = theme === "dark"
+
+  const handleToggle = () => {
+    const nextDark = !isDark
+    setTheme(nextDark ? "dark" : "light")
+    if (user?.id) {
+      void apiUpdateUserTheme(user.id, nextDark)
+    }
+  }
 
   return (
     <button
       type="button"
-      onClick={() => setTheme(isDark ? "light" : "dark")}
+      onClick={handleToggle}
       className={cn(
         "relative flex h-9 w-9 items-center justify-center rounded-full border border-[#E5E7EB] bg-white text-[#6B7280] transition-all duration-300 hover:bg-[#F3F4F6] hover:text-[#111827] focus-visible:outline-none dark:border-[#27272a] dark:bg-[#09090b] dark:text-[#a1a1aa] dark:hover:bg-[#18181b] dark:hover:text-white",
         className

@@ -19,6 +19,7 @@ export type User = {
   roles?: string[]
 
   permissions?: string[]
+  theme?: boolean
 
   departmentRoles?: Array<{
     departmentId: number

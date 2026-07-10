@@ -5,6 +5,7 @@ import { useMutation } from "@tanstack/react-query"
 import { useNavigate, useLocation, Navigate } from "react-router-dom"
 import { toast } from "sonner"
 import { ChevronDown, CircleCheckIcon, Search } from "lucide-react"
+import { useTheme } from "next-themes"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -52,6 +53,7 @@ export function OtpAuthentication() {
   const [countySearch, setCountySearch] = useState("")
   const [isLoggingIn, setIsLoggingIn] = useState(false)
   const { establishDashboardSession } = useAuth()
+  const { setTheme } = useTheme()
   const navigate = useNavigate()
   const location = useLocation()
   const state = location.state as OtpLocationState | null
@@ -182,6 +184,9 @@ export function OtpAuthentication() {
           let authUser
           try {
             const details = await getUserDetails(result.userId)
+            if (details.theme !== undefined) {
+              setTheme(details.theme ? "dark" : "light")
+            }
             authUser = {
               ...buildAuthUserFromDetails(result.userId, loginId, details),
               namespace: selectedNameSpace,
