@@ -159,8 +159,8 @@ export function PersonalTimeStudyPage() {
 
     for (const d of monthQuery.data.data) {
       const s = String(d.status).toLowerCase()
-      // If unlocked (opened), don't show the cell color
-      const cellColor = s === "opened" ? undefined : (d.color ?? undefined)
+      // If unlocked (opened) or draft, don't show the cell color
+      const cellColor = (s === "opened" || s === "draft") ? undefined : (d.color ?? undefined)
       dayMap[d.date] = { status: d.status, color: cellColor, hasNotes: !!d.notes, noteText: d.notes || undefined }
 
       const weekKey = getWeekStartKey(d.date)

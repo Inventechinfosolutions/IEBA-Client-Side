@@ -165,6 +165,7 @@ export type TimeEntryParentRow = {
   leaveid?: number
   status?: string
   recordType?: string
+  isEdited?: boolean
 }
 
 export type TimeEntryRow = TimeEntryParentRow
@@ -727,7 +728,8 @@ export function PersonalTimeStudyEntryForm({
         }
         if (r.leaveid) {
           const leave = leaveRecords?.find((l) => Number(l.id) === Number(r.leaveid))
-          if (leave && leave.status?.toLowerCase() !== "approved") {
+          const lStatus = leave?.status?.toLowerCase();
+          if (leave && lStatus !== "approved" && lStatus !== "draft" && lStatus !== "requested") {
             return false
           }
         }
@@ -794,7 +796,8 @@ export function PersonalTimeStudyEntryForm({
       const leaveRows: TimeEntryParentRow[] = []
       if (leaveRecords) {
         leaveRecords.forEach((leave) => {
-          if (leave.status?.toLowerCase() === "approved") {
+          const lStatus = leave.status?.toLowerCase();
+          if (lStatus === "approved" || lStatus === "draft" || lStatus === "requested") {
             const lStart = (leave.starttime ?? "").split(":").slice(0, 2).join(":")
             const lEnd = (leave.endtime ?? "").split(":").slice(0, 2).join(":")
             const existing = sorted.find(
@@ -909,6 +912,11 @@ export function PersonalTimeStudyEntryForm({
         // Auto-fill logic
         if (patch.start !== undefined && !rowSettings.removeAutoFillEndTime) {
           updatedP.end = addMinutesToTime(patch.start, 15)
+        }
+
+        if (patch.start !== undefined || patch.end !== undefined) {
+          updatedP.isEdited = true
+          updatedP.totalMin = String(computeDurationMinutes(updatedP.start, updatedP.end))
         }
 
         if (patch.start !== undefined || patch.end !== undefined || patch.totalMin !== undefined) {
@@ -1096,7 +1104,9 @@ export function PersonalTimeStudyEntryForm({
           endtime: hideTime ? null : (p.end || null),
           activitytime: hideTime
             ? (Number(decimalTotalMin) || 0)
-            : (Number(computeDurationMinutes(p.start, p.end)) || Number(p.totalMin) || 0),
+            : (p.dbId && !p.isEdited)
+              ? (Number(p.totalMin) || 0)
+              : (Number(computeDurationMinutes(p.start, p.end)) || Number(p.totalMin) || 0),
           programid: p.tsProgram,
           activityid: p.serviceActivity,
           description: p.description,
@@ -1315,7 +1325,7 @@ export function PersonalTimeStudyEntryForm({
         </div>
       )}
       <div className="mb-6 flex flex-col gap-2">
-        {showLeaveBanner && leaveRecords && leaveRecords.filter(l => l.status?.toLowerCase() === "approved").map((leave, idx) => (
+        {showLeaveBanner && leaveRecords && leaveRecords.filter(l => ["approved", "draft", "requested"].includes(l.status?.toLowerCase() ?? "")).map((leave, idx) => (
           <div key={idx} className="mt-5 mb-1 mx-auto max-w-max rounded-[6px] bg-[#E2E8F0]/50 px-4 py-1.5 text-[13px] text-gray-600 italic text-center border border-[#CBD5E1]">
             {leave.name || leave.employeeName || username} applied leave in this date : <span className="not-italic font-medium text-gray-800">({dateStr})</span> from : <span className="not-italic font-medium text-gray-800">({leave.starttime})</span> To : <span className="not-italic font-medium text-gray-800">({leave.endtime})</span>.
           </div>
@@ -1612,7 +1622,7 @@ export function PersonalTimeStudyEntryForm({
                       type="number"
                       min="0"
                       readOnly={isLocked || isLeaveRow || isApportionedRow}
-                      value={(!totalDisplay || totalDisplay === "0") ? (parent.totalMin || totalDisplay || "") : totalDisplay}
+                      value={parent.dbId && !parent.isEdited ? (parent.totalMin || "") : ((!totalDisplay || totalDisplay === "0") ? (parent.totalMin || totalDisplay || "") : totalDisplay)}
                       placeholder="—"
                       className={cn(
                         "h-10 text-[11px] bg-[#F2F4F7] cursor-not-allowed",
