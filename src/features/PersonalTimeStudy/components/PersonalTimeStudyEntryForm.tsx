@@ -809,8 +809,10 @@ export function PersonalTimeStudyEntryForm({
             const lEnd = (leave.endtime ?? "").split(":").slice(0, 2).join(":")
             const existing = sorted.find(
               (rec) =>
-                (rec.leaveid !== undefined && leave.id !== undefined && Number(rec.leaveid) === Number(leave.id)) ||
-                (rec.start === lStart && rec.end === lEnd && rec.tsProgram === String(leave.programid ?? ""))
+
+                leave.id !== undefined &&
+                rec.leaveid !== undefined &&
+                Number(rec.leaveid) === Number(leave.id),
             )
             if (existing) {
               existing.isLeave = true
@@ -836,6 +838,8 @@ export function PersonalTimeStudyEntryForm({
                 id: newId(),
                 start: lStart,
                 end: lEnd,
+                // totalMin: String(leave.leaveTotalTime ?? ""),
+                leaveid: leave.id,
                 tsProgram: String(leave.programid ?? ""),
                 serviceActivity: String(leave.activityid ?? ""),
                 description: "",
