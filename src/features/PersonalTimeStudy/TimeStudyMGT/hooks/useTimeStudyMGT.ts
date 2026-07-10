@@ -8,6 +8,10 @@ import { toIsoYmdFromDate, todayLocal } from "@/lib/dates"
 import { usePermissions } from "@/hooks/usePermissions"
 import type { MgtEmployeeRow, MgtDayStatusMap, MgtWeekSummary } from "../types"
 import { useGetUserAssignedDepartmentsSettingChecks } from "../../queries/getUserAssignedDepartmentsSettingChecks"
+import {
+  FUTURE_WEEK_STATUS,
+  isCalendarWeekEntirelyFuture,
+} from "../../utils/weekSummaryUtils"
 
 /** Derive week STATUS/ACTION from backend monthlegend day statuses (any single day qualifies). */
 function resolveWeekStatusFromBackendDays(days: string[]): string {
@@ -144,7 +148,9 @@ export function useTimeStudyMGT() {
     for (const [key, val] of Object.entries(weekMap)) {
       finalWeekSummaries[key] = {
         totalMinutes: val.totalMinutes,
-        status: resolveWeekStatusFromBackendDays(val.days),
+        status: isCalendarWeekEntirelyFuture(key)
+          ? FUTURE_WEEK_STATUS
+          : resolveWeekStatusFromBackendDays(val.days),
       }
     }
 

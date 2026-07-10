@@ -28,45 +28,10 @@ import { TimeStudyMGTPage } from "../TimeStudyMGT"
 import { PersonalTimeStudyNotesSection } from "../components/PersonalTimeStudyNotesSection"
 import { PersonalTimeStudyPeriodsSection } from "../components/PersonalTimeStudyPeriodsSection"
 import { toIsoYmdFromDate, todayLocal } from "@/lib/dates"
+import { buildWeekSummariesFromMonthLegend } from "../utils/weekSummaryUtils"
 
 
 type ActiveTab = "personal" | "mgt"
-
-function getWeekStartKey(dateStr: string): string {
-  const [y, m, d] = dateStr.split('-').map(Number)
-  const date = new Date(y, m - 1, d)
-  const day = date.getDay()
-  const diff = date.getDate() - day
-  const sunday = new Date(date.getFullYear(), date.getMonth(), diff)
-  return toIsoYmdFromDate(sunday)
-}
-
-/**
- * Determines the overall status for a week based on individual day statuses and totals.
- * Priority:
- * 1. All Approved -> "approved"
- * 2. Any Rejected -> "rejected"
- * 3. Any entered minutes -> equal / less / more (even if only one day saved/submitted)
- * 4. Nothing filled -> "pending"
- */
-function getWeeklyStatus(days: string[], totalMinutes: number, targetMinutes: number): string {
-  if (days.length === 0) return "pending"
-
-  const lowerDays = days.map(d => String(d || "").toLowerCase())
-
-  const allApproved = lowerDays.every(d => d === "approved")
-  if (allApproved) return "approved"
-
-  if (lowerDays.some(d => d === "rejected")) return "rejected"
-
-  if (totalMinutes > 0) {
-    if (totalMinutes === targetMinutes) return "equal"
-    if (totalMinutes < targetMinutes) return "less"
-    return "more"
-  }
-
-  return "pending"
-}
 
 export function PersonalTimeStudyPage() {
   const { user } = useAuth()
@@ -153,7 +118,6 @@ export function PersonalTimeStudyPage() {
   // 5. Calendar day & week summaries
   const { dayStatuses, weekSummaries } = useMemo(() => {
     const dayMap: Record<string, { status: string; color?: string; hasNotes?: boolean; noteText?: string }> = {}
-    const weekMap: Record<string, { totalMinutes: number, targetMinutes: number, days: string[] }> = {}
 
     if (!monthQuery.data?.data) return { dayStatuses: {}, weekSummaries: {} }
 
@@ -162,28 +126,9 @@ export function PersonalTimeStudyPage() {
       // If unlocked (opened) or draft, don't show the cell color
       const cellColor = (s === "opened" || s === "draft") ? undefined : (d.color ?? undefined)
       dayMap[d.date] = { status: d.status, color: cellColor, hasNotes: !!d.notes, noteText: d.notes || undefined }
-
-      const weekKey = getWeekStartKey(d.date)
-      if (!weekMap[weekKey]) {
-        weekMap[weekKey] = { totalMinutes: 0, targetMinutes: 0, days: [] }
-      }
-
-      weekMap[weekKey].totalMinutes += d.minutes ?? 0
-      weekMap[weekKey].targetMinutes += d.allocatedMinutes ?? 0
-      weekMap[weekKey].days.push(d.status)
     }
 
-    // Find the baseline daily assigned minutes from the DB (first day that has a non-zero value)
-    const dbAssignedMinutes = monthQuery.data.data.find(d => (d.allocatedMinutes ?? 0) > 0)?.allocatedMinutes ?? 0
-
-    const weekSummaries: Record<string, any> = {}
-    for (const [key, val] of Object.entries(weekMap)) {
-      // Weekly target is strictly 7 * the assigned daily minutes from the DB
-      const weeklyTarget = 7 * dbAssignedMinutes
-
-      const finalStatus = getWeeklyStatus(val.days, val.totalMinutes, weeklyTarget)
-      weekSummaries[key] = { totalMinutes: val.totalMinutes, status: finalStatus }
-    }
+    const weekSummaries = buildWeekSummariesFromMonthLegend(monthQuery.data.data)
 
     // Extract dynamic legend from data
     const statusMap = new Map<string, string>()
