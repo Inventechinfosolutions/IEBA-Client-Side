@@ -27,17 +27,16 @@ function getWeekStartKey(dateStr: string): string {
 }
 
 function getWeeklyStatus(days: string[], totalMinutes: number, targetMinutes: number): string {
-  if (days.length === 0) return "notsubmitted"
+  if (days.length === 0) return "pending"
   const lowerDays = days.map(d => String(d || "").toLowerCase())
-  const allApproved = lowerDays.every(d => d === "approved")
-  if (allApproved) return "approved"
-  const hasRejected = lowerDays.some(d => d === "rejected")
-  if (hasRejected) return "rejected"
-  const hasNotSubmitted = lowerDays.some(d => !d || d === "opened" || d === "notsubmitted" || d === "undefined")
-  if (hasNotSubmitted) return "pending"
-  if (totalMinutes === targetMinutes) return "equal"
-  if (totalMinutes < targetMinutes) return "less"
-  return "more"
+  if (lowerDays.every(d => d === "approved")) return "approved"
+  if (lowerDays.some(d => d === "rejected")) return "rejected"
+  if (totalMinutes > 0) {
+    if (totalMinutes === targetMinutes) return "equal"
+    if (totalMinutes < targetMinutes) return "less"
+    return "more"
+  }
+  return "pending"
 }
 
 export function UserDashboard() {

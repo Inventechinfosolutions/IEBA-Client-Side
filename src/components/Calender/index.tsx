@@ -96,9 +96,24 @@ const weekSummaryDotColors: Record<DateStatus, string> = {
   [DateStatus.WEEKEND]: '#f1f5f9',
 };;
 
+/** Locale used by AppCalender — week row keys must match this when rolling up summaries. */
+export const CALENDAR_LOCALE = "en-GB"
+
 /** Build lookup key for `weekSummaries` from the first day of a calendar row. */
 export function formatWeekStartUtcKey(date: Date): string {
   return toIsoYmdFromDate(date)
+}
+
+/** Week-start key for a YYYY-MM-DD date, aligned with AppCalender grid rows. */
+export function getCalendarWeekStartKeyFromIso(dateStr: string): string {
+  const [y, m, d] = dateStr.split("-").map(Number)
+  const date = new Date(y, m - 1, d)
+  const firstDayOfWeek =
+    new Intl.DateTimeFormat(CALENDAR_LOCALE).resolvedOptions().weekday === "monday" ? 1 : 0
+  let dayOfWeek = date.getDay() - firstDayOfWeek
+  if (dayOfWeek < 0) dayOfWeek += 7
+  const weekStart = new Date(date.getFullYear(), date.getMonth(), date.getDate() - dayOfWeek)
+  return toIsoYmdFromDate(weekStart)
 }
 
 function getNowInTimezone(_timezone: string, _locale: string) {
