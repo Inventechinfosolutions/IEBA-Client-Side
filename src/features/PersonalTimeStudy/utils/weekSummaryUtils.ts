@@ -27,33 +27,31 @@ export type WeekRollup = {
   days: string[]
 }
 
-/**
- * Weekly STATUS display rules:
- * - TOTAL(MIN.) = sum of entered minutes for all 7 days in the calendar row
- * - Target = 5 working days × daily allocation (e.g. 5 × 480 = 2400)
- * - Green  → total === 2400
- * - Yellow → total < 2400
- * - Red    → total > 2400
- */
-export function getWeeklyStatus(
-  days: string[],
-  totalMinutes: number,
-  targetMinutes: number,
-): string {
-  if (days.length === 0) return "pending"
-
+/** Derive week STATUS from backend month-legend day statuses (any single day qualifies). */
+export function resolveWeekStatusFromBackendDays(days: string[]): string {
   const lowerDays = days.map((d) => String(d || "").toLowerCase())
 
-  if (lowerDays.every((d) => d === "approved")) return "approved"
-  if (lowerDays.some((d) => d === "rejected")) return "rejected"
-
-  if (totalMinutes > 0) {
-    if (totalMinutes === targetMinutes) return "equal"
-    if (totalMinutes < targetMinutes) return "less"
-    return "more"
+  if (lowerDays.some((d) => d === "rejected")) {
+    return "rejected"
   }
-
-  return "pending"
+  if (lowerDays.some((d) => d === "approved")) {
+    return "approved"
+  }
+  if (
+    lowerDays.some(
+      (d) =>
+        d.startsWith("submitted") ||
+        d.includes("target met") ||
+        d.includes("equal hours") ||
+        d === "less_hours" ||
+        d === "more_hours" ||
+        d === "equal_hours" ||
+        d === "submitted",
+    )
+  ) {
+    return "submitted"
+  }
+  return "notsubmitted"
 }
 
 /** Daily allocation from month legend (e.g. 480). */
@@ -86,8 +84,6 @@ export function buildWeekRollups(monthData: UserMonthLegendDayResDto[]): Record<
 export function buildWeekSummariesFromMonthLegend(
   monthData: UserMonthLegendDayResDto[],
 ): Record<string, { totalMinutes: number; status: string }> {
-  const dailyAssignedMinutes = getDailyAssignedMinutes(monthData)
-  const weeklyTarget = getWeeklyTargetMinutes(dailyAssignedMinutes)
   const weekMap = buildWeekRollups(monthData)
   const weekSummaries: Record<string, { totalMinutes: number; status: string }> = {}
 
@@ -96,7 +92,7 @@ export function buildWeekSummariesFromMonthLegend(
       totalMinutes: val.totalMinutes,
       status: isCalendarWeekEntirelyFuture(key)
         ? FUTURE_WEEK_STATUS
-        : getWeeklyStatus(val.days, val.totalMinutes, weeklyTarget),
+        : resolveWeekStatusFromBackendDays(val.days),
     }
   }
 

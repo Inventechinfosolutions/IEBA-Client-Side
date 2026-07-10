@@ -11,34 +11,8 @@ import { useGetUserAssignedDepartmentsSettingChecks } from "../../queries/getUse
 import {
   FUTURE_WEEK_STATUS,
   isCalendarWeekEntirelyFuture,
+  resolveWeekStatusFromBackendDays,
 } from "../../utils/weekSummaryUtils"
-
-/** Derive week STATUS/ACTION from backend monthlegend day statuses (any single day qualifies). */
-function resolveWeekStatusFromBackendDays(days: string[]): string {
-  const lowerDays = days.map((d) => String(d || "").toLowerCase())
-
-  if (lowerDays.some((d) => d === "rejected")) {
-    return "rejected"
-  }
-  if (lowerDays.some((d) => d === "approved")) {
-    return "approved"
-  }
-  if (
-    lowerDays.some(
-      (d) =>
-        d.startsWith("submitted") ||
-        d.includes("target met") ||
-        d.includes("equal hours") ||
-        d === "less_hours" ||
-        d === "more_hours" ||
-        d === "equal_hours" ||
-        d === "submitted",
-    )
-  ) {
-    return "submitted"
-  }
-  return "notsubmitted"
-}
 
 /**
  * Master UI state hook for the Time Study MGT tab.

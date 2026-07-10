@@ -7,7 +7,7 @@ import { PersonalLeaveCard } from "../components/PersonalLeaveCard"
 import { ReportsCard } from "../components/ReportsCard"
 import { TodoCard } from "../components/TodoCard"
 import { Card } from "@/components/ui/card"
-import { Lock, Check, X, MessageCircle, Plus, Minus } from "lucide-react"
+import { MessageCircle, Plus, Minus } from "lucide-react"
 import { PersonalTimeStudyCalendarCard } from "../../PersonalTimeStudy/components/PersonalTimeStudyCalendarCard"
 import { useGetPersonalMonthLegend } from "../../PersonalTimeStudy/queries/getPersonalMonthLegend"
 import { useGetPersonalDayDetail } from "../../PersonalTimeStudy/queries/getPersonalDayDetail"
@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils"
 import tableEmptyIcon from "@/assets/icons/table-empty.png"
 import { toIsoYmdFromDate, todayLocal } from "@/lib/dates"
 import { buildWeekSummariesFromMonthLegend } from "../../PersonalTimeStudy/utils/weekSummaryUtils"
+import { WeekStatusIcon } from "../../PersonalTimeStudy/components/WeekStatusIcon"
 
 export function UserDashboard() {
   const { user } = useAuth()
@@ -129,80 +130,9 @@ export function UserDashboard() {
     return { dayStatuses: dayMap, weekSummaries }
   }, [monthQuery.data])
 
-  const renderStatus = (_weekIndex: number, _dates: Date[], status: any) => {
-    const s = String(status).toLowerCase()
-    if (s === "approved") {
-      return (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Lock className="size-4 text-gray-500 shrink-0 cursor-help" aria-hidden />
-          </TooltipTrigger>
-          <TooltipContent className="text-xs">Approved</TooltipContent>
-        </Tooltip>
-      )
-    }
-    if (s === "rejected") {
-      return (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <span className="inline-flex size-4 items-center justify-center rounded-full bg-white border border-[#DC3545] shrink-0 cursor-help shadow-sm">
-              <X className="size-2.5 text-[#DC3545]" aria-hidden />
-            </span>
-          </TooltipTrigger>
-          <TooltipContent className="text-xs">Rejected</TooltipContent>
-        </Tooltip>
-      )
-    }
-    if (s === "pending") {
-      return (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <span className="inline-flex size-4 items-center justify-center rounded-full bg-white border border-[#F97316] shrink-0 cursor-help shadow-sm">
-              <X className="size-2.5 text-[#F97316]" aria-hidden />
-            </span>
-          </TooltipTrigger>
-          <TooltipContent className="text-xs">Time sheet pending</TooltipContent>
-        </Tooltip>
-      )
-    }
-    if (s === "equal") {
-      return (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <span className="inline-flex size-4 items-center justify-center rounded-full bg-[#28A745] shrink-0 cursor-help shadow-sm">
-              <Check className="size-2.5 text-white" aria-hidden />
-            </span>
-          </TooltipTrigger>
-          <TooltipContent className="text-xs">Equal Hours</TooltipContent>
-        </Tooltip>
-      )
-    }
-    if (s === "less") {
-      return (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <span className="inline-flex size-4 items-center justify-center rounded-full bg-[#FFC107] shrink-0 cursor-help shadow-sm">
-              <Check className="size-2.5 text-white" aria-hidden />
-            </span>
-          </TooltipTrigger>
-          <TooltipContent className="text-xs">Less Hours</TooltipContent>
-        </Tooltip>
-      )
-    }
-    if (s === "more") {
-      return (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <span className="inline-flex size-4 items-center justify-center rounded-full bg-[#DC3545] shrink-0 cursor-help shadow-sm">
-              <Check className="size-2.5 text-white" aria-hidden />
-            </span>
-          </TooltipTrigger>
-          <TooltipContent className="text-xs">More Hours</TooltipContent>
-        </Tooltip>
-      )
-    }
-    return null
-  }
+  const renderStatus = (_weekIndex: number, _dates: Date[], status: unknown) => (
+    <WeekStatusIcon status={status} />
+  )
 
   return (
     <TooltipProvider>
