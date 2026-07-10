@@ -16,6 +16,9 @@ import { TimePickerDropdown } from "@/components/ui/time-picker"
 import { PersonalTimeStudyApportioningPanel } from "./PersonalTimeStudyApportioningPanel"
 import { useAuth } from "@/contexts/AuthContext"
 import { API_BASE_URL } from "@/lib/config"
+import {
+  isEndTimeAfterStartTime,
+} from "@/lib/dates"
 import { apiDownloadSupportingDoc, apiDeleteSupportingDoc, apiGetUserActivitiesForProgram, apiGetUserProgramsAndActivitiesMulticode } from "../api/personalTimeStudyApi"
 import { Spinner } from "@/components/ui/spinner"
 import { normalizeMulticodeDropdownPayload } from "../utils/multicodeDropdownUtils"
@@ -209,11 +212,24 @@ function computeDurationMinutes(start: string, end: string): string {
   const [sh, sm] = start.split(":").map(Number)
   const [eh, em] = end.split(":").map(Number)
   if (isNaN(sh) || isNaN(sm) || isNaN(eh) || isNaN(em)) return ""
-  const s = sh * 60 + sm
-  const e = eh * 60 + em
-  let d = e - s
-  if (d < 0) d += 24 * 60
+  const d = eh * 60 + em - (sh * 60 + sm)
+  if (d <= 0) return ""
   return String(d)
+}
+
+const END_TIME_AFTER_START_MSG = "End time must be after start time"
+
+function assertEndAfterStartOrToast(
+  start: string | undefined,
+  end: string | undefined,
+  toastId?: string,
+): boolean {
+  const result = isEndTimeAfterStartTime(start, end)
+  if (result === false) {
+    toast.error(END_TIME_AFTER_START_MSG, toastId ? { id: toastId } : undefined)
+    return false
+  }
+  return true
 }
 
 function addMinutesToTime(time: string, minutesToAdd: number): string {
@@ -926,6 +942,9 @@ export function PersonalTimeStudyEntryForm({
         }
 
         if (patch.start !== undefined || patch.end !== undefined) {
+          if (!rowSettings.hideTime && !assertEndAfterStartOrToast(updatedP.start, updatedP.end, `time-val-${id}`)) {
+            return p
+          }
           updatedP.isEdited = true
           updatedP.totalMin = String(computeDurationMinutes(updatedP.start, updatedP.end))
         }
@@ -961,6 +980,12 @@ export function PersonalTimeStudyEntryForm({
           const updated = { ...s, ...updates }
 
           if (updates.start || updates.end) {
+            if (
+              !rowSettings.hideTime &&
+              !assertEndAfterStartOrToast(updated.start, updated.end, `sub-time-val-${subRowId}`)
+            ) {
+              return s
+            }
             updated.totalMin = String(computeDurationMinutes(updated.start, updated.end))
           } else if (updates.totalMin !== undefined) {
             // If totalMin is updated manually, try to move end time
@@ -1160,6 +1185,9 @@ export function PersonalTimeStudyEntryForm({
           toast.error("Please fill all the required fields")
           return false
         }
+        if (!assertEndAfterStartOrToast(p.start, p.end)) {
+          return false
+        }
       }
 
       if (p.subRows.length > 0) {
@@ -1170,6 +1198,13 @@ export function PersonalTimeStudyEntryForm({
         for (const s of p.subRows) {
           if (!s.totalMin || !s.studyProgram || !s.serviceActivity) {
             toast.error("Please fill all the required fields in sub-rows")
+            return false
+          }
+          if (
+            !hideTime &&
+            (s.start?.trim() || s.end?.trim()) &&
+            !assertEndAfterStartOrToast(s.start, s.end)
+          ) {
             return false
           }
           subTotalMin += Number(s.totalMin) || 0
