@@ -34,6 +34,13 @@ function RequiredMark() {
   return <span className="text-destructive">*</span>
 }
 
+function leaveBannerStatusLabel(status?: string | null): string {
+  const normalized = status?.toLowerCase() ?? ""
+  if (normalized === "draft") return "   (Draft)  "
+  if (normalized === "requested") return "   (Requested not yet approved)"
+  return ""
+}
+
 type MinDecimalFieldProps = {
   label: ReactNode
   labelClassName?: string
@@ -1325,11 +1332,15 @@ export function PersonalTimeStudyEntryForm({
         </div>
       )}
       <div className="mb-6 flex flex-col gap-2">
-        {showLeaveBanner && leaveRecords && leaveRecords.filter(l => ["approved", "draft", "requested"].includes(l.status?.toLowerCase() ?? "")).map((leave, idx) => (
+        {showLeaveBanner && leaveRecords && leaveRecords.filter(l => ["approved", "draft", "requested"].includes(l.status?.toLowerCase() ?? "")).map((leave, idx) => {
+          const statusLabel = leaveBannerStatusLabel(leave.status)
+          return (
           <div key={idx} className="mt-5 mb-1 mx-auto max-w-max rounded-[6px] bg-[#E2E8F0]/50 px-4 py-1.5 text-[13px] text-gray-600 italic text-center border border-[#CBD5E1]">
-            {leave.name || leave.employeeName || username} applied leave in this date : <span className="not-italic font-medium text-gray-800">({dateStr})</span> from : <span className="not-italic font-medium text-gray-800">({leave.starttime})</span> To : <span className="not-italic font-medium text-gray-800">({leave.endtime})</span>.
+            {leave.name || leave.employeeName || username} applied leave in this date : <span className="not-italic font-medium text-gray-800">({dateStr})</span> from : <span className="not-italic font-medium text-gray-800">({leave.starttime})</span> To : <span className="not-italic font-medium text-gray-800">({leave.endtime})</span>
+            {statusLabel ? <span className="whitespace-pre">{statusLabel}</span> : null}.
           </div>
-        ))}
+          )
+        })}
 
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
