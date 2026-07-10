@@ -30,6 +30,15 @@ const ACTION_ITEMS = [
     ),
   },
   {
+    label: "Not Submitted",
+    textColor: "text-gray-700",
+    icon: (
+      <span className="inline-flex size-4 items-center justify-center rounded-full bg-white border border-[#F97316] shrink-0 shadow-sm">
+        <X className="size-2.5 text-[#F97316]" aria-hidden />
+      </span>
+    ),
+  },
+  {
     label: "Unlock",
     textColor: "text-gray-700",
     icon: (
