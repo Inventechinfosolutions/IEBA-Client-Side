@@ -13,6 +13,9 @@ import { useGetUserAssignedDepartmentsSettingChecks } from "../../queries/getUse
 function resolveWeekStatusFromBackendDays(days: string[]): string {
   const lowerDays = days.map((d) => String(d || "").toLowerCase())
 
+  if (lowerDays.some((d) => d === "rejected")) {
+    return "rejected"
+  }
   if (lowerDays.some((d) => d === "approved")) {
     return "approved"
   }
@@ -29,9 +32,6 @@ function resolveWeekStatusFromBackendDays(days: string[]): string {
     )
   ) {
     return "submitted"
-  }
-  if (lowerDays.some((d) => d === "rejected")) {
-    return "rejected"
   }
   return "notsubmitted"
 }
