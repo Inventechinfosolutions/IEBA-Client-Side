@@ -43,35 +43,29 @@ function getWeekStartKey(dateStr: string): string {
 
 /**
  * Determines the overall status for a week based on individual day statuses and totals.
- * Priority: 
+ * Priority:
  * 1. All Approved -> "approved"
  * 2. Any Rejected -> "rejected"
- * 3. Any Not Submitted -> "pending"
- * 4. All Submitted -> Compare Total vs Target (equal, less, more)
+ * 3. Any entered minutes -> equal / less / more (even if only one day saved/submitted)
+ * 4. Nothing filled -> "pending"
  */
 function getWeeklyStatus(days: string[], totalMinutes: number, targetMinutes: number): string {
-  if (days.length === 0) return "notsubmitted"
+  if (days.length === 0) return "pending"
 
   const lowerDays = days.map(d => String(d || "").toLowerCase())
 
-  // 1. Check if everything is approved
   const allApproved = lowerDays.every(d => d === "approved")
   if (allApproved) return "approved"
 
-  // 2. Check if there is any rejection
-  const hasRejected = lowerDays.some(d => d === "rejected")
-  if (hasRejected) return "rejected"
+  if (lowerDays.some(d => d === "rejected")) return "rejected"
 
-  // 3. Check if any working day is not submitted
-  // "opened" or empty string or "notsubmitted" count as pending
-  const hasNotSubmitted = lowerDays.some(d => !d || d === "opened" || d === "notsubmitted" || d === "undefined")
-  if (hasNotSubmitted) return "pending"
+  if (totalMinutes > 0) {
+    if (totalMinutes === targetMinutes) return "equal"
+    if (totalMinutes < targetMinutes) return "less"
+    return "more"
+  }
 
-  // 4. Everything is submitted (or approved/rejected mix without pending)
-  // Calculate based on totals
-  if (totalMinutes === targetMinutes) return "equal"
-  if (totalMinutes < targetMinutes) return "less"
-  return "more"
+  return "pending"
 }
 
 export function PersonalTimeStudyPage() {
@@ -243,7 +237,7 @@ export function PersonalTimeStudyPage() {
       )
     }
 
-    // 3. Pending (Orange X)
+    // 3. Pending — nothing filled for the week
     if (s === "pending") {
       return (
         <Tooltip>

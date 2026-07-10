@@ -102,6 +102,18 @@ export function TimeStudyMGTPage() {
                     </Tooltip>
                   )
                 }
+                if (s === "notsubmitted" || s === "not_submitted") {
+                  return (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="inline-flex size-4 items-center justify-center rounded-full bg-white border border-[#F97316] shrink-0 cursor-help shadow-sm">
+                          <X className="size-2.5 text-[#F97316]" aria-hidden />
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent className="text-xs">Not Submitted</TooltipContent>
+                    </Tooltip>
+                  )
+                }
                 return null
               }}
               renderAction={(_weekIndex, dates, status) => {
