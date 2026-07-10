@@ -1,4 +1,5 @@
 import { api } from "@/lib/api"
+import { isEndTimeAfterStartTime } from "@/lib/dates"
 import type { ApiEnvelope } from "@/features/program/types"
 import type {
   SubmitNotesReqDto,
@@ -14,6 +15,23 @@ import type {
   UserLeaveMultiCodeRecordRequestDto,
 } from "../../leave-approval/types"
 import { apiSubmitBulkUserLeaves, apiUpdateUserLeave as apiUpdateUserLeaveBase } from "../../leave-approval/api"
+
+const END_TIME_AFTER_START_MSG = "End time must be after start time"
+
+function assertTimeStudyRecordTimes(
+  record: Pick<TimeStudyRecordSubmitItemDto, "starttime" | "endtime">,
+): void {
+  const result = isEndTimeAfterStartTime(record.starttime, record.endtime)
+  if (result === false) {
+    throw new Error(END_TIME_AFTER_START_MSG)
+  }
+}
+
+function assertTimeStudySubmitPayload(payload: TimeStudyRecordSubmitItemDto[]): void {
+  for (const record of payload) {
+    assertTimeStudyRecordTimes(record)
+  }
+}
 
 export async function apiGetMonthLegend(params: {
   userId: string
@@ -55,6 +73,7 @@ export async function apiSubmitTimeRecords(
   mode: "save" | "submit",
   method: "post" | "put" = "post"
 ): Promise<TimeStudyRecordResDto[]> {
+  assertTimeStudySubmitPayload(payload)
   const strippedPayload = payload.map(({ supportingDocs, ...rest }: any) => rest)
   const url = `/timestudyrecords/submit?mode=${mode}`
   const res = method === "put"
@@ -125,6 +144,7 @@ export async function apiUpdateTimeRecord(
   id: number,
   dto: Partial<TimeStudyRecordSubmitItemDto>
 ): Promise<TimeStudyRecordResDto> {
+  assertTimeStudyRecordTimes(dto)
   const { supportingDocs, ...rest } = dto as any
   const res = await api.put<ApiEnvelope<TimeStudyRecordResDto>>(
     `/timestudyrecords/${id}`,
