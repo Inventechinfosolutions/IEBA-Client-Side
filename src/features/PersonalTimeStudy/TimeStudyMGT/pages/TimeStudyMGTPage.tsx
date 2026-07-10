@@ -7,6 +7,7 @@ import { Check, X, Unlock, Bell, Info } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { useActionUserTimeRecord } from "../mutations/updateActionUserTimeRecord"
 import { PersonalTimeStudyEntryForm } from "../../components/PersonalTimeStudyEntryForm"
+import { FUTURE_WEEK_STATUS } from "../../utils/weekSummaryUtils"
 
 function isPendingSubmissionStatus(status: unknown): boolean {
   const s = String(status ?? "").toLowerCase()
@@ -133,6 +134,8 @@ export function TimeStudyMGTPage() {
               }}
               renderAction={(_weekIndex, dates, status) => {
                 const s = String(status).toLowerCase()
+                if (s === FUTURE_WEEK_STATUS) return null
+
                 const isApproved = s === "approved"
                 const isSubmitted = s === "submitted" || s === "submittedexceed" || s === "submittedless"
                 const hasRejectedDayInWeek = dates.some((date) => {

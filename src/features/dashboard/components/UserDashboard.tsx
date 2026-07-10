@@ -16,28 +16,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { cn } from "@/lib/utils"
 import tableEmptyIcon from "@/assets/icons/table-empty.png"
 import { toIsoYmdFromDate, todayLocal } from "@/lib/dates"
-
-function getWeekStartKey(dateStr: string): string {
-  const [y, m, d] = dateStr.split('-').map(Number)
-  const date = new Date(y, m - 1, d)
-  const day = date.getDay()
-  const diff = date.getDate() - day
-  const sunday = new Date(date.getFullYear(), date.getMonth(), diff)
-  return toIsoYmdFromDate(sunday)
-}
-
-function getWeeklyStatus(days: string[], totalMinutes: number, targetMinutes: number): string {
-  if (days.length === 0) return "pending"
-  const lowerDays = days.map(d => String(d || "").toLowerCase())
-  if (lowerDays.every(d => d === "approved")) return "approved"
-  if (lowerDays.some(d => d === "rejected")) return "rejected"
-  if (totalMinutes > 0) {
-    if (totalMinutes === targetMinutes) return "equal"
-    if (totalMinutes < targetMinutes) return "less"
-    return "more"
-  }
-  return "pending"
-}
+import { buildWeekSummariesFromMonthLegend } from "../../PersonalTimeStudy/utils/weekSummaryUtils"
 
 export function UserDashboard() {
   const { user } = useAuth()
@@ -136,7 +115,6 @@ export function UserDashboard() {
 
   const { dayStatuses, weekSummaries } = useMemo(() => {
     const dayMap: Record<string, { status: string; color?: string; hasNotes?: boolean; noteText?: string }> = {}
-    const weekMap: Record<string, { totalMinutes: number, targetMinutes: number, days: string[] }> = {}
 
     if (!monthQuery.data?.data) return { dayStatuses: {}, weekSummaries: {} }
 
@@ -144,24 +122,9 @@ export function UserDashboard() {
       const s = String(d.status).toLowerCase()
       const cellColor = s === "opened" ? undefined : (d.color ?? undefined)
       dayMap[d.date] = { status: d.status, color: cellColor, hasNotes: !!d.notes, noteText: d.notes || undefined }
-
-      const weekKey = getWeekStartKey(d.date)
-      if (!weekMap[weekKey]) {
-        weekMap[weekKey] = { totalMinutes: 0, targetMinutes: 0, days: [] }
-      }
-
-      weekMap[weekKey].totalMinutes += d.minutes ?? 0
-      weekMap[weekKey].targetMinutes += d.allocatedMinutes ?? 0
-      weekMap[weekKey].days.push(d.status)
     }
 
-    const dbAssignedMinutes = monthQuery.data.data.find(d => (d.allocatedMinutes ?? 0) > 0)?.allocatedMinutes ?? 0
-    const weekSummaries: Record<string, any> = {}
-    for (const [key, val] of Object.entries(weekMap)) {
-      const weeklyTarget = 7 * dbAssignedMinutes
-      const finalStatus = getWeeklyStatus(val.days, val.totalMinutes, weeklyTarget)
-      weekSummaries[key] = { totalMinutes: val.totalMinutes, status: finalStatus }
-    }
+    const weekSummaries = buildWeekSummariesFromMonthLegend(monthQuery.data.data)
 
     return { dayStatuses: dayMap, weekSummaries }
   }, [monthQuery.data])
