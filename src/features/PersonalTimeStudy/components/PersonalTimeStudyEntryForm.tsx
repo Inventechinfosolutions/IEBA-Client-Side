@@ -16,6 +16,9 @@ import { TimePickerDropdown } from "@/components/ui/time-picker"
 import { PersonalTimeStudyApportioningPanel } from "./PersonalTimeStudyApportioningPanel"
 import { useAuth } from "@/contexts/AuthContext"
 import { API_BASE_URL } from "@/lib/config"
+import {
+  isEndTimeAfterStartTime,
+} from "@/lib/dates"
 import { apiDownloadSupportingDoc, apiDeleteSupportingDoc, apiGetUserActivitiesForProgram, apiGetUserProgramsAndActivitiesMulticode } from "../api/personalTimeStudyApi"
 import { Spinner } from "@/components/ui/spinner"
 import { normalizeMulticodeDropdownPayload } from "../utils/multicodeDropdownUtils"
@@ -32,6 +35,13 @@ import { formatTimeInput, normalizeTimeOnBlur } from "../utils/timeUtils"
 /** Inline required-field asterisk — available to all components in this module. */
 function RequiredMark() {
   return <span className="text-destructive">*</span>
+}
+
+function leaveBannerStatusLabel(status?: string | null): string {
+  const normalized = status?.toLowerCase() ?? ""
+  if (normalized === "draft") return "   (Draft)  "
+  if (normalized === "requested") return "   (Requested not yet approved)"
+  return ""
 }
 
 type MinDecimalFieldProps = {
@@ -165,6 +175,7 @@ export type TimeEntryParentRow = {
   leaveid?: number
   status?: string
   recordType?: string
+  isEdited?: boolean
 }
 
 export type TimeEntryRow = TimeEntryParentRow
@@ -201,11 +212,24 @@ function computeDurationMinutes(start: string, end: string): string {
   const [sh, sm] = start.split(":").map(Number)
   const [eh, em] = end.split(":").map(Number)
   if (isNaN(sh) || isNaN(sm) || isNaN(eh) || isNaN(em)) return ""
-  const s = sh * 60 + sm
-  const e = eh * 60 + em
-  let d = e - s
-  if (d < 0) d += 24 * 60
+  const d = eh * 60 + em - (sh * 60 + sm)
+  if (d <= 0) return ""
   return String(d)
+}
+
+const END_TIME_AFTER_START_MSG = "End time must be after start time"
+
+function assertEndAfterStartOrToast(
+  start: string | undefined,
+  end: string | undefined,
+  toastId?: string,
+): boolean {
+  const result = isEndTimeAfterStartTime(start, end)
+  if (result === false) {
+    toast.error(END_TIME_AFTER_START_MSG, toastId ? { id: toastId } : undefined)
+    return false
+  }
+  return true
 }
 
 function addMinutesToTime(time: string, minutesToAdd: number): string {
@@ -727,7 +751,8 @@ export function PersonalTimeStudyEntryForm({
         }
         if (r.leaveid) {
           const leave = leaveRecords?.find((l) => Number(l.id) === Number(r.leaveid))
-          if (leave && leave.status?.toLowerCase() !== "approved") {
+          const lStatus = leave?.status?.toLowerCase();
+          if (leave && lStatus !== "approved" && lStatus !== "draft" && lStatus !== "requested") {
             return false
           }
         }
@@ -794,13 +819,16 @@ export function PersonalTimeStudyEntryForm({
       const leaveRows: TimeEntryParentRow[] = []
       if (leaveRecords) {
         leaveRecords.forEach((leave) => {
-          if (leave.status?.toLowerCase() === "approved") {
+          const lStatus = leave.status?.toLowerCase();
+          if (lStatus === "approved" || lStatus === "draft" || lStatus === "requested") {
             const lStart = (leave.starttime ?? "").split(":").slice(0, 2).join(":")
             const lEnd = (leave.endtime ?? "").split(":").slice(0, 2).join(":")
             const existing = sorted.find(
               (rec) =>
-                (rec.leaveid !== undefined && leave.id !== undefined && Number(rec.leaveid) === Number(leave.id)) ||
-                (rec.start === lStart && rec.end === lEnd && rec.tsProgram === String(leave.programid ?? ""))
+
+                leave.id !== undefined &&
+                rec.leaveid !== undefined &&
+                Number(rec.leaveid) === Number(leave.id),
             )
             if (existing) {
               existing.isLeave = true
@@ -826,6 +854,8 @@ export function PersonalTimeStudyEntryForm({
                 id: newId(),
                 start: lStart,
                 end: lEnd,
+                // totalMin: String(leave.leaveTotalTime ?? ""),
+                leaveid: leave.id,
                 tsProgram: String(leave.programid ?? ""),
                 serviceActivity: String(leave.activityid ?? ""),
                 description: "",
@@ -911,6 +941,14 @@ export function PersonalTimeStudyEntryForm({
           updatedP.end = addMinutesToTime(patch.start, 15)
         }
 
+        if (patch.start !== undefined || patch.end !== undefined) {
+          if (!rowSettings.hideTime && !assertEndAfterStartOrToast(updatedP.start, updatedP.end, `time-val-${id}`)) {
+            return p
+          }
+          updatedP.isEdited = true
+          updatedP.totalMin = String(computeDurationMinutes(updatedP.start, updatedP.end))
+        }
+
         if (patch.start !== undefined || patch.end !== undefined || patch.totalMin !== undefined) {
           if (updatedP.subRows.length > 0) {
             const hideTime = rowSettings.hideTime
@@ -942,6 +980,12 @@ export function PersonalTimeStudyEntryForm({
           const updated = { ...s, ...updates }
 
           if (updates.start || updates.end) {
+            if (
+              !rowSettings.hideTime &&
+              !assertEndAfterStartOrToast(updated.start, updated.end, `sub-time-val-${subRowId}`)
+            ) {
+              return s
+            }
             updated.totalMin = String(computeDurationMinutes(updated.start, updated.end))
           } else if (updates.totalMin !== undefined) {
             // If totalMin is updated manually, try to move end time
@@ -1096,7 +1140,9 @@ export function PersonalTimeStudyEntryForm({
           endtime: hideTime ? null : (p.end || null),
           activitytime: hideTime
             ? (Number(decimalTotalMin) || 0)
-            : (Number(computeDurationMinutes(p.start, p.end)) || Number(p.totalMin) || 0),
+            : (p.dbId && !p.isEdited)
+              ? (Number(p.totalMin) || 0)
+              : (Number(computeDurationMinutes(p.start, p.end)) || Number(p.totalMin) || 0),
           programid: p.tsProgram,
           activityid: p.serviceActivity,
           description: p.description,
@@ -1139,6 +1185,9 @@ export function PersonalTimeStudyEntryForm({
           toast.error("Please fill all the required fields")
           return false
         }
+        if (!assertEndAfterStartOrToast(p.start, p.end)) {
+          return false
+        }
       }
 
       if (p.subRows.length > 0) {
@@ -1149,6 +1198,13 @@ export function PersonalTimeStudyEntryForm({
         for (const s of p.subRows) {
           if (!s.totalMin || !s.studyProgram || !s.serviceActivity) {
             toast.error("Please fill all the required fields in sub-rows")
+            return false
+          }
+          if (
+            !hideTime &&
+            (s.start?.trim() || s.end?.trim()) &&
+            !assertEndAfterStartOrToast(s.start, s.end)
+          ) {
             return false
           }
           subTotalMin += Number(s.totalMin) || 0
@@ -1315,11 +1371,15 @@ export function PersonalTimeStudyEntryForm({
         </div>
       )}
       <div className="mb-6 flex flex-col gap-2">
-        {showLeaveBanner && leaveRecords && leaveRecords.filter(l => l.status?.toLowerCase() === "approved").map((leave, idx) => (
+        {showLeaveBanner && leaveRecords && leaveRecords.filter(l => ["approved", "draft", "requested"].includes(l.status?.toLowerCase() ?? "")).map((leave, idx) => {
+          const statusLabel = leaveBannerStatusLabel(leave.status)
+          return (
           <div key={idx} className="mt-5 mb-1 mx-auto max-w-max rounded-[6px] bg-[#E2E8F0]/50 px-4 py-1.5 text-[13px] text-gray-600 italic text-center border border-[#CBD5E1]">
-            {leave.name || leave.employeeName || username} applied leave in this date : <span className="not-italic font-medium text-gray-800">({dateStr})</span> from : <span className="not-italic font-medium text-gray-800">({leave.starttime})</span> To : <span className="not-italic font-medium text-gray-800">({leave.endtime})</span>.
+            {leave.name || leave.employeeName || username} applied leave in this date : <span className="not-italic font-medium text-gray-800">({dateStr})</span> from : <span className="not-italic font-medium text-gray-800">({leave.starttime})</span> To : <span className="not-italic font-medium text-gray-800">({leave.endtime})</span>
+            {statusLabel ? <span className="whitespace-pre">{statusLabel}</span> : null}.
           </div>
-        ))}
+          )
+        })}
 
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
@@ -1612,7 +1672,7 @@ export function PersonalTimeStudyEntryForm({
                       type="number"
                       min="0"
                       readOnly={isLocked || isLeaveRow || isApportionedRow}
-                      value={(!totalDisplay || totalDisplay === "0") ? (parent.totalMin || totalDisplay || "") : totalDisplay}
+                      value={parent.dbId && !parent.isEdited ? (parent.totalMin || "") : ((!totalDisplay || totalDisplay === "0") ? (parent.totalMin || totalDisplay || "") : totalDisplay)}
                       placeholder="—"
                       className={cn(
                         "h-10 text-[11px] bg-[#F2F4F7] cursor-not-allowed",
