@@ -7,7 +7,7 @@ import { PersonalLeaveCard } from "../components/PersonalLeaveCard"
 import { ReportsCard } from "../components/ReportsCard"
 import { TodoCard } from "../components/TodoCard"
 import { Card } from "@/components/ui/card"
-import { Lock, Check, X, MessageCircle, Plus, Minus } from "lucide-react"
+import { MessageCircle, Plus, Minus } from "lucide-react"
 import { PersonalTimeStudyCalendarCard } from "../../PersonalTimeStudy/components/PersonalTimeStudyCalendarCard"
 import { useGetPersonalMonthLegend } from "../../PersonalTimeStudy/queries/getPersonalMonthLegend"
 import { useGetPersonalDayDetail } from "../../PersonalTimeStudy/queries/getPersonalDayDetail"
@@ -16,28 +16,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { cn } from "@/lib/utils"
 import tableEmptyIcon from "@/assets/icons/table-empty.png"
 import { toIsoYmdFromDate, todayLocal } from "@/lib/dates"
-
-function getWeekStartKey(dateStr: string): string {
-  const [y, m, d] = dateStr.split('-').map(Number)
-  const date = new Date(y, m - 1, d)
-  const day = date.getDay()
-  const diff = date.getDate() - day
-  const sunday = new Date(date.getFullYear(), date.getMonth(), diff)
-  return toIsoYmdFromDate(sunday)
-}
-
-function getWeeklyStatus(days: string[], totalMinutes: number, targetMinutes: number): string {
-  if (days.length === 0) return "pending"
-  const lowerDays = days.map(d => String(d || "").toLowerCase())
-  if (lowerDays.every(d => d === "approved")) return "approved"
-  if (lowerDays.some(d => d === "rejected")) return "rejected"
-  if (totalMinutes > 0) {
-    if (totalMinutes === targetMinutes) return "equal"
-    if (totalMinutes < targetMinutes) return "less"
-    return "more"
-  }
-  return "pending"
-}
+import { buildWeekSummariesFromMonthLegend } from "../../PersonalTimeStudy/utils/weekSummaryUtils"
+import { WeekStatusIcon } from "../../PersonalTimeStudy/components/WeekStatusIcon"
 
 export function UserDashboard() {
   const { user } = useAuth()
@@ -136,7 +116,6 @@ export function UserDashboard() {
 
   const { dayStatuses, weekSummaries } = useMemo(() => {
     const dayMap: Record<string, { status: string; color?: string; hasNotes?: boolean; noteText?: string }> = {}
-    const weekMap: Record<string, { totalMinutes: number, targetMinutes: number, days: string[] }> = {}
 
     if (!monthQuery.data?.data) return { dayStatuses: {}, weekSummaries: {} }
 
@@ -144,102 +123,16 @@ export function UserDashboard() {
       const s = String(d.status).toLowerCase()
       const cellColor = s === "opened" ? undefined : (d.color ?? undefined)
       dayMap[d.date] = { status: d.status, color: cellColor, hasNotes: !!d.notes, noteText: d.notes || undefined }
-
-      const weekKey = getWeekStartKey(d.date)
-      if (!weekMap[weekKey]) {
-        weekMap[weekKey] = { totalMinutes: 0, targetMinutes: 0, days: [] }
-      }
-
-      weekMap[weekKey].totalMinutes += d.minutes ?? 0
-      weekMap[weekKey].targetMinutes += d.allocatedMinutes ?? 0
-      weekMap[weekKey].days.push(d.status)
     }
 
-    const dbAssignedMinutes = monthQuery.data.data.find(d => (d.allocatedMinutes ?? 0) > 0)?.allocatedMinutes ?? 0
-    const weekSummaries: Record<string, any> = {}
-    for (const [key, val] of Object.entries(weekMap)) {
-      const weeklyTarget = 7 * dbAssignedMinutes
-      const finalStatus = getWeeklyStatus(val.days, val.totalMinutes, weeklyTarget)
-      weekSummaries[key] = { totalMinutes: val.totalMinutes, status: finalStatus }
-    }
+    const weekSummaries = buildWeekSummariesFromMonthLegend(monthQuery.data.data)
 
     return { dayStatuses: dayMap, weekSummaries }
   }, [monthQuery.data])
 
-  const renderStatus = (_weekIndex: number, _dates: Date[], status: any) => {
-    const s = String(status).toLowerCase()
-    if (s === "approved") {
-      return (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Lock className="size-4 text-gray-500 shrink-0 cursor-help" aria-hidden />
-          </TooltipTrigger>
-          <TooltipContent className="text-xs">Approved</TooltipContent>
-        </Tooltip>
-      )
-    }
-    if (s === "rejected") {
-      return (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <span className="inline-flex size-4 items-center justify-center rounded-full bg-white border border-[#DC3545] shrink-0 cursor-help shadow-sm">
-              <X className="size-2.5 text-[#DC3545]" aria-hidden />
-            </span>
-          </TooltipTrigger>
-          <TooltipContent className="text-xs">Rejected</TooltipContent>
-        </Tooltip>
-      )
-    }
-    if (s === "pending") {
-      return (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <span className="inline-flex size-4 items-center justify-center rounded-full bg-white border border-[#F97316] shrink-0 cursor-help shadow-sm">
-              <X className="size-2.5 text-[#F97316]" aria-hidden />
-            </span>
-          </TooltipTrigger>
-          <TooltipContent className="text-xs">Time sheet pending</TooltipContent>
-        </Tooltip>
-      )
-    }
-    if (s === "equal") {
-      return (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <span className="inline-flex size-4 items-center justify-center rounded-full bg-[#28A745] shrink-0 cursor-help shadow-sm">
-              <Check className="size-2.5 text-white" aria-hidden />
-            </span>
-          </TooltipTrigger>
-          <TooltipContent className="text-xs">Equal Hours</TooltipContent>
-        </Tooltip>
-      )
-    }
-    if (s === "less") {
-      return (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <span className="inline-flex size-4 items-center justify-center rounded-full bg-[#FFC107] shrink-0 cursor-help shadow-sm">
-              <Check className="size-2.5 text-white" aria-hidden />
-            </span>
-          </TooltipTrigger>
-          <TooltipContent className="text-xs">Less Hours</TooltipContent>
-        </Tooltip>
-      )
-    }
-    if (s === "more") {
-      return (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <span className="inline-flex size-4 items-center justify-center rounded-full bg-[#DC3545] shrink-0 cursor-help shadow-sm">
-              <Check className="size-2.5 text-white" aria-hidden />
-            </span>
-          </TooltipTrigger>
-          <TooltipContent className="text-xs">More Hours</TooltipContent>
-        </Tooltip>
-      )
-    }
-    return null
-  }
+  const renderStatus = (_weekIndex: number, _dates: Date[], status: unknown) => (
+    <WeekStatusIcon status={status} />
+  )
 
   return (
     <TooltipProvider>

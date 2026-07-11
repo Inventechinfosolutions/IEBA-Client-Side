@@ -7,6 +7,8 @@ import { Check, X, Unlock, Bell, Info } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { useActionUserTimeRecord } from "../mutations/updateActionUserTimeRecord"
 import { PersonalTimeStudyEntryForm } from "../../components/PersonalTimeStudyEntryForm"
+import { WeekStatusIcon } from "../../components/WeekStatusIcon"
+import { FUTURE_WEEK_STATUS } from "../../utils/weekSummaryUtils"
 
 function isPendingSubmissionStatus(status: unknown): boolean {
   const s = String(status ?? "").toLowerCase()
@@ -79,60 +81,11 @@ export function TimeStudyMGTPage() {
               dayStatuses={dayStatuses}
               weekSummaries={weekSummaries}
               showActionColumn={true}
-              renderStatus={(_weekIndex, _dates, status) => {
-                const s = String(status).toLowerCase()
-                if (s === "approved") {
-                  return (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <span className="inline-flex size-4 items-center justify-center rounded-full bg-[#22c55e] shrink-0 cursor-help">
-                          <Check className="size-2.5 text-white" aria-hidden />
-                        </span>
-                      </TooltipTrigger>
-                      <TooltipContent className="text-xs">Approved</TooltipContent>
-                    </Tooltip>
-                  )
-                }
-                if (s === "rejected") {
-                  return (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <span className="inline-flex size-4 items-center justify-center rounded-full bg-[#EF4444] shrink-0 cursor-help">
-                          <X className="size-2.5 text-white" aria-hidden />
-                        </span>
-                      </TooltipTrigger>
-                      <TooltipContent className="text-xs">Rejected</TooltipContent>
-                    </Tooltip>
-                  )
-                }
-                if (s === "submitted" || s === "submittedexceed" || s === "submittedless") {
-                  return (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <span className="inline-flex size-4 items-center justify-center rounded-full bg-[#3b82f6] shrink-0 cursor-help">
-                          <Check className="size-2.5 text-white" aria-hidden />
-                        </span>
-                      </TooltipTrigger>
-                      <TooltipContent className="text-xs">Submitted</TooltipContent>
-                    </Tooltip>
-                  )
-                }
-                if (s === "notsubmitted" || s === "not_submitted") {
-                  return (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <span className="inline-flex size-4 items-center justify-center rounded-full bg-white border border-[#F97316] shrink-0 cursor-help shadow-sm">
-                          <X className="size-2.5 text-[#F97316]" aria-hidden />
-                        </span>
-                      </TooltipTrigger>
-                      <TooltipContent className="text-xs">Not Submitted</TooltipContent>
-                    </Tooltip>
-                  )
-                }
-                return null
-              }}
+              renderStatus={(_weekIndex, _dates, status) => <WeekStatusIcon status={status} />}
               renderAction={(_weekIndex, dates, status) => {
                 const s = String(status).toLowerCase()
+                if (s === FUTURE_WEEK_STATUS) return null
+
                 const isApproved = s === "approved"
                 const isSubmitted = s === "submitted" || s === "submittedexceed" || s === "submittedless"
                 const hasRejectedDayInWeek = dates.some((date) => {
