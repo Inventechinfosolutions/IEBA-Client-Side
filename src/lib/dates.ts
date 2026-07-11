@@ -126,36 +126,6 @@ export function toIsoYmdFromDate(date: Date): string {
   return `${y}-${mo}-${d}`
 }
 
-/** Parse `HH:MM` or `HH:MM:SS` to minutes from midnight; null when empty/invalid. */
-export function parseHhMmToMinutes(time: string | null | undefined): number | null {
-  const m = /^(\d{1,2}):(\d{2})(?::\d{2})?$/.exec(String(time ?? "").trim())
-  if (!m) return null
-  const h = Number(m[1])
-  const min = Number(m[2])
-  if (Number.isNaN(h) || Number.isNaN(min) || h < 0 || h > 23 || min < 0 || min > 59) return null
-  return h * 60 + min
-}
-
-/**
- * Validate start/end on the same day.
- * - `null` → both empty → skip validation (decimal-time / null-time rows).
- * - `true` → end is after start.
- * - `false` → invalid pair (end <= start or bad format).
- */
-export function isEndTimeAfterStartTime(
-  start: string | null | undefined,
-  end: string | null | undefined,
-): boolean | null {
-  const startStr = String(start ?? "").trim()
-  const endStr = String(end ?? "").trim()
-  if (!startStr && !endStr) return null
-  if (!startStr || !endStr) return null
-  const startM = parseHhMmToMinutes(startStr)
-  const endM = parseHhMmToMinutes(endStr)
-  if (startM === null || endM === null) return false
-  return endM > startM
-}
-
 /** Get today's date at local midnight. */
 export function todayLocal(): Date {
   const now = new Date()
