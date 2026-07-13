@@ -682,14 +682,23 @@ function unwrapListData(raw: unknown): unknown[] {
   return []
 }
 
+/** Collapse whitespace so the same person/activity is not split by trailing spaces etc. */
+function normalizeReportText(value: string): string {
+  return value.trim().replace(/\s+/g, " ")
+}
+
+function normalizeReportKey(value: string): string {
+  return normalizeReportText(value).toLowerCase()
+}
+
 export function unwrapReportDataRecords(raw: unknown): ReportDataRecord[] {
   return unwrapListData(raw).map((row) => {
     const record = asRecord(row)
     return {
-      employeename: String(record.employeename ?? record.employeeName ?? ""),
-      program: String(record.program ?? ""),
-      activity: String(record.activity ?? ""),
-      mastercode: String(record.mastercode ?? record.masterCode ?? ""),
+      employeename: normalizeReportText(String(record.employeename ?? record.employeeName ?? "")),
+      program: normalizeReportText(String(record.program ?? "")),
+      activity: normalizeReportText(String(record.activity ?? "")),
+      mastercode: normalizeReportText(String(record.mastercode ?? record.masterCode ?? "")),
       activitytime: (record.activitytime ?? record.activityTime ?? 0) as string | number,
       traveltime: (record.traveltime ?? record.travelTime ?? 0) as string | number,
     }
@@ -802,16 +811,34 @@ export function formatReportTime(value: string | number): string {
 
 // --- P101 grouping (by activity within employee) ---
 
+/**
+ * Group P101 rows by employee → activity → program.
+ *
+ * Employee / activity matching is case-insensitive and whitespace-normalized so
+ * the same person is not split across multiple pages when the API returns
+ * slight name variants (e.g. trailing space). Duplicate program lines under an
+ * activity are summed — P101 is a summation report.
+ */
 export function groupP101DataByEmployee(records: ReportDataRecord[]): P101GroupedEmployee[] {
-  return records.reduce<P101GroupedEmployee[]>((acc, curr) => {
-    let employee = acc.find((emp) => emp.employeename === curr.employeename)
+  const employees: P101GroupedEmployee[] = []
+  const employeeIndexByKey = new Map<string, number>()
 
-    if (!employee) {
-      employee = { employeename: curr.employeename, activities: [] }
-      acc.push(employee)
+  for (const curr of records) {
+    const employeeKey = normalizeReportKey(curr.employeename)
+    if (!employeeKey) continue
+
+    let employeeIdx = employeeIndexByKey.get(employeeKey)
+    if (employeeIdx === undefined) {
+      employeeIdx = employees.length
+      employeeIndexByKey.set(employeeKey, employeeIdx)
+      employees.push({ employeename: curr.employeename, activities: [] })
     }
+    const employee = employees[employeeIdx]!
 
-    let activityGroup = employee.activities.find((act) => act.activity === curr.activity)
+    const activityKey = normalizeReportKey(curr.activity)
+    let activityGroup = employee.activities.find(
+      (act) => normalizeReportKey(act.activity) === activityKey,
+    )
 
     if (!activityGroup) {
       activityGroup = {
@@ -824,15 +851,32 @@ export function groupP101DataByEmployee(records: ReportDataRecord[]): P101Groupe
       employee.activities.push(activityGroup)
     }
 
-    activityGroup.records.push(curr)
+    const programKey = `${normalizeReportKey(curr.program)}|${normalizeReportKey(curr.mastercode)}`
+    const existingProgram = activityGroup.records.find(
+      (row) =>
+        `${normalizeReportKey(row.program)}|${normalizeReportKey(row.mastercode)}` === programKey,
+    )
+
     const activityTime = toNumber(curr.activitytime)
     const travelTime = toNumber(curr.traveltime)
+
+    if (existingProgram) {
+      existingProgram.activitytime = toNumber(existingProgram.activitytime) + activityTime
+      existingProgram.traveltime = toNumber(existingProgram.traveltime) + travelTime
+    } else {
+      activityGroup.records.push({
+        ...curr,
+        activitytime: activityTime,
+        traveltime: travelTime,
+      })
+    }
+
     activityGroup.totalActivityTimeForActivity += activityTime
     activityGroup.totalTravelTime += travelTime
     activityGroup.totalTime += activityTime + travelTime
+  }
 
-    return acc
-  }, [])
+  return employees
 }
 
 export function getP101EmployeeGrandTotals(employee: P101GroupedEmployee): {
