@@ -163,7 +163,6 @@ export function SingleSelectSearchDropdown({
                   }}
                   onBlur={() => {
                     if (selectingRef.current) return
-
                     onBlur()
                   }}
                   className={cn(
@@ -202,7 +201,6 @@ export function SingleSelectSearchDropdown({
         sideOffset={6}
         // Prevent popover from stealing focus away from the input
         onOpenAutoFocus={(e) => e.preventDefault()}
-        onCloseAutoFocus={(e) => e.preventDefault()}
         onWheel={(e) => e.stopPropagation()}
         className={cn(
           "z-[1000] p-0",

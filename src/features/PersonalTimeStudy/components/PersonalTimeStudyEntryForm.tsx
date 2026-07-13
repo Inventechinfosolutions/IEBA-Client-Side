@@ -1,5 +1,5 @@
 import { ChevronDown, Clock, Eye, Plus, Trash2, Check, AlertCircle, AlertTriangle } from "lucide-react"
-import { useCallback, useMemo, useRef, useState, type ReactNode } from "react"
+import { useCallback, useMemo, useRef, useState, type MouseEvent, type ReactNode } from "react"
 import type { UserAssignedDepartmentsSettingChecks } from "../queries/getUserAssignedDepartmentsSettingChecks"
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card"
 
@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 import { SingleSelectSearchDropdown } from "@/components/ui/dropdown-search"
 import { Popover, PopoverContent, PopoverAnchor } from "@/components/ui/popover"
-import { TimePickerDropdown } from "@/components/ui/time-picker"
+import { ScrollArea } from "@/components/ui/scroll-area"
 import { PersonalTimeStudyApportioningPanel } from "./PersonalTimeStudyApportioningPanel"
 import { useAuth } from "@/contexts/AuthContext"
 import { API_BASE_URL } from "@/lib/config"
@@ -293,6 +293,111 @@ type PersonalTimeStudyEntryFormProps = {
   onOpenPeriodsSheet?: () => void
 }
 
+const TIME_PICKER_HOURS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0"))
+const TIME_PICKER_MINUTES = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, "0"))
+
+/** Time Entries only — local picker; mousedown keeps popover open while selecting. */
+function TimeEntriesTimePickerDropdown({
+  value,
+  onChange,
+  onClose,
+  minuteStep = 15,
+}: {
+  value: string
+  onChange: (v: string) => void
+  onClose?: () => void
+  minuteStep?: number
+}) {
+  const [localTime, setLocalTime] = useState(value || "00:00")
+  const [prevValue, setPrevValue] = useState(value)
+
+  if (value !== prevValue) {
+    setPrevValue(value)
+    setLocalTime(value || "00:00")
+  }
+
+  const parts = localTime.split(":")
+  const h = parts[0] ?? ""
+  const m = parts[1] ?? ""
+  const filteredMinutes = TIME_PICKER_MINUTES.filter((minute) => parseInt(minute, 10) % minuteStep === 0)
+
+  const handleOk = () => {
+    onChange(localTime)
+    onClose?.()
+  }
+
+  return (
+    <div className="flex flex-col w-[120px] bg-white overflow-hidden rounded-md">
+      <div className="flex h-[200px] divide-x divide-gray-100">
+        <ScrollArea className="flex-1">
+          <div className="flex flex-col p-1.5 pb-[170px] gap-0.5">
+            {TIME_PICKER_HOURS.map((hour) => (
+              <button
+                key={hour}
+                type="button"
+                tabIndex={-1}
+                data-selected={h === hour}
+                className={cn(
+                  "flex h-7 w-full items-center justify-center rounded-[4px] text-[13px] font-normal transition-colors",
+                  h === hour ? "bg-[#eaf4ff] text-gray-900" : "bg-transparent text-gray-700 hover:bg-gray-100",
+                )}
+                onMouseDown={(e: MouseEvent) => {
+                  e.preventDefault()
+                  setLocalTime(`${hour}:${m || "00"}`)
+                }}
+              >
+                {hour}
+              </button>
+            ))}
+          </div>
+        </ScrollArea>
+        <ScrollArea className="flex-1">
+          <div className="flex flex-col p-1.5 pb-[170px] gap-0.5">
+            {filteredMinutes.map((minute) => (
+              <button
+                key={minute}
+                type="button"
+                tabIndex={-1}
+                data-selected={m === minute}
+                className={cn(
+                  "flex h-7 w-full items-center justify-center rounded-[4px] text-[13px] font-normal transition-colors",
+                  m === minute ? "bg-[#eaf4ff] text-gray-900" : "bg-transparent text-gray-700 hover:bg-gray-100",
+                )}
+                onMouseDown={(e: MouseEvent) => {
+                  e.preventDefault()
+                  setLocalTime(`${h || "00"}:${minute}`)
+                }}
+              >
+                {minute}
+              </button>
+            ))}
+          </div>
+        </ScrollArea>
+      </div>
+      <div className="p-2 pt-1 pb-2 flex justify-end bg-white">
+        <button
+          type="button"
+          tabIndex={-1}
+          onMouseDown={(e: MouseEvent) => {
+            e.preventDefault()
+            handleOk()
+          }}
+          className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-[13px] font-medium h-[28px] px-4 rounded-[4px] transition-colors"
+        >
+          OK
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function focusTimeEntryDescription(rowId: string) {
+  const input = document.querySelector(
+    `[data-time-entries-form] [data-pts-desc="${rowId}"]`,
+  ) as HTMLInputElement | null
+  input?.focus()
+}
+
 function TimePicker24h({
   value,
   onChange,
@@ -301,6 +406,9 @@ function TimePicker24h({
   disabled = false,
   isLeave = false,
   isApportioned = false,
+  rowId,
+  skipToDescriptionOnTab = false,
+  isStartField = false,
 }: {
   value: string
   onChange: (v: string) => void
@@ -309,11 +417,18 @@ function TimePicker24h({
   disabled?: boolean
   isLeave?: boolean
   isApportioned?: boolean
+  rowId?: string
+  skipToDescriptionOnTab?: boolean
+  isStartField?: boolean
 }) {
   const [open, setOpen] = useState(false)
 
   const openMenu = () => {
     if (!disabled) setOpen(true)
+  }
+
+  const handleBlur = () => {
+    onChange(normalizeTimeOnBlur(value))
   }
 
   return (
@@ -325,6 +440,7 @@ function TimePicker24h({
         <div className="relative">
           <PopoverAnchor asChild>
             <div
+              data-time-picker-anchor
               className={cn("relative cursor-pointer", disabled && "cursor-not-allowed")}
               onClick={openMenu}
             >
@@ -333,13 +449,35 @@ function TimePicker24h({
                 disabled={disabled}
                 placeholder="--:--"
                 onChange={(e) => onChange(formatTimeInput(e.target.value))}
-                onBlur={() => onChange(normalizeTimeOnBlur(value))}
+                onBlur={handleBlur}
                 onFocus={openMenu}
+                onKeyDown={(e) => {
+                  if (skipToDescriptionOnTab && e.key === "Tab" && !e.shiftKey && rowId) {
+                    e.preventDefault()
+                    setOpen(false)
+                    handleBlur()
+                    setTimeout(() => focusTimeEntryDescription(rowId), 0)
+                    return
+                  }
+                  if (e.key === "Tab") {
+                    setOpen(false)
+                  }
+                  if (isStartField && (e.key === "ArrowRight" || e.key === "Enter")) {
+                    e.preventDefault()
+                    handleBlur()
+                    ;(e.target as HTMLInputElement).blur()
+                  }
+                  if (e.key === "Escape") {
+                    e.preventDefault()
+                    setOpen(false)
+                    ;(e.target as HTMLInputElement).blur()
+                  }
+                }}
                 className={cn(
                   "h-10 pr-8 text-[11px] font-normal rounded-[6px] text-[#344054] bg-white w-full",
                   disabled && "bg-[#F2F4F7] cursor-not-allowed pointer-events-none !opacity-100",
                   isLeave && "border-yellow-400",
-                  isApportioned && "border-[#6C5DD3]"
+                  isApportioned && "border-[#6C5DD3]",
                 )}
               />
               <Clock className="absolute right-3 top-1/2 size-4 -translate-y-1/2 opacity-70 pointer-events-none text-gray-500" />
@@ -353,8 +491,21 @@ function TimePicker24h({
             onOpenAutoFocus={(e) => {
               e.preventDefault()
             }}
+            onCloseAutoFocus={(e) => {
+              e.preventDefault()
+            }}
+            onInteractOutside={(e) => {
+              const target = e.target as HTMLElement
+              if (target.closest("[data-time-picker-anchor]")) {
+                e.preventDefault()
+              }
+            }}
           >
-            <TimePickerDropdown value={value} onChange={(v) => { onChange(v); setOpen(false); }} minuteStep={15} />
+            <TimeEntriesTimePickerDropdown
+              value={value}
+              onChange={(v) => { onChange(v); setOpen(false); }}
+              minuteStep={15}
+            />
           </PopoverContent>
         </div>
       </Popover>
@@ -391,14 +542,25 @@ function SupportingDocField({
   return (
     <div className={cn("min-w-[90px] flex-1 space-y-0.5 relative")}>
       <Label className="text-[11px] text-muted-foreground">Supporting doc</Label>
-      <input ref={fileRef} type="file" className="hidden" multiple onChange={(e) => { if (e.target.files?.length) { onAdd(parentId, e.target.files); e.target.value = ""; } }} />
+      <input
+        ref={fileRef}
+        type="file"
+        className="hidden"
+        multiple
+        onChange={(e) => { if (e.target.files?.length) { onAdd(parentId, e.target.files); e.target.value = ""; } }}
+      />
       <div className={cn(
         "flex h-10 w-full items-center rounded-[6px] border border-input text-[11px] overflow-hidden bg-white",
         disabled && "bg-[#F2F4F7] cursor-not-allowed",
         isLeave && "border-yellow-400",
         isApportioned && "border-[#6C5DD3]"
       )}>
-        <button type="button" className={cn("flex flex-1 min-w-0 items-center px-2 overflow-hidden", disabled && "cursor-not-allowed")} onClick={() => setOpen((v) => !v)}>
+        <button
+          type="button"
+          disabled={disabled}
+          className={cn("flex flex-1 min-w-0 items-center px-2 overflow-hidden", disabled && "cursor-not-allowed")}
+          onClick={() => !disabled && setOpen((v) => !v)}
+        >
           <span className="truncate text-foreground flex-1">{pillLabel}</span>
           {extraCount > 0 && (
             <span className="ml-1 px-1.5 py-0.5 rounded-[6px] bg-[#6C5DD3]/10 text-[#6C5DD3] text-[10px] font-bold shrink-0">
@@ -408,7 +570,13 @@ function SupportingDocField({
           <ChevronDown className={cn("size-3 ml-1 text-muted-foreground transition-transform", open && "rotate-180")} />
         </button>
         {!disabled && (
-          <button type="button" disabled={uploading} onClick={() => fileRef.current?.click()} className={cn("shrink-0 w-10 border-l border-input h-full text-[#6C5DD3] hover:bg-accent flex items-center justify-center", uploading && "opacity-40 cursor-not-allowed")}>
+          <button
+            type="button"
+            disabled={uploading}
+            aria-label="Upload supporting document"
+            onClick={() => fileRef.current?.click()}
+            className={cn("shrink-0 w-10 border-l border-input h-full text-[#6C5DD3] hover:bg-accent flex items-center justify-center", uploading && "opacity-40 cursor-not-allowed")}
+          >
             <Plus className="size-5" />
           </button>
         )}
@@ -1507,7 +1675,11 @@ export function PersonalTimeStudyEntryForm({
                 <Button
                   size="icon"
                   disabled={isLocked}
-                  className={cn("size-9 bg-[#6C5DD3] hover:bg-[#6C5DD3]/90", isLocked && "cursor-not-allowed")}
+                  aria-label="Add time entry row"
+                  className={cn(
+                    "size-9 bg-[#6C5DD3] hover:bg-[#6C5DD3]/90",
+                    isLocked && "cursor-not-allowed",
+                  )}
                   onClick={addParentAtTop}
                 >
                   <Plus className="size-4" />
@@ -1518,7 +1690,7 @@ export function PersonalTimeStudyEntryForm({
         </div>
       </div>
 
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-3" data-time-entries-form>
         {parents.map((parent) => {
           const totalDisplay = computeDurationMinutes(parent.start, parent.end)
           const isLeaveRow = parent.isLeave
@@ -1527,10 +1699,12 @@ export function PersonalTimeStudyEntryForm({
           const effectiveHideTime = resolveEffectiveHideTime(parent)
           const hideDocs = rowSettings.hideSupportingDoc
           const hideNotes = rowSettings.hideDescriptionActivityNote
+          const showGreenPlus = !readonly && !isLeaveRow && !isApportionedRow && isMulticodeAllowedForParent(parent)
+          const showDelete = !readonly && canDeleteParent(parent.id)
 
           return (
-            <div key={parent.id} className={cn("rounded-md", !isLeaveRow && !isApportionedRow && "bg-card/50 p-2 border border-border/50")}>
-              <div className={cn(parentFieldRowClass, (isLeaveRow || isApportionedRow) && "p-2")}>
+            <div key={parent.id}>
+              <div className={parentFieldRowClass}>
                 <div className="flex-1 space-y-0.5">
                   <Label className="text-[11px] text-[#6C5DD3] font-medium">TS Program <RequiredMark /></Label>
                   <SingleSelectSearchDropdown
@@ -1607,10 +1781,28 @@ export function PersonalTimeStudyEntryForm({
                   />
                 </div>
                 {!effectiveHideTime && (
-                  <TimePicker24h label="Start" value={parent.start} disabled={isLocked || isLeaveRow || isApportionedRow} isLeave={isLeaveRow} isApportioned={isApportionedRow} onChange={(v) => updateParent(parent.id, { start: v })} />
+                  <TimePicker24h
+                    label="Start"
+                    value={parent.start}
+                    disabled={isLocked || isLeaveRow || isApportionedRow}
+                    isLeave={isLeaveRow}
+                    isApportioned={isApportionedRow}
+                    isStartField
+                    rowId={parent.id}
+                    onChange={(v) => updateParent(parent.id, { start: v })}
+                  />
                 )}
                 {!effectiveHideTime && (
-                  <TimePicker24h label="End" value={parent.end} disabled={isLocked || isLeaveRow || isApportionedRow || !parent.start} isLeave={isLeaveRow} isApportioned={isApportionedRow} onChange={(v) => updateParent(parent.id, { end: v })} />
+                  <TimePicker24h
+                    label="End"
+                    value={parent.end}
+                    disabled={isLocked || isLeaveRow || isApportionedRow || !parent.start}
+                    isLeave={isLeaveRow}
+                    isApportioned={isApportionedRow}
+                    rowId={parent.id}
+                    skipToDescriptionOnTab={!hideNotes}
+                    onChange={(v) => updateParent(parent.id, { end: v })}
+                  />
                 )}
                 {effectiveHideTime ? (
                   <MinDecimalField
@@ -1636,7 +1828,7 @@ export function PersonalTimeStudyEntryForm({
                     <TitleCaseInput
                       type="number"
                       min="0"
-                      readOnly={isLocked || isLeaveRow || isApportionedRow}
+                      disabled={isLocked || isLeaveRow || isApportionedRow}
                       value={parent.dbId && !parent.isEdited ? (parent.totalMin || "") : ((!totalDisplay || totalDisplay === "0") ? (parent.totalMin || totalDisplay || "") : totalDisplay)}
                       placeholder="—"
                       className={cn(
@@ -1651,6 +1843,7 @@ export function PersonalTimeStudyEntryForm({
                   <div className="flex-[1.5] space-y-0.5">
                     <Label className="text-[11px] text-muted-foreground">Description</Label>
                     <TitleCaseInput
+                      data-pts-desc={parent.id}
                       value={parent.description}
                       readOnly={isLocked || isLeaveRow || isApportionedRow}
                       onChange={(e) => updateParent(parent.id, { description: e.target.value })}
@@ -1673,18 +1866,19 @@ export function PersonalTimeStudyEntryForm({
                   />
                 )}
                 <div className="flex items-end gap-1 pb-0.5">
-                  {!readonly && canDeleteParent(parent.id) && (
+                  {showDelete && (
                     <Button
                       size="icon"
                       variant="ghost"
                       disabled={isLocked}
+                      aria-label="Delete time entry row"
                       className={cn("size-10 text-destructive hover:bg-destructive/10", isLocked && "cursor-not-allowed")}
                       onClick={() => removeParent(parent.id)}
                     >
                       <Trash2 className="size-4" />
                     </Button>
                   )}
-                  {!readonly && !isLeaveRow && !isApportionedRow && isMulticodeAllowedForParent(parent) && (
+                  {showGreenPlus && (
                     <Button
                       size="icon"
                       variant="outline"

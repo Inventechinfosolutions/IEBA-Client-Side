@@ -120,6 +120,3 @@ export function TimePickerDropdown({
     </div>
   )
 }
-
-
-
