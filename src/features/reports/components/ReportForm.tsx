@@ -951,17 +951,28 @@ export function ReportForm({ module }: ReportFormProps) {
   }, [rawDepartmentOptions, reportKey])
 
   const employeeOptions = useMemo(() => {
+    // Pick the source that is actually active for this report. Gating on the
+    // `shouldFetch*` flags (not just cached data presence) prevents a stale
+    // department-users cache from overriding MAA employees, which caused the
+    // dropdown labels to intermittently flip between names and user ids.
     if (shouldFetchCostPoolUsers && costPoolUsersData) {
       return sortSelectOptionsByLabel(costPoolUsersData)
     }
-    if (departmentId && departmentUsersData) {
+    if (shouldLoadDepartmentUsers && departmentUsersData) {
       return sortSelectOptionsByLabel(departmentUsersData)
     }
-    if ((reportKey.includes("MAA") || reportKey.includes("TCM")) && maaEmployeesData) {
+    if (shouldFetchMaaEmployees && maaEmployeesData) {
       return sortSelectOptionsByLabel(maaEmployeesData)
     }
     return []
-  }, [shouldFetchCostPoolUsers, costPoolUsersData, departmentId, departmentUsersData, reportKey, maaEmployeesData])
+  }, [
+    shouldFetchCostPoolUsers,
+    costPoolUsersData,
+    shouldLoadDepartmentUsers,
+    departmentUsersData,
+    shouldFetchMaaEmployees,
+    maaEmployeesData,
+  ])
 
   const isEmployeeLoading =
     (shouldFetchCostPoolUsers && isCostPoolUsersFetching) ||

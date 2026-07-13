@@ -186,7 +186,7 @@ function ActivityRows({
   grandTotalTime: number
 }) {
   return (
-    <>
+    <View wrap={false}>
       {activity.records.map((record, recordIndex) => (
         <View key={`${activity.activity}-${record.program}-${recordIndex}`}>
           {recordIndex === 0 ? (
@@ -246,7 +246,7 @@ function ActivityRows({
           ) : null}
         </View>
       ))}
-    </>
+    </View>
   )
 }
 
@@ -257,7 +257,7 @@ function EmployeeTable({ employee }: { employee: P101GroupedEmployee }) {
     <View style={styles.table}>
       <TableHeaderRow />
 
-      <View style={styles.row}>
+      <View style={styles.row} wrap={false}>
         <CellBox width={W.employee} bold>
           {employee.employeename}
         </CellBox>
@@ -277,7 +277,7 @@ function EmployeeTable({ employee }: { employee: P101GroupedEmployee }) {
         />
       ))}
 
-      <View style={[styles.row, { marginTop: 16 }]}>
+      <View style={[styles.row, { marginTop: 16 }]} wrap={false}>
         <View style={[styles.grandTotalBox, { width: W.employee + W.activity + W.ffp }]}>
           <Text style={[styles.rightText, styles.boldText]}>Grand Totals:</Text>
         </View>

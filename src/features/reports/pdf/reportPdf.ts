@@ -686,10 +686,12 @@ export function unwrapReportDataRecords(raw: unknown): ReportDataRecord[] {
   return unwrapListData(raw).map((row) => {
     const record = asRecord(row)
     return {
-      employeename: String(record.employeename ?? record.employeeName ?? ""),
-      program: String(record.program ?? ""),
-      activity: String(record.activity ?? ""),
-      mastercode: String(record.mastercode ?? record.masterCode ?? ""),
+      employeename: String(record.employeename ?? record.employeeName ?? "")
+        .trim()
+        .replace(/\s+/g, " "),
+      program: String(record.program ?? "").trim().replace(/\s+/g, " "),
+      activity: String(record.activity ?? "").trim().replace(/\s+/g, " "),
+      mastercode: String(record.mastercode ?? record.masterCode ?? "").trim(),
       activitytime: (record.activitytime ?? record.activityTime ?? 0) as string | number,
       traveltime: (record.traveltime ?? record.travelTime ?? 0) as string | number,
     }
@@ -802,20 +804,39 @@ export function formatReportTime(value: string | number): string {
 
 // --- P101 grouping (by activity within employee) ---
 
+/** Normalize employee / activity labels so slight name variance does not split one person across pages. */
+function normalizeP101GroupKey(value: string): string {
+  return value.trim().replace(/\s+/g, " ").toLowerCase()
+}
+
+/**
+ * Group P101 rows by employee → activity, summing duplicate program/FFP lines.
+ *
+ * Without aggregation the API's per-day detail rows reprint the same codes and can
+ * overflow onto a second page. Without name normalization, trailing spaces / case
+ * differences produce a second "employee" with its own Grand Totals (e.g. 16h for
+ * two days) that must be added to the first page to match the true period total.
+ */
 export function groupP101DataByEmployee(records: ReportDataRecord[]): P101GroupedEmployee[] {
   return records.reduce<P101GroupedEmployee[]>((acc, curr) => {
-    let employee = acc.find((emp) => emp.employeename === curr.employeename)
+    const employeeName = String(curr.employeename ?? "").trim().replace(/\s+/g, " ")
+    const employeeKey = normalizeP101GroupKey(employeeName)
+    let employee = acc.find((emp) => normalizeP101GroupKey(emp.employeename) === employeeKey)
 
     if (!employee) {
-      employee = { employeename: curr.employeename, activities: [] }
+      employee = { employeename: employeeName || curr.employeename, activities: [] }
       acc.push(employee)
     }
 
-    let activityGroup = employee.activities.find((act) => act.activity === curr.activity)
+    const activityLabel = String(curr.activity ?? "").trim().replace(/\s+/g, " ")
+    const activityKey = normalizeP101GroupKey(activityLabel)
+    let activityGroup = employee.activities.find(
+      (act) => normalizeP101GroupKey(act.activity) === activityKey,
+    )
 
     if (!activityGroup) {
       activityGroup = {
-        activity: curr.activity,
+        activity: activityLabel || curr.activity,
         records: [],
         totalActivityTimeForActivity: 0,
         totalTravelTime: 0,
@@ -824,9 +845,33 @@ export function groupP101DataByEmployee(records: ReportDataRecord[]): P101Groupe
       employee.activities.push(activityGroup)
     }
 
-    activityGroup.records.push(curr)
+    const programLabel = String(curr.program ?? "").trim().replace(/\s+/g, " ")
+    const masterCode = String(curr.mastercode ?? "").trim()
     const activityTime = toNumber(curr.activitytime)
     const travelTime = toNumber(curr.traveltime)
+
+    // Summation report: merge same program + FFP into one line instead of listing each day.
+    const existingRecord = activityGroup.records.find(
+      (row) =>
+        normalizeP101GroupKey(row.program) === normalizeP101GroupKey(programLabel) &&
+        String(row.mastercode ?? "").trim() === masterCode,
+    )
+
+    if (existingRecord) {
+      existingRecord.activitytime = toNumber(existingRecord.activitytime) + activityTime
+      existingRecord.traveltime = toNumber(existingRecord.traveltime) + travelTime
+    } else {
+      activityGroup.records.push({
+        ...curr,
+        employeename: employee.employeename,
+        activity: activityGroup.activity,
+        program: programLabel || curr.program,
+        mastercode: masterCode || curr.mastercode,
+        activitytime: activityTime,
+        traveltime: travelTime,
+      })
+    }
+
     activityGroup.totalActivityTimeForActivity += activityTime
     activityGroup.totalTravelTime += travelTime
     activityGroup.totalTime += activityTime + travelTime
