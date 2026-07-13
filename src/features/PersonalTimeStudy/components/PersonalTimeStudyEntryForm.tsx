@@ -66,16 +66,12 @@ function MinDecimalField({
 }: MinDecimalFieldProps) {
   const [originalValue, setOriginalValue] = useState<string | null>(null)
 
-  const needsRounding = showDecimalHint && (
-    (!!value.trim() && !isQuarterHourDecimal(value)) ||
-    originalValue !== null
-  )
   const displayMessage = showDecimalHint
     ? hintMessage ?? (
-        originalValue !== null
-          ? `${originalValue} hrs rounded to ${value} hrs (${Math.round(Number(value) * 60)} mins)`
-          : (needsRounding ? buildDecimalMinMessage(value) : null)
-      )
+      originalValue !== null
+        ? `${originalValue} hrs rounded to ${value} hrs (${Math.round(Number(value) * 60)} mins)`
+        : buildDecimalMinMessage(value)
+    )
     : null
 
   const handleBlur = () => {
@@ -321,11 +317,6 @@ function TimeEntriesTimePickerDropdown({
   const m = parts[1] ?? ""
   const filteredMinutes = TIME_PICKER_MINUTES.filter((minute) => parseInt(minute, 10) % minuteStep === 0)
 
-  const handleOk = () => {
-    onChange(localTime)
-    onClose?.()
-  }
-
   return (
     <div className="flex flex-col w-[120px] bg-white overflow-hidden rounded-md">
       <div className="flex h-[200px] divide-x divide-gray-100">
@@ -343,7 +334,9 @@ function TimeEntriesTimePickerDropdown({
                 )}
                 onMouseDown={(e: MouseEvent) => {
                   e.preventDefault()
-                  setLocalTime(`${hour}:${m || "00"}`)
+                  const newTime = `${hour}:${m || "00"}`
+                  setLocalTime(newTime)
+                  onChange(newTime)
                 }}
               >
                 {hour}
@@ -365,7 +358,9 @@ function TimeEntriesTimePickerDropdown({
                 )}
                 onMouseDown={(e: MouseEvent) => {
                   e.preventDefault()
-                  setLocalTime(`${h || "00"}:${minute}`)
+                  const newTime = `${h || "00"}:${minute}`
+                  setLocalTime(newTime)
+                  onChange(newTime)
                 }}
               >
                 {minute}
@@ -373,19 +368,6 @@ function TimeEntriesTimePickerDropdown({
             ))}
           </div>
         </ScrollArea>
-      </div>
-      <div className="p-2 pt-1 pb-2 flex justify-end bg-white">
-        <button
-          type="button"
-          tabIndex={-1}
-          onMouseDown={(e: MouseEvent) => {
-            e.preventDefault()
-            handleOk()
-          }}
-          className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-[13px] font-medium h-[28px] px-4 rounded-[4px] transition-colors"
-        >
-          OK
-        </button>
       </div>
     </div>
   )
@@ -422,6 +404,7 @@ function TimePicker24h({
   isStartField?: boolean
 }) {
   const [open, setOpen] = useState(false)
+  const anchorRef = useRef<HTMLDivElement>(null)
 
   const openMenu = () => {
     if (!disabled) setOpen(true)
@@ -440,6 +423,7 @@ function TimePicker24h({
         <div className="relative">
           <PopoverAnchor asChild>
             <div
+              ref={anchorRef}
               data-time-picker-anchor
               className={cn("relative cursor-pointer", disabled && "cursor-not-allowed")}
               onClick={openMenu}
@@ -465,12 +449,12 @@ function TimePicker24h({
                   if (isStartField && (e.key === "ArrowRight" || e.key === "Enter")) {
                     e.preventDefault()
                     handleBlur()
-                    ;(e.target as HTMLInputElement).blur()
+                      ; (e.target as HTMLInputElement).blur()
                   }
                   if (e.key === "Escape") {
                     e.preventDefault()
                     setOpen(false)
-                    ;(e.target as HTMLInputElement).blur()
+                      ; (e.target as HTMLInputElement).blur()
                   }
                 }}
                 className={cn(
@@ -496,14 +480,15 @@ function TimePicker24h({
             }}
             onInteractOutside={(e) => {
               const target = e.target as HTMLElement
-              if (target.closest("[data-time-picker-anchor]")) {
+              if (anchorRef.current?.contains(target)) {
                 e.preventDefault()
               }
             }}
           >
             <TimeEntriesTimePickerDropdown
               value={value}
-              onChange={(v) => { onChange(v); setOpen(false); }}
+              onChange={onChange}
+              onClose={() => setOpen(false)}
               minuteStep={15}
             />
           </PopoverContent>
@@ -829,10 +814,10 @@ export function PersonalTimeStudyEntryForm({
     }
   }, [onFetchMulticodeDept, userId])
 
-  const fetchActivitiesForProgram = useCallback(async (programIdStr: string | undefined) => {
+  const fetchActivitiesForProgram = useCallback(async (programIdStr: string | undefined, explicitDeptId?: number) => {
     const programId = programIdStr?.trim()
     if (!programId || !userId) return
-    const deptId = resolveDepartmentIdForProgram(programId)
+    const deptId = explicitDeptId ?? resolveDepartmentIdForProgram(programId)
     if (!deptId) return
 
 
@@ -849,13 +834,13 @@ export function PersonalTimeStudyEntryForm({
       fetchedRef.current.delete(key)
       console.error(`Failed to fetch activities for program ${programId} in dept ${deptId}`, err)
     }
-  }, [userId, resolveDepartmentIdForProgram, allowMulticodeUi, fetchMulticodeProgramsForDepartment])
+  }, [userId, resolveDepartmentIdForProgram])
 
   const isFetchingActivitiesForProgram = useCallback(
-    (programId: string | undefined) => {
+    (programId: string | undefined, explicitDeptId?: number) => {
       const normalized = String(programId ?? "").trim()
       if (!normalized) return false
-      const deptId = resolveDepartmentIdForProgram(normalized)
+      const deptId = explicitDeptId ?? resolveDepartmentIdForProgram(normalized)
       if (!deptId) return false
       const key = `${deptId}:${normalized}`
       return !programActivities[key] && fetchedRef.current.has(key)
@@ -903,8 +888,7 @@ export function PersonalTimeStudyEntryForm({
         }
         if (r.leaveid) {
           const leave = leaveRecords?.find((l) => Number(l.id) === Number(r.leaveid))
-          const lStatus = leave?.status?.toLowerCase();
-          if (leave && lStatus !== "approved" && lStatus !== "draft" && lStatus !== "requested") {
+          if (leave && !["approved", "requested", "draft"].includes(leave.status?.toLowerCase() ?? "")) {
             return false
           }
         }
@@ -962,25 +946,17 @@ export function PersonalTimeStudyEntryForm({
           parentMap.set(rec.id, parentRow)
         }
       })
-      const sorted = Array.from(parentMap.values()).sort((a, b) => {
-        if (!a.start) return 1
-        if (!b.start) return -1
-        return b.start.localeCompare(a.start)
-      })
+      const normalRows = Array.from(parentMap.values())
 
       const leaveRows: TimeEntryParentRow[] = []
       if (leaveRecords) {
         leaveRecords.forEach((leave) => {
-          const lStatus = leave.status?.toLowerCase();
-          if (lStatus === "approved" || lStatus === "draft" || lStatus === "requested") {
+          if (["approved", "requested", "draft"].includes(leave.status?.toLowerCase() ?? "")) {
             const lStart = (leave.starttime ?? "").split(":").slice(0, 2).join(":")
             const lEnd = (leave.endtime ?? "").split(":").slice(0, 2).join(":")
-            const existing = sorted.find(
+            const existing = normalRows.find(
               (rec) =>
-
-                leave.id !== undefined &&
-                rec.leaveid !== undefined &&
-                Number(rec.leaveid) === Number(leave.id),
+                rec.leaveid !== undefined && leave.id !== undefined && Number(rec.leaveid) === Number(leave.id)
             )
             if (existing) {
               existing.isLeave = true
@@ -991,7 +967,8 @@ export function PersonalTimeStudyEntryForm({
                 studyProgram: String(c.programid ?? ""),
                 serviceActivity: String(c.activityid ?? ""),
                 totalMin: String(c.leaveTotalTime ?? "0"),
-                description: "",
+                activityTimeMessage: (c as any).message ?? null,
+                description: (c as any).requestcomment || (c as any).description || "",
                 start: "",
                 end: "",
                 programCode: c.programcode,
@@ -1008,9 +985,11 @@ export function PersonalTimeStudyEntryForm({
                 end: lEnd,
                 // totalMin: String(leave.leaveTotalTime ?? ""),
                 leaveid: leave.id,
+                totalMin: String(leave.leaveTotalTime ?? ""),
+                activityTimeMessage: (leave as any).message ?? null,
                 tsProgram: String(leave.programid ?? ""),
                 serviceActivity: String(leave.activityid ?? ""),
-                description: "",
+                description: (leave as any).requestcomment || (leave as any).description || "",
                 supportingDocLabel: "",
                 supportingDocs: [],
                 subRows: subRows,
@@ -1019,13 +998,19 @@ export function PersonalTimeStudyEntryForm({
                 activityCode: leave.activitycode,
                 activityName: leave.activityname,
                 isLeave: true,
+                status: leave.status,
               })
             }
           }
         })
       }
 
-      const combined = [...sorted, ...leaveRows]
+      const combinedUnsorted = [...normalRows, ...leaveRows]
+      const combined = combinedUnsorted.sort((a, b) => {
+        if (!a.start) return 1
+        if (!b.start) return -1
+        return b.start.localeCompare(a.start)
+      })
       const final = combined.length > 0 ? combined : [createParent()]
       // Freeze snapshot of server-loaded rows so handleSave can detect what changed.
       // Only rows with a dbId (came from the server) are snapshotted.
@@ -1094,8 +1079,10 @@ export function PersonalTimeStudyEntryForm({
         }
 
         if (patch.start !== undefined || patch.end !== undefined) {
-          updatedP.isEdited = true
-          updatedP.totalMin = String(computeDurationMinutes(updatedP.start, updatedP.end))
+          const hideTime = rowSettings.hideTime
+          if (!hideTime) {
+            updatedP.totalMin = String(computeDurationMinutes(updatedP.start, updatedP.end) || "")
+          }
         }
 
         if (patch.start !== undefined || patch.end !== undefined || patch.totalMin !== undefined) {
@@ -1504,15 +1491,29 @@ export function PersonalTimeStudyEntryForm({
         </div>
       )}
       <div className="mb-6 flex flex-col gap-2">
-        {showLeaveBanner && leaveRecords && leaveRecords.filter(l => ["approved", "draft", "requested"].includes(l.status?.toLowerCase() ?? "")).map((leave, idx) => {
-          const statusLabel = leaveBannerStatusLabel(leave.status)
+        {showLeaveBanner && leaveRecords && (() => {
+          const filtered = leaveRecords.filter(l => ["approved", "requested", "draft"].includes(l.status?.toLowerCase() ?? ""))
+          if (!filtered.length) return null
           return (
-          <div key={idx} className="mt-5 mb-1 mx-auto max-w-max rounded-[6px] bg-[#E2E8F0]/50 px-4 py-1.5 text-[13px] text-gray-600 italic text-center border border-[#CBD5E1]">
-            {leave.name || leave.employeeName || username} applied leave in this date : <span className="not-italic font-medium text-gray-800">({dateStr})</span> from : <span className="not-italic font-medium text-gray-800">({leave.starttime})</span> To : <span className="not-italic font-medium text-gray-800">({leave.endtime})</span>
-            {statusLabel ? <span className="whitespace-pre">{statusLabel}</span> : null}.
-          </div>
+            <div className="mt-5 mb-1 flex flex-wrap justify-center gap-4">
+              {filtered.map((leave, idx) => (
+                <div key={idx} className="rounded-[6px] bg-[#E2E8F0]/50 px-4 py-1.5 text-[13px] text-gray-600 italic text-center border border-[#CBD5E1] flex items-center justify-center gap-2 w-fit">
+                  <span>
+                    {readonly ? (leave.name || leave.employeeName || username) : "You"} applied leave in this date : <span className="not-italic font-medium text-gray-800">({dateStr})</span> from : <span className="not-italic font-medium text-gray-800">({(leave.starttime || "").slice(0, 5)})</span> To : <span className="not-italic font-medium text-gray-800">({(leave.endtime || "").slice(0, 5)})</span>. <strong className="not-italic font-semibold text-gray-700">Status:</strong>
+                  </span>
+                  <span className={cn(
+                    "px-2 py-0.5 rounded-[6px] text-[11px] border bg-white capitalize font-semibold not-italic shrink-0 select-none",
+                    leave.status?.toLowerCase() === "approved" ? "border-green-500 text-green-600 bg-green-50/50" :
+                      leave.status?.toLowerCase() === "rejected" ? "border-red-500 text-red-500 bg-red-50/50" :
+                        "border-[#f59e0b] text-[#d97706] bg-amber-50/50"
+                  )}>
+                    {leave.status}
+                  </span>
+                </div>
+              ))}
+            </div>
           )
-        })}
+        })()}
 
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
@@ -1734,12 +1735,13 @@ export function PersonalTimeStudyEntryForm({
                       return filtered;
                     })()}
                     onChange={(v) => {
+                      const newDeptId = resolveDepartmentIdForProgram(v);
                       if (v !== parent.tsProgram) {
-                        updateParent(parent.id, { tsProgram: v, serviceActivity: '' });
+                        updateParent(parent.id, { tsProgram: v, serviceActivity: '', departmentId: newDeptId });
                       } else {
-                        updateParent(parent.id, { tsProgram: v });
+                        updateParent(parent.id, { tsProgram: v, departmentId: newDeptId });
                       }
-                      fetchActivitiesForProgram(v);
+                      fetchActivitiesForProgram(v, newDeptId);
                       checkAndRefetchConfig(v);
                     }}
                     onBlur={() => { }}
@@ -1752,15 +1754,15 @@ export function PersonalTimeStudyEntryForm({
                     value={parent.serviceActivity}
                     placeholder="Select Activity Code"
                     disabled={isLocked || isLeaveRow || isApportionedRow || !parent.tsProgram}
-                    isLoading={isFetchingActivitiesForProgram(parent.tsProgram)}
+                    isLoading={isFetchingActivitiesForProgram(parent.tsProgram, parent.departmentId)}
                     onOpenChange={(open) => {
                       if (open && parent.tsProgram) {
-                        fetchActivitiesForProgram(parent.tsProgram);
+                        fetchActivitiesForProgram(parent.tsProgram, parent.departmentId);
                       }
                     }}
                     options={(() => {
                       if (!parent.tsProgram) return [];
-                      const deptId = resolveDepartmentIdForProgram(parent.tsProgram);
+                      const deptId = resolveDepartmentIdForProgram(parent.tsProgram) ?? parent.departmentId;
                       const key = deptId ? `${deptId}:${parent.tsProgram}` : "";
                       const listForProg = key ? (programActivities[key] ?? []) : [];
                       const filtered = listForProg
@@ -1828,8 +1830,8 @@ export function PersonalTimeStudyEntryForm({
                     <TitleCaseInput
                       type="number"
                       min="0"
-                      disabled={isLocked || isLeaveRow || isApportionedRow}
-                      value={parent.dbId && !parent.isEdited ? (parent.totalMin || "") : ((!totalDisplay || totalDisplay === "0") ? (parent.totalMin || totalDisplay || "") : totalDisplay)}
+                      readOnly={isLocked || isLeaveRow || isApportionedRow}
+                      value={parent.totalMin !== undefined && parent.totalMin !== "" ? parent.totalMin : (totalDisplay || "")}
                       placeholder="—"
                       className={cn(
                         "h-10 text-[11px] bg-[#F2F4F7] cursor-not-allowed",
@@ -1894,146 +1896,149 @@ export function PersonalTimeStudyEntryForm({
               </div>
               {parent.subRows.length > 0 && (
                 <div className="mt-4 space-y-3 border-l-2 border-[#6C5DD3]/20 pl-4 ml-8">
-                  {parent.subRows.map((sub) => (
-                    <div key={sub.id} className={parentFieldRowClass}>
-                      <div className="flex-1 space-y-1">
-                        <Label className="text-[11px] text-muted-foreground">Program <RequiredMark /></Label>
-                        <SingleSelectSearchDropdown
-                          value={sub.studyProgram}
-                          placeholder="Select program"
-                          disabled={isLocked || isLeaveRow || isApportionedRow}
-                          title={(!apportioningConfig?.timestudyAllowedDepartmentIds || apportioningConfig.timestudyAllowedDepartmentIds.length === 0) && !apportioningConfig?.bypassSchedule ? "No Time Study period Allocated" : undefined}
-                          isLoading={(() => {
-                            const deptId = resolveDepartmentIdForProgram(parent.tsProgram)
-                            return Boolean(deptId && fetchingDepartments[String(deptId)])
-                          })()}
-                          onOpenChange={(open) => {
-                            if (open) {
-                              onOpenDropdown?.()
+                  {parent.subRows.map((sub) => {
+                    const parentDeptId = resolveDepartmentIdForProgram(parent.tsProgram) ?? parent.departmentId
+                    return (
+                      <div key={sub.id} className={parentFieldRowClass}>
+                        <div className="flex-1 space-y-1">
+                          <Label className="text-[11px] text-muted-foreground">Program <RequiredMark /></Label>
+                          <SingleSelectSearchDropdown
+                            value={sub.studyProgram}
+                            placeholder="Select program"
+                            disabled={isLocked || isLeaveRow || isApportionedRow}
+                            title={(!apportioningConfig?.timestudyAllowedDepartmentIds || apportioningConfig.timestudyAllowedDepartmentIds.length === 0) && !apportioningConfig?.bypassSchedule ? "No Time Study period Allocated" : undefined}
+                            isLoading={(() => {
                               const deptId = resolveDepartmentIdForProgram(parent.tsProgram)
-                              if (deptId) {
-                                fetchMulticodeProgramsForDepartment(deptId)
+                              return Boolean(deptId && fetchingDepartments[String(deptId)])
+                            })()}
+                            onOpenChange={(open) => {
+                              if (open) {
+                                onOpenDropdown?.()
+                                const deptId = resolveDepartmentIdForProgram(parent.tsProgram)
+                                if (deptId) {
+                                  fetchMulticodeProgramsForDepartment(deptId)
+                                }
                               }
-                            }
-                          }}
-                          options={(() => {
-                            const filtered = [...getSubRowProgramOptions(parent.tsProgram)]
-                            if (sub.studyProgram && !filtered.some((o) => o.value === sub.studyProgram)) {
-                              if (sub.programCode || sub.programName) {
-                                const deptPrefix = (sub.departmentCode ?? "").split("-")[0]
-                                const prefix = deptPrefix ? `${deptPrefix}-` : ""
-                                filtered.unshift({
-                                  value: sub.studyProgram,
-                                  label: `${prefix}${sub.programCode ?? ""} - ${sub.programName ?? ""}`,
-                                })
+                            }}
+                            options={(() => {
+                              const filtered = [...getSubRowProgramOptions(parent.tsProgram)]
+                              if (sub.studyProgram && !filtered.some((o) => o.value === sub.studyProgram)) {
+                                if (sub.programCode || sub.programName) {
+                                  const deptPrefix = (sub.departmentCode ?? "").split("-")[0]
+                                  const prefix = deptPrefix ? `${deptPrefix}-` : ""
+                                  filtered.unshift({
+                                    value: sub.studyProgram,
+                                    label: `${prefix}${sub.programCode ?? ""} - ${sub.programName ?? ""}`,
+                                  })
+                                }
                               }
-                            }
-                            return filtered
-                          })()}
-                          onChange={(v) => {
-                            if (v !== sub.studyProgram) {
-                              updateSubRow(parent.id, sub.id, { studyProgram: v, serviceActivity: "" })
-                            } else {
-                              updateSubRow(parent.id, sub.id, { studyProgram: v })
-                            }
-                            fetchActivitiesForProgram(v)
-                            checkAndRefetchConfig(v)
-                          }}
-                          onBlur={() => { }}
-                          className={cn("h-9 text-[11px]", (isLocked || isLeaveRow || isApportionedRow) && "bg-[#F2F4F7] cursor-not-allowed", isLeaveRow && "border-yellow-400", isApportionedRow && "border-[#6C5DD3]")}
+                              return filtered
+                            })()}
+                            onChange={(v) => {
+                              if (v !== sub.studyProgram) {
+                                updateSubRow(parent.id, sub.id, { studyProgram: v, serviceActivity: "" })
+                              } else {
+                                updateSubRow(parent.id, sub.id, { studyProgram: v })
+                              }
+                              fetchActivitiesForProgram(v)
+                              checkAndRefetchConfig(v)
+                            }}
+                            onBlur={() => { }}
+                            className={cn("h-9 text-[11px]", (isLocked || isLeaveRow || isApportionedRow) && "bg-[#F2F4F7] cursor-not-allowed", isLeaveRow && "border-yellow-400", isApportionedRow && "border-[#6C5DD3]")}
+                          />
+                        </div>
+                        <div className="flex-1 space-y-1">
+                          <Label className="text-[11px] text-muted-foreground">Activity Code <RequiredMark /></Label>
+                          <SingleSelectSearchDropdown
+                            value={sub.serviceActivity}
+                            placeholder="Select Activity Code"
+                            disabled={isLocked || isLeaveRow || isApportionedRow || !sub.studyProgram}
+                            isLoading={isFetchingActivitiesForProgram(sub.studyProgram, parentDeptId)}
+                            onOpenChange={(open) => {
+                              if (open && sub.studyProgram) {
+                                fetchActivitiesForProgram(sub.studyProgram, parentDeptId)
+                              }
+                            }}
+                            options={(() => {
+                              if (!sub.studyProgram) return []
+                              const deptId = parentDeptId
+                              const key = deptId ? `${deptId}:${sub.studyProgram}` : ""
+                              const listForProg = key ? (programActivities[key] ?? []) : []
+                              const filtered = listForProg
+                                .map((a: any) => ({ value: String(a.id), label: `${a.code} - ${a.name}` }))
+                              if (sub.serviceActivity && !filtered.some((o) => o.value === sub.serviceActivity)) {
+                                const fallback = listForProg.find((a: any) => String(a.id) === sub.serviceActivity) as any
+                                if (fallback) {
+                                  filtered.unshift({ value: String(fallback.id), label: `${fallback.code} - ${fallback.name}` })
+                                } else if (sub.activityCode || sub.activityName) {
+                                  filtered.unshift({
+                                    value: sub.serviceActivity,
+                                    label: `${sub.activityCode ?? ""} - ${sub.activityName ?? ""}`,
+                                  })
+                                }
+                              }
+                              return filtered
+                            })()}
+                            onChange={(v) => updateSubRow(parent.id, sub.id, { serviceActivity: v })}
+                            onBlur={() => { }}
+                            className={cn("h-9 text-[11px]", (isLocked || isLeaveRow || isApportionedRow || !sub.studyProgram) && "bg-[#F2F4F7] cursor-not-allowed", isLeaveRow && "border-yellow-400", isApportionedRow && "border-[#6C5DD3]")}
+                          />
+                        </div>
+                        <MinDecimalField
+                          label={
+                            <>
+                              {(effectiveHideTime || !!sub.activityTimeMessage) ? "Hrs." : "Min."}{" "}
+                              <RequiredMark />
+                            </>
+                          }
+                          labelClassName="text-[11px] text-[#6C5DD3] font-medium"
+                          value={sub.totalMin}
+                          readOnly={isLocked || isLeaveRow || isApportionedRow}
+                          showDecimalHint={effectiveHideTime || !!sub.activityTimeMessage}
+                          hintMessage={sub.activityTimeMessage}
+                          heightClass="h-9"
+                          inputClassName={cn(
+                            isLeaveRow && "border-yellow-400",
+                            isApportionedRow && "border-[#6C5DD3]",
+                          )}
+                          onChange={(v) => updateSubRow(parent.id, sub.id, { totalMin: v })}
                         />
-                      </div>
-                      <div className="flex-1 space-y-1">
-                        <Label className="text-[11px] text-muted-foreground">Activity Code <RequiredMark /></Label>
-                        <SingleSelectSearchDropdown
-                          value={sub.serviceActivity}
-                          placeholder="Select Activity Code"
-                          disabled={isLocked || isLeaveRow || isApportionedRow || !sub.studyProgram}
-                          isLoading={isFetchingActivitiesForProgram(sub.studyProgram)}
-                          onOpenChange={(open) => {
-                            if (open && sub.studyProgram) {
-                              fetchActivitiesForProgram(sub.studyProgram)
-                            }
-                          }}
-                          options={(() => {
-                            if (!sub.studyProgram) return []
-                            const deptId = resolveDepartmentIdForProgram(sub.studyProgram)
-                            const key = deptId ? `${deptId}:${sub.studyProgram}` : ""
-                            const listForProg = key ? (programActivities[key] ?? []) : []
-                            const filtered = listForProg
-                              .map((a: any) => ({ value: String(a.id), label: `${a.code} - ${a.name}` }))
-                            if (sub.serviceActivity && !filtered.some((o) => o.value === sub.serviceActivity)) {
-                              const fallback = listForProg.find((a: any) => String(a.id) === sub.serviceActivity) as any
-                              if (fallback) {
-                                filtered.unshift({ value: String(fallback.id), label: `${fallback.code} - ${fallback.name}` })
-                              } else if (sub.activityCode || sub.activityName) {
-                                filtered.unshift({
-                                  value: sub.serviceActivity,
-                                  label: `${sub.activityCode ?? ""} - ${sub.activityName ?? ""}`,
-                                })
-                              }
-                            }
-                            return filtered
-                          })()}
-                          onChange={(v) => updateSubRow(parent.id, sub.id, { serviceActivity: v })}
-                          onBlur={() => { }}
-                          className={cn("h-9 text-[11px]", (isLocked || isLeaveRow || isApportionedRow || !sub.studyProgram) && "bg-[#F2F4F7] cursor-not-allowed", isLeaveRow && "border-yellow-400", isApportionedRow && "border-[#6C5DD3]")}
-                        />
-                      </div>
-                      <MinDecimalField
-                        label={
-                          <>
-                            {(effectiveHideTime || !!sub.activityTimeMessage) ? "Hrs." : "Min."}{" "}
-                            <RequiredMark />
-                          </>
-                        }
-                        labelClassName="text-[11px] text-[#6C5DD3] font-medium"
-                        value={sub.totalMin}
-                        readOnly={isLocked || isLeaveRow || isApportionedRow}
-                        showDecimalHint={effectiveHideTime || !!sub.activityTimeMessage}
-                        hintMessage={sub.activityTimeMessage}
-                        heightClass="h-9"
-                        inputClassName={cn(
-                          isLeaveRow && "border-yellow-400",
-                          isApportionedRow && "border-[#6C5DD3]",
-                        )}
-                        onChange={(v) => updateSubRow(parent.id, sub.id, { totalMin: v })}
-                      />
-                      {(() => {
-                        const hideSubNotes = getRowSettings(parent).hideDescriptionActivityNote
-                        if (hideSubNotes) return null
-                        return (
-                          <div className="flex-1 space-y-1">
-                            <div className="flex items-center gap-2">
-                              <Label className="text-[11px] text-muted-foreground whitespace-nowrap">
-                                Description
-                              </Label>
+                        {(() => {
+                          const hideSubNotes = getRowSettings(parent).hideDescriptionActivityNote
+                          if (hideSubNotes) return null
+                          return (
+                            <div className="flex-1 space-y-1">
+                              <div className="flex items-center gap-2">
+                                <Label className="text-[11px] text-muted-foreground whitespace-nowrap">
+                                  Description
+                                </Label>
+                              </div>
+                              <TitleCaseInput
+                                value={sub.description}
+                                readOnly={isLocked || isLeaveRow || isApportionedRow}
+                                onChange={(e) => updateSubRow(parent.id, sub.id, { description: e.target.value })}
+                                placeholder="Add description here..."
+                                className={cn("h-9 text-[11px] text-[#344054] font-normal", (isLocked || isLeaveRow || isApportionedRow) && "bg-[#F2F4F7] cursor-not-allowed", isLeaveRow && "border-yellow-400", isApportionedRow && "border-[#6C5DD3]")}
+                              />
                             </div>
-                            <TitleCaseInput
-                              value={sub.description}
-                              readOnly={isLocked || isLeaveRow || isApportionedRow}
-                              onChange={(e) => updateSubRow(parent.id, sub.id, { description: e.target.value })}
-                              placeholder="Add description here..."
-                              className={cn("h-9 text-[11px] text-[#344054] font-normal", (isLocked || isLeaveRow || isApportionedRow) && "bg-[#F2F4F7] cursor-not-allowed", isLeaveRow && "border-yellow-400", isApportionedRow && "border-[#6C5DD3]")}
-                            />
-                          </div>
-                        )
-                      })()}
-                      <div className="flex items-end pb-0.5">
-                        {!readonly && !isLeaveRow && !isApportionedRow && (
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            disabled={isLocked}
-                            className={cn("size-9 text-destructive hover:bg-destructive/10", isLocked && "cursor-not-allowed")}
-                            onClick={() => removeSubRow(parent.id, sub.id)}
-                          >
-                            <Trash2 className="size-4" />
-                          </Button>
-                        )}
+                          )
+                        })()}
+                        <div className="flex items-end pb-0.5">
+                          {!readonly && !isLeaveRow && !isApportionedRow && (
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              disabled={isLocked}
+                              className={cn("size-9 text-destructive hover:bg-destructive/10", isLocked && "cursor-not-allowed")}
+                              onClick={() => removeSubRow(parent.id, sub.id)}
+                            >
+                              <Trash2 className="size-4" />
+                            </Button>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               )}
             </div>

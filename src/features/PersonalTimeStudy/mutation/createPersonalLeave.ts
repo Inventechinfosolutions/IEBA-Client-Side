@@ -4,6 +4,12 @@ import { apiSaveLeaveAsDraft, apiSubmitLeaveAsRequested, apiWithdrawLeave, apiUp
 import { personalTimeStudyKeys } from "../keys"
 import type { CreateLeavePayload } from "../types"
 
+function invalidateAll(queryClient: ReturnType<typeof useQueryClient>, userId: string, dateStr: string, month: number, year: number) {
+  queryClient.invalidateQueries({ queryKey: personalTimeStudyKeys.dayDetail(userId, dateStr) })
+  queryClient.invalidateQueries({ queryKey: personalTimeStudyKeys.monthLegend(userId, month, year) })
+  queryClient.invalidateQueries({ queryKey: personalTimeStudyKeys.timeEntrySummary(userId, dateStr) })
+}
+
 /** Save leave entries as draft (no supervisor notification). */
 export function useCreatePersonalLeave(userId: string, dateStr: string, month: number, year: number) {
   const queryClient = useQueryClient()
@@ -12,8 +18,7 @@ export function useCreatePersonalLeave(userId: string, dateStr: string, month: n
       apiSaveLeaveAsDraft(values, uid ?? userId, dropdownData),
     onSuccess: () => {
       toast.success("Leave request saved")
-      queryClient.invalidateQueries({ queryKey: personalTimeStudyKeys.dayDetail(userId, dateStr) })
-      queryClient.invalidateQueries({ queryKey: personalTimeStudyKeys.monthLegend(userId, month, year) })
+      invalidateAll(queryClient, userId, dateStr, month, year)
     },
     onError: (error: any) => {
       toast.error(error.message || "Failed to save leave request")
@@ -29,8 +34,7 @@ export function useSubmitPersonalLeave(userId: string, dateStr: string, month: n
       apiSubmitLeaveAsRequested(values, uid ?? userId, dropdownData),
     onSuccess: () => {
       toast.success("Leave request submitted")
-      queryClient.invalidateQueries({ queryKey: personalTimeStudyKeys.dayDetail(userId, dateStr) })
-      queryClient.invalidateQueries({ queryKey: personalTimeStudyKeys.monthLegend(userId, month, year) })
+      invalidateAll(queryClient, userId, dateStr, month, year)
     },
     onError: (error: any) => {
       toast.error(error.message || "Failed to submit leave request")
@@ -46,8 +50,7 @@ export function useUpdatePersonalLeave(userId: string, dateStr: string, month: n
       apiUpdateUserLeave(id, values, uid ?? userId, status, dropdownData),
     onSuccess: () => {
       toast.success("Leave request updated")
-      queryClient.invalidateQueries({ queryKey: personalTimeStudyKeys.dayDetail(userId, dateStr) })
-      queryClient.invalidateQueries({ queryKey: personalTimeStudyKeys.monthLegend(userId, month, year) })
+      invalidateAll(queryClient, userId, dateStr, month, year)
     },
     onError: (error: any) => {
       toast.error(error.message || "Failed to update leave request")
@@ -62,8 +65,7 @@ export function useWithdrawPersonalLeave(userId: string, dateStr: string, month:
     mutationFn: (leave: any) => apiWithdrawLeave(leave),
     onSuccess: () => {
       toast.success("Leave request withdrawn")
-      queryClient.invalidateQueries({ queryKey: personalTimeStudyKeys.dayDetail(userId, dateStr) })
-      queryClient.invalidateQueries({ queryKey: personalTimeStudyKeys.monthLegend(userId, month, year) })
+      invalidateAll(queryClient, userId, dateStr, month, year)
     },
     onError: (error: any) => {
       toast.error(error.message || "Failed to withdraw leave request")
