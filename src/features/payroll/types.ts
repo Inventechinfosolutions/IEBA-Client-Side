@@ -91,7 +91,11 @@ export type PayrollUploadSectionProps = {
   settingsPayrollType?: PayrollFrequencyType
   /** Lock payroll type UI based on settings response. */
   isPayrollTypeLocked?: boolean
-  onSubmitUpload: (values: PayrollUploadFormValues, file: File | null) => void
+  /**
+   * Called when user clicks Upload.
+   * `resetFile` clears the file input — call it in both onSuccess and onError.
+   */
+  onSubmitUpload: (values: PayrollUploadFormValues, file: File | null, resetFile: () => void) => void
 }
 
 export type PayrollDetailsSectionProps = {

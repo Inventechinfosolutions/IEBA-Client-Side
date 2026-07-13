@@ -320,6 +320,7 @@ export function PersonalTimeStudyPage() {
                     <PersonalTimeStudyEntryForm
                       key={dateStr}
                       dateStr={dateStr}
+                      showLeaveBanner={true}
                       initialRecords={dayQuery.data?.timeStudyRecords}
                       dropdownData={dropdownQuery.data}
                       leaveRecords={dayQuery.data?.leaveRecords as any}

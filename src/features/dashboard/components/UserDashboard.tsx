@@ -29,11 +29,11 @@ export function UserDashboard() {
   const departmentId = currentDeptRole?.departmentId
   const roleId = currentDeptRole?.roleId
 
-  const overview = useDashboardOverview({ 
+  const overview = useDashboardOverview({
     userId,
-    departmentId, 
-    roleId, 
-    enabled: true 
+    departmentId,
+    roleId,
+    enabled: true
   })
   const reports = useReportsByRole({
     departmentId,
@@ -47,16 +47,16 @@ export function UserDashboard() {
   const tsDraft = overview.data?.timeStudyRecordByUserStatusCounts?.find((s: any) => s.status === 'draft')?.count ?? 0
 
   const selfLeaveTotal = overview.data?.personalLeaveTotal ?? 0
-  
-  const getPersonalLeaveCount = (statusName: string) => 
+
+  const getPersonalLeaveCount = (statusName: string) =>
     overview.data?.personalLeaveStatusCounts?.find((s: any) => s.status.toLowerCase() === statusName)?.count ?? 0
-  
+
   const selfLeaveApproved = getPersonalLeaveCount('approved')
   const selfLeaveOpen = getPersonalLeaveCount('requested') || getPersonalLeaveCount('draft')
   const selfLeaveRejected = getPersonalLeaveCount('rejected')
 
   const holidaysList = overview.data?.holidayList ?? []
-  
+
   const parseDate = (dStr: string) => {
     const t = dStr.trim()
     let m = /^(\d{4})-(\d{2})-(\d{2})/.exec(t)
@@ -237,8 +237,40 @@ export function UserDashboard() {
                     const tsRecords = dayQuery.data?.timeStudyRecords || []
                     const leaveRecords = dayQuery.data?.leaveRecords || []
 
+                    const processedTsRecords = tsRecords.map((r: any) => ({ ...r }))
+                    const leaveRows: any[] = []
+
+                    if (leaveRecords) {
+                      leaveRecords.forEach((leave: any) => {
+                        if (["approved", "requested", "draft"].includes(leave.status?.toLowerCase() ?? "")) {
+                          const existing = processedTsRecords.find((rec: any) =>
+                            rec.leaveid !== undefined && leave.id !== undefined && Number(rec.leaveid) === Number(leave.id)
+                          )
+
+                          if (existing) {
+                            existing.isLeave = true
+                          } else {
+                            leaveRows.push({
+                              ...leave,
+                              activitytime: leave.leaveTotalTime,
+                              traveltime: 0,
+                              description: leave.requestcomment || leave.description || "",
+                              isLeave: true,
+                              multiCodeRecords: (leave.multiCodeRecords || []).map((c: any) => ({
+                                ...c,
+                                activitytime: c.leaveTotalTime,
+                                traveltime: 0,
+                                description: c.requestcomment || c.description || "",
+                                status: c.status || leave.status
+                              }))
+                            })
+                          }
+                        }
+                      })
+                    }
+
                     // Combine and sort by start time
-                    const allRecords = [...tsRecords, ...leaveRecords].sort((a, b) => {
+                    const allRecords = [...processedTsRecords, ...leaveRows].sort((a, b) => {
                       const timeA = a.starttime || (a as any).starttime || "00:00:00"
                       const timeB = b.starttime || (b as any).starttime || "00:00:00"
                       return timeA.localeCompare(timeB)

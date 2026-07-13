@@ -71,16 +71,18 @@ export function PayrollPage() {
   const [editDialogKey, setEditDialogKey] = useState(0)
 
   const handleSubmitUpload = useCallback(
-    (values: PayrollUploadFormValues, file: File | null) => {
+    (values: PayrollUploadFormValues, file: File | null, resetFile: () => void) => {
       uploadMutation.mutate(
         { uploadType: values.uploadType, file },
         {
           onSuccess: () => {
             toast.success("Payroll file uploaded successfully.")
+            resetFile()
           },
           onError: (err: unknown) => {
             const message = err instanceof Error ? err.message : "Upload failed."
             toast.error(message)
+            resetFile()
           },
         },
       )
