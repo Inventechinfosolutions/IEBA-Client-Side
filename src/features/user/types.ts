@@ -197,6 +197,7 @@ export type EmergencyContactUpsertDto = {
 export type UpdateUserRequestDto = {
   firstName?: string
   lastName?: string
+  loginId?: string
   roles?: string[]
   password?: string
   employeeId?: string
@@ -313,6 +314,8 @@ export type UpdateUserModuleInput = {
   id: string
   values: UserModuleFormValues
   defaultValues?: Partial<UserModuleFormValues>
+  /** When false (default), loginId is never sent on PUT — preserves all non-Mono counties. */
+  allowLoginIdUpdate?: boolean
 }
 
 export type UserTableProps = {

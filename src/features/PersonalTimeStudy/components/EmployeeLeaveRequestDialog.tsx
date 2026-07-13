@@ -83,16 +83,12 @@ function MinDecimalField({
 }: MinDecimalFieldProps) {
   const [originalValue, setOriginalValue] = useState<string | null>(null)
 
-  const needsRounding = showDecimalHint && (
-    (!!value.trim() && !isQuarterHourDecimal(value)) ||
-    originalValue !== null
-  )
   const displayMessage = showDecimalHint
     ? hintMessage ?? (
-        originalValue !== null
-          ? `${originalValue} hrs rounded to ${value} hrs (${Math.round(Number(value) * 60)} mins)`
-          : (needsRounding ? buildDecimalMinMessage(value) : null)
-      )
+      originalValue !== null
+        ? `${originalValue} hrs rounded to ${value} hrs (${Math.round(Number(value) * 60)} mins)`
+        : buildDecimalMinMessage(value)
+    )
     : null
 
   const handleBlur = () => {
@@ -710,25 +706,24 @@ export function EmployeeLeaveRequestDialog({
     [resolveDepartmentIdForProgram, programActivities],
   )
 
-  const hasExceeded = useMemo(() => {
-    return formEntries.some((entry, index) => {
-      const currentTotal = Number(entry.totalMinApplied || 0)
+  const hasExceeded = formEntries.some((entry, index) => {
+    const liveEntry = form.getValues(`entries.${index}`) || entry
+    const currentTotal = Number(liveEntry.totalMinApplied || 0)
 
-      // 1. Check against physical time difference
-      if (entry.startTime && entry.endTime) {
-        const diff = calculateMinutesDiff(entry.startTime, entry.endTime)
-        if (currentTotal > diff) return true
-      }
+    // 1. Check against physical time difference
+    if (liveEntry.startTime && liveEntry.endTime) {
+      const diff = calculateMinutesDiff(liveEntry.startTime, liveEntry.endTime)
+      if (currentTotal > diff) return true
+    }
 
-      // 2. Check against original approved amount
-      if (isApproved && initialValues?.entries) {
-        const originalTotal = Number(initialValues.entries[index]?.totalMinApplied || 0)
-        if (originalTotal > 0 && currentTotal > originalTotal) return true
-      }
+    // 2. Check against original approved amount
+    if (isApproved && initialValues?.entries) {
+      const originalTotal = Number(initialValues.entries[index]?.totalMinApplied || 0)
+      if (originalTotal > 0 && currentTotal > originalTotal) return true
+    }
 
-      return false
-    })
-  }, [formEntries, isApproved, initialValues])
+    return false
+  })
 
   const resetForm = useCallback(() => {
     form.reset({ entries: [createEmptyRow()] })
@@ -1241,6 +1236,11 @@ export function EmployeeLeaveRequestDialog({
                                     disabled={!hasProgram}
                                     isLoading={isActivityLoading}
                                     options={options}
+                                    onOpenChange={(open) => {
+                                      if (open && hasProgram) {
+                                        fetchActivitiesForProgram(programId)
+                                      }
+                                    }}
                                     onChange={(v) => f.onChange(v || EMPTY)}
                                     onBlur={f.onBlur}
                                     className="h-9 min-h-0 text-[13px] bg-white border-border/60"
@@ -1418,7 +1418,7 @@ export function EmployeeLeaveRequestDialog({
                                     placeholder="0"
                                     autoComplete="off"
                                     {...f}
-                                    onChange={() => {}}
+                                    onChange={() => { }}
                                   />
                                 )}
                                 {fieldState.error?.message ? (
@@ -1688,6 +1688,11 @@ export function EmployeeLeaveRequestDialog({
                                             disabled={!hasProgram}
                                             isLoading={isActivityLoading}
                                             options={options}
+                                            onOpenChange={(open) => {
+                                              if (open && hasProgram) {
+                                                fetchActivitiesForProgram(programId)
+                                              }
+                                            }}
                                             onChange={(v) => f.onChange(v || EMPTY)}
                                             onBlur={f.onBlur}
                                             className="h-9 min-h-0 text-[11px] bg-white border-border/60"
@@ -1711,9 +1716,9 @@ export function EmployeeLeaveRequestDialog({
                                 }
                                 const parentHideTime = parentRowIndex !== -1
                                   ? getRowSettings(
-                                      formEntries[parentRowIndex]?.date,
-                                      formEntries[parentRowIndex]?.programCode,
-                                    ).hideTime
+                                    formEntries[parentRowIndex]?.date,
+                                    formEntries[parentRowIndex]?.programCode,
+                                  ).hideTime
                                   : false
                                 return parentHideTime ? "w-[92px]" : "w-[72px]"
                               })())}>
@@ -1728,9 +1733,9 @@ export function EmployeeLeaveRequestDialog({
                                     }
                                     const parentHideTime = parentRowIndex !== -1
                                       ? getRowSettings(
-                                          formEntries[parentRowIndex]?.date,
-                                          formEntries[parentRowIndex]?.programCode,
-                                        ).hideTime
+                                        formEntries[parentRowIndex]?.date,
+                                        formEntries[parentRowIndex]?.programCode,
+                                      ).hideTime
                                       : false
                                     return parentHideTime ? "Hrs." : "Min."
                                   })()}{" "}
@@ -1749,9 +1754,9 @@ export function EmployeeLeaveRequestDialog({
                                     }
                                     const parentHideTime = parentRowIndex !== -1
                                       ? getRowSettings(
-                                          formEntries[parentRowIndex]?.date,
-                                          formEntries[parentRowIndex]?.programCode,
-                                        ).hideTime
+                                        formEntries[parentRowIndex]?.date,
+                                        formEntries[parentRowIndex]?.programCode,
+                                      ).hideTime
                                       : false
                                     const originalTotal = Number(
                                       initialValues?.entries?.[index]?.totalMinApplied || 0,
