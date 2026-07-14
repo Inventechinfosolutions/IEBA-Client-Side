@@ -99,21 +99,36 @@ const weekSummaryDotColors: Record<DateStatus, string> = {
 /** Locale used by AppCalender — week row keys must match this when rolling up summaries. */
 export const CALENDAR_LOCALE = "en-GB"
 
+/**
+ * First day of each calendar week row (`Date.getDay()` index: 0=Sun … 6=Sat).
+ * Product weeks are Mon–Sun. Do not use `DateTimeFormat.resolvedOptions().weekday`
+ * — that option is a format style ("short"/"long"), not the week-start weekday.
+ */
+export const CALENDAR_FIRST_DAY_OF_WEEK = 1 // Monday
+
+/** Monday (=1) … offset within the Mon–Sun week row for a JS weekday (0=Sun … 6=Sat). */
+export function getOffsetWithinCalendarWeek(jsWeekday: number): number {
+  let offset = jsWeekday - CALENDAR_FIRST_DAY_OF_WEEK
+  if (offset < 0) offset += 7
+  return offset
+}
+
+/** Local Monday that starts the calendar week containing `date`. */
+export function getCalendarWeekStartDate(date: Date): Date {
+  const offset = getOffsetWithinCalendarWeek(date.getDay())
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate() - offset)
+}
+
 /** Build lookup key for `weekSummaries` from the first day of a calendar row. */
 export function formatWeekStartUtcKey(date: Date): string {
   return toIsoYmdFromDate(date)
 }
 
-/** Week-start key for a YYYY-MM-DD date, aligned with AppCalender grid rows. */
+/** Week-start key for a YYYY-MM-DD date, aligned with AppCalender grid rows (Mon–Sun). */
 export function getCalendarWeekStartKeyFromIso(dateStr: string): string {
   const [y, m, d] = dateStr.split("-").map(Number)
   const date = new Date(y, m - 1, d)
-  const firstDayOfWeek =
-    new Intl.DateTimeFormat(CALENDAR_LOCALE).resolvedOptions().weekday === "monday" ? 1 : 0
-  let dayOfWeek = date.getDay() - firstDayOfWeek
-  if (dayOfWeek < 0) dayOfWeek += 7
-  const weekStart = new Date(date.getFullYear(), date.getMonth(), date.getDate() - dayOfWeek)
-  return toIsoYmdFromDate(weekStart)
+  return toIsoYmdFromDate(getCalendarWeekStartDate(date))
 }
 
 function getNowInTimezone(_timezone: string, _locale: string) {
@@ -121,19 +136,13 @@ function getNowInTimezone(_timezone: string, _locale: string) {
   return new Date(now.getFullYear(), now.getMonth(), now.getDate());
 }
 
-function getStartOfCalendarGrid(date: Date, _timezone: string, locale: string) {
+function getStartOfCalendarGrid(date: Date, _timezone: string, _locale: string) {
   const year = date.getFullYear();
   const month = date.getMonth();
   const firstOfMonth = new Date(year, month, 1);
 
-  // Get first day of week based on locale
-  const firstDayOfWeek = new Intl.DateTimeFormat(locale).resolvedOptions().weekday === 'monday' ? 1 : 0;
-
-  let startOffset = firstOfMonth.getDay() - firstDayOfWeek;
-  if (startOffset < 0) startOffset += 7;
-
-  const startDate = new Date(year, month, 1 - startOffset);
-  return startDate;
+  const startOffset = getOffsetWithinCalendarWeek(firstOfMonth.getDay());
+  return new Date(year, month, 1 - startOffset);
 }
 
 const AppCalender = ({
@@ -176,17 +185,15 @@ const AppCalender = ({
     return currentYear - 10 + i;
   });
 
-  // Get days of week based on locale
+  // Short weekday labels Sun→Sat, then rotate so Mon is first (CALENDAR_FIRST_DAY_OF_WEEK).
   const daysOfWeek = Array.from({ length: 7 }, (_, i) => {
     const date = new Date(2021, 0, 3 + i); // Start with a Sunday
     return date.toLocaleString(locale, { weekday: 'short' });
   });
 
-  // Rotate days array based on locale's first day of week
-  const firstDayOfWeek = new Intl.DateTimeFormat(locale).resolvedOptions().weekday === 'monday' ? 1 : 0;
   const rotatedDays = [
-    ...daysOfWeek.slice(firstDayOfWeek),
-    ...daysOfWeek.slice(0, firstDayOfWeek)
+    ...daysOfWeek.slice(CALENDAR_FIRST_DAY_OF_WEEK),
+    ...daysOfWeek.slice(0, CALENDAR_FIRST_DAY_OF_WEEK),
   ];
 
   const getDateInfo = useCallback((date: Date): { status: DateStatus; color?: string; hasNotes?: boolean; noteText?: string } => {
@@ -227,7 +234,7 @@ const AppCalender = ({
       currentWeek.push({
         date,
         day: date.getDate(),
-        weekDay: rotatedDays[date.getDay()],
+        weekDay: rotatedDays[getOffsetWithinCalendarWeek(date.getDay())],
         isCurrentMonth: date.getMonth() === currentDate.getMonth(),
         isSelected,
         isToday,
@@ -257,15 +264,7 @@ const AppCalender = ({
       }
       setSelectedWeekDates([]);
     } else {
-      const firstDayOfWeek = new Intl.DateTimeFormat(locale).resolvedOptions().weekday === 'monday' ? 1 : 0;
-      let dayOfWeek = date.getDay() - firstDayOfWeek;
-      if (dayOfWeek < 0) dayOfWeek += 7;
-  
-      const weekStart = new Date(
-        date.getFullYear(),
-        date.getMonth(),
-        date.getDate() - dayOfWeek
-      );
+      const weekStart = getCalendarWeekStartDate(date);
 
       const week = Array.from({ length: 7 }, (_, i) => {
         return new Date(
@@ -405,7 +404,7 @@ const AppCalender = ({
               </div>
             )}
 
-            {/* Single grid: Sun–Sat + TOTAL(MIN.) + STATUS + optionally ACTION per row */}
+            {/* Single grid: Mon–Sun + TOTAL(MIN.) + STATUS + optionally ACTION per row */}
             <div className={cn("calendar-weeks-grid", showActionColumn && "has-action")}>
               <div className="days-of-week-container">
                 {rotatedDays.map((day) => (
