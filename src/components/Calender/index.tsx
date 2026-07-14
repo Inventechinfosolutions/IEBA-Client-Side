@@ -7,6 +7,7 @@ import {
   useState,
   type ComponentProps,
   type CSSProperties,
+  type KeyboardEvent,
 } from "react"
 import {
   Tooltip,
@@ -50,8 +51,14 @@ export type AppCalenderProps = Omit<ComponentProps<"div">, "children"> & {
   weekSummaries?: Record<string, CalendarWeekSummary>
   /** Controlled selected date. */
   selectedDate?: Date | null
-  /** Callback when a date is clicked. */
+  /** Callback when a date is clicked or chosen (arrow move, Enter, click). */
   onDateSelect?: (date: Date) => void
+  /**
+   * Fired when the user activates a day for editing (click / Enter / Space),
+   * not when only moving the highlight with arrow keys.
+   * Use to move focus into the time-entry form (e.g. Program).
+   */
+  onDayActivate?: (date: Date) => void
   /** Controlled month/year viewport. */
   currentMonthDate?: Date
   /** Callback when month/year navigation occurs. */
@@ -64,6 +71,12 @@ export type AppCalenderProps = Omit<ComponentProps<"div">, "children"> & {
   renderStatus?: (weekIndex: number, dates: Date[], status: DateStatus) => React.ReactNode
   /** Render function for the ACTION column. Receives week index, dates, and week status. */
   renderAction?: (weekIndex: number, dates: Date[], status: DateStatus) => React.ReactNode
+  /**
+   * When Tab is pressed on a focused day cell, call this instead of walking every day
+   * and mid-page controls. Typical use: move focus to the first form field (e.g. Program).
+   * Shift+Tab is left to the browser (month nav / previous controls).
+   */
+  onDayTabOut?: () => void
 }
 
 interface CalendarDay {
@@ -150,12 +163,14 @@ const AppCalender = ({
   weekSummaries,
   selectedDate: propsSelectedDate,
   onDateSelect,
+  onDayActivate,
   currentMonthDate: propsCurrentMonthDate,
   onMonthChange,
   dayStatuses,
   showActionColumn,
   renderStatus,
   renderAction,
+  onDayTabOut,
   className,
   ...divProps
 }: AppCalenderProps) => {
@@ -250,7 +265,22 @@ const AppCalender = ({
     return weeks.filter(week => week.some(day => day.isCurrentMonth));
   }, [currentDate, selectedDate, selectedWeekDates, selectedTimezone, selectionMode, getDateInfo, locale, rotatedDays]);
 
-  const handleDayClick = (date: Date) => {
+  const flatDays = useMemo(() => calendarWeeks.flat(), [calendarWeeks])
+
+  const focusDayByIndex = useCallback((index: number) => {
+    const day = flatDays[index]
+    if (!day) return
+    const key = toIsoYmdFromDate(day.date)
+    const el = document.querySelector(
+      `[data-calendar-day="${key}"]`,
+    ) as HTMLElement | null
+    el?.focus()
+  }, [flatDays])
+
+  const handleDayClick = (
+    date: Date,
+    source: "pointer" | "keyboard-activate" | "keyboard-move" = "pointer",
+  ) => {
     // Auto-navigate if clicking a day from a different month
     if (date.getMonth() !== currentDate.getMonth()) {
       handleMonthChange(new Date(date.getFullYear(), date.getMonth(), 1))
@@ -263,6 +293,9 @@ const AppCalender = ({
         setInternalSelectedDate(date);
       }
       setSelectedWeekDates([]);
+      if (source !== "keyboard-move") {
+        onDayActivate?.(date)
+      }
     } else {
       const weekStart = getCalendarWeekStartDate(date);
 
@@ -289,6 +322,51 @@ const AppCalender = ({
       setInternalCurrentDate(newDate);
     }
   };
+
+  const handleDayKeyDown = (
+    e: KeyboardEvent<HTMLDivElement>,
+    dayObj: CalendarDay,
+  ) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault()
+      handleDayClick(dayObj.date, "keyboard-activate")
+      return
+    }
+
+    if (e.key === "Tab" && !e.shiftKey && onDayTabOut) {
+      e.preventDefault()
+      onDayTabOut()
+      return
+    }
+
+    const currentIndex = flatDays.findIndex(
+      (d) => d.date.getTime() === dayObj.date.getTime(),
+    )
+    if (currentIndex < 0) return
+
+    let nextIndex: number | null = null
+    if (e.key === "ArrowRight") nextIndex = currentIndex + 1
+    else if (e.key === "ArrowLeft") nextIndex = currentIndex - 1
+    else if (e.key === "ArrowDown") nextIndex = currentIndex + 7
+    else if (e.key === "ArrowUp") nextIndex = currentIndex - 7
+
+    if (nextIndex == null || nextIndex < 0 || nextIndex >= flatDays.length) return
+
+    e.preventDefault()
+    const nextDay = flatDays[nextIndex]
+    handleDayClick(nextDay.date, "keyboard-move")
+    // Focus after selection / possible month change paints
+    requestAnimationFrame(() => {
+      focusDayByIndex(nextIndex!)
+    })
+  }
+
+  /** Roving tabindex: one day in the tab order; arrows move within the grid. */
+  const tabStopDateKey = useMemo(() => {
+    if (selectedDate) return toIsoYmdFromDate(selectedDate)
+    const firstCurrent = flatDays.find((d) => d.isCurrentMonth)
+    return firstCurrent ? toIsoYmdFromDate(firstCurrent.date) : null
+  }, [selectedDate, flatDays])
 
   return (
     <TooltipProvider>
@@ -343,22 +421,24 @@ const AppCalender = ({
             <div className="calendar-header">
               <button
                 onClick={() => handleMonthChange(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1))}
+                tabIndex={-1}
                 className="p-2 rounded-full bg-[#6C5DD3] text-primary-foreground border-none cursor-pointer transition-all duration-200 ease-in-out hover:bg-[#6C5DD3]/90 focus:outline-none focus:ring-2 focus:ring-[#6C5DD3] focus:ring-opacity-50"
               >
                 ‹
               </button>
 
               <div className="text-2xl font-semibold text-foreground">
-                <Button variant="ghost" onClick={() => setShowMonthSelect(!showMonthSelect)}>
+                <Button variant="ghost" tabIndex={-1} onClick={() => setShowMonthSelect(!showMonthSelect)}>
                   {currentDate.toLocaleString(locale, { month: 'long' })}
                 </Button>{' '}
-                <Button variant="ghost" onClick={() => setShowYearSelect(!showYearSelect)}>
+                <Button variant="ghost" tabIndex={-1} onClick={() => setShowYearSelect(!showYearSelect)}>
                   {currentDate.toLocaleString(locale, { year: 'numeric' })}
                 </Button>
               </div>
 
               <button
                 onClick={() => handleMonthChange(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1))}
+                tabIndex={-1}
                 className="p-2 rounded-full bg-[#6C5DD3] text-primary-foreground border-none cursor-pointer transition-all duration-200 ease-in-out hover:bg-[#6C5DD3]/90 focus:outline-none focus:ring-2 focus:ring-[#6C5DD3] focus:ring-opacity-50"
               >
                 ›
@@ -423,18 +503,22 @@ const AppCalender = ({
                 return (
                   <Fragment key={`week-${week[0]?.date.getTime() ?? weekIndex}`}>
                     {week.map((dayObj, index) => {
+                      const dayKey = toIsoYmdFromDate(dayObj.date)
+                      const isTabStop = tabStopDateKey === dayKey
                       const cell = (
                         <div
                           key={`${dayObj.date.getTime()}-${index}`}
                           role="button"
-                          tabIndex={0}
-                          onClick={() => handleDayClick(dayObj.date)}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter" || e.key === " ") {
-                              e.preventDefault()
-                              handleDayClick(dayObj.date)
-                            }
+                          data-calendar-day={dayKey}
+                          data-calendar-selected-day={dayObj.isSelected ? "true" : undefined}
+                          tabIndex={isTabStop ? 0 : -1}
+                          onMouseDown={(e) => {
+                            // Keep mouse clicks from parking focus on the day cell.
+                            // Focus moves to TS Program via onDayActivate (avoids Tab escaping to the sidebar).
+                            if (e.button === 0) e.preventDefault()
                           }}
+                          onClick={() => handleDayClick(dayObj.date)}
+                          onKeyDown={(e) => handleDayKeyDown(e, dayObj)}
                           className={cn(
                             "day-cell text-foreground",
                             !dayObj.isCurrentMonth && "not-current-month",
