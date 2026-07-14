@@ -339,7 +339,7 @@ export function CountyActivityCodeAddPage({
 
 
   return (
-    <div className="overflow-hidden rounded-[10px] border border-[#EBEDF0] bg-white">
+    <div className="county-activity-add-page overflow-hidden rounded-[10px] border border-[#EBEDF0] bg-white">
       <div className="grid grid-cols-2 border-b border-[#E9EAEC]">
         <button
           type="button"

@@ -82,6 +82,11 @@
 .dark .bg-\[\#FAFAFA\] {
   background-color: #0d0d10 !important;
 }
+.dark .bg-\[\#FAFAFC\],
+.dark [class*="bg-[#FAFAFC]"],
+.dark [class*="bg-[#fafafc]"] {
+  background-color: #0c0c0e !important;
+}
 .dark .bg-\[\#F3F4F6\] {
   background-color: #121215 !important;
 }
@@ -170,6 +175,10 @@
 .dark .border-gray-200 {
   border-color: rgba(108, 93, 211, 0.45) !important;
 }
+.dark [class*="border-[#F3F4F6]"],
+.dark [class*="border-[#f3f4f6]"] {
+  border-color: rgba(108, 93, 211, 0.45) !important;
+}
 .dark .border-\[\#c6cedd\],
 .dark .border-\[\#C6CEDD\],
 .dark [class*="border-[#c6cedd]"],
@@ -200,6 +209,10 @@
 .dark .shadow-auth-card,
 .dark .shadow-\[0_2px_10px_rgba\(0\2c 0\2c 0\2c 0\.06\)\] {
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6) !important;
+}
+.dark .shadow-\[0_0_20px_0_\#0000001a\],
+.dark [class*="shadow-[0_0_20px_0_#0000001a]"] {
+  box-shadow: 0 4px 20px rgba(108, 93, 211, 0.15) !important;
 }
 .dark [data-slot="sidebar-container"][data-side="left"] {
   box-shadow: 4px 0 18px rgba(0, 0, 0, 0.4) !important;
@@ -243,6 +256,10 @@
   color: #f4f4f5 !important;
   border-color: #27272a !important;
 }
+.dark .border-input,
+.dark [class*="border-input"] {
+  border-color: #27272a !important;
+}
 .dark input::placeholder, 
 .dark textarea::placeholder {
   color: #71717a !important;
@@ -258,6 +275,15 @@
 .dark [class*="bg-[#FAF8FF]"]:hover {
   background-color: #121216 !important;
 }
+.dark [class*="bg-[#fafafa]/40"] {
+  background-color: rgba(108, 93, 211, 0.05) !important;
+}
+.dark [class*="hover:bg-[#f5f3ff]/30"]:hover {
+  background-color: rgba(108, 93, 211, 0.1) !important;
+}
+.dark [class*="hover:bg-[#f5f3ff]/50"]:hover {
+  background-color: rgba(108, 93, 211, 0.12) !important;
+}
 .dark [class*="bg-white"]:hover {
   background-color: #121214 !important;
 }
@@ -268,7 +294,8 @@
 .dark [class*="border-[rgb(217,217,217)]"] {
   border-color: #27272a !important;
 }
-.dark [class*="text-[#1f2937]"] {
+.dark [class*="text-[#1f2937]"],
+.dark [class*="text-[#1F2937]"] {
   color: #f4f4f5 !important;
 }
 .dark [class*="text-[#8f93a1]"] {
@@ -368,7 +395,10 @@
   background-color: #0d0d11 !important;
 }
 .dark [class*="border-[#F0F0F0]"] {
-  border-color: #27272a !important;
+  border-color: rgba(108, 93, 211, 0.4) !important;
+}
+.dark [class*="border-[#f0f0f5]"] {
+  border-color: rgba(108, 93, 211, 0.4) !important;
 }
 .dark [class*="border-[#E8EAF6]"],
 .dark [class*="border-[#e8eaf6]"],
@@ -380,7 +410,7 @@
   background-color: #121216 !important;
 }
 .dark [class*="divide-[#F5F5F7]"] > * + * {
-  border-color: #27272a !important;
+  border-color: rgba(108, 93, 211, 0.4) !important;
 }
 
 /* 13. Recharts Bar Charts Background Track In Dark Mode */
@@ -455,7 +485,7 @@
   color: #a78bfa !important;
 }
 .dark .divide-gray-200 > * + * {
-  border-color: #27272a !important;
+  border-color: rgba(108, 93, 211, 0.4) !important;
 }
 
 /* 18. Calendar layout text and header overrides in Dark Mode */
@@ -720,6 +750,7 @@
 .dark .rounded-\[12px\].bg-white:not(input):not(button):not(select),
 .dark .rounded-\[15px\].bg-white:not(input):not(button):not(select) {
   border: 1px solid rgba(108, 93, 211, 0.4) !important;
+  box-shadow: 0 4px 20px rgba(108, 93, 211, 0.15) !important;
 }
 
 /* 35. Time Entry Row Wrapper Purple Borders in Dark Mode */
@@ -790,10 +821,14 @@
 }
 
 /* 41. Table Inner Separators and Column Border Overrides in Dark Mode */
-.dark th.border-white\/50,
+.dark th.border-white,
+.dark th[class*="border-white"] {
+  border-color: #000000 !important;
+}
+
 .dark td.border-white\/50,
-.dark [class*="border-white/50"],
-.dark .border-r.border-white\/50 {
+.dark [class*="border-white/50"]:not(th),
+.dark .border-r.border-white\/50:not(th) {
   border-color: rgba(108, 93, 211, 0.4) !important;
 }
 .dark th[class*="border-[#"],
@@ -971,3 +1006,78 @@
 .dark [class*="text-[#2A2F3A]"] {
   color: #a1a1aa !important;
 }
+
+/* 54. Personal Time Study Tabs Contrast Overrides in Dark Mode */
+.dark button#tab-personal-time-study[class*="bg-[#6C5DD3]"],
+.dark button#tab-personal-time-study[class*="bg-[#6c5dd3]"],
+.dark button#tab-time-study-mgt[class*="bg-[#6C5DD3]"],
+.dark button#tab-time-study-mgt[class*="bg-[#6c5dd3]"] {
+  background: linear-gradient(to bottom, #7e6df5, #6c5dd3) !important;
+  color: #ffffff !important;
+  border-color: #6C5DD3 !important;
+}
+.dark button#tab-personal-time-study[class*="bg-white"],
+.dark button#tab-time-study-mgt[class*="bg-white"] {
+  background-color: #09090b !important;
+  color: #a78bfa !important;
+  border-color: rgba(108, 93, 211, 0.4) !important;
+}
+.dark button#tab-personal-time-study[class*="bg-white"]:hover,
+.dark button#tab-time-study-mgt[class*="bg-white"]:hover {
+  background-color: rgba(108, 93, 211, 0.1) !important;
+  color: #ffffff !important;
+}
+
+/* 55. County Activity Code Tab and Container Border Overrides in Dark Mode */
+.dark .border-\[\#EBEDF0\],
+.dark .border-\[\#ebedf0\],
+.dark [class*="border-[#EBEDF0]"],
+.dark [class*="border-[#ebedf0]"] {
+  border-color: rgba(108, 93, 211, 0.45) !important;
+}
+
+.dark .border-\[\#E9EAEC\],
+.dark .border-\[\#e9eaec\],
+.dark [class*="border-[#E9EAEC]"],
+.dark [class*="border-[#e9eaec]"] {
+  border-color: transparent !important;
+}
+
+.dark .border-\[\#D9D9D9\],
+.dark .border-\[\#d9d9d9\],
+.dark [class*="border-[#D9D9D9]"],
+.dark [class*="border-[#d9d9d9]"] {
+  border-color: rgba(108, 93, 211, 0.5) !important;
+}
+
+/* 56. Input and Textarea border overrides for border-[#D9D9D9] in Dark Mode */
+.dark input.border-\[\#D9D9D9\],
+.dark input.border-\[\#d9d9d9\],
+.dark input[class*="border-[#D9D9D9]"],
+.dark input[class*="border-[#d9d9d9]"],
+.dark textarea.border-\[\#D9D9D9\],
+.dark textarea.border-\[\#d9d9d9\],
+.dark textarea[class*="border-[#D9D9D9]"],
+.dark textarea[class*="border-[#d9d9d9]"] {
+  border-color: rgba(108, 93, 211, 0.5) !important;
+}
+
+/* 57. Style all form controls inside CountyActivityCode modal as purple in Dark Mode */
+.dark .county-activity-add-page input,
+.dark .county-activity-add-page textarea,
+.dark .county-activity-add-page select,
+.dark .county-activity-add-page button[data-slot="select-trigger"],
+.dark .county-activity-add-page button.relative.flex {
+  border-color: rgba(108, 93, 211, 0.5) !important;
+}
+
+/* 58. Style User Table & Department Table header column lines as black in Dark Mode */
+.dark th.border-\[\#FFFFFF66\],
+.dark th.border-\[\#ffffff66\],
+.dark th[class*="border-[#FFFFFF66]"],
+.dark th[class*="border-[#ffffff66]"] {
+  border-color: #000000 !important;
+}
+
+
+
