@@ -11,6 +11,7 @@ import { useAuth } from "@/contexts/AuthContext"
 import { usePermissions } from "@/hooks/usePermissions"
 import { PersonalTimeStudyCalendarCard } from "../components/PersonalTimeStudyCalendarCard"
 import { PersonalTimeStudyEntryForm } from "../components/PersonalTimeStudyEntryForm"
+import { focusFirstTsProgramFieldSoon } from "../utils/focusUtils"
 import { PersonalTimeStudyLeaveCard } from "../components/PersonalTimeStudyLeaveCard"
 import { PersonalTimeStudyLegendCard } from "../components/PersonalTimeStudyLegendCard"
 import { PersonalTimeStudyMinutesCard } from "../components/PersonalTimeStudyMinutesCard"
@@ -61,6 +62,20 @@ export function PersonalTimeStudyPage() {
   const dateStr = toIsoYmdFromDate(selectedDate)
   const month = viewportDate.getMonth() + 1
   const year = viewportDate.getFullYear()
+
+  const requestProgramFocus = useCallback(() => {
+    // Imperative focus after paint — no useEffect (TanStack Query owns async data).
+    focusFirstTsProgramFieldSoon()
+  }, [])
+
+  const handleDateSelect = useCallback((date: Date) => {
+    setSelectedDate(date)
+  }, [])
+
+  const handleDayActivate = useCallback((_date: Date) => {
+    // Click / Enter / Space on a day → jump straight into TS Program (skips sidebar / notes / leave).
+    requestProgramFocus()
+  }, [requestProgramFocus])
 
   const handleMonthChange = (newViewport: Date) => {
     setViewportDate(newViewport)
@@ -225,7 +240,9 @@ export function PersonalTimeStudyPage() {
                       <PersonalTimeStudyCalendarCard
                         weekRows={weekRows}
                         selectedDate={selectedDate}
-                        onDateSelect={setSelectedDate}
+                        onDateSelect={handleDateSelect}
+                        onDayActivate={handleDayActivate}
+                        onDayTabOut={requestProgramFocus}
                         currentMonthDate={viewportDate}
                         onMonthChange={handleMonthChange}
                         dayStatuses={dayStatuses}
@@ -282,10 +299,12 @@ export function PersonalTimeStudyPage() {
                           }}
                           isSaving={notesMutation.isPending}
                           disabled={settingChecksQuery.data?.allowUserEntry === false}
+                          skipTabOrder
                         />
                         {isTimeStudySupervisor ? (
                           <button
                             type="button"
+                            tabIndex={-1}
                             onClick={() => setPeriodsSheetOpen(true)}
                             className="animate-in fade-in slide-in-from-right-12 duration-500 ease-out flex flex-col gap-2 h-full w-32 items-center justify-center rounded-[10px] bg-white text-[#6C5DD3] border border-gray-200 shadow-[0_4px_16px_rgba(16,24,40,0.12)] transition-colors hover:bg-gray-50 cursor-pointer p-3"
                             aria-label="Open Time Study Periods"

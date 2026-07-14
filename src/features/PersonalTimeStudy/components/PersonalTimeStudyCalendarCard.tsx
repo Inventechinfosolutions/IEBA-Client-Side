@@ -8,6 +8,8 @@ type PersonalTimeStudyCalendarCardProps = {
   weekRows: WeekSummaryRow[]
   selectedDate?: Date | null
   onDateSelect?: (date: Date) => void
+  onDayActivate?: (date: Date) => void
+  onDayTabOut?: () => void
   currentMonthDate?: Date
   onMonthChange?: (date: Date) => void
   dayStatuses?: Record<string, any>
@@ -33,6 +35,8 @@ export function PersonalTimeStudyCalendarCard({
   className,
   selectedDate,
   onDateSelect,
+  onDayActivate,
+  onDayTabOut,
   currentMonthDate,
   onMonthChange,
   dayStatuses,
@@ -58,6 +62,8 @@ export function PersonalTimeStudyCalendarCard({
             showBuiltInLegend={false}
             selectedDate={selectedDate}
             onDateSelect={onDateSelect}
+            onDayActivate={onDayActivate}
+            onDayTabOut={onDayTabOut}
             currentMonthDate={currentMonthDate}
             onMonthChange={onMonthChange}
             dayStatuses={dayStatuses}
