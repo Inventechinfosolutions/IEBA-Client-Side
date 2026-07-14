@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext"
 import { setToken } from "@/lib/api"
 import { queryClient } from "@/main"
 
+import { AUTH_DEFAULT_LANDING_PATH } from "@/features/auth/constants"
 import { mimicKeys } from "../keys"
 import { clearStoredMimicSession } from "../storage"
 import { useMimicSession } from "../queries/useMimicSession"
@@ -27,7 +28,7 @@ export function MimicBanner({ inline = false }: { inline?: boolean }) {
           clearStoredMimicSession()
           queryClient.setQueryData(mimicKeys.all, null)
           queryClient.clear()
-          navigate("/", { replace: true })
+          navigate(AUTH_DEFAULT_LANDING_PATH, { replace: true })
         }}
       >
         Exit

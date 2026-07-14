@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
+import { toast } from "sonner"
 import {
   Sheet,
   SheetContent,
@@ -12,7 +13,8 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { useNotifications } from "../queries/useNotifications"
 import { useMarkAllAsRead } from "../mutations/useMarkAllAsRead"
 import { useMarkNotificationAsRead } from "../mutations/useMarkNotificationAsRead"
-import { Play, Inbox, Megaphone } from "lucide-react"
+import { useDeleteNotification } from "../mutations/useDeleteNotification"
+import { Play, Inbox, Megaphone, Trash2 } from "lucide-react"
 import type { Notification, NotificationFilter, NotificationSheetProps } from "../types"
 import { formatTimestamp, getNotificationItems } from "../types"
 import { NotificationStatus } from "../enums/notification.enum"
@@ -27,8 +29,20 @@ export function NotificationSheet({ open, onOpenChange }: NotificationSheetProps
   const { data, isLoading, refetch } = useNotifications(filter)
   const markAllAsRead = useMarkAllAsRead()
   const markNotificationAsRead = useMarkNotificationAsRead()
+  const deleteNotification = useDeleteNotification()
 
   const notifications = getNotificationItems(data)
+
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteNotification.mutateAsync(id)
+      toast.success("Notification deleted successfully")
+    } catch (error: any) {
+      const msg = error?.message || "Failed to delete notification"
+      toast.error(msg)
+      console.error("Failed to delete notification:", error)
+    }
+  }
 
   const handleMarkAllAsRead = async () => {
     try {
@@ -36,7 +50,9 @@ export function NotificationSheet({ open, onOpenChange }: NotificationSheetProps
       for (const notification of notifications) nextReadIds[notification.id] = true
       setLocallyReadIds((prev) => ({ ...prev, ...nextReadIds }))
       await markAllAsRead.mutateAsync()
-    } catch (error) {
+      toast.success("All notifications marked as read")
+    } catch (error: any) {
+      toast.error("Failed to mark all notifications as read")
       console.error("Failed to mark all as read:", error)
     }
   }
@@ -56,12 +72,14 @@ export function NotificationSheet({ open, onOpenChange }: NotificationSheetProps
     setLocallyReadIds((prev) => ({ ...prev, [notification.id]: true }))
     try {
       await markNotificationAsRead.mutateAsync(notification.id)
-    } catch (error) {
+      toast.success("Notification marked as read")
+    } catch (error: any) {
       setLocallyReadIds((prev) => {
         const next = { ...prev }
         delete next[notification.id]
         return next
       })
+      toast.error("Failed to mark notification as read")
       console.error("Failed to mark notification as read:", error)
     }
   }
@@ -125,11 +143,10 @@ export function NotificationSheet({ open, onOpenChange }: NotificationSheetProps
                 const isRead = notification.read || Boolean(locallyReadIds[notification.id])
 
                 return (
-                  <div key={notification.id} className="bg-white">
-                    <button
-                      type="button"
+                  <div key={notification.id} className="relative bg-white border-b border-[#E5E7EB]">
+                    <div
                       onClick={() => void handleToggleExpand(notification)}
-                      className="flex w-full items-start gap-4 px-8 py-5 text-left hover:bg-gray-50/50 transition-colors"
+                      className="flex w-full items-start gap-4 px-8 py-5 text-left hover:bg-gray-50/50 transition-colors cursor-pointer"
                     >
                       <div className="flex items-start gap-3 shrink-0">
                         <div className="mt-1.5">
@@ -147,7 +164,7 @@ export function NotificationSheet({ open, onOpenChange }: NotificationSheetProps
                         )}
                       </div>
 
-                      <div className="flex-1 min-w-0">
+                      <div className="flex-1 min-w-0 pr-8">
                         <div className="flex flex-col gap-1">
                           <h4 className={`text-[15px] ${isRead ? "font-normal text-gray-500" : "font-bold text-black"}`}>
                             {notification.title}
@@ -176,6 +193,18 @@ export function NotificationSheet({ open, onOpenChange }: NotificationSheetProps
                           </div>
                         )}
                       </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        void handleDelete(notification.id)
+                      }}
+                      className="absolute top-5 right-8 p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
+                      title="Delete notification"
+                    >
+                      <Trash2 className="size-4" />
                     </button>
                   </div>
                 )

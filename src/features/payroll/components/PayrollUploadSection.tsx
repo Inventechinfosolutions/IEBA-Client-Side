@@ -67,8 +67,13 @@ export function PayrollUploadSection({
     }
   }
 
+  const resetFile = () => {
+    setSelectedFile(null)
+    if (fileInputRef.current) fileInputRef.current.value = ""
+  }
+
   const submitUpload = form.handleSubmit((values) => {
-    onSubmitUpload(values, selectedFile)
+    onSubmitUpload(values, selectedFile, resetFile)
   })
 
   return (

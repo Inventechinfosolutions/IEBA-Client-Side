@@ -7,6 +7,23 @@ import { Check, X, Unlock, Bell, Info } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { useActionUserTimeRecord } from "../mutations/updateActionUserTimeRecord"
 import { PersonalTimeStudyEntryForm } from "../../components/PersonalTimeStudyEntryForm"
+import { WeekStatusIcon } from "../../components/WeekStatusIcon"
+import { FUTURE_WEEK_STATUS } from "../../utils/weekSummaryUtils"
+
+function isPendingSubmissionStatus(status: unknown): boolean {
+  const s = String(status ?? "").toLowerCase()
+  return (
+    s.startsWith("submitted") ||
+    s.includes("target met") ||
+    s.includes("equal hours") ||
+    s === "less_hours" ||
+    s === "more_hours" ||
+    s === "equal_hours" ||
+    s === "submitted" ||
+    s === "submittedless" ||
+    s === "submittedexceed"
+  )
+}
 
 export function TimeStudyMGTPage() {
   const {
@@ -64,50 +81,23 @@ export function TimeStudyMGTPage() {
               dayStatuses={dayStatuses}
               weekSummaries={weekSummaries}
               showActionColumn={true}
-              renderStatus={(_weekIndex, _dates, status) => {
-                const s = String(status).toLowerCase()
-                if (s === "approved") {
-                  return (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <span className="inline-flex size-4 items-center justify-center rounded-full bg-[#22c55e] shrink-0 cursor-help">
-                          <Check className="size-2.5 text-white" aria-hidden />
-                        </span>
-                      </TooltipTrigger>
-                      <TooltipContent className="text-xs">Approved</TooltipContent>
-                    </Tooltip>
-                  )
-                }
-                if (s === "rejected") {
-                  return (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <span className="inline-flex size-4 items-center justify-center rounded-full bg-[#EF4444] shrink-0 cursor-help">
-                          <X className="size-2.5 text-white" aria-hidden />
-                        </span>
-                      </TooltipTrigger>
-                      <TooltipContent className="text-xs">Rejected</TooltipContent>
-                    </Tooltip>
-                  )
-                }
-                if (s === "submitted" || s === "submittedexceed" || s === "submittedless") {
-                  return (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <span className="inline-flex size-4 items-center justify-center rounded-full bg-[#3b82f6] shrink-0 cursor-help">
-                          <Check className="size-2.5 text-white" aria-hidden />
-                        </span>
-                      </TooltipTrigger>
-                      <TooltipContent className="text-xs">Submitted</TooltipContent>
-                    </Tooltip>
-                  )
-                }
-                return null
-              }}
+              renderStatus={(_weekIndex, _dates, status) => <WeekStatusIcon status={status} />}
               renderAction={(_weekIndex, dates, status) => {
                 const s = String(status).toLowerCase()
+                if (s === FUTURE_WEEK_STATUS) return null
+
                 const isApproved = s === "approved"
                 const isSubmitted = s === "submitted" || s === "submittedexceed" || s === "submittedless"
+                const hasRejectedDayInWeek = dates.some((date) => {
+                  const dateStr = toIsoYmdFromDate(date)
+                  return String(dayStatuses[dateStr]?.status ?? "").toLowerCase() === "rejected"
+                })
+                const hasPendingSubmittedDays = dates.some((date) => {
+                  const dateStr = toIsoYmdFromDate(date)
+                  return isPendingSubmissionStatus(dayStatuses[dateStr]?.status)
+                })
+                const showApproveReject = isSubmitted || hasPendingSubmittedDays
+                const showUnlock = isApproved && !hasPendingSubmittedDays
                 
                 const handleAction = (action: string) => {
                   if (!selectedUserId) return
@@ -118,17 +108,19 @@ export function TimeStudyMGTPage() {
 
                 return (
                   <div className="flex items-center gap-1.5">
-                    {/* If Submitted: Show Approve/Reject ONLY */}
-                    {isSubmitted && (
+                    {/* If any day is still pending submission review: Show Approve/Reject */}
+                    {showApproveReject && (
                       <>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <button onClick={() => handleAction("approved")} className="inline-flex size-4 items-center justify-center rounded-full bg-[#22c55e] hover:bg-[#16a34a] shrink-0 transition-colors shadow-sm cursor-pointer animate-zoom-in-out z-10 relative">
-                              <Check className="size-2.5 text-white" />
-                            </button>
-                          </TooltipTrigger>
-                          <TooltipContent className="text-xs">Approve</TooltipContent>
-                        </Tooltip>
+                        {!hasRejectedDayInWeek && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button onClick={() => handleAction("approved")} className="inline-flex size-4 items-center justify-center rounded-full bg-[#22c55e] hover:bg-[#16a34a] shrink-0 transition-colors shadow-sm cursor-pointer animate-zoom-in-out z-10 relative">
+                                <Check className="size-2.5 text-white" />
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent className="text-xs">Approve</TooltipContent>
+                          </Tooltip>
+                        )}
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <button onClick={() => handleAction("rejected")} className="inline-flex size-4 items-center justify-center rounded-full bg-[#EF4444] hover:bg-[#dc2626] shrink-0 transition-colors shadow-sm cursor-pointer">
@@ -140,8 +132,8 @@ export function TimeStudyMGTPage() {
                       </>
                     )}
 
-                    {/* If Approved: Show Unlock + Info */}
-                    {isApproved && (
+                    {/* If fully approved with no pending days: Show Unlock + Info */}
+                    {showUnlock && (
                       <>
                         <Tooltip>
                           <TooltipTrigger asChild>
@@ -165,7 +157,7 @@ export function TimeStudyMGTPage() {
                     )}
 
                     {/* If Open/Draft/Rejected/Null: Show Notify + Info */}
-                    {!isSubmitted && !isApproved && (
+                    {!showApproveReject && !showUnlock && (
                       <>
                         <Tooltip>
                           <TooltipTrigger asChild>

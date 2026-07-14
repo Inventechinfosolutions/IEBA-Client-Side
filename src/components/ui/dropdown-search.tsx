@@ -74,6 +74,8 @@ export function SingleSelectSearchDropdown({
 }: SingleSelectSearchDropdownProps) {
   const [internalOpen, setInternalOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
+  const [activeIndex, setActiveIndex] = useState(-1)
+  const dropdownId = useRef(Math.random().toString(36).substring(7)).current
   const inputRef = useRef<HTMLInputElement>(null)
   // Tracks whether a list item mousedown is in progress.
   // onMouseDown sets this true → input's onBlur sees it and skips closing.
@@ -104,6 +106,9 @@ export function SingleSelectSearchDropdown({
       isOpenRef.current = true
       if (!controlled) setInternalOpen(true)
       onOpenChange?.(true)
+
+      const selectedIndex = filteredOptions.findIndex((o) => String(o.value).trim() === valueTrimmed)
+      setActiveIndex(selectedIndex >= 0 ? selectedIndex : 0)
     }
   }
 
@@ -112,6 +117,7 @@ export function SingleSelectSearchDropdown({
     if (!controlled) setInternalOpen(false)
     onOpenChange?.(false)
     setSearchQuery("")
+    setActiveIndex(-1)
   }
 
   const handleSelect = (optValue: string) => {
@@ -120,27 +126,102 @@ export function SingleSelectSearchDropdown({
     inputRef.current?.blur()
   }
 
+  const scrollToIndex = (index: number) => {
+    setTimeout(() => {
+      const activeEl = document.getElementById(`opt-${dropdownId}-${index}`)
+      if (activeEl) {
+        activeEl.scrollIntoView({ block: "nearest" })
+      }
+    }, 0)
+  }
+
+  const focusNextTabbable = (currentEl: HTMLElement) => {
+    setTimeout(() => {
+      const focusableSelector = 'a[href], area[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]), [tabindex="0"]'
+      const focusables = Array.from(document.querySelectorAll(focusableSelector)) as HTMLElement[]
+      
+      const visibleFocusables = focusables.filter((el) => {
+        if (el.tabIndex < 0) return false
+        const style = window.getComputedStyle(el)
+        if (style.display === 'none' || style.visibility === 'hidden') return false
+        return el.offsetWidth > 0 || el.offsetHeight > 0
+      })
+
+      const index = visibleFocusables.indexOf(currentEl)
+      if (index >= 0 && index < visibleFocusables.length - 1) {
+        visibleFocusables[index + 1].focus()
+      } else {
+        currentEl.blur()
+      }
+    }, 50)
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (disabledEffective) return
+
+    switch (e.key) {
+      case "ArrowDown":
+        e.preventDefault()
+        if (!open) {
+          openMenu()
+        } else if (filteredOptions.length > 0) {
+          const nextIndex = activeIndex < 0 ? 0 : (activeIndex + 1) % filteredOptions.length
+          setActiveIndex(nextIndex)
+          scrollToIndex(nextIndex)
+        }
+        break
+      case "ArrowUp":
+        e.preventDefault()
+        if (!open) {
+          openMenu()
+        } else if (filteredOptions.length > 0) {
+          const nextIndex = activeIndex < 0 ? filteredOptions.length - 1 : (activeIndex - 1 + filteredOptions.length) % filteredOptions.length
+          setActiveIndex(nextIndex)
+          scrollToIndex(nextIndex)
+        }
+        break
+      case "Enter":
+        if (open && activeIndex >= 0 && activeIndex < filteredOptions.length) {
+          e.preventDefault()
+          onChange(filteredOptions[activeIndex].value)
+          closeMenu()
+          if (inputRef.current) {
+            focusNextTabbable(inputRef.current)
+          }
+        }
+        break
+      case "Escape":
+        if (open) {
+          e.preventDefault()
+          closeMenu()
+        }
+        break
+      default:
+        break
+    }
+  }
+
   // What the input should display
   const inputDisplayValue = open
     ? searchQuery                          // while open: show what user is typing
     : isLoading
-    ? ""
-    : selectedLabel                        // while closed: show selected label
+      ? ""
+      : selectedLabel                        // while closed: show selected label
 
   const inputPlaceholder = open
     ? (selectedLabel || placeholder)       // ghost-text hint while searching
     : isLoading
-    ? loadingLabel
-    : placeholder
+      ? loadingLabel
+      : placeholder
 
   return (
     <Popover modal={false} open={open} onOpenChange={(next) => { if (!next) closeMenu() }}>
       {/* PopoverAnchor lets the content align to this element without it being the trigger */}
       <PopoverAnchor asChild>
-          <div
-            className={cn(
-              "relative flex min-h-[43px] w-full items-center rounded-[7px] border border-input bg-white px-3 py-1.5 pr-9",
-              "focus-within:border-[#6C5DD3] focus-within:ring-1 focus-within:ring-[#6C5DD333]",
+        <div
+          className={cn(
+            "relative flex min-h-[43px] w-full items-center rounded-[7px] border border-input bg-white px-3 py-1.5 pr-9",
+            "focus-within:border-[#6C5DD3] focus-within:ring-1 focus-within:ring-[#6C5DD333]",
             disabledEffective && "cursor-not-allowed bg-[#f2f2f2] opacity-100",
             className,
           )}
@@ -157,13 +238,17 @@ export function SingleSelectSearchDropdown({
                   // Open on focus/click
                   onFocus={openMenu}
                   onClick={openMenu}
+                  onKeyDown={handleKeyDown}
                   onChange={(e) => {
                     setSearchQuery(e.target.value)
-                    if (!open) openMenu()
+                    if (!open) {
+                      openMenu()
+                    } else {
+                      setActiveIndex(0)
+                    }
                   }}
                   onBlur={() => {
                     if (selectingRef.current) return
-
                     onBlur()
                   }}
                   className={cn(
@@ -202,7 +287,6 @@ export function SingleSelectSearchDropdown({
         sideOffset={6}
         // Prevent popover from stealing focus away from the input
         onOpenAutoFocus={(e) => e.preventDefault()}
-        onCloseAutoFocus={(e) => e.preventDefault()}
         onWheel={(e) => e.stopPropagation()}
         className={cn(
           "z-[1000] p-0",
@@ -238,6 +322,7 @@ export function SingleSelectSearchDropdown({
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <button
+                        id={`opt-${dropdownId}-${index}`}
                         type="button"
                         onMouseDown={(e) => {
                           e.preventDefault()
@@ -246,8 +331,8 @@ export function SingleSelectSearchDropdown({
                           selectingRef.current = false
                         }}
                         className={cn(
-                          "w-full cursor-pointer rounded px-3 py-2 text-left hover:bg-[#f3f4f8] dark:hover:bg-[#2a1f52] dark:text-[#e4e4e7]",
-                          selected ? "bg-[#eef8ff] dark:bg-[#1c1538]" : "bg-transparent",
+                          "w-full cursor-pointer rounded px-3 py-2 text-left hover:bg-[#f3f4f8]",
+                          selected ? "bg-[#eef8ff]" : (index === activeIndex ? "bg-[#f3f4f8]" : "bg-transparent"),
                           itemButtonClassName,
                         )}
                       >

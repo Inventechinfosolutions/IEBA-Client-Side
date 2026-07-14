@@ -78,7 +78,11 @@ export function TimePickerDropdown({
                   "flex h-7 w-full items-center justify-center rounded-[4px] text-[13px] font-normal transition-colors",
                   h === hour ? "bg-[#eaf4ff] text-gray-900" : "bg-transparent text-gray-700 hover:bg-gray-100"
                 )}
-                onClick={() => setLocalTime(`${hour}:${m || "00"}`)}
+                onClick={() => {
+                  const newTime = `${hour}:${m || "00"}`
+                  setLocalTime(newTime)
+                  onChange(newTime)
+                }}
               >
                 {hour}
               </button>
@@ -98,7 +102,11 @@ export function TimePickerDropdown({
                   "flex h-7 w-full items-center justify-center rounded-[4px] text-[13px] font-normal transition-colors",
                   m === minute ? "bg-[#eaf4ff] text-gray-900" : "bg-transparent text-gray-700 hover:bg-gray-100"
                 )}
-                onClick={() => setLocalTime(`${h || "00"}:${minute}`)}
+                onClick={() => {
+                  const newTime = `${h || "00"}:${minute}`
+                  setLocalTime(newTime)
+                  onChange(newTime)
+                }}
               >
                 {minute}
               </button>
@@ -120,6 +128,3 @@ export function TimePickerDropdown({
     </div>
   )
 }
-
-
-

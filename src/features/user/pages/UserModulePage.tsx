@@ -36,6 +36,7 @@ import {
   useMimicSession,
   useMimicUser,
 } from "../user-mimic"
+import { AUTH_DEFAULT_LANDING_PATH } from "@/features/auth/constants"
 import { mimicKeys } from "../user-mimic/keys"
 import { setStoredMimicSession } from "../user-mimic/storage"
 import {
@@ -46,6 +47,7 @@ import {
   type UserModuleRow,
   type UserTableSortState,
 } from "../types"
+import { isMonoCounty } from "../utility/county"
 
 const emptyFormValues: UserModuleFormValues = {
   employeeNo: "",
@@ -383,7 +385,7 @@ export function UserModulePage() {
         targetLoginId: details.user?.loginId?.trim() || row.loginId || undefined,
       })
       queryClient.clear()
-      navigate("/", { replace: true })
+      navigate(AUTH_DEFAULT_LANDING_PATH, { replace: true })
     } catch (error) {
       const message =
         error instanceof Error
@@ -430,7 +432,12 @@ export function UserModulePage() {
           await persistUserAllowMultiCodeHistoryOnSave(selectedRow.id, values, defaultValues)
         }
 
-        await userModule.updateRowAsync({ id: selectedRow.id, values, defaultValues })
+        await userModule.updateRowAsync({
+          id: selectedRow.id,
+          values,
+          defaultValues,
+          allowLoginIdUpdate: isMonoCounty(user?.countyName),
+        })
         toast.success("User Saved Successfully", successToastOptions)
         invalidateUserTabCaches(queryClient, selectedRow.id, sourceTab)
         const merged = await refetchFormAfterTabSave(
@@ -447,7 +454,12 @@ export function UserModulePage() {
           await persistSecurityApportioningOnSave(draftUserId, values, defaultValues)
           await persistUserAllowMultiCodeHistoryOnSave(draftUserId, values, defaultValues)
         }
-        await userModule.updateRowAsync({ id: draftUserId, values, defaultValues })
+        await userModule.updateRowAsync({
+          id: draftUserId,
+          values,
+          defaultValues,
+          allowLoginIdUpdate: isMonoCounty(user?.countyName),
+        })
         toast.success("Employee saved successfully", successToastOptions)
         invalidateUserTabCaches(queryClient, draftUserId, sourceTab)
         const merged = await refetchFormAfterTabSave(queryClient, draftUserId, sourceTab, values)

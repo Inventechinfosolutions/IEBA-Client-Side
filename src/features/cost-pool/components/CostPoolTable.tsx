@@ -602,14 +602,15 @@ export function CostPoolTable({
       <div className={`overflow-hidden rounded-[8px] border border-[#E5E7EB] ${showHistory ? "hidden" : ""}`}>
         <Table className="w-full table-fixed border-collapse">
           <colgroup>
-            <col className="w-[33%]" />
-            <col className="w-[32%]" />
-            <col className="w-[18%]" />
-            <col className="w-[18%]" />
+            <col className="w-[22%]" />
+            <col className="w-[20%]" />
+            <col className="w-[34%]" />
+            <col className="w-[12%]" />
+            <col className="w-[12%]" />
           </colgroup>
           <TableHeader>
             <TableRow className="h-[48px] bg-[#6C5DD3] hover:bg-[#6C5DD3]">
-              {["Cost Pool", "Department", "Active", "Action"].map((column) => (
+              {["Cost Pool", "Department", "Activities", "Active", "Action"].map((column) => (
                 <TableHead
                   key={column}
                   className={`h-[48px] align-middle border-r border-[#FFFFFF66] bg-[#6C5DD3] px-[12px] py-[8px] text-[14px] font-normal leading-[1.2] whitespace-normal break-normal text-white font-['Roboto',sans-serif] last:border-r-0 ${
@@ -701,6 +702,9 @@ export function CostPoolTable({
                   <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[6px] align-top text-center">
                     <Skeleton className="h-4 w-[65%]" />
                   </TableCell>
+                  <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[6px] align-top text-left">
+                    <Skeleton className="h-4 w-[80%]" />
+                  </TableCell>
                   <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[6px] align-middle text-center">
                     <Skeleton className="mx-auto h-4 w-4" />
                   </TableCell>
@@ -712,7 +716,7 @@ export function CostPoolTable({
             ) : sortedRows.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={4}
+                  colSpan={5}
                   className="h-20 text-center text-sm text-muted-foreground"
                 >
                   No cost pools found.
@@ -726,6 +730,19 @@ export function CostPoolTable({
                   </TableCell>
                   <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[6px] align-top text-center text-[14px] font-normal font-['Roboto',sans-serif] text-[#000000E0]">
                     {row.department}
+                  </TableCell>
+                  <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[6px] align-top text-left text-[14px] font-normal font-['Roboto',sans-serif] text-[#000000E0]">
+                    {row.activities.length > 0 ? (
+                      <div className="program-table-scroll max-h-[88px] overflow-y-auto pr-1 [scrollbar-width:thin]">
+                        <div className="flex flex-col gap-0.5 whitespace-normal break-words">
+                          {row.activities.map((activity) => (
+                            <span key={activity}>{activity}</span>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <span className="text-[#9CA3AF]">N/A</span>
+                    )}
                   </TableCell>
                   <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[6px] align-middle text-center">
                     {row.active ? (

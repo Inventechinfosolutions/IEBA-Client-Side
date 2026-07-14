@@ -1,4 +1,4 @@
-import { useMemo, useState, Fragment, useRef, useCallback } from "react"
+import { useMemo, useState, Fragment, useRef, useCallback, useEffect } from "react"
 import { useLocation } from "react-router-dom"
 import { Controller, useForm, useWatch } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -457,6 +457,7 @@ function ReportEmployeeMultiSelect({
 
 function ReportSecondaryPickBlock({
   control,
+  setValue,
   title,
   activeLabel,
   inactiveLabel,
@@ -470,6 +471,36 @@ function ReportSecondaryPickBlock({
   onValuesChange,
   isLoading = false,
 }: ReportSecondaryPickBlockProps & { isLoading?: boolean }) {
+  const includeActive = useWatch({ control, name: activeField }) === true
+  const includeInactive = useWatch({ control, name: inactiveField }) === true
+  const idsRaw = useWatch({ control, name: idsField })
+
+  useEffect(() => {
+    const current = parseMultiSelectStoredValues(typeof idsRaw === "string" ? idsRaw : "")
+
+    if (!includeActive && !includeInactive) {
+      if (current.length > 0) {
+        setValue(idsField, "", { shouldValidate: true, shouldDirty: true })
+        onValuesChange?.("")
+      }
+      return
+    }
+
+    if (isLoading || current.length === 0) return
+
+    // Avoid pruning while async option lists are still empty (Program/Activity blocks
+    // do not always pass isLoading).
+    if (options.length === 0) return
+
+    const allowed = new Set(options.map((o) => o.value))
+    const pruned = current.filter((id) => allowed.has(id))
+    if (pruned.length === current.length) return
+
+    const next = serializeEmployeeIdsField(pruned)
+    setValue(idsField, next, { shouldValidate: true, shouldDirty: true })
+    onValuesChange?.(next)
+  }, [includeActive, includeInactive, options, idsRaw, idsField, setValue, onValuesChange, isLoading])
+
   /* Padding on the positioned parent skewed `top-full`; keep pb on this outer wrapper only (pb-16 clears bar + mt-3). */
   return (
     <div className="w-full min-w-0 max-w-full pb-16">
@@ -645,7 +676,7 @@ export function ReportForm({ module }: ReportFormProps) {
     mode: "onTouched",
   })
 
-  const { control, handleSubmit, setError, setValue, getValues, formState } = form
+  const { control, handleSubmit, setError, setValue, getValues, formState, trigger } = form
 
   const reportKey = useWatch({ control, name: "reportKey" }) ?? ""
   const departmentId = useWatch({ control, name: "departmentId" }) ?? ""
@@ -711,6 +742,26 @@ export function ReportForm({ module }: ReportFormProps) {
     }
     return { actualDateFrom: undefined, actualDateTo: undefined }
   }, [selectMonthBy, dateFrom, dateTo, monthVal, yearVal, fiscalYearId, quarter, weekIdVal])
+
+  const periodResetKey = useMemo(
+    () => `${selectMonthBy}|${actualDateFrom ?? ""}|${actualDateTo ?? ""}`,
+    [selectMonthBy, actualDateFrom, actualDateTo],
+  )
+  const prevPeriodResetKeyRef = useRef<string | null>(null)
+
+  useEffect(() => {
+    if (prevPeriodResetKeyRef.current === null) {
+      prevPeriodResetKeyRef.current = periodResetKey
+      return
+    }
+    if (prevPeriodResetKeyRef.current === periodResetKey) return
+    prevPeriodResetKeyRef.current = periodResetKey
+
+    setValue("employeeIds", "", { shouldValidate: true })
+    setValue("activityIds", "")
+    setValue("programIds", "")
+    void trigger(["selectMonthBy", "month", "fiscalYearId", "quarter", "year", "dateFrom", "dateTo"])
+  }, [periodResetKey, setValue, trigger])
 
   const currentReportItem = useMemo(() => {
     return departmentReportItems.find((i) => i.key === reportKey)
@@ -952,17 +1003,27 @@ export function ReportForm({ module }: ReportFormProps) {
   }, [rawDepartmentOptions, reportKey])
 
   const employeeOptions = useMemo(() => {
-    if (shouldFetchCostPoolUsers && costPoolUsersData) {
+    if (shouldFetchCostPoolUsers && costPoolUsersData && !isCostPoolUsersFetching) {
       return sortSelectOptionsByLabel(costPoolUsersData)
     }
-    if (departmentId && departmentUsersData) {
+    if (shouldLoadDepartmentUsers && departmentUsersData && !isDeptUsersFetching) {
       return sortSelectOptionsByLabel(departmentUsersData)
     }
-    if ((reportKey.includes("MAA") || reportKey.includes("TCM")) && maaEmployeesData) {
+    if (shouldFetchMaaEmployees && maaEmployeesData && !isMaaEmployeesFetching) {
       return sortSelectOptionsByLabel(maaEmployeesData)
     }
     return []
-  }, [shouldFetchCostPoolUsers, costPoolUsersData, departmentId, departmentUsersData, reportKey, maaEmployeesData])
+  }, [
+    shouldFetchCostPoolUsers,
+    costPoolUsersData,
+    isCostPoolUsersFetching,
+    shouldLoadDepartmentUsers,
+    departmentUsersData,
+    isDeptUsersFetching,
+    shouldFetchMaaEmployees,
+    maaEmployeesData,
+    isMaaEmployeesFetching,
+  ])
 
   const isEmployeeLoading =
     (shouldFetchCostPoolUsers && isCostPoolUsersFetching) ||
@@ -1105,6 +1166,7 @@ export function ReportForm({ module }: ReportFormProps) {
     yearQuarterSelectTrigger: string
     dateInputInRowClassName: string
     setValue: any
+    trigger: any
     fiscalYearId: string
     quarter: string
     selectMonthBy: string
@@ -1124,6 +1186,7 @@ export function ReportForm({ module }: ReportFormProps) {
     yearQuarterSelectTrigger,
     dateInputInRowClassName,
     setValue,
+    trigger,
     fiscalYearId,
     quarter,
     selectMonthBy,
@@ -1146,6 +1209,10 @@ export function ReportForm({ module }: ReportFormProps) {
                 value={field.value}
                 onValueChange={(v) => {
                   field.onChange(v as "qtr" | "dates" | "month" | "year" | "scheduled")
+                  setValue("employeeIds", "", { shouldValidate: true })
+                  setValue("activityIds", "")
+                  setValue("programIds", "")
+                  void trigger(["selectMonthBy", "month", "fiscalYearId", "quarter", "year", "dateFrom", "dateTo"])
                   if (v === "dates") {
                     const now = new Date()
                     const y = now.getFullYear()
@@ -1171,22 +1238,6 @@ export function ReportForm({ module }: ReportFormProps) {
 
                   return (
                     <>
-                      {monthByFlags.showQtr && (
-                        <div className="flex items-center gap-2">
-                          <RadioGroupItem value="qtr" id="reports-month-qtr" />
-                          <Label htmlFor="reports-month-qtr" className="text-[14px] font-normal">
-                            Qtr
-                          </Label>
-                        </div>
-                      )}
-                      {monthByFlags.showDates && (
-                        <div className="flex items-center gap-2">
-                          <RadioGroupItem value="dates" id="reports-month-dates" />
-                          <Label htmlFor="reports-month-dates" className="text-[14px] font-normal">
-                            Dates
-                          </Label>
-                        </div>
-                      )}
                       {monthByFlags.showMonth && (
                         <div className="flex items-center gap-2">
                           <RadioGroupItem value="month" id="reports-month-only" />
@@ -1195,11 +1246,27 @@ export function ReportForm({ module }: ReportFormProps) {
                           </Label>
                         </div>
                       )}
+                      {monthByFlags.showQtr && (
+                        <div className="flex items-center gap-2">
+                          <RadioGroupItem value="qtr" id="reports-month-qtr" />
+                          <Label htmlFor="reports-month-qtr" className="text-[14px] font-normal">
+                            Qtr
+                          </Label>
+                        </div>
+                      )}
                       {monthByFlags.showYear && (
                         <div className="flex items-center gap-2">
                           <RadioGroupItem value="year" id="reports-year-only" />
                           <Label htmlFor="reports-year-only" className="text-[14px] font-normal">
                             Year
+                          </Label>
+                        </div>
+                      )}
+                      {monthByFlags.showDates && (
+                        <div className="flex items-center gap-2">
+                          <RadioGroupItem value="dates" id="reports-month-dates" />
+                          <Label htmlFor="reports-month-dates" className="text-[14px] font-normal">
+                            Dates
                           </Label>
                         </div>
                       )}
@@ -1695,6 +1762,7 @@ export function ReportForm({ module }: ReportFormProps) {
               yearQuarterSelectTrigger={yearQuarterSelectTrigger}
               dateInputInRowClassName={dateInputInRowClassName}
               setValue={setValue}
+              trigger={trigger}
               fiscalYearId={fiscalYearId}
               quarter={quarter}
               selectMonthBy={selectMonthBy}
@@ -1725,6 +1793,7 @@ export function ReportForm({ module }: ReportFormProps) {
                 yearQuarterSelectTrigger={yearQuarterSelectTrigger}
                 dateInputInRowClassName={dateInputInRowClassName}
                 setValue={setValue}
+                trigger={trigger}
                 fiscalYearId={fiscalYearId}
                 quarter={quarter}
                 selectMonthBy={selectMonthBy}
@@ -1752,6 +1821,7 @@ export function ReportForm({ module }: ReportFormProps) {
                     render: () => (
                       <ReportSecondaryPickBlock
                         control={control}
+                        setValue={setValue}
                         title="Employee"
                         activeLabel="Active Employee"
                         inactiveLabel="Inactive Employee"
@@ -1776,6 +1846,7 @@ export function ReportForm({ module }: ReportFormProps) {
                     render: () => (
                       <ReportSecondaryPickBlock
                         control={control}
+                        setValue={setValue}
                         title="Program"
                         activeLabel="Active programs"
                         inactiveLabel="Inactive Programs"
@@ -1795,6 +1866,7 @@ export function ReportForm({ module }: ReportFormProps) {
                     render: () => (
                       <ReportSecondaryPickBlock
                         control={control}
+                        setValue={setValue}
                         title="Activities"
                         activeLabel="Active Activities"
                         inactiveLabel="Inactive Activities"
@@ -1814,6 +1886,7 @@ export function ReportForm({ module }: ReportFormProps) {
                     render: () => (
                       <ReportSecondaryPickBlock
                         control={control}
+                        setValue={setValue}
                         title="Cost Pool"
                         activeLabel="Active Cost Pool"
                         inactiveLabel="Inactive Cost Pool"
@@ -1848,6 +1921,7 @@ export function ReportForm({ module }: ReportFormProps) {
             <div className="w-full max-w-xl">
               <ReportSecondaryPickBlock
                 control={control}
+                setValue={setValue}
                 title="Employee"
                 activeLabel="Active Employee"
                 inactiveLabel="Inactive Employee"

@@ -112,7 +112,7 @@ export const reportDownloadFileNameSchema = z
 /** Default form state aligned with {@link reportFormSchema}. */
 export const REPORT_FORM_DEFAULT_VALUES: z.infer<typeof reportFormSchema> = {
   reportKey: "",
-  selectMonthBy: "qtr",
+  selectMonthBy: "month",
   month: "2025-04",
   year: "2025-2026",
   weekId: "",

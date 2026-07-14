@@ -130,7 +130,7 @@ function EmptyCell({ width }: { width: number }) {
 
 function TableHeaderRow() {
   return (
-    <View style={styles.row}>
+    <View style={styles.row} wrap={false}>
       <View style={[styles.headerBox, { width: W.employee }]}>
         <Text style={styles.headerText}>Employee Name</Text>
       </View>
@@ -186,9 +186,11 @@ function ActivityRows({
   grandTotalTime: number
 }) {
   return (
-    <>
+    // Keep each activity block atomic so React-PDF does not split/duplicate
+    // codes across page breaks (the Sue Abernethy two-page total bug).
+    <View wrap={false}>
       {activity.records.map((record, recordIndex) => (
-        <View key={`${activity.activity}-${record.program}-${recordIndex}`}>
+        <View key={`${activity.activity}-${record.program}-${record.mastercode}-${recordIndex}`}>
           {recordIndex === 0 ? (
             <View style={styles.row}>
               <EmptyCell width={W.employee} />
@@ -246,7 +248,7 @@ function ActivityRows({
           ) : null}
         </View>
       ))}
-    </>
+    </View>
   )
 }
 
@@ -257,7 +259,7 @@ function EmployeeTable({ employee }: { employee: P101GroupedEmployee }) {
     <View style={styles.table}>
       <TableHeaderRow />
 
-      <View style={styles.row}>
+      <View style={styles.row} wrap={false}>
         <CellBox width={W.employee} bold>
           {employee.employeename}
         </CellBox>
@@ -277,7 +279,7 @@ function EmployeeTable({ employee }: { employee: P101GroupedEmployee }) {
         />
       ))}
 
-      <View style={[styles.row, { marginTop: 16 }]}>
+      <View style={[styles.row, { marginTop: 16 }]} wrap={false}>
         <View style={[styles.grandTotalBox, { width: W.employee + W.activity + W.ffp }]}>
           <Text style={[styles.rightText, styles.boldText]}>Grand Totals:</Text>
         </View>
