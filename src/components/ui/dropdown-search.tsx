@@ -53,7 +53,7 @@ export type SingleSelectSearchDropdownProps = {
   onOpenChange?: (open: boolean) => void
   title?: string
   /** Extra attributes for the trigger input (e.g. data-pts-program for focus targets). */
-  inputProps?: InputHTMLAttributes<HTMLInputElement>
+  inputProps?: InputHTMLAttributes<HTMLInputElement> & { [key: `data-${string}`]: string }
 }
 
 export function SingleSelectSearchDropdown({
