@@ -59,6 +59,7 @@ import {
 } from "../types"
 import type {
   CostPoolActivityPickRow,
+  CostPoolActivitySummaryResDto,
   CostPoolDepartmentOption,
   CostPoolDetailResDto,
   CostPoolRow,
@@ -602,10 +603,10 @@ export function CostPoolTable({
       <div className={`overflow-hidden rounded-[8px] border border-[#E5E7EB] ${showHistory ? "hidden" : ""}`}>
         <Table className="w-full table-fixed border-collapse">
           <colgroup>
-            <col className="w-[22%]" />
-            <col className="w-[20%]" />
-            <col className="w-[34%]" />
-            <col className="w-[12%]" />
+            <col className="w-[14%]" />
+            <col className="w-[18%]" />
+            <col className="w-[46%]" />
+            <col className="w-[10%]" />
             <col className="w-[12%]" />
           </colgroup>
           <TableHeader>
@@ -725,24 +726,14 @@ export function CostPoolTable({
             ) : (
               sortedRows.map((row) => (
                 <TableRow key={row.id} className="border-b border-[#E5E7EB]">
-                  <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[6px] align-top text-left text-[14px] font-normal font-['Roboto',sans-serif] text-[#000000E0]">
+                  <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[6px] align-middle text-left text-[14px] font-normal font-['Roboto',sans-serif] text-[#000000E0] whitespace-normal wrap-break-word">
                     {row.costPool}
                   </TableCell>
-                  <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[6px] align-top text-center text-[14px] font-normal font-['Roboto',sans-serif] text-[#000000E0]">
+                  <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[6px] align-middle text-center text-[14px] font-normal font-['Roboto',sans-serif] text-[#000000E0] whitespace-normal wrap-break-word">
                     {row.department}
                   </TableCell>
-                  <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[6px] align-top text-left text-[14px] font-normal font-['Roboto',sans-serif] text-[#000000E0]">
-                    {row.activities.length > 0 ? (
-                      <div className="program-table-scroll max-h-[88px] overflow-y-auto pr-1 [scrollbar-width:thin]">
-                        <div className="flex flex-col gap-0.5 whitespace-normal break-words">
-                          {row.activities.map((activity) => (
-                            <span key={activity}>{activity}</span>
-                          ))}
-                        </div>
-                      </div>
-                    ) : (
-                      <span className="text-[#9CA3AF]">N/A</span>
-                    )}
+                  <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[6px] align-middle text-center text-[14px] font-normal font-['Roboto',sans-serif] text-[#000000E0]">
+                    <ActivitiesCell activities={row.activities} />
                   </TableCell>
                   <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[6px] align-middle text-center">
                     {row.active ? (
@@ -840,6 +831,51 @@ export function CostPoolTable({
           ) : null}
         </DialogContent>
       </Dialog>
+    </div>
+  )
+}
+
+function ActivitiesCell({ activities }: { activities: CostPoolActivitySummaryResDto[] }) {
+  const [isExpanded, setIsExpanded] = useState(false)
+  
+  if (activities.length === 0) {
+    return <span className="text-[#9CA3AF]">N/A</span>
+  }
+
+  const visibleActivities = isExpanded ? activities : activities.slice(0, 3)
+  const hasMore = activities.length > 3
+
+  return (
+    <div className="flex flex-col gap-1.5 align-middle">
+      <div className="flex flex-wrap gap-1.5 justify-center">
+        {visibleActivities.map((activity) => {
+          const code = String(activity.code ?? "").trim()
+          const name = String(activity.name ?? "").trim()
+          const displayName = code && name ? `${code} - ${name}` : (code || name)
+          const isInactive = activity.status?.toLowerCase() === "inactive"
+          return (
+            <span
+              key={activity.id}
+              className={`inline-flex items-center rounded-[7px] bg-[#f8f9fa] dark:bg-[#1c192d] px-1.5 py-0.5 text-[10px] text-[#232735] dark:text-[#e4e4e7] ${
+                isInactive
+                  ? "border border-red-400 text-red-600 bg-red-50 dark:bg-red-950/30 dark:text-red-400"
+                  : "border border-[#d8dae3] dark:border-[rgba(108,93,211,0.5)]!"
+              }`}
+            >
+              {displayName}
+            </span>
+          )
+        })}
+      </div>
+      {hasMore && (
+        <button
+          type="button"
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="text-[#6C5DD3] hover:underline text-[11px] font-medium mt-1 inline-block text-center cursor-pointer"
+        >
+          {isExpanded ? "Show Less" : `+ ${activities.length - 3} more`}
+        </button>
+      )}
     </div>
   )
 }

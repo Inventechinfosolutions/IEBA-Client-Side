@@ -329,6 +329,7 @@ export function PersonalTimeStudyLeaveCard({
           </ul>
           <Button
             type="button"
+            tabIndex={-1}
             className="h-8 w-full rounded-[8px] bg-[#6C5DD3] text-[12px] hover:bg-[#6C5DD3]/90"
             onClick={() => {
               setLeaveDialogOpen(true)

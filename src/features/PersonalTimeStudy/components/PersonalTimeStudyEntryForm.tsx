@@ -28,6 +28,10 @@ import {
 
 
 import { formatTimeInput, normalizeTimeOnBlur } from "../utils/timeUtils"
+import {
+  parkPersonalTimeStudyFocus,
+  parkPersonalTimeStudyFocusSoon,
+} from "../utils/focusUtils"
 
 /** Inline required-field asterisk — available to all components in this module. */
 function RequiredMark() {
@@ -635,6 +639,7 @@ export function PersonalTimeStudyEntryForm({
   const [parents, setParents] = useState<TimeEntryParentRow[]>([createParent()])
   const [prevInitialRecords, setPrevInitialRecords] = useState<any[] | undefined>(undefined)
   const [prevLeaveRecords, setPrevLeaveRecords] = useState<any[] | undefined>(undefined)
+  const focusSinkRef = useRef<HTMLSpanElement>(null)
 
   const isLocked = useMemo(() => {
     if (readonly) return true
@@ -1418,6 +1423,7 @@ export function PersonalTimeStudyEntryForm({
       return
     }
     onSubmit?.(payload)
+    parkPersonalTimeStudyFocusSoon()
   }
 
   const handleAddDocs = (parentId: string, files: FileList) => {
@@ -1484,13 +1490,26 @@ export function PersonalTimeStudyEntryForm({
   }
 
   return (
-    <section className={cn("relative w-full rounded-[6px] border-0 bg-white p-4 shadow-[0_4px_16px_rgba(16,24,40,0.12)]", className)}>
+    <section
+      className={cn(
+        "relative w-full rounded-[6px] border-0 bg-white p-4 shadow-[0_4px_16px_rgba(16,24,40,0.12)]",
+        className,
+      )}
+    >
+      {/* Non-interactive focus sink — holds focus after Submit so it cannot jump to header / "+" / sidebar */}
+      <span
+        ref={focusSinkRef}
+        tabIndex={-1}
+        data-pts-focus-sink
+        aria-hidden="true"
+        className="sr-only"
+      />
       {isLoading && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/60 backdrop-blur-[1px] rounded-[6px]">
           <Spinner className="text-[#6C5DD3]" />
         </div>
       )}
-      <div className="mb-6 flex flex-col gap-2">
+      <div className="mb-6 flex flex-col gap-2 pr-12">
         {showLeaveBanner && leaveRecords && (() => {
           const filtered = leaveRecords.filter(l => ["approved", "requested", "draft"].includes(l.status?.toLowerCase() ?? ""))
           if (!filtered.length) return null
@@ -1637,8 +1656,10 @@ export function PersonalTimeStudyEntryForm({
               </div>
             )}
             {!readonly && moveSaveSubmitToTop && (
-              <div className="flex items-center gap-2 mr-2">
+              // Visual-only copy when button moves to top — skipped in Tab order (real Save/Submit are after the row fields).
+              <div className="flex items-center gap-2 mr-2" aria-hidden="true">
                 <Button
+                  tabIndex={-1}
                   disabled={isLocked || allIsLeave}
                   className={cn("h-9 px-4 bg-[#6C5DD3] hover:bg-[#5B4DBF] text-[12px]", (isLocked || allIsLeave) && "cursor-not-allowed")}
                   onClick={handleSave}
@@ -1646,6 +1667,7 @@ export function PersonalTimeStudyEntryForm({
                   Save
                 </Button>
                 <Button
+                  tabIndex={-1}
                   disabled={isLocked || allIsLeave}
                   className={cn("h-9 px-4 bg-green-600 hover:bg-green-700 text-white text-[12px]", (isLocked || allIsLeave) && "cursor-not-allowed")}
                   onClick={() => setShowSubmitConfirm(true)}
@@ -1654,44 +1676,26 @@ export function PersonalTimeStudyEntryForm({
                 </Button>
               </div>
             )}
-            {!readonly && (
-              <div className="flex items-center gap-2 shrink-0">
-                {apportioningConfig?.allowUserEntry === false && (
-                  hideApportioningInfo ? (
-                    onOpenPeriodsSheet && (
-                      <button
-                        type="button"
-                        onClick={onOpenPeriodsSheet}
-                        className="h-9 flex items-center gap-3.5 rounded-[8px] bg-white text-[#6C5DD3] border border-gray-200 shadow-sm hover:bg-gray-50 cursor-pointer transition-colors shrink-0 px-3 py-1.5"
-                        title="Clicked to view Time Study Period and Apportioning"
-                      >
-                        <span className="text-[11px] font-semibold text-gray-500 select-none">
-                          Note: Click on the warning icon to view why the time entry is blocked
-                        </span>
-                        <AlertTriangle className="size-6 text-[#F97316] animate-pulse shrink-0" />
-                      </button>
-                    )
-                  ) : null
-                )}
-                <Button
-                  size="icon"
-                  disabled={isLocked}
-                  aria-label="Add time entry row"
-                  className={cn(
-                    "size-9 bg-[#6C5DD3] hover:bg-[#6C5DD3]/90",
-                    isLocked && "cursor-not-allowed",
-                  )}
-                  onClick={addParentAtTop}
-                >
-                  <Plus className="size-4" />
-                </Button>
-              </div>
+            {!readonly && apportioningConfig?.allowUserEntry === false && hideApportioningInfo && onOpenPeriodsSheet && (
+              <button
+                type="button"
+                tabIndex={-1}
+                onClick={onOpenPeriodsSheet}
+                className="h-9 flex items-center gap-3.5 rounded-[8px] bg-white text-[#6C5DD3] border border-gray-200 shadow-sm hover:bg-gray-50 cursor-pointer transition-colors shrink-0 px-3 py-1.5 mr-2"
+                title="Clicked to view Time Study Period and Apportioning"
+              >
+                <span className="text-[11px] font-semibold text-gray-500 select-none">
+                  Note: Click on the warning icon to view why the time entry is blocked
+                </span>
+                <AlertTriangle className="size-6 text-[#F97316] animate-pulse shrink-0" />
+              </button>
             )}
+            {/* Purple "+" stays visually top-right via absolute; real control is last in Tab order below. */}
           </div>
         </div>
       </div>
 
-      <div className="flex flex-col gap-3" data-time-entries-form>
+      <div className="flex flex-col gap-3" data-time-entries-form data-pts-tab-scope>
         {parents.map((parent) => {
           const totalDisplay = computeDurationMinutes(parent.start, parent.end)
           const isLeaveRow = parent.isLeave
@@ -1714,6 +1718,7 @@ export function PersonalTimeStudyEntryForm({
                     disabled={isLocked || isLeaveRow || isApportionedRow}
                     title={(!apportioningConfig?.timestudyAllowedDepartmentIds || apportioningConfig.timestudyAllowedDepartmentIds.length === 0) && !apportioningConfig?.bypassSchedule ? "No Time Study period Allocated" : undefined}
                     isLoading={isDropdownLoading}
+                    inputProps={{ "data-pts-program": "true" }}
                     onOpenChange={(open) => {
                       if (open) onOpenDropdown?.()
                     }}
@@ -1802,7 +1807,7 @@ export function PersonalTimeStudyEntryForm({
                     isLeave={isLeaveRow}
                     isApportioned={isApportionedRow}
                     rowId={parent.id}
-                    skipToDescriptionOnTab={!hideNotes}
+                    skipToDescriptionOnTab={false}
                     onChange={(v) => updateParent(parent.id, { end: v })}
                   />
                 )}
@@ -2053,10 +2058,18 @@ export function PersonalTimeStudyEntryForm({
         autoApportioning={apportioningConfig?.autoApportioning}
       />
 
-      {!readonly && !moveSaveSubmitToTop && (
-        <div className="mt-4 flex justify-end gap-2">
+      {/* Tab order after row fields: Save → Submit → purple "+". Visual "+" stays top-right. */}
+      {!readonly && (
+        <div
+          className={cn(
+            "mt-4 flex justify-end gap-2",
+            // When Save/Submit are shown at top for mouse users, keep this pair for Tab order only.
+            moveSaveSubmitToTop && "sr-only",
+          )}
+        >
           <Button
             disabled={isLocked || allIsLeave}
+            data-pts-save
             className={cn("h-10 px-8 bg-[#6C5DD3] hover:bg-[#5B4DBF]", (isLocked || allIsLeave) && "cursor-not-allowed")}
             onClick={handleSave}
           >
@@ -2064,6 +2077,7 @@ export function PersonalTimeStudyEntryForm({
           </Button>
           <Button
             disabled={isLocked || allIsLeave}
+            data-pts-submit
             className={cn("h-10 px-8 bg-green-600 hover:bg-green-700 text-white", (isLocked || allIsLeave) && "cursor-not-allowed")}
             onClick={() => setShowSubmitConfirm(true)}
           >
@@ -2072,13 +2086,46 @@ export function PersonalTimeStudyEntryForm({
         </div>
       )}
 
+      {!readonly && (
+        <Button
+          size="icon"
+          disabled={isLocked}
+          aria-label="Add time entry row"
+          data-pts-purple-add
+          className={cn(
+            "absolute right-4 top-4 z-20 size-9 bg-[#6C5DD3] hover:bg-[#6C5DD3]/90",
+            isLocked && "cursor-not-allowed",
+          )}
+          onClick={addParentAtTop}
+          onKeyDown={(e) => {
+            // Last control in the Time Entries tab sequence — do not escape to sidebar / header.
+            if (e.key === "Tab" && !e.shiftKey) {
+              e.preventDefault()
+              parkPersonalTimeStudyFocus()
+            }
+          }}
+        >
+          <Plus className="size-4" />
+        </Button>
+      )}
+
       {showSubmitConfirm && (
         <div className="fixed inset-0 z-100 flex items-center justify-center bg-black/40 px-4">
           <div className="w-full max-w-[520px] rounded-[12px] bg-white p-6 shadow-2xl">
             <h3 className="mb-6 text-[16px] font-medium text-center">Are you sure, you want to lock the time and fully submit it?</h3>
             <div className="flex justify-center gap-4">
               <Button variant="outline" className="h-11 min-w-[100px] bg-[#F2F4F7]" onClick={() => setShowSubmitConfirm(false)}>Cancel</Button>
-              <Button className="h-11 min-w-[100px] bg-[#6C5DD3] text-white" onClick={() => { setShowSubmitConfirm(false); handleSubmitInternal(); }}>OK</Button>
+              <Button
+                className="h-11 min-w-[100px] bg-[#6C5DD3] text-white"
+                onClick={() => {
+                  // Park before the dialog unmounts so focus cannot restore to header / "+" 
+                  parkPersonalTimeStudyFocus()
+                  setShowSubmitConfirm(false)
+                  handleSubmitInternal()
+                }}
+              >
+                OK
+              </Button>
             </div>
           </div>
         </div>

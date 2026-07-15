@@ -10,6 +10,7 @@
  * separate table column that aligns row-by-row with the week rows.
  */
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react"
+import { getCalendarWeekStartKeyFromIso } from "@/components/Calender"
 import type { MgtDayStatusMap, MgtWeekSummary } from "../types"
 import { toIsoYmdFromDate } from "@/lib/dates"
 
@@ -126,17 +127,12 @@ export function MgtCalendarCard({
           <tbody>
             {weeks.map((week, wi) => {
               const datesInWeek = week.filter(Boolean) as Date[]
-              
-              // Get the Sunday key for this week row
               const firstDate = datesInWeek[0]
-              let weekKey = ""
-              if (firstDate) {
-                const d = new Date(firstDate)
-                const day = d.getDay()
-                const diff = d.getDate() - day
-                const sunday = new Date(d.getFullYear(), d.getMonth(), diff)
-                weekKey = toIsoYmdFromDate(sunday)
-              }
+
+              // Mon–Sun week key — must match getCalendarWeekStartKeyFromIso / AppCalender rows
+              const weekKey = firstDate
+                ? getCalendarWeekStartKeyFromIso(toIsoYmdFromDate(firstDate))
+                : ""
               const summary = weekSummaries[weekKey]
 
               return (
