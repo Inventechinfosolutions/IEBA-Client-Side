@@ -1,32 +1,32 @@
 import type { QueryClient } from "@tanstack/react-query"
-import { lazy } from "react"
 import { createBrowserRouter, Navigate } from "react-router-dom"
 import { GuestOnlyRoute } from "@/components/GuestOnlyRoute"
 import { ProtectedRoute } from "@/components/ProtectedRoute"
 import { PermissionRoute } from "@/components/PermissionRoute"
 import { DashboardLayout } from "@/layouts/DashboardLayout"
 import { LoginPage, ForgotPassword, OtpAuthentication, ResetPassword } from "@/features/auth"
-const DashboardPage = lazy(() => import("@/features/dashboard/pages/DashboardPage"))
-const MasterCodePage = lazy(() => import("@/features/master-code/pages/MasterCodePage"))
-const ProgramPage = lazy(() => import("@/features/program/pages/ProgramPage"))
-const ReportsPage = lazy(() => import("@/features/reports/pages/ReportsPage"))
-const TodoPage = lazy(() => import("@/features/todo/pages/TodoPage"))
-const UserModulePage = lazy(() => import("@/features/user/pages/UserModulePage"))
-const LeaveApprovalPage = lazy(() => import("@/features/leave-approval/pages/LeaveApprovalPage"))
-const UsersPage = lazy(() => import("@/features/users/pages/UsersPage"))
-const UserPage = lazy(() => import("@/features/users/pages/UserPage"))
-const DepartmentRolePage = lazy(() => import("@/features/DepartmentRole/pages/DepartmentRolePage"))
-const CountyActivityCodePage = lazy(() => import("@/features/CountyActivityCode/pages/CountyActivityCodePage"))
-const SettingsPage = lazy(() => import("@/features/settings/pages/SettingsPage"))
-const ScheduleTimeStudyPage = lazy(() => import("@/features/schedule-time-study/pages/ScheduleTimeStudyPage"))
-const PersonalTimeStudyPage = lazy(() => import("@/features/PersonalTimeStudy/pages/PersonalTimeStudyPage"))
-const ProfilePage = lazy(() => import("@/features/Profile/pages/ProfilePage"))
-const CostPoolPage = lazy(() => import("@/features/cost-pool/pages/CostPoolPage"))
-const JobClassificationPage = lazy(() => import("@/features/job-classification/pages/JobClassificationPage"))
-const JobPoolPage = lazy(() => import("@/features/job-pool/pages/JobPoolPage"))
-// const FteAllocationPage = lazy(() => import("@/features/fte-allocation/pages/FteAllocationPage"))
-const DepartmentPage = lazy(() => import("@/features/department/pages/DepartmentPage"))
-const PayrollPage = lazy(() => import("@/features/payroll/pages/PayrollPage"))
+import { lazyWithRetry } from "@/lib/lazyWithRetry"
+const DashboardPage = lazyWithRetry(() => import("@/features/dashboard/pages/DashboardPage"))
+const MasterCodePage = lazyWithRetry(() => import("@/features/master-code/pages/MasterCodePage"))
+const ProgramPage = lazyWithRetry(() => import("@/features/program/pages/ProgramPage"))
+const ReportsPage = lazyWithRetry(() => import("@/features/reports/pages/ReportsPage"))
+const TodoPage = lazyWithRetry(() => import("@/features/todo/pages/TodoPage"))
+const UserModulePage = lazyWithRetry(() => import("@/features/user/pages/UserModulePage"))
+const LeaveApprovalPage = lazyWithRetry(() => import("@/features/leave-approval/pages/LeaveApprovalPage"))
+const UsersPage = lazyWithRetry(() => import("@/features/users/pages/UsersPage"))
+const UserPage = lazyWithRetry(() => import("@/features/users/pages/UserPage"))
+const DepartmentRolePage = lazyWithRetry(() => import("@/features/DepartmentRole/pages/DepartmentRolePage"))
+const CountyActivityCodePage = lazyWithRetry(() => import("@/features/CountyActivityCode/pages/CountyActivityCodePage"))
+const SettingsPage = lazyWithRetry(() => import("@/features/settings/pages/SettingsPage"))
+const ScheduleTimeStudyPage = lazyWithRetry(() => import("@/features/schedule-time-study/pages/ScheduleTimeStudyPage"))
+const PersonalTimeStudyPage = lazyWithRetry(() => import("@/features/PersonalTimeStudy/pages/PersonalTimeStudyPage"))
+const ProfilePage = lazyWithRetry(() => import("@/features/Profile/pages/ProfilePage"))
+const CostPoolPage = lazyWithRetry(() => import("@/features/cost-pool/pages/CostPoolPage"))
+const JobClassificationPage = lazyWithRetry(() => import("@/features/job-classification/pages/JobClassificationPage"))
+const JobPoolPage = lazyWithRetry(() => import("@/features/job-pool/pages/JobPoolPage"))
+// const FteAllocationPage = lazyWithRetry(() => import("@/features/fte-allocation/pages/FteAllocationPage"))
+const DepartmentPage = lazyWithRetry(() => import("@/features/department/pages/DepartmentPage"))
+const PayrollPage = lazyWithRetry(() => import("@/features/payroll/pages/PayrollPage"))
 import { userModuleKeys } from "@/features/user/keys"
 import { profileKeys } from "@/features/Profile/keys"
 import { masterCodeKeys } from "@/features/master-code/keys"

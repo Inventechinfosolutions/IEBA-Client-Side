@@ -5,10 +5,12 @@ import { MgtLegendCard } from "../components/MgtLegendCard"
 import { PersonalTimeStudyCalendarCard } from "../../components/PersonalTimeStudyCalendarCard"
 import { Check, X, Unlock, Bell, Info } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { useActionUserTimeRecord } from "../mutations/updateActionUserTimeRecord"
+import { useActionUserTimeRecordRanges } from "../mutations/updateActionUserTimeRecord"
 import { PersonalTimeStudyEntryForm } from "../../components/PersonalTimeStudyEntryForm"
 import { WeekStatusIcon } from "../../components/WeekStatusIcon"
 import { FUTURE_WEEK_STATUS } from "../../utils/weekSummaryUtils"
+import { MgtActionDateDialog } from "../components/MgtActionDateDialog"
+import type { MgtActionDateRange } from "../api/timeStudyMGTApi"
 
 function isPendingSubmissionStatus(status: unknown): boolean {
   const s = String(status ?? "").toLowerCase()
@@ -50,7 +52,7 @@ export function TimeStudyMGTPage() {
     refetchConfig,
   } = useTimeStudyMGT()
 
-  const { mutate: notifyUser } = useActionUserTimeRecord()
+  const { mutateAsync: applyAction, isPending: isActionPending } = useActionUserTimeRecordRanges()
 
   return (
     <TooltipProvider>
@@ -99,11 +101,13 @@ export function TimeStudyMGTPage() {
                 const showApproveReject = isSubmitted || hasPendingSubmittedDays
                 const showUnlock = isApproved && !hasPendingSubmittedDays
                 
-                const handleAction = (action: string) => {
+                const handleAction = async (action: string, dateRanges: MgtActionDateRange[]) => {
                   if (!selectedUserId) return
-                  const startDate = toIsoYmdFromDate(dates[0])
-                  const endDate = toIsoYmdFromDate(dates[dates.length - 1])
-                  notifyUser({ userId: selectedUserId, startDate, endDate, status: action })
+                  await applyAction({
+                    userId: selectedUserId,
+                    dateRanges,
+                    status: action,
+                  })
                 }
 
                 return (
@@ -112,37 +116,64 @@ export function TimeStudyMGTPage() {
                     {showApproveReject && (
                       <>
                         {!hasRejectedDayInWeek && (
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <button onClick={() => handleAction("approved")} className="inline-flex size-4 items-center justify-center rounded-full bg-[#22c55e] hover:bg-[#16a34a] shrink-0 transition-colors shadow-sm cursor-pointer animate-zoom-in-out z-10 relative">
+                          <MgtActionDateDialog
+                            action="approved"
+                            dates={dates}
+                            dayStatuses={dayStatuses}
+                            isSubmitting={isActionPending}
+                            onConfirm={(dateRanges) => handleAction("approved", dateRanges)}
+                            trigger={
+                              <button
+                                type="button"
+                                aria-label="Choose days to approve"
+                                title="Approve"
+                                className="inline-flex size-4 items-center justify-center rounded-full bg-[#22c55e] hover:bg-[#16a34a] shrink-0 transition-colors shadow-sm cursor-pointer animate-zoom-in-out z-10 relative"
+                              >
                                 <Check className="size-2.5 text-white" />
                               </button>
-                            </TooltipTrigger>
-                            <TooltipContent className="text-xs">Approve</TooltipContent>
-                          </Tooltip>
+                            }
+                          />
                         )}
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <button onClick={() => handleAction("rejected")} className="inline-flex size-4 items-center justify-center rounded-full bg-[#EF4444] hover:bg-[#dc2626] shrink-0 transition-colors shadow-sm cursor-pointer">
+                        <MgtActionDateDialog
+                          action="rejected"
+                          dates={dates}
+                          dayStatuses={dayStatuses}
+                          isSubmitting={isActionPending}
+                          onConfirm={(dateRanges) => handleAction("rejected", dateRanges)}
+                          trigger={
+                            <button
+                              type="button"
+                              aria-label="Choose days to reject"
+                              title="Reject"
+                              className="inline-flex size-4 items-center justify-center rounded-full bg-[#EF4444] hover:bg-[#dc2626] shrink-0 transition-colors shadow-sm cursor-pointer"
+                            >
                               <X className="size-2.5 text-white" />
                             </button>
-                          </TooltipTrigger>
-                          <TooltipContent className="text-xs">Reject</TooltipContent>
-                        </Tooltip>
+                          }
+                        />
                       </>
                     )}
 
                     {/* If fully approved with no pending days: Show Unlock + Info */}
                     {showUnlock && (
                       <>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <button onClick={() => handleAction("opened")} className="inline-flex size-5 items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 shrink-0 transition-colors border border-gray-200 cursor-pointer">
+                        <MgtActionDateDialog
+                          action="opened"
+                          dates={dates}
+                          dayStatuses={dayStatuses}
+                          isSubmitting={isActionPending}
+                          onConfirm={(dateRanges) => handleAction("opened", dateRanges)}
+                          trigger={
+                            <button
+                              type="button"
+                              aria-label="Choose days to unlock"
+                              title="Unlock"
+                              className="inline-flex size-5 items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 shrink-0 transition-colors border border-gray-200 cursor-pointer"
+                            >
                               <Unlock className="size-3 text-gray-600" />
                             </button>
-                          </TooltipTrigger>
-                          <TooltipContent className="text-xs">Unlock</TooltipContent>
-                        </Tooltip>
+                          }
+                        />
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <button className="text-[#6c5dd3] hover:opacity-80 shrink-0 transition-opacity cursor-pointer">
@@ -159,14 +190,23 @@ export function TimeStudyMGTPage() {
                     {/* If Open/Draft/Rejected/Null: Show Notify + Info */}
                     {!showApproveReject && !showUnlock && (
                       <>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <button onClick={() => handleAction("notify")} className="inline-flex size-5 items-center justify-center shrink-0 cursor-pointer hover:opacity-80 transition-opacity">
+                        <MgtActionDateDialog
+                          action="notify"
+                          dates={dates}
+                          dayStatuses={dayStatuses}
+                          isSubmitting={isActionPending}
+                          onConfirm={(dateRanges) => handleAction("notify", dateRanges)}
+                          trigger={
+                            <button
+                              type="button"
+                              aria-label="Choose days to notify"
+                              title="Notify"
+                              className="inline-flex size-5 items-center justify-center shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
+                            >
                               <Bell className="size-4" style={{ fill: "#6c5dd3", stroke: "#6c5dd3" }} aria-hidden />
                             </button>
-                          </TooltipTrigger>
-                          <TooltipContent className="text-xs">Notify</TooltipContent>
-                        </Tooltip>
+                          }
+                        />
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <button className="text-[#6c5dd3] hover:opacity-80 shrink-0 transition-opacity cursor-pointer">
