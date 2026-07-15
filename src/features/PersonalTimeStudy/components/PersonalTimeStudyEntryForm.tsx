@@ -1753,19 +1753,26 @@ export function PersonalTimeStudyEntryForm({
                           !e.shiftKey &&
                           isFetchingActivitiesForProgram(parent.tsProgram, parent.departmentId)
                         ) {
-                          e.preventDefault();
-                          let attempts = 0;
-                          const poll = () => {
-                            attempts++;
-                            const row = document.querySelector<HTMLElement>(`[data-pts-row="${parent.id}"]`);
-                            const activityInput = row?.querySelector<HTMLInputElement>("[data-pts-activity]");
-                            if (activityInput && !activityInput.disabled) {
-                              activityInput.focus();
-                            } else if (attempts < 100) {
-                              setTimeout(poll, 50);
-                            }
-                          };
-                          setTimeout(poll, 50);
+                          e.preventDefault()
+                          const row = document.querySelector<HTMLElement>(`[data-pts-row="${parent.id}"]`)
+                          if (!row) return
+                          const tryFocusActivity = () => {
+                            const activityInput = row.querySelector<HTMLInputElement>("[data-pts-activity]")
+                            if (!activityInput || activityInput.disabled) return false
+                            activityInput.focus()
+                            return true
+                          }
+                          if (tryFocusActivity()) return
+                          // Wait until Activity API finishes (input enabled) — no attempt/time cap.
+                          const observer = new MutationObserver(() => {
+                            if (tryFocusActivity()) observer.disconnect()
+                          })
+                          observer.observe(row, {
+                            attributes: true,
+                            attributeFilter: ["disabled"],
+                            childList: true,
+                            subtree: true,
+                          })
                         }
                       },
                     }}
