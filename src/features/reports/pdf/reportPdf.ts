@@ -898,6 +898,25 @@ export function calculateP101Percentage(value: number, grandTotal: number): stri
   return `${((value / grandTotal) * 100).toFixed(2)}%`
 }
 
+/** Catch-all FFP code used by P101-ALL for every non-FFP master code. */
+export const P101_ALL_FFP_CATCHALL = "FFP-05"
+
+/** True when the FFP/master code is an FFP code (e.g. FFP-05, FFP-50). */
+export function isFfpMasterCode(mastercode: string): boolean {
+  return normalizeReportKey(mastercode).startsWith("ffp")
+}
+
+/**
+ * P101-ALL: keep FFP codes as-is; remap every non-FFP master code to FFP-05
+ * so FFP-05 is the catch-all for FFP-05 hours plus all non-FFP time.
+ */
+export function remapP101AllNonFfpToFfp05(records: ReportDataRecord[]): ReportDataRecord[] {
+  return records.map((record) => {
+    if (isFfpMasterCode(record.mastercode)) return record
+    return { ...record, mastercode: P101_ALL_FFP_CATCHALL }
+  })
+}
+
 // --- P110-SS unwrap / grouping ---
 
 export function unwrapP110SSRecords(raw: unknown): P110SSRecord[] {
@@ -2672,6 +2691,9 @@ export function resolveReportTitle(
       return "P100 - Summation of Employee Time"
     case "P101":
       return "P101 - Summation of Employee Time (Sort by Function Code)"
+    case "P101-ALL":
+    case "P101ALL":
+      return "P101-ALL - Summation of Employee Time (Sort by Function Code)"
     case "P110":
       return "P110 - Time Study Daily"
     case "P110-SS":
@@ -2736,6 +2758,8 @@ export function resolveFooterVariant(reportCode: string): ReportPdfFooterVariant
     case "DSSRPT2":
     case "QTR-MONTH":
     case "P101":
+    case "P101-ALL":
+    case "P101ALL":
     case "P110":
     case "WIC":
       return "pageOnly"

@@ -47,6 +47,7 @@ import { generateTSCRReportPdf } from "../pdf/TSCRReportPdf"
 import { generateWICReportPdf } from "../pdf/WICReportPdf"
 import { generateDSSRPT5ReportPdf } from "../pdf/DSSRPT5ReportPdf"
 import { generateP101ReportPdf } from "../pdf/P101ReportPdf"
+import { generateP101AllReportPdf } from "../pdf/P101-ALLReportPdf"
 import { generateP110ReportPdf } from "../pdf/P110ReportPdf"
 import { generateP110SSReportPdf } from "../pdf/P110SSReportPdf"
 import { generateP111ReportPdf } from "../pdf/P111ReportPdf.tsx"
@@ -270,6 +271,15 @@ async function buildFrontendPdfReport(
         startDate,
         endDate,
         meta,
+      })
+    }
+
+    if (body.reportKey === "P101-ALL" || body.reportKey === "P101ALL") {
+      return await generateP101AllReportPdf({
+        records: unwrapReportDataRecords(response),
+        startDate,
+        endDate,
+        meta: { ...meta, reportCode: "P101-ALL" },
       })
     }
 
