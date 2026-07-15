@@ -125,7 +125,7 @@ export type CostPoolRow = {
   department: string
   departmentId: number
   /** Display labels for activities mapped to this cost pool (e.g. "Admin-VET - Veterans"). */
-  activities: string[]
+  activities: CostPoolActivitySummaryResDto[]
   active: boolean
 }
 

@@ -19,6 +19,12 @@ import { toIsoYmdFromDate, todayLocal } from "@/lib/dates"
 import { buildWeekSummariesFromMonthLegend } from "../../PersonalTimeStudy/utils/weekSummaryUtils"
 import { WeekStatusIcon } from "../../PersonalTimeStudy/components/WeekStatusIcon"
 
+const formatDashboardTableStatus = (status?: string) => {
+  if (!status) return status
+  if (status.toLowerCase() === "draft") return "Saved"
+  return status
+}
+
 export function UserDashboard() {
   const { user } = useAuth()
   const { isSuperAdmin, assignedDepartmentIds } = usePermissions()
@@ -355,7 +361,7 @@ export function UserDashboard() {
                                   record.status?.toLowerCase() === "rejected" ? "border-[#ef4444]" :
                                     "border-[#f59e0b]"
                               )}>
-                                {record.status}
+                                {formatDashboardTableStatus(record.status)}
                               </span>
                             </td>
                           </tr>
@@ -409,7 +415,7 @@ export function UserDashboard() {
                                                     effectiveStatus?.toLowerCase() === "rejected" ? "border-[#ef4444]" :
                                                       "border-[#f59e0b]"
                                                 )}>
-                                                  {effectiveStatus}
+                                                  {formatDashboardTableStatus(effectiveStatus)}
                                                 </span>
                                               )
                                             })()}
