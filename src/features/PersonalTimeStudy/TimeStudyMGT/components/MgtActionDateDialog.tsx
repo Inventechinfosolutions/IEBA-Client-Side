@@ -70,7 +70,11 @@ function isDayEligibleForAction(
   action: MgtActionDateDialogProps["action"],
   status: unknown,
 ): boolean {
-  if (action === "approved" || action === "rejected") return isPendingSubmissionStatus(status)
+  if (action === "approved") return isPendingSubmissionStatus(status)
+  // Reject: submitted days + already approved days (supervisor may roll back selected approved days).
+  if (action === "rejected") {
+    return isPendingSubmissionStatus(status) || isApprovedStatus(status)
+  }
   if (action === "opened") return isUnlockableStatus(status)
   return isNotifyEligibleStatus(status)
 }

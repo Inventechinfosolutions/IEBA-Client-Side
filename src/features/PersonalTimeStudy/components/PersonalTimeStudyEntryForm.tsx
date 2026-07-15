@@ -1656,21 +1656,48 @@ export function PersonalTimeStudyEntryForm({
               </div>
             )}
             {!readonly && moveSaveSubmitToTop && (
-              // Visual-only copy when button moves to top — skipped in Tab order (real Save/Submit are after the row fields).
-              <div className="flex items-center gap-2 mr-2" aria-hidden="true">
+              // When Save/Submit move to top, these are the real keyboard-accessible buttons.
+              // tabIndex={-1} keeps them out of natural DOM tab order (they are before form fields in DOM),
+              // but they are focused programmatically from the purple + Tab handler.
+              <div className="flex items-center gap-2 mr-2">
                 <Button
                   tabIndex={-1}
+                  data-pts-save-top
                   disabled={isLocked || allIsLeave}
                   className={cn("h-9 px-4 bg-[#6C5DD3] hover:bg-[#5B4DBF] text-[12px]", (isLocked || allIsLeave) && "cursor-not-allowed")}
                   onClick={handleSave}
+                  onKeyDown={(e) => {
+                    if (e.key === "Tab" && !e.shiftKey) {
+                      e.preventDefault();
+                      const submitBtn = document.querySelector<HTMLElement>("[data-pts-submit-top]");
+                      submitBtn?.focus();
+                    }
+                    if (e.key === "Tab" && e.shiftKey) {
+                      e.preventDefault();
+                      const purpleBtn = document.querySelector<HTMLElement>("[data-pts-purple-add]");
+                      purpleBtn?.focus();
+                    }
+                  }}
                 >
                   Save
                 </Button>
                 <Button
                   tabIndex={-1}
+                  data-pts-submit-top
                   disabled={isLocked || allIsLeave}
                   className={cn("h-9 px-4 bg-green-600 hover:bg-green-700 text-white text-[12px]", (isLocked || allIsLeave) && "cursor-not-allowed")}
                   onClick={() => setShowSubmitConfirm(true)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Tab" && !e.shiftKey) {
+                      e.preventDefault();
+                      parkPersonalTimeStudyFocus();
+                    }
+                    if (e.key === "Tab" && e.shiftKey) {
+                      e.preventDefault();
+                      const saveBtn = document.querySelector<HTMLElement>("[data-pts-save-top]");
+                      saveBtn?.focus();
+                    }
+                  }}
                 >
                   Submit
                 </Button>
@@ -1709,7 +1736,7 @@ export function PersonalTimeStudyEntryForm({
 
           return (
             <div key={parent.id}>
-              <div className={parentFieldRowClass}>
+              <div className={parentFieldRowClass} data-pts-row={parent.id}>
                 <div className="flex-1 space-y-0.5">
                   <Label className="text-[11px] text-[#6C5DD3] font-medium">TS Program <RequiredMark /></Label>
                   <SingleSelectSearchDropdown
@@ -1718,7 +1745,30 @@ export function PersonalTimeStudyEntryForm({
                     disabled={isLocked || isLeaveRow || isApportionedRow}
                     title={(!apportioningConfig?.timestudyAllowedDepartmentIds || apportioningConfig.timestudyAllowedDepartmentIds.length === 0) && !apportioningConfig?.bypassSchedule ? "No Time Study period Allocated" : undefined}
                     isLoading={isDropdownLoading}
-                    inputProps={{ "data-pts-program": "true" }}
+                    inputProps={{
+                      "data-pts-program": "true",
+                      onKeyDown: (e) => {
+                        if (
+                          e.key === "Tab" &&
+                          !e.shiftKey &&
+                          isFetchingActivitiesForProgram(parent.tsProgram, parent.departmentId)
+                        ) {
+                          e.preventDefault();
+                          let attempts = 0;
+                          const poll = () => {
+                            attempts++;
+                            const row = document.querySelector<HTMLElement>(`[data-pts-row="${parent.id}"]`);
+                            const activityInput = row?.querySelector<HTMLInputElement>("[data-pts-activity]");
+                            if (activityInput && !activityInput.disabled) {
+                              activityInput.focus();
+                            } else if (attempts < 100) {
+                              setTimeout(poll, 50);
+                            }
+                          };
+                          setTimeout(poll, 50);
+                        }
+                      },
+                    }}
                     onOpenChange={(open) => {
                       if (open) onOpenDropdown?.()
                     }}
@@ -1782,6 +1832,7 @@ export function PersonalTimeStudyEntryForm({
                       }
                       return filtered;
                     })()}
+                    inputProps={{ "data-pts-activity": "true" }}
                     onChange={(v) => updateParent(parent.id, { serviceActivity: v })}
                     onBlur={() => { }}
                     className={cn("h-10 text-[11px]", (isLocked || isLeaveRow || isApportionedRow || !parent.tsProgram) && "bg-[#F2F4F7] cursor-not-allowed", isLeaveRow && "border-yellow-400", isApportionedRow && "border-[#6C5DD3]")}
@@ -2070,6 +2121,7 @@ export function PersonalTimeStudyEntryForm({
           <Button
             disabled={isLocked || allIsLeave}
             data-pts-save
+            tabIndex={moveSaveSubmitToTop ? -1 : undefined}
             className={cn("h-10 px-8 bg-[#6C5DD3] hover:bg-[#5B4DBF]", (isLocked || allIsLeave) && "cursor-not-allowed")}
             onClick={handleSave}
           >
@@ -2078,6 +2130,7 @@ export function PersonalTimeStudyEntryForm({
           <Button
             disabled={isLocked || allIsLeave}
             data-pts-submit
+            tabIndex={moveSaveSubmitToTop ? -1 : undefined}
             className={cn("h-10 px-8 bg-green-600 hover:bg-green-700 text-white", (isLocked || allIsLeave) && "cursor-not-allowed")}
             onClick={() => setShowSubmitConfirm(true)}
           >
@@ -2098,10 +2151,17 @@ export function PersonalTimeStudyEntryForm({
           )}
           onClick={addParentAtTop}
           onKeyDown={(e) => {
-            // Last control in the Time Entries tab sequence — do not escape to sidebar / header.
+            // Last control in the Time Entries tab sequence.
             if (e.key === "Tab" && !e.shiftKey) {
-              e.preventDefault()
-              parkPersonalTimeStudyFocus()
+              e.preventDefault();
+              if (moveSaveSubmitToTop) {
+                // Save/Submit are at top — focus the top Save button programmatically.
+                const saveBtn = document.querySelector<HTMLElement>("[data-pts-save-top]");
+                saveBtn?.focus();
+              } else {
+                // Save/Submit are at bottom — they are in natural Tab order, just park focus.
+                parkPersonalTimeStudyFocus();
+              }
             }
           }}
         >

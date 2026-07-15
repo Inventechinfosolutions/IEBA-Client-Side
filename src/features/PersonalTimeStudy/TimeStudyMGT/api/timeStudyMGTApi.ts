@@ -61,6 +61,8 @@ export async function apiMgtActionUserTimeRecord(params: {
   startDate: string
   endDate: string
   status: string
+  /** When rejecting, also reject approved records in the selected range. */
+  includeApprovedOnReject?: boolean
 }): Promise<void> {
   await api.post("/timestudyrecords/user/timeentry/record/action", params)
 }
@@ -82,6 +84,7 @@ export async function apiMgtActionUserTimeRecordRanges(params: {
         startDate,
         endDate,
         status: params.status,
+        includeApprovedOnReject: params.status === "rejected" ? true : undefined,
       }),
     ),
   )
