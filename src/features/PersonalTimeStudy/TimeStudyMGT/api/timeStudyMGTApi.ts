@@ -64,3 +64,25 @@ export async function apiMgtActionUserTimeRecord(params: {
 }): Promise<void> {
   await api.post("/timestudyrecords/user/timeentry/record/action", params)
 }
+
+export type MgtActionDateRange = {
+  startDate: string
+  endDate: string
+}
+
+export async function apiMgtActionUserTimeRecordRanges(params: {
+  userId: string
+  dateRanges: MgtActionDateRange[]
+  status: string
+}): Promise<void> {
+  await Promise.all(
+    params.dateRanges.map(({ startDate, endDate }) =>
+      apiMgtActionUserTimeRecord({
+        userId: params.userId,
+        startDate,
+        endDate,
+        status: params.status,
+      }),
+    ),
+  )
+}
