@@ -1570,13 +1570,13 @@ export function PersonalTimeStudyEntryForm({
 
           <div className="flex items-center gap-3">
             {apportioningConfig?.supervisorApportioning && !hideApportioningInfo && (
-              <div className="flex items-center gap-2 bg-[#F8F9FA] border border-[#E2E8F0] px-3 py-1.5 rounded-[6px] h-9">
+              <div className="flex items-center gap-2 bg-[#F8F9FA] border border-[#E2E8F0] px-3 py-1.5 rounded-[6px] h-9 dark:bg-[#18181b] dark:border-[#27272a]">
                 <div className="flex size-4 shrink-0 items-center justify-center rounded-[4px] border border-[#6C5DD3] bg-[#6C5DD3] text-white opacity-50 cursor-not-allowed">
                   <Check className="size-3 stroke-[3]" />
                 </div>
                 <div className="flex items-center gap-1.5">
                   <Label
-                    className="text-[12px] text-[#344054] font-semibold cursor-not-allowed select-none"
+                    className="text-[12px] text-[#344054] font-semibold cursor-not-allowed select-none dark:text-[#f4f4f5]"
                   >
                     Apportioning
                   </Label>
@@ -1588,28 +1588,28 @@ export function PersonalTimeStudyEntryForm({
                         </div>
                       </HoverCardTrigger>
                       <HoverCardContent
-                        className="w-fit min-w-[340px] max-w-sm p-3 z-[100] bg-white border border-gray-100 shadow-xl rounded-[8px] text-[#111827]"
+                        className="w-fit min-w-[340px] max-w-sm p-3 z-[100] bg-white border border-gray-100 shadow-xl rounded-[8px] text-[#111827] dark:bg-[#18181b] dark:border-[#27272a] dark:text-[#f4f4f5]"
                         align="end"
                         side="top"
                       >
                         <div className="text-[11px] font-medium space-y-2">
                           {apportioningSummary.map((item) => (
-                            <div key={item.departmentId} className="border-b last:border-b-0 pb-2 last:pb-0 border-gray-100">
+                            <div key={item.departmentId} className="border-b last:border-b-0 pb-2 last:pb-0 border-gray-100 dark:border-[#27272a]">
                               <div className="font-bold text-[#6C5DD3] text-[12px] flex items-center justify-between gap-2">
                                 <span className="flex-1">{item.departmentName}</span>
                                 {item.apportioningType && item.apportioningType !== "none" && (
-                                  <span className="text-[9px] uppercase font-semibold px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 border border-gray-200 font-mono shrink-0">
+                                  <span className="text-[9px] uppercase font-semibold px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 border border-gray-200 font-mono shrink-0 dark:bg-zinc-800 dark:text-zinc-300 dark:border-zinc-700">
                                     {item.apportioningType}
                                   </span>
                                 )}
                               </div>
                               {item.outOfDateRange ? (
                                 <p
-                                  className="mt-1.5 mb-1 text-[12px] text-gray-700 font-medium leading-snug w-full"
+                                  className="mt-1.5 mb-1 text-[12px] text-gray-700 font-medium leading-snug w-full dark:text-zinc-300"
                                   dangerouslySetInnerHTML={{ __html: `<b>Note:</b> ${item.message}` }}
                                 />
                               ) : (
-                                <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 mt-1 text-[#344054]">
+                                <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 mt-1 text-[#344054] dark:text-zinc-300">
                                   {item.startDate && (
                                     <div>
                                       <span className="text-muted-foreground font-medium">Start Date:</span>{" "}
