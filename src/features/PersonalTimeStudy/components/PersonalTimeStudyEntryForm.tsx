@@ -472,7 +472,7 @@ function TimePicker24h({
             </div>
           </PopoverAnchor>
           <PopoverContent
-            className="p-0 w-auto"
+            className="p-0 w-auto time-picker-popover"
             align="start"
             side="top"
             sideOffset={5}

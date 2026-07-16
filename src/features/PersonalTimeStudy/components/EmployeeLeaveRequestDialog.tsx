@@ -259,7 +259,7 @@ function TimePicker24h({
             </div>
           </PopoverAnchor>
           <PopoverContent
-            className="p-0"
+            className="p-0 time-picker-popover"
             align="start"
             side="bottom"
             avoidCollisions={true}
