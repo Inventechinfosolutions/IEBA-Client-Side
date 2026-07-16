@@ -321,8 +321,18 @@ function TimeEntriesTimePickerDropdown({
   const m = parts[1] ?? ""
   const filteredMinutes = TIME_PICKER_MINUTES.filter((minute) => parseInt(minute, 10) % minuteStep === 0)
 
+  const scrollRef = useCallback((node: HTMLDivElement | null) => {
+    if (node) {
+      setTimeout(() => {
+        node.querySelectorAll('[data-selected="true"]').forEach((el) => {
+          el.scrollIntoView({ block: "start", behavior: "auto" })
+        })
+      }, 0)
+    }
+  }, [])
+
   return (
-    <div className="flex flex-col w-[120px] bg-white overflow-hidden rounded-md">
+    <div ref={scrollRef} className="flex flex-col w-[120px] bg-white overflow-hidden rounded-md">
       <div className="flex h-[200px] divide-x divide-gray-100">
         <ScrollArea className="flex-1">
           <div className="flex flex-col p-1.5 pb-[170px] gap-0.5">
