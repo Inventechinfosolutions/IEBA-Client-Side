@@ -331,6 +331,12 @@ export function SingleSelectSearchDropdown({
           }
         }}
       >
+        <style>{`
+          .dark div[role="dialog"] button.bg-\\[\\#f3f4f8\\] {
+            background-color: #2a1f52 !important;
+            color: #ffffff !important;
+          }
+        `}</style>
         {filteredOptions.length === 0 && !isLoading ? (
           emptyListSlot !== undefined ? (
             <div className="p-1">{emptyListSlot}</div>
@@ -346,12 +352,13 @@ export function SingleSelectSearchDropdown({
               const rowKey = opt.key ?? `${opt.value}-${index}`
               return (
                 <TooltipProvider key={rowKey}>
-                  <Tooltip>
+                  <Tooltip open={open && index === activeIndex}>
                     <TooltipTrigger asChild>
                       <button
                         id={`opt-${dropdownId}-${index}`}
                         type="button"
                         tabIndex={-1}
+                        onMouseEnter={() => setActiveIndex(index)}
                         onMouseDown={(e) => {
                           e.preventDefault()
                           selectingRef.current = true
