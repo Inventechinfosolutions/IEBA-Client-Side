@@ -177,7 +177,7 @@ export function ReportMonthPicker({ id, value, onChange, onBlur, className }: Re
                       "h-[40px] cursor-pointer rounded-[6px] px-1 text-[14px] font-medium transition-colors",
                       isSelected
                         ? "bg-[#6C5DD3] text-white"
-                        : "text-[#111827] hover:bg-[#ede9fe]",
+                        : "text-[#111827] hover:bg-[#ede9fe] dark:text-[#f4f4f5] dark:hover:bg-[#2a1f52]",
                     )}
                   >
                     {label}
@@ -243,8 +243,8 @@ export function ReportMonthPicker({ id, value, onChange, onBlur, className }: Re
                         isSelected
                           ? "bg-[#6C5DD3] text-white"
                           : isCurrentYear
-                            ? "bg-[#ede9fe] text-[#111827] hover:bg-[#ddd6fe]"
-                            : "text-[#111827] hover:bg-[#f3f4f6]",
+                            ? "bg-[#ede9fe] text-[#111827] hover:bg-[#ddd6fe] dark:bg-[#2a1f52] dark:text-[#f4f4f5] dark:hover:bg-[#342666]"
+                            : "text-[#111827] hover:bg-[#f3f4f6] dark:text-[#f4f4f5] dark:hover:bg-[#18181b]",
                       )}
                     >
                       {year}

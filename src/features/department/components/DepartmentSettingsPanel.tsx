@@ -353,15 +353,15 @@ export function DepartmentSettingsPanel({
                                                                         <button
                                                                             key={opt}
                                                                             type="button"
-                                                                            className="flex w-full items-center justify-between rounded-[6px] px-3 py-1.5 text-left text-[13px] hover:bg-[#F3F4F6]"
+                                                                            className="group flex w-full items-center justify-between rounded-[6px] px-3 py-1.5 text-left text-[13px] hover:bg-[#F3F4F6]"
                                                                             onClick={(e) => {
                                                                                 e.stopPropagation()
                                                                                 const current = settings.multiCodes ? settings.multiCodes.split(",") : []
                                                                                 setValue("settings.multiCodes", (isSelected ? current.filter(c => c !== opt) : [...current, opt]).join(","))
                                                                             }}
                                                                         >
-                                                                            <span className={isSelected ? "font-[500] text-[#6C5DD3]" : ""}>{opt}</span>
-                                                                            {isSelected && <Check className="size-3.5 text-[#6C5DD3]" />}
+                                                                            <span className={`${isSelected ? "font-[500] text-[#6C5DD3]" : ""} dark:group-hover:text-white!`}>{opt}</span>
+                                                                            {isSelected && <Check className="size-3.5 text-[#6C5DD3] dark:group-hover:text-white!" />}
                                                                         </button>
                                                                     )
                                                                 })}

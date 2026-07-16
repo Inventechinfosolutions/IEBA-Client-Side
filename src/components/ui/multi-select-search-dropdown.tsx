@@ -275,8 +275,8 @@ export function MultiSelectSearchDropdown({
               }}
               onClick={() => toggleSelectAll()}
             >
-              <span className="flex-1 truncate text-left text-[14px] font-medium text-[#111827]">Select All</span>
-              {allFilteredSelected && <Check className="size-4 shrink-0 text-[#1890ff]" strokeWidth={3} />}
+              <span className="flex-1 truncate text-left text-[14px] font-medium text-[#111827] dark:text-white!">Select All</span>
+              {allFilteredSelected && <Check className="size-4 shrink-0 text-[#1890ff] dark:text-white!" strokeWidth={3} />}
             </button>
             {filteredOptions.map((opt) => {
               const selected = selectedValues.includes(opt.value)
@@ -299,10 +299,10 @@ export function MultiSelectSearchDropdown({
                         }}
                         onClick={() => toggle(opt.value)}
                       >
-                        <span className="min-w-0 flex-1 truncate text-left text-[14px] font-normal text-[#111827]">
+                        <span className="min-w-0 flex-1 truncate text-left text-[14px] font-normal text-[#111827] dark:text-white!">
                           {opt.label}
                         </span>
-                        {selected && <Check className="size-4 shrink-0 text-[#1890ff]" strokeWidth={3} />}
+                        {selected && <Check className="size-4 shrink-0 text-[#1890ff] dark:text-white!" strokeWidth={3} />}
                       </button>
                     </TooltipTrigger>
                     <TooltipContent

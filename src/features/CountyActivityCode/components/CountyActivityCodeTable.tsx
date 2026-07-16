@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod"
-import { ArrowLeft, ChevronDown, ChevronRight, History, OctagonXIcon, PlusIcon, SearchIcon, Eye, X } from "lucide-react"
+import { ArrowLeft, Check, ChevronDown, ChevronRight, History, OctagonXIcon, PlusIcon, SearchIcon, Eye, X } from "lucide-react"
 
 import { useQueryClient } from "@tanstack/react-query"
 import { useForm } from "react-hook-form"
@@ -1347,10 +1347,13 @@ export function CountyActivityCodeTable({
                 onPageChange(1)
               }}
             >
-              <Checkbox
-                checked={showInactive}
-                className="size-5 rounded-[6px] border-white bg-white data-[state=checked]:border-white data-[state=checked]:bg-[#6C5DD3] data-[state=checked]:text-white"
-              />
+              {showInactive ? (
+                <span className="inline-flex size-[14px] items-center justify-center rounded-[3px] bg-white dark:bg-[#1C1C2D]">
+                  <Check className="size-[11px] stroke-[3] text-[#6C5DD3] dark:text-white" />
+                </span>
+              ) : (
+                <span className="size-[11px] rounded-[2px] bg-white dark:bg-[#1C1C2D]" />
+              )}
               <span className="text-[14px] font-normal">Inactive</span>
             </button>
           )}
@@ -1410,9 +1413,8 @@ export function CountyActivityCodeTable({
               ].map((column) => (
                 <TableHead
                   key={column.key}
-                  className={`h-[72px] align-middle border-r border-[#FFFFFF66] bg-[#6C5DD3] px-[8px] py-[6px] text-[13px] font-[500] leading-tight text-white font-['Roboto',sans-serif] last:border-r-0 ${
-                    column.align === "center" ? "text-center" : "text-left"
-                  }`}
+                  className={`h-[72px] align-middle border-r border-[#FFFFFF66] bg-[#6C5DD3] px-[8px] py-[6px] text-[13px] font-[500] leading-tight text-white font-['Roboto',sans-serif] last:border-r-0 ${column.align === "center" ? "text-center" : "text-left"
+                    }`}
                 >
                   {column.sortKey ? (
                     <TooltipProvider>
@@ -1439,9 +1441,8 @@ export function CountyActivityCodeTable({
                               setIsSortTooltipOpen(true)
                             }}
                             onBlur={() => setIsSortTooltipOpen(false)}
-                            className={`flex max-w-full cursor-pointer items-center gap-2 font-[400] h-auto ${
-                              column.align === "center" ? "mx-auto justify-center text-center" : "justify-start text-left"
-                            }`}
+                            className={`flex max-w-full cursor-pointer items-center gap-2 font-[400] h-auto ${column.align === "center" ? "mx-auto justify-center text-center" : "justify-start text-left"
+                              }`}
                           >
                             <span className="leading-tight font-normal whitespace-normal break-words">
                               {renderCountyActivityHeaderLabel(column.labelLines)}
@@ -1449,14 +1450,14 @@ export function CountyActivityCodeTable({
                             <span className="inline-flex shrink-0 flex-col">
                               <span
                                 className={`h-0 w-0 border-b-[5px] border-l-[4px] border-r-[4px] border-l-transparent border-r-transparent ${sortBy === column.sortKey && sortDirection === "asc"
-                                    ? "border-b-[#1E8BFF]"
-                                    : "border-b-white/60"
+                                  ? "border-b-[#1E8BFF]"
+                                  : "border-b-white/60"
                                   }`}
                               />
                               <span
                                 className={`mt-0.5 h-0 w-0 border-l-[4px] border-r-[4px] border-t-[5px] border-l-transparent border-r-transparent ${sortBy === column.sortKey && sortDirection === "desc"
-                                    ? "border-t-[#201547]"
-                                    : "border-t-white"
+                                  ? "border-t-[#201547]"
+                                  : "border-t-white"
                                   }`}
                               />
                             </span>
@@ -1471,9 +1472,8 @@ export function CountyActivityCodeTable({
                       </Tooltip>
                     </TooltipProvider>
                   ) : (
-                    <div className={`flex items-center leading-tight font-[400] ${
-                      column.align === "center" ? "justify-center" : "justify-start"
-                    }`}>
+                    <div className={`flex items-center leading-tight font-[400] ${column.align === "center" ? "justify-center" : "justify-start"
+                      }`}>
                       {renderCountyActivityHeaderLabel(column.labelLines)}
                     </div>
                   )}
@@ -1831,59 +1831,59 @@ export function CountyActivityCodeTable({
         >
           <div className="relative my-8 w-[900px] max-w-[calc(100vw-2rem)]">
             <CountyActivityCodeAddPage
-            key={addFormMountKey}
-            form={addForm}
-            onAddSave={submitCreateCountyActivityFromAddModal}
-            subParentActivityDetail={addSubParentDetailQuery.data ?? null}
-            tab={addTab}
-            masterCodeTypeOptions={masterCodeTypeOptions}
-            isMasterCodeTypeOptionsLoading={masterCatalogQuery.isLoading}
-            masterCodeOptions={addMasterCodeOptions}
-            isMasterCodeOptionsLoading={addMasterCodesQuery.isLoading}
-            departmentNames={departmentNames}
-            onCodeDropdownOpen={() => {
-              void addMasterCodesQuery.refetch()
-            }}
-            onCodeTypeDropdownOpen={() => setCodeTypeDropdownOpened(true)}
-            onTabChange={(nextTab) => {
-              setAddTab(nextTab)
-              if (nextTab === CountyActivityGridRowType.SUB) {
-                setCurrentPrimaryId(null)
-                void queryClient.invalidateQueries({
-                  queryKey: countyActivityCodeKeys.activePrimarySubPicker(),
-                })
-              }
-              if (nextTab === CountyActivityGridRowType.SUB && currentPrimaryDefaults) {
-                addForm.setValue("masterCodeType", currentPrimaryDefaults.masterCodeType, {
-                  shouldValidate: true,
-                })
-                addForm.setValue("masterCode", currentPrimaryDefaults.masterCode, {
-                  shouldValidate: true,
-                })
-                addForm.setValue("department", currentPrimaryDefaults.department, {
-                  shouldValidate: true,
-                })
-              }
-            }}
-            primaryActivityCodeOptions={addModalPrimaryActivityOptions}
-            selectedPrimaryId={currentPrimaryId}
-            onSelectedPrimaryIdChange={(id) => {
-              setCurrentPrimaryId(id)
-            }}
-            onPrimaryPickerDropdownOpen={() => setPrimaryPickerOpened(true)}
-            onClose={() => {
-              setAddOpen(false)
-              setCodeTypeDropdownOpened(false)
-              setPrimaryPickerOpened(false)
-              if (hasCreatedNew) {
-                void queryClient.invalidateQueries({ queryKey: countyActivityCodeKeys.pagedLists() })
-                setHasCreatedNew(false)
-              }
-            }}
-            isSubmitting={createCountyActivityCode.isPending}
-            isEditSourceLoading={addTab === CountyActivityGridRowType.SUB && addSubParentDetailQuery.isLoading}
-            apportioningDepartments={addSubParentDetailQuery.data?.apportioningDepartments}
-          />
+              key={addFormMountKey}
+              form={addForm}
+              onAddSave={submitCreateCountyActivityFromAddModal}
+              subParentActivityDetail={addSubParentDetailQuery.data ?? null}
+              tab={addTab}
+              masterCodeTypeOptions={masterCodeTypeOptions}
+              isMasterCodeTypeOptionsLoading={masterCatalogQuery.isLoading}
+              masterCodeOptions={addMasterCodeOptions}
+              isMasterCodeOptionsLoading={addMasterCodesQuery.isLoading}
+              departmentNames={departmentNames}
+              onCodeDropdownOpen={() => {
+                void addMasterCodesQuery.refetch()
+              }}
+              onCodeTypeDropdownOpen={() => setCodeTypeDropdownOpened(true)}
+              onTabChange={(nextTab) => {
+                setAddTab(nextTab)
+                if (nextTab === CountyActivityGridRowType.SUB) {
+                  setCurrentPrimaryId(null)
+                  void queryClient.invalidateQueries({
+                    queryKey: countyActivityCodeKeys.activePrimarySubPicker(),
+                  })
+                }
+                if (nextTab === CountyActivityGridRowType.SUB && currentPrimaryDefaults) {
+                  addForm.setValue("masterCodeType", currentPrimaryDefaults.masterCodeType, {
+                    shouldValidate: true,
+                  })
+                  addForm.setValue("masterCode", currentPrimaryDefaults.masterCode, {
+                    shouldValidate: true,
+                  })
+                  addForm.setValue("department", currentPrimaryDefaults.department, {
+                    shouldValidate: true,
+                  })
+                }
+              }}
+              primaryActivityCodeOptions={addModalPrimaryActivityOptions}
+              selectedPrimaryId={currentPrimaryId}
+              onSelectedPrimaryIdChange={(id) => {
+                setCurrentPrimaryId(id)
+              }}
+              onPrimaryPickerDropdownOpen={() => setPrimaryPickerOpened(true)}
+              onClose={() => {
+                setAddOpen(false)
+                setCodeTypeDropdownOpened(false)
+                setPrimaryPickerOpened(false)
+                if (hasCreatedNew) {
+                  void queryClient.invalidateQueries({ queryKey: countyActivityCodeKeys.pagedLists() })
+                  setHasCreatedNew(false)
+                }
+              }}
+              isSubmitting={createCountyActivityCode.isPending}
+              isEditSourceLoading={addTab === CountyActivityGridRowType.SUB && addSubParentDetailQuery.isLoading}
+              apportioningDepartments={addSubParentDetailQuery.data?.apportioningDepartments}
+            />
           </div>
         </DialogContent>
       </Dialog>
@@ -1916,89 +1916,89 @@ export function CountyActivityCodeTable({
               </div>
             ) : rowToEdit ? (
               <CountyActivityCodeAddPage
-              key={rowToEdit.id}
-              mode={CountyActivityAddPageMode.EDIT}
-              form={editForm}
-              tab={
-                rowToEdit.rowType === CountyActivityGridRowType.SUB
-                  ? CountyActivityGridRowType.SUB
-                  : CountyActivityGridRowType.PRIMARY
-              }
-              onTabChange={() => { }}
-              disabledTabs={{
-                primary: rowToEdit.rowType === CountyActivityGridRowType.SUB,
-                sub: rowToEdit.rowType !== CountyActivityGridRowType.SUB,
-              }}
-              readOnly={rowToEdit.apportioning === true && rowToEdit.manualApportioning === true}
-              primaryActivityCodeOptions={editModalPrimaryActivityOptions}
-              selectedPrimaryId={
-                rowToEdit.rowType === CountyActivityGridRowType.SUB
-                  ? (editDetailQuery.data?.activity.parent?.id != null
-                    ? String(editDetailQuery.data.activity.parent.id)
-                    : rowToEdit.parentId ?? null)
-                  : null
-              }
-              readOnlyPrimaryPicker={false}
-              masterCodeTypeOptions={masterCodeTypeOptions}
-              isMasterCodeTypeOptionsLoading={masterCatalogQuery.isLoading}
-              masterCodeOptions={editMasterCodeOptions}
-              isMasterCodeOptionsLoading={editMasterCodesQuery.isLoading}
-              isEditSourceLoading={
-                editDetailQuery.isLoading ||
-                (rowToEdit?.rowType === CountyActivityGridRowType.PRIMARY &&
-                  editMasterCodesQuery.isLoading)
-              }
-              initialDepartmentShuttle={
-                rowToEdit.rowType === CountyActivityGridRowType.PRIMARY &&
-                editDetailQuery.data?.activity
-                  ? {
+                key={rowToEdit.id}
+                mode={CountyActivityAddPageMode.EDIT}
+                form={editForm}
+                tab={
+                  rowToEdit.rowType === CountyActivityGridRowType.SUB
+                    ? CountyActivityGridRowType.SUB
+                    : CountyActivityGridRowType.PRIMARY
+                }
+                onTabChange={() => { }}
+                disabledTabs={{
+                  primary: rowToEdit.rowType === CountyActivityGridRowType.SUB,
+                  sub: rowToEdit.rowType !== CountyActivityGridRowType.SUB,
+                }}
+                readOnly={rowToEdit.apportioning === true && rowToEdit.manualApportioning === true}
+                primaryActivityCodeOptions={editModalPrimaryActivityOptions}
+                selectedPrimaryId={
+                  rowToEdit.rowType === CountyActivityGridRowType.SUB
+                    ? (editDetailQuery.data?.activity.parent?.id != null
+                      ? String(editDetailQuery.data.activity.parent.id)
+                      : rowToEdit.parentId ?? null)
+                    : null
+                }
+                readOnlyPrimaryPicker={false}
+                masterCodeTypeOptions={masterCodeTypeOptions}
+                isMasterCodeTypeOptionsLoading={masterCatalogQuery.isLoading}
+                masterCodeOptions={editMasterCodeOptions}
+                isMasterCodeOptionsLoading={editMasterCodesQuery.isLoading}
+                isEditSourceLoading={
+                  editDetailQuery.isLoading ||
+                  (rowToEdit?.rowType === CountyActivityGridRowType.PRIMARY &&
+                    editMasterCodesQuery.isLoading)
+                }
+                initialDepartmentShuttle={
+                  rowToEdit.rowType === CountyActivityGridRowType.PRIMARY &&
+                    editDetailQuery.data?.activity
+                    ? {
                       assigned:
                         editDetailQuery.data.activity.assignedDepartments ??
                         editDetailQuery.data.activity.departments ??
                         [],
                       unassigned: editDetailQuery.data.activity.unassignedDepartments ?? [],
                     }
-                  : undefined
-              }
-              departmentNames={editModalDepartmentNames}
-              apportioningDepartments={editDetailQuery.data?.apportioningDepartments}
-              onSelectedPrimaryIdChange={(id) => {
-                setEditSelectedPrimaryId(id)
-                if (editPrimaryDetailQuery.data && String(editPrimaryDetailQuery.data.activity.id) === id) {
-                  const { activity, departmentNames: deptNames } = editPrimaryDetailQuery.data
-                  editForm.setValue("masterCodeType", activity.activityCodeType)
-                  editForm.setValue("masterCode", parseMasterCodeDisplay(activity.activityCode))
-                  editForm.setValue("department", deptNames.join(", "))
-                } else {
-                  const selected = findCountyActivityRowForSubParentPickerById(id)
-                  if (selected) {
-                    editForm.setValue("masterCodeType", selected.masterCodeType)
-                    editForm.setValue("masterCode", selected.masterCode)
-                    editForm.setValue("department", selected.department)
-                  }
+                    : undefined
                 }
-              }}
-              onCodeDropdownOpen={() => {
-                setEditMasterCodesDropdownOpened(true)
-                void editMasterCodesQuery.refetch()
-              }}
-              onCodeTypeDropdownOpen={() => setCodeTypeDropdownOpened(true)}
-              onPrimaryPickerDropdownOpen={() => setPrimaryPickerOpened(true)}
-              onEditSave={() => {
-                void submitCountyActivityEditFromEditModal()
-              }}
-              onClose={() => {
-                setEditOpen(false)
-                setRowToEdit(null)
-                setEditMasterCodesDropdownOpened(false)
-                setCodeTypeDropdownOpened(false)
-                setPrimaryPickerOpened(false)
-                setEditSelectedPrimaryId(null)
-                editForm.reset(countyActivityAddDefaultValues)
-              }}
-              isSubmitting={updateCountyActivityCode.isPending}
-            />
-          ) : null}
+                departmentNames={editModalDepartmentNames}
+                apportioningDepartments={editDetailQuery.data?.apportioningDepartments}
+                onSelectedPrimaryIdChange={(id) => {
+                  setEditSelectedPrimaryId(id)
+                  if (editPrimaryDetailQuery.data && String(editPrimaryDetailQuery.data.activity.id) === id) {
+                    const { activity, departmentNames: deptNames } = editPrimaryDetailQuery.data
+                    editForm.setValue("masterCodeType", activity.activityCodeType)
+                    editForm.setValue("masterCode", parseMasterCodeDisplay(activity.activityCode))
+                    editForm.setValue("department", deptNames.join(", "))
+                  } else {
+                    const selected = findCountyActivityRowForSubParentPickerById(id)
+                    if (selected) {
+                      editForm.setValue("masterCodeType", selected.masterCodeType)
+                      editForm.setValue("masterCode", selected.masterCode)
+                      editForm.setValue("department", selected.department)
+                    }
+                  }
+                }}
+                onCodeDropdownOpen={() => {
+                  setEditMasterCodesDropdownOpened(true)
+                  void editMasterCodesQuery.refetch()
+                }}
+                onCodeTypeDropdownOpen={() => setCodeTypeDropdownOpened(true)}
+                onPrimaryPickerDropdownOpen={() => setPrimaryPickerOpened(true)}
+                onEditSave={() => {
+                  void submitCountyActivityEditFromEditModal()
+                }}
+                onClose={() => {
+                  setEditOpen(false)
+                  setRowToEdit(null)
+                  setEditMasterCodesDropdownOpened(false)
+                  setCodeTypeDropdownOpened(false)
+                  setPrimaryPickerOpened(false)
+                  setEditSelectedPrimaryId(null)
+                  editForm.reset(countyActivityAddDefaultValues)
+                }}
+                isSubmitting={updateCountyActivityCode.isPending}
+              />
+            ) : null}
           </div>
         </DialogContent>
       </Dialog>

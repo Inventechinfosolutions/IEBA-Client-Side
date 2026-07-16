@@ -2,6 +2,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { useMemo, useState } from "react"
 
+import { Check } from "lucide-react"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Spinner } from "@/components/ui/spinner"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -62,10 +63,13 @@ export function EmployeesTable({
               onInactiveChange(next)
             }}
           >
-            <Checkbox
-              checked={showInactive}
-              className="size-[14px] rounded-[4px] border border-white bg-white data-[state=checked]:bg-[#6C5DD3] data-[state=checked]:text-white"
-            />
+            {showInactive ? (
+              <span className="inline-flex size-[14px] items-center justify-center rounded-[3px] bg-white dark:bg-[#1C1C2D]">
+                <Check className="size-[9px] stroke-[3] text-[#6C5DD3] dark:text-white" />
+              </span>
+            ) : (
+              <span className="size-[11px] rounded-[2px] bg-white dark:bg-[#1C1C2D]" />
+            )}
             <span className="text-[14px] font-[400] text-white">
               Inactive
             </span>
@@ -159,11 +163,10 @@ export function EmployeesTable({
               key={emp.id}
               type="button"
               onClick={() => onEmployeeSelect(emp.id)}
-              className={`w-full border-b border-[#DCDCDC] px-[12px] py-[10px] text-left text-[14px] transition-colors last:border-b-0 ${
-                selectedEmployeeId === emp.id
+              className={`w-full border-b border-[#DCDCDC] px-[12px] py-[10px] text-left text-[14px] transition-colors last:border-b-0 ${selectedEmployeeId === emp.id
                   ? "bg-white"
                   : "bg-[#FFFFFF66] hover:bg-[#F9FAFB]"
-              }`}
+                }`}
             >
               {selectedEmployeeId === emp.id ? (
                 <span className="inline-block rounded-[20px] bg-[#A78BFA] px-[10px] py-[4px] font-[500] text-white">

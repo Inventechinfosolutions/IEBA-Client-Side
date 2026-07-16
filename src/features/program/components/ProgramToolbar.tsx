@@ -90,9 +90,11 @@ export function ProgramToolbar({
             onClick={onToggleInactiveOnly}
           >
             {inactiveOnly ? (
-              <Check className="size-[11px] stroke-3 text-white" />
+              <span className="inline-flex size-[14px] items-center justify-center rounded-[3px] bg-white dark:bg-[#1C1C2D]">
+                <Check className="size-[11px] stroke-[3] text-[#6C5DD3] dark:text-white" />
+              </span>
             ) : (
-              <span className="size-[11px] rounded-[2px] bg-white" />
+              <span className="size-[11px] rounded-[2px] bg-white dark:bg-[#1C1C2D]" />
             )}
             Inactive
           </Button>

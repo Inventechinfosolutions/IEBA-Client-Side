@@ -39,11 +39,10 @@ export function UserToolbar({
             value={searchTerm}
             onChange={(event) => onSearchChange(event.target.value)}
             placeholder="Search here"
-            className={`h-9 rounded-[8px] bg-white pl-9 pr-8 text-[11px]! md:text-[11px]! text-[#232735] shadow-[0_1px_3px_rgba(35,39,53,0.08)] placeholder:text-[11px] placeholder:text-[#b7bccb] focus-visible:ring-0 ${
-              isSearchFocused || searchTerm.trim()
+            className={`h-9 rounded-[8px] bg-white pl-9 pr-8 text-[11px]! md:text-[11px]! text-[#232735] shadow-[0_1px_3px_rgba(35,39,53,0.08)] placeholder:text-[11px] placeholder:text-[#b7bccb] focus-visible:ring-0 ${isSearchFocused || searchTerm.trim()
                 ? "border-[#6C5DD3]"
                 : "border-[#e1e4ec]"
-            }`}
+              }`}
           />
           {searchTerm.length > 0 && (
             <button
@@ -63,11 +62,10 @@ export function UserToolbar({
                 <button
                   key={name}
                   type="button"
-                  className={`flex h-[26px] w-full cursor-pointer items-center px-3 text-left text-[11px] text-[#232735] hover:bg-[#f4f5fa] ${
-                    searchTerm.trim().toLowerCase() === name.toLowerCase()
+                  className={`flex h-[26px] w-full cursor-pointer items-center px-3 text-left text-[11px] text-[#232735] hover:bg-[#f4f5fa] ${searchTerm.trim().toLowerCase() === name.toLowerCase()
                       ? "bg-[#f4f5fa]"
                       : ""
-                  }`}
+                    }`}
                   onMouseDown={(event) => event.preventDefault()}
                   onClick={() => {
                     onSelectSuggestion(name)
@@ -85,7 +83,7 @@ export function UserToolbar({
           <SingleSelectDropdown
             value={departmentId ?? "all"}
             onChange={(val) => onDepartmentChange(val === "all" ? undefined : val)}
-            onBlur={() => {}}
+            onBlur={() => { }}
             options={[
               { value: "all", label: "All Departments" },
               ...allowedDepartments.map((dept) => ({
@@ -106,9 +104,11 @@ export function UserToolbar({
           onClick={onToggleInactiveOnly}
         >
           {inactiveOnly ? (
-            <Check className="size-[11px] stroke-3 text-white" />
+            <span className="inline-flex size-[14px] items-center justify-center rounded-[3px] bg-white dark:bg-[#1C1C2D]">
+              <Check className="size-[11px] stroke-[3] text-[#6C5DD3] dark:text-white" />
+            </span>
           ) : (
-            <span className="size-[11px] rounded-[2px] bg-white" />
+            <span className="size-[11px] rounded-[2px] bg-white dark:bg-[#1C1C2D]" />
           )}
           Inactive
         </Button>
