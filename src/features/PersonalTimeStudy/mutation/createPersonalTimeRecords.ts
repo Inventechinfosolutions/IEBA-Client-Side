@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import { apiSubmitTimeRecords, apiUpdateTimeRecord, apiUploadSupportingDoc } from "../api/personalTimeStudyApi"
 import { personalTimeStudyKeys } from "../keys"
+import { parkPersonalTimeStudyFocusSoon } from "../utils/focusUtils"
 
 /**
  * Mutation to save or submit time records.
@@ -41,6 +42,10 @@ export function useSubmitPersonalTimeRecords(userId: string, dateStr: string, mo
       queryClient.invalidateQueries({ queryKey: personalTimeStudyKeys.dayDetail(userId, dateStr) })
       queryClient.invalidateQueries({ queryKey: personalTimeStudyKeys.monthLegend(userId, month, year) })
       queryClient.invalidateQueries({ queryKey: personalTimeStudyKeys.timeEntrySummary(userId, dateStr) })
+      // Keep focus parked while controls lock and queries refetch (avoids header / sidebar jumps).
+      if (mode === "submit") {
+        parkPersonalTimeStudyFocusSoon()
+      }
     },
     onError: (error: any) => {
       toast.error(error.message || "Failed to process records")

@@ -1,6 +1,6 @@
 "use client"
 
-import type { ReactNode } from "react"
+import type { InputHTMLAttributes, KeyboardEvent, ReactNode } from "react"
 import { useMemo, useRef, useState } from "react"
 import { Search, ChevronDown } from "lucide-react"
 
@@ -52,6 +52,8 @@ export type SingleSelectSearchDropdownProps = {
   /** Notified when the menu opens or closes */
   onOpenChange?: (open: boolean) => void
   title?: string
+  /** Extra attributes for the trigger input (e.g. data-pts-program for focus targets). */
+  inputProps?: InputHTMLAttributes<HTMLInputElement> & { [key: `data-${string}`]: string }
 }
 
 export function SingleSelectSearchDropdown({
@@ -71,6 +73,7 @@ export function SingleSelectSearchDropdown({
   emptyListSlot,
   onOpenChange,
   title,
+  inputProps,
 }: SingleSelectSearchDropdownProps) {
   const [internalOpen, setInternalOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
@@ -135,15 +138,20 @@ export function SingleSelectSearchDropdown({
     }, 0)
   }
 
+  const focusableSelector =
+    'a[href], area[href], input:not([disabled]):not([tabindex="-1"]), select:not([disabled]):not([tabindex="-1"]), textarea:not([disabled]):not([tabindex="-1"]), button:not([disabled]):not([tabindex="-1"]), [tabindex="0"]'
+
   const focusNextTabbable = (currentEl: HTMLElement) => {
     setTimeout(() => {
-      const focusableSelector = 'a[href], area[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]), [tabindex="0"]'
-      const focusables = Array.from(document.querySelectorAll(focusableSelector)) as HTMLElement[]
-      
+      // Stay inside the time-entry form so Enter doesn't jump into calendar legend/notes.
+      const root =
+        (currentEl.closest("[data-time-entries-form]") as HTMLElement | null) ?? document.body
+      const focusables = Array.from(root.querySelectorAll(focusableSelector)) as HTMLElement[]
+
       const visibleFocusables = focusables.filter((el) => {
         if (el.tabIndex < 0) return false
         const style = window.getComputedStyle(el)
-        if (style.display === 'none' || style.visibility === 'hidden') return false
+        if (style.display === "none" || style.visibility === "hidden") return false
         return el.offsetWidth > 0 || el.offsetHeight > 0
       })
 
@@ -156,7 +164,7 @@ export function SingleSelectSearchDropdown({
     }, 50)
   }
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (disabledEffective) return
 
     switch (e.key) {
@@ -195,6 +203,10 @@ export function SingleSelectSearchDropdown({
           e.preventDefault()
           closeMenu()
         }
+        break
+      case "Tab":
+        // Close the list so Tab moves to the next field, not into portaled options.
+        if (open) closeMenu()
         break
       default:
         break
@@ -235,11 +247,24 @@ export function SingleSelectSearchDropdown({
                   disabled={disabledEffective}
                   placeholder={inputPlaceholder}
                   value={inputDisplayValue}
+                  {...inputProps}
                   // Open on focus/click
-                  onFocus={openMenu}
-                  onClick={openMenu}
-                  onKeyDown={handleKeyDown}
+                  onFocus={(e) => {
+                    inputProps?.onFocus?.(e)
+                    openMenu()
+                  }}
+                  onClick={(e) => {
+                    inputProps?.onClick?.(e)
+                    openMenu()
+                  }}
+                  onKeyDown={(e) => {
+                    inputProps?.onKeyDown?.(e)
+                    if (e.defaultPrevented) return
+                    handleKeyDown(e)
+                  }}
                   onChange={(e) => {
+                    inputProps?.onChange?.(e)
+                    if (e.defaultPrevented) return
                     setSearchQuery(e.target.value)
                     if (!open) {
                       openMenu()
@@ -247,7 +272,8 @@ export function SingleSelectSearchDropdown({
                       setActiveIndex(0)
                     }
                   }}
-                  onBlur={() => {
+                  onBlur={(e) => {
+                    inputProps?.onBlur?.(e)
                     if (selectingRef.current) return
                     onBlur()
                   }}
@@ -256,6 +282,7 @@ export function SingleSelectSearchDropdown({
                     "text-[11px] font-normal leading-[16px] text-[#111827]",
                     "placeholder:text-[#9ca3af]",
                     disabledEffective && "cursor-not-allowed",
+                    inputProps?.className,
                   )}
                 />
               </TooltipTrigger>
@@ -324,6 +351,7 @@ export function SingleSelectSearchDropdown({
                       <button
                         id={`opt-${dropdownId}-${index}`}
                         type="button"
+                        tabIndex={-1}
                         onMouseDown={(e) => {
                           e.preventDefault()
                           selectingRef.current = true
