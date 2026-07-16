@@ -138,30 +138,64 @@ export function SingleSelectSearchDropdown({
     }, 0)
   }
 
-  const focusableSelector =
-    'a[href], area[href], input:not([disabled]):not([tabindex="-1"]), select:not([disabled]):not([tabindex="-1"]), textarea:not([disabled]):not([tabindex="-1"]), button:not([disabled]):not([tabindex="-1"]), [tabindex="0"]'
+  const focusableIncludingDisabledSelector =
+    'a[href], area[href], input:not([tabindex="-1"]), select:not([tabindex="-1"]), textarea:not([tabindex="-1"]), button:not([tabindex="-1"]), [tabindex="0"]'
 
+  const isVisibleFocusCandidate = (el: HTMLElement) => {
+    if (el.tabIndex < 0) return false
+    const style = window.getComputedStyle(el)
+    if (style.display === "none" || style.visibility === "hidden") return false
+    return el.offsetWidth > 0 || el.offsetHeight > 0
+  }
+
+  /** Focus next field; if it is disabled (e.g. Activity still loading), wait until enabled — no time cap. */
   const focusNextTabbable = (currentEl: HTMLElement) => {
-    setTimeout(() => {
-      // Stay inside the time-entry form so Enter doesn't jump into calendar legend/notes.
+    // One frame so React can apply loading/disabled after onChange — not an API timeout.
+    requestAnimationFrame(() => {
       const root =
         (currentEl.closest("[data-time-entries-form]") as HTMLElement | null) ?? document.body
-      const focusables = Array.from(root.querySelectorAll(focusableSelector)) as HTMLElement[]
+      const allVisible = Array.from(
+        root.querySelectorAll(focusableIncludingDisabledSelector),
+      ).filter((el) => isVisibleFocusCandidate(el as HTMLElement)) as HTMLElement[]
 
-      const visibleFocusables = focusables.filter((el) => {
-        if (el.tabIndex < 0) return false
-        const style = window.getComputedStyle(el)
-        if (style.display === "none" || style.visibility === "hidden") return false
-        return el.offsetWidth > 0 || el.offsetHeight > 0
-      })
-
-      const index = visibleFocusables.indexOf(currentEl)
-      if (index >= 0 && index < visibleFocusables.length - 1) {
-        visibleFocusables[index + 1].focus()
-      } else {
+      const index = allVisible.indexOf(currentEl)
+      const next = index >= 0 ? allVisible[index + 1] : null
+      if (!next) {
         currentEl.blur()
+        return
       }
-    }, 50)
+
+      const resolveLiveTarget = (): HTMLInputElement | null => {
+        const scope = next.closest("[data-pts-row], [data-time-entries-form]") ?? root
+        if (next.hasAttribute("data-pts-activity")) {
+          return scope.querySelector<HTMLInputElement>("[data-pts-activity]")
+        }
+        return (document.contains(next) ? next : null) as HTMLInputElement | null
+      }
+
+      const tryFocusNext = () => {
+        const live = resolveLiveTarget()
+        if (!live || live.disabled) return false
+        live.focus()
+        return true
+      }
+
+      if (tryFocusNext()) return
+
+      // Stay on Program until Activity finishes loading (disabled removed).
+      currentEl.focus({ preventScroll: true })
+      const watchRoot =
+        next.closest("[data-pts-row], [data-time-entries-form]") ?? next.parentElement ?? next
+      const observer = new MutationObserver(() => {
+        if (tryFocusNext()) observer.disconnect()
+      })
+      observer.observe(watchRoot, {
+        attributes: true,
+        attributeFilter: ["disabled"],
+        childList: true,
+        subtree: true,
+      })
+    })
   }
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
