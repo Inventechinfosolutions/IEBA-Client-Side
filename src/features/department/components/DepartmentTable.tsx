@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react"
-import { ArrowLeft, History, User, Phone, Mail, MapPin, X } from "lucide-react"
+import { ArrowLeft, Check, History, User, Phone, Mail, MapPin, X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -113,7 +113,7 @@ const ContactInfo = ({
           <TooltipProvider delayDuration={200}>
             <Tooltip>
               <TooltipTrigger asChild>
-                <span 
+                <span
                   style={{ wordBreak: "break-all", whiteSpace: "normal" }}
                   className="block w-full min-w-0 cursor-pointer text-[12px] font-medium text-[#6C5DD3]"
                 >
@@ -222,7 +222,7 @@ export function DepartmentTable({
 
   return (
     <div className="flex flex-1 flex-col gap-[24px]">
-  
+
       <div className="flex items-center justify-between">
         {showHistory ? (
           <div className="flex flex-1 items-center gap-2">
@@ -274,11 +274,10 @@ export function DepartmentTable({
           {isSuperAdmin && (
             <button
               type="button"
-              className={`flex h-[48px] items-center gap-2 rounded-[10px] px-4 text-[14px] font-medium transition-colors ${
-                showHistory
-                  ? "bg-[#6C5DD3] text-white"
-                  : "border border-[#6C5DD3] bg-white text-[#6C5DD3] hover:bg-[#F3F0FF]"
-              }`}
+              className={`flex h-[48px] items-center gap-2 rounded-[10px] px-4 text-[14px] font-medium transition-colors ${showHistory
+                ? "bg-[#6C5DD3] text-white"
+                : "border border-[#6C5DD3] bg-white text-[#6C5DD3] hover:bg-[#F3F0FF]"
+                }`}
               onClick={() => {
                 setShowHistory((prev) => {
                   if (prev) {
@@ -319,10 +318,13 @@ export function DepartmentTable({
                 setSortDirection(null)
               }}
             >
-              <Checkbox
-                checked={filters.inactive}
-                className="size-5 rounded-[6px] border-white bg-white data-[state=checked]:border-white data-[state=checked]:bg-[#6C5DD3] data-[state=checked]:text-white shadow-none"
-              />
+              {filters.inactive ? (
+                <span className="inline-flex size-[14px] items-center justify-center rounded-[3px] bg-white dark:bg-[#1C1C2D]">
+                  <Check className="size-[9px] stroke-[3] text-[#6C5DD3] dark:text-white" />
+                </span>
+              ) : (
+                <span className="size-[14px] rounded-[3px] bg-white dark:bg-[#1C1C2D]" />
+              )}
               <span className="text-[14px] font-medium text-white select-none whitespace-nowrap">
                 Inactive
               </span>
@@ -349,26 +351,25 @@ export function DepartmentTable({
 
       {/* ── Table ───────────────────────────────────────────────────────── */}
       <div
-        className={`overflow-hidden rounded-[8px] border border-[#E5E7EB] bg-white ${
-          showHistory ? "hidden" : ""
-        }`}
+        className={`overflow-hidden rounded-[8px] border border-[#E5E7EB] bg-white ${showHistory ? "hidden" : ""
+          }`}
       >
         <Table className="w-full table-fixed border-collapse">
           <colgroup>
-            <col className={canUpdateDepartment ? "w-[7%]" : "w-[18%]"} /> { /* Code */ }
-            <col className={canUpdateDepartment ? "w-[9%]" : "w-[20%]"} /> { /* Name/Department */ }
-            <col className={canUpdateDepartment ? "w-[8%]" : "w-[20%]"} /> { /* Address */ }
+            <col className={canUpdateDepartment ? "w-[7%]" : "w-[18%]"} /> { /* Code */}
+            <col className={canUpdateDepartment ? "w-[9%]" : "w-[20%]"} /> { /* Name/Department */}
+            <col className={canUpdateDepartment ? "w-[8%]" : "w-[20%]"} /> { /* Address */}
             {canUpdateDepartment && (
               <>
-                <col className="w-[15%]" /> { /* Primary Contact */ }
-                <col className="w-[15%]" /> { /* Secondary Contact */ }
-                <col className="w-[15%]" /> { /* Billing Contact */ }
+                <col className="w-[15%]" /> { /* Primary Contact */}
+                <col className="w-[15%]" /> { /* Secondary Contact */}
+                <col className="w-[15%]" /> { /* Billing Contact */}
               </>
             )}
-            <col className={canUpdateDepartment ? "w-[7%]" : "w-[15%]"} /> { /* Allow Multi */ }
-            <col className={canUpdateDepartment ? "w-[5%]" : "w-[12%]"} /> { /* Multi Codes */ }
-            <col className={canUpdateDepartment ? "w-[5%]" : "w-[15%]"} /> { /* Active */ }
-            {showActionColumn && <col className="w-[5%]" />} { /* Action */ }
+            <col className={canUpdateDepartment ? "w-[7%]" : "w-[15%]"} /> { /* Allow Multi */}
+            <col className={canUpdateDepartment ? "w-[5%]" : "w-[12%]"} /> { /* Multi Codes */}
+            <col className={canUpdateDepartment ? "w-[5%]" : "w-[15%]"} /> { /* Active */}
+            {showActionColumn && <col className="w-[5%]" />} { /* Action */}
           </colgroup>
           <TableHeader>
             <TableRow className="bg-[#6C5DD3] hover:bg-[#6C5DD3] h-[56px]">
@@ -398,18 +399,16 @@ export function DepartmentTable({
                         <span className="whitespace-nowrap font-medium">Code</span>
                         <span className="inline-flex shrink-0 flex-col">
                           <span
-                            className={`h-0 w-0 border-b-[4px] border-l-3 border-r-3 border-l-transparent border-r-transparent ${
-                              sortBy === "code" && sortDirection === "asc"
-                                ? "border-b-[#1E8BFF]"
-                                : "border-b-white/60"
-                            }`}
+                            className={`h-0 w-0 border-b-[4px] border-l-3 border-r-3 border-l-transparent border-r-transparent ${sortBy === "code" && sortDirection === "asc"
+                              ? "border-b-[#1E8BFF]"
+                              : "border-b-white/60"
+                              }`}
                           />
                           <span
-                            className={`mt-0.5 h-0 w-0 border-l-3 border-r-3 border-t-[4px] border-l-transparent border-r-transparent ${
-                              sortBy === "code" && sortDirection === "desc"
-                                ? "border-t-[#201547]"
-                                : "border-t-white"
-                            }`}
+                            className={`mt-0.5 h-0 w-0 border-l-3 border-r-3 border-t-[4px] border-l-transparent border-r-transparent ${sortBy === "code" && sortDirection === "desc"
+                              ? "border-t-[#201547]"
+                              : "border-t-white"
+                              }`}
                           />
                         </span>
                       </button>
@@ -446,18 +445,16 @@ export function DepartmentTable({
                         <span className="whitespace-nowrap font-medium">Department</span>
                         <span className="inline-flex shrink-0 flex-col">
                           <span
-                            className={`h-0 w-0 border-b-[4px] border-l-3 border-r-3 border-l-transparent border-r-transparent ${
-                              sortBy === "name" && sortDirection === "asc"
-                                ? "border-b-[#1E8BFF]"
-                                : "border-b-white/60"
-                            }`}
+                            className={`h-0 w-0 border-b-[4px] border-l-3 border-r-3 border-l-transparent border-r-transparent ${sortBy === "name" && sortDirection === "asc"
+                              ? "border-b-[#1E8BFF]"
+                              : "border-b-white/60"
+                              }`}
                           />
                           <span
-                            className={`mt-0.5 h-0 w-0 border-l-3 border-r-3 border-t-[4px] border-l-transparent border-r-transparent ${
-                              sortBy === "name" && sortDirection === "desc"
-                                ? "border-t-[#201547]"
-                                : "border-t-white"
-                            }`}
+                            className={`mt-0.5 h-0 w-0 border-l-3 border-r-3 border-t-[4px] border-l-transparent border-r-transparent ${sortBy === "name" && sortDirection === "desc"
+                              ? "border-t-[#201547]"
+                              : "border-t-white"
+                              }`}
                           />
                         </span>
                       </button>
@@ -562,10 +559,10 @@ export function DepartmentTable({
                   )}
                   <TableCell className="border-r border-[#D1D5DB] px-[8px] py-[6px] text-center">
                     <div className="flex justify-center">
-                      <img 
-                        src={dept.settings.allowMultiCodes ? statusCheckImg : statusCrossImg} 
-                        alt={dept.settings.allowMultiCodes ? "Check" : "Cross"} 
-                        className="h-[14px] w-[14px]" 
+                      <img
+                        src={dept.settings.allowMultiCodes ? statusCheckImg : statusCrossImg}
+                        alt={dept.settings.allowMultiCodes ? "Check" : "Cross"}
+                        className="h-[14px] w-[14px]"
                       />
                     </div>
                   </TableCell>
@@ -579,10 +576,10 @@ export function DepartmentTable({
                         ))
                       ) : (
                         <div className="flex justify-center">
-                          <img 
-                            src={statusCrossImg} 
-                            alt="Cross" 
-                            className="h-[14px] w-[14px]" 
+                          <img
+                            src={statusCrossImg}
+                            alt="Cross"
+                            className="h-[14px] w-[14px]"
                           />
                         </div>
                       )}
@@ -590,10 +587,10 @@ export function DepartmentTable({
                   </TableCell>
                   <TableCell className="border-r border-[#D1D5DB] px-[8px] py-[6px] text-center">
                     <div className="flex justify-center">
-                      <img 
-                        src={dept.active ? statusCheckImg : statusCrossImg} 
-                        alt={dept.active ? "Active" : "Inactive"} 
-                        className="h-[14px] w-[14px]" 
+                      <img
+                        src={dept.active ? statusCheckImg : statusCrossImg}
+                        alt={dept.active ? "Active" : "Inactive"}
+                        className="h-[14px] w-[14px]"
                       />
                     </div>
                   </TableCell>
