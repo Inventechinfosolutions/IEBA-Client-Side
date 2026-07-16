@@ -349,21 +349,12 @@ export function detailToUpsertFormValues(detail: CostPoolDetailResDto): CostPool
 }
 
 export function listItemToTableRow(dto: CostPoolResDto): CostPoolRow {
-  const activities = (dto.activities ?? [])
-    .map((activity) => {
-      const code = String(activity.code ?? "").trim()
-      const name = String(activity.name ?? "").trim()
-      if (code && name) return `${code} - ${name}`
-      return code || name
-    })
-    .filter(Boolean)
-
   return {
     id: dto.id,
     costPool: dto.name,
     department: dto.department?.name ?? "",
     departmentId: dto.departmentId,
-    activities,
+    activities: dto.activities ?? [],
     active: dto.status === CostPoolStatus.ACTIVE,
   }
 }
