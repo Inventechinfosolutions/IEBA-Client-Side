@@ -1211,6 +1211,26 @@
   box-shadow: 0 0 8px rgba(167, 139, 250, 0.6) !important;
 }
 
+/* 64. Remove Shadow from Time Picker Popover and Inner Elements */
+.dark div[role="dialog"].time-picker-popover,
+.dark div[role="dialog"][class*="time-picker-popover"] {
+  box-shadow: none !important;
+  border: 1px solid rgba(108, 93, 211, 0.3) !important;
+}
+
+.dark div[role="dialog"].time-picker-popover .bg-white,
+.dark div[role="dialog"].time-picker-popover [class*="bg-white"] {
+  box-shadow: none !important;
+  border: none !important;
+}
+
+/* General fallback */
+.time-picker-popover,
+[class*="time-picker-popover"] {
+  box-shadow: none !important;
+}
+
+
 
 
 
