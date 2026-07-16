@@ -1079,5 +1079,97 @@
   border-color: #000000 !important;
 }
 
+/* 59. Style TimePicker Dropdowns in Dark Mode */
+.dark .w-\[120px\].bg-white {
+  background-color: #18181b !important;
+  border: 1px solid #27272a !important;
+}
+
+.dark .w-\[120px\].bg-white div {
+  border-color: #27272a !important;
+}
+
+.dark .w-\[120px\].bg-white button {
+  color: #f4f4f5 !important;
+}
+
+.dark .w-\[120px\].bg-white button:hover {
+  background-color: #27272a !important;
+}
+
+.dark .w-\[120px\].bg-white button[data-selected="true"] {
+  background-color: #6C5DD3 !important;
+  color: #ffffff !important;
+}
+
+.dark .w-\[120px\].bg-white .bg-white {
+  background-color: #18181b !important;
+}
+
+/* 60. Style ChangeCountyDialog select text, placeholder, and search icon in Dark Mode */
+.dark .text-\[\#000000D9\],
+.dark .text-\[\#000000d9\],
+.dark [class*="text-[#000000D9]"],
+.dark [class*="text-[#000000d9]"] {
+  color: #f4f4f5 !important;
+}
+
+.dark .text-\[\#00000073\],
+.dark .text-\[\#00000073\],
+.dark [class*="text-[#00000073]"] {
+  color: #a1a1aa !important;
+}
+
+.dark .text-\[\#00000040\],
+.dark .text-\[\#00000040\],
+.dark [class*="text-[#00000040]"] {
+  color: rgba(255, 255, 255, 0.4) !important;
+}
+
+/* 61. Style ChangeCountyDialog select hover and active state in Dark Mode */
+.dark div.absolute.bg-white button:hover,
+.dark div.absolute.bg-white button.bg-\[\#e6f4ff\],
+.dark div.absolute.bg-white button[class*="bg-[#e6f4ff]"],
+.dark .hover\:bg-black\/5:hover,
+.dark [class*="hover:bg-black/5"]:hover {
+  background-color: #6C5DD3 !important;
+  color: #ffffff !important;
+}
+
+/* 62. Style Disabled Checkboxes and Labels in Dark Mode */
+.dark label.cursor-not-allowed,
+.dark label[class*="cursor-not-allowed"] {
+  color: #71717a !important;
+}
+
+.dark button:disabled[role="checkbox"],
+.dark button[disabled][role="checkbox"],
+.dark button:disabled[class*="border-[#e5e7eb]"],
+.dark button:disabled[class*="disabled:bg-[#f3f4f6]"] {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+  color: rgba(255, 255, 255, 0.2) !important;
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
+}
+
+/* 63. Premium Focus Visible Indicators in Dark Mode */
+.dark button:focus-visible,
+.dark [data-slot="button"]:focus-visible,
+.dark [data-pts-save-top]:focus-visible,
+.dark [data-pts-submit-top]:focus-visible,
+.dark [data-pts-save]:focus-visible,
+.dark [data-pts-submit]:focus-visible,
+.dark [data-pts-purple-add]:focus-visible {
+  outline: 2px solid #a78bfa !important;
+  outline-offset: 2px !important;
+  box-shadow: 0 0 8px rgba(167, 139, 250, 0.6) !important;
+}
+
+
+
+
+
+
 
 

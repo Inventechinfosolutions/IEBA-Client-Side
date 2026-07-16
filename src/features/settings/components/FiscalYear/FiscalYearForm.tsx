@@ -136,7 +136,7 @@ function HolidayDatePicker({
             onChange(toIsoYmdFromDate(date))
             setOpen(false)
           }}
-          className="!bg-white text-[14px] [&_.rdp-caption_label]:text-[14px] [&_.rdp-day]:text-[14px] [&_.rdp-day_button]:h-9 [&_.rdp-day_button]:w-9 [&_.rdp-day_button]:text-[14px] [&_.rdp-weekday]:text-[14px] [&_nav>button]:hover:!bg-white"
+          className="bg-white dark:bg-transparent text-[14px] [&_.rdp-caption_label]:text-[14px] [&_.rdp-day]:text-[14px] [&_.rdp-day_button]:h-9 [&_.rdp-day_button]:w-9 [&_.rdp-day_button]:text-[14px] [&_.rdp-weekday]:text-[14px] [&_nav>button]:hover:!bg-white dark:[&_nav>button]:hover:!bg-transparent"
         />
       </DropdownMenuContent>
     </DropdownMenu>
