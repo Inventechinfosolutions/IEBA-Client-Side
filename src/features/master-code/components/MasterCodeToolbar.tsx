@@ -25,7 +25,7 @@ export function MasterCodeToolbar({
               <Check className="size-[11px] stroke-[3] text-[#6C5DD3] dark:text-white" />
             </span>
           ) : (
-            <span className="size-[11px] rounded-[2px] bg-white dark:bg-[#1C1C2D]" />
+            <span className="size-[13px] rounded-[3px] bg-white dark:bg-[#1C1C2D]" />
           )}
           Allow Multi Codes?
         </Button>
@@ -40,7 +40,7 @@ export function MasterCodeToolbar({
             <Check className="size-[9px] stroke-[3] text-[#6C5DD3] dark:text-white" />
           </span>
         ) : (
-          <span className="size-[11px] rounded-[2px] bg-white dark:bg-[#1C1C2D]" />
+          <span className="size-[13px] rounded-[3px] bg-white dark:bg-[#1C1C2D]" />
         )}
         Inactive
       </Button>

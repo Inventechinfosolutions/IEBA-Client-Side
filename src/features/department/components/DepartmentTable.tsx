@@ -275,8 +275,8 @@ export function DepartmentTable({
             <button
               type="button"
               className={`flex h-[48px] items-center gap-2 rounded-[10px] px-4 text-[14px] font-medium transition-colors ${showHistory
-                  ? "bg-[#6C5DD3] text-white"
-                  : "border border-[#6C5DD3] bg-white text-[#6C5DD3] hover:bg-[#F3F0FF]"
+                ? "bg-[#6C5DD3] text-white"
+                : "border border-[#6C5DD3] bg-white text-[#6C5DD3] hover:bg-[#F3F0FF]"
                 }`}
               onClick={() => {
                 setShowHistory((prev) => {
@@ -323,7 +323,7 @@ export function DepartmentTable({
                   <Check className="size-[9px] stroke-[3] text-[#6C5DD3] dark:text-white" />
                 </span>
               ) : (
-                <span className="size-[11px] rounded-[2px] bg-white dark:bg-[#1C1C2D]" />
+                <span className="size-[14px] rounded-[3px] bg-white dark:bg-[#1C1C2D]" />
               )}
               <span className="text-[14px] font-medium text-white select-none whitespace-nowrap">
                 Inactive
@@ -400,14 +400,14 @@ export function DepartmentTable({
                         <span className="inline-flex shrink-0 flex-col">
                           <span
                             className={`h-0 w-0 border-b-[4px] border-l-3 border-r-3 border-l-transparent border-r-transparent ${sortBy === "code" && sortDirection === "asc"
-                                ? "border-b-[#1E8BFF]"
-                                : "border-b-white/60"
+                              ? "border-b-[#1E8BFF]"
+                              : "border-b-white/60"
                               }`}
                           />
                           <span
                             className={`mt-0.5 h-0 w-0 border-l-3 border-r-3 border-t-[4px] border-l-transparent border-r-transparent ${sortBy === "code" && sortDirection === "desc"
-                                ? "border-t-[#201547]"
-                                : "border-t-white"
+                              ? "border-t-[#201547]"
+                              : "border-t-white"
                               }`}
                           />
                         </span>
@@ -446,14 +446,14 @@ export function DepartmentTable({
                         <span className="inline-flex shrink-0 flex-col">
                           <span
                             className={`h-0 w-0 border-b-[4px] border-l-3 border-r-3 border-l-transparent border-r-transparent ${sortBy === "name" && sortDirection === "asc"
-                                ? "border-b-[#1E8BFF]"
-                                : "border-b-white/60"
+                              ? "border-b-[#1E8BFF]"
+                              : "border-b-white/60"
                               }`}
                           />
                           <span
                             className={`mt-0.5 h-0 w-0 border-l-3 border-r-3 border-t-[4px] border-l-transparent border-r-transparent ${sortBy === "name" && sortDirection === "desc"
-                                ? "border-t-[#201547]"
-                                : "border-t-white"
+                              ? "border-t-[#201547]"
+                              : "border-t-white"
                               }`}
                           />
                         </span>

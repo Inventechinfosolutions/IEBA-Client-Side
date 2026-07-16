@@ -576,7 +576,7 @@ export function CostPoolTable({
                   <Check className="size-[11px] stroke-[3] text-[#6C5DD3] dark:text-white" />
                 </span>
               ) : (
-                <span className="size-[11px] rounded-[2px] bg-white dark:bg-[#1C1C2D]" />
+                <span className="size-[14px] rounded-[3px] bg-white dark:bg-[#1C1C2D]" />
               )}
               <span className="text-[14px] font-normal">Inactive</span>
             </button>
