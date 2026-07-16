@@ -452,7 +452,7 @@ export function DepartmentRoleAdd({
         className="fixed inset-0 z-50 overflow-y-auto grid place-items-center bg-transparent border-none shadow-none p-0 left-0 top-0 translate-x-0 translate-y-0 max-w-none w-screen h-screen"
         overlayClassName="bg-black/40"
       >
-        <div className="relative my-8 w-[1000px] max-w-[95vw] bg-white dark:bg-[#18181b] rounded-lg border dark:border-[rgba(108,93,211,0.4)] p-[2%_5%] shadow-lg flex flex-col">
+        <div className="department-role-add-page relative my-8 w-[1000px] max-w-[95vw] bg-white dark:bg-[#18181b] rounded-lg border dark:border-[rgba(108,93,211,0.4)] p-[2%_5%] shadow-lg flex flex-col">
           <DialogClose className="absolute right-6 top-6 cursor-pointer rounded-sm opacity-70 hover:opacity-100">
             <X className="size-4 text-black dark:text-[#e4e4e7]" />
           </DialogClose>

@@ -759,11 +759,37 @@
   border-color: rgba(108, 93, 211, 0.45) !important;
 }
 
-/* 36. Dialog and Modal Content Purple Borders in Dark Mode */
+/* 36. Dialog and Modal Content Purple Borders and Smoky Purple Glow in Dark Mode */
 .dark div[role="dialog"],
 .dark [data-slot="dialog-content"],
-.dark .fixed.left-\[50\%\].top-\[50\%\] {
-  border: 1px solid rgba(108, 93, 211, 0.45) !important;
+.dark .fixed.left-\[50\%\],
+.dark [data-slot="popover-content"],
+.dark [class*="PopoverContent"],
+.dark [class*="DropdownMenuContent"],
+.dark [class*="DropdownContent"],
+.dark [data-slot="select-content"],
+.dark [data-slot="dropdown-menu-content"],
+.dark [class*="select-content"],
+.dark [class*="dropdown-menu-content"],
+.dark [class*="popover-content"],
+.dark [class*="DropdownSearch"],
+.dark [class*="dropdown-search"],
+.dark [class*="MultiSelectSearch"],
+.dark [class*="multi-select-search"],
+.dark div[role="dialog"] > .bg-white,
+.dark div[role="dialog"] > [class*="bg-white"],
+.dark [data-slot="dialog-content"] > .bg-white,
+.dark [data-slot="dialog-content"] > [class*="bg-white"],
+.dark .fixed.left-\[50\%\] > .bg-white,
+.dark .fixed.left-\[50\%\] > [class*="bg-white"],
+.dark div[role="dialog"] > div > .bg-white,
+.dark div[role="dialog"] > div > [class*="bg-white"],
+.dark [data-slot="dialog-content"] > div > .bg-white,
+.dark [data-slot="dialog-content"] > div > [class*="bg-white"],
+.dark .fixed.left-\[50\%\] > div > .bg-white,
+.dark .fixed.left-\[50\%\] > div > [class*="bg-white"] {
+  border: 1px solid rgba(108, 93, 211, 0.55) !important;
+  box-shadow: 0 0 35px rgba(108, 93, 211, 0.5), 0 0 15px rgba(108, 93, 211, 0.3), 0 12px 48px rgba(0, 0, 0, 0.6) !important;
 }
 
 /* 37. To-Do Table Hover Row Overrides in Dark Mode */
@@ -1063,6 +1089,25 @@
 }
 
 /* 57. Style all form controls inside CountyActivityCode modal as purple in Dark Mode */
+.dark .county-activity-add-page,
+.dark .cost-pool-add-page,
+.dark .department-role-add-page {
+  background-color: #0c0a12 !important;
+  border: 1px solid rgba(108, 93, 211, 0.55) !important;
+  box-shadow: 0 0 35px rgba(108, 93, 211, 0.5), 0 0 15px rgba(108, 93, 211, 0.3), 0 12px 48px rgba(0, 0, 0, 0.6) !important;
+  overflow: visible !important;
+}
+.dark .county-activity-add-page .border-b {
+  border-color: rgba(108, 93, 211, 0.3) !important;
+}
+.dark .county-activity-add-page button:not([type="submit"]) {
+  background-color: transparent !important;
+}
+.dark .county-activity-add-page button.bg-\[\#6C5DD3\],
+.dark .county-activity-add-page button[class*="bg-[#6C5DD3]"] {
+  background-color: #6C5DD3 !important;
+  color: #ffffff !important;
+}
 .dark .county-activity-add-page input,
 .dark .county-activity-add-page textarea,
 .dark .county-activity-add-page select,

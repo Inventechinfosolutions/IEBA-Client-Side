@@ -181,7 +181,7 @@ export function CostPoolAddPage({
   }
 
   return (
-    <div className="relative w-[1150px] max-w-[calc(100vw-2rem)] rounded-[10px] bg-white px-11 py-7 shadow-[0_0_20px_0_#0000001a]">
+    <div className="cost-pool-add-page relative w-[1150px] max-w-[calc(100vw-2rem)] rounded-[10px] bg-white px-11 py-7 shadow-[0_0_20px_0_#0000001a]">
       {(isSubmitting || isLoadingDetails) && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/60">
           <Spinner className="text-[#6C5DD3]" />
