@@ -90,6 +90,8 @@ export function useTimeStudyMGT() {
         allocatedMinutes: d.allocatedMinutes,
         consumedMinutes: d.consumedMinutes,
         balanceMinutes: d.balanceMinutes,
+        hasNotes: !!d.notes,
+        noteText: d.notes ?? undefined,
       }
 
       // Roll up to week summary

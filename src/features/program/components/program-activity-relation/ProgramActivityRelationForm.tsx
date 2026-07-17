@@ -181,11 +181,13 @@ export function ProgramActivityRelationForm({ form, departmentIds }: ProgramActi
   }
 
   const toggleAllUnassigned = () => {
-    setToggledU((prev) => (prev.length === filteredU.length ? [] : filteredU.map((a) => a.id)))
+    const checkable = filteredU.filter(a => a.assignmentType !== "autoassigned")
+    setToggledU((prev) => (prev.length === checkable.length ? [] : checkable.map((a) => a.id)))
   }
 
   const toggleAllAssigned = () => {
-    setToggledA((prev) => (prev.length === filteredA.length ? [] : filteredA.map((a) => a.id)))
+    const checkable = filteredA.filter(a => a.assignmentType !== "autoassigned")
+    setToggledA((prev) => (prev.length === checkable.length ? [] : checkable.map((a) => a.id)))
   }
 
   const programDisabledClass =
