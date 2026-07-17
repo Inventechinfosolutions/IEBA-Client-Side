@@ -15,6 +15,8 @@ export type MgtDayStatus = {
   allocatedMinutes?: number
   consumedMinutes?: number
   balanceMinutes?: number
+  hasNotes?: boolean
+  noteText?: string
 }
 
 // ─── Month legend map ─────────────────────────────────────────────────────────

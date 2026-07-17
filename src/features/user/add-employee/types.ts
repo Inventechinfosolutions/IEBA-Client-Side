@@ -173,6 +173,7 @@ export type UserProgramsActivitiesProgramItem = {
   type?: string
   parentId?: number | null
   isMultiCode?: boolean
+  assignmentType?: string | null
 }
 
 /** Activity row (ActivityDepartment id) nested under an assigned program. */
@@ -185,6 +186,7 @@ export type UserProgramsActivitiesActivityItem = {
   activityId?: number
   assigned?: boolean
   assignedByJobPool?: boolean
+  assignmentType?: string | null
 }
 
 export type UserProgramsActivitiesAssignedSplit<T> = {
@@ -218,6 +220,7 @@ export type UserProgramsActivitiesProgramActivityGroup = {
   jobpoolId?: number | null
   jobpoolName?: string | null
   children: UserProgramsActivitiesAssignedSplit<UserProgramsActivitiesActivityItem>
+  assignmentType?: string | null
 }
 
 export type UserProgramsActivitiesProgramActivitiesBundle = {
@@ -491,6 +494,7 @@ export type AddEmployeeTimeStudyTransferPanelProps = {
   selectedDept: string
   isLoading?: boolean
   jobPoolSection?: AddEmployeeTimeStudyJobPoolSection | null
+  apportioningSection?: AddEmployeeTimeStudyJobPoolSection | null
 }
 
 export type TimeStudyPlacementOverride = "assigned" | "unassigned"
