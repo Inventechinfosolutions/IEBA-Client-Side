@@ -70,6 +70,7 @@ export type P101ReportPdfProps = {
 }
 
 export type P110SSRecord = {
+  employeeId: string
   employeename: string
   date: string
   program: string
@@ -86,6 +87,7 @@ export type P110SSDateGroup = {
 }
 
 export type P110SSGroupedEmployee = {
+  employeeId: string
   employeename: string
   dates: P110SSDateGroup[]
 }
@@ -99,6 +101,7 @@ export type P110SSReportPdfProps = {
 }
 
 export type P110Record = {
+  employeeId: string
   employeename: string
   date: string
   program: string
@@ -118,6 +121,7 @@ export type P110DateGroup = {
 }
 
 export type P110GroupedEmployee = {
+  employeeId: string
   employeename: string
   dates: P110DateGroup[]
 }
@@ -904,6 +908,7 @@ export function unwrapP110SSRecords(raw: unknown): P110SSRecord[] {
   return unwrapListData(raw).map((row) => {
     const record = asRecord(row)
     return {
+      employeeId: String(record.employeeId ?? record.userid ?? record.userId ?? ""),
       employeename: String(record.employeename ?? record.employeeName ?? ""),
       date: String(record.date ?? ""),
       program: String(record.program ?? ""),
@@ -917,15 +922,20 @@ export function unwrapP110SSRecords(raw: unknown): P110SSRecord[] {
 export function groupP110SSByEmployee(records: P110SSRecord[]): P110SSGroupedEmployee[] {
   const grouped: Record<
     string,
-    { employeename: string; dates: Record<string, P110SSDateGroup> }
+    { employeeId: string; employeename: string; dates: Record<string, P110SSDateGroup> }
   > = {}
 
   for (const record of records) {
-    if (!grouped[record.employeename]) {
-      grouped[record.employeename] = { employeename: record.employeename, dates: {} }
+    const groupKey = record.employeeId || record.employeename
+    if (!grouped[groupKey]) {
+      grouped[groupKey] = {
+        employeeId: record.employeeId,
+        employeename: record.employeename,
+        dates: {},
+      }
     }
 
-    const employee = grouped[record.employeename]
+    const employee = grouped[groupKey]
     if (!employee.dates[record.date]) {
       employee.dates[record.date] = {
         date: record.date,
@@ -943,6 +953,7 @@ export function groupP110SSByEmployee(records: P110SSRecord[]): P110SSGroupedEmp
   }
 
   return Object.values(grouped).map((employee) => ({
+    employeeId: employee.employeeId,
     employeename: employee.employeename,
     dates: Object.values(employee.dates),
   }))
@@ -958,6 +969,7 @@ export function unwrapP110Records(raw: unknown): P110Record[] {
   return unwrapListData(raw).map((row) => {
     const record = asRecord(row)
     return {
+      employeeId: String(record.employeeId ?? record.userid ?? record.userId ?? ""),
       employeename: String(record.employeename ?? record.employeeName ?? ""),
       date: String(record.date ?? ""),
       program: String(record.program ?? ""),
@@ -973,15 +985,20 @@ export function unwrapP110Records(raw: unknown): P110Record[] {
 export function groupP110ByEmployee(records: P110Record[]): P110GroupedEmployee[] {
   const grouped: Record<
     string,
-    { employeename: string; dates: Record<string, P110DateGroup> }
+    { employeeId: string; employeename: string; dates: Record<string, P110DateGroup> }
   > = {}
 
   for (const record of records) {
-    if (!grouped[record.employeename]) {
-      grouped[record.employeename] = { employeename: record.employeename, dates: {} }
+    const groupKey = record.employeeId || record.employeename
+    if (!grouped[groupKey]) {
+      grouped[groupKey] = {
+        employeeId: record.employeeId,
+        employeename: record.employeename,
+        dates: {},
+      }
     }
 
-    const employee = grouped[record.employeename]
+    const employee = grouped[groupKey]
     if (!employee.dates[record.date]) {
       employee.dates[record.date] = {
         date: record.date,
@@ -1002,6 +1019,7 @@ export function groupP110ByEmployee(records: P110Record[]): P110GroupedEmployee[
   }
 
   return Object.values(grouped).map((employee) => ({
+    employeeId: employee.employeeId,
     employeename: employee.employeename,
     dates: Object.values(employee.dates),
   }))
