@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from "react"
+import { useRef, useState, type MouseEvent, type PointerEvent } from "react"
 import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react"
 
-import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
 
 const MONTH_LABELS = [
@@ -60,6 +60,11 @@ function formatMonthDisplay(value: string): string {
   })
 }
 
+/** Keep focus inside the popover so year nav does not dismiss it. */
+function keepPopoverOpen(event: PointerEvent | MouseEvent) {
+  event.preventDefault()
+}
+
 export function ReportMonthPicker({ id, value, onChange, onBlur, className }: ReportMonthPickerProps) {
   const [open, setOpen] = useState(false)
   const [panel, setPanel] = useState<PickerPanel>("month")
@@ -96,21 +101,22 @@ export function ReportMonthPicker({ id, value, onChange, onBlur, className }: Re
     setPanel("month")
   }
 
-  useEffect(() => {
-    if (!open || panel !== "year") return
+  const openYearPanel = () => {
+    setPanel("year")
     requestAnimationFrame(() => {
       yearListRef.current
         ?.querySelector(`[data-year="${viewYear}"]`)
         ?.scrollIntoView({ block: "center" })
     })
-  }, [open, panel, viewYear])
+  }
 
   return (
-    <DropdownMenu open={open} onOpenChange={handleOpenChange}>
-      <DropdownMenuTrigger asChild>
+    <Popover open={open} onOpenChange={handleOpenChange}>
+      <PopoverTrigger asChild>
         <button
           id={id}
           type="button"
+          aria-haspopup="dialog"
           className={cn(
             "box-border flex h-12 w-full min-w-[112px] max-w-[168px] cursor-pointer items-center justify-between rounded-[8px] border border-[#d6d7dc] bg-white px-[9.29688px] text-left text-[14px] font-normal text-[#111827] shadow-none outline-none hover:bg-white focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD3]/25 data-[state=open]:border-[#6C5DD3] data-[state=open]:ring-1 data-[state=open]:ring-[#6C5DD3]/25",
             className,
@@ -121,12 +127,14 @@ export function ReportMonthPicker({ id, value, onChange, onBlur, className }: Re
           </span>
           <CalendarDays className="size-4 shrink-0 text-[#6b7280]" aria-hidden />
         </button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent
+      </PopoverTrigger>
+      <PopoverContent
         align="start"
         side="bottom"
         sideOffset={6}
-        className="w-[360px] overflow-hidden rounded-[10px] border border-[#d6d7dc] bg-white p-0 shadow-[0_12px_28px_rgba(17,24,39,0.16)]"
+        className="z-[100] w-[360px] overflow-hidden rounded-[10px] border border-[#d6d7dc] bg-white p-0 shadow-[0_12px_28px_rgba(17,24,39,0.16)]"
+        onOpenAutoFocus={(event) => event.preventDefault()}
+        onCloseAutoFocus={(event) => event.preventDefault()}
       >
         {panel === "month" ? (
           <>
@@ -135,6 +143,7 @@ export function ReportMonthPicker({ id, value, onChange, onBlur, className }: Re
                 <button
                   type="button"
                   className="inline-flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-[6px] text-[#6b7280] hover:bg-white hover:text-[#111827]"
+                  onPointerDown={keepPopoverOpen}
                   onClick={() => setViewYear((year) => Math.max(YEAR_START, year - 1))}
                   aria-label="Previous year"
                 >
@@ -142,7 +151,8 @@ export function ReportMonthPicker({ id, value, onChange, onBlur, className }: Re
                 </button>
                 <button
                   type="button"
-                  onClick={() => setPanel("year")}
+                  onPointerDown={keepPopoverOpen}
+                  onClick={openYearPanel}
                   className="h-9 min-w-[88px] flex-1 cursor-pointer rounded-[6px] bg-white px-2 text-center text-[15px] font-semibold text-[#111827] ring-1 ring-[#e5e7eb] hover:ring-[#6C5DD3]"
                   aria-label={`Change year, currently ${viewYear}`}
                 >
@@ -151,6 +161,7 @@ export function ReportMonthPicker({ id, value, onChange, onBlur, className }: Re
                 <button
                   type="button"
                   className="inline-flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-[6px] text-[#6b7280] hover:bg-white hover:text-[#111827]"
+                  onPointerDown={keepPopoverOpen}
                   onClick={() => setViewYear((year) => Math.min(YEAR_END, year + 1))}
                   aria-label="Next year"
                 >
@@ -159,7 +170,8 @@ export function ReportMonthPicker({ id, value, onChange, onBlur, className }: Re
               </div>
               <button
                 type="button"
-                onClick={() => setPanel("year")}
+                onPointerDown={keepPopoverOpen}
+                onClick={openYearPanel}
                 className="mt-1.5 w-full cursor-pointer text-center text-[12px] font-medium text-[#6C5DD3] hover:text-[#5b4fc2]"
               >
                 Jump to year
@@ -172,6 +184,7 @@ export function ReportMonthPicker({ id, value, onChange, onBlur, className }: Re
                   <button
                     key={label}
                     type="button"
+                    onPointerDown={keepPopoverOpen}
                     onClick={() => handleSelectMonth(monthIndex)}
                     className={cn(
                       "h-[40px] cursor-pointer rounded-[6px] px-1 text-[14px] font-medium transition-colors",
@@ -215,6 +228,7 @@ export function ReportMonthPicker({ id, value, onChange, onBlur, className }: Re
             <div className="flex items-center gap-2 border-b border-[#e5e7eb] bg-[#f9fafb] px-3 py-2">
               <button
                 type="button"
+                onPointerDown={keepPopoverOpen}
                 onClick={() => setPanel("month")}
                 className="inline-flex cursor-pointer items-center gap-1 text-[14px] font-medium text-[#6C5DD3] hover:text-[#5b4fc2]"
               >
@@ -237,6 +251,7 @@ export function ReportMonthPicker({ id, value, onChange, onBlur, className }: Re
                       key={year}
                       type="button"
                       data-year={year}
+                      onPointerDown={keepPopoverOpen}
                       onClick={() => handleSelectYear(year)}
                       className={cn(
                         "h-[38px] cursor-pointer rounded-[6px] text-[14px] font-medium transition-colors",
@@ -258,7 +273,7 @@ export function ReportMonthPicker({ id, value, onChange, onBlur, className }: Re
             </div>
           </>
         )}
-      </DropdownMenuContent>
-    </DropdownMenu>
+      </PopoverContent>
+    </Popover>
   )
 }

@@ -75,6 +75,22 @@ export type PayrollUploadFormValues = {
   uploadType: PayrollFrequencyType
 }
 
+export type PayrollUploadItem = {
+  id: number
+  fileName: string
+  storageKey: string
+  mimeType: string | null
+  payrolltype: string | null
+  recordsCreated: number
+  uploadedBy: string | null
+  createdAt: string
+}
+
+export type PayrollUploadListResponse = {
+  items: readonly PayrollUploadItem[]
+  total: number
+}
+
 export type PayrollDetailsFormValues = {
   payrollType: PayrollFrequencyType
   fiscalYearId: string
