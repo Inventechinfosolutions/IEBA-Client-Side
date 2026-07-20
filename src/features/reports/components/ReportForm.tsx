@@ -46,6 +46,7 @@ import {
 } from "../schemas"
 import { ReportWeekCalendarPicker } from "./ReportWeekCalendarPicker"
 import { ReportMonthPicker } from "./ReportMonthPicker"
+import { ReportDatePicker } from "./ReportDatePicker"
 import type {
   ReportEmployeeMultiSelectProps,
   ReportCatalogItem,
@@ -743,25 +744,14 @@ export function ReportForm({ module }: ReportFormProps) {
     return { actualDateFrom: undefined, actualDateTo: undefined }
   }, [selectMonthBy, dateFrom, dateTo, monthVal, yearVal, fiscalYearId, quarter, weekIdVal])
 
-  const periodResetKey = useMemo(
-    () => `${selectMonthBy}|${actualDateFrom ?? ""}|${actualDateTo ?? ""}`,
-    [selectMonthBy, actualDateFrom, actualDateTo],
-  )
-  const prevPeriodResetKeyRef = useRef<string | null>(null)
-
-  useEffect(() => {
-    if (prevPeriodResetKeyRef.current === null) {
-      prevPeriodResetKeyRef.current = periodResetKey
-      return
-    }
-    if (prevPeriodResetKeyRef.current === periodResetKey) return
-    prevPeriodResetKeyRef.current = periodResetKey
-
+  // Clear dependent picks in period onChange handlers (no useEffect). Do not call from
+  // dateFrom/dateTo edits — changing the month in the date picker must not wipe selections.
+  const clearPeriodDependentPicks = useCallback(() => {
     setValue("employeeIds", "", { shouldValidate: true })
     setValue("activityIds", "")
     setValue("programIds", "")
     void trigger(["selectMonthBy", "month", "fiscalYearId", "quarter", "year", "dateFrom", "dateTo"])
-  }, [periodResetKey, setValue, trigger])
+  }, [setValue, trigger])
 
   const currentReportItem = useMemo(() => {
     return departmentReportItems.find((i) => i.key === reportKey)
@@ -1166,7 +1156,7 @@ export function ReportForm({ module }: ReportFormProps) {
     yearQuarterSelectTrigger: string
     dateInputInRowClassName: string
     setValue: any
-    trigger: any
+    clearPeriodDependentPicks: () => void
     fiscalYearId: string
     quarter: string
     selectMonthBy: string
@@ -1186,7 +1176,7 @@ export function ReportForm({ module }: ReportFormProps) {
     yearQuarterSelectTrigger,
     dateInputInRowClassName,
     setValue,
-    trigger,
+    clearPeriodDependentPicks,
     fiscalYearId,
     quarter,
     selectMonthBy,
@@ -1209,10 +1199,7 @@ export function ReportForm({ module }: ReportFormProps) {
                 value={field.value}
                 onValueChange={(v) => {
                   field.onChange(v as "qtr" | "dates" | "month" | "year" | "scheduled")
-                  setValue("employeeIds", "", { shouldValidate: true })
-                  setValue("activityIds", "")
-                  setValue("programIds", "")
-                  void trigger(["selectMonthBy", "month", "fiscalYearId", "quarter", "year", "dateFrom", "dateTo"])
+                  clearPeriodDependentPicks()
                   if (v === "dates") {
                     const now = new Date()
                     const y = now.getFullYear()
@@ -1299,7 +1286,10 @@ export function ReportForm({ module }: ReportFormProps) {
                   render={({ field }) => (
                     <SingleSelectDropdown
                       value={field.value ?? ""}
-                      onChange={field.onChange}
+                      onChange={(val) => {
+                        field.onChange(val)
+                        clearPeriodDependentPicks()
+                      }}
                       onBlur={field.onBlur}
                       options={fiscalYearOptions}
                       placeholder="Select year"
@@ -1328,7 +1318,10 @@ export function ReportForm({ module }: ReportFormProps) {
                 render={({ field }) => (
                   <SingleSelectDropdown
                     value={field.value ?? ""}
-                    onChange={field.onChange}
+                    onChange={(val) => {
+                      field.onChange(val)
+                      clearPeriodDependentPicks()
+                    }}
                     onBlur={field.onBlur}
                     options={quarterOptions}
                     placeholder="Qtr"
@@ -1359,6 +1352,7 @@ export function ReportForm({ module }: ReportFormProps) {
                       value={field.value}
                       onChange={(val) => {
                         field.onChange(val)
+                        clearPeriodDependentPicks()
                         if (val) {
                           const [start, end] = val.split("|")
                           setValue("dateFrom", start)
@@ -1384,7 +1378,10 @@ export function ReportForm({ module }: ReportFormProps) {
               render={({ field }) => (
                 <SingleSelectDropdown
                   value={field.value ?? ""}
-                  onChange={field.onChange}
+                  onChange={(val) => {
+                    field.onChange(val)
+                    clearPeriodDependentPicks()
+                  }}
                   onBlur={field.onBlur}
                   options={fiscalYearOptions}
                   placeholder="Select Year"
@@ -1413,7 +1410,10 @@ export function ReportForm({ module }: ReportFormProps) {
                 <ReportMonthPicker
                   id="reports-month-input"
                   value={field.value ?? ""}
-                  onChange={field.onChange}
+                  onChange={(val) => {
+                    field.onChange(val)
+                    clearPeriodDependentPicks()
+                  }}
                   onBlur={field.onBlur}
                 />
               )}
@@ -1437,7 +1437,10 @@ export function ReportForm({ module }: ReportFormProps) {
                   render={({ field }) => (
                     <SingleSelectDropdown
                       value={field.value ?? ""}
-                      onChange={field.onChange}
+                      onChange={(val) => {
+                        field.onChange(val)
+                        clearPeriodDependentPicks()
+                      }}
                       onBlur={field.onBlur}
                       options={fiscalYearOptions}
                       placeholder="Select Fiscal Year"
@@ -1462,6 +1465,7 @@ export function ReportForm({ module }: ReportFormProps) {
                     value={field.value ?? ""}
                     onChange={(val) => {
                       field.onChange(val)
+                      clearPeriodDependentPicks()
                       const selectedPeriod = timeStudyPeriodOptions.find((opt) => opt.value === val)
                       const nextFrom = normalizeToDateInputValue(selectedPeriod?.startDate)
                       const nextTo = normalizeToDateInputValue(selectedPeriod?.endDate)
@@ -1491,9 +1495,8 @@ export function ReportForm({ module }: ReportFormProps) {
                 name="dateFrom"
                 control={control}
                 render={({ field }) => (
-                  <TitleCaseInput
+                  <ReportDatePicker
                     id="reports-date-from"
-                    type="date"
                     className={dateInputInRowClassName}
                     value={field.value ?? ""}
                     onChange={field.onChange}
@@ -1510,9 +1513,8 @@ export function ReportForm({ module }: ReportFormProps) {
                 name="dateTo"
                 control={control}
                 render={({ field }) => (
-                  <TitleCaseInput
+                  <ReportDatePicker
                     id="reports-date-to"
-                    type="date"
                     className={dateInputInRowClassName}
                     value={field.value ?? ""}
                     onChange={field.onChange}
@@ -1532,13 +1534,11 @@ export function ReportForm({ module }: ReportFormProps) {
                 name="dateFrom"
                 control={control}
                 render={({ field }) => (
-                  <TitleCaseInput
+                  <ReportDatePicker
                     id="reports-date-from"
-                    type="date"
                     className={dateInputInRowClassName}
                     value={field.value ?? ""}
-                    onChange={(e) => {
-                      const val = e.target.value
+                    onChange={(val) => {
                       field.onChange(val)
                       if (currentReportItem?.key === "DSSRPT1" && val) {
                         setValue("dateTo", addDays(val, 27), { shouldValidate: true })
@@ -1562,9 +1562,8 @@ export function ReportForm({ module }: ReportFormProps) {
                 name="dateTo"
                 control={control}
                 render={({ field }) => (
-                  <TitleCaseInput
+                  <ReportDatePicker
                     id="reports-date-to"
-                    type="date"
                     className={dateInputInRowClassName}
                     value={field.value ?? ""}
                     onChange={field.onChange}
@@ -1738,7 +1737,10 @@ export function ReportForm({ module }: ReportFormProps) {
                 render={({ field }) => (
                   <SingleSelectDropdown
                     value={field.value ?? ""}
-                    onChange={field.onChange}
+                    onChange={(val) => {
+                      field.onChange(val)
+                      clearPeriodDependentPicks()
+                    }}
                     onBlur={field.onBlur}
                     options={fiscalYearOptions}
                     placeholder="Select Fiscal Year"
@@ -1762,7 +1764,7 @@ export function ReportForm({ module }: ReportFormProps) {
               yearQuarterSelectTrigger={yearQuarterSelectTrigger}
               dateInputInRowClassName={dateInputInRowClassName}
               setValue={setValue}
-              trigger={trigger}
+              clearPeriodDependentPicks={clearPeriodDependentPicks}
               fiscalYearId={fiscalYearId}
               quarter={quarter}
               selectMonthBy={selectMonthBy}
@@ -1793,7 +1795,7 @@ export function ReportForm({ module }: ReportFormProps) {
                 yearQuarterSelectTrigger={yearQuarterSelectTrigger}
                 dateInputInRowClassName={dateInputInRowClassName}
                 setValue={setValue}
-                trigger={trigger}
+                clearPeriodDependentPicks={clearPeriodDependentPicks}
                 fiscalYearId={fiscalYearId}
                 quarter={quarter}
                 selectMonthBy={selectMonthBy}

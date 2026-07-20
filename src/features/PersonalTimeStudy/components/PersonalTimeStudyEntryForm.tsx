@@ -644,7 +644,12 @@ export function PersonalTimeStudyEntryForm({
 }: PersonalTimeStudyEntryFormProps) {
   const { user } = useAuth()
   const userId = propsUserId || user?.id || ""
-  const username = propsUsername || user?.name || ""
+  // Build the display name as "FirstName LastName" (legacy IEBA order). The auth user's
+  // `name` field is "LastName FirstName" (display order), so prefer first/last name parts.
+  const selfName = user
+    ? `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() || user.name || ""
+    : ""
+  const username = propsUsername || selfName
 
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false)
   const [parents, setParents] = useState<TimeEntryParentRow[]>([createParent()])
