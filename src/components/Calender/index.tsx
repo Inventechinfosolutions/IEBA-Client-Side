@@ -114,19 +114,19 @@ export const CALENDAR_LOCALE = "en-GB"
 
 /**
  * First day of each calendar week row (`Date.getDay()` index: 0=Sun … 6=Sat).
- * Product weeks are Mon–Sun. Do not use `DateTimeFormat.resolvedOptions().weekday`
+ * Product weeks are Sun–Sat. Do not use `DateTimeFormat.resolvedOptions().weekday`
  * — that option is a format style ("short"/"long"), not the week-start weekday.
  */
-export const CALENDAR_FIRST_DAY_OF_WEEK = 1 // Monday
+export const CALENDAR_FIRST_DAY_OF_WEEK = 0 // Sunday
 
-/** Monday (=1) … offset within the Mon–Sun week row for a JS weekday (0=Sun … 6=Sat). */
+/** Sunday (=0) … offset within the Sun–Sat week row for a JS weekday (0=Sun … 6=Sat). */
 export function getOffsetWithinCalendarWeek(jsWeekday: number): number {
   let offset = jsWeekday - CALENDAR_FIRST_DAY_OF_WEEK
   if (offset < 0) offset += 7
   return offset
 }
 
-/** Local Monday that starts the calendar week containing `date`. */
+/** Local Sunday that starts the calendar week containing `date`. */
 export function getCalendarWeekStartDate(date: Date): Date {
   const offset = getOffsetWithinCalendarWeek(date.getDay())
   return new Date(date.getFullYear(), date.getMonth(), date.getDate() - offset)
@@ -137,7 +137,7 @@ export function formatWeekStartUtcKey(date: Date): string {
   return toIsoYmdFromDate(date)
 }
 
-/** Week-start key for a YYYY-MM-DD date, aligned with AppCalender grid rows (Mon–Sun). */
+/** Week-start key for a YYYY-MM-DD date, aligned with AppCalender grid rows (Sun–Sat). */
 export function getCalendarWeekStartKeyFromIso(dateStr: string): string {
   const [y, m, d] = dateStr.split("-").map(Number)
   const date = new Date(y, m - 1, d)
@@ -200,7 +200,7 @@ const AppCalender = ({
     return currentYear - 10 + i;
   });
 
-  // Short weekday labels Sun→Sat, then rotate so Mon is first (CALENDAR_FIRST_DAY_OF_WEEK).
+  // Short weekday labels Sun→Sat, then rotate to start at CALENDAR_FIRST_DAY_OF_WEEK.
   const daysOfWeek = Array.from({ length: 7 }, (_, i) => {
     const date = new Date(2021, 0, 3 + i); // Start with a Sunday
     return date.toLocaleString(locale, { weekday: 'short' });
