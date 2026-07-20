@@ -88,7 +88,7 @@ function MinDecimalField({
   }
 
   return (
-    <div className={cn("space-y-0.5", showDecimalHint ? "w-[92px]" : "w-[60px]")}>
+    <div className={cn("space-y-0.5", showDecimalHint ? "w-[92px]" : "w-[75px]")}>
       <Label className={labelClassName}>{label}</Label>
       <div className="relative">
         <TitleCaseInput
@@ -169,6 +169,7 @@ export type TimeEntryParentRow = {
   departmentId?: number
   isLeave?: boolean
   apportioning?: boolean
+  apportioningType?: string
   leaveid?: number
   status?: string
   recordType?: string
@@ -872,7 +873,15 @@ export function PersonalTimeStudyEntryForm({
     if (departments?.length === 1) {
       return departments[0].requiresSaveAndSubmitButtonMoveToTop === true
     }
-    const activeParents = parents.filter(p => !p.isLeave && !p.apportioning && !!p.tsProgram)
+    const activeParents = parents.filter(p => {
+      if (p.isLeave || !p.tsProgram) return false
+      if (p.apportioning) {
+        const isManual = p.apportioningType?.toUpperCase() === "MANUAL"
+        const isRejectedOrOpened = ["rejected", "opened"].includes(p.status?.toLowerCase() ?? "")
+        return isManual && isRejectedOrOpened
+      }
+      return true
+    })
     if (activeParents.length === 0) return false
     return activeParents.every(p => getRowSettings(p).moveSaveSubmitToTop)
   }, [parents, getRowSettings, apportioningConfig?.departments])
@@ -899,7 +908,11 @@ export function PersonalTimeStudyEntryForm({
           return false
         }
         if (r.apportioning === true) {
-          return false
+          const isManual = r.apportioningType?.toUpperCase() === "MANUAL"
+          const isRejectedOrOpened = ["rejected", "opened", "draft"].includes(r.status?.toLowerCase() ?? "")
+          if (!(isManual && isRejectedOrOpened)) {
+            return false
+          }
         }
         if (r.leaveid) {
           const leave = leaveRecords?.find((l) => Number(l.id) === Number(r.leaveid))
@@ -957,6 +970,7 @@ export function PersonalTimeStudyEntryForm({
             leaveid: rec.leaveid ?? undefined,
             isLeave: rec.leaveid ? true : undefined,
             apportioning: rec.apportioning,
+            apportioningType: rec.apportioningType,
           }
           parentMap.set(rec.id, parentRow)
         }
@@ -1027,9 +1041,15 @@ export function PersonalTimeStudyEntryForm({
         return b.start.localeCompare(a.start)
       })
       const final = combined.length > 0 ? combined : [createParent()]
-      // Freeze snapshot of server-loaded rows so handleSave can detect what changed.
-      // Only rows with a dbId (came from the server) are snapshotted.
-      parentsSnapshotRef.current = final.filter(p => !!p.dbId && !p.isLeave && !p.apportioning && !p.leaveid)
+      parentsSnapshotRef.current = final.filter(p => {
+        if (!p.dbId || p.isLeave || p.leaveid) return false
+        if (p.apportioning) {
+          const isManual = p.apportioningType?.toUpperCase() === "MANUAL"
+          const isRejectedOrOpened = ["rejected", "opened"].includes(p.status?.toLowerCase() ?? "")
+          return isManual && isRejectedOrOpened
+        }
+        return true
+      })
       setParents(final)
 
     }
@@ -1266,7 +1286,15 @@ export function PersonalTimeStudyEntryForm({
   const mapToPayload = (overrideStatus?: string, changedOnly = false): any[] => {
     const deptId = dropdownData?.[0]?.departmentId
     return parents
-      .filter((p) => !p.isLeave && !p.leaveid && !p.apportioning)
+      .filter((p) => {
+        if (p.isLeave || p.leaveid) return false
+        if (p.apportioning) {
+          const isManual = p.apportioningType?.toUpperCase() === "MANUAL"
+          const isRejectedOrOpened = ["rejected", "opened"].includes(p.status?.toLowerCase() ?? "")
+          return isManual && isRejectedOrOpened
+        }
+        return true
+      })
       .filter((p) => {
         if (!changedOnly) return true
         if (!p.dbId) return true // brand-new row → always send
@@ -1295,6 +1323,8 @@ export function PersonalTimeStudyEntryForm({
           supportingDocs: p.supportingDocs,
           status: overrideStatus || p.status || "draft",
           recordType: p.recordType || "NORMAL",
+          apportioning: p.apportioning || undefined,
+          apportioningDesc: p.apportioning ? p.description : undefined,
           multiCodeRecords: p.subRows.map((s) => {
             const subDeptId = resolveDepartmentIdForProgram(s.studyProgram)
             const subUsesDecimal = hideTime || !!s.activityTimeMessage
@@ -1318,7 +1348,14 @@ export function PersonalTimeStudyEntryForm({
 
   const validateEntries = () => {
     for (const p of parents) {
-      if (p.isLeave || p.leaveid || p.apportioning) continue
+      if (p.isLeave || p.leaveid) continue
+      if (p.apportioning) {
+        const isManual = p.apportioningType?.toUpperCase() === "MANUAL"
+        const isRejectedOrOpened = ["rejected", "opened"].includes(p.status?.toLowerCase() ?? "")
+        if (!(isManual && isRejectedOrOpened)) {
+          continue
+        }
+      }
       const hideTime = resolveEffectiveHideTime(p)
       if (hideTime) {
         if (!p.totalMin || !p.tsProgram || !p.serviceActivity) {
@@ -1399,7 +1436,15 @@ export function PersonalTimeStudyEntryForm({
     // If the day has no saved records yet (fresh entry), skip the guard entirely.
     const hasServerRecords = parentsSnapshotRef.current.length > 0
     if (hasServerRecords) {
-      const editableParents = parents.filter(p => !p.isLeave && !p.leaveid && !p.apportioning)
+      const editableParents = parents.filter(p => {
+        if (p.isLeave || p.leaveid) return false
+        if (p.apportioning) {
+          const isManual = p.apportioningType?.toUpperCase() === "MANUAL"
+          const isRejectedOrOpened = ["rejected", "opened"].includes(p.status?.toLowerCase() ?? "")
+          return isManual && isRejectedOrOpened
+        }
+        return true
+      })
       const hasChanges = editableParents.some(p => {
         if (!p.dbId) return true // new row → always counts as a change
         const snap = parentsSnapshotRef.current.find(s => s.dbId === p.dbId)
@@ -1736,12 +1781,16 @@ export function PersonalTimeStudyEntryForm({
         {parents.map((parent) => {
           const totalDisplay = computeDurationMinutes(parent.start, parent.end)
           const isLeaveRow = parent.isLeave
-          const isApportionedRow = parent.apportioning === true
+          const isManualApportioningRejectedOrOpened =
+            parent.apportioning === true &&
+            parent.apportioningType?.toUpperCase() === "MANUAL" &&
+            ["rejected", "opened", "draft"].includes(parent.status?.toLowerCase() ?? "")
+          const isApportionedRow = parent.apportioning === true && !isManualApportioningRejectedOrOpened
           const rowSettings = getRowSettings(parent)
           const effectiveHideTime = resolveEffectiveHideTime(parent)
           const hideDocs = rowSettings.hideSupportingDoc
           const hideNotes = rowSettings.hideDescriptionActivityNote
-          const showGreenPlus = !readonly && !isLeaveRow && !isApportionedRow && isMulticodeAllowedForParent(parent)
+          const showGreenPlus = !readonly && !isLeaveRow && !parent.apportioning && isMulticodeAllowedForParent(parent)
           const showDelete = !readonly && canDeleteParent(parent.id)
 
           return (
@@ -1763,19 +1812,26 @@ export function PersonalTimeStudyEntryForm({
                           !e.shiftKey &&
                           isFetchingActivitiesForProgram(parent.tsProgram, parent.departmentId)
                         ) {
-                          e.preventDefault();
-                          let attempts = 0;
-                          const poll = () => {
-                            attempts++;
-                            const row = document.querySelector<HTMLElement>(`[data-pts-row="${parent.id}"]`);
-                            const activityInput = row?.querySelector<HTMLInputElement>("[data-pts-activity]");
-                            if (activityInput && !activityInput.disabled) {
-                              activityInput.focus();
-                            } else if (attempts < 100) {
-                              setTimeout(poll, 50);
-                            }
-                          };
-                          setTimeout(poll, 50);
+                          e.preventDefault()
+                          const row = document.querySelector<HTMLElement>(`[data-pts-row="${parent.id}"]`)
+                          if (!row) return
+                          const tryFocusActivity = () => {
+                            const activityInput = row.querySelector<HTMLInputElement>("[data-pts-activity]")
+                            if (!activityInput || activityInput.disabled) return false
+                            activityInput.focus()
+                            return true
+                          }
+                          if (tryFocusActivity()) return
+                          // Wait until Activity API finishes (input enabled) — no attempt/time cap.
+                          const observer = new MutationObserver(() => {
+                            if (tryFocusActivity()) observer.disconnect()
+                          })
+                          observer.observe(row, {
+                            attributes: true,
+                            attributeFilter: ["disabled"],
+                            childList: true,
+                            subtree: true,
+                          })
                         }
                       },
                     }}
@@ -1891,7 +1947,7 @@ export function PersonalTimeStudyEntryForm({
                     onChange={(v) => updateParent(parent.id, { totalMin: v })}
                   />
                 ) : (
-                  <div className="w-[60px] space-y-0.5">
+                  <div className="w-[75px] space-y-0.5">
                     <Label className="text-[11px] text-muted-foreground">Min. <RequiredMark /></Label>
                     <TitleCaseInput
                       type="number"

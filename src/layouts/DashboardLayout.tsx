@@ -46,6 +46,12 @@ export function DashboardLayout() {
   const { data: mimic } = useMimicSession()
   const profileImageQuery = useGetProfileImage(user?.id)
   const countyName = user?.countyName?.trim() || ""
+  const isIebaCounty = countyName.toLowerCase() === "ieba"
+  const welcomeLabel = isIebaCounty
+    ? "Bits of Time Welcome To Testing county"
+    : countyName
+      ? `Bits of Time Welcome To ${countyName}`
+      : "Bits of Time"
   const [changePasswordOpen, setChangePasswordOpen] = useState(false)
   const [changeCountyOpen, setChangeCountyOpen] = useState(false)
   const [notificationsOpen, setNotificationsOpen] = useState(false)
@@ -81,10 +87,10 @@ export function DashboardLayout() {
         <header className="sticky top-0 z-50 flex h-[72px] shrink-0 items-center justify-between gap-4 bg-white px-6 shadow-[0_2px_10px_rgba(0,0,0,0.06)]">
           <div className="flex items-center gap-3">
             <SidebarTrigger className="-ml-2 rounded-full border border-[#E5E7EB] bg-white text-[#4B5563] hover:bg-[#F3F4F6]" />
-            <span className="text-[17px] text-[#6C5DD3]">
-              {countyName
-                ? `Bits of Time Welcome To ${countyName}`
-                : "Bits of Time"}
+            <span
+              className={`text-[17px] ${isIebaCounty ? "text-green-600" : "text-[#6C5DD3]"}`}
+            >
+              {welcomeLabel}
             </span>
           </div>
           <div className="flex flex-1 justify-center -translate-60 -translate-y-3">

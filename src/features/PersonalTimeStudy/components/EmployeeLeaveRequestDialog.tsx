@@ -101,7 +101,7 @@ function MinDecimalField({
   }
 
   return (
-    <div className={cn("space-y-0.5", showDecimalHint ? "w-[92px]" : "w-[60px]")}>
+    <div className={cn("space-y-0.5", showDecimalHint ? "w-[92px]" : "w-[75px]")}>
       <Label className={labelClassName}>{label}</Label>
       <div className="relative">
         <TitleCaseInput

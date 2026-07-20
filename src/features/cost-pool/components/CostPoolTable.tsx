@@ -316,7 +316,7 @@ function CostPoolEditDialogContent({
   }, [detailQuery.data])
 
   const readOnly = useMemo(() => {
-    return detailQuery.data?.name?.endsWith("StandbyCostPool") ?? false
+    return detailQuery.data?.assignmentType === "autoassigned"
   }, [detailQuery.data])
 
   if (detailQuery.isError) {
@@ -616,7 +616,8 @@ export function CostPoolTable({
               {["Cost Pool", "Department", "Activities", "Active", "Action"].map((column) => (
                 <TableHead
                   key={column}
-                  className={`h-[48px] align-middle border-r border-[#FFFFFF66] bg-[#6C5DD3] px-[12px] py-[8px] text-[14px] font-normal leading-[1.2] whitespace-normal break-normal text-white font-['Roboto',sans-serif] last:border-r-0 ${["Department", "Active", "Action"].includes(column)
+                  className={`h-[48px] align-middle border-r border-[#FFFFFF66] bg-[#6C5DD3] px-[12px] py-[8px] text-[14px] font-normal leading-[1.2] whitespace-normal break-normal text-white font-['Roboto',sans-serif] last:border-r-0 ${
+                    ["Department", "Activities", "Active", "Action"].includes(column)
                       ? "text-center"
                       : "text-left"
                     }`}
@@ -755,7 +756,7 @@ export function CostPoolTable({
                           setEditOpen(true)
                         }}
                       >
-                        {row.costPool.endsWith("StandbyCostPool") ? (
+                        {row.assignmentType === "autoassigned" ? (
                           <Eye className="h-4 w-4" />
                         ) : (
                           <img

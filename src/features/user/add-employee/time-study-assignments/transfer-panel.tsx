@@ -39,7 +39,8 @@ function ReadOnlyCheckbox() {
   )
 }
 
-function RowCheckbox({ isSelected, readOnly }: { isSelected: boolean; readOnly?: boolean }) {
+function RowCheckbox({ isSelected, readOnly, hideCheckbox }: { isSelected: boolean; readOnly?: boolean; hideCheckbox?: boolean }) {
+  if (hideCheckbox) return <div className="size-4.5 shrink-0" />
   if (readOnly) return <ReadOnlyCheckbox />
   return (
     <div
@@ -194,7 +195,7 @@ function TransferRow({
         </TooltipProvider>
         <RowLabel item={item} isSelected={isSelected} readOnly={readOnly} />
       </div>
-      <RowCheckbox isSelected={isSelected} readOnly={readOnly} />
+      <RowCheckbox isSelected={isSelected} readOnly={readOnly} hideCheckbox={item.id.includes("apportioning-")} />
     </>
   )
 
@@ -309,6 +310,43 @@ function JobPoolBlock({
   )
 }
 
+function ApportioningBlock({
+  section,
+  minLevel,
+}: {
+  section: AddEmployeeTimeStudyJobPoolSection
+  minLevel: number
+}) {
+  const groups = groupJobPoolItemsByLabel(section.items)
+
+  return (
+    <div
+      className="flex cursor-not-allowed flex-col select-none"
+      role="group"
+      aria-label={section.sectionTitle}
+      aria-disabled="true"
+      title="Apportioning assignments are read-only"
+    >
+      <div className="grid h-7 grid-cols-[minmax(0,1fr)_auto] cursor-not-allowed items-center gap-2 bg-[#F3F4F6] pl-4 pr-2 text-[10px] font-semibold text-[#6C5DD3]">
+        <span className="min-w-0">{section.sectionTitle}</span>
+        <div className="size-4.5 shrink-0" />
+      </div>
+      {groups.map((group) => (
+        <div key={group.label || "default"} className="flex cursor-not-allowed flex-col">
+          {group.label ? (
+            <div className="cursor-not-allowed px-4 py-1">
+              <span className="inline-flex items-center justify-center rounded-[6px] border border-[#E5E7EB] bg-white px-3 py-1 text-[10px] font-bold text-[#374151] shadow-sm">
+                {group.label}
+              </span>
+            </div>
+          ) : null}
+          <ItemTree items={group.items} selectedIds={[]} minLevel={minLevel} readOnly />
+        </div>
+      ))}
+    </div>
+  )
+}
+
 export function TransferPanel({
   title,
   items,
@@ -320,18 +358,23 @@ export function TransferPanel({
   selectedDept,
   isLoading = false,
   jobPoolSection = null,
+  apportioningSection = null,
 }: AddEmployeeTimeStudyTransferPanelProps) {
   const filteredJobPoolSection = jobPoolSection
     ? filterJobPoolSection(jobPoolSection, searchValue)
     : null
+  const filteredApportioningSection = apportioningSection
+    ? filterJobPoolSection(apportioningSection, searchValue)
+    : null
   const hasMainContent = items.length > 0
-  const hasAnyContent = hasMainContent || Boolean(filteredJobPoolSection)
+  const hasAnyContent = hasMainContent || Boolean(filteredJobPoolSection) || Boolean(filteredApportioningSection)
   const allSelected = items.length > 0 && items.every((item) => selectedIds.includes(item.id))
 
   // Compute minLevel from all visible items so depth is relative to the shallowest item shown
   const allLevels = [
     ...items.map((i) => i.level ?? 1),
     ...(filteredJobPoolSection?.items ?? []).map((i) => i.level ?? 1),
+    ...(filteredApportioningSection?.items ?? []).map((i) => i.level ?? 1),
   ]
   const minLevel = allLevels.length > 0 ? Math.min(...allLevels) : 1
 
@@ -354,10 +397,15 @@ export function TransferPanel({
             {filteredJobPoolSection ? (
               <JobPoolBlock section={filteredJobPoolSection} minLevel={minLevel} />
             ) : null}
+            {filteredApportioningSection ? (
+              <div className={filteredJobPoolSection ? "mt-2 border-t border-[#E5E7EB] pt-2" : ""}>
+                <ApportioningBlock section={filteredApportioningSection} minLevel={minLevel} />
+              </div>
+            ) : null}
             {hasMainContent ? (
               <div
                 className={
-                  filteredJobPoolSection
+                  filteredJobPoolSection || filteredApportioningSection
                     ? "mt-2 flex flex-col border-t border-[#E5E7EB] pt-2"
                     : "flex flex-col"
                 }

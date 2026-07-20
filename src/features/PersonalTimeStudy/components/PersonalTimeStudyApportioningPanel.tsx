@@ -81,31 +81,40 @@ export function PersonalTimeStudyApportioningPanel({
   apportioningRecords,
   autoApportioning,
 }: ApportioningPanelProps) {
+  const filteredRecords = useMemo(() => {
+    return (apportioningRecords || []).filter((r) => {
+      const isManual = r.apportioningType === "MANUAL"
+      const statusLower = r.status?.toLowerCase()
+      const isRejectedOrOpened = statusLower === "rejected" || statusLower === "opened" || statusLower === "draft"
+      return !(isManual && isRejectedOrOpened)
+    })
+  }, [apportioningRecords])
+
   const shouldRender = useMemo(
-    () => (apportioningRecords || []).length > 0,
-    [apportioningRecords],
+    () => (filteredRecords || []).length > 0,
+    [filteredRecords],
   )
 
-  // ── Build flat program / activity lists from apportioningRecords ──────────────────
+  // ── Build flat program / activity lists from filteredRecords ──────────────────
   const allPrograms = useMemo(() => {
-    const list = (apportioningRecords || []).map((r) => ({
+    const list = (filteredRecords || []).map((r) => ({
       id: String(r.programid),
       code: r.programcode,
       name: r.programname,
       departmentCode: r.departmentcode,
     }))
     return Array.from(new Map(list.map((p: any) => [p.id, p])).values()) as any[]
-  }, [apportioningRecords])
+  }, [filteredRecords])
 
   const allActivities = useMemo(() => {
-    const list = (apportioningRecords || []).map((r) => ({
+    const list = (filteredRecords || []).map((r) => ({
       id: String(r.activityid),
       code: r.activitycode,
       name: r.activityname,
       departmentCode: r.departmentcode,
     }))
     return Array.from(new Map(list.map((a: any) => [a.id, a])).values()) as any[]
-  }, [apportioningRecords])
+  }, [filteredRecords])
 
   // ── Build the flat list of display rows ───────────────────────────────────
   const displayRows = useMemo(() => {
@@ -120,7 +129,7 @@ export function PersonalTimeStudyApportioningPanel({
       backendRecord?: any
     }> = []
 
-    for (const rec of (apportioningRecords || [])) {
+    for (const rec of (filteredRecords || [])) {
       const dept = apportioningConfig?.departments?.find(
         (d) => Number(d.departmentId) === Number(rec.departmentId)
       )
@@ -139,7 +148,7 @@ export function PersonalTimeStudyApportioningPanel({
     }
 
     return rows
-  }, [apportioningConfig, apportioningRecords, autoApportioning])
+  }, [apportioningConfig, filteredRecords, autoApportioning])
 
   // ── Row selection state (UI-only) ─────────────────────────────────────────
   const [rowStates, setRowStates] = useState<Record<string, ApportioningRowState>>({})
@@ -336,7 +345,7 @@ export function PersonalTimeStudyApportioningPanel({
                       </HoverCardTrigger>
                       <HoverCardContent className="w-fit max-w-xs p-3 z-[100] bg-white border border-gray-100 shadow-xl rounded-[8px] text-[#111827] dark:bg-[#18181b] dark:border-[#27272a] dark:text-[#f4f4f5]" align="end" side="top">
                         <div className="text-[12px] font-medium leading-relaxed">
-                          {rec?.apportioningDesc || "No description available"}
+                          {rec?.apportioningDesc || rec?.description || "No description available"}
                         </div>
                       </HoverCardContent>
                     </HoverCard>

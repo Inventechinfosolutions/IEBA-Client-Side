@@ -436,6 +436,7 @@ function parseUserProgramsActivitiesActivityItem(
     activityId: Number.isFinite(activityId) ? activityId : undefined,
     assigned: a.assigned === true,
     assignedByJobPool: a.assignedByJobPool === true,
+    assignmentType: typeof a.assignmentType === "string" ? a.assignmentType : null,
   }
 }
 
@@ -468,6 +469,7 @@ function parseUserProgramsActivitiesProgramItem(
     type,
     parentId: Number.isFinite(parentId) ? parentId : parentId === null ? null : undefined,
     isMultiCode: p.isMultiCode === true,
+    assignmentType: typeof p.assignmentType === "string" ? p.assignmentType : null,
   }
 }
 
