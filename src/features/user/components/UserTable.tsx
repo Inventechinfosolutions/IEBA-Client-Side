@@ -79,7 +79,7 @@ export function UserTable({ rows, isLoading, onEditRow, onSwitchUser, sortState,
               <TableHead
                 key={header}
                 className={`h-10 bg-[var(--primary)] p-[8px] text-[12px] leading-[1.15] font-normal text-white whitespace-normal break-words ${
-                  idx === headers.length - 1 ? "border-r-0" : "border-r border-white/50"
+                  idx === headers.length - 1 ? "border-r-0" : "border-r border-[#FFFFFF66]"
                 } ${idx >= 3 ? "text-center" : ""}`}
               >
                 {idx === 0 ? (

@@ -516,7 +516,7 @@ export function ParticipantsListForm({
               ) : (
                 <div className="p-4">
                   {/* Department row */}
-                  <div className="grid h-7 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 bg-[#F3F4F6] pl-4 pr-5 text-[12px] font-semibold text-[#374151]">
+                  <div className="grid h-7 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 bg-[#F3F4F6] dark:bg-[#121215] pl-4 pr-5 text-[12px] font-semibold text-[#374151] dark:text-[#f4f4f5]">
                     <span className="min-w-0">{selectedDepartmentLabel || "—"}</span>
                     <button
                       type="button"
@@ -531,19 +531,21 @@ export function ParticipantsListForm({
                       className={`flex size-4.5 shrink-0 items-center justify-center rounded-[6px] border shadow-sm transition-all ${departmentUsers.length > 0 &&
                         selectedUserIds.length === departmentUsers.length
                         ? "border-[#6C5DD3] bg-[#6C5DD3] text-white"
-                        : "border-[#E5E7EB] bg-white text-transparent hover:border-[#D1D5DB]"
+                        : "border-[#6C5DD3]! dark:border-[#7566d4]! bg-white dark:bg-[#09090b] text-transparent hover:border-[#6C5DD3]"
                         }`}
                     >
-                      <Check className="size-3.5 stroke-[3]" />
+                      {departmentUsers.length > 0 && selectedUserIds.length === departmentUsers.length && (
+                        <Check className="size-3.5 stroke-[3]" />
+                      )}
                     </button>
                   </div>
 
                   {/* Roles list */}
-                  <div className="border-t border-[#E5E7EB] bg-white">
+                  <div className="border-t border-[#E5E7EB] dark:border-[#27272a] bg-white dark:bg-[#09090b]">
                     <ScrollArea className="h-[360px] pb-2">
                       <div className="flex flex-col">
                         <div className="px-6 py-0.5">
-                          <span className="inline-flex items-center justify-center rounded-[6px] border border-[#E5E7EB] bg-white px-3 py-1 text-[12px] font-bold text-[#374151] shadow-sm">
+                          <span className="inline-flex items-center justify-center rounded-[6px] border border-[#E5E7EB] dark:border-[#27272a] bg-white dark:bg-[#18181b] px-3 py-1 text-[12px] font-bold text-[#374151] dark:text-[#f4f4f5] shadow-sm">
                             Users
                           </span>
                         </div>
@@ -553,32 +555,33 @@ export function ParticipantsListForm({
                             `${u.firstName ?? ""} ${u.lastName ?? ""}`.trim() ||
                             (u.user?.loginId ?? "").trim() ||
                             "—"
+                          const isUserChecked = selectedUserIds.includes(u.id)
                           return (
                             <button
                               key={u.id}
                               type="button"
                               onClick={() => toggleUserOne(u.id)}
-                              className={`group relative grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-2 py-1 pl-[60px] pr-5 text-left transition-colors ${selectedUserIds.includes(u.id)
-                                ? "bg-[#F3F0FF]"
-                                : "hover:bg-[#F9FAFB]"
+                              className={`group relative grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-2 py-1 pl-[60px] pr-5 text-left transition-colors ${isUserChecked
+                                ? "bg-[#F3F0FF] dark:bg-[#1c1538]"
+                                : "hover:bg-[#F9FAFB] dark:hover:bg-[#121215]"
                                 }`}
                             >
                               <div className="min-w-0 pr-2">
                                 <div className="absolute left-6 top-0.5 flex h-full w-8 items-center justify-center">
-                                  <div className="absolute left-4 top-0 h-full w-[1.5px] bg-[#D1D5DB]" />
-                                  <div className="absolute left-4 top-1/2 h-[1.5px] w-3 bg-[#D1D5DB]" />
+                                  <div className="absolute left-4 top-0 h-full w-[1.5px] bg-[#D1D5DB] dark:bg-[#3f3f46]" />
+                                  <div className="absolute left-4 top-1/2 h-[1.5px] w-3 bg-[#D1D5DB] dark:bg-[#3f3f46]" />
                                 </div>
-                                <div className=" text-[14px] font-normal text-[#111827] whitespace-normal break-words">
+                                <div className="text-[14px] font-normal text-[#111827] dark:text-[#f4f4f5] whitespace-normal break-words">
                                   {label}
                                 </div>
                               </div>
                               <div
-                                className={`flex size-4.5 shrink-0 items-center justify-center rounded-[6px] border shadow-sm transition-all ${selectedUserIds.includes(u.id)
+                                className={`flex size-4.5 shrink-0 items-center justify-center rounded-[6px] border shadow-sm transition-all ${isUserChecked
                                   ? "border-[#6C5DD3] bg-[#6C5DD3] text-white"
-                                  : "border-[#E5E7EB] bg-white text-transparent hover:border-[#D1D5DB]"
+                                  : "border-[#6C5DD3]! dark:border-[#7566d4]! bg-white dark:bg-[#09090b] text-transparent hover:border-[#6C5DD3]"
                                   }`}
                               >
-                                <Check className="size-3.5 stroke-[3]" />
+                                {isUserChecked && <Check className="size-3.5 stroke-[3]" />}
                               </div>
                             </button>
                           )
@@ -602,7 +605,7 @@ export function ParticipantsListForm({
             <Button
               type="button"
               variant="secondary"
-              className="h-10 w-[86px] rounded-[6px] bg-[#D9D9D9] text-[14px] font-medium text-black hover:bg-[#CDCDCD]"
+              className="h-10 w-[86px] rounded-[6px] bg-[#F3F4F6] dark:bg-[#27272a] text-[14px] font-medium text-[#111827] dark:text-[#f4f4f5] hover:bg-[#E5E7EB] dark:hover:bg-[#3f3f46]"
               onClick={() => onOpenChange(false)}
             >
               Exit

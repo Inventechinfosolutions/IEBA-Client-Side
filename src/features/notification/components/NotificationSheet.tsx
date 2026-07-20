@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { toast } from "sonner"
+import { cn } from "@/lib/utils"
 import {
   Sheet,
   SheetContent,
@@ -97,7 +98,7 @@ export function NotificationSheet({ open, onOpenChange }: NotificationSheetProps
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-[450px] p-0 sm:max-w-[450px] bg-white border-l border-[#E5E7EB]">
+      <SheetContent className="w-[450px] p-0 sm:max-w-[450px] bg-white border-l border-[#E5E7EB] dark:bg-[#18181b] dark:border-[#27272a]">
         <SheetHeader className="p-8 pb-4">
           <SheetTitle className="text-[28px] font-bold text-[#6C5DD3]">
             Notifications
@@ -137,39 +138,39 @@ export function NotificationSheet({ open, onOpenChange }: NotificationSheetProps
               </p>
             </div>
           ) : (
-            <div className="divide-y divide-[#E5E7EB] border-t border-[#E5E7EB]">
+            <div className="divide-y divide-[#E5E7EB] border-t border-[#E5E7EB] dark:divide-[#27272a] dark:border-[#27272a]">
               {notifications.map((notification: Notification) => {
                 const isExpanded = expandedNotificationId === notification.id
                 const isRead = notification.read || Boolean(locallyReadIds[notification.id])
 
                 return (
-                  <div key={notification.id} className="relative bg-white border-b border-[#E5E7EB]">
+                  <div key={notification.id} className={cn("relative bg-white border-b border-[#E5E7EB] transition-colors dark:bg-[#18181b] dark:border-[#27272a]", isExpanded && "dark:bg-[#6c5dd3]/25")}>
                     <div
                       onClick={() => void handleToggleExpand(notification)}
-                      className="flex w-full items-start gap-4 px-8 py-5 text-left hover:bg-gray-50/50 transition-colors cursor-pointer"
+                      className={cn("flex w-full items-start gap-4 px-8 py-5 text-left transition-colors cursor-pointer hover:bg-gray-50/50 dark:hover:bg-[#6c5dd3]/15", isExpanded && "dark:hover:bg-[#6c5dd3]/25")}
                     >
                       <div className="flex items-start gap-3 shrink-0">
                         <div className="mt-1.5">
                           {isExpanded ? (
-                            <Play className="size-3 rotate-90 fill-current text-black" />
+                            <Play className="size-3 rotate-90 fill-current text-black dark:text-white" />
                           ) : (
-                            <Play className="size-3 fill-current text-black" />
+                            <Play className="size-3 fill-current text-black dark:text-white" />
                           )}
                         </div>
                         {!isRead && (
                           <div className="relative">
-                            <Megaphone className="size-5 text-gray-600" />
-                            <div className="absolute -top-0.5 -right-0.5 size-2 bg-[#FF4D4F] rounded-full border-2 border-white" />
+                            <Megaphone className="size-5 text-gray-600 dark:text-zinc-300" />
+                            <div className="absolute -top-0.5 -right-0.5 size-2 bg-[#FF4D4F] rounded-full border-2 border-white dark:border-[#18181b]" />
                           </div>
                         )}
                       </div>
 
                       <div className="flex-1 min-w-0 pr-8">
                         <div className="flex flex-col gap-1">
-                          <h4 className={`text-[15px] ${isRead ? "font-normal text-gray-500" : "font-bold text-black"}`}>
+                          <h4 className={cn("text-[15px]", isRead ? "font-normal text-gray-500 dark:text-zinc-400" : "font-bold text-black dark:text-white", isExpanded && "dark:text-white")}>
                             {notification.title}
                           </h4>
-                          <div className="flex items-center justify-between text-[13px] text-gray-500">
+                          <div className={cn("flex items-center justify-between text-[13px] text-gray-500 dark:text-zinc-400", isExpanded && "dark:text-zinc-300")}>
                             <span>Sent By: {notification.senderName || "admin ieba"}</span>
                             <span>{formatTimestamp(notification.createdAt)}</span>
                           </div>
@@ -177,14 +178,14 @@ export function NotificationSheet({ open, onOpenChange }: NotificationSheetProps
 
                         {isExpanded && (
                           <div className="mt-6 flex items-start justify-between gap-6 pb-2 animate-in fade-in slide-in-from-top-2 duration-200">
-                            <p className="text-[15px] text-gray-900 leading-relaxed flex-1">
+                            <p className="text-[15px] text-gray-900 leading-relaxed flex-1 dark:text-zinc-200">
                               {notification.message}
                             </p>
                             <Button
                               type="button"
                               onClick={(e) => {
-                                e.stopPropagation()
-                                void handleView(notification)
+                                  e.stopPropagation()
+                                  void handleView(notification)
                               }}
                               className="shrink-0 bg-[#6C5DD3] hover:bg-[#5A4BC2] text-white px-6 h-9 rounded-md text-[13px] font-medium"
                             >
@@ -201,7 +202,7 @@ export function NotificationSheet({ open, onOpenChange }: NotificationSheetProps
                         e.stopPropagation()
                         void handleDelete(notification.id)
                       }}
-                      className="absolute top-5 right-8 p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
+                      className="absolute top-5 right-8 p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/40 rounded transition-colors"
                       title="Delete notification"
                     >
                       <Trash2 className="size-4" />

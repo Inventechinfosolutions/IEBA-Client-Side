@@ -74,11 +74,11 @@ function ChangeItem({ item }: { item: JobPoolHistoryDetailItem }) {
     <DetailCard>
       <div className="text-[11px] font-medium text-[#6B7280]">{item.label}</div>
       <div className="mt-auto flex flex-wrap items-center gap-2 pt-1.5 text-[13px] font-medium">
-        <span className="inline-flex max-w-full shrink-0 rounded-[4px] bg-[#FEF2F2] px-1.5 py-0.5 text-[#B91C1C] break-words">
+        <span className="inline-flex max-w-full rounded-[4px] bg-[#FEF2F2] px-1.5 py-0.5 text-[#B91C1C] break-words whitespace-normal text-left">
           {item.previousValue}
         </span>
         <ArrowRight className="size-3.5 shrink-0 text-[#9CA3AF]" />
-        <span className="inline-flex max-w-full rounded-[4px] bg-[#ECFDF3] px-1.5 py-0.5 text-[#027A48] break-words">
+        <span className="inline-flex max-w-full rounded-[4px] bg-[#ECFDF3] px-1.5 py-0.5 text-[#027A48] break-words whitespace-normal text-left">
           {item.newValue}
         </span>
       </div>

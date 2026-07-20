@@ -74,7 +74,7 @@ export function TimeStudyStatusCard({
         </div>
 
         {/* Filters row — full width, evenly spaced */}
-        <div className="flex items-center gap-1.5 mb-3 pb-2.5 border-b border-[#f0f0f5] select-none">
+        <div className="flex items-center gap-1.5 mb-3 pb-2.5 border-b border-[#f0f0f5] dark:border-[rgba(108,93,211,0.4)] select-none">
           {/* Month Filter */}
           <Select value={selectedMonth} onValueChange={setSelectedMonth}>
             <SelectTrigger size="sm" className="h-7 flex-1 text-[11px] rounded-md border-[#e5e7eb] bg-white px-2 min-w-0">
