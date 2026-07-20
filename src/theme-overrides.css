@@ -455,7 +455,7 @@
 
 /* 11. Empty State Images Overrides (Blend White Backgrounds of PNG assets in Dark Mode) */
 .dark img[src*="table-empty.png"] {
-  filter: invert(0.94) hue-rotate(180deg) brightness(0.9) contrast(1.1) !important;
+  content: url("./assets/icons/table-emptyDark.png") !important;
 }
 
 /* 12. Dashboard Card Overrides */
@@ -1376,4 +1376,30 @@
 .dark span.status-pill.status-completed {
   border-color: #16a34a !important;
   color: #16a34a !important;
+}
+
+/* 66. Loading overlay/backdrop transparent white backgrounds override in Dark Mode */
+.dark .bg-white\/60,
+.dark [class*="bg-white/60"] {
+  background-color: rgba(10, 10, 12, 0.6) !important;
+}
+
+.dark .bg-white\/50,
+.dark [class*="bg-white/50"] {
+  background-color: rgba(10, 10, 12, 0.5) !important;
+}
+
+.dark .bg-white\/40,
+.dark [class*="bg-white/40"] {
+  background-color: rgba(10, 10, 12, 0.4) !important;
+}
+
+.dark .bg-white\/20,
+.dark [class*="bg-white/20"] {
+  background-color: rgba(10, 10, 12, 0.2) !important;
+}
+
+.dark .bg-white\/15,
+.dark [class*="bg-white/15"] {
+  background-color: rgba(10, 10, 12, 0.15) !important;
 }
