@@ -10,14 +10,15 @@ interface ThemeToggleProps {
 
 export function ThemeToggle({ className }: ThemeToggleProps) {
   const { theme, setTheme } = useTheme()
-  const { user } = useAuth()
+  const { user, establishDashboardSession } = useAuth()
 
   const isDark = theme === "dark"
 
   const handleToggle = () => {
     const nextDark = !isDark
     setTheme(nextDark ? "dark" : "light")
-    if (user?.id) {
+    if (user) {
+      establishDashboardSession({ ...user, theme: nextDark })
       void apiUpdateUserTheme(user.id, nextDark)
     }
   }

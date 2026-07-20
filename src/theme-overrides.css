@@ -1357,3 +1357,23 @@
 [class*="time-picker-popover"] {
   box-shadow: none !important;
 }
+
+/* 65. Style Status Pills in Todo Table in Dark Mode to Keep Status Border Colors */
+.dark span.status-pill {
+  background-color: #18181b !important;
+}
+
+.dark span.status-pill.status-new {
+  border-color: #d1d5db !important;
+  color: #d1d5db !important;
+}
+
+.dark span.status-pill.status-inprogress {
+  border-color: #f59e0b !important;
+  color: #f59e0b !important;
+}
+
+.dark span.status-pill.status-completed {
+  border-color: #16a34a !important;
+  color: #16a34a !important;
+}
