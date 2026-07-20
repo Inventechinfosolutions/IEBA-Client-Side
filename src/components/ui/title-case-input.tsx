@@ -2,13 +2,36 @@ import * as React from "react"
 import { Input } from "@/components/ui/input"
 import { toTitleCase } from "@/lib/utils"
 
+const SKIP_TITLE_CASE_TYPES = new Set([
+  "date",
+  "datetime-local",
+  "month",
+  "time",
+  "week",
+  "number",
+  "range",
+  "color",
+  "checkbox",
+  "radio",
+  "file",
+  "hidden",
+  "password",
+])
+
 /** A drop-in replacement for `<Input>` that automatically capitalises the
  * first letter of every word as the user types.*/
 const TitleCaseInput = React.forwardRef<
   HTMLInputElement,
   React.ComponentProps<"input">
->(({ onChange, ...props }, ref) => {
+>(({ onChange, type, ...props }, ref) => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Date/month/etc. must pass through unchanged — title-casing can corrupt values
+    // while the user edits segments (e.g. changing the month in a date picker).
+    if (type && SKIP_TITLE_CASE_TYPES.has(type)) {
+      onChange?.(e)
+      return
+    }
+
     const input = e.target
     const raw = input.value
     const titleCased = toTitleCase(raw)
@@ -47,7 +70,7 @@ const TitleCaseInput = React.forwardRef<
     }
   }
 
-  return <Input ref={ref} onChange={handleChange} {...props} />
+  return <Input ref={ref} type={type} onChange={handleChange} {...props} />
 })
 
 TitleCaseInput.displayName = "TitleCaseInput"
