@@ -709,6 +709,14 @@ export function ReportForm({ module }: ReportFormProps) {
     if (selectMonthBy === "dates" || selectMonthBy === "scheduled") {
       return { actualDateFrom: dateFrom, actualDateTo: dateTo }
     }
+    if (selectMonthBy === "week" && monthVal) {
+      const [y, m] = monthVal.split("-")
+      const lastDay = new Date(parseInt(y), parseInt(m), 0).getDate()
+      return {
+        actualDateFrom: `${monthVal}-01`,
+        actualDateTo: `${monthVal}-${String(lastDay).padStart(2, "0")}`,
+      }
+    }
     if (selectMonthBy === "month" && monthVal) {
       const [y, m] = monthVal.split("-")
       const lastDay = new Date(parseInt(y), parseInt(m), 0).getDate()
@@ -1198,8 +1206,12 @@ export function ReportForm({ module }: ReportFormProps) {
                 className="flex h-12 items-center gap-4"
                 value={field.value}
                 onValueChange={(v) => {
-                  field.onChange(v as "qtr" | "dates" | "month" | "year" | "scheduled")
+                  field.onChange(v as "qtr" | "dates" | "month" | "year" | "scheduled" | "week")
                   clearPeriodDependentPicks()
+                  if (v === "week") {
+                    setValue("dateFrom", "", { shouldValidate: false })
+                    setValue("dateTo", "", { shouldValidate: false })
+                  }
                   if (v === "dates") {
                     const now = new Date()
                     const y = now.getFullYear()
@@ -1230,6 +1242,14 @@ export function ReportForm({ module }: ReportFormProps) {
                           <RadioGroupItem value="month" id="reports-month-only" />
                           <Label htmlFor="reports-month-only" className="text-[14px] font-normal">
                             Month
+                          </Label>
+                        </div>
+                      )}
+                      {monthByFlags.showWeek && (
+                        <div className="flex items-center gap-2">
+                          <RadioGroupItem value="week" id="reports-month-week" />
+                          <Label htmlFor="reports-month-week" className="text-[14px] font-normal">
+                            Week
                           </Label>
                         </div>
                       )}
@@ -1339,7 +1359,7 @@ export function ReportForm({ module }: ReportFormProps) {
               ) : null}
             </div>
 
-            {(currentReportItem?.criteria?.showWeekSelect || reportKey === "P112") && (
+            {(currentReportItem?.criteria?.showWeekSelect) && (
               <div className="w-[240px] shrink-0">
                 <label className={labelClassName} htmlFor="reports-week-picker">
                   Week Picker
@@ -1398,32 +1418,96 @@ export function ReportForm({ module }: ReportFormProps) {
               </p>
             ) : null}
           </div>
-        ) : selectMonthBy === "month" ? (
-          <div className="w-[180px] shrink-0">
-            <label className={labelClassName} htmlFor="reports-month-input">
-              Month
-            </label>
-            <Controller
-              name="month"
-              control={control}
-              render={({ field }) => (
-                <ReportMonthPicker
-                  id="reports-month-input"
-                  value={field.value ?? ""}
-                  onChange={(val) => {
-                    field.onChange(val)
-                    clearPeriodDependentPicks()
-                  }}
-                  onBlur={field.onBlur}
-                />
-              )}
-            />
-            {formState.errors.month?.message ? (
-              <p className="mt-1 text-[13px] text-red-500" role="alert">
-                {formState.errors.month.message}
-              </p>
+        ) : selectMonthBy === "month" || selectMonthBy === "week" ? (
+          <>
+            <div className="w-[180px] shrink-0">
+              <label className={labelClassName} htmlFor="reports-month-input">
+                Month
+              </label>
+              <Controller
+                name="month"
+                control={control}
+                render={({ field }) => (
+                  <ReportMonthPicker
+                    id="reports-month-input"
+                    value={field.value ?? ""}
+                    onChange={(val) => {
+                      field.onChange(val)
+                      clearPeriodDependentPicks()
+                      if (selectMonthBy === "week") {
+                        setValue("dateFrom", "", { shouldValidate: false })
+                        setValue("dateTo", "", { shouldValidate: false })
+                      }
+                    }}
+                    onBlur={field.onBlur}
+                  />
+                )}
+              />
+              {formState.errors.month?.message ? (
+                <p className="mt-1 text-[13px] text-red-500" role="alert">
+                  {formState.errors.month.message}
+                </p>
+              ) : null}
+            </div>
+            {selectMonthBy === "week" ? (
+              <>
+                <div className="w-[min(168px,22vw)] min-w-[120px] shrink-0">
+                  <label className={labelClassName} htmlFor="reports-mcah-week1-start">
+                    Week 1 Start Date
+                  </label>
+                  <Controller
+                    name="dateFrom"
+                    control={control}
+                    render={({ field }) => (
+                      <ReportDatePicker
+                        id="reports-mcah-week1-start"
+                        className={dateInputInRowClassName}
+                        value={field.value ?? ""}
+                        onChange={(val) => {
+                          field.onChange(val)
+                          clearPeriodDependentPicks()
+                        }}
+                        onBlur={field.onBlur}
+                        placeholder="Week 1 start"
+                      />
+                    )}
+                  />
+                  {formState.errors.dateFrom?.message ? (
+                    <p className="mt-1 text-[13px] text-red-500" role="alert">
+                      {formState.errors.dateFrom.message}
+                    </p>
+                  ) : null}
+                </div>
+                <div className="w-[min(168px,22vw)] min-w-[120px] shrink-0">
+                  <label className={labelClassName} htmlFor="reports-mcah-week1-end">
+                    Week 1 End Date
+                  </label>
+                  <Controller
+                    name="dateTo"
+                    control={control}
+                    render={({ field }) => (
+                      <ReportDatePicker
+                        id="reports-mcah-week1-end"
+                        className={dateInputInRowClassName}
+                        value={field.value ?? ""}
+                        onChange={(val) => {
+                          field.onChange(val)
+                          clearPeriodDependentPicks()
+                        }}
+                        onBlur={field.onBlur}
+                        placeholder="Week 1 end"
+                      />
+                    )}
+                  />
+                  {formState.errors.dateTo?.message ? (
+                    <p className="mt-1 text-[13px] text-red-500" role="alert">
+                      {formState.errors.dateTo.message}
+                    </p>
+                  ) : null}
+                </div>
+              </>
             ) : null}
-          </div>
+          </>
         ) : selectMonthBy === "scheduled" ? (
           <>
             {!showTopLevelFiscalYear && isTrue(currentReportItem?.criteria?.showScheduleTime) && (
