@@ -239,7 +239,7 @@ export function TimeStudyMGTPage() {
               key={`${selectedUserId}-${toIsoYmdFromDate(selectedDate)}`}
               dateStr={toIsoYmdFromDate(selectedDate)}
               userId={selectedUserId}
-              username={selectedEmployee?.name || (selectedEmployee ? `${selectedEmployee.firstName} ${selectedEmployee.lastName}` : "")}
+              username={selectedEmployee ? (`${selectedEmployee.firstName ?? ""} ${selectedEmployee.lastName ?? ""}`.trim() || selectedEmployee.name || "") : ""}
               initialRecords={dayDetail?.timeStudyRecords}
               dropdownData={dropdownData}
               leaveRecords={dayDetail?.leaveRecords}

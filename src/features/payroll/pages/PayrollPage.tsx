@@ -7,6 +7,7 @@ import { PayrollDataTable } from "../components/PayrollDataTable"
 import { EditPayrollDataDialog } from "../components/EditPayrollDataDialog"
 import { PayrollDetailsSection } from "../components/PayrollDetailsSection"
 import { PayrollUploadSection } from "../components/PayrollUploadSection"
+import { PayrollUploadHistoryButton } from "../components/PayrollUploadHistoryButton"
 import type { GetPayrollRowsParams, PayrollManagementRow, PayrollUploadFormValues } from "../types"
 import { buildPayrollRowsXlsxBlob, triggerBrowserDownloadBlob } from "../utils/payrollCsv"
 import { usePayrollFilterOptions } from "../hooks/usePayrollFilterOptions"
@@ -231,7 +232,10 @@ export function PayrollPage() {
         >
           <div className="flex min-w-0 w-full max-w-full flex-col gap-6 p-4 md:p-5">
             <div className="min-w-0 max-w-full">
-              <h2 className="mb-3 text-[14px] font-semibold text-[#111827]">Payroll Upload:</h2>
+              <div className="mb-3 flex min-w-0 items-center justify-between gap-3">
+                <h2 className="text-[14px] font-semibold text-[#111827]">Payroll Upload:</h2>
+                <PayrollUploadHistoryButton />
+              </div>
               <PayrollUploadSection
                 isUploading={uploadMutation.isPending}
                 settingsPayrollType={settingsPayrollType}

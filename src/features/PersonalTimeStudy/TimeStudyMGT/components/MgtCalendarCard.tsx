@@ -49,7 +49,7 @@ export function MgtCalendarCard({
     curDay.setDate(curDay.getDate() + 1)
   }
 
-  const startPad   = (monthStart.getDay() + 6) % 7 // Mon = 0
+  const startPad   = monthStart.getDay() // Sun = 0
   const cells: (Date | null)[] = [...Array(startPad).fill(null), ...days]
   while (cells.length % 7 !== 0) cells.push(null)
 
@@ -117,7 +117,7 @@ export function MgtCalendarCard({
         <table className="w-full border-collapse text-xs">
           <thead>
             <tr className="border-b border-gray-200">
-              {["MON","TUE","WED","THU","FRI","SAT","SUN"].map((d) => (
+              {["SUN","MON","TUE","WED","THU","FRI","SAT"].map((d) => (
                 <th key={d} className="py-2 text-center font-semibold text-gray-600 w-10">{d}</th>
               ))}
               <th className="py-2 text-center font-semibold text-gray-600 min-w-[80px]">TOTAL(MIN.)</th>
@@ -130,7 +130,7 @@ export function MgtCalendarCard({
               const datesInWeek = week.filter(Boolean) as Date[]
               const firstDate = datesInWeek[0]
 
-              // Mon–Sun week key — must match getCalendarWeekStartKeyFromIso / AppCalender rows
+              // Sun–Sat week key — must match getCalendarWeekStartKeyFromIso / AppCalender rows
               const weekKey = firstDate
                 ? getCalendarWeekStartKeyFromIso(toIsoYmdFromDate(firstDate))
                 : ""
