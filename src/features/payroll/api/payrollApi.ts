@@ -1,11 +1,12 @@
 import { getToken } from "@/lib/api"
 import { API_BASE_URL } from "@/lib/config"
 import { api } from "@/lib/api"
-import type { 
-  GetPayrollRowsParams, 
-  PayrollFilterOptionsResponse, 
+import type {
+  GetPayrollRowsParams,
+  PayrollFilterOptionsResponse,
   PayrollManagementRow,
-  PayrollRowsResponse
+  PayrollRowsResponse,
+  PayrollUploadListResponse,
 } from "../types"
 import { getAllDepartments } from "@/features/department/api/departments"
 import { fetchListFiscalYears } from "@/features/settings/queries/listFiscalYears"
@@ -42,6 +43,39 @@ export async function uploadPayrollForm(file: File, payrolltype: string) {
 
   const body = await response.json()
   return (body as { data?: unknown }).data ?? body
+}
+
+/**
+ * List archived payroll Excel uploads (MinIO metadata).
+ * GET /api/v1/payrollmanagement/uploads
+ */
+export async function fetchPayrollUploads(page = 1, limit = 20): Promise<PayrollUploadListResponse> {
+  const res = await api.get<{ data: PayrollUploadListResponse }>(
+    `/payrollmanagement/uploads?page=${page}&limit=${limit}`,
+  )
+  const data = (res as { data?: PayrollUploadListResponse })?.data
+  return {
+    items: data?.items ?? [],
+    total: data?.total ?? 0,
+  }
+}
+
+/**
+ * Download an archived payroll Excel file from MinIO.
+ * GET /api/v1/payrollmanagement/uploads/:id/download
+ */
+export async function downloadPayrollUpload(id: number): Promise<Blob> {
+  const token = getToken()
+  const response = await fetch(`${BASE}/payrollmanagement/uploads/${id}/download`, {
+    method: "GET",
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  })
+
+  if (!response.ok) {
+    throw new Error(`Download failed: ${response.statusText}`)
+  }
+
+  return await response.blob()
 }
 
 /**
@@ -116,14 +150,13 @@ export async function fetchPayrollFilterOptions(): Promise<PayrollFilterOptionsR
   }
 }
 
-
 /**
  * Fetches payroll management rows based on active filters using the new paginated API.
  * GET /api/v1/payrollmanagement?payrollType=<type>&fiscalYear=<fy>&month=<m>&departmentCode=<code>&empIds=<ids>&page=1&limit=1000
  */
 export async function fetchPayrollRows(params: GetPayrollRowsParams): Promise<PayrollRowsResponse> {
   const search = new URLSearchParams()
-  
+
   search.set("payrolltype", params.payrollType.toLowerCase())
   search.set("fiscalYear", params.fiscalYearLabel)
   search.set("page", String(params.page ?? 1))
@@ -168,7 +201,7 @@ export async function fetchPayrollRows(params: GetPayrollRowsParams): Promise<Pa
     .join("&")
 
   const res = await api.get<{ data: { items: any[]; meta: { totalItems: number } } }>(`/payrollmanagement?${queryString}`)
-  
+
   const items = res?.data?.items || []
   const total = res?.data?.meta?.totalItems || 0
 
@@ -202,7 +235,7 @@ export async function fetchPayrollRows(params: GetPayrollRowsParams): Promise<Pa
       cashOut: row.cashout,
       payout: row.payout,
       salary: row.salary,
-    }))
+    })),
   }
 }
 

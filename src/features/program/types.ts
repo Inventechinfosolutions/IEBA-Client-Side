@@ -340,6 +340,7 @@ export type TransferItem = {
   isChild?: boolean
   activityId?: string
   masterCodeType?: string
+  assignmentType?: string | null
 }
 
 export type TransferPanelProps = {
@@ -405,6 +406,7 @@ export type ProgramActivityRelationActivityNode = {
   type?: string
   code?: string
   masterCodeType?: string | null
+  assignmentType?: string | null
 }
 
 export type ProgramActivityRelationActivityRoots = Array<{

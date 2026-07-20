@@ -88,7 +88,7 @@ function MinDecimalField({
   }
 
   return (
-    <div className={cn("space-y-0.5", showDecimalHint ? "w-[92px]" : "w-[60px]")}>
+    <div className={cn("space-y-0.5", showDecimalHint ? "w-[92px]" : "w-[75px]")}>
       <Label className={labelClassName}>{label}</Label>
       <div className="relative">
         <TitleCaseInput
@@ -169,6 +169,7 @@ export type TimeEntryParentRow = {
   departmentId?: number
   isLeave?: boolean
   apportioning?: boolean
+  apportioningType?: string
   leaveid?: number
   status?: string
   recordType?: string
@@ -862,7 +863,15 @@ export function PersonalTimeStudyEntryForm({
     if (departments?.length === 1) {
       return departments[0].requiresSaveAndSubmitButtonMoveToTop === true
     }
-    const activeParents = parents.filter(p => !p.isLeave && !p.apportioning && !!p.tsProgram)
+    const activeParents = parents.filter(p => {
+      if (p.isLeave || !p.tsProgram) return false
+      if (p.apportioning) {
+        const isManual = p.apportioningType?.toUpperCase() === "MANUAL"
+        const isRejectedOrOpened = ["rejected", "opened"].includes(p.status?.toLowerCase() ?? "")
+        return isManual && isRejectedOrOpened
+      }
+      return true
+    })
     if (activeParents.length === 0) return false
     return activeParents.every(p => getRowSettings(p).moveSaveSubmitToTop)
   }, [parents, getRowSettings, apportioningConfig?.departments])
@@ -889,7 +898,11 @@ export function PersonalTimeStudyEntryForm({
           return false
         }
         if (r.apportioning === true) {
-          return false
+          const isManual = r.apportioningType?.toUpperCase() === "MANUAL"
+          const isRejectedOrOpened = ["rejected", "opened", "draft"].includes(r.status?.toLowerCase() ?? "")
+          if (!(isManual && isRejectedOrOpened)) {
+            return false
+          }
         }
         if (r.leaveid) {
           const leave = leaveRecords?.find((l) => Number(l.id) === Number(r.leaveid))
@@ -947,6 +960,7 @@ export function PersonalTimeStudyEntryForm({
             leaveid: rec.leaveid ?? undefined,
             isLeave: rec.leaveid ? true : undefined,
             apportioning: rec.apportioning,
+            apportioningType: rec.apportioningType,
           }
           parentMap.set(rec.id, parentRow)
         }
@@ -1017,9 +1031,15 @@ export function PersonalTimeStudyEntryForm({
         return b.start.localeCompare(a.start)
       })
       const final = combined.length > 0 ? combined : [createParent()]
-      // Freeze snapshot of server-loaded rows so handleSave can detect what changed.
-      // Only rows with a dbId (came from the server) are snapshotted.
-      parentsSnapshotRef.current = final.filter(p => !!p.dbId && !p.isLeave && !p.apportioning && !p.leaveid)
+      parentsSnapshotRef.current = final.filter(p => {
+        if (!p.dbId || p.isLeave || p.leaveid) return false
+        if (p.apportioning) {
+          const isManual = p.apportioningType?.toUpperCase() === "MANUAL"
+          const isRejectedOrOpened = ["rejected", "opened"].includes(p.status?.toLowerCase() ?? "")
+          return isManual && isRejectedOrOpened
+        }
+        return true
+      })
       setParents(final)
 
     }
@@ -1256,7 +1276,15 @@ export function PersonalTimeStudyEntryForm({
   const mapToPayload = (overrideStatus?: string, changedOnly = false): any[] => {
     const deptId = dropdownData?.[0]?.departmentId
     return parents
-      .filter((p) => !p.isLeave && !p.leaveid && !p.apportioning)
+      .filter((p) => {
+        if (p.isLeave || p.leaveid) return false
+        if (p.apportioning) {
+          const isManual = p.apportioningType?.toUpperCase() === "MANUAL"
+          const isRejectedOrOpened = ["rejected", "opened"].includes(p.status?.toLowerCase() ?? "")
+          return isManual && isRejectedOrOpened
+        }
+        return true
+      })
       .filter((p) => {
         if (!changedOnly) return true
         if (!p.dbId) return true // brand-new row → always send
@@ -1285,6 +1313,8 @@ export function PersonalTimeStudyEntryForm({
           supportingDocs: p.supportingDocs,
           status: overrideStatus || p.status || "draft",
           recordType: p.recordType || "NORMAL",
+          apportioning: p.apportioning || undefined,
+          apportioningDesc: p.apportioning ? p.description : undefined,
           multiCodeRecords: p.subRows.map((s) => {
             const subDeptId = resolveDepartmentIdForProgram(s.studyProgram)
             const subUsesDecimal = hideTime || !!s.activityTimeMessage
@@ -1308,7 +1338,14 @@ export function PersonalTimeStudyEntryForm({
 
   const validateEntries = () => {
     for (const p of parents) {
-      if (p.isLeave || p.leaveid || p.apportioning) continue
+      if (p.isLeave || p.leaveid) continue
+      if (p.apportioning) {
+        const isManual = p.apportioningType?.toUpperCase() === "MANUAL"
+        const isRejectedOrOpened = ["rejected", "opened"].includes(p.status?.toLowerCase() ?? "")
+        if (!(isManual && isRejectedOrOpened)) {
+          continue
+        }
+      }
       const hideTime = resolveEffectiveHideTime(p)
       if (hideTime) {
         if (!p.totalMin || !p.tsProgram || !p.serviceActivity) {
@@ -1389,7 +1426,15 @@ export function PersonalTimeStudyEntryForm({
     // If the day has no saved records yet (fresh entry), skip the guard entirely.
     const hasServerRecords = parentsSnapshotRef.current.length > 0
     if (hasServerRecords) {
-      const editableParents = parents.filter(p => !p.isLeave && !p.leaveid && !p.apportioning)
+      const editableParents = parents.filter(p => {
+        if (p.isLeave || p.leaveid) return false
+        if (p.apportioning) {
+          const isManual = p.apportioningType?.toUpperCase() === "MANUAL"
+          const isRejectedOrOpened = ["rejected", "opened"].includes(p.status?.toLowerCase() ?? "")
+          return isManual && isRejectedOrOpened
+        }
+        return true
+      })
       const hasChanges = editableParents.some(p => {
         if (!p.dbId) return true // new row → always counts as a change
         const snap = parentsSnapshotRef.current.find(s => s.dbId === p.dbId)
@@ -1656,21 +1701,48 @@ export function PersonalTimeStudyEntryForm({
               </div>
             )}
             {!readonly && moveSaveSubmitToTop && (
-              // Visual-only copy when button moves to top — skipped in Tab order (real Save/Submit are after the row fields).
-              <div className="flex items-center gap-2 mr-2" aria-hidden="true">
+              // When Save/Submit move to top, these are the real keyboard-accessible buttons.
+              // tabIndex={-1} keeps them out of natural DOM tab order (they are before form fields in DOM),
+              // but they are focused programmatically from the purple + Tab handler.
+              <div className="flex items-center gap-2 mr-2">
                 <Button
                   tabIndex={-1}
+                  data-pts-save-top
                   disabled={isLocked || allIsLeave}
                   className={cn("h-9 px-4 bg-[#6C5DD3] hover:bg-[#5B4DBF] text-[12px]", (isLocked || allIsLeave) && "cursor-not-allowed")}
                   onClick={handleSave}
+                  onKeyDown={(e) => {
+                    if (e.key === "Tab" && !e.shiftKey) {
+                      e.preventDefault();
+                      const submitBtn = document.querySelector<HTMLElement>("[data-pts-submit-top]");
+                      submitBtn?.focus();
+                    }
+                    if (e.key === "Tab" && e.shiftKey) {
+                      e.preventDefault();
+                      const purpleBtn = document.querySelector<HTMLElement>("[data-pts-purple-add]");
+                      purpleBtn?.focus();
+                    }
+                  }}
                 >
                   Save
                 </Button>
                 <Button
                   tabIndex={-1}
+                  data-pts-submit-top
                   disabled={isLocked || allIsLeave}
                   className={cn("h-9 px-4 bg-green-600 hover:bg-green-700 text-white text-[12px]", (isLocked || allIsLeave) && "cursor-not-allowed")}
                   onClick={() => setShowSubmitConfirm(true)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Tab" && !e.shiftKey) {
+                      e.preventDefault();
+                      parkPersonalTimeStudyFocus();
+                    }
+                    if (e.key === "Tab" && e.shiftKey) {
+                      e.preventDefault();
+                      const saveBtn = document.querySelector<HTMLElement>("[data-pts-save-top]");
+                      saveBtn?.focus();
+                    }
+                  }}
                 >
                   Submit
                 </Button>
@@ -1699,17 +1771,21 @@ export function PersonalTimeStudyEntryForm({
         {parents.map((parent) => {
           const totalDisplay = computeDurationMinutes(parent.start, parent.end)
           const isLeaveRow = parent.isLeave
-          const isApportionedRow = parent.apportioning === true
+          const isManualApportioningRejectedOrOpened =
+            parent.apportioning === true &&
+            parent.apportioningType?.toUpperCase() === "MANUAL" &&
+            ["rejected", "opened", "draft"].includes(parent.status?.toLowerCase() ?? "")
+          const isApportionedRow = parent.apportioning === true && !isManualApportioningRejectedOrOpened
           const rowSettings = getRowSettings(parent)
           const effectiveHideTime = resolveEffectiveHideTime(parent)
           const hideDocs = rowSettings.hideSupportingDoc
           const hideNotes = rowSettings.hideDescriptionActivityNote
-          const showGreenPlus = !readonly && !isLeaveRow && !isApportionedRow && isMulticodeAllowedForParent(parent)
+          const showGreenPlus = !readonly && !isLeaveRow && !parent.apportioning && isMulticodeAllowedForParent(parent)
           const showDelete = !readonly && canDeleteParent(parent.id)
 
           return (
             <div key={parent.id}>
-              <div className={parentFieldRowClass}>
+              <div className={parentFieldRowClass} data-pts-row={parent.id}>
                 <div className="flex-1 space-y-0.5">
                   <Label className="text-[11px] text-[#6C5DD3] font-medium">TS Program <RequiredMark /></Label>
                   <SingleSelectSearchDropdown
@@ -1718,7 +1794,37 @@ export function PersonalTimeStudyEntryForm({
                     disabled={isLocked || isLeaveRow || isApportionedRow}
                     title={(!apportioningConfig?.timestudyAllowedDepartmentIds || apportioningConfig.timestudyAllowedDepartmentIds.length === 0) && !apportioningConfig?.bypassSchedule ? "No Time Study period Allocated" : undefined}
                     isLoading={isDropdownLoading}
-                    inputProps={{ "data-pts-program": "true" }}
+                    inputProps={{
+                      "data-pts-program": "true",
+                      onKeyDown: (e) => {
+                        if (
+                          e.key === "Tab" &&
+                          !e.shiftKey &&
+                          isFetchingActivitiesForProgram(parent.tsProgram, parent.departmentId)
+                        ) {
+                          e.preventDefault()
+                          const row = document.querySelector<HTMLElement>(`[data-pts-row="${parent.id}"]`)
+                          if (!row) return
+                          const tryFocusActivity = () => {
+                            const activityInput = row.querySelector<HTMLInputElement>("[data-pts-activity]")
+                            if (!activityInput || activityInput.disabled) return false
+                            activityInput.focus()
+                            return true
+                          }
+                          if (tryFocusActivity()) return
+                          // Wait until Activity API finishes (input enabled) — no attempt/time cap.
+                          const observer = new MutationObserver(() => {
+                            if (tryFocusActivity()) observer.disconnect()
+                          })
+                          observer.observe(row, {
+                            attributes: true,
+                            attributeFilter: ["disabled"],
+                            childList: true,
+                            subtree: true,
+                          })
+                        }
+                      },
+                    }}
                     onOpenChange={(open) => {
                       if (open) onOpenDropdown?.()
                     }}
@@ -1782,6 +1888,7 @@ export function PersonalTimeStudyEntryForm({
                       }
                       return filtered;
                     })()}
+                    inputProps={{ "data-pts-activity": "true" }}
                     onChange={(v) => updateParent(parent.id, { serviceActivity: v })}
                     onBlur={() => { }}
                     className={cn("h-10 text-[11px]", (isLocked || isLeaveRow || isApportionedRow || !parent.tsProgram) && "bg-[#F2F4F7] cursor-not-allowed", isLeaveRow && "border-yellow-400", isApportionedRow && "border-[#6C5DD3]")}
@@ -1830,7 +1937,7 @@ export function PersonalTimeStudyEntryForm({
                     onChange={(v) => updateParent(parent.id, { totalMin: v })}
                   />
                 ) : (
-                  <div className="w-[60px] space-y-0.5">
+                  <div className="w-[75px] space-y-0.5">
                     <Label className="text-[11px] text-muted-foreground">Min. <RequiredMark /></Label>
                     <TitleCaseInput
                       type="number"
@@ -2070,6 +2177,7 @@ export function PersonalTimeStudyEntryForm({
           <Button
             disabled={isLocked || allIsLeave}
             data-pts-save
+            tabIndex={moveSaveSubmitToTop ? -1 : undefined}
             className={cn("h-10 px-8 bg-[#6C5DD3] hover:bg-[#5B4DBF]", (isLocked || allIsLeave) && "cursor-not-allowed")}
             onClick={handleSave}
           >
@@ -2078,6 +2186,7 @@ export function PersonalTimeStudyEntryForm({
           <Button
             disabled={isLocked || allIsLeave}
             data-pts-submit
+            tabIndex={moveSaveSubmitToTop ? -1 : undefined}
             className={cn("h-10 px-8 bg-green-600 hover:bg-green-700 text-white", (isLocked || allIsLeave) && "cursor-not-allowed")}
             onClick={() => setShowSubmitConfirm(true)}
           >
@@ -2098,10 +2207,17 @@ export function PersonalTimeStudyEntryForm({
           )}
           onClick={addParentAtTop}
           onKeyDown={(e) => {
-            // Last control in the Time Entries tab sequence — do not escape to sidebar / header.
+            // Last control in the Time Entries tab sequence.
             if (e.key === "Tab" && !e.shiftKey) {
-              e.preventDefault()
-              parkPersonalTimeStudyFocus()
+              e.preventDefault();
+              if (moveSaveSubmitToTop) {
+                // Save/Submit are at top — focus the top Save button programmatically.
+                const saveBtn = document.querySelector<HTMLElement>("[data-pts-save-top]");
+                saveBtn?.focus();
+              } else {
+                // Save/Submit are at bottom — they are in natural Tab order, just park focus.
+                parkPersonalTimeStudyFocus();
+              }
             }
           }}
         >

@@ -1,6 +1,7 @@
-import { useMutation } from "@tanstack/react-query"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 import { uploadPayrollForm } from "../api/payrollApi"
+import { payrollKeys } from "../key"
 import type { PayrollFrequencyType } from "../types"
 
 type UploadPayrollVariables = {
@@ -16,7 +17,11 @@ async function uploadPayrollFile({ uploadType, file }: UploadPayrollVariables) {
 }
 
 export function useUploadPayrollFile() {
+  const queryClient = useQueryClient()
   return useMutation({
     mutationFn: uploadPayrollFile,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: payrollKeys.lists() })
+    },
   })
 }
