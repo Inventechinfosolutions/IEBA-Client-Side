@@ -21,7 +21,7 @@ export function ReportsCard({ reports, isLoading }: ReportsCardProps) {
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-[10px] border border-[#E8EAF6] bg-white shadow-[0_0_20px_0_#0000001a]">
       {/* Header */}
-      <div className="flex items-center justify-between px-5 py-3 border-b border-[#F0F0F0]">
+      <div className="flex items-center justify-between px-5 py-3 border-b border-[#F0F0F0] dark:border-[rgba(108,93,211,0.4)]">
         <div className="flex items-center gap-2">
           <ChevronDown className="h-4 w-4 text-[#6C5DD3]" />
           <span className="text-[18px]  text-[#1a1a2e]">Reports</span>
@@ -37,7 +37,7 @@ export function ReportsCard({ reports, isLoading }: ReportsCardProps) {
       {/* Left accent bar + list */}
       <div className="flex flex-1 min-h-0 overflow-hidden pr-5">
         <div className="w-[4px] bg-[#6C5DD3] rounded-full my-2 ml-4 shrink-0" />
-        <div className="flex-1 min-h-0 max-h-full overflow-y-auto divide-y divide-[#F5F5F7] ieba-scrollbar pr-2">
+        <div className="flex-1 min-h-0 max-h-full overflow-y-auto divide-y divide-[#F5F5F7] dark:divide-[rgba(108,93,211,0.4)] ieba-scrollbar pr-2">
           {isLoading &&
             Array.from({ length: 5 }).map((_, i) => (
               <div key={i} className="flex items-center gap-3 px-4 py-2.5 animate-pulse">

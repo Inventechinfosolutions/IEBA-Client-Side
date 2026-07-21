@@ -32,7 +32,7 @@ export type SingleSelectOption = {
 
 /** Same panel + scroll behavior as Settings → Reports → Reports dropdown (native scrollbar). */
 const reportsDropdownContentClassName =
-  "max-h-[260px] overflow-auto rounded-[7px] border border-[#d9deea] bg-white shadow-[0_8px_18px_rgba(17,24,39,0.12)]"
+  "max-h-[260px] overflow-auto rounded-[7px] border border-[#d9deea] bg-white dark:bg-[#18181b] dark:border-[rgba(108,93,211,0.4)] shadow-[0_8px_18px_rgba(17,24,39,0.12)]"
 
 export type SingleSelectDropdownProps = {
   value: string
@@ -115,7 +115,7 @@ export function SingleSelectDropdown({
           onBlur={onBlur}
           aria-label={placeholder}
           className={cn(
-            "relative flex min-h-[43px] w-full items-center rounded-[7px] border border-[#c6cedd] bg-white px-3 py-1.5 pr-9 text-left shadow-none",
+            "relative flex min-h-[43px] w-full items-center rounded-[7px] border border-[#c6cedd] bg-white dark:bg-[#09090b] dark:border-[rgba(108,93,211,0.5)] dark:text-[#e4e4e7] px-3 py-1.5 pr-9 text-left shadow-none",
             "text-[11px] font-normal leading-[16px] text-[#111827]",
             "cursor-pointer outline-none focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]",
             disabledEffective && "cursor-not-allowed bg-[#f2f2f2] opacity-100",
@@ -197,8 +197,8 @@ export function SingleSelectDropdown({
                           "w-full px-3 py-2 text-left",
                           optionDisabled
                             ? "cursor-not-allowed text-[#9ca3af]"
-                            : "cursor-pointer hover:bg-[#f3f4f8]",
-                          selected && !optionDisabled ? "bg-[#eef8ff]" : "bg-transparent",
+                            : "cursor-pointer hover:bg-[#f3f4f8] dark:hover:bg-[#2a1f52] dark:text-[#e4e4e7]",
+                          selected && !optionDisabled ? "bg-[#eef8ff] dark:bg-[#1c1538]" : "bg-transparent",
                           itemButtonClassName,
                         )}
                       >

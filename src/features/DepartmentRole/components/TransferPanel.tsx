@@ -27,7 +27,7 @@ export function TransferPanel({
   }
 
   return (
-    <div className="flex flex-col overflow-hidden rounded-[8px] border border-[#E5E7EB] bg-white">
+    <div className="flex flex-col overflow-hidden rounded-[8px] border border-[#E5E7EB] dark:border-[rgba(108,93,211,0.4)] bg-white dark:bg-[#18181b]">
       <div className="flex h-10 items-center justify-between gap-3 bg-[#6C5DD3] px-3 text-[13px] font-medium text-white">
         <span className="flex-1">{title}</span>
         <div className="flex items-center gap-2 pr-2">
@@ -35,10 +35,10 @@ export function TransferPanel({
           <button
             type="button"
             onClick={() => onSelectAll(!allSelected)}
-            className={`flex size-4 items-center justify-center rounded-[3px] border transition-colors ${allSelected ? "bg-white text-[#6C5DD3]" : "border-white/20 bg-white"
+            className={`flex size-4 items-center justify-center rounded-[3px] border transition-colors ${allSelected ? "border-[#6C5DD3] bg-[#6C5DD3] text-white" : "border-white/20 bg-white dark:bg-[#09090b] dark:border-[#3f3f46]"
               }`}
           >
-            {allSelected && <Check className="size-3 stroke-3 text-[#6C5DD3]" />}
+            {allSelected && <Check className="size-3 stroke-3 text-white" />}
           </button>
           <span className="min-w-[12px] text-center">{totalCount}</span>
         </div>
@@ -54,11 +54,11 @@ export function TransferPanel({
               return (
                 <div
                   key={item.id}
-                  className="flex flex-col rounded-[6px] overflow-hidden bg-[#F5F5F5] transition-all"
+                  className="flex flex-col rounded-[6px] overflow-hidden bg-[#F5F5F5] dark:bg-[#1a162b] transition-all"
                 >
                   <div
                     className={`group relative flex h-[40px] cursor-pointer items-center justify-between px-3 transition-colors ${
-                      isSelected ? "bg-[#F3F0FF]" : "bg-[#F5F5F5] hover:bg-[#EBEBEB]"
+                      isSelected ? "bg-[#F3F0FF] dark:bg-[#1e1650]" : "bg-[#F5F5F5] dark:bg-[#1a162b] hover:bg-[#EBEBEB] dark:hover:bg-[#251f3d]"
                     }`}
                   >
                     <div className="flex flex-1 items-center gap-2.5" onClick={() => toggleExpand(item.id)}>
@@ -67,7 +67,7 @@ export function TransferPanel({
                       ) : (
                         <ChevronRight className="size-4.5 shrink-0 text-[#6C5DD3]" />
                       )}
-                      <span className="text-[14px] font-medium text-[#111827]">{item.name}</span>
+                      <span className="text-[14px] font-medium text-[#111827] dark:text-[#e4e4e7]">{item.name}</span>
                     </div>
 
                     <button
@@ -75,15 +75,15 @@ export function TransferPanel({
                       onClick={() => onToggleItem(item.id)}
                       className={`flex size-4.5 shrink-0 items-center justify-center rounded-[4px] border shadow-sm transition-all ${isSelected
                           ? "border-[#6C5DD3] bg-[#6C5DD3] text-white"
-                          : "border-[#E5E7EB] bg-white text-transparent hover:border-[#D1D5DB]"
+                          : "border-[#E5E7EB] bg-white dark:bg-[#09090b] dark:border-[#3f3f46] hover:border-[#D1D5DB]"
                         }`}
                     >
-                      <Check className="size-3.5 stroke-3" />
+                      {isSelected && <Check className="size-3.5 stroke-3 text-white" />}
                     </button>
                   </div>
 
                   {isExpanded && item.permissions.length > 0 && (
-                    <div className="flex flex-col bg-white pb-2.5 px-1">
+                    <div className="flex flex-col bg-white dark:bg-[#18181b] pb-2.5 px-1">
                       {item.permissions.map((perm, idx) => {
                         const isPermSelected = selectedIds.includes(`${item.id}:${perm}`)
                         return (
@@ -92,20 +92,20 @@ export function TransferPanel({
                             className="relative flex items-center justify-between py-0.5 pl-12 pr-2 hover:bg-[#F9FAFB]/50 rounded-md"
                           >
                             {/* Tree lines */}
-                            <div className="absolute left-[26px] top-0 h-full w-[1.5px] bg-[#E5E7EB]" />
-                            <div className="absolute left-[26px] top-1/2 h-[1.5px] w-4 bg-[#E5E7EB]" />
+                            <div className="absolute left-[26px] top-0 h-full w-[1.5px] bg-[#E5E7EB] dark:bg-[rgba(108,93,211,0.3)]" />
+                            <div className="absolute left-[26px] top-1/2 h-[1.5px] w-4 bg-[#E5E7EB] dark:bg-[rgba(108,93,211,0.3)]" />
 
-                            <span className="text-[13.5px] text-[#4B5563] leading-normal">{perm}</span>
+                            <span className="text-[13.5px] text-[#4B5563] dark:text-[#a1a1aa] leading-normal">{perm}</span>
 
                             <button
                               type="button"
                               onClick={() => onTogglePermission?.(item.id, perm)}
                               className={`flex size-4.5 shrink-0 items-center justify-center rounded-[4px] border shadow-sm transition-all ${isPermSelected
                                   ? "border-[#6C5DD3] bg-[#6C5DD3] text-white"
-                                  : "border-[#E5E7EB] bg-white text-transparent hover:border-[#D1D5DB]"
+                                  : "border-[#E5E7EB] bg-white dark:bg-[#09090b] dark:border-[#3f3f46] hover:border-[#D1D5DB]"
                                 }`}
                             >
-                              <Check className="size-3.5 stroke-3" />
+                              {isPermSelected && <Check className="size-3.5 stroke-3 text-white" />}
                             </button>
                           </div>
                         )

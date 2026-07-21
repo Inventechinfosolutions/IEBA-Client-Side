@@ -45,7 +45,7 @@ const labelClassName =
   "mb-2 block text-[12px] font-normal text-[var(--primary)]"
 
 const topDateButtonClassName =
-  "h-[40px] w-[150px] justify-between rounded-[6px] border border-[#d6d7dc] !bg-white px-3 text-[12px] font-normal text-[#111827] hover:!bg-white focus-visible:!bg-white data-[state=open]:!bg-white"
+  "h-[40px] w-[150px] justify-between rounded-[6px] border border-[#d6d7dc] dark:border-[#27272a] bg-white dark:bg-[#09090b] px-3 text-[12px] font-normal text-[#111827] dark:text-[#f4f4f5] hover:bg-white dark:hover:bg-[#18181b] focus-visible:bg-white dark:focus-visible:bg-[#18181b] data-[state=open]:bg-white dark:data-[state=open]:bg-[#18181b]"
 
 const showFiscalYearSuccessToast = (message: string) =>
   toast.success(message, {
@@ -82,9 +82,9 @@ function HolidayDatePicker({
         <Button
           type="button"
           variant="outline"
-          className="group h-[40px] w-full justify-between rounded-[6px] border border-[#d6d7dc] !bg-white px-3 !text-[14px] font-normal text-[#111827] hover:!bg-white focus-visible:!bg-white aria-expanded:!bg-white data-[state=open]:!bg-white"
+          className="group h-[40px] w-full justify-between rounded-[6px] border border-[#d6d7dc] dark:border-[#27272a] bg-white dark:bg-[#09090b] px-3 !text-[14px] font-normal text-[#111827] dark:text-[#f4f4f5] hover:bg-white dark:hover:bg-[#18181b] focus-visible:bg-white dark:focus-visible:bg-[#18181b] aria-expanded:bg-white dark:aria-expanded:bg-[#18181b] data-[state=open]:bg-white dark:data-[state=open]:bg-[#18181b]"
         >
-          <span className={cn(hasValue ? "text-[#111827]" : "text-[#b5bcc9]")}>
+          <span className={cn(hasValue ? "text-[#111827] dark:text-[#f4f4f5]" : "text-[#b5bcc9] dark:text-[#71717a]")}>
             {isoYmdToDisplayDdMmYyyy(value) || "DD-MM-YYYY"}
           </span>
           <span
@@ -123,7 +123,7 @@ function HolidayDatePicker({
         align="start"
         side="bottom"
         sideOffset={6}
-        className="w-auto rounded-[6px] border border-[#e6e8ef] !bg-white p-2 text-[14px] text-[#111827] shadow-[0_10px_24px_rgba(17,24,39,0.18)]"
+        className="w-auto rounded-[6px] border border-[#e6e8ef] dark:border-[#27272a] bg-white dark:bg-[#09090b] p-2 text-[14px] text-[#111827] dark:text-[#f4f4f5] shadow-[0_10px_24px_rgba(17,24,39,0.18)]"
       >
         <Calendar
           captionLayout="label"
@@ -136,7 +136,7 @@ function HolidayDatePicker({
             onChange(toIsoYmdFromDate(date))
             setOpen(false)
           }}
-          className="!bg-white text-[14px] [&_.rdp-caption_label]:text-[14px] [&_.rdp-day]:text-[14px] [&_.rdp-day_button]:h-9 [&_.rdp-day_button]:w-9 [&_.rdp-day_button]:text-[14px] [&_.rdp-weekday]:text-[14px] [&_nav>button]:hover:!bg-white"
+          className="bg-white dark:bg-transparent text-[14px] [&_.rdp-caption_label]:text-[14px] [&_.rdp-day]:text-[14px] [&_.rdp-day_button]:h-9 [&_.rdp-day_button]:w-9 [&_.rdp-day_button]:text-[14px] [&_.rdp-weekday]:text-[14px] [&_nav>button]:hover:!bg-white dark:[&_nav>button]:hover:!bg-transparent"
         />
       </DropdownMenuContent>
     </DropdownMenu>
@@ -162,7 +162,7 @@ function MonthYearPicker({ value, onChange, useMonthEnd }: MonthYearPickerProps)
     >
       <DropdownMenuTrigger asChild>
         <Button type="button" variant="outline" className={cn(topDateButtonClassName, "group")}>
-          <span className={cn(hasValue ? "text-[#111827]" : "text-[#b5bcc9]")}>
+          <span className={cn(hasValue ? "text-[#111827] dark:text-[#f4f4f5]" : "text-[#b5bcc9] dark:text-[#71717a]")}>
             {displayValue || "Select month"}
           </span>
           <span
@@ -209,7 +209,7 @@ function MonthYearPicker({ value, onChange, useMonthEnd }: MonthYearPickerProps)
         align="start"
         side="bottom"
         sideOffset={6}
-        className="w-[300px] rounded-[6px] bg-white p-0 shadow-[0_10px_24px_rgba(17,24,39,0.18)]"
+        className="w-[300px] rounded-[6px] border border-[#e6e8ef] dark:border-[#27272a] bg-white dark:bg-[#09090b] p-0 shadow-[0_10px_24px_rgba(17,24,39,0.18)]"
       >
         <div className="flex h-[50px] items-center justify-between px-3">
           <button

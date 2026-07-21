@@ -314,3 +314,7 @@ export async function apiGetUserDetails(userId: string): Promise<UserDetailsDto>
   return res.data
 }
 
+export async function apiUpdateUserTheme(userId: string, theme: boolean): Promise<void> {
+  await api.put(`/users/${encodeURIComponent(userId)}/theme`, { theme })
+}
+

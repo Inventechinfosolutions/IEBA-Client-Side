@@ -37,7 +37,7 @@ function serializeStoredValues(values: readonly string[]): string {
 
 /** Same panel + scroll behavior as Settings → Reports → Reports dropdown (native scrollbar). */
 const reportsDropdownContentClassName =
-  "max-h-[260px] overflow-auto rounded-[7px] border border-[#d9deea] bg-white shadow-[0_8px_18px_rgba(17,24,39,0.12)]"
+  "max-h-[260px] overflow-auto rounded-[7px] border border-[#d9deea] bg-white dark:bg-[#18181b] dark:border-[rgba(108,93,211,0.4)] shadow-[0_8px_18px_rgba(17,24,39,0.12)]"
 
 export type MultiSelectDropdownProps = {
   value: string
@@ -101,7 +101,7 @@ export function MultiSelectDropdown({
           onBlur={onBlur}
           aria-label={placeholder}
           className={cn(
-            "relative flex min-h-[43px] w-full flex-wrap items-center gap-2 rounded-[7px] border border-[#c6cedd] bg-white px-3 py-1.5 pr-9 text-left shadow-none",
+            "relative flex min-h-[43px] w-full flex-wrap items-center gap-2 rounded-[7px] border border-[#c6cedd] bg-white dark:bg-[#09090b] dark:border-[rgba(108,93,211,0.5)] dark:text-[#e4e4e7] px-3 py-1.5 pr-9 text-left shadow-none",
             "text-[11px] font-normal leading-[16px] text-[#111827]",
             "cursor-pointer outline-none focus-visible:border-[#3b82f6] focus-visible:ring-1 focus-visible:ring-[#3b82f640]",
             disabledEffective && "cursor-not-allowed bg-[#f2f2f2] opacity-100",
@@ -199,8 +199,8 @@ export function MultiSelectDropdown({
                         type="button"
                         onClick={() => toggle(opt.value)}
                         className={cn(
-                          "flex w-full items-center justify-between gap-3 px-3 py-2 text-left hover:bg-[#f3f4f8]",
-                          selected ? "bg-[#eef8ff]" : "bg-transparent",
+                          "flex w-full items-center justify-between gap-3 px-3 py-2 text-left hover:bg-[#f3f4f8] dark:hover:bg-[#2a1f52] dark:text-[#e4e4e7]",
+                          selected ? "bg-[#eef8ff] dark:bg-[#1c1538]" : "bg-transparent",
                         )}
                       >
                         <span className="truncate text-[11px] font-normal text-[#111827]">{opt.label}</span>

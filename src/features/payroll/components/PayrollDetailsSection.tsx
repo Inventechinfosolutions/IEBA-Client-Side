@@ -213,7 +213,7 @@ export function PayrollDetailsSection({
                   placeholder="Fiscal year"
                   disabled={isOptionsLoading}
                   isLoading={isOptionsLoading}
-                  className="h-[46px]! min-h-[46px]! w-full rounded-[6px]! border-[#d6d7dc]! text-[14px]!"
+                  className="h-[46px]! min-h-[46px]! w-full rounded-[6px]! border-[#d6d7dc]! dark:border-[rgba(108,93,211,0.5)]! text-[14px]!"
                   itemButtonClassName="rounded-[6px] px-3 py-2"
                   itemLabelClassName="!text-[14px]"
                 />
@@ -275,7 +275,7 @@ export function PayrollDetailsSection({
                   placeholder={periodType === "month" ? "Month" : "Quarter"}
                   disabled={isOptionsLoading}
                   isLoading={isOptionsLoading}
-                  className="h-[46px]! min-h-[46px]! w-full rounded-[6px]! border-[#d6d7dc]! text-[14px]!"
+                  className="h-[46px]! min-h-[46px]! w-full rounded-[6px]! border-[#d6d7dc]! dark:border-[rgba(108,93,211,0.5)]! text-[14px]!"
                   itemButtonClassName="rounded-[6px] px-3 py-2"
                   itemLabelClassName="!text-[14px]"
                 />
@@ -305,7 +305,7 @@ export function PayrollDetailsSection({
                   placeholder="Department"
                   disabled={isOptionsLoading || (isRestrictedAdmin && isDetailsLoading)}
                   isLoading={isOptionsLoading || (isRestrictedAdmin && isDetailsLoading)}
-                  className="h-[46px]! min-h-[46px]! w-full rounded-[6px]! border-[#d6d7dc]! text-[14px]!"
+                  className="h-[46px]! min-h-[46px]! w-full rounded-[6px]! border-[#d6d7dc]! dark:border-[rgba(108,93,211,0.5)]! text-[14px]!"
                   itemButtonClassName="rounded-[6px] px-3 py-2"
                   itemLabelClassName="!text-[14px]"
                 />
@@ -333,7 +333,7 @@ export function PayrollDetailsSection({
                   disabled={isOptionsLoading}
                   isLoading={isUsersLoading}
                   maxVisibleItems={2}
-                  className="min-h-[46px] w-full rounded-[6px] border-[#d6d7dc] text-[14px]"
+                  className="min-h-[46px] w-full rounded-[6px] border-[#d6d7dc] dark:border-[rgba(108,93,211,0.5)] text-[14px]"
                 />
               )}
             />

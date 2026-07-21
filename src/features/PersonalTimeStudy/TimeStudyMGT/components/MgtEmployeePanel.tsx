@@ -134,7 +134,7 @@ export function MgtEmployeePanel({
       </div>
 
       {/* Scrollable list — fixed height so panel never shrinks */}
-      <div className="overflow-y-auto divide-y divide-gray-200 h-[430px]">
+      <div className="overflow-y-auto divide-y divide-gray-200 dark:divide-[rgba(108,93,211,0.4)] h-[430px]">
         {isLoading ? (
           <div className="flex h-full items-center justify-center">
             <Spinner className="size-8 text-[#6C5DD3]" />

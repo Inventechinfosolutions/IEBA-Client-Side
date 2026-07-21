@@ -336,12 +336,12 @@ export function MasterCodeFormModal({
           </div>
 
           <div className="mt-2">
-            <label className="block text-[12px] text-[#111827]">*Activity Description</label>
+            <label className="block text-[12px] text-[#111827] dark:text-[#a1a1aa]">*Activity Description</label>
             <div
               key={detail?.id || "new"}
-              className="relative mt-1.5 overflow-hidden rounded-[10px] border border-[#c5cad5] bg-white"
+              className="relative mt-1.5 overflow-hidden rounded-[10px] border border-[#c5cad5] dark:border-[rgba(108,93,211,0.45)] bg-white dark:bg-[#09090b]"
             >
-              <div className="flex h-8 items-center gap-4 border-b border-[#d3d8e2] px-3 text-[#4b5563]">
+              <div className="flex h-8 items-center gap-4 border-b border-[#d3d8e2] dark:border-[rgba(108,93,211,0.3)] px-3 text-[#4b5563] dark:text-[#a1a1aa]">
                 <button
                   type="button"
                   onClick={() => applyCommand("bold")}
@@ -383,7 +383,7 @@ export function MasterCodeFormModal({
                 onInput={syncEditorValue}
                 onClick={refreshActiveTools}
                 onKeyUp={refreshActiveTools}
-                className="program-table-scroll max-h-[201px] min-h-[201px] select-text overflow-y-scroll overflow-x-hidden whitespace-pre-wrap break-all wrap-anywhere bg-white px-3 py-2 pr-5 text-[13px] leading-6 text-[#111827] outline-none [&_ul]:list-disc [&_ul]:pl-5 [&_li]:my-0.5"
+                className="program-table-scroll max-h-[201px] min-h-[201px] select-text overflow-y-scroll overflow-x-hidden whitespace-pre-wrap break-all wrap-anywhere bg-white dark:bg-[#09090b] px-3 py-2 pr-5 text-[13px] leading-6 text-[#111827] dark:text-[#e4e4e7] outline-none [&_ul]:list-disc [&_ul]:pl-5 [&_li]:my-0.5"
               />
 
             </div>

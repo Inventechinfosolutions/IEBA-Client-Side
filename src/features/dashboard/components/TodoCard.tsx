@@ -51,7 +51,7 @@ export function TodoCard({ items = [], isLoading }: TodoCardProps) {
         </div>
 
         {/* List */}
-        <div className="flex-1 overflow-y-auto divide-y divide-gray-200 pr-5">
+        <div className="flex-1 overflow-y-auto divide-y divide-gray-200 dark:divide-[rgba(108,93,211,0.4)] pr-5">
           {isLoading &&
             Array.from({ length: 4 }).map((_, i) => (
               <div key={i} className="flex items-center gap-3 px-4 py-3 animate-pulse">
