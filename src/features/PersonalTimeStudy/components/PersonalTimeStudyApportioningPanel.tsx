@@ -32,7 +32,7 @@ function ReadOnlyAutoToggle({ checked }: { checked: boolean }) {
       title="Controlled by department settings — cannot be changed here"
       className={cn(
         "relative inline-flex h-5 w-9 shrink-0 cursor-not-allowed items-center rounded-full border-2 border-transparent",
-        checked ? "bg-[#6C5DD3]" : "bg-gray-300",
+        checked ? "bg-[#6C5DD3]" : "bg-gray-300 dark:bg-zinc-700",
       )}
     >
       <span
@@ -52,8 +52,8 @@ function RemainingTimeDisplay({ minutes, children }: { minutes: number; children
     <div
       aria-readonly="true"
       className={cn(
-        "flex h-10 w-full items-center justify-between rounded-[6px] border bg-[#F2F4F7] px-3 text-[11px] font-semibold cursor-not-allowed select-none",
-        isOver ? "border-red-300 text-red-600" : "border-input text-[#344054]",
+        "flex h-10 w-full items-center justify-between rounded-[6px] border bg-[#F2F4F7] px-3 text-[11px] font-semibold cursor-not-allowed select-none dark:bg-[#18181b] dark:border-[#27272a] dark:text-[#f4f4f5]",
+        isOver ? "border-red-300 text-red-600 dark:border-red-900/50 dark:text-red-400" : "border-input text-[#344054]",
       )}
     >
       <span>{minutes}</span>
@@ -68,7 +68,7 @@ function ReadOnlyField({ label }: { label: string }) {
     <div
       aria-readonly="true"
       title="Set automatically by the system — cannot be changed"
-      className="flex h-10 w-full items-center rounded-[6px] border border-input bg-[#F2F4F7] px-3 text-[11px] text-[#344054] cursor-not-allowed select-none truncate"
+      className="flex h-10 w-full items-center rounded-[6px] border border-input bg-[#F2F4F7] px-3 text-[11px] text-[#344054] cursor-not-allowed select-none truncate dark:bg-[#18181b] dark:border-[#27272a] dark:text-[#f4f4f5]"
     >
       {label || <span className="text-muted-foreground italic">Not Assigned</span>}
     </div>
@@ -191,7 +191,7 @@ export function PersonalTimeStudyApportioningPanel({
   if (!shouldRender) return null
 
   return (
-    <div className="mt-4 rounded-[8px] border border-[#6C5DD3]/20 bg-[#F8F7FF] p-4">
+    <div className="mt-4 rounded-[8px] border border-[#6C5DD3]/20 bg-[#F8F7FF] p-4 dark:bg-[#12111a] dark:border-[#6C5DD3]/30">
       {/* Panel title */}
       <h4 className="mb-3 text-[13px] font-semibold text-[#6C5DD3]">Apportioning</h4>
 
@@ -277,7 +277,7 @@ export function PersonalTimeStudyApportioningPanel({
               className="grid grid-cols-[110px_150px_1fr_1fr_160px] items-end gap-2"
             >
               {/* Department name */}
-              <span className="text-[12px] font-bold text-[#111827] leading-snug pb-3">
+              <span className="text-[12px] font-bold text-[#111827] leading-snug pb-3 dark:text-[#f4f4f5]">
                 {row.deptName}
               </span>
 
@@ -343,7 +343,7 @@ export function PersonalTimeStudyApportioningPanel({
                           <AlertCircle className="size-3.5" />
                         </div>
                       </HoverCardTrigger>
-                      <HoverCardContent className="w-fit max-w-xs p-3 z-[100] bg-white border border-gray-100 shadow-xl rounded-[8px] text-[#111827]" align="end" side="top">
+                      <HoverCardContent className="w-fit max-w-xs p-3 z-[100] bg-white border border-gray-100 shadow-xl rounded-[8px] text-[#111827] dark:bg-[#18181b] dark:border-[#27272a] dark:text-[#f4f4f5]" align="end" side="top">
                         <div className="text-[12px] font-medium leading-relaxed">
                           {rec?.apportioningDesc || rec?.description || "No description available"}
                         </div>

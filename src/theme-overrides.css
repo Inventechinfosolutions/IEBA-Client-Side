@@ -13,3 +13,1443 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --ring: #6C5DD3;
 }
+
+.dark {
+  /* Premium Deep Black Theme Variables */
+  --background: #000000;
+  --foreground: #f4f4f5;
+  --card: #0a0a0c;
+  --card-foreground: #f4f4f5;
+
+  --popover: #121215;
+  --popover-foreground: #f4f4f5;
+
+  --primary: #7566d4;
+  --primary-foreground: #ffffff;
+
+  --secondary: #16161a;
+  --secondary-foreground: #f4f4f5;
+
+  --muted: #16161a;
+  --muted-foreground: #a1a1aa;
+
+  --accent: #2a1f52;
+  --accent-foreground: #f4f4f5;
+
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+
+  --border: rgba(108, 93, 211, 0.45);
+  --input: #121215;
+  --ring: #7566d4;
+
+  --sidebar: #09090b;
+  --sidebar-foreground: #e4e4e7;
+  --sidebar-primary: #7566d4;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #16161a;
+  --sidebar-accent-foreground: #f4f4f5;
+  --sidebar-border: #1a1a20;
+  --sidebar-ring: #7566d4;
+
+  /* Redefine tailwind color variables for Tailwind v4 */
+  --color-background: var(--background);
+  --color-card: var(--card);
+  --color-popover: var(--popover);
+  --color-primary: var(--primary);
+  --color-secondary: var(--secondary);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+}
+
+/* Global Hardcoded Light Class Overrides in Dark Mode */
+
+/* 1. Backgrounds */
+.dark .bg-white {
+  background-color: #0a0a0c !important;
+}
+
+.dark .bg-\[\#F4F5FB\] {
+  background-color: #000000 !important;
+}
+
+.dark .bg-\[\#f5f5f5\] {
+  background-color: #000000 !important;
+}
+
+.dark .bg-\[\#FAFAFA\] {
+  background-color: #0d0d10 !important;
+}
+
+.dark .bg-\[\#FAFAFC\],
+.dark [class*="bg-[#FAFAFC]"],
+.dark [class*="bg-[#fafafc]"] {
+  background-color: #0c0c0e !important;
+}
+
+.dark .bg-\[\#F3F4F6\] {
+  background-color: #121215 !important;
+}
+
+.dark .bg-\[\#f3f4f8\] {
+  background-color: #121215 !important;
+}
+
+.dark .bg-\[\#f9fafb\] {
+  background-color: #121215 !important;
+}
+
+.dark .bg-\[\#f2f2f2\] {
+  background-color: #16161a !important;
+}
+
+.dark .bg-\[\#F6F7FB\] {
+  background-color: #0a0a0c !important;
+}
+
+.dark .bg-gray-50 {
+  background-color: #121215 !important;
+}
+
+.dark .bg-gray-100 {
+  background-color: #121215 !important;
+}
+
+/* 2. Text Colors */
+.dark .text-\[\#111827\] {
+  color: #f4f4f5 !important;
+}
+
+.dark .text-\[\#374151\] {
+  color: #d4d4d8 !important;
+}
+
+.dark .text-\[\#4B5563\] {
+  color: #a1a1aa !important;
+}
+
+.dark .text-\[\#6B7280\] {
+  color: #a1a1aa !important;
+}
+
+.dark .text-\[\#9CA3AF\] {
+  color: #71717a !important;
+}
+
+.dark .text-\[\#555f76\] {
+  color: #a1a1aa !important;
+}
+
+.dark .text-\[\#232735\] {
+  color: #f4f4f5 !important;
+}
+
+.dark .text-\[\#000000E0\] {
+  color: #f4f4f5 !important;
+}
+
+.dark .text-gray-500 {
+  color: #a1a1aa !important;
+}
+
+.dark .text-gray-900 {
+  color: #f4f4f5 !important;
+}
+
+/* 3. Borders */
+.dark .border-\[\#E5E7EB\] {
+  border-color: rgba(108, 93, 211, 0.45) !important;
+}
+
+.dark .border-\[\#d1d5db\] {
+  border-color: rgba(108, 93, 211, 0.45) !important;
+}
+
+.dark .border-\[\#cbd5e1\] {
+  border-color: rgba(108, 93, 211, 0.45) !important;
+}
+
+.dark .border-\[\#e5e7eb\] {
+  border-color: rgba(108, 93, 211, 0.45) !important;
+}
+
+.dark .border-\[\#d0d5df\] {
+  border-color: rgba(108, 93, 211, 0.45) !important;
+}
+
+.dark .border-\[\#eef0f5\] {
+  border-color: rgba(108, 93, 211, 0.45) !important;
+}
+
+.dark .border-\[\#e8ebf2\] {
+  border-color: rgba(108, 93, 211, 0.45) !important;
+}
+
+.dark .border-\[\#d7dbe7\] {
+  border-color: rgba(108, 93, 211, 0.45) !important;
+}
+
+.dark .border-\[\#d6d7dc\] {
+  border-color: rgba(108, 93, 211, 0.45) !important;
+}
+
+.dark .border-gray-100 {
+  border-color: rgba(108, 93, 211, 0.45) !important;
+}
+
+.dark .border-gray-200 {
+  border-color: rgba(108, 93, 211, 0.45) !important;
+}
+
+.dark [class*="border-[#F3F4F6]"],
+.dark [class*="border-[#f3f4f6]"] {
+  border-color: rgba(108, 93, 211, 0.45) !important;
+}
+
+.dark .border-\[\#c6cedd\],
+.dark .border-\[\#C6CEDD\],
+.dark [class*="border-[#c6cedd]"],
+.dark [class*="border-[#C6CEDD]"] {
+  border-color: rgba(108, 93, 211, 0.5) !important;
+}
+
+.dark .border-\[\#d9deea\],
+.dark .border-\[\#D9DEEA\],
+.dark [class*="border-[#d9deea]"],
+.dark [class*="border-[#D9DEEA]"] {
+  border-color: rgba(108, 93, 211, 0.4) !important;
+}
+
+.dark .border-\[\#dcd6f7\],
+.dark .border-\[\#DCD6F7\],
+.dark [class*="border-[#dcd6f7]"],
+.dark [class*="border-[#DCD6F7]"] {
+  border-color: rgba(108, 93, 211, 0.5) !important;
+}
+
+.dark .border-\[\#cfd4df\],
+.dark .border-\[\#CFD4DF\],
+.dark [class*="border-[#cfd4df]"],
+.dark [class*="border-[#CFD4DF]"] {
+  border-color: rgba(108, 93, 211, 0.45) !important;
+}
+
+/* 4. Shadows */
+.dark .shadow-login-card,
+.dark .shadow-auth-card,
+.dark .shadow-\[0_2px_10px_rgba\(0\2c 0\2c 0\2c 0\.06\)\] {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6) !important;
+}
+
+.dark .shadow-\[0_0_20px_0_\#0000001a\],
+.dark [class*="shadow-[0_0_20px_0_#0000001a]"] {
+  box-shadow: 0 4px 20px rgba(108, 93, 211, 0.15) !important;
+}
+
+.dark [data-slot="sidebar-container"][data-side="left"] {
+  box-shadow: 4px 0 18px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* 5. Sidebar Menu Hover, Contrast & Active States */
+.dark [data-sidebar="menu-button"] {
+  color: #a1a1aa !important;
+}
+
+.dark [data-sidebar="menu-button"] a {
+  color: #a1a1aa !important;
+}
+
+.dark [data-sidebar="menu-button"] svg {
+  color: #71717a !important;
+}
+
+.dark [data-sidebar="menu-button"][data-active="true"] {
+  color: #6C5DD3 !important;
+}
+
+.dark [data-sidebar="menu-button"][data-active="true"] a {
+  color: #6C5DD3 !important;
+}
+
+.dark [data-sidebar="menu-button"][data-active="true"] svg {
+  color: #6C5DD3 !important;
+}
+
+.dark [data-sidebar="menu-button"]:hover {
+  background-color: var(--sidebar-accent) !important;
+  color: var(--sidebar-accent-foreground) !important;
+}
+
+.dark [data-sidebar="menu-button"]:hover a {
+  color: #ffffff !important;
+}
+
+.dark [data-sidebar="menu-button"]:hover svg {
+  color: #ffffff !important;
+}
+
+/* 6. Inputs, Controls & Placeholders */
+.dark input,
+.dark textarea,
+.dark select {
+  background-color: #09090b !important;
+  color: #f4f4f5 !important;
+  border-color: #27272a !important;
+}
+
+.dark .border-input,
+.dark [class*="border-input"] {
+  border-color: #27272a !important;
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: #71717a !important;
+}
+
+/* 7. Custom Tailwind Arbitrary/Brackets Style Rules */
+.dark [class*="bg-[rgb(255,255,255)]"] {
+  background-color: #09090b !important;
+}
+
+.dark [class*="bg-[#FAF8FF]"] {
+  background-color: #0d0d11 !important;
+}
+
+.dark [class*="bg-[#FAF8FF]"]:hover {
+  background-color: #121216 !important;
+}
+
+.dark [class*="bg-[#fafafa]/40"] {
+  background-color: rgba(108, 93, 211, 0.05) !important;
+}
+
+.dark [class*="hover:bg-[#f5f3ff]/30"]:hover {
+  background-color: rgba(108, 93, 211, 0.1) !important;
+}
+
+.dark [class*="hover:bg-[#f5f3ff]/50"]:hover {
+  background-color: rgba(108, 93, 211, 0.12) !important;
+}
+
+.dark [class*="bg-white"]:hover {
+  background-color: #121214 !important;
+}
+
+.dark [class*="text-[#000000E0]"] {
+  color: #f4f4f5 !important;
+}
+
+.dark [class*="border-[rgb(218,218,218)]"],
+.dark [class*="border-[rgb(217,217,217)]"] {
+  border-color: #27272a !important;
+}
+
+.dark [class*="text-[#1f2937]"],
+.dark [class*="text-[#1F2937]"] {
+  color: #f4f4f5 !important;
+}
+
+.dark [class*="text-[#8f93a1]"] {
+  color: #71717a !important;
+}
+
+.dark [class*="border-[#d8dae3]"] {
+  border-color: #27272a !important;
+}
+
+.dark [class*="hover:bg-[#f5f5f8]"]:hover {
+  background-color: #18181b !important;
+}
+
+.dark [class*="hover:bg-[#fafafa]"]:hover {
+  background-color: #18181b !important;
+}
+
+.dark [class*="hover:bg-[#f8f9fa]"]:hover {
+  background-color: #18181b !important;
+  color: #ffffff !important;
+}
+
+.dark [class*="bg-[#f0f7ff]"] {
+  background-color: #18181b !important;
+  color: #ffffff !important;
+}
+
+.dark [class*="bg-[#f8f9fa]"] {
+  background-color: #18181b !important;
+}
+
+.dark [class*="border-[#eff0f5]"] {
+  border-color: #27272a !important;
+}
+
+/* 8. Table Elements & Headers & Scrollbars */
+.dark table {
+  background-color: #000000 !important;
+  color: #f4f4f5 !important;
+}
+
+.dark tr {
+  border-color: #27272a !important;
+}
+
+.dark td,
+.dark th {
+  border-color: #27272a !important;
+}
+
+.dark .program-table-scroll {
+  scrollbar-color: #52525b #09090b !important;
+}
+
+.dark .program-table-scroll::-webkit-scrollbar-track {
+  background: #09090b !important;
+  border-left-color: #27272a !important;
+}
+
+.dark .program-table-scroll::-webkit-scrollbar-thumb {
+  background-color: #52525b !important;
+  border-color: #09090b !important;
+}
+
+/* 9. Ant Design Modal elements overrides */
+.dark .ant-modal-content {
+  background-color: #09090b !important;
+  color: #f4f4f5 !important;
+  border-color: #27272a !important;
+}
+
+.dark .ant-modal-header {
+  background-color: #09090b !important;
+  color: #f4f4f5 !important;
+}
+
+.dark .ant-modal-title {
+  color: #f4f4f5 !important;
+}
+
+.dark .ant-modal-footer {
+  background-color: #09090b !important;
+}
+
+/* 10. Native File Inputs in Dark Mode */
+.dark input[type="file"]::file-selector-button {
+  background-color: #18181b !important;
+  color: #f4f4f5 !important;
+  border-color: #27272a !important;
+  border-radius: 4px;
+}
+
+.dark input[type="file"]::file-selector-button:hover {
+  background-color: #27272a !important;
+}
+
+.dark input[type="file"] {
+  color: #a1a1aa !important;
+}
+
+/* 11. Empty State Images Overrides (Blend White Backgrounds of PNG assets in Dark Mode) */
+.dark img[src*="table-empty.png"] {
+  content: url("./assets/icons/table-emptyDark.png") !important;
+}
+
+/* 12. Dashboard Card Overrides */
+.dark .text-\[\#1a1a2e\] {
+  color: #f4f4f5 !important;
+}
+
+.dark [class*="text-[#1a1a2e]"] {
+  color: #f4f4f5 !important;
+}
+
+.dark [class*="bg-[#f8f8fb]"] {
+  background-color: #0d0d11 !important;
+}
+
+.dark [class*="border-[#F0F0F0]"] {
+  border-color: rgba(108, 93, 211, 0.4) !important;
+}
+
+.dark [class*="border-[#f0f0f5]"] {
+  border-color: rgba(108, 93, 211, 0.4) !important;
+}
+
+.dark [class*="border-[#E8EAF6]"],
+.dark [class*="border-[#e8eaf6]"],
+.dark .border-\[\#E8EAF6\],
+.dark .border-\[\#e8eaf6\] {
+  border-color: rgba(108, 93, 211, 0.4) !important;
+}
+
+.dark [class*="hover:bg-[#F9F8FF]"]:hover {
+  background-color: #121216 !important;
+}
+
+.dark [class*="divide-[#F5F5F7]"]>*+* {
+  border-color: rgba(108, 93, 211, 0.4) !important;
+}
+
+/* 13. Recharts Bar Charts Background Track In Dark Mode */
+.dark .recharts-bar-background,
+.dark .recharts-bar-background-rectangle {
+  fill: #18181b !important;
+}
+
+/* 14. Global Custom Scrollbars overrides for Dashboard Lists */
+.dark .ieba-scrollbar {
+  scrollbar-color: #52525b transparent !important;
+}
+
+.dark .ieba-scrollbar::-webkit-scrollbar-thumb {
+  background: #52525b !important;
+}
+
+.dark .ieba-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #71717a !important;
+}
+
+/* 15. Calendar day cell overrides in Dark Mode */
+.dark .day-cell[style*="#f3f4f6"],
+.dark .day-cell[style*="243, 244, 246"],
+.dark .day-cell[style*="243,244,246"] {
+  background-color: #18181b !important;
+  color: #a1a1aa !important;
+}
+
+.dark .day-cell.selected {
+  background-color: #6C5DD3 !important;
+  color: #ffffff !important;
+}
+
+.dark .day-cell.not-current-month[style*="#f3f4f6"],
+.dark .day-cell.not-current-month[style*="243, 244, 246"],
+.dark .day-cell.not-current-month[style*="243,244,246"] {
+  background-color: #050505 !important;
+  color: #52525b !important;
+}
+
+.dark .day-cell.week-selected:not(.selected) {
+  background-color: #1e3a8a !important;
+  color: #ffffff !important;
+  border-color: #3b82f6 !important;
+}
+
+.dark .day-cell:not(.selected):not(.week-selected):hover {
+  background-color: #27272a !important;
+}
+
+.dark .day-cell.today:not(.selected):not(.week-selected) {
+  color: #a78bfa !important;
+}
+
+/* 16. Disabled Select Search Dropdowns and Inputs in Dark Mode */
+.dark [class*="bg-[#f2f2f2]"] {
+  background-color: #18181b !important;
+}
+
+.dark [class*="bg-[#F2F4F7]"] {
+  background-color: #18181b !important;
+}
+
+/* 17. Custom gray utility classes overrides in Dark Mode */
+.dark .text-gray-700 {
+  color: #d4d4d8 !important;
+}
+
+.dark .hover\:bg-gray-50:hover {
+  background-color: #18181b !important;
+}
+
+.dark [class*="bg-purple-50"] {
+  background-color: #1c1538 !important;
+  color: #a78bfa !important;
+}
+
+.dark .divide-gray-200>*+* {
+  border-color: rgba(108, 93, 211, 0.4) !important;
+}
+
+/* 18. Calendar layout text and header overrides in Dark Mode */
+.dark .days-of-week-container>div {
+  color: #a1a1aa !important;
+}
+
+.dark .week-summary-header {
+  color: #a1a1aa !important;
+}
+
+.dark .week-summary-total {
+  color: #f4f4f5 !important;
+}
+
+/* 19. Global Alternating Rows and Cell Borders Overrides in Dark Mode */
+.dark [class*="bg-[#F9FAFB]"] {
+  background-color: #0c0c0e !important;
+}
+
+.dark [class*="hover:bg-[#F9FAFB]"]:hover {
+  background-color: #18181b !important;
+}
+
+.dark [class*="border-[#D1D5DB]"] {
+  border-color: #27272a !important;
+}
+
+/* 20. Master Code Table Text Contrast Overrides in Dark Mode */
+.dark .text-\[\#232735\] {
+  color: #f4f4f5 !important;
+}
+
+.dark [class*="text-[#232735]"] {
+  color: #f4f4f5 !important;
+}
+
+.dark .text-\[\#262a35\] {
+  color: #f4f4f5 !important;
+}
+
+.dark [class*="text-[#262a35]"] {
+  color: #f4f4f5 !important;
+}
+
+/* 21. Global Inputs and Form Overrides in Dark Mode */
+.dark input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="file"]) {
+  background-color: #18181b !important;
+  color: #f4f4f5 !important;
+  border-color: #27272a !important;
+}
+
+.dark input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="file"])::placeholder {
+  color: #71717a !important;
+}
+
+.dark label,
+.dark Label {
+  color: #f4f4f5 !important;
+}
+
+.dark svg.text-black,
+.dark [class*="text-black"] svg {
+  color: #f4f4f5 !important;
+}
+
+/* 22. Select Trigger Text Color Override in Dark Mode */
+.dark button[id="department"],
+.dark button[data-slot="select-trigger"],
+.dark [data-slot="select-value"] {
+  color: #f4f4f5 !important;
+  opacity: 0.85 !important;
+}
+
+.dark button[id="department"] span,
+.dark button[data-slot="select-trigger"] span {
+  color: #f4f4f5 !important;
+}
+
+.dark button.text-black:not([class*="bg-[#DADADA]"]):not([class*="bg-[#dadada]"]) {
+  color: #f4f4f5 !important;
+}
+
+/* 23. Global Scrollbar overrides in Dark Mode */
+.dark *::-webkit-scrollbar {
+  width: 8px !important;
+  height: 8px !important;
+}
+
+.dark *::-webkit-scrollbar-track {
+  background: #09090b !important;
+}
+
+.dark *::-webkit-scrollbar-thumb {
+  background-color: #52525b !important;
+  border-radius: 4px !important;
+  border: 2px solid #09090b !important;
+}
+
+.dark *::-webkit-scrollbar-thumb:hover {
+  background-color: #71717a !important;
+}
+
+.dark * {
+  scrollbar-color: #52525b #09090b !important;
+}
+
+/* 24. User Name Pill Badges Style Overrides in Dark Mode */
+.dark span.inline-flex.border {
+  background-color: #18181b !important;
+  color: #f4f4f5 !important;
+}
+
+.dark span.inline-flex.border:not([class*="border-red-400"]) {
+  border-color: #27272a !important;
+}
+
+/* 25. Secondary / Cancel / Exit Buttons Contrast Overrides in Dark Mode */
+.dark [class*="bg-[#d9d9d9]"],
+.dark [class*="bg-[#DADADA]"],
+.dark [class*="bg-[#d2d4d9]"],
+.dark [class*="bg-[#D2D4D9]"] {
+  background-color: #27272a !important;
+  color: #f4f4f5 !important;
+}
+
+.dark [class*="bg-[#d9d9d9]"]:hover,
+.dark [class*="bg-[#DADADA]"]:hover,
+.dark [class*="bg-[#d2d4d9]"]:hover,
+.dark [class*="bg-[#D2D4D9]"]:hover,
+.dark [class*="hover:bg-[#d9d9d9]"]:hover,
+.dark [class*="hover:bg-[#d2d4d9]"]:hover,
+.dark [class*="hover:bg-[#d1d1d1]"]:hover,
+.dark [class*="hover:bg-[#d0d0d0]"]:hover {
+  background-color: #3f3f46 !important;
+  color: #ffffff !important;
+}
+
+.dark button[class*="bg-[#E5E7EB]"],
+.dark button[class*="bg-[#e5e7eb]"] {
+  background-color: #09090b !important;
+  border: 1px solid rgba(108, 93, 211, 0.5) !important;
+  color: #e4e4e7 !important;
+}
+
+.dark button[class*="bg-[#E5E7EB]"]:hover,
+.dark button[class*="bg-[#e5e7eb]"]:hover {
+  background-color: rgba(108, 93, 211, 0.15) !important;
+}
+
+/* 26. Custom Tabs Active State Overrides in Dark Mode */
+.dark [data-slot="tabs-trigger"][data-state="active"] {
+  background: linear-gradient(to bottom, #7e6df5, #6c5dd3) !important;
+  color: #ffffff !important;
+}
+
+.dark [data-slot="tabs-trigger"] {
+  color: #6C5DD3 !important;
+}
+
+/* 27. Badge / Pill Borders Overrides in Dark Mode */
+.dark span[class*="border"]:not(.rounded-full):not([class*="d7dbe7"]):not([class*="D7DBE7"]):not([class*="border-red"]):not([class*="border-green"]):not([class*="border-yellow"]),
+.dark .border-\[\#d8dae3\],
+.dark .border-\[\#D8DAE3\],
+.dark [class*="border-[#d8dae3]"],
+.dark [class*="border-[#D8DAE3]"] {
+  border-color: transparent !important;
+}
+
+/* 28. Primary Brand Purple Buttons Premium Gradient Overrides in Dark Mode */
+.dark button.bg-\[\#6C5DD3\],
+.dark button.bg-primary,
+.dark .bg-\[\#6C5DD3\],
+.dark .bg-\[\#6c5dd3\],
+.dark button.bg-\[\#6c5dd3\] {
+  background: linear-gradient(to bottom, #7e6df5, #6c5dd3) !important;
+  border: 1px solid rgba(140, 126, 246, 0.4) !important;
+  box-shadow: 0 2px 8px rgba(108, 93, 211, 0.25) !important;
+  color: #ffffff !important;
+}
+
+.dark button.bg-\[\#6C5DD3\]:hover,
+.dark button.bg-primary:hover,
+.dark .bg-\[\#6C5DD3\]:hover,
+.dark .bg-\[\#6c5dd3\]:hover,
+.dark button.bg-\[\#6c5dd3\]:hover {
+  background: linear-gradient(to bottom, #8c7ef6, #7566d4) !important;
+  box-shadow: 0 4px 12px rgba(108, 93, 211, 0.35) !important;
+  color: #ffffff !important;
+}
+
+/* 29. Active Sidebar Item Style Override in Dark Mode */
+.dark [data-slot="sidebar-menu-button"][data-active="true"] {
+  background: linear-gradient(to bottom, #7e6df5, #6c5dd3) !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 6px rgba(108, 93, 211, 0.2) !important;
+}
+
+.dark [data-slot="sidebar-menu-button"][data-active="true"] * {
+  color: #ffffff !important;
+}
+
+/* 30. Expanded Child Table Rows Overrides in Dark Mode */
+.dark [class*="bg-[#F6F5FF]"],
+.dark [class*="bg-[#f6f5ff]"] {
+  background-color: #131124 !important;
+}
+
+/* 31. Table Contact Card Divider Lines in Dark Mode */
+.dark td [class*="border-t"][class*="border-[#E5E7EB]"],
+.dark td .border-t.border-\[\#E5E7EB\],
+.dark td .border-t.border-\[\#e5e7eb\] {
+  border-color: rgba(108, 93, 211, 0.45) !important;
+}
+
+/* 32. Table Container and Tab Wrapper Card Purple Borders in Dark Mode */
+.dark .overflow-hidden.rounded-\[8px\].border,
+.dark .overflow-hidden.rounded-\[10px\].border,
+.dark div.border-\[\#E5E7EB\][class*="rounded"],
+.dark div.border-\[\#e5e7eb\][class*="rounded"],
+.dark .border-\[\#e7e9f2\],
+.dark [class*="border-[#e7e9f2]"],
+.dark .border-\[\#e7e9f0\],
+.dark [class*="border-[#e7e9f0]"],
+.dark .border-\[\#e8e9ef\],
+.dark [class*="border-[#e8e9ef]"],
+.dark .border-\[\#e1e4ec\],
+.dark [class*="border-[#e1e4ec]"],
+.dark .border-\[\#E1E4EC\],
+.dark [class*="border-[#E1E4EC]"],
+.dark .border-\[\#d8dce8\],
+.dark [class*="border-[#d8dce8]"],
+.dark .border-\[\#D8DCE8\],
+.dark [class*="border-[#D8DCE8]"],
+.dark .border-\[\#e8ebf2\],
+.dark [class*="border-[#e8ebf2]"],
+.dark .border-\[\#E8EBF2\],
+.dark [class*="border-[#E8EBF2]"],
+.dark .border-\[\#d0d5df\],
+.dark [class*="border-[#d0d5df]"],
+.dark .border-\[\#D0D5DF\],
+.dark [class*="border-[#D0D5DF]"],
+.dark .border-\[\#c6cedd\],
+.dark [class*="border-[#c6cedd]"],
+.dark .border-\[\#C6CEDD\],
+.dark [class*="border-[#C6CEDD]"],
+.dark .border-\[\#d2d8e3\],
+.dark [class*="border-[#d2d8e3]"],
+.dark .border-\[\#D2D8E3\],
+.dark [class*="border-[#D2D8E3]"],
+.dark .border-\[\#e4e7ef\],
+.dark [class*="border-[#e4e7ef]"],
+.dark .border-\[\#E4E7EF\],
+.dark [class*="border-[#E4E7EF]"],
+.dark .border-\[\#f1f3f7\],
+.dark [class*="border-[#f1f3f7]"],
+.dark .border-\[\#F1F3F7\],
+.dark [class*="border-[#F1F3F7]"] {
+  border-color: rgba(108, 93, 211, 0.4) !important;
+}
+
+/* 33. Purple Outline Buttons Keep Purple Styles in Dark Mode */
+.dark button.border-\[\#6C5DD3\],
+.dark button.border-\[\#6c5dd3\],
+.dark button[class*="border-[#6C5DD3]"],
+.dark button[class*="border-[#6c5dd3]"] {
+  border-color: #6C5DD3 !important;
+  color: #6C5DD3 !important;
+  background-color: transparent !important;
+}
+
+.dark button.border-\[\#6C5DD3\]:hover,
+.dark button.border-\[\#6c5dd3\]:hover,
+.dark button[class*="border-[#6C5DD3]"]:hover,
+.dark button[class*="border-[#6c5dd3]"]:hover {
+  background-color: rgba(108, 93, 211, 0.1) !important;
+  color: #ffffff !important;
+}
+
+/* 34. Dashboard and General Cards Purple Borders in Dark Mode */
+.dark [class*="rounded-[6px]"][class*="bg-white"]:not(input):not(button):not(select),
+.dark [class*="rounded-[10px]"][class*="bg-white"]:not(input):not(button):not(select),
+.dark [class*="rounded-[12px]"][class*="bg-white"]:not(input):not(button):not(select),
+.dark [class*="rounded-[15px]"][class*="bg-white"]:not(input):not(button):not(select),
+.dark .rounded-\[6px\].bg-white:not(input):not(button):not(select),
+.dark .rounded-\[10px\].bg-white:not(input):not(button):not(select),
+.dark .rounded-\[12px\].bg-white:not(input):not(button):not(select),
+.dark .rounded-\[15px\].bg-white:not(input):not(button):not(select) {
+  border: 1px solid rgba(108, 93, 211, 0.4) !important;
+  box-shadow: 0 4px 20px rgba(108, 93, 211, 0.15) !important;
+}
+
+/* 35. Time Entry Row Wrapper Purple Borders in Dark Mode */
+.dark .rounded-md.border.border-border\/50,
+.dark [class*="rounded-md"][class*="border-border/50"] {
+  border-color: rgba(108, 93, 211, 0.45) !important;
+}
+
+/* 36. Dialog and Modal Content Purple Borders and Smoky Purple Glow in Dark Mode */
+.dark div[role="dialog"],
+.dark [data-slot="dialog-content"],
+.dark .fixed.left-\[50\%\],
+.dark [data-slot="popover-content"],
+.dark [class*="PopoverContent"],
+.dark [class*="DropdownMenuContent"],
+.dark [class*="DropdownContent"],
+.dark [data-slot="select-content"],
+.dark [data-slot="dropdown-menu-content"],
+.dark [class*="select-content"],
+.dark [class*="dropdown-menu-content"],
+.dark [class*="popover-content"],
+.dark [class*="DropdownSearch"],
+.dark [class*="dropdown-search"],
+.dark [class*="MultiSelectSearch"],
+.dark [class*="multi-select-search"],
+.dark div[role="dialog"]>.bg-white,
+.dark div[role="dialog"]>[class*="bg-white"],
+.dark [data-slot="dialog-content"]>.bg-white,
+.dark [data-slot="dialog-content"]>[class*="bg-white"],
+.dark .fixed.left-\[50\%\]>.bg-white,
+.dark .fixed.left-\[50\%\]>[class*="bg-white"],
+.dark div[role="dialog"]>div>.bg-white,
+.dark div[role="dialog"]>div>[class*="bg-white"],
+.dark [data-slot="dialog-content"]>div>.bg-white,
+.dark [data-slot="dialog-content"]>div>[class*="bg-white"],
+.dark .fixed.left-\[50\%\]>div>.bg-white,
+.dark .fixed.left-\[50\%\]>div>[class*="bg-white"] {
+  border: 1px solid rgba(108, 93, 211, 0.55) !important;
+  box-shadow: 0 0 35px rgba(108, 93, 211, 0.5), 0 0 15px rgba(108, 93, 211, 0.3), 0 12px 48px rgba(0, 0, 0, 0.6) !important;
+}
+
+/* 37. To-Do Table Hover Row Overrides in Dark Mode */
+.dark tr.hover\:bg-\[\#FAFAFA\]:hover,
+.dark tr.hover\:bg-\[\#fafafa\]:hover,
+.dark [class*="hover:bg-[#FAFAFA]"]:hover,
+.dark [class*="hover:bg-[#fafafa]"]:hover {
+  background-color: #121216 !important;
+}
+
+/* 38. Sonner Toast Messages styling overrides in Dark Mode */
+.dark [data-sonner-toast] {
+  background-color: #121215 !important;
+  border-color: rgba(108, 93, 211, 0.45) !important;
+  color: #f4f4f5 !important;
+}
+
+.dark [data-sonner-toast] [data-title],
+.dark [data-sonner-toast] [data-description] {
+  color: #f4f4f5 !important;
+}
+
+/* 39. Radio Button States Borders in Dark Mode */
+.dark label span.rounded-full.border-\[5px\],
+.dark label span.rounded-full.border-\[5px\].border-\[\#6c5dd3\],
+.dark label span.rounded-full.border-\[5px\].border-\[\#6C5DD3\] {
+  border-color: #6C5DD3 !important;
+}
+
+.dark label span.rounded-full.border-2,
+.dark label span.rounded-full.border-2.border-\[\#c9ced9\],
+.dark label span.rounded-full.border-2.border-\[\#C9CED9\] {
+  border-color: #52525b !important;
+}
+
+.dark label span.rounded-full.border-8,
+.dark label span.rounded-full.border-8.border-\[\#d7dbe4\],
+.dark label span.rounded-full.border-8.border-\[\#D7DBE4\] {
+  border-color: #27272a !important;
+}
+
+/* 40. Disabled & Read-Only Inputs Contrast Overrides in Dark Mode */
+.dark input:disabled,
+.dark input[disabled],
+.dark input[readonly],
+.dark textarea:disabled,
+.dark textarea[disabled],
+.dark textarea[readonly],
+.dark form input:disabled,
+.dark form textarea:disabled,
+.dark input:disabled[class*="disabled:text-black"],
+.dark input:disabled[class*="disabled:text-black!"],
+.dark textarea:disabled[class*="disabled:text-black"],
+.dark textarea:disabled[class*="disabled:text-black!"] {
+  color: #a1a1aa !important;
+  background-color: rgba(210, 212, 217, 0.1) !important;
+  border-color: rgba(108, 93, 211, 0.45) !important;
+}
+
+/* 41. Table Inner Separators and Column Border Overrides in Dark Mode */
+.dark th.border-white,
+.dark th[class*="border-white"] {
+  border-color: #000000 !important;
+}
+
+.dark td.border-white\/50,
+.dark [class*="border-white/50"]:not(th),
+.dark .border-r.border-white\/50:not(th) {
+  border-color: rgba(108, 93, 211, 0.4) !important;
+}
+
+.dark th[class*="border-[#"],
+.dark td[class*="border-[#"],
+.dark .border-\[\#eff0f5\],
+.dark [class*="border-[#eff0f5]"],
+.dark .border-\[\#eef0f5\],
+.dark [class*="border-[#eef0f5]"],
+.dark .border-\[\#e9ecf3\],
+.dark [class*="border-[#e9ecf3]"],
+.dark .border-\[\#e6e7ef\],
+.dark [class*="border-[#e6e7ef]"],
+.dark .border-\[\#EDEDED\],
+.dark [class*="border-[#EDEDED]"] {
+  border-color: rgba(108, 93, 211, 0.25) !important;
+}
+
+/* 42. Department and Multi-Code Badge Pills Purple Borders in Dark Mode */
+.dark span.border-\[\#d7dbe7\],
+.dark span[class*="border-[#d7dbe7]"],
+.dark span.border-\[\#D7DBE7\],
+.dark span[class*="border-[#D7DBE7]"],
+.dark .border-\[\#d7dbe7\],
+.dark [class*="border-[#d7dbe7]"],
+.dark .border-\[\#D7DBE7\],
+.dark [class*="border-[#D7DBE7]"] {
+  border-color: rgba(108, 93, 211, 0.45) !important;
+}
+
+/* 43. Employee Wizard Tab Background Overrides in Dark Mode */
+.dark .bg-\[\#fafbfe\]:not(.text-white),
+.dark .bg-\[\#FAFBFE\]:not(.text-white),
+.dark [class*="bg-[#fafbfe]"]:not(.text-white),
+.dark [class*="bg-[#FAFBFE]"]:not(.text-white) {
+  background-color: #121215 !important;
+}
+
+.dark .bg-\[\#fafbfe\]:not(.text-white):hover,
+.dark .bg-\[\#FAFBFE\]:not(.text-white):hover,
+.dark [class*="bg-[#fafbfe]"]:not(.text-white):hover,
+.dark [class*="bg-[#FAFBFE]"]:not(.text-white):hover {
+  background-color: #1a1a20 !important;
+}
+
+.dark .bg-\[\#fafbfe\].text-white,
+.dark .bg-\[\#FAFBFE\].text-white,
+.dark [class*="bg-[#fafbfe]"].text-white,
+.dark [class*="bg-[#FAFBFE]"].text-white,
+.dark button.text-white.bg-\[var\(--primary\)\] {
+  background: linear-gradient(to bottom, #7e6df5, #6c5dd3) !important;
+  color: #ffffff !important;
+}
+
+/* 44. Employee Wizard Input Fields Purple Borders in Dark Mode */
+.dark input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="file"])[class*="border-[#e4e7ef]"],
+.dark input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="file"])[class*="border-[#E4E7EF]"],
+.dark input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="file"])[class*="border-[#c6cedd]"],
+.dark input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="file"])[class*="border-[#C6CEDD]"],
+.dark input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="file"])[class*="border-[#d0d5df]"],
+.dark input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="file"])[class*="border-[#D0D5DF]"],
+.dark input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="file"])[class*="border-[#d2d8e3]"],
+.dark input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="file"])[class*="border-[#D2D8E3]"] {
+  border-color: rgba(108, 93, 211, 0.45) !important;
+}
+
+/* 45. Disabled/Readonly Wizard Inputs Purple Borders in Dark Mode */
+.dark input:disabled[class*="border-[#e4e7ef]"],
+.dark input:disabled[class*="border-[#E4E7EF]"],
+.dark input:disabled[class*="border-[#c6cedd]"],
+.dark input:disabled[class*="border-[#C6CEDD]"],
+.dark input:disabled[class*="border-[#d0d5df]"],
+.dark input:disabled[class*="border-[#D0D5DF]"] {
+  border-color: rgba(108, 93, 211, 0.45) !important;
+}
+
+/* 46. Transfer Panel Group Header Overrides in Dark Mode */
+.dark .bg-\[\#F3F4F6\],
+.dark .bg-\[\#f3f4f6\],
+.dark [class*="bg-[#F3F4F6]"],
+.dark [class*="bg-[#f3f4f6]"] {
+  background-color: #18181b !important;
+}
+
+.dark .text-\[\#374151\],
+.dark [class*="text-[#374151]"] {
+  color: #a1a1aa !important;
+}
+
+/* 47. Wizard Selected / Hover List Row Overrides in Dark Mode */
+.dark .bg-\[\#F3F0FF\],
+.dark .bg-\[\#f3f0ff\],
+.dark [class*="bg-[#F3F0FF]"],
+.dark [class*="bg-[#f3f0ff]"] {
+  background-color: #1c1538 !important;
+}
+
+.dark [class*="hover:bg-[#F3F0FF]"]:hover,
+.dark [class*="hover:bg-[#f3f0ff]"]:hover,
+.dark button.hover\:bg-\[\#F3F0FF\]:hover,
+.dark button.hover\:bg-\[\#f3f0ff\]:hover {
+  background-color: #281e4f !important;
+}
+
+.dark [class*="hover:bg-[#F9FAFB]"]:hover,
+.dark [class*="hover:bg-[#f9fafb]"]:hover,
+.dark button.hover\:bg-\[\#F9FAFB\]:hover,
+.dark button.hover\:bg-\[\#f9fafb\]:hover {
+  background-color: #121216 !important;
+}
+
+/* 48. Apportioning Table Row Borders and Hover in Dark Mode */
+.dark .border-\[\#f1f2f6\],
+.dark [class*="border-[#f1f2f6]"],
+.dark .border-\[\#F1F2F6\],
+.dark [class*="border-[#F1F2F6]"],
+.dark .border-\[\#cbd5e1\],
+.dark [class*="border-[#cbd5e1]"],
+.dark .border-\[\#CBD5E1\],
+.dark [class*="border-[#CBD5E1]"] {
+  border-color: rgba(108, 93, 211, 0.4) !important;
+}
+
+.dark [class*="hover:bg-[#f8fafc]"]:hover,
+.dark [class*="hover:bg-[#F8FAFC]"]:hover {
+  background-color: #121216 !important;
+}
+
+/* 49. Dropdown Selected Option Light-Blue Backgrounds Override in Dark Mode */
+.dark .bg-\[\#eef8ff\],
+.dark [class*="bg-[#eef8ff]"],
+.dark .bg-\[\#EEF8FF\],
+.dark [class*="bg-[#EEF8FF]"],
+.dark .bg-\[\#e6f4ff\],
+.dark [class*="bg-[#e6f4ff]"],
+.dark .bg-\[\#E6F4FF\],
+.dark [class*="bg-[#E6F4FF]"] {
+  background-color: #1c1538 !important;
+}
+
+/* 50. Multi-Select Tag Chip and Trigger Background Overrides in Dark Mode */
+.dark .bg-\[\#eef0f5\],
+.dark [class*="bg-[#eef0f5]"],
+.dark .bg-\[\#EEF0F5\],
+.dark [class*="bg-[#EEF0F5]"] {
+  background-color: #2a1f52 !important;
+  color: #d4d0f5 !important;
+}
+
+/* 51. Multi-Select Trigger Button and Dropdown Panel bg-white Override in Dark Mode */
+.dark button[class*="bg-white"][class*="border-[#c6cedd]"],
+.dark button[class*="bg-white"][class*="border-[#C6CEDD]"],
+.dark button[class*="bg-white"][class*="border-[#d9deea]"],
+.dark button[class*="bg-white"][class*="border-[#D9DEEA]"],
+.dark button[class*="bg-white"][class*="rounded-[7px]"],
+.dark button[class*="bg-white"][class*="rounded-[6px]"],
+.dark button[class*="bg-white"][class*="flex-wrap"] {
+  background-color: #09090b !important;
+  border-color: rgba(108, 93, 211, 0.5) !important;
+  color: #e4e4e7 !important;
+}
+
+/* 52. Dropdown Content Panel bg-white Override in Dark Mode */
+.dark div[class*="bg-white"][class*="overflow-auto"][class*="rounded-[7px]"],
+.dark div[class*="bg-white"][class*="overflow-auto"][class*="rounded-[8px]"],
+.dark div[class*="bg-white"][class*="overflow-auto"][class*="rounded-[6px]"],
+.dark [class*="bg-white"][class*="overflow-auto"][class*="border-[#d9deea]"],
+.dark [class*="bg-white"][class*="overflow-auto"][class*="border-[#D9DEEA]"] {
+  background-color: #18181b !important;
+  border-color: rgba(108, 93, 211, 0.4) !important;
+}
+
+.dark div[class*="bg-white"][class*="overflow-auto"] button:hover,
+.dark div[class*="bg-white"][class*="overflow-auto"] [class*="hover:bg-[#f3f4f8]"]:hover,
+.dark [class*="bg-white"][class*="overflow-auto"] [class*="hover:bg-[#f3f4f6]"]:hover {
+  background-color: #2a1f52 !important;
+}
+
+/* 53. Global Label Text Color Override in Dark Mode (text-[#2a2f3a]) */
+.dark .text-\[\#2a2f3a\],
+.dark [class*="text-[#2a2f3a]"],
+.dark .text-\[\#2A2F3A\],
+.dark [class*="text-[#2A2F3A]"] {
+  color: #a1a1aa !important;
+}
+
+/* 54. Personal Time Study Tabs Contrast Overrides in Dark Mode */
+.dark button#tab-personal-time-study[class*="bg-[#6C5DD3]"],
+.dark button#tab-personal-time-study[class*="bg-[#6c5dd3]"],
+.dark button#tab-time-study-mgt[class*="bg-[#6C5DD3]"],
+.dark button#tab-time-study-mgt[class*="bg-[#6c5dd3]"] {
+  background: linear-gradient(to bottom, #7e6df5, #6c5dd3) !important;
+  color: #ffffff !important;
+  border-color: #6C5DD3 !important;
+}
+
+.dark button#tab-personal-time-study[class*="bg-white"],
+.dark button#tab-time-study-mgt[class*="bg-white"] {
+  background-color: #09090b !important;
+  color: #a78bfa !important;
+  border-color: rgba(108, 93, 211, 0.4) !important;
+}
+
+.dark button#tab-personal-time-study[class*="bg-white"]:hover,
+.dark button#tab-time-study-mgt[class*="bg-white"]:hover {
+  background-color: rgba(108, 93, 211, 0.1) !important;
+  color: #ffffff !important;
+}
+
+/* 55. County Activity Code Tab and Container Border Overrides in Dark Mode */
+.dark .border-\[\#EBEDF0\],
+.dark .border-\[\#ebedf0\],
+.dark [class*="border-[#EBEDF0]"],
+.dark [class*="border-[#ebedf0]"] {
+  border-color: rgba(108, 93, 211, 0.45) !important;
+}
+
+.dark .border-\[\#E9EAEC\],
+.dark .border-\[\#e9eaec\],
+.dark [class*="border-[#E9EAEC]"],
+.dark [class*="border-[#e9eaec]"] {
+  border-color: transparent !important;
+}
+
+.dark .border-\[\#D9D9D9\],
+.dark .border-\[\#d9d9d9\],
+.dark [class*="border-[#D9D9D9]"],
+.dark [class*="border-[#d9d9d9]"] {
+  border-color: rgba(108, 93, 211, 0.5) !important;
+}
+
+/* 56. Input and Textarea border overrides for border-[#D9D9D9] in Dark Mode */
+.dark input.border-\[\#D9D9D9\],
+.dark input.border-\[\#d9d9d9\],
+.dark input[class*="border-[#D9D9D9]"],
+.dark input[class*="border-[#d9d9d9]"],
+.dark textarea.border-\[\#D9D9D9\],
+.dark textarea.border-\[\#d9d9d9\],
+.dark textarea[class*="border-[#D9D9D9]"],
+.dark textarea[class*="border-[#d9d9d9]"] {
+  border-color: rgba(108, 93, 211, 0.5) !important;
+}
+
+/* 57. Style all form controls inside CountyActivityCode modal as purple in Dark Mode */
+.dark .county-activity-add-page,
+.dark .cost-pool-add-page,
+.dark .department-role-add-page {
+  background-color: #0c0a12 !important;
+  border: 1px solid rgba(108, 93, 211, 0.55) !important;
+  box-shadow: 0 0 35px rgba(108, 93, 211, 0.5), 0 0 15px rgba(108, 93, 211, 0.3), 0 12px 48px rgba(0, 0, 0, 0.6) !important;
+  overflow: visible !important;
+}
+
+.dark .county-activity-add-page .border-b {
+  border-color: rgba(108, 93, 211, 0.3) !important;
+}
+
+.dark .county-activity-add-page button:not([type="submit"]) {
+  background-color: transparent !important;
+}
+
+.dark .county-activity-add-page button.bg-\[\#6C5DD3\],
+.dark .county-activity-add-page button[class*="bg-[#6C5DD3]"] {
+  background-color: #6C5DD3 !important;
+  color: #ffffff !important;
+}
+
+.dark .county-activity-add-page input,
+.dark .county-activity-add-page textarea,
+.dark .county-activity-add-page select,
+.dark .county-activity-add-page button[data-slot="select-trigger"],
+.dark .county-activity-add-page button.relative.flex {
+  border-color: rgba(108, 93, 211, 0.5) !important;
+}
+
+/* 58. Style User Table & Department Table header column lines as black in Dark Mode */
+.dark th.border-\[\#FFFFFF66\],
+.dark th.border-\[\#ffffff66\],
+.dark th[class*="border-[#FFFFFF66]"],
+.dark th[class*="border-[#ffffff66]"] {
+  border-color: #000000 !important;
+}
+
+/* 59. Style TimePicker Dropdowns in Dark Mode */
+.dark .w-\[120px\].bg-white {
+  background-color: #18181b !important;
+  border: 1px solid #27272a !important;
+}
+
+.dark .w-\[120px\].bg-white div {
+  border-color: #27272a !important;
+}
+
+.dark .w-\[120px\].bg-white button {
+  color: #f4f4f5 !important;
+}
+
+.dark .w-\[120px\].bg-white button:hover {
+  background-color: #27272a !important;
+}
+
+.dark .w-\[120px\].bg-white button[data-selected="true"] {
+  background-color: #6C5DD3 !important;
+  color: #ffffff !important;
+}
+
+.dark .w-\[120px\].bg-white .bg-white {
+  background-color: #18181b !important;
+}
+
+/* 60. Style ChangeCountyDialog select text, placeholder, and search icon in Dark Mode */
+.dark .text-\[\#000000D9\],
+.dark .text-\[\#000000d9\],
+.dark [class*="text-[#000000D9]"],
+.dark [class*="text-[#000000d9]"] {
+  color: #f4f4f5 !important;
+}
+
+.dark .text-\[\#00000073\],
+.dark .text-\[\#00000073\],
+.dark [class*="text-[#00000073]"] {
+  color: #a1a1aa !important;
+}
+
+.dark .text-\[\#00000040\],
+.dark .text-\[\#00000040\],
+.dark [class*="text-[#00000040]"] {
+  color: rgba(255, 255, 255, 0.4) !important;
+}
+
+/* 61. Style ChangeCountyDialog select hover and active state in Dark Mode */
+.dark div.absolute.bg-white button:hover,
+.dark div.absolute.bg-white button.bg-\[\#e6f4ff\],
+.dark div.absolute.bg-white button[class*="bg-[#e6f4ff]"],
+.dark .hover\:bg-black\/5:hover,
+.dark [class*="hover:bg-black/5"]:hover {
+  background-color: #6C5DD3 !important;
+  color: #ffffff !important;
+}
+
+/* 62. Style Disabled Checkboxes and Labels in Dark Mode */
+.dark label.cursor-not-allowed,
+.dark label[class*="cursor-not-allowed"] {
+  color: #71717a !important;
+}
+
+.dark button:disabled[role="checkbox"],
+.dark button[disabled][role="checkbox"],
+.dark button:disabled[class*="border-[#e5e7eb]"],
+.dark button:disabled[class*="disabled:bg-[#f3f4f6]"] {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+  color: rgba(255, 255, 255, 0.2) !important;
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
+}
+
+/* 63. Premium Focus Visible Indicators in Dark Mode */
+.dark button:focus-visible,
+.dark [data-slot="button"]:focus-visible,
+.dark [data-pts-save-top]:focus-visible,
+.dark [data-pts-submit-top]:focus-visible,
+.dark [data-pts-save]:focus-visible,
+.dark [data-pts-submit]:focus-visible,
+.dark [data-pts-purple-add]:focus-visible {
+  outline: 2px solid #a78bfa !important;
+  outline-offset: 2px !important;
+  box-shadow: 0 0 8px rgba(167, 139, 250, 0.6) !important;
+}
+
+/* 64. Remove Shadow from Time Picker Popover and Inner Elements */
+.dark div[role="dialog"].time-picker-popover,
+.dark div[role="dialog"][class*="time-picker-popover"] {
+  box-shadow: none !important;
+  border: 1px solid rgba(108, 93, 211, 0.3) !important;
+}
+
+.dark div[role="dialog"].time-picker-popover .bg-white,
+.dark div[role="dialog"].time-picker-popover [class*="bg-white"] {
+  box-shadow: none !important;
+  border: none !important;
+}
+
+/* General fallback */
+.time-picker-popover,
+[class*="time-picker-popover"] {
+  box-shadow: none !important;
+}
+
+/* 65. Style Status Pills in Todo Table in Dark Mode to Keep Status Border Colors */
+.dark span.status-pill {
+  background-color: #18181b !important;
+}
+
+.dark span.status-pill.status-new {
+  border-color: #d1d5db !important;
+  color: #d1d5db !important;
+}
+
+.dark span.status-pill.status-inprogress {
+  border-color: #f59e0b !important;
+  color: #f59e0b !important;
+}
+
+.dark span.status-pill.status-completed {
+  border-color: #16a34a !important;
+  color: #16a34a !important;
+}
+
+/* 66. Loading overlay/backdrop transparent white backgrounds override in Dark Mode */
+.dark .bg-white\/60,
+.dark [class*="bg-white/60"] {
+  background-color: rgba(10, 10, 12, 0.6) !important;
+}
+
+.dark .bg-white\/50,
+.dark [class*="bg-white/50"] {
+  background-color: rgba(10, 10, 12, 0.5) !important;
+}
+
+.dark .bg-white\/40,
+.dark [class*="bg-white/40"] {
+  background-color: rgba(10, 10, 12, 0.4) !important;
+}
+
+.dark .bg-white\/20,
+.dark [class*="bg-white/20"] {
+  background-color: rgba(10, 10, 12, 0.2) !important;
+}
+
+.dark .bg-white\/15,
+.dark [class*="bg-white/15"] {
+  background-color: rgba(10, 10, 12, 0.15) !important;
+}
+
+/* 67. Leave Banner overrides in Dark Mode */
+.dark .bg-\[\#E2E8F0\]\/50,
+.dark [class*="bg-[#E2E8F0]/50"] {
+  background-color: rgba(42, 31, 82, 0.4) !important; /* Premium dark purple background */
+  border-color: rgba(108, 93, 211, 0.45) !important;
+  color: #a1a1aa !important; /* Soft gray text */
+}
+
+/* Inner text inside leave banner in Dark Mode */
+.dark .bg-\[\#E2E8F0\]\/50 span,
+.dark [class*="bg-[#E2E8F0]/50"] span,
+.dark .bg-\[\#E2E8F0\]\/50 .text-gray-800,
+.dark [class*="bg-[#E2E8F0]/50"] [class*="text-gray-800"] {
+  color: #f4f4f5 !important; /* Bright text for dates/times */
+}
+
+.dark .bg-\[\#E2E8F0\]\/50 strong,
+.dark [class*="bg-[#E2E8F0]/50"] strong,
+.dark .bg-\[\#E2E8F0\]\/50 .text-gray-700,
+.dark [class*="bg-[#E2E8F0]/50"] [class*="text-gray-700"] {
+  color: #d4d4d8 !important; /* Bright text for "Status:" */
+}
+
+/* Status pills inside leave banner in Dark Mode */
+.dark .bg-\[\#E2E8F0\]\/50 span.bg-white,
+.dark [class*="bg-[#E2E8F0]/50"] span.bg-white {
+  background-color: #121215 !important;
+}
+
+.dark .bg-\[\#E2E8F0\]\/50 span.border-green-500,
+.dark [class*="bg-[#E2E8F0]/50"] span[class*="border-green-500"] {
+  background-color: rgba(34, 197, 94, 0.15) !important;
+  color: #4ade80 !important;
+  border-color: #22c55e !important;
+}
+
+.dark .bg-\[\#E2E8F0\]\/50 span.border-red-500,
+.dark [class*="bg-[#E2E8F0]/50"] span[class*="border-red-500"] {
+  background-color: rgba(239, 68, 68, 0.15) !important;
+  color: #f87171 !important;
+  border-color: #ef4444 !important;
+}
+
+.dark .bg-\[\#E2E8F0\]\/50 span.border-\[\#f59e0b\],
+.dark [class*="bg-[#E2E8F0]/50"] span[class*="border-[#f59e0b]"] {
+  background-color: rgba(245, 158, 11, 0.15) !important;
+  color: #fbbf24 !important;
+  border-color: #f59e0b !important;
+}

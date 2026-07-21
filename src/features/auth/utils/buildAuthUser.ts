@@ -39,6 +39,7 @@ export function buildAuthUserFromDetails(
     isPasswordChangeRequired: isPasswordChangeRequired ? true : false,
     roles: details.roles?.map((r) => r.name),
     permissions,
+    theme: details.theme,
     departmentRoles: details.departmentsRoles?.map((dr) => ({
       departmentId: dr.departmentId,
       roleId: dr.roleId,

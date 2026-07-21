@@ -158,7 +158,7 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="h-[40px] bg-white border-none" />
+      <SidebarFooter className="h-[40px] bg-transparent border-none" />
     </Sidebar>
   )
 }

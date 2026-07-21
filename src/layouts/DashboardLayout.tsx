@@ -2,6 +2,7 @@ import { useState, Suspense } from "react"
 import { Outlet, Link } from "react-router-dom"
 
 import { AppSidebar } from "@/components/dashboard/AppSidebar"
+import { ThemeToggle } from "@/components/ThemeToggle"
 import {
   SidebarInset,
   SidebarProvider,
@@ -99,6 +100,7 @@ export function DashboardLayout() {
             {!isSuperAdmin && <div className="flex items-center gap-4" />}
             {user && (
               <>
+                <ThemeToggle />
                 <button
                   type="button"
                   onClick={() => setNotificationsOpen(true)}
