@@ -169,7 +169,7 @@ function mapCountyActivityRowToFormValues(row: CountyActivityCodeRow): CountyAct
     multipleJobPools: row.multipleJobPools,
     department: row.department,
     apportioning: row.apportioning,
-    manualApportioning: row.apportioning,
+    manualApportioning: row.manualApportioning,
     bhsaApplicable: row.bhsaApplicable,
     expenditureClassification: row.expenditureClassification ?? "",
     bhccCategory: row.bhccCategory ?? "",
