@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Plus, Trash2 } from "lucide-react"
-import { useCallback, useMemo, useRef, useState } from "react"
+import { useCallback, useMemo, useRef, useState, type ReactNode } from "react"
 
 import { Controller, useFieldArray, useForm } from "react-hook-form"
 import { toast } from "sonner"
@@ -42,11 +42,99 @@ import {
 } from "../utils/multicodeDropdownUtils"
 
 import { partitionLeaveEntryIndexGroups, apiGetUserActivitiesForProgram, apiGetUserProgramsAndActivitiesMulticode, apiDeleteUserLeave } from "../api/personalTimeStudyApi"
+import { formatTimeInput, normalizeTimeOnBlur } from "../utils/timeUtils"
+import {
+  buildDecimalMinMessage,
+  DecimalActivityTimeHint,
+  isQuarterHourDecimal,
+  roundDecimalHoursToQuarterHour,
+} from "../utils/decimalTimeHint.tsx"
 
 const EMPTY = EMPLOYEE_LEAVE_EMPTY_SELECT_VALUE
 
 function RequiredMark() {
   return <span className="text-destructive">*</span>
+}
+
+type MinDecimalFieldProps = {
+  label: ReactNode
+  labelClassName?: string
+  value: string
+  onChange?: (value: string) => void
+  readOnly?: boolean
+  disabled?: boolean
+  showDecimalHint?: boolean
+  hintMessage?: string | null
+  inputClassName?: string
+  heightClass?: string
+}
+
+function MinDecimalField({
+  label,
+  labelClassName,
+  value,
+  onChange,
+  readOnly,
+  disabled,
+  showDecimalHint,
+  hintMessage,
+  inputClassName,
+  heightClass = "h-10",
+}: MinDecimalFieldProps) {
+  const [originalValue, setOriginalValue] = useState<string | null>(null)
+
+  const displayMessage = showDecimalHint
+    ? hintMessage ?? (
+      originalValue !== null
+        ? `${originalValue} hrs rounded to ${value} hrs (${Math.round(Number(value) * 60)} mins)`
+        : buildDecimalMinMessage(value)
+    )
+    : null
+
+  const handleBlur = () => {
+    if (!showDecimalHint || readOnly || disabled || !value.trim()) return
+    const rounded = roundDecimalHoursToQuarterHour(value)
+    if (rounded !== value) {
+      setOriginalValue(value)
+      onChange?.(rounded)
+    }
+  }
+
+  return (
+    <div className={cn("space-y-0.5", showDecimalHint ? "w-[92px]" : "w-[75px]")}>
+      <Label className={labelClassName}>{label}</Label>
+      <div className="relative">
+        <TitleCaseInput
+          type="number"
+          min="0"
+          step={showDecimalHint ? "0.25" : "1"}
+          readOnly={readOnly}
+          disabled={disabled}
+          value={value}
+          placeholder="—"
+          className={cn(
+            heightClass,
+            "text-[11px] tabular-nums rounded-[6px]",
+            displayMessage && "pr-8",
+            (readOnly || disabled) && "bg-[#F2F4F7] cursor-not-allowed",
+            inputClassName,
+          )}
+          onChange={(e) => {
+            setOriginalValue(null)
+            onChange?.(e.target.value)
+          }}
+          onBlur={handleBlur}
+        />
+        {displayMessage ? (
+          <div className="pointer-events-none absolute inset-y-0 right-1 flex items-center">
+            <div className="pointer-events-auto">
+              <DecimalActivityTimeHint message={displayMessage} />
+            </div>
+          </div>
+        ) : null}
+      </div>
+    </div>
+  )
 }
 
 const leaveChildFieldRowClass = "flex flex-row items-end gap-2 flex-nowrap"
@@ -110,11 +198,11 @@ const getHeaderGridClass = (isEditing: boolean, allowMulticodeUi: boolean, showT
     "grid min-w-[950px] items-end gap-2.5 text-[14px] font-normal text-[#4A4A4A] whitespace-nowrap",
     showTime
       ? (isEditing && !allowMulticodeUi
-          ? "grid-cols-[minmax(7.5rem,1fr)_minmax(8.5rem,1.3fr)_minmax(8.5rem,1.3fr)_minmax(5rem,0.8fr)_minmax(5rem,0.8fr)_minmax(6.5rem,0.8fr)_minmax(8.5rem,1.1fr)]"
-          : "grid-cols-[minmax(7.5rem,1fr)_minmax(8.5rem,1.3fr)_minmax(8.5rem,1.3fr)_minmax(5rem,0.8fr)_minmax(5rem,0.8fr)_minmax(6.5rem,0.8fr)_minmax(8.5rem,1.1fr)_7.5rem]")
+        ? "grid-cols-[minmax(7.5rem,1fr)_minmax(8.5rem,1.3fr)_minmax(8.5rem,1.3fr)_minmax(5rem,0.8fr)_minmax(5rem,0.8fr)_minmax(6.5rem,0.8fr)_minmax(8.5rem,1.1fr)]"
+        : "grid-cols-[minmax(7.5rem,1fr)_minmax(8.5rem,1.3fr)_minmax(8.5rem,1.3fr)_minmax(5rem,0.8fr)_minmax(5rem,0.8fr)_minmax(6.5rem,0.8fr)_minmax(8.5rem,1.1fr)_7.5rem]")
       : (isEditing && !allowMulticodeUi
-          ? "grid-cols-[minmax(7.5rem,1fr)_minmax(8.5rem,1.3fr)_minmax(8.5rem,1.3fr)_minmax(6.5rem,0.8fr)_minmax(8.5rem,1.1fr)]"
-          : "grid-cols-[minmax(7.5rem,1fr)_minmax(8.5rem,1.3fr)_minmax(8.5rem,1.3fr)_minmax(6.5rem,0.8fr)_minmax(8.5rem,1.1fr)_7.5rem]")
+        ? "grid-cols-[minmax(7.5rem,1fr)_minmax(8.5rem,1.3fr)_minmax(8.5rem,1.3fr)_minmax(6.5rem,0.8fr)_minmax(8.5rem,1.1fr)]"
+        : "grid-cols-[minmax(7.5rem,1fr)_minmax(8.5rem,1.3fr)_minmax(8.5rem,1.3fr)_minmax(6.5rem,0.8fr)_minmax(8.5rem,1.1fr)_7.5rem]")
   )
 
 const getRowGridClass = (isEditing: boolean, allowMulticodeUi: boolean, showTime: boolean) =>
@@ -122,11 +210,11 @@ const getRowGridClass = (isEditing: boolean, allowMulticodeUi: boolean, showTime
     "grid min-w-[950px] items-end gap-2.5 py-2",
     showTime
       ? (isEditing && !allowMulticodeUi
-          ? "grid-cols-[minmax(7.5rem,1fr)_minmax(8.5rem,1.3fr)_minmax(8.5rem,1.3fr)_minmax(5rem,0.8fr)_minmax(5rem,0.8fr)_minmax(6.5rem,0.8fr)_minmax(8.5rem,1.1fr)]"
-          : "grid-cols-[minmax(7.5rem,1fr)_minmax(8.5rem,1.3fr)_minmax(8.5rem,1.3fr)_minmax(5rem,0.8fr)_minmax(5rem,0.8fr)_minmax(6.5rem,0.8fr)_minmax(8.5rem,1.1fr)_7.5rem]")
+        ? "grid-cols-[minmax(7.5rem,1fr)_minmax(8.5rem,1.3fr)_minmax(8.5rem,1.3fr)_minmax(5rem,0.8fr)_minmax(5rem,0.8fr)_minmax(6.5rem,0.8fr)_minmax(8.5rem,1.1fr)]"
+        : "grid-cols-[minmax(7.5rem,1fr)_minmax(8.5rem,1.3fr)_minmax(8.5rem,1.3fr)_minmax(5rem,0.8fr)_minmax(5rem,0.8fr)_minmax(6.5rem,0.8fr)_minmax(8.5rem,1.1fr)_7.5rem]")
       : (isEditing && !allowMulticodeUi
-          ? "grid-cols-[minmax(7.5rem,1fr)_minmax(8.5rem,1.3fr)_minmax(8.5rem,1.3fr)_minmax(6.5rem,0.8fr)_minmax(8.5rem,1.1fr)]"
-          : "grid-cols-[minmax(7.5rem,1fr)_minmax(8.5rem,1.3fr)_minmax(8.5rem,1.3fr)_minmax(6.5rem,0.8fr)_minmax(8.5rem,1.1fr)_7.5rem]")
+        ? "grid-cols-[minmax(7.5rem,1fr)_minmax(8.5rem,1.3fr)_minmax(8.5rem,1.3fr)_minmax(6.5rem,0.8fr)_minmax(8.5rem,1.1fr)]"
+        : "grid-cols-[minmax(7.5rem,1fr)_minmax(8.5rem,1.3fr)_minmax(8.5rem,1.3fr)_minmax(6.5rem,0.8fr)_minmax(8.5rem,1.1fr)_7.5rem]")
   )
 
 function TimePicker24h({
@@ -159,7 +247,8 @@ function TimePicker24h({
                 value={value}
                 disabled={disabled}
                 placeholder="--:--"
-                onChange={(e) => onChange(e.target.value)}
+                onChange={(e) => onChange(formatTimeInput(e.target.value))}
+                onBlur={(e) => onChange(normalizeTimeOnBlur(e.target.value))}
                 onFocus={openMenu}
                 className={cn(
                   "h-10 pr-8 text-sm font-normal rounded-[6px] cursor-pointer w-full",
@@ -170,7 +259,7 @@ function TimePicker24h({
             </div>
           </PopoverAnchor>
           <PopoverContent
-            className="p-0"
+            className="p-0 time-picker-popover"
             align="start"
             side="bottom"
             avoidCollisions={true}
@@ -469,7 +558,6 @@ export function EmployeeLeaveRequestDialog({
 
   const isMulticodeAllowedForLeaveParent = useCallback(
     (parentIndex: number) => {
-      if (!allowMulticodeUi) return false
       const parentRow = formEntries?.[parentIndex]
       if (!parentRow) return false
       const dateStr = parentRow.date?.split("T")[0]
@@ -477,13 +565,17 @@ export function EmployeeLeaveRequestDialog({
       const parentProgramId = parentRow.programCode
       if (!parentProgramId || parentProgramId === EMPTY) return false
 
-      const deptId = resolveDepartmentIdForProgram(parentProgramId)
+      const parentRowAny = parentRow as any
+      const deptId = parentRowAny.departmentId
+        ? Number(parentRowAny.departmentId)
+        : resolveDepartmentIdForProgram(parentProgramId)
+
       if (!deptId) return false
 
       const userMultiCode = dateConfigs[dateStr]?.userMultiCode ?? []
-      return userMultiCode.some(item => item.departmentId === deptId)
+      return userMultiCode.some(item => Number(item.departmentId) === Number(deptId))
     },
-    [allowMulticodeUi, formEntries, resolveDepartmentIdForProgram, dateConfigs]
+    [formEntries, resolveDepartmentIdForProgram, dateConfigs]
   )
 
   const formatLeaveProgramOption = useCallback((p: any) => {
@@ -614,25 +706,24 @@ export function EmployeeLeaveRequestDialog({
     [resolveDepartmentIdForProgram, programActivities],
   )
 
-  const hasExceeded = useMemo(() => {
-    return formEntries.some((entry, index) => {
-      const currentTotal = Number(entry.totalMinApplied || 0)
+  const hasExceeded = formEntries.some((entry, index) => {
+    const liveEntry = form.getValues(`entries.${index}`) || entry
+    const currentTotal = Number(liveEntry.totalMinApplied || 0)
 
-      // 1. Check against physical time difference
-      if (entry.startTime && entry.endTime) {
-        const diff = calculateMinutesDiff(entry.startTime, entry.endTime)
-        if (currentTotal > diff) return true
-      }
+    // 1. Check against physical time difference
+    if (liveEntry.startTime && liveEntry.endTime) {
+      const diff = calculateMinutesDiff(liveEntry.startTime, liveEntry.endTime)
+      if (currentTotal > diff) return true
+    }
 
-      // 2. Check against original approved amount
-      if (isApproved && initialValues?.entries) {
-        const originalTotal = Number(initialValues.entries[index]?.totalMinApplied || 0)
-        if (originalTotal > 0 && currentTotal > originalTotal) return true
-      }
+    // 2. Check against original approved amount
+    if (isApproved && initialValues?.entries) {
+      const originalTotal = Number(initialValues.entries[index]?.totalMinApplied || 0)
+      if (originalTotal > 0 && currentTotal > originalTotal) return true
+    }
 
-      return false
-    })
-  }, [formEntries, isApproved, initialValues])
+    return false
+  })
 
   const resetForm = useCallback(() => {
     form.reset({ entries: [createEmptyRow()] })
@@ -761,7 +852,7 @@ export function EmployeeLeaveRequestDialog({
         if (currentTotal > diff) return true
       }
 
-      if (isApproved && initialValues?.entries) {
+      if (!entry.multicodeChild && isApproved && initialValues?.entries) {
         const originalTotal = Number(initialValues.entries[i]?.totalMinApplied || 0)
         if (originalTotal > 0 && currentTotal > originalTotal) return true
       }
@@ -922,7 +1013,8 @@ export function EmployeeLeaveRequestDialog({
           </DialogTitle>
           {isApproved && (
             <div className="mt-3 mx-auto flex w-fit items-center justify-center rounded-[6px] bg-[#E5E7EB] px-6 py-1.5 text-[13px] italic text-[#1F2937]">
-              Note : You cannot exceed more than {initialValues?.entries?.[0]?.totalMinApplied || 0} minutes
+              Note : You cannot exceed more than {initialValues?.entries?.[0]?.totalMinApplied || 0}{" "}
+              {!showTimeColumns ? "hours" : "minutes"}
             </div>
           )}
         </DialogHeader>
@@ -939,7 +1031,7 @@ export function EmployeeLeaveRequestDialog({
               <span>Activity Code</span>
               {showTimeColumns && <span>Start Time</span>}
               {showTimeColumns && <span>End Time</span>}
-              <span>Total Min Applied</span>
+              <span>{showTimeColumns ? "Total Min Applied" : "Total Hrs Applied"}</span>
               <span>Comments</span>
               {(!isEditing || allowMulticodeUi) && <span className="sr-only">Row actions</span>}
             </div>
@@ -1144,6 +1236,11 @@ export function EmployeeLeaveRequestDialog({
                                     disabled={!hasProgram}
                                     isLoading={isActivityLoading}
                                     options={options}
+                                    onOpenChange={(open) => {
+                                      if (open && hasProgram) {
+                                        fetchActivitiesForProgram(programId)
+                                      }
+                                    }}
                                     onChange={(v) => f.onChange(v || EMPTY)}
                                     onBlur={f.onBlur}
                                     className="h-9 min-h-0 text-[13px] bg-white border-border/60"
@@ -1228,10 +1325,8 @@ export function EmployeeLeaveRequestDialog({
                                 </div>
                               )
                             }
-                            // removeAutoFill=false → auto-filled, field disabled
-                            // removeAutoFill=true → user sets manually, field enabled
-                            const removeAutoFill = settings.removeAutoFillEndTime
-                            const endTimeDisabled = isApproved ? false : !removeAutoFill
+                            const startTime = form.getValues(`entries.${parentIndex}.startTime`)
+                            const endTimeDisabled = !startTime
                             return (
                               <div className="space-y-1">
                                 <TimePicker24h
@@ -1281,31 +1376,51 @@ export function EmployeeLeaveRequestDialog({
                               startTime && endTime ? calculateMinutesDiff(startTime, endTime) : 0
                             const exceedsCalculated = !hideTime && diff > 0 && currentTotal > diff
                             const isErrorState = exceedsOriginal || exceedsCalculated
+                            const leaveTimeMessage = formEntries?.[parentIndex]?.leaveTimeMessage ?? null
 
                             return (
                               <>
-                                <TitleCaseInput
-                                  type="text"
-                                  inputMode="numeric"
-                                  className={cn(
-                                    "h-10 text-sm tabular-nums rounded-[6px]",
-                                    !minAppliedEditable &&
-                                    "cursor-not-allowed bg-muted !opacity-100 !text-foreground",
-                                    isErrorState &&
-                                    "border-destructive text-destructive focus-visible:ring-destructive",
-                                  )}
-                                  disabled={isApproved && !minAppliedEditable}
-                                  readOnly={!minAppliedEditable}
-                                  placeholder="0"
-                                  autoComplete="off"
-                                  {...f}
-                                  onChange={(e) => {
-                                    if (minAppliedEditable) {
-                                      const cleanVal = e.target.value.replace(/\D/g, "")
-                                      f.onChange(cleanVal)
-                                    }
-                                  }}
-                                />
+                                {hideTime ? (
+                                  <MinDecimalField
+                                    label={<span className="sr-only">Hours</span>}
+                                    labelClassName="sr-only"
+                                    value={f.value}
+                                    readOnly={!minAppliedEditable}
+                                    disabled={isApproved && !minAppliedEditable}
+                                    showDecimalHint
+                                    hintMessage={leaveTimeMessage}
+                                    heightClass="h-10"
+                                    inputClassName={cn(
+                                      "text-sm",
+                                      isErrorState &&
+                                      "border-destructive text-destructive focus-visible:ring-destructive",
+                                    )}
+                                    onChange={(v) => {
+                                      f.onChange(v)
+                                      if (leaveTimeMessage) {
+                                        form.setValue(`entries.${parentIndex}.leaveTimeMessage`, undefined)
+                                      }
+                                    }}
+                                  />
+                                ) : (
+                                  <TitleCaseInput
+                                    type="text"
+                                    inputMode="numeric"
+                                    className={cn(
+                                      "h-10 text-sm tabular-nums rounded-[6px]",
+                                      !minAppliedEditable &&
+                                      "cursor-not-allowed bg-muted !opacity-100 !text-foreground",
+                                      isErrorState &&
+                                      "border-destructive text-destructive focus-visible:ring-destructive",
+                                    )}
+                                    disabled={isApproved && !minAppliedEditable}
+                                    readOnly={!minAppliedEditable}
+                                    placeholder="0"
+                                    autoComplete="off"
+                                    {...f}
+                                    onChange={() => { }}
+                                  />
+                                )}
                                 {fieldState.error?.message ? (
                                   <p className="text-xs text-destructive">{fieldState.error.message}</p>
                                 ) : exceedsCalculated ? (
@@ -1314,7 +1429,7 @@ export function EmployeeLeaveRequestDialog({
                                   </p>
                                 ) : exceedsOriginal ? (
                                   <p className="text-[11px] text-destructive leading-tight">
-                                    Exceeds {originalTotal} min
+                                    Exceeds {originalTotal} {hideTime ? "hrs" : "min"}
                                   </p>
                                 ) : null}
                               </>
@@ -1573,6 +1688,11 @@ export function EmployeeLeaveRequestDialog({
                                             disabled={!hasProgram}
                                             isLoading={isActivityLoading}
                                             options={options}
+                                            onOpenChange={(open) => {
+                                              if (open && hasProgram) {
+                                                fetchActivitiesForProgram(programId)
+                                              }
+                                            }}
                                             onChange={(v) => f.onChange(v || EMPTY)}
                                             onBlur={f.onBlur}
                                             className="h-9 min-h-0 text-[11px] bg-white border-border/60"
@@ -1586,28 +1706,24 @@ export function EmployeeLeaveRequestDialog({
                                   )}
                                 />
                               </div>
-                              <div className="w-[72px] shrink-0 space-y-1">
+                              <div className={cn("shrink-0 space-y-1", (() => {
+                                let parentRowIndex = -1
+                                for (let k = index - 1; k >= 0; k--) {
+                                  if (!formEntries[k]?.multicodeChild) {
+                                    parentRowIndex = k
+                                    break
+                                  }
+                                }
+                                const parentHideTime = parentRowIndex !== -1
+                                  ? getRowSettings(
+                                    formEntries[parentRowIndex]?.date,
+                                    formEntries[parentRowIndex]?.programCode,
+                                  ).hideTime
+                                  : false
+                                return parentHideTime ? "w-[92px]" : "w-[72px]"
+                              })())}>
                                 <Label className="text-[11px] font-medium text-[#6C5DD3]">
-                                  Min. <RequiredMark />
-                                </Label>
-                                <Controller
-                                  control={form.control}
-                                  name={`entries.${index}.totalMinApplied`}
-                                  render={({ field: f, fieldState }) => {
-                                    const originalTotal = Number(
-                                      initialValues?.entries?.[index]?.totalMinApplied || 0,
-                                    )
-                                    const currentTotal = Number(f.value || 0)
-                                    const exceedsOriginal =
-                                      isApproved && originalTotal > 0 && currentTotal > originalTotal
-                                    const startTime = formEntries?.[index]?.startTime
-                                    const endTime = formEntries?.[index]?.endTime
-                                    const diff =
-                                      startTime && endTime
-                                        ? calculateMinutesDiff(startTime, endTime)
-                                        : 0
-                                    const exceedsCalculated = diff > 0 && currentTotal > diff
-                                    // Find parent row to sum children
+                                  {(() => {
                                     let parentRowIndex = -1
                                     for (let k = index - 1; k >= 0; k--) {
                                       if (!formEntries[k]?.multicodeChild) {
@@ -1615,6 +1731,45 @@ export function EmployeeLeaveRequestDialog({
                                         break
                                       }
                                     }
+                                    const parentHideTime = parentRowIndex !== -1
+                                      ? getRowSettings(
+                                        formEntries[parentRowIndex]?.date,
+                                        formEntries[parentRowIndex]?.programCode,
+                                      ).hideTime
+                                      : false
+                                    return parentHideTime ? "Hrs." : "Min."
+                                  })()}{" "}
+                                  <RequiredMark />
+                                </Label>
+                                <Controller
+                                  control={form.control}
+                                  name={`entries.${index}.totalMinApplied`}
+                                  render={({ field: f, fieldState }) => {
+                                    let parentRowIndex = -1
+                                    for (let k = index - 1; k >= 0; k--) {
+                                      if (!formEntries[k]?.multicodeChild) {
+                                        parentRowIndex = k
+                                        break
+                                      }
+                                    }
+                                    const parentHideTime = parentRowIndex !== -1
+                                      ? getRowSettings(
+                                        formEntries[parentRowIndex]?.date,
+                                        formEntries[parentRowIndex]?.programCode,
+                                      ).hideTime
+                                      : false
+                                    const originalTotal = Number(
+                                      initialValues?.entries?.[index]?.totalMinApplied || 0,
+                                    )
+                                    const currentTotal = Number(f.value || 0)
+                                    const exceedsOriginal = false
+                                    const startTime = formEntries?.[index]?.startTime
+                                    const endTime = formEntries?.[index]?.endTime
+                                    const diff =
+                                      startTime && endTime
+                                        ? calculateMinutesDiff(startTime, endTime)
+                                        : 0
+                                    const exceedsCalculated = !parentHideTime && diff > 0 && currentTotal > diff
                                     const parentMin = parentRowIndex !== -1 ? Number(formEntries[parentRowIndex].totalMinApplied || 0) : 0
                                     let childSum = 0
                                     if (parentRowIndex !== -1) {
@@ -1626,25 +1781,48 @@ export function EmployeeLeaveRequestDialog({
                                     }
                                     const sumExceedsParent = childSum > parentMin
                                     const isErrorState = exceedsOriginal || exceedsCalculated || sumExceedsParent
+                                    const leaveTimeMessage = formEntries?.[index]?.leaveTimeMessage ?? null
 
                                     return (
                                       <>
-                                        <TitleCaseInput
-                                          type="text"
-                                          inputMode="numeric"
-                                          className={cn(
-                                            "h-9 text-[11px] tabular-nums rounded-[6px]",
-                                            isErrorState &&
-                                            "border-destructive text-destructive focus-visible:ring-destructive",
-                                          )}
-                                          placeholder="0"
-                                          autoComplete="off"
-                                          {...f}
-                                          onChange={(e) => {
-                                            const cleanVal = e.target.value.replace(/\D/g, "")
-                                            f.onChange(cleanVal)
-                                          }}
-                                        />
+                                        {parentHideTime ? (
+                                          <MinDecimalField
+                                            label={<span className="sr-only">Hours</span>}
+                                            labelClassName="sr-only"
+                                            value={f.value}
+                                            showDecimalHint
+                                            hintMessage={leaveTimeMessage}
+                                            heightClass="h-9"
+                                            inputClassName={cn(
+                                              "text-[11px]",
+                                              isErrorState &&
+                                              "border-destructive text-destructive focus-visible:ring-destructive",
+                                            )}
+                                            onChange={(v) => {
+                                              f.onChange(v)
+                                              if (leaveTimeMessage) {
+                                                form.setValue(`entries.${index}.leaveTimeMessage`, undefined)
+                                              }
+                                            }}
+                                          />
+                                        ) : (
+                                          <TitleCaseInput
+                                            type="text"
+                                            inputMode="numeric"
+                                            className={cn(
+                                              "h-9 text-[11px] tabular-nums rounded-[6px]",
+                                              isErrorState &&
+                                              "border-destructive text-destructive focus-visible:ring-destructive",
+                                            )}
+                                            placeholder="0"
+                                            autoComplete="off"
+                                            {...f}
+                                            onChange={(e) => {
+                                              const cleanVal = e.target.value.replace(/\D/g, "")
+                                              f.onChange(cleanVal)
+                                            }}
+                                          />
+                                        )}
                                         {fieldState.error?.message ? (
                                           <p className="text-xs text-destructive">{fieldState.error.message}</p>
                                         ) : exceedsCalculated ? (

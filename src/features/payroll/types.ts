@@ -75,6 +75,22 @@ export type PayrollUploadFormValues = {
   uploadType: PayrollFrequencyType
 }
 
+export type PayrollUploadItem = {
+  id: number
+  fileName: string
+  storageKey: string
+  mimeType: string | null
+  payrolltype: string | null
+  recordsCreated: number
+  uploadedBy: string | null
+  createdAt: string
+}
+
+export type PayrollUploadListResponse = {
+  items: readonly PayrollUploadItem[]
+  total: number
+}
+
 export type PayrollDetailsFormValues = {
   payrollType: PayrollFrequencyType
   fiscalYearId: string
@@ -91,7 +107,11 @@ export type PayrollUploadSectionProps = {
   settingsPayrollType?: PayrollFrequencyType
   /** Lock payroll type UI based on settings response. */
   isPayrollTypeLocked?: boolean
-  onSubmitUpload: (values: PayrollUploadFormValues, file: File | null) => void
+  /**
+   * Called when user clicks Upload.
+   * `resetFile` clears the file input — call it in both onSuccess and onError.
+   */
+  onSubmitUpload: (values: PayrollUploadFormValues, file: File | null, resetFile: () => void) => void
 }
 
 export type PayrollDetailsSectionProps = {

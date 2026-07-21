@@ -295,51 +295,51 @@ export function JobPoolTable({
                       {row.name}
                     </TableCell>
 
-                    {/* Job Classification tags */}
-                    <TableCell className="align-middle border-r border-[#eff0f5] px-1.5 py-2.5 text-[11px] text-[#232735] wrap-break-word whitespace-normal text-center">
-                      <div className="flex flex-wrap gap-2 justify-center">
-                        {row.jobClassifications.map((tag, idx) => (
-                          <span
-                            key={idx}
-                            className={`inline-flex items-center rounded-[7px] bg-[#f8f9fa] px-1.5 py-0.5 text-[10px] text-[#232735] ${tag.status?.toLowerCase() === "inactive"
-                              ? "border border-red-300"
-                              : "border border-[#d8dae3]"
-                              }`}
-                          >
-                            {tag.name}
-                          </span>
-                        ))}
-                      </div>
-                    </TableCell>
+                  {/* Job Classification tags */}
+                  <TableCell className="align-middle border-r border-[#eff0f5] px-1.5 py-2.5 text-[11px] text-[#232735] wrap-break-word whitespace-normal text-center">
+                    <div className="flex flex-wrap gap-2 justify-center">
+                      {row.jobClassifications.map((tag, idx) => (
+                        <span
+                          key={idx}
+                          className={`inline-flex items-center rounded-[7px] bg-[#f8f9fa] dark:bg-[#1c192d] px-1.5 py-0.5 text-[10px] text-[#232735] dark:text-[#e4e4e7] ${tag.status?.toLowerCase() === "inactive"
+                            ? "border border-red-300"
+                            : "border border-[#d8dae3] dark:border-[rgba(108,93,211,0.5)]!"
+                            }`}
+                        >
+                          {tag.name}
+                        </span>
+                      ))}
+                    </div>
+                  </TableCell>
 
-                    {/* Users */}
-                    <TableCell className="align-middle border-r border-[#eff0f5] px-1.5 py-2.5 text-[11px] text-[#232735] wrap-break-word whitespace-normal text-center">
-                      {row.userprofiles && row.userprofiles.length > 0 ? (
-                        <div className="flex flex-wrap gap-2 justify-center">
-                          {row.userprofiles
-                            .map((u) => ({
-                              id: u.id,
-                              label: formatUserName(u),
-                              status: u.status,
-                            }))
-                            .filter((u) => u.id && u.label)
-                            .map((u) => (
-                              <span
-                                key={u.id}
-                                title={u.label}
-                                className={`inline-flex items-center justify-center rounded-[7px] border bg-[#f8f9fa] px-1.5 py-0.5 text-[10px] text-[#232735] w-[calc(50%-4px)] text-center ${u.status?.toLowerCase() === "inactive"
-                                  ? "border-red-400"
-                                  : "border-[#d8dae3]"
-                                  }`}
-                              >
-                                {u.label}
-                              </span>
-                            ))}
-                        </div>
-                      ) : (
-                        <span className="text-[#9ca3af]">—</span>
-                      )}
-                    </TableCell>
+                  {/* Users */}
+                  <TableCell className="align-middle border-r border-[#eff0f5] px-1.5 py-2.5 text-[11px] text-[#232735] wrap-break-word whitespace-normal text-center">
+                    {row.userprofiles && row.userprofiles.length > 0 ? (
+                      <div className="flex flex-wrap gap-2 justify-center">
+                        {row.userprofiles
+                          .map((u) => ({
+                            id: u.id,
+                            label: formatUserName(u),
+                            status: u.status,
+                          }))
+                          .filter((u) => u.id && u.label)
+                          .map((u) => (
+                            <span
+                              key={u.id}
+                              title={u.label}
+                              className={`inline-flex items-center justify-center rounded-[7px] border bg-[#f8f9fa] dark:bg-[#1c192d] px-1.5 py-0.5 text-[10px] text-[#232735] dark:text-[#e4e4e7] w-[calc(50%-4px)] text-center ${u.status?.toLowerCase() === "inactive"
+                                ? "border-red-400"
+                                : "border-[#d8dae3] dark:border-[rgba(108,93,211,0.5)]!"
+                                }`}
+                            >
+                              {u.label}
+                            </span>
+                          ))}
+                      </div>
+                    ) : (
+                      <span className="text-[#9ca3af]">—</span>
+                    )}
+                  </TableCell>
 
                     {/* Department */}
                     <TableCell className="align-middle border-r border-[#eff0f5] px-3 py-2.5 text-[11px] text-[#232735] wrap-break-word whitespace-normal text-center">

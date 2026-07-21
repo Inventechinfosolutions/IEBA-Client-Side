@@ -279,10 +279,10 @@ export function ScheduleTimeStudyForm({
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent
           showClose={false}
-          className="min-h-[460px] max-h-[90vh] overflow-y-auto w-[1120px] max-w-[calc(100vw-2rem)] rounded-[8px] border border-[#E5E7EB] bg-white p-4 sm:p-[16px_16px_18px]"
+          className="min-h-[460px] w-[1120px] max-w-[calc(100vw-2rem)] rounded-[8px] border border-[#E5E7EB] dark:border-[#27272a] bg-white dark:bg-[#09090b] p-[16px_16px_18px]"
           overlayClassName="bg-black/45"
         >
-          <DialogTitle className="text-center text-[20px] font-normal text-black">
+          <DialogTitle className="text-center text-[20px] font-normal text-black dark:text-[#f4f4f5]">
             Create Schedule Time Study
           </DialogTitle>
 
@@ -293,10 +293,10 @@ export function ScheduleTimeStudyForm({
           )}
 
           <form onSubmit={(e) => e.preventDefault()} className="space-y-5">
-            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-              <div className="flex flex-col sm:flex-row sm:items-end gap-4 sm:gap-6 w-full sm:w-auto">
-                <div className="space-y-1 w-full sm:w-auto">
-                  <Label className="text-[14px] font-normal text-black">Select Year</Label>
+            <div className="flex items-end justify-between">
+              <div className="flex items-end gap-6">
+                <div className="space-y-1">
+                  <Label className="text-[14px] font-normal text-black dark:text-[#f4f4f5]">Select Year</Label>
                   <Select
                     value={studyYear}
                     onValueChange={(value) =>
@@ -323,8 +323,8 @@ export function ScheduleTimeStudyForm({
                   </Select>
                 </div>
 
-                <div className="space-y-1 w-full sm:w-auto">
-                  <Label className="text-[14px] font-normal text-black">Select Department</Label>
+                <div className="space-y-1">
+                  <Label className="text-[14px] font-normal text-black dark:text-[#f4f4f5]">Select Department</Label>
                   <TitleCaseInput
                     readOnly
                     value={selectedDepartmentLabel}
@@ -355,11 +355,11 @@ export function ScheduleTimeStudyForm({
                 return (
                   <div
                     key={field.id}
-                    className="rounded-[10px] border border-[#E5E7EB] p-[18px_20px]"
+                    className="rounded-[10px] border border-[#E5E7EB] dark:border-[#27272a] p-[18px_20px]"
                   >
                     <div className="grid grid-cols-1 md:grid-cols-[190px_1fr_70px_90px_28px] gap-4 items-end">
                       <div className="space-y-1">
-                        <Label className="text-[14px] font-normal text-black">
+                        <Label className="text-[14px] font-normal text-black dark:text-[#f4f4f5]">
                           Select Time Study Period
                         </Label>
                         <Select
@@ -407,7 +407,7 @@ export function ScheduleTimeStudyForm({
                       </div>
 
                       <div className="space-y-1">
-                        <Label className="text-[14px] font-normal text-black">Groups</Label>
+                        <Label className="text-[14px] font-normal text-black dark:text-[#f4f4f5]">Groups</Label>
                         <div className="relative">
                           <div
                             className={cn(
@@ -588,7 +588,7 @@ export function ScheduleTimeStudyForm({
               <Button
                 type="button"
                 variant="secondary"
-                className="h-[42px] w-full sm:w-[70px] order-3 sm:order-3 rounded-[10px] bg-[#D9D9D9] text-[16px] font-normal text-black hover:bg-[#CDCDCD]"
+                className="h-[42px] w-[70px] rounded-[10px] bg-[#F3F4F6] dark:bg-[#27272a] text-[16px] font-normal text-[#111827] dark:text-[#f4f4f5] hover:bg-[#E5E7EB] dark:hover:bg-[#3f3f46]"
                 onClick={() => onOpenChange(false)}
               >
                 Exit

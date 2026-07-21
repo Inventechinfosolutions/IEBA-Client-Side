@@ -1,4 +1,4 @@
-import { Check, Search } from "lucide-react"
+ import { Check, Search } from "lucide-react"
 import tableEmptyIcon from "@/assets/icons/table-empty.png"
 import { TitleCaseInput } from "@/components/ui/title-case-input"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -18,7 +18,8 @@ export function TransferPanel({
   isActivity = false,
   selectedDept,
 }: TransferPanelProps) {
-  const allSelected = items.length > 0 && items.every((item) => selectedIds.includes(item.id))
+  const checkableItems = items.filter((item) => item.assignmentType !== "autoassigned")
+  const allSelected = checkableItems.length > 0 && checkableItems.every((item) => selectedIds.includes(item.id))
 
   return (
     <div className="flex flex-col overflow-hidden rounded-[8px] border border-[#E5E7EB] bg-white">
@@ -51,11 +52,11 @@ export function TransferPanel({
                     disabled={!onToggleAll}
                     className={`flex size-4.5 items-center justify-center rounded-[6px] border shadow-sm transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 ${
                       allSelected
-                        ? "border-[#6C5DD3] bg-white text-[#6C5DD3]"
-                        : "border-[#E5E7EB] bg-white text-transparent hover:border-[#D1D5DB]"
+                        ? "border-[#6C5DD3] bg-[#6C5DD3] text-white"
+                        : "border-[#E5E7EB] bg-white dark:bg-[#09090b] dark:border-[#3f3f46] hover:border-[#D1D5DB]"
                     }`}
                   >
-                    <Check className="size-3.5 stroke-[3]" />
+                    {allSelected && <Check className="size-3.5 stroke-[3]" />}
                   </button>
                 </div>
                 <div className="px-3 py-0.5">
@@ -68,14 +69,19 @@ export function TransferPanel({
 
             <div className={`flex flex-col ${isActivity ? "pl-6" : ""}`}>
               {items.map((item) => {
-                const isSelected = selectedIds.includes(item.id)
+                const isAutoAssigned = item.assignmentType === "autoassigned"
+                const isSelected = isAutoAssigned || selectedIds.includes(item.id)
                 return (
                   <button
                     key={item.id}
                     type="button"
-                    onClick={() => onToggleItem(item.id)}
-                    className={`group relative flex items-start justify-between px-4 py-1 text-left transition-colors cursor-pointer ${
-                      isSelected ? "bg-[#F3F0FF]" : "hover:bg-[#F9FAFB]"
+                    onClick={isAutoAssigned ? undefined : () => onToggleItem(item.id)}
+                    className={`group relative flex items-start justify-between px-4 py-1 text-left transition-colors ${
+                      isAutoAssigned
+                        ? "cursor-not-allowed opacity-65 bg-[#F3F4F6]"
+                        : "cursor-pointer"
+                    } ${
+                      isSelected ? (isAutoAssigned ? "bg-[#F3F4F6]" : "bg-[#F3F0FF]") : "hover:bg-[#F9FAFB]"
                     }`}
                   >
                     <div className="flex items-start flex-1 min-w-0 pt-0.5">
@@ -128,14 +134,14 @@ export function TransferPanel({
                               {item.masterCodeType ? (
                                 <>
                                   <span className="font-bold">-{item.masterCodeType.trim()}-</span>
-                                  <span className={isSelected ? "text-[#6C5DD3]" : "text-[#111827]"}> {toTitleCase(item.name)}</span>
+                                  <span className={isSelected ? "text-[#6C5DD3] dark:text-[#a78bfa]" : "text-[#111827] dark:text-[#a1a1aa]"}> {toTitleCase(item.name)}</span>
                                 </>
                               ) : (
-                                <span className={isSelected ? "text-[#6C5DD3]" : "text-[#111827]"}> - {toTitleCase(item.name)}</span>
+                                <span className={isSelected ? "text-[#6C5DD3] dark:text-[#a78bfa]" : "text-[#111827] dark:text-[#a1a1aa]"}> - {toTitleCase(item.name)}</span>
                               )}
                             </>
                           ) : (
-                            <span className={isSelected ? "text-[#6C5DD3]" : "text-[#374151]"}>
+                            <span className={isSelected ? "text-[#6C5DD3] dark:text-[#a78bfa]" : "text-[#374151] dark:text-[#a1a1aa]"}>
                               {item.masterCodeType ? (
                                 <span className="font-bold">-{item.masterCodeType.trim()}- </span>
                               ) : null}
@@ -146,15 +152,19 @@ export function TransferPanel({
                       )}
                     </div>
 
-                    <div
-                      className={`flex size-4.5 shrink-0 items-center justify-center rounded-[6px] border shadow-sm transition-all mt-0.5 ${
-                        isSelected
-                          ? "border-[#6C5DD3] bg-[#6C5DD3] text-white"
-                          : "border-[#E5E7EB] bg-white text-transparent hover:border-[#D1D5DB]"
-                      }`}
-                    >
-                      <Check className="size-3.5 stroke-[3]" />
-                    </div>
+                    {isAutoAssigned ? (
+                      <div className="size-4.5 shrink-0" />
+                    ) : (
+                      <div
+                        className={`flex size-4.5 shrink-0 items-center justify-center rounded-[6px] border shadow-sm transition-all mt-0.5 ${
+                          isSelected
+                            ? "border-[#6C5DD3] bg-[#6C5DD3] text-white"
+                            : "border-[#E5E7EB] bg-white text-transparent hover:border-[#D1D5DB]"
+                        }`}
+                      >
+                        <Check className="size-3.5 stroke-[3]" />
+                      </div>
+                    )}
                   </button>
                 )
               })}

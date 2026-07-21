@@ -5,6 +5,7 @@ import { useMutation } from "@tanstack/react-query"
 import { useNavigate, useLocation, Navigate } from "react-router-dom"
 import { toast } from "sonner"
 import { ChevronDown, CircleCheckIcon, Search } from "lucide-react"
+import { useTheme } from "next-themes"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -29,6 +30,7 @@ import { useGlobalNamespaces } from "@/features/auth/queries/getGlobalNamespaces
 import { useValidateLoginOtp } from "@/features/auth/mutations/useValidateLoginOtp"
 import { getUserDetails } from "@/features/auth/api/getUserDetails"
 import { buildAuthUserFromDetails } from "@/features/auth/utils/buildAuthUser"
+import { AUTH_DEFAULT_LANDING_PATH } from "@/features/auth/constants"
 import { AuthJourney } from "@/features/auth/enums/auth.enum"
 import {
   type OtpFormValues,
@@ -52,6 +54,7 @@ export function OtpAuthentication() {
   const [countySearch, setCountySearch] = useState("")
   const [isLoggingIn, setIsLoggingIn] = useState(false)
   const { establishDashboardSession } = useAuth()
+  const { setTheme } = useTheme()
   const navigate = useNavigate()
   const location = useLocation()
   const state = location.state as OtpLocationState | null
@@ -182,6 +185,9 @@ export function OtpAuthentication() {
           let authUser
           try {
             const details = await getUserDetails(result.userId)
+            if (details.theme !== undefined) {
+              setTheme(details.theme ? "dark" : "light")
+            }
             authUser = {
               ...buildAuthUserFromDetails(result.userId, loginId, details),
               namespace: selectedNameSpace,
@@ -204,7 +210,7 @@ export function OtpAuthentication() {
               <CircleCheckIcon className="size-4 shrink-0 text-green-600 dark:text-green-400" />
             ),
           })
-          navigate("/", { replace: true })
+          navigate(AUTH_DEFAULT_LANDING_PATH, { replace: true })
         },
         onError: (error) => {
           setIsLoggingIn(false)

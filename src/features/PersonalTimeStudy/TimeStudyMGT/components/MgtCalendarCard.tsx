@@ -10,8 +10,10 @@
  * separate table column that aligns row-by-row with the week rows.
  */
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react"
+import { getCalendarWeekStartKeyFromIso } from "@/components/Calender"
 import type { MgtDayStatusMap, MgtWeekSummary } from "../types"
 import { toIsoYmdFromDate } from "@/lib/dates"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 
 
@@ -47,7 +49,7 @@ export function MgtCalendarCard({
     curDay.setDate(curDay.getDate() + 1)
   }
 
-  const startPad   = (monthStart.getDay() + 6) % 7 // Mon = 0
+  const startPad   = monthStart.getDay() // Sun = 0
   const cells: (Date | null)[] = [...Array(startPad).fill(null), ...days]
   while (cells.length % 7 !== 0) cells.push(null)
 
@@ -115,7 +117,7 @@ export function MgtCalendarCard({
         <table className="w-full border-collapse text-xs">
           <thead>
             <tr className="border-b border-gray-200">
-              {["MON","TUE","WED","THU","FRI","SAT","SUN"].map((d) => (
+              {["SUN","MON","TUE","WED","THU","FRI","SAT"].map((d) => (
                 <th key={d} className="py-2 text-center font-semibold text-gray-600 w-10">{d}</th>
               ))}
               <th className="py-2 text-center font-semibold text-gray-600 min-w-[80px]">TOTAL(MIN.)</th>
@@ -126,17 +128,12 @@ export function MgtCalendarCard({
           <tbody>
             {weeks.map((week, wi) => {
               const datesInWeek = week.filter(Boolean) as Date[]
-              
-              // Get the Sunday key for this week row
               const firstDate = datesInWeek[0]
-              let weekKey = ""
-              if (firstDate) {
-                const d = new Date(firstDate)
-                const day = d.getDay()
-                const diff = d.getDate() - day
-                const sunday = new Date(d.getFullYear(), d.getMonth(), diff)
-                weekKey = toIsoYmdFromDate(sunday)
-              }
+
+              // Sun–Sat week key — must match getCalendarWeekStartKeyFromIso / AppCalender rows
+              const weekKey = firstDate
+                ? getCalendarWeekStartKeyFromIso(toIsoYmdFromDate(firstDate))
+                : ""
               const summary = weekSummaries[weekKey]
 
               return (
@@ -148,27 +145,47 @@ export function MgtCalendarCard({
                     const ds       = dateStr ? dayStatuses[dateStr] : undefined
                     const dotColor = ds?.color
 
+                    const cell = d ? (
+                      <div className="flex flex-col items-center gap-0.5">
+                        <span className={`relative flex h-7 w-7 items-center justify-center rounded-full text-xs font-medium transition-colors ${
+                          isToday
+                            ? "bg-[#6C5DD3]/20 text-[#6C5DD3] font-bold"
+                            : isOtherMonth
+                            ? "text-gray-300"
+                            : "text-gray-700"
+                        }`}>
+                          {d.getDate()}
+                          {ds?.hasNotes && (
+                            <span className="absolute top-0 right-0 text-[8px] leading-none text-[#6C5DD3] font-black pointer-events-none" style={{ textShadow: '0 0 4px rgba(255,255,255,0.9), 0 1px 3px rgba(108,93,211,0.5)' }}>
+                              ★
+                            </span>
+                          )}
+                        </span>
+                        {dotColor && (
+                          <span
+                            className="h-1.5 w-1.5 rounded-full"
+                            style={{ backgroundColor: dotColor }}
+                          />
+                        )}
+                      </div>
+                    ) : null
+
                     return (
                       <td key={di} className="py-2 text-center">
-                        {d ? (
-                          <div className="flex flex-col items-center gap-0.5">
-                            <span className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-medium transition-colors ${
-                              isToday
-                                ? "bg-[#6C5DD3]/20 text-[#6C5DD3] font-bold"
-                                : isOtherMonth
-                                ? "text-gray-300"
-                                : "text-gray-700"
-                            }`}>
-                              {d.getDate()}
-                            </span>
-                            {dotColor && (
-                              <span
-                                className="h-1.5 w-1.5 rounded-full"
-                                style={{ backgroundColor: dotColor }}
-                              />
-                            )}
-                          </div>
-                        ) : null}
+                        {d && ds?.noteText ? (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div className="inline-block cursor-pointer">{cell}</div>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="max-w-[200px] text-xs">
+                              <span className="block break-all break-words">
+                                {ds.noteText}
+                              </span>
+                            </TooltipContent>
+                          </Tooltip>
+                        ) : (
+                          cell
+                        )}
                       </td>
                     )
                   })}

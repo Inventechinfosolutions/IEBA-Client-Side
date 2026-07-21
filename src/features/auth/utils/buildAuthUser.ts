@@ -33,10 +33,13 @@ export function buildAuthUserFromDetails(
       displayName && displayName.trim().length > 0
         ? displayName
         : loginId.split("@")[0] || loginId,
+    firstName: details.firstName,
+    lastName: details.lastName,
     email: details.user?.loginId?.trim() || loginId,
     isPasswordChangeRequired: isPasswordChangeRequired ? true : false,
     roles: details.roles?.map((r) => r.name),
     permissions,
+    theme: details.theme,
     departmentRoles: details.departmentsRoles?.map((dr) => ({
       departmentId: dr.departmentId,
       roleId: dr.roleId,

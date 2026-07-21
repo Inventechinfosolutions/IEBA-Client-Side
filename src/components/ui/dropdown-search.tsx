@@ -1,6 +1,6 @@
 "use client"
 
-import type { ReactNode } from "react"
+import type { InputHTMLAttributes, KeyboardEvent, ReactNode } from "react"
 import { useMemo, useRef, useState } from "react"
 import { Search, ChevronDown } from "lucide-react"
 
@@ -52,6 +52,8 @@ export type SingleSelectSearchDropdownProps = {
   /** Notified when the menu opens or closes */
   onOpenChange?: (open: boolean) => void
   title?: string
+  /** Extra attributes for the trigger input (e.g. data-pts-program for focus targets). */
+  inputProps?: InputHTMLAttributes<HTMLInputElement> & { [key: `data-${string}`]: string }
 }
 
 export function SingleSelectSearchDropdown({
@@ -71,9 +73,12 @@ export function SingleSelectSearchDropdown({
   emptyListSlot,
   onOpenChange,
   title,
+  inputProps,
 }: SingleSelectSearchDropdownProps) {
   const [internalOpen, setInternalOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
+  const [activeIndex, setActiveIndex] = useState(-1)
+  const dropdownId = useRef(Math.random().toString(36).substring(7)).current
   const inputRef = useRef<HTMLInputElement>(null)
   // Tracks whether a list item mousedown is in progress.
   // onMouseDown sets this true → input's onBlur sees it and skips closing.
@@ -104,6 +109,9 @@ export function SingleSelectSearchDropdown({
       isOpenRef.current = true
       if (!controlled) setInternalOpen(true)
       onOpenChange?.(true)
+
+      const selectedIndex = filteredOptions.findIndex((o) => String(o.value).trim() === valueTrimmed)
+      setActiveIndex(selectedIndex >= 0 ? selectedIndex : 0)
     }
   }
 
@@ -112,6 +120,7 @@ export function SingleSelectSearchDropdown({
     if (!controlled) setInternalOpen(false)
     onOpenChange?.(false)
     setSearchQuery("")
+    setActiveIndex(-1)
   }
 
   const handleSelect = (optValue: string) => {
@@ -120,27 +129,145 @@ export function SingleSelectSearchDropdown({
     inputRef.current?.blur()
   }
 
+  const scrollToIndex = (index: number) => {
+    setTimeout(() => {
+      const activeEl = document.getElementById(`opt-${dropdownId}-${index}`)
+      if (activeEl) {
+        activeEl.scrollIntoView({ block: "nearest" })
+      }
+    }, 0)
+  }
+
+  const focusableIncludingDisabledSelector =
+    'a[href], area[href], input:not([tabindex="-1"]), select:not([tabindex="-1"]), textarea:not([tabindex="-1"]), button:not([tabindex="-1"]), [tabindex="0"]'
+
+  const isVisibleFocusCandidate = (el: HTMLElement) => {
+    if (el.tabIndex < 0) return false
+    const style = window.getComputedStyle(el)
+    if (style.display === "none" || style.visibility === "hidden") return false
+    return el.offsetWidth > 0 || el.offsetHeight > 0
+  }
+
+  /** Focus next field; if it is disabled (e.g. Activity still loading), wait until enabled — no time cap. */
+  const focusNextTabbable = (currentEl: HTMLElement) => {
+    // One frame so React can apply loading/disabled after onChange — not an API timeout.
+    requestAnimationFrame(() => {
+      const root =
+        (currentEl.closest("[data-time-entries-form]") as HTMLElement | null) ?? document.body
+      const allVisible = Array.from(
+        root.querySelectorAll(focusableIncludingDisabledSelector),
+      ).filter((el) => isVisibleFocusCandidate(el as HTMLElement)) as HTMLElement[]
+
+      const index = allVisible.indexOf(currentEl)
+      const next = index >= 0 ? allVisible[index + 1] : null
+      if (!next) {
+        currentEl.blur()
+        return
+      }
+
+      const resolveLiveTarget = (): HTMLInputElement | null => {
+        const scope = next.closest("[data-pts-row], [data-time-entries-form]") ?? root
+        if (next.hasAttribute("data-pts-activity")) {
+          return scope.querySelector<HTMLInputElement>("[data-pts-activity]")
+        }
+        return (document.contains(next) ? next : null) as HTMLInputElement | null
+      }
+
+      const tryFocusNext = () => {
+        const live = resolveLiveTarget()
+        if (!live || live.disabled) return false
+        live.focus()
+        return true
+      }
+
+      if (tryFocusNext()) return
+
+      // Stay on Program until Activity finishes loading (disabled removed).
+      currentEl.focus({ preventScroll: true })
+      const watchRoot =
+        next.closest("[data-pts-row], [data-time-entries-form]") ?? next.parentElement ?? next
+      const observer = new MutationObserver(() => {
+        if (tryFocusNext()) observer.disconnect()
+      })
+      observer.observe(watchRoot, {
+        attributes: true,
+        attributeFilter: ["disabled"],
+        childList: true,
+        subtree: true,
+      })
+    })
+  }
+
+  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (disabledEffective) return
+
+    switch (e.key) {
+      case "ArrowDown":
+        e.preventDefault()
+        if (!open) {
+          openMenu()
+        } else if (filteredOptions.length > 0) {
+          const nextIndex = activeIndex < 0 ? 0 : (activeIndex + 1) % filteredOptions.length
+          setActiveIndex(nextIndex)
+          scrollToIndex(nextIndex)
+        }
+        break
+      case "ArrowUp":
+        e.preventDefault()
+        if (!open) {
+          openMenu()
+        } else if (filteredOptions.length > 0) {
+          const nextIndex = activeIndex < 0 ? filteredOptions.length - 1 : (activeIndex - 1 + filteredOptions.length) % filteredOptions.length
+          setActiveIndex(nextIndex)
+          scrollToIndex(nextIndex)
+        }
+        break
+      case "Enter":
+        if (open && activeIndex >= 0 && activeIndex < filteredOptions.length) {
+          e.preventDefault()
+          onChange(filteredOptions[activeIndex].value)
+          closeMenu()
+          if (inputRef.current) {
+            focusNextTabbable(inputRef.current)
+          }
+        }
+        break
+      case "Escape":
+        if (open) {
+          e.preventDefault()
+          closeMenu()
+        }
+        break
+      case "Tab":
+        // Close the list so Tab moves to the next field, not into portaled options.
+        if (open) closeMenu()
+        break
+      default:
+        break
+    }
+  }
+
   // What the input should display
   const inputDisplayValue = open
     ? searchQuery                          // while open: show what user is typing
     : isLoading
-    ? ""
-    : selectedLabel                        // while closed: show selected label
+      ? ""
+      : selectedLabel                        // while closed: show selected label
 
   const inputPlaceholder = open
     ? (selectedLabel || placeholder)       // ghost-text hint while searching
     : isLoading
-    ? loadingLabel
-    : placeholder
+      ? loadingLabel
+      : placeholder
 
   return (
     <Popover modal={false} open={open} onOpenChange={(next) => { if (!next) closeMenu() }}>
       {/* PopoverAnchor lets the content align to this element without it being the trigger */}
       <PopoverAnchor asChild>
-          <div
-            className={cn(
-              "relative flex min-h-[43px] w-full items-center rounded-[7px] border border-input bg-white px-3 py-1.5 pr-9",
-              "focus-within:border-[#6C5DD3] focus-within:ring-1 focus-within:ring-[#6C5DD333]",
+        <div
+          className={cn(
+            "relative flex min-h-[43px] w-full items-center rounded-[7px] border border-input bg-white px-3 py-1.5 pr-9",
+            "focus-within:border-[#6C5DD3] focus-within:ring-1 focus-within:ring-[#6C5DD333]",
             disabledEffective && "cursor-not-allowed bg-[#f2f2f2] opacity-100",
             className,
           )}
@@ -154,16 +281,34 @@ export function SingleSelectSearchDropdown({
                   disabled={disabledEffective}
                   placeholder={inputPlaceholder}
                   value={inputDisplayValue}
+                  {...inputProps}
                   // Open on focus/click
-                  onFocus={openMenu}
-                  onClick={openMenu}
-                  onChange={(e) => {
-                    setSearchQuery(e.target.value)
-                    if (!open) openMenu()
+                  onFocus={(e) => {
+                    inputProps?.onFocus?.(e)
+                    openMenu()
                   }}
-                  onBlur={() => {
+                  onClick={(e) => {
+                    inputProps?.onClick?.(e)
+                    openMenu()
+                  }}
+                  onKeyDown={(e) => {
+                    inputProps?.onKeyDown?.(e)
+                    if (e.defaultPrevented) return
+                    handleKeyDown(e)
+                  }}
+                  onChange={(e) => {
+                    inputProps?.onChange?.(e)
+                    if (e.defaultPrevented) return
+                    setSearchQuery(e.target.value)
+                    if (!open) {
+                      openMenu()
+                    } else {
+                      setActiveIndex(0)
+                    }
+                  }}
+                  onBlur={(e) => {
+                    inputProps?.onBlur?.(e)
                     if (selectingRef.current) return
-
                     onBlur()
                   }}
                   className={cn(
@@ -171,6 +316,7 @@ export function SingleSelectSearchDropdown({
                     "text-[11px] font-normal leading-[16px] text-[#111827]",
                     "placeholder:text-[#9ca3af]",
                     disabledEffective && "cursor-not-allowed",
+                    inputProps?.className,
                   )}
                 />
               </TooltipTrigger>
@@ -202,12 +348,11 @@ export function SingleSelectSearchDropdown({
         sideOffset={6}
         // Prevent popover from stealing focus away from the input
         onOpenAutoFocus={(e) => e.preventDefault()}
-        onCloseAutoFocus={(e) => e.preventDefault()}
         onWheel={(e) => e.stopPropagation()}
         className={cn(
           "z-[1000] p-0",
           "w-[var(--radix-popover-trigger-width)]",
-          "max-h-[260px] overflow-auto rounded-[7px] border border-[#d9deea] bg-white shadow-[0_8px_18px_rgba(17,24,39,0.12)]",
+          "max-h-[260px] overflow-auto rounded-[7px] border border-[#d9deea] bg-white dark:bg-[#18181b] dark:border-[rgba(108,93,211,0.4)] shadow-[0_8px_18px_rgba(17,24,39,0.12)]",
           contentClassName,
         )}
         // Keep focus on input when interacting with the list
@@ -220,6 +365,12 @@ export function SingleSelectSearchDropdown({
           }
         }}
       >
+        <style>{`
+          .dark div[role="dialog"] button.bg-\\[\\#f3f4f8\\] {
+            background-color: #2a1f52 !important;
+            color: #ffffff !important;
+          }
+        `}</style>
         {filteredOptions.length === 0 && !isLoading ? (
           emptyListSlot !== undefined ? (
             <div className="p-1">{emptyListSlot}</div>
@@ -235,10 +386,13 @@ export function SingleSelectSearchDropdown({
               const rowKey = opt.key ?? `${opt.value}-${index}`
               return (
                 <TooltipProvider key={rowKey}>
-                  <Tooltip>
+                  <Tooltip open={open && index === activeIndex}>
                     <TooltipTrigger asChild>
                       <button
+                        id={`opt-${dropdownId}-${index}`}
                         type="button"
+                        tabIndex={-1}
+                        onMouseEnter={() => setActiveIndex(index)}
                         onMouseDown={(e) => {
                           e.preventDefault()
                           selectingRef.current = true
@@ -247,7 +401,7 @@ export function SingleSelectSearchDropdown({
                         }}
                         className={cn(
                           "w-full cursor-pointer rounded px-3 py-2 text-left hover:bg-[#f3f4f8]",
-                          selected ? "bg-[#eef8ff]" : "bg-transparent",
+                          selected ? "bg-[#eef8ff]" : (index === activeIndex ? "bg-[#f3f4f8]" : "bg-transparent"),
                           itemButtonClassName,
                         )}
                       >

@@ -223,9 +223,9 @@ export function JobClassificationFormModal({
           </div>
 
           <div className="mt-5 relative">
-            <label className="block text-[14px] text-[#111827] mb-1.5">Activity Description</label>
-            <div className="relative overflow-hidden rounded-[10px] border border-[#c5cad5] bg-white">
-              <div className="flex h-8 items-center gap-4 border-b border-[#d3d8e2] px-3 text-[#4b5563]">
+            <label className="block text-[14px] text-[#111827] dark:text-[#a1a1aa] mb-1.5">Activity Description</label>
+            <div className="relative overflow-hidden rounded-[10px] border border-[#c5cad5] dark:border-[rgba(108,93,211,0.45)] bg-white dark:bg-[#09090b]">
+              <div className="flex h-8 items-center gap-4 border-b border-[#d3d8e2] dark:border-[rgba(108,93,211,0.3)] px-3 text-[#4b5563] dark:text-[#a1a1aa]">
                 <button
                   type="button"
                   onClick={() => applyCommand("bold")}
@@ -267,7 +267,7 @@ export function JobClassificationFormModal({
                 onInput={syncEditorValue}
                 onClick={refreshActiveTools}
                 onKeyUp={refreshActiveTools}
-                className="program-table-scroll max-h-[260px] min-h-[260px] select-text overflow-y-scroll overflow-x-hidden whitespace-pre-wrap break-all [overflow-wrap:anywhere] bg-white px-3 py-2 pr-5 text-[14px] leading-6 text-[#111827] outline-none [&_ul]:list-disc [&_ul]:pl-5 [&_li]:my-0.5"
+                className="program-table-scroll max-h-[260px] min-h-[260px] select-text overflow-y-scroll overflow-x-hidden whitespace-pre-wrap break-all [overflow-wrap:anywhere] bg-white dark:bg-[#09090b] px-3 py-2 pr-5 text-[14px] leading-6 text-[#111827] dark:text-[#e4e4e7] outline-none [&_ul]:list-disc [&_ul]:pl-5 [&_li]:my-0.5"
               />
 
             </div>

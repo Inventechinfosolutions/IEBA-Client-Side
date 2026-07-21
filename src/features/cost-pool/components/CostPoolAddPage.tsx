@@ -31,13 +31,13 @@ function VisualCheckbox({ checked }: CostPoolVisualCheckboxProps) {
   return (
     <span
       aria-hidden="true"
-      className={`inline-flex size-5 items-center justify-center rounded-[6px] border ${
+      className={`inline-flex size-5 items-center justify-center rounded-[6px] border transition-colors ${
         checked
           ? "border-[#6C5DD3] bg-[#6C5DD3] text-white"
-          : "border-[#D1D5DB] bg-white text-transparent"
+          : "border-[#6C5DD3]! dark:border-[#7566d4]! bg-white dark:bg-[#09090b] text-transparent"
       }`}
     >
-      <CheckIcon className="size-4" />
+      {checked && <CheckIcon className="size-4" />}
     </span>
   )
 }
@@ -181,7 +181,7 @@ export function CostPoolAddPage({
   }
 
   return (
-    <div className="relative w-full max-w-[1150px] rounded-[10px] bg-white px-4 sm:px-11 py-7 shadow-[0_0_20px_0_#0000001a]">
+    <div className="cost-pool-add-page relative w-[1150px] max-w-[calc(100vw-2rem)] rounded-[10px] bg-white px-11 py-7 shadow-[0_0_20px_0_#0000001a]">
       {(isSubmitting || isLoadingDetails) && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/60">
           <Spinner className="text-[#6C5DD3]" />
@@ -242,7 +242,7 @@ export function CostPoolAddPage({
                   <SelectItem
                     key={d.id}
                     value={String(d.id)}
-                    className="rounded-[10px] px-3 py-2.5 text-[14px]  text-[#111827] focus:bg-[#E6F4FF] focus:text-[#111827] data-[state=checked]:bg-[#E6F4FF] data-[state=checked]:font-semibold [&>span:first-child]:hidden"
+                    className="rounded-[10px] px-3 py-2.5 text-[14px] text-[#111827] focus:bg-blue-50 dark:focus:bg-[#1c1538] focus:text-[#111827] dark:focus:text-white data-[state=checked]:bg-blue-50 dark:data-[state=checked]:bg-[#1c1538] data-[state=checked]:text-[#111827] dark:data-[state=checked]:text-white data-[state=checked]:font-semibold [&>span:first-child]:hidden"
                   >
                     {d.name}
                   </SelectItem>
@@ -363,7 +363,7 @@ export function CostPoolAddPage({
                       <div className="relative">
                         <div
                           aria-hidden="true"
-                          className="pointer-events-none absolute left-[18px] top-[-12px] bottom-0 w-px bg-[#E5E7EB]"
+                          className="pointer-events-none absolute left-[18px] top-[-12px] bottom-0 w-px bg-[#E5E7EB] dark:bg-[#3f3f46]"
                         />
                         <div>
                           {filteredUnassigned.map((a) => {
@@ -396,7 +396,7 @@ export function CostPoolAddPage({
                                   <div className="relative pl-7 flex items-center min-w-0">
                                     <span
                                       aria-hidden="true"
-                                      className="pointer-events-none absolute left-[6px] w-[22px] top-1/2 -translate-y-1/2 border-t border-[#E5E7EB]"
+                                      className="pointer-events-none absolute left-[6px] w-[22px] top-1/2 -translate-y-1/2 h-px bg-[#E5E7EB] dark:bg-[#3f3f46]"
                                     />
                                     {a.isChild ? (
                                       <TooltipProvider>
@@ -554,7 +554,7 @@ export function CostPoolAddPage({
                       <div className="relative">
                         <div
                           aria-hidden="true"
-                          className="pointer-events-none absolute left-[18px] top-[-12px] bottom-0 w-px bg-[#E5E7EB]"
+                          className="pointer-events-none absolute left-[18px] top-[-12px] bottom-0 w-px bg-[#E5E7EB] dark:bg-[#3f3f46]"
                         />
                         <div>
                           {filteredAssigned.map((a) => {
@@ -587,7 +587,7 @@ export function CostPoolAddPage({
                                   <div className="relative pl-7 flex items-center min-w-0">
                                     <span
                                       aria-hidden="true"
-                                      className="pointer-events-none absolute left-[6px] w-[22px] top-1/2 -translate-y-1/2 border-t border-[#E5E7EB]"
+                                      className="pointer-events-none absolute left-[6px] w-[22px] top-1/2 -translate-y-1/2 h-px bg-[#E5E7EB] dark:bg-[#3f3f46]"
                                     />
                                     {a.isChild ? (
                                       <TooltipProvider>

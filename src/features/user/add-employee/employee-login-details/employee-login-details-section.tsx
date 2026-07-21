@@ -25,6 +25,7 @@ import { syncTab1EmployeeLoginFields } from "../utility/refetchFormAfterTabSave"
 
 import { usePermissions } from "@/hooks/usePermissions"
 import { capitalize } from "@/lib/utils"
+import { isMonoCounty } from "../../utility/county"
 
 export function EmployeeLoginDetailsSection({
   isEditMode,
@@ -97,6 +98,7 @@ export function EmployeeLoginDetailsSection({
     !isEditMode && Boolean(confirmPasswordErrorMessage) && confirmPasswordFieldTouchedOrDirty
 
   const loginIdField = register("loginId")
+  const canEditLoginIdInEditMode = isEditMode && isMonoCounty(user?.countyName)
 
   return (
     <>
@@ -286,6 +288,22 @@ export function EmployeeLoginDetailsSection({
         {!isEditMode ? (
           <div>
             <label className={labelClassName}>*Login Id</label>
+            <Input
+              {...loginIdField}
+              className={inputClassName}
+              placeholder="Email"
+              onChange={(e) => {
+                void loginIdField.onChange(e)
+                setValue("emailAddress", e.target.value, {
+                  shouldValidate: true,
+                  shouldDirty: true,
+                })
+              }}
+            />
+          </div>
+        ) : canEditLoginIdInEditMode ? (
+          <div className="col-span-1">
+            <label className={labelClassName}>Login Id / Email Address</label>
             <Input
               {...loginIdField}
               className={inputClassName}

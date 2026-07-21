@@ -1,4 +1,4 @@
-import { useMemo, useState, Fragment, useRef, useCallback } from "react"
+import { useMemo, useState, Fragment, useRef, useCallback, useEffect } from "react"
 import { useLocation } from "react-router-dom"
 import { Controller, useForm, useWatch } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -45,6 +45,8 @@ import {
   reportFormSchema,
 } from "../schemas"
 import { ReportWeekCalendarPicker } from "./ReportWeekCalendarPicker"
+import { ReportMonthPicker } from "./ReportMonthPicker"
+import { ReportDatePicker } from "./ReportDatePicker"
 import type {
   ReportEmployeeMultiSelectProps,
   ReportCatalogItem,
@@ -151,7 +153,7 @@ const employeeMultiSelectClassName =
   "!h-[45px] !min-h-[45px] !max-h-[45px] w-full max-w-full min-w-0 overflow-hidden rounded-[8px] border border-[#dcd6f7] bg-white !py-0 !text-[14px] leading-normal text-[#111827] shadow-none focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD3]/25 [&_.truncate]:!text-[14px]"
 
 const reportEmployeeListPanelClassName =
-  "rounded-[7px] border border-[#d9deea] bg-white shadow-[0_8px_18px_rgba(17,24,39,0.12)]"
+  "rounded-[7px] border border-[#d9deea] bg-white dark:bg-[#18181b] dark:border-[rgba(108,93,211,0.4)] shadow-[0_8px_18px_rgba(17,24,39,0.12)]"
 
 const reportEmployeeListScrollClassName = "max-h-[240px] overflow-auto p-1"
 
@@ -380,15 +382,15 @@ function ReportEmployeeMultiSelect({
         onCloseAutoFocus={(e) => e.preventDefault()}
       >
         {/* Search input */}
-        <div className="border-b border-[#e5e7eb] px-3 py-2">
-          <div className="flex items-center gap-2 rounded-[6px] border border-[#d6d7dc] bg-[#f9fafb] px-2.5 py-1.5">
+        <div className="border-b border-[#e5e7eb] dark:border-[rgba(108,93,211,0.3)] px-3 py-2">
+          <div className="flex items-center gap-2 rounded-[6px] border border-[#d6d7dc] dark:border-[#3f3f46] bg-[#f9fafb] dark:bg-[#09090b] px-2.5 py-1.5">
             <Search className="size-3.5 shrink-0 text-[#9ca3af]" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search..."
-              className="min-w-0 flex-1 border-0 bg-transparent text-[13px] text-[#111827] placeholder-[#9ca3af] outline-none"
+              className="min-w-0 flex-1 border-0 bg-transparent text-[13px] text-[#111827] dark:text-[#e4e4e7] placeholder-[#9ca3af] outline-none"
               autoFocus
               onClick={(e) => e.stopPropagation()}
               onKeyDown={(e) => e.stopPropagation()}
@@ -415,8 +417,8 @@ function ReportEmployeeMultiSelect({
           <div className={reportEmployeeListScrollClassName}>
             <label
               className={cn(
-                "flex w-full cursor-pointer items-center gap-3 border-b border-[#e5e7eb] px-3 py-2.5 hover:bg-[#f3f4f8]",
-                allFilteredSelected ? "bg-[#eef8ff]" : "bg-transparent",
+                "flex w-full cursor-pointer items-center gap-3 border-b border-[#e5e7eb] dark:border-[rgba(108,93,211,0.3)] px-3 py-2.5 hover:bg-[#f3f4f8] dark:hover:bg-[#2a1f52]",
+                allFilteredSelected ? "bg-[#eef8ff] dark:bg-[#1c1538]" : "bg-transparent",
               )}
             >
               <Checkbox
@@ -424,7 +426,7 @@ function ReportEmployeeMultiSelect({
                 onCheckedChange={() => toggleSelectAll()}
                 className="shrink-0"
               />
-              <span className="truncate text-[14px] font-medium text-[#111827]">Select All</span>
+              <span className="truncate text-[14px] font-medium text-[#111827] dark:text-[#e4e4e7]">Select All</span>
             </label>
             {filteredOptions.map((opt) => {
               const selected = selectedValues.includes(opt.value)
@@ -432,8 +434,8 @@ function ReportEmployeeMultiSelect({
                 <label
                   key={opt.value}
                   className={cn(
-                    "flex w-full cursor-pointer items-center gap-3 px-3 py-2.5 hover:bg-[#f3f4f8]",
-                    selected ? "bg-[#eef8ff]" : "bg-transparent",
+                    "flex w-full cursor-pointer items-center gap-3 px-3 py-2.5 hover:bg-[#f3f4f8] dark:hover:bg-[#2a1f52]",
+                    selected ? "bg-[#eef8ff] dark:bg-[#1c1538]" : "bg-transparent",
                   )}
                 >
                   <Checkbox
@@ -441,7 +443,7 @@ function ReportEmployeeMultiSelect({
                     onCheckedChange={() => toggle(opt.value)}
                     className="shrink-0"
                   />
-                  <span className="min-w-0 flex-1 truncate text-[14px] font-normal text-[#111827]">
+                  <span className="min-w-0 flex-1 truncate text-[14px] font-normal text-[#111827] dark:text-[#e4e4e7]">
                     {opt.label}
                   </span>
                 </label>
@@ -456,6 +458,7 @@ function ReportEmployeeMultiSelect({
 
 function ReportSecondaryPickBlock({
   control,
+  setValue,
   title,
   activeLabel,
   inactiveLabel,
@@ -469,6 +472,36 @@ function ReportSecondaryPickBlock({
   onValuesChange,
   isLoading = false,
 }: ReportSecondaryPickBlockProps & { isLoading?: boolean }) {
+  const includeActive = useWatch({ control, name: activeField }) === true
+  const includeInactive = useWatch({ control, name: inactiveField }) === true
+  const idsRaw = useWatch({ control, name: idsField })
+
+  useEffect(() => {
+    const current = parseMultiSelectStoredValues(typeof idsRaw === "string" ? idsRaw : "")
+
+    if (!includeActive && !includeInactive) {
+      if (current.length > 0) {
+        setValue(idsField, "", { shouldValidate: true, shouldDirty: true })
+        onValuesChange?.("")
+      }
+      return
+    }
+
+    if (isLoading || current.length === 0) return
+
+    // Avoid pruning while async option lists are still empty (Program/Activity blocks
+    // do not always pass isLoading).
+    if (options.length === 0) return
+
+    const allowed = new Set(options.map((o) => o.value))
+    const pruned = current.filter((id) => allowed.has(id))
+    if (pruned.length === current.length) return
+
+    const next = serializeEmployeeIdsField(pruned)
+    setValue(idsField, next, { shouldValidate: true, shouldDirty: true })
+    onValuesChange?.(next)
+  }, [includeActive, includeInactive, options, idsRaw, idsField, setValue, onValuesChange, isLoading])
+
   /* Padding on the positioned parent skewed `top-full`; keep pb on this outer wrapper only (pb-16 clears bar + mt-3). */
   return (
     <div className="w-full min-w-0 max-w-full pb-16">
@@ -644,7 +677,7 @@ export function ReportForm({ module }: ReportFormProps) {
     mode: "onTouched",
   })
 
-  const { control, handleSubmit, setError, setValue, getValues, formState } = form
+  const { control, handleSubmit, setError, setValue, getValues, formState, trigger } = form
 
   const reportKey = useWatch({ control, name: "reportKey" }) ?? ""
   const departmentId = useWatch({ control, name: "departmentId" }) ?? ""
@@ -710,6 +743,15 @@ export function ReportForm({ module }: ReportFormProps) {
     }
     return { actualDateFrom: undefined, actualDateTo: undefined }
   }, [selectMonthBy, dateFrom, dateTo, monthVal, yearVal, fiscalYearId, quarter, weekIdVal])
+
+  // Clear dependent picks in period onChange handlers (no useEffect). Do not call from
+  // dateFrom/dateTo edits — changing the month in the date picker must not wipe selections.
+  const clearPeriodDependentPicks = useCallback(() => {
+    setValue("employeeIds", "", { shouldValidate: true })
+    setValue("activityIds", "")
+    setValue("programIds", "")
+    void trigger(["selectMonthBy", "month", "fiscalYearId", "quarter", "year", "dateFrom", "dateTo"])
+  }, [setValue, trigger])
 
   const currentReportItem = useMemo(() => {
     return departmentReportItems.find((i) => i.key === reportKey)
@@ -951,17 +993,27 @@ export function ReportForm({ module }: ReportFormProps) {
   }, [rawDepartmentOptions, reportKey])
 
   const employeeOptions = useMemo(() => {
-    if (shouldFetchCostPoolUsers && costPoolUsersData) {
+    if (shouldFetchCostPoolUsers && costPoolUsersData && !isCostPoolUsersFetching) {
       return sortSelectOptionsByLabel(costPoolUsersData)
     }
-    if (departmentId && departmentUsersData) {
+    if (shouldLoadDepartmentUsers && departmentUsersData && !isDeptUsersFetching) {
       return sortSelectOptionsByLabel(departmentUsersData)
     }
-    if ((reportKey.includes("MAA") || reportKey.includes("TCM")) && maaEmployeesData) {
+    if (shouldFetchMaaEmployees && maaEmployeesData && !isMaaEmployeesFetching) {
       return sortSelectOptionsByLabel(maaEmployeesData)
     }
     return []
-  }, [shouldFetchCostPoolUsers, costPoolUsersData, departmentId, departmentUsersData, reportKey, maaEmployeesData])
+  }, [
+    shouldFetchCostPoolUsers,
+    costPoolUsersData,
+    isCostPoolUsersFetching,
+    shouldLoadDepartmentUsers,
+    departmentUsersData,
+    isDeptUsersFetching,
+    shouldFetchMaaEmployees,
+    maaEmployeesData,
+    isMaaEmployeesFetching,
+  ])
 
   const isEmployeeLoading =
     (shouldFetchCostPoolUsers && isCostPoolUsersFetching) ||
@@ -1104,6 +1156,7 @@ export function ReportForm({ module }: ReportFormProps) {
     yearQuarterSelectTrigger: string
     dateInputInRowClassName: string
     setValue: any
+    clearPeriodDependentPicks: () => void
     fiscalYearId: string
     quarter: string
     selectMonthBy: string
@@ -1123,6 +1176,7 @@ export function ReportForm({ module }: ReportFormProps) {
     yearQuarterSelectTrigger,
     dateInputInRowClassName,
     setValue,
+    clearPeriodDependentPicks,
     fiscalYearId,
     quarter,
     selectMonthBy,
@@ -1145,6 +1199,7 @@ export function ReportForm({ module }: ReportFormProps) {
                 value={field.value}
                 onValueChange={(v) => {
                   field.onChange(v as "qtr" | "dates" | "month" | "year" | "scheduled")
+                  clearPeriodDependentPicks()
                   if (v === "dates") {
                     const now = new Date()
                     const y = now.getFullYear()
@@ -1170,22 +1225,6 @@ export function ReportForm({ module }: ReportFormProps) {
 
                   return (
                     <>
-                      {monthByFlags.showQtr && (
-                        <div className="flex items-center gap-2">
-                          <RadioGroupItem value="qtr" id="reports-month-qtr" />
-                          <Label htmlFor="reports-month-qtr" className="text-[14px] font-normal">
-                            Qtr
-                          </Label>
-                        </div>
-                      )}
-                      {monthByFlags.showDates && (
-                        <div className="flex items-center gap-2">
-                          <RadioGroupItem value="dates" id="reports-month-dates" />
-                          <Label htmlFor="reports-month-dates" className="text-[14px] font-normal">
-                            Dates
-                          </Label>
-                        </div>
-                      )}
                       {monthByFlags.showMonth && (
                         <div className="flex items-center gap-2">
                           <RadioGroupItem value="month" id="reports-month-only" />
@@ -1194,11 +1233,27 @@ export function ReportForm({ module }: ReportFormProps) {
                           </Label>
                         </div>
                       )}
+                      {monthByFlags.showQtr && (
+                        <div className="flex items-center gap-2">
+                          <RadioGroupItem value="qtr" id="reports-month-qtr" />
+                          <Label htmlFor="reports-month-qtr" className="text-[14px] font-normal">
+                            Qtr
+                          </Label>
+                        </div>
+                      )}
                       {monthByFlags.showYear && (
                         <div className="flex items-center gap-2">
                           <RadioGroupItem value="year" id="reports-year-only" />
                           <Label htmlFor="reports-year-only" className="text-[14px] font-normal">
                             Year
+                          </Label>
+                        </div>
+                      )}
+                      {monthByFlags.showDates && (
+                        <div className="flex items-center gap-2">
+                          <RadioGroupItem value="dates" id="reports-month-dates" />
+                          <Label htmlFor="reports-month-dates" className="text-[14px] font-normal">
+                            Dates
                           </Label>
                         </div>
                       )}
@@ -1231,7 +1286,10 @@ export function ReportForm({ module }: ReportFormProps) {
                   render={({ field }) => (
                     <SingleSelectDropdown
                       value={field.value ?? ""}
-                      onChange={field.onChange}
+                      onChange={(val) => {
+                        field.onChange(val)
+                        clearPeriodDependentPicks()
+                      }}
                       onBlur={field.onBlur}
                       options={fiscalYearOptions}
                       placeholder="Select year"
@@ -1260,7 +1318,10 @@ export function ReportForm({ module }: ReportFormProps) {
                 render={({ field }) => (
                   <SingleSelectDropdown
                     value={field.value ?? ""}
-                    onChange={field.onChange}
+                    onChange={(val) => {
+                      field.onChange(val)
+                      clearPeriodDependentPicks()
+                    }}
                     onBlur={field.onBlur}
                     options={quarterOptions}
                     placeholder="Qtr"
@@ -1291,6 +1352,7 @@ export function ReportForm({ module }: ReportFormProps) {
                       value={field.value}
                       onChange={(val) => {
                         field.onChange(val)
+                        clearPeriodDependentPicks()
                         if (val) {
                           const [start, end] = val.split("|")
                           setValue("dateFrom", start)
@@ -1316,7 +1378,10 @@ export function ReportForm({ module }: ReportFormProps) {
               render={({ field }) => (
                 <SingleSelectDropdown
                   value={field.value ?? ""}
-                  onChange={field.onChange}
+                  onChange={(val) => {
+                    field.onChange(val)
+                    clearPeriodDependentPicks()
+                  }}
                   onBlur={field.onBlur}
                   options={fiscalYearOptions}
                   placeholder="Select Year"
@@ -1342,12 +1407,13 @@ export function ReportForm({ module }: ReportFormProps) {
               name="month"
               control={control}
               render={({ field }) => (
-                <TitleCaseInput
+                <ReportMonthPicker
                   id="reports-month-input"
-                  type="month"
-                  className={dateInputInRowClassName}
                   value={field.value ?? ""}
-                  onChange={field.onChange}
+                  onChange={(val) => {
+                    field.onChange(val)
+                    clearPeriodDependentPicks()
+                  }}
                   onBlur={field.onBlur}
                 />
               )}
@@ -1371,7 +1437,10 @@ export function ReportForm({ module }: ReportFormProps) {
                   render={({ field }) => (
                     <SingleSelectDropdown
                       value={field.value ?? ""}
-                      onChange={field.onChange}
+                      onChange={(val) => {
+                        field.onChange(val)
+                        clearPeriodDependentPicks()
+                      }}
                       onBlur={field.onBlur}
                       options={fiscalYearOptions}
                       placeholder="Select Fiscal Year"
@@ -1396,6 +1465,7 @@ export function ReportForm({ module }: ReportFormProps) {
                     value={field.value ?? ""}
                     onChange={(val) => {
                       field.onChange(val)
+                      clearPeriodDependentPicks()
                       const selectedPeriod = timeStudyPeriodOptions.find((opt) => opt.value === val)
                       const nextFrom = normalizeToDateInputValue(selectedPeriod?.startDate)
                       const nextTo = normalizeToDateInputValue(selectedPeriod?.endDate)
@@ -1425,9 +1495,8 @@ export function ReportForm({ module }: ReportFormProps) {
                 name="dateFrom"
                 control={control}
                 render={({ field }) => (
-                  <TitleCaseInput
+                  <ReportDatePicker
                     id="reports-date-from"
-                    type="date"
                     className={dateInputInRowClassName}
                     value={field.value ?? ""}
                     onChange={field.onChange}
@@ -1444,9 +1513,8 @@ export function ReportForm({ module }: ReportFormProps) {
                 name="dateTo"
                 control={control}
                 render={({ field }) => (
-                  <TitleCaseInput
+                  <ReportDatePicker
                     id="reports-date-to"
-                    type="date"
                     className={dateInputInRowClassName}
                     value={field.value ?? ""}
                     onChange={field.onChange}
@@ -1466,13 +1534,11 @@ export function ReportForm({ module }: ReportFormProps) {
                 name="dateFrom"
                 control={control}
                 render={({ field }) => (
-                  <TitleCaseInput
+                  <ReportDatePicker
                     id="reports-date-from"
-                    type="date"
                     className={dateInputInRowClassName}
                     value={field.value ?? ""}
-                    onChange={(e) => {
-                      const val = e.target.value
+                    onChange={(val) => {
                       field.onChange(val)
                       if (currentReportItem?.key === "DSSRPT1" && val) {
                         setValue("dateTo", addDays(val, 27), { shouldValidate: true })
@@ -1496,9 +1562,8 @@ export function ReportForm({ module }: ReportFormProps) {
                 name="dateTo"
                 control={control}
                 render={({ field }) => (
-                  <TitleCaseInput
+                  <ReportDatePicker
                     id="reports-date-to"
-                    type="date"
                     className={dateInputInRowClassName}
                     value={field.value ?? ""}
                     onChange={field.onChange}
@@ -1672,7 +1737,10 @@ export function ReportForm({ module }: ReportFormProps) {
                 render={({ field }) => (
                   <SingleSelectDropdown
                     value={field.value ?? ""}
-                    onChange={field.onChange}
+                    onChange={(val) => {
+                      field.onChange(val)
+                      clearPeriodDependentPicks()
+                    }}
                     onBlur={field.onBlur}
                     options={fiscalYearOptions}
                     placeholder="Select Fiscal Year"
@@ -1696,6 +1764,7 @@ export function ReportForm({ module }: ReportFormProps) {
               yearQuarterSelectTrigger={yearQuarterSelectTrigger}
               dateInputInRowClassName={dateInputInRowClassName}
               setValue={setValue}
+              clearPeriodDependentPicks={clearPeriodDependentPicks}
               fiscalYearId={fiscalYearId}
               quarter={quarter}
               selectMonthBy={selectMonthBy}
@@ -1726,6 +1795,7 @@ export function ReportForm({ module }: ReportFormProps) {
                 yearQuarterSelectTrigger={yearQuarterSelectTrigger}
                 dateInputInRowClassName={dateInputInRowClassName}
                 setValue={setValue}
+                clearPeriodDependentPicks={clearPeriodDependentPicks}
                 fiscalYearId={fiscalYearId}
                 quarter={quarter}
                 selectMonthBy={selectMonthBy}
@@ -1753,6 +1823,7 @@ export function ReportForm({ module }: ReportFormProps) {
                     render: () => (
                       <ReportSecondaryPickBlock
                         control={control}
+                        setValue={setValue}
                         title="Employee"
                         activeLabel="Active Employee"
                         inactiveLabel="Inactive Employee"
@@ -1777,6 +1848,7 @@ export function ReportForm({ module }: ReportFormProps) {
                     render: () => (
                       <ReportSecondaryPickBlock
                         control={control}
+                        setValue={setValue}
                         title="Program"
                         activeLabel="Active programs"
                         inactiveLabel="Inactive Programs"
@@ -1796,6 +1868,7 @@ export function ReportForm({ module }: ReportFormProps) {
                     render: () => (
                       <ReportSecondaryPickBlock
                         control={control}
+                        setValue={setValue}
                         title="Activities"
                         activeLabel="Active Activities"
                         inactiveLabel="Inactive Activities"
@@ -1815,6 +1888,7 @@ export function ReportForm({ module }: ReportFormProps) {
                     render: () => (
                       <ReportSecondaryPickBlock
                         control={control}
+                        setValue={setValue}
                         title="Cost Pool"
                         activeLabel="Active Cost Pool"
                         inactiveLabel="Inactive Cost Pool"
@@ -1849,6 +1923,7 @@ export function ReportForm({ module }: ReportFormProps) {
             <div className="w-full max-w-xl">
               <ReportSecondaryPickBlock
                 control={control}
+                setValue={setValue}
                 title="Employee"
                 activeLabel="Active Employee"
                 inactiveLabel="Inactive Employee"

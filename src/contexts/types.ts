@@ -3,6 +3,10 @@ import type { LoginResult } from "@/features/auth/types"
 export type User = {
   id: string
   name: string
+  /** First name (used to build "FirstName LastName" for time study records). */
+  firstName?: string
+  /** Last name (used to build "FirstName LastName" for time study records). */
+  lastName?: string
   email: string
  
   namespace?: string
@@ -19,6 +23,7 @@ export type User = {
   roles?: string[]
 
   permissions?: string[]
+  theme?: boolean
 
   departmentRoles?: Array<{
     departmentId: number

@@ -354,6 +354,8 @@ export function listItemToTableRow(dto: CostPoolResDto): CostPoolRow {
     costPool: dto.name,
     department: dto.department?.name ?? "",
     departmentId: dto.departmentId,
+    activities: dto.activities ?? [],
     active: dto.status === CostPoolStatus.ACTIVE,
+    assignmentType: dto.assignmentType ?? null,
   }
 }

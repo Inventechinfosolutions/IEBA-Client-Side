@@ -29,7 +29,7 @@ function clampPositionName(raw: string): string {
 }
 
 function mapUpdateInput(input: UpdateUserModuleInput): UpdateUserRequestDto {
-  const { values, defaultValues } = input
+  const { values, defaultValues, allowLoginIdUpdate = false } = input
   
   if (!defaultValues) {
     const passwordTrimmed = values.password.trim()
@@ -67,6 +67,13 @@ function mapUpdateInput(input: UpdateUserModuleInput): UpdateUserRequestDto {
   }
   if (values.lastName.trim() !== (defaultValues.lastName ?? "").trim()) {
     dto.lastName = values.lastName.trim()
+  }
+
+  if (
+    allowLoginIdUpdate &&
+    values.loginId.trim() !== (defaultValues.loginId ?? "").trim()
+  ) {
+    dto.loginId = values.loginId.trim()
   }
   
   const passwordTrimmed = values.password.trim()

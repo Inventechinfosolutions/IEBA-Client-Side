@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from "react"
 import { useLocation } from "react-router-dom"
-import { Lock, Check, X, AlertTriangle } from "lucide-react"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { AlertTriangle } from "lucide-react"
+import { TooltipProvider } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 import { ApportioningDrawer } from "../components/ApportioningDrawer"
 
@@ -11,6 +11,7 @@ import { useAuth } from "@/contexts/AuthContext"
 import { usePermissions } from "@/hooks/usePermissions"
 import { PersonalTimeStudyCalendarCard } from "../components/PersonalTimeStudyCalendarCard"
 import { PersonalTimeStudyEntryForm } from "../components/PersonalTimeStudyEntryForm"
+import { focusFirstTsProgramFieldSoon } from "../utils/focusUtils"
 import { PersonalTimeStudyLeaveCard } from "../components/PersonalTimeStudyLeaveCard"
 import { PersonalTimeStudyLegendCard } from "../components/PersonalTimeStudyLegendCard"
 import { PersonalTimeStudyMinutesCard } from "../components/PersonalTimeStudyMinutesCard"
@@ -28,51 +29,11 @@ import { TimeStudyMGTPage } from "../TimeStudyMGT"
 import { PersonalTimeStudyNotesSection } from "../components/PersonalTimeStudyNotesSection"
 import { PersonalTimeStudyPeriodsSection } from "../components/PersonalTimeStudyPeriodsSection"
 import { toIsoYmdFromDate, todayLocal } from "@/lib/dates"
+import { buildWeekSummariesFromMonthLegend } from "../utils/weekSummaryUtils"
+import { WeekStatusIcon } from "../components/WeekStatusIcon"
 
 
 type ActiveTab = "personal" | "mgt"
-
-function getWeekStartKey(dateStr: string): string {
-  const [y, m, d] = dateStr.split('-').map(Number)
-  const date = new Date(y, m - 1, d)
-  const day = date.getDay()
-  const diff = date.getDate() - day
-  const sunday = new Date(date.getFullYear(), date.getMonth(), diff)
-  return toIsoYmdFromDate(sunday)
-}
-
-/**
- * Determines the overall status for a week based on individual day statuses and totals.
- * Priority: 
- * 1. All Approved -> "approved"
- * 2. Any Rejected -> "rejected"
- * 3. Any Not Submitted -> "pending"
- * 4. All Submitted -> Compare Total vs Target (equal, less, more)
- */
-function getWeeklyStatus(days: string[], totalMinutes: number, targetMinutes: number): string {
-  if (days.length === 0) return "notsubmitted"
-
-  const lowerDays = days.map(d => String(d || "").toLowerCase())
-
-  // 1. Check if everything is approved
-  const allApproved = lowerDays.every(d => d === "approved")
-  if (allApproved) return "approved"
-
-  // 2. Check if there is any rejection
-  const hasRejected = lowerDays.some(d => d === "rejected")
-  if (hasRejected) return "rejected"
-
-  // 3. Check if any working day is not submitted
-  // "opened" or empty string or "notsubmitted" count as pending
-  const hasNotSubmitted = lowerDays.some(d => !d || d === "opened" || d === "notsubmitted" || d === "undefined")
-  if (hasNotSubmitted) return "pending"
-
-  // 4. Everything is submitted (or approved/rejected mix without pending)
-  // Calculate based on totals
-  if (totalMinutes === targetMinutes) return "equal"
-  if (totalMinutes < targetMinutes) return "less"
-  return "more"
-}
 
 export function PersonalTimeStudyPage() {
   const { user } = useAuth()
@@ -101,6 +62,20 @@ export function PersonalTimeStudyPage() {
   const dateStr = toIsoYmdFromDate(selectedDate)
   const month = viewportDate.getMonth() + 1
   const year = viewportDate.getFullYear()
+
+  const requestProgramFocus = useCallback(() => {
+    // Imperative focus after paint — no useEffect (TanStack Query owns async data).
+    focusFirstTsProgramFieldSoon()
+  }, [])
+
+  const handleDateSelect = useCallback((date: Date) => {
+    setSelectedDate(date)
+  }, [])
+
+  const handleDayActivate = useCallback((_date: Date) => {
+    // Click / Enter / Space on a day → jump straight into TS Program (skips sidebar / notes / leave).
+    requestProgramFocus()
+  }, [requestProgramFocus])
 
   const handleMonthChange = (newViewport: Date) => {
     setViewportDate(newViewport)
@@ -159,37 +134,17 @@ export function PersonalTimeStudyPage() {
   // 5. Calendar day & week summaries
   const { dayStatuses, weekSummaries } = useMemo(() => {
     const dayMap: Record<string, { status: string; color?: string; hasNotes?: boolean; noteText?: string }> = {}
-    const weekMap: Record<string, { totalMinutes: number, targetMinutes: number, days: string[] }> = {}
 
     if (!monthQuery.data?.data) return { dayStatuses: {}, weekSummaries: {} }
 
     for (const d of monthQuery.data.data) {
       const s = String(d.status).toLowerCase()
-      // If unlocked (opened), don't show the cell color
-      const cellColor = s === "opened" ? undefined : (d.color ?? undefined)
+      // If unlocked (opened) or draft, don't show the cell color
+      const cellColor = (s === "opened" || s === "draft") ? undefined : (d.color ?? undefined)
       dayMap[d.date] = { status: d.status, color: cellColor, hasNotes: !!d.notes, noteText: d.notes || undefined }
-
-      const weekKey = getWeekStartKey(d.date)
-      if (!weekMap[weekKey]) {
-        weekMap[weekKey] = { totalMinutes: 0, targetMinutes: 0, days: [] }
-      }
-
-      weekMap[weekKey].totalMinutes += d.minutes ?? 0
-      weekMap[weekKey].targetMinutes += d.allocatedMinutes ?? 0
-      weekMap[weekKey].days.push(d.status)
     }
 
-    // Find the baseline daily assigned minutes from the DB (first day that has a non-zero value)
-    const dbAssignedMinutes = monthQuery.data.data.find(d => (d.allocatedMinutes ?? 0) > 0)?.allocatedMinutes ?? 0
-
-    const weekSummaries: Record<string, any> = {}
-    for (const [key, val] of Object.entries(weekMap)) {
-      // Weekly target is strictly 7 * the assigned daily minutes from the DB
-      const weeklyTarget = 7 * dbAssignedMinutes
-
-      const finalStatus = getWeeklyStatus(val.days, val.totalMinutes, weeklyTarget)
-      weekSummaries[key] = { totalMinutes: val.totalMinutes, status: finalStatus }
-    }
+    const weekSummaries = buildWeekSummariesFromMonthLegend(monthQuery.data.data)
 
     // Extract dynamic legend from data
     const statusMap = new Map<string, string>()
@@ -214,93 +169,9 @@ export function PersonalTimeStudyPage() {
     return { dayStatuses: dayMap, weekSummaries, legend: dynamicLegend }
   }, [monthQuery.data])
 
-  const renderStatus = (_weekIndex: number, _dates: Date[], status: any) => {
-    const s = String(status).toLowerCase()
-
-    // 1. Approved (Lock Icon)
-    if (s === "approved") {
-      return (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Lock className="size-4 text-gray-500 shrink-0 cursor-help" aria-hidden />
-          </TooltipTrigger>
-          <TooltipContent className="text-xs">Approved</TooltipContent>
-        </Tooltip>
-      )
-    }
-
-    // 2. Rejected (Red X)
-    if (s === "rejected") {
-      return (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <span className="inline-flex size-4 items-center justify-center rounded-full bg-white border border-[#DC3545] shrink-0 cursor-help shadow-sm">
-              <X className="size-2.5 text-[#DC3545]" aria-hidden />
-            </span>
-          </TooltipTrigger>
-          <TooltipContent className="text-xs">Rejected</TooltipContent>
-        </Tooltip>
-      )
-    }
-
-    // 3. Pending (Orange X)
-    if (s === "pending") {
-      return (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <span className="inline-flex size-4 items-center justify-center rounded-full bg-white border border-[#F97316] shrink-0 cursor-help shadow-sm">
-              <X className="size-2.5 text-[#F97316]" aria-hidden />
-            </span>
-          </TooltipTrigger>
-          <TooltipContent className="text-xs">Time sheet pending</TooltipContent>
-        </Tooltip>
-      )
-    }
-
-    // 4. Equal (Green Check)
-    if (s === "equal") {
-      return (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <span className="inline-flex size-4 items-center justify-center rounded-full bg-[#28A745] shrink-0 cursor-help shadow-sm">
-              <Check className="size-2.5 text-white" aria-hidden />
-            </span>
-          </TooltipTrigger>
-          <TooltipContent className="text-xs">Equal Hours</TooltipContent>
-        </Tooltip>
-      )
-    }
-
-    // 5. Less (Yellow Alert)
-    if (s === "less") {
-      return (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <span className="inline-flex size-4 items-center justify-center rounded-full bg-[#FFC107] shrink-0 cursor-help shadow-sm">
-              <Check className="size-2.5 text-white" aria-hidden />
-            </span>
-          </TooltipTrigger>
-          <TooltipContent className="text-xs">Less Hours</TooltipContent>
-        </Tooltip>
-      )
-    }
-
-    // 6. More (Red Alert)
-    if (s === "more") {
-      return (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <span className="inline-flex size-4 items-center justify-center rounded-full bg-[#DC3545] shrink-0 cursor-help shadow-sm">
-              <Check className="size-2.5 text-white" aria-hidden />
-            </span>
-          </TooltipTrigger>
-          <TooltipContent className="text-xs">More Hours</TooltipContent>
-        </Tooltip>
-      )
-    }
-
-    return null
-  }
+  const renderStatus = (_weekIndex: number, _dates: Date[], status: unknown) => (
+    <WeekStatusIcon status={status} />
+  )
 
 
 
@@ -369,7 +240,9 @@ export function PersonalTimeStudyPage() {
                       <PersonalTimeStudyCalendarCard
                         weekRows={weekRows}
                         selectedDate={selectedDate}
-                        onDateSelect={setSelectedDate}
+                        onDateSelect={handleDateSelect}
+                        onDayActivate={handleDayActivate}
+                        onDayTabOut={requestProgramFocus}
                         currentMonthDate={viewportDate}
                         onMonthChange={handleMonthChange}
                         dayStatuses={dayStatuses}
@@ -426,10 +299,12 @@ export function PersonalTimeStudyPage() {
                           }}
                           isSaving={notesMutation.isPending}
                           disabled={settingChecksQuery.data?.allowUserEntry === false}
+                          skipTabOrder
                         />
                         {isTimeStudySupervisor ? (
                           <button
                             type="button"
+                            tabIndex={-1}
                             onClick={() => setPeriodsSheetOpen(true)}
                             className="animate-in fade-in slide-in-from-right-12 duration-500 ease-out flex flex-col gap-2 h-full w-32 items-center justify-center rounded-[10px] bg-white text-[#6C5DD3] border border-gray-200 shadow-[0_4px_16px_rgba(16,24,40,0.12)] transition-colors hover:bg-gray-50 cursor-pointer p-3"
                             aria-label="Open Time Study Periods"
@@ -464,6 +339,7 @@ export function PersonalTimeStudyPage() {
                     <PersonalTimeStudyEntryForm
                       key={dateStr}
                       dateStr={dateStr}
+                      showLeaveBanner={true}
                       initialRecords={dayQuery.data?.timeStudyRecords}
                       dropdownData={dropdownQuery.data}
                       leaveRecords={dayQuery.data?.leaveRecords as any}

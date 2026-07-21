@@ -2,6 +2,7 @@ import { useState, Suspense } from "react"
 import { Outlet, Link } from "react-router-dom"
 
 import { AppSidebar } from "@/components/dashboard/AppSidebar"
+import { ThemeToggle } from "@/components/ThemeToggle"
 import {
   SidebarInset,
   SidebarProvider,
@@ -45,6 +46,12 @@ export function DashboardLayout() {
   const { data: mimic } = useMimicSession()
   const profileImageQuery = useGetProfileImage(user?.id)
   const countyName = user?.countyName?.trim() || ""
+  const isIebaCounty = countyName.toLowerCase() === "ieba"
+  const welcomeLabel = isIebaCounty
+    ? "Bits of Time Welcome To Testing county"
+    : countyName
+      ? `Bits of Time Welcome To ${countyName}`
+      : "Bits of Time"
   const [changePasswordOpen, setChangePasswordOpen] = useState(false)
   const [changeCountyOpen, setChangeCountyOpen] = useState(false)
   const [notificationsOpen, setNotificationsOpen] = useState(false)
@@ -78,17 +85,12 @@ export function DashboardLayout() {
       <AppSidebar />
       <SidebarInset className="bg-[#F4F5FB] h-svh overflow-hidden">
         <header className="sticky top-0 z-50 flex h-[72px] shrink-0 items-center justify-between gap-4 bg-white px-6 shadow-[0_2px_10px_rgba(0,0,0,0.06)]">
-          <div className="flex items-center gap-3 min-w-0">
-            <SidebarTrigger className="-ml-2 rounded-full border border-[#E5E7EB] bg-white text-[#4B5563] hover:bg-[#F3F4F6] shrink-0" />
-            <span className="text-[12px] sm:text-[15px] md:text-[17px] font-semibold text-[#6C5DD3] leading-[1.2] whitespace-normal break-words block">
-              {countyName ? (
-                <>
-                  <span className="hidden sm:inline">Bits of Time Welcome To {countyName}</span>
-                  <span className="sm:hidden">Welcome To {countyName}</span>
-                </>
-              ) : (
-                "Bits of Time"
-              )}
+          <div className="flex items-center gap-3">
+            <SidebarTrigger className="-ml-2 rounded-full border border-[#E5E7EB] bg-white text-[#4B5563] hover:bg-[#F3F4F6]" />
+            <span
+              className={`text-[17px] ${isIebaCounty ? "text-green-600" : "text-[#6C5DD3]"}`}
+            >
+              {welcomeLabel}
             </span>
           </div>
           <div className="flex flex-1 justify-center -translate-60 -translate-y-3">
@@ -98,6 +100,7 @@ export function DashboardLayout() {
             {!isSuperAdmin && <div className="flex items-center gap-4" />}
             {user && (
               <>
+                <ThemeToggle />
                 <button
                   type="button"
                   onClick={() => setNotificationsOpen(true)}
@@ -200,6 +203,12 @@ export function DashboardLayout() {
                     if (!user) return
                     markPasswordChangedForUser(user.id)
                     establishDashboardSession({ ...user, isPasswordChangeRequired: false })
+                  }}
+                  onDismiss={() => {
+                    if (!user) return
+                    markPasswordChangedForUser(user.id)
+                    establishDashboardSession({ ...user, isPasswordChangeRequired: false })
+                    setChangePasswordOpen(false)
                   }}
                 />
                 <NotificationSheet

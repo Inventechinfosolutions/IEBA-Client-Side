@@ -67,8 +67,13 @@ export function PayrollUploadSection({
     }
   }
 
+  const resetFile = () => {
+    setSelectedFile(null)
+    if (fileInputRef.current) fileInputRef.current.value = ""
+  }
+
   const submitUpload = form.handleSubmit((values) => {
-    onSubmitUpload(values, selectedFile)
+    onSubmitUpload(values, selectedFile, resetFile)
   })
 
   return (
@@ -97,7 +102,7 @@ export function PayrollUploadSection({
                     placeholder="Select type"
                     disabled={isPayrollTypeLocked}
                     className={cn(
-                      "h-[46px]! min-h-[46px]! w-full rounded-[6px]! border-[#d6d7dc]! bg-[#f3f4f6]! text-[14px]! text-[#111827]!",
+                      "h-[46px]! min-h-[46px]! w-full rounded-[6px]! border-[#d6d7dc]! dark:border-[rgba(108,93,211,0.5)]! bg-[#f3f4f6]! dark:bg-[#09090b]! text-[14px]! text-[#111827]! dark:text-[#e4e4e7]!",
                       isPayrollTypeLocked && "cursor-not-allowed",
                     )}
                     itemButtonClassName="rounded-[6px] px-3 py-2"
@@ -117,12 +122,12 @@ export function PayrollUploadSection({
                   accept=".csv,.xlsx,.xls"
                   onChange={(e) => handleFileChange(e.target.files)}
                 />
-                <div className="flex h-[46px] min-w-0 max-w-full items-center gap-2 rounded-[6px] border border-[#d6d7dc] bg-white px-2">
+                <div className="flex h-[46px] min-w-0 max-w-full items-center gap-2 rounded-[6px] border border-[#d6d7dc] dark:border-[rgba(108,93,211,0.5)] bg-white dark:bg-[#09090b] px-2">
                   <Button
                     type="button"
                     variant="outline"
                     onClick={handlePickFileClick}
-                    className="h-9 shrink-0 rounded-[6px] border-[#d6d7dc] bg-white px-3 text-[14px] font-normal text-[#111827] hover:bg-[#f9fafb]"
+                    className="h-9 shrink-0 rounded-[6px] border-[#d6d7dc] dark:border-[rgba(108,93,211,0.4)] bg-white dark:bg-[#1c192d] px-3 text-[14px] font-normal text-[#111827] dark:text-[#e4e4e7] hover:bg-[#f9fafb]"
                   >
                     Choose File
                   </Button>

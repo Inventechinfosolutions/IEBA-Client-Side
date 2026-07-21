@@ -15,7 +15,6 @@ import { LeaveApprovalStatus, leaveApprovalStatusLabel } from "../enums/leaveApp
 import type { LeaveApprovalStatusValue } from "../enums/leaveApprovalStatus"
 import type { LeaveApprovalRow, LeaveApprovalSortKey, LeaveApprovalTableProps } from "../types"
 import {
-  assignSyntheticParentIdsByTimeSlot,
   groupUserLeaveRows,
   type UserLeaveMultiCodeFragment,
 } from "@/lib/groupUserLeaveRows"
@@ -93,10 +92,9 @@ export function LeaveApprovalTable({
   const [isStartDateTooltipOpen, setIsStartDateTooltipOpen] = useState(false)
   const [expandedByParentId, setExpandedByParentId] = useState<Record<number, boolean>>({})
 
-  const preparedRows = useMemo(() => assignSyntheticParentIdsByTimeSlot(rows), [rows])
   const groupedRows = useMemo(
-    () => groupUserLeaveRows(preparedRows, { synthesizeChild: syntheticListChild }),
-    [preparedRows],
+    () => groupUserLeaveRows(rows, { synthesizeChild: syntheticListChild }),
+    [rows],
   )
 
   const toggleExpanded = (parentId: number) => {

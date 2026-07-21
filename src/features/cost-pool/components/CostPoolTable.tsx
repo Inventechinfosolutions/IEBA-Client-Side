@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useQuery } from "@tanstack/react-query"
-import { ArrowLeft, History, PlusIcon, SearchIcon, X, Eye } from "lucide-react"
+import { ArrowLeft, Check, History, PlusIcon, SearchIcon, X, Eye } from "lucide-react"
 import { useMemo, useState } from "react"
 import { useForm } from "react-hook-form"
 
@@ -59,6 +59,7 @@ import {
 } from "../types"
 import type {
   CostPoolActivityPickRow,
+  CostPoolActivitySummaryResDto,
   CostPoolDepartmentOption,
   CostPoolDetailResDto,
   CostPoolRow,
@@ -81,9 +82,9 @@ function CostPoolCreateDialogContent({
   const { user } = useAuth()
   const { isSuperAdmin } = usePermissions()
   const isRestricted = !isSuperAdmin
-  
+
   const departmentsQuery = useGetDepartments({ status: "active", page: 1, limit: 100 })
-  
+
   // Locally fetch user details to get the most accurate department list
   const { data: userDetails, isLoading: isDetailsLoading } = useQuery({
     queryKey: ["user-details-local", user?.id],
@@ -97,24 +98,24 @@ function CostPoolCreateDialogContent({
       name: d.name,
       allowUserCostpoolDirect: d.settings.allowUserCostpoolDirect,
     }))
-    
+
     if (isSuperAdmin) return rawOptions.map(opt => ({ ...opt, id: String(opt.id) }))
-    
+
     // Get assigned IDs from local API response or context
     const apiDepts = (userDetails as any)?.data?.departments || (userDetails as any)?.departments
     const contextDepts = user?.departmentRoles || []
-    
+
     const assignedIds = new Set<number>()
-    
+
     if (Array.isArray(apiDepts)) {
       apiDepts.forEach((d: any) => assignedIds.add(Number(d.id || d.departmentId)))
     }
     if (assignedIds.size === 0 && Array.isArray(contextDepts)) {
       contextDepts.forEach((dr) => assignedIds.add(Number(dr.departmentId)))
     }
-      
+
     // If we have assigned IDs, filter the list. Otherwise return all (fallback)
-    const filtered = assignedIds.size > 0 
+    const filtered = assignedIds.size > 0
       ? rawOptions.filter(opt => assignedIds.has(opt.id))
       : rawOptions
 
@@ -223,9 +224,9 @@ function CostPoolEditFormBody({
       return
     }
     updateMutation.mutate(
-      { 
-        id: costPoolId, 
-        values, 
+      {
+        id: costPoolId,
+        values,
         initialValues,
         oldAssignedUsers: detail.assignedUsers,
         oldAssignedActivities: detail.assignedActivities,
@@ -292,7 +293,7 @@ function CostPoolEditDialogContent({
 
   const userRows = useMemo(() => {
     if (!detailQuery.data) return []
-    
+
     const detailAssigned = (detailQuery.data.assignedUsers ?? []).map((u) => ({
       userId: String(u.id),
       displayName: u.name?.trim() || [u.firstName, u.lastName].filter(Boolean).join(" ") || String(u.id),
@@ -315,7 +316,7 @@ function CostPoolEditDialogContent({
   }, [detailQuery.data])
 
   const readOnly = useMemo(() => {
-    return detailQuery.data?.name?.endsWith("StandbyCostPool") ?? false
+    return detailQuery.data?.assignmentType === "autoassigned"
   }, [detailQuery.data])
 
   if (detailQuery.isError) {
@@ -509,21 +510,19 @@ export function CostPoolTable({
             </div>
 
             {/* Department filter dropdown */}
-            <div className="w-full sm:w-auto">
-              <SingleSelectDropdown
-                value={filters.departmentId !== undefined ? String(filters.departmentId) : ""}
-                onChange={(val) => {
-                  const deptId = val === "__all__" || val === "" ? undefined : val
-                  onDepartmentChange(deptId)
-                  onPageChange(1)
-                }}
-                onBlur={() => {}}
-                options={departmentOptions}
-                placeholder="Filter by Department"
-                isLoading={allDepartmentsQuery.isPending && deptFetchEnabled}
-                onOpenChange={handleDeptOpenChange}
-              />
-            </div>
+            <SingleSelectDropdown
+              value={filters.departmentId !== undefined ? String(filters.departmentId) : ""}
+              onChange={(val) => {
+                const deptId = val === "__all__" || val === "" ? undefined : val
+                onDepartmentChange(deptId)
+                onPageChange(1)
+              }}
+              onBlur={() => { }}
+              options={departmentOptions}
+              placeholder="Filter by Department"
+              isLoading={allDepartmentsQuery.isPending && deptFetchEnabled}
+              onOpenChange={handleDeptOpenChange}
+            />
           </div>
         )}
 
@@ -531,11 +530,10 @@ export function CostPoolTable({
           {isSuperAdmin && (
             <button
               type="button"
-              className={`flex h-12 items-center justify-center gap-2 rounded-[12px] px-4 text-[14px] font-normal transition-colors w-full sm:w-auto ${
-                showHistory
+              className={`flex h-12 items-center gap-2 rounded-[12px] px-4 text-[14px] font-normal transition-colors ${showHistory
                   ? "bg-[#6C5DD3] text-white"
                   : "border border-[#6C5DD3] bg-white text-[#6C5DD3] hover:bg-[#F3F0FF]"
-              }`}
+                }`}
               onClick={() => {
                 setShowHistory((prev) => {
                   if (prev) {
@@ -573,10 +571,13 @@ export function CostPoolTable({
                 onPageChange(1)
               }}
             >
-              <Checkbox
-                checked={showInactive}
-                className="size-5 rounded-[6px] border-white bg-white data-[state=checked]:border-white data-[state=checked]:bg-[#6C5DD3] data-[state=checked]:text-white"
-              />
+              {showInactive ? (
+                <span className="inline-flex size-[14px] items-center justify-center rounded-[3px] bg-white dark:bg-[#1C1C2D]">
+                  <Check className="size-[11px] stroke-[3] text-[#6C5DD3] dark:text-white" />
+                </span>
+              ) : (
+                <span className="size-[14px] rounded-[3px] bg-white dark:bg-[#1C1C2D]" />
+              )}
               <span className="text-[14px] font-normal">Inactive</span>
             </button>
           )}
@@ -605,21 +606,22 @@ export function CostPoolTable({
       <div className={`hidden xl:block overflow-hidden rounded-[8px] border border-[#E5E7EB] ${showHistory ? "hidden" : ""}`}>
         <Table className="w-full table-fixed border-collapse">
           <colgroup>
-            <col className="w-[33%]" />
-            <col className="w-[32%]" />
+            <col className="w-[14%]" />
             <col className="w-[18%]" />
-            <col className="w-[18%]" />
+            <col className="w-[46%]" />
+            <col className="w-[10%]" />
+            <col className="w-[12%]" />
           </colgroup>
           <TableHeader>
             <TableRow className="h-[48px] bg-[#6C5DD3] hover:bg-[#6C5DD3]">
-              {["Cost Pool", "Department", "Active", "Action"].map((column) => (
+              {["Cost Pool", "Department", "Activities", "Active", "Action"].map((column) => (
                 <TableHead
                   key={column}
                   className={`h-[48px] align-middle border-r border-[#FFFFFF66] bg-[#6C5DD3] px-[12px] py-[8px] text-[14px] font-normal leading-[1.2] whitespace-normal break-normal text-white font-['Roboto',sans-serif] last:border-r-0 ${
-                    ["Department", "Active", "Action"].includes(column)
+                    ["Department", "Activities", "Active", "Action"].includes(column)
                       ? "text-center"
                       : "text-left"
-                  }`}
+                    }`}
                 >
                   {column === "Cost Pool" ? (
                     <TooltipProvider>
@@ -656,18 +658,16 @@ export function CostPoolTable({
                             </span>
                             <span className="ml-1 inline-flex shrink-0 flex-col items-center leading-none">
                               <span
-                                className={`h-0 w-0 border-b-[6px] border-l-[5px] border-r-[5px] border-l-transparent border-r-transparent ${
-                                  getSortStateForColumn("costPool") === "asc"
+                                className={`h-0 w-0 border-b-[6px] border-l-[5px] border-r-[5px] border-l-transparent border-r-transparent ${getSortStateForColumn("costPool") === "asc"
                                     ? "border-b-[#1E8BFF]"
                                     : "border-b-white"
-                                }`}
+                                  }`}
                               />
                               <span
-                                className={`mt-1 h-0 w-0 border-l-[5px] border-r-[5px] border-t-[6px] border-l-transparent border-r-transparent ${
-                                  getSortStateForColumn("costPool") === "desc"
+                                className={`mt-1 h-0 w-0 border-l-[5px] border-r-[5px] border-t-[6px] border-l-transparent border-r-transparent ${getSortStateForColumn("costPool") === "desc"
                                     ? "border-t-[#1E8BFF]"
                                     : "border-t-white"
-                                }`}
+                                  }`}
                               />
                             </span>
                           </button>
@@ -704,6 +704,9 @@ export function CostPoolTable({
                   <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[6px] align-top text-center">
                     <Skeleton className="h-4 w-[65%]" />
                   </TableCell>
+                  <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[6px] align-top text-left">
+                    <Skeleton className="h-4 w-[80%]" />
+                  </TableCell>
                   <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[6px] align-middle text-center">
                     <Skeleton className="mx-auto h-4 w-4" />
                   </TableCell>
@@ -715,7 +718,7 @@ export function CostPoolTable({
             ) : sortedRows.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={4}
+                  colSpan={5}
                   className="h-20 text-center text-sm text-muted-foreground"
                 >
                   No cost pools found.
@@ -724,11 +727,14 @@ export function CostPoolTable({
             ) : (
               sortedRows.map((row) => (
                 <TableRow key={row.id} className="border-b border-[#E5E7EB]">
-                  <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[6px] align-top text-left text-[14px] font-normal font-['Roboto',sans-serif] text-[#000000E0]">
+                  <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[6px] align-middle text-left text-[14px] font-normal font-['Roboto',sans-serif] text-[#000000E0] whitespace-normal wrap-break-word">
                     {row.costPool}
                   </TableCell>
-                  <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[6px] align-top text-center text-[14px] font-normal font-['Roboto',sans-serif] text-[#000000E0]">
+                  <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[6px] align-middle text-center text-[14px] font-normal font-['Roboto',sans-serif] text-[#000000E0] whitespace-normal wrap-break-word">
                     {row.department}
+                  </TableCell>
+                  <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[6px] align-middle text-center text-[14px] font-normal font-['Roboto',sans-serif] text-[#000000E0]">
+                    <ActivitiesCell activities={row.activities} />
                   </TableCell>
                   <TableCell className="border-r border-[#E5E7EB] px-[14px] py-[6px] align-middle text-center">
                     {row.active ? (
@@ -751,7 +757,7 @@ export function CostPoolTable({
                           setEditOpen(true)
                         }}
                       >
-                        {row.costPool.endsWith("StandbyCostPool") ? (
+                        {row.assignmentType === "autoassigned" ? (
                           <Eye className="h-4 w-4" />
                         ) : (
                           <img
@@ -848,7 +854,7 @@ export function CostPoolTable({
         <DialogContent
           showClose={false}
           overlayClassName="bg-black/50"
-          className="max-h-[90vh] w-[1240px] max-w-[calc(100vw-2rem)] overflow-y-auto border-0 bg-transparent p-0 shadow-none outline-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden focus-visible:outline-none"
+          className="max-h-[90vh] w-[1240px] max-w-[calc(100vw-2rem)] overflow-y-auto border-none! bg-transparent! p-0 shadow-none! outline-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden focus-visible:outline-none"
         >
           <div className="flex w-full justify-center">
             <CostPoolCreateDialogContent
@@ -871,7 +877,7 @@ export function CostPoolTable({
         <DialogContent
           showClose={false}
           overlayClassName="bg-black/50"
-          className="max-h-[90vh] w-[1240px] max-w-[calc(100vw-2rem)] overflow-y-auto border-0 bg-transparent p-0 shadow-none outline-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden focus-visible:outline-none"
+          className="max-h-[90vh] w-[1240px] max-w-[calc(100vw-2rem)] overflow-y-auto border-none! bg-transparent! p-0 shadow-none! outline-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden focus-visible:outline-none"
         >
           {rowToEdit ? (
             <div className="flex w-full justify-center">
@@ -889,6 +895,50 @@ export function CostPoolTable({
           ) : null}
         </DialogContent>
       </Dialog>
+    </div>
+  )
+}
+
+function ActivitiesCell({ activities }: { activities: CostPoolActivitySummaryResDto[] }) {
+  const [isExpanded, setIsExpanded] = useState(false)
+
+  if (activities.length === 0) {
+    return <span className="text-[#9CA3AF]">N/A</span>
+  }
+
+  const visibleActivities = isExpanded ? activities : activities.slice(0, 3)
+  const hasMore = activities.length > 3
+
+  return (
+    <div className="flex flex-col gap-1.5 align-middle">
+      <div className="flex flex-wrap gap-1.5 justify-center">
+        {visibleActivities.map((activity) => {
+          const code = String(activity.code ?? "").trim()
+          const name = String(activity.name ?? "").trim()
+          const displayName = code && name ? `${code} - ${name}` : (code || name)
+          const isInactive = activity.status?.toLowerCase() === "inactive"
+          return (
+            <span
+              key={activity.id}
+              className={`inline-flex items-center rounded-[7px] bg-[#f8f9fa] dark:bg-[#1c192d] px-1.5 py-0.5 text-[10px] text-[#232735] dark:text-[#e4e4e7] ${isInactive
+                  ? "border border-red-400 text-red-600 bg-red-50 dark:bg-red-950/30 dark:text-red-400"
+                  : "border border-[#d8dae3] dark:border-[rgba(108,93,211,0.5)]!"
+                }`}
+            >
+              {displayName}
+            </span>
+          )
+        })}
+      </div>
+      {hasMore && (
+        <button
+          type="button"
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="text-[#6C5DD3] hover:underline text-[11px] font-medium mt-1 inline-block text-center cursor-pointer"
+        >
+          {isExpanded ? "Show Less" : `+ ${activities.length - 3} more`}
+        </button>
+      )}
     </div>
   )
 }

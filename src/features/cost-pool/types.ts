@@ -44,6 +44,9 @@ export type CostPoolResDto = {
   status: CostPoolStatus
   departmentId: number
   department?: CostPoolDepartmentResDto
+  /** Mapped activities returned on the cost-pool list payload. */
+  activities?: CostPoolActivitySummaryResDto[]
+  assignmentType?: string | null
   createdAt?: string
   updatedAt?: string
 }
@@ -122,7 +125,10 @@ export type CostPoolRow = {
   costPool: string
   department: string
   departmentId: number
+  /** Display labels for activities mapped to this cost pool (e.g. "Admin-VET - Veterans"). */
+  activities: CostPoolActivitySummaryResDto[]
   active: boolean
+  assignmentType?: string | null
 }
 
 export type CostPoolFilterFormValues = {

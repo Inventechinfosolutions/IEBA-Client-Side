@@ -475,11 +475,6 @@ function orphanActivitiesFor(
   return bundle.orphanActivities ?? EMPTY_ACTIVITY_SPLIT
 }
 
-function programChildrenAssigned(
-  program: UserProgramsActivitiesProgramWithAssignments,
-): UserProgramsActivitiesActivityItem[] {
-  return program.children?.assigned ?? []
-}
 
 function getProgramsAssignedSplit(bundle: UserProgramsActivitiesDepartmentBundle) {
   const assigned = programsBundleFor(bundle).assigned
@@ -588,13 +583,13 @@ function buildJobPoolTransferSection(
   const items =
     kind === "programs"
       ? sortTransferItems(
-          jobPoolOnlyAssignedPrograms(bundle).map((parent) =>
-            mapJobPoolProgramToTransferItem(parent, bundle),
-          ),
-        )
+        jobPoolOnlyAssignedPrograms(bundle).map((parent) =>
+          mapJobPoolProgramToTransferItem(parent, bundle),
+        ),
+      )
       : jobPoolAssignedActivities(bundle).map((child) =>
-          mapJobPoolRowToTransferItem(child, departmentName, `jobpool-activity-${child.id}`),
-        )
+        mapJobPoolRowToTransferItem(child, departmentName, `jobpool-activity-${child.id}`),
+      )
 
   if (items.length === 0) return null
   return { sectionTitle, items: sortTransferItems(items) }
@@ -621,7 +616,57 @@ function isNormalNonJobPoolProgram(
   program: UserProgramsActivitiesProgramWithAssignments,
 ): boolean {
   const jobpoolId = program.jobpoolId
-  return jobpoolId == null || jobpoolId < 1
+  const isJobPool = jobpoolId != null && jobpoolId >= 1
+  const isApportioning = program.assignmentType === "autoassigned"
+  return !isJobPool && !isApportioning
+}
+
+function apportioningOnlyAssignedPrograms(
+  bundle: UserProgramsActivitiesDepartmentBundle,
+): UserProgramsActivitiesProgramWithAssignments[] {
+  const { normal } = getProgramsAssignedSplit(bundle)
+  return normal.filter((p) => p.assignmentType === "autoassigned")
+}
+
+function apportioningAssignedActivities(
+  bundle: UserProgramsActivitiesDepartmentBundle,
+): UserProgramsActivitiesActivityItem[] {
+  const apportioningProgs = apportioningOnlyAssignedPrograms(bundle)
+  const fromProgs = apportioningProgs.flatMap((parent) => parent.children?.assigned ?? [])
+  const fromOrphans = (bundle.orphanActivities?.assigned ?? []).filter((a) => a.assignmentType === "autoassigned")
+  return dedupeActivitiesById([...fromProgs, ...fromOrphans])
+}
+
+function buildApportioningTransferSection(
+  bundle: UserProgramsActivitiesDepartmentBundle,
+  kind: "programs" | "activities",
+): AddEmployeeTimeStudyJobPoolSection | null {
+  const departmentName = bundle.departmentName.trim()
+  const sectionTitle = `${departmentName} (Manual Apportioning  ${kind === "programs" ? "Programs" : "Activities"})`
+
+  const items =
+    kind === "programs"
+      ? sortTransferItems(
+        apportioningOnlyAssignedPrograms(bundle).map((parent) =>
+          mapJobPoolRowToTransferItem(
+            parent,
+            departmentName,
+            `apportioning-program-parent-${parent.id}`,
+            [],
+          ),
+        ),
+      )
+      : apportioningAssignedActivities(bundle).map((child) =>
+        mapJobPoolRowToTransferItem(
+          child,
+          departmentName,
+          `apportioning-activity-${child.id}`,
+          [],
+        ),
+      )
+
+  if (items.length === 0) return null
+  return { sectionTitle, items: sortTransferItems(items) }
 }
 
 function mapBundleActivitiesToTransferItems(
@@ -863,7 +908,7 @@ export function TimeStudyAssignmentsPanel({
     try {
       await apiUpdateUser(userId, { tsMinPerDay: Number.isFinite(n) ? n : undefined })
       toast.success("TS Minutes/Day updated successfully.", addEmployeeTransferSuccessToastOptions)
-      
+
       resetField("tsMinDay", { defaultValue: val })
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed to update TS Minutes/Day")
@@ -967,7 +1012,10 @@ export function TimeStudyAssignmentsPanel({
   }, [selectedBundle, assignedProgramsSplit.normal, allProgramsInSelectedBundle])
 
   const bundleProgramIdsForSelectedDepartment = useMemo(
-    () => new Set(assignedProgramsSplit.normal.map((p) => String(p.id))),
+    () => new Set(
+      assignedProgramsSplit.normal
+        .map((p) => String(p.id))
+    ),
     [assignedProgramsSplit.normal],
   )
 
@@ -981,11 +1029,38 @@ export function TimeStudyAssignmentsPanel({
     [selectedBundle],
   )
 
+  const apportioningProgramsSection = useMemo(
+    () => (selectedBundle ? buildApportioningTransferSection(selectedBundle, "programs") : null),
+    [selectedBundle],
+  )
+
+  const apportioningActivitiesSection = useMemo(
+    () => (selectedBundle ? buildApportioningTransferSection(selectedBundle, "activities") : null),
+    [selectedBundle],
+  )
+
   const jobPoolAssignedIds = useMemo(
     () =>
       selectedBundle
         ? collectJobPoolAssignedIds(selectedBundle)
         : { programIds: new Set<string>(), activityIds: new Set<string>() },
+    [selectedBundle],
+  )
+
+  const apportioningAssignedIds = useMemo(
+    () => {
+      const programIds = new Set<string>()
+      const activityIds = new Set<string>()
+      if (selectedBundle) {
+        for (const parent of apportioningOnlyAssignedPrograms(selectedBundle)) {
+          programIds.add(String(parent.id))
+        }
+        for (const child of apportioningAssignedActivities(selectedBundle)) {
+          activityIds.add(String(child.id))
+        }
+      }
+      return { programIds, activityIds }
+    },
     [selectedBundle],
   )
 
@@ -1044,10 +1119,10 @@ export function TimeStudyAssignmentsPanel({
     () =>
       selectedBundle
         ? collectBundleActivityTransferItems(
-            selectedBundle,
-            uiAssignedNormalPrograms,
-            assignedProgramsSplit.jobpoolautoassign,
-          )
+          selectedBundle,
+          uiAssignedNormalPrograms,
+          assignedProgramsSplit.jobpoolautoassign,
+        )
         : [],
     [selectedBundle, uiAssignedNormalPrograms, assignedProgramsSplit.jobpoolautoassign],
   )
@@ -1092,7 +1167,9 @@ export function TimeStudyAssignmentsPanel({
         allProgramsInSelectedBundle,
       )
       const isAssignedProgram = (rowId: string) =>
-        programAssignedPredicateEditMode(rowId) && !jobPoolAssignedIds.programIds.has(rowId)
+        programAssignedPredicateEditMode(rowId) &&
+        !jobPoolAssignedIds.programIds.has(rowId) &&
+        !apportioningAssignedIds.programIds.has(rowId)
       return buildAssignedItemsForEditMode(
         globalProgramsForSelectedDepartment,
         bundleRows,
@@ -1107,6 +1184,7 @@ export function TimeStudyAssignmentsPanel({
     assignedProgramsSplit.normal,
     allProgramsInSelectedBundle,
     jobPoolAssignedIds,
+    apportioningAssignedIds,
     programAssignedPredicateEditMode,
     deptProgramsAddMode,
     assignedProgramIdsAddMode,
@@ -1306,7 +1384,7 @@ export function TimeStudyAssignmentsPanel({
         globalActivitiesForSelectedDepartment,
         bundleAssignedActivityRows,
         activityAssignedPredicateEditMode,
-      ).filter((row) => !jobPoolAssignedIds.activityIds.has(row.id))
+      ).filter((row) => !jobPoolAssignedIds.activityIds.has(row.id) && !apportioningAssignedIds.activityIds.has(row.id))
     }
     return deptActivitiesAddMode.filter((a) => assignedActivityIdsAddMode.includes(a.id))
   }, [
@@ -1314,6 +1392,7 @@ export function TimeStudyAssignmentsPanel({
     globalActivitiesForSelectedDepartment,
     bundleAssignedActivityRows,
     jobPoolAssignedIds,
+    apportioningAssignedIds,
     activityAssignedPredicateEditMode,
     deptActivitiesAddMode,
     assignedActivityIdsAddMode,
@@ -1553,7 +1632,7 @@ export function TimeStudyAssignmentsPanel({
       </p>
 
       {hasUserTsBundle &&
-      (tsDepartmentScopeQuery.isError || userProgramsActivitiesQuery.isError) ? (
+        (tsDepartmentScopeQuery.isError || userProgramsActivitiesQuery.isError) ? (
         <p className="mb-3 text-[11px] text-red-500" role="alert">
           {(tsDepartmentScopeQuery.error ?? userProgramsActivitiesQuery.error) instanceof Error
             ? (tsDepartmentScopeQuery.error ?? userProgramsActivitiesQuery.error)!.message
@@ -1660,7 +1739,7 @@ export function TimeStudyAssignmentsPanel({
                         shouldValidate: true,
                       })
                     }}
-                    onBlur={() => {}}
+                    onBlur={() => { }}
                     options={departmentSelectOptions}
                     placeholder={
                       departmentSelectOptions.length === 0
@@ -1693,7 +1772,7 @@ export function TimeStudyAssignmentsPanel({
                       setSearchActivitiesU("")
                       setSearchActivitiesA("")
                     }}
-                    onBlur={() => {}}
+                    onBlur={() => { }}
                     options={departmentSelectOptions}
                     placeholder={
                       departmentSelectOptions.length === 0
@@ -1801,6 +1880,7 @@ export function TimeStudyAssignmentsPanel({
               onSearchChange={setSearchProgramsA}
               selectedDept={selectedDept}
               jobPoolSection={hasUserTsBundle ? jobPoolProgramsSection : null}
+              apportioningSection={hasUserTsBundle ? apportioningProgramsSection : null}
             />
           </div>
 
@@ -1851,6 +1931,7 @@ export function TimeStudyAssignmentsPanel({
               onSearchChange={setSearchActivitiesA}
               selectedDept={selectedDept}
               jobPoolSection={hasUserTsBundle ? jobPoolActivitiesSection : null}
+              apportioningSection={hasUserTsBundle ? apportioningActivitiesSection : null}
             />
           </div>
         </>

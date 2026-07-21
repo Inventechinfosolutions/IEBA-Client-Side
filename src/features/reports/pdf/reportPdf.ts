@@ -70,6 +70,7 @@ export type P101ReportPdfProps = {
 }
 
 export type P110SSRecord = {
+  employeeId: string
   employeename: string
   date: string
   program: string
@@ -86,6 +87,7 @@ export type P110SSDateGroup = {
 }
 
 export type P110SSGroupedEmployee = {
+  employeeId: string
   employeename: string
   dates: P110SSDateGroup[]
 }
@@ -99,6 +101,7 @@ export type P110SSReportPdfProps = {
 }
 
 export type P110Record = {
+  employeeId: string
   employeename: string
   date: string
   program: string
@@ -118,6 +121,7 @@ export type P110DateGroup = {
 }
 
 export type P110GroupedEmployee = {
+  employeeId: string
   employeename: string
   dates: P110DateGroup[]
 }
@@ -682,14 +686,23 @@ function unwrapListData(raw: unknown): unknown[] {
   return []
 }
 
+/** Collapse whitespace so the same person/activity is not split by trailing spaces etc. */
+function normalizeReportText(value: string): string {
+  return value.trim().replace(/\s+/g, " ")
+}
+
+function normalizeReportKey(value: string): string {
+  return normalizeReportText(value).toLowerCase()
+}
+
 export function unwrapReportDataRecords(raw: unknown): ReportDataRecord[] {
   return unwrapListData(raw).map((row) => {
     const record = asRecord(row)
     return {
-      employeename: String(record.employeename ?? record.employeeName ?? ""),
-      program: String(record.program ?? ""),
-      activity: String(record.activity ?? ""),
-      mastercode: String(record.mastercode ?? record.masterCode ?? ""),
+      employeename: normalizeReportText(String(record.employeename ?? record.employeeName ?? "")),
+      program: normalizeReportText(String(record.program ?? "")),
+      activity: normalizeReportText(String(record.activity ?? "")),
+      mastercode: normalizeReportText(String(record.mastercode ?? record.masterCode ?? "")),
       activitytime: (record.activitytime ?? record.activityTime ?? 0) as string | number,
       traveltime: (record.traveltime ?? record.travelTime ?? 0) as string | number,
     }
@@ -802,16 +815,34 @@ export function formatReportTime(value: string | number): string {
 
 // --- P101 grouping (by activity within employee) ---
 
+/**
+ * Group P101 rows by employee → activity → program.
+ *
+ * Employee / activity matching is case-insensitive and whitespace-normalized so
+ * the same person is not split across multiple pages when the API returns
+ * slight name variants (e.g. trailing space). Duplicate program lines under an
+ * activity are summed — P101 is a summation report.
+ */
 export function groupP101DataByEmployee(records: ReportDataRecord[]): P101GroupedEmployee[] {
-  return records.reduce<P101GroupedEmployee[]>((acc, curr) => {
-    let employee = acc.find((emp) => emp.employeename === curr.employeename)
+  const employees: P101GroupedEmployee[] = []
+  const employeeIndexByKey = new Map<string, number>()
 
-    if (!employee) {
-      employee = { employeename: curr.employeename, activities: [] }
-      acc.push(employee)
+  for (const curr of records) {
+    const employeeKey = normalizeReportKey(curr.employeename)
+    if (!employeeKey) continue
+
+    let employeeIdx = employeeIndexByKey.get(employeeKey)
+    if (employeeIdx === undefined) {
+      employeeIdx = employees.length
+      employeeIndexByKey.set(employeeKey, employeeIdx)
+      employees.push({ employeename: curr.employeename, activities: [] })
     }
+    const employee = employees[employeeIdx]!
 
-    let activityGroup = employee.activities.find((act) => act.activity === curr.activity)
+    const activityKey = normalizeReportKey(curr.activity)
+    let activityGroup = employee.activities.find(
+      (act) => normalizeReportKey(act.activity) === activityKey,
+    )
 
     if (!activityGroup) {
       activityGroup = {
@@ -824,15 +855,32 @@ export function groupP101DataByEmployee(records: ReportDataRecord[]): P101Groupe
       employee.activities.push(activityGroup)
     }
 
-    activityGroup.records.push(curr)
+    const programKey = `${normalizeReportKey(curr.program)}|${normalizeReportKey(curr.mastercode)}`
+    const existingProgram = activityGroup.records.find(
+      (row) =>
+        `${normalizeReportKey(row.program)}|${normalizeReportKey(row.mastercode)}` === programKey,
+    )
+
     const activityTime = toNumber(curr.activitytime)
     const travelTime = toNumber(curr.traveltime)
+
+    if (existingProgram) {
+      existingProgram.activitytime = toNumber(existingProgram.activitytime) + activityTime
+      existingProgram.traveltime = toNumber(existingProgram.traveltime) + travelTime
+    } else {
+      activityGroup.records.push({
+        ...curr,
+        activitytime: activityTime,
+        traveltime: travelTime,
+      })
+    }
+
     activityGroup.totalActivityTimeForActivity += activityTime
     activityGroup.totalTravelTime += travelTime
     activityGroup.totalTime += activityTime + travelTime
+  }
 
-    return acc
-  }, [])
+  return employees
 }
 
 export function getP101EmployeeGrandTotals(employee: P101GroupedEmployee): {
@@ -854,12 +902,32 @@ export function calculateP101Percentage(value: number, grandTotal: number): stri
   return `${((value / grandTotal) * 100).toFixed(2)}%`
 }
 
+/** Catch-all FFP code used by P101-ALL for every non-FFP master code. */
+export const P101_ALL_FFP_CATCHALL = "FFP-05"
+
+/** True when the FFP/master code is an FFP code (e.g. FFP-05, FFP-50). */
+export function isFfpMasterCode(mastercode: string): boolean {
+  return normalizeReportKey(mastercode).startsWith("ffp")
+}
+
+/**
+ * P101-ALL: keep FFP codes as-is; remap every non-FFP master code to FFP-05
+ * so FFP-05 is the catch-all for FFP-05 hours plus all non-FFP time.
+ */
+export function remapP101AllNonFfpToFfp05(records: ReportDataRecord[]): ReportDataRecord[] {
+  return records.map((record) => {
+    if (isFfpMasterCode(record.mastercode)) return record
+    return { ...record, mastercode: P101_ALL_FFP_CATCHALL }
+  })
+}
+
 // --- P110-SS unwrap / grouping ---
 
 export function unwrapP110SSRecords(raw: unknown): P110SSRecord[] {
   return unwrapListData(raw).map((row) => {
     const record = asRecord(row)
     return {
+      employeeId: String(record.employeeId ?? record.userid ?? record.userId ?? ""),
       employeename: String(record.employeename ?? record.employeeName ?? ""),
       date: String(record.date ?? ""),
       program: String(record.program ?? ""),
@@ -873,15 +941,20 @@ export function unwrapP110SSRecords(raw: unknown): P110SSRecord[] {
 export function groupP110SSByEmployee(records: P110SSRecord[]): P110SSGroupedEmployee[] {
   const grouped: Record<
     string,
-    { employeename: string; dates: Record<string, P110SSDateGroup> }
+    { employeeId: string; employeename: string; dates: Record<string, P110SSDateGroup> }
   > = {}
 
   for (const record of records) {
-    if (!grouped[record.employeename]) {
-      grouped[record.employeename] = { employeename: record.employeename, dates: {} }
+    const groupKey = record.employeeId || record.employeename
+    if (!grouped[groupKey]) {
+      grouped[groupKey] = {
+        employeeId: record.employeeId,
+        employeename: record.employeename,
+        dates: {},
+      }
     }
 
-    const employee = grouped[record.employeename]
+    const employee = grouped[groupKey]
     if (!employee.dates[record.date]) {
       employee.dates[record.date] = {
         date: record.date,
@@ -899,6 +972,7 @@ export function groupP110SSByEmployee(records: P110SSRecord[]): P110SSGroupedEmp
   }
 
   return Object.values(grouped).map((employee) => ({
+    employeeId: employee.employeeId,
     employeename: employee.employeename,
     dates: Object.values(employee.dates),
   }))
@@ -914,6 +988,7 @@ export function unwrapP110Records(raw: unknown): P110Record[] {
   return unwrapListData(raw).map((row) => {
     const record = asRecord(row)
     return {
+      employeeId: String(record.employeeId ?? record.userid ?? record.userId ?? ""),
       employeename: String(record.employeename ?? record.employeeName ?? ""),
       date: String(record.date ?? ""),
       program: String(record.program ?? ""),
@@ -929,15 +1004,20 @@ export function unwrapP110Records(raw: unknown): P110Record[] {
 export function groupP110ByEmployee(records: P110Record[]): P110GroupedEmployee[] {
   const grouped: Record<
     string,
-    { employeename: string; dates: Record<string, P110DateGroup> }
+    { employeeId: string; employeename: string; dates: Record<string, P110DateGroup> }
   > = {}
 
   for (const record of records) {
-    if (!grouped[record.employeename]) {
-      grouped[record.employeename] = { employeename: record.employeename, dates: {} }
+    const groupKey = record.employeeId || record.employeename
+    if (!grouped[groupKey]) {
+      grouped[groupKey] = {
+        employeeId: record.employeeId,
+        employeename: record.employeename,
+        dates: {},
+      }
     }
 
-    const employee = grouped[record.employeename]
+    const employee = grouped[groupKey]
     if (!employee.dates[record.date]) {
       employee.dates[record.date] = {
         date: record.date,
@@ -958,6 +1038,7 @@ export function groupP110ByEmployee(records: P110Record[]): P110GroupedEmployee[
   }
 
   return Object.values(grouped).map((employee) => ({
+    employeeId: employee.employeeId,
     employeename: employee.employeename,
     dates: Object.values(employee.dates),
   }))
@@ -2628,6 +2709,9 @@ export function resolveReportTitle(
       return "P100 - Summation of Employee Time"
     case "P101":
       return "P101 - Summation of Employee Time (Sort by Function Code)"
+    case "P101-ALL":
+    case "P101ALL":
+      return "P101-ALL - Summation of Employee Time (Sort by Function Code)"
     case "P110":
       return "P110 - Time Study Daily"
     case "P110-SS":
@@ -2692,6 +2776,8 @@ export function resolveFooterVariant(reportCode: string): ReportPdfFooterVariant
     case "DSSRPT2":
     case "QTR-MONTH":
     case "P101":
+    case "P101-ALL":
+    case "P101ALL":
     case "P110":
     case "WIC":
       return "pageOnly"

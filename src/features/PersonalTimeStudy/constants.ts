@@ -1,3 +1,6 @@
+/** Standard work week length for weekly STATUS target (Mon–Fri). */
+export const WORKING_DAYS_PER_WEEK = 5
+
 /** Legend / UI colors aligned with `AppCalender` status colors and product reference. */
 export const PERSONAL_TIME_STUDY_LEGEND = {
   approvedTimeEntry: "#6C757D",
