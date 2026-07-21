@@ -68,7 +68,6 @@ import { countyActivityCodeKeys } from "../keys"
 import {
   useGetCountyActivityForEdit,
   useGetCountyActivityMasterCodes,
-  useGetMasterActivityCatalog,
   useGetCountyActivityNested,
   useGetCountyActivityActivePrimarySubPicker,
   fetchCountyActivityNestedRows,
@@ -81,6 +80,7 @@ import {
 } from "../api/countyActivityApi"
 import { usePermissions } from "@/hooks/usePermissions"
 import { useGetAllDepartments } from "@/features/department/queries/getDepartments"
+import { useGetClientMasterCodeTabs } from "@/features/master-code/queries/getClientMasterCodeTabs"
 
 
 function stripHtmlTags(html: string): string {
@@ -537,7 +537,7 @@ export function CountyActivityCodeTable({
 
   const addMasterCodeType = addForm.watch("masterCodeType")
 
-  const masterCatalogQuery = useGetMasterActivityCatalog((addOpen || editOpen) && codeTypeDropdownOpened)
+  const masterCatalogQuery = useGetClientMasterCodeTabs((addOpen || editOpen) && codeTypeDropdownOpened)
 
   const [editSelectedPrimaryId, setEditSelectedPrimaryId] = useState<string | null>(null)
   const editPrimaryDetailQuery = useGetCountyActivityForEdit(
@@ -670,15 +670,9 @@ export function CountyActivityCodeTable({
     (editMasterCodesDropdownOpened || editMasterCodesQueryType !== rowToEdit.masterCodeType),
   )
 
-  // Code Type dropdown: derived from the all-activity-codes catalog (replaces old /master-codes call)
+  // Code Type dropdown: derived from client master code tab names
   const masterCodeTypeOptions = useMemo(() => {
-    const data = masterCatalogQuery.data ?? []
-    const types = new Set<string>()
-    for (const item of data) {
-      const t = String(item.type ?? "").trim()
-      if (t) types.add(t)
-    }
-    return [...types].sort((a, b) => a.localeCompare(b))
+    return masterCatalogQuery.data ?? []
   }, [masterCatalogQuery.data])
 
   // Code dropdown (Add modal): per-type call fires when user selects a Code Type
