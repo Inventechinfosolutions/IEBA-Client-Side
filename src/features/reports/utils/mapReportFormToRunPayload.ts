@@ -46,6 +46,12 @@ export function mapReportFormToRunPayload(values: ReportFormValues): ReportRunPa
           }
           return payload
         })()
+      : values.selectMonthBy === "week"
+        ? {
+            month: values.month?.trim(),
+            dateFrom: values.dateFrom?.trim(),
+            dateTo: values.dateTo?.trim(),
+          }
       : values.selectMonthBy === "month" && values.month
         ? (() => {
             const [y, m] = values.month.split("-")
