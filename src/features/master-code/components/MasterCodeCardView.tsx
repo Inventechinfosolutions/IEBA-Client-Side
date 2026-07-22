@@ -152,8 +152,8 @@ export function MasterCodeCardView({
                     <span
                       className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
                         row.status
-                          ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
-                          : "bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-200 dark:border-rose-800"
+                          ? "bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/90 dark:text-emerald-400! dark:border-emerald-600/60"
+                          : "bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-950/90 dark:text-rose-400! dark:border-rose-600/60"
                       }`}
                     >
                       {row.status ? (

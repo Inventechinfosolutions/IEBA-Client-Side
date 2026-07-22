@@ -56,6 +56,8 @@ const headers: { label: string; className?: string; sortKey?: LeaveApprovalSortK
   { label: "Action", className: "w-[80px]" },
 ]
 
+import { LeaveApprovalCardView } from "./LeaveApprovalCardView"
+
 export function LeaveApprovalTable({
   rows,
   isLoading,
@@ -138,8 +140,18 @@ export function LeaveApprovalTable({
   }
 
   return (
-    <div className="overflow-hidden rounded-[4px] border border-[#e6e7ef]">
-      <Table className="table-fixed">
+    <div className="w-full min-w-0">
+      {/* Mobile & Tablet Card View */}
+      <LeaveApprovalCardView
+        rows={rows}
+        isLoading={isLoading}
+        onOpenComments={onOpenComments}
+        dropdownData={dropdownData}
+      />
+
+      {/* Desktop Table View */}
+      <div className="hidden xl:block overflow-hidden rounded-[4px] border border-[#e6e7ef]">
+        <Table className="table-fixed">
         <TableHeader className="[&_tr]:border-b-0">
           <TableRow className="hover:bg-transparent">
             {headers.map((h, index) => {
@@ -497,6 +509,7 @@ export function LeaveApprovalTable({
           )}
         </TableBody>
       </Table>
+      </div>
     </div>
   )
 }
