@@ -46,79 +46,16 @@ export function MasterCodePagination({
   })()
 
   return (
-    <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-2.5 sm:gap-4 rounded-[8px] bg-white px-3.5 sm:px-5 py-3 shadow-[0_4px_16px_rgba(16,24,40,0.08)] border border-[#e5e7eb] sm:border-transparent">
-      <p className="text-[12px] text-[#8f93a1] whitespace-nowrap font-medium shrink-0">
-        Total <span className="font-semibold text-[#1f2937]">{totalItems}</span> items
-      </p>
+    <div className="pagination-card mt-4 rounded-[6px] bg-white dark:bg-[#0c0d12] px-5 py-3 shadow-[0_4px_16px_rgba(16,24,40,0.12)] dark:ring-1 dark:ring-[#6C5DD3]">
 
-      <div className="flex flex-wrap sm:flex-nowrap items-center justify-center sm:justify-end gap-1.5 sm:gap-3 w-full sm:w-auto min-w-0">
-        <Pagination className="mx-0 w-auto justify-center">
-          <PaginationContent className="gap-0.5 sm:gap-1.5 text-xs">
-            <PaginationItem>
-              <PaginationLink
-                href="#"
-                size="icon"
-                aria-disabled={currentPage === 1}
-                className="inline-flex size-6 sm:size-7 items-center justify-center rounded border border-transparent text-[#8f93a1] no-underline hover:bg-[#f5f5f8] data-[active=true]:border-transparent data-[active=true]:bg-transparent data-[active=true]:text-[#8f93a1] data-[active=true]:font-normal [&[aria-disabled=true]]:pointer-events-none [&[aria-disabled=true]]:opacity-40"
-                onClick={(event) => {
-                  event.preventDefault()
-                  if (currentPage === 1) return
-                  onPageChange(Math.max(1, currentPage - 1))
-                }}
-              >
-                <ChevronLeft className="size-3.5" />
-              </PaginationLink>
-            </PaginationItem>
-            {pages.map((page, index) =>
-              typeof page === "number" ? (
-                <PaginationItem key={page}>
-                  <PaginationLink
-                    href="#"
-                    size="icon"
-                    isActive={page === currentPage}
-                    className={`inline-flex size-6 sm:size-7 items-center justify-center rounded border text-xs no-underline ${
-                      page === currentPage
-                        ? "border-[#d8dae3] bg-white font-medium text-[#1f2937]"
-                        : "border-transparent text-[#8f93a1] hover:border-[#d8dae3]"
-                    }`}
-                    onClick={(event) => {
-                      event.preventDefault()
-                      onPageChange(page)
-                    }}
-                  >
-                    {page}
-                  </PaginationLink>
-                </PaginationItem>
-              ) : (
-                <PaginationItem key={`${page}-${index}`}>
-                  <span className="inline-flex size-5 sm:size-7 items-center justify-center text-xs text-[#8f93a1]">
-                    ...
-                  </span>
-                </PaginationItem>
-              )
-            )}
-            <PaginationItem>
-              <PaginationLink
-                href="#"
-                size="icon"
-                aria-disabled={currentPage === totalPages}
-                className="inline-flex size-6 sm:size-7 items-center justify-center rounded border border-transparent text-[#8f93a1] no-underline hover:bg-[#f5f5f8] data-[active=true]:border-transparent data-[active=true]:bg-transparent data-[active=true]:text-[#8f93a1] data-[active=true]:font-normal [&[aria-disabled=true]]:pointer-events-none [&[aria-disabled=true]]:opacity-40"
-                onClick={(event) => {
-                  event.preventDefault()
-                  if (currentPage === totalPages) return
-                  onPageChange(Math.min(totalPages, currentPage + 1))
-                }}
-              >
-                <ChevronRight className="size-3.5" />
-              </PaginationLink>
-            </PaginationItem>
-          </PaginationContent>
-        </Pagination>
-
-        <div className="flex items-center gap-2 text-xs shrink-0">
+      {/* ── Mobile / Tablet layout (hidden on sm and above) ── */}
+      <div className="sm:hidden flex flex-col gap-2">
+        {/* Row 1: Total items + Page size dropdown */}
+        <div className="flex items-center justify-between">
+          <p className="text-[12px] text-[#8f93a1] dark:text-[#6b7280]">Total {totalItems} items</p>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <div className="ml-1 sm:ml-3 inline-flex cursor-pointer items-center gap-1 rounded-md border border-[#d8dae3] bg-white px-2 py-1 text-xs text-[#1f2937] shadow-[0_1px_1px_rgba(16,24,40,0.03)] outline-none hover:bg-[#fafafa] whitespace-nowrap">
+              <div className="inline-flex cursor-pointer items-center gap-1 rounded-md border border-[#d8dae3] dark:border-[rgba(108,93,211,0.5)] bg-white dark:bg-[#09090b] px-2 py-1 text-xs text-[#1f2937] dark:text-[#e5e7eb] shadow-[0_1px_1px_rgba(16,24,40,0.03)] outline-none hover:bg-[#fafafa] dark:hover:bg-[#18181b]">
                 {pageSize} / page
                 <ChevronDown className="size-3 text-[#8f93a1]" />
               </div>
@@ -138,7 +75,165 @@ export function MasterCodePagination({
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
+        {/* Row 2: Page number buttons centered */}
+        <div className="flex justify-center">
+          <Pagination className="mx-0 w-auto justify-start">
+            <PaginationContent className="gap-1 text-xs">
+              <PaginationItem>
+                <PaginationLink
+                  href="#"
+                  size="icon"
+                  aria-disabled={currentPage === 1}
+                  className="inline-flex size-6 items-center justify-center rounded border border-transparent text-[#8f93a1] dark:text-[#6b7280] no-underline hover:bg-[#f5f5f8] dark:hover:bg-[#27272a] data-[active=true]:border-transparent data-[active=true]:bg-transparent data-[active=true]:text-[#8f93a1] data-[active=true]:font-normal [&[aria-disabled=true]]:pointer-events-none [&[aria-disabled=true]]:opacity-40"
+                  onClick={(event) => {
+                    event.preventDefault()
+                    if (currentPage === 1) return
+                    onPageChange(Math.max(1, currentPage - 1))
+                  }}
+                >
+                  <ChevronLeft className="size-3.5" />
+                </PaginationLink>
+              </PaginationItem>
+              {pages.map((page, index) =>
+                typeof page === "number" ? (
+                  <PaginationItem key={page}>
+                    <PaginationLink
+                      href="#"
+                      size="icon"
+                      isActive={page === currentPage}
+                      className={`inline-flex size-7 items-center justify-center rounded border text-xs no-underline ${
+                        page === currentPage
+                          ? "border-[#d8dae3] dark:border-[rgba(108,93,211,0.6)] bg-white dark:bg-[#18181b] font-medium text-[#1f2937] dark:text-white"
+                          : "border-transparent text-[#8f93a1] dark:text-[#6b7280] hover:border-[#d8dae3] dark:hover:border-[rgba(108,93,211,0.4)] dark:hover:bg-[#27272a]"
+                      }`}
+                      onClick={(event) => {
+                        event.preventDefault()
+                        onPageChange(page)
+                      }}
+                    >
+                      {page}
+                    </PaginationLink>
+                  </PaginationItem>
+                ) : (
+                  <PaginationItem key={`${page}-${index}`}>
+                    <span className="inline-flex size-7 items-center justify-center text-xs text-[#8f93a1] dark:text-[#4b5563]">
+                      ...
+                    </span>
+                  </PaginationItem>
+                )
+              )}
+              <PaginationItem>
+                <PaginationLink
+                  href="#"
+                  size="icon"
+                  aria-disabled={currentPage === totalPages}
+                  className="inline-flex size-6 items-center justify-center rounded border border-transparent text-[#8f93a1] dark:text-[#6b7280] no-underline hover:bg-[#f5f5f8] dark:hover:bg-[#27272a] data-[active=true]:border-transparent data-[active=true]:bg-transparent data-[active=true]:text-[#8f93a1] data-[active=true]:font-normal [&[aria-disabled=true]]:pointer-events-none [&[aria-disabled=true]]:opacity-40"
+                  onClick={(event) => {
+                    event.preventDefault()
+                    if (currentPage === totalPages) return
+                    onPageChange(Math.min(totalPages, currentPage + 1))
+                  }}
+                >
+                  <ChevronRight className="size-3.5" />
+                </PaginationLink>
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        </div>
       </div>
+
+      {/* ── Desktop layout (exact original — hidden on mobile) ── */}
+      <div className="hidden sm:flex items-center">
+        <div className="ml-auto flex items-center gap-4">
+          <p className="text-[12px] text-[#8f93a1]">Total {totalItems} items</p>
+          <Pagination className="mx-0 w-auto justify-start">
+            <PaginationContent className="gap-2 text-xs">
+              <PaginationItem>
+                <PaginationLink
+                  href="#"
+                  size="icon"
+                  aria-disabled={currentPage === 1}
+                  className="inline-flex size-6 items-center justify-center rounded border border-transparent text-[#8f93a1] no-underline hover:bg-[#f5f5f8] data-[active=true]:border-transparent data-[active=true]:bg-transparent data-[active=true]:text-[#8f93a1] data-[active=true]:font-normal [&[aria-disabled=true]]:pointer-events-none [&[aria-disabled=true]]:opacity-40"
+                  onClick={(event) => {
+                    event.preventDefault()
+                    if (currentPage === 1) return
+                    onPageChange(Math.max(1, currentPage - 1))
+                  }}
+                >
+                  <ChevronLeft className="size-3.5" />
+                </PaginationLink>
+              </PaginationItem>
+              {pages.map((page, index) =>
+                typeof page === "number" ? (
+                  <PaginationItem key={page}>
+                    <PaginationLink
+                      href="#"
+                      size="icon"
+                      isActive={page === currentPage}
+                      className={`inline-flex size-7 items-center justify-center rounded border text-xs no-underline ${
+                        page === currentPage
+                          ? "border-[#d8dae3] bg-white font-medium text-[#1f2937]"
+                          : "border-transparent text-[#8f93a1] hover:border-[#d8dae3]"
+                      }`}
+                      onClick={(event) => {
+                        event.preventDefault()
+                        onPageChange(page)
+                      }}
+                    >
+                      {page}
+                    </PaginationLink>
+                  </PaginationItem>
+                ) : (
+                  <PaginationItem key={`${page}-${index}`}>
+                    <span className="inline-flex size-7 items-center justify-center text-xs text-[#8f93a1]">
+                      ...
+                    </span>
+                  </PaginationItem>
+                )
+              )}
+              <PaginationItem>
+                <PaginationLink
+                  href="#"
+                  size="icon"
+                  aria-disabled={currentPage === totalPages}
+                  className="inline-flex size-6 items-center justify-center rounded border border-transparent text-[#8f93a1] no-underline hover:bg-[#f5f5f8] data-[active=true]:border-transparent data-[active=true]:bg-transparent data-[active=true]:text-[#8f93a1] data-[active=true]:font-normal [&[aria-disabled=true]]:pointer-events-none [&[aria-disabled=true]]:opacity-40"
+                  onClick={(event) => {
+                    event.preventDefault()
+                    if (currentPage === totalPages) return
+                    onPageChange(Math.min(totalPages, currentPage + 1))
+                  }}
+                >
+                  <ChevronRight className="size-3.5" />
+                </PaginationLink>
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+          <div className="flex items-center gap-2 text-xs">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <div className="ml-3 inline-flex cursor-pointer items-center gap-1 rounded-md border border-[#d8dae3] bg-white px-2 py-1 text-xs text-[#1f2937] shadow-[0_1px_1px_rgba(16,24,40,0.03)] outline-none hover:bg-[#fafafa]">
+                  {pageSize} / page
+                  <ChevronDown className="size-3 text-[#8f93a1]" />
+                </div>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-[100px] min-w-[100px] rounded-lg border-[#d8dae3] bg-white p-1.5 shadow-[0_10px_38px_rgba(0,0,0,0.1),0_10px_20px_rgba(0,0,0,0.06)]">
+                {[5, 10, 20, 50].map((size) => (
+                  <DropdownMenuItem
+                    key={size}
+                    className={`cursor-pointer rounded-md px-2 py-1.5 text-xs text-[#1f2937] outline-none ${
+                      size === pageSize ? "bg-[#f0f7ff] font-medium" : "hover:bg-[#f8f9fa]"
+                    }`}
+                    onClick={() => onPageSizeChange(size)}
+                  >
+                    {size} / page
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
+      </div>
+
     </div>
   )
 }
