@@ -38,6 +38,10 @@ type ReportDatePickerProps = {
   className?: string
   disabled?: boolean
   placeholder?: string
+  /** Inclusive lower bound as `YYYY-MM-DD`. */
+  minDate?: string
+  /** Inclusive upper bound as `YYYY-MM-DD`. */
+  maxDate?: string
 }
 
 function parseYmdLocal(value: string): { year: number; month: number; day: number } | null {
@@ -78,6 +82,72 @@ function shiftMonth(year: number, monthIndex: number, delta: number): { year: nu
   return { year: date.getFullYear(), month: date.getMonth() }
 }
 
+function isYmdInRange(ymd: string, minDate?: string, maxDate?: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(ymd)) return false
+  if (minDate && ymd < minDate) return false
+  if (maxDate && ymd > maxDate) return false
+  return true
+}
+
+function isDayDisabled(
+  year: number,
+  monthIndex: number,
+  day: number,
+  minDate?: string,
+  maxDate?: string,
+): boolean {
+  return !isYmdInRange(formatYmdLocal(year, monthIndex, day), minDate, maxDate)
+}
+
+function isMonthDisabled(
+  year: number,
+  monthIndex: number,
+  minDate?: string,
+  maxDate?: string,
+): boolean {
+  const monthStart = formatYmdLocal(year, monthIndex, 1)
+  const monthEnd = formatYmdLocal(year, monthIndex, getDaysInMonth(year, monthIndex))
+  if (minDate && monthEnd < minDate) return true
+  if (maxDate && monthStart > maxDate) return true
+  return false
+}
+
+function isYearDisabled(year: number, minDate?: string, maxDate?: string): boolean {
+  if (minDate) {
+    const minParsed = parseYmdLocal(minDate)
+    if (minParsed && year < minParsed.year) return true
+  }
+  if (maxDate) {
+    const maxParsed = parseYmdLocal(maxDate)
+    if (maxParsed && year > maxParsed.year) return true
+  }
+  return false
+}
+
+function clampViewToRange(
+  year: number,
+  monthIndex: number,
+  minDate?: string,
+  maxDate?: string,
+): { year: number; month: number } {
+  const viewKey = `${year}-${String(monthIndex + 1).padStart(2, "0")}`
+  if (minDate) {
+    const minKey = minDate.slice(0, 7)
+    if (viewKey < minKey) {
+      const parsed = parseYmdLocal(minDate)
+      if (parsed) return { year: parsed.year, month: parsed.month }
+    }
+  }
+  if (maxDate) {
+    const maxKey = maxDate.slice(0, 7)
+    if (viewKey > maxKey) {
+      const parsed = parseYmdLocal(maxDate)
+      if (parsed) return { year: parsed.year, month: parsed.month }
+    }
+  }
+  return { year, month: monthIndex }
+}
+
 /** Keep focus inside the popover so month/year nav does not dismiss it. */
 function keepPopoverOpen(event: PointerEvent | MouseEvent) {
   event.preventDefault()
@@ -91,20 +161,36 @@ export function ReportDatePicker({
   className,
   disabled = false,
   placeholder = "mm/dd/yyyy",
+  minDate,
+  maxDate,
 }: ReportDatePickerProps) {
   const [open, setOpen] = useState(false)
   const [panel, setPanel] = useState<PickerPanel>("day")
   const parsed = parseYmdLocal(value ?? "")
   const now = new Date()
-  const [viewYear, setViewYear] = useState(parsed?.year ?? now.getFullYear())
-  const [viewMonth, setViewMonth] = useState(parsed?.month ?? now.getMonth())
+  const todayYmd = formatYmdLocal(now.getFullYear(), now.getMonth(), now.getDate())
+  const todayInRange = isYmdInRange(todayYmd, minDate, maxDate)
+  const initialView = clampViewToRange(
+    parsed?.year ?? now.getFullYear(),
+    parsed?.month ?? now.getMonth(),
+    minDate,
+    maxDate,
+  )
+  const [viewYear, setViewYear] = useState(initialView.year)
+  const [viewMonth, setViewMonth] = useState(initialView.month)
   const displayValue = formatDisplay(value ?? "")
   const yearListRef = useRef<HTMLDivElement>(null)
 
   const resetPickerState = () => {
     setPanel("day")
-    setViewYear(parsed?.year ?? now.getFullYear())
-    setViewMonth(parsed?.month ?? now.getMonth())
+    const next = clampViewToRange(
+      parsed?.year ?? now.getFullYear(),
+      parsed?.month ?? now.getMonth(),
+      minDate,
+      maxDate,
+    )
+    setViewYear(next.year)
+    setViewMonth(next.month)
   }
 
   const handleOpenChange = (nextOpen: boolean) => {
@@ -119,6 +205,7 @@ export function ReportDatePicker({
   }
 
   const commitDate = (year: number, monthIndex: number, day: number) => {
+    if (isDayDisabled(year, monthIndex, day, minDate, maxDate)) return
     onChange(formatYmdLocal(year, monthIndex, day))
     setOpen(false)
     setPanel("day")
@@ -142,25 +229,34 @@ export function ReportDatePicker({
   }
 
   const handleSelectYear = (year: number) => {
+    if (isYearDisabled(year, minDate, maxDate)) return
     setViewYear(year)
     setPanel("month")
   }
 
   const handleSelectMonth = (monthIndex: number) => {
+    if (isMonthDisabled(viewYear, monthIndex, minDate, maxDate)) return
     setViewMonth(monthIndex)
     setPanel("day")
   }
 
+  const prevMonth = shiftMonth(viewYear, viewMonth, -1)
+  const nextMonth = shiftMonth(viewYear, viewMonth, 1)
+  const canGoPrevMonth = !isMonthDisabled(prevMonth.year, prevMonth.month, minDate, maxDate)
+  const canGoNextMonth = !isMonthDisabled(nextMonth.year, nextMonth.month, minDate, maxDate)
+  const canGoPrevYear = !isYearDisabled(viewYear - 1, minDate, maxDate)
+  const canGoNextYear = !isYearDisabled(viewYear + 1, minDate, maxDate)
+
   const handlePrevMonth = () => {
-    const next = shiftMonth(viewYear, viewMonth, -1)
-    setViewYear(next.year)
-    setViewMonth(next.month)
+    if (!canGoPrevMonth) return
+    setViewYear(prevMonth.year)
+    setViewMonth(prevMonth.month)
   }
 
   const handleNextMonth = () => {
-    const next = shiftMonth(viewYear, viewMonth, 1)
-    setViewYear(next.year)
-    setViewMonth(next.month)
+    if (!canGoNextMonth) return
+    setViewYear(nextMonth.year)
+    setViewMonth(nextMonth.month)
   }
 
   const monthTitle = new Date(viewYear, viewMonth, 1).toLocaleDateString("en-US", {
@@ -208,9 +304,10 @@ export function ReportDatePicker({
               <div className="flex items-center justify-between gap-1">
                 <button
                   type="button"
-                  className="inline-flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-[6px] text-[#6b7280] hover:bg-white hover:text-[#111827]"
+                  className="inline-flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-[6px] text-[#6b7280] hover:bg-white hover:text-[#111827] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-[#6b7280]"
                   onPointerDown={keepPopoverOpen}
                   onClick={handlePrevMonth}
+                  disabled={!canGoPrevMonth}
                   aria-label="Previous month"
                 >
                   <ChevronLeft className="size-4" />
@@ -226,9 +323,10 @@ export function ReportDatePicker({
                 </button>
                 <button
                   type="button"
-                  className="inline-flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-[6px] text-[#6b7280] hover:bg-white hover:text-[#111827]"
+                  className="inline-flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-[6px] text-[#6b7280] hover:bg-white hover:text-[#111827] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-[#6b7280]"
                   onPointerDown={keepPopoverOpen}
                   onClick={handleNextMonth}
+                  disabled={!canGoNextMonth}
                   aria-label="Next month"
                 >
                   <ChevronRight className="size-4" />
@@ -272,6 +370,7 @@ export function ReportDatePicker({
                   if (day === null) {
                     return <div key={`empty-${index}`} className="h-9" />
                   }
+                  const dayDisabled = isDayDisabled(viewYear, viewMonth, day, minDate, maxDate)
                   const isSelected =
                     parsed?.year === viewYear && parsed?.month === viewMonth && parsed?.day === day
                   const isToday =
@@ -282,14 +381,17 @@ export function ReportDatePicker({
                     <button
                       key={day}
                       type="button"
+                      disabled={dayDisabled}
                       onClick={() => commitDate(viewYear, viewMonth, day)}
                       className={cn(
-                        "h-9 cursor-pointer rounded-[6px] text-[14px] font-medium transition-colors",
-                        isSelected
-                          ? "bg-[#6C5DD3] text-white"
-                          : isToday
-                            ? "bg-[#ede9fe] text-[#111827] hover:bg-[#ddd6fe]"
-                            : "text-[#111827] hover:bg-[#ede9fe]",
+                        "h-9 rounded-[6px] text-[14px] font-medium transition-colors",
+                        dayDisabled
+                          ? "cursor-not-allowed text-[#d1d5db]"
+                          : isSelected
+                            ? "cursor-pointer bg-[#6C5DD3] text-white"
+                            : isToday
+                              ? "cursor-pointer bg-[#ede9fe] text-[#111827] hover:bg-[#ddd6fe]"
+                              : "cursor-pointer text-[#111827] hover:bg-[#ede9fe]",
                       )}
                     >
                       {day}
@@ -308,8 +410,9 @@ export function ReportDatePicker({
               </button>
               <button
                 type="button"
+                disabled={!todayInRange}
                 onClick={() => commitDate(now.getFullYear(), now.getMonth(), now.getDate())}
-                className="cursor-pointer text-[14px] font-medium text-[#2563eb] hover:text-[#1d4ed8]"
+                className="cursor-pointer text-[14px] font-medium text-[#2563eb] hover:text-[#1d4ed8] disabled:cursor-not-allowed disabled:text-[#9ca3af] disabled:hover:text-[#9ca3af]"
               >
                 Today
               </button>
@@ -321,9 +424,10 @@ export function ReportDatePicker({
               <div className="flex items-center justify-between gap-1">
                 <button
                   type="button"
-                  className="inline-flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-[6px] text-[#6b7280] hover:bg-white hover:text-[#111827]"
+                  className="inline-flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-[6px] text-[#6b7280] hover:bg-white hover:text-[#111827] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-[#6b7280]"
                   onPointerDown={keepPopoverOpen}
                   onClick={() => setViewYear((year) => Math.max(YEAR_START, year - 1))}
+                  disabled={!canGoPrevYear}
                   aria-label="Previous year"
                 >
                   <ChevronLeft className="size-4" />
@@ -339,9 +443,10 @@ export function ReportDatePicker({
                 </button>
                 <button
                   type="button"
-                  className="inline-flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-[6px] text-[#6b7280] hover:bg-white hover:text-[#111827]"
+                  className="inline-flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-[6px] text-[#6b7280] hover:bg-white hover:text-[#111827] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-[#6b7280]"
                   onPointerDown={keepPopoverOpen}
                   onClick={() => setViewYear((year) => Math.min(YEAR_END, year + 1))}
+                  disabled={!canGoNextYear}
                   aria-label="Next year"
                 >
                   <ChevronRight className="size-4" />
@@ -369,6 +474,7 @@ export function ReportDatePicker({
             </div>
             <div className="grid grid-cols-4 gap-2 p-4">
               {MONTH_LABELS.map((label, monthIndex) => {
+                const monthDisabled = isMonthDisabled(viewYear, monthIndex, minDate, maxDate)
                 const isViewing = viewMonth === monthIndex
                 const isCommitted = parsed?.year === viewYear && parsed?.month === monthIndex
                 const isCurrentMonth = now.getFullYear() === viewYear && now.getMonth() === monthIndex
@@ -376,15 +482,18 @@ export function ReportDatePicker({
                   <button
                     key={label}
                     type="button"
+                    disabled={monthDisabled}
                     onPointerDown={keepPopoverOpen}
                     onClick={() => handleSelectMonth(monthIndex)}
                     className={cn(
-                      "h-[40px] cursor-pointer rounded-[6px] px-1 text-[14px] font-medium transition-colors",
-                      isViewing
-                        ? "bg-[#6C5DD3] text-white"
-                        : isCommitted || isCurrentMonth
-                          ? "bg-[#ede9fe] text-[#111827] hover:bg-[#ddd6fe]"
-                          : "text-[#111827] hover:bg-[#ede9fe]",
+                      "h-[40px] rounded-[6px] px-1 text-[14px] font-medium transition-colors",
+                      monthDisabled
+                        ? "cursor-not-allowed text-[#d1d5db]"
+                        : isViewing
+                          ? "cursor-pointer bg-[#6C5DD3] text-white"
+                          : isCommitted || isCurrentMonth
+                            ? "cursor-pointer bg-[#ede9fe] text-[#111827] hover:bg-[#ddd6fe]"
+                            : "cursor-pointer text-[#111827] hover:bg-[#ede9fe]",
                     )}
                   >
                     {label}
@@ -417,6 +526,7 @@ export function ReportDatePicker({
             >
               <div className="grid grid-cols-4 gap-2">
                 {YEARS.map((year) => {
+                  const yearDisabled = isYearDisabled(year, minDate, maxDate)
                   const isSelected = year === viewYear
                   const isCurrentYear = year === now.getFullYear()
                   return (
@@ -424,15 +534,18 @@ export function ReportDatePicker({
                       key={year}
                       type="button"
                       data-year={year}
+                      disabled={yearDisabled}
                       onPointerDown={keepPopoverOpen}
                       onClick={() => handleSelectYear(year)}
                       className={cn(
-                        "h-[38px] cursor-pointer rounded-[6px] text-[14px] font-medium transition-colors",
-                        isSelected
-                          ? "bg-[#6C5DD3] text-white"
-                          : isCurrentYear
-                            ? "bg-[#ede9fe] text-[#111827] hover:bg-[#ddd6fe]"
-                            : "text-[#111827] hover:bg-[#f3f4f6]",
+                        "h-[38px] rounded-[6px] text-[14px] font-medium transition-colors",
+                        yearDisabled
+                          ? "cursor-not-allowed text-[#d1d5db]"
+                          : isSelected
+                            ? "cursor-pointer bg-[#6C5DD3] text-white"
+                            : isCurrentYear
+                              ? "cursor-pointer bg-[#ede9fe] text-[#111827] hover:bg-[#ddd6fe]"
+                              : "cursor-pointer text-[#111827] hover:bg-[#f3f4f6]",
                       )}
                     >
                       {year}

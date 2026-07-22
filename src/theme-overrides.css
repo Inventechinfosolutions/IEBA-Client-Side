@@ -455,7 +455,7 @@
 
 /* 11. Empty State Images Overrides (Blend White Backgrounds of PNG assets in Dark Mode) */
 .dark img[src*="table-empty.png"] {
-  filter: invert(0.94) hue-rotate(180deg) brightness(0.9) contrast(1.1) !important;
+  content: url("./assets/icons/table-emptyDark.png") !important;
 }
 
 /* 12. Dashboard Card Overrides */
@@ -1376,4 +1376,80 @@
 .dark span.status-pill.status-completed {
   border-color: #16a34a !important;
   color: #16a34a !important;
+}
+
+/* 66. Loading overlay/backdrop transparent white backgrounds override in Dark Mode */
+.dark .bg-white\/60,
+.dark [class*="bg-white/60"] {
+  background-color: rgba(10, 10, 12, 0.6) !important;
+}
+
+.dark .bg-white\/50,
+.dark [class*="bg-white/50"] {
+  background-color: rgba(10, 10, 12, 0.5) !important;
+}
+
+.dark .bg-white\/40,
+.dark [class*="bg-white/40"] {
+  background-color: rgba(10, 10, 12, 0.4) !important;
+}
+
+.dark .bg-white\/20,
+.dark [class*="bg-white/20"] {
+  background-color: rgba(10, 10, 12, 0.2) !important;
+}
+
+.dark .bg-white\/15,
+.dark [class*="bg-white/15"] {
+  background-color: rgba(10, 10, 12, 0.15) !important;
+}
+
+/* 67. Leave Banner overrides in Dark Mode */
+.dark .bg-\[\#E2E8F0\]\/50,
+.dark [class*="bg-[#E2E8F0]/50"] {
+  background-color: rgba(42, 31, 82, 0.4) !important; /* Premium dark purple background */
+  border-color: rgba(108, 93, 211, 0.45) !important;
+  color: #a1a1aa !important; /* Soft gray text */
+}
+
+/* Inner text inside leave banner in Dark Mode */
+.dark .bg-\[\#E2E8F0\]\/50 span,
+.dark [class*="bg-[#E2E8F0]/50"] span,
+.dark .bg-\[\#E2E8F0\]\/50 .text-gray-800,
+.dark [class*="bg-[#E2E8F0]/50"] [class*="text-gray-800"] {
+  color: #f4f4f5 !important; /* Bright text for dates/times */
+}
+
+.dark .bg-\[\#E2E8F0\]\/50 strong,
+.dark [class*="bg-[#E2E8F0]/50"] strong,
+.dark .bg-\[\#E2E8F0\]\/50 .text-gray-700,
+.dark [class*="bg-[#E2E8F0]/50"] [class*="text-gray-700"] {
+  color: #d4d4d8 !important; /* Bright text for "Status:" */
+}
+
+/* Status pills inside leave banner in Dark Mode */
+.dark .bg-\[\#E2E8F0\]\/50 span.bg-white,
+.dark [class*="bg-[#E2E8F0]/50"] span.bg-white {
+  background-color: #121215 !important;
+}
+
+.dark .bg-\[\#E2E8F0\]\/50 span.border-green-500,
+.dark [class*="bg-[#E2E8F0]/50"] span[class*="border-green-500"] {
+  background-color: rgba(34, 197, 94, 0.15) !important;
+  color: #4ade80 !important;
+  border-color: #22c55e !important;
+}
+
+.dark .bg-\[\#E2E8F0\]\/50 span.border-red-500,
+.dark [class*="bg-[#E2E8F0]/50"] span[class*="border-red-500"] {
+  background-color: rgba(239, 68, 68, 0.15) !important;
+  color: #f87171 !important;
+  border-color: #ef4444 !important;
+}
+
+.dark .bg-\[\#E2E8F0\]\/50 span.border-\[\#f59e0b\],
+.dark [class*="bg-[#E2E8F0]/50"] span[class*="border-[#f59e0b]"] {
+  background-color: rgba(245, 158, 11, 0.15) !important;
+  color: #fbbf24 !important;
+  border-color: #f59e0b !important;
 }

@@ -38,6 +38,8 @@ export type ReportCatalogItem = {
     showDates?: boolean
     showMonthly?: boolean
     showQtr?: boolean
+    /** MCAH-style Week 1 start/end (replaces Quarter for payroll-aligned monthly weeks). */
+    showWeek?: boolean
     showTimeStudy?: boolean
     showScheduleTime?: boolean
   }
@@ -46,7 +48,7 @@ export type ReportCatalogItem = {
 /** Normalized payload sent to view/download APIs. */
 export type ReportRunPayload = {
   reportKey: string
-  selectMonthBy: "qtr" | "dates" | "month" | "year" | "scheduled"
+  selectMonthBy: "qtr" | "dates" | "month" | "year" | "scheduled" | "week"
   month?: string
   year?: string
   weekId?: string

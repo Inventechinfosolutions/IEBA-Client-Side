@@ -1,5 +1,22 @@
 import { z } from "zod"
 
+function parseLocalYmd(value: string): Date | null {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value.trim())
+  if (!match) return null
+  const y = Number(match[1])
+  const m = Number(match[2])
+  const d = Number(match[3])
+  const dt = new Date(y, m - 1, d)
+  if (dt.getFullYear() !== y || dt.getMonth() !== m - 1 || dt.getDate() !== d) return null
+  return dt
+}
+
+function diffLocalDays(a: Date, b: Date): number {
+  const utcA = Date.UTC(a.getFullYear(), a.getMonth(), a.getDate())
+  const utcB = Date.UTC(b.getFullYear(), b.getMonth(), b.getDate())
+  return Math.round((utcA - utcB) / 86_400_000)
+}
+
 export const REPORT_QUARTERS = ["Qtr-1", "Qtr-2", "Qtr-3", "Qtr-4"] as const
 
 export const reportQuarterSchema = z.enum(REPORT_QUARTERS)
@@ -11,7 +28,7 @@ export const reportDownloadTypeSchema = z.enum(REPORT_DOWNLOAD_TYPES)
 export const reportFormSchema = z
   .object({
     reportKey: z.string().trim().min(1, "Select a report"),
-    selectMonthBy: z.enum(["qtr", "dates", "month", "year", "scheduled"]),
+    selectMonthBy: z.enum(["qtr", "dates", "month", "year", "scheduled", "week"]),
     month: z.string().optional(),
     year: z.string().optional(),
     weekId: z.string().optional(),
@@ -70,6 +87,64 @@ export const reportFormSchema = z
           message: "Select a month",
           path: ["month"],
         })
+      }
+    } else if (data.selectMonthBy === "week") {
+      if (!data.month?.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Select a month",
+          path: ["month"],
+        })
+      }
+      if (!data.dateFrom?.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          // message: "Week 1 start date is required",
+          message: "Start date is required",
+          path: ["dateFrom"],
+        })
+      }
+      if (!data.dateTo?.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          // message: "Week 1 end date is required",
+          message: "End date is required",
+          path: ["dateTo"],
+        })
+      }
+      const start = data.dateFrom?.trim() ? parseLocalYmd(data.dateFrom) : null
+      const end = data.dateTo?.trim() ? parseLocalYmd(data.dateTo) : null
+      const month = data.month?.trim() ?? ""
+      if (start && end) {
+        if (end < start) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Week 1 end date cannot be before start date",
+            path: ["dateTo"],
+          })
+        } else if (diffLocalDays(end, start) > 6) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Week 1 cannot exceed 7 days",
+            path: ["dateTo"],
+          })
+        }
+      }
+      if (month && /^\d{4}-\d{2}$/.test(month)) {
+        if (data.dateFrom?.trim() && !data.dateFrom.startsWith(month)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Week 1 start date must fall within the selected month",
+            path: ["dateFrom"],
+          })
+        }
+        if (data.dateTo?.trim() && !data.dateTo.startsWith(month)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Week 1 end date must fall within the selected month",
+            path: ["dateTo"],
+          })
+        }
       }
     } else if (data.selectMonthBy === "year") {
       if (!data.year?.trim()) {
@@ -142,4 +217,3 @@ export const REPORT_FORM_DEFAULT_VALUES: z.infer<typeof reportFormSchema> = {
   downloadType: "PDF",
   fileName: "",
 }
-
