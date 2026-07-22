@@ -867,9 +867,20 @@
   border-color: rgba(108, 93, 211, 0.4) !important;
 }
 
-/* 32b. Todo Card View — high-specificity override to beat section-32 generic rule */
-.dark div.todo-card.overflow-hidden.border {
+/* 32b. Todo Card & Payroll Card View — high-specificity override to beat section-32 generic rule */
+.dark div.todo-card.overflow-hidden.border,
+.dark div.payroll-card.overflow-hidden.border {
   border-color: rgba(108, 93, 211, 0.8) !important;
+}
+
+/* 32c. Editable Input Fields — force dark sharp solid purple border in both light and dark modes */
+input.editable-field-input,
+.dark input.editable-field-input,
+.dark input.editable-field-input[class*="editable-field-input"],
+.dark div input.editable-field-input {
+  border: 1.5px solid #6C5DD3 !important;
+  border-color: #6C5DD3 !important;
+  box-shadow: 0 0 0 1px #6C5DD3 !important;
 }
 
 /* 33. Purple Outline Buttons Keep Purple Styles in Dark Mode */
