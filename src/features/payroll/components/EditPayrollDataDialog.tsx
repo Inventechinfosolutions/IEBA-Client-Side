@@ -111,32 +111,38 @@ export function EditPayrollDataDialog({
       onOpenChange(next)
       if (!next) setValues({})
     }}>
-      <DialogContent className="max-w-4xl overflow-hidden p-4 sm:p-6">
+      <DialogContent className="w-[95vw] max-w-4xl max-h-[90dvh] overflow-hidden flex flex-col p-4 sm:p-6 rounded-[8px] bg-white dark:bg-[#0c0d12] border border-[#e5e7eb] dark:border-[rgba(108,93,211,0.55)] shadow-[0_12px_28px_rgba(17,24,39,0.16)] dark:shadow-[0_12px_28px_rgba(0,0,0,0.6)]">
         {(isSaving || !row) && (
-          <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/60 backdrop-blur-[1px]">
+          <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/60 dark:bg-black/60 backdrop-blur-[1px]">
             <Spinner className="text-[#6C5DD3]" />
           </div>
         )}
-        <DialogHeader>
-          <DialogTitle className="text-[16px]">Edit Payroll Data</DialogTitle>
+        <DialogHeader className="pb-2">
+          <DialogTitle className="text-[16px] sm:text-[18px] font-semibold text-[#111827] dark:text-white">Edit Payroll Data</DialogTitle>
         </DialogHeader>
 
         {visibleColumns.length === 0 ? (
-          <div className="text-[13px] text-[#6b7280]">No enabled columns are available.</div>
+          <div className="text-[13px] text-[#6b7280] dark:text-[#9ca3af]">No enabled columns are available.</div>
         ) : (
-          <div className="max-h-[70vh] overflow-y-auto pr-1">
+          <div className="flex-1 overflow-y-auto pr-1 py-2">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {visibleColumns.map((col) => (
                 <div key={col.dataKey} className="min-w-0">
-                  <div className="mb-1 text-[12px] font-medium text-[#111827]">{col.label}</div>
+                  <div className={cn(
+                    "mb-1 text-[12px]",
+                    col.editable ? "font-semibold text-[#111827] dark:text-white" : "font-normal text-[#6b7280] dark:text-[#9ca3af]"
+                  )}>
+                    {col.label}
+                  </div>
                   <input
                     value={effectiveValues[col.dataKey] ?? ""}
                     onChange={(e) => handleChange(col.dataKey, e.target.value)}
                     disabled={!col.editable}
                     className={cn(
-                      "h-[34px] w-full rounded-[6px] border border-[#d6d7dc] bg-white px-3 text-[13px] outline-none",
-                      "focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)]/15",
-                      !col.editable && "cursor-not-allowed bg-[#f5f6fa] text-[#6b7280]",
+                      "h-[38px] w-full rounded-[6px] border px-3 text-[13px] outline-none transition-colors",
+                      col.editable
+                        ? "editable-field-input border-[#6C5DD3] dark:border-[#6C5DD3] bg-white dark:bg-[#09090b] text-[#111827] dark:text-white focus:ring-2 focus:ring-[#6C5DD3]/20"
+                        : "cursor-not-allowed border-[#d6d7dc] dark:border-[#27272a] bg-[#f5f6fa] dark:bg-[#141417] text-[#6b7280] dark:text-[#6b7280]",
                     )}
                   />
                 </div>
@@ -145,12 +151,13 @@ export function EditPayrollDataDialog({
           </div>
         )}
 
-        <DialogFooter className="pt-2">
+        <DialogFooter className="pt-4 flex flex-col-reverse sm:flex-row gap-2 sm:gap-3">
           <Button
             type="button"
             variant="outline"
             onClick={() => onOpenChange(false)}
             disabled={isSaving}
+            className="w-full sm:w-auto h-[40px] dark:border-[#27272a] dark:bg-[#18181b] dark:text-white dark:hover:bg-[#27272a]"
           >
             Cancel
           </Button>
@@ -158,7 +165,7 @@ export function EditPayrollDataDialog({
             type="button"
             onClick={handleSave}
             disabled={!canSave}
-            className="bg-[var(--primary)] hover:bg-[var(--primary)]"
+            className="w-full sm:w-auto h-[40px] bg-[var(--primary)] text-white hover:bg-[var(--primary)]/90"
           >
             {isSaving ? "Saving..." : "Save"}
           </Button>

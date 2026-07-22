@@ -195,8 +195,8 @@ export function PayrollDetailsSection({
           ) : null}
         </div>
 
-        <div className="flex min-w-0 max-w-full flex-wrap items-start gap-6">
-          <div className="w-[min(100%,200px)] shrink-0 sm:w-[200px]">
+        <div className="flex min-w-0 max-w-full flex-col lg:flex-row flex-wrap items-start gap-4 lg:gap-6">
+          <div className="w-full lg:w-[200px] shrink-0">
             <PurpleFieldLabel required>Fiscal Year:</PurpleFieldLabel>
             <Controller
               name="fiscalYearId"
@@ -259,7 +259,7 @@ export function PayrollDetailsSection({
             />
           </div>
 
-          <div className="w-[min(100%,200px)] shrink-0 sm:w-[200px]">
+          <div className="w-full lg:w-[200px] shrink-0">
             <PurpleFieldLabel required>
               {periodType === "month" ? "Month:" : "Quarter:"}
             </PurpleFieldLabel>
@@ -288,7 +288,7 @@ export function PayrollDetailsSection({
             ) : null}
           </div>
 
-          <div className="w-full min-w-0 shrink-0 sm:w-[min(100%,280px)]">
+          <div className="w-full lg:w-[280px] shrink-0">
             <PurpleFieldLabel>Department:</PurpleFieldLabel>
             <Controller
               name="departmentId"
@@ -318,7 +318,7 @@ export function PayrollDetailsSection({
             ) : null}
           </div>
 
-          <div className="w-full min-w-0 shrink-0 sm:w-[min(100%,280px)]">
+          <div className="w-full lg:w-[280px] shrink-0">
             <PurpleFieldLabel>Employees:</PurpleFieldLabel>
             <Controller
               name="employeeIdsSerialized"
@@ -340,19 +340,19 @@ export function PayrollDetailsSection({
           </div>
         </div>
 
-        <div className="flex min-w-0 max-w-full flex-row flex-wrap items-center justify-start gap-3">
+        <div className="flex w-full lg:w-auto flex-row flex-wrap items-center justify-start gap-2.5 lg:gap-3 pt-2">
           <Button
             type="button"
             disabled={isRowsLoading}
             onClick={handleGetSubmit}
-            className="h-[44px] min-w-[100px] rounded-[8px] border-0 bg-(--primary) px-8 text-[12px] font-medium text-white hover:bg-(--primary) disabled:opacity-70"
+            className="flex-1 lg:flex-none lg:w-auto h-[44px] min-w-[100px] rounded-[8px] border-0 bg-(--primary) px-8 text-[12px] font-medium text-white hover:bg-(--primary) disabled:opacity-70"
           >
             Get
           </Button>
           <Button
             type="button"
             onClick={onDownloadCurrentRows}
-            className="h-[44px] min-w-[120px] rounded-[8px] border-0 bg-(--primary) px-6 text-[12px] font-medium text-white hover:bg-(--primary)/90"
+            className="flex-1 lg:flex-none lg:w-auto h-[44px] min-w-[120px] rounded-[8px] border-0 bg-(--primary) px-6 text-[12px] font-medium text-white hover:bg-(--primary)/90"
           >
             Download
           </Button>
@@ -360,7 +360,7 @@ export function PayrollDetailsSection({
             type="button"
             disabled={activeQueryParams === null}
             onClick={handleDeleteClick}
-            className="h-[44px] min-w-[100px] rounded-[8px] border-0 bg-[#ef4444] px-6 text-[12px] font-medium text-white hover:bg-[#dc2626] disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-[#ef4444] disabled:opacity-100 disabled:hover:bg-[#ef4444]"
+            className="flex-1 lg:flex-none lg:w-auto h-[44px] min-w-[100px] rounded-[8px] border-0 bg-[#ef4444] px-6 text-[12px] font-medium text-white hover:bg-[#dc2626] disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-[#ef4444] disabled:opacity-100 disabled:hover:bg-[#ef4444]"
           >
             Delete
           </Button>
