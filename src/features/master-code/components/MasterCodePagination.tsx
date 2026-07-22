@@ -46,17 +46,20 @@ export function MasterCodePagination({
   })()
 
   return (
-    <div className="mt-4 flex items-center rounded-[6px] bg-white px-5 py-3 shadow-[0_4px_16px_rgba(16,24,40,0.12)]">
-      <div className="ml-auto flex items-center gap-4">
-        <p className="text-[12px] text-[#8f93a1]">Total {totalItems} items</p>
-        <Pagination className="mx-0 w-auto justify-start">
-          <PaginationContent className="gap-2 text-xs">
+    <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-2.5 sm:gap-4 rounded-[8px] bg-white px-3.5 sm:px-5 py-3 shadow-[0_4px_16px_rgba(16,24,40,0.08)] border border-[#e5e7eb] sm:border-transparent">
+      <p className="text-[12px] text-[#8f93a1] whitespace-nowrap font-medium shrink-0">
+        Total <span className="font-semibold text-[#1f2937]">{totalItems}</span> items
+      </p>
+
+      <div className="flex flex-wrap sm:flex-nowrap items-center justify-center sm:justify-end gap-1.5 sm:gap-3 w-full sm:w-auto min-w-0">
+        <Pagination className="mx-0 w-auto justify-center">
+          <PaginationContent className="gap-0.5 sm:gap-1.5 text-xs">
             <PaginationItem>
               <PaginationLink
                 href="#"
                 size="icon"
                 aria-disabled={currentPage === 1}
-                className="inline-flex size-6 items-center justify-center rounded border border-transparent text-[#8f93a1] no-underline hover:bg-[#f5f5f8] data-[active=true]:border-transparent data-[active=true]:bg-transparent data-[active=true]:text-[#8f93a1] data-[active=true]:font-normal [&[aria-disabled=true]]:pointer-events-none [&[aria-disabled=true]]:opacity-40"
+                className="inline-flex size-6 sm:size-7 items-center justify-center rounded border border-transparent text-[#8f93a1] no-underline hover:bg-[#f5f5f8] data-[active=true]:border-transparent data-[active=true]:bg-transparent data-[active=true]:text-[#8f93a1] data-[active=true]:font-normal [&[aria-disabled=true]]:pointer-events-none [&[aria-disabled=true]]:opacity-40"
                 onClick={(event) => {
                   event.preventDefault()
                   if (currentPage === 1) return
@@ -73,7 +76,7 @@ export function MasterCodePagination({
                     href="#"
                     size="icon"
                     isActive={page === currentPage}
-                    className={`inline-flex size-7 items-center justify-center rounded border text-xs no-underline ${
+                    className={`inline-flex size-6 sm:size-7 items-center justify-center rounded border text-xs no-underline ${
                       page === currentPage
                         ? "border-[#d8dae3] bg-white font-medium text-[#1f2937]"
                         : "border-transparent text-[#8f93a1] hover:border-[#d8dae3]"
@@ -88,7 +91,7 @@ export function MasterCodePagination({
                 </PaginationItem>
               ) : (
                 <PaginationItem key={`${page}-${index}`}>
-                  <span className="inline-flex size-7 items-center justify-center text-xs text-[#8f93a1]">
+                  <span className="inline-flex size-5 sm:size-7 items-center justify-center text-xs text-[#8f93a1]">
                     ...
                   </span>
                 </PaginationItem>
@@ -99,7 +102,7 @@ export function MasterCodePagination({
                 href="#"
                 size="icon"
                 aria-disabled={currentPage === totalPages}
-                className="inline-flex size-6 items-center justify-center rounded border border-transparent text-[#8f93a1] no-underline hover:bg-[#f5f5f8] data-[active=true]:border-transparent data-[active=true]:bg-transparent data-[active=true]:text-[#8f93a1] data-[active=true]:font-normal [&[aria-disabled=true]]:pointer-events-none [&[aria-disabled=true]]:opacity-40"
+                className="inline-flex size-6 sm:size-7 items-center justify-center rounded border border-transparent text-[#8f93a1] no-underline hover:bg-[#f5f5f8] data-[active=true]:border-transparent data-[active=true]:bg-transparent data-[active=true]:text-[#8f93a1] data-[active=true]:font-normal [&[aria-disabled=true]]:pointer-events-none [&[aria-disabled=true]]:opacity-40"
                 onClick={(event) => {
                   event.preventDefault()
                   if (currentPage === totalPages) return
@@ -111,10 +114,11 @@ export function MasterCodePagination({
             </PaginationItem>
           </PaginationContent>
         </Pagination>
-        <div className="flex items-center gap-2 text-xs">
+
+        <div className="flex items-center gap-2 text-xs shrink-0">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <div className="ml-3 inline-flex cursor-pointer items-center gap-1 rounded-md border border-[#d8dae3] bg-white px-2 py-1 text-xs text-[#1f2937] shadow-[0_1px_1px_rgba(16,24,40,0.03)] outline-none hover:bg-[#fafafa]">
+              <div className="ml-1 sm:ml-3 inline-flex cursor-pointer items-center gap-1 rounded-md border border-[#d8dae3] bg-white px-2 py-1 text-xs text-[#1f2937] shadow-[0_1px_1px_rgba(16,24,40,0.03)] outline-none hover:bg-[#fafafa] whitespace-nowrap">
                 {pageSize} / page
                 <ChevronDown className="size-3 text-[#8f93a1]" />
               </div>
