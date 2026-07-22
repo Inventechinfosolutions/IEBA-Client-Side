@@ -31,7 +31,7 @@ function checkboxClass(checked: boolean) {
   return `flex size-4.5 shrink-0 items-center justify-center rounded-[6px] border shadow-sm transition-all ${
     checked
       ? "border-[#6C5DD3] bg-[#6C5DD3] text-white"
-      : "border-[#E5E7EB] bg-white text-transparent hover:border-[#D1D5DB]"
+      : "border-[#6C5DD3]! dark:border-[#7566d4]! bg-white dark:bg-[#09090b] text-transparent hover:border-[#6C5DD3]"
   }`
 }
 
@@ -71,7 +71,7 @@ export function JobPoolUsersAssignedTree({
                   onClick={() => onToggleJobPool(jp.id, !poolSelected)}
                   className={checkboxClass(poolSelected)}
                 >
-                  <Check className="size-3.5 stroke-[3]" />
+                  {poolSelected && <Check className="size-3.5 stroke-[3]" />}
                 </button>
               </div>
 
@@ -98,20 +98,22 @@ export function JobPoolUsersAssignedTree({
                       <button
                         key={`${jp.id}-${u.id}`}
                         type="button"
-                        onClick={() => onToggleJobPool(jp.id, !poolSelected)}
-                        className="group relative grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-2 py-1 pl-[60px] pr-5 text-left select-none cursor-pointer hover:bg-[#F9FAFB] transition-colors"
+                        onClick={() => onToggleUser(u.id, jp.id)}
+                        className={`group relative grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 py-1 pl-[60px] pr-5 text-left transition-colors ${
+                          checked ? "bg-[#F3F0FF]" : "hover:bg-[#F9FAFB]"
+                        }`}
                       >
                         <div className="min-w-0 pr-2">
                           <div className="absolute left-6 top-0.5 flex h-full w-8 items-center justify-center">
                             <div className="absolute left-4 top-0 h-full w-[1.5px] bg-[#D1D5DB]" />
                             <div className="absolute left-4 top-1/2 h-[1.5px] w-3 bg-[#D1D5DB]" />
                           </div>
-                          <div className="pl-6 text-[14px] font-normal text-[#111827] whitespace-normal break-words">
+                          <div className="text-[14px] font-normal text-[#111827] whitespace-normal break-words">
                             {label}
                           </div>
                         </div>
                         <div className={checkboxClass(checked)}>
-                          <Check className="size-3.5 stroke-[3]" />
+                          {checked && <Check className="size-3.5 stroke-[3]" />}
                         </div>
                       </button>
                     )

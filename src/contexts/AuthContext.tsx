@@ -36,6 +36,8 @@ import { restoreSessionFromRefreshCookie } from "@/features/auth/utils/restoreSe
 import { isSigningOut, setSigningOut } from "@/features/auth/utils/signOutState"
 import type { AuthContextValue, User } from "./types"
 
+import { useTheme } from "next-themes"
+
 const AuthContext = createContext<AuthContextValue | null>(null)
 const AUTH_SESSION_QUERY_KEY = ["auth", "session"] as const
 
@@ -48,6 +50,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<string | null>(null)
   const [sessionExpired, setSessionExpired] = useState(false)
   const queryClient = useQueryClient()
+  const { setTheme } = useTheme()
+
+  const applyTheme = useCallback((isDark: boolean) => {
+    setTheme(isDark ? "dark" : "light")
+    if (typeof window !== "undefined") {
+      const themeStr = isDark ? "dark" : "light"
+      localStorage.setItem("theme", themeStr)
+      if (isDark) {
+        document.documentElement.classList.add("dark")
+        document.documentElement.style.colorScheme = "dark"
+      } else {
+        document.documentElement.classList.remove("dark")
+        document.documentElement.style.colorScheme = "light"
+      }
+    }
+  }, [setTheme])
 
   if (typeof window !== "undefined") {
     ;(window as Window & { showSessionExpired?: () => void }).showSessionExpired = () => {
@@ -62,6 +80,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const token = getToken()
       const storedUser = getStoredUser()
       if (token && storedUser) {
+        if (storedUser.theme !== undefined) {
+          applyTheme(storedUser.theme)
+        }
         return storedUser
       }
 
@@ -72,6 +93,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const restored = await restoreSessionFromRefreshCookie()
       if (restored) {
         setStoredUser(restored)
+        if (restored.theme !== undefined) {
+          applyTheme(restored.theme)
+        }
         return restored
       }
 
@@ -90,9 +114,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       clearExplicitLogout()
       setError(null)
       setStoredUser(authUser)
+      if (authUser.theme !== undefined) {
+        applyTheme(authUser.theme)
+      }
       queryClient.setQueryData<User | null>(AUTH_SESSION_QUERY_KEY, authUser)
     },
-    [queryClient]
+    [queryClient, applyTheme]
   )
 
   const signIn = useCallback(
@@ -111,12 +138,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         let authUser: User
         try {
           const details = await getUserDetails(result.userId)
+          console.log("DEBUG: getUserDetails response:", details)
+          if (details.theme !== undefined) {
+            console.log("DEBUG: Setting theme to:", details.theme ? "dark" : "light")
+            applyTheme(details.theme)
+          }
           authUser = buildAuthUserFromDetails(
             result.userId,
             result.loginId,
             details
           )
-        } catch {
+        } catch (err) {
+          console.error("DEBUG: Failed to get user details:", err)
           authUser = {
             id: result.userId,
             name: result.loginId.split("@")[0] || result.loginId,
@@ -140,6 +173,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = useCallback(() => {
     setSigningOut(true)
     markExplicitLogout()
+
+    // Reset theme to light mode on logout
+    applyTheme(false)
 
     // Call logout while access token is still in sessionStorage (backend requires Bearer).
     const logoutPromise = logoutRequest()

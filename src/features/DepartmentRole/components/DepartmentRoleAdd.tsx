@@ -452,13 +452,13 @@ export function DepartmentRoleAdd({
         className="fixed inset-0 z-50 overflow-y-auto grid place-items-center bg-transparent border-none shadow-none p-0 left-0 top-0 translate-x-0 translate-y-0 max-w-none w-screen h-screen"
         overlayClassName="bg-black/40"
       >
-        <div className="relative my-8 w-[1000px] max-w-[95vw] bg-white rounded-lg border p-[2%_5%] shadow-lg flex flex-col">
+        <div className="department-role-add-page relative my-8 w-[1000px] max-w-[95vw] bg-white dark:bg-[#18181b] rounded-lg border dark:border-[rgba(108,93,211,0.4)] p-[2%_5%] shadow-lg flex flex-col">
           <DialogClose className="absolute right-6 top-6 cursor-pointer rounded-sm opacity-70 hover:opacity-100">
-            <X className="size-4 text-black" />
+            <X className="size-4 text-black dark:text-[#e4e4e7]" />
           </DialogClose>
 
           <DialogHeader className="flex shrink-0 flex-col gap-3">
-            <DialogTitle className="text-center text-xl text-black">
+            <DialogTitle className="text-center text-xl text-black dark:text-[#f4f4f5]">
               {mode === "edit" ? "Edit Role" : "Add Role"}
             </DialogTitle>
             <div className="flex items-center justify-end gap-2">
@@ -474,7 +474,7 @@ export function DepartmentRoleAdd({
                   />
                   <Label
                     htmlFor="active"
-                    className="cursor-pointer text-sm font-normal text-black"
+                    className="cursor-pointer text-sm font-normal text-black dark:text-[#e4e4e7]"
                   >
                     Active
                   </Label>
@@ -491,7 +491,7 @@ export function DepartmentRoleAdd({
               <Button
                 type="button"
                 variant="outline"
-                className="min-h-[50px] min-w-[98px] border-[#DADADA] bg-[#DADADA] px-5 py-2.5 text-black hover:bg-[#d1d1d1]"
+                className="min-h-[50px] min-w-[98px] border-[#DADADA] dark:border-[rgba(108,93,211,0.5)] bg-[#DADADA] dark:bg-[#09090b] px-5 py-2.5 text-black dark:text-[#e4e4e7] hover:bg-[#d1d1d1]"
                 onClick={() => handleOpenChange(false)}
               >
                 Exit
@@ -511,7 +511,7 @@ export function DepartmentRoleAdd({
               <div className="space-y-4 pt-10 pb-2 pr-1">
                 <div className="grid grid-cols-[1fr_auto_1fr] gap-2 px-1">
                   <div className="min-w-0 space-y-2">
-                    <Label htmlFor="department" className="text-black">
+                    <Label htmlFor="department" className="text-black dark:text-[#e4e4e7]">
                       Department
                     </Label>
                     <Select
@@ -522,7 +522,7 @@ export function DepartmentRoleAdd({
                       <SelectTrigger
                         id="department"
                         className={cn(
-                          "!h-[50px] w-full rounded-md border border-[#e5e5e5] bg-black/[0.04] px-[18px] text-black",
+                          "!h-[50px] w-full rounded-md border border-[#e5e5e5] dark:border-[rgba(108,93,211,0.5)] bg-black/[0.04] dark:bg-[#09090b] px-[18px] text-black dark:text-[#a1a1aa]",
                           form.formState.errors.department &&
                             "border-destructive",
                           "cursor-not-allowed opacity-60"
@@ -546,7 +546,7 @@ export function DepartmentRoleAdd({
                   </div>
                   <div className="w-[62px] shrink-0" aria-hidden />
                   <div className="min-w-0 space-y-2">
-                    <Label htmlFor="roleName" className="text-black">
+                    <Label htmlFor="roleName" className="text-black dark:text-[#e4e4e7]">
                       Role Name
                     </Label>
                     <TitleCaseInput
@@ -554,7 +554,7 @@ export function DepartmentRoleAdd({
                       placeholder="Role Name"
                       disabled={mode === "edit"}
                       className={cn(
-                        "h-[50px] w-full rounded-md border border-[#e5e5e5] bg-white px-[18px] py-1 text-black placeholder:text-muted-foreground",
+                        "h-[50px] w-full rounded-md border border-[#e5e5e5] dark:border-[rgba(108,93,211,0.5)] bg-white dark:bg-[#09090b] px-[18px] py-1 text-black dark:text-[#e4e4e7] placeholder:text-muted-foreground",
                         form.formState.errors.roleName && "border-destructive",
                         mode === "edit" && "cursor-not-allowed opacity-60 bg-black/[0.04]"
                       )}
@@ -616,7 +616,7 @@ export function DepartmentRoleAdd({
                   <Button
                     type="button"
                     variant="outline"
-                    className="min-h-[50px] min-w-[98px] border-[#DADADA] bg-[#DADADA] px-5 py-2.5 text-black hover:bg-[#d1d1d1]"
+                    className="min-h-[50px] min-w-[98px] border-[#DADADA] dark:border-[rgba(108,93,211,0.5)] bg-[#DADADA] dark:bg-[#09090b] px-5 py-2.5 text-black dark:text-[#e4e4e7] hover:bg-[#d1d1d1]"
                     onClick={() => handleOpenChange(false)}
                   >
                     Exit

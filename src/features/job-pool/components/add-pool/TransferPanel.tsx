@@ -38,22 +38,14 @@ export function TransferPanel({
             <span className="flex-1">{title}</span>
             <button
               type="button"
-              onClick={onToggleAll}
-              disabled={isListDisabled || !onToggleAll}
-              className={`flex items-center gap-2 transition-opacity ${
-                isListDisabled ? "cursor-not-allowed! opacity-60" : "cursor-pointer hover:opacity-80"
+              onClick={() => onToggleAll?.()}
+              className={`flex size-[18px] items-center justify-center rounded-[3px] border transition-colors ${
+                allSelected
+                  ? "bg-[#6C5DD3] border-[#6C5DD3] text-white"
+                  : "bg-white dark:bg-[#09090b] border-white/20 dark:border-[#3f3f46]"
               }`}
             >
-              <span className="text-white text-[12px] font-bold">All</span>
-              <div
-                className={`flex size-[18px] items-center justify-center rounded-[5px] border-0 shadow-sm transition-all ${
-                  allSelected
-                    ? "bg-[#6C5DD3] border-[#6C5DD3] text-white"
-                    : "bg-white text-transparent opacity-100 hover:brightness-95"
-                }`}
-              >
-                <Check className="size-3.2 stroke-3" />
-              </div>
+              {allSelected && <Check className="size-3.2 stroke-3 text-white" />}
             </button>
             <span className="text-[14px] font-bold text-white whitespace-nowrap">
               {count}
@@ -91,11 +83,11 @@ export function TransferPanel({
                     disabled={!onToggleAll}
                     className={`flex size-5 items-center justify-center rounded-[6px] border shadow-sm transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 ${
                       allSelected
-                        ? "bg-white border-[#6C5DD3] text-[#6C5DD3]"
-                        : "bg-white border-[#D1D5DB] text-transparent hover:border-[#6C5DD3]/30"
+                        ? "bg-[#6C5DD3] border-[#6C5DD3] text-white"
+                        : "bg-white dark:bg-[#09090b] border-[#D1D5DB] dark:border-[#3f3f46] hover:border-[#6C5DD3]/30"
                     }`}
                   >
-                    <Check className="size-3.2 stroke-3" />
+                    {allSelected && <Check className="size-3.2 stroke-3 text-white" />}
                   </button>
                 </div>
                 
@@ -170,11 +162,11 @@ export function TransferPanel({
                         >
                           {item.code ? (
                             <>
-                              <span className="text-[#6C5DD3] font-bold">({item.code})</span>
-                              <span className={isSelected ? "text-[#6C5DD3]" : (isDisabled ? "text-[#9CA3AF]" : "text-[#111827]")}> - {toTitleCase(item.name)}</span>
+                              <span className="text-[#6C5DD3] dark:text-[#a78bfa] font-bold">({item.code})</span>
+                              <span className={isSelected ? "text-[#6C5DD3] dark:text-[#a78bfa]" : (isDisabled ? "text-[#9CA3AF] dark:text-[#71717a]" : "text-[#111827] dark:text-[#e4e4e7]")}> - {toTitleCase(item.name)}</span>
                             </>
                           ) : (
-                            <span className={isSelected ? "text-[#6C5DD3]" : (isDisabled ? "text-[#9CA3AF]" : "text-[#374151]")}>{toTitleCase(item.name)}</span>
+                            <span className={isSelected ? "text-[#6C5DD3] dark:text-[#a78bfa]" : (isDisabled ? "text-[#9CA3AF] dark:text-[#71717a]" : "text-[#374151] dark:text-[#e4e4e7]")}>{toTitleCase(item.name)}</span>
                           )}
                         </span>
                       )}
@@ -184,10 +176,10 @@ export function TransferPanel({
                       className={`flex size-5 shrink-0 items-center justify-center rounded-[6px] border shadow-sm transition-all mt-0.5 ${
                         isSelected
                           ? "bg-[#6C5DD3] border-[#6C5DD3] text-white"
-                          : `bg-white border-[#D1D5DB] text-transparent ${isDisabled ? "bg-[#F3F4F6]" : "hover:border-[#6C5DD3]/30"}`
+                          : `bg-white dark:bg-[#09090b] border-[#D1D5DB] dark:border-[#3f3f46] ${isDisabled ? "bg-[#F3F4F6] dark:bg-[#27272a]" : "hover:border-[#6C5DD3]/30"}`
                       }`}
                     >
-                      <Check className="size-3.2 stroke-3" />
+                      {isSelected && <Check className="size-3.2 stroke-3 text-white" />}
                     </div>
                   </button>
                 )

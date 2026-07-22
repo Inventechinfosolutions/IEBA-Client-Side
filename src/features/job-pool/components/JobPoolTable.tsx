@@ -299,9 +299,9 @@ export function JobPoolTable({
                       {row.jobClassifications.map((tag, idx) => (
                         <span
                           key={idx}
-                          className={`inline-flex items-center rounded-[7px] bg-[#f8f9fa] px-1.5 py-0.5 text-[10px] text-[#232735] ${tag.status?.toLowerCase() === "inactive"
+                          className={`inline-flex items-center rounded-[7px] bg-[#f8f9fa] dark:bg-[#1c192d] px-1.5 py-0.5 text-[10px] text-[#232735] dark:text-[#e4e4e7] ${tag.status?.toLowerCase() === "inactive"
                             ? "border border-red-300"
-                            : "border border-[#d8dae3]"
+                            : "border border-[#d8dae3] dark:border-[rgba(108,93,211,0.5)]!"
                             }`}
                         >
                           {tag.name}
@@ -325,9 +325,9 @@ export function JobPoolTable({
                             <span
                               key={u.id}
                               title={u.label}
-                              className={`inline-flex items-center justify-center rounded-[7px] border bg-[#f8f9fa] px-1.5 py-0.5 text-[10px] text-[#232735] w-[calc(50%-4px)] text-center ${u.status?.toLowerCase() === "inactive"
+                              className={`inline-flex items-center justify-center rounded-[7px] border bg-[#f8f9fa] dark:bg-[#1c192d] px-1.5 py-0.5 text-[10px] text-[#232735] dark:text-[#e4e4e7] w-[calc(50%-4px)] text-center ${u.status?.toLowerCase() === "inactive"
                                 ? "border-red-400"
-                                : "border-[#d8dae3]"
+                                : "border-[#d8dae3] dark:border-[rgba(108,93,211,0.5)]!"
                                 }`}
                             >
                               {u.label}

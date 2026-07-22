@@ -204,11 +204,11 @@ export function DepartmenRoleTable({
                               <MoreVerticalIcon className="size-4" />
                             </Button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="min-w-[120px]">
+                          <DropdownMenuContent align="end" className="min-w-[120px] bg-white dark:bg-[#18181b] border border-[#e5e5e5] dark:border-[rgba(108,93,211,0.4)]">
                             {canAddRole && (
                               <DropdownMenuItem
                                 onClick={() => onOptionAction?.(row.id, "add")}
-                                className="cursor-pointer text-black focus:text-black"
+                                className="cursor-pointer text-black dark:text-[#e4e4e7] focus:bg-[#EBF5FF] dark:focus:bg-[#2a1f52] focus:text-black dark:focus:text-[#e4e4e7]"
                               >
                                 <PlusIcon className="mr-2 size-4 text-[rgb(108,93,211)]" />
                                 Add
@@ -216,7 +216,7 @@ export function DepartmenRoleTable({
                             )}
                             <DropdownMenuItem
                               onClick={() => onOptionAction?.(row.id, "delete")}
-                              className="cursor-pointer text-black focus:text-black"
+                              className="cursor-pointer text-black dark:text-[#e4e4e7] focus:bg-[#EBF5FF] dark:focus:bg-[#2a1f52] focus:text-black dark:focus:text-[#e4e4e7]"
                             >
                               <Trash2Icon className="mr-2 size-4 text-[rgb(108,93,211)]" />
                               Delete

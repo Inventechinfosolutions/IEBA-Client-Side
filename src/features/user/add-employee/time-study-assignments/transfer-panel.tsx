@@ -46,10 +46,10 @@ function RowCheckbox({ isSelected, readOnly, hideCheckbox }: { isSelected: boole
     <div
       className={`flex size-4.5 shrink-0 items-center justify-center rounded-[6px] border shadow-sm transition-all ${isSelected
           ? "border-[#6C5DD3] bg-[#6C5DD3] text-white"
-          : "border-[#E5E7EB] bg-white text-transparent hover:border-[#D1D5DB]"
+          : "border-[#E5E7EB] bg-white dark:bg-[#09090b] dark:border-[#3f3f46] hover:border-[#D1D5DB]"
         }`}
     >
-      <Check className="size-3.5 stroke-3" />
+      {isSelected && <Check className="size-3.5 stroke-3" />}
     </div>
   )
 }
@@ -70,7 +70,7 @@ function RowLabel({
   isSelected: boolean
   readOnly?: boolean
 }) {
-  const nameColorClass = readOnly ? "text-[#111827]" : isSelected ? "text-[#6C5DD3]" : "text-[#111827]"
+  const nameColorClass = readOnly ? "text-[#111827] dark:text-[#a1a1aa]" : isSelected ? "text-[#6C5DD3] dark:text-[#a78bfa]" : "text-[#111827] dark:text-[#a1a1aa]"
   const displayName = truncateLabelName(item.name)
   const showFullNameTooltip = item.name.length > ROW_NAME_MAX_LENGTH
 
@@ -81,7 +81,7 @@ function RowLabel({
           ({item.code}
           {item.isMultiCode ? "**" : ""})
         </span>
-        <span className="shrink-0 font-bold text-[#111827]"> — </span>
+        <span className="shrink-0 font-bold text-[#111827] dark:text-[#a1a1aa]"> — </span>
         <span
           className={`min-w-0 ${nameColorClass}`}
           title={showFullNameTooltip ? item.name : undefined}
@@ -214,7 +214,7 @@ function TransferRow({
     <button
       type="button"
       onClick={onToggle}
-      className={`group relative z-0 flex w-full cursor-pointer items-center justify-between py-0.5 pr-3 text-left transition-colors ${isSelected ? "bg-[#F3F0FF]" : "hover:bg-[#F9FAFB]"
+      className={`group relative z-0 flex w-full cursor-pointer items-center justify-between py-0.5 pr-3 text-left transition-colors ${isSelected ? "bg-[#F3F0FF] dark:bg-[#1e1650]" : "hover:bg-[#F9FAFB] dark:hover:bg-[#16113a]"
         }`}
     >
       {rowBody}
@@ -416,12 +416,12 @@ export function TransferPanel({
                     type="button"
                     onClick={onToggleAll}
                     className={`flex size-4.5 shrink-0 items-center justify-center rounded-[6px] border shadow-sm transition-all ${allSelected
-                        ? "border-[#6C5DD3] bg-white text-[#6C5DD3]"
-                        : "border-[#E5E7EB] bg-white text-transparent hover:border-[#D1D5DB]"
+                        ? "border-[#6C5DD3] bg-[#6C5DD3] text-white"
+                        : "border-[#E5E7EB] bg-white dark:bg-[#09090b] dark:border-[#3f3f46] hover:border-[#D1D5DB]"
                       }`}
                     aria-label={`Toggle all ${selectedDept}`}
                   >
-                    <Check className="size-3.5 stroke-3" />
+                    {allSelected && <Check className="size-3.5 stroke-3" />}
                   </button>
                 </div>
 

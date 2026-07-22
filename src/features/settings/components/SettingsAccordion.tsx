@@ -77,7 +77,7 @@ export function SettingsAccordion({
                 <span className="min-w-[160px] text-left text-[12px] font-bold text-[var(--primary)]">
                   {section}
                 </span>
-                <span className="h-0 flex-1 border-t-2 border-[#d8d9dc]" />
+                <span className="h-0.5 flex-1 bg-[#d8d9dc] dark:bg-[#3f3f46]" />
                 <span className="inline-flex size-6 items-center justify-center rounded-full border-2 border-[var(--primary)] bg-white text-[var(--primary)]">
                   <ChevronLeft
                     strokeWidth={3}

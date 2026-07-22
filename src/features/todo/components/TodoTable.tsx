@@ -196,7 +196,7 @@ export function TodoTable({
                     </TableCell>
                     <TableCell className="h-[35px] w-[120px] border-r border-[#eff0f5] px-3 py-1 align-middle text-center">
                       <span
-                        className={`inline-flex h-[20px] min-w-[53px] items-center justify-center rounded-[8px] border px-1.5 text-center text-[11px] ${getStatusPillClasses(
+                        className={`status-pill status-${row.status} inline-flex h-[20px] min-w-[53px] items-center justify-center rounded-[8px] border px-1.5 text-center text-[11px] ${getStatusPillClasses(
                           row.status
                         )}`}
                       >
