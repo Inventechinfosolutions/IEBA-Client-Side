@@ -71,14 +71,11 @@ export function enrichCountyActivityDetailDto(activity: ApiActivityResDto): ApiA
   const linkByDeptId = new Map(
     (activity.activityDepartments ?? []).map((link) => [link.departmentId, link]),
   )
-  const { apportioning, manualApportioning } = normalizeCountyActivityApportioningFlags(
-    activity.apportioning,
-  )
 
   return {
     ...activity,
-    apportioning,
-    manualApportioning,
+    apportioning: activity.apportioning === true,
+    manualApportioning: activity.manualApportioning === true,
     assignedDepartments: (activity.assignedDepartments ?? []).map((dept) =>
       enrichCountyActivityShuttleDepartment(dept, linkByDeptId),
     ),
@@ -445,9 +442,8 @@ export function mapCountyActivityListItemToGridRow(
     leaveCode: dto.leavecode,
     docRequired: dto.docrequired,
     multipleJobPools: dto.isActivityAssignableToMultipleJobPools,
-    apportioning: dto.apportioning || false,
-    manualApportioning: normalizeCountyActivityApportioningFlags(dto.apportioning || false)
-      .manualApportioning,
+    apportioning: dto.apportioning === true,
+    manualApportioning: dto.manualApportioning === true,
     apportioningDepartments,
     rowType: isPrimary ? CountyActivityGridRowType.PRIMARY : CountyActivityGridRowType.SUB,
     parentId:

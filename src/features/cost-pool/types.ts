@@ -1,8 +1,8 @@
 import type { UseFormReturn } from "react-hook-form"
 
-import type { CostPoolStatus, CostPoolUpsertMode } from "./enums/cost-pool.enum"
+import type { CostPoolStatus, CostPoolUpsertMode, CostPoolType } from "./enums/cost-pool.enum"
 
-export type { CostPoolStatus, CostPoolUpsertMode }
+export type { CostPoolStatus, CostPoolUpsertMode, CostPoolType }
 
 /** API: `PaginationMetaDto` */
 export type CostPoolPaginationMetaDto = {
@@ -44,9 +44,8 @@ export type CostPoolResDto = {
   status: CostPoolStatus
   departmentId: number
   department?: CostPoolDepartmentResDto
-  /** Mapped activities returned on the cost-pool list payload. */
   activities?: CostPoolActivitySummaryResDto[]
-  assignmentType?: string | null
+  type?: CostPoolType | null
   createdAt?: string
   updatedAt?: string
 }
@@ -128,7 +127,7 @@ export type CostPoolRow = {
   /** Display labels for activities mapped to this cost pool (e.g. "Admin-VET - Veterans"). */
   activities: CostPoolActivitySummaryResDto[]
   active: boolean
-  assignmentType?: string | null
+  type?: CostPoolType | null
 }
 
 export type CostPoolFilterFormValues = {
