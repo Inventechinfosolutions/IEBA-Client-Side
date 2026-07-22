@@ -75,6 +75,8 @@ function ExpandButton({
   )
 }
 
+import { ProgramActivityRelationHistoryCardView } from "./ProgramActivityRelationHistoryCardView"
+
 export function ProgramActivityRelationHistoryTable({
   programCode = "",
   activityCode = "",
@@ -107,7 +109,8 @@ export function ProgramActivityRelationHistoryTable({
 
   return (
     <div className="flex flex-col gap-4 pt-3">
-      <div className="overflow-hidden rounded-[10px] border border-[#E5E7EB]">
+      {/* Desktop Table View */}
+      <div className="hidden xl:block overflow-hidden rounded-[10px] border border-[#E5E7EB]">
         <div className="relative overflow-x-auto">
           {isDataLoading && historyData.length === 0 && (
             <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/60">
@@ -224,6 +227,14 @@ export function ProgramActivityRelationHistoryTable({
           </Table>
         </div>
       </div>
+
+      {/* Mobile/Tablet Card View */}
+      <ProgramActivityRelationHistoryCardView
+        historyData={historyData}
+        isLoading={isDataLoading}
+        expandedRowIds={expandedRowIds}
+        onToggleRow={toggleRow}
+      />
 
       {!isDataLoading && totalItems > 0 && (
         <MasterCodePagination
