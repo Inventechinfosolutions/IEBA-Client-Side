@@ -13,7 +13,7 @@ export type TodoStatus = TodoStatusEnum
 
 export const TODO_STATUS_LABEL: Record<TodoStatusEnum, string> = {
   [TodoStatusEnum.NEW]: "New",
-  [TodoStatusEnum.INPROGRESS]: "In progress",
+  [TodoStatusEnum.INPROGRESS]: "In Progress",
   [TodoStatusEnum.COMPLETED]: "Completed",
 }
 
