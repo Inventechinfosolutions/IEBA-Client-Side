@@ -292,13 +292,13 @@ export function CountyActivityCodeCardView({
                       <button
                         type="button"
                         onClick={() => onToggleExpand(rowIdStr)}
-                        className="shrink-0 size-7 cursor-pointer rounded-[6px] text-white bg-transparent hover:bg-white/20 p-1 transition-colors flex items-center justify-center"
+                        className="shrink-0 size-7 cursor-pointer rounded-[6px] text-white bg-white/15 hover:bg-white/25 p-1 transition-colors flex items-center justify-center"
                         title={isExpanded ? "Collapse sub-activities" : "Expand sub-activities"}
                       >
                         {isExpanded ? (
-                          <ChevronDown className="size-5" />
+                          <ChevronDown className="size-4.5" />
                         ) : (
-                          <ChevronRight className="size-5" />
+                          <ChevronRight className="size-4.5" />
                         )}
                       </button>
                     )}
@@ -312,7 +312,7 @@ export function CountyActivityCodeCardView({
                               <button
                                 type="button"
                                 onClick={() => onEdit(row)}
-                                className="shrink-0 size-7 cursor-pointer rounded-[6px] text-white bg-transparent hover:bg-white/20 p-1 transition-colors flex items-center justify-center"
+                                className="shrink-0 size-7 cursor-pointer rounded-[6px] text-white bg-white/15 hover:bg-white/25 p-1 transition-colors flex items-center justify-center"
                                 aria-label="View Activity"
                               >
                                 <Eye className="size-[14px]" />
@@ -335,7 +335,7 @@ export function CountyActivityCodeCardView({
                             e.stopPropagation()
                             onEdit(row)
                           }}
-                          className="shrink-0 size-7 cursor-pointer rounded-[6px] text-white bg-transparent hover:bg-white/20 p-1 transition-colors flex items-center justify-center"
+                          className="shrink-0 size-7 cursor-pointer rounded-[6px] text-white bg-white/15 hover:bg-white/25 p-1 transition-colors flex items-center justify-center"
                           aria-label="Edit Activity"
                         >
                           <img
