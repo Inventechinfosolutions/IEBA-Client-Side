@@ -114,12 +114,20 @@ export function MasterCodePage() {
 
   const handleToggleMultiCodes = () => {
     if (masterCodes.selectedTenantMaster != null) {
+      const willEnable = !masterCodes.selectedTenantMaster.allowMulticode
       masterCodes.updateTenantMaster(
         {
           id: masterCodes.selectedTenantMaster.id,
-          body: { allowMulticode: !masterCodes.selectedTenantMaster.allowMulticode },
+          body: { allowMulticode: willEnable },
         },
         {
+          onSuccess: () =>
+            toast.success(
+              willEnable
+                ? "Allow Multi Codes enabled successfully"
+                : "Allow Multi Codes disabled successfully",
+              successToastOptions,
+            ),
           onError: (error: Error) =>
             toast.error(error.message),
         }

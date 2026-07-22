@@ -48,9 +48,12 @@ export function mergeDepartmentDetail(prev: Department | undefined, fresh: Depar
         : fresh.billingContact,
     settings: {
       ...fresh.settings,
-      multiCodes: fresh.settings.multiCodes?.trim()
-        ? fresh.settings.multiCodes
-        : (prev.settings.multiCodes ?? fresh.settings.multiCodes),
+      multiCodes:
+        fresh.settings.allowMultiCodes === false
+          ? ""
+          : fresh.settings.multiCodes !== undefined
+            ? fresh.settings.multiCodes
+            : (prev.settings.multiCodes ?? fresh.settings.multiCodes),
     },
   }
 }
