@@ -1,10 +1,9 @@
 import React from "react"
 import { ChevronDown, ChevronRight, Check, X, Eye } from "lucide-react"
+
 import editIconImg from "@/assets/edit-icon.png"
-import statusCheckImg from "@/assets/status-check.png"
-import statusCrossImg from "@/assets/status-cross.png"
 import tableEmptyIcon from "@/assets/icons/table-empty.png"
-import { Spinner } from "@/components/ui/spinner"
+import { Skeleton } from "@/components/ui/skeleton"
 import {
   Tooltip,
   TooltipContent,
@@ -38,13 +37,11 @@ function stripHtmlTags(html: string): string {
     .trim()
 }
 
-function StatusIcon({ value }: { value: boolean | undefined | null }) {
-  return (
-    <img
-      src={value ? statusCheckImg : statusCrossImg}
-      alt={value ? "Yes" : "No"}
-      className="h-4 w-4 object-contain"
-    />
+function AttributeCheck({ value }: { value: boolean | undefined | null }) {
+  return value ? (
+    <Check className="size-3 text-emerald-600 dark:text-emerald-400" />
+  ) : (
+    <X className="size-3 text-rose-600 dark:text-rose-400" />
   )
 }
 
@@ -62,172 +59,153 @@ function CountyActivityCardSubRows({
 
   if (query.isLoading) {
     return (
-      <div className="p-4 bg-[#F6F5FF] dark:bg-[#13141a] border-t border-[#E5E7EB] dark:border-[#27272a] flex items-center justify-center">
-        <Spinner className="size-5 text-[#6C5DD3]" />
+      <div className="p-3 space-y-2 animate-pulse rounded-lg bg-purple-50/40 dark:bg-zinc-900/40">
+        <Skeleton className="h-3.5 w-1/2 rounded" />
+        <Skeleton className="h-3.5 w-3/4 rounded" />
       </div>
     )
   }
 
   if (children.length === 0) {
     return (
-      <div className="p-4 bg-[#F6F5FF] dark:bg-[#13141a] border-t border-[#E5E7EB] dark:border-[#27272a] text-center text-[12px] text-gray-500">
+      <div className="p-3 text-center text-[12px] text-gray-500 dark:text-zinc-400">
         No sub-activities found
       </div>
     )
   }
 
   return (
-    <div className="bg-[#F6F5FF] dark:bg-[#13141a] border-t border-[#E5E7EB] dark:border-[#27272a] p-3 space-y-3">
-      <div className="text-[11px] font-bold uppercase tracking-wider text-[#6C5DD3] dark:text-[#a78bfa] px-1">
-        Sub-County Activity Codes ({children.length})
-      </div>
-      {children.map((child) => {
+    <div className="space-y-3">
+      {children.map((child, idx) => {
         const cleanChildDesc = stripHtmlTags(child.description || "")
+        const childTitle = child.countyActivityCode
+          ? `${child.countyActivityCode} - ${child.countyActivityName}`
+          : child.countyActivityName
+
         return (
           <div
-            key={`sub-card-${child.id}`}
-            className="rounded-[10px] border border-[#E5E7EB] dark:border-[#27272a] bg-white dark:bg-[#0c0d12] shadow-xs overflow-hidden"
+            key={`sub-card-${child.id}-${idx}`}
+            className="rounded-[10px] border border-purple-200 dark:border-purple-900/60 bg-purple-50/30 dark:bg-zinc-900/40 shadow-sm overflow-hidden text-[13px] flex flex-col"
           >
-            {/* Header / Top row of Sub Activity */}
-            <div className="bg-[#7C6BDD] px-3.5 py-2.5 text-white flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2 min-w-0">
-                <span className="font-bold text-[13px] tracking-wide bg-white/20 px-2.5 py-0.5 rounded-[5px] text-white shrink-0">
-                  {child.countyActivityCode || "—"}
+            {/* Child Header */}
+            <div className="flex items-center justify-between bg-purple-700 dark:bg-purple-800 px-3 py-1.5 text-white gap-2">
+              <span className="font-semibold text-[11px] sm:text-[12px] leading-tight whitespace-normal break-words flex-1 min-w-0">
+                {childTitle}
+              </span>
+              {canUpdateCountyActivity && (
+                child.apportioning === true && child.manualApportioning === true ? (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          onClick={() => onEditRow(child)}
+                          className="shrink-0 size-7 cursor-pointer rounded-[6px] text-white bg-transparent hover:bg-white/20 p-1 transition-colors flex items-center justify-center"
+                          aria-label="View Sub-Activity"
+                        >
+                          <Eye className="size-[14px]" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent
+                        side="top"
+                        align="center"
+                        sideOffset={6}
+                        className="z-50 rounded-[8px] border-0 bg-black px-3 py-2 text-left text-[12px] font-medium leading-relaxed text-white shadow-lg"
+                      >
+                        Auto-created manual activity cannot be modified
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => onEditRow(child)}
+                    className="shrink-0 size-7 cursor-pointer rounded-[6px] text-white bg-transparent hover:bg-white/20 p-1 transition-colors flex items-center justify-center"
+                    aria-label="Edit Sub-Activity"
+                  >
+                    <img
+                      src={editIconImg}
+                      alt="Edit"
+                      aria-hidden="true"
+                      className="size-[14px] object-contain brightness-0 invert"
+                    />
+                  </button>
+                )
+              )}
+            </div>
+
+            {/* Child Body */}
+            <div className="p-3 space-y-2 bg-white dark:bg-[#0c0d12]">
+              {/* Row 1: Status */}
+              <div className="flex justify-between items-center pb-2 border-b border-gray-100 dark:border-zinc-800 text-[12px]">
+                <span className="text-[#6B7280] dark:text-[#9ca3af] font-bold uppercase text-[10px] tracking-wider">
+                  Status:
                 </span>
-              </div>
-              <div className="flex items-center gap-2 shrink-0">
                 <span
-                  className={`text-[10px] font-semibold px-2 py-0.5 rounded-full inline-flex items-center gap-1 ${
+                  className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${
                     child.active
-                      ? "bg-emerald-500/20 text-emerald-100 border border-emerald-400/30"
-                      : "bg-rose-500/20 text-rose-100 border border-rose-400/30"
+                      ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
+                      : "bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-200 dark:border-rose-800"
                   }`}
                 >
                   {child.active ? (
-                    <>
-                      <Check className="size-3" /> Active
-                    </>
+                    <Check className="size-2.5 text-emerald-600 dark:text-emerald-400" />
                   ) : (
-                    <>
-                      <X className="size-3" /> Inactive
-                    </>
+                    <X className="size-2.5 text-rose-600 dark:text-rose-400" />
                   )}
+                  {child.active ? "Active" : "Inactive"}
                 </span>
-
-                {canUpdateCountyActivity && (
-                  child.apportioning === true && child.manualApportioning === true ? (
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <button
-                            type="button"
-                            onClick={() => onEditRow(child)}
-                            className="p-1 hover:bg-white/20 rounded-[4px] transition-colors text-white cursor-pointer"
-                            title="Auto-created manual activity cannot be modified"
-                          >
-                            <Eye className="size-3.5" />
-                          </button>
-                        </TooltipTrigger>
-                        <TooltipContent
-                          side="top"
-                          align="center"
-                          sideOffset={6}
-                          className="z-50 rounded-[8px] border-0 bg-black px-3 py-2 text-left text-[12px] font-medium leading-relaxed text-white shadow-lg"
-                        >
-                          Auto-created manual activity cannot be modified
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => onEditRow(child)}
-                      className="p-1 hover:bg-white/20 rounded-[4px] transition-colors cursor-pointer"
-                      title="Edit Sub-Activity"
-                    >
-                      <img src={editIconImg} alt="Edit" className="size-3.5 object-contain brightness-200" />
-                    </button>
-                  )
-                )}
-              </div>
-            </div>
-
-            {/* Sub Activity Body / Fields */}
-            <div className="p-3.5 space-y-3 text-[12px]">
-              {/* Activity Name */}
-              <div className="space-y-0.5">
-                <div className="text-[10px] font-bold uppercase tracking-wider text-[#1F2937] dark:text-[#f4f4f5]">
-                  Activity Name
-                </div>
-                <div className="text-[13px] font-medium text-[#4B5563] dark:text-[#d4d4d8] leading-snug break-words">
-                  {child.countyActivityName || "—"}
-                </div>
               </div>
 
-              {/* Description Field */}
-              <div className="space-y-0.5">
-                <div className="text-[10px] font-bold uppercase tracking-wider text-[#1F2937] dark:text-[#f4f4f5]">
-                  Description
-                </div>
-                <div className="text-[12px] font-normal text-[#6B7280] dark:text-[#9ca3af] leading-relaxed whitespace-normal break-words">
-                  {cleanChildDesc || "—"}
-                </div>
+              {/* Row 2: Department */}
+              <div className="flex justify-between items-start pb-2 border-b border-gray-100 dark:border-zinc-800 text-[12px] gap-2">
+                <span className="text-[#6B7280] dark:text-[#9ca3af] font-bold uppercase text-[10px] tracking-wider shrink-0">
+                  Department:
+                </span>
+                <span className="font-medium text-[#111827] dark:text-[#e5e7eb] text-right break-words max-w-[70%]">
+                  {child.department || "—"}
+                </span>
               </div>
 
-              {/* Attributes Grid for Sub-Activity */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-3 gap-y-2.5 pt-2.5 border-t border-[#F3F4F6] dark:border-[#27272a]">
-                <div>
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-[#1F2937] dark:text-[#f4f4f5]">
-                    Leave Code
-                  </div>
-                  <div className="mt-0.5">
-                    <StatusIcon value={child.leaveCode} />
-                  </div>
+              {/* Row 3: Description */}
+              {cleanChildDesc ? (
+                <div className="flex flex-col gap-0.5 pb-2 border-b border-gray-100 dark:border-zinc-800 text-[12px]">
+                  <span className="text-[#6B7280] dark:text-[#9ca3af] font-bold uppercase text-[10px] tracking-wider">
+                    Description:
+                  </span>
+                  <span className="font-medium text-[#111827] dark:text-[#e5e7eb] break-words">
+                    {cleanChildDesc}
+                  </span>
                 </div>
+              ) : null}
 
-                <div>
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-[#1F2937] dark:text-[#f4f4f5]">
-                    Multi Job Pools
-                  </div>
-                  <div className="mt-0.5">
-                    <StatusIcon value={child.multipleJobPools} />
-                  </div>
+              {/* Row 4: Key Attributes */}
+              <div className="grid grid-cols-2 gap-2 pt-1 text-[11px]">
+                <div className="flex justify-between items-center pb-1 border-b border-gray-100 dark:border-zinc-800">
+                  <span className="text-[#6B7280] dark:text-[#9ca3af] font-bold uppercase text-[9px] tracking-wider">
+                    Leave Code:
+                  </span>
+                  <AttributeCheck value={child.leaveCode} />
                 </div>
-
-                <div>
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-[#1F2937] dark:text-[#f4f4f5]">
-                    SPMP
-                  </div>
-                  <div className="mt-0.5">
-                    <StatusIcon value={false} />
-                  </div>
+                <div className="flex justify-between items-center pb-1 border-b border-gray-100 dark:border-zinc-800">
+                  <span className="text-[#6B7280] dark:text-[#9ca3af] font-bold uppercase text-[9px] tracking-wider">
+                    Multi Job Pools:
+                  </span>
+                  <AttributeCheck value={child.multipleJobPools} />
                 </div>
-
-                <div>
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-[#1F2937] dark:text-[#f4f4f5]">
-                    Match
-                  </div>
-                  <div className="mt-0.5">
-                    <StatusIcon value={false} />
-                  </div>
+                <div className="flex justify-between items-center pb-1 border-b border-gray-100 dark:border-zinc-800">
+                  <span className="text-[#6B7280] dark:text-[#9ca3af] font-bold uppercase text-[9px] tracking-wider">
+                    SPMP:
+                  </span>
+                  <AttributeCheck value={child.spmp} />
                 </div>
-
-                <div>
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-[#1F2937] dark:text-[#f4f4f5]">
-                    %
-                  </div>
-                  <div className="mt-0.5">
-                    <StatusIcon value={false} />
-                  </div>
-                </div>
-
-                <div>
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-[#1F2937] dark:text-[#f4f4f5]">
-                    Apportioning
-                  </div>
-                  <div className="mt-0.5 text-[12px] font-normal text-[#6B7280] dark:text-[#9ca3af]">
-                    --
-                  </div>
+                <div className="flex justify-between items-center pb-1 border-b border-gray-100 dark:border-zinc-800">
+                  <span className="text-[#6B7280] dark:text-[#9ca3af] font-bold uppercase text-[9px] tracking-wider">
+                    Match %:
+                  </span>
+                  <span className="font-medium text-[#111827] dark:text-[#e5e7eb]">
+                    {typeof child.percentage === "number" ? child.percentage.toFixed(2) : "0.00"}%
+                  </span>
                 </div>
               </div>
             </div>
@@ -251,21 +229,19 @@ export function CountyActivityCodeCardView({
     <div className="block xl:hidden space-y-4 w-full min-w-0">
       {isLoading ? (
         <div className="grid grid-cols-1 gap-4">
-          {Array.from({ length: 4 }).map((_, idx) => (
+          {Array.from({ length: 3 }).map((_, idx) => (
             <div
               key={`county-card-skeleton-${idx}`}
               className="rounded-[12px] border border-gray-200 dark:border-[#27272a] bg-white dark:bg-[#0c0d12] overflow-hidden animate-pulse"
             >
-              <div className="h-12 bg-[#6C5DD3] px-5 py-3 flex justify-between items-center">
+              <div className="h-11 bg-[#6C5DD3] px-4 py-3 flex justify-between items-center">
                 <div className="h-4 w-1/3 rounded bg-white/40" />
-                <div className="h-5 w-16 rounded bg-white/40" />
+                <div className="h-4 w-16 rounded bg-white/40" />
               </div>
-              <div className="p-5 space-y-4">
-                <div className="h-4 w-3/4 rounded bg-gray-200 dark:bg-zinc-800" />
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
-                  <div className="h-16 rounded bg-gray-200 dark:bg-zinc-800" />
-                  <div className="h-16 rounded bg-gray-200 dark:bg-zinc-800" />
-                  <div className="h-16 rounded bg-gray-200 dark:bg-zinc-800" />
+              <div className="p-4 space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="h-3 w-1/2 rounded bg-gray-200 dark:bg-zinc-800" />
+                  <div className="h-3 w-1/2 rounded bg-gray-200 dark:bg-zinc-800" />
                 </div>
               </div>
             </div>
@@ -275,7 +251,7 @@ export function CountyActivityCodeCardView({
         <div className="rounded-[12px] border border-[#E5E7EB] dark:border-[#27272a] bg-white dark:bg-[#0c0d12] p-8 text-center flex flex-col items-center justify-center min-h-[160px] w-full">
           <img
             src={tableEmptyIcon}
-            alt="No data"
+            alt="No county activity codes found"
             aria-hidden="true"
             className="mx-auto h-[73px] w-[82px] object-contain opacity-80"
           />
@@ -285,223 +261,209 @@ export function CountyActivityCodeCardView({
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4">
-          {data.map((row) => {
+          {data.map((row, idx) => {
             const rowIdStr = String(row.id)
             const isExpanded = Boolean(expandedParentIds[rowIdStr])
             const cleanDesc = stripHtmlTags(row.description || "")
             const masterCodeDisplay = row.catalogActivityCode || (row.masterCode > 0 ? String(row.masterCode) : "—")
+            const cardTitle = row.countyActivityCode
+              ? `${row.countyActivityCode} - ${row.countyActivityName}`
+              : row.countyActivityName
 
             return (
               <div
-                key={`county-card-${row.id}`}
-                className="rounded-[12px] border border-[#E5E7EB] dark:border-[#27272a] bg-white dark:bg-[#0c0d12] shadow-sm hover:shadow-md transition-all overflow-hidden w-full min-w-0"
+                key={`county-card-${row.id}-${idx}`}
+                className="history-card rounded-[12px] border border-[#E5E7EB] dark:border-[rgba(108,93,211,0.55)] bg-white dark:bg-[#0c0d12] shadow-sm overflow-hidden text-[13px] text-[#111827] dark:text-white flex flex-col"
               >
-                {/* Header */}
-                <div className="bg-[#6C5DD3] px-4 py-3 text-white flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <span className="font-bold text-[14px] tracking-wide bg-white/20 px-2.5 py-1 rounded-[6px] text-white shrink-0">
-                      {row.countyActivityCode || "—"}
-                    </span>
-                  </div>
+                {/* Level 0 Header */}
+                <div className="flex items-center justify-between bg-[#6C5DD3] px-3.5 py-1.5 text-white gap-2">
+                  <span className="font-semibold text-[12px] sm:text-[13px] leading-tight whitespace-normal break-words flex-1 min-w-0">
+                    {cardTitle}
+                  </span>
+                  {canUpdateCountyActivity && (
+                    row.apportioning === true && row.manualApportioning === true ? (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button
+                              type="button"
+                              onClick={() => onEdit(row)}
+                              className="shrink-0 size-7 cursor-pointer rounded-[6px] text-white bg-transparent hover:bg-white/20 p-1 transition-colors flex items-center justify-center"
+                              aria-label="View Activity"
+                            >
+                              <Eye className="size-[14px]" />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent
+                            side="top"
+                            align="center"
+                            sideOffset={6}
+                            className="z-50 rounded-[8px] border-0 bg-black px-3 py-2 text-left text-[12px] font-medium leading-relaxed text-white shadow-lg"
+                          >
+                            Auto-created manual activity cannot be modified
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onEdit(row)
+                        }}
+                        className="shrink-0 size-7 cursor-pointer rounded-[6px] text-white bg-transparent hover:bg-white/20 p-1 transition-colors flex items-center justify-center"
+                        aria-label="Edit Activity"
+                      >
+                        <img
+                          src={editIconImg}
+                          alt="Edit"
+                          aria-hidden="true"
+                          className="size-[14px] object-contain brightness-0 invert"
+                        />
+                      </button>
+                    )
+                  )}
+                </div>
 
-                  <div className="flex items-center gap-2 shrink-0">
-                    {/* Status Badge */}
+                {/* Level 0 Card Body */}
+                <div className="p-4 space-y-2.5 bg-white dark:bg-[#0c0d12]">
+                  {/* Row 1: Status */}
+                  <div className="flex justify-between items-center pb-2 border-b border-gray-100 dark:border-zinc-800">
+                    <span className="text-[#6B7280] dark:text-[#9ca3af] font-bold uppercase text-[10px] tracking-wider">
+                      Status:
+                    </span>
                     <span
-                      className={`text-[11px] font-semibold px-2 py-0.5 rounded-full inline-flex items-center gap-1 ${
+                      className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
                         row.active
-                          ? "bg-emerald-500/20 text-emerald-100 border border-emerald-400/30"
-                          : "bg-rose-500/20 text-rose-100 border border-rose-400/30"
+                          ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
+                          : "bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-200 dark:border-rose-800"
                       }`}
                     >
                       {row.active ? (
-                        <>
-                          <Check className="size-3" /> Active
-                        </>
+                        <Check className="size-3 text-emerald-600 dark:text-emerald-400" />
                       ) : (
-                        <>
-                          <X className="size-3" /> Inactive
-                        </>
+                        <X className="size-3 text-rose-600 dark:text-rose-400" />
                       )}
+                      {row.active ? "Active" : "Inactive"}
                     </span>
-
-                    {/* Expand Toggle */}
-                    {row.hasChild ? (
-                      <button
-                        type="button"
-                        onClick={() => onToggleExpand(rowIdStr)}
-                        className="p-1 hover:bg-white/20 rounded-[6px] transition-colors text-white"
-                        title={isExpanded ? "Collapse sub-activities" : "Expand sub-activities"}
-                      >
-                        {isExpanded ? (
-                          <ChevronDown className="size-5" />
-                        ) : (
-                          <ChevronRight className="size-5" />
-                        )}
-                      </button>
-                    ) : null}
-
-                    {/* Edit Button */}
-                    {canUpdateCountyActivity ? (
-                      row.apportioning === true && row.manualApportioning === true ? (
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <button
-                                type="button"
-                                onClick={() => onEdit(row)}
-                                className="p-1 hover:bg-white/20 rounded-[6px] transition-colors text-white cursor-pointer"
-                                title="Auto-created manual activity cannot be modified"
-                              >
-                                <Eye className="size-4" />
-                              </button>
-                            </TooltipTrigger>
-                            <TooltipContent
-                              side="top"
-                              align="center"
-                              sideOffset={6}
-                              className="z-50 rounded-[8px] border-0 bg-black px-3 py-2 text-left text-[12px] font-medium leading-relaxed text-white shadow-lg"
-                            >
-                              Auto-created manual activity cannot be modified
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => onEdit(row)}
-                          className="p-1 hover:bg-white/20 rounded-[6px] transition-colors"
-                          title="Edit County Activity Code"
-                        >
-                          <img src={editIconImg} alt="Edit" className="size-4 object-contain brightness-200" />
-                        </button>
-                      )
-                    ) : null}
-                  </div>
-                </div>
-
-                {/* Card Body */}
-                <div className="p-4 space-y-3.5 text-[13px]">
-                  {/* Activity Name */}
-                  <div className="space-y-0.5">
-                    <div className="text-[10px] font-bold uppercase tracking-wider text-[#1F2937] dark:text-[#f4f4f5]">
-                      Activity Name
-                    </div>
-                    <div className="text-[13px] font-medium text-[#4B5563] dark:text-[#d4d4d8] leading-snug break-words">
-                      {row.countyActivityName || "—"}
-                    </div>
                   </div>
 
-                  {/* Description Field */}
-                  <div className="space-y-0.5">
-                    <div className="text-[10px] font-bold uppercase tracking-wider text-[#1F2937] dark:text-[#f4f4f5]">
-                      Description
-                    </div>
-                    <div className="text-[12px] font-normal text-[#6B7280] dark:text-[#9ca3af] leading-relaxed whitespace-normal break-words">
-                      {cleanDesc || "—"}
-                    </div>
+                  {/* Row 2: Department */}
+                  <div className="flex justify-between items-start pb-2 border-b border-gray-100 dark:border-zinc-800 gap-2">
+                    <span className="text-[#6B7280] dark:text-[#9ca3af] font-bold uppercase text-[10px] tracking-wider shrink-0">
+                      Department:
+                    </span>
+                    <span className="font-medium text-[#111827] dark:text-[#e5e7eb] text-[12px] text-right break-words max-w-[70%]">
+                      {row.department || "—"}
+                    </span>
                   </div>
 
-                  {/* Attributes & Indicators Grid */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-3.5 pt-3 border-t border-[#F3F4F6] dark:border-[#27272a]">
-                    <div>
-                      <div className="text-[10px] font-bold uppercase tracking-wider text-[#1F2937] dark:text-[#f4f4f5]">
-                        Department
-                      </div>
-                      <div className="mt-0.5 text-[12px] font-normal text-[#6B7280] dark:text-[#9ca3af] break-words">
-                        {row.department || "—"}
-                      </div>
+                  {/* Row 3: Description */}
+                  {cleanDesc ? (
+                    <div className="flex flex-col gap-0.5 pb-2 border-b border-gray-100 dark:border-zinc-800">
+                      <span className="text-[#6B7280] dark:text-[#9ca3af] font-bold uppercase text-[10px] tracking-wider">
+                        Description:
+                      </span>
+                      <span className="font-medium text-[#111827] dark:text-[#e5e7eb] text-[12px] break-words">
+                        {cleanDesc}
+                      </span>
                     </div>
+                  ) : null}
 
-                    <div>
-                      <div className="text-[10px] font-bold uppercase tracking-wider text-[#1F2937] dark:text-[#f4f4f5]">
-                        Master Code Type
-                      </div>
-                      <div className="mt-0.5 text-[12px] font-normal text-[#6B7280] dark:text-[#9ca3af] truncate">
-                        {row.masterCodeType || "—"}
-                      </div>
+                  {/* Row 4: Master Code Type */}
+                  {row.masterCodeType ? (
+                    <div className="flex justify-between items-center pb-2 border-b border-gray-100 dark:border-zinc-800">
+                      <span className="text-[#6B7280] dark:text-[#9ca3af] font-bold uppercase text-[10px] tracking-wider">
+                        Master Code Type:
+                      </span>
+                      <span className="font-medium text-[#111827] dark:text-[#e5e7eb] text-[12px]">
+                        {row.masterCodeType}
+                      </span>
                     </div>
+                  ) : null}
 
-                    <div>
-                      <div className="text-[10px] font-bold uppercase tracking-wider text-[#1F2937] dark:text-[#f4f4f5]">
-                        Master Code
-                      </div>
-                      <div className="mt-0.5 text-[12px] font-normal text-[#6B7280] dark:text-[#9ca3af] truncate">
-                        {masterCodeDisplay}
-                      </div>
+                  {/* Row 5: Master Code */}
+                  <div className="flex justify-between items-center pb-2 border-b border-gray-100 dark:border-zinc-800">
+                    <span className="text-[#6B7280] dark:text-[#9ca3af] font-bold uppercase text-[10px] tracking-wider">
+                      Master Code:
+                    </span>
+                    <span className="font-medium text-[#111827] dark:text-[#e5e7eb] text-[12px]">
+                      {masterCodeDisplay}
+                    </span>
+                  </div>
+
+                  {/* Row 6: Attributes Grid */}
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-1 text-[11px]">
+                    <div className="flex justify-between items-center pb-1 border-b border-gray-100 dark:border-zinc-800">
+                      <span className="text-[#6B7280] dark:text-[#9ca3af] font-bold uppercase text-[9px] tracking-wider">
+                        Leave Code:
+                      </span>
+                      <AttributeCheck value={row.leaveCode} />
                     </div>
-
-                    <div>
-                      <div className="text-[10px] font-bold uppercase tracking-wider text-[#1F2937] dark:text-[#f4f4f5]">
-                        Apportioning
-                      </div>
-                      <div className="mt-0.5 text-[12px] font-medium text-[#6C5DD3] dark:text-[#a78bfa] truncate">
+                    <div className="flex justify-between items-center pb-1 border-b border-gray-100 dark:border-zinc-800">
+                      <span className="text-[#6B7280] dark:text-[#9ca3af] font-bold uppercase text-[9px] tracking-wider">
+                        Apportioning:
+                      </span>
+                      <span className="font-medium text-[#111827] dark:text-[#e5e7eb]">
                         {typeof row.apportioning === "string" ? (
                           row.apportioning
                         ) : (
-                          <StatusIcon value={Boolean(row.apportioning)} />
+                          <AttributeCheck value={Boolean(row.apportioning)} />
                         )}
-                      </div>
+                      </span>
                     </div>
-
-                    <div>
-                      <div className="text-[10px] font-bold uppercase tracking-wider text-[#1F2937] dark:text-[#f4f4f5]">
-                        Leave Code
-                      </div>
-                      <div className="mt-0.5 text-[12px] font-normal text-[#6B7280] dark:text-[#9ca3af]">
-                        <StatusIcon value={row.leaveCode} />
-                      </div>
+                    <div className="flex justify-between items-center pb-1 border-b border-gray-100 dark:border-zinc-800">
+                      <span className="text-[#6B7280] dark:text-[#9ca3af] font-bold uppercase text-[9px] tracking-wider">
+                        SPMP:
+                      </span>
+                      <AttributeCheck value={row.spmp} />
                     </div>
-
-                    <div>
-                      <div className="text-[10px] font-bold uppercase tracking-wider text-[#1F2937] dark:text-[#f4f4f5]">
-                        SPMP
-                      </div>
-                      <div className="mt-0.5 text-[12px] font-normal text-[#6B7280] dark:text-[#9ca3af]">
-                        <StatusIcon value={row.spmp} />
-                      </div>
+                    <div className="flex justify-between items-center pb-1 border-b border-gray-100 dark:border-zinc-800">
+                      <span className="text-[#6B7280] dark:text-[#9ca3af] font-bold uppercase text-[9px] tracking-wider">
+                        Match %:
+                      </span>
+                      <span className="font-medium text-[#111827] dark:text-[#e5e7eb]">
+                        {typeof row.percentage === "number" ? row.percentage.toFixed(2) : "0.00"}%
+                      </span>
                     </div>
-
-                    <div>
-                      <div className="text-[10px] font-bold uppercase tracking-wider text-[#1F2937] dark:text-[#f4f4f5]">
-                        Match
-                      </div>
-                      <div className="mt-0.5 text-[12px] font-normal text-[#6B7280] dark:text-[#9ca3af]">
-                        {row.match ? (
-                          <span>{row.match}</span>
-                        ) : (
-                          <StatusIcon value={false} />
-                        )}
-                      </div>
-                    </div>
-
-                    <div>
-                      <div className="text-[10px] font-bold uppercase tracking-wider text-[#1F2937] dark:text-[#f4f4f5]">
-                        %
-                      </div>
-                      <div className="mt-0.5 text-[12px] font-normal text-[#6B7280] dark:text-[#9ca3af]">
-                        {typeof row.percentage === "number" ? row.percentage.toFixed(2) : "0.00"}
-                      </div>
-                    </div>
-
-                    <div>
-                      <div className="text-[10px] font-bold uppercase tracking-wider text-[#1F2937] dark:text-[#f4f4f5]">
-                        Multi Job Pools
-                      </div>
-                      <div className="mt-0.5 text-[12px] font-normal text-[#6B7280] dark:text-[#9ca3af]">
-                        <StatusIcon value={row.multipleJobPools} />
-                      </div>
+                    <div className="flex justify-between items-center pb-1 border-b border-gray-100 dark:border-zinc-800">
+                      <span className="text-[#6B7280] dark:text-[#9ca3af] font-bold uppercase text-[9px] tracking-wider">
+                        Multi Job Pools:
+                      </span>
+                      <AttributeCheck value={row.multipleJobPools} />
                     </div>
                   </div>
-                </div>
 
-                {/* Expanded Sub-Activities */}
-                {row.hasChild && isExpanded && (
-                  <CountyActivityCardSubRows
-                    parentId={row.id}
-                    canUpdateCountyActivity={canUpdateCountyActivity}
-                    onEditRow={onEdit}
-                  />
-                )}
+                  {/* Toggle Button for Sub-Activities */}
+                  {row.hasChild ? (
+                    <button
+                      type="button"
+                      onClick={() => onToggleExpand(rowIdStr)}
+                      className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-lg bg-[#F5F3FF] dark:bg-zinc-900 text-[#6C5DD3] dark:text-[#a799ff] text-[12px] font-semibold hover:bg-[#ECE9FE] transition-colors cursor-pointer"
+                    >
+                      {isExpanded ? (
+                        <>
+                          Hide Sub-Activities <ChevronDown className="size-3.5" />
+                        </>
+                      ) : (
+                        <>
+                          View Sub-Activities <ChevronRight className="size-3.5" />
+                        </>
+                      )}
+                    </button>
+                  ) : null}
+
+                  {/* NESTED CHILDREN (Rendered INSIDE parent card body) */}
+                  {row.hasChild && isExpanded && (
+                    <div className="mt-3 space-y-3 pt-3 border-t border-purple-100 dark:border-purple-900/40 pl-1 sm:pl-2">
+                      <CountyActivityCardSubRows
+                        parentId={row.id}
+                        canUpdateCountyActivity={canUpdateCountyActivity}
+                        onEditRow={onEdit}
+                      />
+                    </div>
+                  )}
+                </div>
               </div>
             )
           })}
