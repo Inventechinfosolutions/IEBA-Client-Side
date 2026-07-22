@@ -1,4 +1,4 @@
-import { Play } from "lucide-react"
+import { ChevronDown, ChevronUp, Play } from "lucide-react"
 import type { ComponentProps } from "react"
 
 import { cn } from "@/lib/utils"
@@ -14,6 +14,8 @@ export type TransferListMoveButtonProps = ComponentProps<"button"> & {
 
 /**
  * Purple square, borderless — white triangle (`Play`) dual-list control (Security, Time Study, etc.).
+ * On mobile (row layout): shows ChevronDown (forward) / ChevronUp (back).
+ * On sm+ (column layout): shows Play pointing right / left.
  */
 export function TransferListMoveButton({
   direction,
@@ -30,9 +32,22 @@ export function TransferListMoveButton({
       className={cn(transferListMoveButtonClass, className)}
       {...props}
     >
+      {/* Mobile: up/down arrows */}
+      {direction === "forward" ? (
+        <ChevronDown
+          className="block sm:hidden size-5 shrink-0 fill-white stroke-white stroke-[1.5]"
+          aria-hidden
+        />
+      ) : (
+        <ChevronUp
+          className="block sm:hidden size-5 shrink-0 fill-white stroke-white stroke-[1.5]"
+          aria-hidden
+        />
+      )}
+      {/* Desktop: left/right play triangles */}
       <Play
         className={cn(
-          "size-3 shrink-0 fill-white stroke-white stroke-[1.25]",
+          "hidden sm:block size-3 shrink-0 fill-white stroke-white stroke-[1.25]",
           direction === "back" && "rotate-180",
         )}
         aria-hidden
