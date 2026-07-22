@@ -470,10 +470,10 @@ export function TimeStudyPeriodsForm({
     >
       <DialogContent
         showClose={false}
-        className="min-h-[460px] w-[1220px] max-w-[calc(100vw-2rem)] rounded-[12px] border border-[#E5E7EB] bg-white p-[20px_24px]"
+        className="min-h-[460px] w-[1220px] max-w-[calc(100vw-2rem)] rounded-[12px] border border-[#E5E7EB] dark:border-[#27272a] bg-white dark:bg-[#09090b] p-[20px_24px]"
         overlayClassName="bg-black/45"
       >
-        <DialogTitle className="text-center text-[20px] font-medium text-black">
+        <DialogTitle className="text-center text-[20px] font-medium text-black dark:text-[#f4f4f5]">
           {editingRow ? "Edit Time Study Period" : "Create Time Study Periods"}
         </DialogTitle>
 
@@ -484,8 +484,8 @@ export function TimeStudyPeriodsForm({
         )}
 
         <form onSubmit={onSubmit} className="space-y-6">
-          <div className="rounded-[10px] border border-[#E5E7EB] p-3">
-            <div className="mb-3 flex flex-wrap items-center justify-end gap-4 text-[16px] text-black">
+          <div className="rounded-[10px] border border-[#E5E7EB] dark:border-[#27272a] p-3">
+            <div className="mb-3 flex flex-wrap items-center justify-end gap-4 text-[16px] text-black dark:text-[#f4f4f5]">
               {isHolidayFetchPending ? (
                 <div className="flex items-center gap-2">
                   <Spinner className="size-3 text-[#6C5DD3]" />
@@ -501,7 +501,7 @@ export function TimeStudyPeriodsForm({
             <div className="space-y-3">
               <div className="flex items-end gap-6">
                 <div className="space-y-1">
-                  <Label className="text-[14px] font-normal text-black">Select Fiscal Year</Label>
+                  <Label className="text-[14px] font-normal text-black dark:text-[#f4f4f5]">Select Fiscal Year</Label>
                   <Select
                     value={fiscalYear || undefined}
                     onValueChange={(value) => {
@@ -563,7 +563,7 @@ export function TimeStudyPeriodsForm({
                 </div>
 
                 <div className="space-y-1">
-                  <Label className="text-[14px] font-normal text-black">Select Department</Label>
+                  <Label className="text-[14px] font-normal text-black dark:text-[#f4f4f5]">Select Department</Label>
                   <TitleCaseInput
                     value={departmentLabel}
                     readOnly
@@ -574,7 +574,7 @@ export function TimeStudyPeriodsForm({
 
               <div className="grid grid-cols-7 gap-2">
                 <div className="space-y-1">
-                  <Label className="text-[14px] font-normal text-black">Time Study Period</Label>
+                  <Label className="text-[14px] font-normal text-black dark:text-[#f4f4f5]">Time Study Period</Label>
                   <TitleCaseInput
                     className={cn(
                       "h-10 rounded-[14px] border-[#D1D5DB]",
@@ -595,7 +595,7 @@ export function TimeStudyPeriodsForm({
                 </div>
 
                 <div className="space-y-1">
-                  <Label className="text-[14px] font-normal text-black">Start Date</Label>
+                  <Label className="text-[14px] font-normal text-black dark:text-[#f4f4f5]">Start Date</Label>
                   <TitleCaseInput
                     readOnly={!isCreateDateEditable}
                     type={isCreateDateEditable ? "date" : "text"}
@@ -626,7 +626,7 @@ export function TimeStudyPeriodsForm({
                 </div>
 
                 <div className="space-y-1">
-                  <Label className="text-[14px] font-normal text-black">End Date</Label>
+                  <Label className="text-[14px] font-normal text-black dark:text-[#f4f4f5]">End Date</Label>
                   <TitleCaseInput
                     readOnly={!isCreateDateEditable}
                     type={isCreateDateEditable ? "date" : "text"}
@@ -650,7 +650,7 @@ export function TimeStudyPeriodsForm({
                 </div>
 
                 <div className="space-y-1">
-                  <Label className="text-[14px] font-normal text-black">
+                  <Label className="text-[14px] font-normal text-black dark:text-[#f4f4f5]">
                     Hours <span className="text-[12px]">(8 hrs/day)</span>
                   </Label>
                   <TitleCaseInput
@@ -665,7 +665,7 @@ export function TimeStudyPeriodsForm({
                 </div>
 
                 <div className="space-y-1">
-                  <Label className="text-[14px] font-normal text-black">Holidays</Label>
+                  <Label className="text-[14px] font-normal text-black dark:text-[#f4f4f5]">Holidays</Label>
                   <TitleCaseInput
                     disabled={true}
                     className={cn(
@@ -678,7 +678,7 @@ export function TimeStudyPeriodsForm({
                 </div>
 
                 <div className="space-y-1">
-                  <Label className="text-[14px] font-normal text-black">Allocable</Label>
+                  <Label className="text-[14px] font-normal text-black dark:text-[#f4f4f5]">Allocable</Label>
                   <TitleCaseInput
                     disabled={true}
                     className={cn(
@@ -691,7 +691,7 @@ export function TimeStudyPeriodsForm({
                 </div>
 
                 <div className="space-y-1">
-                  <Label className="text-[14px] font-normal text-black">Non-Allocable</Label>
+                  <Label className="text-[14px] font-normal text-black dark:text-[#f4f4f5]">Non-Allocable</Label>
                   <TitleCaseInput
                     disabled={true}
                     className={cn(
@@ -719,7 +719,7 @@ export function TimeStudyPeriodsForm({
             <Button
               type="button"
               variant="secondary"
-              className="h-[54px] w-[120px] rounded-[14px] bg-[#D9D9D9] text-[14px] font-medium text-black hover:bg-[#CFCFCF]"
+              className="h-[54px] w-[120px] rounded-[14px] bg-[#F3F4F6] dark:bg-[#27272a] text-[14px] font-medium text-[#111827] dark:text-[#f4f4f5] hover:bg-[#E5E7EB] dark:hover:bg-[#3f3f46]"
               onClick={() => onOpenChange(false)}
             >
               Exit

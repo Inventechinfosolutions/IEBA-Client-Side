@@ -239,7 +239,7 @@ export function MultiSelectSearchDropdown({
         onCloseAutoFocus={(e) => e.preventDefault()}
         className={cn(
           "z-1000 w-(--radix-popover-trigger-width) p-0",
-          "max-h-[260px] overflow-auto rounded-[7px] border border-[#d9deea] bg-white shadow-[0_8px_18px_rgba(17,24,39,0.12)]",
+          "max-h-[260px] overflow-auto rounded-[7px] border border-[#d9deea] bg-white dark:bg-[#18181b] dark:border-[rgba(108,93,211,0.4)] shadow-[0_8px_18px_rgba(17,24,39,0.12)]",
           contentClassName
         )}
         onInteractOutside={(e) => {
@@ -263,8 +263,8 @@ export function MultiSelectSearchDropdown({
             <button
               type="button"
               className={cn(
-                "flex w-full cursor-pointer items-center justify-between gap-3 border-b border-[#e5e7eb] px-3 py-2 hover:bg-[#f5f5f5]",
-                allFilteredSelected ? "bg-[#e6f4ff]" : "bg-transparent",
+                "flex w-full cursor-pointer items-center justify-between gap-3 border-b border-[#e5e7eb] dark:border-[rgba(108,93,211,0.3)] px-3 py-2 hover:bg-[#f5f5f5] dark:hover:bg-[#2a1f52] dark:text-[#e4e4e7]",
+                allFilteredSelected ? "bg-[#e6f4ff] dark:bg-[#1c1538]" : "bg-transparent",
               )}
               onMouseDown={(e) => {
                 e.preventDefault()
@@ -275,8 +275,8 @@ export function MultiSelectSearchDropdown({
               }}
               onClick={() => toggleSelectAll()}
             >
-              <span className="flex-1 truncate text-left text-[14px] font-medium text-[#111827]">Select All</span>
-              {allFilteredSelected && <Check className="size-4 shrink-0 text-[#1890ff]" strokeWidth={3} />}
+              <span className="flex-1 truncate text-left text-[14px] font-medium text-[#111827] dark:text-white!">Select All</span>
+              {allFilteredSelected && <Check className="size-4 shrink-0 text-[#1890ff] dark:text-white!" strokeWidth={3} />}
             </button>
             {filteredOptions.map((opt) => {
               const selected = selectedValues.includes(opt.value)
@@ -287,8 +287,8 @@ export function MultiSelectSearchDropdown({
                       <button
                         type="button"
                         className={cn(
-                          "flex w-full cursor-pointer items-center justify-between gap-3 px-3 py-2 hover:bg-[#f5f5f5]",
-                          selected ? "bg-[#e6f4ff]" : "bg-transparent",
+                          "flex w-full cursor-pointer items-center justify-between gap-3 px-3 py-2 hover:bg-[#f5f5f5] dark:hover:bg-[#2a1f52] dark:text-[#e4e4e7]",
+                          selected ? "bg-[#e6f4ff] dark:bg-[#1c1538]" : "bg-transparent",
                         )}
                         onMouseDown={(e) => {
                           e.preventDefault()
@@ -299,10 +299,10 @@ export function MultiSelectSearchDropdown({
                         }}
                         onClick={() => toggle(opt.value)}
                       >
-                        <span className="min-w-0 flex-1 truncate text-left text-[14px] font-normal text-[#111827]">
+                        <span className="min-w-0 flex-1 truncate text-left text-[14px] font-normal text-[#111827] dark:text-white!">
                           {opt.label}
                         </span>
-                        {selected && <Check className="size-4 shrink-0 text-[#1890ff]" strokeWidth={3} />}
+                        {selected && <Check className="size-4 shrink-0 text-[#1890ff] dark:text-white!" strokeWidth={3} />}
                       </button>
                     </TooltipTrigger>
                     <TooltipContent

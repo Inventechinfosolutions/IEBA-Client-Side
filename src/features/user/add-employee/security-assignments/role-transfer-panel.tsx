@@ -73,12 +73,12 @@ export function RoleTransferPanel({
             onClick={onToggleAll}
             className={`flex size-4.5 items-center justify-center rounded-[6px] border shadow-sm transition-all ${
               allSelected
-                ? "border-[#6C5DD3] bg-white text-[#6C5DD3]"
-                : "border-[#E5E7EB] bg-white text-transparent hover:border-[#D1D5DB]"
+                ? "border-[#6C5DD3] bg-[#6C5DD3] text-white"
+                : "border-[#E5E7EB] bg-white dark:bg-[#09090b] dark:border-[#3f3f46] hover:border-[#D1D5DB]"
             }`}
             aria-label="Toggle all"
           >
-            <Check className="size-3.5 stroke-3" />
+            {allSelected && <Check className="size-3.5 stroke-3" />}
           </button>
           <span className="flex-1">
           <span className="font-bold text-white/90">{items.length}</span>
@@ -107,12 +107,12 @@ export function RoleTransferPanel({
                       onClick={() => toggleDepartment(group.department)}
                       className={`flex size-4.5 shrink-0 items-center justify-center rounded-[6px] border shadow-sm transition-all ${
                         deptAllSelected
-                          ? "border-[#6C5DD3] bg-white text-[#6C5DD3]"
-                          : "border-[#E5E7EB] bg-white text-transparent hover:border-[#D1D5DB]"
+                          ? "border-[#6C5DD3] bg-[#6C5DD3] text-white"
+                          : "border-[#E5E7EB] bg-white dark:bg-[#09090b] dark:border-[#3f3f46] hover:border-[#D1D5DB]"
                       }`}
                       aria-label={`Toggle all ${group.department}`}
                     >
-                      <Check className="size-3.5 stroke-3" />
+                      {deptAllSelected && <Check className="size-3.5 stroke-3" />}
                     </button>
                   </div>
 
@@ -131,7 +131,7 @@ export function RoleTransferPanel({
                           type="button"
                           onClick={() => onToggleItem(item.id)}
                           className={`group relative grid w-full cursor-pointer grid-cols-[minmax(0,1fr)_auto] items-center gap-2 py-1 pl-9 pr-5 text-left transition-colors ${
-                            isSelected ? "bg-[#F3F0FF]" : "hover:bg-[#F9FAFB]"
+                            isSelected ? "bg-[#F3F0FF] dark:bg-[#1e1650]" : "hover:bg-[#F9FAFB] dark:hover:bg-[#16113a]"
                           }`}
                         >
                           <div className="min-w-0 pr-2">
@@ -140,7 +140,7 @@ export function RoleTransferPanel({
                               <div className="absolute left-4 top-0 h-full w-px bg-[#E5E7EB]" />
                               <div className="absolute left-4 top-1/2 h-px w-3 bg-[#E5E7EB]" />
                             </div>
-                            <div className="pl-6 text-[10px] font-medium text-[#111827] whitespace-normal wrap-break-word">
+                            <div className="pl-6 text-[10px] font-medium text-[#111827] dark:text-[#a1a1aa] whitespace-normal wrap-break-word">
                               {item.name}
                             </div>
                           </div>
@@ -148,10 +148,10 @@ export function RoleTransferPanel({
                             className={`flex size-4.5 shrink-0 items-center justify-center rounded-[6px] border shadow-sm transition-all ${
                               isSelected
                                 ? "border-[#6C5DD3] bg-[#6C5DD3] text-white"
-                                : "border-[#E5E7EB] bg-white text-transparent hover:border-[#D1D5DB]"
+                                : "border-[#E5E7EB] bg-white dark:bg-[#09090b] dark:border-[#3f3f46] hover:border-[#D1D5DB]"
                             }`}
                           >
-                            <Check className="size-3.5 stroke-3" />
+                            {isSelected && <Check className="size-3.5 stroke-3" />}
                           </div>
                         </button>
                       )

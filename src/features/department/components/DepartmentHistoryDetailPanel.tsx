@@ -73,11 +73,11 @@ function ChangeItem({ item }: { item: DepartmentHistorySnapshotItem }) {
         className="mt-0.5 text-[13px] font-medium break-words"
         title={item.fullValue}
       >
-        <span className="rounded-[4px] bg-[#FEF2F2] px-1.5 py-0.5 text-[#B91C1C]">
+        <span className="inline-flex max-w-full rounded-[4px] bg-[#FEF2F2] px-1.5 py-0.5 text-[#B91C1C] break-words whitespace-normal text-left">
           {item.previousValue}
         </span>
         <ArrowRight className="mx-1.5 inline size-3.5 text-[#9CA3AF]" />
-        <span className="rounded-[4px] bg-[#ECFDF3] px-1.5 py-0.5 text-[#027A48]">
+        <span className="inline-flex max-w-full rounded-[4px] bg-[#ECFDF3] px-1.5 py-0.5 text-[#027A48] break-words whitespace-normal text-left">
           {item.newValue}
         </span>
       </div>
