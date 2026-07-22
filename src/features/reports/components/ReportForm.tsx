@@ -37,6 +37,8 @@ import { formatCountyDisplayName } from "@/features/department/lib/departmentRep
 import { resolveCountyClientLogoSrc, useGetCountyClient, fetchClientForCurrentCounty, settingsCountyClientQueryKey } from "@/features/settings/queries/getCountyClient"
 import { useQueryClient } from "@tanstack/react-query"
 import { useListFiscalYears } from "@/features/settings/queries/listFiscalYears"
+import { normalizeFiscalDateToIso } from "@/features/settings/components/FiscalYear/fiscalYearDateUtils"
+import type { SettingsFiscalYearRow } from "@/features/settings/components/FiscalYear/types"
 import {
   REPORT_DOWNLOAD_TYPES,
   REPORT_FORM_DEFAULT_VALUES,
@@ -598,6 +600,52 @@ function normalizeToDateInputValue(raw?: string): string | undefined {
   return undefined
 }
 
+/** Resolve inclusive FY calendar bounds (`YYYY-MM-DD`). Prefers API start/end; else Jul 1–Jun 30. */
+function resolveFiscalYearDateBounds(
+  fiscalYearId: string,
+  fiscalYears?: readonly SettingsFiscalYearRow[],
+): { minDate: string; maxDate: string } | null {
+  const id = fiscalYearId.trim()
+  if (!id) return null
+
+  const row = fiscalYears?.find((fy) => fy.id === id)
+  const start = row?.start ? normalizeFiscalDateToIso(row.start) : ""
+  const end = row?.end ? normalizeFiscalDateToIso(row.end) : ""
+  if (/^\d{4}-\d{2}-\d{2}$/.test(start) && /^\d{4}-\d{2}-\d{2}$/.test(end) && start <= end) {
+    return { minDate: start, maxDate: end }
+  }
+
+  const [y1, y2] = id.split("-")
+  if (/^\d{4}$/.test(y1 ?? "") && /^\d{4}$/.test(y2 ?? "")) {
+    return { minDate: `${y1}-07-01`, maxDate: `${y2}-06-30` }
+  }
+  return null
+}
+
+function clampIsoDateToRange(value: string, minDate: string, maxDate: string): string {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return minDate
+  if (value < minDate) return minDate
+  if (value > maxDate) return maxDate
+  return value
+}
+
+function defaultDatesWithinFiscalYear(bounds: { minDate: string; maxDate: string }): {
+  from: string
+  to: string
+} {
+  const now = new Date()
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`
+  const from = clampIsoDateToRange(today, bounds.minDate, bounds.maxDate)
+  const m = now.getMonth()
+  const y = now.getFullYear()
+  const qtrEndMonth = Math.floor(m / 3) * 3 + 2
+  const qtrEndDate = new Date(y, qtrEndMonth + 1, 0)
+  const toCandidate = `${y}-${String(qtrEndMonth + 1).padStart(2, "0")}-${String(qtrEndDate.getDate()).padStart(2, "0")}`
+  let to = clampIsoDateToRange(toCandidate, bounds.minDate, bounds.maxDate)
+  if (to < from) to = from
+  return { from, to }
+}
+
 export type ReportFormProps = {
   module: ReportsModuleApi
 }
@@ -988,6 +1036,90 @@ export function ReportForm({ module }: ReportFormProps) {
     [fiscalYearsData],
   )
 
+  const fiscalYearDateBounds = useMemo(() => {
+    // Constrain pickers by FY when Fiscal Year is shown with Dates, Week, or Month mode.
+    if (
+      (selectMonthBy !== "dates" &&
+        selectMonthBy !== "week" &&
+        selectMonthBy !== "month") ||
+      !showTopLevelFiscalYear
+    ) {
+      return null
+    }
+    return resolveFiscalYearDateBounds(fiscalYearId, fiscalYearsData)
+  }, [selectMonthBy, showTopLevelFiscalYear, fiscalYearId, fiscalYearsData])
+
+  const fiscalYearMonthBounds = useMemo(() => {
+    if (!fiscalYearDateBounds) return null
+    return {
+      minMonth: fiscalYearDateBounds.minDate.slice(0, 7),
+      maxMonth: fiscalYearDateBounds.maxDate.slice(0, 7),
+    }
+  }, [fiscalYearDateBounds])
+
+  const clampDatesToFiscalYearBounds = useCallback(
+    (nextFiscalYearId: string) => {
+      if (
+        (selectMonthBy !== "dates" &&
+          selectMonthBy !== "week" &&
+          selectMonthBy !== "month") ||
+        !showTopLevelFiscalYear
+      ) {
+        return
+      }
+      const bounds = resolveFiscalYearDateBounds(nextFiscalYearId, fiscalYearsData)
+      if (!bounds) return
+
+      if (selectMonthBy === "month" || selectMonthBy === "week") {
+        const currentMonth = getValues("month")?.trim() ?? ""
+        if (currentMonth) {
+          const minMonth = bounds.minDate.slice(0, 7)
+          const maxMonth = bounds.maxDate.slice(0, 7)
+          let nextMonth = currentMonth
+          if (currentMonth < minMonth) nextMonth = minMonth
+          else if (currentMonth > maxMonth) nextMonth = maxMonth
+          if (nextMonth !== currentMonth) {
+            setValue("month", nextMonth, { shouldValidate: true })
+          }
+        }
+      }
+
+      if (selectMonthBy === "dates" || selectMonthBy === "week") {
+        const currentFrom = getValues("dateFrom")?.trim() ?? ""
+        const currentTo = getValues("dateTo")?.trim() ?? ""
+        if (currentFrom) {
+          const nextFrom = clampIsoDateToRange(currentFrom, bounds.minDate, bounds.maxDate)
+          if (nextFrom !== currentFrom) {
+            setValue("dateFrom", nextFrom, { shouldValidate: true })
+          }
+        }
+        if (currentTo) {
+          const fromAfterClamp = clampIsoDateToRange(
+            getValues("dateFrom")?.trim() || currentFrom,
+            bounds.minDate,
+            bounds.maxDate,
+          )
+          let nextTo = clampIsoDateToRange(currentTo, bounds.minDate, bounds.maxDate)
+          if (fromAfterClamp && nextTo < fromAfterClamp) nextTo = fromAfterClamp
+          if (nextTo !== currentTo) {
+            setValue("dateTo", nextTo, { shouldValidate: true })
+          }
+        }
+      }
+    },
+    [fiscalYearsData, getValues, selectMonthBy, setValue, showTopLevelFiscalYear],
+  )
+
+  // Keep any retained/out-of-range dates inside the selected FY (e.g. May when FY starts in July).
+  useEffect(() => {
+    if (!fiscalYearDateBounds || !fiscalYearId) return
+    clampDatesToFiscalYearBounds(fiscalYearId)
+  }, [
+    clampDatesToFiscalYearBounds,
+    fiscalYearDateBounds,
+    fiscalYearId,
+  ])
+
   const quarterOptions = useMemo(
     () => REPORT_QUARTERS.map((q) => ({ value: q, label: q })),
     [],
@@ -1165,7 +1297,10 @@ export function ReportForm({ module }: ReportFormProps) {
     dateInputInRowClassName: string
     setValue: any
     clearPeriodDependentPicks: () => void
+    clampDatesToFiscalYearBounds: (nextFiscalYearId: string) => void
     fiscalYearId: string
+    fiscalYearDateBounds: { minDate: string; maxDate: string } | null
+    fiscalYearMonthBounds: { minMonth: string; maxMonth: string } | null
     quarter: string
     selectMonthBy: string
     formState: any
@@ -1185,7 +1320,10 @@ export function ReportForm({ module }: ReportFormProps) {
     dateInputInRowClassName,
     setValue,
     clearPeriodDependentPicks,
+    clampDatesToFiscalYearBounds,
     fiscalYearId,
+    fiscalYearDateBounds,
+    fiscalYearMonthBounds,
     quarter,
     selectMonthBy,
     formState,
@@ -1213,20 +1351,39 @@ export function ReportForm({ module }: ReportFormProps) {
                     setValue("dateTo", "", { shouldValidate: false })
                   }
                   if (v === "dates") {
-                    const now = new Date()
-                    const y = now.getFullYear()
-                    const m = now.getMonth()
-                    const fromStr = `${y}-${String(m + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`
-                    const qtrEndMonth = Math.floor(m / 3) * 3 + 2
-                    const qtrEndDate = new Date(y, qtrEndMonth + 1, 0)
-                    const toStr = `${y}-${String(qtrEndMonth + 1).padStart(2, "0")}-${String(qtrEndDate.getDate()).padStart(2, "0")}`
-
-                    if (currentReportItem?.key === "DSSRPT1") {
-                      setValue("dateFrom", fromStr, { shouldValidate: true })
-                      setValue("dateTo", addDays(fromStr, 27), { shouldValidate: true })
+                    if (fiscalYearDateBounds) {
+                      const { from, to } = defaultDatesWithinFiscalYear(fiscalYearDateBounds)
+                      if (currentReportItem?.key === "DSSRPT1") {
+                        setValue("dateFrom", from, { shouldValidate: true })
+                        setValue(
+                          "dateTo",
+                          clampIsoDateToRange(
+                            addDays(from, 27),
+                            fiscalYearDateBounds.minDate,
+                            fiscalYearDateBounds.maxDate,
+                          ),
+                          { shouldValidate: true },
+                        )
+                      } else {
+                        setValue("dateFrom", from, { shouldValidate: true })
+                        setValue("dateTo", to, { shouldValidate: true })
+                      }
                     } else {
-                      setValue("dateFrom", fromStr, { shouldValidate: true })
-                      setValue("dateTo", toStr, { shouldValidate: true })
+                      const now = new Date()
+                      const y = now.getFullYear()
+                      const m = now.getMonth()
+                      const fromStr = `${y}-${String(m + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`
+                      const qtrEndMonth = Math.floor(m / 3) * 3 + 2
+                      const qtrEndDate = new Date(y, qtrEndMonth + 1, 0)
+                      const toStr = `${y}-${String(qtrEndMonth + 1).padStart(2, "0")}-${String(qtrEndDate.getDate()).padStart(2, "0")}`
+
+                      if (currentReportItem?.key === "DSSRPT1") {
+                        setValue("dateFrom", fromStr, { shouldValidate: true })
+                        setValue("dateTo", addDays(fromStr, 27), { shouldValidate: true })
+                      } else {
+                        setValue("dateFrom", fromStr, { shouldValidate: true })
+                        setValue("dateTo", toStr, { shouldValidate: true })
+                      }
                     }
                   }
                 }}
@@ -1309,6 +1466,7 @@ export function ReportForm({ module }: ReportFormProps) {
                       onChange={(val) => {
                         field.onChange(val)
                         clearPeriodDependentPicks()
+                        clampDatesToFiscalYearBounds(val)
                       }}
                       onBlur={field.onBlur}
                       options={fiscalYearOptions}
@@ -1440,6 +1598,8 @@ export function ReportForm({ module }: ReportFormProps) {
                       }
                     }}
                     onBlur={field.onBlur}
+                    minMonth={fiscalYearMonthBounds?.minMonth}
+                    maxMonth={fiscalYearMonthBounds?.maxMonth}
                   />
                 )}
               />
@@ -1469,6 +1629,8 @@ export function ReportForm({ module }: ReportFormProps) {
                         }}
                         onBlur={field.onBlur}
                         placeholder="Week 1 start"
+                        minDate={fiscalYearDateBounds?.minDate}
+                        maxDate={fiscalYearDateBounds?.maxDate}
                       />
                     )}
                   />
@@ -1496,6 +1658,8 @@ export function ReportForm({ module }: ReportFormProps) {
                         }}
                         onBlur={field.onBlur}
                         placeholder="Week 1 end"
+                        minDate={fiscalYearDateBounds?.minDate}
+                        maxDate={fiscalYearDateBounds?.maxDate}
                       />
                     )}
                   />
@@ -1524,6 +1688,7 @@ export function ReportForm({ module }: ReportFormProps) {
                       onChange={(val) => {
                         field.onChange(val)
                         clearPeriodDependentPicks()
+                        clampDatesToFiscalYearBounds(val)
                       }}
                       onBlur={field.onBlur}
                       options={fiscalYearOptions}
@@ -1585,6 +1750,8 @@ export function ReportForm({ module }: ReportFormProps) {
                     value={field.value ?? ""}
                     onChange={field.onChange}
                     onBlur={field.onBlur}
+                    minDate={fiscalYearDateBounds?.minDate}
+                    maxDate={fiscalYearDateBounds?.maxDate}
                   />
                 )}
               />
@@ -1603,6 +1770,8 @@ export function ReportForm({ module }: ReportFormProps) {
                     value={field.value ?? ""}
                     onChange={field.onChange}
                     onBlur={field.onBlur}
+                    minDate={fiscalYearDateBounds?.minDate}
+                    maxDate={fiscalYearDateBounds?.maxDate}
                   />
                 )}
               />
@@ -1625,10 +1794,20 @@ export function ReportForm({ module }: ReportFormProps) {
                     onChange={(val) => {
                       field.onChange(val)
                       if (currentReportItem?.key === "DSSRPT1" && val) {
-                        setValue("dateTo", addDays(val, 27), { shouldValidate: true })
+                        let nextTo = addDays(val, 27)
+                        if (fiscalYearDateBounds) {
+                          nextTo = clampIsoDateToRange(
+                            nextTo,
+                            fiscalYearDateBounds.minDate,
+                            fiscalYearDateBounds.maxDate,
+                          )
+                        }
+                        setValue("dateTo", nextTo, { shouldValidate: true })
                       }
                     }}
                     onBlur={field.onBlur}
+                    minDate={fiscalYearDateBounds?.minDate}
+                    maxDate={fiscalYearDateBounds?.maxDate}
                   />
                 )}
               />
@@ -1653,6 +1832,8 @@ export function ReportForm({ module }: ReportFormProps) {
                     onChange={field.onChange}
                     onBlur={field.onBlur}
                     disabled={currentReportItem?.key === "DSSRPT1"}
+                    minDate={fiscalYearDateBounds?.minDate}
+                    maxDate={fiscalYearDateBounds?.maxDate}
                   />
                 )}
               />
@@ -1824,6 +2005,7 @@ export function ReportForm({ module }: ReportFormProps) {
                     onChange={(val) => {
                       field.onChange(val)
                       clearPeriodDependentPicks()
+                      clampDatesToFiscalYearBounds(val)
                     }}
                     onBlur={field.onBlur}
                     options={fiscalYearOptions}
@@ -1849,7 +2031,10 @@ export function ReportForm({ module }: ReportFormProps) {
               dateInputInRowClassName={dateInputInRowClassName}
               setValue={setValue}
               clearPeriodDependentPicks={clearPeriodDependentPicks}
+              clampDatesToFiscalYearBounds={clampDatesToFiscalYearBounds}
               fiscalYearId={fiscalYearId}
+              fiscalYearDateBounds={fiscalYearDateBounds}
+              fiscalYearMonthBounds={fiscalYearMonthBounds}
               quarter={quarter}
               selectMonthBy={selectMonthBy}
               formState={formState}
@@ -1880,7 +2065,10 @@ export function ReportForm({ module }: ReportFormProps) {
                 dateInputInRowClassName={dateInputInRowClassName}
                 setValue={setValue}
                 clearPeriodDependentPicks={clearPeriodDependentPicks}
+                clampDatesToFiscalYearBounds={clampDatesToFiscalYearBounds}
                 fiscalYearId={fiscalYearId}
+                fiscalYearDateBounds={fiscalYearDateBounds}
+                fiscalYearMonthBounds={fiscalYearMonthBounds}
                 quarter={quarter}
                 selectMonthBy={selectMonthBy}
                 formState={formState}

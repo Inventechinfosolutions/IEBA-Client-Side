@@ -34,6 +34,10 @@ type ReportMonthPickerProps = {
   onChange: (value: string) => void
   onBlur?: () => void
   className?: string
+  /** Inclusive lower bound as `YYYY-MM`. */
+  minMonth?: string
+  /** Inclusive upper bound as `YYYY-MM`. */
+  maxMonth?: string
 }
 
 function parseMonthValue(value: string): { year: number; month: number } | null {
@@ -60,23 +64,74 @@ function formatMonthDisplay(value: string): string {
   })
 }
 
+function isMonthInRange(ym: string, minMonth?: string, maxMonth?: string): boolean {
+  if (!/^\d{4}-\d{2}$/.test(ym)) return false
+  if (minMonth && ym < minMonth) return false
+  if (maxMonth && ym > maxMonth) return false
+  return true
+}
+
+function isYearDisabled(year: number, minMonth?: string, maxMonth?: string): boolean {
+  if (minMonth) {
+    const minParsed = parseMonthValue(minMonth)
+    if (minParsed && year < minParsed.year) return true
+  }
+  if (maxMonth) {
+    const maxParsed = parseMonthValue(maxMonth)
+    if (maxParsed && year > maxParsed.year) return true
+  }
+  return false
+}
+
+function isMonthDisabled(
+  year: number,
+  monthIndex: number,
+  minMonth?: string,
+  maxMonth?: string,
+): boolean {
+  return !isMonthInRange(formatMonthValue(year, monthIndex), minMonth, maxMonth)
+}
+
+function clampViewYear(year: number, minMonth?: string, maxMonth?: string): number {
+  if (minMonth) {
+    const minParsed = parseMonthValue(minMonth)
+    if (minParsed && year < minParsed.year) return minParsed.year
+  }
+  if (maxMonth) {
+    const maxParsed = parseMonthValue(maxMonth)
+    if (maxParsed && year > maxParsed.year) return maxParsed.year
+  }
+  return year
+}
+
 /** Keep focus inside the popover so year nav does not dismiss it. */
 function keepPopoverOpen(event: PointerEvent | MouseEvent) {
   event.preventDefault()
 }
 
-export function ReportMonthPicker({ id, value, onChange, onBlur, className }: ReportMonthPickerProps) {
+export function ReportMonthPicker({
+  id,
+  value,
+  onChange,
+  onBlur,
+  className,
+  minMonth,
+  maxMonth,
+}: ReportMonthPickerProps) {
   const [open, setOpen] = useState(false)
   const [panel, setPanel] = useState<PickerPanel>("month")
   const parsed = parseMonthValue(value ?? "")
   const now = new Date()
-  const [viewYear, setViewYear] = useState(parsed?.year ?? now.getFullYear())
+  const todayYm = formatMonthValue(now.getFullYear(), now.getMonth())
+  const todayInRange = isMonthInRange(todayYm, minMonth, maxMonth)
+  const initialYear = clampViewYear(parsed?.year ?? now.getFullYear(), minMonth, maxMonth)
+  const [viewYear, setViewYear] = useState(initialYear)
   const displayValue = formatMonthDisplay(value ?? "")
   const yearListRef = useRef<HTMLDivElement>(null)
 
   const resetPickerState = () => {
     setPanel("month")
-    setViewYear(parsed?.year ?? now.getFullYear())
+    setViewYear(clampViewYear(parsed?.year ?? now.getFullYear(), minMonth, maxMonth))
   }
 
   const handleOpenChange = (nextOpen: boolean) => {
@@ -90,6 +145,7 @@ export function ReportMonthPicker({ id, value, onChange, onBlur, className }: Re
   }
 
   const handleSelectMonth = (monthIndex: number) => {
+    if (isMonthDisabled(viewYear, monthIndex, minMonth, maxMonth)) return
     onChange(formatMonthValue(viewYear, monthIndex))
     setOpen(false)
     setPanel("month")
@@ -97,9 +153,13 @@ export function ReportMonthPicker({ id, value, onChange, onBlur, className }: Re
   }
 
   const handleSelectYear = (year: number) => {
+    if (isYearDisabled(year, minMonth, maxMonth)) return
     setViewYear(year)
     setPanel("month")
   }
+
+  const canGoPrevYear = !isYearDisabled(viewYear - 1, minMonth, maxMonth)
+  const canGoNextYear = !isYearDisabled(viewYear + 1, minMonth, maxMonth)
 
   const openYearPanel = () => {
     setPanel("year")
@@ -142,9 +202,10 @@ export function ReportMonthPicker({ id, value, onChange, onBlur, className }: Re
               <div className="flex items-center justify-between gap-1">
                 <button
                   type="button"
-                  className="inline-flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-[6px] text-[#6b7280] hover:bg-white hover:text-[#111827]"
+                  className="inline-flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-[6px] text-[#6b7280] hover:bg-white hover:text-[#111827] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-[#6b7280]"
                   onPointerDown={keepPopoverOpen}
                   onClick={() => setViewYear((year) => Math.max(YEAR_START, year - 1))}
+                  disabled={!canGoPrevYear}
                   aria-label="Previous year"
                 >
                   <ChevronLeft className="size-4" />
@@ -160,9 +221,10 @@ export function ReportMonthPicker({ id, value, onChange, onBlur, className }: Re
                 </button>
                 <button
                   type="button"
-                  className="inline-flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-[6px] text-[#6b7280] hover:bg-white hover:text-[#111827]"
+                  className="inline-flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-[6px] text-[#6b7280] hover:bg-white hover:text-[#111827] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-[#6b7280]"
                   onPointerDown={keepPopoverOpen}
                   onClick={() => setViewYear((year) => Math.min(YEAR_END, year + 1))}
+                  disabled={!canGoNextYear}
                   aria-label="Next year"
                 >
                   <ChevronRight className="size-4" />
@@ -179,18 +241,22 @@ export function ReportMonthPicker({ id, value, onChange, onBlur, className }: Re
             </div>
             <div className="grid grid-cols-4 gap-2 p-4">
               {MONTH_LABELS.map((label, monthIndex) => {
+                const monthDisabled = isMonthDisabled(viewYear, monthIndex, minMonth, maxMonth)
                 const isSelected = parsed?.year === viewYear && parsed?.month === monthIndex
                 return (
                   <button
                     key={label}
                     type="button"
+                    disabled={monthDisabled}
                     onPointerDown={keepPopoverOpen}
                     onClick={() => handleSelectMonth(monthIndex)}
                     className={cn(
-                      "h-[40px] cursor-pointer rounded-[6px] px-1 text-[14px] font-medium transition-colors",
-                      isSelected
-                        ? "bg-[#6C5DD3] text-white"
-                        : "text-[#111827] hover:bg-[#ede9fe] dark:text-[#f4f4f5] dark:hover:bg-[#2a1f52]",
+                      "h-[40px] rounded-[6px] px-1 text-[14px] font-medium transition-colors",
+                      monthDisabled
+                        ? "cursor-not-allowed text-[#d1d5db]"
+                        : isSelected
+                          ? "cursor-pointer bg-[#6C5DD3] text-white"
+                          : "cursor-pointer text-[#111827] hover:bg-[#ede9fe] dark:text-[#f4f4f5] dark:hover:bg-[#2a1f52]",
                     )}
                   >
                     {label}
@@ -212,12 +278,14 @@ export function ReportMonthPicker({ id, value, onChange, onBlur, className }: Re
               </button>
               <button
                 type="button"
+                disabled={!todayInRange}
                 onClick={() => {
+                  if (!todayInRange) return
                   onChange(formatMonthValue(now.getFullYear(), now.getMonth()))
                   setOpen(false)
                   onBlur?.()
                 }}
-                className="cursor-pointer text-[14px] font-medium text-[#2563eb] hover:text-[#1d4ed8]"
+                className="cursor-pointer text-[14px] font-medium text-[#2563eb] hover:text-[#1d4ed8] disabled:cursor-not-allowed disabled:text-[#9ca3af] disabled:hover:text-[#9ca3af]"
               >
                 This month
               </button>
@@ -244,6 +312,7 @@ export function ReportMonthPicker({ id, value, onChange, onBlur, className }: Re
             >
               <div className="grid grid-cols-4 gap-2">
                 {YEARS.map((year) => {
+                  const yearDisabled = isYearDisabled(year, minMonth, maxMonth)
                   const isSelected = year === viewYear
                   const isCurrentYear = year === now.getFullYear()
                   return (
@@ -251,15 +320,18 @@ export function ReportMonthPicker({ id, value, onChange, onBlur, className }: Re
                       key={year}
                       type="button"
                       data-year={year}
+                      disabled={yearDisabled}
                       onPointerDown={keepPopoverOpen}
                       onClick={() => handleSelectYear(year)}
                       className={cn(
-                        "h-[38px] cursor-pointer rounded-[6px] text-[14px] font-medium transition-colors",
-                        isSelected
-                          ? "bg-[#6C5DD3] text-white"
-                          : isCurrentYear
-                            ? "bg-[#ede9fe] text-[#111827] hover:bg-[#ddd6fe] dark:bg-[#2a1f52] dark:text-[#f4f4f5] dark:hover:bg-[#342666]"
-                            : "text-[#111827] hover:bg-[#f3f4f6] dark:text-[#f4f4f5] dark:hover:bg-[#18181b]",
+                        "h-[38px] rounded-[6px] text-[14px] font-medium transition-colors",
+                        yearDisabled
+                          ? "cursor-not-allowed text-[#d1d5db]"
+                          : isSelected
+                            ? "cursor-pointer bg-[#6C5DD3] text-white"
+                            : isCurrentYear
+                              ? "cursor-pointer bg-[#ede9fe] text-[#111827] hover:bg-[#ddd6fe] dark:bg-[#2a1f52] dark:text-[#f4f4f5] dark:hover:bg-[#342666]"
+                              : "cursor-pointer text-[#111827] hover:bg-[#f3f4f6] dark:text-[#f4f4f5] dark:hover:bg-[#18181b]",
                       )}
                     >
                       {year}
