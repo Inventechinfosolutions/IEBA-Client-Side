@@ -2,6 +2,7 @@ import React, { useState } from "react"
 import {
   ChevronDown,
   ChevronUp,
+  ChevronRight,
   EyeIcon,
   MoreVerticalIcon,
   PencilIcon,
@@ -9,6 +10,8 @@ import {
   Trash2Icon,
   Building2,
   Shield,
+  Check,
+  X,
 } from "lucide-react"
 
 import { Checkbox } from "@/components/ui/checkbox"
@@ -127,7 +130,10 @@ export function DepartmentRoleCardView({
               >
                 {/* Header */}
                 <div className="bg-[#6C5DD3] px-4 py-3 text-white flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2 min-w-0">
+                  <div
+                    onClick={() => hasChildren && toggleExpanded(row.id)}
+                    className={`flex items-center gap-2 min-w-0 flex-1 ${hasChildren ? "cursor-pointer" : ""}`}
+                  >
                     <Building2 className="size-4 shrink-0 text-white/80" />
                     <span className="font-bold text-[14px] truncate text-white">
                       {row.departmentName}
@@ -135,9 +141,6 @@ export function DepartmentRoleCardView({
                   </div>
 
                   <div className="flex items-center gap-2 shrink-0">
-                    {/* Status Icon */}
-                    <StatusIcon value={isActive} />
-
                     {/* Expand Toggle */}
                     {hasChildren && (
                       <button
@@ -147,9 +150,9 @@ export function DepartmentRoleCardView({
                         title={isExpanded ? "Collapse roles" : "Expand roles"}
                       >
                         {isExpanded ? (
-                          <ChevronUp className="size-5" />
-                        ) : (
                           <ChevronDown className="size-5" />
+                        ) : (
+                          <ChevronRight className="size-5" />
                         )}
                       </button>
                     )}
@@ -192,6 +195,28 @@ export function DepartmentRoleCardView({
 
                 {/* Card Body */}
                 <div className="p-4 space-y-3">
+                  {/* Status Row */}
+                  <div className="flex justify-between items-center pb-2 border-b border-gray-100 dark:border-zinc-800 text-[12px]">
+                    <span className="text-[#6B7280] dark:text-[#9ca3af] font-bold uppercase text-[10px] tracking-wider">
+                      Status:
+                    </span>
+                    <span
+                      className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
+                        isActive
+                          ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
+                          : "bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-200 dark:border-rose-800"
+                      }`}
+                    >
+                      {isActive ? (
+                        <Check className="size-3 text-emerald-600 dark:text-emerald-400" />
+                      ) : (
+                        <X className="size-3 text-rose-600 dark:text-rose-400" />
+                      )}
+                      {isActive ? "Active" : "Inactive"}
+                    </span>
+                  </div>
+
+                  {/* Roles Row */}
                   <div className="space-y-1.5">
                     <div className="text-[10px] font-bold uppercase tracking-wider text-[#1F2937] dark:text-[#f4f4f5] flex items-center gap-1.5">
                       <Shield className="size-3 text-[#6C5DD3]" />

@@ -277,52 +277,77 @@ export function CountyActivityCodeCardView({
               >
                 {/* Level 0 Header */}
                 <div className="flex items-center justify-between bg-[#6C5DD3] px-3.5 py-1.5 text-white gap-2">
-                  <span className="font-semibold text-[12px] sm:text-[13px] leading-tight whitespace-normal break-words flex-1 min-w-0">
+                  <span
+                    onClick={() => row.hasChild && onToggleExpand(rowIdStr)}
+                    className={`font-semibold text-[12px] sm:text-[13px] leading-tight whitespace-normal break-words flex-1 min-w-0 ${
+                      row.hasChild ? "cursor-pointer" : ""
+                    }`}
+                  >
                     {cardTitle}
                   </span>
-                  {canUpdateCountyActivity && (
-                    row.apportioning === true && row.manualApportioning === true ? (
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <button
-                              type="button"
-                              onClick={() => onEdit(row)}
-                              className="shrink-0 size-7 cursor-pointer rounded-[6px] text-white bg-transparent hover:bg-white/20 p-1 transition-colors flex items-center justify-center"
-                              aria-label="View Activity"
-                            >
-                              <Eye className="size-[14px]" />
-                            </button>
-                          </TooltipTrigger>
-                          <TooltipContent
-                            side="top"
-                            align="center"
-                            sideOffset={6}
-                            className="z-50 rounded-[8px] border-0 bg-black px-3 py-2 text-left text-[12px] font-medium leading-relaxed text-white shadow-lg"
-                          >
-                            Auto-created manual activity cannot be modified
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    ) : (
+
+                  <div className="flex items-center gap-1 shrink-0">
+                    {/* Expand Toggle */}
+                    {row.hasChild && (
                       <button
                         type="button"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          onEdit(row)
-                        }}
+                        onClick={() => onToggleExpand(rowIdStr)}
                         className="shrink-0 size-7 cursor-pointer rounded-[6px] text-white bg-transparent hover:bg-white/20 p-1 transition-colors flex items-center justify-center"
-                        aria-label="Edit Activity"
+                        title={isExpanded ? "Collapse sub-activities" : "Expand sub-activities"}
                       >
-                        <img
-                          src={editIconImg}
-                          alt="Edit"
-                          aria-hidden="true"
-                          className="size-[14px] object-contain brightness-0 invert"
-                        />
+                        {isExpanded ? (
+                          <ChevronDown className="size-5" />
+                        ) : (
+                          <ChevronRight className="size-5" />
+                        )}
                       </button>
-                    )
-                  )}
+                    )}
+
+                    {/* Edit Button */}
+                    {canUpdateCountyActivity && (
+                      row.apportioning === true && row.manualApportioning === true ? (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button
+                                type="button"
+                                onClick={() => onEdit(row)}
+                                className="shrink-0 size-7 cursor-pointer rounded-[6px] text-white bg-transparent hover:bg-white/20 p-1 transition-colors flex items-center justify-center"
+                                aria-label="View Activity"
+                              >
+                                <Eye className="size-[14px]" />
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent
+                              side="top"
+                              align="center"
+                              sideOffset={6}
+                              className="z-50 rounded-[8px] border-0 bg-black px-3 py-2 text-left text-[12px] font-medium leading-relaxed text-white shadow-lg"
+                            >
+                              Auto-created manual activity cannot be modified
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            onEdit(row)
+                          }}
+                          className="shrink-0 size-7 cursor-pointer rounded-[6px] text-white bg-transparent hover:bg-white/20 p-1 transition-colors flex items-center justify-center"
+                          aria-label="Edit Activity"
+                        >
+                          <img
+                            src={editIconImg}
+                            alt="Edit"
+                            aria-hidden="true"
+                            className="size-[14px] object-contain brightness-0 invert"
+                          />
+                        </button>
+                      )
+                    )}
+                  </div>
                 </div>
 
                 {/* Level 0 Card Body */}
@@ -433,25 +458,6 @@ export function CountyActivityCodeCardView({
                       <AttributeCheck value={row.multipleJobPools} />
                     </div>
                   </div>
-
-                  {/* Toggle Button for Sub-Activities */}
-                  {row.hasChild ? (
-                    <button
-                      type="button"
-                      onClick={() => onToggleExpand(rowIdStr)}
-                      className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-lg bg-[#F5F3FF] dark:bg-zinc-900 text-[#6C5DD3] dark:text-[#a799ff] text-[12px] font-semibold hover:bg-[#ECE9FE] transition-colors cursor-pointer"
-                    >
-                      {isExpanded ? (
-                        <>
-                          Hide Sub-Activities <ChevronDown className="size-3.5" />
-                        </>
-                      ) : (
-                        <>
-                          View Sub-Activities <ChevronRight className="size-3.5" />
-                        </>
-                      )}
-                    </button>
-                  ) : null}
 
                   {/* NESTED CHILDREN (Rendered INSIDE parent card body) */}
                   {row.hasChild && isExpanded && (
