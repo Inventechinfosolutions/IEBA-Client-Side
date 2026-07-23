@@ -1539,67 +1539,134 @@ export function SecurityAssignmentsPanel({
                               </label>
                             </div>
                             {!isAddMode && isSuperAdmin && (
-                              <HoverCard>
-                                <HoverCardTrigger asChild>
-                                  <History className="size-[14px] text-(--primary) cursor-pointer hover:text-[#5244b2] transition-colors" />
-                                </HoverCardTrigger>
-                                <HoverCardContent className="w-auto p-4 z-[100] shadow-lg rounded-[8px]" align="center" side="top">
-                                  <div className="text-[12px] font-bold text-[#111827] mb-3">MultiCodes History</div>
-                                  <div className="overflow-x-auto max-h-[300px] overflow-y-auto">
-                                    <table className="w-full text-left text-[12px] border-collapse whitespace-nowrap">
-                                      <thead className="bg-[#6b5cd6] text-white sticky top-0 z-10">
-                                        <tr>
-                                          <th className="px-3 py-2 font-medium font-inter">Department</th>
-                                          <th className="px-3 py-2 font-medium font-inter border-l border-[#897ee0]">MultiCode</th>
-                                          <th className="px-3 py-2 font-medium font-inter border-l border-[#897ee0]">Activation Start Date</th>
-                                          <th className="px-3 py-2 font-medium font-inter border-l border-[#897ee0]">Activation End Date</th>
-                                          <th className="px-3 py-2 font-medium font-inter border-l border-[#897ee0]">Updated At</th>
-                                        </tr>
-                                      </thead>
-                                      <tbody className="divide-y divide-[#e5e7eb]">
-                                        {timelineQuery.data?.filter((row) => {
-                                          const rowDeptId = Number(row.departmentId ?? 0)
-                                          if (rowDeptId > 0 && currentDeptId) {
-                                            return rowDeptId === Number(currentDeptId)
-                                          }
-                                          const rowDeptName = assignedDepts.find(d => Number(d.id) === rowDeptId)?.name ?? ""
-                                          return rowDeptName === currentDeptName
-                                        }).length ? timelineQuery.data
-                                          ?.filter((row) => {
+                              <Popover>
+                                <HoverCard openDelay={0} closeDelay={100}>
+                                  <HoverCardTrigger asChild>
+                                    <PopoverTrigger asChild>
+                                      <div
+                                        role="button"
+                                        tabIndex={0}
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="inline-flex items-center cursor-pointer text-(--primary) hover:text-[#5244b2] transition-colors shrink-0 p-0.5 select-none"
+                                      >
+                                        <History className="size-[14px]" />
+                                      </div>
+                                    </PopoverTrigger>
+                                  </HoverCardTrigger>
+                                  <HoverCardContent className="w-auto max-w-[320px] sm:max-w-none p-3 sm:p-4 z-[100] bg-white dark:bg-[#18181b] border border-gray-100 dark:border-zinc-800 shadow-lg rounded-[8px]" align="center" side="top">
+                                    <div className="text-[12px] font-bold text-[#111827] dark:text-white mb-3">MultiCodes History</div>
+                                    <div className="overflow-x-auto max-h-[300px] overflow-y-auto">
+                                      <table className="w-full text-left text-[12px] border-collapse whitespace-nowrap">
+                                        <thead className="bg-[#6b5cd6] text-white sticky top-0 z-10">
+                                          <tr>
+                                            <th className="px-3 py-2 font-medium font-inter">Department</th>
+                                            <th className="px-3 py-2 font-medium font-inter border-l border-[#897ee0]">MultiCode</th>
+                                            <th className="px-3 py-2 font-medium font-inter border-l border-[#897ee0]">Activation Start Date</th>
+                                            <th className="px-3 py-2 font-medium font-inter border-l border-[#897ee0]">Activation End Date</th>
+                                            <th className="px-3 py-2 font-medium font-inter border-l border-[#897ee0]">Updated At</th>
+                                          </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-[#e5e7eb] dark:divide-zinc-800">
+                                          {timelineQuery.data?.filter((row) => {
                                             const rowDeptId = Number(row.departmentId ?? 0)
                                             if (rowDeptId > 0 && currentDeptId) {
                                               return rowDeptId === Number(currentDeptId)
                                             }
                                             const rowDeptName = assignedDepts.find(d => Number(d.id) === rowDeptId)?.name ?? ""
                                             return rowDeptName === currentDeptName
-                                          })
-                                          .map((row, i) => {
-                                            const deptName = assignedDepts.find(d => d.id === row.departmentId)?.name ?? "-"
-                                            const multiCodes = row.multiCodeTypes?.join(", ") || "-"
-                                            const sDate = displayDate(row.startDate)
-                                            const eDate = row.endDate ? displayDate(row.endDate) : "-"
-                                            const uDate = displayDate(row.updatedAt)
-                                            return (
-                                              <tr key={i} className="hover:bg-gray-50 transition-colors">
-                                                <td className="px-3 py-2 text-[#374151]">{deptName}</td>
-                                                <td className="px-3 py-2 text-[#374151]">{multiCodes}</td>
-                                                <td className="px-3 py-2 text-[#374151]">{sDate}</td>
-                                                <td className="px-3 py-2 text-[#374151]">{eDate}</td>
-                                                <td className="px-3 py-2 text-[#374151]">{uDate}</td>
-                                              </tr>
-                                            )
-                                          }) : (
+                                          }).length ? timelineQuery.data
+                                            ?.filter((row) => {
+                                              const rowDeptId = Number(row.departmentId ?? 0)
+                                              if (rowDeptId > 0 && currentDeptId) {
+                                                return rowDeptId === Number(currentDeptId)
+                                              }
+                                              const rowDeptName = assignedDepts.find(d => Number(d.id) === rowDeptId)?.name ?? ""
+                                              return rowDeptName === currentDeptName
+                                            })
+                                            .map((row, i) => {
+                                              const deptName = assignedDepts.find(d => d.id === row.departmentId)?.name ?? "-"
+                                              const multiCodes = row.multiCodeTypes?.join(", ") || "-"
+                                              const sDate = displayDate(row.startDate)
+                                              const eDate = row.endDate ? displayDate(row.endDate) : "-"
+                                              const uDate = displayDate(row.updatedAt)
+                                              return (
+                                                <tr key={i} className="hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors">
+                                                  <td className="px-3 py-2 text-[#374151] dark:text-zinc-200">{deptName}</td>
+                                                  <td className="px-3 py-2 text-[#374151] dark:text-zinc-200">{multiCodes}</td>
+                                                  <td className="px-3 py-2 text-[#374151] dark:text-zinc-200">{sDate}</td>
+                                                  <td className="px-3 py-2 text-[#374151] dark:text-zinc-200">{eDate}</td>
+                                                  <td className="px-3 py-2 text-[#374151] dark:text-zinc-200">{uDate}</td>
+                                                </tr>
+                                              )
+                                            }) : (
+                                            <tr>
+                                              <td colSpan={5} className="px-4 py-6 text-center text-[#6b7280] dark:text-zinc-400">
+                                                {timelineQuery.isLoading ? "Loading history..." : "No history for selected department."}
+                                              </td>
+                                            </tr>
+                                          )}
+                                        </tbody>
+                                      </table>
+                                    </div>
+                                  </HoverCardContent>
+                                  <PopoverContent className="w-auto max-w-[320px] sm:max-w-none p-3 sm:p-4 z-[100] bg-white dark:bg-[#18181b] border border-gray-100 dark:border-zinc-800 shadow-lg rounded-[8px]" align="center" side="top">
+                                    <div className="text-[12px] font-bold text-[#111827] dark:text-white mb-3">MultiCodes History</div>
+                                    <div className="overflow-x-auto max-h-[300px] overflow-y-auto">
+                                      <table className="w-full text-left text-[12px] border-collapse whitespace-nowrap">
+                                        <thead className="bg-[#6b5cd6] text-white sticky top-0 z-10">
                                           <tr>
-                                            <td colSpan={5} className="px-4 py-6 text-center text-[#6b7280]">
-                                              {timelineQuery.isLoading ? "Loading history..." : "No history for selected department."}
-                                            </td>
+                                            <th className="px-3 py-2 font-medium font-inter">Department</th>
+                                            <th className="px-3 py-2 font-medium font-inter border-l border-[#897ee0]">MultiCode</th>
+                                            <th className="px-3 py-2 font-medium font-inter border-l border-[#897ee0]">Activation Start Date</th>
+                                            <th className="px-3 py-2 font-medium font-inter border-l border-[#897ee0]">Activation End Date</th>
+                                            <th className="px-3 py-2 font-medium font-inter border-l border-[#897ee0]">Updated At</th>
                                           </tr>
-                                        )}
-                                      </tbody>
-                                    </table>
-                                  </div>
-                                </HoverCardContent>
-                              </HoverCard>
+                                        </thead>
+                                        <tbody className="divide-y divide-[#e5e7eb] dark:divide-zinc-800">
+                                          {timelineQuery.data?.filter((row) => {
+                                            const rowDeptId = Number(row.departmentId ?? 0)
+                                            if (rowDeptId > 0 && currentDeptId) {
+                                              return rowDeptId === Number(currentDeptId)
+                                            }
+                                            const rowDeptName = assignedDepts.find(d => Number(d.id) === rowDeptId)?.name ?? ""
+                                            return rowDeptName === currentDeptName
+                                          }).length ? timelineQuery.data
+                                            ?.filter((row) => {
+                                              const rowDeptId = Number(row.departmentId ?? 0)
+                                              if (rowDeptId > 0 && currentDeptId) {
+                                                return rowDeptId === Number(currentDeptId)
+                                              }
+                                              const rowDeptName = assignedDepts.find(d => Number(d.id) === rowDeptId)?.name ?? ""
+                                              return rowDeptName === currentDeptName
+                                            })
+                                            .map((row, i) => {
+                                              const deptName = assignedDepts.find(d => d.id === row.departmentId)?.name ?? "-"
+                                              const multiCodes = row.multiCodeTypes?.join(", ") || "-"
+                                              const sDate = displayDate(row.startDate)
+                                              const eDate = row.endDate ? displayDate(row.endDate) : "-"
+                                              const uDate = displayDate(row.updatedAt)
+                                              return (
+                                                <tr key={i} className="hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors">
+                                                  <td className="px-3 py-2 text-[#374151] dark:text-zinc-200">{deptName}</td>
+                                                  <td className="px-3 py-2 text-[#374151] dark:text-zinc-200">{multiCodes}</td>
+                                                  <td className="px-3 py-2 text-[#374151] dark:text-zinc-200">{sDate}</td>
+                                                  <td className="px-3 py-2 text-[#374151] dark:text-zinc-200">{eDate}</td>
+                                                  <td className="px-3 py-2 text-[#374151] dark:text-zinc-200">{uDate}</td>
+                                                </tr>
+                                              )
+                                            }) : (
+                                            <tr>
+                                              <td colSpan={5} className="px-4 py-6 text-center text-[#6b7280] dark:text-zinc-400">
+                                                {timelineQuery.isLoading ? "Loading history..." : "No history for selected department."}
+                                              </td>
+                                            </tr>
+                                          )}
+                                        </tbody>
+                                      </table>
+                                    </div>
+                                  </PopoverContent>
+                                </HoverCard>
+                              </Popover>
                             )}
                           </div>
                           <div className="h-[40px] flex items-center w-full">
@@ -1756,7 +1823,7 @@ export function SecurityAssignmentsPanel({
                         )}
 
                         {/* Delete Button */}
-                        <div className="w-10 flex flex-col flex-shrink-0 mt-[26px]">
+                        <div className="absolute top-2 right-2 sm:relative sm:top-auto sm:right-auto w-8 sm:w-10 flex flex-col flex-shrink-0 sm:mt-[26px]">
                           <button
                             type="button"
                             onClick={async () => {
@@ -1772,10 +1839,10 @@ export function SecurityAssignmentsPanel({
                               }
                               removeMultiCode(index)
                             }}
-                            className="flex size-10 flex-shrink-0 items-center justify-center transition-colors text-red-500 hover:text-red-600 cursor-pointer"
+                            className="flex size-8 sm:size-10 flex-shrink-0 items-center justify-center transition-colors text-red-500 hover:text-red-600 cursor-pointer"
                             title="Remove row"
                           >
-                            <Trash2 className="size-5" />
+                            <Trash2 className="size-4 sm:size-5" />
                           </button>
                         </div>
                       </div>
