@@ -2,6 +2,7 @@ import { useRef, useState, type MouseEvent, type PointerEvent } from "react"
 import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react"
 
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { buildSelectableYearsDesc } from "@/lib/dates"
 import { cn } from "@/lib/utils"
 
 const MONTH_LABELS = [
@@ -21,10 +22,6 @@ const MONTH_LABELS = [
 
 const YEAR_START = 1990
 const YEAR_END = 2040
-const YEARS = Array.from(
-  { length: YEAR_END - YEAR_START + 1 },
-  (_, index) => YEAR_END - index,
-)
 
 type PickerPanel = "month" | "year"
 
@@ -81,6 +78,15 @@ function isYearDisabled(year: number, minMonth?: string, maxMonth?: string): boo
     if (maxParsed && year > maxParsed.year) return true
   }
   return false
+}
+
+function yearsForPicker(minMonth?: string, maxMonth?: string): number[] {
+  return buildSelectableYearsDesc({
+    minYear: minMonth ? parseMonthValue(minMonth)?.year : undefined,
+    maxYear: maxMonth ? parseMonthValue(maxMonth)?.year : undefined,
+    absoluteMin: YEAR_START,
+    absoluteMax: YEAR_END,
+  })
 }
 
 function isMonthDisabled(
@@ -160,6 +166,7 @@ export function ReportMonthPicker({
 
   const canGoPrevYear = !isYearDisabled(viewYear - 1, minMonth, maxMonth)
   const canGoNextYear = !isYearDisabled(viewYear + 1, minMonth, maxMonth)
+  const yearOptions = yearsForPicker(minMonth, maxMonth)
 
   const openYearPanel = () => {
     setPanel("year")
@@ -311,8 +318,7 @@ export function ReportMonthPicker({
               className="report-month-picker-scroll max-h-[280px] overflow-y-auto px-3 py-3"
             >
               <div className="grid grid-cols-4 gap-2">
-                {YEARS.map((year) => {
-                  const yearDisabled = isYearDisabled(year, minMonth, maxMonth)
+                {yearOptions.map((year) => {
                   const isSelected = year === viewYear
                   const isCurrentYear = year === now.getFullYear()
                   return (
@@ -320,18 +326,15 @@ export function ReportMonthPicker({
                       key={year}
                       type="button"
                       data-year={year}
-                      disabled={yearDisabled}
                       onPointerDown={keepPopoverOpen}
                       onClick={() => handleSelectYear(year)}
                       className={cn(
                         "h-[38px] rounded-[6px] text-[14px] font-medium transition-colors",
-                        yearDisabled
-                          ? "cursor-not-allowed text-[#d1d5db]"
-                          : isSelected
-                            ? "cursor-pointer bg-[#6C5DD3] text-white"
-                            : isCurrentYear
-                              ? "cursor-pointer bg-[#ede9fe] text-[#111827] hover:bg-[#ddd6fe] dark:bg-[#2a1f52] dark:text-[#f4f4f5] dark:hover:bg-[#342666]"
-                              : "cursor-pointer text-[#111827] hover:bg-[#f3f4f6] dark:text-[#f4f4f5] dark:hover:bg-[#18181b]",
+                        isSelected
+                          ? "cursor-pointer bg-[#6C5DD3] text-white"
+                          : isCurrentYear
+                            ? "cursor-pointer bg-[#ede9fe] text-[#111827] hover:bg-[#ddd6fe] dark:bg-[#2a1f52] dark:text-[#f4f4f5] dark:hover:bg-[#342666]"
+                            : "cursor-pointer text-[#111827] hover:bg-[#f3f4f6] dark:text-[#f4f4f5] dark:hover:bg-[#18181b]",
                       )}
                     >
                       {year}

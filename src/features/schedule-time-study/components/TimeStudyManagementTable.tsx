@@ -42,6 +42,7 @@ import { fetchScheduleTimeStudyPeriodRows } from "../queries/getRmtsPayPeriods"
 import { fetchScheduleTimeStudyFiscalYears } from "../api/api"
 import { scheduleTimeStudyKeys } from "../keys"
 import { usePermissions } from "@/hooks/usePermissions"
+import { resolveCurrentFiscalYearId } from "@/features/settings/components/FiscalYear/fiscalYearDateUtils"
 import type {
   ScheduleTimeStudyFormValues,
   ScheduleTimeStudyPeriodRow,
@@ -204,7 +205,9 @@ function ScheduleTimeStudyTableLoaded({
                   queryFn: fetchScheduleTimeStudyFiscalYears,
                 })
                 if (fiscalYears.length > 0 && !form.getValues("studyYear")) {
-                  form.setValue("studyYear", fiscalYears[0].id, { shouldValidate: true })
+                  form.setValue("studyYear", resolveCurrentFiscalYearId(fiscalYears), {
+                    shouldValidate: true,
+                  })
                 }
               } catch (err) {
                 console.error("Failed to fetch fiscal years automatically", err)

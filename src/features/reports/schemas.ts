@@ -1,4 +1,5 @@
 import { z } from "zod"
+import { getJulJunFiscalYearId } from "@/lib/dates"
 
 function parseLocalYmd(value: string): Date | null {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value.trim())
@@ -184,36 +185,73 @@ export const reportDownloadFileNameSchema = z
   .trim()
   .min(1, "Enter a file name")
 
-/** Default form state aligned with {@link reportFormSchema}. */
-export const REPORT_FORM_DEFAULT_VALUES: z.infer<typeof reportFormSchema> = {
-  reportKey: "",
-  selectMonthBy: "month",
-  month: "2025-04",
-  year: "2025-2026",
-  weekId: "",
-  fiscalYearId: "2025-2026",
-  quarter: "Qtr-4",
-  dateFrom: "",
-  dateTo: "",
-  departmentId: "",
-  masterCode: "BOTH",
-  employeeIds: "",
-  includeActiveEmployees: true,
-  includeInactiveEmployees: false,
-  activityIds: "",
-  includeActiveActivities: true,
-  includeInactiveActivities: false,
-  costPoolIds: "",
-  includeActiveCostPools: true,
-  includeInactiveCostPools: false,
-  programIds: "",
-  includeActivePrograms: true,
-  includeInactivePrograms: false,
-  includeUnapprovedTime: true,
-  checkDateId: "",
-  scheduleTime: false,
-  timeStudyPeriodId: "",
-  retainParameters: false,
-  downloadType: "PDF",
-  fileName: "",
+/** Calendar month as `YYYY-MM` for the given date (defaults to today). */
+export function getCurrentReportMonthValue(now = new Date()): string {
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`
 }
+
+/**
+ * Last-resort Jul–Jun FY id when Settings API rows are not available yet.
+ * Prefer {@link resolveCurrentFiscalYearId} from Settings fiscal year dates.
+ */
+export function getCurrentFiscalYearId(now = new Date()): string {
+  return getJulJunFiscalYearId(now)
+}
+
+/** Fiscal quarter for Jul–Jun FY: Q1 Jul–Sep … Q4 Apr–Jun. */
+export function getCurrentFiscalQuarter(
+  now = new Date(),
+): (typeof REPORT_QUARTERS)[number] {
+  const month = now.getMonth() + 1
+  if (month >= 7 && month <= 9) return "Qtr-1"
+  if (month >= 10) return "Qtr-2"
+  if (month <= 3) return "Qtr-3"
+  return "Qtr-4"
+}
+
+/** Fresh defaults with current month / FY / quarter (call on each reset). */
+export function createReportFormDefaultValues(
+  now = new Date(),
+): z.infer<typeof reportFormSchema> {
+  const fiscalYearId = getCurrentFiscalYearId(now)
+  return {
+    reportKey: "",
+    selectMonthBy: "month",
+    month: getCurrentReportMonthValue(now),
+    year: fiscalYearId,
+    weekId: "",
+    fiscalYearId,
+    quarter: getCurrentFiscalQuarter(now),
+    dateFrom: "",
+    dateTo: "",
+    departmentId: "",
+    masterCode: "BOTH",
+    employeeIds: "",
+    includeActiveEmployees: true,
+    includeInactiveEmployees: false,
+    activityIds: "",
+    includeActiveActivities: true,
+    includeInactiveActivities: false,
+    costPoolIds: "",
+    includeActiveCostPools: true,
+    includeInactiveCostPools: false,
+    programIds: "",
+    includeActivePrograms: true,
+    includeInactivePrograms: false,
+    includeUnapprovedTime: true,
+    checkDateId: "",
+    scheduleTime: false,
+    timeStudyPeriodId: "",
+    retainParameters: false,
+    downloadType: "PDF",
+    fileName: "",
+  }
+}
+
+/**
+ * Snapshot defaults for callers that need a constant.
+ * Prefer {@link createReportFormDefaultValues} when resetting the form so
+ * month / FY stay aligned with “today”.
+ */
+export const REPORT_FORM_DEFAULT_VALUES: z.infer<typeof reportFormSchema> =
+  createReportFormDefaultValues()
