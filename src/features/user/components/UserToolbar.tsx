@@ -27,10 +27,11 @@ export function UserToolbar({
     isSearchFocused && searchTerm.trim().length > 0 && visibleSuggestions.length > 0
 
   return (
-    <div className="mb-3 flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
-      <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:gap-3 w-full sm:w-auto">
+    <div className="mb-3 flex flex-col gap-2.5 lg:flex-row lg:items-center lg:justify-between lg:gap-3">
+      {/* Row 1: Search + All Departments */}
+      <div className="flex flex-row items-center gap-2.5 w-full lg:w-auto">
         <div
-          className="relative w-full sm:w-[240px]"
+          className="relative flex-1 min-w-0"
           onFocusCapture={() => setIsSearchFocused(true)}
           onBlurCapture={() => setIsSearchFocused(false)}
         >
@@ -39,7 +40,7 @@ export function UserToolbar({
             value={searchTerm}
             onChange={(event) => onSearchChange(event.target.value)}
             placeholder="Search here"
-            className={`h-9 rounded-[8px] bg-white pl-9 pr-8 text-[11px]! md:text-[11px]! text-[#232735] shadow-[0_1px_3px_rgba(35,39,53,0.08)] placeholder:text-[11px] placeholder:text-[#b7bccb] focus-visible:ring-0 ${isSearchFocused || searchTerm.trim()
+            className={`h-9 w-full rounded-[8px] bg-white pl-9 pr-8 text-[11px]! text-[#232735] shadow-[0_1px_3px_rgba(35,39,53,0.08)] placeholder:text-[11px] placeholder:text-[#b7bccb] focus-visible:ring-0 ${isSearchFocused || searchTerm.trim()
               ? "border-[#6C5DD3]"
               : "border-[#e1e4ec]"
               }`}
@@ -79,7 +80,7 @@ export function UserToolbar({
           ) : null}
         </div>
 
-        <div className="w-full sm:w-[200px]">
+        <div className="w-[200px] shrink-0 lg:w-[200px]">
           <SingleSelectDropdown
             value={departmentId ?? "all"}
             onChange={(val) => onDepartmentChange(val === "all" ? undefined : val)}
@@ -97,10 +98,11 @@ export function UserToolbar({
         </div>
       </div>
 
-      <div className="flex w-full items-center justify-between gap-2.5 sm:w-auto sm:justify-end sm:gap-2">
+      {/* Row 2: Inactive + Add Employee — mirrors the width of row 1 */}
+      <div className="flex w-full items-center gap-2 shrink-0 lg:w-auto lg:justify-end">
         <Button
           type="button"
-          className="h-9 flex-1 cursor-pointer items-center justify-center gap-2 rounded-[12px] bg-[#6C5DD3] px-3 text-[12px] font-semibold text-white shadow-[0_1px_0_rgba(0,0,0,0.05)] hover:bg-[#6C5DD3] sm:flex-none"
+          className="h-9 flex-1 lg:flex-none shrink-0 cursor-pointer items-center justify-center gap-2 rounded-[12px] bg-[#6C5DD3] px-4 text-[12px] font-semibold text-white shadow-[0_1px_0_rgba(0,0,0,0.05)] hover:bg-[#6C5DD3]"
           onClick={onToggleInactiveOnly}
         >
           {inactiveOnly ? (
@@ -115,7 +117,7 @@ export function UserToolbar({
         {canAddUser && (
           <Button
             type="button"
-            className="h-9 flex-1 cursor-pointer items-center justify-center gap-1 rounded-[12px] bg-[#6C5DD3] px-3 text-[12px] font-semibold text-white shadow-[0_1px_0_rgba(0,0,0,0.05)] hover:bg-[#6C5DD3] sm:flex-none"
+            className="h-9 flex-1 lg:flex-none shrink-0 cursor-pointer items-center justify-center gap-1 rounded-[12px] bg-[#6C5DD3] px-4 text-[12px] font-semibold text-white shadow-[0_1px_0_rgba(0,0,0,0.05)] hover:bg-[#6C5DD3]"
             onClick={onAddEmployee}
           >
             <Plus className="size-3.5" />
