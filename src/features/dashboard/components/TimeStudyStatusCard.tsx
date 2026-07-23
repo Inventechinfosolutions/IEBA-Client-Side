@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { Clock, X } from "lucide-react"
 import iconApproved from "@/assets/icon-approved.png"
 import iconPending from "@/assets/icon-pending.png"
@@ -13,6 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { buildNearbyCalendarYears } from "@/lib/dates"
 
 export function TimeStudyStatusCard({
   approved,
@@ -27,6 +28,7 @@ export function TimeStudyStatusCard({
   const [selectedMonth, setSelectedMonth] = useState<string>("all")
   const [selectedYear, setSelectedYear] = useState<string>("all")
   const [selectedQuarter, setSelectedQuarter] = useState<string>("all")
+  const yearOptions = useMemo(() => buildNearbyCalendarYears(), [])
 
   const isFiltered = selectedMonth !== "all" || selectedYear !== "all" || selectedQuarter !== "all"
 
@@ -104,9 +106,11 @@ export function TimeStudyStatusCard({
             </SelectTrigger>
             <SelectContent position="popper" className="bg-white">
               <SelectItem value="all">Year</SelectItem>
-              <SelectItem value="2024">2024</SelectItem>
-              <SelectItem value="2025">2025</SelectItem>
-              <SelectItem value="2026">2026</SelectItem>
+              {yearOptions.map((year) => (
+                <SelectItem key={year} value={String(year)}>
+                  {year}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
 

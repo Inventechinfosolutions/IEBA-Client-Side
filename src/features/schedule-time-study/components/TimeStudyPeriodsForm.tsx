@@ -55,6 +55,10 @@ import {
   normalizeDateInputValue,
   toDateInputValue,
 } from "@/lib/dates"
+import {
+  resolveCurrentFiscalYearId,
+  resolveFiscalYearDateBoundsFromRows,
+} from "@/features/settings/components/FiscalYear/fiscalYearDateUtils"
 
 const payPeriodUpdateSuccessToastOptions = {
   position: "top-center" as const,
@@ -120,16 +124,31 @@ function buildUniquePayPeriodName(params: {
   return `${withRange} (${Date.now()})`
 }
 
-function getFiscalYearFromDate(dateValue: DateInputValue): FiscalYearValue {
+function getFiscalYearFromDate(
+  dateValue: DateInputValue,
+  fiscalYearOptions?: readonly ScheduleTimeStudyFiscalYearOption[],
+): FiscalYearValue {
   // Kept for edit mode: infer FY label from a pay period start date.
   const normalized = normalizeDateInputValue(dateValue)
   const match = /^(\d{2})-(\d{2})-(\d{4})$/.exec(normalized)
-  if (!match) return "2025-2026"
-  const month = Number(match[1])
-  const year = Number(match[3])
-  if (!Number.isFinite(month) || !Number.isFinite(year)) return "2025-2026"
-  const startYear = month >= 7 ? year : year - 1
-  return `${startYear}-${startYear + 1}`
+  if (match) {
+    const month = Number(match[1])
+    const day = Number(match[2])
+    const year = Number(match[3])
+    if (Number.isFinite(month) && Number.isFinite(day) && Number.isFinite(year)) {
+      const iso = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`
+      if (fiscalYearOptions?.length) {
+        const containing = fiscalYearOptions.find((fy) => {
+          const bounds = resolveFiscalYearDateBoundsFromRows(fy.id, fiscalYearOptions)
+          return !!bounds && iso >= bounds.minDate && iso <= bounds.maxDate
+        })
+        if (containing) return containing.id
+      }
+      const startYear = month >= 7 ? year : year - 1
+      return `${startYear}-${startYear + 1}`
+    }
+  }
+  return resolveCurrentFiscalYearId(fiscalYearOptions)
 }
 
 function isPreviousFiscalYear(fiscalYear: FiscalYearValue): boolean {
@@ -146,12 +165,14 @@ function isPreviousFiscalYear(fiscalYear: FiscalYearValue): boolean {
 
 function buildFormValues(
   selectedDepartment: TimeStudyPeriodsDepartmentValue,
-  editingRow?: TimeStudyPeriodsEditingRow
+  editingRow?: TimeStudyPeriodsEditingRow,
+  fiscalYearOptions?: readonly ScheduleTimeStudyFiscalYearOption[],
 ): TimeStudyPeriodsFormValues {
   if (!editingRow) {
     return {
       ...timeStudyPeriodsDefaultValues,
       department: selectedDepartment,
+      fiscalYear: resolveCurrentFiscalYearId(fiscalYearOptions) || timeStudyPeriodsDefaultValues.fiscalYear,
     }
   }
 
@@ -160,7 +181,7 @@ function buildFormValues(
 
   return {
     ...timeStudyPeriodsDefaultValues,
-    fiscalYear: getFiscalYearFromDate(normalizedStartDate),
+    fiscalYear: getFiscalYearFromDate(normalizedStartDate, fiscalYearOptions),
     department: selectedDepartment,
     timeStudyPeriod: editingRow.timeStudyPeriod,
     startDate: normalizedStartDate,
@@ -193,7 +214,7 @@ export function TimeStudyPeriodsForm({
     enabled: open && editingPayPeriodIdForQuery != null,
   })
 
-  const initialFormValues = buildFormValues(selectedDepartment, editingRow)
+  const initialFormValues = buildFormValues(selectedDepartment, editingRow, fiscalYearOptions)
   const queryClient = useQueryClient()
   const lastHolidayIdsCsvRef = useRef("")
   const [isHolidayFetchPending, setIsHolidayFetchPending] = useState(false)
@@ -207,7 +228,7 @@ export function TimeStudyPeriodsForm({
   const updatePayPeriod = useUpdateRmtsPayPeriod()
 
   const resetFormToDefaults = () => {
-    form.reset(buildFormValues(selectedDepartment, editingRow))
+    form.reset(buildFormValues(selectedDepartment, editingRow, fiscalYearOptions))
   }
 
   const friendlyPayPeriodSaveError = (error: unknown, payPeriodName: string) => {
