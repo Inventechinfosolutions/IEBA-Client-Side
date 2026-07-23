@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList } from "@/components/ui/tabs"
 import { TimeStudyPeriodsForm } from "./TimeStudyPeriodsForm"
+import { TimeStudyPeriodCardView } from "./TimeStudyPeriodCardView"
 import { ParticipantsListTable } from "./ParticipantsListTable"
 import { ScheduledTimeStudyTable } from "./ScheduleTimeStudyTable"
 import { TimeStudyTab } from "./TimeStudyTab"
@@ -214,7 +215,7 @@ function ScheduleTimeStudyTableLoaded({
           onBlur={() => {}}
           options={filteredDepartments.map((dept) => ({ value: String(dept.id), label: dept.name }))}
           placeholder="Select department"
-          className="h-10 w-[190px] rounded-[10px] border-[#D1D5DB] px-[14px] text-[14px] text-[#111827] focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+          className="h-10 w-full sm:w-[260px] min-w-0 rounded-[10px] border-[#D1D5DB] px-[14px] text-[14px] text-[#111827] focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0"
           isLoading={isDepartmentsFetching}
         />
         {form.formState.errors.department ? (
@@ -227,7 +228,7 @@ function ScheduleTimeStudyTableLoaded({
         onValueChange={(value) => setActiveTab(value as ScheduleTimeStudyTab)}
         className="w-full"
       >
-        <TabsList className="grid !h-[62px] w-full grid-cols-3 items-stretch gap-0 overflow-hidden rounded-[6px] border border-[#E5E7EB] bg-white p-0">
+        <TabsList className="flex flex-col sm:grid sm:grid-cols-3 !h-auto sm:!h-[62px] w-full items-stretch gap-2 sm:gap-0 rounded-[8px] sm:rounded-[6px] border border-[#E5E7EB] bg-[#F9FAFB] sm:bg-white p-1.5 sm:p-0">
           <TimeStudyTab
             value="time-study-period-management"
             label="Time Study Period Management"
@@ -247,8 +248,8 @@ function ScheduleTimeStudyTableLoaded({
             Time Study Period MGMT
           </h3>
 
-          <div className="flex items-center justify-between gap-3">
-            <div className="space-y-1">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 w-full min-w-0">
+            <div className="space-y-1 w-full lg:w-auto">
               <SingleSelectDropdown
                 value={selectedStudyYear}
                 onChange={(value) => {
@@ -267,7 +268,7 @@ function ScheduleTimeStudyTableLoaded({
                 onBlur={() => {}}
                 options={fiscalYearOptions.map((fy) => ({ value: fy.id, label: fy.label }))}
                 placeholder="Select year"
-                className="h-10 w-[170px] rounded-[10px] border-[#D1D5DB] px-[12px] text-[14px] font-normal text-[#111827] focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+                className="h-10 w-full sm:w-[170px] rounded-[10px] border-[#D1D5DB] px-[12px] text-[14px] font-normal text-[#111827] focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0"
               />
               {form.formState.errors.studyYear ? (
                 <p className="text-xs text-destructive">{form.formState.errors.studyYear.message}</p>
@@ -276,7 +277,7 @@ function ScheduleTimeStudyTableLoaded({
 
             <form
               onSubmit={(event: FormEvent<HTMLFormElement>) => event.preventDefault()}
-              className="flex items-center gap-5"
+              className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4 w-full lg:w-auto"
             >
               <div className="w-full sm:w-[220px]">
                 <TitleCaseInput
@@ -307,7 +308,7 @@ function ScheduleTimeStudyTableLoaded({
               </div>
               <Button
                 type="button"
-                className="h-10 w-[180px] rounded-[6px] bg-[#6C5DD3] px-[15px] text-[14px] font-normal text-white hover:bg-[#5D4FC4]"
+                className="h-10 w-full sm:w-auto px-4 shrink-0 truncate rounded-[6px] bg-[#6C5DD3] text-[14px] font-normal text-white hover:bg-[#5D4FC4]"
                 onClick={() => {
                   setEditingPeriodRow(null)
                   setPeriodsFormMountKey((k) => k + 1)
@@ -319,7 +320,30 @@ function ScheduleTimeStudyTableLoaded({
             </form>
           </div>
 
-          <div className="relative overflow-hidden rounded-[10px] border border-[#E5E7EB]">
+          <TimeStudyPeriodCardView
+            rows={periodRows}
+            isLoading={isLoading}
+            onEditRow={(row) => {
+              setEditingPeriodRow(row)
+              setPeriodsFormMountKey((k) => k + 1)
+              setCreatePeriodsOpen(true)
+            }}
+            onDeleteRow={(row) => {
+              const id = Number(row.id)
+              if (!Number.isFinite(id) || id <= 0) return
+              void deletePayPeriod
+                .mutateAsync(id)
+                .then(() => {
+                  toast.success("Deleted successfully", payPeriodDeleteSuccessToastOptions)
+                })
+                .catch((error: unknown) => {
+                  toast.error(error instanceof Error ? error.message : "Delete failed")
+                })
+            }}
+            isDeletingId={deletePayPeriod.isPending ? Number(editingPeriodRow?.id) : null}
+          />
+
+          <div className="hidden xl:block relative overflow-hidden rounded-[10px] border border-[#E5E7EB]">
             {isFetching && (
               <div className="absolute top-[60px] inset-x-0 bottom-0 flex items-center justify-center bg-white/50 z-[50]">
                 <Spinner className="text-[#6C5DD3]" />
