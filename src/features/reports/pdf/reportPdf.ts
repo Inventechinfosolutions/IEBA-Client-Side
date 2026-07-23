@@ -61,12 +61,21 @@ export type P101GroupedEmployee = {
   activities: P101GroupedActivity[]
 }
 
+export type P101AllCategoryTotals = {
+  ffpTotal: number
+  maaTotal: number
+  /** FFP + MAA hours (pre-remap), matching the client mockup combined total. */
+  periodTotal: number
+}
+
 export type P101ReportPdfProps = {
   records: ReportDataRecord[]
   startDate: string
   endDate: string
   printedOn?: string
   meta?: ReportPdfMeta
+  /** Pre-remap FFP/MAA totals by normalized employee name — P101-ALL only. */
+  categoryTotalsByEmployee?: Map<string, P101AllCategoryTotals>
 }
 
 export type P110SSRecord = {
@@ -902,22 +911,115 @@ export function calculateP101Percentage(value: number, grandTotal: number): stri
   return `${((value / grandTotal) * 100).toFixed(2)}%`
 }
 
-/** Catch-all FFP code used by P101-ALL for every non-FFP master code. */
-export const P101_ALL_FFP_CATCHALL = "FFP-05"
+/** Catch-all FFP activity used by P101-ALL for every non-FFP code. */
+export const P101_ALL_FFP_CATCHALL_ACTIVITY = "FFP-05 Program Specific Admin"
+export const P101_ALL_FFP_CATCHALL_MASTERCODE = "5 N"
 
-/** True when the FFP/master code is an FFP code (e.g. FFP-05, FFP-50). */
+/** True when the activity label is an FFP code (e.g. FFP-05 Program Specific Admin). */
+export function isFfpActivityLabel(activity: string): boolean {
+  const raw = normalizeReportKey(activity)
+  return raw.startsWith("ffp-") || raw.startsWith("ffp ")
+}
+
+/** True when the activity label is an MAA code (e.g. MAA-01 Other Activities). */
+export function isMaaActivityLabel(activity: string): boolean {
+  const raw = normalizeReportKey(activity)
+  return raw.startsWith("maa-") || raw.startsWith("maa ")
+}
+
+/** @deprecated Prefer isFfpActivityLabel — mastercode is often "5 N", not "FFP-05". */
 export function isFfpMasterCode(mastercode: string): boolean {
   return normalizeReportKey(mastercode).startsWith("ffp")
 }
 
 /**
- * P101-ALL: keep FFP codes as-is; remap every non-FFP master code to FFP-05
- * so FFP-05 is the catch-all for FFP-05 hours plus all non-FFP time.
+ * Pre-remap FFP / MAA / combined totals per employee for P101-ALL footer lines.
+ * Combined total is FFP + MAA only (matches client mockup).
+ */
+export function getP101AllCategoryTotalsByEmployee(
+  records: ReportDataRecord[],
+): Map<string, P101AllCategoryTotals> {
+  const totals = new Map<string, P101AllCategoryTotals>()
+
+  for (const record of records) {
+    const key = normalizeReportKey(record.employeename)
+    if (!key) continue
+
+    const hours = toNumber(record.activitytime) + toNumber(record.traveltime)
+    const existing = totals.get(key) ?? { ffpTotal: 0, maaTotal: 0, periodTotal: 0 }
+
+    if (isFfpActivityLabel(record.activity)) {
+      existing.ffpTotal += hours
+    } else if (isMaaActivityLabel(record.activity)) {
+      existing.maaTotal += hours
+    }
+
+    existing.periodTotal = existing.ffpTotal + existing.maaTotal
+    totals.set(key, existing)
+  }
+
+  return totals
+}
+
+export function getP101AllTotalsForEmployee(
+  totalsByEmployee: Map<string, P101AllCategoryTotals> | undefined,
+  employeename: string,
+): P101AllCategoryTotals {
+  const empty: P101AllCategoryTotals = { ffpTotal: 0, maaTotal: 0, periodTotal: 0 }
+  if (!totalsByEmployee) return empty
+  return totalsByEmployee.get(normalizeReportKey(employeename)) ?? empty
+}
+
+/** Month + year label for P101-ALL period total line (e.g. "May 2026"). */
+export function formatP101AllPeriodLabel(startDate: string, endDate?: string): string {
+  const raw = (startDate || endDate || "").trim()
+  if (!raw) return "Period"
+
+  const iso = /^(\d{4})-(\d{2})-(\d{2})$/.exec(raw)
+  const mdY = /^(\d{2})-(\d{2})-(\d{4})$/.exec(raw)
+  let year: number | undefined
+  let monthIndex: number | undefined
+
+  if (iso) {
+    year = Number(iso[1])
+    monthIndex = Number(iso[2]) - 1
+  } else if (mdY) {
+    year = Number(mdY[3])
+    monthIndex = Number(mdY[1]) - 1
+  }
+
+  if (year === undefined || monthIndex === undefined || monthIndex < 0 || monthIndex > 11) {
+    return "Period"
+  }
+
+  const monthName = new Date(year, monthIndex, 1).toLocaleString("en-US", { month: "long" })
+  return `${monthName} ${year}`
+}
+
+/**
+ * P101-ALL: keep FFP activity rows as-is; remap every non-FFP activity into FFP-05
+ * so FFP-05 is the catch-all for FFP-05 hours plus all other non-FFP time.
  */
 export function remapP101AllNonFfpToFfp05(records: ReportDataRecord[]): ReportDataRecord[] {
+  if (!records.length) return records
+
+  let ffp05Activity = P101_ALL_FFP_CATCHALL_ACTIVITY
+  let ffp05Mastercode = P101_ALL_FFP_CATCHALL_MASTERCODE
+  for (const record of records) {
+    if (/^ffp-05\b/i.test(record.activity.trim())) {
+      ffp05Activity = record.activity
+      if (record.mastercode.trim()) ffp05Mastercode = record.mastercode
+      break
+    }
+  }
+
   return records.map((record) => {
-    if (isFfpMasterCode(record.mastercode)) return record
-    return { ...record, mastercode: P101_ALL_FFP_CATCHALL }
+    if (isFfpActivityLabel(record.activity)) return record
+    return {
+      ...record,
+      activity: ffp05Activity,
+      mastercode: ffp05Mastercode,
+    }
   })
 }
 
@@ -2776,11 +2878,13 @@ export function resolveFooterVariant(reportCode: string): ReportPdfFooterVariant
     case "DSSRPT2":
     case "QTR-MONTH":
     case "P101":
-    case "P101-ALL":
-    case "P101ALL":
     case "P110":
     case "WIC":
       return "pageOnly"
+    case "P101-ALL":
+    case "P101ALL":
+      // Signatures stay in the fixed page footer (same position for every employee).
+      return "signaturePerPage"
     default:
       return "signature"
   }
