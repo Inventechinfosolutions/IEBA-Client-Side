@@ -2,6 +2,7 @@ import { useRef, useState, type MouseEvent, type PointerEvent } from "react"
 import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react"
 
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { buildSelectableYearsDesc } from "@/lib/dates"
 import { cn } from "@/lib/utils"
 
 const MONTH_LABELS = [
@@ -23,10 +24,6 @@ const WEEKDAY_LABELS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"] as const
 
 const YEAR_START = 1990
 const YEAR_END = 2040
-const YEARS = Array.from(
-  { length: YEAR_END - YEAR_START + 1 },
-  (_, index) => YEAR_END - index,
-)
 
 type PickerPanel = "day" | "month" | "year"
 
@@ -122,6 +119,15 @@ function isYearDisabled(year: number, minDate?: string, maxDate?: string): boole
     if (maxParsed && year > maxParsed.year) return true
   }
   return false
+}
+
+function yearsForPicker(minDate?: string, maxDate?: string): number[] {
+  return buildSelectableYearsDesc({
+    minYear: minDate ? parseYmdLocal(minDate)?.year : undefined,
+    maxYear: maxDate ? parseYmdLocal(maxDate)?.year : undefined,
+    absoluteMin: YEAR_START,
+    absoluteMax: YEAR_END,
+  })
 }
 
 function clampViewToRange(
@@ -246,6 +252,7 @@ export function ReportDatePicker({
   const canGoNextMonth = !isMonthDisabled(nextMonth.year, nextMonth.month, minDate, maxDate)
   const canGoPrevYear = !isYearDisabled(viewYear - 1, minDate, maxDate)
   const canGoNextYear = !isYearDisabled(viewYear + 1, minDate, maxDate)
+  const yearOptions = yearsForPicker(minDate, maxDate)
 
   const handlePrevMonth = () => {
     if (!canGoPrevMonth) return
@@ -525,8 +532,7 @@ export function ReportDatePicker({
               className="report-month-picker-scroll max-h-[280px] overflow-y-auto px-3 py-3"
             >
               <div className="grid grid-cols-4 gap-2">
-                {YEARS.map((year) => {
-                  const yearDisabled = isYearDisabled(year, minDate, maxDate)
+                {yearOptions.map((year) => {
                   const isSelected = year === viewYear
                   const isCurrentYear = year === now.getFullYear()
                   return (
@@ -534,18 +540,15 @@ export function ReportDatePicker({
                       key={year}
                       type="button"
                       data-year={year}
-                      disabled={yearDisabled}
                       onPointerDown={keepPopoverOpen}
                       onClick={() => handleSelectYear(year)}
                       className={cn(
                         "h-[38px] rounded-[6px] text-[14px] font-medium transition-colors",
-                        yearDisabled
-                          ? "cursor-not-allowed text-[#d1d5db]"
-                          : isSelected
-                            ? "cursor-pointer bg-[#6C5DD3] text-white"
-                            : isCurrentYear
-                              ? "cursor-pointer bg-[#ede9fe] text-[#111827] hover:bg-[#ddd6fe]"
-                              : "cursor-pointer text-[#111827] hover:bg-[#f3f4f6]",
+                        isSelected
+                          ? "cursor-pointer bg-[#6C5DD3] text-white"
+                          : isCurrentYear
+                            ? "cursor-pointer bg-[#ede9fe] text-[#111827] hover:bg-[#ddd6fe]"
+                            : "cursor-pointer text-[#111827] hover:bg-[#f3f4f6]",
                       )}
                     >
                       {year}
