@@ -46,7 +46,7 @@ export function MasterCodePagination({
   })()
 
   return (
-    <div className="pagination-card mt-4 rounded-[6px] bg-white dark:bg-[#0c0d12] px-5 py-3 shadow-[0_4px_16px_rgba(16,24,40,0.12)] dark:ring-1 dark:ring-[#6C5DD3]">
+    <div className="pagination-card mt-4 rounded-[6px] bg-white dark:bg-[#0c0d12] px-3 sm:px-5 py-2.5 sm:py-3 shadow-[0_4px_16px_rgba(16,24,40,0.12)] dark:ring-1 dark:ring-[#6C5DD3]">
 
       {/* ── Mobile / Tablet layout (hidden on sm and above) ── */}
       <div className="sm:hidden flex flex-col gap-2">
@@ -76,7 +76,7 @@ export function MasterCodePagination({
           </DropdownMenu>
         </div>
         {/* Row 2: Page number buttons centered */}
-        <div className="flex justify-center">
+        <div className="flex justify-center max-w-full overflow-x-auto py-0.5">
           <Pagination className="mx-0 w-auto justify-start">
             <PaginationContent className="gap-1 text-xs">
               <PaginationItem>
