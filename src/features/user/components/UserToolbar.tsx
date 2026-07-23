@@ -27,10 +27,10 @@ export function UserToolbar({
     isSearchFocused && searchTerm.trim().length > 0 && visibleSuggestions.length > 0
 
   return (
-    <div className="mb-2 flex items-center justify-between gap-3">
-      <div className="flex items-center gap-3">
+    <div className="mb-3 flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+      <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:gap-3 w-full sm:w-auto">
         <div
-          className="relative w-[240px]"
+          className="relative w-full sm:w-[240px]"
           onFocusCapture={() => setIsSearchFocused(true)}
           onBlurCapture={() => setIsSearchFocused(false)}
         >
@@ -79,7 +79,7 @@ export function UserToolbar({
           ) : null}
         </div>
 
-        <div className="w-[200px]">
+        <div className="w-full sm:w-[200px]">
           <SingleSelectDropdown
             value={departmentId ?? "all"}
             onChange={(val) => onDepartmentChange(val === "all" ? undefined : val)}
@@ -97,10 +97,10 @@ export function UserToolbar({
         </div>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex w-full items-center justify-between gap-2.5 sm:w-auto sm:justify-end sm:gap-2">
         <Button
           type="button"
-          className="h-9 cursor-pointer gap-2 rounded-[12px] bg-[#6C5DD3] px-3 text-[12px] font-semibold text-white shadow-[0_1px_0_rgba(0,0,0,0.05)] hover:bg-[#6C5DD3]"
+          className="h-9 flex-1 cursor-pointer items-center justify-center gap-2 rounded-[12px] bg-[#6C5DD3] px-3 text-[12px] font-semibold text-white shadow-[0_1px_0_rgba(0,0,0,0.05)] hover:bg-[#6C5DD3] sm:flex-none"
           onClick={onToggleInactiveOnly}
         >
           {inactiveOnly ? (
@@ -115,7 +115,7 @@ export function UserToolbar({
         {canAddUser && (
           <Button
             type="button"
-            className="h-9 cursor-pointer gap-1 rounded-[12px] bg-[#6C5DD3] px-3 text-[12px] font-semibold text-white shadow-[0_1px_0_rgba(0,0,0,0.05)] hover:bg-[#6C5DD3]"
+            className="h-9 flex-1 cursor-pointer items-center justify-center gap-1 rounded-[12px] bg-[#6C5DD3] px-3 text-[12px] font-semibold text-white shadow-[0_1px_0_rgba(0,0,0,0.05)] hover:bg-[#6C5DD3] sm:flex-none"
             onClick={onAddEmployee}
           >
             <Plus className="size-3.5" />

@@ -1079,7 +1079,7 @@ export function SecurityAssignmentsPanel({
           <div className="mb-4 flex flex-wrap items-center gap-3">
             <Button
               type="button"
-              className="h-9 cursor-pointer gap-2 rounded-[12px] border border-[#E5E7EB] bg-white px-3 text-[12px] font-semibold text-[#6C5DD3] shadow-[0_1px_0_rgba(0,0,0,0.05)] hover:border-[#6C5DD3] hover:bg-[#F3F0FF]"
+              className="h-9 w-full cursor-pointer justify-center gap-2 rounded-[12px] border border-[#E5E7EB] bg-white px-3 text-[12px] font-semibold text-[#6C5DD3] shadow-[0_1px_0_rgba(0,0,0,0.05)] hover:border-[#6C5DD3] hover:bg-[#F3F0FF] sm:w-auto"
               onClick={() => {
                 setShowSecurityDeptRoleHistory(false)
                 setSecurityDeptRoleHistoryDeptName("")
@@ -1087,19 +1087,19 @@ export function SecurityAssignmentsPanel({
               }}
             >
               <ArrowLeft className="size-3.5" />
-              Back to Security
+              <span>Back to Security</span>
             </Button>
             <TitleCaseInput
               placeholder="Search Department Name"
               value={securityDeptRoleHistoryDeptName}
               onChange={(e) => setSecurityDeptRoleHistoryDeptName(e.target.value)}
-              className="h-[41px] w-[220px] rounded-[10px] border border-[#d0d5df] bg-white px-3.5 text-[11px] text-[#111827] shadow-[0_4px_10px_rgba(15,23,42,0.08)] placeholder:text-[10px] placeholder:text-[#a7afbf] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
+              className="h-[41px] w-full rounded-[10px] border border-[#d0d5df] bg-white px-3.5 text-[11px] text-[#111827] shadow-[0_4px_10px_rgba(15,23,42,0.08)] placeholder:text-[10px] placeholder:text-[#a7afbf] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333] sm:w-[220px]"
             />
             <TitleCaseInput
               placeholder="Search Role Name"
               value={securityDeptRoleHistoryRoleName}
               onChange={(e) => setSecurityDeptRoleHistoryRoleName(e.target.value)}
-              className="h-[41px] w-[200px] rounded-[10px] border border-[#d0d5df] bg-white px-3.5 text-[11px] text-[#111827] shadow-[0_4px_10px_rgba(15,23,42,0.08)] placeholder:text-[10px] placeholder:text-[#a7afbf] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
+              className="h-[41px] w-full rounded-[10px] border border-[#d0d5df] bg-white px-3.5 text-[11px] text-[#111827] shadow-[0_4px_10px_rgba(15,23,42,0.08)] placeholder:text-[10px] placeholder:text-[#a7afbf] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333] sm:w-[200px]"
             />
           </div>
 
@@ -1155,60 +1155,62 @@ export function SecurityAssignmentsPanel({
               )}
             </div>
 
-            <div className="flex min-w-0 flex-wrap items-center gap-3 sm:justify-end sm:gap-5 sm:pr-1 sm:pt-2">
-              <label className={`flex items-center gap-2 text-[11px] select-none ${isApportioningEnabled ? "cursor-pointer text-[#111827]" : "cursor-not-allowed text-[#9ca3af]"}`}>
-                <Controller
-                  name="supervisorApportioning"
-                  control={control}
-                  render={({ field }) => (
-                    <Checkbox
-                      checked={
-                        isApportioningEnabled
-                          ? dirtyFields.supervisorApportioning
-                            ? field.value
-                            : field.value || (tab2Apportioning?.supervisorApportioning ?? false)
-                          : false
-                      }
-                      onCheckedChange={(checked) => field.onChange(checked === true)}
-                      disabled={!isApportioningEnabled}
-                      className="size-4 rounded-[3px] border-[#c2c6d1] data-[state=checked]:border-(--primary) data-[state=checked]:bg-(--primary) disabled:cursor-not-allowed disabled:bg-[#f3f4f6] disabled:border-[#e5e7eb] disabled:opacity-100"
-                    />
-                  )}
-                />
-                Supervisor Apportioning
-              </label>
-
-              {isSuperAdmin && (
-                <label className="flex cursor-pointer select-none items-center gap-2 text-[11px] text-[#111827]">
+            <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:justify-end sm:gap-4 sm:pr-1 sm:pt-1">
+              <div className="flex flex-wrap items-center gap-4 sm:gap-5">
+                <label className={`flex items-center gap-2 text-[11px] select-none ${isApportioningEnabled ? "cursor-pointer text-[#111827]" : "cursor-not-allowed text-[#9ca3af]"}`}>
                   <Controller
-                    name="clientAdmin"
+                    name="supervisorApportioning"
                     control={control}
                     render={({ field }) => (
                       <Checkbox
-                        checked={field.value}
+                        checked={
+                          isApportioningEnabled
+                            ? dirtyFields.supervisorApportioning
+                              ? field.value
+                              : field.value || (tab2Apportioning?.supervisorApportioning ?? false)
+                            : false
+                        }
                         onCheckedChange={(checked) => field.onChange(checked === true)}
-                        className="size-4 cursor-pointer rounded-[3px] border-[#c2c6d1] data-[state=checked]:border-(--primary) data-[state=checked]:bg-(--primary)"
+                        disabled={!isApportioningEnabled}
+                        className="size-4 rounded-[3px] border-[#c2c6d1] data-[state=checked]:border-(--primary) data-[state=checked]:bg-(--primary) disabled:cursor-not-allowed disabled:bg-[#f3f4f6] disabled:border-[#e5e7eb] disabled:opacity-100"
                       />
                     )}
                   />
-                  Client Admin
+                  Supervisor Apportioning
                 </label>
-              )}
+
+                {isSuperAdmin && (
+                  <label className="flex cursor-pointer select-none items-center gap-2 text-[11px] text-[#111827]">
+                    <Controller
+                      name="clientAdmin"
+                      control={control}
+                      render={({ field }) => (
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={(checked) => field.onChange(checked === true)}
+                          className="size-4 cursor-pointer rounded-[3px] border-[#c2c6d1] data-[state=checked]:border-(--primary) data-[state=checked]:bg-(--primary)"
+                        />
+                      )}
+                    />
+                    Client Admin
+                  </label>
+                )}
+              </div>
 
               {canPersistTransfers && isSuperAdmin ? (
                 <Button
                   type="button"
-                  className="inline-flex h-auto min-h-9 shrink cursor-pointer items-center gap-2 whitespace-normal rounded-[12px] border border-[#E5E7EB] bg-white px-3 py-2 text-[11px] font-semibold leading-snug text-[#6C5DD3] shadow-[0_1px_0_rgba(0,0,0,0.05)] hover:border-[#6C5DD3] hover:bg-[#F3F0FF] sm:text-[12px]"
+                  className="inline-flex h-11 w-full shrink cursor-pointer items-center justify-center gap-2 rounded-[12px] border border-[#E5E7EB] bg-white px-3 text-[11px] font-semibold text-[#6C5DD3] shadow-[0_1px_0_rgba(0,0,0,0.05)] hover:border-[#6C5DD3] hover:bg-[#F3F0FF] sm:h-9 sm:w-auto sm:text-[12px]"
                   onClick={() => setShowSecurityDeptRoleHistory(true)}
                 >
                   <History className="size-3.5 shrink-0" />
-                  Department Role History
+                  <span>Department Role History</span>
                 </Button>
               ) : null}
             </div>
           </div>
 
-          <div className="relative mt-3 grid grid-cols-[1fr_60px_1fr] items-center gap-4">
+          <div className="relative mt-3 grid grid-cols-1 items-center gap-3 lg:grid-cols-[1fr_60px_1fr] lg:gap-4">
             {(securityRolesQuery.isLoading ||
               (Boolean(securityUserId) && tab2Query.isLoading) ||
               transferBusy) && (
@@ -1225,7 +1227,7 @@ export function SecurityAssignmentsPanel({
               onToggleDepartmentGroup={toggleDepartmentGroupU}
             />
 
-            <div className="flex flex-col gap-3 pt-10">
+            <div className="flex items-center justify-center gap-3 py-2 lg:flex-col lg:py-0 lg:pt-10">
               <TransferListMoveButton
                 direction="forward"
                 onClick={() => void transferToAssigned()}
@@ -1423,7 +1425,7 @@ export function SecurityAssignmentsPanel({
                     )
 
                     return (
-                      <div key={field.id} className="flex items-start gap-4 w-full relative">
+                      <div key={field.id} className="flex flex-col sm:flex-row sm:items-start gap-4 w-full relative p-3.5 sm:p-0 border sm:border-0 border-[#e5e7eb] rounded-[10px] sm:rounded-none bg-[#fafafa] sm:bg-transparent">
 
                         {/* Department */}
                         <div className="flex-[1.2] flex flex-col">

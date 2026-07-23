@@ -1651,7 +1651,7 @@ export function TimeStudyAssignmentsPanel({
           <div className="mb-4 flex flex-wrap items-center gap-3">
             <Button
               type="button"
-              className="h-9 cursor-pointer gap-2 rounded-[12px] border border-[#E5E7EB] bg-white px-3 text-[12px] font-semibold text-[#6C5DD3] shadow-[0_1px_0_rgba(0,0,0,0.05)] hover:border-[#6C5DD3] hover:bg-[#F3F0FF]"
+              className="h-9 w-full cursor-pointer justify-center gap-2 rounded-[12px] border border-[#E5E7EB] bg-white px-3 text-[12px] font-semibold text-[#6C5DD3] shadow-[0_1px_0_rgba(0,0,0,0.05)] hover:border-[#6C5DD3] hover:bg-[#F3F0FF] sm:w-auto"
               onClick={() => {
                 setTsHistoryView(null)
                 setTsHistoryProgramSearch("")
@@ -1660,14 +1660,14 @@ export function TimeStudyAssignmentsPanel({
               }}
             >
               <ArrowLeft className="size-3.5" />
-              Back to assignments
+              <span>Back to assignments</span>
             </Button>
             {tsHistoryView === "program" ? (
               <TitleCaseInput
                 value={tsHistoryProgramSearch}
                 onChange={(e) => setTsHistoryProgramSearch(e.target.value)}
                 placeholder="Search Program Code"
-                className="h-[41px] w-[270px] rounded-[10px] border border-[#d0d5df] bg-white px-3.5 text-[11px] text-[#111827] shadow-[0_4px_10px_rgba(15,23,42,0.08)] placeholder:text-[10px] placeholder:text-[#a7afbf] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
+                className="h-[41px] w-full rounded-[10px] border border-[#d0d5df] bg-white px-3.5 text-[11px] text-[#111827] shadow-[0_4px_10px_rgba(15,23,42,0.08)] placeholder:text-[10px] placeholder:text-[#a7afbf] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333] sm:w-[270px]"
               />
             ) : (
               <>
@@ -1675,13 +1675,13 @@ export function TimeStudyAssignmentsPanel({
                   value={tsHistoryActivityCode}
                   onChange={(e) => setTsHistoryActivityCode(e.target.value)}
                   placeholder="Search Activity Code"
-                  className="h-[41px] w-[220px] rounded-[10px] border border-[#d0d5df] bg-white px-3.5 text-[11px] text-[#111827] shadow-[0_4px_10px_rgba(15,23,42,0.08)] placeholder:text-[10px] placeholder:text-[#a7afbf] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
+                  className="h-[41px] w-full rounded-[10px] border border-[#d0d5df] bg-white px-3.5 text-[11px] text-[#111827] shadow-[0_4px_10px_rgba(15,23,42,0.08)] placeholder:text-[10px] placeholder:text-[#a7afbf] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333] sm:w-[220px]"
                 />
                 <TitleCaseInput
                   value={tsHistoryActivityName}
                   onChange={(e) => setTsHistoryActivityName(e.target.value)}
                   placeholder="Search Activity Name"
-                  className="h-[41px] w-[250px] rounded-[10px] border border-[#d0d5df] bg-white px-3.5 text-[11px] text-[#111827] shadow-[0_4px_10px_rgba(15,23,42,0.08)] placeholder:text-[10px] placeholder:text-[#a7afbf] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
+                  className="h-[41px] w-full rounded-[10px] border border-[#d0d5df] bg-white px-3.5 text-[11px] text-[#111827] shadow-[0_4px_10px_rgba(15,23,42,0.08)] placeholder:text-[10px] placeholder:text-[#a7afbf] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333] sm:w-[250px]"
                 />
               </>
             )}
@@ -1713,7 +1713,7 @@ export function TimeStudyAssignmentsPanel({
       ) : (
         <>
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between lg:gap-6">
-            <div className="w-full max-w-[306px] shrink-0">
+            <div className="w-full lg:w-[300px] shrink-0">
               {isAddMode ? (
                 <div>
                   <p className="mb-1 block select-none text-[11px] font-medium text-[#2a2f3a]">Department</p>
@@ -1748,7 +1748,7 @@ export function TimeStudyAssignmentsPanel({
                     }
                     isLoading={addModeDepartmentDropdownLoading}
                     contentClassName="max-h-[180px]"
-                    className="min-h-[46px] rounded-[7px] border-[#c6cedd] text-[11px] leading-[14px]"
+                    className="min-h-[46px] w-full rounded-[7px] border-[#c6cedd] text-[11px] leading-[14px]"
                     itemButtonClassName="rounded-[4px] px-2.5 py-1.5"
                     itemLabelClassName="text-[11px] leading-[16px]"
                   />
@@ -1781,7 +1781,7 @@ export function TimeStudyAssignmentsPanel({
                     }
                     isLoading={editModeDepartmentDropdownLoading}
                     contentClassName="max-h-[180px]"
-                    className="min-h-[46px] rounded-[7px] border-[#c6cedd] text-[11px] leading-[14px]"
+                    className="min-h-[46px] w-full rounded-[7px] border-[#c6cedd] text-[11px] leading-[14px]"
                     itemButtonClassName="rounded-[4px] px-2.5 py-1.5"
                     itemLabelClassName="text-[11px] leading-[16px]"
                   />
@@ -1792,40 +1792,40 @@ export function TimeStudyAssignmentsPanel({
             <div className="flex min-w-0 w-full flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:gap-x-4 sm:gap-y-3 lg:flex-1 lg:justify-end">
               <div className="flex w-full shrink-0 flex-col gap-1 sm:w-auto">
                 <label className="select-none text-[11px] font-medium text-[#2a2f3a]">TS Minutes/Day</label>
-                <div className="flex flex-wrap items-center gap-3">
-                  <div className="flex h-[46px] items-center rounded-[7px] border border-[#d2d8e3] bg-white px-3">
+                <div className="flex w-full items-center gap-2 sm:w-auto">
+                  <div className="flex h-[46px] flex-1 items-center justify-between rounded-[7px] border border-[#d2d8e3] bg-white px-3 sm:flex-initial">
                     <TitleCaseInput
                       {...register("tsMinDay")}
                       className="h-auto w-[70px] border-0 bg-transparent p-0 text-[12px] text-[#111827] shadow-none focus-visible:ring-0"
                     />
-                    <span className="ml-6 select-none text-[11px] text-[#2a2f3a]">Min/Day</span>
+                    <span className="ml-4 select-none text-[11px] text-[#2a2f3a]">Min/Day</span>
                   </div>
                   <Button
                     type="button"
                     onClick={handleSaveTsMinDay}
                     disabled={!canPersistTsTransfers || isSavingTsMinDay}
-                    className="h-[46px] rounded-[7px] bg-[#6C5DD3] px-5 text-[12px] font-medium text-white hover:bg-[#6C5DD3] disabled:opacity-50"
+                    className="h-[46px] rounded-[7px] bg-[#6C5DD3] px-5 text-[12px] font-medium text-white hover:bg-[#6C5DD3] disabled:opacity-50 shrink-0"
                   >
                     {isSavingTsMinDay ? "Saving..." : "Save"}
                   </Button>
                 </div>
               </div>
               {canShowTsHistory && isSuperAdmin ? (
-                <div className="flex w-full min-w-0 flex-wrap content-end gap-2 sm:w-auto sm:max-w-full sm:justify-end">
+                <div className="flex w-full min-w-0 flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:justify-end">
                   <Button
                     type="button"
-                    className="inline-flex h-auto min-h-9 shrink cursor-pointer items-start gap-2 whitespace-normal rounded-[12px] border border-[#E5E7EB] bg-white px-3 py-2 text-left text-[11px] font-semibold leading-snug text-[#6C5DD3] shadow-[0_1px_0_rgba(0,0,0,0.05)] hover:border-[#6C5DD3] hover:bg-[#F3F0FF] sm:text-[12px]"
+                    className="inline-flex h-[46px] w-full cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-[12px] border border-[#E5E7EB] bg-white px-3 text-[11px] font-semibold text-[#6C5DD3] shadow-[0_1px_0_rgba(0,0,0,0.05)] hover:border-[#6C5DD3] hover:bg-[#F3F0FF] sm:w-auto sm:text-[12px]"
                     onClick={() => setTsHistoryView("program")}
                   >
-                    <History className="mt-0.5 size-3.5 shrink-0" />
+                    <History className="size-3.5 shrink-0" />
                     <span>User Program History</span>
                   </Button>
                   <Button
                     type="button"
-                    className="inline-flex h-auto min-h-9 shrink cursor-pointer items-start gap-2 whitespace-normal rounded-[12px] border border-[#E5E7EB] bg-white px-3 py-2 text-left text-[11px] font-semibold leading-snug text-[#6C5DD3] shadow-[0_1px_0_rgba(0,0,0,0.05)] hover:border-[#6C5DD3] hover:bg-[#F3F0FF] sm:text-[12px]"
+                    className="inline-flex h-[46px] w-full cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-[12px] border border-[#E5E7EB] bg-white px-3 text-[11px] font-semibold text-[#6C5DD3] shadow-[0_1px_0_rgba(0,0,0,0.05)] hover:border-[#6C5DD3] hover:bg-[#F3F0FF] sm:w-auto sm:text-[12px]"
                     onClick={() => setTsHistoryView("activity")}
                   >
-                    <ClipboardList className="mt-0.5 size-3.5 shrink-0" />
+                    <ClipboardList className="size-3.5 shrink-0" />
                     <span>User Activity History</span>
                   </Button>
                 </div>
@@ -1833,7 +1833,7 @@ export function TimeStudyAssignmentsPanel({
             </div>
           </div>
 
-          <div className="mt-6 grid grid-cols-[1fr_60px_1fr] items-center gap-4">
+          <div className="mt-6 grid grid-cols-1 items-center gap-3 lg:grid-cols-[1fr_60px_1fr] lg:gap-4">
             <TransferPanel
               title="Select TS Programs(Unassigned)"
               items={filteredProgramsU}
@@ -1845,7 +1845,7 @@ export function TimeStudyAssignmentsPanel({
               selectedDept={selectedDept}
             />
 
-            <div className="flex flex-col gap-3 pt-10">
+            <div className="flex items-center justify-center gap-3 py-2 lg:flex-col lg:py-0 lg:pt-10">
               <TransferListMoveButton
                 direction="forward"
                 onClick={() => void moveSelectedProgramsToAssignedColumn()}
@@ -1884,7 +1884,7 @@ export function TimeStudyAssignmentsPanel({
             />
           </div>
 
-          <div className="mt-4 grid grid-cols-[1fr_60px_1fr] items-center gap-4">
+          <div className="mt-4 grid grid-cols-1 items-center gap-3 lg:grid-cols-[1fr_60px_1fr] lg:gap-4">
             <TransferPanel
               title="Select Activities(Unassigned)"
               items={filteredActivitiesU}
@@ -1896,7 +1896,7 @@ export function TimeStudyAssignmentsPanel({
               selectedDept={selectedDept}
             />
 
-            <div className="flex flex-col gap-3 pt-10">
+            <div className="flex items-center justify-center gap-3 py-2 lg:flex-col lg:py-0 lg:pt-10">
               <TransferListMoveButton
                 direction="forward"
                 onClick={() => void moveSelectedActivitiesToAssignedColumn()}

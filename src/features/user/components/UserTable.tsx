@@ -57,8 +57,8 @@ export function UserTable({ rows, isLoading, onEditRow, onSwitchUser, sortState,
   const sortedRows = rows
 
   return (
-    <div className="overflow-hidden rounded-[4px] border border-[#e6e7ef]">
-      <Table className="table-fixed">
+    <div className="overflow-x-auto rounded-[4px] border border-[#e6e7ef]">
+      <Table className="table-fixed min-w-[950px] w-full">
         <colgroup>
           <col style={{ width: "150px" }} />
           <col style={{ width: "130px" }} />
