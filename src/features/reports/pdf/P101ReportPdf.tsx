@@ -324,10 +324,10 @@ function EmployeeTable({
 
       {useCategoryTotals && categoryTotals ? (
         <>
-          <CategoryTotalRow label="Total FFP time" totalHours={categoryTotals.ffpTotal} isFirst />
-          <CategoryTotalRow label="Total MAA time" totalHours={categoryTotals.maaTotal} />
+          <CategoryTotalRow label="Total FFP hours" totalHours={categoryTotals.ffpTotal} isFirst />
+          <CategoryTotalRow label="Total MAA hours" totalHours={categoryTotals.maaTotal} />
           <CategoryTotalRow
-            label={`Total for ${periodLabel ?? "Period"}`}
+            label={`Grand Total`}
             totalHours={categoryTotals.periodTotal}
           />
         </>
