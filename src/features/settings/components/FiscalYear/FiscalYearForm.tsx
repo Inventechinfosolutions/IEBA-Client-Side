@@ -145,7 +145,7 @@ function HolidayDatePicker({
 
 function MonthYearPicker({ value, onChange, useMonthEnd }: MonthYearPickerProps) {
   const [open, setOpen] = useState(false)
-  const selectedDate = parseIsoYmdToLocalDate(value) ?? new Date(2025, 0, 1)
+  const selectedDate = parseIsoYmdToLocalDate(value) ?? new Date()
   const [viewYear, setViewYear] = useState(selectedDate.getFullYear())
   const displayValue = isoYmdToDisplayDdMmYyyy(value)
   const hasValue = Boolean(displayValue)
@@ -156,7 +156,7 @@ function MonthYearPicker({ value, onChange, useMonthEnd }: MonthYearPickerProps)
       onOpenChange={(nextOpen) => {
         setOpen(nextOpen)
         if (nextOpen) {
-          setViewYear((parseIsoYmdToLocalDate(value) ?? new Date(2025, 0, 1)).getFullYear())
+          setViewYear((parseIsoYmdToLocalDate(value) ?? new Date()).getFullYear())
         }
       }}
     >

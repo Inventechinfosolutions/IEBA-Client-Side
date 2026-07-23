@@ -1,4 +1,4 @@
-import { parseIsoYyyyMmDd, toMmDdYyyy } from "@/lib/dates"
+import { getJulJunFiscalYearId, parseIsoYyyyMmDd, toMmDdYyyy } from "@/lib/dates"
 
 /** Normalize API fiscal date to `YYYY-MM-DD` for inputs and `<input type="date">`. */
 export function normalizeFiscalDateToIso(value: string): string {
@@ -7,6 +7,71 @@ export function normalizeFiscalDateToIso(value: string): string {
   const m = /^(\d{2})-(\d{2})-(\d{4})$/.exec(t)
   if (m) return `${m[3]}-${m[1]}-${m[2]}`
   return t
+}
+
+/** Minimal FY row shape from `GET /setting/fiscalyear` (settings + schedule modules). */
+export type FiscalYearBoundsSource = {
+  id: string
+  start?: string
+  end?: string
+}
+
+/**
+ * Inclusive calendar bounds for a FY id.
+ * Prefers Settings API `start`/`end`; Jul 1–Jun 30 from the id is last resort only.
+ */
+export function resolveFiscalYearDateBoundsFromRows(
+  fiscalYearId: string,
+  fiscalYears?: readonly FiscalYearBoundsSource[],
+): { minDate: string; maxDate: string } | null {
+  const id = fiscalYearId.trim()
+  if (!id) return null
+
+  const row = fiscalYears?.find((fy) => fy.id === id)
+  const start = row?.start ? normalizeFiscalDateToIso(row.start) : ""
+  const end = row?.end ? normalizeFiscalDateToIso(row.end) : ""
+  if (/^\d{4}-\d{2}-\d{2}$/.test(start) && /^\d{4}-\d{2}-\d{2}$/.test(end) && start <= end) {
+    return { minDate: start, maxDate: end }
+  }
+
+  const [y1, y2] = id.split("-")
+  if (/^\d{4}$/.test(y1 ?? "") && /^\d{4}$/.test(y2 ?? "")) {
+    return { minDate: `${y1}-07-01`, maxDate: `${y2}-06-30` }
+  }
+  return null
+}
+
+/**
+ * Current fiscal year from Settings API dates (row whose start/end contains today).
+ * Jul–Jun calendar id is used only when no FY list is available.
+ */
+export function resolveCurrentFiscalYearId(
+  fiscalYears?: readonly FiscalYearBoundsSource[],
+  now = new Date(),
+): string {
+  const today = toIsoYmdFromDate(now)
+  if (fiscalYears?.length) {
+    const containing = fiscalYears.find((fy) => {
+      const bounds = resolveFiscalYearDateBoundsFromRows(fy.id, fiscalYears)
+      return !!bounds && today >= bounds.minDate && today <= bounds.maxDate
+    })
+    if (containing) return containing.id
+
+    const started = fiscalYears
+      .map((fy) => ({
+        fy,
+        bounds: resolveFiscalYearDateBoundsFromRows(fy.id, fiscalYears),
+      }))
+      .filter((entry) => entry.bounds && entry.bounds.minDate <= today)
+      .sort((a, b) => b.fy.id.localeCompare(a.fy.id, undefined, { numeric: true }))
+    if (started[0]) return started[0].fy.id
+
+    const newest = [...fiscalYears].sort((a, b) =>
+      b.id.localeCompare(a.id, undefined, { numeric: true }),
+    )
+    return newest[0]?.id ?? getJulJunFiscalYearId(now)
+  }
+  return getJulJunFiscalYearId(now)
 }
 
 /** Convert `YYYY-MM-DD` to `MM-DD-YYYY` for `GET /setting/holiday/list?type=filter&...`. */
