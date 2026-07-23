@@ -32,22 +32,22 @@ export function TransferListMoveButton({
       className={cn(transferListMoveButtonClass, className)}
       {...props}
     >
-      {/* Mobile: up/down arrows */}
+      {/* Mobile/Stacked: up/down arrows */}
       {direction === "forward" ? (
         <ChevronDown
-          className="block sm:hidden size-5 shrink-0 fill-white stroke-white stroke-[1.5]"
+          className="block lg:hidden size-5 shrink-0 fill-white stroke-white stroke-[1.5]"
           aria-hidden
         />
       ) : (
         <ChevronUp
-          className="block sm:hidden size-5 shrink-0 fill-white stroke-white stroke-[1.5]"
+          className="block lg:hidden size-5 shrink-0 fill-white stroke-white stroke-[1.5]"
           aria-hidden
         />
       )}
-      {/* Desktop: left/right play triangles */}
+      {/* Desktop side-by-side: left/right play triangles */}
       <Play
         className={cn(
-          "hidden sm:block size-3 shrink-0 fill-white stroke-white stroke-[1.25]",
+          "hidden lg:block size-3 shrink-0 fill-white stroke-white stroke-[1.25]",
           direction === "back" && "rotate-180",
         )}
         aria-hidden

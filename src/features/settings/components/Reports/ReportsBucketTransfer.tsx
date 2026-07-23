@@ -115,7 +115,7 @@ export function ReportsBucketTransfer({
 
   return (
     <div className={containerClassName}>
-      <div className="grid max-w-[1120px] grid-cols-[1fr_60px_1fr] items-center gap-4">
+      <div className="grid w-full max-w-[1120px] grid-cols-1 items-center gap-3 lg:grid-cols-[1fr_60px_1fr] lg:gap-4">
         <ReportsTransferPanel
           title={unassignedTitle}
           items={filteredUnassigned}
@@ -129,7 +129,7 @@ export function ReportsBucketTransfer({
           disabled={isDisabled}
         />
 
-        <div className="flex flex-col gap-3 pt-10">
+        <div className="flex items-center justify-center gap-3 py-2 lg:flex-col lg:py-0 lg:pt-10">
           <TransferListMoveButton
             direction="forward"
             disabled={isDisabled || toggledUnassigned.length === 0}
