@@ -128,7 +128,7 @@ const labelClassName = "mb-2 block text-[14px] font-normal text-[#2a2f3a]"
 const selectTriggerBase =
   "!min-h-0 shrink-0 rounded-[8px] border border-[#d6d7dc] bg-white !text-[14px] font-normal leading-normal text-[#111827] shadow-none focus-visible:border-[#6C5DD3] focus-visible:ring-0"
 
-const reportSelectTrigger = cn(selectTriggerBase, "!h-12 w-full px-[11px] !py-0")
+const reportSelectTrigger = cn(selectTriggerBase, "!h-12 w-full min-w-[162.83px] px-[11px] !py-0")
 
 const yearQuarterSelectTrigger = cn(selectTriggerBase, "!h-12 w-full px-[11px] !py-0")
 
@@ -140,7 +140,7 @@ const downloadTypeSelectTrigger = cn(selectTriggerBase, "!h-[45px] w-full px-[11
 
 
 const dateInputInRowClassName =
-  "box-border h-12 w-full rounded-[8px] border border-[#d6d7dc] bg-white p-[9.29688px] text-[14px] text-[#111827] shadow-none focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD3]/25"
+  "box-border h-12 w-full min-w-[112px] max-w-[168px] rounded-[8px] border border-[#d6d7dc] bg-white p-[9.29688px] text-[14px] text-[#111827] shadow-none focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD3]/25"
 
 
 const fileNameInputClassName =
@@ -1436,16 +1436,14 @@ export function ReportForm({ module }: ReportFormProps) {
   }: ReportFiltersBodyProps) => {
     return (
       <>
-        <div className="flex flex-col sm:flex-row sm:items-end gap-2 sm:gap-4 min-w-0 w-full sm:w-auto">
-          <span className="mb-1 sm:mb-2 block text-[14px] font-normal text-[#2a2f3a] whitespace-nowrap">
-            Select Month By
-          </span>
+        <div className="flex shrink-0 items-end gap-4">
+          <span className={labelClassName}>Select Month By</span>
           <Controller
             name="selectMonthBy"
             control={control}
             render={({ field }) => (
               <RadioGroup
-                className="flex flex-wrap items-center gap-3 sm:gap-4 min-h-[40px] sm:h-12"
+                className="flex h-12 items-center gap-4"
                 value={field.value}
                 onValueChange={(v) => {
                   field.onChange(v as "qtr" | "dates" | "month" | "year" | "scheduled" | "week")
@@ -1564,7 +1562,7 @@ export function ReportForm({ module }: ReportFormProps) {
         {selectMonthBy === "qtr" ? (
           <>
             {!showTopLevelFiscalYear && (
-              <div className="w-full sm:w-[152px] shrink-0">
+              <div className="w-[152px] shrink-0">
                 <label className={labelClassName} htmlFor="reports-fiscal-year">
                   {topLevelFiscalYearLabel}
                 </label>
@@ -1597,7 +1595,7 @@ export function ReportForm({ module }: ReportFormProps) {
               </div>
             )}
 
-            <div className="w-full sm:w-[142px] shrink-0">
+            <div className="w-[142px] shrink-0">
               <label className={labelClassName} htmlFor="reports-quarter">
                 Qtr
               </label>
@@ -1629,7 +1627,7 @@ export function ReportForm({ module }: ReportFormProps) {
             </div>
 
             {(currentReportItem?.criteria?.showWeekSelect) && (
-              <div className="w-full sm:w-[240px] shrink-0">
+              <div className="w-[240px] shrink-0">
                 <label className={labelClassName} htmlFor="reports-week-picker">
                   Week Picker
                 </label>
@@ -1657,7 +1655,7 @@ export function ReportForm({ module }: ReportFormProps) {
             )}
           </>
         ) : selectMonthBy === "year" ? (
-          <div className="w-full sm:w-[180px] shrink-0">
+          <div className="w-[180px] shrink-0">
             <label className={labelClassName} htmlFor="reports-year-input">
               Year
             </label>
@@ -1689,7 +1687,7 @@ export function ReportForm({ module }: ReportFormProps) {
           </div>
         ) : selectMonthBy === "month" || selectMonthBy === "week" ? (
           <>
-            <div className="w-full sm:w-[180px] shrink-0">
+            <div className="w-[180px] shrink-0">
               <label className={labelClassName} htmlFor="reports-month-input">
                 Month
               </label>
@@ -1704,7 +1702,10 @@ export function ReportForm({ module }: ReportFormProps) {
                       field.onChange(val)
                       clearPeriodDependentPicks()
                       if (selectMonthBy === "week") {
-                        setValue("dateFrom", "", { shouldValidate: false })
+                        const month = val?.trim() || getCurrentReportMonthValue()
+                        setValue("dateFrom", defaultWeekStartInMonth(month), {
+                          shouldValidate: false,
+                        })
                         setValue("dateTo", "", { shouldValidate: false })
                       }
                     }}
@@ -1722,7 +1723,7 @@ export function ReportForm({ module }: ReportFormProps) {
             </div>
             {selectMonthBy === "week" ? (
               <>
-                <div className="w-full sm:w-[168px] shrink-0">
+                <div className="w-[min(168px,22vw)] min-w-[120px] shrink-0">
                   <label className={labelClassName} htmlFor="reports-mcah-week1-start">
                     Week 1 Start Date
                   </label>
@@ -1740,8 +1741,8 @@ export function ReportForm({ module }: ReportFormProps) {
                         }}
                         onBlur={field.onBlur}
                         placeholder="Week 1 start"
-                        minDate={fiscalYearDateBounds?.minDate}
-                        maxDate={fiscalYearDateBounds?.maxDate}
+                        minDate={weekDateBounds?.minDate}
+                        maxDate={weekDateBounds?.maxDate}
                       />
                     )}
                   />
@@ -1751,7 +1752,7 @@ export function ReportForm({ module }: ReportFormProps) {
                     </p>
                   ) : null}
                 </div>
-                <div className="w-full sm:w-[168px] shrink-0">
+                <div className="w-[min(168px,22vw)] min-w-[120px] shrink-0">
                   <label className={labelClassName} htmlFor="reports-mcah-week1-end">
                     Week 1 End Date
                   </label>
@@ -1786,7 +1787,7 @@ export function ReportForm({ module }: ReportFormProps) {
         ) : selectMonthBy === "scheduled" ? (
           <>
             {!showTopLevelFiscalYear && isTrue(currentReportItem?.criteria?.showScheduleTime) && (
-              <div className="w-full sm:w-[180px] shrink-0">
+              <div className="w-[180px] shrink-0">
                 <label className={labelClassName} htmlFor="reports-scheduled-fiscal-year">
                   Fiscal Year
                 </label>
@@ -1813,7 +1814,7 @@ export function ReportForm({ module }: ReportFormProps) {
                 />
               </div>
             )}
-            <div className="w-full sm:w-[350px] shrink-0">
+            <div className="w-[min(350px,40vw)] min-w-[200px] shrink-0">
               <label className={labelClassName} htmlFor="reports-time-study-period">
                 Time Study Period
               </label>
@@ -1847,7 +1848,7 @@ export function ReportForm({ module }: ReportFormProps) {
                 )}
               />
             </div>
-            <div className="w-full sm:w-[168px] shrink-0">
+            <div className="w-[min(168px,22vw)] min-w-[120px] shrink-0">
               <label className={labelClassName} htmlFor="reports-date-from">
                 Start Date
               </label>
@@ -1867,7 +1868,7 @@ export function ReportForm({ module }: ReportFormProps) {
                 )}
               />
             </div>
-            <div className="w-full sm:w-[168px] shrink-0">
+            <div className="w-[min(168px,22vw)] min-w-[120px] shrink-0">
               <label className={labelClassName} htmlFor="reports-date-to">
                 End Date
               </label>
@@ -1890,7 +1891,7 @@ export function ReportForm({ module }: ReportFormProps) {
           </>
         ) : (
           <>
-            <div className="w-full sm:w-[168px] shrink-0">
+            <div className="w-[min(168px,22vw)] min-w-[120px] shrink-0">
               <label className={labelClassName} htmlFor="reports-date-from">
                 Start Date
               </label>
@@ -1928,7 +1929,7 @@ export function ReportForm({ module }: ReportFormProps) {
                 </p>
               ) : null}
             </div>
-            <div className="w-full sm:w-[168px] shrink-0">
+            <div className="w-[min(168px,22vw)] min-w-[120px] shrink-0">
               <label className={labelClassName} htmlFor="reports-date-to">
                 End Date
               </label>
@@ -2016,7 +2017,7 @@ export function ReportForm({ module }: ReportFormProps) {
             </div>
           )}
 
-          <div className="w-full sm:w-[280px] shrink-0">
+          <div className="w-[min(100%,240px)] min-w-[162.83px] shrink-0">
             <label className={labelClassName} htmlFor="reports-select-report">
               Reports
             </label>
@@ -2082,7 +2083,7 @@ export function ReportForm({ module }: ReportFormProps) {
           </div>
 
           {isTrue(currentReportItem?.criteria?.showmasterCodes) && (
-            <div className="w-full sm:w-[350px] shrink-0">
+            <div className="min-w-0 w-full max-w-[350px] shrink-0">
               <label className={labelClassName} htmlFor="reports-master-code">
                 Select Master Code
               </label>
@@ -2119,7 +2120,7 @@ export function ReportForm({ module }: ReportFormProps) {
           )}
 
           {showTopLevelFiscalYear && (
-            <div className="w-full sm:w-[180px] shrink-0">
+            <div className="w-[180px] shrink-0">
               <label className={labelClassName} htmlFor="reports-fiscal-year">
                 {topLevelFiscalYearLabel}
               </label>
@@ -2361,7 +2362,7 @@ export function ReportForm({ module }: ReportFormProps) {
               )}
             />
           </div>
-          <div className="flex min-w-0 w-full sm:w-auto flex-wrap items-center justify-end gap-3 sm:flex-nowrap">
+          <div className="flex min-w-0 flex-wrap items-center justify-end gap-x-2 gap-y-2 sm:flex-nowrap">
             <Controller
               name="retainParameters"
               control={control}
@@ -2381,29 +2382,27 @@ export function ReportForm({ module }: ReportFormProps) {
                 </label>
               )}
             />
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              <Button
-                type="button"
-                variant="default"
-                className="!h-[45px] !min-h-[45px] flex-1 sm:!w-[120px] shrink-0 rounded-[8px] !border-0 !bg-[#6C5DD3] !p-[4.46875px] !text-[14px] !font-medium !text-white hover:!bg-[#5b4fc2]"
-                disabled={isViewPending}
-                onClick={() => {
-                  void onViewReport()
-                }}
-              >
-                {isViewPending ? (
-                  <>
-                    <Loader2 className="mr-1 size-4 shrink-0 animate-spin" />
-                    <span className="truncate">Loading…</span>
-                  </>
-                ) : (
-                  "View Report"
-                )}
-              </Button>
-              <Button type="button" variant="default" className="!h-[45px] !min-h-[45px] flex-1 sm:!w-[80px] shrink-0 rounded-[8px] !border-0 !bg-[#ef4444] !p-[4.46875px] !text-[14px] !font-medium !text-white hover:!bg-[#dc2626]" onClick={onStop}>
-                Stop
-              </Button>
-            </div>
+            <Button
+              type="button"
+              variant="default"
+              className={primaryReportButtonClass}
+              disabled={isViewPending}
+              onClick={() => {
+                void onViewReport()
+              }}
+            >
+              {isViewPending ? (
+                <>
+                  <Loader2 className="mr-1 size-4 shrink-0 animate-spin" />
+                  <span className="truncate">Loading…</span>
+                </>
+              ) : (
+                "View Report"
+              )}
+            </Button>
+            <Button type="button" variant="default" className={stopReportButtonClass} onClick={onStop}>
+              Stop
+            </Button>
           </div>
         </div>
 
@@ -2421,59 +2420,57 @@ export function ReportForm({ module }: ReportFormProps) {
         <LoadingProgress isLoading={isViewPending || isDownloadPending} />
 
         {/* Row 4: download row — narrow type, file name grows, button right */}
-        <div className="flex min-w-0 flex-col sm:flex-row sm:items-end gap-3 sm:gap-4 pt-6">
-          <div className="flex min-w-0 w-full sm:w-auto items-end gap-3 sm:gap-4 flex-1">
-            <div className="w-[120px] sm:w-[130px] shrink-0">
-              <label className={labelClassName} htmlFor="reports-download-type">
-                Download Type
-              </label>
-              <Controller
-                name="downloadType"
-                control={control}
-                render={({ field }) => (
-                  <SingleSelectDropdown
-                    value={field.value}
-                    onChange={(v) => field.onChange(v as ReportFormValues["downloadType"])}
-                    onBlur={field.onBlur}
-                    options={downloadTypeOptions}
-                    placeholder="Format"
-                    className={downloadTypeSelectTrigger}
-                    contentClassName="max-h-[180px]"
-                    itemButtonClassName="rounded-[6px] px-3 py-2"
-                    itemLabelClassName="!text-[14px] !font-normal"
-                  />
-                )}
-              />
-            </div>
-            <div className="flex-1 min-w-0">
-              <label className={labelClassName} htmlFor="reports-file-name">
-                File Name
-              </label>
-              <Controller
-                name="fileName"
-                control={control}
-                render={({ field }) => (
-                  <TitleCaseInput
-                    id="reports-file-name"
-                    placeholder="file name"
-                    className={fileNameInputClassName}
-                    value={field.value ?? ""}
-                    onChange={field.onChange}
-                    onBlur={field.onBlur}
-                  />
-                )}
-              />
-              {formState.errors.fileName?.message ? (
-                <p className="mt-1 text-[13px] text-red-500" role="alert">
-                  {formState.errors.fileName.message}
-                </p>
-              ) : null}
-            </div>
+        <div className="flex min-w-0 flex-wrap items-end gap-4 pt-6">
+          <div className="w-[120px] shrink-0">
+            <label className={labelClassName} htmlFor="reports-download-type">
+              Download Type
+            </label>
+            <Controller
+              name="downloadType"
+              control={control}
+              render={({ field }) => (
+                <SingleSelectDropdown
+                  value={field.value}
+                  onChange={(v) => field.onChange(v as ReportFormValues["downloadType"])}
+                  onBlur={field.onBlur}
+                  options={downloadTypeOptions}
+                  placeholder="Format"
+                  className={downloadTypeSelectTrigger}
+                  contentClassName="max-h-[180px]"
+                  itemButtonClassName="rounded-[6px] px-3 py-2"
+                  itemLabelClassName="!text-[14px] !font-normal"
+                />
+              )}
+            />
+          </div>
+          <div className=" flex-1 basis-0 w-full max-w-[350px] min-w-[350px]">
+            <label className={labelClassName} htmlFor="reports-file-name">
+              File Name
+            </label>
+            <Controller
+              name="fileName"
+              control={control}
+              render={({ field }) => (
+                <TitleCaseInput
+                  id="reports-file-name"
+                  placeholder="file name"
+                  className={fileNameInputClassName}
+                  value={field.value ?? ""}
+                  onChange={field.onChange}
+                  onBlur={field.onBlur}
+                />
+              )}
+            />
+            {formState.errors.fileName?.message ? (
+              <p className="mt-1 text-[13px] text-red-500" role="alert">
+                {formState.errors.fileName.message}
+              </p>
+            ) : null}
           </div>
           <Button
             type="button"
             variant="default"
-            className="!h-[45px] !min-h-[45px] w-full sm:!w-[120px] shrink-0 rounded-[8px] !border-0 !bg-[#6C5DD3] !p-[4.46875px] !text-[14px] !font-medium !text-white hover:!bg-[#5b4fc2] focus-visible:!ring-2 focus-visible:!ring-[#6C5DD3]/35"
+            className={primaryReportButtonClass}
             disabled={isDownloadPending}
             onClick={() => {
               void onDownloadReport()
