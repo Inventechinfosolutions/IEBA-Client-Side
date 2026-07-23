@@ -12,11 +12,14 @@ import {
   buildResolvedPdfMeta,
   calculateP101Percentage,
   ensurePdfBlob,
+  formatP101AllPeriodLabel,
   formatPrintedOnLabel,
   formatReportTime,
+  getP101AllTotalsForEmployee,
   getP101EmployeeGrandTotals,
   groupP101DataByEmployee,
   resolveFooterVariant,
+  type P101AllCategoryTotals,
   type P101GroupedActivity,
   type P101GroupedEmployee,
   type P101ReportPdfProps,
@@ -252,7 +255,47 @@ function ActivityRows({
   )
 }
 
-function EmployeeTable({ employee }: { employee: P101GroupedEmployee }) {
+function CategoryTotalRow({
+  label,
+  totalHours,
+  isFirst,
+}: {
+  label: string
+  totalHours: number
+  isFirst?: boolean
+}) {
+  return (
+    <View style={[styles.row, isFirst ? { marginTop: 16 } : {}]} wrap={false}>
+      <View style={[styles.grandTotalBox, { width: W.employee + W.activity + W.ffp }]}>
+        <Text style={[styles.rightText, styles.boldText]}>{label}</Text>
+      </View>
+      <View style={[styles.grandTotalBox, { width: W.activityTime }]}>
+        <Text style={[styles.rightText, styles.boldText]} />
+      </View>
+      <View style={[styles.grandTotalBox, { width: W.travelTime }]}>
+        <Text style={[styles.rightText, styles.boldText]} />
+      </View>
+      <View style={[styles.grandTotalBox, { width: W.totalTime }]}>
+        <Text style={[styles.rightText, styles.boldText]}>{formatReportTime(totalHours)}</Text>
+      </View>
+      <View style={[styles.grandTotalBox, { width: W.pct }]}>
+        <Text style={[styles.rightText, styles.boldText]} />
+      </View>
+    </View>
+  )
+}
+
+function EmployeeTable({
+  employee,
+  categoryTotals,
+  periodLabel,
+  useCategoryTotals,
+}: {
+  employee: P101GroupedEmployee
+  categoryTotals?: P101AllCategoryTotals
+  periodLabel?: string
+  useCategoryTotals?: boolean
+}) {
   const grandTotals = getP101EmployeeGrandTotals(employee)
 
   return (
@@ -279,31 +322,42 @@ function EmployeeTable({ employee }: { employee: P101GroupedEmployee }) {
         />
       ))}
 
-      <View style={[styles.row, { marginTop: 16 }]} wrap={false}>
-        <View style={[styles.grandTotalBox, { width: W.employee + W.activity + W.ffp }]}>
-          <Text style={[styles.rightText, styles.boldText]}>Grand Totals:</Text>
+      {useCategoryTotals && categoryTotals ? (
+        <>
+          <CategoryTotalRow label="Total FFP time" totalHours={categoryTotals.ffpTotal} isFirst />
+          <CategoryTotalRow label="Total MAA time" totalHours={categoryTotals.maaTotal} />
+          <CategoryTotalRow
+            label={`Total for ${periodLabel ?? "Period"}`}
+            totalHours={categoryTotals.periodTotal}
+          />
+        </>
+      ) : (
+        <View style={[styles.row, { marginTop: 16 }]} wrap={false}>
+          <View style={[styles.grandTotalBox, { width: W.employee + W.activity + W.ffp }]}>
+            <Text style={[styles.rightText, styles.boldText]}>Grand Totals:</Text>
+          </View>
+          <View style={[styles.grandTotalBox, { width: W.activityTime }]}>
+            <Text style={[styles.rightText, styles.boldText]}>
+              {formatReportTime(grandTotals.activityTime)}
+            </Text>
+          </View>
+          <View style={[styles.grandTotalBox, { width: W.travelTime }]}>
+            <Text style={[styles.rightText, styles.boldText]}>
+              {formatReportTime(grandTotals.travelTime)}
+            </Text>
+          </View>
+          <View style={[styles.grandTotalBox, { width: W.totalTime }]}>
+            <Text style={[styles.rightText, styles.boldText]}>
+              {formatReportTime(grandTotals.totalTime)}
+            </Text>
+          </View>
+          <View style={[styles.grandTotalBox, { width: W.pct }]}>
+            <Text style={[styles.rightText, styles.boldText]}>
+              {calculateP101Percentage(grandTotals.totalTime, grandTotals.totalTime)}
+            </Text>
+          </View>
         </View>
-        <View style={[styles.grandTotalBox, { width: W.activityTime }]}>
-          <Text style={[styles.rightText, styles.boldText]}>
-            {formatReportTime(grandTotals.activityTime)}
-          </Text>
-        </View>
-        <View style={[styles.grandTotalBox, { width: W.travelTime }]}>
-          <Text style={[styles.rightText, styles.boldText]}>
-            {formatReportTime(grandTotals.travelTime)}
-          </Text>
-        </View>
-        <View style={[styles.grandTotalBox, { width: W.totalTime }]}>
-          <Text style={[styles.rightText, styles.boldText]}>
-            {formatReportTime(grandTotals.totalTime)}
-          </Text>
-        </View>
-        <View style={[styles.grandTotalBox, { width: W.pct }]}>
-          <Text style={[styles.rightText, styles.boldText]}>
-            {calculateP101Percentage(grandTotals.totalTime, grandTotals.totalTime)}
-          </Text>
-        </View>
-      </View>
+      )}
     </View>
   )
 }
@@ -355,11 +409,16 @@ function P101ReportDocument({
   printedOn,
   meta,
   footerVariant,
+  categoryTotalsByEmployee,
 }: P101ReportPdfProps & {
   meta: ResolvedReportPdfMeta
   footerVariant: ReportPdfFooterVariant
 }) {
   const groupedEmployees = groupP101DataByEmployee(records)
+  const useCategoryTotals =
+    meta.reportCode === "P101-ALL" || meta.reportCode === "P101ALL"
+  const periodLabel = formatP101AllPeriodLabel(startDate, endDate)
+  const showInlineSignature = footerVariant !== "signaturePerPage"
 
   if (groupedEmployees.length === 0) {
     return (
@@ -382,8 +441,16 @@ function P101ReportDocument({
           printedOn={printedOn}
         >
           {index === 0 ? <PeriodDates startDate={startDate} endDate={endDate} /> : null}
-          <EmployeeTable employee={employee} />
-          <P101EmployeeSignature />
+          <EmployeeTable
+            employee={employee}
+            useCategoryTotals={useCategoryTotals}
+            categoryTotals={getP101AllTotalsForEmployee(
+              categoryTotalsByEmployee,
+              employee.employeename,
+            )}
+            periodLabel={periodLabel}
+          />
+          {showInlineSignature ? <P101EmployeeSignature /> : null}
         </P101ReportPage>
       ))}
     </Document>
