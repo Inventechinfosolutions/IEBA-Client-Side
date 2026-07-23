@@ -11,6 +11,7 @@ import { useAuth } from "@/contexts/AuthContext"
 import { usePermissions } from "@/hooks/usePermissions"
 import { PersonalTimeStudyCalendarCard } from "../components/PersonalTimeStudyCalendarCard"
 import { PersonalTimeStudyEntryForm } from "../components/PersonalTimeStudyEntryForm"
+import { PersonalTimeStudyMobileEntryForm } from "../components/PersonalTimeStudyMobileEntryForm"
 import { focusFirstTsProgramFieldSoon } from "../utils/focusUtils"
 import { PersonalTimeStudyLeaveCard } from "../components/PersonalTimeStudyLeaveCard"
 import { PersonalTimeStudyLegendCard } from "../components/PersonalTimeStudyLegendCard"
@@ -204,7 +205,7 @@ export function PersonalTimeStudyPage() {
                   type="button"
                   onClick={() => setActiveTab("personal")}
                   className={cn(
-                    "flex h-[63px] cursor-pointer items-center justify-center rounded-[6px] border px-3 text-[17px] leading-none font-medium tracking-wide",
+                    "flex h-[48px] sm:h-[63px] cursor-pointer items-center justify-center rounded-[6px] border px-2 sm:px-3 text-[13px] sm:text-[17px] leading-none font-medium tracking-wide truncate",
                     activeTab === "personal"
                       ? "border-[#6C5DD3] bg-[#6C5DD3] text-white"
                       : "border-[#e8e9ef] bg-white text-[#6C5DD3]"
@@ -218,7 +219,7 @@ export function PersonalTimeStudyPage() {
                     type="button"
                     onClick={() => setActiveTab("mgt")}
                     className={cn(
-                      "flex h-[63px] cursor-pointer items-center justify-center rounded-[6px] border px-3 text-[17px] leading-none font-medium tracking-wide",
+                      "flex h-[48px] sm:h-[63px] cursor-pointer items-center justify-center rounded-[6px] border px-2 sm:px-3 text-[13px] sm:text-[17px] leading-none font-medium tracking-wide truncate",
                       activeTab === "mgt"
                         ? "border-[#6C5DD3] bg-[#6C5DD3] text-white"
                         : "border-[#e8e9ef] bg-white text-[#6C5DD3]"
@@ -235,8 +236,8 @@ export function PersonalTimeStudyPage() {
               {/* ── Personal Time Study Tab ── */}
               {activeTab === "personal" && (
                 <>
-                  <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:gap-4">
-                    <div className="min-w-0 shrink-0 lg:w-[40%] lg:max-w-[40%]">
+                  <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:gap-4">
+                    <div className="min-w-0 shrink-0 xl:w-[40%] xl:max-w-[40%]">
                       <PersonalTimeStudyCalendarCard
                         weekRows={weekRows}
                         selectedDate={selectedDate}
@@ -253,7 +254,7 @@ export function PersonalTimeStudyPage() {
                     </div>
 
                     <div className="flex min-w-0 flex-1 flex-col gap-3">
-                      <div className="grid w-full grid-cols-1 items-stretch gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                      <div className="grid w-full grid-cols-1 items-stretch gap-3 sm:grid-cols-2 xl:grid-cols-3">
                         <PersonalTimeStudyLegendCard className="h-full" />
                         <PersonalTimeStudyLeaveCard
                           leaveCount={
@@ -275,7 +276,7 @@ export function PersonalTimeStudyPage() {
                           isDropdownLoading={dropdownQuery.isFetching}
                         />
                         <PersonalTimeStudyMinutesCard
-                          className="sm:col-span-2 lg:col-span-1 h-full"
+                          className="sm:col-span-2 xl:col-span-1 h-full"
                           allocatedMinutes={summaryQuery.data?.tsmins ?? 0}
                           actualMinutes={summaryQuery.data?.actualnormalactivitytime ?? 0}
                           balanceMinutes={summaryQuery.data?.actualnormalactivityTimebalance ?? 0}
@@ -285,7 +286,7 @@ export function PersonalTimeStudyPage() {
                         />
                       </div>
 
-                      <div className={cn("grid gap-2 h-[180px]", isTimeStudySupervisor ? "grid-cols-[1fr_auto]" : "grid-cols-1 md:grid-cols-2")}>
+                      <div className={cn("grid gap-2 min-h-[180px] h-auto md:h-[180px]", isTimeStudySupervisor ? "grid-cols-[1fr_auto]" : "grid-cols-1 md:grid-cols-2")}>
                         <PersonalTimeStudyNotesSection
                           className="animate-in fade-in slide-in-from-right-12 duration-500 ease-out"
                           value={localNotes}
@@ -335,7 +336,41 @@ export function PersonalTimeStudyPage() {
                     </div>
                   </div>
 
-                  <div className="mt-4 mb-2">
+                  {/* Mobile card view — hidden on xl+ (desktop) */}
+                  <div className="mt-4 mb-2 xl:hidden">
+                    <PersonalTimeStudyMobileEntryForm
+                      key={dateStr}
+                      dateStr={dateStr}
+                      showLeaveBanner={true}
+                      initialRecords={dayQuery.data?.timeStudyRecords}
+                      dropdownData={dropdownQuery.data}
+                      leaveRecords={dayQuery.data?.leaveRecords as any}
+                      onSave={(records) => submitMutation.mutate({ records, mode: "save" })}
+                      onSubmit={(records) => submitMutation.mutate({ records, mode: "submit" })}
+                      onDelete={(id) => deleteMutation.mutate(id)}
+                      allocatedTotal={summaryQuery.data?.tsmins}
+                      actualTotal={summaryQuery.data?.actualnormalactivitytime}
+                      balanceTotal={summaryQuery.data?.actualnormalactivityTimebalance}
+                      actualMultiTotal={summaryQuery.data?.actualmultiactivitytime}
+                      multiBalanceTotal={summaryQuery.data?.actualmultiactivityTimebalance}
+                      hideSummaryHeader={true}
+                      apportioningConfig={settingChecksQuery.data ?? null}
+                      apportioningRecords={dayQuery.data?.timeStudyRecords?.filter((r: any) => r.apportioning === true) || []}
+                      apportioningSummary={summaryQuery.data?.apportioningSummary}
+                      isLoading={dayQuery.isFetching || submitMutation.isPending || deleteMutation.isPending}
+                      isDropdownLoading={dropdownQuery.isFetching}
+                      onOpenDropdown={handleOpenDropdown}
+                      departmentMulticodes={departmentMulticodes}
+                      fetchingDepartments={fetchingDepartments}
+                      onFetchMulticodeDept={fetchMulticodeProgramsForDepartment}
+                      refetchConfig={settingChecksQuery.refetch}
+                      hideApportioningInfo={isTimeStudySupervisor}
+                      onOpenPeriodsSheet={() => setPeriodsSheetOpen(true)}
+                    />
+                  </div>
+
+                  {/* Desktop table-row view — hidden below xl (1280px) */}
+                  <div className="mt-4 mb-2 hidden xl:block">
                     <PersonalTimeStudyEntryForm
                       key={dateStr}
                       dateStr={dateStr}
