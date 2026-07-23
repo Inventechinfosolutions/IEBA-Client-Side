@@ -1,5 +1,5 @@
 import type { ReactNode } from "react"
-import { Check, ChevronDown, ChevronRight, EllipsisVertical, Pencil, Plus, X } from "lucide-react"
+import { Check, ChevronDown, ChevronRight, EllipsisVertical, Eye, Pencil, Plus, X } from "lucide-react"
 
 import editIconImg from "@/assets/edit-icon.png"
 import tableEmptyIcon from "@/assets/icons/table-empty.png"
@@ -102,14 +102,18 @@ export function TimeStudyProgramCardView({
                         onEditRow(level0Row)
                       }}
                       className="shrink-0 size-7 cursor-pointer rounded-[6px] text-white bg-transparent hover:bg-white/20 p-1 transition-colors flex items-center justify-center"
-                      aria-label="Edit Program"
+                      aria-label={level0Row.apportioning === true && level0Row.manualApportioning === true ? "View Program" : "Edit Program"}
                     >
-                      <img
-                        src={editIconImg}
-                        alt="Edit"
-                        aria-hidden="true"
-                        className="size-[14px] object-contain brightness-0 invert"
-                      />
+                      {level0Row.apportioning === true && level0Row.manualApportioning === true ? (
+                        <Eye className="size-[14px] text-white" />
+                      ) : (
+                        <img
+                          src={editIconImg}
+                          alt="Edit"
+                          aria-hidden="true"
+                          className="size-[14px] object-contain brightness-0 invert"
+                        />
+                      )}
                     </button>
                   )}
                 </div>
@@ -251,8 +255,17 @@ export function TimeStudyProgramCardView({
                                         }}
                                         className="cursor-pointer gap-1.5 rounded px-2 py-1 text-[12px] text-[#111827] dark:text-white"
                                       >
-                                        <Pencil className="size-3.5 text-[#6C5DD3]" />
-                                        Edit
+                                        {level1Row.apportioning === true && level1Row.manualApportioning === true ? (
+                                          <>
+                                            <Eye className="size-3.5 text-[#6C5DD3]" />
+                                            View
+                                          </>
+                                        ) : (
+                                          <>
+                                            <Pencil className="size-3.5 text-[#6C5DD3]" />
+                                            Edit
+                                          </>
+                                        )}
                                       </DropdownMenuItem>
                                     )}
                                   </DropdownMenuContent>
@@ -358,14 +371,18 @@ export function TimeStudyProgramCardView({
                                               type="button"
                                               onClick={() => onEditRow(level2Row)}
                                               className="shrink-0 size-7 cursor-pointer rounded-[6px] text-gray-700 dark:text-white bg-transparent hover:bg-gray-200 dark:hover:bg-zinc-800 p-1 transition-colors flex items-center justify-center"
-                                              aria-label="Edit Sub-Program"
+                                              aria-label={level2Row.apportioning === true && level2Row.manualApportioning === true ? "View Sub-Program" : "Edit Sub-Program"}
                                             >
-                                              <img
-                                                src={editIconImg}
-                                                alt="Edit"
-                                                aria-hidden="true"
-                                                className="size-[14px] object-contain dark:brightness-0 dark:invert opacity-70 hover:opacity-100 transition-opacity"
-                                              />
+                                              {level2Row.apportioning === true && level2Row.manualApportioning === true ? (
+                                                <Eye className="size-[14px] text-[#6C5DD3] dark:text-[#a799ff]" />
+                                              ) : (
+                                                <img
+                                                  src={editIconImg}
+                                                  alt="Edit"
+                                                  aria-hidden="true"
+                                                  className="size-[14px] object-contain dark:brightness-0 dark:invert opacity-70 hover:opacity-100 transition-opacity"
+                                                />
+                                              )}
                                             </button>
                                           )}
                                         </div>

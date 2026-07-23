@@ -1,4 +1,5 @@
 import React, { useState } from "react"
+import { Eye } from "lucide-react"
 
 import tableEmptyIcon from "@/assets/icons/table-empty.png"
 import editIconImg from "@/assets/edit-icon.png"
@@ -7,6 +8,7 @@ import statusCrossIcon from "@/assets/status-cross.png"
 import { Button } from "@/components/ui/button"
 import { usePermissions } from "@/hooks/usePermissions"
 import type { CostPoolRow } from "../types"
+import { CostPoolType } from "../enums/cost-pool.enum"
 
 export type CostPoolCardViewProps = {
   rows: CostPoolRow[]
@@ -28,6 +30,7 @@ function CostPoolCardItem({
   const activities = row.activities ?? []
   const hasMoreActivities = activities.length > 3
   const visibleActivities = isActivitiesExpanded ? activities : activities.slice(0, 3)
+  const isStandby = (row.type as any) === CostPoolType.STANDBY || (row.type as any) === "STANDBY"
 
   return (
     <div className="cost-pool-card rounded-[10px] border border-[#E5E7EB] dark:border-[rgba(108,93,211,0.55)] bg-white dark:bg-[#0c0d12] shadow-sm dark:shadow-[0_2px_12px_rgba(108,93,211,0.12)] overflow-hidden text-[13px] text-[#111827] dark:text-white flex flex-col">
@@ -47,14 +50,18 @@ function CostPoolCardItem({
               size="icon"
               onClick={() => onEditRow(row)}
               className="size-7 shrink-0 cursor-pointer rounded-[6px] text-white bg-transparent hover:bg-white/20 dark:bg-transparent dark:hover:bg-white/20 p-1"
-              aria-label={`Edit ${row.costPool}`}
+              aria-label={isStandby ? `View ${row.costPool}` : `Edit ${row.costPool}`}
             >
-              <img
-                src={editIconImg}
-                alt="Edit"
-                aria-hidden="true"
-                className="size-[16px] object-contain brightness-0 invert"
-              />
+              {isStandby ? (
+                <Eye className="size-[16px] text-white" />
+              ) : (
+                <img
+                  src={editIconImg}
+                  alt="Edit"
+                  aria-hidden="true"
+                  className="size-[16px] object-contain brightness-0 invert"
+                />
+              )}
             </Button>
           ) : null}
         </div>

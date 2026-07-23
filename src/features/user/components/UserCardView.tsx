@@ -159,54 +159,138 @@ export function UserCardView({
                 </div>
 
                 {/* Assigned Multi Codes */}
-                <div>
-                  <span className="font-bold text-[#111827]">Assigned Multi Codes: </span>
-                  {row.assignedMultiCodesDetailed && row.assignedMultiCodesDetailed.length > 0 ? (
-                    <div className="mt-1 flex flex-col gap-1 pl-1">
-                      {row.assignedMultiCodesDetailed.map((detail) => {
-                        const key = `${row.id}-${detail.departmentName}`
-                        const isExpanded = expandedMultiCodeRowIds[key]
-                        return (
-                          <div key={key} className="flex flex-col items-start">
-                            <button
-                              type="button"
-                              className="inline-flex cursor-pointer items-start gap-1 text-left text-[11px] font-normal text-[#232735]"
-                              onClick={() =>
-                                setExpandedMultiCodeRowIds((prev) => ({
-                                  ...prev,
-                                  [key]: !prev[key],
-                                }))
-                              }
-                            >
-                              {isExpanded ? (
-                                <ChevronDown className="mt-0.5 size-3 shrink-0 text-[#6C5DD3]" aria-hidden />
-                              ) : (
-                                <ChevronRight className="mt-0.5 size-3 shrink-0 text-[#6C5DD3]" aria-hidden />
-                              )}
-                              <span>{detail.departmentName}</span>
-                            </button>
+                {(() => {
+                  const details = row.assignedMultiCodesDetailed ?? []
+                  if (details.length === 0) {
+                    return (
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-bold text-[#111827] dark:text-white">Assigned Multi Codes: </span>
+                        <span className="font-normal text-[#232735] dark:text-[#e4e4e7]">—</span>
+                      </div>
+                    )
+                  }
+
+                  if (details.length === 1) {
+                    const detail = details[0]
+                    const key = `${row.id}-${detail.departmentName}`
+                    const isExpanded = Boolean(expandedMultiCodeRowIds[key])
+                    return (
+                      <div className="flex flex-col items-start">
+                        <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
+                          <span className="font-bold text-[#111827] dark:text-white">Assigned Multi Codes: </span>
+                          <button
+                            type="button"
+                            className="inline-flex cursor-pointer items-center gap-1 text-left font-normal text-[#232735] dark:text-[#e4e4e7]"
+                            onClick={() =>
+                              setExpandedMultiCodeRowIds((prev) => ({
+                                ...prev,
+                                [key]: !prev[key],
+                              }))
+                            }
+                          >
                             {isExpanded ? (
-                              <div className="mt-1 flex flex-wrap gap-1 pl-4">
-                                {detail.codes.split(", ").map((code) => (
-                                  <span
-                                    key={code}
-                                    className="rounded-[6px] border border-[#d7dbe7] bg-[#f8f9fc] px-2 py-0.5 text-[10px] text-[#555f76]"
-                                  >
-                                    {code}
-                                  </span>
-                                ))}
-                              </div>
-                            ) : null}
+                              <ChevronDown className="size-3.5 shrink-0 text-[#6C5DD3]" aria-hidden />
+                            ) : (
+                              <ChevronRight className="size-3.5 shrink-0 text-[#6C5DD3]" aria-hidden />
+                            )}
+                            <span>{detail.departmentName}</span>
+                          </button>
+                        </div>
+                        {isExpanded ? (
+                          <div className="mt-1.5 flex flex-wrap gap-1.5 pl-4">
+                            {detail.codes.split(", ").map((code) => (
+                              <span
+                                key={code}
+                                className="rounded-[6px] border border-[#d7dbe7] dark:border-zinc-800 bg-[#f8f9fc] dark:bg-zinc-900 px-2 py-0.5 text-[10px] text-[#555f76] dark:text-zinc-300 font-medium"
+                              >
+                                {code}
+                              </span>
+                            ))}
                           </div>
-                        )
-                      })}
+                        ) : null}
+                      </div>
+                    )
+                  }
+
+                  const hasAnyExpanded = details.some((detail) => {
+                    const key = `${row.id}-${detail.departmentName}`
+                    return Boolean(expandedMultiCodeRowIds[key])
+                  })
+
+                  if (!hasAnyExpanded) {
+                    return (
+                      <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
+                        <span className="font-bold text-[#111827] dark:text-white">Assigned Multi Codes: </span>
+                        <div className="inline-flex flex-wrap items-center gap-x-3 gap-y-1">
+                          {details.map((detail) => {
+                            const key = `${row.id}-${detail.departmentName}`
+                            return (
+                              <button
+                                key={key}
+                                type="button"
+                                className="inline-flex cursor-pointer items-center gap-1 text-left font-normal text-[#232735] dark:text-[#e4e4e7]"
+                                onClick={() =>
+                                  setExpandedMultiCodeRowIds((prev) => ({
+                                    ...prev,
+                                    [key]: !prev[key],
+                                  }))
+                                }
+                              >
+                                <ChevronRight className="size-3.5 shrink-0 text-[#6C5DD3]" aria-hidden />
+                                <span>{detail.departmentName}</span>
+                              </button>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )
+                  }
+
+                  return (
+                    <div className="space-y-1">
+                      <span className="font-bold text-[#111827] dark:text-white block">Assigned Multi Codes: </span>
+                      <div className="flex flex-col gap-1.5 pl-3">
+                        {details.map((detail) => {
+                          const key = `${row.id}-${detail.departmentName}`
+                          const isExpanded = Boolean(expandedMultiCodeRowIds[key])
+                          return (
+                            <div key={key} className="flex flex-col items-start">
+                              <button
+                                type="button"
+                                className="inline-flex cursor-pointer items-center gap-1 text-left font-normal text-[#232735] dark:text-[#e4e4e7]"
+                                onClick={() =>
+                                  setExpandedMultiCodeRowIds((prev) => ({
+                                    ...prev,
+                                    [key]: !prev[key],
+                                  }))
+                                }
+                              >
+                                {isExpanded ? (
+                                  <ChevronDown className="size-3.5 shrink-0 text-[#6C5DD3]" aria-hidden />
+                                ) : (
+                                  <ChevronRight className="size-3.5 shrink-0 text-[#6C5DD3]" aria-hidden />
+                                )}
+                                <span>{detail.departmentName}</span>
+                              </button>
+                              {isExpanded ? (
+                                <div className="mt-1 flex flex-wrap gap-1.5 pl-4">
+                                  {detail.codes.split(", ").map((code) => (
+                                    <span
+                                      key={code}
+                                      className="rounded-[6px] border border-[#d7dbe7] dark:border-zinc-800 bg-[#f8f9fc] dark:bg-zinc-900 px-2 py-0.5 text-[10px] text-[#555f76] dark:text-zinc-300 font-medium"
+                                    >
+                                      {code}
+                                    </span>
+                                  ))}
+                                </div>
+                              ) : null}
+                            </div>
+                          )
+                        })}
+                      </div>
                     </div>
-                  ) : (
-                    <span className="font-normal text-[#232735]">
-                      {row.assignedMultiCodes || "—"}
-                    </span>
-                  )}
-                </div>
+                  )
+                })()}
               </div>
 
               {/* Status Indicators Grid */}
