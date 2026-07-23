@@ -131,3 +131,48 @@ export function todayLocal(): Date {
   const now = new Date()
   return new Date(now.getFullYear(), now.getMonth(), now.getDate())
 }
+
+/**
+ * Last-resort Jul–Jun fiscal year id (e.g. July 2026 → `2026-2027`).
+ * Prefer {@link resolveCurrentFiscalYearId} with Settings API rows when available.
+ */
+export function getJulJunFiscalYearId(now = new Date()): string {
+  const month = now.getMonth() + 1
+  const year = now.getFullYear()
+  const startYear = month >= 7 ? year : year - 1
+  return `${startYear}-${startYear + 1}`
+}
+
+/**
+ * Year buttons for date/month pickers (newest first).
+ * When min/max years are set, only those years are returned — never a wall of greyed-out years.
+ */
+export function buildSelectableYearsDesc(options?: {
+  minYear?: number
+  maxYear?: number
+  absoluteMin?: number
+  absoluteMax?: number
+}): number[] {
+  const absoluteMin = options?.absoluteMin ?? 1990
+  const absoluteMax = options?.absoluteMax ?? 2040
+  let start = options?.minYear ?? absoluteMin
+  let end = options?.maxYear ?? absoluteMax
+  if (!Number.isFinite(start)) start = absoluteMin
+  if (!Number.isFinite(end)) end = absoluteMax
+  start = Math.max(absoluteMin, Math.trunc(start))
+  end = Math.min(absoluteMax, Math.trunc(end))
+  if (start > end) {
+    const fallback = options?.minYear ?? options?.maxYear ?? absoluteMax
+    const year = Math.max(absoluteMin, Math.min(absoluteMax, Math.trunc(fallback)))
+    return [year]
+  }
+  return Array.from({ length: end - start + 1 }, (_, index) => end - index)
+}
+
+/** Calendar years for dashboard/filter dropdowns around the current year. */
+export function buildNearbyCalendarYears(now = new Date(), past = 5, future = 1): number[] {
+  const current = now.getFullYear()
+  const start = current - past
+  const end = current + future
+  return Array.from({ length: end - start + 1 }, (_, index) => end - index)
+}
