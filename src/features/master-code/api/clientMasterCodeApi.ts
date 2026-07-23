@@ -49,10 +49,10 @@ export async function apiSaveClientMasterCodes(
   return Array.isArray(res.data) ? res.data : masterCodeIds
 }
 
-/** `GET /client/:clientId/master-codes/tabs` — tab names for Master Code page. */
-export async function apiGetClientMasterCodeTabs(clientId: number): Promise<string[]> {
+/** `GET /client/master-codes/active-tabs` — tab names for Master Code page. */
+export async function apiGetClientMasterCodeTabs(): Promise<string[]> {
   const res = await api.get<{ data?: string[] }>(
-    `/client/${encodeURIComponent(String(clientId))}/master-codes/tabs`,
+    `/client/master-codes/active-tabs`,
   )
   return Array.isArray(res.data) ? res.data : []
 }

@@ -53,7 +53,7 @@ import {
   costPoolUpsertDefaultValues,
   costPoolUpsertFormSchema,
 } from "../schemas"
-import { CostPoolUpsertMode } from "../enums/cost-pool.enum"
+import { CostPoolUpsertMode, CostPoolType } from "../enums/cost-pool.enum"
 import {
   COST_POOL_SORT_DIRECTION,
   COST_POOL_SORT_STATE,
@@ -317,7 +317,7 @@ function CostPoolEditDialogContent({
   }, [detailQuery.data])
 
   const readOnly = useMemo(() => {
-    return detailQuery.data?.assignmentType === "autoassigned"
+    return detailQuery.data?.type === CostPoolType.STANDBY
   }, [detailQuery.data])
 
   if (detailQuery.isError) {
@@ -775,7 +775,7 @@ export function CostPoolTable({
                           setEditOpen(true)
                         }}
                       >
-                        {row.assignmentType === "autoassigned" ? (
+                        {row.type === CostPoolType.STANDBY ? (
                           <Eye className="h-4 w-4" />
                         ) : (
                           <img
