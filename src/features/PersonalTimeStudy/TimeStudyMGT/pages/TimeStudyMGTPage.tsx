@@ -7,6 +7,7 @@ import { Check, X, Unlock, Bell, Info } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { useActionUserTimeRecordRanges } from "../mutations/updateActionUserTimeRecord"
 import { PersonalTimeStudyEntryForm } from "../../components/PersonalTimeStudyEntryForm"
+import { PersonalTimeStudyMobileEntryForm } from "../../components/PersonalTimeStudyMobileEntryForm"
 import { WeekStatusIcon } from "../../components/WeekStatusIcon"
 import { FUTURE_WEEK_STATUS } from "../../utils/weekSummaryUtils"
 import { MgtActionDateDialog } from "../components/MgtActionDateDialog"
@@ -58,8 +59,8 @@ export function TimeStudyMGTPage() {
     <TooltipProvider>
       <div className="flex flex-col gap-4">
 
-        {/* 3-column layout: Employee Panel | Calendar | Legend */}
-        <div className="flex gap-8 items-stretch px-3">
+        {/* 3-column layout on desktop: Employee Panel | Calendar | Legend */}
+        <div className="flex flex-col 2xl:flex-row gap-6 2xl:gap-8 items-stretch px-1 sm:px-3">
 
           {/* Left: Employee list */}
           <MgtEmployeePanel
@@ -72,7 +73,7 @@ export function TimeStudyMGTPage() {
           />
 
           {/* Middle: Calendar */}
-          <div className="flex-1 min-w-0 px-3">
+          <div className="flex-1 min-w-0 px-0 sm:px-3 overflow-x-auto">
             <PersonalTimeStudyCalendarCard
               weekRows={[]}
               variant="management"
@@ -226,7 +227,7 @@ export function TimeStudyMGTPage() {
           </div>
 
           {/* Right: Legend */}
-          <div className="w-[220px] shrink-0 self-start">
+          <div className="w-full 2xl:w-[220px] shrink-0 self-start">
             <MgtLegendCard />
           </div>
 
@@ -235,27 +236,55 @@ export function TimeStudyMGTPage() {
         {/* Read-only Time Study Entry Form with totals integrated */}
         {selectedUserId && selectedDate && (
           <div className="mt-4 mb-4">
-            <PersonalTimeStudyEntryForm
-              key={`${selectedUserId}-${toIsoYmdFromDate(selectedDate)}`}
-              dateStr={toIsoYmdFromDate(selectedDate)}
-              userId={selectedUserId}
-              username={selectedEmployee ? (`${selectedEmployee.firstName ?? ""} ${selectedEmployee.lastName ?? ""}`.trim() || selectedEmployee.name || "") : ""}
-              initialRecords={dayDetail?.timeStudyRecords}
-              dropdownData={dropdownData}
-              leaveRecords={dayDetail?.leaveRecords}
-              readonly={true}
-              allocatedTotal={allocatedTotal}
-              actualTotal={actualTotal}
-              balanceTotal={balanceTotal}
-              actualMultiTotal={actualMultiTotal}
-              multiBalanceTotal={multiBalanceTotal}
-              showLeaveBanner={true}
-              isLoading={isDayDetailLoading}
-              apportioningConfig={apportioningConfig}
-              apportioningRecords={apportioningRecords}
-              apportioningSummary={dayDetail?.apportioningSummary}
-              refetchConfig={refetchConfig}
-            />
+            {/* Mobile Card View (< xl) */}
+            <div className="xl:hidden">
+              <PersonalTimeStudyMobileEntryForm
+                key={`${selectedUserId}-${toIsoYmdFromDate(selectedDate)}`}
+                dateStr={toIsoYmdFromDate(selectedDate)}
+                userId={selectedUserId}
+                username={selectedEmployee ? (`${selectedEmployee.firstName ?? ""} ${selectedEmployee.lastName ?? ""}`.trim() || selectedEmployee.name || "") : ""}
+                initialRecords={dayDetail?.timeStudyRecords}
+                dropdownData={dropdownData}
+                leaveRecords={dayDetail?.leaveRecords as any}
+                readonly={true}
+                allocatedTotal={allocatedTotal}
+                actualTotal={actualTotal}
+                balanceTotal={balanceTotal}
+                actualMultiTotal={actualMultiTotal}
+                multiBalanceTotal={multiBalanceTotal}
+                showLeaveBanner={true}
+                isLoading={isDayDetailLoading}
+                apportioningConfig={apportioningConfig}
+                apportioningRecords={apportioningRecords}
+                apportioningSummary={dayDetail?.apportioningSummary}
+                refetchConfig={refetchConfig}
+              />
+            </div>
+
+            {/* Desktop Table View (≥ xl — 100% UNTOUCHED) */}
+            <div className="hidden xl:block">
+              <PersonalTimeStudyEntryForm
+                key={`${selectedUserId}-${toIsoYmdFromDate(selectedDate)}`}
+                dateStr={toIsoYmdFromDate(selectedDate)}
+                userId={selectedUserId}
+                username={selectedEmployee ? (`${selectedEmployee.firstName ?? ""} ${selectedEmployee.lastName ?? ""}`.trim() || selectedEmployee.name || "") : ""}
+                initialRecords={dayDetail?.timeStudyRecords}
+                dropdownData={dropdownData}
+                leaveRecords={dayDetail?.leaveRecords}
+                readonly={true}
+                allocatedTotal={allocatedTotal}
+                actualTotal={actualTotal}
+                balanceTotal={balanceTotal}
+                actualMultiTotal={actualMultiTotal}
+                multiBalanceTotal={multiBalanceTotal}
+                showLeaveBanner={true}
+                isLoading={isDayDetailLoading}
+                apportioningConfig={apportioningConfig}
+                apportioningRecords={apportioningRecords}
+                apportioningSummary={dayDetail?.apportioningSummary}
+                refetchConfig={refetchConfig}
+              />
+            </div>
           </div>
         )}
 

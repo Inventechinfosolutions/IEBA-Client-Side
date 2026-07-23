@@ -19,7 +19,7 @@ import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 import { SingleSelectSearchDropdown } from "@/components/ui/dropdown-search"
-import { Popover, PopoverContent, PopoverAnchor } from "@/components/ui/popover"
+import { Popover, PopoverContent, PopoverAnchor, PopoverTrigger } from "@/components/ui/popover"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { PersonalTimeStudyApportioningPanel } from "./PersonalTimeStudyApportioningPanel"
 import { useAuth } from "@/contexts/AuthContext"
@@ -593,6 +593,7 @@ export function PersonalTimeStudyMobileEntryForm({
   const username = propsUsername || selfName
 
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false)
+  const [openApportioning, setOpenApportioning] = useState(false)
   const [parents, setParents] = useState<TimeEntryParentRow[]>([createParent()])
   const [prevInitialRecords, setPrevInitialRecords] = useState<any[] | undefined>(undefined)
   const [prevLeaveRecords, setPrevLeaveRecords] = useState<any[] | undefined>(undefined)
@@ -1399,9 +1400,9 @@ export function PersonalTimeStudyMobileEntryForm({
           return (
             <div className="mt-5 mb-1 flex flex-wrap justify-center gap-4">
               {filtered.map((leave, idx) => (
-                <div key={idx} className="rounded-[6px] bg-[#E2E8F0]/50 px-4 py-1.5 text-[13px] text-gray-600 italic text-center border border-[#CBD5E1] flex items-center justify-center gap-2 w-fit">
+                <div key={idx} className="rounded-[6px] bg-[#E2E8F0]/50 dark:bg-zinc-900 px-4 py-1.5 text-[13px] text-gray-600 dark:text-zinc-300 italic text-center border border-[#CBD5E1] dark:border-zinc-800 flex items-center justify-center gap-2 w-fit">
                   <span>
-                    {readonly ? (leave.name || leave.employeeName || username) : "You"} applied leave in this date : <span className="not-italic font-medium text-gray-800">({dateStr})</span> from : <span className="not-italic font-medium text-gray-800">({(leave.starttime || "").slice(0, 5)})</span> To : <span className="not-italic font-medium text-gray-800">({(leave.endtime || "").slice(0, 5)})</span>. <strong className="not-italic font-semibold text-gray-700">Status:</strong>
+                    {readonly ? (leave.name || leave.employeeName || username) : "You"} applied leave in this date : <span className="not-italic font-medium text-gray-800 dark:text-zinc-100">({dateStr})</span> from : <span className="not-italic font-medium text-gray-800 dark:text-zinc-100">({(leave.starttime || "").slice(0, 5)})</span> To : <span className="not-italic font-medium text-gray-800 dark:text-zinc-100">({(leave.endtime || "").slice(0, 5)})</span>. <strong className="not-italic font-semibold text-gray-700 dark:text-zinc-200">Status:</strong>
                   </span>
                   <span className={cn(
                     "px-2 py-0.5 rounded-[6px] text-[11px] border bg-white capitalize font-semibold not-italic shrink-0 select-none",
@@ -1436,24 +1437,33 @@ export function PersonalTimeStudyMobileEntryForm({
 
           <div className="ml-auto flex items-center justify-end gap-2">
             {apportioningConfig?.supervisorApportioning && !hideApportioningInfo && (
-              <div className="flex items-center gap-2 bg-[#F8F9FA] border border-[#E2E8F0] px-3 py-1.5 rounded-[6px] h-9">
-                <div className="flex size-4 shrink-0 items-center justify-center rounded-[4px] border border-[#6C5DD3] bg-[#6C5DD3] text-white opacity-50 cursor-not-allowed">
-                  <Check className="size-3 stroke-[3]" />
-                </div>
-                <Label className="text-[12px] text-[#344054] font-semibold cursor-not-allowed select-none">Apportioning</Label>
-                {apportioningSummary && apportioningSummary.length > 0 && (
+              apportioningSummary && apportioningSummary.length > 0 ? (
+                <Popover open={openApportioning} onOpenChange={setOpenApportioning}>
                   <HoverCard openDelay={0} closeDelay={100}>
                     <HoverCardTrigger asChild>
-                      <div className="cursor-pointer text-blue-500 hover:text-blue-600 transition-colors flex items-center shrink-0">
-                        <AlertCircle className="size-3.5" />
-                      </div>
+                      <PopoverTrigger asChild>
+                        <div
+                          onClick={() => setOpenApportioning((prev) => !prev)}
+                          className="flex items-center gap-2 bg-[#F8F9FA] dark:bg-zinc-900 border border-[#E2E8F0] dark:border-zinc-800 px-3 py-1.5 rounded-[6px] h-9 cursor-pointer hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors select-none"
+                        >
+                          <div className="flex size-4 shrink-0 items-center justify-center rounded-[4px] border border-[#6C5DD3] bg-[#6C5DD3] text-white opacity-50 cursor-pointer">
+                            <Check className="size-3 stroke-[3]" />
+                          </div>
+                          <Label className="text-[12px] text-[#344054] dark:text-zinc-200 font-semibold cursor-pointer select-none">
+                            Apportioning
+                          </Label>
+                          <div className="text-blue-500 hover:text-blue-600 transition-colors flex items-center shrink-0">
+                            <AlertCircle className="size-3.5" />
+                          </div>
+                        </div>
+                      </PopoverTrigger>
                     </HoverCardTrigger>
-                    <HoverCardContent className="w-fit min-w-[300px] max-w-sm p-3 z-[100] bg-white border border-gray-100 shadow-xl rounded-[8px]" align="end" side="top">
-                      <div className="text-[11px] font-medium space-y-2">
+                    <HoverCardContent className="w-fit min-w-[260px] sm:min-w-[300px] max-w-[280px] sm:max-w-sm p-2.5 sm:p-3 z-[100] bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 shadow-xl rounded-[8px]" align="end" side="top">
+                      <div className="text-[10px] sm:text-[11px] font-medium space-y-2">
                         {apportioningSummary.map((item) => (
-                          <div key={item.departmentId} className="border-b last:border-b-0 pb-2 last:pb-0 border-gray-100">
-                            <div className="font-bold text-[#6C5DD3] text-[12px]">{item.departmentName}</div>
-                            <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 mt-1 text-[#344054]">
+                          <div key={item.departmentId} className="border-b last:border-b-0 pb-2 last:pb-0 border-gray-100 dark:border-zinc-800">
+                            <div className="font-bold text-[#6C5DD3] text-[11px] sm:text-[12px]">{item.departmentName}</div>
+                            <div className="grid grid-cols-2 gap-x-3 sm:gap-x-4 gap-y-0.5 mt-1 text-[#344054] dark:text-zinc-300">
                               {item.startDate && <div><span className="text-muted-foreground">Start:</span> <span className="font-semibold">{item.startDate}</span></div>}
                               {item.endDate && <div><span className="text-muted-foreground">End:</span> <span className="font-semibold">{item.endDate}</span></div>}
                               <div><span className="text-muted-foreground">Percent:</span> <span className="font-semibold">{item.apportioningPercent}%</span></div>
@@ -1463,9 +1473,31 @@ export function PersonalTimeStudyMobileEntryForm({
                         ))}
                       </div>
                     </HoverCardContent>
+                    <PopoverContent className="w-fit min-w-[260px] sm:min-w-[300px] max-w-[280px] sm:max-w-sm p-2.5 sm:p-3 z-[100] bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 shadow-xl rounded-[8px]" align="end" side="top">
+                      <div className="text-[10px] sm:text-[11px] font-medium space-y-2">
+                        {apportioningSummary.map((item) => (
+                          <div key={item.departmentId} className="border-b last:border-b-0 pb-2 last:pb-0 border-gray-100 dark:border-zinc-800">
+                            <div className="font-bold text-[#6C5DD3] text-[11px] sm:text-[12px]">{item.departmentName}</div>
+                            <div className="grid grid-cols-2 gap-x-3 sm:gap-x-4 gap-y-0.5 mt-1 text-[#344054] dark:text-zinc-300">
+                              {item.startDate && <div><span className="text-muted-foreground">Start:</span> <span className="font-semibold">{item.startDate}</span></div>}
+                              {item.endDate && <div><span className="text-muted-foreground">End:</span> <span className="font-semibold">{item.endDate}</span></div>}
+                              <div><span className="text-muted-foreground">Percent:</span> <span className="font-semibold">{item.apportioningPercent}%</span></div>
+                              <div><span className="text-muted-foreground">Allocated:</span> <span className="font-semibold">{item.allocatedMinutes} Min.</span></div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </PopoverContent>
                   </HoverCard>
-                )}
-              </div>
+                </Popover>
+              ) : (
+                <div className="flex items-center gap-2 bg-[#F8F9FA] dark:bg-zinc-900 border border-[#E2E8F0] dark:border-zinc-800 px-3 py-1.5 rounded-[6px] h-9">
+                  <div className="flex size-4 shrink-0 items-center justify-center rounded-[4px] border border-[#6C5DD3] bg-[#6C5DD3] text-white opacity-50 cursor-not-allowed">
+                    <Check className="size-3 stroke-[3]" />
+                  </div>
+                  <Label className="text-[12px] text-[#344054] dark:text-zinc-200 font-semibold cursor-not-allowed select-none">Apportioning</Label>
+                </div>
+              )
             )}
             {!readonly && moveSaveSubmitToTop && (
               <div className="flex items-center gap-2">
