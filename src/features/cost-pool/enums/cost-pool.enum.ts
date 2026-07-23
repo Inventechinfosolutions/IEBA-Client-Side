@@ -31,3 +31,10 @@ export const CostPoolRequestMethod = {
 
 export type CostPoolRequestMethod =
   (typeof CostPoolRequestMethod)[keyof typeof CostPoolRequestMethod]
+
+export const CostPoolType = {
+  NORMAL: "NORMAL",
+  STANDBY: "STANDBY",
+} as const
+
+export type CostPoolType = (typeof CostPoolType)[keyof typeof CostPoolType]
