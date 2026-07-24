@@ -12,6 +12,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { MasterCodePagination } from "@/features/master-code/components/MasterCodePagination"
+import { UserProgramHistoryCardView } from "./UserProgramHistoryCardView"
 import {
   PROGRAM_DEFINITION_HISTORY_KIND,
   USER_ASSIGNMENT_HISTORY_KIND,
@@ -90,7 +91,8 @@ export function UserProgramHistoryTable({
         <h3 className="text-[14px] font-bold text-[#111827]">{resolvedSectionTitle}</h3>
       </div>
 
-      <div className="overflow-hidden rounded-[10px] border border-[#E5E7EB]">
+      {/* Desktop Table View */}
+      <div className="hidden xl:block overflow-hidden rounded-[10px] border border-[#E5E7EB]">
         <div className="relative min-h-[300px] overflow-x-auto">
           {isLoading && (
             <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/60">
@@ -199,6 +201,13 @@ export function UserProgramHistoryTable({
           </Table>
         </div>
       </div>
+
+      {/* Mobile / Tablet Card View */}
+      <UserProgramHistoryCardView
+        historyData={historyData}
+        isLoading={isLoading}
+        isUserAssignmentHistory={isUserAssignmentHistory}
+      />
 
       {!isLoading && totalItems > 0 && (
         <MasterCodePagination

@@ -88,7 +88,7 @@ export function DepartmentSettingsPanel({
     const remainingRows = filteredRows.filter(s => !settings[s.key as keyof Settings])
 
     return (
-        <div className="px-6 pb-6">
+        <div className="px-4 sm:px-6 pb-6">
             {departmentId && (
                 <DepartmentEditContextHeader
                     code={currentCode}
@@ -97,10 +97,10 @@ export function DepartmentSettingsPanel({
             )}
 
             {/* Split-panel layout — always show both panels */}
-            <div className="py-4 flex gap-3 min-h-[320px]">
+            <div className="py-4 flex flex-col md:flex-row gap-3 min-h-[320px]">
 
                 {/* LEFT — Unassigned Settings panel */}
-                <div className="w-1/2 flex flex-col rounded-[12px] border border-[#6C5DD3] overflow-hidden shadow-[0_4px_20px_#6C5DD320]">
+                <div className="w-full md:w-1/2 flex flex-col rounded-[12px] border border-[#6C5DD3] overflow-hidden shadow-[0_4px_20px_#6C5DD320]">
                     {/* Header */}
                     <div className="flex h-12 items-center px-4 bg-[#6C5DD3]">
                         <div className="flex items-center gap-2">
@@ -114,7 +114,7 @@ export function DepartmentSettingsPanel({
                     </div>
 
                     {/* Body — unselected rows only */}
-                    <div className="flex-1 divide-y divide-[#F3F4F6] overflow-y-auto bg-white">
+                    <div className="flex-1 divide-y divide-[#F3F4F6] overflow-y-auto bg-white min-h-[160px]">
                         {remainingRows.length === 0 ? (
                             <div className="flex flex-col items-center justify-center py-10 gap-2 text-[#9CA3AF]">
                                 <span className="text-[13px] italic">All settings are assigned</span>
@@ -175,7 +175,7 @@ export function DepartmentSettingsPanel({
                 </div>
 
                 {/* RIGHT — Assigned Settings panel */}
-                <div className="w-1/2 flex flex-col rounded-[12px] border border-[#6C5DD3] overflow-hidden shadow-[0_4px_20px_#6C5DD320]">
+                <div className="w-full md:w-1/2 flex flex-col rounded-[12px] border border-[#6C5DD3] overflow-hidden shadow-[0_4px_20px_#6C5DD320]">
                     {/* Header */}
                     <div className="flex h-12 items-center px-4 bg-[#6C5DD3]">
                         <div className="flex items-center gap-2">
@@ -189,7 +189,7 @@ export function DepartmentSettingsPanel({
                     </div>
 
                     {/* Body — selected rows only */}
-                    <div className="flex-1 divide-y divide-[#F3F4F6] overflow-y-auto">
+                    <div className="flex-1 divide-y divide-[#F3F4F6] overflow-y-auto min-h-[160px]">
                         {selectedRows.length === 0 ? (
                             <div className="flex flex-col items-center justify-center py-10 gap-2 text-[#9CA3AF]">
                                 <span className="text-[13px] italic">No settings selected</span>
@@ -240,7 +240,7 @@ export function DepartmentSettingsPanel({
                                                     setValue("settings.autoApportioning", value === "auto")
                                                     setValue("settings.manualApportioning", value === "manual")
                                                 }}
-                                                className="flex flex-row gap-6"
+                                                className="flex flex-row flex-wrap gap-4 sm:gap-6"
                                             >
                                                 <div className="flex items-center gap-2">
                                                     <RadioGroupItem value="auto" id="dept-auto" className="border-[#D1D5DB] data-checked:border-[#6C5DD3] data-checked:bg-[#6C5DD3]" />
@@ -257,7 +257,7 @@ export function DepartmentSettingsPanel({
                                     {/* Apportioning start/end date */}
                                     {setting.key === "apportioning" && (
                                         <div className="ml-7 mt-3 space-y-2">
-                                            <div className="grid grid-cols-2 gap-4 max-w-[380px]">
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-[380px]">
                                                 <div className="space-y-1.5">
                                                     <Label className="text-[13px] font-[500] text-[#374151]">Start Date</Label>
                                                     <TitleCaseInput
@@ -379,11 +379,11 @@ export function DepartmentSettingsPanel({
             </div>
 
             {/* Actions */}
-            <div className="flex justify-end gap-4 pt-4">
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 sm:gap-4 pt-4">
                 <Button
                     type="button"
                     onClick={onSave}
-                    className="w-[140px] h-[50px] bg-[#6C5DD3] hover:bg-[#5B4DC5] rounded-[8px] text-[16px] font-[500]"
+                    className="w-full sm:w-[140px] h-[48px] sm:h-[50px] bg-[#6C5DD3] hover:bg-[#5B4DC5] rounded-[8px] text-[15px] sm:text-[16px] font-[500]"
                 >
                     Save
                 </Button>
@@ -391,7 +391,7 @@ export function DepartmentSettingsPanel({
                     type="button"
                     disabled={isSubmitting}
                     onClick={onExit}
-                    className="w-[140px] h-[50px] bg-[#E5E7EB] hover:bg-[#D1D5DB] text-[#374151] rounded-[8px] text-[16px] font-[500]"
+                    className="w-full sm:w-[140px] h-[48px] sm:h-[50px] bg-[#E5E7EB] hover:bg-[#D1D5DB] text-[#374151] rounded-[8px] text-[15px] sm:text-[16px] font-[500]"
                 >
                     Exit
                 </Button>

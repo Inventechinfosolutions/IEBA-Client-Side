@@ -4,6 +4,7 @@ import { toast } from "sonner"
 import { useDeletePayrollRows } from "../mutations/deletePayrollRows"
 import { useUploadPayrollFile } from "../mutations/uploadPayrollFile"
 import { PayrollDataTable } from "../components/PayrollDataTable"
+import { PayrollCardView } from "../components/PayrollCardView"
 import { EditPayrollDataDialog } from "../components/EditPayrollDataDialog"
 import { PayrollDetailsSection } from "../components/PayrollDetailsSection"
 import { PayrollUploadSection } from "../components/PayrollUploadSection"
@@ -270,6 +271,13 @@ export function PayrollPage() {
             <div className="min-w-0 max-w-full">
               <h2 className="mb-3 text-[14px] font-semibold text-[#111827]">Payroll data</h2>
               <PayrollDataTable
+                rows={rowsModule.rows}
+                isLoading={isTableLoading || payrollSettingsModule.isLoading || payrollSettingsModule.isFetching}
+                columns={enabledColumnLabels}
+                showEditAction={hasAnyEditableEnabledColumn}
+                onEditRow={hasAnyEditableEnabledColumn ? handleEditRow : undefined}
+              />
+              <PayrollCardView
                 rows={rowsModule.rows}
                 isLoading={isTableLoading || payrollSettingsModule.isLoading || payrollSettingsModule.isFetching}
                 columns={enabledColumnLabels}

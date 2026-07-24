@@ -86,7 +86,7 @@ export function ResetPassword() {
   }
 
   return (
-    <div className="relative flex min-h-svh w-full flex-col items-center justify-center overflow-hidden bg-white px-4 py-8 sm:px-6 sm:py-12">
+    <div className="relative flex min-h-svh w-full flex-col items-center justify-center bg-white px-4 pt-16 pb-8 sm:px-6 sm:pt-20 sm:pb-12">
       <div
         className="pointer-events-none absolute inset-0 bg-cover bg-center bg-no-repeat opacity-30 [filter:invert(1)]"
         style={{ backgroundImage: `url(${forgotPasswordBg})` }}
@@ -94,11 +94,11 @@ export function ResetPassword() {
 
       <Link
         to="/login"
-        className="IEBA--login absolute left-0 top-0 z-10 flex items-center gap-2 pt-[24.9297px] pr-[24.9297px] pb-0 pl-[24.9297px] font-[Roboto,sans-serif] text-[26px] text-[#212529]"
+        className="IEBA--login absolute left-0 top-0 z-10 flex items-center gap-2 p-3 font-[Roboto,sans-serif] text-[#212529] sm:pt-[24.9297px] sm:pr-[24.9297px] sm:pb-0 sm:pl-[24.9297px]"
         aria-label="IEBA Home"
       >
-        <img src={iebaLogo} alt="logo" className="h-[42px] w-[42px] object-contain" />
-        <span className="font">I E B A</span>
+        <img src={iebaLogo} alt="logo" className="h-8 w-8 object-contain sm:h-[42px] sm:w-[42px]" />
+        <span className="text-[20px] sm:text-[26px] font">I E B A</span>
       </Link>
 
       <div className="relative z-10 flex w-full max-w-[420px] min-w-0 shrink-0 justify-center">
@@ -109,10 +109,10 @@ export function ResetPassword() {
                 <img src={passwordIcon} alt="" className="h-7 w-7 object-contain opacity-90" />
               </div>
             </div>
-            <CardTitle className="mb-2 font-normal tracking-tight text-[#212529] text-[35.465px] leading-tight">
+          <CardTitle className="mb-2 font-normal tracking-tight text-[#212529] text-[26px] leading-tight sm:text-[32px] md:text-[35.465px]">
               Set password
             </CardTitle>
-            <CardDescription className="mb-2 text-[20px] text-[#C4BEBE]">
+          <CardDescription className="mb-2 text-[16px] text-[#C4BEBE] sm:text-[18px] sm:mb-2">
               Access to our dashboard
             </CardDescription>
             <p className="text-sm text-muted-foreground">

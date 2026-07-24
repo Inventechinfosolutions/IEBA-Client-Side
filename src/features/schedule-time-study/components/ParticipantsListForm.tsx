@@ -330,10 +330,10 @@ export function ParticipantsListForm({
     >
       <DialogContent
         showClose={false}
-        className="min-h-[520px] w-[980px] max-w-[calc(100vw-2rem)] rounded-[6px] border border-[#E5E7EB] bg-white p-[18px_26px_24px]"
+        className="min-h-[520px] max-h-[calc(100vh-2rem)] overflow-y-auto w-[980px] max-w-[calc(100vw-2rem)] rounded-[10px] border border-[#E5E7EB] bg-white p-4 sm:p-6"
         overlayClassName="bg-black/45"
       >
-        <DialogTitle className="text-center text-[17px] font-medium text-[#6C5DD3]">
+        <DialogTitle className="text-center text-[17px] sm:text-[20px] font-bold text-[#6C5DD3] break-words">
           {editingRow ? "Edit Participant Group" : "Create Participant Group"}
         </DialogTitle>
 
@@ -344,8 +344,8 @@ export function ParticipantsListForm({
         )}
 
         <form onSubmit={onSubmit} className="space-y-5">
-          <div className="mx-auto mt-4 flex w-fit items-end justify-center gap-5">
-            <div className="w-[180px] space-y-1">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 w-full mt-4 items-start">
+            <div className="w-full space-y-1">
               <Label className="text-[14px] font-normal text-black">Group Name</Label>
               <TitleCaseInput
                 className={`!h-12 w-full rounded-[10px] border-[#D1D5DB] text-[14px] ${form.formState.errors.groupName ? "border-red-500" : ""
@@ -364,7 +364,7 @@ export function ParticipantsListForm({
               )}
             </div>
 
-            <div className="w-[180px] space-y-1">
+            <div className="w-full space-y-1">
               <Label className="text-[14px] font-normal text-black">Select Department</Label>
               <TitleCaseInput
                 readOnly
@@ -373,10 +373,11 @@ export function ParticipantsListForm({
               />
             </div>
 
-            <div className="w-[180px] space-y-1">
-              <Label className="text-[14px] font-normal text-black">Select Year</Label>
+            <div className="w-full space-y-1">
+              <Label className="text-[14px] font-normal text-black">Fiscal Year</Label>
               <Select
-                value={studyYear}
+                disabled={!!editingRow}
+                value={studyYear || undefined}
                 onValueChange={(value) =>
                   form.setValue("studyYear", value, { shouldValidate: true })
                 }
@@ -392,8 +393,7 @@ export function ParticipantsListForm({
                   side="bottom"
                   avoidCollisions={false}
                   sideOffset={10}
-                  align="start"
-                  className="rounded-[10px] border border-[#E5E7EB] p-1"
+                  className="w-[var(--radix-select-trigger-width)] max-h-[240px] overflow-y-auto rounded-[10px] border border-[#E5E7EB] bg-white p-1 z-[100]"
                 >
                   {fiscalYearOptions.map((fy) => (
                     <SelectItem key={fy.id} value={fy.id}>
@@ -409,7 +409,7 @@ export function ParticipantsListForm({
               )}
             </div>
 
-            <div className="w-[180px] space-y-2">
+            <div className="w-full space-y-2">
               <Label className="text-[14px] font-normal text-black">Select User By</Label>
               <RadioGroup
                 value={selectedUserBy}
@@ -455,7 +455,7 @@ export function ParticipantsListForm({
             </div>
           </div>
 
-          <div className="mx-auto w-[600px] overflow-hidden rounded-[8px] border border-[#E5E7EB]">
+          <div className="mx-auto w-full max-w-[600px] overflow-hidden rounded-[8px] border border-[#E5E7EB]">
             <div className="h-10 bg-[#6C5DD3] px-4 py-2 text-[15px] font-medium text-white">
               {selectedUserBy === "user"
                 ? "All User List (Assigned)"

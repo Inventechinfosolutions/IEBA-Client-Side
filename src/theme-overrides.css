@@ -733,12 +733,46 @@
 }
 
 /* 27. Badge / Pill Borders Overrides in Dark Mode */
-.dark span[class*="border"]:not(.rounded-full):not([class*="d7dbe7"]):not([class*="D7DBE7"]):not([class*="border-red"]):not([class*="border-green"]):not([class*="border-yellow"]),
+.dark span[class*="border"]:not(.rounded-full):not([class*="d7dbe7"]):not([class*="D7DBE7"]):not([class*="border-red"]):not([class*="border-green"]):not([class*="border-yellow"]):not(.status-pill),
 .dark .border-\[\#d8dae3\],
 .dark .border-\[\#D8DAE3\],
 .dark [class*="border-[#d8dae3]"],
 .dark [class*="border-[#D8DAE3]"] {
   border-color: transparent !important;
+}
+
+/* Status Pill Styling (Light & Dark mode) */
+.status-pill.status-new {
+  border-color: #d1d5db !important;
+  color: #4b5563 !important;
+}
+
+.status-pill.status-inprogress {
+  border-color: #f59e0b !important;
+  color: #f59e0b !important;
+}
+
+.status-pill.status-completed {
+  border-color: #16a34a !important;
+  color: #16a34a !important;
+}
+
+.dark .status-pill.status-new {
+  border-color: #52525b !important;
+  color: #ffffff !important;
+  background-color: #27272a !important;
+}
+
+.dark .status-pill.status-inprogress {
+  border-color: #f59e0b !important;
+  color: #f59e0b !important;
+  background-color: #291e0a !important;
+}
+
+.dark .status-pill.status-completed {
+  border-color: #16a34a !important;
+  color: #4ade80 !important;
+  background-color: #052e16 !important;
 }
 
 /* 28. Primary Brand Purple Buttons Premium Gradient Overrides in Dark Mode */
@@ -833,6 +867,22 @@
   border-color: rgba(108, 93, 211, 0.4) !important;
 }
 
+/* 32b. Todo Card & Payroll Card View — high-specificity override to beat section-32 generic rule */
+.dark div.todo-card.overflow-hidden.border,
+.dark div.payroll-card.overflow-hidden.border {
+  border-color: rgba(108, 93, 211, 0.8) !important;
+}
+
+/* 32c. Editable Input Fields — force dark sharp solid purple border in both light and dark modes */
+input.editable-field-input,
+.dark input.editable-field-input,
+.dark input.editable-field-input[class*="editable-field-input"],
+.dark div input.editable-field-input {
+  border: 1.5px solid #6C5DD3 !important;
+  border-color: #6C5DD3 !important;
+  box-shadow: 0 0 0 1px #6C5DD3 !important;
+}
+
 /* 33. Purple Outline Buttons Keep Purple Styles in Dark Mode */
 .dark button.border-\[\#6C5DD3\],
 .dark button.border-\[\#6c5dd3\],
@@ -911,7 +961,73 @@
   background-color: #121216 !important;
 }
 
-/* 38. Sonner Toast Messages styling overrides in Dark Mode */
+/* 38. Sonner Toast Messages styling overrides in Dark Mode & Mobile Responsive */
+.dark [data-sonner-toast] {
+  background-color: #121215 !important;
+  border-color: rgba(108, 93, 211, 0.45) !important;
+  color: #f4f4f5 !important;
+}
+
+.dark [data-sonner-toast] [data-title],
+.dark [data-sonner-toast] [data-description] {
+  color: #f4f4f5 !important;
+}
+
+/* Mobile responsive toast overrides ONLY (< 640px) */
+@media (max-width: 639px) {
+  [data-sonner-toaster] {
+    left: 50% !important;
+    right: auto !important;
+    transform: translateX(-50%) !important;
+    width: calc(100vw - 32px) !important;
+    max-width: 360px !important;
+    margin: 0 auto !important;
+  }
+
+  [data-sonner-toast] {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    min-height: 44px !important;
+    max-height: none !important;
+    margin: 0 auto !important;
+    padding: 10px 14px !important;
+    box-sizing: border-box !important;
+    overflow: visible !important;
+    align-items: flex-start !important;
+  }
+
+  [data-sonner-toast] [data-icon] {
+    flex-shrink: 0 !important;
+  }
+
+  [data-sonner-toast] [data-content] {
+    flex: 1 1 0% !important;
+    min-width: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+    white-space: normal !important;
+    word-break: break-word !important;
+    overflow-wrap: anywhere !important;
+  }
+
+  [data-sonner-toast] [data-title],
+  [data-sonner-toast] [data-description],
+  [data-sonner-toast] div,
+  [data-sonner-toast] span {
+    font-size: 12px !important;
+    line-height: 1.4 !important;
+    height: auto !important;
+    white-space: normal !important;
+    word-break: break-word !important;
+    overflow-wrap: anywhere !important;
+    hyphens: auto !important;
+    text-overflow: clip !important;
+    overflow: visible !important;
+  }
+}
+
 .dark [data-sonner-toast] {
   background-color: #121215 !important;
   border-color: rgba(108, 93, 211, 0.45) !important;

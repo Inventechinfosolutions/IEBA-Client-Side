@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/table"
 import { MasterCodePagination } from "@/features/master-code/components/MasterCodePagination"
 
+import { CostPoolHistoryCardView } from "./CostPoolHistoryCardView"
 import {
   useCostPoolHistoryQuery,
   type CostPoolHistoryRecord,
@@ -75,10 +76,14 @@ export function CostPoolHistoryTable({
   )
 
   return (
-    <div className="flex flex-col gap-4 pt-3">
+    <div className="flex flex-col gap-4 pt-3 w-full min-w-0">
+      <CostPoolHistoryCardView
+        data={historyData}
+        isLoading={isDataLoading}
+      />
 
       {/* Table */}
-      <div className="relative overflow-hidden rounded-[10px] border border-[#E5E7EB]">
+      <div className="hidden xl:block relative w-full min-w-0 overflow-x-auto rounded-[10px] border border-[#E5E7EB]">
         {isDataLoading && (
           <div className="absolute inset-x-0 bottom-0 top-[48px] z-50 flex items-center justify-center bg-white/60">
             <Spinner className="text-[#6C5DD3]" />

@@ -25,6 +25,7 @@ import { useDeleteRmtsPpGroupList } from "../mutations/deleteRmtsPpGroupList"
 import type { ScheduledTimeStudyRowEnriched, ScheduledTimeStudyTableProps } from "../types"
 import { SchedulePayPeriodGroupStatus } from "../enums/schedule-time-study.enum"
 import { ScheduleTimeStudyForm } from "./ScheduleTimeStudyForm"
+import { ScheduledTimeStudyCardView } from "./ScheduledTimeStudyCardView"
 import { Check } from "lucide-react"
 import { toast } from "sonner"
 
@@ -79,20 +80,20 @@ export function ScheduledTimeStudyTable({
 
   return (
     <>
-      <div className="flex flex-wrap items-start justify-between gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 w-full min-w-0">
         <SingleSelectDropdown
           value={selectedStudyYear}
           onChange={onStudyYearChange}
           onBlur={() => {}}
           options={fiscalYearOptions.map((fy) => ({ value: fy.id, label: fy.label }))}
           placeholder="Select year"
-          className="h-10 w-[170px] rounded-[10px] border-[#D1D5DB] px-[12px] text-[14px] font-normal text-[#111827] focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+          className="h-10 w-full sm:w-[170px] rounded-[10px] border-[#D1D5DB] px-[12px] text-[14px] font-normal text-[#111827] focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0"
         />
 
         {canAddSchedule && (
           <Button
             type="button"
-            className="h-10 w-[150px] rounded-[12px] bg-[#6C5DD3] px-[15px] text-[14px] font-normal text-white hover:bg-[#5D4FC4]"
+            className="h-10 w-full sm:w-[150px] shrink-0 rounded-[12px] bg-[#6C5DD3] px-[15px] text-[14px] font-normal text-white hover:bg-[#5D4FC4]"
             onClick={() => {
               setEditingScheduledRow(null)
               setFormMountKey((k) => k + 1)
@@ -104,7 +105,31 @@ export function ScheduledTimeStudyTable({
         )}
       </div>
 
-      <div className="relative overflow-hidden rounded-[10px] border border-[#E5E7EB]">
+      <ScheduledTimeStudyCardView
+        rows={scheduledRows}
+        isLoading={scheduledQuery.isLoading}
+        canUpdateSchedule={canUpdateSchedule}
+        onEditRow={(row) => {
+          setEditingScheduledRow(row)
+          setFormMountKey((k) => k + 1)
+          setCreateScheduledOpen(true)
+        }}
+        onDeleteRow={(row) => {
+          const id = Number(row.id)
+          if (!Number.isFinite(id) || id <= 0) return
+          void deleteRow
+            .mutateAsync(id)
+            .then(() => {
+              toast.success("Deleted successfully", participantGroupSuccessToastOptions)
+            })
+            .catch((error: unknown) => {
+              toast.error(error instanceof Error ? error.message : "Delete failed")
+            })
+        }}
+        isDeletingId={deleteRow.isPending ? Number(editingScheduledRow?.id) : null}
+      />
+
+      <div className="hidden xl:block relative overflow-hidden rounded-[10px] border border-[#E5E7EB]">
         {scheduledQuery.isFetching && (
           <div className="absolute top-[60px] inset-x-0 bottom-0 flex items-center justify-center bg-white/50 z-[50]">
             <Spinner className="text-[#6C5DD3]" />

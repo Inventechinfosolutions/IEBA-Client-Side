@@ -20,7 +20,7 @@ export function MasterCodeTabs({
             type="button"
             onClick={() => onChange(tab)}
             className={cn(
-              "flex h-[53px] cursor-pointer items-center justify-center rounded-[8px] border px-3 text-[14px] leading-none font-medium tracking-wide text-[var(--primary)]",
+              "flex h-[42px] sm:h-[53px] cursor-pointer items-center justify-center rounded-[8px] border px-1 sm:px-3 text-[11px] sm:text-[14px] leading-none font-medium tracking-wide text-[var(--primary)] truncate",
               activeTab === tab
                 ? "border-[var(--primary)] bg-[var(--primary)] text-white"
                 : "border-[#e8e9ef] bg-white text-[var(--primary)]"

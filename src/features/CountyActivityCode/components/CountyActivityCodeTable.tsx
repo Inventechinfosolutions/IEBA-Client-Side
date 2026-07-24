@@ -40,6 +40,7 @@ import {
 } from "../schemas"
 import { CountyActivityCodeAddPage } from "./CountyActivityCodeAddPage"
 import { CountyActivityHistoryTable } from "./CountyActivityHistoryTable"
+import { CountyActivityCodeCardView } from "./CountyActivityCodeCardView"
 import {
   CountyActivityAddPageMode,
   CountyActivityGridRowType,
@@ -859,6 +860,13 @@ export function CountyActivityCodeTable({
     subCountyParentPickerRows.find((r) => r.id === id) ??
     primaryRows.find((r) => r.id === id)
 
+  const handleOpenEditModal = (row: CountyActivityCodeRow) => {
+    setRowToEdit(row)
+    setEditMasterCodesDropdownOpened(false)
+    setCodeTypeDropdownOpened(false)
+    setEditSelectedPrimaryId(null)
+    setEditOpen(true)
+  }
 
 
   const doCreateCountyActivity = (
@@ -1224,32 +1232,29 @@ export function CountyActivityCodeTable({
       setSortDirection(null)
       return
     }
-
     setSortDirection("asc")
   }
 
   return (
     <div className="space-y-4 rounded-[12px] border border-[#E5E7EB] bg-white p-4">
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-[10px] p-3">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between w-full min-w-0">
         {showHistory ? (
-          <div className="flex flex-1 flex-col gap-3">
-            <div className="flex flex-wrap items-center gap-2">
-              <TitleCaseInput
-                placeholder="Search County Activity Code"
-                value={historyActivityCode}
-                onChange={(e) => setHistoryActivityCode(e.target.value)}
-                className="h-12 w-[220px] rounded-[10px] border border-[#D9D9D9] bg-white px-3.5 text-[11px] text-[#111827] shadow-[0_4px_10px_rgba(15,23,42,0.08)] placeholder:text-[10px] placeholder:text-[#9CA3AF] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
-              />
-              <TitleCaseInput
-                placeholder="Search County Activity Name"
-                value={historyActivityName}
-                onChange={(e) => setHistoryActivityName(e.target.value)}
-                className="h-12 w-[250px] rounded-[10px] border border-[#D9D9D9] bg-white px-3.5 text-[11px] text-[#111827] shadow-[0_4px_10px_rgba(15,23,42,0.08)] placeholder:text-[10px] placeholder:text-[#9CA3AF] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
-              />
-            </div>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full lg:w-auto min-w-0">
+            <TitleCaseInput
+              placeholder="Search Activity Code"
+              value={historyActivityCode}
+              onChange={(e) => setHistoryActivityCode(e.target.value)}
+              className="h-[48px] w-full sm:w-[200px] lg:w-[220px] rounded-[8px] border-[#E5E7EB] bg-white px-[15px] py-[12px] text-[14px] shadow-sm focus-visible:ring-1 focus-visible:ring-[#6C5DD3]"
+            />
+            <TitleCaseInput
+              placeholder="Search Activity Name"
+              value={historyActivityName}
+              onChange={(e) => setHistoryActivityName(e.target.value)}
+              className="h-[48px] w-full sm:w-[220px] lg:w-[260px] rounded-[8px] border-[#E5E7EB] bg-white px-[15px] py-[12px] text-[14px] shadow-sm focus-visible:ring-1 focus-visible:ring-[#6C5DD3]"
+            />
           </div>
         ) : (
-          <div className="w-full max-w-[300px]">
+          <div className="relative w-full lg:w-[300px]">
             <form
               onSubmit={(event) => event.preventDefault()}
               className="relative"
@@ -1294,12 +1299,13 @@ export function CountyActivityCodeTable({
             </form>
           </div>
         )}
-        <div className="flex items-center gap-3 ml-auto">
+
+        <div className="grid grid-cols-3 gap-2 sm:gap-[12px] w-full lg:flex lg:w-auto lg:items-center lg:justify-end shrink-0">
           {/* History toggle button */}
           {isSuperAdmin && (
             <button
               type="button"
-              className={`flex h-12 items-center gap-2 rounded-[10px] px-4 text-[14px] font-normal transition-colors ${showHistory
+              className={`flex h-12 w-full lg:w-auto items-center justify-center gap-2 rounded-[10px] px-3 sm:px-4 text-[13px] sm:text-[14px] font-medium transition-colors ${showHistory
                 ? "bg-[#6C5DD3] text-white"
                 : "border border-[#6C5DD3] bg-white text-[#6C5DD3] hover:bg-[#F3F0FF]"
                 }`}
@@ -1317,13 +1323,13 @@ export function CountyActivityCodeTable({
             >
               {showHistory ? (
                 <>
-                  <ArrowLeft className="size-4 animate-back-bounce" />
-                  Back to County Activity
+                  <ArrowLeft className="size-4 shrink-0 animate-back-bounce" />
+                  <span className="truncate">Back to County Activity</span>
                 </>
               ) : (
                 <>
-                  <History className="size-4" />
-                  History
+                  <History className="size-4 shrink-0" />
+                  <span className="truncate">History</span>
                 </>
               )}
             </button>
@@ -1333,7 +1339,7 @@ export function CountyActivityCodeTable({
           {!showHistory && (
             <button
               type="button"
-              className="flex h-12 items-center gap-2 rounded-[10px] bg-[#6C5DD3] px-4 text-white"
+              className="flex h-12 w-full lg:w-auto items-center justify-center gap-2 rounded-[10px] bg-[#6C5DD3] px-3 sm:px-4 text-white cursor-pointer"
               onClick={() => {
                 const nextValue = !showInactive
                 filterForm.setValue("inactive", nextValue)
@@ -1342,13 +1348,13 @@ export function CountyActivityCodeTable({
               }}
             >
               {showInactive ? (
-                <span className="inline-flex size-[14px] items-center justify-center rounded-[3px] bg-white dark:bg-[#1C1C2D]">
+                <span className="inline-flex size-[14px] shrink-0 items-center justify-center rounded-[3px] bg-white dark:bg-[#1C1C2D]">
                   <Check className="size-[11px] stroke-[3] text-[#6C5DD3] dark:text-white" />
                 </span>
               ) : (
-                <span className="size-[14px] rounded-[3px] bg-white dark:bg-[#1C1C2D]" />
+                <span className="size-[14px] shrink-0 rounded-[3px] bg-white dark:bg-[#1C1C2D]" />
               )}
-              <span className="text-[14px] font-normal">Inactive</span>
+              <span className="text-[13px] sm:text-[14px] font-medium select-none whitespace-nowrap truncate">Inactive</span>
             </button>
           )}
           {!showHistory && canAddCountyActivity && (
@@ -1366,10 +1372,10 @@ export function CountyActivityCodeTable({
                 setCodeTypeDropdownOpened(false)
                 setAddOpen(true)
               }}
-              className="h-12 rounded-[10px] bg-[#6C5DD3] px-6 text-[14px] font-normal text-white hover:bg-[#5B4DC5]"
+              className="h-12 w-full lg:w-auto justify-center rounded-[10px] bg-[#6C5DD3] px-3 sm:px-6 text-[13px] sm:text-[14px] font-medium text-white hover:bg-[#5B4DC5]"
             >
-              <PlusIcon className="mr-2 size-4" />
-              Add County Activity
+              <PlusIcon className="mr-1 size-4 shrink-0" />
+              <span className="truncate">Add County Activity</span>
             </Button>
           )}
         </div>
@@ -1386,7 +1392,32 @@ export function CountyActivityCodeTable({
         </div>
       )}
 
-      <div className={`overflow-hidden rounded-[10px] border border-[#E5E7EB] ${showHistory ? "hidden" : ""}`}>
+      {/* Mobile & Tablet Card View */}
+      {!showHistory && (
+        <CountyActivityCodeCardView
+          data={rows}
+          isLoading={isLoading}
+          canUpdateCountyActivity={canUpdateCountyActivity}
+          onEdit={handleOpenEditModal}
+          expandedParentIds={expandedRowIds}
+          onToggleExpand={(id) => setExpandedRowIds(prev => ({ ...prev, [id]: !prev[id] }))}
+          footer={
+            !isLoading && totalItems > 0 ? (
+              <MasterCodePagination
+                totalItems={totalItems}
+                currentPage={pagination.page}
+                pageSize={pagination.pageSize}
+                onPageChange={onPageChange}
+                onPageSizeChange={onPageSizeChange}
+              />
+            ) : null
+          }
+        />
+      )}
+
+      {/* Desktop Table View */}
+      {!showHistory && (
+        <div className="hidden xl:block overflow-hidden rounded-[10px] border border-[#E5E7EB]">
         <Table className="w-full table-fixed border-collapse">
           <colgroup>
             {COUNTY_ACTIVITY_TABLE_COLUMNS.map((column) => (
@@ -1718,13 +1749,7 @@ export function CountyActivityCodeTable({
                                       size="icon"
                                       variant="ghost"
                                       className="text-[#6C5DD3] hover:bg-[#6C5DD3]/10"
-                                      onClick={() => {
-                                        setRowToEdit(row)
-                                        setEditMasterCodesDropdownOpened(false)
-                                        setCodeTypeDropdownOpened(false)
-                                        setEditSelectedPrimaryId(null)
-                                        setEditOpen(true)
-                                      }}
+                                      onClick={() => handleOpenEditModal(row)}
                                     >
                                       <Eye className="h-4 w-4" />
                                     </Button>
@@ -1745,13 +1770,7 @@ export function CountyActivityCodeTable({
                                 size="icon"
                                 variant="ghost"
                                 className="text-[#6C5DD3] hover:bg-[#6C5DD3]/10"
-                                onClick={() => {
-                                  setRowToEdit(row)
-                                  setEditMasterCodesDropdownOpened(false)
-                                  setCodeTypeDropdownOpened(false)
-                                  setEditSelectedPrimaryId(null)
-                                  setEditOpen(true)
-                                }}
+                                onClick={() => handleOpenEditModal(row)}
                               >
                                 <img
                                   src={editIconImg}
@@ -1770,13 +1789,7 @@ export function CountyActivityCodeTable({
                         key={`sub-${row.id}`}
                         parentId={row.id}
                         canUpdateCountyActivity={canUpdateCountyActivity}
-                        onEditRow={(child) => {
-                          setRowToEdit(child)
-                          setEditMasterCodesDropdownOpened(false)
-                          setCodeTypeDropdownOpened(false)
-                          setEditSelectedPrimaryId(null)
-                          setEditOpen(true)
-                        }}
+                        onEditRow={handleOpenEditModal}
                       />
                     ) : null
 
@@ -1788,9 +1801,10 @@ export function CountyActivityCodeTable({
           </TableBody>
         </Table>
       </div>
+      )}
 
       {!showHistory && (
-        <div className="mt-4">
+        <div className="mt-4 hidden xl:block">
           <MasterCodePagination
             totalItems={totalItems}
             currentPage={pagination.page}

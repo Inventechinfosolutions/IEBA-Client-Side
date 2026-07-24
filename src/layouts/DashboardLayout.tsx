@@ -47,11 +47,13 @@ export function DashboardLayout() {
   const profileImageQuery = useGetProfileImage(user?.id)
   const countyName = user?.countyName?.trim() || ""
   const isIebaCounty = countyName.toLowerCase() === "ieba"
-  const welcomeLabel = isIebaCounty
-    ? "Bits of Time Welcome To Testing county"
+  const welcomeSubLabel = isIebaCounty
+    ? "Welcome To Testing county"
     : countyName
-      ? `Bits of Time Welcome To ${countyName}`
-      : "Bits of Time"
+      ? `Welcome To ${countyName}`
+      : ""
+  const welcomeLabel = welcomeSubLabel ? `Bits of Time ${welcomeSubLabel}` : "Bits of Time"
+  const textColorClass = isIebaCounty ? "text-green-600" : "text-[#6C5DD3]"
   const [changePasswordOpen, setChangePasswordOpen] = useState(false)
   const [changeCountyOpen, setChangeCountyOpen] = useState(false)
   const [notificationsOpen, setNotificationsOpen] = useState(false)
@@ -84,19 +86,29 @@ export function DashboardLayout() {
       )}
       <AppSidebar />
       <SidebarInset className="bg-[#F4F5FB] h-svh overflow-hidden">
-        <header className="sticky top-0 z-50 flex h-[72px] shrink-0 items-center justify-between gap-4 bg-white px-6 shadow-[0_2px_10px_rgba(0,0,0,0.06)]">
-          <div className="flex items-center gap-3">
-            <SidebarTrigger className="-ml-2 rounded-full border border-[#E5E7EB] bg-white text-[#4B5563] hover:bg-[#F3F4F6]" />
-            <span
-              className={`text-[17px] ${isIebaCounty ? "text-green-600" : "text-[#6C5DD3]"}`}
+        <header className="sticky top-0 z-50 flex h-[60px] sm:h-[72px] shrink-0 items-center justify-between gap-2 sm:gap-4 bg-white px-3 sm:px-6 shadow-[0_2px_10px_rgba(0,0,0,0.06)]">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0 shrink">
+            <SidebarTrigger className="-ml-1 sm:-ml-2 shrink-0 rounded-full border border-[#E5E7EB] bg-white text-[#4B5563] hover:bg-[#F3F4F6]" />
+            <div
+              className={`flex flex-col leading-tight sm:flex-row sm:items-center sm:gap-1.5 min-w-0 ${textColorClass}`}
+              title={welcomeLabel}
             >
-              {welcomeLabel}
-            </span>
+              <span className="text-[13px] sm:text-[15px] md:text-[17px] font-semibold sm:font-medium whitespace-nowrap">
+                Bits of Time
+              </span>
+              {welcomeSubLabel && (
+                <span className="text-[11px] sm:text-[15px] md:text-[17px] font-normal sm:font-medium truncate max-w-[140px] xs:max-w-[200px] sm:max-w-none">
+                  {welcomeSubLabel}
+                </span>
+              )}
+            </div>
           </div>
-          <div className="flex flex-1 justify-center -translate-60 -translate-y-3">
-            <MimicBanner inline />
-          </div>
-          <div className="flex items-center gap-6">
+          {mimic && (
+            <div className="hidden lg:flex flex-1 justify-center -translate-x-12">
+              <MimicBanner inline />
+            </div>
+          )}
+          <div className="flex items-center gap-2 sm:gap-4 md:gap-6 shrink-0">
             {!isSuperAdmin && <div className="flex items-center gap-4" />}
             {user && (
               <>
@@ -104,11 +116,11 @@ export function DashboardLayout() {
                 <button
                   type="button"
                   onClick={() => setNotificationsOpen(true)}
-                  className="relative flex items-center justify-center p-2 text-[#6B7280] transition-colors hover:text-[#111827]"
+                  className="relative flex items-center justify-center p-1.5 sm:p-2 text-[#6B7280] transition-colors hover:text-[#111827]"
                 >
-                  <Bell className="size-[22px]" />
+                  <Bell className="size-[20px] sm:size-[22px]" />
                   {unreadCount > 0 ? (
-                    <span className="absolute -right-1 -top-1 inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-[#FF4D4F] px-1 text-[12px] font-semibold leading-none text-white">
+                    <span className="absolute -right-0.5 -top-0.5 sm:-right-1 sm:-top-1 inline-flex min-h-4 min-w-4 sm:min-h-5 sm:min-w-5 items-center justify-center rounded-full bg-[#FF4D4F] px-1 text-[10px] sm:text-[12px] font-semibold leading-none text-white">
                       {unreadCount > 99 ? "99+" : unreadCount}
                     </span>
                   ) : null}
@@ -117,19 +129,19 @@ export function DashboardLayout() {
                   <DropdownMenuTrigger asChild>
                     <button
                       type="button"
-                      className="flex items-center gap-2 bg-transparent px-0 py-0 border-0 outline-none hover:bg-transparent"
+                      className="flex items-center gap-1.5 sm:gap-2 bg-transparent px-0 py-0 border-0 outline-none hover:bg-transparent cursor-pointer"
                     >
-                      <Avatar className="h-12 w-12 border border-black">
+                      <Avatar className="h-9 w-9 sm:h-10 sm:w-10 md:h-12 md:w-12 border border-black shrink-0">
                         <AvatarImage src={profileImageQuery.data ?? user.avatar} alt={user.name} />
                         <AvatarFallback>
-                          <UserIcon className="h-6 w-6 text-gray-400" />
+                          <UserIcon className="h-5 w-5 sm:h-6 sm:w-6 text-gray-400" />
                         </AvatarFallback>
                       </Avatar>
-                      <div className="flex flex-col items-start leading-tight">
-                        <span className="text-[14px] font-medium text-[#111827]">
+                      <div className="hidden sm:flex flex-col items-start leading-tight">
+                        <span className="text-[13px] sm:text-[14px] font-medium text-[#111827] line-clamp-1 max-w-[120px] md:max-w-none">
                           {user.name}
                         </span>
-                        <span className="text-[12px] font-normal text-[#6B7280]">
+                        <span className="text-[11px] sm:text-[12px] font-normal text-[#6B7280] line-clamp-1 max-w-[120px] md:max-w-none">
                           {isSuperAdmin
                             ? "Super Admin"
                             : user.roles && user.roles.length > 0
@@ -137,7 +149,7 @@ export function DashboardLayout() {
                               : "User"}
                         </span>
                       </div>
-                      <ChevronDown className="ml-1 h-4 w-4 text-[#9CA3AF]" />
+                      <ChevronDown className="ml-0.5 sm:ml-1 h-3.5 w-3.5 sm:h-4 sm:w-4 text-[#9CA3AF] shrink-0" />
                     </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent
@@ -225,7 +237,12 @@ export function DashboardLayout() {
             )}
           </div>
         </header>
-        <div className="flex flex-1 min-h-0 flex-col gap-4 overflow-auto bg-[#f5f5f5] p-4 md:gap-6 md:p-6">
+        {mimic && (
+          <div className="flex lg:hidden w-full items-center justify-center bg-white dark:bg-[#09090b] py-2 px-3 border-b border-[#fc1b1b]/30 shadow-xs z-40">
+            <MimicBanner inline />
+          </div>
+        )}
+        <div className="flex flex-1 min-h-0 flex-col gap-3 sm:gap-4 overflow-auto bg-[#f5f5f5] p-3 sm:p-4 md:gap-6 md:p-6">
           <Suspense
             fallback={
               <div className="flex min-h-[300px] flex-1 items-center justify-center">

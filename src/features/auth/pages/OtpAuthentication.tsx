@@ -309,14 +309,14 @@ export function OtpAuthentication() {
   )
 
   return (
-    <div className="relative flex min-h-svh w-full flex-col items-center justify-center overflow-x-hidden bg-white px-4 py-8 sm:px-6 sm:py-12">
+    <div className="relative flex min-h-svh w-full flex-col items-center justify-center overflow-x-hidden bg-white px-4 py-10 sm:px-6 sm:py-12">
       {/* Same bg as Forgot Password: inverted forgot-password-bg.png, 30% intensity */}
       <div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-30 pointer-events-none [filter:invert(1)]"
         style={{ backgroundImage: `url(${forgotPasswordBg})` }}
       />
       {/* Top-left: IEBA logo 42×42, IEBA--login container styles */}
-      <div className="IEBA--login absolute left-0 top-0 z-10 pt-[24.9297px] pr-[24.9297px] pb-0 pl-[24.9297px] md:left-0">
+      <div className="IEBA--login absolute left-0 top-0 z-10 p-3 sm:pt-[24.9297px] sm:pr-[24.9297px] sm:pb-0 sm:pl-[24.9297px] md:left-0">
         <a
           href="/"
           className="flex items-center gap-2.5 font-[Roboto,sans-serif] text-[26px] text-[#212529]"
@@ -325,20 +325,20 @@ export function OtpAuthentication() {
           <img
             src={iebaLogo}
             alt="logo"
-            className="h-[42px] w-[42px] object-contain"
+            className="h-8 w-8 object-contain sm:h-[42px] sm:w-[42px]"
           />
-          <span className="font">I E B A</span>
+          <span className="text-[20px] sm:text-[26px] font">I E B A</span>
         </a>
       </div>
 
       {/* OTP card: narrower width, taller min height; max-width keeps centering stable */}
       <div className="relative z-10 flex w-full max-w-[420px] min-w-0 shrink-0 justify-center">
-        <Card className="flex min-h-[430px] w-full min-w-0 flex-col rounded-[6px] border-gray-100 bg-white py-7 px-5 shadow-login-card font-[Roboto,sans-serif]">
-        <CardHeader className="space-y-0 text-center px-0 pt-4">
-          <CardTitle className="mb-2 font-normal tracking-tight text-[#212529] text-[39.465px] leading-tight font-['Roboto',sans-serif]">
+        <Card className="flex w-full min-w-0 flex-col rounded-[6px] border-gray-100 bg-white py-5 px-4 shadow-login-card font-[Roboto,sans-serif] sm:py-7 sm:px-5">
+        <CardHeader className="space-y-0 text-center px-0 pt-3 sm:pt-4">
+          <CardTitle className="mb-2 font-normal tracking-tight text-[#212529] text-[28px] leading-tight font-['Roboto',sans-serif] sm:text-[36px] md:text-[39.465px]">
             OTP Authentication
           </CardTitle>
-          <CardDescription className="mb-4 text-[20px] text-[#C4BEBE]">
+          <CardDescription className="mb-3 text-[16px] text-[#C4BEBE] sm:text-[18px] sm:mb-4">
             Access to our dashboard
           </CardDescription>
         </CardHeader>
@@ -385,7 +385,7 @@ export function OtpAuthentication() {
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-3 pt-0.5">
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-0.5">
             <button
               type="button"
               onClick={handleResendOtp}
@@ -402,7 +402,7 @@ export function OtpAuthentication() {
               type="button"
               variant="secondary"
               onClick={handleCancel}
-              className="h-6 rounded-[6px] border-0 bg-[#DADADA] px-[15px] text-base font-normal text-gray-800 hover:bg-[#d0d0d0]"
+              className="h-8 rounded-[6px] border-0 bg-[#DADADA] px-[15px] text-sm font-normal text-gray-800 hover:bg-[#d0d0d0] sm:h-6 sm:text-base"
             >
               Cancel
             </Button>
@@ -435,9 +435,9 @@ export function OtpAuthentication() {
       >
         <DialogContent
           overlayClassName="bg-black/40"
-          className="top-[31%] z-[60] w-[min(520px,92vw)] max-w-[92vw] border-0 bg-white p-0 shadow-lg sm:rounded-[6px] [&>button]:hidden"
+          className="top-[50%] -translate-y-1/2 sm:top-[31%] sm:translate-y-0 z-[60] w-[min(520px,95vw)] max-w-[95vw] border-0 bg-white p-0 shadow-lg sm:rounded-[6px] [&>button]:hidden"
         >
-          <DialogHeader className="px-8 pt-10 sm:px-9">
+          <DialogHeader className="px-5 pt-6 sm:px-8 sm:pt-10 md:px-9">
             <DialogTitle>
               <div className="mb-3 flex w-full items-center justify-center gap-4">
                 <img
@@ -451,7 +451,7 @@ export function OtpAuthentication() {
               </div>
             </DialogTitle>
           </DialogHeader>
-        <div className="px-8 pb-4 pt-1 sm:px-9">
+        <div className="px-5 pb-4 pt-1 sm:px-8 md:px-9">
           <div className="mx-auto w-full max-w-[360px]">
             <div className="mb-3 w-full">
               <h6 className="block text-left text-[16px]  font-normal leading-tight text-[#000000E0]">
@@ -552,7 +552,7 @@ export function OtpAuthentication() {
             </p>
           )}
         </div>
-        <div className="flex w-full items-center justify-center gap-3 px-8 pb-10 sm:px-9">
+        <div className="flex w-full items-center justify-center gap-3 px-5 pb-6 sm:px-8 sm:pb-10 md:px-9">
           <Button
             type="button"
             onClick={handleCountyOk}
