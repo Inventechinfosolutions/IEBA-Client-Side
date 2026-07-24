@@ -71,7 +71,7 @@ export function EmployeePanel({
           disabledTabs={disabledTabs}
         />
 
-        <div className="min-h-[200px] px-8 pb-8 pt-6">
+        <div className="min-h-[200px] px-4 pb-6 pt-4 sm:px-8 sm:pb-8 sm:pt-6">
           {activeTab === "employee" ? (
             <EmployeeLoginDetailsSection
               isEditMode={isEditMode}
@@ -102,12 +102,12 @@ export function EmployeePanel({
             />
           ) : null}
 
-          <div className="mt-5 flex items-center justify-end gap-3">
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-2.5 sm:justify-end sm:gap-3">
             {activeTab !== "timeStudy" ? (
               <Button
                 type="submit"
                 disabled={isSubmitting}
-                className="h-9 min-w-[72px] cursor-pointer rounded-[8px] bg-[#6C5DD3] px-5 text-[12px] text-white hover:bg-[#6C5DD3]"
+                className="h-10 flex-1 cursor-pointer rounded-[8px] bg-[#6C5DD3] px-5 text-[12px] text-white hover:bg-[#6C5DD3] sm:h-9 sm:flex-none sm:min-w-[72px]"
               >
                 Save
               </Button>
@@ -117,7 +117,7 @@ export function EmployeePanel({
                 type="button"
                 onClick={onNextClick}
                 disabled={isSubmitting}
-                className="h-9 min-w-[72px] cursor-pointer rounded-[8px] bg-[#6C5DD3] px-5 text-[12px] text-white hover:bg-[#6C5DD3]"
+                className="h-10 flex-1 cursor-pointer rounded-[8px] bg-[#6C5DD3] px-5 text-[12px] text-white hover:bg-[#6C5DD3] sm:h-9 sm:flex-none sm:min-w-[72px]"
               >
                 Next
               </Button>
@@ -127,7 +127,7 @@ export function EmployeePanel({
                 type="button"
                 onClick={handlePasswordReset}
                 disabled={isSubmitting || isResettingPassword}
-                className="h-9 min-w-[120px] cursor-pointer rounded-[8px] bg-[#6C5DD3] px-5 text-[12px] text-white hover:bg-[#6C5DD3] disabled:opacity-60"
+                className="h-10 flex-1 cursor-pointer rounded-[8px] bg-[#6C5DD3] px-5 text-[12px] text-white hover:bg-[#6C5DD3] disabled:opacity-60 sm:h-9 sm:flex-none sm:min-w-[120px]"
               >
                 {isResettingPassword ? "Resetting..." : "Password Reset"}
               </Button>
@@ -136,7 +136,7 @@ export function EmployeePanel({
               type="button"
               onClick={onCancel}
               disabled={isSubmitting}
-              className="h-9 min-w-[72px] cursor-pointer rounded-[8px] bg-[#d2d4d9] px-5 text-[12px] text-[#111827] hover:bg-[#d2d4d9]"
+              className="h-10 flex-1 cursor-pointer rounded-[8px] bg-[#d2d4d9] px-5 text-[12px] text-[#111827] hover:bg-[#d2d4d9] sm:h-9 sm:flex-none sm:min-w-[72px]"
             >
               Exit
             </Button>

@@ -15,7 +15,7 @@ export function PersonalLeaveCard({
     <div className="flex h-full flex-col rounded-[10px] border border-[#E8EAF6] bg-white shadow-[0_0_20px_0_#0000001a] hover:shadow-[0_4px_16px_rgba(108,93,211,0.10)] transition-shadow duration-200">
 
       {/* Header */}
-      <Link to="/personal-time-study?focus=leave" className="flex items-start gap-3 px-4 pt-4 pb-2 hover:opacity-85 transition-opacity">
+      <Link to="/personal-time-study?focus=leave" className="flex items-start gap-3 px-4 sm:px-5 lg:px-4 pt-4 sm:pt-5 lg:pt-4 pb-2 hover:opacity-85 transition-opacity">
         <img src={iconPersonalLeave} alt="Leave icon" className="h-10 w-10 shrink-0 rounded-xl object-contain" />
         <span className="text-[16px] font-medium text-[#1a1a2e] leading-tight pt-1">
           Personal Leave Requests ({isLoading ? "–" : total})
@@ -23,7 +23,7 @@ export function PersonalLeaveCard({
       </Link>
 
       {/* Stats rows */}
-      <div className="flex-1 flex flex-col justify-evenly px-4 py-2">
+      <div className="flex-1 flex flex-col justify-evenly px-4 sm:px-5 lg:px-4 py-2 sm:py-3 lg:py-2 gap-2 sm:gap-3 lg:gap-0">
         <Link to="/personal-time-study?focus=leave&status=approved" className="hover:bg-gray-50/50 rounded px-1.5 py-0.5 transition-colors block">
           <StatRow label="Approved" value={approved} loading={isLoading} />
         </Link>

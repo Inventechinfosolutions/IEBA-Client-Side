@@ -1079,7 +1079,7 @@ export function SecurityAssignmentsPanel({
           <div className="mb-4 flex flex-wrap items-center gap-3">
             <Button
               type="button"
-              className="h-9 cursor-pointer gap-2 rounded-[12px] border border-[#E5E7EB] bg-white px-3 text-[12px] font-semibold text-[#6C5DD3] shadow-[0_1px_0_rgba(0,0,0,0.05)] hover:border-[#6C5DD3] hover:bg-[#F3F0FF]"
+              className="h-9 w-full cursor-pointer justify-center gap-2 rounded-[12px] border border-[#E5E7EB] bg-white px-3 text-[12px] font-semibold text-[#6C5DD3] shadow-[0_1px_0_rgba(0,0,0,0.05)] hover:border-[#6C5DD3] hover:bg-[#F3F0FF] sm:w-auto"
               onClick={() => {
                 setShowSecurityDeptRoleHistory(false)
                 setSecurityDeptRoleHistoryDeptName("")
@@ -1087,19 +1087,19 @@ export function SecurityAssignmentsPanel({
               }}
             >
               <ArrowLeft className="size-3.5" />
-              Back to Security
+              <span>Back to Security</span>
             </Button>
             <TitleCaseInput
               placeholder="Search Department Name"
               value={securityDeptRoleHistoryDeptName}
               onChange={(e) => setSecurityDeptRoleHistoryDeptName(e.target.value)}
-              className="h-[41px] w-[220px] rounded-[10px] border border-[#d0d5df] bg-white px-3.5 text-[11px] text-[#111827] shadow-[0_4px_10px_rgba(15,23,42,0.08)] placeholder:text-[10px] placeholder:text-[#a7afbf] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
+              className="h-[41px] w-full rounded-[10px] border border-[#d0d5df] bg-white px-3.5 text-[11px] text-[#111827] shadow-[0_4px_10px_rgba(15,23,42,0.08)] placeholder:text-[10px] placeholder:text-[#a7afbf] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333] sm:w-[220px]"
             />
             <TitleCaseInput
               placeholder="Search Role Name"
               value={securityDeptRoleHistoryRoleName}
               onChange={(e) => setSecurityDeptRoleHistoryRoleName(e.target.value)}
-              className="h-[41px] w-[200px] rounded-[10px] border border-[#d0d5df] bg-white px-3.5 text-[11px] text-[#111827] shadow-[0_4px_10px_rgba(15,23,42,0.08)] placeholder:text-[10px] placeholder:text-[#a7afbf] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
+              className="h-[41px] w-full rounded-[10px] border border-[#d0d5df] bg-white px-3.5 text-[11px] text-[#111827] shadow-[0_4px_10px_rgba(15,23,42,0.08)] placeholder:text-[10px] placeholder:text-[#a7afbf] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333] sm:w-[200px]"
             />
           </div>
 
@@ -1155,60 +1155,62 @@ export function SecurityAssignmentsPanel({
               )}
             </div>
 
-            <div className="flex min-w-0 flex-wrap items-center gap-3 sm:justify-end sm:gap-5 sm:pr-1 sm:pt-2">
-              <label className={`flex items-center gap-2 text-[11px] select-none ${isApportioningEnabled ? "cursor-pointer text-[#111827]" : "cursor-not-allowed text-[#9ca3af]"}`}>
-                <Controller
-                  name="supervisorApportioning"
-                  control={control}
-                  render={({ field }) => (
-                    <Checkbox
-                      checked={
-                        isApportioningEnabled
-                          ? dirtyFields.supervisorApportioning
-                            ? field.value
-                            : field.value || (tab2Apportioning?.supervisorApportioning ?? false)
-                          : false
-                      }
-                      onCheckedChange={(checked) => field.onChange(checked === true)}
-                      disabled={!isApportioningEnabled}
-                      className="size-4 rounded-[3px] border-[#c2c6d1] data-[state=checked]:border-(--primary) data-[state=checked]:bg-(--primary) disabled:cursor-not-allowed disabled:bg-[#f3f4f6] disabled:border-[#e5e7eb] disabled:opacity-100"
-                    />
-                  )}
-                />
-                Supervisor Apportioning
-              </label>
-
-              {isSuperAdmin && (
-                <label className="flex cursor-pointer select-none items-center gap-2 text-[11px] text-[#111827]">
+            <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:justify-end sm:gap-4 sm:pr-1 sm:pt-1">
+              <div className="flex flex-wrap items-center gap-4 sm:gap-5">
+                <label className={`flex items-center gap-2 text-[11px] select-none ${isApportioningEnabled ? "cursor-pointer text-[#111827]" : "cursor-not-allowed text-[#9ca3af]"}`}>
                   <Controller
-                    name="clientAdmin"
+                    name="supervisorApportioning"
                     control={control}
                     render={({ field }) => (
                       <Checkbox
-                        checked={field.value}
+                        checked={
+                          isApportioningEnabled
+                            ? dirtyFields.supervisorApportioning
+                              ? field.value
+                              : field.value || (tab2Apportioning?.supervisorApportioning ?? false)
+                            : false
+                        }
                         onCheckedChange={(checked) => field.onChange(checked === true)}
-                        className="size-4 cursor-pointer rounded-[3px] border-[#c2c6d1] data-[state=checked]:border-(--primary) data-[state=checked]:bg-(--primary)"
+                        disabled={!isApportioningEnabled}
+                        className="size-4 rounded-[3px] border-[#c2c6d1] data-[state=checked]:border-(--primary) data-[state=checked]:bg-(--primary) disabled:cursor-not-allowed disabled:bg-[#f3f4f6] disabled:border-[#e5e7eb] disabled:opacity-100"
                       />
                     )}
                   />
-                  Client Admin
+                  Supervisor Apportioning
                 </label>
-              )}
+
+                {isSuperAdmin && (
+                  <label className="flex cursor-pointer select-none items-center gap-2 text-[11px] text-[#111827]">
+                    <Controller
+                      name="clientAdmin"
+                      control={control}
+                      render={({ field }) => (
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={(checked) => field.onChange(checked === true)}
+                          className="size-4 cursor-pointer rounded-[3px] border-[#c2c6d1] data-[state=checked]:border-(--primary) data-[state=checked]:bg-(--primary)"
+                        />
+                      )}
+                    />
+                    Client Admin
+                  </label>
+                )}
+              </div>
 
               {canPersistTransfers && isSuperAdmin ? (
                 <Button
                   type="button"
-                  className="inline-flex h-auto min-h-9 shrink cursor-pointer items-center gap-2 whitespace-normal rounded-[12px] border border-[#E5E7EB] bg-white px-3 py-2 text-[11px] font-semibold leading-snug text-[#6C5DD3] shadow-[0_1px_0_rgba(0,0,0,0.05)] hover:border-[#6C5DD3] hover:bg-[#F3F0FF] sm:text-[12px]"
+                  className="inline-flex h-11 w-full shrink cursor-pointer items-center justify-center gap-2 rounded-[12px] border border-[#E5E7EB] bg-white px-3 text-[11px] font-semibold text-[#6C5DD3] shadow-[0_1px_0_rgba(0,0,0,0.05)] hover:border-[#6C5DD3] hover:bg-[#F3F0FF] sm:h-9 sm:w-auto sm:text-[12px]"
                   onClick={() => setShowSecurityDeptRoleHistory(true)}
                 >
                   <History className="size-3.5 shrink-0" />
-                  Department Role History
+                  <span>Department Role History</span>
                 </Button>
               ) : null}
             </div>
           </div>
 
-          <div className="relative mt-3 grid grid-cols-[1fr_60px_1fr] items-center gap-4">
+          <div className="relative mt-3 grid grid-cols-1 items-center gap-3 lg:grid-cols-[1fr_60px_1fr] lg:gap-4">
             {(securityRolesQuery.isLoading ||
               (Boolean(securityUserId) && tab2Query.isLoading) ||
               transferBusy) && (
@@ -1225,7 +1227,7 @@ export function SecurityAssignmentsPanel({
               onToggleDepartmentGroup={toggleDepartmentGroupU}
             />
 
-            <div className="flex flex-col gap-3 pt-10">
+            <div className="flex items-center justify-center gap-3 py-2 lg:flex-col lg:py-0 lg:pt-10">
               <TransferListMoveButton
                 direction="forward"
                 onClick={() => void transferToAssigned()}
@@ -1251,79 +1253,72 @@ export function SecurityAssignmentsPanel({
           </div>
 
           {displaySupervisorApportioning && isApportioningEnabled && (
-            <div className="mt-8 overflow-hidden rounded-[10px] border border-[#e5e7eb] bg-white shadow-[0_4px_20px_rgba(0,0,0,0.05)] transition-all duration-300">
-              <table className="w-full text-left text-[12px] border-collapse">
-                <thead>
-                  <tr className="bg-(--primary) text-white">
-                    <th className="px-5 py-2.5 text-[10.5px] font-semibold uppercase tracking-wider">Department Name</th>
-                    <th className="px-5 py-2.5 text-[10.5px] font-semibold text-center uppercase tracking-wider">Apportioning</th>
-                    <th className="px-5 py-2.5 text-[10.5px] font-semibold text-center uppercase tracking-wider">Percentage of allocation</th>
-                    <th className="px-5 py-2.5 text-[10.5px] font-semibold text-center uppercase tracking-wider">Auto Apportioning</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(() => {
-                    const supervisorRoleName = "Time Study Supervisor"
-                    const deptsWithSupervisor = new Set(
-                      assignedSnapshots
-                        .filter(s => s.name.trim() === supervisorRoleName)
-                        .map(s => s.departmentId)
-                    )
-                    const deptsWithUser = new Set(
-                      assignedSnapshots
-                        .filter(s => s.name.trim() === "User")
-                        .map(s => s.departmentId)
-                    )
-                    const qualifiedDeptIds = Array.from(deptsWithSupervisor).filter(id => deptsWithUser.has(id))
+            <div className="mt-8 overflow-hidden rounded-[10px] border border-[#e5e7eb] dark:border-zinc-700 bg-white dark:bg-zinc-900 shadow-[0_4px_20px_rgba(0,0,0,0.05)] transition-all duration-300">
+              {(() => {
+                const supervisorRoleName = "Time Study Supervisor"
+                const deptsWithSupervisor = new Set(
+                  assignedSnapshots
+                    .filter(s => s.name.trim() === supervisorRoleName)
+                    .map(s => s.departmentId)
+                )
+                const deptsWithUser = new Set(
+                  assignedSnapshots
+                    .filter(s => s.name.trim() === "User")
+                    .map(s => s.departmentId)
+                )
+                const qualifiedDeptIds = Array.from(deptsWithSupervisor).filter(id => deptsWithUser.has(id))
 
-                    const assignedDepts = qualifiedDeptIds
-                      .map(id => {
-                        const snap = assignedSnapshots.find(s => s.departmentId === id)
-                        const deptInfo = departmentsQuery.data?.items.find(d => String(d.id) === String(id))
-                        return {
-                          id: String(id),
-                          name: snap?.department ?? deptInfo?.name ?? `Dept ${id}`,
-                          apportioning: deptInfo?.settings.apportioning ?? false,
-                          autoApportioning: deptInfo?.settings.autoApportioning ?? false,
-                          apportioningStartDate: deptInfo?.settings.apportioningStartDate ?? null,
-                          apportioningEndDate: deptInfo?.settings.apportioningEndDate ?? null,
-                        }
-                      })
-                      .filter(dept => {
-                        if (!dept.apportioning) return false
-                        return true
-                      })
-
-                    if (assignedDepts.length === 0) {
-                      return (
-                        <tr>
-                          <td colSpan={4} className="px-4 py-12 text-center text-[#9ca3af] bg-[#f9fafb]">
-                            <p className="text-[13px]">No departments assigned yet.</p>
-                            <p className="mt-1 text-[11px]">Assign departments to manage apportioning allocations.</p>
-                          </td>
-                        </tr>
-                      )
+                const assignedDepts = qualifiedDeptIds
+                  .map(id => {
+                    const snap = assignedSnapshots.find(s => s.departmentId === id)
+                    const deptInfo = departmentsQuery.data?.items.find(d => String(d.id) === String(id))
+                    return {
+                      id: String(id),
+                      name: snap?.department ?? deptInfo?.name ?? `Dept ${id}`,
+                      apportioning: deptInfo?.settings.apportioning ?? false,
+                      autoApportioning: deptInfo?.settings.autoApportioning ?? false,
+                      apportioningStartDate: deptInfo?.settings.apportioningStartDate ?? null,
+                      apportioningEndDate: deptInfo?.settings.apportioningEndDate ?? null,
                     }
+                  })
+                  .filter(dept => {
+                    if (!dept.apportioning) return false
+                    return true
+                  })
 
-                    return assignedDepts.map((dept) => (
-                      <tr key={dept.id} className="border-t border-[#f1f2f6] hover:bg-[#f8fafc] transition-colors duration-200">
-                        <td className="px-5 py-4 font-medium text-[#111827]">{dept.name}</td>
-                        <td className="px-5 py-4 text-center">
-                          <div className="flex justify-center items-center">
-                            {dept.apportioning ? (
-                              <img src={statusCheck} alt="Checked" className="size-5 object-contain" />
-                            ) : (
-                              <img src={statusCross} alt="Unchecked" className="size-5 object-contain" />
-                            )}
+                if (assignedDepts.length === 0) {
+                  return (
+                    <div className="px-4 py-12 text-center text-[#9ca3af] bg-[#f9fafb]">
+                      <p className="text-[13px]">No departments assigned yet.</p>
+                      <p className="mt-1 text-[11px]">Assign departments to manage apportioning allocations.</p>
+                    </div>
+                  )
+                }
+
+                return (
+                  <>
+                    {/* Mobile Card View (< sm) */}
+                    <div className="block sm:hidden space-y-3 p-3 bg-[#fafafa] dark:bg-zinc-900">
+                      {assignedDepts.map((dept) => (
+                        <div key={dept.id} className="overflow-hidden rounded-[8px] border border-[#e5e7eb] dark:border-zinc-700 bg-white dark:bg-zinc-800 shadow-sm">
+                          <div className="bg-(--primary) px-3.5 py-2.5 text-[12px] font-semibold text-white">
+                            {dept.name}
                           </div>
-                        </td>
-                        <td className="px-5 py-4 text-center">
-                          <div className="flex justify-center">
-                            <Controller
-                              name={`apportioningAllocations.${dept.id}`}
-                              control={control}
-                              render={({ field }) => (
-                                <div className="flex justify-center">
+                          <div className="p-3 space-y-2.5 text-[11px] text-[#374151] dark:text-zinc-300">
+                            <div className="flex items-center justify-between border-b border-[#f1f2f6] dark:border-zinc-700 pb-2">
+                              <span className="font-medium text-[#6b7280] dark:text-zinc-400">Apportioning</span>
+                              {dept.apportioning ? (
+                                <img src={statusCheck} alt="Checked" className="size-4 object-contain" />
+                              ) : (
+                                <img src={statusCross} alt="Unchecked" className="size-4 object-contain" />
+                              )}
+                            </div>
+                            <div className="flex items-center justify-between border-b border-[#f1f2f6] dark:border-zinc-700 pb-2">
+                              <span className="font-medium text-[#6b7280] dark:text-zinc-400">Percentage of allocation</span>
+                              <Controller
+                                name={`apportioningAllocations.${dept.id}`}
+                                control={control}
+                                render={({ field }) => (
                                   <input
                                     {...field}
                                     type="text"
@@ -1333,31 +1328,96 @@ export function SecurityAssignmentsPanel({
                                       ""
                                     }
                                     placeholder=""
-                                    className="h-8 w-20 rounded-[4px] border border-[#cbd5e1] bg-white px-2 text-center text-[12px] font-medium text-[#111827] outline-none transition-all focus:border-(--primary) focus:ring-1 focus:ring-(--primary)"
+                                    className="h-7 w-16 rounded-[4px] border border-[#cbd5e1] dark:border-zinc-600 bg-white dark:bg-zinc-700 px-2 text-center text-[12px] font-medium text-[#111827] dark:text-zinc-100 outline-none transition-all focus:border-(--primary) focus:ring-1 focus:ring-(--primary)"
                                     onChange={(e) => {
                                       const val = e.target.value.replace(/[^0-9.]/g, "")
                                       field.onChange(val)
                                     }}
                                   />
-                                </div>
+                                )}
+                              />
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="font-medium text-[#6b7280] dark:text-zinc-400">Auto Apportioning</span>
+                              {dept.autoApportioning ? (
+                                <img src={statusCheck} alt="Checked" className="size-4 object-contain" />
+                              ) : (
+                                <img src={statusCross} alt="Unchecked" className="size-4 object-contain" />
                               )}
-                            />
+                            </div>
                           </div>
-                        </td>
-                        <td className="px-5 py-4 text-center">
-                          <div className="flex justify-center items-center">
-                            {dept.autoApportioning ? (
-                              <img src={statusCheck} alt="Checked" className="size-5 object-contain" />
-                            ) : (
-                              <img src={statusCross} alt="Unchecked" className="size-5 object-contain" />
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  })()}
-                </tbody>
-              </table>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Desktop Table View (>= sm) */}
+                    <div className="hidden sm:block overflow-x-auto w-full">
+                      <table className="w-full text-left text-[12px] border-collapse">
+                        <thead>
+                          <tr className="bg-(--primary) text-white">
+                            <th className="px-5 py-2.5 text-[10.5px] font-semibold uppercase tracking-wider">Department Name</th>
+                            <th className="px-5 py-2.5 text-[10.5px] font-semibold text-center uppercase tracking-wider">Apportioning</th>
+                            <th className="px-5 py-2.5 text-[10.5px] font-semibold text-center uppercase tracking-wider">Percentage of allocation</th>
+                            <th className="px-5 py-2.5 text-[10.5px] font-semibold text-center uppercase tracking-wider">Auto Apportioning</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {assignedDepts.map((dept) => (
+                            <tr key={dept.id} className="border-t border-[#f1f2f6] hover:bg-[#f8fafc] transition-colors duration-200">
+                              <td className="px-5 py-4 font-medium text-[#111827]">{dept.name}</td>
+                              <td className="px-5 py-4 text-center">
+                                <div className="flex justify-center items-center">
+                                  {dept.apportioning ? (
+                                    <img src={statusCheck} alt="Checked" className="size-5 object-contain" />
+                                  ) : (
+                                    <img src={statusCross} alt="Unchecked" className="size-5 object-contain" />
+                                  )}
+                                </div>
+                              </td>
+                              <td className="px-5 py-4 text-center">
+                                <div className="flex justify-center">
+                                  <Controller
+                                    name={`apportioningAllocations.${dept.id}`}
+                                    control={control}
+                                    render={({ field }) => (
+                                      <div className="flex justify-center">
+                                        <input
+                                          {...field}
+                                          type="text"
+                                          value={
+                                            field.value ??
+                                            tab2Apportioning?.apportioningAllocations?.[dept.id] ??
+                                            ""
+                                          }
+                                          placeholder=""
+                                          className="h-8 w-20 rounded-[4px] border border-[#cbd5e1] bg-white px-2 text-center text-[12px] font-medium text-[#111827] outline-none transition-all focus:border-(--primary) focus:ring-1 focus:ring-(--primary)"
+                                          onChange={(e) => {
+                                            const val = e.target.value.replace(/[^0-9.]/g, "")
+                                            field.onChange(val)
+                                          }}
+                                        />
+                                      </div>
+                                    )}
+                                  />
+                                </div>
+                              </td>
+                              <td className="px-5 py-4 text-center">
+                                <div className="flex justify-center items-center">
+                                  {dept.autoApportioning ? (
+                                    <img src={statusCheck} alt="Checked" className="size-5 object-contain" />
+                                  ) : (
+                                    <img src={statusCross} alt="Unchecked" className="size-5 object-contain" />
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>
+                )
+              })()}
             </div>
           )}
 
@@ -1423,12 +1483,12 @@ export function SecurityAssignmentsPanel({
                     )
 
                     return (
-                      <div key={field.id} className="flex items-start gap-4 w-full relative">
+                      <div key={field.id} className="flex flex-col sm:flex-row sm:items-start gap-4 w-full relative p-3.5 sm:p-0 border sm:border-0 border-[#e5e7eb] dark:border-zinc-700 rounded-[10px] sm:rounded-none bg-[#fafafa] dark:bg-zinc-800 sm:bg-transparent sm:dark:bg-transparent">
 
                         {/* Department */}
                         <div className="flex-[1.2] flex flex-col">
                           <div className="h-[22px] mb-1 flex items-end">
-                            <label className="block text-[11px] font-normal text-[#374151]">
+                            <label className="block text-[11px] font-normal text-[#374151] dark:text-zinc-300">
                               Department <span className="text-red-500">*</span>
                             </label>
                           </div>
@@ -1537,67 +1597,134 @@ export function SecurityAssignmentsPanel({
                               </label>
                             </div>
                             {!isAddMode && isSuperAdmin && (
-                              <HoverCard>
-                                <HoverCardTrigger asChild>
-                                  <History className="size-[14px] text-(--primary) cursor-pointer hover:text-[#5244b2] transition-colors" />
-                                </HoverCardTrigger>
-                                <HoverCardContent className="w-auto p-4 z-[100] shadow-lg rounded-[8px]" align="center" side="top">
-                                  <div className="text-[12px] font-bold text-[#111827] mb-3">MultiCodes History</div>
-                                  <div className="overflow-x-auto max-h-[300px] overflow-y-auto">
-                                    <table className="w-full text-left text-[12px] border-collapse whitespace-nowrap">
-                                      <thead className="bg-[#6b5cd6] text-white sticky top-0 z-10">
-                                        <tr>
-                                          <th className="px-3 py-2 font-medium font-inter">Department</th>
-                                          <th className="px-3 py-2 font-medium font-inter border-l border-[#897ee0]">MultiCode</th>
-                                          <th className="px-3 py-2 font-medium font-inter border-l border-[#897ee0]">Activation Start Date</th>
-                                          <th className="px-3 py-2 font-medium font-inter border-l border-[#897ee0]">Activation End Date</th>
-                                          <th className="px-3 py-2 font-medium font-inter border-l border-[#897ee0]">Updated At</th>
-                                        </tr>
-                                      </thead>
-                                      <tbody className="divide-y divide-[#e5e7eb]">
-                                        {timelineQuery.data?.filter((row) => {
-                                          const rowDeptId = Number(row.departmentId ?? 0)
-                                          if (rowDeptId > 0 && currentDeptId) {
-                                            return rowDeptId === Number(currentDeptId)
-                                          }
-                                          const rowDeptName = assignedDepts.find(d => Number(d.id) === rowDeptId)?.name ?? ""
-                                          return rowDeptName === currentDeptName
-                                        }).length ? timelineQuery.data
-                                          ?.filter((row) => {
+                              <Popover>
+                                <HoverCard openDelay={0} closeDelay={100}>
+                                  <HoverCardTrigger asChild>
+                                    <PopoverTrigger asChild>
+                                      <div
+                                        role="button"
+                                        tabIndex={0}
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="inline-flex items-center cursor-pointer text-(--primary) hover:text-[#5244b2] transition-colors shrink-0 p-0.5 select-none"
+                                      >
+                                        <History className="size-[14px]" />
+                                      </div>
+                                    </PopoverTrigger>
+                                  </HoverCardTrigger>
+                                  <HoverCardContent className="w-auto max-w-[320px] sm:max-w-none p-3 sm:p-4 z-[100] bg-white dark:bg-[#18181b] border border-gray-100 dark:border-zinc-800 shadow-lg rounded-[8px]" align="center" side="top">
+                                    <div className="text-[12px] font-bold text-[#111827] dark:text-white mb-3">MultiCodes History</div>
+                                    <div className="overflow-x-auto max-h-[300px] overflow-y-auto">
+                                      <table className="w-full text-left text-[12px] border-collapse whitespace-nowrap">
+                                        <thead className="bg-[#6b5cd6] text-white sticky top-0 z-10">
+                                          <tr>
+                                            <th className="px-3 py-2 font-medium font-inter">Department</th>
+                                            <th className="px-3 py-2 font-medium font-inter border-l border-[#897ee0]">MultiCode</th>
+                                            <th className="px-3 py-2 font-medium font-inter border-l border-[#897ee0]">Activation Start Date</th>
+                                            <th className="px-3 py-2 font-medium font-inter border-l border-[#897ee0]">Activation End Date</th>
+                                            <th className="px-3 py-2 font-medium font-inter border-l border-[#897ee0]">Updated At</th>
+                                          </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-[#e5e7eb] dark:divide-zinc-800">
+                                          {timelineQuery.data?.filter((row) => {
                                             const rowDeptId = Number(row.departmentId ?? 0)
                                             if (rowDeptId > 0 && currentDeptId) {
                                               return rowDeptId === Number(currentDeptId)
                                             }
                                             const rowDeptName = assignedDepts.find(d => Number(d.id) === rowDeptId)?.name ?? ""
                                             return rowDeptName === currentDeptName
-                                          })
-                                          .map((row, i) => {
-                                            const deptName = assignedDepts.find(d => d.id === row.departmentId)?.name ?? "-"
-                                            const multiCodes = row.multiCodeTypes?.join(", ") || "-"
-                                            const sDate = displayDate(row.startDate)
-                                            const eDate = row.endDate ? displayDate(row.endDate) : "-"
-                                            const uDate = displayDate(row.updatedAt)
-                                            return (
-                                              <tr key={i} className="hover:bg-gray-50 transition-colors">
-                                                <td className="px-3 py-2 text-[#374151]">{deptName}</td>
-                                                <td className="px-3 py-2 text-[#374151]">{multiCodes}</td>
-                                                <td className="px-3 py-2 text-[#374151]">{sDate}</td>
-                                                <td className="px-3 py-2 text-[#374151]">{eDate}</td>
-                                                <td className="px-3 py-2 text-[#374151]">{uDate}</td>
-                                              </tr>
-                                            )
-                                          }) : (
+                                          }).length ? timelineQuery.data
+                                            ?.filter((row) => {
+                                              const rowDeptId = Number(row.departmentId ?? 0)
+                                              if (rowDeptId > 0 && currentDeptId) {
+                                                return rowDeptId === Number(currentDeptId)
+                                              }
+                                              const rowDeptName = assignedDepts.find(d => Number(d.id) === rowDeptId)?.name ?? ""
+                                              return rowDeptName === currentDeptName
+                                            })
+                                            .map((row, i) => {
+                                              const deptName = assignedDepts.find(d => d.id === row.departmentId)?.name ?? "-"
+                                              const multiCodes = row.multiCodeTypes?.join(", ") || "-"
+                                              const sDate = displayDate(row.startDate)
+                                              const eDate = row.endDate ? displayDate(row.endDate) : "-"
+                                              const uDate = displayDate(row.updatedAt)
+                                              return (
+                                                <tr key={i} className="hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors">
+                                                  <td className="px-3 py-2 text-[#374151] dark:text-zinc-200">{deptName}</td>
+                                                  <td className="px-3 py-2 text-[#374151] dark:text-zinc-200">{multiCodes}</td>
+                                                  <td className="px-3 py-2 text-[#374151] dark:text-zinc-200">{sDate}</td>
+                                                  <td className="px-3 py-2 text-[#374151] dark:text-zinc-200">{eDate}</td>
+                                                  <td className="px-3 py-2 text-[#374151] dark:text-zinc-200">{uDate}</td>
+                                                </tr>
+                                              )
+                                            }) : (
+                                            <tr>
+                                              <td colSpan={5} className="px-4 py-6 text-center text-[#6b7280] dark:text-zinc-400">
+                                                {timelineQuery.isLoading ? "Loading history..." : "No history for selected department."}
+                                              </td>
+                                            </tr>
+                                          )}
+                                        </tbody>
+                                      </table>
+                                    </div>
+                                  </HoverCardContent>
+                                  <PopoverContent className="w-auto max-w-[320px] sm:max-w-none p-3 sm:p-4 z-[100] bg-white dark:bg-[#18181b] border border-gray-100 dark:border-zinc-800 shadow-lg rounded-[8px]" align="center" side="top">
+                                    <div className="text-[12px] font-bold text-[#111827] dark:text-white mb-3">MultiCodes History</div>
+                                    <div className="overflow-x-auto max-h-[300px] overflow-y-auto">
+                                      <table className="w-full text-left text-[12px] border-collapse whitespace-nowrap">
+                                        <thead className="bg-[#6b5cd6] text-white sticky top-0 z-10">
                                           <tr>
-                                            <td colSpan={5} className="px-4 py-6 text-center text-[#6b7280]">
-                                              {timelineQuery.isLoading ? "Loading history..." : "No history for selected department."}
-                                            </td>
+                                            <th className="px-3 py-2 font-medium font-inter">Department</th>
+                                            <th className="px-3 py-2 font-medium font-inter border-l border-[#897ee0]">MultiCode</th>
+                                            <th className="px-3 py-2 font-medium font-inter border-l border-[#897ee0]">Activation Start Date</th>
+                                            <th className="px-3 py-2 font-medium font-inter border-l border-[#897ee0]">Activation End Date</th>
+                                            <th className="px-3 py-2 font-medium font-inter border-l border-[#897ee0]">Updated At</th>
                                           </tr>
-                                        )}
-                                      </tbody>
-                                    </table>
-                                  </div>
-                                </HoverCardContent>
-                              </HoverCard>
+                                        </thead>
+                                        <tbody className="divide-y divide-[#e5e7eb] dark:divide-zinc-800">
+                                          {timelineQuery.data?.filter((row) => {
+                                            const rowDeptId = Number(row.departmentId ?? 0)
+                                            if (rowDeptId > 0 && currentDeptId) {
+                                              return rowDeptId === Number(currentDeptId)
+                                            }
+                                            const rowDeptName = assignedDepts.find(d => Number(d.id) === rowDeptId)?.name ?? ""
+                                            return rowDeptName === currentDeptName
+                                          }).length ? timelineQuery.data
+                                            ?.filter((row) => {
+                                              const rowDeptId = Number(row.departmentId ?? 0)
+                                              if (rowDeptId > 0 && currentDeptId) {
+                                                return rowDeptId === Number(currentDeptId)
+                                              }
+                                              const rowDeptName = assignedDepts.find(d => Number(d.id) === rowDeptId)?.name ?? ""
+                                              return rowDeptName === currentDeptName
+                                            })
+                                            .map((row, i) => {
+                                              const deptName = assignedDepts.find(d => d.id === row.departmentId)?.name ?? "-"
+                                              const multiCodes = row.multiCodeTypes?.join(", ") || "-"
+                                              const sDate = displayDate(row.startDate)
+                                              const eDate = row.endDate ? displayDate(row.endDate) : "-"
+                                              const uDate = displayDate(row.updatedAt)
+                                              return (
+                                                <tr key={i} className="hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors">
+                                                  <td className="px-3 py-2 text-[#374151] dark:text-zinc-200">{deptName}</td>
+                                                  <td className="px-3 py-2 text-[#374151] dark:text-zinc-200">{multiCodes}</td>
+                                                  <td className="px-3 py-2 text-[#374151] dark:text-zinc-200">{sDate}</td>
+                                                  <td className="px-3 py-2 text-[#374151] dark:text-zinc-200">{eDate}</td>
+                                                  <td className="px-3 py-2 text-[#374151] dark:text-zinc-200">{uDate}</td>
+                                                </tr>
+                                              )
+                                            }) : (
+                                            <tr>
+                                              <td colSpan={5} className="px-4 py-6 text-center text-[#6b7280] dark:text-zinc-400">
+                                                {timelineQuery.isLoading ? "Loading history..." : "No history for selected department."}
+                                              </td>
+                                            </tr>
+                                          )}
+                                        </tbody>
+                                      </table>
+                                    </div>
+                                  </PopoverContent>
+                                </HoverCard>
+                              </Popover>
                             )}
                           </div>
                           <div className="h-[40px] flex items-center w-full">
@@ -1754,7 +1881,7 @@ export function SecurityAssignmentsPanel({
                         )}
 
                         {/* Delete Button */}
-                        <div className="w-10 flex flex-col flex-shrink-0 mt-[26px]">
+                        <div className="absolute top-2 right-2 sm:relative sm:top-auto sm:right-auto w-8 sm:w-10 flex flex-col flex-shrink-0 sm:mt-[26px]">
                           <button
                             type="button"
                             onClick={async () => {
@@ -1770,10 +1897,10 @@ export function SecurityAssignmentsPanel({
                               }
                               removeMultiCode(index)
                             }}
-                            className="flex size-10 flex-shrink-0 items-center justify-center transition-colors text-red-500 hover:text-red-600 cursor-pointer"
+                            className="flex size-8 sm:size-10 flex-shrink-0 items-center justify-center transition-colors text-red-500 hover:text-red-600 cursor-pointer"
                             title="Remove row"
                           >
-                            <Trash2 className="size-5" />
+                            <Trash2 className="size-4 sm:size-5" />
                           </button>
                         </div>
                       </div>

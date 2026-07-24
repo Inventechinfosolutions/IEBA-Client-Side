@@ -60,7 +60,7 @@ export function MgtEmployeePanel({
 
   return (
     <TooltipProvider>
-      <div className="flex w-[420px] shrink-0 flex-col rounded-[6px] bg-white shadow-[0_4px_16px_rgba(16,24,40,0.12)] overflow-hidden">
+      <div className="flex w-full xl:w-[350px] 2xl:w-[420px] shrink-0 flex-col rounded-[6px] bg-white shadow-[0_4px_16px_rgba(16,24,40,0.12)] overflow-hidden">
         {/* Purple header */}
         <div className="flex h-[52px] items-center justify-between bg-[#6C5DD3] px-3 py-2">
           <div className="flex-1 h-full pr-2">

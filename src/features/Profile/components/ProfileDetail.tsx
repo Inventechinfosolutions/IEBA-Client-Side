@@ -73,7 +73,7 @@ const selectTriggerClassName =
   "w-full !h-[58px] rounded-[7px] border border-[#e4e7ef] bg-white px-3 !py-0 text-[12px] leading-[12px] text-[#1f2937] shadow-none focus-visible:border-[#3b82f6] focus-visible:ring-1 focus-visible:ring-[#3b82f640] data-[state=open]:border-[#3b82f6] data-[state=open]:ring-1 data-[state=open]:ring-[#3b82f640]"
 
 const profilePicClassName =
-  "h-[180px] w-[180px] rounded-full shadow-[0_0_20px_0_#0000001a] cursor-pointer object-cover"
+  "h-[140px] w-[140px] sm:h-[180px] sm:w-[180px] rounded-full shadow-[0_0_20px_0_#0000001a] cursor-pointer object-cover"
 
 const profileErrorToastIcon = (
   <span className="inline-flex size-4 shrink-0 items-center justify-center rounded-full bg-[#ef4444] text-white">
@@ -84,47 +84,46 @@ const profileErrorToastIcon = (
 function ProfileDetailSkeleton() {
   return (
     <div className="space-y-6">
-      <div className="flex items-start gap-8">
-        <Skeleton className="size-[122px] rounded-full" />
-        <div className="flex-1 space-y-4">
-          <div className="grid grid-cols-3 gap-6">
-            <Skeleton className="h-[44px] rounded-[7px]" />
-            <Skeleton className="h-[44px] rounded-[7px]" />
-            <Skeleton className="h-[44px] rounded-[7px]" />
+      <div className="flex flex-col items-center sm:flex-row sm:items-start gap-6 sm:gap-8">
+        <Skeleton className="size-[120px] sm:size-[180px] rounded-full shrink-0" />
+        <div className="w-full flex-1 space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+            <Skeleton className="h-[58px] rounded-[7px]" />
+            <Skeleton className="h-[58px] rounded-[7px]" />
           </div>
-          <div className="grid grid-cols-2 gap-6">
-            <Skeleton className="h-[44px] rounded-[7px]" />
-            <Skeleton className="h-[44px] rounded-[7px]" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+            <Skeleton className="h-[58px] rounded-[7px]" />
+            <Skeleton className="h-[58px] rounded-[7px]" />
           </div>
         </div>
       </div>
 
       <div className="space-y-4">
         <Skeleton className="h-4 w-[160px]" />
-        <div className="grid grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
           {Array.from({ length: 5 }).map((_, idx) => (
-            <Skeleton key={idx} className="h-[44px] rounded-[7px]" />
+            <Skeleton key={idx} className="h-[58px] rounded-[7px]" />
           ))}
         </div>
       </div>
 
       <div className="space-y-4">
         <Skeleton className="h-4 w-[120px]" />
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
           {Array.from({ length: 4 }).map((_, idx) => (
-            <Skeleton key={idx} className="h-[44px] rounded-[7px]" />
+            <Skeleton key={idx} className="h-[58px] rounded-[7px]" />
           ))}
         </div>
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
           {Array.from({ length: 4 }).map((_, idx) => (
-            <Skeleton key={idx} className="h-[44px] rounded-[7px]" />
+            <Skeleton key={idx} className="h-[58px] rounded-[7px]" />
           ))}
         </div>
       </div>
 
-      <div className="flex justify-end gap-3">
-        <Skeleton className="h-9 w-[100px] rounded-[8px]" />
-        <Skeleton className="h-9 w-[100px] rounded-[8px]" />
+      <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
+        <Skeleton className="h-13 w-full sm:w-[100px] rounded-[8px]" />
+        <Skeleton className="h-13 w-full sm:w-[100px] rounded-[8px]" />
       </div>
     </div>
   )
@@ -208,7 +207,7 @@ function ProfileDetailForm({
   return (
     <>
       <form onSubmit={handleSave} className="space-y-6">
-        <div className="flex items-start gap-8">
+        <div className="flex flex-col items-center lg:flex-row lg:items-start gap-6 lg:gap-8">
           <ImageCropUploadDialog
             title="Profile Update"
             initialImageSrc={profileImageQuery.data ?? null}
@@ -251,7 +250,7 @@ function ProfileDetailForm({
               }
             }}
             renderTrigger={({ openDialog }) => (
-              <div className="mt-2 flex h-[200px] w-[200px] items-center justify-center rounded-full bg-white">
+              <div className="mt-2 flex h-[140px] w-[140px] lg:h-[180px] lg:w-[180px] shrink-0 items-center justify-center rounded-full bg-white">
                 <Avatar
                   className={profilePicClassName}
                   role="button"
@@ -270,8 +269,8 @@ function ProfileDetailForm({
             )}
           />
 
-          <div className="flex-1 space-y-4">
-            <div className="grid grid-cols-2 gap-6">
+          <div className="w-full flex-1 space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
               <div>
                 <label className={labelClassName}>
                   *First Name
@@ -306,7 +305,7 @@ function ProfileDetailForm({
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
               <div>
                 <label className={labelClassName}>Area Code</label>
                 <TitleCaseInput
@@ -347,7 +346,7 @@ function ProfileDetailForm({
             <div className="h-px flex-1 bg-[#e6e7ef]" aria-hidden />
           </div>
 
-          <div className="grid grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             <div>
               <label className={labelClassName}>First Name</label>
               <Controller
@@ -472,7 +471,7 @@ function ProfileDetailForm({
             <div className="h-px flex-1 bg-[#e6e7ef]" aria-hidden />
           </div>
 
-          <div className="grid grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
               <label className={labelClassName}>Employee ID</label>
               <TitleCaseInput
@@ -516,7 +515,7 @@ function ProfileDetailForm({
             </div>
           </div>
 
-          <div className="mt-4 grid grid-cols-4 gap-4">
+          <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
               <label className={labelClassName}>Primary Supervisor</label>
               <TitleCaseInput
@@ -557,18 +556,18 @@ function ProfileDetailForm({
         </div>
 
 
-        <div className="flex items-center justify-end gap-3 pt-2">
+        <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-3 pt-2">
           <Button
             type="submit"
             disabled={isSaving}
-            className="h-13 min-w-[78px] cursor-pointer rounded-[8px] bg-[#6C5DD3] px-5 text-[15px] text-white hover:bg-[#6C5DD3] disabled:opacity-60"
+            className="h-13 w-full sm:w-auto min-w-[100px] cursor-pointer rounded-[8px] bg-[#6C5DD3] px-5 text-[15px] text-white hover:bg-[#6C5DD3] disabled:opacity-60"
           >
             Submit
           </Button>
           <Button
             type="button"
             onClick={handleCancel}
-            className="h-13 min-w-[78px] cursor-pointer rounded-[8px] bg-[#d2d4d9] px-5 text-[15px] text-[#111827] hover:bg-[#d2d4d9]"
+            className="h-13 w-full sm:w-auto min-w-[100px] cursor-pointer rounded-[8px] bg-[#d2d4d9] px-5 text-[15px] text-[#111827] hover:bg-[#d2d4d9]"
           >
             Cancel
           </Button>

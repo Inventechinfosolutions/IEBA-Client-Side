@@ -23,6 +23,7 @@ import type {
   JobClassificationTableProps,
   JobClassificationTableSortState,
 } from "../types"
+import { JobClassificationCardView } from "./JobClassificationCardView"
 import { usePermissions } from "@/hooks/usePermissions"
 
 const SKELETON_ROWS = 8
@@ -72,7 +73,14 @@ export function JobClassificationTable({
   else if (sortedRows.length === 0) minHeight = "150px"
 
   return (
-    <div className="overflow-hidden rounded-[4px] border border-[#e6e7ef]">
+    <div className="w-full min-w-0">
+      <JobClassificationCardView
+        rows={sortedRows}
+        isLoading={isLoading}
+        onEditRow={onEditRow}
+      />
+
+      <div className="hidden xl:block overflow-hidden rounded-[4px] border border-[#e6e7ef]">
       <div className="overflow-y-auto [scrollbar-gutter:stable] bg-[#6C5DD3]">
         <Table className="table-fixed">
           <colgroup>
@@ -293,6 +301,7 @@ export function JobClassificationTable({
         </Table>
       </div>
     </div>
-  )
+  </div>
+)
 }
 

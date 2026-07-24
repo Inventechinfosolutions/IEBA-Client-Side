@@ -87,7 +87,7 @@ export function EmployeeSection({
   }, [assignedEmployeeIds, allUsersMap, searchA])
 
   return (
-    <div className="grid grid-cols-[1fr_60px_1fr] items-center gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-[1fr_60px_1fr] items-center gap-4">
       <TransferPanel
         title="Unassigned Employee"
         items={unassignedUsers}
@@ -98,7 +98,7 @@ export function EmployeeSection({
         count={unassignedUsers.length}
         isListDisabled={true}
       />
-      <div className="flex flex-col gap-3 pt-12">
+      <div className="hidden md:flex flex-col gap-3 pt-12">
         <div className="size-11" />
         <div className="size-11" />
       </div>

@@ -4,6 +4,7 @@ import { SingleSelectSearchDropdown } from "@/components/ui/dropdown-search"
 import type { UserAssignedDepartmentsSettingChecks } from "../queries/getUserAssignedDepartmentsSettingChecks"
 import { AlertCircle } from "lucide-react"
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { buildDecimalMinMessage, DecimalActivityTimeHint } from "../utils/decimalTimeHint"
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -72,6 +73,39 @@ function ReadOnlyField({ label }: { label: string }) {
     >
       {label || <span className="text-muted-foreground italic">Not Assigned</span>}
     </div>
+  )
+}
+
+function ApportioningDescInfoIcon({ description }: { description?: string }) {
+  const [open, setOpen] = useState(false)
+  const descText = description || "No description available"
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <HoverCard openDelay={0} closeDelay={100}>
+        <HoverCardTrigger asChild>
+          <PopoverTrigger asChild>
+            <div
+              role="button"
+              tabIndex={0}
+              onClick={(e) => {
+                e.stopPropagation()
+                setOpen((prev) => !prev)
+              }}
+              className="cursor-pointer text-blue-500 hover:text-blue-600 transition-colors flex items-center shrink-0 p-0.5 select-none"
+            >
+              <AlertCircle className="size-3.5" />
+            </div>
+          </PopoverTrigger>
+        </HoverCardTrigger>
+        <HoverCardContent className="w-fit max-w-[250px] sm:max-w-xs p-2.5 sm:p-3 z-[100] bg-white border border-gray-100 shadow-xl rounded-[8px] text-[#111827] dark:bg-[#18181b] dark:border-[#27272a] dark:text-[#f4f4f5]" align="end" side="top">
+          <div className="text-[11px] sm:text-[12px] font-medium leading-snug">{descText}</div>
+        </HoverCardContent>
+        <PopoverContent className="w-fit max-w-[250px] sm:max-w-xs p-2.5 sm:p-3 z-[100] bg-white border border-gray-100 shadow-xl rounded-[8px] text-[#111827] dark:bg-[#18181b] dark:border-[#27272a] dark:text-[#f4f4f5]" align="end" side="top">
+          <div className="text-[11px] sm:text-[12px] font-medium leading-snug">{descText}</div>
+        </PopoverContent>
+      </HoverCard>
+    </Popover>
   )
 }
 
@@ -195,8 +229,8 @@ export function PersonalTimeStudyApportioningPanel({
       {/* Panel title */}
       <h4 className="mb-3 text-[13px] font-semibold text-[#6C5DD3]">Apportioning</h4>
 
-      {/* Column headers */}
-      <div className="mb-1 grid grid-cols-[110px_150px_1fr_1fr_160px] items-end gap-2">
+      {/* Column headers — hidden on mobile, visible on desktop */}
+      <div className="mb-1 hidden xl:grid grid-cols-[110px_150px_1fr_1fr_160px] items-end gap-2">
         <span className="text-[11px] font-medium text-muted-foreground"></span>
         <span className="text-[11px] font-medium text-muted-foreground">Auto Apportioning</span>
         <span className="text-[11px] font-medium text-[#6C5DD3]">
@@ -271,88 +305,107 @@ export function PersonalTimeStudyApportioningPanel({
             ? rec?.message ?? buildDecimalMinMessage(remainingMinutes)
             : null
 
+          const programField = rec || row.autoApportioning ? (
+            <ReadOnlyField
+              label={
+                rec && (rec.programcode || rec.programname)
+                  ? `${(row.deptCode ?? "").split("-")[0]}-${rec.programcode ?? ""} - ${rec.programname ?? ""}`
+                  : "No Data"
+              }
+            />
+          ) : (
+            <SingleSelectSearchDropdown
+              value={rowState.selectedProgram}
+              placeholder="Not Assigned"
+              options={programOptions}
+              onChange={(v) => handleProgramChange(row.rowKey, v)}
+              onBlur={() => {}}
+              className="h-10 text-[11px]"
+            />
+          )
+
+          const activityField = rec || row.autoApportioning ? (
+            <ReadOnlyField
+              label={
+                rec && (rec.activitycode || rec.activityname)
+                  ? `${rec.activitycode ?? ""} - ${rec.activityname ?? ""}`
+                  : "No Data"
+              }
+            />
+          ) : (
+            <SingleSelectSearchDropdown
+              value={rowState.selectedActivity}
+              placeholder="Not Assigned"
+              disabled={!rowState.selectedProgram}
+              options={activityOptions}
+              onChange={(v) => handleActivityChange(row.rowKey, v)}
+              onBlur={() => {}}
+              className={cn(
+                "h-10 text-[11px]",
+                !rowState.selectedProgram && "bg-[#F2F4F7] cursor-not-allowed",
+              )}
+            />
+          )
+
+          const remainingTimeBox = (
+            <RemainingTimeDisplay minutes={remainingMinutes}>
+              <div className="flex items-center gap-1 shrink-0">
+                {decimalHintMessage ? (
+                  <DecimalActivityTimeHint message={decimalHintMessage} />
+                ) : null}
+                <ApportioningDescInfoIcon
+                  description={rec?.apportioningDesc || rec?.description}
+                />
+              </div>
+            </RemainingTimeDisplay>
+          )
+
           return (
-            <div
-              key={row.rowKey}
-              className="grid grid-cols-[110px_150px_1fr_1fr_160px] items-end gap-2"
-            >
-              {/* Department name */}
-              <span className="text-[12px] font-bold text-[#111827] leading-snug pb-3 dark:text-[#f4f4f5]">
-                {row.deptName}
-              </span>
+            <React.Fragment key={row.rowKey}>
+              {/* Desktop Row layout (xl:grid) */}
+              <div className="hidden xl:grid grid-cols-[110px_150px_1fr_1fr_160px] items-end gap-2">
+                <span className="text-[12px] font-bold text-[#111827] leading-snug pb-3 dark:text-[#f4f4f5]">
+                  {row.deptName}
+                </span>
 
-              {/* Auto Apportioning toggle — READ-ONLY, driven by config API */}
-              <div className="flex h-10 items-center">
-                <ReadOnlyAutoToggle checked={row.autoApportioning} />
+                <div className="flex h-10 items-center">
+                  <ReadOnlyAutoToggle checked={row.autoApportioning} />
+                </div>
+
+                {programField}
+                {activityField}
+
+                <div className="pb-0.5">
+                  {remainingTimeBox}
+                </div>
               </div>
 
-              {/* Program — read-only when auto-apportioning or record exists */}
-              {rec || row.autoApportioning ? (
-                <ReadOnlyField
-                  label={
-                    rec && (rec.programcode || rec.programname)
-                      ? `${(row.deptCode ?? "").split("-")[0]}-${rec.programcode ?? ""} - ${rec.programname ?? ""}`
-                      : "No Data"
-                  }
-                />
-              ) : (
-                <SingleSelectSearchDropdown
-                  value={rowState.selectedProgram}
-                  placeholder="Not Assigned"
-                  options={programOptions}
-                  onChange={(v) => handleProgramChange(row.rowKey, v)}
-                  onBlur={() => {}}
-                  className="h-10 text-[11px]"
-                />
-              )}
-
-              {/* Service / Activity — read-only when auto-apportioning or record exists */}
-              {rec || row.autoApportioning ? (
-                <ReadOnlyField
-                  label={
-                    rec && (rec.activitycode || rec.activityname)
-                      ? `${rec.activitycode ?? ""} - ${rec.activityname ?? ""}`
-                      : "No Data"
-                  }
-                />
-              ) : (
-                <SingleSelectSearchDropdown
-                  value={rowState.selectedActivity}
-                  placeholder="Not Assigned"
-                  disabled={!rowState.selectedProgram}
-                  options={activityOptions}
-                  onChange={(v) => handleActivityChange(row.rowKey, v)}
-                  onBlur={() => {}}
-                  className={cn(
-                    "h-10 text-[11px]",
-                    !rowState.selectedProgram && "bg-[#F2F4F7] cursor-not-allowed",
-                  )}
-                />
-              )}
-
-              {/* Remaining Time (Min.) — read-only, icon inside box on the right */}
-              <div className="pb-0.5">
-                <RemainingTimeDisplay minutes={remainingMinutes}>
-                  <div className="flex items-center gap-1 shrink-0">
-                    {decimalHintMessage ? (
-                      <DecimalActivityTimeHint message={decimalHintMessage} />
-                    ) : null}
-                    <HoverCard openDelay={0} closeDelay={100}>
-                      <HoverCardTrigger asChild>
-                        <div className="cursor-pointer text-blue-500 hover:text-blue-600 transition-colors flex items-center shrink-0">
-                          <AlertCircle className="size-3.5" />
-                        </div>
-                      </HoverCardTrigger>
-                      <HoverCardContent className="w-fit max-w-xs p-3 z-[100] bg-white border border-gray-100 shadow-xl rounded-[8px] text-[#111827] dark:bg-[#18181b] dark:border-[#27272a] dark:text-[#f4f4f5]" align="end" side="top">
-                        <div className="text-[12px] font-medium leading-relaxed">
-                          {rec?.apportioningDesc || rec?.description || "No description available"}
-                        </div>
-                      </HoverCardContent>
-                    </HoverCard>
+              {/* Mobile Card Row layout (< xl) */}
+              <div className="flex flex-col gap-2.5 rounded-lg border border-[#6C5DD3]/20 bg-white dark:bg-zinc-900 p-3 shadow-xs xl:hidden">
+                <div className="flex items-center justify-between border-b border-gray-100 dark:border-zinc-800 pb-2">
+                  <span className="text-[12px] font-bold text-[#111827] dark:text-[#f4f4f5]">{row.deptName}</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[11px] text-muted-foreground font-medium">Auto Apportioning</span>
+                    <ReadOnlyAutoToggle checked={row.autoApportioning} />
                   </div>
-                </RemainingTimeDisplay>
+                </div>
+
+                <div className="space-y-0.5">
+                  <label className="text-[11px] font-medium text-[#6C5DD3]">Time Study Program <span className="text-destructive">*</span></label>
+                  {programField}
+                </div>
+
+                <div className="space-y-0.5">
+                  <label className="text-[11px] font-medium text-[#6C5DD3]">Service/Activity <span className="text-destructive">*</span></label>
+                  {activityField}
+                </div>
+
+                <div className="space-y-0.5">
+                  <label className="text-[11px] font-medium text-muted-foreground">Apportioned Time(Min.)</label>
+                  {remainingTimeBox}
+                </div>
               </div>
-            </div>
+            </React.Fragment>
           )
         })}
       </div>

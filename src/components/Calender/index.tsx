@@ -377,10 +377,10 @@ const AppCalender = ({
         )}
         {...divProps}
       >
-      <div className="ieba-time-study-calendar flex flex-col items-stretch gap-4 w-full">
-        <div className="calendar-card w-full">
-          {/* Timezone Selector */}
-          {/* <div className="mb-4">
+        <div className="ieba-time-study-calendar flex flex-col items-stretch gap-4 w-full">
+          <div className="calendar-card w-full">
+            {/* Timezone Selector */}
+            {/* <div className="mb-4">
             <label htmlFor="timezone-select" className="block text-sm font-medium text-foreground mb-1">
               Select Timezone:
             </label>
@@ -396,8 +396,8 @@ const AppCalender = ({
             </select>
           </div> */}
 
-          {/* Selection Mode Selector */}
-          {/* <div className="mb-4">
+            {/* Selection Mode Selector */}
+            {/* <div className="mb-4">
             <label htmlFor="selection-mode" className="block text-sm font-medium text-foreground mb-1">
               Selection Mode:
             </label>
@@ -416,220 +416,226 @@ const AppCalender = ({
             </select>
           </div> */}
 
-          <div className="relative">
-            {/* Calendar Header */}
-            <div className="calendar-header">
-              <button
-                onClick={() => handleMonthChange(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1))}
-                tabIndex={-1}
-                className="p-2 rounded-full bg-[#6C5DD3] text-primary-foreground border-none cursor-pointer transition-all duration-200 ease-in-out hover:bg-[#6C5DD3]/90 focus:outline-none focus:ring-2 focus:ring-[#6C5DD3] focus:ring-opacity-50"
-              >
-                ‹
-              </button>
+            <div className="relative">
+              {/* Calendar Header */}
+              <div className="calendar-header">
+                <button
+                  onClick={() => handleMonthChange(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1))}
+                  tabIndex={-1}
+                  className="p-2 rounded-full bg-[#6C5DD3] text-primary-foreground border-none cursor-pointer transition-all duration-200 ease-in-out hover:bg-[#6C5DD3]/90 focus:outline-none focus:ring-2 focus:ring-[#6C5DD3] focus:ring-opacity-50"
+                >
+                  ‹
+                </button>
 
-              <div className="text-2xl font-semibold text-foreground">
-                <Button variant="ghost" tabIndex={-1} onClick={() => setShowMonthSelect(!showMonthSelect)}>
-                  {currentDate.toLocaleString(locale, { month: 'long' })}
-                </Button>{' '}
-                <Button variant="ghost" tabIndex={-1} onClick={() => setShowYearSelect(!showYearSelect)}>
-                  {currentDate.toLocaleString(locale, { year: 'numeric' })}
-                </Button>
+                <div className="text-2xl font-semibold text-foreground">
+                  <Button variant="ghost" tabIndex={-1} onClick={() => setShowMonthSelect(!showMonthSelect)}>
+                    {currentDate.toLocaleString(locale, { month: 'long' })}
+                  </Button>{' '}
+                  <Button variant="ghost" tabIndex={-1} onClick={() => setShowYearSelect(!showYearSelect)}>
+                    {currentDate.toLocaleString(locale, { year: 'numeric' })}
+                  </Button>
+                </div>
+
+                <button
+                  onClick={() => handleMonthChange(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1))}
+                  tabIndex={-1}
+                  className="p-2 rounded-full bg-[#6C5DD3] text-primary-foreground border-none cursor-pointer transition-all duration-200 ease-in-out hover:bg-[#6C5DD3]/90 focus:outline-none focus:ring-2 focus:ring-[#6C5DD3] focus:ring-opacity-50"
+                >
+                  ›
+                </button>
               </div>
 
-              <button
-                onClick={() => handleMonthChange(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1))}
-                tabIndex={-1}
-                className="p-2 rounded-full bg-[#6C5DD3] text-primary-foreground border-none cursor-pointer transition-all duration-200 ease-in-out hover:bg-[#6C5DD3]/90 focus:outline-none focus:ring-2 focus:ring-[#6C5DD3] focus:ring-opacity-50"
-              >
-                ›
-              </button>
-            </div>
+              {showMonthSelect && (
+                <div className="absolute top-0 left-0 w-full h-full bg-background z-10 grid grid-cols-3 gap-2 p-4">
+                  {months.map((month, monthIndex) => (
+                    <div
+                      key={month}
+                      onClick={() => {
+                        const year = currentDate.getFullYear();
+                        const newDate = new Date(year, monthIndex, 1);
+                        handleMonthChange(newDate);
+                        setShowMonthSelect(false);
+                      }}
+                      className="cursor-pointer p-2 text-center hover:bg-accent rounded text-foreground"
+                    >
+                      {month}
+                    </div>
+                  ))}
+                </div>
+              )}
 
-            {showMonthSelect && (
-              <div className="absolute top-0 left-0 w-full h-full bg-background z-10 grid grid-cols-3 gap-2 p-4">
-                {months.map((month, monthIndex) => (
-                  <div
-                    key={month}
-                    onClick={() => {
-                      const year = currentDate.getFullYear();
-                      const newDate = new Date(year, monthIndex, 1);
-                      handleMonthChange(newDate);
-                      setShowMonthSelect(false);
-                    }}
-                    className="cursor-pointer p-2 text-center hover:bg-accent rounded text-foreground"
-                  >
-                    {month}
-                  </div>
-                ))}
-              </div>
-            )}
+              {showYearSelect && (
+                <div className="absolute top-0 left-0 w-full h-full bg-background z-10 grid grid-cols-3 gap-2 p-4 overflow-y-auto">
+                  {years.map(year => (
+                    <div
+                      key={year}
+                      onClick={() => {
+                        const month = currentDate.getMonth();
+                        const day = currentDate.getDate();
+                        const newDate = new Date(year, month, day);
+                        handleMonthChange(newDate);
+                        setShowYearSelect(false);
+                      }}
+                      className="cursor-pointer p-2 text-center hover:bg-accent rounded text-foreground"
+                    >
+                      {year}
+                    </div>
+                  ))}
+                </div>
+              )}
 
-            {showYearSelect && (
-              <div className="absolute top-0 left-0 w-full h-full bg-background z-10 grid grid-cols-3 gap-2 p-4 overflow-y-auto">
-                {years.map(year => (
-                  <div
-                    key={year}
-                    onClick={() => {
-                      const month = currentDate.getMonth();
-                      const day = currentDate.getDate();
-                      const newDate = new Date(year, month, day);
-                      handleMonthChange(newDate);
-                      setShowYearSelect(false);
-                    }}
-                    className="cursor-pointer p-2 text-center hover:bg-accent rounded text-foreground"
-                  >
-                    {year}
-                  </div>
-                ))}
-              </div>
-            )}
+              {/* Single grid: Mon–Sun + TOTAL(MIN.) + STATUS + optionally ACTION per row */}
+              <div className={cn("calendar-weeks-grid", showActionColumn && "has-action")}>
+                <div className="days-of-week-container">
+                  {rotatedDays.map((day) => (
+                    <div key={day}>{day}</div>
+                  ))}
+                </div>
+                <div className="week-summary-header">
+                  <span className="inline xl:hidden text-[9px] tracking-tighter">TOTAL</span>
+                  <span className="hidden xl:inline">TOTAL(MIN.)</span>
+                </div>
+                <div className="week-summary-header">
+                  <span className="inline xl:hidden text-[9px] tracking-tighter">STATUS</span>
+                  <span className="hidden xl:inline">STATUS</span>
+                </div>
+                {showActionColumn && <div className="week-summary-header">ACTION</div>}
 
-            {/* Single grid: Mon–Sun + TOTAL(MIN.) + STATUS + optionally ACTION per row */}
-            <div className={cn("calendar-weeks-grid", showActionColumn && "has-action")}>
-              <div className="days-of-week-container">
-                {rotatedDays.map((day) => (
-                  <div key={day}>{day}</div>
-                ))}
-              </div>
-              <div className="week-summary-header">TOTAL(MIN.)</div>
-              <div className="week-summary-header">STATUS</div>
-              {showActionColumn && <div className="week-summary-header">ACTION</div>}
-
-              {calendarWeeks.map((week, weekIndex) => {
-                const weekKey = formatWeekStartUtcKey(week[0].date)
-                const summary = weekSummaries?.[weekKey]
-                const weekTotal = summary?.totalMinutes ?? 0
-                const weekStatus = (summary?.status as DateStatus) ?? DateStatus.NOT_SUBMITTED
-                return (
-                  <Fragment key={`week-${week[0]?.date.getTime() ?? weekIndex}`}>
-                    {week.map((dayObj, index) => {
-                      const dayKey = toIsoYmdFromDate(dayObj.date)
-                      const isTabStop = tabStopDateKey === dayKey
-                      const cell = (
-                        <div
-                          key={`${dayObj.date.getTime()}-${index}`}
-                          role="button"
-                          data-calendar-day={dayKey}
-                          data-calendar-selected-day={dayObj.isSelected ? "true" : undefined}
-                          tabIndex={isTabStop ? 0 : -1}
-                          onMouseDown={(e) => {
-                            // Keep mouse clicks from parking focus on the day cell.
-                            // Focus moves to TS Program via onDayActivate (avoids Tab escaping to the sidebar).
-                            if (e.button === 0) e.preventDefault()
-                          }}
-                          onClick={() => handleDayClick(dayObj.date)}
-                          onKeyDown={(e) => handleDayKeyDown(e, dayObj)}
-                          className={cn(
-                            "day-cell text-foreground",
-                            !dayObj.isCurrentMonth && "not-current-month",
-                            dayObj.isSelected && "selected",
-                            dayObj.isWeekSelected && !dayObj.isSelected && "week-selected",
-                            dayObj.isToday &&
+                {calendarWeeks.map((week, weekIndex) => {
+                  const weekKey = formatWeekStartUtcKey(week[0].date)
+                  const summary = weekSummaries?.[weekKey]
+                  const weekTotal = summary?.totalMinutes ?? 0
+                  const weekStatus = (summary?.status as DateStatus) ?? DateStatus.NOT_SUBMITTED
+                  return (
+                    <Fragment key={`week-${week[0]?.date.getTime() ?? weekIndex}`}>
+                      {week.map((dayObj, index) => {
+                        const dayKey = toIsoYmdFromDate(dayObj.date)
+                        const isTabStop = tabStopDateKey === dayKey
+                        const cell = (
+                          <div
+                            key={`${dayObj.date.getTime()}-${index}`}
+                            role="button"
+                            data-calendar-day={dayKey}
+                            data-calendar-selected-day={dayObj.isSelected ? "true" : undefined}
+                            tabIndex={isTabStop ? 0 : -1}
+                            onMouseDown={(e) => {
+                              // Keep mouse clicks from parking focus on the day cell.
+                              // Focus moves to TS Program via onDayActivate (avoids Tab escaping to the sidebar).
+                              if (e.button === 0) e.preventDefault()
+                            }}
+                            onClick={() => handleDayClick(dayObj.date)}
+                            onKeyDown={(e) => handleDayKeyDown(e, dayObj)}
+                            className={cn(
+                              "day-cell text-foreground",
+                              !dayObj.isCurrentMonth && "not-current-month",
+                              dayObj.isSelected && "selected",
+                              dayObj.isWeekSelected && !dayObj.isSelected && "week-selected",
+                              dayObj.isToday &&
                               !dayObj.isSelected &&
                               !dayObj.isWeekSelected &&
                               "today",
-                            dayObj.isSelected &&
+                              dayObj.isSelected &&
                               "z-1 shadow-md ring-2 ring-primary ring-offset-2 ring-offset-background text-foreground!",
-                            dayObj.isWeekSelected &&
+                              dayObj.isWeekSelected &&
                               !dayObj.isSelected &&
                               "border-2 border-primary text-primary! font-medium",
-                            dayObj.color && "text-white!"
-                          )}
-                          style={
-                            {
-                              backgroundColor: dayObj.color || "#f3f4f6", 
-                              backgroundImage: dayObj.status === DateStatus.REJECTED 
-                                ? `linear-gradient(to top right, transparent 46%, rgba(0,0,0,0.6) 46%, rgba(0,0,0,0.6) 54%, transparent 54%)`
-                                : "none"
-                            } as CSSProperties
-                          }
-                        >
-                          {dayObj.day}
-                          {dayObj.hasNotes && (
-                            <span className="absolute top-1.5 right-1.5 text-[9px] leading-none text-[#6C5DD3] font-black pointer-events-none" style={{ textShadow: '0 0 4px rgba(255,255,255,0.9), 0 1px 3px rgba(108,93,211,0.5)' }}>
-                              ★
-                            </span>
-                          )}
-                        </div>
-                      );
-
-                      if (dayObj.noteText) {
-                        return (
-                          <Tooltip key={`${dayObj.date.getTime()}-${index}`}>
-                            <TooltipTrigger asChild>{cell}</TooltipTrigger>
-                            <TooltipContent side="top" className="max-w-[200px] text-xs">
-                              <span className="block break-all break-words">
-                                {dayObj.noteText}
+                              dayObj.color && "text-white!"
+                            )}
+                            style={
+                              {
+                                backgroundColor: dayObj.color || "#f3f4f6",
+                                backgroundImage: dayObj.status === DateStatus.REJECTED
+                                  ? `linear-gradient(to top right, transparent 46%, rgba(0,0,0,0.6) 46%, rgba(0,0,0,0.6) 54%, transparent 54%)`
+                                  : "none"
+                              } as CSSProperties
+                            }
+                          >
+                            {dayObj.day}
+                            {dayObj.hasNotes && (
+                              <span className="absolute top-1.5 right-1.5 text-[9px] leading-none text-[#6C5DD3] font-black pointer-events-none" style={{ textShadow: '0 0 4px rgba(255,255,255,0.9), 0 1px 3px rgba(108,93,211,0.5)' }}>
+                                ★
                               </span>
-                            </TooltipContent>
-                          </Tooltip>
+                            )}
+                          </div>
                         );
-                      }
-                      return cell;
-                    })}
-                    <div className="week-summary-total">{weekTotal}</div>
-                    <div className="week-summary-status">
-                      {renderStatus ? renderStatus(weekIndex, week.map(d => d.date), weekStatus as DateStatus) : (
-                        <span
-                          className="week-summary-status-dot"
-                          style={{
-                            backgroundColor: weekSummaryDotColors[weekStatus as DateStatus] || "#94a3b8", 
-                          }}
-                          title={weekStatus?.replace(/_/g, " ")}
-                        />
-                      )}
-                    </div>
-                    {showActionColumn && (
-                      <div className="week-summary-action">
-                        {renderAction && renderAction(weekIndex, week.map(d => d.date), weekStatus as DateStatus)}
-                      </div>
-                    )}
-                  </Fragment>
-                )
-              })}
-            </div>
-          </div>
-        </div>
 
-      </div>
-      {showBuiltInLegend ? (
-        <div className="flex items-center justify-center bg-background py-2 w-full">
-          <div className="calendar-card w-full max-w-md mx-auto">
-            <h3 className="text-lg font-semibold text-foreground mb-4">
-              Time Entry Status
-            </h3>
-            <div className="flex flex-wrap gap-4">
-              <div className="flex items-center space-x-3">
-                <div
-                  className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-medium"
-                  style={{ backgroundColor: "#28A745" }}
-                >
-                  1
-                </div>
-                <span className="text-foreground">Submitted (Target Met)</span>
-              </div>
-              <div className="flex items-center space-x-3">
-                <div
-                  className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-medium"
-                  style={{ backgroundColor: "#FFC107" }}
-                >
-                  1
-                </div>
-                <span className="text-foreground">Less Hours</span>
-              </div>
-              <div className="flex items-center space-x-3">
-                <div
-                  className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-medium"
-                  style={{ backgroundColor: "#DC3545" }}
-                >
-                  1
-                </div>
-                <span className="text-foreground">Exceed Hours</span>
+                        if (dayObj.noteText) {
+                          return (
+                            <Tooltip key={`${dayObj.date.getTime()}-${index}`}>
+                              <TooltipTrigger asChild>{cell}</TooltipTrigger>
+                              <TooltipContent side="top" className="max-w-[200px] text-xs">
+                                <span className="block break-all break-words">
+                                  {dayObj.noteText}
+                                </span>
+                              </TooltipContent>
+                            </Tooltip>
+                          );
+                        }
+                        return cell;
+                      })}
+                      <div className="week-summary-total">{weekTotal}</div>
+                      <div className="week-summary-status">
+                        {renderStatus ? renderStatus(weekIndex, week.map(d => d.date), weekStatus as DateStatus) : (
+                          <span
+                            className="week-summary-status-dot"
+                            style={{
+                              backgroundColor: weekSummaryDotColors[weekStatus as DateStatus] || "#94a3b8",
+                            }}
+                            title={weekStatus?.replace(/_/g, " ")}
+                          />
+                        )}
+                      </div>
+                      {showActionColumn && (
+                        <div className="week-summary-action">
+                          {renderAction && renderAction(weekIndex, week.map(d => d.date), weekStatus as DateStatus)}
+                        </div>
+                      )}
+                    </Fragment>
+                  )
+                })}
               </div>
             </div>
           </div>
+
         </div>
-      ) : null}
+        {showBuiltInLegend ? (
+          <div className="flex items-center justify-center bg-background py-2 w-full">
+            <div className="calendar-card w-full max-w-md mx-auto">
+              <h3 className="text-lg font-semibold text-foreground mb-4">
+                Time Entry Status
+              </h3>
+              <div className="flex flex-wrap gap-4">
+                <div className="flex items-center space-x-3">
+                  <div
+                    className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-medium"
+                    style={{ backgroundColor: "#28A745" }}
+                  >
+                    1
+                  </div>
+                  <span className="text-foreground">Submitted (Target Met)</span>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <div
+                    className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-medium"
+                    style={{ backgroundColor: "#FFC107" }}
+                  >
+                    1
+                  </div>
+                  <span className="text-foreground">Less Hours</span>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <div
+                    className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-medium"
+                    style={{ backgroundColor: "#DC3545" }}
+                  >
+                    1
+                  </div>
+                  <span className="text-foreground">Exceed Hours</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : null}
       </div>
     </TooltipProvider>
   )

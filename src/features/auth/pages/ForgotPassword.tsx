@@ -59,31 +59,31 @@ export function ForgotPassword() {
   }
 
   return (
-    <div className="relative flex min-h-svh w-full flex-col items-center justify-center overflow-hidden bg-white p-6">
+    <div className="relative flex min-h-svh w-full flex-col items-center justify-center bg-white px-4 pt-16 pb-8 sm:p-6 sm:pt-20">
       <div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-30 pointer-events-none [filter:invert(1)]"
         style={{ backgroundImage: `url(${forgotPasswordBg})` }}
       />
       <Link
         to="/login"
-        className="IEBA--login absolute left-0 top-0 z-10 flex items-center gap-2 pt-[24.9297px] pr-[24.9297px] pb-0 pl-[24.9297px] font-[Roboto,sans-serif] text-[26px] text-[#212529]"
+        className="IEBA--login absolute left-0 top-0 z-10 flex items-center gap-2 p-3 font-[Roboto,sans-serif] text-[#212529] sm:pt-[24.9297px] sm:pr-[24.9297px] sm:pb-0 sm:pl-[24.9297px]"
         aria-label="IEBA Home"
       >
         <img
           src={iebaLogo}
           alt="logo"
-          className="h-[42px] w-[42px] object-contain"
+          className="h-8 w-8 object-contain sm:h-[42px] sm:w-[42px]"
         />
-        <span className="font">I E B A</span>
+        <span className="text-[20px] sm:text-[26px] font">I E B A</span>
       </Link>
 
-      <div className="relative z-10 flex w-full justify-center">
-        <div className="flex h-[420px] min-w-[320px] w-[28%] flex-col rounded-[6px] bg-white py-5 px-4 shadow-login-card font-[Roboto,sans-serif]">
+      <div className="relative z-10 flex w-full max-w-[420px] justify-center">
+        <div className="flex w-full min-h-fit flex-col rounded-[6px] bg-white py-5 px-4 shadow-login-card font-[Roboto,sans-serif] sm:py-7 sm:px-6">
           <div className="text-center" style={{ paddingTop: "2.3vh" }}>
-            <h1 className="mb-2 tracking-tight text-[#212529] text-[39.465px] leading-tight">
+            <h1 className="mb-2 tracking-tight text-[#212529] text-[26px] leading-tight sm:text-[32px] md:text-[39.465px]">
               Forgot Password
             </h1>
-            <p className="mb-4 text-[20px] text-[#C4BEBE]" style={{ fontFamily: "Roboto, sans-serif" }}>
+            <p className="mb-3 text-[16px] text-[#C4BEBE] sm:text-[20px] sm:mb-4" style={{ fontFamily: "Roboto, sans-serif" }}>
               Access to our dashboard
             </p>
           </div>
@@ -111,7 +111,7 @@ export function ForgotPassword() {
             <Button
               type="submit"
               disabled={isSubmitting || sendOtpMutation.isPending}
-              className="mt-auto h-11 w-full rounded-[6px] border-0 text-[18px] font-medium text-white hover:opacity-90 mb-[11vh]"
+              className="mt-auto h-11 w-full rounded-[6px] border-0 text-[16px] font-medium text-white hover:opacity-90 sm:text-[18px] mb-4 sm:mb-[11vh]"
               style={{ background: "linear-gradient(90deg,#00c5fb,#6c5dd3)" }}
             >
               <span className="flex items-center justify-center gap-2">

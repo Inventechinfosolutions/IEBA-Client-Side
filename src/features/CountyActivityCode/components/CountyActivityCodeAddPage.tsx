@@ -386,8 +386,8 @@ export function CountyActivityCodeAddPage({
               : ""
           }
         >
-          <div className="grid grid-cols-3 items-center gap-4">
-            <div className="flex flex-col gap-1 text-[16px] text-[#1F2937] dark:text-[#e4e4e7]">
+          <div className="flex flex-col-reverse sm:grid sm:grid-cols-3 items-center gap-3 sm:gap-4">
+            <div className="flex flex-col gap-1 text-[15px] sm:text-[16px] text-[#1F2937] dark:text-[#e4e4e7] w-full sm:w-auto">
               {tab === CountyActivityGridRowType.PRIMARY && (
                 <label className="flex cursor-pointer items-center gap-2">
                   <Checkbox
@@ -406,12 +406,12 @@ export function CountyActivityCodeAddPage({
                 </p>
               ) : null}
             </div>
-            <h3 className="whitespace-nowrap text-center text-[22px] max-[1024px]:text-[22px] max-[768px]:text-[18px] font-normal text-[#1F2937] dark:text-[#f4f4f5]">
+            <h3 className="text-center text-[18px] sm:text-[22px] font-normal text-[#1F2937] dark:text-[#f4f4f5]">
               {isReadOnly ? "View" : mode === CountyActivityAddPageMode.EDIT ? "Edit" : "Add"}{" "}
               {tab === CountyActivityGridRowType.PRIMARY ? "Primary" : "Sub"} County Activity
             </h3>
-            <div className="flex justify-end">
-              <label className="flex items-center gap-2 text-[16px] text-[#1F2937] dark:text-[#e4e4e7]">
+            <div className="flex justify-end w-full sm:w-auto">
+              <label className="flex items-center gap-2 text-[15px] sm:text-[16px] text-[#1F2937] dark:text-[#e4e4e7]">
                 <Checkbox
                   disabled={isReadOnly}
                   checked={form.watch("active")}
@@ -423,7 +423,7 @@ export function CountyActivityCodeAddPage({
           </div>
 
           {isReadOnly && (
-            <div className="mx-auto w-[500px] mt-4 rounded-[8px] bg-amber-50 border border-amber-200 p-3 text-amber-800 text-[14px] font-medium flex items-center justify-center gap-2">
+            <div className="mx-auto max-w-[500px] w-full mt-4 rounded-[8px] bg-amber-50 border border-amber-200 p-3 text-amber-800 text-[14px] font-medium flex items-center justify-center gap-2">
               <svg className="h-5 w-5 shrink-0 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
@@ -432,7 +432,7 @@ export function CountyActivityCodeAddPage({
           )}
 
           {tab === CountyActivityGridRowType.PRIMARY ? (
-            <div className="mt-[35px] grid min-w-0 grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)_minmax(0,1fr)_minmax(0,1fr)] gap-3">
+            <div className="mt-[35px] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 w-full min-w-0">
               <div className="min-w-0 space-y-1">
                 <label className="text-[14px] font-normal text-[#1F2937]">Code Type</label>
                 <Select
@@ -554,7 +554,7 @@ export function CountyActivityCodeAddPage({
               </div>
             </div>
           ) : (
-            <div className="mt-[40px] grid min-w-0 grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] gap-3">
+            <div className="mt-[40px] grid grid-cols-1 sm:grid-cols-3 gap-3.5 w-full min-w-0">
               <div className="min-w-0 overflow-hidden space-y-1">
                 <label className="text-[14px] font-normal text-[#1F2937]">
                   Primary Activity Code
@@ -648,7 +648,7 @@ export function CountyActivityCodeAddPage({
           </div>
 
           {tab === CountyActivityGridRowType.PRIMARY && (
-            <div className="grid grid-cols-[minmax(0,1fr)_74px_minmax(0,1fr)] gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-[1fr_60px_1fr] gap-3 sm:gap-4 items-center w-full">
               <div className="w-full overflow-hidden rounded-[12px] border border-[#E5E7EB]">
                 <div className="flex h-[44px] items-center justify-between bg-[#6C5DD3] px-4 font-normal text-white">
                   <span className="font-normal">{filteredUnassigned.length} item</span>
@@ -664,7 +664,7 @@ export function CountyActivityCodeAddPage({
                       className="h-[44px] rounded-[8px] border-[#D9D9D9] pl-9"
                     />
                   </div>
-                  <div className="min-h-[165px] space-y-2">
+                  <div className="min-h-[165px] max-h-[220px] overflow-y-auto space-y-2">
                     {filteredUnassigned.map((item) => (
                       <label
                         key={item}
@@ -688,24 +688,24 @@ export function CountyActivityCodeAddPage({
                 </div>
               </div>
 
-              <div className="flex min-w-[74px] flex-col items-center justify-center gap-3">
+              <div className="flex sm:flex-col items-center justify-center gap-2 sm:gap-3 py-2 sm:py-0">
                 <Button
                   type="button"
                   size="icon"
                   disabled={isReadOnly}
                   onClick={assignCountyActivityDepartmentsFromPicker}
-                  className="h-[38px] w-[62px] rounded-[12px] bg-[#6C5DD3] hover:bg-[#5B4DC5]"
+                  className="h-[38px] w-[50px] sm:w-[50px] rounded-[12px] bg-[#6C5DD3] hover:bg-[#5B4DC5]"
                 >
-                  <ChevronRight className="size-5" />
+                  <ChevronRight className="size-5 rotate-90 sm:rotate-0 transition-transform" />
                 </Button>
                 <Button
                   type="button"
                   size="icon"
                   disabled={isReadOnly}
                   onClick={removeCountyActivityDepartmentsFromPicker}
-                  className="h-[38px] w-[62px] rounded-[12px] bg-[#6C5DD3] hover:bg-[#5B4DC5]"
+                  className="h-[38px] w-[50px] sm:w-[50px] rounded-[12px] bg-[#6C5DD3] hover:bg-[#5B4DC5]"
                 >
-                  <ChevronLeft className="size-5" />
+                  <ChevronLeft className="size-5 rotate-90 sm:rotate-0 transition-transform" />
                 </Button>
               </div>
 
@@ -779,7 +779,7 @@ export function CountyActivityCodeAddPage({
 
               {form.watch("bhsaApplicable") && (
                 <>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1">
                       <label className="text-[14px] font-normal text-[#1F2937]">
                         Expenditure Classification {form.watch("bhsaApplicable") && <span className="text-red-500">*</span>}
@@ -899,9 +899,9 @@ export function CountyActivityCodeAddPage({
             </div>
           )}
 
-          <div className="mt-[70px] flex flex-wrap items-center justify-between gap-3 pt-4">
-            <div className="flex items-center gap-5">
-              <label className="flex items-center gap-2 text-[14px] text-[#1F2937]">
+          <div className="mt-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-4 border-t border-[#F3F4F6]">
+            <div className="flex flex-wrap items-center gap-4 sm:gap-5">
+              <label className="flex items-center gap-2 text-[14px] text-[#1F2937] cursor-pointer">
                 <Checkbox
                   disabled={isReadOnly}
                   checked={form.watch("leaveCode")}
@@ -909,7 +909,7 @@ export function CountyActivityCodeAddPage({
                 />
                 <span>Leave Code?</span>
               </label>
-              <label className="flex items-center gap-2 text-[14px] text-[#1F2937]">
+              <label className="flex items-center gap-2 text-[14px] text-[#1F2937] cursor-pointer">
                 <Checkbox
                   disabled={isReadOnly}
                   checked={form.watch("docRequired")}
@@ -918,7 +918,7 @@ export function CountyActivityCodeAddPage({
                 <span>Documents Required?</span>
               </label>
 
-              <label className="flex items-center gap-2 text-[14px] text-[#A1A1AA]">
+              <label className="flex items-center gap-2 text-[14px] text-[#1F2937] cursor-pointer">
                 <Checkbox
                   disabled={isReadOnly}
                   checked={form.watch("multipleJobPools")}
@@ -929,24 +929,24 @@ export function CountyActivityCodeAddPage({
                 <span>Assign Multiple Job Pools?</span>
               </label>
             </div>
-            <div className="flex items-center gap-2">
-              {!isReadOnly && (
-                <Button
-                  type="submit"
-                  disabled={isSubmitting || (mode === CountyActivityAddPageMode.EDIT && isEditSourceLoading)}
-                  className="h-[45px] rounded-[14px] bg-[#6C5DD3] px-[25px] text-[16px] font-normal text-white hover:bg-[#5B4DC5]"
-                >
-                  Save
-                </Button>
-              )}
+            <div className="flex flex-col-reverse sm:flex-row items-center gap-2.5 w-full sm:w-auto">
               <Button
                 type="button"
                 variant="secondary"
                 onClick={onClose}
-                className="h-[45px] rounded-[14px] bg-[#E5E7EB] px-[25px] text-[16px] font-normal text-[#111827] hover:bg-[#D1D5DB]"
+                className="h-[45px] w-full sm:w-[120px] rounded-[10px] bg-[#E5E7EB] px-5 text-[15px] font-medium text-[#111827] hover:bg-[#D1D5DB]"
               >
                 Exit
               </Button>
+              {!isReadOnly && (
+                <Button
+                  type="submit"
+                  disabled={isSubmitting || (mode === CountyActivityAddPageMode.EDIT && isEditSourceLoading)}
+                  className="h-[45px] w-full sm:w-[120px] rounded-[10px] bg-[#6C5DD3] px-5 text-[15px] font-medium text-white hover:bg-[#5B4DC5]"
+                >
+                  Save
+                </Button>
+              )}
             </div>
           </div>
         </div>

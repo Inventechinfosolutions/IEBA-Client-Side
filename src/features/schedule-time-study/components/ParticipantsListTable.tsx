@@ -26,6 +26,7 @@ import { useGetRmtsGroups } from "../queries/getRmtsGroups"
 import { useGetRmtsGroupById } from "../queries/getRmtsGroupById"
 import type { ParticipantsListRow, ParticipantsListTableProps } from "../types"
 import { ParticipantsListForm, ParticipantUsersModal } from "./ParticipantsListForm"
+import { ParticipantsListCardView } from "./ParticipantsListCardView"
 
 const participantGroupSuccessToastOptions = {
   position: "top-center" as const,
@@ -84,26 +85,52 @@ export function ParticipantsListTable({
     <div className="mt-8 space-y-4">
       <h3 className="text-[20px] font-normal leading-none text-[#6C5DD3]">Participant List</h3>
 
-      <div className="flex flex-wrap items-start justify-between gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 w-full min-w-0">
         <SingleSelectDropdown
           value={studyYear}
           onChange={onStudyYearChange}
           onBlur={() => {}}
           options={fiscalYearOptions.map((fy) => ({ value: fy.id, label: fy.label }))}
           placeholder="Select year"
-          className="h-10 w-[170px] rounded-[10px] border-[#D1D5DB] px-[12px] text-[14px] font-normal text-[#111827] focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+          className="h-10 w-full sm:w-[170px] rounded-[10px] border-[#D1D5DB] px-[12px] text-[14px] font-normal text-[#111827] focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0"
         />
 
         <Button
           type="button"
-          className="h-10 w-[175px] rounded-[12px] bg-[#6C5DD3] px-[15px] text-[14px] font-normal text-white hover:bg-[#5D4FC4]"
+          className="h-10 w-full sm:w-[175px] shrink-0 rounded-[12px] bg-[#6C5DD3] px-[15px] text-[14px] font-normal text-white hover:bg-[#5D4FC4]"
           onClick={() => setCreateGroupOpen(true)}
         >
           Add Participant Group
         </Button>
       </div>
 
-      <div className="relative overflow-hidden rounded-[10px] border border-[#E5E7EB]">
+      <ParticipantsListCardView
+        rows={rows}
+        isLoading={participantsQuery.isLoading}
+        onEditRow={(row) => {
+          setEditingParticipantRow(row)
+          setCreateGroupOpen(true)
+        }}
+        onDeleteRow={(row) => {
+          const id = Number(row.id)
+          if (!Number.isFinite(id) || id <= 0) return
+          void deleteGroup
+            .mutateAsync(id)
+            .then(() => {
+              toast.success("Deleted successfully", participantGroupSuccessToastOptions)
+            })
+            .catch((error: unknown) => {
+              toast.error(formatRmtsGroupMutationError(error))
+            })
+        }}
+        onViewUsers={(row) => {
+          setViewGroupId(Number(row.id))
+          setUsersModalOpen(true)
+        }}
+        isDeletingId={deleteGroup.isPending ? Number(editingParticipantRow?.id) : null}
+      />
+
+      <div className="hidden xl:block relative overflow-hidden rounded-[10px] border border-[#E5E7EB]">
         {participantsQuery.isFetching && (
           <div className="absolute top-[60px] inset-x-0 bottom-0 flex items-center justify-center bg-white/50 z-[50]">
             <Spinner className="text-[#6C5DD3]" />

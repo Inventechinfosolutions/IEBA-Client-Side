@@ -37,7 +37,7 @@ export function TodoCard({ items = [], isLoading }: TodoCardProps) {
     <TooltipProvider>
       <div className="flex h-full flex-col rounded-[10px] border border-[#E8EAF6] bg-white shadow-[0_0_20px_0_#0000001a]">
         {/* Header */}
-        <div className="flex items-center justify-between px-5 pt-4 pb-3">
+        <div className="flex items-center justify-between px-5 sm:px-6 lg:px-5 pt-4 sm:pt-5 lg:pt-4 pb-3 sm:pb-4 lg:pb-3">
           <div className="flex items-center gap-2">
             <ListTodo className="h-5 w-5 text-[#6C5DD3]" />
             <span className="text-[15px] font-semibold text-[#1a1a2e]">To Do</span>
@@ -73,19 +73,19 @@ export function TodoCard({ items = [], isLoading }: TodoCardProps) {
                 <TooltipTrigger asChild>
                   <Link 
                     to="/to-do"
-                    className="relative flex items-center px-4 py-3 hover:bg-[#FAFAFA] cursor-pointer"
+                    className="flex items-center justify-between gap-2 px-4 py-3 sm:py-4 lg:py-3 hover:bg-[#FAFAFA] cursor-pointer"
                   >
-                    <div className="flex items-center flex-1 min-w-0 pr-4">
-                      <span className="text-[#9CA3AF]  text-xl w-[24px] shrink-0">⋮</span>
-                      <span className="text-base  text-[#1a1a2e] whitespace-normal break-all truncate">
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                      <span className="text-[#9CA3AF] text-xl shrink-0">⋮</span>
+                      <span className="text-sm font-medium text-[#1a1a2e] truncate">
                         {item.title}
                       </span>
                     </div>
-                    <div className="absolute left-1/2 -translate-x-1/2 text-sm  text-gray-500">
-                      {formatTodoDate(item)}
-                    </div>
-                    <div className="w-[24px] shrink-0 flex justify-end">
-                      <Check className={`h-4 w-4 ${getStatusColor(item.status)}`} />
+                    <div className="flex items-center gap-3 shrink-0">
+                      <span className="text-xs text-gray-500 whitespace-nowrap">
+                        {formatTodoDate(item)}
+                      </span>
+                      <Check className={`h-4 w-4 shrink-0 ${getStatusColor(item.status)}`} />
                     </div>
                   </Link>
                 </TooltipTrigger>

@@ -80,7 +80,8 @@ function MinDecimalField({
   hintMessage,
   inputClassName,
   heightClass = "h-10",
-}: MinDecimalFieldProps) {
+  containerClassName,
+}: MinDecimalFieldProps & { containerClassName?: string }) {
   const [originalValue, setOriginalValue] = useState<string | null>(null)
 
   const displayMessage = showDecimalHint
@@ -101,7 +102,7 @@ function MinDecimalField({
   }
 
   return (
-    <div className={cn("space-y-0.5", showDecimalHint ? "w-[92px]" : "w-[75px]")}>
+    <div className={cn("space-y-0.5 w-full sm:w-auto", showDecimalHint ? "sm:w-[92px]" : "sm:w-[75px]", containerClassName)}>
       <Label className={labelClassName}>{label}</Label>
       <div className="relative">
         <TitleCaseInput
@@ -114,7 +115,7 @@ function MinDecimalField({
           placeholder="—"
           className={cn(
             heightClass,
-            "text-[11px] tabular-nums rounded-[6px]",
+            "text-[11px] tabular-nums rounded-[6px] bg-white dark:bg-zinc-900 border-border",
             displayMessage && "pr-8",
             (readOnly || disabled) && "bg-[#F2F4F7] cursor-not-allowed",
             inputClassName,
@@ -136,8 +137,6 @@ function MinDecimalField({
     </div>
   )
 }
-
-const leaveChildFieldRowClass = "flex flex-row items-end gap-2 flex-nowrap"
 
 
 
@@ -195,7 +194,7 @@ export type EmployeeLeaveRequestDialogProps = {
 
 const getHeaderGridClass = (isEditing: boolean, allowMulticodeUi: boolean, showTime: boolean) =>
   cn(
-    "grid min-w-[950px] items-end gap-2.5 text-[14px] font-normal text-[#4A4A4A] whitespace-nowrap",
+    "hidden xl:grid min-w-[950px] items-end gap-2.5 text-[14px] font-normal text-[#4A4A4A] dark:text-zinc-300 whitespace-nowrap pb-2 border-b border-border/40",
     showTime
       ? (isEditing && !allowMulticodeUi
         ? "grid-cols-[minmax(7.5rem,1fr)_minmax(8.5rem,1.3fr)_minmax(8.5rem,1.3fr)_minmax(5rem,0.8fr)_minmax(5rem,0.8fr)_minmax(6.5rem,0.8fr)_minmax(8.5rem,1.1fr)]"
@@ -207,14 +206,14 @@ const getHeaderGridClass = (isEditing: boolean, allowMulticodeUi: boolean, showT
 
 const getRowGridClass = (isEditing: boolean, allowMulticodeUi: boolean, showTime: boolean) =>
   cn(
-    "grid min-w-[950px] items-end gap-2.5 py-2",
+    "flex flex-col gap-3 p-3.5 rounded-[10px] border border-gray-200 dark:border-zinc-800 bg-[#F8F9FC] dark:bg-zinc-900/60 shadow-xs xl:shadow-none xl:bg-transparent xl:border-0 xl:p-0 xl:grid xl:min-w-[950px] xl:items-end xl:gap-2.5 xl:py-2",
     showTime
       ? (isEditing && !allowMulticodeUi
-        ? "grid-cols-[minmax(7.5rem,1fr)_minmax(8.5rem,1.3fr)_minmax(8.5rem,1.3fr)_minmax(5rem,0.8fr)_minmax(5rem,0.8fr)_minmax(6.5rem,0.8fr)_minmax(8.5rem,1.1fr)]"
-        : "grid-cols-[minmax(7.5rem,1fr)_minmax(8.5rem,1.3fr)_minmax(8.5rem,1.3fr)_minmax(5rem,0.8fr)_minmax(5rem,0.8fr)_minmax(6.5rem,0.8fr)_minmax(8.5rem,1.1fr)_7.5rem]")
+        ? "xl:grid-cols-[minmax(7.5rem,1fr)_minmax(8.5rem,1.3fr)_minmax(8.5rem,1.3fr)_minmax(5rem,0.8fr)_minmax(5rem,0.8fr)_minmax(6.5rem,0.8fr)_minmax(8.5rem,1.1fr)]"
+        : "xl:grid-cols-[minmax(7.5rem,1fr)_minmax(8.5rem,1.3fr)_minmax(8.5rem,1.3fr)_minmax(5rem,0.8fr)_minmax(5rem,0.8fr)_minmax(6.5rem,0.8fr)_minmax(8.5rem,1.1fr)_7.5rem]")
       : (isEditing && !allowMulticodeUi
-        ? "grid-cols-[minmax(7.5rem,1fr)_minmax(8.5rem,1.3fr)_minmax(8.5rem,1.3fr)_minmax(6.5rem,0.8fr)_minmax(8.5rem,1.1fr)]"
-        : "grid-cols-[minmax(7.5rem,1fr)_minmax(8.5rem,1.3fr)_minmax(8.5rem,1.3fr)_minmax(6.5rem,0.8fr)_minmax(8.5rem,1.1fr)_7.5rem]")
+        ? "xl:grid-cols-[minmax(7.5rem,1fr)_minmax(8.5rem,1.3fr)_minmax(8.5rem,1.3fr)_minmax(6.5rem,0.8fr)_minmax(8.5rem,1.1fr)]"
+        : "xl:grid-cols-[minmax(7.5rem,1fr)_minmax(8.5rem,1.3fr)_minmax(8.5rem,1.3fr)_minmax(6.5rem,0.8fr)_minmax(8.5rem,1.1fr)_7.5rem]")
   )
 
 function TimePicker24h({
@@ -251,7 +250,7 @@ function TimePicker24h({
                 onBlur={(e) => onChange(normalizeTimeOnBlur(e.target.value))}
                 onFocus={openMenu}
                 className={cn(
-                  "h-10 pr-8 text-sm font-normal rounded-[6px] cursor-pointer w-full",
+                  "h-10 pr-8 text-sm font-normal rounded-[6px] cursor-pointer w-full bg-white dark:bg-zinc-900 border-border",
                   disabled && "cursor-not-allowed bg-muted !text-foreground pointer-events-none !opacity-100"
                 )}
               />
@@ -876,6 +875,7 @@ export function EmployeeLeaveRequestDialog({
   }
 
   const validateDates = () => {
+    if (isEditing) return true
     const entries = form.getValues("entries")
     const today = new Date()
     today.setHours(0, 0, 0, 0)
@@ -998,21 +998,21 @@ export function EmployeeLeaveRequestDialog({
         showClose
         overlayClassName="bg-black/55"
         className={cn(
-          "flex max-h-[min(90vh,800px)] w-full max-w-[min(96vw,1200px)] flex-col gap-0 overflow-hidden p-0 sm:rounded-lg bg-white",
+          "flex max-h-[92vh] sm:max-h-[min(90vh,800px)] w-[95vw] sm:w-full max-w-full sm:max-w-[min(96vw,1200px)] flex-col gap-0 overflow-hidden p-0 rounded-lg sm:rounded-lg bg-white dark:bg-zinc-950 text-foreground",
           className
         )}
       >
         {(isFetching || isSaving || isSubmitting) && (
-          <div className="absolute inset-0 z-60 flex flex-col items-center justify-center bg-white/60 backdrop-blur-[1px]">
+          <div className="absolute inset-0 z-60 flex flex-col items-center justify-center bg-white/60 dark:bg-zinc-950/60 backdrop-blur-[1px]">
             <Spinner className="text-[#6C5DD3]" />
           </div>
         )}
-        <DialogHeader className="shrink-0 border-b border-border px-6 py-4">
-          <DialogTitle className="text-center text-lg font-semibold">
+        <DialogHeader className="shrink-0 border-b border-border px-4 py-3 sm:px-6 sm:py-4">
+          <DialogTitle className="text-center text-base sm:text-lg font-semibold">
             {title || "Employee Leave Request"}
           </DialogTitle>
           {isApproved && (
-            <div className="mt-3 mx-auto flex w-fit items-center justify-center rounded-[6px] bg-[#E5E7EB] px-6 py-1.5 text-[13px] italic text-[#1F2937]">
+            <div className="mt-2 sm:mt-3 mx-auto flex w-fit items-center justify-center rounded-[6px] bg-[#E5E7EB] dark:bg-zinc-800 px-3 py-1 sm:px-6 sm:py-1.5 text-[12px] sm:text-[13px] italic text-[#1F2937] dark:text-zinc-200 text-center">
               Note : You cannot exceed more than {initialValues?.entries?.[0]?.totalMinApplied || 0}{" "}
               {!showTimeColumns ? "hours" : "minutes"}
             </div>
@@ -1023,8 +1023,8 @@ export function EmployeeLeaveRequestDialog({
           className="flex min-h-0 flex-1 flex-col"
           onSubmit={(e) => e.preventDefault()}
         >
-          <div className="min-h-0 flex-1 overflow-x-auto overflow-y-auto px-4 py-3 sm:px-6">
-            {/* Column headers */}
+          <div className="min-h-0 flex-1 overflow-x-hidden sm:overflow-x-auto overflow-y-auto px-3.5 py-3 sm:px-6">
+            {/* Column headers (Desktop only) */}
             <div className={getHeaderGridClass(isEditing, allowMulticodeUi, showTimeColumns)}>
               <span>Date</span>
               <span>Program Code</span>
@@ -1046,10 +1046,13 @@ export function EmployeeLeaveRequestDialog({
                   !isEditing && !(parentIndex === 0 && leaveEntryIndexGroups.length === 1)
 
                 return (
-                  <div key={parentField.id} className="py-3 first:pt-1">
+                  <div key={parentField.id} className="py-2.5 sm:py-3 first:pt-1">
                     <div className={getRowGridClass(isEditing, allowMulticodeUi, showTimeColumns)}>
                       {/* Date */}
                       <div className="space-y-1">
+                        <Label className="text-[11px] font-semibold text-[#6C5DD3] sm:hidden">
+                          Date <RequiredMark />
+                        </Label>
                         <Controller
                           control={form.control}
                           name={`entries.${parentIndex}.date`}
@@ -1057,28 +1060,30 @@ export function EmployeeLeaveRequestDialog({
                             <>
                               <TitleCaseInput
                                 type="date"
-                                className="h-10 text-sm rounded-[6px]"
+                                className="h-10 text-sm rounded-[6px] bg-white dark:bg-zinc-900 border-border"
                                 name={f.name}
                                 value={f.value}
                                 ref={f.ref}
                                 onBlur={f.onBlur}
                                 onChange={(e) => {
                                   if (e.target.value) {
-                                    const today = new Date()
-                                    today.setHours(0, 0, 0, 0)
-                                    const [year, month, day] = e.target.value.split("-").map(Number)
-                                    const selectedDate = new Date(year, month - 1, day)
-                                    const isTodayOrFuture = selectedDate >= today
-                                    const isWithinCurrentMonth =
-                                      selectedDate.getMonth() === today.getMonth() &&
-                                      selectedDate.getFullYear() === today.getFullYear()
-                                    if (!isTodayOrFuture || !isWithinCurrentMonth) {
-                                      toast.error("Please select today's date or a future date within the current month")
-                                      f.onChange("")
-                                    } else {
-                                      f.onChange(e)
-                                      fetchConfigForDate(e.target.value)
+                                    if (!isEditing) {
+                                      const today = new Date()
+                                      today.setHours(0, 0, 0, 0)
+                                      const [year, month, day] = e.target.value.split("-").map(Number)
+                                      const selectedDate = new Date(year, month - 1, day)
+                                      const isTodayOrFuture = selectedDate >= today
+                                      const isWithinCurrentMonth =
+                                        selectedDate.getMonth() === today.getMonth() &&
+                                        selectedDate.getFullYear() === today.getFullYear()
+                                      if (!isTodayOrFuture || !isWithinCurrentMonth) {
+                                        toast.error("Please select today's date or a future date within the current month")
+                                        f.onChange("")
+                                        return
+                                      }
                                     }
+                                    f.onChange(e)
+                                    fetchConfigForDate(e.target.value)
                                   } else {
                                     f.onChange(e)
                                   }
@@ -1095,6 +1100,9 @@ export function EmployeeLeaveRequestDialog({
 
                       {/* Program Code */}
                       <div className="space-y-1">
+                        <Label className="text-[11px] font-semibold text-[#6C5DD3] sm:hidden">
+                          Program Code <RequiredMark />
+                        </Label>
                         <Controller
                           control={form.control}
                           name={`entries.${parentIndex}.programCode`}
@@ -1179,7 +1187,7 @@ export function EmployeeLeaveRequestDialog({
                                   }
                                 }}
                                 onBlur={f.onBlur}
-                                className="h-10 min-h-0 rounded-[6px]"
+                                className="h-10 min-h-0 rounded-[6px] bg-white dark:bg-zinc-900 border-border"
                               />
                               {fieldState.error?.message && (
                                 <p className="text-xs text-destructive">{fieldState.error.message}</p>
@@ -1191,6 +1199,9 @@ export function EmployeeLeaveRequestDialog({
 
                       {/* Activity Code */}
                       <div className="space-y-1">
+                        <Label className="text-[11px] font-semibold text-[#6C5DD3] sm:hidden">
+                          Activity Code <RequiredMark />
+                        </Label>
                         <Controller
                           control={form.control}
                           name={`entries.${parentIndex}.activityCode`}
@@ -1255,102 +1266,112 @@ export function EmployeeLeaveRequestDialog({
                         />
                       </div>
 
-                      {/* Start Time */}
+                      {/* Start & End Times (grid container for mobile, inline for desktop) */}
                       {showTimeColumns && (
-                        <Controller
-                          control={form.control}
-                          name={`entries.${parentIndex}.startTime`}
-                          render={({ field: f, fieldState }) => {
-                            const settings = getRowSettings(
-                              form.getValues(`entries.${parentIndex}.date`),
-                              form.getValues(`entries.${parentIndex}.programCode`)
-                            )
-                            const hideTime = settings.hideTime
-                            const removeAutoFill = settings.removeAutoFillEndTime
-                            if (hideTime) {
+                        <div className="grid grid-cols-2 gap-2.5 sm:contents">
+                          {/* Start Time */}
+                          <Controller
+                            control={form.control}
+                            name={`entries.${parentIndex}.startTime`}
+                            render={({ field: f, fieldState }) => {
+                              const settings = getRowSettings(
+                                form.getValues(`entries.${parentIndex}.date`),
+                                form.getValues(`entries.${parentIndex}.programCode`)
+                              )
+                              const hideTime = settings.hideTime
+                              const removeAutoFill = settings.removeAutoFillEndTime
+                              if (hideTime) {
+                                return (
+                                  <div className="flex h-10 items-center justify-center text-[#98A2B3] font-medium">
+                                    —
+                                  </div>
+                                )
+                              }
                               return (
-                                <div className="flex h-10 items-center justify-center text-[#98A2B3] font-medium">
-                                  —
+                                <div className="space-y-1">
+                                  <Label className="text-[11px] font-medium text-muted-foreground sm:hidden">
+                                    Start Time
+                                  </Label>
+                                  <TimePicker24h
+                                    value={f.value}
+                                    disabled={isApproved}
+                                    onChange={(v) => {
+                                      f.onChange(v)
+                                      if (!removeAutoFill) {
+                                        // Auto-fill end time to start + 15 min
+                                        const newEnd = addMinutesToTime(v, 15)
+                                        form.setValue(`entries.${parentIndex}.endTime`, newEnd, {
+                                          shouldValidate: true,
+                                          shouldDirty: true,
+                                        })
+                                        updateDuration(parentIndex, v, newEnd)
+                                      } else {
+                                        // No auto-fill — just recalculate duration with existing end
+                                        const currentEnd = form.getValues(`entries.${parentIndex}.endTime`)
+                                        updateDuration(parentIndex, v, currentEnd)
+                                      }
+                                      scheduleSyncMulticodeChildRowsFromParent(parentIndex)
+                                    }}
+                                    className="w-full"
+                                  />
+                                  {fieldState.error?.message && (
+                                    <p className="text-xs text-destructive">{fieldState.error.message}</p>
+                                  )}
                                 </div>
                               )
-                            }
-                            return (
-                              <div className="space-y-1">
-                                <TimePicker24h
-                                  value={f.value}
-                                  disabled={isApproved}
-                                  onChange={(v) => {
-                                    f.onChange(v)
-                                    if (!removeAutoFill) {
-                                      // Auto-fill end time to start + 15 min
-                                      const newEnd = addMinutesToTime(v, 15)
-                                      form.setValue(`entries.${parentIndex}.endTime`, newEnd, {
-                                        shouldValidate: true,
-                                        shouldDirty: true,
-                                      })
-                                      updateDuration(parentIndex, v, newEnd)
-                                    } else {
-                                      // No auto-fill — just recalculate duration with existing end
-                                      const currentEnd = form.getValues(`entries.${parentIndex}.endTime`)
-                                      updateDuration(parentIndex, v, currentEnd)
-                                    }
-                                    scheduleSyncMulticodeChildRowsFromParent(parentIndex)
-                                  }}
-                                  className="w-full"
-                                />
-                                {fieldState.error?.message && (
-                                  <p className="text-xs text-destructive">{fieldState.error.message}</p>
-                                )}
-                              </div>
-                            )
-                          }}
-                        />
-                      )}
+                            }}
+                          />
 
-                      {/* End Time */}
-                      {showTimeColumns && (
-                        <Controller
-                          control={form.control}
-                          name={`entries.${parentIndex}.endTime`}
-                          render={({ field: f, fieldState }) => {
-                            const settings = getRowSettings(
-                              form.getValues(`entries.${parentIndex}.date`),
-                              form.getValues(`entries.${parentIndex}.programCode`)
-                            )
-                            const hideTime = settings.hideTime
-                            if (hideTime) {
+                          {/* End Time */}
+                          <Controller
+                            control={form.control}
+                            name={`entries.${parentIndex}.endTime`}
+                            render={({ field: f, fieldState }) => {
+                              const settings = getRowSettings(
+                                form.getValues(`entries.${parentIndex}.date`),
+                                form.getValues(`entries.${parentIndex}.programCode`)
+                              )
+                              const hideTime = settings.hideTime
+                              if (hideTime) {
+                                return (
+                                  <div className="flex h-10 items-center justify-center text-[#98A2B3] font-medium">
+                                    —
+                                  </div>
+                                )
+                              }
+                              const startTime = form.getValues(`entries.${parentIndex}.startTime`)
+                              const endTimeDisabled = !startTime
                               return (
-                                <div className="flex h-10 items-center justify-center text-[#98A2B3] font-medium">
-                                  —
+                                <div className="space-y-1">
+                                  <Label className="text-[11px] font-medium text-muted-foreground sm:hidden">
+                                    End Time
+                                  </Label>
+                                  <TimePicker24h
+                                    value={f.value}
+                                    disabled={endTimeDisabled}
+                                    onChange={(v) => {
+                                      f.onChange(v)
+                                      const currentStart = form.getValues(`entries.${parentIndex}.startTime`)
+                                      updateDuration(parentIndex, currentStart, v)
+                                      scheduleSyncMulticodeChildRowsFromParent(parentIndex)
+                                    }}
+                                    className="w-full"
+                                  />
+                                  {fieldState.error?.message && (
+                                    <p className="text-xs text-destructive">{fieldState.error.message}</p>
+                                  )}
                                 </div>
                               )
-                            }
-                            const startTime = form.getValues(`entries.${parentIndex}.startTime`)
-                            const endTimeDisabled = !startTime
-                            return (
-                              <div className="space-y-1">
-                                <TimePicker24h
-                                  value={f.value}
-                                  disabled={endTimeDisabled}
-                                  onChange={(v) => {
-                                    f.onChange(v)
-                                    const currentStart = form.getValues(`entries.${parentIndex}.startTime`)
-                                    updateDuration(parentIndex, currentStart, v)
-                                    scheduleSyncMulticodeChildRowsFromParent(parentIndex)
-                                  }}
-                                  className="w-full"
-                                />
-                                {fieldState.error?.message && (
-                                  <p className="text-xs text-destructive">{fieldState.error.message}</p>
-                                )}
-                              </div>
-                            )
-                          }}
-                        />
+                            }}
+                          />
+                        </div>
                       )}
 
                       {/* Total Min Applied */}
                       <div className="space-y-1">
+                        <Label className="text-[11px] font-semibold text-[#6C5DD3] sm:hidden">
+                          {showTimeColumns ? "Total Min Applied" : "Total Hrs Applied"} <RequiredMark />
+                        </Label>
                         <Controller
                           control={form.control}
                           name={`entries.${parentIndex}.totalMinApplied`}
@@ -1382,6 +1403,7 @@ export function EmployeeLeaveRequestDialog({
                               <>
                                 {hideTime ? (
                                   <MinDecimalField
+                                    containerClassName="w-full"
                                     label={<span className="sr-only">Hours</span>}
                                     labelClassName="sr-only"
                                     value={f.value}
@@ -1407,7 +1429,7 @@ export function EmployeeLeaveRequestDialog({
                                     type="text"
                                     inputMode="numeric"
                                     className={cn(
-                                      "h-10 text-sm tabular-nums rounded-[6px]",
+                                      "h-10 text-sm tabular-nums rounded-[6px] bg-white dark:bg-zinc-900 border-border",
                                       !minAppliedEditable &&
                                       "cursor-not-allowed bg-muted !opacity-100 !text-foreground",
                                       isErrorState &&
@@ -1440,13 +1462,16 @@ export function EmployeeLeaveRequestDialog({
 
                       {/* Comments */}
                       <div className="space-y-1">
+                        <Label className="text-[11px] font-medium text-muted-foreground sm:hidden">
+                          Comments
+                        </Label>
                         <Controller
                           control={form.control}
                           name={`entries.${parentIndex}.comment`}
                           render={({ field: f, fieldState }) => (
                             <>
                               <TitleCaseInput
-                                className="h-10 text-sm rounded-[6px]"
+                                className="h-10 text-sm rounded-[6px] bg-white dark:bg-zinc-900 border-border"
                                 placeholder="Comments"
                                 {...f}
                               />
@@ -1459,7 +1484,7 @@ export function EmployeeLeaveRequestDialog({
                       </div>
 
                       {(!isEditing || (allowMulticodeUi && !isApproved)) && (
-                        <div className="flex items-end justify-center gap-1 pb-0.5">
+                        <div className="flex items-center justify-end gap-2 pt-2 border-t border-border/50 sm:border-0 sm:pt-0 sm:justify-center sm:items-end sm:gap-1 sm:pb-0.5">
                           {isMulticodeAllowedForLeaveParent(parentIndex) && !isApproved && (
                             <Button
                               type="button"
@@ -1521,7 +1546,7 @@ export function EmployeeLeaveRequestDialog({
                     </div>
 
                     {childIndices.length > 0 && (
-                      <div className="mt-3 space-y-3 border-l-2 border-[#6C5DD3]/20 pl-4 ml-6 sm:ml-8">
+                      <div className="mt-3 space-y-3 border-l-2 border-[#6C5DD3]/40 pl-3 ml-2 sm:ml-6">
                         {childIndices.map((index) => (
                           <div key={fields[index]!.id}>
                             <div className="hidden" aria-hidden>
@@ -1541,7 +1566,7 @@ export function EmployeeLeaveRequestDialog({
                                 render={({ field: f }) => <input type="hidden" {...f} />}
                               />
                             </div>
-                            <div className={leaveChildFieldRowClass}>
+                            <div className="flex flex-col gap-2.5 p-3 rounded-[8px] border border-[#6C5DD3]/25 dark:border-[#6C5DD3]/40 bg-white dark:bg-zinc-950 shadow-xs sm:flex-row sm:items-end sm:gap-2 sm:p-0 sm:border-0 sm:bg-transparent sm:shadow-none">
                               <div className="min-w-0 flex-1 space-y-1">
                                 <Label className="text-[11px] text-muted-foreground">
                                   Program <RequiredMark />
@@ -1622,7 +1647,7 @@ export function EmployeeLeaveRequestDialog({
                                           }
                                         }}
                                         onBlur={f.onBlur}
-                                        className="h-9 min-h-0 text-[11px] rounded-[6px]"
+                                        className="h-9 min-h-0 text-[11px] rounded-[6px] bg-white dark:bg-zinc-900 border-border"
                                       />
                                       {fieldState.error?.message && (
                                         <p className="text-xs text-destructive">{fieldState.error.message}</p>
@@ -1706,7 +1731,7 @@ export function EmployeeLeaveRequestDialog({
                                   )}
                                 />
                               </div>
-                              <div className={cn("shrink-0 space-y-1", (() => {
+                              <div className={cn("space-y-1 w-full sm:w-auto shrink-0", (() => {
                                 let parentRowIndex = -1
                                 for (let k = index - 1; k >= 0; k--) {
                                   if (!formEntries[k]?.multicodeChild) {
@@ -1720,7 +1745,7 @@ export function EmployeeLeaveRequestDialog({
                                     formEntries[parentRowIndex]?.programCode,
                                   ).hideTime
                                   : false
-                                return parentHideTime ? "w-[92px]" : "w-[72px]"
+                                return parentHideTime ? "sm:w-[92px]" : "sm:w-[72px]"
                               })())}>
                                 <Label className="text-[11px] font-medium text-[#6C5DD3]">
                                   {(() => {
@@ -1787,6 +1812,7 @@ export function EmployeeLeaveRequestDialog({
                                       <>
                                         {parentHideTime ? (
                                           <MinDecimalField
+                                            containerClassName="w-full"
                                             label={<span className="sr-only">Hours</span>}
                                             labelClassName="sr-only"
                                             value={f.value}
@@ -1810,7 +1836,7 @@ export function EmployeeLeaveRequestDialog({
                                             type="text"
                                             inputMode="numeric"
                                             className={cn(
-                                              "h-9 text-[11px] tabular-nums rounded-[6px]",
+                                              "h-9 text-[11px] tabular-nums rounded-[6px] w-full bg-white dark:bg-zinc-900 border-border",
                                               isErrorState &&
                                               "border-destructive text-destructive focus-visible:ring-destructive",
                                             )}
@@ -1851,7 +1877,7 @@ export function EmployeeLeaveRequestDialog({
                                   render={({ field: f, fieldState }) => (
                                     <>
                                       <TitleCaseInput
-                                        className="h-9 text-[11px] rounded-[6px]"
+                                        className="h-9 text-[11px] rounded-[6px] bg-white dark:bg-zinc-900 border-border"
                                         placeholder="Comments"
                                         {...f}
                                       />
@@ -1863,7 +1889,7 @@ export function EmployeeLeaveRequestDialog({
                                 />
                               </div>
                               {!isApproved && (
-                                <div className="flex shrink-0 items-end pb-0.5">
+                                <div className="flex shrink-0 items-center justify-end pt-1 sm:pt-0 sm:items-end sm:pb-0.5">
                                   <Button
                                     type="button"
                                     size="icon"
@@ -1899,7 +1925,7 @@ export function EmployeeLeaveRequestDialog({
             </div>
           </div>
 
-          <DialogFooter className="shrink-0 flex-row gap-2 border-t border-border px-6 py-4 sm:justify-end">
+          <DialogFooter className="shrink-0 flex-col-reverse sm:flex-row gap-2 border-t border-border px-4 py-3 sm:px-6 sm:py-4">
             {editingStatus?.toLowerCase() !== "requested" && editingStatus?.toLowerCase() !== "approved" && (
               <Button
                 type="button"
@@ -1907,7 +1933,7 @@ export function EmployeeLeaveRequestDialog({
                 disabled={form.formState.isSubmitting || isSaving || isSubmitting || hasExceeded}
                 onClick={() => void handleSave()}
                 className={cn(
-                  "h-10 rounded-[6px] px-8 text-white transition-opacity",
+                  "w-full sm:w-auto h-10 rounded-[6px] px-8 text-white transition-opacity",
                   (form.formState.isSubmitting || isSaving || isSubmitting || hasExceeded) ? "bg-[#6C5DD3] opacity-50 cursor-not-allowed pointer-events-none" : "bg-[#6C5DD3] hover:bg-[#6C5DD3]/90"
                 )}
               >
@@ -1920,7 +1946,7 @@ export function EmployeeLeaveRequestDialog({
               disabled={form.formState.isSubmitting || isSaving || isSubmitting || hasExceeded}
               onClick={() => void handleSubmitFinal()}
               className={cn(
-                "h-10 rounded-[6px] px-8 text-white transition-opacity",
+                "w-full sm:w-auto h-10 rounded-[6px] px-8 text-white transition-opacity",
                 (form.formState.isSubmitting || isSaving || isSubmitting || hasExceeded) ? "bg-[#6C5DD3] opacity-50 cursor-not-allowed pointer-events-none" : "bg-[#6C5DD3] hover:bg-[#6C5DD3]/90"
               )}
             >
@@ -1931,7 +1957,7 @@ export function EmployeeLeaveRequestDialog({
               type="button"
               variant="secondary"
               onClick={() => handleClose(false)}
-              className="h-10 rounded-[6px] px-8"
+              className="w-full sm:w-auto h-10 rounded-[6px] px-8"
             >
               Exit
             </Button>

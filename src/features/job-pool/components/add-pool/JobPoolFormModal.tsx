@@ -94,7 +94,7 @@ export function JobPoolFormModal({
       <DialogContent 
         showClose={false}
         overlayClassName="bg-black/35"
-        className="max-w-[1000px] w-[80vw] h-[90vh] p-0 flex flex-col overflow-hidden rounded-[10px]! bg-white"
+        className="left-1/2 top-1/2 w-[92vw] sm:w-[85vw] max-w-[1000px] max-h-[90vh] h-[90vh] -translate-x-1/2 -translate-y-1/2 p-0 flex flex-col overflow-hidden rounded-[10px] bg-white"
       >
         <form 
           onSubmit={form.handleSubmit(onSave)} 
@@ -106,23 +106,23 @@ export function JobPoolFormModal({
             </div>
           )}
           {/* Header Section */}
-          <div className="flex flex-col">
-            <div className="relative flex items-center justify-center px-8 py-4">
-              <h2 className="text-[24px] font-semibold text-[#111827]">
+          <div className="flex flex-col border-b border-gray-100 dark:border-[#27272a]">
+            <div className="flex items-center justify-between px-4 sm:px-8 py-3.5 sm:py-4 gap-3">
+              <h2 className="text-[20px] sm:text-[24px] font-semibold text-[#111827]">
                 {mode === "add" ? "Add Job Pool" : "Edit Job Pool"}
               </h2>
-              <div className="absolute right-8">
+              <div className="shrink-0">
                 <Controller
                   control={form.control}
                   name="active"
                   render={({ field }) => (
-                    <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                    <label className="flex items-center gap-2 cursor-pointer select-none">
                       <Checkbox
                         checked={field.value}
                         onCheckedChange={field.onChange}
-                        className="size-5 rounded-[4px] border-[#E5E7EB] data-[state=checked]:border-[#6C5DD3] data-[state=checked]:bg-[#6C5DD3] data-[state=checked]:text-white shadow-sm"
+                        className="size-4 sm:size-5 rounded-[4px] border-[#E5E7EB] data-[state=checked]:border-[#6C5DD3] data-[state=checked]:bg-[#6C5DD3] data-[state=checked]:text-white shadow-sm"
                       />
-                      <span className="text-[15px] font-medium text-[#374151]">Active</span>
+                      <span className="text-[14px] sm:text-[15px] font-medium text-[#374151]">Active</span>
                     </label>
                   )}
                 />
@@ -132,10 +132,10 @@ export function JobPoolFormModal({
 
           {/* Scrollable Form Body */}
           <div className="flex-1 overflow-y-auto program-table-scroll">
-            <div className="p-6">
+            <div className="p-4 sm:p-6">
               {/* Top Row: Department and Job Pool Name */}
               <div
-                className="grid grid-cols-[minmax(0,2fr)_60px_minmax(0,2fr)] gap-4"
+                className="grid grid-cols-1 md:grid-cols-[minmax(0,2fr)_60px_minmax(0,2fr)] gap-4"
                 onMouseDownCapture={(event) => {
                   const targetNode = event.target as Node
                   if (

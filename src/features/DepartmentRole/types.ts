@@ -11,6 +11,19 @@ export type DepartmentRoleRow = {
   isExpanded?: boolean
 }
 
+export type DepartmentRoleChildRow = {
+  id: string
+  roleName: string
+  status: RoleStatus
+  /**
+   * API `autoselected` (legacy `data.default`). When true: view-only action (eye), Active checkbox disabled.
+   * When false and active: edit (pencil). When false and inactive: no action in Option column.
+   */
+  autoselected: boolean
+  /** Derived as `!autoselected` for legacy naming; prefer `autoselected` for new code. */
+  isCustom?: boolean
+}
+
 export type DepartmentRoleWithChildren = {
   id: string
   /** Numeric department id from API (for create / lookups). */
@@ -18,18 +31,7 @@ export type DepartmentRoleWithChildren = {
   departmentName: string
   roles: string[]
   status: RoleStatus
-  children?: Array<{
-    id: string
-    roleName: string
-    status: RoleStatus
-    /**
-     * API `autoselected` (legacy `data.default`). When true: view-only action (eye), Active checkbox disabled.
-     * When false and active: edit (pencil). When false and inactive: no action in Option column.
-     */
-    autoselected: boolean
-    /** Derived as `!autoselected` for legacy naming; prefer `autoselected` for new code. */
-    isCustom?: boolean
-  }>
+  children?: DepartmentRoleChildRow[]
 }
 
 export type DepartmentRoleFormValues = {

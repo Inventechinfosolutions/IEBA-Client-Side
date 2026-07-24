@@ -23,7 +23,7 @@ function InputShell({
       onChange={(event) => onChange?.(event.target.value)}
       placeholder={placeholder}
       disabled={disabled}
-      className="h-[44px] rounded-[10px] border border-[#d4d8e2] bg-white px-3 text-[14px] text-[#111827] placeholder:text-[14px] placeholder:text-[#b0b8c8] focus-visible:border-[#6C5DD3] focus-visible:ring-0 disabled:pointer-events-auto disabled:cursor-not-allowed disabled:border-[0.8px]! disabled:border-[#cfd4dd]! disabled:bg-[#d2d4d9]/20! disabled:text-black! disabled:opacity-100"
+      className="h-[44px] rounded-[10px] border border-[#d4d8e2] bg-white px-3 text-[14px] text-[#111827] placeholder:text-[14px] placeholder:text-[#b0b8c8] focus-visible:border-[#6C5DD3] focus-visible:ring-0 disabled:pointer-events-auto disabled:cursor-not-allowed disabled:border-[0.8px]! disabled:border-[#cfd4dd]! disabled:bg-[#d2d4d9]/20! disabled:text-black dark:disabled:text-white! disabled:opacity-100"
     />
   )
 }
@@ -46,7 +46,7 @@ export function TimeStudyProgramForm({
 
   if (activeSection === "BU Program") {
     return (
-      <div className="mx-auto grid w-[500px] grid-cols-1 gap-4">
+      <div className="mx-auto grid w-full max-w-[500px] grid-cols-1 gap-4">
         <div className="space-y-1">
           <FieldLabel text="*Department" />
           <SingleSelectSearchDropdown
@@ -122,7 +122,7 @@ export function TimeStudyProgramForm({
 
   if (activeSection === "BU Sub-Program") {
     return (
-      <div className="mx-auto grid w-[500px] grid-cols-1 gap-4">
+      <div className="mx-auto grid w-full max-w-[500px] grid-cols-1 gap-4">
         <div className="space-y-1">
           <FieldLabel text="*TS Program" />
           <SingleSelectSearchDropdown
@@ -208,7 +208,7 @@ export function TimeStudyProgramForm({
   }
 
   return (
-    <div className="mx-auto grid w-[500px] grid-cols-1 gap-4">
+    <div className="mx-auto grid w-full max-w-[500px] grid-cols-1 gap-4">
       <div className="space-y-1">
         <FieldLabel text="*TS Program" />
         <SingleSelectSearchDropdown

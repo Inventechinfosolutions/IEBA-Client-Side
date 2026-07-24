@@ -491,7 +491,7 @@ export function TimeStudyPeriodsForm({
     >
       <DialogContent
         showClose={false}
-        className="min-h-[460px] w-[1220px] max-w-[calc(100vw-2rem)] rounded-[12px] border border-[#E5E7EB] dark:border-[#27272a] bg-white dark:bg-[#09090b] p-[20px_24px]"
+        className="min-h-[460px] max-h-[calc(100vh-2rem)] overflow-y-auto w-[1220px] max-w-[calc(100vw-2rem)] rounded-[12px] border border-[#E5E7EB] dark:border-[#27272a] bg-white dark:bg-[#09090b] p-[20px_24px]"
         overlayClassName="bg-black/45"
       >
         <DialogTitle className="text-center text-[20px] font-medium text-black dark:text-[#f4f4f5]">
@@ -520,8 +520,8 @@ export function TimeStudyPeriodsForm({
             </div>
 
             <div className="space-y-3">
-              <div className="flex items-end gap-6">
-                <div className="space-y-1">
+              <div className="flex flex-col sm:flex-row sm:items-end gap-4 sm:gap-6">
+                <div className="space-y-1 w-full sm:w-auto">
                   <Label className="text-[14px] font-normal text-black dark:text-[#f4f4f5]">Select Fiscal Year</Label>
                   <Select
                     value={fiscalYear || undefined}
@@ -551,7 +551,7 @@ export function TimeStudyPeriodsForm({
                       void fetchHolidaysAndApply(dateRange.startDate, dateRange.endDate)
                     }}
                   >
-                    <SelectTrigger className="h-12 min-w-[160px] rounded-[10px] border-[#D1D5DB] px-[11px] text-[14px]">
+                    <SelectTrigger className="h-12 w-full sm:w-[160px] rounded-[10px] border-[#D1D5DB] px-[11px] text-[14px]">
                       <SelectValue placeholder="Select fiscal year" />
                     </SelectTrigger>
                     <SelectContent
@@ -559,9 +559,8 @@ export function TimeStudyPeriodsForm({
                       side="bottom"
                       avoidCollisions={false}
                       sideOffset={10}
-                      align="start"
-                    className="min-w-[180px] rounded-[10px] border border-[#E5E7EB] p-1"
-                  >
+                      className="w-[var(--radix-select-trigger-width)] max-h-[240px] overflow-y-auto rounded-[10px] border border-[#E5E7EB] bg-white p-1 z-[100]"
+                    >
                       {fiscalYearOptions.length === 0 ? (
                         <div className="px-3 py-2 text-[13px] text-muted-foreground">
                           No fiscal years loaded
@@ -583,17 +582,17 @@ export function TimeStudyPeriodsForm({
                   </Select>
                 </div>
 
-                <div className="space-y-1">
+                <div className="space-y-1 w-full sm:w-auto">
                   <Label className="text-[14px] font-normal text-black dark:text-[#f4f4f5]">Select Department</Label>
                   <TitleCaseInput
                     value={departmentLabel}
                     readOnly
-                    className="h-12 w-[150px] cursor-not-allowed rounded-[10px] border-[#D1D5DB] bg-[#F9FAFB] px-[11px] text-[14px]"
+                    className="h-12 w-full sm:w-[150px] cursor-not-allowed rounded-[10px] border-[#D1D5DB] bg-[#F9FAFB] px-[11px] text-[14px]"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-7 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
                 <div className="space-y-1">
                   <Label className="text-[14px] font-normal text-black dark:text-[#f4f4f5]">Time Study Period</Label>
                   <TitleCaseInput

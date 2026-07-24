@@ -127,7 +127,7 @@ function DepartmentReportMultiSelectField({
   }
 
   return (
-    <div className="grid grid-cols-[1fr_60px_1fr] items-center gap-4 w-full">
+    <div className="grid grid-cols-1 sm:grid-cols-[1fr_60px_1fr] items-center gap-4 w-full">
       <TransferPanel
         title="Select Reports(Available)"
         items={filteredAvailable}
@@ -138,18 +138,20 @@ function DepartmentReportMultiSelectField({
         onSearchChange={setSearchAvailable}
       />
 
-      <div className="flex flex-col gap-3 justify-center items-center pt-8">
+      <div className="flex sm:flex-col gap-3 justify-center items-center py-2 sm:pt-8">
         <TransferListMoveButton
           direction="forward"
           disabled={toggledAvailable.length === 0}
           aria-label="Move selected to assigned"
           onClick={handleMoveForward}
+          className="[&>svg]:rotate-90 sm:[&>svg]:rotate-0"
         />
         <TransferListMoveButton
           direction="back"
           disabled={toggledSelected.length === 0}
           aria-label="Move selected to unassigned"
           onClick={handleMoveBack}
+          className="[&>svg]:-rotate-90 sm:[&>svg]:rotate-180"
         />
       </div>
 
@@ -198,7 +200,7 @@ export function DepartmentReportSettingsPanel({
   const saveDisabled = isSubmitting || isSaving || isReportDataLoading
 
   return (
-    <div className="px-6 pb-6">
+    <div className="px-4 sm:px-6 pb-6">
       {showDepartmentSummary && (
         <DepartmentEditContextHeader
           countyName={countyNameDisplay}
@@ -207,7 +209,7 @@ export function DepartmentReportSettingsPanel({
         />
       )}
 
-      <div className="py-8 min-h-[220px]">
+      <div className="py-4 sm:py-8 min-h-[220px]">
         <label className={labelClassName}>Reports</label>
         <DepartmentReportMultiSelectField
           key={`${multiSelectKey}-${serverMappedReportIds}`}
@@ -219,20 +221,12 @@ export function DepartmentReportSettingsPanel({
         />
       </div>
 
-      <div className="flex justify-end gap-4 pt-4">
-        {/* <Button
-          type="button"
-          disabled={saveDisabled}
-          onClick={() => void saveMappedReports()}
-          className="w-[140px] h-[50px] bg-[#6C5DD3] hover:bg-[#5B4DC5] rounded-[8px] text-[16px] font-[500]"
-        >
-          Save
-        </Button> */}
+      <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 sm:gap-4 pt-4">
         <Button
           type="button"
           disabled={saveDisabled}
           onClick={onExit}
-          className="w-[140px] h-[50px] bg-[#E5E7EB] hover:bg-[#D1D5DB] text-[#374151] rounded-[8px] text-[16px] font-[500]"
+          className="w-full sm:w-[140px] h-[48px] sm:h-[50px] bg-[#E5E7EB] hover:bg-[#D1D5DB] text-[#374151] rounded-[8px] text-[15px] sm:text-[16px] font-[500]"
         >
           Exit
         </Button>
