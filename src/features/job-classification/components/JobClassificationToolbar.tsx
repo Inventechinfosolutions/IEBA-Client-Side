@@ -15,13 +15,13 @@ export function JobClassificationToolbar({
   const { canAdd } = usePermissions()
   const canAddJobClassification = canAdd("jobclassification")
   return (
-    <div className="flex items-center justify-between gap-3">
-      <div className="relative">
+    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 w-full min-w-0">
+      <div className="relative w-full lg:w-auto flex-1 min-w-0">
         <TitleCaseInput
           value={searchValue}
           onChange={(e) => onSearchChange(e.target.value)}
           placeholder="Search Here"
-          className="h-[50px] w-[270px] rounded-[10px] border border-[#d0d5df] bg-white pl-3.5 pr-9 text-[13px] text-[#111827] shadow-[0_4px_10px_rgba(15,23,42,0.08)] placeholder:text-[13px] placeholder:text-[#a7afbf] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
+          className="h-[46px] lg:h-[50px] w-full lg:w-[260px] rounded-[10px] border border-[#d0d5df] bg-white pl-3.5 pr-9 text-[13px] text-[#111827] shadow-[0_4px_10px_rgba(15,23,42,0.08)] placeholder:text-[13px] placeholder:text-[#a7afbf] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
         />
         {searchValue.length > 0 && (
           <button
@@ -34,10 +34,10 @@ export function JobClassificationToolbar({
           </button>
         )}
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 w-full lg:w-auto min-w-0">
         <Button
           type="button"
-          className="h-11 cursor-pointer gap-2 rounded-[10px] bg-[#6C5DD3] px-3 text-[12px] font-semibold text-white shadow-[0_1px_0_rgba(0,0,0,0.05)] hover:bg-[#6C5DD3]"
+          className="h-[46px] lg:h-[50px] shrink-0 cursor-pointer gap-1.5 rounded-[10px] bg-[#6C5DD3] px-2.5 sm:px-3 text-[11px] sm:text-[12px] font-semibold text-white shadow-[0_1px_0_rgba(0,0,0,0.05)] hover:bg-[#6C5DD3] justify-center text-center whitespace-nowrap"
           onClick={onToggleInactiveOnly}
         >
           {inactiveOnly ? (
@@ -52,15 +52,14 @@ export function JobClassificationToolbar({
         {canAddJobClassification && (
           <Button
             type="button"
-            className="h-11 cursor-pointer gap-1 rounded-[10px] bg-[#6C5DD3] px-3 text-[12px] font-semibold text-white shadow-[0_1px_0_rgba(0,0,0,0.05)] hover:bg-[#6C5DD3]"
+            className="h-[46px] lg:h-[50px] flex-1 lg:flex-none min-w-0 cursor-pointer gap-1 rounded-[10px] bg-[#6C5DD3] px-2.5 sm:px-3 text-[11px] sm:text-[12px] font-semibold text-white shadow-[0_1px_0_rgba(0,0,0,0.05)] hover:bg-[#6C5DD3] justify-center text-center whitespace-nowrap"
             onClick={onAdd}
           >
-            <Plus className="size-3.5" />
-            Add Job Classification
+            <Plus className="size-3.5 shrink-0" />
+            <span className="whitespace-nowrap">Add Job Classification</span>
           </Button>
         )}
       </div>
     </div>
   )
 }
-

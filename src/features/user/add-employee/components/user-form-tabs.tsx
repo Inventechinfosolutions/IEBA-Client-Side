@@ -3,7 +3,7 @@ import type { AddEmployeeFormTabsProps } from "../types"
 
 export function UserFormTabs({ activeTab, onTabChange, disabledTabs = [] }: AddEmployeeFormTabsProps) {
   return (
-    <div className="grid select-none grid-cols-4 gap-px rounded-[8px] border border-[#e8ebf2] bg-white p-px text-[12px] text-[#596077]">
+    <div className="grid select-none grid-cols-2 gap-1 rounded-[8px] border border-[#e8ebf2] bg-white p-1 text-[12px] text-[#596077] sm:grid-cols-4 sm:gap-px sm:p-px">
       {addEmployeeTabs.map((tab) => {
         const isDisabled = disabledTabs.includes(tab.id)
         return (
@@ -12,7 +12,7 @@ export function UserFormTabs({ activeTab, onTabChange, disabledTabs = [] }: AddE
             type="button"
             onClick={() => onTabChange(tab.id)}
             disabled={isDisabled}
-            className={`h-11 rounded-[8px] bg-[#fafbfe] px-4 text-[12px] font-medium transition-colors ${
+            className={`h-11 rounded-[8px] bg-[#fafbfe] px-2 sm:px-4 text-[11px] sm:text-[12px] font-medium transition-colors ${
               isDisabled ? "cursor-not-allowed" : "cursor-pointer"
             } ${
               activeTab === tab.id

@@ -75,7 +75,7 @@ export function DepartmentRoleView({
                 <Spinner className="text-[#6C5DD3]" />
               </div>
             )}
-            <div className="grid w-full grid-cols-2 gap-6 pb-4">
+            <div className="grid w-full grid-cols-1 gap-4 pb-4">
               <div className="min-w-0 space-y-2">
                 <Label className="text-black dark:text-[#e4e4e7]">Department</Label>
                 {isLoading ? (

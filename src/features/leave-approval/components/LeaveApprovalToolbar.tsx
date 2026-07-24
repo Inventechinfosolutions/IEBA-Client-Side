@@ -27,8 +27,8 @@ export function LeaveApprovalToolbar({
       onSubmit={handleSubmit}
       className="bg-transparent px-0 py-0"
     >
-      <div className="flex flex-wrap items-end gap-6">
-        <div className="w-[140px]">
+      <div className="flex flex-col sm:flex-row flex-wrap items-end gap-3 sm:gap-4 w-full">
+        <div className="w-full sm:w-[130px] md:w-[140px] shrink-0">
           <label className="mb-2 block text-[12px] text-[#111827]">Type</label>
           <Controller
             name="type"
@@ -48,7 +48,7 @@ export function LeaveApprovalToolbar({
                     })),
                 ]}
                 placeholder="All"
-                className="!h-[45px] !min-h-[45px] !w-[140px] !rounded-[8px] !border-[#d6d7dc] !text-[12px] focus-visible:!border-[#6C5DD3] focus-visible:!ring-0"
+                className="!h-[45px] !min-h-[45px] !w-full sm:!w-[130px] md:!w-[140px] !rounded-[8px] !border-[#d6d7dc] !text-[12px] focus-visible:!border-[#6C5DD3] focus-visible:!ring-0"
                 contentClassName="max-h-[224px]"
                 itemButtonClassName="rounded-[6px] px-3 py-2"
                 itemLabelClassName="!text-[12px]"
@@ -57,7 +57,7 @@ export function LeaveApprovalToolbar({
           />
         </div>
 
-        <div className="w-[140px]">
+        <div className="w-full sm:w-[130px] md:w-[140px] shrink-0">
           <label className="mb-2 block text-[12px] text-[#111827]">Select User</label>
           <Controller
             name="userId"
@@ -75,7 +75,7 @@ export function LeaveApprovalToolbar({
                   })),
                 ]}
                 placeholder="All"
-                className="!h-[45px] !min-h-[45px] !w-[140px] !rounded-[6px] !border-[#d6d7dc] !text-[12px] focus-visible:!border-[#6C5DD3] focus-visible:!ring-0 shadow-none bg-transparent"
+                className="!h-[45px] !min-h-[45px] !w-full sm:!w-[130px] md:!w-[140px] !rounded-[6px] !border-[#d6d7dc] !text-[12px] focus-visible:!border-[#6C5DD3] focus-visible:!ring-0 shadow-none bg-transparent"
                 contentClassName="w-[200px]"
               />
             )}
@@ -85,7 +85,7 @@ export function LeaveApprovalToolbar({
         <Button
           type="submit"
           disabled={isSubmitting}
-          className="h-[40px] min-w-[111px] cursor-pointer rounded-[10px] bg-[#6C5DD3] px-8 text-[12px] font-medium text-white hover:bg-[#6C5DD3] disabled:cursor-not-allowed disabled:opacity-70"
+          className="h-[40px] w-full sm:w-auto sm:min-w-[100px] shrink-0 cursor-pointer rounded-[10px] bg-[#6C5DD3] px-6 text-[12px] font-medium text-white hover:bg-[#6C5DD3] disabled:cursor-not-allowed disabled:opacity-70"
         >
           Search
         </Button>

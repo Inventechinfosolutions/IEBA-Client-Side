@@ -9,6 +9,7 @@ import { useAuth } from "@/contexts/AuthContext"
 import { getToken, setToken } from "@/lib/api"
 import { useGetDepartments } from "@/features/department/queries/getDepartments"
 import { UserTable } from "../components/UserTable"
+import { UserCardView } from "../components/UserCardView"
 import { UserToolbar } from "../components/UserToolbar"
 import { usePermissions } from "@/hooks/usePermissions"
 import {
@@ -541,7 +542,6 @@ export function UserModulePage() {
       key={location.key}
       className="font-roboto *:font-roboto w-full"
       style={{
-        zoom: 1.2,
         "--primary": "#6C5DD3",
       } as React.CSSProperties}
     >
@@ -589,14 +589,26 @@ export function UserModulePage() {
           />
           <div className="rounded-[8px] bg-white p-3">
             <div className="mb-5">
-              <UserTable
-                rows={filteredRows}
-                isLoading={isTableLoading}
-                onEditRow={handleEditRow}
-                onSwitchUser={isGlobalAdmin && !mimicSession ? handleSwitchUser : undefined}
-                sortState={sortState}
-                onSortChange={handleSortChange}
-              />
+              <div className="hidden xl:block">
+                <UserTable
+                  rows={filteredRows}
+                  isLoading={isTableLoading}
+                  onEditRow={handleEditRow}
+                  onSwitchUser={isGlobalAdmin && !mimicSession ? handleSwitchUser : undefined}
+                  sortState={sortState}
+                  onSortChange={handleSortChange}
+                />
+              </div>
+              <div className="block xl:hidden">
+                <UserCardView
+                  rows={filteredRows}
+                  isLoading={isTableLoading}
+                  onEditRow={handleEditRow}
+                  onSwitchUser={isGlobalAdmin && !mimicSession ? handleSwitchUser : undefined}
+                  sortState={sortState}
+                  onSortChange={handleSortChange}
+                />
+              </div>
             </div>
             <MasterCodePagination
               totalItems={userModule.totalItems}

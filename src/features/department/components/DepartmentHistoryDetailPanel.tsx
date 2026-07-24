@@ -92,86 +92,98 @@ export function DepartmentHistoryDetailPanel({ row }: DepartmentHistoryDetailPan
   })
 
   return (
-    <div className="space-y-4 border-t border-[#E5E7EB] bg-[#FAFAFC] px-4 py-4">
-      <div className="grid grid-cols-2 gap-3 text-[13px] md:grid-cols-4">
+    <div className="space-y-4 border-t border-[#E5E7EB] bg-[#FAFAFC] px-4 py-4 w-full min-w-0">
+      {/* Top Metadata Container */}
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 text-[13px] md:grid-cols-4 rounded-[10px] bg-white p-3.5 border border-[#E5E7EB]">
         <div>
-          <div className="text-[11px] font-medium uppercase tracking-wide text-[#6B7280]">
+          <div className="text-[10px] font-bold uppercase tracking-wider text-[#6B7280]">
             Created By
           </div>
-          <div className="mt-1 text-[#111827]">{getDepartmentHistoryCreatedByDisplay(row)}</div>
+          <div className="mt-1 text-[#111827] font-medium text-[11px] sm:text-[12px] leading-tight">
+            {getDepartmentHistoryCreatedByDisplay(row)}
+          </div>
         </div>
         <div>
-          <div className="text-[11px] font-medium uppercase tracking-wide text-[#6B7280]">
+          <div className="text-[10px] font-bold uppercase tracking-wider text-[#6B7280]">
             Created At
           </div>
-          <div className="mt-1 text-[#111827]">{getDepartmentHistoryCreatedAtDisplay(row)}</div>
+          <div className="mt-1 text-[#111827] font-medium text-[11px] sm:text-[12px] leading-tight">
+            {getDepartmentHistoryCreatedAtDisplay(row)}
+          </div>
         </div>
         <div>
-          <div className="text-[11px] font-medium uppercase tracking-wide text-[#6B7280]">
+          <div className="text-[10px] font-bold uppercase tracking-wider text-[#6B7280]">
             Updated By
           </div>
-          <div className="mt-1 text-[#111827]">{getDepartmentHistoryUpdatedByDisplay(row)}</div>
+          <div className="mt-1 text-[#111827] font-medium text-[11px] sm:text-[12px] leading-tight">
+            {getDepartmentHistoryUpdatedByDisplay(row)}
+          </div>
         </div>
         <div>
-          <div className="text-[11px] font-medium uppercase tracking-wide text-[#6B7280]">
+          <div className="text-[10px] font-bold uppercase tracking-wider text-[#6B7280]">
             Updated At
           </div>
-          <div className="mt-1 text-[#111827]">{getDepartmentHistoryUpdatedAtDisplay(row)}</div>
+          <div className="mt-1 text-[#111827] font-medium text-[11px] sm:text-[12px] leading-tight">
+            {getDepartmentHistoryUpdatedAtDisplay(row)}
+          </div>
         </div>
       </div>
 
+      {/* Mapped Reports */}
       {reports.length > 0 ? (
         <section>
-          <h4 className="mb-2 text-[12px] font-semibold uppercase tracking-wide text-[#6B7280]">
-            Mapped Reports
+          <h4 className="mb-2 text-[11px] font-bold uppercase tracking-wider text-[#6B7280]">
+            Mapped Reports ({reports.length})
           </h4>
-          <div className="flex flex-wrap gap-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
             {reports.map((report) => (
-              <span
+              <div
                 key={`${report.id ?? report.code}-${report.name}`}
-                className="inline-flex rounded-[8px] border border-[#DDD6FE] bg-[#F5F3FF] px-3 py-1.5 text-[12px] font-medium text-[#5B4DC5]"
+                className="flex items-start gap-2.5 rounded-[8px] border border-[#DDD6FE] bg-[#F5F3FF] px-3 py-2.5 text-[12px] font-medium text-[#5B4DC5] w-full min-w-0"
                 title={formatDepartmentHistoryReportLabel(report)}
               >
-                {report.code ? (
-                  <>
-                    <span className="font-semibold">{report.code}</span>
-                    {report.name ? (
-                      <span className="ml-1 font-normal text-[#6B7280]">{report.name}</span>
-                    ) : null}
-                  </>
-                ) : (
-                  formatDepartmentHistoryReportLabel(report)
-                )}
-              </span>
+                <span className="font-semibold shrink-0 bg-[#6C5DD3] text-white px-2 py-0.5 rounded-[4px] text-[11px] mt-0.5">
+                  {report.code || "RPT"}
+                </span>
+                <span className="whitespace-normal break-words text-[#374151] font-medium text-[12px] leading-snug flex-1">
+                  {report.name || formatDepartmentHistoryReportLabel(report)}
+                </span>
+              </div>
             ))}
           </div>
         </section>
       ) : null}
 
+      {/* Sections */}
       {sections.map((section) => (
         <section key={section.title}>
-          <h4 className="mb-2 text-[12px] font-semibold uppercase tracking-wide text-[#6B7280]">
+          <h4 className="mb-2 text-[11px] font-bold uppercase tracking-wider text-[#6B7280]">
             {section.title}
           </h4>
 
           {section.title === "Department Settings" && section.items[0]?.kind === "boolean" ? (
-            <div className="flex flex-wrap gap-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
               {section.items.map((item) => (
-                <BooleanPill
+                <div
                   key={item.label}
-                  enabled={Boolean(item.enabled)}
-                  label={item.label}
-                />
+                  className="flex items-center justify-between rounded-[8px] border border-[#F3F4F6] bg-white px-3 py-2 text-[12px]"
+                >
+                  <span className="text-[#374151] font-medium truncate mr-2">{item.label}</span>
+                  <BooleanPill
+                    enabled={Boolean(item.enabled)}
+                    label={Boolean(item.enabled) ? "Enabled" : "Disabled"}
+                  />
+                </div>
               ))}
             </div>
           ) : section.items[0]?.kind === "change" ? (
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-3">
               {section.items.map((item) => (
                 <ChangeItem key={item.label} item={item} />
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-3">
               {section.items.map((item) => (
                 <div
                   key={item.label}

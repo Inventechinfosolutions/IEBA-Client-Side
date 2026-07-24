@@ -264,7 +264,7 @@ export function DashboardPage() {
   }
 
   return (
-    <div className="flex flex-col gap-4 w-full min-h-0">
+    <div className="flex flex-col gap-4 w-full min-h-0 pb-8 sm:pb-10">
       {/* Header / Toolbar */}
       {isSuperAdmin && (
         <div className="flex items-center justify-between mb-2 gap-3">
@@ -280,8 +280,7 @@ export function DashboardPage() {
           )}
           <button
             type="button"
-            className={`flex h-10 items-center gap-2 rounded-[8px] px-4 text-[13px] font-medium transition-colors ${
-              showAuditHistory
+            className={`flex h-10 items-center gap-2 rounded-[8px] px-4 text-[13px] font-medium transition-colors ${showAuditHistory
                 ? "bg-[#6C5DD3] text-white"
                 : "border border-[#6C5DD3] bg-white text-[#6C5DD3] hover:bg-[#F3F0FF]"
             }`}
@@ -313,108 +312,108 @@ export function DashboardPage() {
         </div>
       ) : (
         <>
-          <div
-            className="grid gap-4 h-[250px]"
-            style={{ gridTemplateColumns: row1TemplateColumns }}
-          >
+          {/* Row 1: 1-col on mobile/iPad Mini/Air/Pro, custom fractional cols on desktop (1280px+) */}
+          <style>{`@media (min-width: 1280px) { .db-row1 { grid-template-columns: ${row1TemplateColumns} !important; height: 250px !important; } .db-row1 > * { height: 100% !important; } }`}</style>
+          <div className="db-row1 grid grid-cols-1 gap-4 sm:gap-6">
 
-        {showPersonalTimeStudyCard && (
-          <div className="h-full overflow-hidden">
-            <PersonalTimeStudyCard
-              totalApproved={tsApproved}
-              totalSubmitted={tsSubmitted}
-              totalDraft={tsDraft}
-              isLoading={overview.isLoading}
-              noBlur={true}
-            />
-          </div>
-        )}
+            {showPersonalTimeStudyCard && (
+              <div className="min-h-[200px] overflow-hidden">
+                <PersonalTimeStudyCard
+                  totalApproved={tsApproved}
+                  totalSubmitted={tsSubmitted}
+                  totalDraft={tsDraft}
+                  isLoading={overview.isLoading}
+                  noBlur={true}
+                />
+              </div>
+            )}
 
-        <div className="h-full overflow-hidden">
-          <PersonalLeaveCard
-            total={selfLeaveTotal}
-            approved={selfLeaveApproved}
-            open={selfLeaveOpen}
-            rejected={selfLeaveRejected}
-            nextHolidayMonth={nextHolidayMonth}
-            nextHolidayDay={nextHolidayDay}
-            isLoading={overview.isLoading}
-          />
-        </div>
-
-        {/* Time Study Status */}
-        {showTimeStudyStatusCard && (
-          <div className="h-full overflow-hidden">
-            <TimeStudyStatusCard
-              approved={trApproved}
-              pendingApproval={trPending}
-              notSubmitted={trNotSubmitted}
-              isLoading={overview.isLoading}
-              userId={isSuperAdmin ? undefined : userId}
-            />
-          </div>
-        )}
-
-
-        <div className="h-full overflow-hidden">
-          <TodoCard items={todoItems} isLoading={overview.isLoading} />
-        </div>
-      </div>
-
-      {/* ── Row 2: h-[285px] ── */}
-      <div className="grid gap-4 h-[285px]" style={{ gridTemplateColumns: row2TemplateColumns }}>
-
-
-        {showUserManagement ? (
-          <div className="flex flex-col gap-3 h-full min-h-0">
-            <UsersCard
-              userCount={userCountVal}
-                activeUsers={shouldShowExtendedStats ? activeUsersVal : undefined}
-                showActiveUsers={shouldShowExtendedStats}
+            <div className="min-h-[200px] overflow-hidden">
+              <PersonalLeaveCard
+                total={selfLeaveTotal}
+                approved={selfLeaveApproved}
+                open={selfLeaveOpen}
+                rejected={selfLeaveRejected}
+                nextHolidayMonth={nextHolidayMonth}
+                nextHolidayDay={nextHolidayDay}
                 isLoading={overview.isLoading}
-            />
-            <div className="flex-1 min-h-0">
-              <HolidayListCard list={holidaysList} isLoading={overview.isLoading} />
+              />
+            </div>
+
+            {/* Time Study Status */}
+            {showTimeStudyStatusCard && (
+              <div className="min-h-[200px] overflow-hidden">
+                <TimeStudyStatusCard
+                  approved={trApproved}
+                  pendingApproval={trPending}
+                  notSubmitted={trNotSubmitted}
+                  isLoading={overview.isLoading}
+                  userId={isSuperAdmin ? undefined : userId}
+                />
+              </div>
+            )}
+
+            <div className="min-h-[200px] overflow-hidden">
+              <TodoCard items={todoItems} isLoading={overview.isLoading} />
             </div>
           </div>
-        ) : (
-          <div className="h-full min-h-0 overflow-hidden">
-            <HolidayListCard list={holidaysList} isLoading={overview.isLoading} />
+
+          {/* Row 2: 1-col on mobile/iPad Mini/Air/Pro, custom fractional cols on desktop (1280px+) */}
+          <style>{`@media (min-width: 1280px) { .db-row2 { grid-template-columns: ${row2TemplateColumns} !important; height: 285px !important; } .db-row2 > * { height: 100% !important; } }`}</style>
+          <div className="db-row2 grid grid-cols-1 gap-4 sm:gap-6 mb-8 sm:mb-12">
+
+            {showUserManagement ? (
+              <div className="flex flex-col gap-3 min-h-[200px]">
+                <UsersCard
+                  userCount={userCountVal}
+                  activeUsers={shouldShowExtendedStats ? activeUsersVal : undefined}
+                  showActiveUsers={shouldShowExtendedStats}
+                  isLoading={overview.isLoading}
+                />
+                <div className="flex-1 min-h-0">
+                  <HolidayListCard list={holidaysList} isLoading={overview.isLoading} />
+                </div>
+              </div>
+            ) : (
+              <div className="min-h-[200px] overflow-hidden">
+                <HolidayListCard list={holidaysList} isLoading={overview.isLoading} />
+              </div>
+            )}
+
+            {/* Payroll Management */}
+            {showPayrollCard && (
+              <PayrollManagementCard
+                canViewPayroll
+                onDownloadTemplate={handleDownloadTemplate}
+              />
+            )}
+
+            {/* Reports */}
+            <div className="min-h-[200px] overflow-hidden">
+              <ReportsCard reports={reportsData} isLoading={reports.isLoading} />
+            </div>
+
+            {/* Staff Leave + Stats */}
+            {showStaffStatsCard && (
+              <StaffStatsCard
+                open={staffLeaveOpen}
+                approved={staffLeaveApproved}
+                rejected={staffLeaveRejected}
+                deptCount={deptCountVal}
+                programCount={programCountVal}
+                activitiesCount={isSuperAdmin ? masterActivityCountVal : activityCountVal}
+                jobPools={shouldShowExtendedStats ? jobPoolsVal : undefined}
+                costPools={shouldShowExtendedStats ? costPoolsVal : undefined}
+                isLoading={overview.isLoading}
+              />
+            )}
           </div>
-        )}
-
-        {/* Payroll Management */}
-        {showPayrollCard && (
-          <PayrollManagementCard 
-            canViewPayroll 
-            onDownloadTemplate={handleDownloadTemplate} 
-          />
-        )}
-
-        {/* Reports */}
-        <div className="h-full overflow-hidden min-h-0">
-          <ReportsCard reports={reportsData} isLoading={reports.isLoading} />
-        </div>
-
-        {/* Staff Leave + Stats */}
-        {showStaffStatsCard && (
-          <StaffStatsCard
-            open={staffLeaveOpen}
-            approved={staffLeaveApproved}
-            rejected={staffLeaveRejected}
-            deptCount={deptCountVal}
-            programCount={programCountVal}
-            activitiesCount={isSuperAdmin ? masterActivityCountVal : activityCountVal}
-            jobPools={shouldShowExtendedStats ? jobPoolsVal : undefined}
-            costPools={shouldShowExtendedStats ? costPoolsVal : undefined}
-            isLoading={overview.isLoading}
-          />
-        )}
-      </div>
-    </>
-  )}
-</div>
-)
+        </>
+      )}
+      {/* Bottom spacer — ensures gap between last card and bottom of scroll area */}
+      <div className="shrink-0 h-10 sm:h-14" aria-hidden="true" />
+    </div>
+  )
 }
 
 

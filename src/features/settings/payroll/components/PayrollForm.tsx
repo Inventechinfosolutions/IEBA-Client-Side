@@ -208,9 +208,9 @@ export function PayrollForm({ isSaving = false }: { isSaving?: boolean }) {
   const activeRow = activeId ? columns.find(c => c.key === activeId) : null
 
   return (
-    <div className="bg-transparent px-6 py-3">
-      <div className="flex items-start gap-8">
-        <div className="min-w-0 w-[55%] max-w-full shrink">
+    <div className="bg-transparent px-3 py-3 sm:px-6">
+      <div className="flex flex-col md:flex-row items-start gap-6 md:gap-8">
+        <div className="min-w-0 w-full md:w-[55%] max-w-full shrink">
           <div className="overflow-hidden rounded-[6px] border border-[#e7e9f2] bg-white">
             <div className="overflow-hidden [scrollbar-gutter:stable]">
               <table className="w-full border-collapse table-fixed text-[12px]">
@@ -327,7 +327,7 @@ export function PayrollForm({ isSaving = false }: { isSaving?: boolean }) {
           </div>
         </div>
 
-        <div className="w-[280px] shrink-0">
+        <div className="w-full md:w-[280px] shrink-0">
           <label className="mb-2 block text-[12px] font-medium text-[#111827]">Payroll By</label>
           <Controller
             name="payroll.payrollBy"
