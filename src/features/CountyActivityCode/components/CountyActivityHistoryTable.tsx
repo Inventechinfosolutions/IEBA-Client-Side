@@ -11,6 +11,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { MasterCodePagination } from "@/features/master-code/components/MasterCodePagination"
+import { CountyActivityHistoryCardView } from "./CountyActivityHistoryCardView"
 
 import {
   ACTIVITY_DEFINITION_HISTORY_KIND,
@@ -89,9 +90,31 @@ export function CountyActivityHistoryTable({
   const colWidths = isAssignmentLayout ? COL_WIDTHS_ASSIGNMENT : COL_WIDTHS_AUDIT
   const leftAlignThroughIndex = isAssignmentLayout ? 1 : 2
 
+  const paginationNode = !isLoading && totalItems > 0 ? (
+    <MasterCodePagination
+      totalItems={totalItems}
+      currentPage={page}
+      pageSize={pageSize}
+      onPageChange={setPage}
+      onPageSizeChange={(newSize) => {
+        setPageSize(newSize)
+        setPage(1)
+      }}
+    />
+  ) : null
+
   return (
-    <div className="flex flex-col gap-4 pt-3">
-      <div className="overflow-hidden rounded-[10px] border border-[#E5E7EB]">
+    <div className="flex flex-col gap-4 pt-3 w-full min-w-0">
+      {/* Mobile & Tablet Card View */}
+      <CountyActivityHistoryCardView
+        historyData={historyData}
+        isLoading={isLoading}
+        isAssignmentLayout={isAssignmentLayout}
+        footer={paginationNode}
+      />
+
+      {/* Desktop Table View */}
+      <div className="hidden xl:block overflow-hidden rounded-[10px] border border-[#E5E7EB]">
         <div className="overflow-x-auto">
           <Table className="w-full table-fixed border-collapse">
             <colgroup>
@@ -208,18 +231,9 @@ export function CountyActivityHistoryTable({
         </div>
       </div>
 
-      {!isLoading && totalItems > 0 && (
-        <MasterCodePagination
-          totalItems={totalItems}
-          currentPage={page}
-          pageSize={pageSize}
-          onPageChange={setPage}
-          onPageSizeChange={(newSize) => {
-            setPageSize(newSize)
-            setPage(1)
-          }}
-        />
-      )}
+      <div className="hidden xl:block">
+        {paginationNode}
+      </div>
     </div>
   )
 }

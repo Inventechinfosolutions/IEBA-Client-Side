@@ -416,7 +416,7 @@ export function SingleSelectSearchDropdown({
                       </button>
                     </TooltipTrigger>
                     <TooltipContent
-                      side="right"
+                      side="top"
                       sideOffset={6}
                       className="z-[2000] bg-black border border-black rounded-[8px] text-white text-xs px-3 py-1.5 shadow-md font-normal max-w-xs break-words"
                     >

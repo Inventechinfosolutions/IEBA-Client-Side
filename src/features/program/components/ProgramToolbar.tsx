@@ -40,8 +40,8 @@ export function ProgramToolbar({
   const showAdd = canAdd(getModuleKey(activeTabLabel)) && !hideAdd
 
   return (
-    <div className="mb-2 flex items-center justify-between gap-3">
-      <div className="relative w-[270px]">
+    <div className="mb-2 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 sm:gap-3">
+      <div className="relative w-full sm:w-[270px]">
         <TitleCaseInput
           value={searchValue}
           onChange={(event) => onSearchChange(event.target.value)}
@@ -59,11 +59,11 @@ export function ProgramToolbar({
           </button>
         )}
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 w-full sm:w-auto">
         {onToggleHistory && isSuperAdmin && (
           <Button
             type="button"
-            className={`h-9 cursor-pointer gap-2 rounded-[12px] px-3 text-[12px] font-semibold transition-all shadow-[0_1px_0_rgba(0,0,0,0.05)] ${
+            className={`h-9 cursor-pointer gap-2 rounded-[12px] px-3 text-[12px] font-semibold transition-all shadow-[0_1px_0_rgba(0,0,0,0.05)] flex-1 sm:flex-none justify-center ${
               showHistory
                 ? "bg-[#6C5DD3] text-white hover:bg-[#6C5DD3]"
                 : "bg-white border border-[#E5E7EB] text-[#6C5DD3] hover:bg-[#F3F0FF] hover:border-[#6C5DD3]"
@@ -86,7 +86,7 @@ export function ProgramToolbar({
         {!showHistory && (
           <Button
             type="button"
-            className="h-9 cursor-pointer gap-2 rounded-[12px] bg-[#6C5DD3] px-3 text-[12px] font-semibold text-white shadow-[0_1px_0_rgba(0,0,0,0.05)] hover:bg-[#6C5DD3]"
+            className="h-9 cursor-pointer gap-2 rounded-[12px] bg-[#6C5DD3] px-3 text-[12px] font-semibold text-white shadow-[0_1px_0_rgba(0,0,0,0.05)] hover:bg-[#6C5DD3] shrink-0"
             onClick={onToggleInactiveOnly}
           >
             {inactiveOnly ? (
@@ -102,7 +102,7 @@ export function ProgramToolbar({
         {!showHistory && showAdd && (
           <Button
             type="button"
-            className="h-9 cursor-pointer gap-1 rounded-[12px] bg-[#6C5DD3] px-3 text-[12px] font-semibold text-white shadow-[0_1px_0_rgba(0,0,0,0.05)] hover:bg-[#6C5DD3]"
+            className="h-9 cursor-pointer gap-1 rounded-[12px] bg-[#6C5DD3] px-3 text-[12px] font-semibold text-white shadow-[0_1px_0_rgba(0,0,0,0.05)] hover:bg-[#6C5DD3] flex-1 sm:flex-none justify-center"
             onClick={onAddProgram}
           >
             <Plus className="size-3.5" />

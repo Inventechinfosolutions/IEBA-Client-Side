@@ -37,6 +37,7 @@ import type {
 } from "../types"
 import { BudgetProgramTypeEnum } from "../enums/enums"
 import { usePermissions } from "@/hooks/usePermissions"
+import { BudgetUnitCardView } from "./BudgetUnitCardView"
 
 export const BudgetUnitTable = forwardRef<BudgetUnitTableHandle, BudgetUnitTableProps>(
   function BudgetUnitTable(
@@ -602,358 +603,380 @@ export const BudgetUnitTable = forwardRef<BudgetUnitTableHandle, BudgetUnitTable
 
   const skeletonRows = Array.from({ length: 8 }, (_, index) => `program-skeleton-${index}`)
 
-  return (    <div className="overflow-hidden rounded-[4px] border border-[#e6e7ef]">
-      <div className="overflow-x-auto">
-        <div className="program-table-scroll [scrollbar-gutter:stable]">
-          <Table className="table-fixed min-w-[1000px]">
-            <colgroup>
-              <col style={{ width: "140px" }} />
-              <col style={{ width: "210px" }} />
-              <col style={{ width: "150px" }} />
-              <col style={{ width: "170px" }} />
-              <col style={{ width: "190px" }} />
-              <col style={{ width: "70px" }} />
-              {!readonly && <col style={{ width: "70px" }} />}
-            </colgroup>
-            <TableHeader className="sticky top-0 z-10 bg-(--primary) shadow-[0_1px_0_rgba(0,0,0,0.05)] [&_tr]:border-b-0">
-              <TableRow className="hover:bg-transparent">
-                <TableHead className="h-10 border-r border-white/50 bg-(--primary) px-3 text-[12px] font-medium text-white">
-                  <TooltipProvider>
-                    <Tooltip open={tooltipOpenKey === "code"}>
-                      <TooltipTrigger asChild>
-                        <button
-                          type="button"
-                          onClick={() => handleSort("code")}
-                          onMouseEnter={() => setTooltipOpenKey("code")}
-                          onMouseLeave={() => setTooltipOpenKey(null)}
-                          onFocus={() => setTooltipOpenKey("code")}
-                          onBlur={() => setTooltipOpenKey(null)}
-                          className="relative flex h-full w-full cursor-pointer items-center justify-start pr-4 text-left text-white"
-                        >
-                          <span>BU Code</span>
-                          <span className="pointer-events-none absolute right-0 inline-flex flex-col items-center leading-none">
-                            <ChevronUp
-                              className={`size-[10px] ${
-                                sortState.key === "code" && sortState.direction === "asc"
-                                  ? "text-white"
-                                  : "text-white/50"
-                              }`}
-                            />
-                            <ChevronDown
-                              className={`-mt-1 size-[10px] ${
-                                sortState.key === "code" && sortState.direction === "desc"
-                                  ? "text-white"
-                                  : "text-white/50"
-                              }`}
-                            />
-                          </span>
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent side="top" sideOffset={6}>
-                        {getTooltipText("code")}
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </TableHead>
-                <TableHead className="h-10 border-r border-white/50 bg-(--primary) px-3 text-[12px] font-medium text-white">
-                  <TooltipProvider>
-                    <Tooltip open={tooltipOpenKey === "name"}>
-                      <TooltipTrigger asChild>
-                        <button
-                          type="button"
-                          onClick={() => handleSort("name")}
-                          onMouseEnter={() => setTooltipOpenKey("name")}
-                          onMouseLeave={() => setTooltipOpenKey(null)}
-                          onFocus={() => setTooltipOpenKey("name")}
-                          onBlur={() => setTooltipOpenKey(null)}
-                          className="relative flex h-full w-full cursor-pointer items-center justify-start pr-4 text-left text-white"
-                        >
-                          <span>BU Name</span>
-                          <span className="pointer-events-none absolute right-0 inline-flex flex-col items-center leading-none">
-                            <ChevronUp
-                              className={`size-[10px] ${
-                                sortState.key === "name" && sortState.direction === "asc"
-                                  ? "text-white"
-                                  : "text-white/50"
-                              }`}
-                            />
-                            <ChevronDown
-                              className={`-mt-1 size-[10px] ${
-                                sortState.key === "name" && sortState.direction === "desc"
-                                  ? "text-white"
-                                  : "text-white/50"
-                              }`}
-                            />
-                          </span>
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent side="top" sideOffset={6}>
-                        {getTooltipText("name")}
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </TableHead>
-                <TableHead className="h-10 border-r border-white/50 bg-(--primary) px-3 text-center text-[12px] font-medium text-white">
-                  Medical Pct
-                </TableHead>
-                <TableHead className="h-10 border-r border-white/50 bg-(--primary) px-3 text-[12px] font-medium text-white">
-                  Description
-                </TableHead>
-                <TableHead className="h-10 border-r border-white/50 bg-(--primary) px-3 text-[12px] font-medium text-white">
-                  Department
-                </TableHead>
-                <TableHead className="h-10 border-r border-white/50 bg-(--primary) px-3 text-center text-[12px] font-medium text-white">
-                  Active
-                </TableHead>
-                {!readonly && (
-                  <TableHead className="h-10 border-r-0 bg-(--primary) px-3 text-center text-[12px] font-medium text-white">
-                    Action
-                  </TableHead>
-                )}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading
-                ? skeletonRows.map((rowId) => (
-                    <TableRow key={rowId} className="h-10 border-b border-[#eff0f5] hover:bg-transparent">
-                      <TableCell className="border-r border-[#eff0f5] px-3 py-2"><Skeleton className="h-3.5 w-[70%]" /></TableCell>
-                      <TableCell className="border-r border-[#eff0f5] px-3 py-2"><Skeleton className="h-3.5 w-[80%]" /></TableCell>
-                      <TableCell className="border-r border-[#eff0f5] px-3 py-2"><Skeleton className="mx-auto h-3.5 w-10" /></TableCell>
-                      <TableCell className="border-r border-[#eff0f5] px-3 py-2"><Skeleton className="h-3.5 w-[80%]" /></TableCell>
-                      <TableCell className="border-r border-[#eff0f5] px-3 py-2"><Skeleton className="h-3.5 w-[70%]" /></TableCell>
-                      <TableCell className="border-r border-[#eff0f5] px-3 py-2"><Skeleton className="mx-auto h-4 w-4 rounded-sm" /></TableCell>
-                      {!readonly && (
-                        <TableCell className="border-r border-[#eff0f5] px-3 py-2"><Skeleton className="mx-auto h-3.5 w-3.5 rounded-sm" /></TableCell>
-                      )}
-                    </TableRow>
-                  ))
-                : hierarchyRows.map((displayRow) => (
-                    <React.Fragment key={
-                      displayRow.kind === "group"
-                        ? `group-${displayRow.budgetUnitId}`
-                        : displayRow.row.hierarchyLevel === 0
-                          ? `bu-${displayRow.row.id}`
-                          : displayRow.row.hierarchyLevel === 1
-                            ? `prog-${displayRow.row.id}`
-                            : `sub-${displayRow.row.id}`
-                    }>
-                    <TableRow
-                      className={`min-h-[40px] border-b border-[#eff0f5] hover:bg-transparent ${
-                        displayRow.kind === "group" ||
-                        displayRow.row.hierarchyLevel === 0 ||
-                        displayRow.row.hierarchyLevel === 2
-                          ? "cursor-pointer"
-                          : ""
-                      }`}
-                      onClick={() => {
-                        if (displayRow.kind === "group") {
-                          toggleProgramGroup(displayRow.budgetUnitId)
-                          return
-                        }
-                        if (displayRow.row.hierarchyLevel === 0) {
-                          toggleBudgetUnit(displayRow.row.id)
-                          return
-                        }
-                        if (displayRow.row.hierarchyLevel === 2) {
-                          toggleProgram(displayRow.row.parentId ?? "", displayRow.row.id)
-                        }
-                      }}
-                    >
-                      <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-[12px] text-[#232735] whitespace-pre-wrap break-all wrap-anywhere max-w-[140px]">
-                        {displayRow.kind === "group" ? (
-                          <div className="flex items-center gap-1" style={{ paddingLeft: `${displayRow.hierarchyLevel * 14}px` }}>
-                            <button
-                              type="button"
-                              onClick={(event) => {
-                                event.stopPropagation()
-                                toggleProgramGroup(displayRow.budgetUnitId)
-                              }}
-                              className="inline-flex cursor-pointer items-center text-(--primary)"
-                              aria-label="Toggle program group"
-                            >
-                              {expandedProgramGroups[displayRow.budgetUnitId] ? <ChevronUp className="size-3.5" /> : <ChevronRight className="size-3.5" />}
-                            </button>
-                            <span className="text-[12px] font-medium text-(--primary)">{displayRow.label}</span>
-                          </div>
-                        ) : (
-                          <div
-                            className="flex items-center gap-1"
-                            style={{ paddingLeft: displayRow.row.hierarchyLevel ? `${displayRow.row.hierarchyLevel * 14}px` : "0px" }}
+  return (
+    <>
+      {/* Desktop Table View */}
+      <div className="hidden xl:block overflow-hidden rounded-[4px] border border-[#e6e7ef]">
+        <div className="overflow-x-auto">
+          <div className="program-table-scroll [scrollbar-gutter:stable]">
+            <Table className="table-fixed min-w-[1000px]">
+              <colgroup>
+                <col style={{ width: "140px" }} />
+                <col style={{ width: "210px" }} />
+                <col style={{ width: "150px" }} />
+                <col style={{ width: "170px" }} />
+                <col style={{ width: "190px" }} />
+                <col style={{ width: "70px" }} />
+                {!readonly && <col style={{ width: "70px" }} />}
+              </colgroup>
+              <TableHeader className="sticky top-0 z-10 bg-(--primary) shadow-[0_1px_0_rgba(0,0,0,0.05)] [&_tr]:border-b-0">
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className="h-10 border-r border-white/50 bg-(--primary) px-3 text-[12px] font-medium text-white">
+                    <TooltipProvider>
+                      <Tooltip open={tooltipOpenKey === "code"}>
+                        <TooltipTrigger asChild>
+                          <button
+                            type="button"
+                            onClick={() => handleSort("code")}
+                            onMouseEnter={() => setTooltipOpenKey("code")}
+                            onMouseLeave={() => setTooltipOpenKey(null)}
+                            onFocus={() => setTooltipOpenKey("code")}
+                            onBlur={() => setTooltipOpenKey(null)}
+                            className="relative flex h-full w-full cursor-pointer items-center justify-start pr-4 text-left text-white"
                           >
-                            {displayRow.row.hierarchyLevel === 0 ? (
+                            <span>BU Code</span>
+                            <span className="pointer-events-none absolute right-0 inline-flex flex-col items-center leading-none">
+                              <ChevronUp
+                                className={`size-[10px] ${
+                                  sortState.key === "code" && sortState.direction === "asc"
+                                    ? "text-white"
+                                    : "text-white/50"
+                                }`}
+                              />
+                              <ChevronDown
+                                className={`-mt-1 size-[10px] ${
+                                  sortState.key === "code" && sortState.direction === "desc"
+                                    ? "text-white"
+                                    : "text-white/50"
+                                }`}
+                              />
+                            </span>
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" sideOffset={6}>
+                          {getTooltipText("code")}
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </TableHead>
+                  <TableHead className="h-10 border-r border-white/50 bg-(--primary) px-3 text-[12px] font-medium text-white">
+                    <TooltipProvider>
+                      <Tooltip open={tooltipOpenKey === "name"}>
+                        <TooltipTrigger asChild>
+                          <button
+                            type="button"
+                            onClick={() => handleSort("name")}
+                            onMouseEnter={() => setTooltipOpenKey("name")}
+                            onMouseLeave={() => setTooltipOpenKey(null)}
+                            onFocus={() => setTooltipOpenKey("name")}
+                            onBlur={() => setTooltipOpenKey(null)}
+                            className="relative flex h-full w-full cursor-pointer items-center justify-start pr-4 text-left text-white"
+                          >
+                            <span>BU Name</span>
+                            <span className="pointer-events-none absolute right-0 inline-flex flex-col items-center leading-none">
+                              <ChevronUp
+                                className={`size-[10px] ${
+                                  sortState.key === "name" && sortState.direction === "asc"
+                                    ? "text-white"
+                                    : "text-white/50"
+                                }`}
+                              />
+                              <ChevronDown
+                                className={`-mt-1 size-[10px] ${
+                                  sortState.key === "name" && sortState.direction === "desc"
+                                    ? "text-white"
+                                    : "text-white/50"
+                                }`}
+                              />
+                            </span>
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" sideOffset={6}>
+                          {getTooltipText("name")}
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </TableHead>
+                  <TableHead className="h-10 border-r border-white/50 bg-(--primary) px-3 text-center text-[12px] font-medium text-white">
+                    Medical Pct
+                  </TableHead>
+                  <TableHead className="h-10 border-r border-white/50 bg-(--primary) px-3 text-[12px] font-medium text-white">
+                    Description
+                  </TableHead>
+                  <TableHead className="h-10 border-r border-white/50 bg-(--primary) px-3 text-[12px] font-medium text-white">
+                    Department
+                  </TableHead>
+                  <TableHead className="h-10 border-r border-white/50 bg-(--primary) px-3 text-center text-[12px] font-medium text-white">
+                    Active
+                  </TableHead>
+                  {!readonly && (
+                    <TableHead className="h-10 border-r-0 bg-(--primary) px-3 text-center text-[12px] font-medium text-white">
+                      Action
+                    </TableHead>
+                  )}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {isLoading
+                  ? skeletonRows.map((rowId) => (
+                      <TableRow key={rowId} className="h-10 border-b border-[#eff0f5] hover:bg-transparent">
+                        <TableCell className="border-r border-[#eff0f5] px-3 py-2"><Skeleton className="h-3.5 w-[70%]" /></TableCell>
+                        <TableCell className="border-r border-[#eff0f5] px-3 py-2"><Skeleton className="h-3.5 w-[80%]" /></TableCell>
+                        <TableCell className="border-r border-[#eff0f5] px-3 py-2"><Skeleton className="mx-auto h-3.5 w-10" /></TableCell>
+                        <TableCell className="border-r border-[#eff0f5] px-3 py-2"><Skeleton className="h-3.5 w-[80%]" /></TableCell>
+                        <TableCell className="border-r border-[#eff0f5] px-3 py-2"><Skeleton className="h-3.5 w-[70%]" /></TableCell>
+                        <TableCell className="border-r border-[#eff0f5] px-3 py-2"><Skeleton className="mx-auto h-4 w-4 rounded-sm" /></TableCell>
+                        {!readonly && (
+                          <TableCell className="border-r border-[#eff0f5] px-3 py-2"><Skeleton className="mx-auto h-3.5 w-3.5 rounded-sm" /></TableCell>
+                        )}
+                      </TableRow>
+                    ))
+                  : hierarchyRows.map((displayRow) => (
+                      <React.Fragment key={
+                        displayRow.kind === "group"
+                          ? `group-${displayRow.budgetUnitId}`
+                          : displayRow.row.hierarchyLevel === 0
+                            ? `bu-${displayRow.row.id}`
+                            : displayRow.row.hierarchyLevel === 1
+                              ? `prog-${displayRow.row.id}`
+                              : `sub-${displayRow.row.id}`
+                      }>
+                      <TableRow
+                        className={`min-h-[40px] border-b border-[#eff0f5] hover:bg-transparent ${
+                          displayRow.kind === "group" ||
+                          displayRow.row.hierarchyLevel === 0 ||
+                          displayRow.row.hierarchyLevel === 2
+                            ? "cursor-pointer"
+                            : ""
+                        }`}
+                        onClick={() => {
+                          if (displayRow.kind === "group") {
+                            toggleProgramGroup(displayRow.budgetUnitId)
+                            return
+                          }
+                          if (displayRow.row.hierarchyLevel === 0) {
+                            toggleBudgetUnit(displayRow.row.id)
+                            return
+                          }
+                          if (displayRow.row.hierarchyLevel === 2) {
+                            toggleProgram(displayRow.row.parentId ?? "", displayRow.row.id)
+                          }
+                        }}
+                      >
+                        <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-[12px] text-[#232735] whitespace-pre-wrap break-all wrap-anywhere max-w-[140px]">
+                          {displayRow.kind === "group" ? (
+                            <div className="flex items-center gap-1" style={{ paddingLeft: `${displayRow.hierarchyLevel * 14}px` }}>
                               <button
                                 type="button"
                                 onClick={(event) => {
                                   event.stopPropagation()
-                                  toggleBudgetUnit(displayRow.row.id)
+                                  toggleProgramGroup(displayRow.budgetUnitId)
                                 }}
                                 className="inline-flex cursor-pointer items-center text-(--primary)"
-                                aria-label="Toggle budget unit children"
+                                aria-label="Toggle program group"
                               >
-                                {expandedBudgetUnits[displayRow.row.id] ? <ChevronUp className="size-3.5" /> : <ChevronRight className="size-3.5" />}
+                                {expandedProgramGroups[displayRow.budgetUnitId] ? <ChevronUp className="size-3.5" /> : <ChevronRight className="size-3.5" />}
                               </button>
-                            ) : null}
-                            {displayRow.row.hierarchyLevel === 2 ? (
-                              <button
-                                type="button"
-                                onClick={(event) => {
-                                  event.stopPropagation()
-                                  toggleProgram(displayRow.row.parentId ?? "", displayRow.row.id)
-                                }}
-                                className="inline-flex cursor-pointer items-center text-(--primary)"
-                                aria-label="Toggle program children"
-                              >
-                                {expandedPrograms[`${displayRow.row.parentId ?? ""}:${displayRow.row.id}`] ? <ChevronUp className="size-3.5" /> : <ChevronRight className="size-3.5" />}
-                              </button>
-                            ) : null}
-                            {displayRow.row.code}
-                          </div>
-                        )}
-                      </TableCell>
-                      <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-[12px] text-[#232735] whitespace-pre-wrap break-all wrap-anywhere max-w-[210px]">
-                        {displayRow.kind === "group" ? "" : displayRow.row.name}
-                      </TableCell>
-                      <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-center text-[12px] text-[#232735] whitespace-pre-wrap break-all wrap-anywhere max-w-[150px]">
-                        {displayRow.kind === "group" ? "" : displayRow.row.medicalPct}
-                      </TableCell>
-                      <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-[12px] text-[#232735] whitespace-pre-wrap break-all wrap-anywhere max-w-[170px]">
-                        {displayRow.kind === "group" ? "" : displayRow.row.description}
-                      </TableCell>
-                      <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-[12px] text-[#232735] whitespace-pre-wrap break-all wrap-anywhere max-w-[190px]">
-                        {displayRow.kind === "group" ? "" : displayRow.row.department}
-                      </TableCell>
-                      <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-center whitespace-normal">
-                        {displayRow.kind === "group" ? null : (
-                          <img src={displayRow.row.active ? tableCheckIcon : tableCloseIcon} alt="" aria-hidden="true" className="mx-auto size-[12px] object-contain" />
-                        )}
-                      </TableCell>
-                      {!readonly && (
-                      <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-center whitespace-normal">
-                        {displayRow.kind === "group"
-                          ? null
-                          : displayRow.row.hierarchyLevel === 2
-                            ? // BU Program row: show dropdown (Add + Edit)
-                              (canAddBudgetProgram || canUpdateBudgetProgram) && (
-                                <div className="flex justify-center">
-                                  <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                      <button
-                                        type="button"
-                                        onClick={(event) => event.stopPropagation()}
-                                        className="inline-flex cursor-pointer items-center justify-center text-(--primary) opacity-90 transition-opacity hover:opacity-100"
-                                        aria-label="Open row actions"
-                                      >
-                                        <EllipsisVertical className="size-[14px]" />
-                                      </button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent
-                                      align="center"
-                                      side="bottom"
-                                      sideOffset={6}
-                                      className="w-[92px]! min-w-[92px]! rounded-[6px] border border-[#edf0f6] p-1 shadow-[0_8px_20px_rgba(17,24,39,0.14)]"
-                                    >
-                                      {canAddBudgetProgram && displayRow.row.active && (
-                                        <DropdownMenuItem
-                                          onClick={(event) => {
-                                            event.stopPropagation()
-                                            onAddSubProgramFromProgram?.(displayRow.row)
-                                          }}
-                                          className="cursor-pointer gap-1.5 rounded-[8px] px-1.5 py-1 text-[12px] text-[#111827]"
-                                        >
-                                          <Plus className="size-[13px] text-(--primary)" />
-                                          Add
-                                        </DropdownMenuItem>
-                                      )}
-                                      {canUpdateBudgetProgram && (
-                                        <DropdownMenuItem
-                                          onClick={(event) => {
-                                            event.stopPropagation()
-                                            onEditRow(displayRow.row)
-                                          }}
-                                          className="cursor-pointer gap-1.5 rounded-[8px] px-1.5 py-1 text-[12px] text-[#111827]"
-                                        >
-                                          <Pencil className="size-[13px] text-(--primary)" />
-                                          Edit
-                                        </DropdownMenuItem>
-                                      )}
-                                    </DropdownMenuContent>
-                                  </DropdownMenu>
-                                </div>
-                              )
-                            : // Sub-program and BU rows: simple Edit button only
-                              canUpdateBudgetProgram && (
+                              <span className="text-[12px] font-medium text-(--primary)">{displayRow.label}</span>
+                            </div>
+                          ) : (
+                            <div
+                              className="flex items-center gap-1"
+                              style={{ paddingLeft: displayRow.row.hierarchyLevel ? `${displayRow.row.hierarchyLevel * 14}px` : "0px" }}
+                            >
+                              {displayRow.row.hierarchyLevel === 0 ? (
                                 <button
                                   type="button"
                                   onClick={(event) => {
                                     event.stopPropagation()
-                                    onEditRow(displayRow.row)
+                                    toggleBudgetUnit(displayRow.row.id)
                                   }}
-                                  className="inline-flex cursor-pointer items-center opacity-80 drop-shadow-[0_1px_0_rgba(108,93,211,0.35)] transition-opacity hover:opacity-100"
+                                  className="inline-flex cursor-pointer items-center text-(--primary)"
+                                  aria-label="Toggle budget unit children"
                                 >
-                                  <img
-                                    src={tableEditIcon}
-                                    alt=""
-                                    aria-hidden="true"
-                                    className="size-[11px] object-contain"
-                                  />
+                                  {expandedBudgetUnits[displayRow.row.id] ? <ChevronUp className="size-3.5" /> : <ChevronRight className="size-3.5" />}
                                 </button>
-                              )}
-                      </TableCell>
-                      )}
-                    </TableRow>
-                    {/* Removed group-level skeleton: loading is now shown only directly under the expanded BU Program row */}
-                    {displayRow.kind === "data" &&
-                      displayRow.row.hierarchyLevel === 2 &&
-                      expandedPrograms[displayRow.row.id] &&
-                      subProgramLoadingProgramId === displayRow.row.id && (
-                        <TableRow
-                          key={`loading-sub-${displayRow.row.id}`}
-                          className="h-10 border-b border-[#eff0f5] hover:bg-transparent"
-                        >
-                          <TableCell className="border-r border-[#eff0f5] px-3 py-2">
-                            <Skeleton className="h-3.5 w-[70%]" />
-                          </TableCell>
-                          <TableCell className="border-r border-[#eff0f5] px-3 py-2">
-                            <Skeleton className="h-3.5 w-[80%]" />
-                          </TableCell>
-                          <TableCell className="border-r border-[#eff0f5] px-3 py-2">
-                            <Skeleton className="mx-auto h-3.5 w-10" />
-                          </TableCell>
-                          <TableCell className="border-r border-[#eff0f5] px-3 py-2">
-                            <Skeleton className="h-3.5 w-[80%]" />
-                          </TableCell>
-                          <TableCell className="border-r border-[#eff0f5] px-3 py-2">
-                            <Skeleton className="h-3.5 w-[70%]" />
-                          </TableCell>
-                          <TableCell className="border-r border-[#eff0f5] px-3 py-2">
-                            <Skeleton className="mx-auto h-4 w-4 rounded-sm" />
-                          </TableCell>
-                          {!readonly && (
-                          <TableCell className="border-r border-[#eff0f5] px-3 py-2">
-                            <Skeleton className="mx-auto h-3.5 w-3.5 rounded-sm" />
-                          </TableCell>
+                              ) : null}
+                              {displayRow.row.hierarchyLevel === 2 ? (
+                                <button
+                                  type="button"
+                                  onClick={(event) => {
+                                    event.stopPropagation()
+                                    toggleProgram(displayRow.row.parentId ?? "", displayRow.row.id)
+                                  }}
+                                  className="inline-flex cursor-pointer items-center text-(--primary)"
+                                  aria-label="Toggle program children"
+                                >
+                                  {expandedPrograms[`${displayRow.row.parentId ?? ""}:${displayRow.row.id}`] ? <ChevronUp className="size-3.5" /> : <ChevronRight className="size-3.5" />}
+                                </button>
+                              ) : null}
+                              {displayRow.row.code}
+                            </div>
                           )}
-                        </TableRow>
-                      )}
-                    </React.Fragment>
-                  ))}
-              {!isLoading && hierarchyRows.length === 0 ? (
-                <TableRow className="h-[210px] hover:bg-transparent">
-                  <TableCell colSpan={readonly ? 6 : 7} className="text-center">
-                    <img
-                      src={tableEmptyIcon}
-                      alt=""
-                      aria-hidden="true"
-                      className="mx-auto h-[73px] w-[82px] object-contain opacity-80"
-                    />
-                  </TableCell>
-                </TableRow>
-              ) : null}
-            </TableBody>
-          </Table>
+                        </TableCell>
+                        <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-[12px] text-[#232735] whitespace-pre-wrap break-all wrap-anywhere max-w-[210px]">
+                          {displayRow.kind === "group" ? "" : displayRow.row.name}
+                        </TableCell>
+                        <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-center text-[12px] text-[#232735] whitespace-pre-wrap break-all wrap-anywhere max-w-[150px]">
+                          {displayRow.kind === "group" ? "" : displayRow.row.medicalPct}
+                        </TableCell>
+                        <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-[12px] text-[#232735] whitespace-pre-wrap break-all wrap-anywhere max-w-[170px]">
+                          {displayRow.kind === "group" ? "" : displayRow.row.description}
+                        </TableCell>
+                        <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-[12px] text-[#232735] whitespace-pre-wrap break-all wrap-anywhere max-w-[190px]">
+                          {displayRow.kind === "group" ? "" : displayRow.row.department}
+                        </TableCell>
+                        <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-center whitespace-normal">
+                          {displayRow.kind === "group" ? null : (
+                            <img src={displayRow.row.active ? tableCheckIcon : tableCloseIcon} alt="" aria-hidden="true" className="mx-auto size-[12px] object-contain" />
+                          )}
+                        </TableCell>
+                        {!readonly && (
+                        <TableCell className="align-top border-r border-[#eff0f5] px-3 py-2 text-center whitespace-normal">
+                          {displayRow.kind === "group"
+                            ? null
+                            : displayRow.row.hierarchyLevel === 2
+                              ? // BU Program row: show dropdown (Add + Edit)
+                                (canAddBudgetProgram || canUpdateBudgetProgram) && (
+                                  <div className="flex justify-center">
+                                    <DropdownMenu>
+                                      <DropdownMenuTrigger asChild>
+                                        <button
+                                          type="button"
+                                          onClick={(event) => event.stopPropagation()}
+                                          className="inline-flex cursor-pointer items-center justify-center text-(--primary) opacity-90 transition-opacity hover:opacity-100"
+                                          aria-label="Open row actions"
+                                        >
+                                          <EllipsisVertical className="size-[14px]" />
+                                        </button>
+                                      </DropdownMenuTrigger>
+                                      <DropdownMenuContent
+                                        align="center"
+                                        side="bottom"
+                                        sideOffset={6}
+                                        className="w-[92px]! min-w-[92px]! rounded-[6px] border border-[#edf0f6] p-1 shadow-[0_8px_20px_rgba(17,24,39,0.14)]"
+                                      >
+                                        {canAddBudgetProgram && displayRow.row.active && (
+                                          <DropdownMenuItem
+                                            onClick={(event) => {
+                                              event.stopPropagation()
+                                              onAddSubProgramFromProgram?.(displayRow.row)
+                                            }}
+                                            className="cursor-pointer gap-1.5 rounded-[8px] px-1.5 py-1 text-[12px] text-[#111827]"
+                                          >
+                                            <Plus className="size-[13px] text-(--primary)" />
+                                            Add
+                                          </DropdownMenuItem>
+                                        )}
+                                        {canUpdateBudgetProgram && (
+                                          <DropdownMenuItem
+                                            onClick={(event) => {
+                                              event.stopPropagation()
+                                              onEditRow(displayRow.row)
+                                            }}
+                                            className="cursor-pointer gap-1.5 rounded-[8px] px-1.5 py-1 text-[12px] text-[#111827]"
+                                          >
+                                            <Pencil className="size-[13px] text-(--primary)" />
+                                            Edit
+                                          </DropdownMenuItem>
+                                        )}
+                                      </DropdownMenuContent>
+                                    </DropdownMenu>
+                                  </div>
+                                )
+                              : // Sub-program and BU rows: simple Edit button only
+                                canUpdateBudgetProgram && (
+                                  <button
+                                    type="button"
+                                    onClick={(event) => {
+                                      event.stopPropagation()
+                                      onEditRow(displayRow.row)
+                                    }}
+                                    className="inline-flex cursor-pointer items-center opacity-80 drop-shadow-[0_1px_0_rgba(108,93,211,0.35)] transition-opacity hover:opacity-100"
+                                  >
+                                    <img
+                                      src={tableEditIcon}
+                                      alt=""
+                                      aria-hidden="true"
+                                      className="size-[11px] object-contain"
+                                    />
+                                  </button>
+                                )}
+                        </TableCell>
+                        )}
+                      </TableRow>
+                      {/* Removed group-level skeleton: loading is now shown only directly under the expanded BU Program row */}
+                      {displayRow.kind === "data" &&
+                        displayRow.row.hierarchyLevel === 2 &&
+                        expandedPrograms[displayRow.row.id] &&
+                        subProgramLoadingProgramId === displayRow.row.id && (
+                          <TableRow
+                            key={`loading-sub-${displayRow.row.id}`}
+                            className="h-10 border-b border-[#eff0f5] hover:bg-transparent"
+                          >
+                            <TableCell className="border-r border-[#eff0f5] px-3 py-2">
+                              <Skeleton className="h-3.5 w-[70%]" />
+                            </TableCell>
+                            <TableCell className="border-r border-[#eff0f5] px-3 py-2">
+                              <Skeleton className="h-3.5 w-[80%]" />
+                            </TableCell>
+                            <TableCell className="border-r border-[#eff0f5] px-3 py-2">
+                              <Skeleton className="mx-auto h-3.5 w-10" />
+                            </TableCell>
+                            <TableCell className="border-r border-[#eff0f5] px-3 py-2">
+                              <Skeleton className="h-3.5 w-[80%]" />
+                            </TableCell>
+                            <TableCell className="border-r border-[#eff0f5] px-3 py-2">
+                              <Skeleton className="h-3.5 w-[70%]" />
+                            </TableCell>
+                            <TableCell className="border-r border-[#eff0f5] px-3 py-2">
+                              <Skeleton className="mx-auto h-4 w-4 rounded-sm" />
+                            </TableCell>
+                            {!readonly && (
+                            <TableCell className="border-r border-[#eff0f5] px-3 py-2">
+                              <Skeleton className="mx-auto h-3.5 w-3.5 rounded-sm" />
+                            </TableCell>
+                            )}
+                          </TableRow>
+                        )}
+                      </React.Fragment>
+                    ))}
+                {!isLoading && hierarchyRows.length === 0 ? (
+                  <TableRow className="h-[210px] hover:bg-transparent">
+                    <TableCell colSpan={readonly ? 6 : 7} className="text-center">
+                      <img
+                        src={tableEmptyIcon}
+                        alt=""
+                        aria-hidden="true"
+                        className="mx-auto h-[73px] w-[82px] object-contain opacity-80"
+                      />
+                    </TableCell>
+                  </TableRow>
+                ) : null}
+              </TableBody>
+            </Table>
+          </div>
         </div>
       </div>
-    </div>
+
+      {/* Mobile / Tablet Card View */}
+      <BudgetUnitCardView
+        hierarchyRows={hierarchyRows}
+        isLoading={isLoading}
+        readonly={readonly}
+        canAddBudgetProgram={canAddBudgetProgram}
+        canUpdateBudgetProgram={canUpdateBudgetProgram}
+        expandedBudgetUnits={expandedBudgetUnits}
+        expandedProgramGroups={expandedProgramGroups}
+        expandedPrograms={expandedPrograms}
+        subProgramLoadingProgramId={subProgramLoadingProgramId}
+        onEditRow={onEditRow}
+        onAddSubProgramFromProgram={onAddSubProgramFromProgram}
+        toggleBudgetUnit={toggleBudgetUnit}
+        toggleProgramGroup={toggleProgramGroup}
+        toggleProgram={toggleProgram}
+      />
+    </>
   )
 })
 

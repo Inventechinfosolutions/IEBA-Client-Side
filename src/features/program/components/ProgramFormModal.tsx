@@ -279,7 +279,7 @@ export const ProgramFormModal = forwardRef<ProgramFormModalHandle, ProgramFormMo
       <DialogContent
         showClose={false}
         overlayClassName="bg-black/40"
-        className={`left-1/2 top-[5%] w-[760px] max-w-[calc(100vw-40px)] -translate-x-1/2 translate-y-0 gap-0 overflow-hidden rounded-[8px] border bg-white p-0 text-[#0f172a] subpixel-antialiased shadow-[0_6px_18px_rgba(22,29,45,0.12)] ${
+        className={`left-1/2 top-[4%] sm:top-[5%] w-[760px] max-w-[calc(100vw-24px)] sm:max-w-[calc(100vw-40px)] -translate-x-1/2 translate-y-0 gap-0 overflow-hidden rounded-[8px] border bg-white p-0 text-[#0f172a] subpixel-antialiased shadow-[0_6px_18px_rgba(22,29,45,0.12)] max-h-[92vh] flex flex-col ${
           pendingSection ? "border-transparent" : "border-[#f4f6fb]"
         }`}
       >
@@ -303,7 +303,7 @@ export const ProgramFormModal = forwardRef<ProgramFormModalHandle, ProgramFormMo
                 type="button"
                 aria-disabled={lockSectionTabs}
                 onClick={() => handleSectionChange(section)}
-                className={`h-[58px] rounded-[8px] border text-[12px] ${
+                className={`h-[48px] sm:h-[58px] rounded-[8px] border text-[11px] sm:text-[12px] px-1 py-1 flex items-center justify-center text-center leading-snug break-words ${
                   activeSection === section
                      ? "border-[var(--primary)] bg-[var(--primary)] font-medium text-white"
                      : "border-[#e8e9ef] bg-white text-[#4f5970]"
@@ -316,11 +316,11 @@ export const ProgramFormModal = forwardRef<ProgramFormModalHandle, ProgramFormMo
         ) : null}
         <form
           onSubmit={handleSubmit}
-          className="select-none bg-white px-10 pb-8 pt-7 [&_input]:!text-[14px] [&_input::placeholder]:text-[12px] [&_input::placeholder]:text-[#b0b8c8]"
+          className="select-none bg-white px-4 sm:px-10 pb-6 sm:pb-8 pt-5 sm:pt-7 overflow-y-auto max-h-[calc(92vh-60px)] [&_input]:!text-[14px] [&_input::placeholder]:text-[12px] [&_input::placeholder]:text-[#b0b8c8]"
         >
           <input type="hidden" {...form.register("formSection")} />
-          <DialogHeader className="mx-auto w-[500px] pb-5">
-            <DialogTitle className="text-center text-[22px] font-semibold text-[#111827]">
+          <DialogHeader className="mx-auto w-full max-w-[500px] pb-5">
+            <DialogTitle className="text-center text-[18px] sm:text-[22px] font-semibold text-[#111827] leading-snug">
               {isTimeStudyContext
                 ? isReadOnly
                   ? activeSection === "BU Program"
@@ -366,7 +366,7 @@ export const ProgramFormModal = forwardRef<ProgramFormModalHandle, ProgramFormMo
             </div>
           </DialogHeader>
           {isReadOnly && (
-            <div className="mx-auto w-[500px] mb-5 rounded-[8px] bg-amber-50 border border-amber-200 p-3 text-amber-800 text-[14px] font-medium flex items-center justify-center gap-2">
+            <div className="mx-auto w-full max-w-[500px] mb-5 rounded-[8px] bg-amber-50 border border-amber-200 p-3 text-amber-800 text-[13px] sm:text-[14px] font-medium flex items-center justify-center gap-2">
               <svg className="h-5 w-5 shrink-0 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
@@ -397,7 +397,7 @@ export const ProgramFormModal = forwardRef<ProgramFormModalHandle, ProgramFormMo
               budgetUnitLookup={budgetUnitLookup}
             />
           )}
-          <div className="mx-auto mt-6 flex w-[500px] items-center justify-end gap-4">
+          <div className="mx-auto mt-6 flex w-full max-w-[500px] items-center justify-end gap-3 sm:gap-4">
             {!isReadOnly && (
               <Button
                 type="submit"
@@ -421,8 +421,8 @@ export const ProgramFormModal = forwardRef<ProgramFormModalHandle, ProgramFormMo
         )}
         </div>
         {pendingSection ? (
-          <div className="absolute inset-0 z-20 flex items-start justify-center bg-black/25 pt-[70px]">
-            <div className="w-[528px] rounded-[4px] bg-white px-6 py-5 shadow-[0_10px_24px_rgba(17,24,39,0.2)]">
+          <div className="absolute inset-0 z-20 flex items-start justify-center bg-black/25 pt-[70px] px-3">
+            <div className="w-full max-w-[528px] rounded-[4px] bg-white px-5 sm:px-6 py-5 shadow-[0_10px_24px_rgba(17,24,39,0.2)]">
               <p className="text-[16px] font-medium leading-[1.2] text-[#111827]">
                 Are you sure do you want to switch? there are unsaved changes
               </p>

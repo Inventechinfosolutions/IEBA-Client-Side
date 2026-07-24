@@ -23,6 +23,7 @@ import {
 import { TodoStatusEnum } from "../enums/todoStatus"
 import { TODO_STATUS_LABEL } from "../types"
 import type { TodoRow, TodoTableProps } from "../types"
+import { TodoCardView } from "./TodoCardView"
 
 const headers: { label: string; className?: string }[] = [
   { label: "Title", className: "w-[160px]" },
@@ -33,9 +34,13 @@ const headers: { label: string; className?: string }[] = [
 ]
 
 function getStatusPillClasses(status: TodoRow["status"]) {
-  if (status === TodoStatusEnum.NEW) return "border-[#d1d5db] text-black"
-  if (status === TodoStatusEnum.INPROGRESS) return "border-[#f59e0b] text-black"
-  return "border-[#16a34a] text-black"
+  if (status === TodoStatusEnum.NEW) {
+    return "border-[#d1d5db] text-[#4b5563] bg-white dark:bg-zinc-800 dark:text-white dark:border-[#52525b]"
+  }
+  if (status === TodoStatusEnum.INPROGRESS) {
+    return "border-[#f59e0b] text-[#f59e0b] bg-white dark:bg-[#291e0a] dark:text-[#f59e0b] dark:border-[#f59e0b]"
+  }
+  return "border-[#16a34a] text-[#16a34a] bg-white dark:bg-[#052e16] dark:text-[#4ade80] dark:border-[#16a34a]"
 }
 
 export function TodoTable({
@@ -49,8 +54,10 @@ export function TodoTable({
   const [isTitleTooltipOpen, setIsTitleTooltipOpen] = useState(false)
 
   return (
-    <div className="overflow-hidden rounded-[8px] border border-[#e7e9f0] bg-white">
-      <Table className="table-fixed">
+    <>
+      {/* Desktop Table View */}
+      <div className="hidden xl:block overflow-hidden rounded-[8px] border border-[#e7e9f0] bg-white">
+        <Table className="table-fixed">
         <TableHeader>
           <TableRow className="hover:bg-transparent">
             {headers.map((header) => {
@@ -58,9 +65,8 @@ export function TodoTable({
                 return (
                   <TableHead
                     key={header.label}
-                    className={`h-10 bg-[#6c5dd3] p-[12px] text-left text-[12px] font-medium text-white ${
-                      "border-r border-white/50"
-                    } ${header.className ?? ""}`}
+                    className={`h-10 bg-[#6c5dd3] p-[12px] text-left text-[12px] font-medium text-white ${"border-r border-white/50"
+                      } ${header.className ?? ""}`}
                   >
                     <TooltipProvider>
                       <Tooltip open={isTitleTooltipOpen}>
@@ -77,14 +83,12 @@ export function TodoTable({
                             <span>Title</span>
                             <span className="pointer-events-none absolute right-[8px] inline-flex flex-col items-center gap-px leading-none">
                               <Triangle
-                                className={`size-[6px] fill-white stroke-white ${
-                                  titleSortState === "asc" ? "opacity-100" : "opacity-50"
-                                }`}
+                                className={`size-[6px] fill-white stroke-white ${titleSortState === "asc" ? "opacity-100" : "opacity-50"
+                                  }`}
                               />
                               <Triangle
-                                className={`size-[6px] rotate-180 fill-white stroke-white ${
-                                  titleSortState === "desc" ? "opacity-100" : "opacity-50"
-                                }`}
+                                className={`size-[6px] rotate-180 fill-white stroke-white ${titleSortState === "desc" ? "opacity-100" : "opacity-50"
+                                  }`}
                               />
                             </span>
                           </button>
@@ -105,16 +109,14 @@ export function TodoTable({
               return (
                 <TableHead
                   key={header.label}
-                  className={`h-10 bg-[#6c5dd3] p-[12px] text-center text-[12px] font-medium text-white ${
-                    "border-r border-white/50"
-                  } ${header.className ?? ""}`}
+                  className={`h-10 bg-[#6c5dd3] p-[12px] text-center text-[12px] font-medium text-white ${"border-r border-white/50"
+                    } ${header.className ?? ""}`}
                 >
                   <div
-                    className={`flex h-full w-full items-center ${
-                      header.label === "Description"
-                        ? "justify-start text-left"
-                        : "justify-center text-center"
-                    }`}
+                    className={`flex h-full w-full items-center ${header.label === "Description"
+                      ? "justify-start text-left"
+                      : "justify-center text-center"
+                      }`}
                   >
                     {header.label}
                   </div>
@@ -238,6 +240,15 @@ export function TodoTable({
         </TableBody>
       </Table>
     </div>
+
+      {/* Mobile / Tablet Card View */}
+      <TodoCardView
+        rows={rows}
+        isLoading={isLoading}
+        onEditRow={onEditRow}
+        footer={footer}
+      />
+    </>
   )
 }
 

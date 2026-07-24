@@ -42,6 +42,7 @@ import {
 import { CostPoolAddPage } from "./CostPoolAddPage"
 import { useCreateCostPool } from "../mutations/createCostPool"
 import { useUpdateCostPool } from "../mutations/updateCostPool"
+import { CostPoolCardView } from "./CostPoolCardView"
 import { useCostPoolActivityPicklistQuery } from "../queries/getCostPoolActivityPicklist"
 import { useCostPoolUserPicklistQuery } from "../queries/getCostPoolUserPicklist"
 import { CostPoolHistoryTable } from "./CostPoolHistoryTable"
@@ -459,31 +460,35 @@ export function CostPoolTable({
 
   return (
     <div className="space-y-4 rounded-[10px] border border-[#E5E7EB] bg-white p-4">
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-[8px] p-3">
+      <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-3 w-full min-w-0">
         {showHistory ? (
-          <div className="flex flex-1 items-center gap-2">
-            <TitleCaseInput
-              placeholder="Search Activity Code"
-              value={historyActivityCode}
-              onChange={(e) => setHistoryActivityCode(e.target.value)}
-              className="h-12 w-[220px] rounded-[10px] border border-[#D9D9D9] bg-white px-3.5 text-[11px] text-[#111827] shadow-[0_4px_10px_rgba(15,23,42,0.08)] placeholder:text-[10px] placeholder:text-[#9CA3AF] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
-            />
-            <TitleCaseInput
-              placeholder="Search Assignment Kind"
-              value={historyAssignmentKind}
-              onChange={(e) => setHistoryAssignmentKind(e.target.value)}
-              className="h-12 w-[220px] rounded-[10px] border border-[#D9D9D9] bg-white px-3.5 text-[11px] text-[#111827] shadow-[0_4px_10px_rgba(15,23,42,0.08)] placeholder:text-[10px] placeholder:text-[#9CA3AF] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
-            />
+          <div className="flex flex-col sm:flex-row items-center gap-2.5 w-full xl:w-auto min-w-0 flex-1">
+            <div className="w-full sm:w-[240px] min-w-0">
+              <TitleCaseInput
+                placeholder="Search Activity Code"
+                value={historyActivityCode}
+                onChange={(e) => setHistoryActivityCode(e.target.value)}
+                className="h-[46px] sm:h-[50px] w-full rounded-[10px] border border-[#D9D9D9] bg-white px-3.5 text-[12px] sm:text-[13px] text-[#111827] shadow-[0_4px_10px_rgba(15,23,42,0.08)] placeholder:text-[11px] sm:placeholder:text-[12px] placeholder:text-[#9CA3AF] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
+              />
+            </div>
+            <div className="w-full sm:w-[240px] min-w-0">
+              <TitleCaseInput
+                placeholder="Search Assignment Kind"
+                value={historyAssignmentKind}
+                onChange={(e) => setHistoryAssignmentKind(e.target.value)}
+                className="h-[46px] sm:h-[50px] w-full rounded-[10px] border border-[#D9D9D9] bg-white px-3.5 text-[12px] sm:text-[13px] text-[#111827] shadow-[0_4px_10px_rgba(15,23,42,0.08)] placeholder:text-[11px] sm:placeholder:text-[12px] placeholder:text-[#9CA3AF] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
+              />
+            </div>
           </div>
         ) : (
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col sm:flex-row items-center gap-2.5 w-full xl:w-auto min-w-0 flex-1">
             {/* Search bar */}
-            <div className="w-full max-w-[260px]">
-              <form onSubmit={(event) => event.preventDefault()} className="relative">
+            <div className="w-full sm:w-[260px] min-w-0">
+              <form onSubmit={(event) => event.preventDefault()} className="relative w-full">
                 <SearchIcon className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#9CA3AF]" />
                 <TitleCaseInput
                   placeholder="Search here"
-                  className="h-12 rounded-[8px] border border-[#D9D9D9] bg-white pl-9 pr-9 text-[16px] text-[#1F2937] placeholder:text-[#9CA3AF]"
+                  className="h-[46px] sm:h-[50px] w-full rounded-[8px] border border-[#D9D9D9] bg-white pl-9 pr-9 text-[13px] sm:text-[14px] text-[#1F2937] placeholder:text-[#9CA3AF]"
                   {...filterForm.register("search")}
                   value={searchValue}
                   onChange={(event) => {
@@ -510,27 +515,29 @@ export function CostPoolTable({
             </div>
 
             {/* Department filter dropdown */}
-            <SingleSelectDropdown
-              value={filters.departmentId !== undefined ? String(filters.departmentId) : ""}
-              onChange={(val) => {
-                const deptId = val === "__all__" || val === "" ? undefined : val
-                onDepartmentChange(deptId)
-                onPageChange(1)
-              }}
-              onBlur={() => { }}
-              options={departmentOptions}
-              placeholder="Filter by Department"
-              isLoading={allDepartmentsQuery.isPending && deptFetchEnabled}
-              onOpenChange={handleDeptOpenChange}
-            />
+            <div className="w-full sm:w-[240px] min-w-0">
+              <SingleSelectDropdown
+                value={filters.departmentId !== undefined ? String(filters.departmentId) : ""}
+                onChange={(val) => {
+                  const deptId = val === "__all__" || val === "" ? undefined : val
+                  onDepartmentChange(deptId)
+                  onPageChange(1)
+                }}
+                onBlur={() => { }}
+                options={departmentOptions}
+                placeholder="Filter by Department"
+                isLoading={allDepartmentsQuery.isPending && deptFetchEnabled}
+                onOpenChange={handleDeptOpenChange}
+              />
+            </div>
           </div>
         )}
 
-        <div className="flex items-center gap-3 ml-auto">
+        <div className="flex items-center gap-1.5 sm:gap-2.5 w-full xl:w-auto min-w-0 justify-between sm:justify-end">
           {isSuperAdmin && (
             <button
               type="button"
-              className={`flex h-12 items-center gap-2 rounded-[12px] px-4 text-[14px] font-normal transition-colors ${showHistory
+              className={`flex h-[42px] sm:h-[48px] shrink-0 items-center gap-1 sm:gap-1.5 rounded-[10px] px-2.5 sm:px-4 text-[11px] sm:text-[13px] font-medium transition-colors whitespace-nowrap cursor-pointer ${showHistory
                   ? "bg-[#6C5DD3] text-white"
                   : "border border-[#6C5DD3] bg-white text-[#6C5DD3] hover:bg-[#F3F0FF]"
                 }`}
@@ -548,13 +555,13 @@ export function CostPoolTable({
             >
               {showHistory ? (
                 <>
-                  <ArrowLeft className="size-4 animate-back-bounce" />
-                  Back to Cost Pool
+                  <ArrowLeft className="size-3.5 shrink-0 animate-back-bounce" />
+                  <span>Back to Cost Pool</span>
                 </>
               ) : (
                 <>
-                  <History className="size-4" />
-                  History
+                  <History className="size-3.5 shrink-0" />
+                  <span>History</span>
                 </>
               )}
             </button>
@@ -563,7 +570,7 @@ export function CostPoolTable({
           {!showHistory && (
             <button
               type="button"
-              className="flex h-12 items-center gap-2 rounded-[12px] bg-[#6C5DD3] px-4 text-white"
+              className="flex h-[42px] sm:h-[48px] shrink-0 items-center gap-1 sm:gap-1.5 rounded-[10px] bg-[#6C5DD3] px-2.5 sm:px-4 text-[11px] sm:text-[13px] font-medium text-white cursor-pointer whitespace-nowrap"
               onClick={() => {
                 const nextValue = !showInactive
                 filterForm.setValue("inactive", nextValue)
@@ -578,7 +585,7 @@ export function CostPoolTable({
               ) : (
                 <span className="size-[14px] rounded-[3px] bg-white dark:bg-[#1C1C2D]" />
               )}
-              <span className="text-[14px] font-normal">Inactive</span>
+              <span>Inactive</span>
             </button>
           )}
 
@@ -586,10 +593,10 @@ export function CostPoolTable({
             <Button
               type="button"
               onClick={() => setAddOpen(true)}
-              className="h-12 rounded-[12px] bg-[#6C5DD3] px-6 text-[14px] font-normal text-white hover:bg-[#5B4DC5]"
+              className="h-[42px] sm:h-[48px] flex-1 sm:flex-none min-w-0 shrink-0 cursor-pointer gap-1 sm:gap-1.5 rounded-[10px] bg-[#6C5DD3] px-2.5 sm:px-4 text-[11px] sm:text-[13px] font-medium text-white hover:bg-[#5B4DC5] justify-center text-center whitespace-nowrap"
             >
-              <PlusIcon className="mr-2 size-4" />
-              Add Cost Pool
+              <PlusIcon className="size-3.5 shrink-0" />
+              <span className="truncate">Add Cost Pool</span>
             </Button>
           )}
         </div>
@@ -602,7 +609,19 @@ export function CostPoolTable({
         />
       )}
 
-      <div className={`overflow-hidden rounded-[8px] border border-[#E5E7EB] ${showHistory ? "hidden" : ""}`}>
+      {!showHistory && (
+        <CostPoolCardView
+          rows={sortedRows}
+          isLoading={isLoading}
+          onEditRow={(row) => {
+            setRowToEdit(row)
+            setEditOpen(true)
+          }}
+        />
+      )}
+
+      {!showHistory && (
+        <div className="hidden xl:block w-full min-w-0 overflow-x-auto rounded-[8px] border border-[#E5E7EB]">
         <Table className="w-full table-fixed border-collapse">
           <colgroup>
             <col className="w-[14%]" />
@@ -774,6 +793,7 @@ export function CostPoolTable({
           </TableBody>
         </Table>
       </div>
+      )}
       {!showHistory && (
         <div className="mt-4">
           <MasterCodePagination

@@ -98,15 +98,15 @@ export function NotificationSheet({ open, onOpenChange }: NotificationSheetProps
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-[450px] p-0 sm:max-w-[450px] bg-white border-l border-[#E5E7EB] dark:bg-[#18181b] dark:border-[#27272a]">
-        <SheetHeader className="p-8 pb-4">
-          <SheetTitle className="text-[28px] font-bold text-[#6C5DD3]">
+      <SheetContent className="w-full max-w-full sm:w-[450px] sm:max-w-[450px] p-0 bg-white border-l border-[#E5E7EB] dark:bg-[#18181b] dark:border-[#27272a]">
+        <SheetHeader className="p-4 sm:p-8 pb-3 sm:pb-4">
+          <SheetTitle className="text-[24px] sm:text-[28px] font-bold text-[#6C5DD3]">
             Notifications
           </SheetTitle>
         </SheetHeader>
 
-        <div className="flex items-center justify-between px-8 py-2 mb-4">
-          <div className="w-[200px]">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 sm:gap-0 px-4 sm:px-8 py-2 mb-4">
+          <div className="w-full sm:w-[200px]">
             <SingleSelectDropdown
               value={filter}
               onChange={handleFilterChange}
@@ -121,7 +121,7 @@ export function NotificationSheet({ open, onOpenChange }: NotificationSheetProps
             variant="ghost"
             onClick={handleMarkAllAsRead}
             disabled={markAllAsRead.isPending || notifications.every((n: Notification) => n.read)}
-            className="h-auto p-0 text-[14px] font-medium text-[#6C5DD3] hover:bg-transparent hover:underline disabled:opacity-50"
+            className="h-auto p-0 text-[13px] sm:text-[14px] font-medium text-[#6C5DD3] hover:bg-transparent hover:underline disabled:opacity-50 self-end sm:self-auto"
           >
             Mark all as read
           </Button>
@@ -129,7 +129,7 @@ export function NotificationSheet({ open, onOpenChange }: NotificationSheetProps
 
         <ScrollArea className="h-[calc(100vh-180px)]">
           {notifications.length === 0 ? (
-            <div className="flex h-[400px] flex-col items-center justify-center gap-4 text-center px-8">
+            <div className="flex h-[400px] flex-col items-center justify-center gap-4 text-center px-4 sm:px-8">
               <div className="flex flex-col items-center justify-center opacity-60">
                 <Inbox className="size-20 text-[#9CA3AF] stroke-[1px]" />
               </div>
@@ -147,10 +147,10 @@ export function NotificationSheet({ open, onOpenChange }: NotificationSheetProps
                   <div key={notification.id} className={cn("relative bg-white border-b border-[#E5E7EB] transition-colors dark:bg-[#18181b] dark:border-[#27272a]", isExpanded && "dark:bg-[#6c5dd3]/25")}>
                     <div
                       onClick={() => void handleToggleExpand(notification)}
-                      className={cn("flex w-full items-start gap-4 px-8 py-5 text-left transition-colors cursor-pointer hover:bg-gray-50/50 dark:hover:bg-[#6c5dd3]/15", isExpanded && "dark:hover:bg-[#6c5dd3]/25")}
+                      className={cn("flex w-full items-start gap-3 sm:gap-4 px-4 sm:px-8 py-4 sm:py-5 text-left transition-colors cursor-pointer hover:bg-gray-50/50 dark:hover:bg-[#6c5dd3]/15", isExpanded && "dark:hover:bg-[#6c5dd3]/25")}
                     >
-                      <div className="flex items-start gap-3 shrink-0">
-                        <div className="mt-1.5">
+                      <div className="flex items-start gap-2.5 sm:gap-3 shrink-0">
+                        <div className="mt-1">
                           {isExpanded ? (
                             <Play className="size-3 rotate-90 fill-current text-black dark:text-white" />
                           ) : (
@@ -165,20 +165,20 @@ export function NotificationSheet({ open, onOpenChange }: NotificationSheetProps
                         )}
                       </div>
 
-                      <div className="flex-1 min-w-0 pr-8">
+                      <div className="flex-1 min-w-0 pr-6 sm:pr-8">
                         <div className="flex flex-col gap-1">
-                          <h4 className={cn("text-[15px]", isRead ? "font-normal text-gray-500 dark:text-zinc-400" : "font-bold text-black dark:text-white", isExpanded && "dark:text-white")}>
+                          <h4 className={cn("text-[14px] sm:text-[15px]", isRead ? "font-normal text-gray-500 dark:text-zinc-400" : "font-bold text-black dark:text-white", isExpanded && "dark:text-white")}>
                             {notification.title}
                           </h4>
-                          <div className={cn("flex items-center justify-between text-[13px] text-gray-500 dark:text-zinc-400", isExpanded && "dark:text-zinc-300")}>
-                            <span>Sent By: {notification.senderName || "admin ieba"}</span>
-                            <span>{formatTimestamp(notification.createdAt)}</span>
+                          <div className={cn("flex flex-col sm:flex-row sm:items-center justify-between gap-0.5 sm:gap-2 text-[12px] sm:text-[13px] text-gray-500 dark:text-zinc-400", isExpanded && "dark:text-zinc-300")}>
+                            <span className="truncate">Sent By: {notification.senderName || "admin ieba"}</span>
+                            <span className="shrink-0">{formatTimestamp(notification.createdAt)}</span>
                           </div>
                         </div>
 
                         {isExpanded && (
-                          <div className="mt-6 flex items-start justify-between gap-6 pb-2 animate-in fade-in slide-in-from-top-2 duration-200">
-                            <p className="text-[15px] text-gray-900 leading-relaxed flex-1 dark:text-zinc-200">
+                          <div className="mt-4 sm:mt-6 flex flex-col sm:flex-row items-start sm:items-start justify-between gap-3 sm:gap-6 pb-2 animate-in fade-in slide-in-from-top-2 duration-200">
+                            <p className="text-[14px] sm:text-[15px] text-gray-900 leading-relaxed flex-1 dark:text-zinc-200">
                               {notification.message}
                             </p>
                             <Button
@@ -187,7 +187,7 @@ export function NotificationSheet({ open, onOpenChange }: NotificationSheetProps
                                   e.stopPropagation()
                                   void handleView(notification)
                               }}
-                              className="shrink-0 bg-[#6C5DD3] hover:bg-[#5A4BC2] text-white px-6 h-9 rounded-md text-[13px] font-medium"
+                              className="w-full sm:w-auto shrink-0 bg-[#6C5DD3] hover:bg-[#5A4BC2] text-white px-6 h-9 rounded-md text-[13px] font-medium"
                             >
                               View
                             </Button>
@@ -202,7 +202,7 @@ export function NotificationSheet({ open, onOpenChange }: NotificationSheetProps
                         e.stopPropagation()
                         void handleDelete(notification.id)
                       }}
-                      className="absolute top-5 right-8 p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/40 rounded transition-colors"
+                      className="absolute top-4 sm:top-5 right-3 sm:right-8 p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/40 rounded transition-colors"
                       title="Delete notification"
                     >
                       <Trash2 className="size-4" />

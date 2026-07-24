@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/table"
 import { Spinner } from "@/components/ui/spinner"
 import { MasterCodePagination } from "@/features/master-code/components/MasterCodePagination"
+import { AuditHistoryCardView } from "./AuditHistoryCardView"
 
 import {
   useAuditHistoryQuery,
@@ -70,17 +71,17 @@ export function AuditHistoryTable({
   )
 
   return (
-    <div className="flex flex-col gap-4 pt-3">
+    <div className="flex flex-col gap-4 pt-1 sm:pt-3">
 
-      {/* Table */}
-      <div className="relative overflow-hidden rounded-[10px] border border-[#E5E7EB]">
+      {/* Desktop Table View (xl+) */}
+      <div className="relative hidden xl:block overflow-hidden rounded-[10px] border border-[#E5E7EB]">
         {isDataLoading && (
           <div className="absolute inset-x-0 bottom-0 top-[48px] z-50 flex items-center justify-center bg-white/60">
             <Spinner className="text-[#6C5DD3]" />
           </div>
         )}
         <div className="overflow-x-auto">
-          <Table className="w-full table-fixed border-collapse">
+          <Table className="w-full min-w-[900px] border-collapse">
             <colgroup>
               <col style={{ width: "15%" }} />
               <col style={{ width: "12%" }} />
@@ -165,6 +166,12 @@ export function AuditHistoryTable({
           </Table>
         </div>
       </div>
+
+      {/* Mobile & Tablet Card View (< lg: 1 col on mobile, 2 cols on tablet) */}
+      <AuditHistoryCardView
+        rows={historyData}
+        isLoading={isLoading}
+      />
 
       {/* Pagination */}
       {!isDataLoading && totalItems > 0 && (

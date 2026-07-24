@@ -1,6 +1,6 @@
 /** Focus the first editable TS Program field in the personal time-entry form. */
 export function focusFirstTsProgramField() {
-  const root = document.querySelector("[data-time-entries-form]")
+  const root = document.querySelector<HTMLElement>("[data-time-entries-form]")
   if (!root) return false
 
   const candidates = Array.from(
@@ -30,7 +30,7 @@ export function focusFirstTsProgramFieldSoon(maxFrames = 48) {
  * Prevents the browser from moving focus to header / sidebar / "+" when controls disable.
  */
 export function parkPersonalTimeStudyFocus() {
-  const sink = document.querySelector("[data-pts-focus-sink]") as HTMLElement | null
+  const sink = document.querySelector<HTMLElement>("[data-pts-focus-sink]")
   if (sink) {
     sink.focus({ preventScroll: true })
     return true
