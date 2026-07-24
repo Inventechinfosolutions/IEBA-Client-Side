@@ -60,7 +60,7 @@ export function TimeStudyMGTPage() {
       <div className="flex flex-col gap-4">
 
         {/* 3-column layout on desktop: Employee Panel | Calendar | Legend */}
-        <div className="flex flex-col 2xl:flex-row gap-6 2xl:gap-8 items-stretch px-1 sm:px-3">
+        <div className="flex flex-col xl:flex-row gap-4 xl:gap-6 items-stretch px-1 sm:px-3">
 
           {/* Left: Employee list */}
           <MgtEmployeePanel
@@ -227,7 +227,7 @@ export function TimeStudyMGTPage() {
           </div>
 
           {/* Right: Legend */}
-          <div className="w-full 2xl:w-[220px] shrink-0 self-start">
+          <div className="w-full xl:w-[200px] 2xl:w-[220px] shrink-0 self-start">
             <MgtLegendCard />
           </div>
 
