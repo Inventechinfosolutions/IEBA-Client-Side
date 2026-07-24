@@ -13,8 +13,10 @@ import {
   ensurePdfBlob,
   formatPrintedOnLabel,
   formatReportTime,
-  getP110GrandTotals,
+  getP110CodeTypeGrandTotals,
+  getP110FfpColumnValue,
   resolveFooterVariant,
+  type P110CodeTypeTotal,
   type P110DateGroup,
   type P110GroupedEmployee,
   type P110Record,
@@ -259,8 +261,10 @@ function EmployeeTableChrome({ employeeName }: { employeeName: string }) {
 }
 
 function DateSection({ dateGroup }: { dateGroup: P110DateGroup }) {
+  // Keep date header + detail rows + FFP/MAA totals together so grey totals
+  // do not split across page breaks (same pattern as P101 activity blocks).
   return (
-    <View style={styles.dateSection}>
+    <View style={styles.dateSection} wrap={false}>
       <View style={styles.row}>
         <View style={[styles.dateHeaderCell, { width: W.actTime }]}>
           <Text style={styles.boldText}>{dateGroup.date}</Text>
@@ -279,28 +283,38 @@ function DateSection({ dateGroup }: { dateGroup: P110DateGroup }) {
         <RecordRow key={`${dateGroup.date}-${record.program}-${index}`} record={record} />
       ))}
 
-      <View style={styles.row}>
-        <View style={[styles.dateTotalBox, { width: W.actTime }]}>
-          <Text style={styles.rightText}>{formatReportTime(dateGroup.totalActivityTime)}</Text>
-        </View>
-        <View style={[styles.dateTotalBox, { width: W.tvlTime }]}>
-          <Text style={styles.rightText}>{formatReportTime(dateGroup.totalTravelTime)}</Text>
-        </View>
-        <View style={[styles.dateTotalBox, { width: W.totalTime }]}>
-          <Text style={styles.rightText}>{formatReportTime(dateGroup.totalTime)}</Text>
-        </View>
-        <EmptyCell width={W.program} />
-        <EmptyCell width={W.activity} />
-        <EmptyCell width={W.ffp} />
-        <EmptyCell width={W.support} />
+      {dateGroup.codeTypeTotals.map((codeTotal) => (
+        <CodeTypeTotalRow key={`${dateGroup.date}-${codeTotal.label}`} codeTotal={codeTotal} />
+      ))}
+    </View>
+  )
+}
+
+function CodeTypeTotalRow({ codeTotal }: { codeTotal: P110CodeTypeTotal }) {
+  return (
+    <View style={styles.row} wrap={false}>
+      <View style={[styles.dateTotalBox, { width: W.actTime }]}>
+        <Text style={styles.rightText}>{formatReportTime(codeTotal.totalActivityTime)}</Text>
       </View>
+      <View style={[styles.dateTotalBox, { width: W.tvlTime }]}>
+        <Text style={styles.rightText}>{formatReportTime(codeTotal.totalTravelTime)}</Text>
+      </View>
+      <View style={[styles.dateTotalBox, { width: W.totalTime }]}>
+        <Text style={styles.rightText}>{formatReportTime(codeTotal.totalTime)}</Text>
+      </View>
+      <View style={[styles.dateTotalBox, { width: W.program }]}>
+        <Text style={[styles.leftText, styles.boldText]}>{codeTotal.label}</Text>
+      </View>
+      <EmptyCell width={W.activity} />
+      <EmptyCell width={W.ffp} />
+      <EmptyCell width={W.support} />
     </View>
   )
 }
 
 function RecordRow({ record }: { record: P110Record }) {
   return (
-    <View style={styles.row}>
+    <View style={styles.row} wrap={false}>
       <Cell width={W.actTime} align="right">
         {formatReportTime(record.activitytime)}
       </Cell>
@@ -313,7 +327,7 @@ function RecordRow({ record }: { record: P110Record }) {
       <Cell width={W.program}>{record.program}</Cell>
       <Cell width={W.activity}>{record.subactivity}</Cell>
       <Cell width={W.ffp} align="center">
-        {record.mastercode}
+        {getP110FfpColumnValue(record)}
       </Cell>
       <Cell width={W.support}>{record.description}</Cell>
     </View>
@@ -321,7 +335,7 @@ function RecordRow({ record }: { record: P110Record }) {
 }
 
 function EmployeeTable({ employee }: { employee: P110GroupedEmployee }) {
-  const grandTotals = getP110GrandTotals(employee)
+  const codeTypeGrandTotals = getP110CodeTypeGrandTotals(employee)
 
   return (
     <View style={styles.table}>
@@ -331,26 +345,32 @@ function EmployeeTable({ employee }: { employee: P110GroupedEmployee }) {
 
       <View style={styles.spacer} />
 
-      <View style={styles.row}>
-        <View style={[styles.grandTotalBox, { width: W.actTime }]}>
-          <Text style={[styles.rightText, styles.boldText]}>
-            {formatReportTime(grandTotals.activityTime)}
-          </Text>
-        </View>
-        <View style={[styles.grandTotalBox, { width: W.tvlTime }]}>
-          <Text style={[styles.rightText, styles.boldText]}>
-            {formatReportTime(grandTotals.travelTime)}
-          </Text>
-        </View>
-        <View style={[styles.grandTotalBox, { width: W.totalTime }]}>
-          <Text style={[styles.rightText, styles.boldText]}>
-            {formatReportTime(grandTotals.totalTime)}
-          </Text>
-        </View>
-        <EmptyCell width={W.program} />
-        <EmptyCell width={W.activity} />
-        <EmptyCell width={W.ffp} />
-        <EmptyCell width={W.support} />
+      <View wrap={false}>
+        {codeTypeGrandTotals.map((codeTotal) => (
+          <View key={`grand-${codeTotal.label}`} style={styles.row} wrap={false}>
+            <View style={[styles.grandTotalBox, { width: W.actTime }]}>
+              <Text style={[styles.rightText, styles.boldText]}>
+                {formatReportTime(codeTotal.totalActivityTime)}
+              </Text>
+            </View>
+            <View style={[styles.grandTotalBox, { width: W.tvlTime }]}>
+              <Text style={[styles.rightText, styles.boldText]}>
+                {formatReportTime(codeTotal.totalTravelTime)}
+              </Text>
+            </View>
+            <View style={[styles.grandTotalBox, { width: W.totalTime }]}>
+              <Text style={[styles.rightText, styles.boldText]}>
+                {formatReportTime(codeTotal.totalTime)}
+              </Text>
+            </View>
+            <View style={[styles.grandTotalBox, { width: W.program }]}>
+              <Text style={[styles.leftText, styles.boldText]}>{codeTotal.label}</Text>
+            </View>
+            <EmptyCell width={W.activity} />
+            <EmptyCell width={W.ffp} />
+            <EmptyCell width={W.support} />
+          </View>
+        ))}
       </View>
     </View>
   )
