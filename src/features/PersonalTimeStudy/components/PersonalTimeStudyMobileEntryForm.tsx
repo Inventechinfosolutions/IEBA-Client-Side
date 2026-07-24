@@ -1526,10 +1526,11 @@ export function PersonalTimeStudyMobileEntryForm({
                 type="button"
                 tabIndex={-1}
                 onClick={onOpenPeriodsSheet}
-                className="h-9 flex items-center gap-3.5 rounded-[8px] bg-white text-[#6C5DD3] border border-gray-200 shadow-sm hover:bg-gray-50 cursor-pointer transition-colors shrink-0 px-3 py-1.5"
+                className="min-h-9 max-w-full flex items-center gap-2 sm:gap-3.5 rounded-[8px] bg-white text-[#6C5DD3] border border-gray-200 shadow-sm hover:bg-gray-50 cursor-pointer transition-colors px-2.5 py-1.5"
+                title="Click to view why the time entry is blocked"
               >
-                <span className="text-[11px] font-semibold text-gray-500 select-none">Note: Click on the warning icon to view why the time entry is blocked</span>
-                <AlertTriangle className="size-6 text-[#F97316] animate-pulse shrink-0" />
+                <span className="text-[10px] sm:text-[11px] font-semibold text-gray-500 select-none leading-tight text-left">Note: Click on the warning icon to view why the time entry is blocked</span>
+                <AlertTriangle className="size-5 sm:size-6 text-[#F97316] animate-pulse shrink-0" />
               </button>
             )}
             {!readonly && (
