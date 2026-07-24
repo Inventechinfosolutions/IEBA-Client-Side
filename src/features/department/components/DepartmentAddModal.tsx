@@ -38,6 +38,7 @@ import { DepartmentHistoryTable } from "./DepartmentHistoryTable"
 import { DepartmentReportSettingsPanel } from "./DepartmentReportSettingsPanel"
 import { DepartmentReportsMappingPanel } from "./DepartmentReportsMappingPanel"
 import { DepartmentSettingsPanel } from "./DepartmentSettingsPanel"
+import { DepartmentNotificationsPanel } from "./DepartmentNotificationsPanel"
 import {
     type Department,
     type DepartmentAddPageProps,
@@ -544,7 +545,7 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                             <form onSubmit={handleSubmit(onSubmit)} className="w-full max-w-full min-w-0">
                                 <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full max-w-full min-w-0">
                                     <div className="px-4 sm:px-6 py-3 sm:py-4 w-full max-w-full min-w-0">
-                                        <TabsList className="grid grid-cols-1 sm:grid-cols-4 !h-auto sm:!h-[62px] w-full min-w-0 max-w-full items-stretch gap-1.5 sm:gap-0 overflow-hidden rounded-[6px] border border-[#E5E7EB] bg-white p-1 sm:p-0">
+                                        <TabsList className="grid grid-cols-1 sm:grid-cols-5 !h-auto sm:!h-[62px] w-full min-w-0 max-w-full items-stretch gap-1.5 sm:gap-0 overflow-hidden rounded-[6px] border border-[#E5E7EB] bg-white p-1 sm:p-0">
                                             <TabsTrigger
                                                 value="details"
                                                 className="h-[44px] sm:h-full rounded-[8px] border-0 data-[state=active]:bg-[#6C5DD3] data-[state=active]:text-white data-[state=inactive]:text-[#9CA3AF] font-[500] text-[13px] sm:text-[14px] leading-tight transition-all shadow-none"
@@ -571,6 +572,13 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                                                 className="h-[44px] sm:h-full rounded-[8px] border-0 px-2 data-[state=active]:bg-[#6C5DD3] data-[state=active]:text-white data-[state=inactive]:text-[#9CA3AF] font-[500] text-[12px] sm:text-[13px] leading-tight transition-all shadow-none disabled:opacity-50 disabled:cursor-not-allowed"
                                             >
                                                 Reports mapping
+                                            </TabsTrigger>
+                                            <TabsTrigger
+                                                value="notifications"
+                                                disabled={isLoadingDept}
+                                                className="h-[44px] sm:h-full rounded-[8px] border-0 px-2 data-[state=active]:bg-[#6C5DD3] data-[state=active]:text-white data-[state=inactive]:text-[#9CA3AF] font-[500] text-[12px] sm:text-[13px] leading-tight transition-all shadow-none disabled:opacity-50 disabled:cursor-not-allowed"
+                                            >
+                                                Department Notifications
                                             </TabsTrigger>
                                         </TabsList>
                                     </div>
@@ -889,6 +897,15 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                                             countyName={departmentMappedReports?.countyName}
                                             isSubmitting={isSubmitting}
                                             onExit={handleExit}
+                                        />
+                                    </TabsContent>
+
+                                    <TabsContent value="notifications" className="mt-0">
+                                        <DepartmentNotificationsPanel
+                                            departmentId={departmentId}
+                                            departmentCode={currentCode}
+                                            departmentName={currentName}
+                                            onEnsureDepartmentId={ensureDepartmentIdForReportMapping}
                                         />
                                     </TabsContent>
                                 </Tabs>

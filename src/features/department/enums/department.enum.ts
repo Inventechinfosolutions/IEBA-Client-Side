@@ -4,6 +4,7 @@ export const DepartmentMainTab = {
   Settings: "settings",
   ReportSettings: "reportSettings",
   ReportsMapping: "reportsMapping",
+  Notifications: "notifications",
 } as const
 
 /** Sub-tabs under Department Details (address + contact roles). */
