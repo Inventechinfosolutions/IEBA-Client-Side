@@ -336,9 +336,9 @@ export function PersonalTimeStudyPage() {
                     </div>
                   </div>
 
-                  {/* Mobile card view — hidden on xl+ (desktop) */}
-                  <div className="mt-4 mb-2 xl:hidden">
-                    <PersonalTimeStudyMobileEntryForm
+                  {/* Desktop table-row view — hidden below xl (1280px) */}
+                  <div className="mt-4 mb-2 hidden xl:block">
+                    <PersonalTimeStudyEntryForm
                       key={dateStr}
                       dateStr={dateStr}
                       showLeaveBanner={true}
@@ -369,9 +369,9 @@ export function PersonalTimeStudyPage() {
                     />
                   </div>
 
-                  {/* Desktop table-row view — hidden below xl (1280px) */}
-                  <div className="mt-4 mb-2 hidden xl:block">
-                    <PersonalTimeStudyEntryForm
+                  {/* Mobile card view — hidden on xl+ (desktop) */}
+                  <div className="mt-4 mb-2 xl:hidden">
+                    <PersonalTimeStudyMobileEntryForm
                       key={dateStr}
                       dateStr={dateStr}
                       showLeaveBanner={true}
