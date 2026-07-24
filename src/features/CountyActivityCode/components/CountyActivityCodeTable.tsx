@@ -75,6 +75,7 @@ import {
 import { ACTIVITY_DEFINITION_HISTORY_KIND } from "../queries/activityHistory"
 import {
   apiPutCountyActivity,
+  apiCascadeDepartmentsToChildActivities,
   normalizeCountyActivityApportioningFlags,
   parseMasterCodeDisplay,
 } from "../api/countyActivityApi"
@@ -976,6 +977,8 @@ export function CountyActivityCodeTable({
     const isPrimary = editingRow.rowType === CountyActivityGridRowType.PRIMARY
     const wasActive = editingRow.active
     const isBecomingActive = values.active !== undefined ? values.active : wasActive
+    // Track whether the department list actually changed so we only cascade when needed
+    const departmentChanged = isPrimary && editDepartmentLinks != null
 
     updateCountyActivityCode.mutate(
       {
@@ -1057,6 +1060,26 @@ export function CountyActivityCodeTable({
               }
             }
           }
+
+          // Cascade department changes to all secondary (child) county activities.
+          // Only runs when a PRIMARY row's department list was actually updated.
+          if (departmentChanged && editDepartmentLinks != null) {
+            const resolvedCode =
+              values.countyActivityCode?.trim() ?? editingRow.countyActivityCode
+            const resolvedName =
+              values.countyActivityName?.trim() ?? editingRow.countyActivityName
+            const resolvedLeaveCode =
+              values.leaveCode !== undefined ? values.leaveCode : editingRow.leaveCode
+
+            void apiCascadeDepartmentsToChildActivities({
+              primaryActivityId: Number(editingRow.id),
+              desiredDepartmentIds: editDepartmentLinks.map((d) => d.id),
+              primaryActivityCode: resolvedCode,
+              primaryActivityName: resolvedName,
+              primaryLeaveCode: resolvedLeaveCode,
+            })
+          }
+
           toast.success(
             editingRow.rowType === CountyActivityGridRowType.PRIMARY
               ? "Primary county activity updated successfully."

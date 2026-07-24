@@ -253,6 +253,57 @@ async function syncCountyActivityDepartmentLinks(
   )
 }
 
+/**
+ * Cascade department link changes from a primary county activity to all its children.
+ *
+ * After a primary's `/activity-departments` records are synced, call this to propagate
+ * the same set of desired department IDs to every secondary (child) activity so that
+ * they always reflect the primary's current departments.
+ *
+ * Failures on individual children are caught and logged — they do not abort the cascade
+ * or surface an error toast to the user (mirrors the pattern used for the active/inactive
+ * cascade in CountyActivityCodeTable).
+ */
+export async function apiCascadeDepartmentsToChildActivities(input: {
+  primaryActivityId: number
+  desiredDepartmentIds: number[]
+  primaryActivityCode: string
+  primaryActivityName: string
+  primaryLeaveCode: boolean
+}): Promise<void> {
+  const { primaryActivityId, desiredDepartmentIds, primaryActivityCode, primaryActivityName, primaryLeaveCode } = input
+
+  let children: ApiActivityResDto[]
+  try {
+    children = await apiGetCountyActivityNested(primaryActivityId)
+  } catch (err) {
+    console.error(`[dept-cascade] Failed to fetch children for primary ${primaryActivityId}:`, err)
+    return
+  }
+
+  if (children.length === 0) return
+
+  await Promise.all(
+    children.map(async (child) => {
+      try {
+        await syncCountyActivityDepartmentLinks({
+          activityId: child.id,
+          desiredDepartmentIds,
+          activityCode: child.code ?? primaryActivityCode,
+          activityName: child.name ?? primaryActivityName,
+          type: ApiActivityTypeEnum.SECONDARY,
+          leavecode: child.leavecode ?? primaryLeaveCode,
+          parentActivityId: primaryActivityId,
+          apportioning: false,
+          manualApportioning: false,
+        })
+      } catch (err) {
+        console.error(`[dept-cascade] Failed to sync departments for child activity ${child.id}:`, err)
+      }
+    }),
+  )
+}
+
 function countyActivityCatalogEnrichmentKey(activityCodeType: string, activityCode: string): string {
   return `${activityCodeType.trim()}|${activityCode.trim()}`
 }
