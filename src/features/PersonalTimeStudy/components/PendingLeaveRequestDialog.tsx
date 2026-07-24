@@ -36,6 +36,7 @@ import {
 import type { UserLeaveDaySnapshotResDto } from "../types"
 import emptyIcon from "@/assets/icons/table-empty.png"
 import { Spinner } from "@/components/ui/spinner"
+import { PendingLeaveRequestCardView } from "./PendingLeaveRequestCardView"
 
 function syntheticSnapshotChild(
   parent: UserLeaveDaySnapshotResDto,
@@ -130,16 +131,34 @@ export function PendingLeaveRequestDialog({
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent
           overlayClassName="bg-black/55"
-          className="max-w-[1400px] p-0 overflow-hidden sm:rounded-[8px] bg-white"
+          className="w-[95vw] sm:w-full max-w-full sm:max-w-[1400px] p-0 overflow-hidden sm:rounded-[8px] bg-white dark:bg-zinc-950"
         >
-          <DialogHeader className="px-6 py-4">
-            <DialogTitle className="text-center text-lg font-semibold text-foreground">
+          <DialogHeader className="px-4 py-3 sm:px-6 sm:py-4">
+            <DialogTitle className="text-center text-base sm:text-lg font-semibold text-foreground">
               {title}
             </DialogTitle>
           </DialogHeader>
 
-          <div className="px-6 py-4">
-            <div className="overflow-hidden rounded-[4px] border border-border bg-white">
+          <div className="px-3 sm:px-6 py-4">
+            {/* Mobile Card View Component (< sm) */}
+            <div className="sm:hidden">
+              <PendingLeaveRequestCardView
+                leaves={leaves}
+                groupedLeaves={groupedLeaves}
+                expandedByParentId={expandedByParentId}
+                toggleExpanded={toggleExpanded}
+                onEdit={onEdit}
+                onCancel={onCancel}
+                getProgramLabel={getProgramLabel}
+                getActivityLabel={getActivityLabel}
+                isRejected={isRejected}
+                isLoading={isLoading}
+              />
+            </div>
+
+            {/* Desktop Table View (≥ sm — 100% UNTOUCHED) */}
+            <div className="hidden sm:block overflow-x-auto">
+              <div className="overflow-hidden rounded-[4px] border border-border bg-white">
               <div className="overflow-y-hidden [scrollbar-gutter:stable] bg-[#6C5DD3]">
                 <Table className="table-fixed border-collapse bg-[#6C5DD3]">
                   <colgroup>
@@ -468,8 +487,9 @@ export function PendingLeaveRequestDialog({
               </div>
             </div>
           </div>
+        </div>
 
-          <DialogFooter className="bg-white px-6 py-4 sm:justify-end">
+        <DialogFooter className="bg-white px-6 py-4 sm:justify-end">
             <Button
               onClick={() => onOpenChange(false)}
               className="min-w-[120px] rounded-[6px] bg-[#6C5DD3] font-medium text-white hover:bg-[#5b4eb3]"

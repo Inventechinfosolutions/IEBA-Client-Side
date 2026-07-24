@@ -105,7 +105,7 @@ export function PayrollDataTable({ rows, isLoading, columns, onEditRow, showEdit
 
   if (showEmptyBody) {
     return (
-      <div className={cn(tableScrollClass, payrollTableCardClass)}>
+      <div className={cn(tableScrollClass, payrollTableCardClass, "hidden xl:block")}>
         <table className="w-max min-w-full border-collapse text-left text-[12px]">
           <PayrollHeaderRow columns={derivedColumns} />
           <TableBody>
@@ -142,7 +142,7 @@ export function PayrollDataTable({ rows, isLoading, columns, onEditRow, showEdit
   }
 
   return (
-    <div className={cn(tableScrollClass, payrollTableCardClass, "relative")}>
+    <div className={cn(tableScrollClass, payrollTableCardClass, "hidden xl:block relative")}>
       {isLoading && (
         <div className="absolute inset-x-0 bottom-0 top-[44px] z-20 flex items-center justify-center bg-white/40 backdrop-blur-[1px]">
           <Spinner className="text-[#6C5DD3]" />

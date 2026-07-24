@@ -509,7 +509,7 @@ export function DepartmentRoleAdd({
                 </div>
               )}
               <div className="space-y-4 pt-10 pb-2 pr-1">
-                <div className="grid grid-cols-[1fr_auto_1fr] gap-2 px-1">
+                <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto_1fr] gap-3 sm:gap-2 px-1">
                   <div className="min-w-0 space-y-2">
                     <Label htmlFor="department" className="text-black dark:text-[#e4e4e7]">
                       Department
@@ -544,7 +544,7 @@ export function DepartmentRoleAdd({
                       </p>
                     )}
                   </div>
-                  <div className="w-[62px] shrink-0" aria-hidden />
+                  <div className="hidden sm:block w-[62px] shrink-0" aria-hidden />
                   <div className="min-w-0 space-y-2">
                     <Label htmlFor="roleName" className="text-black dark:text-[#e4e4e7]">
                       Role Name
@@ -568,7 +568,7 @@ export function DepartmentRoleAdd({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-[1fr_auto_1fr] gap-2 py-4">
+                <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto_1fr] gap-3 sm:gap-2 py-4">
                   <TransferPanel
                     title="All permissions"
                     items={availableItems}
@@ -583,7 +583,7 @@ export function DepartmentRoleAdd({
                     onSelectAll={selectAllAvailable}
                   />
 
-                  <div className="flex flex-col items-center justify-center gap-3">
+                  <div className="flex flex-row sm:flex-col items-center justify-center gap-3 py-2 sm:py-0">
                     <TransferListMoveButton
                       direction="forward"
                       onClick={() => void transferToAssigned()}

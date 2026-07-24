@@ -87,7 +87,7 @@ export function TodoFormModal({
         </span>
       ),
       className:
-        "!w-fit !max-w-none !min-h-[35px] !rounded-[8px] !px-3 !py-2 !text-[12px] !whitespace-nowrap !text-[#111827] !shadow-[0_8px_22px_rgba(17,24,39,0.18)]",
+        "!w-fit !max-w-[90vw] sm:!max-w-none !min-h-[35px] !rounded-[8px] !px-3 !py-2 !text-[12px] !whitespace-normal sm:!whitespace-nowrap !text-[#111827] !shadow-[0_8px_22px_rgba(17,24,39,0.18)]",
     })
   })
 
@@ -96,16 +96,16 @@ export function TodoFormModal({
       <DialogContent
         showClose={false}
         overlayClassName="bg-black/55"
-        className="w-full max-w-[800px] rounded-[4px] border border-[#e2e5ee] p-0 translate-y-[-80%] shadow-[0_12px_28px_rgba(17,24,39,0.16)]"
+        className="w-full max-w-[800px] rounded-[4px] border border-[#e2e5ee] dark:border-[#27272a] bg-white dark:bg-[#0c0d12] p-0 translate-y-[-50%] sm:translate-y-[-80%] [@media(max-height:700px)]:!translate-y-[-50%] max-h-[90dvh] overflow-hidden flex flex-col shadow-[0_12px_28px_rgba(17,24,39,0.16)] dark:shadow-[0_12px_28px_rgba(0,0,0,0.6)]"
       >
-        <DialogHeader className="px-8 pb-2 pt-6">
-          <DialogTitle className="text-center text-[24px] font-medium text-[#111827]">
+        <DialogHeader className="px-5 pb-2 pt-5 sm:px-8 sm:pt-6">
+          <DialogTitle className="text-center text-[20px] sm:text-[24px] font-medium text-[#111827] dark:text-white">
             {mode === "edit" ? "Edit To Do" : "Add To Do"}
           </DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="relative px-12 pb-12 pt-1">
+        <form onSubmit={handleSubmit} className="relative flex flex-col flex-1 overflow-hidden px-5 pt-1 sm:px-12">
           {isSubmitting && (
-            <div className="absolute inset-0 z-50 flex items-center justify-center rounded-b-[4px] bg-white/60">
+            <div className="absolute inset-0 z-50 flex items-center justify-center rounded-b-[4px] bg-white/60 dark:bg-black/60">
               <Spinner className="text-[#6C5DD3]" />
             </div>
           )}
@@ -117,23 +117,25 @@ export function TodoFormModal({
             </div>
           ) : (
             <>
-              <div className="space-y-8">
+              {/* Scrollable fields area */}
+              <div className="flex-1 overflow-y-auto">
+              <div className="space-y-5 sm:space-y-8">
                 {isEditMode ? (
-                  <div className="grid grid-cols-[minmax(0,1fr)_270px] items-start gap-10">
+                  <div className="flex flex-col gap-5 sm:grid sm:grid-cols-[minmax(0,1fr)_270px] sm:items-start sm:gap-10">
                     <div>
-                      <label className="mb-1 block text-[12px] text-[#111827]">
+                      <label className="mb-1 block text-[12px] text-[#111827] dark:text-[#9ca3af]">
                         *Title
                       </label>
                       <TitleCaseInput
                         {...form.register("title")}
                         disabled={isEditMode}
                         placeholder="Enter To Do Title"
-                        className="h-[46px] w-[300px] rounded-[8px] border-[#dfe3ee] text-[12px] placeholder:text-[12px] placeholder:text-gray-400 disabled:pointer-events-auto disabled:cursor-not-allowed disabled:border-[0.8px]! disabled:border-[#cfd4dd]! disabled:bg-[#d2d4d9]/20! disabled:text-black! disabled:opacity-100 focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
+                        className="h-[46px] w-full sm:w-[300px] rounded-[8px] border-[#dfe3ee] dark:border-[#27272a] bg-white dark:bg-[#09090b] text-[12px] text-[#111827] dark:text-white placeholder:text-[12px] placeholder:text-gray-400 dark:placeholder:text-zinc-500 disabled:pointer-events-auto disabled:cursor-not-allowed disabled:border-[0.8px]! disabled:border-[#cfd4dd]! dark:disabled:border-[#27272a]! disabled:bg-[#d2d4d9]/20! dark:disabled:bg-zinc-800/40! disabled:text-black! dark:disabled:text-zinc-400! disabled:opacity-100 focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
                       />
                     </div>
                     <div>
-                      <label className="mb-2 block text-[12px] text-[#111827]">*Status</label>
-                      <div className="flex h-[46px] items-center gap-4">
+                      <label className="mb-2 block text-[12px] text-[#111827] dark:text-[#9ca3af]">*Status</label>
+                      <div className="flex flex-wrap h-auto sm:h-[46px] items-center gap-3 sm:gap-4">
                         {TODO_STATUS_OPTIONS.map((statusOption) => {
                           const isDisabledOption =
                             statusOption === "new" && isNewStatusDisabled
@@ -143,8 +145,8 @@ export function TodoFormModal({
                             key={statusOption}
                             className={`inline-flex items-center gap-2 text-[12px] ${
                               isDisabledOption
-                                ? "cursor-not-allowed text-[#b8bec9]"
-                                : "cursor-pointer text-[#111827]"
+                                ? "cursor-not-allowed text-[#b8bec9] dark:text-zinc-600"
+                                : "cursor-pointer text-[#111827] dark:text-white"
                             }`}
                           >
                             <TitleCaseInput
@@ -161,10 +163,10 @@ export function TodoFormModal({
                             <span
                               className={`inline-flex size-[16px] items-center justify-center rounded-full ${
                                 isDisabledOption
-                                  ? "border-8 border-[#d7dbe4]"
+                                  ? "border-8 border-[#d7dbe4] dark:border-zinc-800"
                                   : selectedStatus === statusOption
                                     ? "border-[5px] border-[#6c5dd3]"
-                                    : "border-2 border-[#c9ced9]"
+                                    : "border-2 border-[#c9ced9] dark:border-zinc-700"
                               }`}
                               aria-hidden="true"
                             />
@@ -177,42 +179,43 @@ export function TodoFormModal({
                   </div>
                 ) : (
                   <div>
-                    <label className="mb-1 block text-[12px] text-[#111827]">
+                    <label className="mb-1 block text-[12px] text-[#111827] dark:text-[#9ca3af]">
                       *Title
                     </label>
                     <TitleCaseInput
                       {...form.register("title")}
                       placeholder="Enter To Do Title"
-                      className="h-[46px] w-[282px] rounded-[8px] border-[#dfe3ee] text-[12px] placeholder:text-[12px] placeholder:text-gray-400 focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
+                      className="h-[46px] w-full sm:w-[282px] rounded-[8px] border-[#dfe3ee] dark:border-[#27272a] bg-white dark:bg-[#09090b] text-[12px] text-[#111827] dark:text-white placeholder:text-[12px] placeholder:text-gray-400 dark:placeholder:text-zinc-500 focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
                     />
                   </div>
                 )}
                 <div>
-                  <label className="mb-1 block text-[12px] text-[#111827]">
+                  <label className="mb-1 block text-[12px] text-[#111827] dark:text-[#9ca3af]">
                     *Description
                   </label>
                   <Textarea
                     {...form.register("description")}
                     disabled={isDescriptionDisabled}
                     placeholder="Enter To Do Description"
-                    className="min-h-[86px] whitespace-pre-wrap break-all rounded-[8px] border-[#dfe3ee] text-[12px] placeholder:text-[12px] placeholder:text-gray-400 disabled:pointer-events-auto disabled:cursor-not-allowed disabled:border-[0.8px]! disabled:border-[#cfd4dd]! disabled:bg-[#d2d4d9]/20! disabled:text-black! disabled:opacity-100 focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
+                    className="min-h-[86px] max-h-[104px] resize-none overflow-y-auto w-full whitespace-pre-wrap break-all rounded-[8px] border-[#dfe3ee] dark:border-[#27272a] bg-white dark:bg-[#09090b] text-[12px] text-[#111827] dark:text-white placeholder:text-[12px] placeholder:text-gray-400 dark:placeholder:text-zinc-500 disabled:pointer-events-auto disabled:cursor-not-allowed disabled:border-[0.8px]! disabled:border-[#cfd4dd]! dark:disabled:border-[#27272a]! disabled:bg-[#d2d4d9]/20! dark:disabled:bg-zinc-800/40! disabled:text-black! dark:disabled:text-zinc-400! disabled:opacity-100 focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333]"
                   />
                 </div>
               </div>
-              <div className="mt-8 flex items-center justify-end gap-5">
-                <Button
-                  type="submit"
-                  disabled={isSubmitting || (isEditMode && isFetching)}
-                  className="h-[52px] min-w-[98px] cursor-pointer rounded-[10px] bg-[#6C5DD3] px-7 text-[14px] text-white hover:bg-[#6C5DD3]"
-                >
-                  Save
-                </Button>
+              </div>{/* end scrollable */}
+              <div className="px-0 pb-6 sm:pb-10 pt-4 sm:pt-5 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-3 sm:gap-5">
                 <Button
                   type="button"
                   onClick={() => onOpenChange(false)}
-                  className="h-[52px] min-w-[98px] cursor-pointer rounded-[10px] bg-[#d2d4d9] px-7 text-[14px] text-[#111827] hover:bg-[#d2d4d9]"
+                  className="h-[46px] sm:h-[52px] w-full sm:w-auto sm:min-w-[98px] cursor-pointer rounded-[10px] bg-[#d2d4d9] dark:bg-[#27272a] px-7 text-[14px] text-[#111827] dark:text-white hover:bg-[#c4c6ce] dark:hover:bg-[#3f3f46]"
                 >
                   Exit
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={isSubmitting || (isEditMode && isFetching)}
+                  className="h-[46px] sm:h-[52px] w-full sm:w-auto sm:min-w-[98px] cursor-pointer rounded-[10px] bg-[#6C5DD3] px-7 text-[14px] text-white hover:bg-[#6C5DD3]"
+                >
+                  Save
                 </Button>
               </div>
             </>

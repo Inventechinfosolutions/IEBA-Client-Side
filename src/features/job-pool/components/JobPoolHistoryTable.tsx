@@ -12,6 +12,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { MasterCodePagination } from "@/features/master-code/components/MasterCodePagination"
+import { JobPoolHistoryCardView } from "./JobPoolHistoryCardView"
 import { JobPoolHistoryDetailPanel } from "./JobPoolHistoryDetailPanel"
 import {
   getJobPoolHistoryColumns,
@@ -95,31 +96,36 @@ export function JobPoolHistoryTable({
   const colWidth = `${Math.floor(96 / Math.max(columns.length, 1))}%`
 
   return (
-    <div className="flex flex-col gap-4 pt-3">
-      <div className="overflow-hidden rounded-[10px] border border-[#E5E7EB]">
-        <div className="overflow-x-auto">
-          <Table className="w-full table-fixed border-collapse min-w-[920px]">
-            <colgroup>
-              <col style={{ width: "4%" }} />
-              {columns.map((column) => (
-                <col key={column.key} style={{ width: colWidth }} />
+    <div className="flex flex-col gap-4 pt-3 w-full min-w-0">
+      <JobPoolHistoryCardView
+        data={historyData}
+        isLoading={isLoading}
+        assignmentKind={assignmentKind}
+      />
+
+      <div className="hidden xl:block w-full min-w-0 overflow-x-auto rounded-[10px] border border-[#E5E7EB]">
+        <Table className="w-full table-fixed border-collapse min-w-[1080px]">
+          <colgroup>
+            <col style={{ width: "4%" }} />
+            {columns.map((column) => (
+              <col key={column.key} style={{ width: colWidth }} />
+            ))}
+          </colgroup>
+          <TableHeader className="sticky top-0 z-10 bg-[#6C5DD3] shadow-[0_1px_0_rgba(0,0,0,0.05)] [&_tr]:border-b-0">
+            <TableRow className="hover:bg-transparent">
+              <TableHead className="h-[48px] border-r border-white/40 bg-[#6C5DD3] px-2 text-center text-[13px] font-[500] text-white" />
+              {columns.map((column, idx) => (
+                <TableHead
+                  key={column.key}
+                  className={`h-[48px] bg-[#6C5DD3] px-3 text-[13px] font-[500] text-white font-['Roboto',sans-serif] ${
+                    column.align === "center" ? "text-center" : "text-left"
+                  } ${idx === columns.length - 1 ? "" : "border-r border-white/40"}`}
+                >
+                  {column.header}
+                </TableHead>
               ))}
-            </colgroup>
-            <TableHeader className="sticky top-0 z-10 bg-[#6C5DD3] shadow-[0_1px_0_rgba(0,0,0,0.05)] [&_tr]:border-b-0">
-              <TableRow className="hover:bg-transparent">
-                <TableHead className="h-[48px] border-r border-white/40 bg-[#6C5DD3] px-2 text-center text-[14px] font-[500] text-white" />
-                {columns.map((column, idx) => (
-                  <TableHead
-                    key={column.key}
-                    className={`h-[48px] bg-[#6C5DD3] px-[14px] text-[14px] font-[500] text-white font-['Roboto',sans-serif] ${
-                      column.align === "center" ? "text-center" : "text-left"
-                    } ${idx === columns.length - 1 ? "" : "border-r border-white/40"}`}
-                  >
-                    {column.header}
-                  </TableHead>
-                ))}
-              </TableRow>
-            </TableHeader>
+            </TableRow>
+          </TableHeader>
             <TableBody>
               {isLoading
                 ? skeletonRows.map((rowId) => (
@@ -201,7 +207,6 @@ export function JobPoolHistoryTable({
             </TableBody>
           </Table>
         </div>
-      </div>
 
       {!isLoading && totalItems > 0 && (
         <MasterCodePagination

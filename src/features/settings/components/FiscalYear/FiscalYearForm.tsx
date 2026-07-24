@@ -26,6 +26,7 @@ import { useUpsertFiscalYear } from "@/features/settings/mutations/upsertFiscalY
 import { useListHolidaysByDateRange } from "@/features/settings/queries/listHolidaysByDateRange"
 import type { SettingsFormValues } from "@/features/settings/types"
 import { FiscalYearTable } from "./FiscalYearTable"
+import { FiscalYearCardView } from "./FiscalYearCardView"
 import type { HolidayDraft, HolidayDatePickerProps, MonthYearPickerProps, SettingsHolidayCalendarRow } from "./types"
 import { monthLabels } from "./types"
 import { FISCAL_YEAR_ERROR_TOAST_OPTIONS, FISCAL_YEAR_SUCCESS_TOAST_CLASSNAME } from "./fiscalYear.constants"
@@ -652,12 +653,25 @@ export function FiscalYearForm({ isSaving = false }: { isSaving?: boolean }) {
         </DialogContent>
       </Dialog>
 
-      <FiscalYearTable
-        holidays={holidays}
-        isLoading={holidaysQuery.isPending || deleteHolidayMutation.isPending}
-        onEditRow={handleOpenEditHolidayDialog}
-        onRemoveRow={handleDeleteHoliday}
-      />
+      {/* Mobile card view */}
+      <div className="block sm:hidden">
+        <FiscalYearCardView
+          holidays={holidays}
+          isLoading={holidaysQuery.isPending || deleteHolidayMutation.isPending}
+          onEditRow={handleOpenEditHolidayDialog}
+          onRemoveRow={handleDeleteHoliday}
+        />
+      </div>
+
+      {/* Desktop table view */}
+      <div className="hidden sm:block">
+        <FiscalYearTable
+          holidays={holidays}
+          isLoading={holidaysQuery.isPending || deleteHolidayMutation.isPending}
+          onEditRow={handleOpenEditHolidayDialog}
+          onRemoveRow={handleDeleteHoliday}
+        />
+      </div>
     </div>
   )
 }

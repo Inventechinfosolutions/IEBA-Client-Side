@@ -20,7 +20,7 @@ export function CountyAddressRow({
   const { control, register } = useFormContext<SettingsFormValues>()
 
   return (
-    <div className="grid w-full grid-cols-[minmax(0,0.85fr)_minmax(0,1.35fr)_minmax(0,0.75fr)_minmax(0,0.45fr)_minmax(0,0.55fr)_auto] items-end gap-x-4 gap-y-2">
+    <div className="grid w-full grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.35fr)_minmax(0,0.75fr)_minmax(0,0.45fr)_minmax(0,0.55fr)_auto] items-end gap-3 lg:gap-x-4 lg:gap-y-2">
       <Controller
         control={control}
         name={`county.addresses.${index}.locationId`}

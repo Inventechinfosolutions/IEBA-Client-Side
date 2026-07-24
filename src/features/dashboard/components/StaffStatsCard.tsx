@@ -17,14 +17,14 @@ export function StaffStatsCard({
     <div className="flex flex-col gap-4 h-full">
       {/* Staff Leave Requests */}
       <Link to="/leave-approval" className="block">
-        <div className="rounded-[12px] bg-white p-5 shadow-[0px_4px_20px_0px_#0000000D] hover:shadow-[0_8px_30px_rgba(108,93,211,0.12)] transition-all duration-200 border border-transparent flex flex-col h-full">
-          <div className="flex items-center gap-4 mb-5">
-            <img src={PersonalLeaveIcon} alt="Staff Leave" className="h-12 w-12 object-contain" />
-            <h3 className="text-[15px] text-[#1a1a2e] leading-tight flex-1">
+        <div className="rounded-[12px] bg-white p-5 sm:p-6 lg:p-5 shadow-[0px_4px_20px_0px_#0000000D] hover:shadow-[0_8px_30px_rgba(108,93,211,0.12)] transition-all duration-200 border border-transparent flex flex-col h-full">
+          <div className="flex items-center gap-3 mb-4">
+            <img src={PersonalLeaveIcon} alt="Staff Leave" className="h-10 w-10 shrink-0 object-contain" />
+            <h3 className="text-sm font-semibold text-[#1a1a2e] leading-snug flex-1">
               Staff Leave Requests
             </h3>
           </div>
-          <div className="flex flex-col justify-between flex-1">
+          <div className="flex flex-col gap-3 sm:gap-3.5 pt-1">
             <StatRow label="Open" value={open} loading={isLoading} />
             <StatRow label="Approved" value={approved} loading={isLoading} />
             <StatRow label="Rejected" value={rejected} loading={isLoading} />
@@ -33,8 +33,8 @@ export function StaffStatsCard({
       </Link>
 
       {/* System Stats */}
-      <div className="flex-1 rounded-[12px] bg-white p-6 shadow-[0px_4px_20px_0px_#0000000D] border border-transparent flex flex-col">
-        <div className="flex flex-col justify-between h-full">
+      <div className="rounded-[12px] bg-white p-5 sm:p-6 lg:p-5 shadow-[0px_4px_20px_0px_#0000000D] border border-transparent flex flex-col">
+        <div className="flex flex-col gap-3 sm:gap-3.5">
           <NavRow to="/department" label="Departments" value={deptCount} loading={isLoading} />
           <NavRow to="/program" label="Programs" value={programCount} loading={isLoading} />
           <NavRow to="/county-activity-code" label="Activities" value={activitiesCount} loading={isLoading} />

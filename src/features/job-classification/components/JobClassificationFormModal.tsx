@@ -19,8 +19,6 @@ import { TitleCaseInput } from "@/components/ui/title-case-input"
 import { jobClassificationFormSchema } from "../schemas"
 import type { JobClassificationFormModalProps, JobClassificationFormValues, ActiveTools } from "../types"
 
-
-
 export function JobClassificationFormModal({
   open,
   mode,
@@ -70,9 +68,9 @@ export function JobClassificationFormModal({
     (node: HTMLDivElement | null) => {
       descriptionEditorRef.current = node
       if (!node) return
-      node.innerHTML = toEditorHtml(getValues("activityDescription"))
+      node.innerHTML = toEditorHtml(safeInitialValues.activityDescription)
     },
-    [getValues]
+    [safeInitialValues.activityDescription]
   )
 
   const refreshActiveTools = () => {
@@ -105,10 +103,12 @@ export function JobClassificationFormModal({
     refreshActiveTools()
   }
 
-
   const closeModal = () => {
     setActiveTools({ bold: false, italic: false, bullet: false })
-    reset()
+    if (descriptionEditorRef.current) {
+      descriptionEditorRef.current.innerHTML = ""
+    }
+    reset(safeInitialValues)
     onOpenChange(false)
   }
 
@@ -172,11 +172,12 @@ export function JobClassificationFormModal({
       }}
     >
       <DialogContent
+        key={`${open ? "open" : "closed"}-${mode}-${safeInitialValues.code}-${safeInitialValues.name}`}
         showClose={false}
         overlayClassName="bg-black/40"
-        className="left-1/2 top-[8%] w-[880px] max-w-[calc(100vw-40px)] -translate-x-1/2 translate-y-0 gap-0 overflow-hidden rounded-[4px] border border-[#f4f6fb] bg-white p-0 text-[#0f172a] subpixel-antialiased shadow-[0_6px_18px_rgba(22,29,45,0.12)]"
+        className="left-1/2 top-1/2 w-[880px] max-w-[calc(100vw-24px)] sm:max-w-[calc(100vw-40px)] -translate-x-1/2 -translate-y-1/2 gap-0 overflow-hidden rounded-[4px] border border-[#f4f6fb] bg-white p-0 text-[#0f172a] subpixel-antialiased shadow-[0_6px_18px_rgba(22,29,45,0.12)] max-h-[90vh] flex flex-col"
       >
-        <form onSubmit={handleSave} className="relative select-none bg-white px-11 pb-8 pt-7">
+        <form onSubmit={handleSave} className="relative select-none bg-white px-4 sm:px-11 pb-6 sm:pb-8 pt-5 sm:pt-7 overflow-y-auto max-h-[calc(90vh-20px)] program-table-scroll flex-1">
           {(isSubmitting || isLoadingDetails) && (
             <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/60">
               <Spinner className="text-[#6C5DD3]" />
@@ -202,7 +203,7 @@ export function JobClassificationFormModal({
             </label>
           </DialogHeader>
 
-          <div className="grid grid-cols-[220px_minmax(0,1fr)] items-end gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-[220px_minmax(0,1fr)] items-end gap-4 sm:gap-5">
             <div className="space-y-1">
               <label className="block text-[14px] text-[#111827] mb-1">*Code</label>
               <TitleCaseInput
@@ -266,9 +267,8 @@ export function JobClassificationFormModal({
                 onInput={syncEditorValue}
                 onClick={refreshActiveTools}
                 onKeyUp={refreshActiveTools}
-                className="program-table-scroll max-h-[260px] min-h-[260px] select-text overflow-y-scroll overflow-x-hidden whitespace-pre-wrap break-all [overflow-wrap:anywhere] bg-white dark:bg-[#09090b] px-3 py-2 pr-5 text-[14px] leading-6 text-[#111827] dark:text-[#e4e4e7] outline-none [&_ul]:list-disc [&_ul]:pl-5 [&_li]:my-0.5"
+                className="program-table-scroll max-h-[200px] sm:max-h-[260px] min-h-[120px] sm:min-h-[180px] select-text overflow-y-auto overflow-x-hidden whitespace-pre-wrap break-all [overflow-wrap:anywhere] bg-white dark:bg-[#09090b] px-3 py-2 pr-5 text-[14px] leading-6 text-[#111827] dark:text-[#e4e4e7] outline-none [&_ul]:list-disc [&_ul]:pl-5 [&_li]:my-0.5"
               />
-
             </div>
           </div>
 
@@ -294,4 +294,3 @@ export function JobClassificationFormModal({
     </Dialog>
   )
 }
-

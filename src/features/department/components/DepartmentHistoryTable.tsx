@@ -12,6 +12,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { MasterCodePagination } from "@/features/master-code/components/MasterCodePagination"
+import { DepartmentHistoryCardView } from "./DepartmentHistoryCardView"
 import { DepartmentHistoryDetailPanel } from "./DepartmentHistoryDetailPanel"
 import {
   getDepartmentHistoryCodeDisplay,
@@ -65,7 +66,7 @@ function ExpandButton({
   return (
     <button
       type="button"
-      className="inline-flex items-center justify-center text-[#6C5DD3] hover:opacity-80"
+      className="inline-flex items-center justify-center text-[#6C5DD3] hover:opacity-80 cursor-pointer"
       onClick={onClick}
       aria-label={isExpanded ? "Hide details" : "View details"}
     >
@@ -167,9 +168,23 @@ export function DepartmentHistoryTable({
     setExpandedRowIds((prev) => ({ ...prev, [rowKey]: !prev[rowKey] }))
   }
 
+  const paginationComponent = !isLoading && totalItems > 0 ? (
+    <MasterCodePagination
+      totalItems={totalItems}
+      currentPage={page}
+      pageSize={pageSize}
+      onPageChange={setPage}
+      onPageSizeChange={(newSize) => {
+        setPageSize(newSize)
+        setPage(1)
+      }}
+    />
+  ) : null
+
   return (
-    <div className={`flex flex-col gap-4 ${isScopedView ? "" : "pt-3"}`}>
-      <div className="overflow-hidden rounded-[10px] border border-[#E5E7EB]">
+    <div className={`flex flex-col gap-4 w-full ${isScopedView ? "" : "pt-3"}`}>
+      {/* Desktop Table View */}
+      <div className="hidden xl:block overflow-hidden rounded-[10px] border border-[#E5E7EB] bg-white">
         <div className="overflow-x-auto">
           <Table className="w-full border-collapse min-w-[760px]">
             <TableHeader className="bg-[#6C5DD3] [&_tr]:border-b-0">
@@ -242,18 +257,16 @@ export function DepartmentHistoryTable({
         </div>
       </div>
 
-      {!isLoading && totalItems > 0 ? (
-        <MasterCodePagination
-          totalItems={totalItems}
-          currentPage={page}
-          pageSize={pageSize}
-          onPageChange={setPage}
-          onPageSizeChange={(newSize) => {
-            setPageSize(newSize)
-            setPage(1)
-          }}
-        />
-      ) : null}
+      {/* Mobile/Tablet Card View */}
+      <DepartmentHistoryCardView
+        historyData={historyData}
+        isLoading={isLoading}
+        isScopedView={isScopedView}
+        expandedRowIds={expandedRowIds}
+        onToggleRow={toggleRow}
+      />
+
+      {paginationComponent}
     </div>
   )
 }

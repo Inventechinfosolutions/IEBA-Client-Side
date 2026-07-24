@@ -165,25 +165,25 @@ export function MgtActionDateDialog({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>{trigger}</DialogTrigger>
-      <DialogContent className="max-w-[480px] rounded-xl border-0 bg-white p-0 shadow-2xl">
-        <DialogHeader className="border-b border-[#E5E7EB] px-6 py-5">
-          <DialogTitle className="text-[18px] text-[#111827]">
+      <DialogContent className="w-[95vw] sm:w-full max-w-[480px] rounded-xl border-0 bg-white dark:bg-zinc-950 p-0 shadow-2xl overflow-hidden">
+        <DialogHeader className="border-b border-[#E5E7EB] dark:border-zinc-800 px-4 py-4 sm:px-6 sm:py-5">
+          <DialogTitle className="text-base sm:text-[18px] text-foreground">
             Select days to {actionLabel.toLowerCase()}
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-xs sm:text-sm text-muted-foreground">
             Only days eligible for this action are listed. Choose one day, several days, or all
             eligible days.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="px-6 py-2">
+        <div className="px-4 py-2 sm:px-6 max-h-[60vh] overflow-y-auto">
           {eligibleDates.length === 0 ? (
-            <p className="py-6 text-sm text-[#6B7280]">
+            <p className="py-6 text-sm text-[#6B7280] dark:text-zinc-400">
               No eligible days in this week for {actionLabel.toLowerCase()}.
             </p>
           ) : (
             <>
-              <label className="flex cursor-pointer items-center gap-3 border-b border-[#E5E7EB] py-4 font-medium text-[#374151]">
+              <label className="flex cursor-pointer items-center gap-2.5 sm:gap-3 border-b border-[#E5E7EB] dark:border-zinc-800 py-3 sm:py-4 text-xs sm:text-sm font-medium text-foreground">
                 <Checkbox
                   checked={allSelected}
                   onCheckedChange={(checked) =>
@@ -193,7 +193,7 @@ export function MgtActionDateDialog({
                 All eligible days ({eligibleDateKeys.length})
               </label>
 
-              <div className="divide-y divide-[#F0F1F3]">
+              <div className="divide-y divide-[#F0F1F3] dark:divide-zinc-800/60">
                 {eligibleDates.map((date) => {
                   const dateKey = toIsoYmdFromDate(date)
                   const checked = selectedDateKeys.includes(dateKey)
@@ -201,7 +201,7 @@ export function MgtActionDateDialog({
                   return (
                     <label
                       key={dateKey}
-                      className="flex cursor-pointer items-center gap-3 py-3 text-sm text-[#374151]"
+                      className="flex cursor-pointer items-center gap-2 sm:gap-3 py-2.5 sm:py-3 text-xs sm:text-sm text-foreground"
                     >
                       <Checkbox
                         checked={checked}
@@ -209,17 +209,17 @@ export function MgtActionDateDialog({
                           toggleDate(dateKey, nextChecked === true)
                         }
                       />
-                      <span className="w-24 font-medium">
+                      <span className="w-20 sm:w-24 font-medium shrink-0">
                         {date.toLocaleDateString("en-US", { weekday: "long" })}
                       </span>
-                      <span className="text-[#6B7280]">
+                      <span className="text-[#6B7280] dark:text-zinc-400 shrink-0">
                         {date.toLocaleDateString("en-US", {
                           month: "short",
                           day: "numeric",
                           year: "numeric",
                         })}
                       </span>
-                      <span className="ml-auto text-xs text-[#9CA3AF]">{statusLabel}</span>
+                      <span className="ml-auto text-[11px] sm:text-xs text-[#9CA3AF] dark:text-zinc-400 text-right truncate pl-1">{statusLabel}</span>
                     </label>
                   )
                 })}
@@ -228,12 +228,13 @@ export function MgtActionDateDialog({
           )}
         </div>
 
-        <DialogFooter className="border-t border-[#E5E7EB] px-6 py-4">
+        <DialogFooter className="border-t border-[#E5E7EB] dark:border-zinc-800 px-4 py-3.5 sm:px-6 sm:py-4 flex flex-col-reverse sm:flex-row gap-2 sm:justify-end">
           <Button
             type="button"
             variant="outline"
             disabled={isSubmitting}
             onClick={() => setOpen(false)}
+            className="w-full sm:w-auto"
           >
             Cancel
           </Button>
@@ -241,7 +242,7 @@ export function MgtActionDateDialog({
             type="button"
             disabled={selectedDateKeys.length === 0 || isSubmitting}
             onClick={handleConfirm}
-            className="bg-[#6C5DD3] hover:bg-[#5B4CC4]"
+            className="w-full sm:w-auto bg-[#6C5DD3] hover:bg-[#5B4CC4] text-white"
           >
             {isSubmitting ? "Applying..." : `${actionLabel} selected`}
           </Button>

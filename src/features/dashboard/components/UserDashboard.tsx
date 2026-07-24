@@ -144,10 +144,10 @@ export function UserDashboard() {
     <TooltipProvider>
       <div className="flex flex-col gap-4 w-full">
         {/* Top Section: Calendar + Stats */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch">
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 items-stretch">
 
-          {/* Left: Calendar Widget (4/12 width) */}
-          <div className="lg:col-span-4 xl:col-span-4 flex">
+          {/* Left: Calendar Widget */}
+          <div className="xl:col-span-4 flex">
             <PersonalTimeStudyCalendarCard
               weekRows={[]}
               selectedDate={selectedDate}
@@ -162,10 +162,10 @@ export function UserDashboard() {
           </div>
 
 
-          <div className="lg:col-span-5 flex flex-col gap-4">
+          <div className="xl:col-span-5 flex flex-col gap-4">
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="h-[250px]">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="min-h-[250px] lg:h-[250px]">
                 <PersonalTimeStudyCard
                   totalApproved={tsApproved}
                   totalSubmitted={tsSubmitted}
@@ -174,7 +174,7 @@ export function UserDashboard() {
                   noBlur={true}
                 />
               </div>
-              <div className="h-[250px]">
+              <div className="min-h-[250px] lg:h-[250px]">
                 <PersonalLeaveCard
                   total={selfLeaveTotal}
                   approved={selfLeaveApproved}
@@ -189,7 +189,7 @@ export function UserDashboard() {
 
 
 
-            <div className="grid grid-cols-12 gap-4 h-[180px] min-h-0">
+            <div className="grid grid-cols-12 gap-4 min-h-[180px] lg:h-[180px]">
               <div className="col-span-12 h-full min-h-0 overflow-hidden">
                 <ReportsCard reports={reportsData} isLoading={reports.isLoading} />
               </div>
@@ -198,8 +198,8 @@ export function UserDashboard() {
 
 
 
-          <div className="lg:col-span-3">
-            <div className="h-[446px]">
+          <div className="xl:col-span-3">
+            <div className="min-h-[300px] xl:h-[446px]">
               <TodoCard items={todoItems} isLoading={overview.isLoading} />
             </div>
           </div>
@@ -448,6 +448,8 @@ export function UserDashboard() {
             </div>
           </div>
         </Card>
+        {/* Bottom spacer */}
+        <div className="shrink-0 h-10 sm:h-14" aria-hidden="true" />
       </div>
     </TooltipProvider>
   )

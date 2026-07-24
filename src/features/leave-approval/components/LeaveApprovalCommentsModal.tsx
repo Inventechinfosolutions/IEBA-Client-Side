@@ -41,7 +41,7 @@ export function LeaveApprovalCommentsModal({
       <DialogContent
         showClose={false}
         overlayClassName="bg-black/30"
-        className="top-[24%] max-w-[560px] rounded-[6px] border border-[#e6e8ef] bg-white p-6 text-[14px]"
+        className="top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[560px] max-w-[calc(100vw-24px)] sm:max-w-[560px] rounded-[6px] border border-[#e6e8ef] bg-white p-4 sm:p-6 text-[14px]"
       >
         {isSubmitting && (
           <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/60">
@@ -61,12 +61,12 @@ export function LeaveApprovalCommentsModal({
             className="ieba-textarea-scroll h-[120px] max-h-[120px] resize-none overflow-y-auto whitespace-pre-wrap break-all rounded-[6px] border border-[#d6d7dc] bg-white px-3 py-2 text-[12px] text-[#111827] shadow-none focus-visible:border-[#6C5DD3] focus-visible:ring-0"
           />
 
-          <DialogFooter className="mt-5 flex justify-end gap-3 sm:justify-end">
+          <div className="mt-5 flex flex-row items-center justify-end gap-2 sm:gap-3">
             <Button
               type="button"
               onClick={() => onOpenChange(false)}
               disabled={isSubmitting}
-              className="h-[44px] min-w-[96px] cursor-pointer rounded-[6px] bg-[#d9d9d9] px-6 !text-[12px] font-medium text-[#111827] hover:bg-[#d9d9d9]"
+              className="h-[38px] sm:h-[44px] min-w-[70px] sm:min-w-[96px] cursor-pointer rounded-[6px] bg-[#d9d9d9] px-4 sm:px-6 !text-[12px] font-medium text-[#111827] hover:bg-[#d9d9d9]"
             >
               Cancel
             </Button>
@@ -76,7 +76,7 @@ export function LeaveApprovalCommentsModal({
                   type="button"
                   onClick={handleReject}
                   disabled={isSubmitting}
-                  className="h-[44px] min-w-[96px] cursor-pointer rounded-[6px] bg-[#ef4444] px-6 !text-[12px] font-medium text-white hover:bg-[#ef4444]"
+                  className="h-[38px] sm:h-[44px] min-w-[70px] sm:min-w-[96px] cursor-pointer rounded-[6px] bg-[#ef4444] px-4 sm:px-6 !text-[12px] font-medium text-white hover:bg-[#ef4444]"
                 >
                   Reject
                 </Button>
@@ -84,7 +84,7 @@ export function LeaveApprovalCommentsModal({
                   type="button"
                   onClick={handleApprove}
                   disabled={isSubmitting}
-                  className="h-[44px] min-w-[96px] cursor-pointer rounded-[6px] bg-[#22c55e] px-6 !text-[12px] font-medium text-white hover:bg-[#22c55e]"
+                  className="h-[38px] sm:h-[44px] min-w-[70px] sm:min-w-[96px] cursor-pointer rounded-[6px] bg-[#22c55e] px-4 sm:px-6 !text-[12px] font-medium text-white hover:bg-[#22c55e]"
                 >
                   Approve
                 </Button>
@@ -93,12 +93,12 @@ export function LeaveApprovalCommentsModal({
               <Button
                 type="submit"
                 disabled={isSubmitting}
-                className="h-[44px] min-w-[84px] cursor-pointer rounded-[6px] bg-[var(--primary)] px-7 !text-[12px] font-medium text-white hover:bg-[var(--primary)]"
+                className="h-[38px] sm:h-[44px] min-w-[70px] sm:min-w-[84px] cursor-pointer rounded-[6px] bg-[var(--primary)] px-5 sm:px-7 !text-[12px] font-medium text-white hover:bg-[var(--primary)]"
               >
                 OK
               </Button>
             )}
-          </DialogFooter>
+          </div>
         </form>
       </DialogContent>
     </Dialog>
