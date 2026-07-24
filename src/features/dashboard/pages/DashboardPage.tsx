@@ -1,7 +1,8 @@
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { useAuth } from "@/contexts/AuthContext"
 import { ArrowLeft, History } from "lucide-react"
 import { Spinner } from "@/components/ui/spinner"
+import { getHighestPriorityDeptRole } from "../utils/rolePriority"
 
 import { PersonalTimeStudyCard } from "../components/PersonalTimeStudyCard"
 import { PersonalLeaveCard } from "../components/PersonalLeaveCard"
@@ -137,9 +138,10 @@ export function DashboardPage() {
       : "0.90fr 1.23fr"
 
 
-  const selectedDeptRoleIdx = "0"
-
-  const currentDeptRole = deptRoles[Number(selectedDeptRoleIdx)]
+  const currentDeptRole = useMemo(
+    () => getHighestPriorityDeptRole(deptRoles),
+    [deptRoles]
+  )
   const departmentId = currentDeptRole?.departmentId
   const roleId = currentDeptRole?.roleId
 

@@ -2,6 +2,7 @@ import React, { useState, useMemo } from "react"
 import { useAuth } from "@/contexts/AuthContext"
 import { usePermissions } from "@/hooks/usePermissions"
 import { useReportsByRole, useDashboardOverview } from "../queries/dashboardQueries"
+import { getHighestPriorityDeptRole } from "../utils/rolePriority"
 import { PersonalTimeStudyCard } from "../components/PersonalTimeStudyCard"
 import { PersonalLeaveCard } from "../components/PersonalLeaveCard"
 import { ReportsCard } from "../components/ReportsCard"
@@ -31,7 +32,10 @@ export function UserDashboard() {
   const userId = user?.id ?? ""
 
   const deptRoles = user?.departmentRoles ?? []
-  const currentDeptRole = deptRoles[0]
+  const currentDeptRole = useMemo(
+    () => getHighestPriorityDeptRole(deptRoles),
+    [deptRoles]
+  )
   const departmentId = currentDeptRole?.departmentId
   const roleId = currentDeptRole?.roleId
 
