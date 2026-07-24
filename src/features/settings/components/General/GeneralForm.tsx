@@ -45,13 +45,13 @@ export function GeneralForm({ isSaving = false }: { isSaving?: boolean }) {
 
 
   return (
-    <div className="bg-transparent px-6 py-3">
+    <div className="bg-transparent px-3 py-3 sm:px-6">
       {/* Keeping AppLogout under generalForm logic as requested */}
       <AppLogout />
 
       <div className="space-y-3">
-        <div className="flex items-center gap-20">
-          <div className="w-[230px] pl-0">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-10">
+          <div className="w-full sm:w-[230px] pl-0">
             <label className={labelClassName}>Screen Inactivity Time</label>
           </div>
 

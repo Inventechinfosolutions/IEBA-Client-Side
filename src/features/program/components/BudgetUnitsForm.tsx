@@ -116,7 +116,7 @@ export function BudgetUnitsForm({
   }
 
   return (
-    <div className="mx-auto grid w-[500px] grid-cols-1 gap-4">
+    <div className="mx-auto grid w-full max-w-[500px] grid-cols-1 gap-4">
       {activeSection === "Budget Unit" ? (
         <>
           <div className="space-y-1">
@@ -127,7 +127,7 @@ export function BudgetUnitsForm({
                 disabled
                 readOnly
                 tabIndex={-1}
-                className="h-[44px] rounded-[7px] border border-[#c6cedd] px-3 text-[14px] font-normal text-[#111827] shadow-none disabled:pointer-events-auto disabled:cursor-not-allowed disabled:border-[0.8px]! disabled:border-[#cfd4dd]! disabled:bg-[#d2d4d9]/20! disabled:text-black! disabled:opacity-100"
+                className="h-[44px] rounded-[7px] border border-[#c6cedd] px-3 text-[14px] font-normal text-[#111827] shadow-none disabled:pointer-events-auto disabled:cursor-not-allowed disabled:border-[0.8px]! disabled:border-[#cfd4dd]! disabled:bg-[#d2d4d9]/20! disabled:text-black dark:disabled:text-white! disabled:opacity-100"
               />
             ) : (
               <SingleSelectSearchDropdown
@@ -188,7 +188,7 @@ export function BudgetUnitsForm({
                 readOnly
                 tabIndex={-1}
                 placeholder="Select Budget Unit"
-                className="h-[44px] rounded-[7px] border border-[#c6cedd] px-3 text-[14px] font-normal text-[#111827] shadow-none placeholder:text-[12px] placeholder:text-[#b0b8c8] disabled:pointer-events-auto disabled:cursor-not-allowed disabled:border-[0.8px]! disabled:border-[#cfd4dd]! disabled:bg-[#d2d4d9]/20! disabled:text-black! disabled:opacity-100"
+                className="h-[44px] rounded-[7px] border border-[#c6cedd] px-3 text-[14px] font-normal text-[#111827] shadow-none placeholder:text-[12px] placeholder:text-[#b0b8c8] disabled:pointer-events-auto disabled:cursor-not-allowed disabled:border-[0.8px]! disabled:border-[#cfd4dd]! disabled:bg-[#d2d4d9]/20! disabled:text-black dark:disabled:text-white! disabled:opacity-100"
               />
             ) : (
               <SingleSelectSearchDropdown
@@ -225,7 +225,7 @@ export function BudgetUnitsForm({
               {...form.register("buProgramCode")}
               disabled
               placeholder="Enter BU Code"
-              className="h-[40px] rounded-[9px] border border-[#c5cad5] bg-white px-2.5 text-[13px] text-[#111827] placeholder:text-[#a7afbf] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333] disabled:pointer-events-auto disabled:cursor-not-allowed disabled:border-[0.8px]! disabled:border-[#cfd4dd]! disabled:bg-[#d2d4d9]/20! disabled:text-black! disabled:opacity-100"
+              className="h-[40px] rounded-[9px] border border-[#c5cad5] bg-white px-2.5 text-[13px] text-[#111827] placeholder:text-[#a7afbf] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333] disabled:pointer-events-auto disabled:cursor-not-allowed disabled:border-[0.8px]! disabled:border-[#cfd4dd]! disabled:bg-[#d2d4d9]/20! disabled:text-black dark:disabled:text-white! disabled:opacity-100"
             />
           </div>
           <div className="space-y-1">
@@ -234,7 +234,7 @@ export function BudgetUnitsForm({
               {...form.register("buProgramDepartment")}
               disabled
               placeholder="Select Department"
-              className="h-[40px] rounded-[9px] border border-[#c5cad5] bg-white px-2.5 text-[13px] text-[#111827] placeholder:text-[#a7afbf] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333] disabled:pointer-events-auto disabled:cursor-not-allowed disabled:border-[0.8px]! disabled:border-[#cfd4dd]! disabled:bg-[#d2d4d9]/20! disabled:text-black! disabled:opacity-100"
+              className="h-[40px] rounded-[9px] border border-[#c5cad5] bg-white px-2.5 text-[13px] text-[#111827] placeholder:text-[#a7afbf] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333] disabled:pointer-events-auto disabled:cursor-not-allowed disabled:border-[0.8px]! disabled:border-[#cfd4dd]! disabled:bg-[#d2d4d9]/20! disabled:text-black dark:disabled:text-white! disabled:opacity-100"
             />
           </div>
           <div className="grid grid-cols-2 gap-4">
@@ -276,7 +276,7 @@ export function BudgetUnitsForm({
               <TitleCaseInput
                 value={form.watch("buSubProgramBudgetUnitProgramName") || ""}
                 disabled
-                className="h-[44px] rounded-[9px] border border-[#c5cad5] bg-white px-2.5 text-[13px] text-[#111827] disabled:pointer-events-auto disabled:cursor-not-allowed disabled:border-[0.8px]! disabled:border-[#cfd4dd]! disabled:bg-[#d2d4d9]/20! disabled:text-black! disabled:opacity-100"
+                className="h-[44px] rounded-[9px] border border-[#c5cad5] bg-white px-2.5 text-[13px] text-[#111827] disabled:pointer-events-auto disabled:cursor-not-allowed disabled:border-[0.8px]! disabled:border-[#cfd4dd]! disabled:bg-[#d2d4d9]/20! disabled:text-black dark:disabled:text-white! disabled:opacity-100"
               />
             </div>
             <div className="space-y-1">
@@ -284,7 +284,7 @@ export function BudgetUnitsForm({
               <TitleCaseInput
                 value={form.watch("buSubProgramBudgetCode") || ""}
                 disabled
-                className="h-[44px] rounded-[9px] border border-[#c5cad5] bg-white px-2.5 text-[13px] text-[#111827] disabled:pointer-events-auto disabled:cursor-not-allowed disabled:border-[0.8px]! disabled:border-[#cfd4dd]! disabled:bg-[#d2d4d9]/20! disabled:text-black! disabled:opacity-100"
+                className="h-[44px] rounded-[9px] border border-[#c5cad5] bg-white px-2.5 text-[13px] text-[#111827] disabled:pointer-events-auto disabled:cursor-not-allowed disabled:border-[0.8px]! disabled:border-[#cfd4dd]! disabled:bg-[#d2d4d9]/20! disabled:text-black dark:disabled:text-white! disabled:opacity-100"
               />
             </div>
           </div>
@@ -330,7 +330,7 @@ export function BudgetUnitsForm({
                 readOnly
                 tabIndex={-1}
                 placeholder="Select Budget Program"
-                className="h-[44px] rounded-[7px] border border-[#c6cedd] px-3 text-[14px] font-normal text-[#111827] shadow-none placeholder:text-[12px] placeholder:text-[#b0b8c8] disabled:pointer-events-auto disabled:cursor-not-allowed disabled:border-[0.8px]! disabled:border-[#cfd4dd]! disabled:bg-[#d2d4d9]/20! disabled:text-black! disabled:opacity-100"
+                className="h-[44px] rounded-[7px] border border-[#c6cedd] px-3 text-[14px] font-normal text-[#111827] shadow-none placeholder:text-[12px] placeholder:text-[#b0b8c8] disabled:pointer-events-auto disabled:cursor-not-allowed disabled:border-[0.8px]! disabled:border-[#cfd4dd]! disabled:bg-[#d2d4d9]/20! disabled:text-black dark:disabled:text-white! disabled:opacity-100"
               />
             ) : (
               <SingleSelectSearchDropdown
@@ -371,7 +371,7 @@ export function BudgetUnitsForm({
               {...form.register("buSubProgramBudgetCode")}
               disabled
               placeholder="Enter Budget Code"
-              className="h-[40px] rounded-[9px] border border-[#c5cad5] bg-white px-2.5 text-[13px] text-[#111827] placeholder:text-[#a7afbf] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333] disabled:pointer-events-auto disabled:cursor-not-allowed disabled:border-[0.8px]! disabled:border-[#cfd4dd]! disabled:bg-[#d2d4d9]/20! disabled:text-black! disabled:opacity-100"
+              className="h-[40px] rounded-[9px] border border-[#c5cad5] bg-white px-2.5 text-[13px] text-[#111827] placeholder:text-[#a7afbf] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333] disabled:pointer-events-auto disabled:cursor-not-allowed disabled:border-[0.8px]! disabled:border-[#cfd4dd]! disabled:bg-[#d2d4d9]/20! disabled:text-black dark:disabled:text-white! disabled:opacity-100"
             />
           </div>
           <div className="space-y-1">
@@ -380,7 +380,7 @@ export function BudgetUnitsForm({
               {...form.register("buSubProgramDepartment")}
               disabled
               placeholder="Select Department"
-              className="h-[40px] rounded-[9px] border border-[#c5cad5] bg-white px-2.5 text-[13px] text-[#111827] placeholder:text-[#a7afbf] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333] disabled:pointer-events-auto disabled:cursor-not-allowed disabled:border-[0.8px]! disabled:border-[#cfd4dd]! disabled:bg-[#d2d4d9]/20! disabled:text-black! disabled:opacity-100"
+              className="h-[40px] rounded-[9px] border border-[#c5cad5] bg-white px-2.5 text-[13px] text-[#111827] placeholder:text-[#a7afbf] focus-visible:border-[#6C5DD3] focus-visible:ring-1 focus-visible:ring-[#6C5DD333] disabled:pointer-events-auto disabled:cursor-not-allowed disabled:border-[0.8px]! disabled:border-[#cfd4dd]! disabled:bg-[#d2d4d9]/20! disabled:text-black dark:disabled:text-white! disabled:opacity-100"
             />
           </div>
           <div className="grid grid-cols-2 gap-4">

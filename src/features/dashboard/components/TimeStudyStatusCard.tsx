@@ -66,7 +66,7 @@ export function TimeStudyStatusCard({
 
   return (
     <>
-      <div className="flex h-full flex-col rounded-[10px] bg-white p-4 shadow-[0_0_20px_0_#0000001a]">
+      <div className="flex h-full flex-col rounded-[10px] bg-white p-4 sm:p-5 lg:p-4 shadow-[0_0_20px_0_#0000001a]">
         {/* Header — title row */}
         <div className="flex items-center gap-2 mb-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#6C5DD3] shrink-0">
@@ -145,7 +145,7 @@ export function TimeStudyStatusCard({
           )}
         </div>
 
-        <div className="flex flex-1 flex-col justify-around">
+        <div className="flex flex-1 flex-col justify-around gap-3 sm:gap-4 lg:gap-0">
           {/* Row — Approved */}
           <StatusRow
             icon={iconApproved}

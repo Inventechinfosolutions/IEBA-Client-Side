@@ -33,7 +33,7 @@ import { cn } from "@/lib/utils"
 import statusCheckImg from "@/assets/status-check.png"
 import statusCrossImg from "@/assets/status-cross.png"
 import { usePermissions } from "@/hooks/usePermissions"
-
+import { DepartmentRoleCardView } from "./DepartmentRoleCardView"
 
 export function DepartmenRoleTable({
   data,
@@ -65,7 +65,29 @@ export function DepartmenRoleTable({
   const rows = data
 
   return (
-    <div className="relative min-h-[360px] overflow-hidden rounded-[10px] border-[0.5px] border-[rgb(218,218,218)] bg-[rgb(255,255,255)]">
+    <div className="space-y-4">
+      <DepartmentRoleCardView
+        data={data}
+        isLoading={isLoading}
+        isSaving={isSaving}
+        canAddRole={canAddRole}
+        canUpdateRole={canUpdateRole}
+        onView={onView}
+        onEdit={onEdit}
+        onToggleChildStatus={onToggleChildStatus}
+        onOptionAction={onOptionAction}
+        footer={
+          <MasterCodePagination
+            totalItems={pagination.totalItems}
+            currentPage={pagination.page}
+            pageSize={pagination.pageSize}
+            onPageChange={onPageChange}
+            onPageSizeChange={onPageSizeChange}
+          />
+        }
+      />
+
+      <div className="hidden xl:block relative min-h-[360px] overflow-hidden rounded-[10px] border-[0.5px] border-[rgb(218,218,218)] bg-[rgb(255,255,255)]">
       {isSaving && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/60">
           <Spinner className="text-[#6C5DD3]" />
@@ -312,6 +334,7 @@ export function DepartmenRoleTable({
         onPageChange={onPageChange}
         onPageSizeChange={onPageSizeChange}
       />
+    </div>
     </div>
   )
 }

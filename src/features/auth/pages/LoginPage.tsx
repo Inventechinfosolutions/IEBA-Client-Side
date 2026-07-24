@@ -64,21 +64,21 @@ export function LoginPage() {
   return (
     <div className="flex min-h-svh w-full flex-nowrap overflow-hidden bg-white">
       <div
-        className="relative flex min-h-svh shrink-0 flex-col items-center justify-center overflow-hidden border-0 bg-white bg-cover p-6 pt-[6vh] md:w-[40%] md:p-10 md:pt-[8vh]"
+        className="relative flex min-h-svh w-full shrink-0 flex-col items-center justify-start overflow-hidden border-0 bg-white bg-cover px-4 pt-0 sm:px-6 md:w-[40%] md:p-10 md:pt-[8vh] md:justify-center"
         style={{
           backgroundImage: `url(${loginLogo})`,
           backgroundPosition: "center top",
         }}
       >
-        <div className="relative z-10 flex w-full max-w-[450px] flex-col items-center pt-[23vh]">
-          <div className="w-[110%] min-h-[480px] max-h-[60vh] overflow-y-auto rounded-[5px] bg-white p-8 shadow-login-card">
+        <div className="relative z-10 flex w-full max-w-[450px] flex-col items-center pt-[42vh] sm:pt-[32vh] md:pt-[23vh]">
+          <div className="w-full min-h-fit max-h-[70vh] overflow-y-auto rounded-[5px] bg-white p-5 shadow-login-card sm:p-8 sm:w-[110%]">
             <div className="text-center">
-              <h1 className="mb-2 tracking-tight text-[#212529] font-[Roboto,sans-serif] text-[38.465px] leading-tight">
+              <h1 className="mb-2 tracking-tight text-[#212529] font-[Roboto,sans-serif] text-[28px] leading-tight sm:text-[34px] md:text-[38.465px]">
                 Login
               </h1>
-              <p className="text-[19px] text-gray-500">Access to our dashboard</p>
+              <p className="text-[15px] text-gray-500 sm:text-[19px]">Access to our dashboard</p>
             </div>
-            <form onSubmit={formHandleSubmit(onSubmit)} className="mt-10 space-y-5">
+            <form onSubmit={formHandleSubmit(onSubmit)} className="mt-6 space-y-4 sm:mt-10 sm:space-y-5">
               {(loginErrorMessage || error) && (
                 <div className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-600">
                   {loginErrorMessage ?? error}
@@ -132,7 +132,7 @@ export function LoginPage() {
                   <p className="text-xs text-red-500">{errors.password.message}</p>
                 )}
               </div>
-              <div className="flex justify-start pt-[2vh] pb-[2vh]">
+              <div className="flex justify-start pt-[1vh] pb-[1vh] sm:pt-[2vh] sm:pb-[2vh]">
                 <Link
                   to="/forgot-password"
                   className="text-sm font-medium text-gray-500 hover:text-gray-700"
@@ -143,7 +143,7 @@ export function LoginPage() {
               <Button
                 type="submit"
                 disabled={isLoading}
-                className="h-11 w-full rounded-[6px] border-0 text-[18px] font-medium text-white hover:opacity-90"
+                className="h-11 w-full rounded-[6px] border-0 text-[16px] font-medium text-white hover:opacity-90 sm:text-[18px]"
                 style={{ background: "linear-gradient(90deg,#00c5fb,#6c5dd3)" }}
               >
                 {isLoading ? (

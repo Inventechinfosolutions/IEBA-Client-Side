@@ -12,7 +12,7 @@ export function UsersCard({
   return (
     <Link
       to="/user"
-      className="flex flex-col rounded-[10px] border border-[#E8EAF6] bg-white p-4 shadow-[0_0_20px_0_#0000001a] gap-y-3 hover:shadow-[0_8px_30px_rgba(108,93,211,0.12)] transition-all duration-200 group"
+      className="flex flex-col rounded-[10px] border border-[#E8EAF6] bg-white p-4 sm:p-5 lg:p-4 shadow-[0_0_20px_0_#0000001a] gap-y-3 sm:gap-y-4 lg:gap-y-3 hover:shadow-[0_8px_30px_rgba(108,93,211,0.12)] transition-all duration-200 group"
     >
       <div className="flex items-center gap-3">
         <img

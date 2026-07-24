@@ -50,18 +50,18 @@ export function ApportioningDrawer({
     <Sheet open={open} onOpenChange={(v) => { if (!v) onClose() }}>
       <SheetContent
         showCloseButton={false}
-        className="w-full sm:max-w-[462px] p-0 bg-white z-[40] border-l border-gray-100 shadow-xl !top-[72px] !h-[calc(100vh-72px)] flex flex-col gap-0"
-        overlayClassName="top-[72px] z-[40]"
+        className="w-full max-w-full sm:max-w-[462px] p-0 bg-white dark:bg-zinc-950 text-foreground z-[40] border-l border-gray-100 dark:border-zinc-800 shadow-xl top-[60px] h-[calc(100vh-60px)] sm:!top-[72px] sm:!h-[calc(100vh-72px)] flex flex-col gap-0 overflow-x-hidden"
+        overlayClassName="top-[60px] sm:top-[72px] z-[40]"
         side="right"
       >
-        <SheetHeader className="p-6 pb-4 border-b border-[#E5E7EB] shrink-0 flex flex-row items-center justify-between space-y-0">
-          <SheetTitle className="text-[20px] font-bold text-[#6C5DD3]">
+        <SheetHeader className="p-4 sm:p-6 pb-4 border-b border-[#E5E7EB] dark:border-zinc-800 shrink-0 flex flex-row items-center justify-between space-y-0 bg-white dark:bg-zinc-950">
+          <SheetTitle className="text-[18px] sm:text-[20px] font-bold text-[#6C5DD3]">
             Time Study Details
           </SheetTitle>
           <button
             type="button"
             onClick={onClose}
-            className="p-1 rounded-md text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors cursor-pointer"
+            className="p-1 rounded-md text-gray-500 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-100 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
             aria-label="Close drawer"
           >
             <X className="size-5" />
@@ -69,14 +69,14 @@ export function ApportioningDrawer({
         </SheetHeader>
 
         <ScrollArea className="flex-1 h-[calc(100vh-140px)]">
-          <div className="p-6 space-y-6">
+          <div className="p-4 sm:p-6 space-y-6">
             <div>
               <h3 className="text-[13px] font-bold text-[#6C5DD3] uppercase tracking-wider mb-3">
                 Time Study Periods
               </h3>
               <div className="space-y-3">
                 {(!timestudyAllowedRaw || timestudyAllowedRaw.length === 0) ? (
-                  <div className="text-[12px] text-gray-500 py-3 italic bg-gray-50 border border-gray-200 rounded-lg text-center">
+                  <div className="text-[12px] text-gray-500 dark:text-zinc-400 py-3 italic bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg text-center">
                     No department assignments found.
                   </div>
                 ) : (
@@ -86,15 +86,15 @@ export function ApportioningDrawer({
                     return (
                       <div
                         key={dept.departmentId}
-                        className="flex flex-col gap-3 p-5 rounded-xl border border-gray-200 bg-white text-[13px] shadow-sm hover:border-[#6C5DD3]/30 transition-all duration-200"
+                        className="flex flex-col gap-3 p-4 sm:p-5 rounded-xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-[13px] shadow-sm hover:border-[#6C5DD3]/30 transition-all duration-200"
                       >
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="text-[14px] font-bold text-gray-900 truncate" title={deptName}>
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <span className="text-[14px] font-bold text-gray-900 dark:text-zinc-100" title={deptName}>
                             {deptName}
                           </span>
                           {dept.allowed ? (
-                            <span className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-[6px] border border-emerald-200 shrink-0">
-                              <CheckCircle2 className="size-3.5 text-emerald-600" />
+                            <span className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-2.5 py-0.5 rounded-[6px] border border-emerald-200 dark:border-emerald-800 shrink-0">
+                              <CheckCircle2 className="size-3.5 text-emerald-600 dark:text-emerald-400" />
                               Allowed
                             </span>
                           ) : (
@@ -104,19 +104,19 @@ export function ApportioningDrawer({
                             </span>
                           )}
                         </div>
-                        <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[13px] font-medium">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5 text-[13px] font-medium">
                           <div>
-                            <span className="text-gray-500 font-medium">Start Date:</span>{" "}
-                            {dept.startDate ? <span className="font-bold text-gray-900">{dept.startDate}</span> : <span className="text-gray-400 italic text-[12px]">Not Configured</span>}
+                            <span className="text-gray-500 dark:text-zinc-400 font-medium">Start Date:</span>{" "}
+                            {dept.startDate ? <span className="font-bold text-gray-900 dark:text-zinc-100">{dept.startDate}</span> : <span className="text-gray-400 dark:text-zinc-500 italic text-[12px]">Not Configured</span>}
                           </div>
                           <div>
-                            <span className="text-gray-500 font-medium">End Date:</span>{" "}
-                            {dept.endDate ? <span className="font-bold text-gray-900">{dept.endDate}</span> : <span className="text-gray-400 italic text-[12px]">Not Configured</span>}
+                            <span className="text-gray-500 dark:text-zinc-400 font-medium">End Date:</span>{" "}
+                            {dept.endDate ? <span className="font-bold text-gray-900 dark:text-zinc-100">{dept.endDate}</span> : <span className="text-gray-400 dark:text-zinc-500 italic text-[12px]">Not Configured</span>}
                           </div>
                         </div>
                         {dept.message && (
                           <p
-                            className="text-[13px] text-gray-700 font-medium leading-snug"
+                            className="text-[13px] text-gray-700 dark:text-zinc-300 font-medium leading-snug"
                             dangerouslySetInnerHTML={{ __html: `<b>Note:</b> ${dept.message}` }}
                           />
                         )}
@@ -127,7 +127,7 @@ export function ApportioningDrawer({
               </div>
             </div>
 
-            <div className="pt-6 border-t border-[#E5E7EB]">
+            <div className="pt-6 border-t border-[#E5E7EB] dark:border-zinc-800">
               <h3 className="text-[13px] font-bold text-[#6C5DD3] uppercase tracking-wider mb-3">
                 Apportioning
               </h3>
@@ -136,13 +136,13 @@ export function ApportioningDrawer({
                   apportioningSummary.map((item) => (
                     <div
                       key={item.departmentId}
-                      className="flex flex-col gap-3 p-5 rounded-xl border border-gray-200 bg-white text-[13px] shadow-sm hover:border-[#6C5DD3]/30 transition-all duration-200"
+                      className="flex flex-col gap-3 p-4 sm:p-5 rounded-xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-[13px] shadow-sm hover:border-[#6C5DD3]/30 transition-all duration-200"
                     >
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-[14px] font-bold text-gray-900 truncate" title={item.departmentName}>
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="text-[14px] font-bold text-gray-900 dark:text-zinc-100" title={item.departmentName}>
                           {item.departmentName}
                         </span>
-                        <div className="flex items-center gap-1.5 shrink-0">
+                        <div className="flex flex-wrap items-center gap-1.5 shrink-0">
                           {item.apportioningType && item.apportioningType !== "none" && (
                             <span className="text-[12px] uppercase font-semibold px-2.5 py-0.5 rounded-[6px] bg-[#6C5DD3]/10 text-[#6C5DD3] border border-[#6C5DD3]/20 font-mono">
                               {item.apportioningType}
@@ -154,8 +154,8 @@ export function ApportioningDrawer({
                               Not Allowed
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-[6px] border border-emerald-200">
-                              <CheckCircle2 className="size-3.5 text-emerald-600" />
+                            <span className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-2.5 py-0.5 rounded-[6px] border border-emerald-200 dark:border-emerald-800">
+                              <CheckCircle2 className="size-3.5 text-emerald-600 dark:text-emerald-400" />
                               Allowed
                             </span>
                           )}
@@ -164,60 +164,60 @@ export function ApportioningDrawer({
                       {item.outOfDateRange ? (
                         <div className="w-full">
                           {(item.startDate || item.endDate) && (
-                            <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-[13px] text-[#1f2937] font-medium mb-2">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-[13px] text-[#1f2937] dark:text-zinc-200 font-medium mb-2">
                               {item.startDate && (
                                 <div>
-                                  <span className="text-gray-500 font-medium">Start Date:</span>{" "}
-                                  <span className="font-bold text-gray-900">{item.startDate}</span>
+                                  <span className="text-gray-500 dark:text-zinc-400 font-medium">Start Date:</span>{" "}
+                                  <span className="font-bold text-gray-900 dark:text-zinc-100">{item.startDate}</span>
                                 </div>
                               )}
                               {item.endDate && (
                                 <div>
-                                  <span className="text-gray-500 font-medium">End Date:</span>{" "}
-                                  <span className="font-bold text-gray-900">{item.endDate}</span>
+                                  <span className="text-gray-500 dark:text-zinc-400 font-medium">End Date:</span>{" "}
+                                  <span className="font-bold text-gray-900 dark:text-zinc-100">{item.endDate}</span>
                                 </div>
                               )}
                             </div>
                           )}
                           <p
-                            className="text-[13px] text-gray-700 font-medium leading-snug"
+                            className="text-[13px] text-gray-700 dark:text-zinc-300 font-medium leading-snug"
                             dangerouslySetInnerHTML={{ __html: `<b>Note:</b> ${item.message}` }}
                           />
                         </div>
                       ) : (
-                        <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-[13px] text-[#1f2937] font-medium">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-[13px] text-[#1f2937] dark:text-zinc-200 font-medium">
                           {item.startDate && (
                             <div>
-                              <span className="text-gray-500 font-medium">Start Date:</span>{" "}
-                              <span className="font-bold text-gray-900">{item.startDate}</span>
+                              <span className="text-gray-500 dark:text-zinc-400 font-medium">Start Date:</span>{" "}
+                              <span className="font-bold text-gray-900 dark:text-zinc-100">{item.startDate}</span>
                             </div>
                           )}
                           {item.endDate && (
                             <div>
-                              <span className="text-gray-500 font-medium">End Date:</span>{" "}
-                              <span className="font-bold text-gray-900">{item.endDate}</span>
+                              <span className="text-gray-500 dark:text-zinc-400 font-medium">End Date:</span>{" "}
+                              <span className="font-bold text-gray-900 dark:text-zinc-100">{item.endDate}</span>
                             </div>
                           )}
                           <div>
-                            <span className="text-gray-500 font-medium">Percent:</span>{" "}
-                            <span className="font-bold text-gray-900">{item.apportioningPercent}%</span>
+                            <span className="text-gray-500 dark:text-zinc-400 font-medium">Percent:</span>{" "}
+                            <span className="font-bold text-gray-900 dark:text-zinc-100">{item.apportioningPercent}%</span>
                           </div>
                           <div>
-                            <span className="text-gray-500 font-medium">Allocated:</span>{" "}
-                            <span className="font-bold text-gray-900">{item.allocatedMinutes} Min.</span>
+                            <span className="text-gray-500 dark:text-zinc-400 font-medium">Allocated:</span>{" "}
+                            <span className="font-bold text-gray-900 dark:text-zinc-100">{item.allocatedMinutes} Min.</span>
                           </div>
                           <div>
-                            <span className="text-gray-500 font-medium">Supervisor Consumed:</span>{" "}
+                            <span className="text-gray-500 dark:text-zinc-400 font-medium">Supervisor Consumed:</span>{" "}
                             <span className="font-bold text-[#6C5DD3]">{item.supervisorConsumedMinutes ?? 0} Min.</span>
                           </div>
                           {item.apportioningType !== "manual" && (
                             <div>
-                              <span className="text-gray-500 font-medium">Reportee Minutes:</span>{" "}
+                              <span className="text-gray-500 dark:text-zinc-400 font-medium">Reportee Minutes:</span>{" "}
                               <span className="font-bold text-[#6C5DD3]">{item.enteredMinutes} Min.</span>
                             </div>
                           )}
-                          <div className="col-span-2 border-t border-gray-100 pt-1.5 mt-0.5">
-                            <span className="text-gray-500 font-medium">Remaining:</span>{" "}
+                          <div className="col-span-1 sm:col-span-2 border-t border-gray-100 dark:border-zinc-800 pt-1.5 mt-0.5">
+                            <span className="text-gray-500 dark:text-zinc-400 font-medium">Remaining:</span>{" "}
                             <span className="font-bold text-[#6C5DD3]">{item.remainingMinutes} Min.</span>
                           </div>
                         </div>
@@ -225,16 +225,16 @@ export function ApportioningDrawer({
                     </div>
                   ))
                 ) : (
-                  <div className="text-[13px] text-gray-500 py-3 italic bg-gray-50 border border-gray-200 rounded-lg text-center">
+                  <div className="text-[13px] text-gray-500 dark:text-zinc-400 py-3 italic bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg text-center">
                     No apportioning details found.
                   </div>
                 )}
               </div>
             </div>
             
-            <div className="mt-8 pt-4 border-t border-[#E5E7EB] flex items-center justify-center gap-2">
+            <div className="mt-8 pt-4 border-t border-[#E5E7EB] dark:border-zinc-800 flex items-center justify-center gap-2">
               <AlertCircle className="size-4 text-[#F97316] shrink-0" />
-              <span className="text-[12px] text-gray-500 font-medium italic">
+              <span className="text-[12px] text-gray-500 dark:text-zinc-400 font-medium italic">
                 For any enquiry and updates please contact your system admin.
               </span>
             </div>

@@ -279,7 +279,7 @@ export function ScheduleTimeStudyForm({
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent
           showClose={false}
-          className="min-h-[460px] w-[1120px] max-w-[calc(100vw-2rem)] rounded-[8px] border border-[#E5E7EB] dark:border-[#27272a] bg-white dark:bg-[#09090b] p-[16px_16px_18px]"
+          className="min-h-[460px] max-h-[calc(100vh-2rem)] overflow-y-auto w-[1120px] max-w-[calc(100vw-2rem)] rounded-[8px] border border-[#E5E7EB] dark:border-[#27272a] bg-white dark:bg-[#09090b] p-[16px_16px_18px]"
           overlayClassName="bg-black/45"
         >
           <DialogTitle className="text-center text-[20px] font-normal text-black dark:text-[#f4f4f5]">
@@ -293,9 +293,9 @@ export function ScheduleTimeStudyForm({
           )}
 
           <form onSubmit={(e) => e.preventDefault()} className="space-y-5">
-            <div className="flex items-end justify-between">
-              <div className="flex items-end gap-6">
-                <div className="space-y-1">
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+              <div className="flex flex-col sm:flex-row sm:items-end gap-4 sm:gap-6 w-full sm:w-auto">
+                <div className="space-y-1 w-full sm:w-auto">
                   <Label className="text-[14px] font-normal text-black dark:text-[#f4f4f5]">Select Year</Label>
                   <Select
                     value={studyYear}
@@ -303,7 +303,7 @@ export function ScheduleTimeStudyForm({
                       form.setValue("studyYear", value, { shouldValidate: true })
                     }
                   >
-                    <SelectTrigger className="!h-12 w-[140px] rounded-[10px] border-[#D1D5DB] px-[11px] py-0 text-[14px] data-[size=default]:!h-12">
+                    <SelectTrigger className="!h-12 w-full sm:w-[140px] rounded-[10px] border-[#D1D5DB] px-[11px] py-0 text-[14px] data-[size=default]:!h-12">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent
@@ -311,8 +311,7 @@ export function ScheduleTimeStudyForm({
                       side="bottom"
                       avoidCollisions={false}
                       sideOffset={10}
-                      align="start"
-                      className="w-[150px] rounded-[10px] border border-[#E5E7EB] p-1"
+                      className="w-[var(--radix-select-trigger-width)] max-h-[240px] overflow-y-auto rounded-[10px] border border-[#E5E7EB] bg-white p-1 z-[100]"
                     >
                       {fiscalYearOptions.map((fy) => (
                         <SelectItem key={fy.id} value={fy.id}>
@@ -323,19 +322,19 @@ export function ScheduleTimeStudyForm({
                   </Select>
                 </div>
 
-                <div className="space-y-1">
+                <div className="space-y-1 w-full sm:w-auto">
                   <Label className="text-[14px] font-normal text-black dark:text-[#f4f4f5]">Select Department</Label>
                   <TitleCaseInput
                     readOnly
                     value={selectedDepartmentLabel}
-                    className="!h-12 w-[160px] cursor-not-allowed rounded-[10px] border-[#D1D5DB] bg-[#F9FAFB] px-[11px] text-[14px] text-[#111827]"
+                    className="!h-12 w-full sm:w-[160px] cursor-not-allowed rounded-[10px] border-[#D1D5DB] bg-[#F9FAFB] px-[11px] text-[14px] text-[#111827]"
                   />
                 </div>
               </div>
 
               <Button
                 type="button"
-                className="h-10 w-[92px] rounded-[10px] bg-[#6C5DD3] text-[14px] font-medium text-white hover:bg-[#5D4FC4]"
+                className="h-10 w-full sm:w-[92px] shrink-0 rounded-[10px] bg-[#6C5DD3] text-[14px] font-medium text-white hover:bg-[#5D4FC4]"
                 onClick={() =>
                   append({
                     timeStudyPeriod: "",
@@ -357,7 +356,7 @@ export function ScheduleTimeStudyForm({
                     key={field.id}
                     className="rounded-[10px] border border-[#E5E7EB] dark:border-[#27272a] p-[18px_20px]"
                   >
-                    <div className="grid grid-cols-[190px_1fr_70px_90px_28px] gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-[190px_1fr_70px_90px_28px] items-end gap-3 md:gap-4">
                       <div className="space-y-1">
                         <Label className="text-[14px] font-normal text-black dark:text-[#f4f4f5]">
                           Select Time Study Period

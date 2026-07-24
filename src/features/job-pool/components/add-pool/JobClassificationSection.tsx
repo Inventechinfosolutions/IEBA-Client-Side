@@ -1,6 +1,6 @@
  import type { Dispatch, SetStateAction } from "react"
 import { useState, useMemo } from "react"
-import { ChevronRight, ChevronLeft } from "lucide-react"
+import { ChevronRight, ChevronLeft, ChevronDown, ChevronUp } from "lucide-react"
 import { TransferPanel } from "./TransferPanel"
 import type { TransferItem, JobClassificationSectionProps } from "../../types"
 
@@ -150,7 +150,7 @@ export function JobClassificationSection({
   }
 
   return (
-    <div className="grid grid-cols-[1fr_60px_1fr] items-center gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-[1fr_60px_1fr] items-center gap-4">
       <TransferPanel
         title="Unassigned Job Classifications"
         items={filteredU}
@@ -161,14 +161,15 @@ export function JobClassificationSection({
         onSearchChange={setSearchU}
         count={filteredU.length}
       />
-      <div className="flex flex-col gap-3 pt-12">
+      <div className="flex md:flex-col justify-center items-center gap-3 py-2 md:py-0 md:pt-12">
         <button
           type="button"
           onClick={() => handleTransfer(toggledU, true)}
           disabled={toggledU.length === 0 || toggledU.every((id) => disabledIds.has(id))}
           className="flex size-11 cursor-pointer items-center justify-center rounded-[10px] bg-[#6C5DD3] text-white shadow-lg shadow-[#6C5DD3]/20 hover:brightness-110 active:scale-95 transition-all disabled:cursor-not-allowed disabled:opacity-50"
         >
-          <ChevronRight className="size-5 stroke-[2.5]" />
+          <ChevronRight className="hidden md:block size-5 stroke-[2.5]" />
+          <ChevronDown className="block md:hidden size-5 stroke-[2.5]" />
         </button>
         <button
           type="button"
@@ -176,7 +177,8 @@ export function JobClassificationSection({
           disabled={toggledA.length === 0}
           className="flex size-11 cursor-pointer items-center justify-center rounded-[10px] bg-[#6C5DD3] text-white shadow-lg shadow-[#6C5DD3]/20 hover:brightness-110 active:scale-95 transition-all disabled:cursor-not-allowed"
         >
-          <ChevronLeft className="size-5 stroke-[2.5]" />
+          <ChevronLeft className="hidden md:block size-5 stroke-[2.5]" />
+          <ChevronUp className="block md:hidden size-5 stroke-[2.5]" />
         </button>
       </div>
       <TransferPanel

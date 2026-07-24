@@ -87,8 +87,8 @@ export function PayrollUploadSection({
         className={`min-w-0 max-w-full gap-0 overflow-visible rounded-[8px] border-0 bg-white py-0 ring-0 ${sectionCardShadowClass}`}
       >
         <CardContent className="min-w-0 max-w-full px-5 py-5">
-          <div className="flex min-w-0 max-w-full flex-wrap items-end gap-6">
-            <div className="w-[min(100%,200px)] shrink-0 sm:w-[200px]">
+          <div className="flex min-w-0 max-w-full flex-col lg:flex-row flex-wrap items-start lg:items-end gap-4 lg:gap-6">
+            <div className="w-full lg:w-[200px] shrink-0">
               <Label className="mb-2 block text-[12px] font-medium text-(--primary)">Type:</Label>
               <Controller
                 name="uploadType"
@@ -112,8 +112,8 @@ export function PayrollUploadSection({
               />
             </div>
 
-            <div className="flex min-w-0 flex-1 flex-wrap items-end gap-2 sm:gap-3">
-              <div className="min-w-0 w-full max-w-[300px] shrink-0">
+            <div className="flex min-w-0 w-full lg:flex-1 flex-col lg:flex-row flex-wrap items-start lg:items-end gap-3 lg:gap-3">
+              <div className="min-w-0 w-full lg:max-w-[300px] shrink-0">
                 <Label className="mb-2 block text-[12px] font-medium text-(--primary)">Attachment:</Label>
                 <input
                   ref={fileInputRef}
@@ -144,19 +144,19 @@ export function PayrollUploadSection({
                 </div>
               </div>
 
-              <div className="flex flex-wrap gap-2 sm:gap-3">
+              <div className="flex w-full lg:w-auto flex-row flex-wrap gap-2 lg:gap-3">
                 <Button
                   type="button"
                   disabled={isUploading}
                   onClick={submitUpload}
-                  className={`min-w-[120px] px-8 ${primaryActionButtonClass}`}
+                  className={`flex-1 lg:flex-none lg:w-auto min-w-[120px] px-8 ${primaryActionButtonClass}`}
                 >
                   Upload
                 </Button>
                 <Button
                   type="button"
                   onClick={handleDownloadTemplateClick}
-                  className={`min-w-[160px] px-6 ${primaryActionButtonClass}`}
+                  className={`flex-1 lg:flex-none lg:w-auto min-w-[160px] px-6 ${primaryActionButtonClass}`}
                 >
                   Download Template
                 </Button>

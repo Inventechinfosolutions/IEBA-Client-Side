@@ -23,6 +23,8 @@ import { useActionUserTimeRecord } from "@/features/PersonalTimeStudy/TimeStudyM
 import { toIsoYmdFromDate } from "@/lib/dates"
 import { apiDownloadSupportingDoc } from "@/features/PersonalTimeStudy/api/personalTimeStudyApi"
 import { toast } from "sonner"
+import { TimeStudyStatusUserCardView } from "./TimeStudyStatusUserCardView"
+import { TimeStudyRecordCardView } from "./TimeStudyRecordCardView"
 
 
 
@@ -183,101 +185,102 @@ export function TimeStudyStatusModal({
     <Dialog open={open} onOpenChange={(v) => !v && handleClose()}>
       <DialogContent
         showClose={false}
-        className={`w-full ${selectedUser ? "max-w-[1200px]" : "max-w-[650px]"} rounded-2xl border-0 p-0 gap-0 shadow-[0_24px_80px_0_rgba(108,93,211,0.18)] overflow-hidden transition-all duration-300`}
+        className={`w-[calc(100vw-24px)] max-w-[calc(100vw-24px)] ${selectedUser ? "md:max-w-[1200px]" : "sm:max-w-[650px]"} rounded-2xl border-0 p-0 gap-0 shadow-[0_24px_80px_0_rgba(108,93,211,0.18)] overflow-hidden transition-all duration-300`}
         overlayClassName="bg-black/40 backdrop-blur-[2px]"
       >
         {/* ── Header ── */}
-        <DialogHeader className={`px-6 pt-5 ${selectedUser ? "pb-1.5" : "pb-4"}`}>
-          <div className="flex items-center justify-between gap-4">
-            {/* Left side: Icon & Title/Badge */}
-            <div className="flex items-center gap-2.5 shrink-0">
-              <div
-                className="flex h-9 w-9 items-center justify-center rounded-xl"
-                style={{ background: `${config.accentColor}18` }}
-              >
-                <config.icon
-                  className="h-[18px] w-[18px]"
-                  style={{ color: config.accentColor }}
-                />
-              </div>
-              <div>
-                <DialogTitle className="text-[15px] font-semibold text-[#1a1a2e]">
-                  {selectedUser ? selectedUser.name : config.title}
-                </DialogTitle>
-                <span
-                  className={`mt-0.5 inline-block rounded-full px-2 py-0.5 text-[11px] font-semibold ${config.badgeColor}`}
-                >
-                  {config.badgeText}
-                </span>
-              </div>
-            </div>
-
-            {/* Middle: Compact Search bar (only when reportee list view) */}
-            {!selectedUser ? (
-              <div className="relative flex-1 max-w-[220px] mx-2">
-                <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#9ca3af]" />
-                <input
-                  type="text"
-                  placeholder="Search user..."
-                  value={searchQuery}
-                  onChange={(e) => handleSearchChange(e.target.value)}
-                  className="h-8 w-full rounded-lg border border-[#e5e7eb] bg-white pl-8 pr-7 text-[12px] text-[#111827] placeholder:text-[#9ca3af] focus:border-[#6C5DD3] focus:outline-none focus:ring-1 focus:ring-[#6C5DD3]/20 transition-all shadow-sm"
-                />
-                {searchQuery && (
-                  <button
-                    type="button"
-                    onClick={() => handleSearchChange("")}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-[#9ca3af] hover:text-[#374151]"
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </button>
-                )}
-              </div>
-            ) : (
-              <div className="flex-1" />
-            )}
-
-            {/* Right side: Back button (if selectedUser) & Close button */}
-            <div className="flex items-center gap-2 shrink-0">
-              {selectedUser && (
+        <DialogHeader className={`px-4 sm:px-6 pt-4 relative ${selectedUser ? "pb-1.5" : "pb-4"}`}>
+          <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between pr-8 sm:pr-10">
+            {/* Left side: Icon/Back & Title/Badge */}
+            <div className="flex items-center gap-2.5 min-w-0 flex-1">
+              {selectedUser ? (
                 <button
                   type="button"
                   onClick={() => {
                     setSelectedUser(null)
                     setDetailPage(1)
                   }}
-                  className="flex items-center gap-1.5 h-8 px-3 rounded-lg border text-[11px] font-bold transition-all hover:opacity-80 active:scale-95 shadow-sm"
+                  className="flex h-8 px-2.5 items-center justify-center gap-1.5 rounded-lg border text-[11px] font-bold transition-all hover:opacity-80 active:scale-95 shadow-sm shrink-0 cursor-pointer"
                   style={{ 
                     borderColor: `${config.accentColor}25`, 
                     backgroundColor: `${config.accentColor}06`,
                     color: config.accentColor
                   }}
+                  title="Back to list"
                 >
                   <ArrowLeft className="h-3.5 w-3.5" style={{ strokeWidth: 2.5 }} />
-                  Back
+                  <span>Back</span>
                 </button>
+              ) : (
+                <div
+                  className="flex h-9 w-9 items-center justify-center rounded-xl shrink-0"
+                  style={{ background: `${config.accentColor}18` }}
+                >
+                  <config.icon
+                    className="h-[18px] w-[18px]"
+                    style={{ color: config.accentColor }}
+                  />
+                </div>
               )}
-              <button
-                type="button"
-                onClick={handleClose}
-                className="flex h-8 w-8 items-center justify-center rounded-lg text-[#9ca3af] transition-colors hover:bg-[#f3f4f6] hover:text-[#374151] shrink-0"
-              >
-                <X className="h-4 w-4" />
-              </button>
+              <div className="min-w-0 flex-1">
+                <DialogTitle className="text-[14px] sm:text-[15px] font-semibold text-[#1a1a2e] truncate">
+                  {selectedUser ? selectedUser.name : config.title}
+                </DialogTitle>
+                <span
+                  className={`mt-0.5 inline-block rounded-full px-2 py-0.5 text-[10px] sm:text-[11px] font-semibold ${config.badgeColor}`}
+                >
+                  {config.badgeText}
+                </span>
+              </div>
             </div>
+
+            {/* Right side: Search button (only when viewing user list) */}
+            {!selectedUser && (
+              <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
+                <div className="relative w-full sm:w-[220px]">
+                  <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#9ca3af]" />
+                  <input
+                    type="text"
+                    placeholder="Search user..."
+                    value={searchQuery}
+                    onChange={(e) => handleSearchChange(e.target.value)}
+                    className="h-8 w-full rounded-lg border border-[#e5e7eb] bg-white pl-8 pr-7 text-[12px] text-[#111827] placeholder:text-[#9ca3af] focus:border-[#6C5DD3] focus:outline-none focus:ring-1 focus:ring-[#6C5DD3]/20 transition-all shadow-sm"
+                  />
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => handleSearchChange("")}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-[#9ca3af] hover:text-[#374151]"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
+
+          {/* Absolute Top-Right Close Button */}
+          <button
+            type="button"
+            onClick={handleClose}
+            className="absolute right-3.5 top-4 flex h-8 w-8 items-center justify-center rounded-lg text-[#9ca3af] transition-colors hover:bg-[#f3f4f6] hover:text-[#374151] cursor-pointer"
+            title="Close"
+          >
+            <X className="h-4 w-4" />
+          </button>
         </DialogHeader>
 
         {selectedUser ? (
           /* ── Time Entries Detailed UI ── */
-          <div className="mx-6 mb-6">
+          <div className="px-3.5 sm:px-6 mb-4 sm:mb-6 w-full min-w-0">
             {/* Title row */}
             <div className="flex items-center justify-center mb-2.5">
               <h3 className="text-[14px] font-bold text-[#6C5DD3] text-center">Time Study Records</h3>
             </div>
 
-            {/* Time Entries Table */}
-            <div className="border border-[#e5e7eb] rounded-xl bg-white shadow-sm overflow-y-auto max-h-[380px]">
+            {/* Time Entries Table (Desktop: >= md) */}
+            <div className="hidden md:block border border-[#e5e7eb] rounded-xl bg-white shadow-sm overflow-y-auto max-h-[380px]">
               <Table className="w-full table-fixed">
                 <TableHeader className={`${config.headerBg} border-b-0 sticky top-0 z-10`}>
                   <TableRow className="border-0 hover:bg-transparent">
@@ -410,6 +413,14 @@ export function TimeStudyStatusModal({
               </Table>
             </div>
 
+            {/* Time Entries Card View (Mobile/Tablet: < md) */}
+            <TimeStudyRecordCardView
+              rows={detailRows}
+              isLoading={isDetailLoading}
+              onViewDoc={handleViewDoc}
+              onDownloadDoc={handleDownloadDoc}
+            />
+
             {/* ── Pagination Component ── */}
             <div className="mt-4">
               <MasterCodePagination
@@ -426,8 +437,8 @@ export function TimeStudyStatusModal({
           </div>
         ) : (
           <>
-            {/* ── Table Container ── */}
-            <div className="mx-6 border border-[#e5e7eb] rounded-xl overflow-y-auto max-h-[450px] bg-white">
+            {/* ── Table Container (Desktop: >= md) ── */}
+            <div className="hidden md:block mx-6 border border-[#e5e7eb] rounded-xl overflow-y-auto max-h-[450px] bg-white">
               <Table>
                 <TableHeader className={`${config.headerBg} border-b-0 sticky top-0 z-10`}>
                   <TableRow className="border-0 hover:bg-transparent">
@@ -472,12 +483,12 @@ export function TimeStudyStatusModal({
                         <TableCell className="px-4 py-3 text-[13px] font-medium text-[#374151] whitespace-nowrap">
                           {user.name}
                         </TableCell>
- 
+
                         {/* Department */}
                         <TableCell className="px-4 py-3 text-[13px] text-[#6b7280] whitespace-nowrap">
                           {user.department}
                         </TableCell>
- 
+
                         {/* Date */}
                         {showDate && (
                           <TableCell className="px-4 py-3 text-[13px] text-[#374151] text-center whitespace-nowrap">
@@ -543,8 +554,46 @@ export function TimeStudyStatusModal({
               </Table>
             </div>
 
+            {/* ── User Status Card View (Mobile/Tablet: < md) ── */}
+            <TimeStudyStatusUserCardView
+              rows={rows}
+              isLoading={isLoading}
+              variant={variant}
+              showDate={showDate}
+              isNotSubmitted={isNotSubmitted}
+              onViewUser={(user) => {
+                if (variant === "pending") {
+                  navigate("/personal-time-study", {
+                    state: {
+                      tab: "mgt",
+                      userId: String(user.id),
+                      date: user.date,
+                    },
+                  })
+                  handleClose()
+                } else {
+                  setSelectedUser(user)
+                }
+              }}
+              onNotifyUser={(user) => {
+                if (!user.date) return
+                const dateObj = new Date(user.date)
+                const day = dateObj.getDay()
+                const diff = dateObj.getDate() - day + (day === 0 ? -6 : 1)
+                const start = new Date(dateObj.setDate(diff))
+                const end = new Date(start)
+                end.setDate(start.getDate() + 6)
+                notifyUser({
+                  userId: String(user.id),
+                  startDate: toIsoYmdFromDate(start),
+                  endDate: toIsoYmdFromDate(end),
+                  status: "notify",
+                })
+              }}
+            />
+
             {/* ── Pagination Component ── */}
-            <div className="px-6 pb-6 pt-0 -mt-2.5">
+            <div className="px-4 sm:px-6 pb-6 pt-3">
               <MasterCodePagination
                 totalItems={totalItems}
                 currentPage={page}
