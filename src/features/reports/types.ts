@@ -85,6 +85,9 @@ export type ReportRunPayload = {
   /** Passed to client-side PDF rendering (not sent to backend). */
   countyName?: string
   countyLogoDataUrl?: string
+  /** Employee picker page the user was on when viewing/downloading. */
+  employeeListPage?: number
+  employeeListTotalPages?: number
 }
 
 /** Mock catalog row with active/inactive filtering. */
@@ -120,6 +123,14 @@ export type ReportSecondaryLayout =
   | "dynamic"
 
 
+export type ReportEmployeeListPagination = {
+  page: number
+  pageSize: number
+  totalItems: number
+  totalPages: number
+  onPageChange: (page: number) => void
+}
+
 export type ReportEmployeeMultiSelectProps = {
   value: string
   onChange: (next: string) => void
@@ -130,6 +141,10 @@ export type ReportEmployeeMultiSelectProps = {
   maxVisibleItems?: number
   className?: string
   emptyListMessage?: string
+  /** When set, list is server-paginated; Select All applies to the current page. */
+  pagination?: ReportEmployeeListPagination
+  /** Labels for selected values not present in the current page of `options`. */
+  optionLabelByValue?: ReadonlyMap<string, string>
 }
 
 export type ReportSecondaryPickBlockProps = {
@@ -146,4 +161,8 @@ export type ReportSecondaryPickBlockProps = {
   emptyListMessage: string
   maxVisibleChips?: number
   onValuesChange?: (next: string) => void
+  pagination?: ReportEmployeeListPagination
+  optionLabelByValue?: ReadonlyMap<string, string>
+  /** When true, keep selected ids that are not in the current `options` page. */
+  retainSelectionsOutsideOptions?: boolean
 }
