@@ -2,7 +2,7 @@ import { useMemo, useState, Fragment, useRef, useCallback, useEffect } from "rea
 import { useLocation } from "react-router-dom"
 import { Controller, useForm, useWatch } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { ChevronDown, Loader2, Search, X } from "lucide-react"
+import { ChevronDown, ChevronLeft, ChevronRight, Loader2, Search, X } from "lucide-react"
 import { toast } from "sonner"
 import { useAuth } from "@/contexts/AuthContext"
 
@@ -54,6 +54,7 @@ import { ReportWeekCalendarPicker } from "./ReportWeekCalendarPicker"
 import { ReportMonthPicker } from "./ReportMonthPicker"
 import { ReportDatePicker } from "./ReportDatePicker"
 import type {
+  ReportEmployeeListPagination,
   ReportEmployeeMultiSelectProps,
   ReportCatalogItem,
   ReportFormValues,
@@ -162,47 +163,54 @@ const reportEmployeeListPanelClassName =
   "rounded-[7px] border border-[#d9deea] bg-white dark:bg-[#18181b] dark:border-[rgba(108,93,211,0.4)] shadow-[0_8px_18px_rgba(17,24,39,0.12)]"
 
 const reportEmployeeListScrollClassName = "max-h-[240px] overflow-auto p-1"
+const DEFAULT_EMPLOYEE_LIST_PAGE_SIZE = 20
 
-/** Which secondary filters to show depends on the catalog report key (e.g. DSSRPTn). */
-function getReportSecondaryLayout(criteria?: ReportCatalogItem["criteria"]): ReportSecondaryLayout {
-  if (criteria) return "dynamic"
-  return "employee"
-}
+function ReportEmployeeListPager({
+  pagination,
+}: {
+  pagination: ReportEmployeeListPagination
+}) {
+  const { page, pageSize, totalItems, totalPages, onPageChange } = pagination
+  const safeTotalPages = Math.max(1, totalPages)
 
-function isTrue(val: unknown): boolean {
-  return val === true || val === "true"
-}
-
-function addDays(dateStr: string, days: number): string {
-  if (!dateStr) return ""
-  const d = new Date(dateStr + "T00:00:00")
-  if (isNaN(d.getTime())) return ""
-  d.setDate(d.getDate() + days)
-  const y = d.getFullYear()
-  const m = String(d.getMonth() + 1).padStart(2, "0")
-  const day = String(d.getDate()).padStart(2, "0")
-  return `${y}-${m}-${day}`
-}
-
-function mapIdNameRowsToSelectOptions(
-  rows: readonly { id: string | number; name?: string; label?: string; code?: string }[],
-): ReportSelectOption[] {
-  const seen = new Set<string>()
-  const opts = [...rows]
-    .map((row) => ({
-      value: String(row.id),
-      label: row.label ?? row.name ?? String(row.id),
-    }))
-    .filter((opt) => {
-      if (seen.has(opt.value)) return false
-      seen.add(opt.value)
-      return true
-    })
-  return sortSelectOptionsByLabel(opts)
-}
-
-function serializeEmployeeIdsField(values: readonly string[]): string {
-  return values.join(", ")
+  return (
+    <div className="flex items-center justify-between gap-2 border-t border-[#e5e7eb] dark:border-[rgba(108,93,211,0.3)] px-2 py-1.5">
+      <p className="truncate text-[11px] text-[#6b7280]">
+        {totalItems} total · {pageSize}/page
+      </p>
+      <div className="flex shrink-0 items-center gap-1">
+        <button
+          type="button"
+          aria-label="Previous page"
+          disabled={page <= 1}
+          className="inline-flex size-6 items-center justify-center rounded border border-[#d8dae3] text-[#6b7280] disabled:pointer-events-none disabled:opacity-40"
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            onPageChange(Math.max(1, page - 1))
+          }}
+        >
+          <ChevronLeft className="size-3.5" />
+        </button>
+        <span className="min-w-[3.25rem] text-center text-[11px] tabular-nums text-[#111827] dark:text-[#e4e4e7]">
+          {page}/{safeTotalPages}
+        </span>
+        <button
+          type="button"
+          aria-label="Next page"
+          disabled={page >= safeTotalPages}
+          className="inline-flex size-6 items-center justify-center rounded border border-[#d8dae3] text-[#6b7280] disabled:pointer-events-none disabled:opacity-40"
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            onPageChange(Math.min(safeTotalPages, page + 1))
+          }}
+        >
+          <ChevronRight className="size-3.5" />
+        </button>
+      </div>
+    </div>
+  )
 }
 
 function ReportEmployeeMultiSelect({
@@ -216,6 +224,8 @@ function ReportEmployeeMultiSelect({
   className,
   emptyListMessage = "No options available",
   isLoading = false,
+  pagination,
+  optionLabelByValue,
 }: ReportEmployeeMultiSelectProps & { isLoading?: boolean }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
@@ -236,9 +246,10 @@ function ReportEmployeeMultiSelect({
   const selectedItems = useMemo(() => {
     return selectedValues.map((v) => {
       const opt = options.find((o) => o.value === v)
-      return { value: v, label: opt?.label ?? v }
+      const cached = optionLabelByValue?.get(v)
+      return { value: v, label: opt?.label ?? cached ?? v }
     })
-  }, [selectedValues, options])
+  }, [selectedValues, options, optionLabelByValue])
 
   const toggle = (v: string) => {
     const set = new Set(selectedValues)
@@ -274,6 +285,7 @@ function ReportEmployeeMultiSelect({
   }
 
   const hasSelection = selectedItems.length > 0
+  const showPager = Boolean(pagination && pagination.totalItems > 0)
 
   return (
     <DropdownMenu modal={false} open={menuOpen} onOpenChange={handleOpenChange}>
@@ -432,7 +444,9 @@ function ReportEmployeeMultiSelect({
                 onCheckedChange={() => toggleSelectAll()}
                 className="shrink-0"
               />
-              <span className="truncate text-[14px] font-medium text-[#111827] dark:text-[#e4e4e7]">Select All</span>
+              <span className="truncate text-[14px] font-medium text-[#111827] dark:text-[#e4e4e7]">
+                {pagination ? "Select All on page" : "Select All"}
+              </span>
             </label>
             {filteredOptions.map((opt) => {
               const selected = selectedValues.includes(opt.value)
@@ -457,9 +471,52 @@ function ReportEmployeeMultiSelect({
             })}
           </div>
         )}
+        {showPager && pagination ? <ReportEmployeeListPager pagination={pagination} /> : null}
       </DropdownMenuContent>
     </DropdownMenu>
   )
+}
+
+function isTrue(val: unknown): boolean {
+  return val === true || val === "true"
+}
+
+function addDays(dateStr: string, days: number): string {
+  if (!dateStr) return ""
+  const d = new Date(dateStr + "T00:00:00")
+  if (isNaN(d.getTime())) return ""
+  d.setDate(d.getDate() + days)
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, "0")
+  const day = String(d.getDate()).padStart(2, "0")
+  return `${y}-${m}-${day}`
+}
+
+function mapIdNameRowsToSelectOptions(
+  rows: readonly { id: string | number; name?: string; label?: string; code?: string }[],
+): ReportSelectOption[] {
+  const seen = new Set<string>()
+  const opts = [...rows]
+    .map((row) => ({
+      value: String(row.id),
+      label: row.label ?? row.name ?? String(row.id),
+    }))
+    .filter((opt) => {
+      if (seen.has(opt.value)) return false
+      seen.add(opt.value)
+      return true
+    })
+  return sortSelectOptionsByLabel(opts)
+}
+
+function serializeEmployeeIdsField(values: readonly string[]): string {
+  return values.join(", ")
+}
+
+/** Which secondary filters to show depends on the catalog report key (e.g. DSSRPTn). */
+function getReportSecondaryLayout(criteria?: ReportCatalogItem["criteria"]): ReportSecondaryLayout {
+  if (criteria) return "dynamic"
+  return "employee"
 }
 
 function ReportSecondaryPickBlock({
@@ -477,6 +534,9 @@ function ReportSecondaryPickBlock({
   maxVisibleChips = 2,
   onValuesChange,
   isLoading = false,
+  pagination,
+  optionLabelByValue,
+  retainSelectionsOutsideOptions = false,
 }: ReportSecondaryPickBlockProps & { isLoading?: boolean }) {
   const includeActive = useWatch({ control, name: activeField }) === true
   const includeInactive = useWatch({ control, name: inactiveField }) === true
@@ -493,6 +553,7 @@ function ReportSecondaryPickBlock({
       return
     }
 
+    if (retainSelectionsOutsideOptions) return
     if (isLoading || current.length === 0) return
 
     // Avoid pruning while async option lists are still empty (Program/Activity blocks
@@ -506,11 +567,22 @@ function ReportSecondaryPickBlock({
     const next = serializeEmployeeIdsField(pruned)
     setValue(idsField, next, { shouldValidate: true, shouldDirty: true })
     onValuesChange?.(next)
-  }, [includeActive, includeInactive, options, idsRaw, idsField, setValue, onValuesChange, isLoading])
+  }, [
+    includeActive,
+    includeInactive,
+    options,
+    idsRaw,
+    idsField,
+    setValue,
+    onValuesChange,
+    isLoading,
+    retainSelectionsOutsideOptions,
+  ])
 
-  /* Padding on the positioned parent skewed `top-full`; keep pb on this outer wrapper only (pb-16 clears bar + mt-3). */
+  /* Padding on the positioned parent skewed `top-full`; keep pb on this outer wrapper only
+     (clears select + optional employee-list page label under it). */
   return (
-    <div className="w-full min-w-0 max-w-full pb-16">
+    <div className="w-full min-w-0 max-w-full pb-20">
       <div className="relative isolate w-full min-w-0 max-w-full">
         <div className="relative z-0 flex w-full min-w-0 flex-wrap items-center justify-between gap-x-3 gap-y-2 mb-2">
           <span className="shrink-0 text-[14px] font-normal leading-none text-[#2a2f3a]">{title}</span>
@@ -563,9 +635,18 @@ function ReportSecondaryPickBlock({
                 className={employeeMultiSelectClassName}
                 emptyListMessage={emptyListMessage}
                 isLoading={isLoading}
+                pagination={pagination}
+                optionLabelByValue={optionLabelByValue}
               />
             )}
           />
+          {pagination && pagination.totalItems > 0 ? (
+            <div className="mt-1.5 flex justify-end">
+              <span className="text-[12px] text-[#6b7280]">
+                Employee list page {pagination.page} of {Math.max(1, pagination.totalPages)}
+              </span>
+            </div>
+          ) : null}
         </div>
       </div>
     </div>
@@ -689,9 +770,15 @@ export type ReportFormProps = {
 
 export function ReportForm({ module }: ReportFormProps) {
   const [reportPreviewUrl, setReportPreviewUrl] = useState<string>("")
+  const [employeeListPage, setEmployeeListPage] = useState(1)
+  const [employeeOptionLabelByValue, setEmployeeOptionLabelByValue] = useState<Map<string, string>>(
+    () => new Map(),
+  )
+  const [previewEmployeeListPageLabel, setPreviewEmployeeListPageLabel] = useState("")
   const location = useLocation()
 
-  const updateReportPreview = (blob: Blob) => {
+  const updateReportPreview = (blob: Blob, employeeListPageLabel = "") => {
+    setPreviewEmployeeListPageLabel(employeeListPageLabel)
     setReportPreviewUrl((previousUrl) => {
       if (previousUrl) {
         URL.revokeObjectURL(previousUrl)
@@ -954,7 +1041,34 @@ export function ReportForm({ module }: ReportFormProps) {
     reportKey,
     activityStartDate,
     activityEndDate,
+    employeeListPage,
+    DEFAULT_EMPLOYEE_LIST_PAGE_SIZE,
   )
+
+  useEffect(() => {
+    setEmployeeListPage(1)
+    setEmployeeOptionLabelByValue(new Map())
+  }, [
+    departmentId,
+    reportKey,
+    masterCode,
+    activityStartDate,
+    activityEndDate,
+    includeActiveEmployees,
+    includeInactiveEmployees,
+  ])
+
+  useEffect(() => {
+    const pageRows = departmentUsersData?.data
+    if (!pageRows?.length) return
+    setEmployeeOptionLabelByValue((prev) => {
+      const next = new Map(prev)
+      for (const row of pageRows) {
+        next.set(row.value, row.label)
+      }
+      return next
+    })
+  }, [departmentUsersData])
 
   const hasActivityDateRange = hasReportPeriodDates
   const shouldFetchActivities =
@@ -1234,8 +1348,8 @@ export function ReportForm({ module }: ReportFormProps) {
     if (shouldFetchCostPoolUsers && costPoolUsersData && !isCostPoolUsersFetching) {
       return sortSelectOptionsByLabel(costPoolUsersData)
     }
-    if (shouldLoadDepartmentUsers && departmentUsersData && !isDeptUsersFetching) {
-      return sortSelectOptionsByLabel(departmentUsersData)
+    if (shouldLoadDepartmentUsers && departmentUsersData?.data) {
+      return sortSelectOptionsByLabel(departmentUsersData.data)
     }
     if (shouldFetchMaaEmployees && maaEmployeesData && !isMaaEmployeesFetching) {
       return sortSelectOptionsByLabel(maaEmployeesData)
@@ -1252,6 +1366,18 @@ export function ReportForm({ module }: ReportFormProps) {
     maaEmployeesData,
     isMaaEmployeesFetching,
   ])
+
+  const departmentEmployeePagination = useMemo((): ReportEmployeeListPagination | undefined => {
+    if (!shouldLoadDepartmentUsers || !departmentUsersData?.meta) return undefined
+    const meta = departmentUsersData.meta
+    return {
+      page: meta.currentPage,
+      pageSize: meta.itemsPerPage,
+      totalItems: meta.totalItems,
+      totalPages: meta.totalPages,
+      onPageChange: setEmployeeListPage,
+    }
+  }, [shouldLoadDepartmentUsers, departmentUsersData])
 
   const isEmployeeLoading =
     (shouldFetchCostPoolUsers && isCostPoolUsersFetching) ||
@@ -1316,6 +1442,12 @@ export function ReportForm({ module }: ReportFormProps) {
       ...mapReportFormToRunPayload(values),
       ...(resolvedCountyName ? { countyName: resolvedCountyName } : {}),
       ...(resolvedLogoSrc ? { countyLogoDataUrl: resolvedLogoSrc } : {}),
+      ...(departmentEmployeePagination
+        ? {
+            employeeListPage: employeeListPage,
+            employeeListTotalPages: departmentEmployeePagination.totalPages,
+          }
+        : {}),
     }
     viewReport(payload, {
       onSuccess: (blobLike) => {
@@ -1324,7 +1456,10 @@ export function ReportForm({ module }: ReportFormProps) {
           toast.error("Report response is not a file. Please check selected report parameters.")
           return
         }
-        updateReportPreview(blob)
+        const pageLabel = departmentEmployeePagination
+          ? `Employee list page ${employeeListPage} of ${departmentEmployeePagination.totalPages}`
+          : ""
+        updateReportPreview(blob, pageLabel)
         toast.success("Report loaded")
         persistIfRequested(values)
       },
@@ -1350,6 +1485,12 @@ export function ReportForm({ module }: ReportFormProps) {
       }),
       ...(resolvedCountyName ? { countyName: resolvedCountyName } : {}),
       ...(resolvedLogoSrc ? { countyLogoDataUrl: resolvedLogoSrc } : {}),
+      ...(departmentEmployeePagination
+        ? {
+            employeeListPage: employeeListPage,
+            employeeListTotalPages: departmentEmployeePagination.totalPages,
+          }
+        : {}),
     }
 
     downloadReport(payload, {
@@ -1359,8 +1500,11 @@ export function ReportForm({ module }: ReportFormProps) {
           toast.error("Download response is not a file. Please check selected report parameters.")
           return
         }
+        const pageLabel = departmentEmployeePagination
+          ? `Employee list page ${employeeListPage} of ${departmentEmployeePagination.totalPages}`
+          : ""
         if (values.downloadType === "PDF") {
-          updateReportPreview(blob)
+          updateReportPreview(blob, pageLabel)
         }
         saveBlobAsFile(blob, parsedName.data, values.downloadType)
         toast.success("Download started")
@@ -1375,6 +1519,7 @@ export function ReportForm({ module }: ReportFormProps) {
   const onStop = () => {
     stopViewReport()
     stopDownloadReport()
+    setPreviewEmployeeListPageLabel("")
     setReportPreviewUrl((previousUrl) => {
       if (previousUrl) {
         URL.revokeObjectURL(previousUrl)
@@ -2238,6 +2383,9 @@ export function ReportForm({ module }: ReportFormProps) {
                         placeholder="Select Employee"
                         emptyListMessage="No employees available"
                         isLoading={isEmployeeLoading}
+                        pagination={departmentEmployeePagination}
+                        optionLabelByValue={employeeOptionLabelByValue}
+                        retainSelectionsOutsideOptions={Boolean(departmentEmployeePagination)}
                         onValuesChange={() => {
                           setValue("activityIds", "")
                           setValue("programIds", "")
@@ -2339,6 +2487,9 @@ export function ReportForm({ module }: ReportFormProps) {
                 emptyListMessage="No employees available"
                 onValuesChange={() => setValue("activityIds", "")}
                 isLoading={isEmployeeLoading}
+                pagination={departmentEmployeePagination}
+                optionLabelByValue={employeeOptionLabelByValue}
+                retainSelectionsOutsideOptions={Boolean(departmentEmployeePagination)}
               />
             </div>
           )}
@@ -2496,7 +2647,17 @@ export function ReportForm({ module }: ReportFormProps) {
 
         {reportPreviewUrl ? (
           <div className="pt-4">
-            <div className="overflow-hidden rounded-[10px] border border-[#E5E7EB] bg-white shadow-sm">
+            <div className="relative overflow-hidden rounded-[10px] border border-[#E5E7EB] bg-white shadow-sm">
+              {previewEmployeeListPageLabel ? (
+                <div
+                  className="pointer-events-none absolute right-[148px] top-0 z-10 flex h-14 items-center"
+                  aria-hidden={false}
+                >
+                  <span className="rounded px-2 py-1 text-[12px] font-medium text-white drop-shadow-[0_1px_1px_rgba(0,0,0,0.65)]">
+                    {previewEmployeeListPageLabel}
+                  </span>
+                </div>
+              ) : null}
               <iframe
                 title="Report preview"
                 src={reportPreviewUrl}
