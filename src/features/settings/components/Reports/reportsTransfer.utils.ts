@@ -10,6 +10,23 @@ export function masterCodeRowToTransferItem(row: MasterCodeTransferRow): Reports
   return { id: String(row.id), name: row.name }
 }
 
+export function programItemsToTransferItems(
+  items: Array<{ id: number; code: string; name: string }>,
+): ReportsTransferItem[] {
+  return items
+    .map((p) => {
+      const code = String(p.code ?? "").trim()
+      if (!code) return null
+      return {
+        id: code,
+        code,
+        name: String(p.name ?? "").trim() || code,
+      }
+    })
+    .filter((x): x is ReportsTransferItem => x != null)
+    .sort((a, b) => a.name.localeCompare(b.name))
+}
+
 export function activityItemsToTransferItems(
   items: MasterCodeActivityTransferItem[],
 ): ReportsTransferItem[] {

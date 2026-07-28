@@ -4,7 +4,7 @@ type SaveSection = (typeof SettingsFormSaveSection)[keyof typeof SettingsFormSav
 
 export const SETTINGS_FORM_SECTION_SUCCESS_MESSAGES: Record<SaveSection, string> = {
   [SettingsFormSaveSection.County]: "County settings updated successfully",
-  [SettingsFormSaveSection.Reports]: "Reports updated successfully",
+  [SettingsFormSaveSection.Reports]: "County reports updated successfully",
   [SettingsFormSaveSection.Login]: "Login settings updated successfully",
   [SettingsFormSaveSection.General]: "General settings updated successfully",
   [SettingsFormSaveSection.Payroll]: "Payroll updated successfully",

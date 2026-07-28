@@ -27,6 +27,11 @@ export const DEFAULT_SETTINGS: SettingsModel = {
     includedMasterCodeIds: [],
     excludedActivityCodes: [],
     includedActivityCodes: [],
+    includedProgramCodes: [],
+    excludedProgramCodes: [],
+    category1Programs: [],
+    category2Programs: [],
+    category3Programs: [],
   },
   login: {
     twoFactorAuthentication: true,

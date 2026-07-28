@@ -16,8 +16,8 @@ export function useGetAssignedAndUnassignedReports(
     enabled: canFetch,
     staleTime: 0,
     gcTime: 5 * 60_000,
-    refetchOnMount: false,
+    refetchOnMount: "always",
     refetchOnWindowFocus: false,
-    refetchOnReconnect: false,
+    refetchOnReconnect: true,
   })
 }

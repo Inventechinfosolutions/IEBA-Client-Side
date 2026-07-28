@@ -2,14 +2,10 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { settingsKeys } from "@/features/settings/keys"
 import { DEFAULT_SETTINGS } from "@/features/settings/constants"
 import { SettingsFormSaveSection } from "@/features/settings/enums/setting.enum"
-import type { ReportOption, SettingsModel, UpdateSettingsInput } from "@/features/settings/types"
+import type { SettingsModel, UpdateSettingsInput } from "@/features/settings/types"
 import type { PayrollBy, PayrollColumnSettingModel, PayrollSettingsModel } from "../payroll"
 import { updatePayrollSettings } from "../payroll"
 import { api } from "@/lib/api"
-import { buildReportMasterCodeSavePayload } from "@/features/reports/lib/reportMasterCodeData.utils"
-import { buildActivityTransferQueryParams } from "@/features/settings/components/Reports/reportsTransfer.utils"
-import { mapRawReportsToReportOptions } from "@/features/settings/lib/reportOptions.utils"
-import { fetchReportTransferFlags } from "@/features/settings/queries/getReportTransferFlags"
 import {
   createCountyLocation,
   deleteCountyLocation,
@@ -202,134 +198,17 @@ async function updateSettings(
   }
 
   if (input.submitterSection === SettingsFormSaveSection.Reports) {
-    const departmentId = input.values.reports?.departmentId?.trim() ?? ""
-    const reportOptions =
-      queryClient.getQueryData<ReportOption[]>(settingsKeys.reports.byDepartment(departmentId)) ??
-      []
-    const selectedReportKey = input.values.reports?.reportKey
-    const selectedReport = reportOptions.find((r) => r.key === selectedReportKey)
-
-    if (!selectedReport?.id) {
-      throw new Error("Please select department and report before saving")
-    }
-
-    const masterCodeExclusionMode =
-      input.values.reports?.masterCodeExclusionMode === "include" ? "include" : "exclude"
-    const activityExclusionMode =
-      input.values.reports?.activityExclusionMode === "include" ? "include" : "exclude"
-    const inclusionType = masterCodeExclusionMode === "include" ? "included" : "excluded"
-    const saveScope = input.reportsSaveScope
-
-    const assignedMasterCodeIds = input.values.reports?.includedMasterCodeIds ?? []
-    const unassignedMasterCodeIds = input.values.reports?.excludedMasterCodeIds ?? []
-    const assignedActivityCodes = input.values.reports?.includedActivityCodes ?? []
-    const unassignedActivityCodes = input.values.reports?.excludedActivityCodes ?? []
-
-    let finalExcludedIds = unassignedMasterCodeIds
-    let finalIncludedIds = assignedMasterCodeIds
-    let finalExcludedActivityCodes = unassignedActivityCodes
-    let finalIncludedActivityCodes = assignedActivityCodes
-
-    if (saveScope === "masterCodes") {
-      finalIncludedActivityCodes = []
-      finalExcludedActivityCodes = []
-    }
-
-    const { excludedMasterCodeData, includedMasterCodeData } = buildReportMasterCodeSavePayload(
-      finalExcludedIds,
-      finalExcludedActivityCodes,
-      finalIncludedIds,
-      finalIncludedActivityCodes,
-    )
-
-    const reportdata = finalIncludedActivityCodes.join(",")
-
-    const putRes = await api.put<unknown>(`/report/${selectedReport.id}`, {
-      name: selectedReport.label.replace(new RegExp(`^${selectedReport.key}\\s*`), ""),
-      filename: selectedReport.filename,
-      path: selectedReport.path,
-      type: inclusionType,
-      reportdata,
-      excludedMasterCodeData,
-      includedMasterCodeData,
-      status: selectedReport.status ?? "active",
-    })
-
-    const putRow = ((putRes as { data?: unknown })?.data ?? putRes) as Record<string, unknown>
-    const updatedReportOption = mapRawReportsToReportOptions([putRow])[0]
-
-    queryClient.setQueryData<ReportOption[]>(
-      settingsKeys.reports.byDepartment(departmentId),
-      (prev) => {
-        const list = prev ?? []
-        return list.map((r) => (r.key === selectedReportKey ? { ...r, ...updatedReportOption } : r))
+    // County report mapping saves immediately from CountyReportsMappingForm.
+    // Master-code exclusion/inclusion moved to Department → Reports mapping.
+    return {
+      ...DEFAULT_SETTINGS,
+      ...input.values,
+      version: (queryClient.getQueryData<SettingsModel>(settingsKeys.detail())?.version ?? 1),
+      reports: {
+        ...DEFAULT_SETTINGS.reports,
+        ...input.values.reports,
       },
-    )
-
-    reportsAfterSave = {
-      departmentId,
-      reportKey: selectedReportKey ?? "",
-      masterCodeExclusionMode,
-      activityExclusionMode,
-      excludedMasterCodeIds: (updatedReportOption.excludedMasterCodeData?.masterCodeIds ?? []).map(
-        String,
-      ),
-      includedMasterCodeIds: (updatedReportOption.includedMasterCodeData?.masterCodeIds ?? []).map(
-        String,
-      ),
-      excludedActivityCodes: updatedReportOption.excludedMasterCodeData?.activityCodes ?? [],
-      includedActivityCodes: updatedReportOption.includedMasterCodeData?.activityCodes ?? [],
     }
-
-    const masterCodeBucketMode = input.reportsBucketMode ?? masterCodeExclusionMode
-    const refreshedMcPickerIds = (
-      masterCodeBucketMode === "include"
-        ? reportsAfterSave.includedMasterCodeIds
-        : reportsAfterSave.excludedMasterCodeIds
-    )
-      .map((id) => Number(id))
-      .filter((n) => Number.isFinite(n) && n >= 1)
-
-    const activityBucketMode =
-      saveScope === "activities"
-        ? (input.reportsBucketMode ?? activityExclusionMode)
-        : activityExclusionMode
-    const savedIncludedActCodes = input.values.reports?.includedActivityCodes ?? []
-    const savedExcludedActCodes = input.values.reports?.excludedActivityCodes ?? []
-    const refreshedActivityQuery = buildActivityTransferQueryParams(
-      activityBucketMode,
-      savedIncludedActCodes,
-      savedExcludedActCodes,
-    )
-
-    const mcIdsKey = refreshedMcPickerIds
-      .slice()
-      .sort((a, b) => a - b)
-      .join(",")
-    const selectedCodesKey = [...new Set(refreshedActivityQuery.selectedActivityCodes)]
-      .sort()
-      .join(",")
-    const excludedCodesKey = [...new Set(refreshedActivityQuery.excludedActivityCodes)]
-      .sort()
-      .join(",")
-
-    await queryClient.fetchQuery({
-      queryKey: settingsKeys.reports.transferFlags(
-        masterCodeBucketMode,
-        mcIdsKey,
-        refreshedActivityQuery.queryActivityMode,
-        selectedCodesKey,
-        excludedCodesKey,
-      ),
-      queryFn: () =>
-        fetchReportTransferFlags({
-          masterCodeMode: masterCodeBucketMode,
-          selectedMasterCodeIds: refreshedMcPickerIds,
-          activityMode: refreshedActivityQuery.queryActivityMode,
-          selectedActivityCodes: refreshedActivityQuery.selectedActivityCodes,
-          excludedActivityCodes: refreshedActivityQuery.excludedActivityCodes,
-        }),
-    })
   }
 
   if (input.submitterSection === SettingsFormSaveSection.Login) {
