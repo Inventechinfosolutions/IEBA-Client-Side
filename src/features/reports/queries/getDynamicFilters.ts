@@ -85,6 +85,8 @@ export function useGetUsersUnderDepartment(
   reportKey: string,
   fromDate?: string,
   toDate?: string,
+  page = 1,
+  limit = 20,
 ) {
   const statusStr = userStatus.length ? userStatus.join(",") : "active"
   return useQuery({
@@ -92,9 +94,19 @@ export function useGetUsersUnderDepartment(
       ...reportKeys.all,
       "users-under-department",
       reportKey,
-      { departmentId, userId, masterCode, statusStr, fromDate, toDate },
+      { departmentId, userId, masterCode, statusStr, fromDate, toDate, page, limit },
     ],
-    queryFn: () => apiGetUsersUnderDepartment(departmentId!, userId || "", masterCode, statusStr, fromDate, toDate),
+    queryFn: () =>
+      apiGetUsersUnderDepartment(
+        departmentId!,
+        userId || "",
+        masterCode,
+        statusStr,
+        fromDate,
+        toDate,
+        page,
+        limit,
+      ),
     enabled: enabled && !!departmentId,
     ...reportQueryOptions,
   })
@@ -125,6 +137,7 @@ export function useGetActivitiesByDepartmentAndUsers(
         endDate,
         activityStatus,
         masterCode,
+        reportKey,
       ),
     enabled:
       enabled && !!departmentId && userIds.length > 0 && !!startDate && !!endDate,

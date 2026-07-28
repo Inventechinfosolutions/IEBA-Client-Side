@@ -3,6 +3,7 @@ export const DepartmentMainTab = {
   Details: "details",
   Settings: "settings",
   ReportSettings: "reportSettings",
+  ReportsMapping: "reportsMapping",
 } as const
 
 /** Sub-tabs under Department Details (address + contact roles). */
