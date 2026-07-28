@@ -36,6 +36,7 @@ import type { DepartmentContactUser } from "../queries/getDepartmentUsers"
 import { useGetDepartmentUsers } from "../queries/getDepartmentUsers"
 import { DepartmentHistoryTable } from "./DepartmentHistoryTable"
 import { DepartmentReportSettingsPanel } from "./DepartmentReportSettingsPanel"
+import { DepartmentReportsMappingPanel } from "./DepartmentReportsMappingPanel"
 import { DepartmentSettingsPanel } from "./DepartmentSettingsPanel"
 import {
     type Department,
@@ -225,13 +226,14 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
         return list
     }, [userOptions, detailsTab, primaryContactId, secondaryContactId, billingContactId, primaryContactName, secondaryContactName, billingContactName])
 
-    const isReportSettingsTabActive = activeTab === "reportSettings"
+    const needsDepartmentMappedReports =
+        activeTab === "reportSettings" || activeTab === "reportsMapping"
     const {
         reportOptions: departmentReportOptions,
         isReportOptionsLoading: isDepartmentReportOptionsLoading,
         mappedReports: departmentMappedReports,
         isMappedReportsLoading: isDepartmentMappedReportsLoading,
-    } = useDepartmentReportSettingsTabQueries(isReportSettingsTabActive, departmentId)
+    } = useDepartmentReportSettingsTabQueries(needsDepartmentMappedReports, departmentId)
 
     const handleSave = async (opts?: { toastMode?: "none" | "createOrUpdate" }): Promise<string | null> => {
         if (createDeptMutation.isPending || updateDeptMutation.isPending) return null
@@ -337,7 +339,7 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
 
     const onSubmit = (_data: DepartmentUpsertValues) => {
         // If we're on the settings or report settings tab and submitting the main form
-        if (activeTab === "settings" || activeTab === "reportSettings") {
+        if (activeTab === "settings" || activeTab === "reportSettings" || activeTab === "reportsMapping") {
             const values = getValues()
             if (values.settings.allowMultiCodes) {
                 const selectedCodes = (values.settings.multiCodes || "").split(",").filter(Boolean)
@@ -485,7 +487,7 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
             return
         }
 
-        if (value === "settings" || value === "reportSettings") {
+        if (value === "settings" || value === "reportSettings" || value === "reportsMapping") {
             const isValid = await validateDetailsTab()
             if (!isValid) return
         }
@@ -542,26 +544,33 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                             <form onSubmit={handleSubmit(onSubmit)} className="w-full max-w-full min-w-0">
                                 <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full max-w-full min-w-0">
                                     <div className="px-4 sm:px-6 py-3 sm:py-4 w-full max-w-full min-w-0">
-                                        <TabsList className="grid grid-cols-1 sm:grid-cols-3 !h-auto sm:!h-[62px] w-full min-w-0 max-w-full items-stretch gap-1.5 sm:gap-0 overflow-hidden rounded-[6px] border border-[#E5E7EB] bg-white p-1 sm:p-0">
+                                        <TabsList className="grid grid-cols-1 sm:grid-cols-4 !h-auto sm:!h-[62px] w-full min-w-0 max-w-full items-stretch gap-1.5 sm:gap-0 overflow-hidden rounded-[6px] border border-[#E5E7EB] bg-white p-1 sm:p-0">
                                             <TabsTrigger
                                                 value="details"
-                                                className="h-[44px] sm:h-full rounded-[8px] border-0 data-[state=active]:bg-[#6C5DD3] data-[state=active]:text-white data-[state=inactive]:text-[#9CA3AF] font-[500] text-[14px] sm:text-[15px] transition-all shadow-none"
+                                                className="h-[44px] sm:h-full rounded-[8px] border-0 data-[state=active]:bg-[#6C5DD3] data-[state=active]:text-white data-[state=inactive]:text-[#9CA3AF] font-[500] text-[13px] sm:text-[14px] leading-tight transition-all shadow-none"
                                             >
                                                 Department Details
                                             </TabsTrigger>
                                             <TabsTrigger
                                                 value="settings"
                                                 disabled={isLoadingDept}
-                                                className="h-[44px] sm:h-full rounded-[8px] border-0 data-[state=active]:bg-[#6C5DD3] data-[state=active]:text-white data-[state=inactive]:text-[#9CA3AF] font-[500] text-[14px] sm:text-[15px] transition-all shadow-none disabled:opacity-50 disabled:cursor-not-allowed"
+                                                className="h-[44px] sm:h-full rounded-[8px] border-0 data-[state=active]:bg-[#6C5DD3] data-[state=active]:text-white data-[state=inactive]:text-[#9CA3AF] font-[500] text-[13px] sm:text-[14px] leading-tight transition-all shadow-none disabled:opacity-50 disabled:cursor-not-allowed"
                                             >
                                                 Department Settings
                                             </TabsTrigger>
                                             <TabsTrigger
                                                 value="reportSettings"
                                                 disabled={isLoadingDept}
-                                                className="h-[44px] sm:h-full rounded-[8px] border-0 px-2 data-[state=active]:bg-[#6C5DD3] data-[state=active]:text-white data-[state=inactive]:text-[#9CA3AF] font-[500] text-[13px] sm:text-[14px] leading-tight transition-all shadow-none disabled:opacity-50 disabled:cursor-not-allowed"
+                                                className="h-[44px] sm:h-full rounded-[8px] border-0 px-2 data-[state=active]:bg-[#6C5DD3] data-[state=active]:text-white data-[state=inactive]:text-[#9CA3AF] font-[500] text-[12px] sm:text-[13px] leading-tight transition-all shadow-none disabled:opacity-50 disabled:cursor-not-allowed"
                                             >
                                                 Department Report Setting
+                                            </TabsTrigger>
+                                            <TabsTrigger
+                                                value="reportsMapping"
+                                                disabled={isLoadingDept}
+                                                className="h-[44px] sm:h-full rounded-[8px] border-0 px-2 data-[state=active]:bg-[#6C5DD3] data-[state=active]:text-white data-[state=inactive]:text-[#9CA3AF] font-[500] text-[12px] sm:text-[13px] leading-tight transition-all shadow-none disabled:opacity-50 disabled:cursor-not-allowed"
+                                            >
+                                                Reports mapping
                                             </TabsTrigger>
                                         </TabsList>
                                     </div>
@@ -868,6 +877,17 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                                             isMappedReportsLoading={isDepartmentMappedReportsLoading}
                                             isSubmitting={isSubmitting}
                                             onEnsureDepartmentId={ensureDepartmentIdForReportMapping}
+                                            onExit={handleExit}
+                                        />
+                                    </TabsContent>
+
+                                    <TabsContent value="reportsMapping" className="mt-0">
+                                        <DepartmentReportsMappingPanel
+                                            departmentId={departmentId}
+                                            departmentCode={currentCode}
+                                            departmentName={currentName}
+                                            countyName={departmentMappedReports?.countyName}
+                                            isSubmitting={isSubmitting}
                                             onExit={handleExit}
                                         />
                                     </TabsContent>

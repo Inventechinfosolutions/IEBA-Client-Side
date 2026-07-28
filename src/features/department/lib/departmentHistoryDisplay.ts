@@ -191,15 +191,38 @@ const CONTACT_CHANGE_FIELDS = new Set([
   "secondaryContactId",
   "billingContactId",
 ])
-const REPORT_CHANGE_FIELDS = new Set(["reportIds"])
+const REPORT_CHANGE_FIELDS = new Set(["reportIds", "reportConfig"])
+
+function formatReportConfigSnapshot(value: unknown): string {
+  if (value == null || typeof value !== "object") return "—"
+  const cfg = value as {
+    reportCode?: string | null
+    reportName?: string | null
+    type?: string | null
+    reportdata?: string | null
+  }
+  const code = String(cfg.reportCode ?? "").trim()
+  const name = String(cfg.reportName ?? "").trim()
+  const type = String(cfg.type ?? "").trim()
+  const label = [code, name].filter(Boolean).join(" — ") || "Report"
+  const dataPreview = cfg.reportdata?.trim()
+    ? cfg.reportdata.length > 80
+      ? `${cfg.reportdata.slice(0, 80)}…`
+      : cfg.reportdata
+    : "—"
+  return `${label} · ${type || "—"} · ${dataPreview}`
+}
 
 function getDepartmentFieldLabel(field: string): string {
+  if (field === "reportConfig") return "Report mapping config"
+  if (field === "reportIds") return "Report IDs"
   return DEPARTMENT_SETTING_LABELS[field] ?? field
 }
 
 function formatDepartmentHistoryFieldValue(field: string, value: unknown): string {
   if (value == null) return "—"
   if (typeof value === "boolean") return value ? "Yes" : "No"
+  if (field === "reportConfig") return formatReportConfigSnapshot(value)
   if (field === "status" && typeof value === "string") {
     return value.charAt(0).toUpperCase() + value.slice(1).toLowerCase()
   }
@@ -342,6 +365,21 @@ export function getDepartmentHistorySnapshotSections(
     })
   }
 
+  if (snapshot.reportConfig != null && typeof snapshot.reportConfig === "object") {
+    const full = JSON.stringify(snapshot.reportConfig)
+    sections.push({
+      title: "Reports mapping",
+      items: [
+        {
+          label: "Report mapping config",
+          value: formatReportConfigSnapshot(snapshot.reportConfig),
+          fullValue: full,
+          kind: "text",
+        },
+      ],
+    })
+  }
+
   return sections
 }
 
@@ -408,7 +446,7 @@ function getDepartmentHistoryChangeSections(
     sections.push({ title: "Department Settings", items: settingItems })
   }
   if (contactItems.length > 0) sections.push({ title: "Contacts", items: contactItems })
-  if (reportItems.length > 0) sections.push({ title: "Report IDs", items: reportItems })
+  if (reportItems.length > 0) sections.push({ title: "Reports mapping", items: reportItems })
   return sections
 }
 

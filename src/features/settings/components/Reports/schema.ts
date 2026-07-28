@@ -9,5 +9,9 @@ export const reportsSettingsSchema = z.object({
   includedMasterCodeIds: z.array(z.string().trim()).default([]),
   excludedActivityCodes: z.array(z.string().trim()).default([]),
   includedActivityCodes: z.array(z.string().trim()).default([]),
+  includedProgramCodes: z.array(z.string().trim()).default([]),
+  excludedProgramCodes: z.array(z.string().trim()).default([]),
+  category1Programs: z.array(z.string().trim()).default([]),
+  category2Programs: z.array(z.string().trim()).default([]),
+  category3Programs: z.array(z.string().trim()).default([]),
 })
-

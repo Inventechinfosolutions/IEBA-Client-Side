@@ -798,12 +798,10 @@ export function ReportForm({ module }: ReportFormProps) {
     return departmentsData?.items ? mapIdNameRowsToSelectOptions(departmentsData.items) : []
   }, [departmentsData])
 
-  const [selectedDeptId, setSelectedDeptId] = useState<string>("")
-  const {
-    data: departmentReportItems = [],
-    isPending: isDeptReportsPending,
-    isFetching: isDeptReportsFetching,
-  } = useGetReportsByDepartment(selectedDeptId, !!selectedDeptId)
+  const [selectedDeptId, setSelectedDeptId] = useState<string>(() => {
+    const stored = readStoredReportFormParams()
+    return stored?.departmentId?.trim() ?? ""
+  })
 
   const formValues = useMemo((): ReportFormValues => {
     const defaults = createReportFormDefaultValues()
@@ -826,6 +824,24 @@ export function ReportForm({ module }: ReportFormProps) {
       base.departmentId = rawDepartmentOptions[0].value
     }
 
+    return base
+  }, [navState, rawDepartmentOptions])
+
+  // Prefer click-selected dept; fall back to form defaults (stored / single-dept).
+  const deptIdForReportsQuery =
+    selectedDeptId || formValues.departmentId?.trim() || ""
+
+  const {
+    data: departmentReportItems = [],
+    isPending: isDeptReportsPending,
+    isFetching: isDeptReportsFetching,
+  } = useGetReportsByDepartment(deptIdForReportsQuery, !!deptIdForReportsQuery)
+
+  const formValuesWithCriteria = useMemo((): ReportFormValues => {
+    const base = { ...formValues }
+    if (!base.departmentId && deptIdForReportsQuery) {
+      base.departmentId = deptIdForReportsQuery
+    }
     const selectedItem = departmentReportItems.find((i) => i.key === base.reportKey)
     if (selectedItem?.criteria) {
       const allowed = resolveAllowedSelectMonthByValues(selectedItem.criteria)
@@ -833,17 +849,15 @@ export function ReportForm({ module }: ReportFormProps) {
         base.selectMonthBy = allowed[0]
       }
     }
-
     if (base.reportKey === "DSSRPT1" && base.dateFrom) {
       base.dateTo = addDays(base.dateFrom, 27)
     }
-
     return base
-  }, [navState, rawDepartmentOptions, departmentReportItems])
+  }, [formValues, departmentReportItems, deptIdForReportsQuery])
 
   const form = useForm<ReportFormValues>({
     resolver: zodResolver(reportFormSchema),
-    values: formValues,
+    values: formValuesWithCriteria,
     resetOptions: {
       keepDirtyValues: true,
     },
@@ -855,12 +869,9 @@ export function ReportForm({ module }: ReportFormProps) {
   const reportKey = useWatch({ control, name: "reportKey" }) ?? ""
   const departmentId = useWatch({ control, name: "departmentId" }) ?? ""
 
-  if (departmentId !== selectedDeptId) {
-    setSelectedDeptId(departmentId)
-  }
-
   const hasSelectedReportType = reportKey.trim().length > 0
-  const deptReportsLoading = !!departmentId && (isDeptReportsPending || isDeptReportsFetching)
+  const deptReportsLoading =
+    !!deptIdForReportsQuery && (isDeptReportsPending || isDeptReportsFetching)
 
   const selectMonthBy = useWatch({ control, name: "selectMonthBy" })
   const fiscalYearId = useWatch({ control, name: "fiscalYearId" }) ?? ""
@@ -2132,6 +2143,7 @@ export function ReportForm({ module }: ReportFormProps) {
                   <SingleSelectDropdown
                     value={field.value ?? ""}
                     onChange={(val) => {
+                      setSelectedDeptId(val)
                       if ((field.value ?? "") !== val) {
                         const defaults = createReportFormDefaultValues()
                         const nextFy = resolveDefaultFiscalYearId(fiscalYearsData)

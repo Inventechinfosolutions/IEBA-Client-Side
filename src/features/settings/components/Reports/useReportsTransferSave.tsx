@@ -73,5 +73,5 @@ export function useReportsTransferSave() {
     )
   }
 
-  return { saveMasterCodes, saveActivities, ReportsTransferSaveTriggers }
+  return { saveMasterCodes, saveActivities, savePrograms: saveMasterCodes, ReportsTransferSaveTriggers }
 }

@@ -9,7 +9,11 @@ import type {
   MapDepartmentReportsReqDto,
 } from "../types"
 
-/** GET /report — catalog for department report settings tab. */
+/**
+ * @deprecated Do not use for Department Report Setting / Reports mapping.
+ * Full catalog belongs only in Settings → county report mapping.
+ * Prefer `getAssignedAndUnassignedReports` (mapped) or `getCountyMappedReportOptions` (pool).
+ */
 export async function getDepartmentReportOptions(): Promise<DepartmentReportOption[]> {
   const res = await api.get<unknown>("/report")
   return toDepartmentReportOptions(extractReportListPayload(res))
@@ -71,4 +75,45 @@ export async function updateAssignedAndUnassignedReports(
     { reportIds },
   )
   return res
+}
+
+export type UpsertDepartmentReportConfigBody = {
+  type: "included" | "excluded"
+  excludedMasterCodeData: {
+    masterCodeIds: number[]
+    activityCodes: string[]
+  }
+  includedMasterCodeData: {
+    masterCodeIds: number[]
+    activityCodes: string[]
+  }
+  includedProgramCodes?: string[]
+  excludedProgramCodes?: string[]
+  category1Programs?: string[]
+  category2Programs?: string[]
+  category3Programs?: string[]
+}
+
+/** GET /departments/:departmentId/reports/:reportId/config */
+export async function getDepartmentReportConfig(
+  departmentId: string,
+  reportId: number,
+): Promise<Record<string, unknown>> {
+  const res = await api.get<unknown>(
+    `/departments/${encodeURIComponent(departmentId)}/reports/${reportId}/config`,
+  )
+  return ((res as { data?: Record<string, unknown> })?.data ?? res) as Record<string, unknown>
+}
+
+/** PUT /departments/:departmentId/reports/:reportId/config */
+export async function upsertDepartmentReportConfig(
+  departmentId: string,
+  reportId: number,
+  body: UpsertDepartmentReportConfigBody,
+): Promise<Record<string, unknown>> {
+  const res = await api.put<unknown>(
+    `/departments/${encodeURIComponent(departmentId)}/reports/${reportId}/config`,
+    body,
+  )
+  return ((res as { data?: Record<string, unknown> })?.data ?? res) as Record<string, unknown>
 }

@@ -14,6 +14,12 @@ import type { MasterCodeSettingsModel } from "@/features/settings/components/Mas
 
 import type { ReportMasterCodeData } from "@/features/reports/lib/reportMasterCodeData.utils"
 
+export type ReportProgramItem = {
+  id: number
+  code: string
+  name: string
+}
+
 export type ReportOption = {
   key: string
   label: string
@@ -26,6 +32,17 @@ export type ReportOption = {
   status?: string | null
   excludedMasterCodeData?: ReportMasterCodeData
   includedMasterCodeData?: ReportMasterCodeData
+  /** Present for MCAH-TVTS department report config */
+  configKind?: "masterCodes" | "programs"
+  includedProgramCodes?: string[]
+  excludedProgramCodes?: string[]
+  category1Programs?: string[]
+  category2Programs?: string[]
+  category3Programs?: string[]
+  programFlag?: {
+    included: ReportProgramItem[]
+    excluded: ReportProgramItem[]
+  }
 }
 export type ActivityOption = { code: string; label: string }
 
@@ -65,7 +82,7 @@ export type SettingsFormValues = z.input<typeof settingsFormSchema>
 
 export type SettingsResponse = SettingsModel
 
-export type ReportsSaveScope = "masterCodes" | "activities"
+export type ReportsSaveScope = "masterCodes" | "activities" | "programs"
 
 export type ReportsBucketMode = "include" | "exclude"
 
