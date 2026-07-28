@@ -84,6 +84,11 @@ export function mapToSettingsFormValues(
       includedMasterCodeIds: settings.reports?.includedMasterCodeIds ?? [],
       excludedActivityCodes: settings.reports?.excludedActivityCodes ?? [],
       includedActivityCodes: settings.reports?.includedActivityCodes ?? [],
+      includedProgramCodes: settings.reports?.includedProgramCodes ?? [],
+      excludedProgramCodes: settings.reports?.excludedProgramCodes ?? [],
+      category1Programs: settings.reports?.category1Programs ?? [],
+      category2Programs: settings.reports?.category2Programs ?? [],
+      category3Programs: settings.reports?.category3Programs ?? [],
     },
     login: {
       twoFactorAuthentication: settings.login?.twoFactorAuthentication ?? false,

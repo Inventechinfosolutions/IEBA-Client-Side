@@ -137,6 +137,7 @@ export function useGetActivitiesByDepartmentAndUsers(
         endDate,
         activityStatus,
         masterCode,
+        reportKey,
       ),
     enabled:
       enabled && !!departmentId && userIds.length > 0 && !!startDate && !!endDate,

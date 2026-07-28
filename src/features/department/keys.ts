@@ -22,6 +22,9 @@ export const departmentKeys = {
       [...departmentKeys.reportSettings.all(), "mapped", departmentId] as const,
     assignedUnassigned: (departmentId: string) =>
       [...departmentKeys.reportSettings.all(), "assigned-unassigned", departmentId] as const,
+    /** GET /departments/:deptId/reports/:reportId/config */
+    config: (departmentId: string, reportId: number) =>
+      [...departmentKeys.reportSettings.all(), "config", departmentId, reportId] as const,
   },
   /** `GET /departments/history` — paginated department history log. */
   history: (params: {

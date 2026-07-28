@@ -6,7 +6,6 @@ import {
   parseDepartmentReportIdsForSave,
   serializeDepartmentReportIds,
 } from "../lib/departmentReport.utils"
-import { useMapDepartmentReports } from "../mutations/mapDepartmentReports"
 import { useUpdateAssignedUnassignedReports } from "../mutations/updateAssignedUnassignedReports"
 import type { DepartmentReportsMapResDto } from "../types"
  
@@ -26,7 +25,6 @@ export function useDepartmentReportSettings({
   const [pendingReportIds, setPendingReportIds] = useState<string | null>(null)
  
   const departmentNameTrimmed = departmentName?.trim() ?? ""
-  const mapReportsMutation = useMapDepartmentReports()
   const updateAssignedUnassignedMutation = useUpdateAssignedUnassignedReports()
  
   const serverMappedReportIds = serializeDepartmentReportIds(

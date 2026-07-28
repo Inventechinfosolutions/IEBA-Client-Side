@@ -77,11 +77,10 @@ export async function apiGetReportsByDepartment(departmentId: string): Promise<R
   const res = await api.get<unknown>(
     `/report/department/${encodeURIComponent(departmentId)}/mapped?${params.toString()}`,
   )
-  const body =
-    (res as { data?: { reports?: unknown[] } })?.data ?? (res as { reports?: unknown[] })
+  const root = res as { data?: { reports?: unknown[]; reportIds?: number[] }; reports?: unknown[] }
+  const body = root?.data ?? root
   const reports = Array.isArray(body?.reports) ? body.reports : []
-  const items = mapRawReportsToCatalogItems(reports)
-  return items
+  return mapRawReportsToCatalogItems(reports)
 }
 
 function formatDateForBackend(raw?: unknown): string | undefined {
@@ -575,6 +574,7 @@ export async function apiGetActivitiesByDepartmentAndUsers(
   endDate?: string,
   activityStatus = "active",
   masterCode?: string,
+  reportCode?: string,
 ): Promise<ReportSelectOption[]> {
   const encodedUserIds = userIds.map(encodeURIComponent).join(",")
   const parts = [`userIds=${encodedUserIds}`]
@@ -586,6 +586,9 @@ export async function apiGetActivitiesByDepartmentAndUsers(
     const codeToSend = masterCode === "BOTH" ? "MAA,TCM" : masterCode
     const encodedCode = codeToSend.split(",").map(encodeURIComponent).join(",")
     parts.push(`masterCode=${encodedCode}`)
+  }
+  if (reportCode?.trim()) {
+    parts.push(`reportCode=${encodeURIComponent(reportCode.trim())}`)
   }
 
   const raw = await api.get<any>(`/report/activity-departments/by-records?${parts.join("&")}`)
