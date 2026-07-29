@@ -77,11 +77,10 @@ export async function apiGetReportsByDepartment(departmentId: string): Promise<R
   const res = await api.get<unknown>(
     `/report/department/${encodeURIComponent(departmentId)}/mapped?${params.toString()}`,
   )
-  const body =
-    (res as { data?: { reports?: unknown[] } })?.data ?? (res as { reports?: unknown[] })
+  const root = res as { data?: { reports?: unknown[]; reportIds?: number[] }; reports?: unknown[] }
+  const body = root?.data ?? root
   const reports = Array.isArray(body?.reports) ? body.reports : []
-  const items = mapRawReportsToCatalogItems(reports)
-  return items
+  return mapRawReportsToCatalogItems(reports)
 }
 
 function formatDateForBackend(raw?: unknown): string | undefined {
@@ -152,6 +151,10 @@ function buildBackendPayload(body: ReportRunPayload, overrideDownloadType?: stri
     downloadType: overrideDownloadType || body.downloadType,
     type: "newreports",
     maaTcmReportingPeriodType: body.maaTcmReportingPeriodType,
+    ...(body.employeeListPage != null ? { employeeListPage: body.employeeListPage } : {}),
+    ...(body.employeeListTotalPages != null
+      ? { employeeListTotalPages: body.employeeListTotalPages }
+      : {}),
     ...(["MAATCM", "TCM_MAA_ADHOC"].includes(body.reportKey)
       ? {
           activityCodeType: parseMaatcmActivityCodeTypesFromMasterCode(body.masterCode),
@@ -473,6 +476,22 @@ export async function apiGetListAllPrograms(): Promise<ReportSelectOption[]> {
   }))
 }
 
+export type UsersUnderDepartmentMeta = {
+  totalItems: number
+  totalPages: number
+  currentPage: number
+  itemsPerPage: number
+  hasNextPage: boolean
+  hasPreviousPage: boolean
+}
+
+export type UsersUnderDepartmentResult = {
+  data: ReportSelectOption[]
+  meta: UsersUnderDepartmentMeta
+}
+
+const DEFAULT_USERS_UNDER_DEPT_PAGE_SIZE = 20
+
 export async function apiGetUsersUnderDepartment(
   departmentId: string,
   currentUserId: string,
@@ -480,12 +499,16 @@ export async function apiGetUsersUnderDepartment(
   departmentStatus = "active",
   fromDate?: string,
   toDate?: string,
-): Promise<ReportSelectOption[]> {
+  page = 1,
+  limit = DEFAULT_USERS_UNDER_DEPT_PAGE_SIZE,
+): Promise<UsersUnderDepartmentResult> {
   const parts = [
     "type=getusersunderdepartmentbystatus",
     `departmentId=${encodeURIComponent(departmentId)}`,
     `departmentStatus=${departmentStatus.split(",").map(encodeURIComponent).join(",")}`,
     `userId=${encodeURIComponent(currentUserId)}`,
+    `page=${encodeURIComponent(String(page))}`,
+    `limit=${encodeURIComponent(String(limit))}`,
   ]
   if (masterCode) {
     const codeToSend = masterCode === "BOTH" ? "MAA,TCM" : masterCode
@@ -499,13 +522,38 @@ export async function apiGetUsersUnderDepartment(
     parts.push(`toDate=${encodeURIComponent(toDate.trim())}`)
   }
 
-  const data = await api.get<any>(`/users?${parts.join("&")}`)
-  const list = Array.isArray(data) ? data : Array.isArray(data.data) ? data.data : []
+  const raw = await api.get<any>(`/users?${parts.join("&")}`)
+  const payload = raw && typeof raw === "object" && "data" in raw ? raw.data : raw
+  const list = Array.isArray(payload)
+    ? payload
+    : Array.isArray(payload?.data)
+      ? payload.data
+      : []
+  const metaRaw = payload && typeof payload === "object" && !Array.isArray(payload) ? payload.meta : undefined
 
-  return list.map((r: any) => ({
+  const data = list.map((r: any) => ({
     value: String(r.id),
     label: r.name || r.label || `${r.firstName || ""} ${r.lastName || ""}`.trim(),
   }))
+
+  const totalItems = Number(metaRaw?.totalItems ?? data.length)
+  const itemsPerPage = Number(metaRaw?.itemsPerPage ?? limit)
+  const currentPage = Number(metaRaw?.currentPage ?? page)
+  const totalPages =
+    Number(metaRaw?.totalPages) ||
+    Math.max(1, itemsPerPage > 0 ? Math.ceil(totalItems / itemsPerPage) : 1)
+
+  return {
+    data,
+    meta: {
+      totalItems,
+      totalPages,
+      currentPage,
+      itemsPerPage,
+      hasNextPage: Boolean(metaRaw?.hasNextPage ?? currentPage < totalPages),
+      hasPreviousPage: Boolean(metaRaw?.hasPreviousPage ?? currentPage > 1),
+    },
+  }
 }
 
 function unwrapListData(raw: any): any[] {
@@ -526,6 +574,7 @@ export async function apiGetActivitiesByDepartmentAndUsers(
   endDate?: string,
   activityStatus = "active",
   masterCode?: string,
+  reportCode?: string,
 ): Promise<ReportSelectOption[]> {
   const encodedUserIds = userIds.map(encodeURIComponent).join(",")
   const parts = [`userIds=${encodedUserIds}`]
@@ -537,6 +586,9 @@ export async function apiGetActivitiesByDepartmentAndUsers(
     const codeToSend = masterCode === "BOTH" ? "MAA,TCM" : masterCode
     const encodedCode = codeToSend.split(",").map(encodeURIComponent).join(",")
     parts.push(`masterCode=${encodedCode}`)
+  }
+  if (reportCode?.trim()) {
+    parts.push(`reportCode=${encodeURIComponent(reportCode.trim())}`)
   }
 
   const raw = await api.get<any>(`/report/activity-departments/by-records?${parts.join("&")}`)

@@ -3,9 +3,9 @@ import { useGetDepartmentReportOptions } from "../queries/getDepartmentReportOpt
 import { useGetAssignedAndUnassignedReports } from "../queries/getAssignedAndUnassignedReports"
 
 /**
- * Report-setting tab APIs — only run while tab 3 is active.
- * - GET /departments/:id/reports/assigned-unassigned if department id exists
- * - GET /report if creating a new department (no ID yet)
+ * Department report catalog APIs — run while tab 3 (Report Setting) or tab 4 (Reports mapping) is active.
+ * - Existing dept: GET /departments/:id/reports/assigned-unassigned (Selected = mapped for tab 4 dropdown)
+ * - New dept (no id yet): GET /report/county/mapped?method=reportscreen (tab 3 pool only)
  */
 export function useDepartmentReportSettingsTabQueries(
   isTabActive: boolean,

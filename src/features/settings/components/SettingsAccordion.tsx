@@ -5,15 +5,14 @@ import { ChevronDown, ChevronLeft } from "lucide-react"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { cn } from "@/lib/utils"
 
-import { ACTIVE_DEPARTMENTS_PAGE_PARAMS } from "@/features/department/constants"
-import { departmentKeys } from "@/features/department/keys"
 import { SETTINGS_ACCORDION_SECTIONS } from "@/features/settings/types"
+import { settingsKeys } from "@/features/settings/keys"
 import type { MasterCodeSelectOption } from "@/features/settings/lib/masterCodeOptions.utils"
 import { CountyForm } from "@/features/settings/components/Country/CountyForm"
 import { AutoGenerateCodeForm } from "@/features/settings/components/AutoGenerateCode/AutoGenerateCodeForm"
 import { PayrollForm } from "@/features/settings/payroll"
 import { FiscalYearForm } from "@/features/settings/components/FiscalYear/FiscalYearForm"
-import { ReportsForm } from "@/features/settings/components/Reports/ReportsForm"
+import { CountyReportsMappingForm } from "@/features/settings/components/Reports/CountyReportsMappingForm"
 import { GeneralForm } from "@/features/settings/components/General/GeneralForm"
 import { LoginForm } from "@/features/settings/components/Login/LoginForm"
 import { MasterCodeForm } from "@/features/settings/components/MasterCode/MasterCodeForm"
@@ -42,8 +41,11 @@ export function SettingsAccordion({
     onOpenSectionChange(section)
 
     if (next === "Reports") {
-      void queryClient.refetchQueries({
-        queryKey: departmentKeys.paginatedList(ACTIVE_DEPARTMENTS_PAGE_PARAMS),
+      void queryClient.invalidateQueries({
+        queryKey: [...settingsKeys.reports.all(), "county-mapped"],
+      })
+      void queryClient.invalidateQueries({
+        queryKey: [...settingsKeys.reports.all(), "county-catalog"],
       })
     }
 
@@ -106,7 +108,7 @@ export function SettingsAccordion({
                   ) : section === "Fiscal Year" ? (
                     <FiscalYearForm isSaving={isSaving} />
                   ) : section === "Reports" ? (
-                    <ReportsForm isSaving={isSaving} isSectionOpen={openSection === "Reports"} />
+                    <CountyReportsMappingForm isSectionOpen={openSection === "Reports"} />
                   ) : section === "General" ? (
                     <GeneralForm isSaving={isSaving} />
                   ) : section === "Master Code" ? (
