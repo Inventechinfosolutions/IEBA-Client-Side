@@ -226,18 +226,24 @@ function ReportEmployeeMultiSelect({
   isLoading = false,
   pagination,
   optionLabelByValue,
+  searchValue,
+  onSearchChange,
 }: ReportEmployeeMultiSelectProps & { isLoading?: boolean }) {
   const [menuOpen, setMenuOpen] = useState(false)
-  const [searchQuery, setSearchQuery] = useState("")
+  const [localSearchQuery, setLocalSearchQuery] = useState("")
+  const isServerSearch = typeof onSearchChange === "function"
+  const searchQuery = isServerSearch ? (searchValue ?? "") : localSearchQuery
+  const setSearchQuery = isServerSearch ? onSearchChange! : setLocalSearchQuery
 
   const disabledEffective = disabled || isLoading
 
   const selectedValues = useMemo(() => parseMultiSelectStoredValues(value), [value])
   const filteredOptions = useMemo(() => {
-    if (!searchQuery.trim()) return options
+    // Server-backed search already filtered `options`; only client-filter local lists.
+    if (isServerSearch || !searchQuery.trim()) return options
     const q = searchQuery.toLowerCase()
     return options.filter((o) => o.label.toLowerCase().includes(q))
-  }, [options, searchQuery])
+  }, [options, searchQuery, isServerSearch])
 
   const filteredValues = useMemo(() => filteredOptions.map((o) => o.value), [filteredOptions])
   const allFilteredSelected =
@@ -281,7 +287,7 @@ function ReportEmployeeMultiSelect({
 
   const handleOpenChange = (open: boolean) => {
     setMenuOpen(open)
-    if (!open) setSearchQuery("")
+    if (!open && !isServerSearch) setLocalSearchQuery("")
   }
 
   const hasSelection = selectedItems.length > 0
@@ -537,6 +543,8 @@ function ReportSecondaryPickBlock({
   pagination,
   optionLabelByValue,
   retainSelectionsOutsideOptions = false,
+  searchValue,
+  onSearchChange,
 }: ReportSecondaryPickBlockProps & { isLoading?: boolean }) {
   const includeActive = useWatch({ control, name: activeField }) === true
   const includeInactive = useWatch({ control, name: inactiveField }) === true
@@ -637,6 +645,8 @@ function ReportSecondaryPickBlock({
                 isLoading={isLoading}
                 pagination={pagination}
                 optionLabelByValue={optionLabelByValue}
+                searchValue={searchValue}
+                onSearchChange={onSearchChange}
               />
             )}
           />
@@ -771,11 +781,26 @@ export type ReportFormProps = {
 export function ReportForm({ module }: ReportFormProps) {
   const [reportPreviewUrl, setReportPreviewUrl] = useState<string>("")
   const [employeeListPage, setEmployeeListPage] = useState(1)
+  const [employeeSearchInput, setEmployeeSearchInput] = useState("")
+  const [employeeSearch, setEmployeeSearch] = useState("")
+  const employeeSearchDebounceRef = useRef<number | null>(null)
   const [employeeOptionLabelByValue, setEmployeeOptionLabelByValue] = useState<Map<string, string>>(
     () => new Map(),
   )
   const [previewEmployeeListPageLabel, setPreviewEmployeeListPageLabel] = useState("")
   const location = useLocation()
+
+  const handleEmployeeSearchChange = (next: string) => {
+    setEmployeeSearchInput(next)
+    if (employeeSearchDebounceRef.current !== null) {
+      window.clearTimeout(employeeSearchDebounceRef.current)
+    }
+    employeeSearchDebounceRef.current = window.setTimeout(() => {
+      employeeSearchDebounceRef.current = null
+      setEmployeeSearch(next)
+      setEmployeeListPage(1)
+    }, 300)
+  }
 
   const updateReportPreview = (blob: Blob, employeeListPageLabel = "") => {
     setPreviewEmployeeListPageLabel(employeeListPageLabel)
@@ -1054,10 +1079,17 @@ export function ReportForm({ module }: ReportFormProps) {
     activityEndDate,
     employeeListPage,
     DEFAULT_EMPLOYEE_LIST_PAGE_SIZE,
+    employeeSearch,
   )
 
   useEffect(() => {
     setEmployeeListPage(1)
+    setEmployeeSearchInput("")
+    setEmployeeSearch("")
+    if (employeeSearchDebounceRef.current !== null) {
+      window.clearTimeout(employeeSearchDebounceRef.current)
+      employeeSearchDebounceRef.current = null
+    }
     setEmployeeOptionLabelByValue(new Map())
   }, [
     departmentId,
@@ -1068,6 +1100,14 @@ export function ReportForm({ module }: ReportFormProps) {
     includeActiveEmployees,
     includeInactiveEmployees,
   ])
+
+  useEffect(() => {
+    return () => {
+      if (employeeSearchDebounceRef.current !== null) {
+        window.clearTimeout(employeeSearchDebounceRef.current)
+      }
+    }
+  }, [])
 
   useEffect(() => {
     const pageRows = departmentUsersData?.data
@@ -2398,6 +2438,8 @@ export function ReportForm({ module }: ReportFormProps) {
                         pagination={departmentEmployeePagination}
                         optionLabelByValue={employeeOptionLabelByValue}
                         retainSelectionsOutsideOptions={Boolean(departmentEmployeePagination)}
+                        searchValue={employeeSearchInput}
+                        onSearchChange={handleEmployeeSearchChange}
                         onValuesChange={() => {
                           setValue("activityIds", "")
                           setValue("programIds", "")
@@ -2502,6 +2544,8 @@ export function ReportForm({ module }: ReportFormProps) {
                 pagination={departmentEmployeePagination}
                 optionLabelByValue={employeeOptionLabelByValue}
                 retainSelectionsOutsideOptions={Boolean(departmentEmployeePagination)}
+                searchValue={employeeSearchInput}
+                onSearchChange={handleEmployeeSearchChange}
               />
             </div>
           )}
