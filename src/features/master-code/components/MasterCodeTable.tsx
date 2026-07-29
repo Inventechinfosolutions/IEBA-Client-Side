@@ -31,6 +31,8 @@ import type {
   MasterCodeTableProps,
 } from "@/features/master-code/types"
 
+import { MasterCodeCardView } from "./MasterCodeCardView"
+
 const getRowCodeNumber = (code: string | undefined) => {
   const parsed = Number.parseInt(code ?? "", 10)
   return Number.isNaN(parsed) ? null : parsed
@@ -97,8 +99,19 @@ export function MasterCodeTable({
   const skeletonRows = Array.from({ length: 10 }, (_, index) => `skeleton-row-${index}`)
 
   return (
-    <div className="overflow-hidden rounded-[4px] border border-[#e6e7ef]">
-      <Table className="table-fixed">
+    <div className="w-full min-w-0">
+      {/* Mobile Card View */}
+      <MasterCodeCardView
+        codeType={codeType}
+        rows={sortedRows}
+        isLoading={isLoading}
+        canEdit={Boolean(canEdit)}
+        onEditRow={onEditRow}
+      />
+
+      {/* Desktop Table View */}
+      <div className="hidden xl:block overflow-hidden rounded-[4px] border border-[#e6e7ef]">
+        <Table className="table-fixed">
         <colgroup>
           <col style={{ width: "120px" }} />
           <col style={{ width: canEdit ? "470px" : "548px" }} />
@@ -378,6 +391,7 @@ export function MasterCodeTable({
           ) : null}
         </TableBody>
       </Table>
+      </div>
     </div>
   )
 }

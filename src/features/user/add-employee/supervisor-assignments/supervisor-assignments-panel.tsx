@@ -152,7 +152,7 @@ export function SupervisorAssignmentsPanel({
             : "Failed to load supervisor details"}
         </p>
       ) : null}
-      <div className="grid max-w-[620px] grid-cols-2 gap-2 pt-2">
+      <div className="grid max-w-[620px] grid-cols-1 sm:grid-cols-2 gap-2 pt-2">
         <Controller
           name="supervisorPrimaryId"
           control={control}

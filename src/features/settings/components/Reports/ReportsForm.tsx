@@ -29,7 +29,7 @@ import {
 
 const labelClassName = "mb-2 block text-[12px] font-normal text-[#2a2f3a]"
 const selectTriggerClassName =
-  "!h-[38px] !w-[260px] !rounded-[8px] border border-[#d6d7dc] bg-white px-[11px] !text-[12px] text-[#111827] shadow-none placeholder:!text-[12px] focus-visible:border-[#6C5DD3] focus-visible:ring-0"
+  "!h-[38px] !w-full sm:!w-[260px] !rounded-[8px] border border-[#d6d7dc] bg-white px-[11px] !text-[12px] text-[#111827] shadow-none placeholder:!text-[12px] focus-visible:border-[#6C5DD3] focus-visible:ring-0"
 
 type ReportsFormProps = {
   isSaving?: boolean
@@ -173,7 +173,7 @@ export function ReportsForm({ isSaving = false, isSectionOpen = false }: Reports
     <div className="bg-transparent px-2 py-1">
       <ReportsTransferSaveTriggers />
 
-      <div className="grid grid-cols-[260px_260px_180px] items-start gap-2">
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:gap-4">
         <div>
           <label className={labelClassName}>Department</label>
           <Controller

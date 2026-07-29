@@ -11,7 +11,7 @@ export function PersonalTimeStudyCard({
 }: PersonalTimeStudyCardProps) {
   return (
     <Link to="/personal-time-study" className="block h-full">
-      <div className="relative flex h-full flex-col rounded-[10px] border border-[#E8EAF6] bg-white p-5 shadow-[0_0_20px_0_#0000001a] hover:shadow-[0_4px_20px_rgba(108,93,211,0.12)] transition-shadow duration-200">
+      <div className="relative flex h-full flex-col rounded-[10px] border border-[#E8EAF6] bg-white p-5 sm:p-6 lg:p-5 shadow-[0_0_20px_0_#0000001a] hover:shadow-[0_4px_20px_rgba(108,93,211,0.12)] transition-shadow duration-200">
         
         {/* blurred overlay – rendered only if noBlur is false */}
         {!noBlur && (
@@ -36,7 +36,7 @@ export function PersonalTimeStudyCard({
             </div>
           ) : (
             <div className="flex-1 flex flex-col justify-between">
-              <div className="space-y-4">
+              <div className="space-y-5 sm:space-y-6 lg:space-y-4">
                 <div className="flex items-center justify-between text-[15px]">
                   <span className="text-[#374151] font-medium">Total Time  study approved :</span>
                   <span className="font-bold text-[#1a1a2e]">{totalApproved}</span>

@@ -116,7 +116,7 @@ export function JobClassificationPage() {
 
   return (
     <section
-      className="font-roboto *:font-roboto w-full rounded-[10px] border border-[#e6e7ef] bg-white p-5 md:p-6 shadow-[0_2px_10px_rgba(0,0,0,0.03)]"
+      className="font-roboto *:font-roboto w-full rounded-[10px] border border-[#e6e7ef] bg-white p-3 sm:p-5 md:p-6 shadow-[0_2px_10px_rgba(0,0,0,0.03)]"
       style={{
         zoom: 1.2,
         "--primary": "#6C5DD3",
@@ -150,6 +150,7 @@ export function JobClassificationPage() {
       </div>
 
       <JobClassificationFormModal
+        key={`${modalOpen}-${modalMode}-${editingId ?? "new"}`}
         open={modalOpen}
         mode={modalMode}
         initialValues={initialValues}

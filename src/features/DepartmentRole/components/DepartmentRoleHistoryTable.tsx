@@ -26,6 +26,8 @@ import {
   getDepartmentRoleHistoryUpdatedByDisplay,
 } from "../lib/departmentRoleHistoryDisplay"
 
+import { DepartmentRoleHistoryCardView } from "./DepartmentRoleHistoryCardView"
+
 type DepartmentRoleHistoryTableProps = {
   departmentName?: string
   departmentCode?: string
@@ -94,7 +96,13 @@ export function DepartmentRoleHistoryTable({
 
   return (
     <div className="flex flex-col gap-4 pt-3">
-      <div className="overflow-hidden rounded-[10px] border border-[#E5E7EB]">
+      <DepartmentRoleHistoryCardView
+        data={historyData}
+        isLoading={isLoading}
+        columnLayout={columnLayout}
+      />
+
+      <div className="hidden xl:block overflow-hidden rounded-[10px] border border-[#E5E7EB]">
         <div className="overflow-x-auto">
           <Table className="w-full table-fixed border-collapse">
             <colgroup>
