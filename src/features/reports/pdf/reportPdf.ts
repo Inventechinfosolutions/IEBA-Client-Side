@@ -948,10 +948,11 @@ export function getP101AllCategoryTotalsByEmployee(
     const hours = toNumber(record.activitytime) + toNumber(record.traveltime)
     const existing = totals.get(key) ?? { ffpTotal: 0, maaTotal: 0, periodTotal: 0 }
 
-    if (isFfpActivityLabel(record.activity)) {
-      existing.ffpTotal += hours
-    } else if (isMaaActivityLabel(record.activity)) {
+    if (isMaaActivityLabel(record.activity)) {
       existing.maaTotal += hours
+    } else {
+      // FFP codes and non-FFP codes that roll into FFP-05 on P101-ALL.
+      existing.ffpTotal += hours
     }
 
     existing.periodTotal = existing.ffpTotal + existing.maaTotal
