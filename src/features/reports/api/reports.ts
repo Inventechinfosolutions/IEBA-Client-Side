@@ -501,6 +501,7 @@ export async function apiGetUsersUnderDepartment(
   toDate?: string,
   page = 1,
   limit = DEFAULT_USERS_UNDER_DEPT_PAGE_SIZE,
+  search?: string,
 ): Promise<UsersUnderDepartmentResult> {
   const parts = [
     "type=getusersunderdepartmentbystatus",
@@ -520,6 +521,14 @@ export async function apiGetUsersUnderDepartment(
   }
   if (toDate?.trim()) {
     parts.push(`toDate=${encodeURIComponent(toDate.trim())}`)
+  }
+  const searchTerm = search?.trim()
+  if (searchTerm) {
+    if (/^\d+$/.test(searchTerm)) {
+      parts.push(`employeeId=${encodeURIComponent(searchTerm)}`)
+    } else {
+      parts.push(`name=${encodeURIComponent(searchTerm)}`)
+    }
   }
 
   const raw = await api.get<any>(`/users?${parts.join("&")}`)
