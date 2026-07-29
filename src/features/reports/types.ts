@@ -145,6 +145,10 @@ export type ReportEmployeeMultiSelectProps = {
   pagination?: ReportEmployeeListPagination
   /** Labels for selected values not present in the current page of `options`. */
   optionLabelByValue?: ReadonlyMap<string, string>
+  /** Controlled search text for server-backed search (paginated lists). */
+  searchValue?: string
+  /** Called when the search box changes; when set, client-side option filtering is skipped. */
+  onSearchChange?: (next: string) => void
 }
 
 export type ReportSecondaryPickBlockProps = {
@@ -165,4 +169,6 @@ export type ReportSecondaryPickBlockProps = {
   optionLabelByValue?: ReadonlyMap<string, string>
   /** When true, keep selected ids that are not in the current `options` page. */
   retainSelectionsOutsideOptions?: boolean
+  searchValue?: string
+  onSearchChange?: (next: string) => void
 }
