@@ -1422,7 +1422,11 @@ export function CountyActivityCodeTable({
           isLoading={isLoading}
           canUpdateCountyActivity={canUpdateCountyActivity}
           onEdit={handleOpenEditModal}
-          expandedParentIds={expandedRowIds}
+          expandedParentIds={
+            (filters.search && filters.search.trim().length > 0)
+              ? Object.fromEntries(primaryRows.map(r => [r.id, true]))
+              : expandedRowIds
+          }
           onToggleExpand={(id) => setExpandedRowIds(prev => ({ ...prev, [id]: !prev[id] }))}
           footer={
             !isLoading && totalItems > 0 ? (
@@ -1603,7 +1607,10 @@ export function CountyActivityCodeTable({
                   </TableRow>
                 ) : (
                   sortedRows.flatMap((row) => {
-                    const isExpanded = Boolean(expandedRowIds[row.id])
+                    const isExpanded = Boolean(
+                      expandedRowIds[row.id] ||
+                      (filters.search && filters.search.trim().length > 0)
+                    )
                     const hasChildren = row.hasChild
 
                     const countyActivityPrimaryTableRow = (
