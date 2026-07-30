@@ -39,6 +39,7 @@ import { useNotifications } from "@/features/notification/queries/useNotificatio
 import type { Notification } from "@/features/notification/types"
 
 import { NotificationSheet } from "@/features/notification/components/NotificationSheet"
+import { ChatbotWidget } from "@/components/chatbot/ChatbotWidget"
 
 export function DashboardLayout() {
   const { user, signOut, establishDashboardSession } = useAuth()
@@ -254,7 +255,7 @@ export function DashboardLayout() {
           </Suspense>
         </div>
       </SidebarInset>
+      <ChatbotWidget />
     </SidebarProvider>
   )
 }
-
