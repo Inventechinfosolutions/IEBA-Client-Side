@@ -121,12 +121,21 @@ export type P110Record = {
   traveltime: string | number
 }
 
+/** Per-day grey totals split by activity code type (FFP / MAA / other). */
+export type P110CodeTypeTotal = {
+  label: string
+  totalActivityTime: number
+  totalTravelTime: number
+  totalTime: number
+}
+
 export type P110DateGroup = {
   date: string
   records: P110Record[]
   totalActivityTime: number
   totalTravelTime: number
   totalTime: number
+  codeTypeTotals: P110CodeTypeTotal[]
 }
 
 export type P110GroupedEmployee = {
@@ -948,10 +957,11 @@ export function getP101AllCategoryTotalsByEmployee(
     const hours = toNumber(record.activitytime) + toNumber(record.traveltime)
     const existing = totals.get(key) ?? { ffpTotal: 0, maaTotal: 0, periodTotal: 0 }
 
-    if (isFfpActivityLabel(record.activity)) {
-      existing.ffpTotal += hours
-    } else if (isMaaActivityLabel(record.activity)) {
+    if (isMaaActivityLabel(record.activity)) {
       existing.maaTotal += hours
+    } else {
+      // FFP codes and non-FFP codes that roll into FFP-05 on P101-ALL.
+      existing.ffpTotal += hours
     }
 
     existing.periodTotal = existing.ffpTotal + existing.maaTotal
@@ -1086,6 +1096,70 @@ export function getP110SSGrandTotal(employee: P110SSGroupedEmployee): number {
 
 // --- P110 unwrap / grouping ---
 
+/** True when the activity label is an FFP code (e.g. FFP-05, FFP 50). */
+export function isP110FfpActivity(subactivity: string): boolean {
+  const raw = normalizeReportText(subactivity).toUpperCase()
+  return raw.startsWith("FFP-") || raw.startsWith("FFP ")
+}
+
+/** True when the activity label is an MAA code. */
+export function isP110MaaActivity(subactivity: string): boolean {
+  const raw = normalizeReportText(subactivity).toUpperCase()
+  return raw.startsWith("MAA-") || raw.startsWith("MAA ") || raw === "MAA"
+}
+
+/**
+ * Bucket a P110 detail row for day totals.
+ * FFP and MAA are called out explicitly; anything else uses its first token.
+ */
+export function getP110CodeTypeLabel(subactivity: string): string {
+  if (isP110FfpActivity(subactivity)) return "FFP"
+  if (isP110MaaActivity(subactivity)) return "MAA"
+  const token = normalizeReportText(subactivity).split(/[\s-]/)[0] ?? ""
+  return token ? token.toUpperCase() : "Other"
+}
+
+/** FFP column value — only FFP activities show mastercode (e.g. "22"). */
+export function getP110FfpColumnValue(record: Pick<P110Record, "subactivity" | "mastercode">): string {
+  return isP110FfpActivity(record.subactivity) ? record.mastercode : ""
+}
+
+const P110_CODE_TYPE_ORDER = ["FFP", "MAA"] as const
+
+function buildP110CodeTypeTotals(records: P110Record[]): P110CodeTypeTotal[] {
+  const byLabel: Record<string, P110CodeTypeTotal> = {}
+
+  for (const record of records) {
+    const label = getP110CodeTypeLabel(record.subactivity)
+    if (!byLabel[label]) {
+      byLabel[label] = {
+        label,
+        totalActivityTime: 0,
+        totalTravelTime: 0,
+        totalTime: 0,
+      }
+    }
+    const activityTime = toNumber(record.activitytime)
+    const travelTime = toNumber(record.traveltime)
+    byLabel[label].totalActivityTime += activityTime
+    byLabel[label].totalTravelTime += travelTime
+    // MAA grey Total Time stays 0 so FFP+MAA are not read as a combined day total.
+    // Act Time still shows MAA hours. FFP (and other) totals use Act+Tvl as usual.
+    if (label !== "MAA") {
+      byLabel[label].totalTime += activityTime + travelTime
+    }
+  }
+
+  return Object.values(byLabel).sort((a, b) => {
+    const ai = P110_CODE_TYPE_ORDER.indexOf(a.label as (typeof P110_CODE_TYPE_ORDER)[number])
+    const bi = P110_CODE_TYPE_ORDER.indexOf(b.label as (typeof P110_CODE_TYPE_ORDER)[number])
+    const aRank = ai === -1 ? P110_CODE_TYPE_ORDER.length : ai
+    const bRank = bi === -1 ? P110_CODE_TYPE_ORDER.length : bi
+    if (aRank !== bRank) return aRank - bRank
+    return a.label.localeCompare(b.label)
+  })
+}
+
 export function unwrapP110Records(raw: unknown): P110Record[] {
   return unwrapListData(raw).map((row) => {
     const record = asRecord(row)
@@ -1127,6 +1201,7 @@ export function groupP110ByEmployee(records: P110Record[]): P110GroupedEmployee[
         totalActivityTime: 0,
         totalTravelTime: 0,
         totalTime: 0,
+        codeTypeTotals: [],
       }
     }
 
@@ -1142,7 +1217,10 @@ export function groupP110ByEmployee(records: P110Record[]): P110GroupedEmployee[
   return Object.values(grouped).map((employee) => ({
     employeeId: employee.employeeId,
     employeename: employee.employeename,
-    dates: Object.values(employee.dates),
+    dates: Object.values(employee.dates).map((dateGroup) => ({
+      ...dateGroup,
+      codeTypeTotals: buildP110CodeTypeTotals(dateGroup.records),
+    })),
   }))
 }
 
@@ -1155,6 +1233,36 @@ export function getP110GrandTotals(employee: P110GroupedEmployee): {
   const travelTime = employee.dates.reduce((sum, dateGroup) => sum + dateGroup.totalTravelTime, 0)
   const totalTime = employee.dates.reduce((sum, dateGroup) => sum + dateGroup.totalTime, 0)
   return { activityTime, travelTime, totalTime }
+}
+
+/** Employee-level grey totals, split the same way as per-day FFP/MAA rows. */
+export function getP110CodeTypeGrandTotals(employee: P110GroupedEmployee): P110CodeTypeTotal[] {
+  const byLabel: Record<string, P110CodeTypeTotal> = {}
+
+  for (const dateGroup of employee.dates) {
+    for (const codeTotal of dateGroup.codeTypeTotals) {
+      if (!byLabel[codeTotal.label]) {
+        byLabel[codeTotal.label] = {
+          label: codeTotal.label,
+          totalActivityTime: 0,
+          totalTravelTime: 0,
+          totalTime: 0,
+        }
+      }
+      byLabel[codeTotal.label].totalActivityTime += codeTotal.totalActivityTime
+      byLabel[codeTotal.label].totalTravelTime += codeTotal.totalTravelTime
+      byLabel[codeTotal.label].totalTime += codeTotal.totalTime
+    }
+  }
+
+  return Object.values(byLabel).sort((a, b) => {
+    const ai = P110_CODE_TYPE_ORDER.indexOf(a.label as (typeof P110_CODE_TYPE_ORDER)[number])
+    const bi = P110_CODE_TYPE_ORDER.indexOf(b.label as (typeof P110_CODE_TYPE_ORDER)[number])
+    const aRank = ai === -1 ? P110_CODE_TYPE_ORDER.length : ai
+    const bRank = bi === -1 ? P110_CODE_TYPE_ORDER.length : bi
+    if (aRank !== bRank) return aRank - bRank
+    return a.label.localeCompare(b.label)
+  })
 }
 
 // --- P111 unwrap / grouping ---
