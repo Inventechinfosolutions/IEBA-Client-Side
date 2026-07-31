@@ -1137,9 +1137,14 @@ export function getP110CodeTypeLabel(subactivity: string): string {
   return token ? token.toUpperCase() : "Other"
 }
 
-/** FFP column value — only FFP activities show mastercode (e.g. "22"). */
+/**
+ * FFP column value — show activity.activityCode (aliased as mastercode).
+ * Tuolumne labels activities "FFP-05 …"; other counties use "0700 …" etc. but still
+ * return numeric FFP codes (5, 12). Only blank MAA rows so the FFP column stays FFP-only.
+ */
 export function getP110FfpColumnValue(record: Pick<P110Record, "subactivity" | "mastercode">): string {
-  return isP110FfpActivity(record.subactivity) ? record.mastercode : ""
+  if (isP110MaaActivity(record.subactivity)) return ""
+  return String(record.mastercode ?? "").trim()
 }
 
 const P110_CODE_TYPE_ORDER = ["FFP", "MAA"] as const
