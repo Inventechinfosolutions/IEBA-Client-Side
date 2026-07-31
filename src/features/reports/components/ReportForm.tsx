@@ -1016,7 +1016,15 @@ export function ReportForm({ module }: ReportFormProps) {
   const showActivitySelect = criteria?.showActivitySelect === true
   const showScheduleTime = isTrue(criteria?.showScheduleTime)
 
-  const isMaaReport = useMemo(() => reportKey.includes("MAA") || reportKey.includes("TCM"), [reportKey])
+  const isMaaReport = useMemo(() => {
+    const key = reportKey.toUpperCase()
+    // P110 family uses department users, not /report/maa/employees
+    // (P110-FFP_MAA contains "MAA" but is a time-study daily layout).
+    if (key === "P110" || key.startsWith("P110-") || key === "FFP-MAA") {
+      return false
+    }
+    return key.includes("MAA") || key.includes("TCM")
+  }, [reportKey])
   const shouldShowCostPool = useMemo(
     () => isTrue(criteria?.showCostPoolSelect) || isTrue(criteria?.showCostPool),
     [criteria],
