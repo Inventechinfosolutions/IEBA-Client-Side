@@ -304,11 +304,12 @@ function RecordRow({ record }: { record: P110Record }) {
 }
 
 function DateSection({ dateGroup }: { dateGroup: P110DateGroup }) {
-  // Keep date header + detail rows + FFP/MAA totals together so grey totals
-  // do not split across page breaks (same pattern as P101 activity blocks).
+  // Allow busy days to paginate. wrap={false} on the whole day causes
+  // @react-pdf to stack rows on top of each other when the block is taller
+  // than one page. Keep only rows / grey totals atomic.
   return (
-    <View style={styles.dateSection} wrap={false}>
-      <View style={styles.row}>
+    <View style={styles.dateSection}>
+      <View style={styles.row} wrap={false}>
         <View style={[styles.dateHeaderCell, { width: W.actTime }]}>
           <Text style={styles.boldText}>{dateGroup.date}</Text>
         </View>
@@ -326,9 +327,11 @@ function DateSection({ dateGroup }: { dateGroup: P110DateGroup }) {
         <RecordRow key={`${dateGroup.date}-${record.program}-${index}`} record={record} />
       ))}
 
-      {dateGroup.codeTypeTotals.map((codeTotal) => (
-        <CodeTypeTotalRow key={`${dateGroup.date}-${codeTotal.label}`} codeTotal={codeTotal} />
-      ))}
+      <View wrap={false}>
+        {dateGroup.codeTypeTotals.map((codeTotal) => (
+          <CodeTypeTotalRow key={`${dateGroup.date}-${codeTotal.label}`} codeTotal={codeTotal} />
+        ))}
+      </View>
     </View>
   )
 }
