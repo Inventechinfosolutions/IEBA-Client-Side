@@ -13,9 +13,10 @@ import {
   ensurePdfBlob,
   formatPrintedOnLabel,
   formatReportTime,
+  getP110CodeTypeGrandTotals,
   getP110FfpColumnValue,
-  getP110GrandTotals,
   resolveFooterVariant,
+  type P110CodeTypeTotal,
   type P110DateGroup,
   type P110GroupedEmployee,
   type P110Record,
@@ -258,50 +259,24 @@ function EmployeeTableChrome({ employeeName }: { employeeName: string }) {
   )
 }
 
-function DayTotalRow({ dateGroup }: { dateGroup: P110DateGroup }) {
+function CodeTypeTotalRow({ codeTotal }: { codeTotal: P110CodeTypeTotal }) {
   return (
     <View style={styles.row} wrap={false}>
       <View style={[styles.dateTotalBox, { width: W.actTime }]}>
-        <Text style={styles.rightText}>{formatReportTime(dateGroup.totalActivityTime)}</Text>
+        <Text style={styles.rightText}>{formatReportTime(codeTotal.totalActivityTime)}</Text>
       </View>
       <View style={[styles.dateTotalBox, { width: W.tvlTime }]}>
-        <Text style={styles.rightText}>{formatReportTime(dateGroup.totalTravelTime)}</Text>
+        <Text style={styles.rightText}>{formatReportTime(codeTotal.totalTravelTime)}</Text>
       </View>
       <View style={[styles.dateTotalBox, { width: W.totalTime }]}>
-        <Text style={styles.rightText}>{formatReportTime(dateGroup.totalTime)}</Text>
+        <Text style={styles.rightText}>{formatReportTime(codeTotal.totalTime)}</Text>
       </View>
-      <EmptyCell width={W.program} />
+      <View style={[styles.dateTotalBox, { width: W.program }]}>
+        <Text style={[styles.leftText, styles.boldText]}>{codeTotal.label}</Text>
+      </View>
       <EmptyCell width={W.activity} />
       <EmptyCell width={W.ffp} />
       <EmptyCell width={W.support} />
-    </View>
-  )
-}
-
-function DateSection({ dateGroup }: { dateGroup: P110DateGroup }) {
-  // Keep date header + detail rows + daily total together so grey totals
-  // do not split across page breaks (same pattern as P101 activity blocks).
-  return (
-    <View style={styles.dateSection} wrap={false}>
-      <View style={styles.row}>
-        <View style={[styles.dateHeaderCell, { width: W.actTime }]}>
-          <Text style={styles.boldText}>{dateGroup.date}</Text>
-        </View>
-        <View style={[styles.dateHeaderCell, { width: W.tvlTime }]} />
-        <View style={[styles.dateHeaderCell, { width: W.totalTime }]} />
-        <EmptyCell width={W.program} />
-        <EmptyCell width={W.activity} />
-        <EmptyCell width={W.ffp} />
-        <View style={[styles.dateHeaderCell, { width: W.support, alignItems: "flex-end" }]}>
-          <Text style={[styles.boldText, styles.rightText]}>Employee notes:</Text>
-        </View>
-      </View>
-
-      {dateGroup.records.map((record, index) => (
-        <RecordRow key={`${dateGroup.date}-${record.program}-${index}`} record={record} />
-      ))}
-
-      <DayTotalRow dateGroup={dateGroup} />
     </View>
   )
 }
@@ -328,8 +303,38 @@ function RecordRow({ record }: { record: P110Record }) {
   )
 }
 
+function DateSection({ dateGroup }: { dateGroup: P110DateGroup }) {
+  // Keep date header + detail rows + FFP/MAA totals together so grey totals
+  // do not split across page breaks (same pattern as P101 activity blocks).
+  return (
+    <View style={styles.dateSection} wrap={false}>
+      <View style={styles.row}>
+        <View style={[styles.dateHeaderCell, { width: W.actTime }]}>
+          <Text style={styles.boldText}>{dateGroup.date}</Text>
+        </View>
+        <View style={[styles.dateHeaderCell, { width: W.tvlTime }]} />
+        <View style={[styles.dateHeaderCell, { width: W.totalTime }]} />
+        <EmptyCell width={W.program} />
+        <EmptyCell width={W.activity} />
+        <EmptyCell width={W.ffp} />
+        <View style={[styles.dateHeaderCell, { width: W.support, alignItems: "flex-end" }]}>
+          <Text style={[styles.boldText, styles.rightText]}>Employee notes:</Text>
+        </View>
+      </View>
+
+      {dateGroup.records.map((record, index) => (
+        <RecordRow key={`${dateGroup.date}-${record.program}-${index}`} record={record} />
+      ))}
+
+      {dateGroup.codeTypeTotals.map((codeTotal) => (
+        <CodeTypeTotalRow key={`${dateGroup.date}-${codeTotal.label}`} codeTotal={codeTotal} />
+      ))}
+    </View>
+  )
+}
+
 function EmployeeTable({ employee }: { employee: P110GroupedEmployee }) {
-  const classicGrandTotals = getP110GrandTotals(employee)
+  const codeTypeGrandTotals = getP110CodeTypeGrandTotals(employee)
 
   return (
     <View style={styles.table}>
@@ -340,33 +345,37 @@ function EmployeeTable({ employee }: { employee: P110GroupedEmployee }) {
       <View style={styles.spacer} />
 
       <View wrap={false}>
-        <View style={styles.row} wrap={false}>
-          <View style={[styles.grandTotalBox, { width: W.actTime }]}>
-            <Text style={[styles.rightText, styles.boldText]}>
-              {formatReportTime(classicGrandTotals.activityTime)}
-            </Text>
+        {codeTypeGrandTotals.map((codeTotal) => (
+          <View key={`grand-${codeTotal.label}`} style={styles.row} wrap={false}>
+            <View style={[styles.grandTotalBox, { width: W.actTime }]}>
+              <Text style={[styles.rightText, styles.boldText]}>
+                {formatReportTime(codeTotal.totalActivityTime)}
+              </Text>
+            </View>
+            <View style={[styles.grandTotalBox, { width: W.tvlTime }]}>
+              <Text style={[styles.rightText, styles.boldText]}>
+                {formatReportTime(codeTotal.totalTravelTime)}
+              </Text>
+            </View>
+            <View style={[styles.grandTotalBox, { width: W.totalTime }]}>
+              <Text style={[styles.rightText, styles.boldText]}>
+                {formatReportTime(codeTotal.totalTime)}
+              </Text>
+            </View>
+            <View style={[styles.grandTotalBox, { width: W.program }]}>
+              <Text style={[styles.leftText, styles.boldText]}>{codeTotal.label}</Text>
+            </View>
+            <EmptyCell width={W.activity} />
+            <EmptyCell width={W.ffp} />
+            <EmptyCell width={W.support} />
           </View>
-          <View style={[styles.grandTotalBox, { width: W.tvlTime }]}>
-            <Text style={[styles.rightText, styles.boldText]}>
-              {formatReportTime(classicGrandTotals.travelTime)}
-            </Text>
-          </View>
-          <View style={[styles.grandTotalBox, { width: W.totalTime }]}>
-            <Text style={[styles.rightText, styles.boldText]}>
-              {formatReportTime(classicGrandTotals.totalTime)}
-            </Text>
-          </View>
-          <EmptyCell width={W.program} />
-          <EmptyCell width={W.activity} />
-          <EmptyCell width={W.ffp} />
-          <EmptyCell width={W.support} />
-        </View>
+        ))}
       </View>
     </View>
   )
 }
 
-function P110ReportPage({
+function P110FfpMaaReportPage({
   meta,
   footerVariant,
   printedOn,
@@ -399,7 +408,7 @@ function P110ReportPage({
   )
 }
 
-function P110ReportDocument({
+function P110FfpMaaReportDocument({
   employees,
   startDate,
   endDate,
@@ -414,10 +423,10 @@ function P110ReportDocument({
   if (employees.length === 0) {
     return (
       <Document>
-        <P110ReportPage meta={meta} footerVariant={footerVariant} printedOn={printedOn}>
+        <P110FfpMaaReportPage meta={meta} footerVariant={footerVariant} printedOn={printedOn}>
           <PeriodDates startDate={startDate} endDate={endDate} />
           <Text style={styles.emptyMessage}>No data available for the selected period.</Text>
-        </P110ReportPage>
+        </P110FfpMaaReportPage>
       </Document>
     )
   }
@@ -425,7 +434,7 @@ function P110ReportDocument({
   return (
     <Document>
       {employees.map((employee, index) => (
-        <P110ReportPage
+        <P110FfpMaaReportPage
           key={`${employee.employeeId || employee.employeename}-${index}`}
           meta={meta}
           footerVariant={footerVariant}
@@ -435,23 +444,23 @@ function P110ReportDocument({
           {index === 0 ? <PeriodDates startDate={startDate} endDate={endDate} /> : null}
           <EmployeeTable employee={employee} />
           <EmployeeFooter />
-        </P110ReportPage>
+        </P110FfpMaaReportPage>
       ))}
     </Document>
   )
 }
 
-/** P110 — classic Time Study Daily with true daily totals + grand total. */
-export async function generateP110ReportPdf(props: P110ReportPdfProps): Promise<Blob> {
+/** P110-FFP_MAA — Time Study Daily with FFP/MAA code-type day and grand totals. */
+export async function generateP110FfpMaaReportPdf(props: P110ReportPdfProps): Promise<Blob> {
   const printedOn = props.printedOn ?? formatPrintedOnLabel()
   const meta = await buildResolvedPdfMeta(
-    { ...props.meta, reportCode: props.meta?.reportCode ?? "P110" },
+    { ...props.meta, reportCode: props.meta?.reportCode ?? "P110-FFP_MAA" },
     REPORT_PDF_DEFAULT_LOGOS,
   )
   const footerVariant = resolveFooterVariant(meta.reportCode)
 
   const instance = pdf(
-    <P110ReportDocument
+    <P110FfpMaaReportDocument
       {...props}
       printedOn={printedOn}
       meta={meta}
