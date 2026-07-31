@@ -300,6 +300,8 @@ export type UserDetailsDto = {
   activationStartDate?: string | null
   activationEndDate?: string | null
   theme?: boolean
+  /** Human-readable county display name resolved from global namespace table. */
+  countyName?: string
 }
 
 export type UserModuleListResponse = {
