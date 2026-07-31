@@ -40,6 +40,7 @@ export function buildAuthUserFromDetails(
     roles: details.roles?.map((r) => r.name),
     permissions,
     theme: details.theme,
+    countyName: details.countyName?.toUpperCase(),
     departmentRoles: details.departmentsRoles?.map((dr) => ({
       departmentId: dr.departmentId,
       roleId: dr.roleId,
