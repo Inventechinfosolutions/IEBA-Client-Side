@@ -144,12 +144,30 @@ export type P110GroupedEmployee = {
   dates: P110DateGroup[]
 }
 
+/** Classic = true daily + grand totals; ffpMaa = Tuolumne FFP/MAA day/grand splits. */
+export type P110TotalsMode = "classic" | "ffpMaa"
+
 export type P110ReportPdfProps = {
   employees: P110GroupedEmployee[]
   startDate: string
   endDate: string
   printedOn?: string
   meta?: ReportPdfMeta
+  /** Defaults from reportCode: P110-FFP_MAA → ffpMaa, otherwise classic. */
+  totalsMode?: P110TotalsMode
+}
+
+export function resolveP110TotalsMode(reportCode?: string): P110TotalsMode {
+  const code = String(reportCode ?? "").toUpperCase()
+  if (
+    code === "P110-FFP_MAA" ||
+    code === "FFP-MAA" ||
+    code === "P110-FFP" ||
+    code === "P110-FFP-MAA"
+  ) {
+    return "ffpMaa"
+  }
+  return "classic"
 }
 
 export type P111Record = {
@@ -1119,9 +1137,14 @@ export function getP110CodeTypeLabel(subactivity: string): string {
   return token ? token.toUpperCase() : "Other"
 }
 
-/** FFP column value — only FFP activities show mastercode (e.g. "22"). */
+/**
+ * FFP column value — show activity.activityCode (aliased as mastercode).
+ * Tuolumne labels activities "FFP-05 …"; other counties use "0700 …" etc. but still
+ * return numeric FFP codes (5, 12). Only blank MAA rows so the FFP column stays FFP-only.
+ */
 export function getP110FfpColumnValue(record: Pick<P110Record, "subactivity" | "mastercode">): string {
-  return isP110FfpActivity(record.subactivity) ? record.mastercode : ""
+  if (isP110MaaActivity(record.subactivity)) return ""
+  return String(record.mastercode ?? "").trim()
 }
 
 const P110_CODE_TYPE_ORDER = ["FFP", "MAA"] as const
@@ -2924,6 +2947,8 @@ export function resolveReportTitle(
       return "P101-ALL - Summation of Employee Time (Sort by Function Code)"
     case "P110":
       return "P110 - Time Study Daily"
+    case "P110-FFP_MAA":
+      return "P110 - Time Study Daily (FFP/MAA)"
     case "P110-SS":
       return "P110-SS - Time Study Daily"
     case "P111":
@@ -2987,6 +3012,7 @@ export function resolveFooterVariant(reportCode: string): ReportPdfFooterVariant
     case "QTR-MONTH":
     case "P101":
     case "P110":
+    case "P110-FFP_MAA":
     case "WIC":
       return "pageOnly"
     case "P101-ALL":

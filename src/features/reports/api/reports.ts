@@ -49,6 +49,7 @@ import { generateDSSRPT5ReportPdf } from "../pdf/DSSRPT5ReportPdf"
 import { generateP101ReportPdf } from "../pdf/P101ReportPdf"
 import { generateP101AllReportPdf } from "../pdf/P101-ALLReportPdf"
 import { generateP110ReportPdf } from "../pdf/P110ReportPdf"
+import { generateP110FfpMaaReportPdf } from "../pdf/P110FfpMaaReportPdf"
 import { generateP110SSReportPdf } from "../pdf/P110SSReportPdf"
 import { generateP111ReportPdf } from "../pdf/P111ReportPdf.tsx"
 import { generateP112ReportPdf } from "../pdf/P112ReportPdf.tsx"
@@ -357,7 +358,21 @@ async function buildFrontendPdfReport(
         employees: groupP110ByEmployee(unwrapP110Records(response)),
         startDate,
         endDate,
-        meta,
+        meta: { ...meta, reportCode: "P110" },
+      })
+    }
+
+    if (
+      body.reportKey === "P110-FFP_MAA" ||
+      body.reportKey === "FFP-MAA" ||
+      body.reportKey === "P110-FFP" ||
+      body.reportKey === "P110-FFP-MAA"
+    ) {
+      return await generateP110FfpMaaReportPdf({
+        employees: groupP110ByEmployee(unwrapP110Records(response)),
+        startDate,
+        endDate,
+        meta: { ...meta, reportCode: "P110-FFP_MAA" },
       })
     }
 

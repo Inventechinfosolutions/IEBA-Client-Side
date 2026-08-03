@@ -514,7 +514,7 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
     return (
         <>
             <Dialog open onOpenChange={(open) => { if (!open) handleExit() }}>
-                <DialogContent className="w-[calc(100vw-2rem)] sm:w-full max-w-[893px] p-0 max-h-[90vh] overflow-y-auto overflow-x-hidden border-none shadow-2xl rounded-[12px] bg-white [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                <DialogContent className="w-[calc(100vw-2rem)] sm:w-full max-w-[893px] p-0 max-h-[90vh] overflow-y-auto overflow-x-hidden border-none shadow-2xl rounded-[12px] bg-white">
                     {historyDepartmentId && isSuperAdmin ? (
                         <button
                             type="button"
