@@ -66,6 +66,30 @@ function ChangeItem({ item }: { item: DepartmentHistorySnapshotItem }) {
     )
   }
 
+  const isMultiline =
+    String(item.previousValue ?? "").includes("\n") ||
+    String(item.newValue ?? "").includes("\n")
+
+  if (isMultiline) {
+    return (
+      <div className="rounded-[8px] border border-[#F3F4F6] bg-white px-3 py-2">
+        <div className="text-[11px] font-medium text-[#6B7280]">{item.label}</div>
+        <div className="mt-1.5 space-y-2" title={item.fullValue}>
+          <div className="rounded-[4px] bg-[#FEF2F2] px-2 py-1.5 text-[12px] font-medium text-[#B91C1C] whitespace-pre-line break-words">
+            {item.previousValue}
+          </div>
+          <div className="flex items-center gap-1.5 text-[11px] text-[#9CA3AF]">
+            <ArrowRight className="size-3.5" />
+            <span>changed to</span>
+          </div>
+          <div className="rounded-[4px] bg-[#ECFDF3] px-2 py-1.5 text-[12px] font-medium text-[#027A48] whitespace-pre-line break-words">
+            {item.newValue}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="rounded-[8px] border border-[#F3F4F6] bg-white px-3 py-2">
       <div className="text-[11px] font-medium text-[#6B7280]">{item.label}</div>
@@ -73,11 +97,11 @@ function ChangeItem({ item }: { item: DepartmentHistorySnapshotItem }) {
         className="mt-0.5 text-[13px] font-medium break-words"
         title={item.fullValue}
       >
-        <span className="inline-flex max-w-full rounded-[4px] bg-[#FEF2F2] px-1.5 py-0.5 text-[#B91C1C] break-words whitespace-normal text-left">
+        <span className="inline-flex max-w-full rounded-[4px] bg-[#FEF2F2] px-1.5 py-0.5 text-[#B91C1C] break-words whitespace-pre-line text-left">
           {item.previousValue}
         </span>
         <ArrowRight className="mx-1.5 inline size-3.5 text-[#9CA3AF]" />
-        <span className="inline-flex max-w-full rounded-[4px] bg-[#ECFDF3] px-1.5 py-0.5 text-[#027A48] break-words whitespace-normal text-left">
+        <span className="inline-flex max-w-full rounded-[4px] bg-[#ECFDF3] px-1.5 py-0.5 text-[#027A48] break-words whitespace-pre-line text-left">
           {item.newValue}
         </span>
       </div>
@@ -177,13 +201,25 @@ export function DepartmentHistoryDetailPanel({ row }: DepartmentHistoryDetailPan
               ))}
             </div>
           ) : section.items[0]?.kind === "change" ? (
-            <div className="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-3">
+            <div
+              className={
+                section.title === "Department Notifications"
+                  ? "grid grid-cols-1 gap-2"
+                  : "grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-3"
+              }
+            >
               {section.items.map((item) => (
                 <ChangeItem key={item.label} item={item} />
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-3">
+            <div
+              className={
+                section.title === "Department Notifications"
+                  ? "grid grid-cols-1 gap-2"
+                  : "grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-3"
+              }
+            >
               {section.items.map((item) => (
                 <div
                   key={item.label}
@@ -191,7 +227,7 @@ export function DepartmentHistoryDetailPanel({ row }: DepartmentHistoryDetailPan
                 >
                   <div className="text-[11px] font-medium text-[#6B7280]">{item.label}</div>
                   <div
-                    className="mt-0.5 text-[13px] font-medium text-[#111827] break-words"
+                    className="mt-0.5 text-[13px] font-medium text-[#111827] break-words whitespace-pre-line"
                     title={item.fullValue}
                   >
                     {item.value}
