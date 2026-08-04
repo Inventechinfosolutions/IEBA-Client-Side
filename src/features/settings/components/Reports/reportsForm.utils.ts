@@ -6,6 +6,20 @@ export function isMcahTvtsReportKey(reportKey: string | null | undefined): boole
   return String(reportKey ?? "").trim().toUpperCase() === "MCAH-TVTS"
 }
 
+/** Reports that can be selected but must not be mapped (Exclusion / transfers locked). */
+const REPORTS_MAPPING_READ_ONLY_KEYS = new Set([
+  "MAATCM",
+  "TCM_MAA_ADHOC",
+  "DSSRPT3",
+  "DSSRPT4",
+  "DSSRPT5",
+  "WIC",
+])
+
+export function isReportsMappingReadOnlyKey(reportKey: string | null | undefined): boolean {
+  return REPORTS_MAPPING_READ_ONLY_KEYS.has(String(reportKey ?? "").trim().toUpperCase())
+}
+
 export function clearReportBuckets(setValue: UseFormSetValue<SettingsFormValues>) {
   setValue("reports.excludedMasterCodeIds", [])
   setValue("reports.includedMasterCodeIds", [])

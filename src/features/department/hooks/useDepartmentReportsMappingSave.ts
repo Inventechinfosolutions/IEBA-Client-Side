@@ -11,7 +11,10 @@ import { departmentKeys } from "@/features/department/keys"
 import { reportKeys } from "@/features/reports/keys"
 import { buildReportMasterCodeSavePayload } from "@/features/reports/lib/reportMasterCodeData.utils"
 import { mapRawReportsToReportOptions } from "@/features/settings/lib/reportOptions.utils"
-import { isMcahTvtsReportKey } from "@/features/settings/components/Reports/reportsForm.utils"
+import {
+  isMcahTvtsReportKey,
+  isReportsMappingReadOnlyKey,
+} from "@/features/settings/components/Reports/reportsForm.utils"
 import type { ReportOption, SettingsFormValues } from "@/features/settings/types"
 import type { ReportsTransferDirection } from "@/features/settings/components/Reports/reportsTransfer.types"
 import type { ReportsBucketMode, ReportsSaveScope } from "@/features/settings/types"
@@ -102,6 +105,10 @@ export function useDepartmentReportsMappingSave() {
         : undefined
       if (!selectedReport?.id) {
         toast.error("Please select a report before saving")
+        return
+      }
+      if (isReportsMappingReadOnlyKey(reportKey)) {
+        toast.error("Mapping is not editable for this report")
         return
       }
 
