@@ -905,6 +905,7 @@ export function DepartmentAddPage({ id, onClose }: DepartmentAddPageProps) {
                                             departmentId={departmentId}
                                             departmentCode={currentCode}
                                             departmentName={currentName}
+                                            isActive={activeTab === "notifications"}
                                             onEnsureDepartmentId={ensureDepartmentIdForReportMapping}
                                         />
                                     </TabsContent>

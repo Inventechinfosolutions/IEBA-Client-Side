@@ -4,7 +4,12 @@ import type { DepartmentNotificationConfigItem } from "../api/departmentNotifica
 
 export const DEPT_NOTIFICATION_CONFIG_KEY = "department-notification-config"
 
-export function useGetDepartmentNotificationConfig(departmentId: string | null) {
+export function useGetDepartmentNotificationConfig(
+  departmentId: string | null,
+  options?: { enabled?: boolean },
+) {
+  const enabled = Boolean(departmentId) && (options?.enabled ?? true)
+
   return useQuery<DepartmentNotificationConfigItem[]>({
     queryKey: [DEPT_NOTIFICATION_CONFIG_KEY, departmentId],
     queryFn: async () => {
@@ -15,7 +20,10 @@ export function useGetDepartmentNotificationConfig(departmentId: string | null) 
       if (res?.data && Array.isArray(res.data)) return res.data
       return []
     },
-    enabled: !!departmentId,
+    enabled,
+    // Cache briefly while staying on the tab; remount after staleTime refetches so we don't show old toggles.
     staleTime: 30_000,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: true,
   })
 }
