@@ -21,7 +21,6 @@ import { settingsKeys } from "@/features/settings/keys"
 import { useQueryClient } from "@tanstack/react-query"
 import { useReportTransferFlags } from "@/features/settings/queries/getReportTransferFlags"
 import { ReportsBucketTransfer } from "@/features/settings/components/Reports/ReportsBucketTransfer"
-import { ReportsExclusionToggle } from "@/features/settings/components/Reports/ReportsExclusionToggle"
 import { useReportsTransferSave } from "@/features/settings/components/Reports/useReportsTransferSave"
 import {
   activityItemsToTransferItems,
@@ -31,12 +30,9 @@ import {
 import {
   clearReportBuckets,
   isMcahTvtsReportKey,
+  isReportsMappingReadOnlyKey,
   loadReportBucketsFromReportOption,
 } from "@/features/settings/components/Reports/reportsForm.utils"
-import {
-  reassignActiveActivitiesForModeChange,
-  reassignActiveMasterCodesForModeChange,
-} from "@/features/reports/lib/reportMasterCodeData.utils"
 import type { ReportOption, ReportProgramItem } from "@/features/settings/types"
 
 const labelClassName = "mb-2 block text-[12px] font-normal text-[#2a2f3a]"
@@ -91,6 +87,7 @@ export function ReportsForm({
   const departmentId = (fixedDepartmentId?.trim() || watchedDepartmentId).trim()
   const reportKey = watch("reports.reportKey") ?? ""
   const isMcahReport = isMcahTvtsReportKey(reportKey)
+  const isMappingReadOnly = isReportsMappingReadOnlyKey(reportKey)
 
   const includedMasterCodeIds = watch("reports.includedMasterCodeIds") ?? []
   const excludedMasterCodeIds = watch("reports.excludedMasterCodeIds") ?? []
@@ -128,7 +125,8 @@ export function ReportsForm({
     [masterCodePickerIds],
   )
 
-  const transferEnabled = isSectionOpen && Boolean(reportKey) && !isMcahReport
+  const transferEnabled =
+    isSectionOpen && Boolean(reportKey) && !isMcahReport && !isMappingReadOnly
   const hasMasterCodeScope = masterCodeNumericIds.length > 0
   const activitiesEnabled = transferEnabled && hasMasterCodeScope
 
@@ -248,6 +246,7 @@ export function ReportsForm({
   }
 
   const showDepartmentPicker = !fixedDepartmentId && !useCountyMappedReports
+  // Exclusion/Inclusion toggle removed — mode is set from report config / defaults.
 
   const { data: departmentsData, isLoading: isDeptsLoading } =
     useSettingsReportDepartments(isSectionOpen && showDepartmentPicker)
@@ -284,49 +283,6 @@ export function ReportsForm({
   const reportOptions = sortSelectOptionsByLabel(
     reportItems.map((item) => ({ value: item.key, label: item.label })),
   )
-
-  const handleExclusionModeChange = (checked: boolean) => {
-    const previousMode =
-      getValues("reports.masterCodeExclusionMode") === "include" ? "include" : "exclude"
-    const nextMode = checked ? "include" : "exclude"
-    if (previousMode === nextMode) return
-
-    if (isMcahTvtsReportKey(getValues("reports.reportKey"))) {
-      setValue("reports.masterCodeExclusionMode", nextMode)
-      setValue("reports.activityExclusionMode", nextMode)
-      syncMcahIncludedExcludedFromCategories(
-        getValues("reports.category1Programs") ?? [],
-        getValues("reports.category2Programs") ?? [],
-        getValues("reports.category3Programs") ?? [],
-      )
-      setMasterCodeFetchMode(nextMode)
-      setActivityFetchMode(nextMode)
-      ;(savePrograms ?? saveMasterCodes)("assign")
-      return
-    }
-
-    const mcReassigned = reassignActiveMasterCodesForModeChange(
-      previousMode,
-      nextMode,
-      getValues("reports.excludedMasterCodeIds") ?? [],
-      getValues("reports.includedMasterCodeIds") ?? [],
-    )
-    const actReassigned = reassignActiveActivitiesForModeChange(
-      previousMode,
-      nextMode,
-      getValues("reports.excludedActivityCodes") ?? [],
-      getValues("reports.includedActivityCodes") ?? [],
-    )
-
-    setValue("reports.masterCodeExclusionMode", nextMode)
-    setValue("reports.activityExclusionMode", nextMode)
-    setValue("reports.excludedMasterCodeIds", mcReassigned.excludedMasterCodeIds)
-    setValue("reports.includedMasterCodeIds", mcReassigned.includedMasterCodeIds)
-    setValue("reports.excludedActivityCodes", actReassigned.excludedActivityCodes)
-    setValue("reports.includedActivityCodes", actReassigned.includedActivityCodes)
-    setMasterCodeFetchMode(nextMode)
-    setActivityFetchMode(nextMode)
-  }
 
   const handleMasterCodeFetchModeChange = (direction: "assign" | "unassign") => {
     setMasterCodeFetchMode(direction === "assign" ? "include" : "exclude")
@@ -490,15 +446,15 @@ export function ReportsForm({
             )}
           />
         </div>
-
-        <ReportsExclusionToggle
-          control={control}
-          disabled={!reportKey || isSaving || isReportDetailLoading}
-          onExclusionModeChange={handleExclusionModeChange}
-        />
       </div>
 
-      {reportKey && isMcahReport ? (
+      {reportKey && isMappingReadOnly ? (
+        <p className="mt-6 rounded-[8px] border border-[#FDE68A] bg-[#FFFBEB] px-3 py-2 text-[12px] font-medium text-[#92400E]">
+          Mapping is not editable for this report
+        </p>
+      ) : null}
+
+      {reportKey && isMcahReport && !isMappingReadOnly ? (
         <div className="mt-6 flex flex-col gap-4">
           {isReportDetailLoading ? (
             <p className="text-[12px] text-[#6B7280]">Loading programs…</p>
@@ -533,7 +489,7 @@ export function ReportsForm({
         </div>
       ) : null}
 
-      {reportKey && !isMcahReport ? (
+      {reportKey && !isMcahReport && !isMappingReadOnly ? (
         <ReportsBucketTransfer
           unassignedTitle="Unassigned Master Codes"
           assignedTitle="Assigned Master Codes"
@@ -551,13 +507,13 @@ export function ReportsForm({
         />
       ) : null}
 
-      {reportKey && !isMcahReport && !hasMasterCodeScope && !isReportDetailLoading ? (
+      {reportKey && !isMcahReport && !isMappingReadOnly && !hasMasterCodeScope && !isReportDetailLoading ? (
         <p className="mt-6 text-[12px] text-[#6B7280]">
           Select at least one master code to load activities.
         </p>
       ) : null}
 
-      {reportKey && !isMcahReport && hasMasterCodeScope ? (
+      {reportKey && !isMcahReport && !isMappingReadOnly && hasMasterCodeScope ? (
         <ReportsBucketTransfer
           key={`${reportKey}:${masterCodePickerIds.join(",")}`}
           containerClassName="mt-6"
