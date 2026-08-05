@@ -22,7 +22,13 @@ export function ApportioningHistoryPopover({ departmentId }: { departmentId?: st
       </PopoverTrigger>
       <PopoverContent className="w-auto p-4 z-[100] shadow-lg rounded-[8px]" align="start" side="bottom">
         <div className="text-[13px] font-bold text-[#111827] mb-3">Apportioning History</div>
-        <div className="overflow-x-auto max-h-[300px] overflow-y-auto">
+        <div
+          className="overflow-x-auto max-h-[300px] overflow-y-auto"
+          onWheel={(e) => {
+            e.stopPropagation()
+            e.nativeEvent.stopPropagation()
+          }}
+        >
           <table className="w-full text-left text-[12px] border-collapse whitespace-nowrap min-w-[500px]">
             <thead className="bg-[#6b5cd6] text-white sticky top-0 z-10">
               <tr>
