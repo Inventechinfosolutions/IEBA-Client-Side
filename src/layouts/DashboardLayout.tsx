@@ -39,6 +39,7 @@ import { useNotifications } from "@/features/notification/queries/useNotificatio
 import type { Notification } from "@/features/notification/types"
 
 import { NotificationSheet } from "@/features/notification/components/NotificationSheet"
+import { AssistantWidget } from "@/components/assistant/AssistantWidget"
 
 export function DashboardLayout() {
   const { user, signOut, establishDashboardSession } = useAuth()
@@ -113,6 +114,9 @@ export function DashboardLayout() {
             {user && (
               <>
                 <ThemeToggle />
+                <AssistantWidget
+                  userRole={isSuperAdmin ? "Super Admin" : user.roles?.[0] || "User"}
+                />
                 <button
                   type="button"
                   onClick={() => setNotificationsOpen(true)}
