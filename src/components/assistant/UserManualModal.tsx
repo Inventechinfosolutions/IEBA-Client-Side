@@ -148,7 +148,14 @@ export const UserManualModal: React.FC<UserManualModalProps> = ({
 
   const availableManuals = useMemo(() => {
     if (isSuperAdmin) return ALL_MANUALS;
-    const userRoles = (user?.roles || []).map((r) => r.toLowerCase());
+    // Gather role names from both user.roles AND user.departmentRoles to catch all assigned roles
+    const globalRoles = (user?.roles || []).map((r: any) =>
+      (typeof r === "string" ? r : r?.name ?? "").toLowerCase()
+    );
+    const deptRoles = (user?.departmentRoles || []).map((dr: any) =>
+      (dr.roleName || dr.role?.name || dr.role || "").toLowerCase()
+    );
+    const userRoles = Array.from(new Set([...globalRoles, ...deptRoles])).filter(Boolean);
     const matched = ALL_MANUALS.filter((manual) => {
       if (manual.id === "user") return true;
       return manual.roleKeys.some((rk) =>
@@ -156,7 +163,7 @@ export const UserManualModal: React.FC<UserManualModalProps> = ({
       );
     });
     return matched.length > 0 ? matched : [ALL_MANUALS.find((m) => m.id === "user")!];
-  }, [user?.roles, isSuperAdmin]);
+  }, [user?.roles, user?.departmentRoles, isSuperAdmin]);
 
   const handleDownload = async (url: string, fileName: string, id: string, title: string) => {
     setDownloading(id);
