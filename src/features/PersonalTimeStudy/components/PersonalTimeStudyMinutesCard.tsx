@@ -2,6 +2,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card"
 import { AlertCircle } from "lucide-react"
+import { formatDecimalHours } from "../utils/decimalTimeHint"
+import { useState } from "react"
 
 type PersonalTimeStudyMinutesCardProps = {
   allocatedMinutes: number
@@ -9,6 +11,7 @@ type PersonalTimeStudyMinutesCardProps = {
   balanceMinutes: number
   totalMAAMinutes?: number | null
   className?: string
+  showHoursMode?: boolean
   apportioningSummary?: Array<{
     departmentId: number
     departmentName: string
@@ -32,10 +35,16 @@ export function PersonalTimeStudyMinutesCard({
   balanceMinutes,
   totalMAAMinutes,
   className,
+  showHoursMode = false,
   apportioningSummary,
   hideApportionedMinutes = false,
 }: PersonalTimeStudyMinutesCardProps) {
   const maaBalance = totalMAAMinutes !== null && totalMAAMinutes !== undefined ? actualMinutes - totalMAAMinutes : null;
+
+  // Convert minutes to decimal hours for display
+  const toHrs = (mins: number) => formatDecimalHours(mins / 60)
+
+  const [hintOpen, setHintOpen] = useState(false)
 
   return (
     <Card
@@ -46,27 +55,77 @@ export function PersonalTimeStudyMinutesCard({
       size="sm"
     >
       <CardHeader className="shrink-0 px-3 pb-1 pt-2">
-        <CardTitle className="text-left text-[13px] font-semibold text-[#6C5DD3]">
-          Minutes Summary
+        <CardTitle className="text-left text-[13px] font-semibold text-[#6C5DD3] flex items-center justify-between">
+          <span>{showHoursMode ? "Hours Summary" : "Minutes Summary"}</span>
+          {showHoursMode && (
+            <HoverCard open={hintOpen} onOpenChange={setHintOpen} openDelay={0} closeDelay={100}>
+              <HoverCardTrigger asChild>
+                <div
+                  className="cursor-pointer text-[#6C5DD3] hover:text-[#5B4DBF] transition-colors flex items-center shrink-0"
+                  onClick={() => setHintOpen((v) => !v)}
+                >
+                  <AlertCircle className="size-4.5 animate-bounce" />
+                </div>
+              </HoverCardTrigger>
+              <HoverCardContent
+                className="w-fit min-w-[240px] p-3 z-[100] bg-white border border-gray-100 shadow-xl rounded-[8px] text-[#111827]"
+                align="end"
+                side="top"
+              >
+                <div className="text-[11px] font-medium space-y-1.5">
+                  <p className="text-[10px] text-[#6C5DD3] font-semibold uppercase tracking-wide mb-2">In Minutes</p>
+                  <div className="flex items-center justify-between gap-4">
+                    <span className="text-muted-foreground">Allocated TS:</span>
+                    <span className="font-semibold text-[#6C5DD3]">{allocatedMinutes} mins</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-4">
+                    <span className="text-muted-foreground">Entered TS:</span>
+                    <span className="font-semibold text-[#6C5DD3]">{actualMinutes} mins</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-4">
+                    <span className="text-muted-foreground">TS Balance:</span>
+                    <span className="font-semibold text-[#6C5DD3]">{balanceMinutes} mins</span>
+                  </div>
+                  {totalMAAMinutes !== null && totalMAAMinutes !== undefined && (
+                    <>
+                      <hr className="border-gray-100 my-1" />
+                      <div className="flex items-center justify-between gap-4">
+                        <span className="text-muted-foreground">Entered MAA:</span>
+                        <span className="font-semibold text-[#6C5DD3]">{totalMAAMinutes} mins</span>
+                      </div>
+                      <div className="flex items-center justify-between gap-4">
+                        <span className="text-muted-foreground">MAA Balance:</span>
+                        <span className="font-semibold text-[#6C5DD3]">{maaBalance} mins</span>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </HoverCardContent>
+            </HoverCard>
+          )}
         </CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-1.5 px-3 pb-3 pt-1">
         <div className="flex items-center justify-between gap-2 text-[12px]">
-          <span className="font-semibold text-[#111827]">Allocated TS Minutes:</span>
+          <span className="font-semibold text-[#111827]">
+            {showHoursMode ? "Allocated TS Hours:" : "Allocated TS Minutes:"}
+          </span>
           <span className="shrink-0 font-semibold tabular-nums text-[#6C5DD3]">
-            {allocatedMinutes}
+            {showHoursMode ? toHrs(allocatedMinutes) : allocatedMinutes}
           </span>
         </div>
         <div className="flex items-center justify-between gap-2 text-[12px]">
-          <span className="font-semibold text-[#111827]">Entered TS Minutes:</span>
+          <span className="font-semibold text-[#111827]">
+            {showHoursMode ? "Entered TS Hours:" : "Entered TS Minutes:"}
+          </span>
           <span className="shrink-0 font-semibold tabular-nums text-[#6C5DD3]">
-            {actualMinutes}
+            {showHoursMode ? toHrs(actualMinutes) : actualMinutes}
           </span>
         </div>
         <div className="flex items-center justify-between gap-2 text-[12px]">
           <span className="font-semibold text-[#111827]">TS Balance:</span>
           <span className="shrink-0 font-semibold tabular-nums text-[#6C5DD3]">
-            {balanceMinutes}
+            {showHoursMode ? toHrs(balanceMinutes) : balanceMinutes}
           </span>
         </div>
 
@@ -74,15 +133,17 @@ export function PersonalTimeStudyMinutesCard({
           <>
             <hr className="my-0.5 border-[#E5E7EB]" />
             <div className="flex items-center justify-between gap-2 text-[12px]">
-              <span className="font-semibold text-[#111827]">Entered MAA Minutes:</span>
+              <span className="font-semibold text-[#111827]">
+                {showHoursMode ? "Entered MAA Hours:" : "Entered MAA Minutes:"}
+              </span>
               <span className="shrink-0 font-semibold tabular-nums text-[#6C5DD3]">
-                {totalMAAMinutes}
+                {showHoursMode ? toHrs(totalMAAMinutes) : totalMAAMinutes}
               </span>
             </div>
             <div className="flex items-center justify-between gap-2 text-[12px]">
               <span className="font-semibold text-[#111827]">MAA Balance:</span>
               <span className="shrink-0 font-semibold tabular-nums text-[#6C5DD3]">
-                {maaBalance}
+                {showHoursMode ? toHrs(maaBalance ?? 0) : maaBalance}
               </span>
             </div>
           </>

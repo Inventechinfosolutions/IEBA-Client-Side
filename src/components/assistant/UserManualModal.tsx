@@ -1,4 +1,4 @@
-﻿import React, { useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import {
@@ -218,11 +218,11 @@ export const UserManualModal: React.FC<UserManualModalProps> = ({
       `}</style>
 
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent showClose={false} className="sm:max-w-[620px] p-0 overflow-hidden border-0 shadow-[0_32px_80px_rgba(0,0,0,0.28)] rounded-3xl">
+        <DialogContent showClose={false} className="w-[calc(100vw-24px)] sm:max-w-[620px] p-0 overflow-hidden border-0 shadow-[0_32px_80px_rgba(0,0,0,0.28)] rounded-2xl sm:rounded-3xl">
 
           {/* -- HEADER ------------------------------- */}
           <div
-            className="relative overflow-hidden px-7 py-6"
+            className="relative overflow-hidden px-4 py-4 sm:px-7 sm:py-6"
             style={{
               background: "linear-gradient(135deg, #4C3B9E 0%, #6C5DD3 45%, #8B74E8 100%)",
             }}
@@ -248,17 +248,17 @@ export const UserManualModal: React.FC<UserManualModalProps> = ({
             <div className="absolute top-3 right-20 w-12 h-12 rounded-full bg-purple-300/20" />
 
             <DialogHeader className="relative z-10">
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3 sm:gap-4">
                 {/* Icon box */}
                 <div
-                  className="flex items-center justify-center w-12 h-12 rounded-2xl shadow-lg"
+                  className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl shadow-lg shrink-0"
                   style={{ background: "rgba(255,255,255,0.18)", backdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,0.25)" }}
                 >
-                  <BookOpen className="h-6 w-6 text-white" style={{ animation: "manual-float 3s ease-in-out infinite" }} />
+                  <BookOpen className="h-5 w-5 sm:h-6 sm:w-6 text-white" style={{ animation: "manual-float 3s ease-in-out infinite" }} />
                 </div>
 
                 <div className="flex-1 min-w-0">
-                  <DialogTitle className="text-[20px] font-bold text-white tracking-tight mb-1">
+                  <DialogTitle className="text-[17px] sm:text-[20px] font-bold text-white tracking-tight mb-1 leading-tight">
                     User Manuals & Documentation
                   </DialogTitle>
                   <DialogDescription className="text-white/75 text-[13px] leading-snug">
@@ -271,7 +271,7 @@ export const UserManualModal: React.FC<UserManualModalProps> = ({
               </div>
 
               {/* Stats row */}
-              <div className="flex items-center gap-5 mt-4 pt-4" style={{ borderTop: "1px solid rgba(255,255,255,0.15)" }}>
+              <div className="flex items-center gap-3 sm:gap-5 mt-3 sm:mt-4 pt-3 sm:pt-4 flex-wrap" style={{ borderTop: "1px solid rgba(255,255,255,0.15)" }}>
                 <div className="flex items-center gap-1.5 text-white/70 text-[12px]">
                   <FileText className="h-3.5 w-3.5" />
                   <span><strong className="text-white">{availableManuals.length}</strong> {availableManuals.length === 1 ? "Manual" : "Manuals"} Available</span>
@@ -285,11 +285,11 @@ export const UserManualModal: React.FC<UserManualModalProps> = ({
           </div>
 
           {/* -- MANUAL LIST --------------------------- */}
-          <div className="bg-[#F6F7FB] dark:bg-[#111113] px-5 py-5 space-y-3 max-h-[54vh] overflow-y-auto">
+          <div className="bg-[#F6F7FB] dark:bg-[#111113] px-3 py-3 sm:px-5 sm:py-5 space-y-3 max-h-[54vh] overflow-y-auto">
             {availableManuals.map((manual) => (
               <div
                 key={manual.id}
-                className="manual-card group relative flex items-center gap-4 p-4 rounded-2xl bg-white dark:bg-[#1C1C1F] border border-gray-100 dark:border-[#2E2E35] shadow-sm hover:shadow-lg hover:border-transparent transition-all duration-250 cursor-default"
+                className="manual-card group relative flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-white dark:bg-[#1C1C1F] border border-gray-100 dark:border-[#2E2E35] shadow-sm hover:shadow-lg hover:border-transparent transition-all duration-250 cursor-default"
                 style={{ "--manual-color": manual.color } as React.CSSProperties}
               >
                 {/* Left color strip */}
@@ -300,7 +300,7 @@ export const UserManualModal: React.FC<UserManualModalProps> = ({
 
                 {/* Icon */}
                 <div
-                  className="manual-icon-wrap flex items-center justify-center w-11 h-11 rounded-xl transition-transform duration-300 shrink-0 ml-2"
+                  className="manual-icon-wrap flex items-center justify-center w-9 h-9 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl transition-transform duration-300 shrink-0 ml-1 sm:ml-2"
                   style={{ background: `${manual.color}18`, color: manual.color }}
                 >
                   {manual.icon}
@@ -308,8 +308,8 @@ export const UserManualModal: React.FC<UserManualModalProps> = ({
 
                 {/* Text */}
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap mb-0.5">
-                    <span className="text-[14px] font-semibold text-gray-900 dark:text-gray-100 group-hover:text-[var(--manual-color)] transition-colors truncate">
+                  <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap mb-0.5">
+                    <span className="text-[13px] sm:text-[14px] font-semibold text-gray-900 dark:text-gray-100 group-hover:text-[var(--manual-color)] transition-colors truncate">
                       {manual.title}
                     </span>
                     <span
@@ -341,7 +341,7 @@ export const UserManualModal: React.FC<UserManualModalProps> = ({
                   type="button"
                   disabled={downloading === manual.id}
                   onClick={() => handleDownload(manual.url, manual.fileName, manual.id, manual.title)}
-                  className="shrink-0 flex items-center justify-center gap-1.5 w-10 h-10 rounded-xl font-semibold text-white shadow-md transition-all duration-200 hover:scale-105 active:scale-95 cursor-pointer disabled:opacity-70 disabled:cursor-wait"
+                  className="shrink-0 flex items-center justify-center gap-1.5 w-9 h-9 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl font-semibold text-white shadow-md transition-all duration-200 hover:scale-105 active:scale-95 cursor-pointer disabled:opacity-70 disabled:cursor-wait"
                   style={{
                     background: `linear-gradient(135deg, ${manual.color}, ${manual.color}CC)`,
                     boxShadow: `0 4px 14px ${manual.color}40`,
@@ -362,7 +362,7 @@ export const UserManualModal: React.FC<UserManualModalProps> = ({
           </div>
 
           {/* -- FOOTER ------------------------------- */}
-          <div className="bg-white dark:bg-[#111113] border-t border-gray-100 dark:border-[#2E2E35] px-6 py-3 flex items-center justify-between">
+          <div className="bg-white dark:bg-[#111113] border-t border-gray-100 dark:border-[#2E2E35] px-3 sm:px-6 py-2.5 sm:py-3 flex items-center justify-between gap-2 flex-wrap">
             <span className="text-[11px] text-gray-400 flex items-center gap-1.5">
               <Sparkles className="h-3.5 w-3.5 text-[#6C5DD3]" />
               IEBA Official Documentation

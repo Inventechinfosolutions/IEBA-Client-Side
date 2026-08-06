@@ -132,6 +132,12 @@ export function PersonalTimeStudyPage() {
     activeTab === "personal" && !!userId,
   )
 
+  // True when every department the user belongs to has requiresStartEndTime=false
+  const allDepartmentsUseDecimalTime = (() => {
+    const depts = settingChecksQuery.data?.departments ?? []
+    return depts.length > 0 && depts.every((d) => d.requiresStartEndTime === false)
+  })()
+
   // 5. Calendar day & week summaries
   const { dayStatuses, weekSummaries } = useMemo(() => {
     const dayMap: Record<string, { status: string; color?: string; hasNotes?: boolean; noteText?: string }> = {}
@@ -283,6 +289,7 @@ export function PersonalTimeStudyPage() {
                           totalMAAMinutes={summaryQuery.data?.actualmultiactivitytime}
                           apportioningSummary={summaryQuery.data?.apportioningSummary}
                           hideApportionedMinutes={isTimeStudySupervisor}
+                          showHoursMode={allDepartmentsUseDecimalTime}
                         />
                       </div>
 
