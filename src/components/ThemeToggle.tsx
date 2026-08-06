@@ -28,7 +28,7 @@ export function ThemeToggle({ className }: ThemeToggleProps) {
       type="button"
       onClick={handleToggle}
       className={cn(
-        "relative flex h-9 w-9 items-center justify-center rounded-full border border-[#E5E7EB] bg-white text-[#6B7280] transition-all duration-300 hover:bg-[#F3F4F6] hover:text-[#111827] focus-visible:outline-none dark:border-[#27272a] dark:bg-[#09090b] dark:text-[#a1a1aa] dark:hover:bg-[#18181b] dark:hover:text-white",
+        "relative flex h-9 w-9 items-center justify-center rounded-full border border-[#E5E7EB] bg-white text-[#6B7280] shadow-sm transition-all duration-300 hover:bg-[#F3F4F6] hover:text-[#111827] focus-visible:outline-none dark:border-[#27272a] dark:bg-[#09090b] dark:text-[#a1a1aa] dark:hover:bg-[#18181b] dark:hover:text-white",
         className
       )}
       aria-label="Toggle theme"

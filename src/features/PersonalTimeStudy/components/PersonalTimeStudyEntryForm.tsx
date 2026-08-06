@@ -557,9 +557,9 @@ function SupportingDocField({
       )}>
         <button
           type="button"
-          disabled={disabled}
-          className={cn("flex flex-1 min-w-0 items-center px-2 overflow-hidden", disabled && "cursor-not-allowed")}
-          onClick={() => !disabled && setOpen((v) => !v)}
+          disabled={disabled && docs.length === 0}
+          className={cn("flex flex-1 min-w-0 items-center px-2 overflow-hidden", (disabled && docs.length === 0) ? "cursor-not-allowed" : "cursor-pointer")}
+          onClick={() => (docs.length > 0 || !disabled) && setOpen((v) => !v)}
         >
           <span className="truncate text-foreground flex-1">{pillLabel}</span>
           {extraCount > 0 && (
