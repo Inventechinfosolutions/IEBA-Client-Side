@@ -20,6 +20,7 @@ import { departmentKeys } from "@/features/department/keys"
 import { settingsKeys } from "@/features/settings/keys"
 import { useQueryClient } from "@tanstack/react-query"
 import { useReportTransferFlags } from "@/features/settings/queries/getReportTransferFlags"
+import { useGetClientMasterCodeTabs } from "@/features/master-code/queries/getClientMasterCodeTabs"
 import { ReportsBucketTransfer } from "@/features/settings/components/Reports/ReportsBucketTransfer"
 import { useReportsTransferSave } from "@/features/settings/components/Reports/useReportsTransferSave"
 import {
@@ -141,17 +142,33 @@ export function ReportsForm({
     transferEnabled,
   )
 
-  const isTransferLoading = transferEnabled && (isPending || isFetching)
+  // Master-code panels only: limit to county active-tabs. Activities still use selected MCs as before.
+  const activeTabsQuery = useGetClientMasterCodeTabs(transferEnabled)
+  const activeTabNameSet = useMemo(() => {
+    const names = activeTabsQuery.data ?? []
+    return new Set(names.map((n) => n.trim()).filter(Boolean))
+  }, [activeTabsQuery.data])
+  const activeTabsReady = Array.isArray(activeTabsQuery.data)
 
-  const unassignedMasterCodes = useMemo(
-    () => (transferFlags?.masterCodeFlag.excluded ?? []).map(masterCodeRowToTransferItem),
-    [transferFlags?.masterCodeFlag.excluded],
-  )
+  const isTransferLoading =
+    transferEnabled &&
+    (isPending || isFetching || activeTabsQuery.isLoading || activeTabsQuery.isFetching)
 
-  const assignedMasterCodes = useMemo(
-    () => (transferFlags?.masterCodeFlag.included ?? []).map(masterCodeRowToTransferItem),
-    [transferFlags?.masterCodeFlag.included],
-  )
+  const unassignedMasterCodes = useMemo(() => {
+    if (!activeTabsReady) return []
+    return (transferFlags?.masterCodeFlag.excluded ?? [])
+      .filter((row) => activeTabNameSet.has(String(row.name ?? "").trim()))
+      .map(masterCodeRowToTransferItem)
+  }, [transferFlags?.masterCodeFlag.excluded, activeTabNameSet, activeTabsReady])
+
+  const assignedMasterCodes = useMemo(() => {
+    if (!activeTabsReady) return []
+    return (transferFlags?.masterCodeFlag.included ?? [])
+      .filter((row) => activeTabNameSet.has(String(row.name ?? "").trim()))
+      .map(masterCodeRowToTransferItem)
+  }, [transferFlags?.masterCodeFlag.included, activeTabNameSet, activeTabsReady])
+
+  // Activities unchanged — still scoped by the selected/assigned master codes above.
 
   const unassignedActivities = useMemo(
     () => activityItemsToTransferItems(transferFlags?.activityFlag.excluded ?? []),
