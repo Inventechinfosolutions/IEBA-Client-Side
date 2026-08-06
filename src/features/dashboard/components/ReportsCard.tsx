@@ -60,18 +60,6 @@ export function ReportsCard({ reports, isLoading }: ReportsCardProps) {
                 <span className="truncate text-sm text-[#374151]">{item.name}</span>
               </button>
             ))}
-
-          {!isLoading && (
-            <button
-              type="button"
-              onClick={() => navigate("/reports", { state: { number: "TSCR", name: "Time Study Calculations Report" } })}
-              className="flex w-full items-center px-4 py-5 hover:bg-[#F9F8FF] text-left transition-colors"
-            >
-              <span className="truncate text-[15px]  text-[#6C5DD3] ml-2">
-                Time Study Calculations Report
-              </span>
-            </button>
-          )}
         </div>
       </div>
     </div>
