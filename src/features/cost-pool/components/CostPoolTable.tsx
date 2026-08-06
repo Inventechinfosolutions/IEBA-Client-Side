@@ -368,7 +368,7 @@ export function CostPoolTable({
   onPageChange,
   onPageSizeChange,
 }: CostPoolTableProps) {
-  const { canAdd, canUpdate, isSuperAdmin } = usePermissions()
+  const { canAdd, canUpdate, isSuperAdmin, isClientAdmin } = usePermissions()
   const canAddCostPool = canAdd("costpool")
   const canUpdateCostPool = canUpdate("costpool")
   const filterForm = useForm<CostPoolFilterFormValues>({
@@ -534,7 +534,7 @@ export function CostPoolTable({
         )}
 
         <div className="flex items-center gap-1.5 sm:gap-2.5 w-full xl:w-auto min-w-0 justify-between sm:justify-end">
-          {isSuperAdmin && (
+          {(isSuperAdmin || isClientAdmin) && (
             <button
               type="button"
               className={`flex h-[42px] sm:h-[48px] shrink-0 items-center gap-1 sm:gap-1.5 rounded-[10px] px-2.5 sm:px-4 text-[11px] sm:text-[13px] font-medium transition-colors whitespace-nowrap cursor-pointer ${showHistory

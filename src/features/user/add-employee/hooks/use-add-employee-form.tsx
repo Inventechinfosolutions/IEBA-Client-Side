@@ -97,8 +97,8 @@ export function useAddEmployeeForm({
   onSave,
 }: UseAddEmployeeFormParams) {
   const isEditMode = mode === "edit"
-  const { isSuperAdmin } = usePermissions()
-  const showDeptAutoAssign = !isSuperAdmin
+  const { isSuperAdmin, isClientAdmin } = usePermissions()
+  const showDeptAutoAssign = !isSuperAdmin && !isClientAdmin
   const [activeTab, setActiveTab] = useState<AddEmployeeFormTab>("employee")
   const [tabSaved, setTabSaved] = useState<Record<SaveGatedTab, boolean>>(initialTabSaved)
   const [addSecurityTransferSucceeded, setAddSecurityTransferSucceeded] = useState(false)

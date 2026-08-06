@@ -34,6 +34,7 @@ function nextSortState(prev: LeaveApprovalSortState, key: LeaveApprovalSortKey):
 export function LeaveApprovalPage() {
   const {
     isSuperAdmin,
+    isClientAdmin,
     canReview
   } = usePermissions()
   const { user } = useAuth()
@@ -48,7 +49,7 @@ export function LeaveApprovalPage() {
   /** Bumps on each open so the comments form remounts with empty defaults (no useEffect). */
   const [commentsModalFormKey, setCommentsModalFormKey] = useState(0)
 
-  const hasAccess = isSuperAdmin || canReview("userleave")
+  const hasAccess = isSuperAdmin || isClientAdmin || canReview("userleave")
 
   const userId = user?.id || ""
   const dropdownQuery = useQuery({
@@ -63,7 +64,7 @@ export function LeaveApprovalPage() {
     filters,
     sort,
     enabled: hasAccess,
-    supervisorUserId: isSuperAdmin ? undefined : user?.id,
+    supervisorUserId: (isSuperAdmin || isClientAdmin) ? undefined : user?.id,
   })
 
   const userOptionsModule = useLeaveApprovals({
@@ -71,7 +72,7 @@ export function LeaveApprovalPage() {
     pageSize: 100,
     filters: { type: "All", userId: "all" },
     enabled: hasAccess,
-    supervisorUserId: isSuperAdmin ? undefined : user?.id,
+    supervisorUserId: (isSuperAdmin || isClientAdmin) ? undefined : user?.id,
   })
 
   if (!hasAccess) {

@@ -52,7 +52,7 @@ export function DepartmentRolePage() {
   const [historyDeptCode, setHistoryDeptCode] = useState("")
   const [historyRoleName, setHistoryRoleName] = useState("")
 
-  const { isSuperAdmin } = usePermissions()
+  const { isSuperAdmin, isClientAdmin } = usePermissions()
 
   const {
     data,
@@ -368,7 +368,7 @@ export function DepartmentRolePage() {
           </div>
         )}
         <div className="flex items-center gap-2 justify-end">
-          {isSuperAdmin && (
+          {(isSuperAdmin || isClientAdmin) && (
             <button
               type="button"
               className={`flex h-12 items-center justify-center gap-2 rounded-[10px] px-4 text-[14px] font-normal transition-colors w-full sm:w-auto ${showHistory

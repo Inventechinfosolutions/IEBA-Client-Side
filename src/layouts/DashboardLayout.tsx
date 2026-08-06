@@ -43,7 +43,7 @@ import { AssistantWidget } from "@/components/assistant/AssistantWidget"
 
 export function DashboardLayout() {
   const { user, signOut, establishDashboardSession } = useAuth()
-  const { isSuperAdmin } = usePermissions()
+  const { isSuperAdmin, isClientAdmin } = usePermissions()
   const { data: mimic } = useMimicSession()
   const profileImageQuery = useGetProfileImage(user?.id)
   const countyName = user?.countyName?.trim() || ""
@@ -189,7 +189,7 @@ export function DashboardLayout() {
                             Change County
                         </DropdownMenuItem>
                       )}
-                      {isSuperAdmin && (
+                      {(isSuperAdmin || isClientAdmin) && (
                         <DropdownMenuItem asChild>
                           <Link to="/settings">
                             <Settings className="mr-2 size-4" />

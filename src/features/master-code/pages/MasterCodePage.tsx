@@ -158,15 +158,15 @@ export function MasterCodePage() {
         />
       </div>
       <div className="mt-5">
-          <MasterCodeToolbar
-            codeType={ui.activeTab}
-            allowMultiCodes={allowMultiCodes}
-            inactiveOnly={ui.inactiveOnly}
-            onToggleAllowMultiCodes={handleToggleMultiCodes}
-            onToggleInactiveOnly={ui.toggleInactiveOnly}
-            onAddFfp={ui.openAddModal}
-            canAdd={hasAddPermission}
-          />
+        <MasterCodeToolbar
+          codeType={ui.activeTab}
+          allowMultiCodes={allowMultiCodes}
+          inactiveOnly={ui.inactiveOnly}
+          onToggleAllowMultiCodes={handleToggleMultiCodes}
+          onToggleInactiveOnly={ui.toggleInactiveOnly}
+          onAddFfp={ui.openAddModal}
+          canAdd={hasAddPermission}
+        />
         <div className="mb-5">
           <MasterCodeTable
             codeType={ui.activeTab}

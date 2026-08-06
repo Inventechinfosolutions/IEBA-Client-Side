@@ -38,7 +38,7 @@ export function ProgramActivityRelationForm({ form, departmentIds }: ProgramActi
   const departmentOptions = formOptionsQuery.data?.departmentOptions ?? []
   const departmentIdByName = formOptionsQuery.data?.departmentIdByName ?? {}
 
-  const { user, isSuperAdmin, isDepartmentAdmin } = usePermissions()
+  const { user, isSuperAdmin, isClientAdmin, isDepartmentAdmin } = usePermissions()
   
   const isRestrictedRole = (user?.roles?.some(role => {
     const r = role.toLowerCase();
@@ -305,7 +305,7 @@ export function ProgramActivityRelationForm({ form, departmentIds }: ProgramActi
           </div>
         )}
 
-        {isSuperAdmin && (
+        {(isSuperAdmin || isClientAdmin) && (
           <Button
             type="button"
             className={`h-9 w-full sm:w-auto shrink-0 cursor-pointer gap-2 rounded-[12px] px-3 text-[12px] font-semibold transition-all shadow-[0_1px_0_rgba(0,0,0,0.05)] justify-center ${

@@ -249,7 +249,7 @@ export function SecurityAssignmentsPanel({
   const unassignMutation = useUnassignUserDepartmentRoles()
   const transferBusy = assignMutation.isPending || unassignMutation.isPending
 
-  const { isSuperAdmin, user } = usePermissions()
+  const { isSuperAdmin, isClientAdmin, user } = usePermissions()
   const isAddMode = mode === "add"
   const historyQuery = useGetUserAllowMulticodeHistory(securityUserId, !isAddMode)
   const timelineQuery = useGetUserAllowMulticodeTimeline(securityUserId, !isAddMode)
@@ -578,8 +578,8 @@ export function SecurityAssignmentsPanel({
       multiCodeRowsSyncStampRef.current = stamp
     }
   }
-  // All non-super-admin roles are restricted to their assigned departments only
-  const isRestrictedNonSuperAdmin = !isSuperAdmin
+  // All non-super-admin / non-client-admin roles are restricted to their assigned departments only
+  const isRestrictedNonSuperAdmin = !isSuperAdmin && !isClientAdmin
 
   const allowedDepartmentNames = useMemo(() => {
     if (!isRestrictedNonSuperAdmin || !user?.departmentRoles) return null
@@ -1044,7 +1044,7 @@ export function SecurityAssignmentsPanel({
 
   return (
     <div className="relative min-w-0 pt-1">
-      {showSecurityDeptRoleHistory && canPersistTransfers && isSuperAdmin ? (
+      {showSecurityDeptRoleHistory && canPersistTransfers && (isSuperAdmin || isClientAdmin) ? (
         <>
           <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
             {isAddMode ? (
@@ -1197,7 +1197,7 @@ export function SecurityAssignmentsPanel({
                 )}
               </div>
 
-              {canPersistTransfers && isSuperAdmin ? (
+              {canPersistTransfers && (isSuperAdmin || isClientAdmin) ? (
                 <Button
                   type="button"
                   className="inline-flex h-11 w-full shrink cursor-pointer items-center justify-center gap-2 rounded-[12px] border border-[#E5E7EB] bg-white px-3 text-[11px] font-semibold text-[#6C5DD3] shadow-[0_1px_0_rgba(0,0,0,0.05)] hover:border-[#6C5DD3] hover:bg-[#F3F0FF] sm:h-9 sm:w-auto sm:text-[12px]"
@@ -1596,7 +1596,7 @@ export function SecurityAssignmentsPanel({
                                 Allow MultiCodes
                               </label>
                             </div>
-                            {!isAddMode && isSuperAdmin && (
+                            {!isAddMode && (isSuperAdmin || isClientAdmin) && (
                               <Popover>
                                 <HoverCard openDelay={0} closeDelay={100}>
                                   <HoverCardTrigger asChild>

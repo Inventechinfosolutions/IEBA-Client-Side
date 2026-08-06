@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react"
 import { useAuth } from "@/contexts/AuthContext"
+import { usePermissions } from "@/hooks/usePermissions"
 import { ArrowLeft, History } from "lucide-react"
 import { Spinner } from "@/components/ui/spinner"
 import { getHighestPriorityDeptRole } from "../utils/rolePriority"
@@ -96,9 +97,10 @@ export function DashboardPage() {
   const hasMultipleDepartmentRoles = deptRoles.length > 1
   const shouldUseAdminDashboardForRoleMix =
     hasDeptTsRole || (hasMultipleDepartmentRoles && !hasOnlyUserPayrollRoleMix)
+  const { isClientAdmin } = usePermissions()
   const isSuperAdmin = mimicSession
-    ? hasSuperAdminRole
-    : hasSuperAdminRole || hasPermission(permissions, "superadmin:all")
+    ? (hasSuperAdminRole || isClientAdmin)
+    : (hasSuperAdminRole || isClientAdmin || hasPermission(permissions, "superadmin:all"))
   const canAddPayroll = hasPermission(permissions, "payroll:add")
   const canCreateUser =
     hasPermission(permissions, "user:create") || hasPermission(permissions, "user:add")
