@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react"
 import { useAuth } from "@/contexts/AuthContext"
+import { usePermissions } from "@/hooks/usePermissions"
 import { ArrowLeft, History } from "lucide-react"
 import { Spinner } from "@/components/ui/spinner"
 import { getHighestPriorityDeptRole } from "../utils/rolePriority"
@@ -96,9 +97,10 @@ export function DashboardPage() {
   const hasMultipleDepartmentRoles = deptRoles.length > 1
   const shouldUseAdminDashboardForRoleMix =
     hasDeptTsRole || (hasMultipleDepartmentRoles && !hasOnlyUserPayrollRoleMix)
+  const { isClientAdmin } = usePermissions()
   const isSuperAdmin = mimicSession
-    ? hasSuperAdminRole
-    : hasSuperAdminRole || hasPermission(permissions, "superadmin:all")
+    ? (hasSuperAdminRole || isClientAdmin)
+    : (hasSuperAdminRole || isClientAdmin || hasPermission(permissions, "superadmin:all"))
   const canAddPayroll = hasPermission(permissions, "payroll:add")
   const canCreateUser =
     hasPermission(permissions, "user:create") || hasPermission(permissions, "user:add")
@@ -115,14 +117,14 @@ export function DashboardPage() {
   const isUserLikeDashboard =
     hasOnlyUserPayrollRoleMix || isRegularUser || isPayrollAdmin
   const canViewAdminLayout = !isUserLikeDashboard
-  const isSuperAdminLikeDashboard = isSuperAdmin
-  const shouldShowExtendedStats = isSuperAdmin || hasDepartmentAndPayrollRole || shouldTreatPayrollRoleMixAsSuperAdmin
+  const isSuperAdminLikeDashboard = isSuperAdmin || isClientAdmin
+  const shouldShowExtendedStats = isSuperAdmin || isClientAdmin || hasDepartmentAndPayrollRole || shouldTreatPayrollRoleMixAsSuperAdmin
   const canAlwaysViewUserCard = hasDeptTsRole
-  const showUserManagement = isSuperAdmin || canCreateUser || canAlwaysViewUserCard
-  const showPayrollCard = isSuperAdmin || hasPayrollAdminRole
-  const showStaffStatsCard = isSuperAdmin || isPayrollAdmin || isDeptOrTSAdmin
+  const showUserManagement = isSuperAdmin || isClientAdmin || canCreateUser || canAlwaysViewUserCard
+  const showPayrollCard = isSuperAdmin || isClientAdmin || hasPayrollAdminRole
+  const showStaffStatsCard = isSuperAdmin || isClientAdmin || isPayrollAdmin || isDeptOrTSAdmin
   const showPersonalTimeStudyCard = !hasSuperAdminRole
-  const showTimeStudyStatusCard = isSuperAdmin || (hasTSSupervisorOrAdminRole && !hasDeptAdminRole && !hasPayrollAdminRole)
+  const showTimeStudyStatusCard = isSuperAdmin || isClientAdmin || (hasTSSupervisorOrAdminRole && !hasDeptAdminRole && !hasPayrollAdminRole)
   let row1TemplateColumns = "1fr 1fr 1fr"
   if (showPersonalTimeStudyCard && showTimeStudyStatusCard) {
     row1TemplateColumns = "0.86fr 0.7fr 1.24fr 1.2fr"
@@ -268,7 +270,7 @@ export function DashboardPage() {
   return (
     <div className="flex flex-col gap-4 w-full min-h-0 pb-8 sm:pb-10">
       {/* Header / Toolbar */}
-      {isSuperAdmin && (
+      {(isSuperAdmin || isClientAdmin) && (
         <div className="flex items-center justify-between mb-2 gap-3">
           {showAuditHistory ? (
             <TitleCaseInput
@@ -350,7 +352,7 @@ export function DashboardPage() {
                   pendingApproval={trPending}
                   notSubmitted={trNotSubmitted}
                   isLoading={overview.isLoading}
-                  userId={isSuperAdmin ? undefined : userId}
+                  userId={(isSuperAdmin || isClientAdmin) ? undefined : userId}
                 />
               </div>
             )}
@@ -403,7 +405,7 @@ export function DashboardPage() {
                 rejected={staffLeaveRejected}
                 deptCount={deptCountVal}
                 programCount={programCountVal}
-                activitiesCount={isSuperAdmin ? masterActivityCountVal : activityCountVal}
+                activitiesCount={(isSuperAdmin || isClientAdmin) ? masterActivityCountVal : activityCountVal}
                 jobPools={shouldShowExtendedStats ? jobPoolsVal : undefined}
                 costPools={shouldShowExtendedStats ? costPoolsVal : undefined}
                 isLoading={overview.isLoading}

@@ -11,11 +11,11 @@ const DEFAULT_FILTERS: DepartmentFilter = {
 }
 
 export function DepartmentPage() {
-  const { isSuperAdmin, user } = usePermissions()
+  const { isSuperAdmin, isClientAdmin, user } = usePermissions()
   const [filters, setFilters] = useState<DepartmentFilter>(DEFAULT_FILTERS)
   
-  // Super Admin sees all; others see only their assigned departments.
-  const userIdFilter = isSuperAdmin ? undefined : user?.id
+  // Super Admin & Client Admin see all; others see only their assigned departments.
+  const userIdFilter = (isSuperAdmin || isClientAdmin) ? undefined : user?.id
 
   const {
     departments,

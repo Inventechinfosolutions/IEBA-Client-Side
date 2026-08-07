@@ -42,10 +42,10 @@ export function useTimeStudyMGT() {
   const month = currentDate.getMonth() + 1
   const year  = currentDate.getFullYear()
 
-  const { isSuperAdmin, assignedDepartmentIds } = usePermissions()
+  const { isSuperAdmin, isClientAdmin, assignedDepartmentIds } = usePermissions()
 
   // ── Queries ──────────────────────────────────────────────────────────────
-  const deptFilter = !isSuperAdmin && assignedDepartmentIds.length > 0 ? assignedDepartmentIds.join(",") : undefined
+  const deptFilter = !isSuperAdmin && !isClientAdmin && assignedDepartmentIds.length > 0 ? assignedDepartmentIds.join(",") : undefined
   const employeeListQuery = useGetMGTEmployeeList(search || undefined, deptFilter)
   const monthLegendQuery  = useGetMGTMonthLegend(selectedUserId, month, year)
 

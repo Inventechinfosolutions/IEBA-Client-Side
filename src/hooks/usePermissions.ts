@@ -21,6 +21,12 @@ export function usePermissions() {
   const isPayrollAdmin = useMemo(() => roles.some(r => r.toLowerCase() === "payroll admin"), [roles])
   const isTimeStudyAdmin = useMemo(() => roles.some(r => r.toLowerCase() === "time study admin"), [roles])
   const isTimeStudySupervisor = useMemo(() => roles.some(r => r.toLowerCase() === "time study supervisor"), [roles])
+  const isClientAdmin = useMemo(() => {
+    const globalRoles = (user?.roles || []).map(r => typeof r === "string" ? r : (r as any)?.name ?? "")
+    const deptRoles = (user?.departmentRoles || []).map(dr => (dr as any).roleName || (dr as any).role?.name || (dr as any).role || "")
+    const allRoles = [...globalRoles, ...deptRoles]
+    return allRoles.some(r => r.toLowerCase() === "client admin")
+  }, [user?.roles, user?.departmentRoles])
 
   const assignedDepartmentIds = useMemo(() => {
     if (!user?.departmentRoles) return []
@@ -64,6 +70,7 @@ export function usePermissions() {
     permissions,
     permSet,
     isSuperAdmin,
+    isClientAdmin,
     isDepartmentAdmin,
     isPayrollAdmin,
     isTimeStudyAdmin,

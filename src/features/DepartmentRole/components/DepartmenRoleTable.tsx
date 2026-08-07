@@ -47,9 +47,9 @@ export function DepartmenRoleTable({
   isLoading = false,
   isSaving = false,
 }: DepartmenRoleTableProps) {
-  const { isSuperAdmin } = usePermissions()
-  const canAddRole = isSuperAdmin
-  const canUpdateRole = isSuperAdmin
+  const { isSuperAdmin, isClientAdmin } = usePermissions()
+  const canAddRole = isSuperAdmin || isClientAdmin
+  const canUpdateRole = isSuperAdmin || isClientAdmin
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
 
   const toggleExpanded = (id: string) => {

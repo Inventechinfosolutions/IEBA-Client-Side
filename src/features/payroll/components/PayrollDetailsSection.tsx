@@ -84,7 +84,7 @@ export function PayrollDetailsSection({
   activeQueryParams,
 }: PayrollDetailsSectionProps) {
   const { user } = useAuth()
-  const { isSuperAdmin, isDepartmentAdmin, isPayrollAdmin } = usePermissions()
+  const { isSuperAdmin, isClientAdmin, isDepartmentAdmin, isPayrollAdmin } = usePermissions()
   const isRestrictedAdmin = isDepartmentAdmin || isPayrollAdmin
 
   // Locally fetch user details to get the most accurate department list
@@ -96,7 +96,7 @@ export function PayrollDetailsSection({
   
   // Get all unique department IDs (normalized to strings for the dropdown component)
   const assignedDepartmentIds = useMemo(() => {
-    if (isSuperAdmin) return new Set<string>()
+    if (isSuperAdmin || isClientAdmin) return new Set<string>()
     
     const apiDepts = (userDetails as any)?.data?.departments || (userDetails as any)?.departments
     const contextDepts = user?.departmentRoles || []
@@ -111,7 +111,7 @@ export function PayrollDetailsSection({
     }
       
     return assigned
-  }, [user?.departmentRoles, userDetails, isSuperAdmin])
+  }, [user?.departmentRoles, userDetails, isSuperAdmin, isClientAdmin])
 
   const detailsFormValues = buildPayrollDetailsDefaultValues(filterOptions, settingsPayrollType)
 
@@ -136,7 +136,7 @@ export function PayrollDetailsSection({
   const fiscalYearOptions: SingleSelectOption[] = [...filterOptions.fiscalYears]
   
   // FILTER: Only show the assigned departments for Dept/Payroll admins
-  const departmentOptions: SingleSelectOption[] = isSuperAdmin
+  const departmentOptions: SingleSelectOption[] = (isSuperAdmin || isClientAdmin)
     ? [...filterOptions.departments]
     : filterOptions.departments.filter(d => assignedDepartmentIds.has(d.value))
 
