@@ -28,7 +28,7 @@ const formatDashboardTableStatus = (status?: string) => {
 
 export function UserDashboard() {
   const { user } = useAuth()
-  const { isSuperAdmin, assignedDepartmentIds } = usePermissions()
+  const { isSuperAdmin, isClientAdmin, assignedDepartmentIds } = usePermissions()
   const userId = user?.id ?? ""
 
   const deptRoles = user?.departmentRoles ?? []
@@ -48,7 +48,7 @@ export function UserDashboard() {
   const reports = useReportsByRole({
     departmentId,
     roleId,
-    isSuperAdmin,
+    isSuperAdmin: isSuperAdmin || isClientAdmin,
     departmentIds: assignedDepartmentIds,
   })
 

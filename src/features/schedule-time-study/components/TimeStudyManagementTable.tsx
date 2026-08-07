@@ -127,11 +127,11 @@ function ScheduleTimeStudyTableLoaded({
   isDepartmentsFetching = false,
 }: ScheduleTimeStudyTableLoadedProps & { isDepartmentsFetching?: boolean }) {
   const queryClient = useQueryClient()
-  const { isSuperAdmin, assignedDepartmentIds } = usePermissions()
+  const { isSuperAdmin, isClientAdmin, assignedDepartmentIds } = usePermissions()
   const filteredDepartments = useMemo(() => {
-    if (isSuperAdmin) return departments
+    if (isSuperAdmin || isClientAdmin) return departments
     return departments.filter(d => assignedDepartmentIds.some(id => String(id) === String(d.id)))
-  }, [departments, isSuperAdmin, assignedDepartmentIds])
+  }, [departments, isSuperAdmin, isClientAdmin, assignedDepartmentIds])
 
   const [activeTab, setActiveTab] = useState<ScheduleTimeStudyTab>(
     "time-study-period-management"

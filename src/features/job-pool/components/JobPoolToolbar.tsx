@@ -14,7 +14,7 @@ export function JobPoolToolbar({
   showHistory,
   onToggleHistory,
 }: JobPoolToolbarProps & { showHistory: boolean; onToggleHistory: () => void }) {
-  const { canAdd, isSuperAdmin } = usePermissions()
+  const { canAdd, isSuperAdmin, isClientAdmin } = usePermissions()
   const canAddJobPool = canAdd("jobpool")
   return (
     <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-3 w-full min-w-0">
@@ -37,7 +37,7 @@ export function JobPoolToolbar({
         )}
       </div>
       <div className="flex items-center gap-2 w-full xl:w-auto min-w-0">
-        {isSuperAdmin && (
+        {(isSuperAdmin || isClientAdmin) && (
           <Button
             type="button"
             className={`h-[46px] sm:h-[50px] shrink-0 cursor-pointer gap-1.5 rounded-[10px] px-2.5 sm:px-3 text-[11px] sm:text-[12px] font-semibold shadow-[0_1px_0_rgba(0,0,0,0.05)] transition-colors whitespace-nowrap ${

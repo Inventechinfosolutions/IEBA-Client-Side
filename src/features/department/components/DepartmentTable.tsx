@@ -153,10 +153,10 @@ export function DepartmentTable({
   onAdd,
   onEdit,
 }: DepartmentTableProps) {
-  const { isSuperAdmin, canAdd, canUpdate } = usePermissions()
-  const canUpdateDepartment = isSuperAdmin || canUpdate("department")
-  const canAddDepartment = isSuperAdmin || canAdd("department")
-  const showActionColumn = canUpdateDepartment || isSuperAdmin
+  const { isSuperAdmin, isClientAdmin, canAdd, canUpdate } = usePermissions()
+  const canUpdateDepartment = isSuperAdmin || isClientAdmin || canUpdate("department")
+  const canAddDepartment = isSuperAdmin || isClientAdmin || canAdd("department")
+  const showActionColumn = canUpdateDepartment || isSuperAdmin || isClientAdmin
   const tableColumnCount = canUpdateDepartment ? 10 : showActionColumn ? 7 : 6
 
   const usersById = useMemo(() => new Map<string, any>(), [])
@@ -270,7 +270,7 @@ export function DepartmentTable({
         )}
 
         <div className="grid grid-cols-3 gap-2 sm:gap-[12px] w-full lg:flex lg:w-auto lg:items-center lg:justify-end shrink-0">
-          {isSuperAdmin && (
+          {(isSuperAdmin || isClientAdmin) && (
             <button
               type="button"
               className={`flex h-[48px] w-full lg:w-auto items-center justify-center gap-2 rounded-[10px] px-3 sm:px-4 text-[13px] sm:text-[14px] font-medium transition-colors ${showHistory
@@ -595,7 +595,7 @@ export function DepartmentTable({
                     {showActionColumn && (
                       <TableCell className="px-[4px] py-[6px] text-center">
                         <div className="inline-flex items-center justify-center gap-0.5">
-                          {isSuperAdmin ? (
+                          {(isSuperAdmin || isClientAdmin) ? (
                             <button
                               type="button"
                               onClick={() =>
@@ -639,7 +639,7 @@ export function DepartmentTable({
           isLoading={isLoading}
           canUpdateDepartment={canUpdateDepartment}
           showActionColumn={showActionColumn}
-          isSuperAdmin={isSuperAdmin}
+          isSuperAdmin={isSuperAdmin || isClientAdmin}
           usersById={usersById}
           onEdit={onEdit}
           onHistory={handleHistoryRow}

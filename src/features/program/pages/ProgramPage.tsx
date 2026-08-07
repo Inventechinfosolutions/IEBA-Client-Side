@@ -187,7 +187,7 @@ export function ProgramPage() {
     return selectedRow ? detectSection(selectedRow) : undefined
   }, [modalOpen, modalMode, isSubProgramQuickAdd, activeTab, selectedRow])
 
-  const { user, isSuperAdmin, isDepartmentAdmin } = usePermissions()
+  const { user, isSuperAdmin, isClientAdmin, isDepartmentAdmin } = usePermissions()
 
   const isRestrictedRole = (user?.roles?.some(role => {
     const r = role.toLowerCase();
@@ -195,16 +195,16 @@ export function ProgramPage() {
            r.includes("time study admin") ||
            r.includes("time study supervisor") ||
            r.toLowerCase() === "user";
-  }) ?? false) && !isSuperAdmin && !isDepartmentAdmin;
+  }) ?? false) && !isSuperAdmin && !isClientAdmin && !isDepartmentAdmin;
 
   const assignedDepartmentIds = useMemo(() => {
-    if (isSuperAdmin) return undefined;
+    if (isSuperAdmin || isClientAdmin) return undefined;
     const ids = new Set<number>();
     user?.departmentRoles?.forEach(dr => {
       if (dr.departmentId) ids.add(dr.departmentId);
     });
     return Array.from(ids);
-  }, [user, isSuperAdmin]);
+  }, [user, isSuperAdmin, isClientAdmin]);
 
   const filteredTabs = useMemo(() => {
     if (isRestrictedRole) {

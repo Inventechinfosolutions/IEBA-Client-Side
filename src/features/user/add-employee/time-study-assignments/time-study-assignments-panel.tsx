@@ -861,7 +861,7 @@ export function TimeStudyAssignmentsPanel({
   const [tsHistoryActivityCode, setTsHistoryActivityCode] = useState("")
   const [tsHistoryActivityName, setTsHistoryActivityName] = useState("")
 
-  const { isSuperAdmin } = usePermissions()
+  const { isSuperAdmin, isClientAdmin } = usePermissions()
   const canShowTsHistory = mode === "edit" && Boolean(userIdForTs)
 
   // Reset all local states when switching users or when a new user is created
@@ -1810,7 +1810,7 @@ export function TimeStudyAssignmentsPanel({
                   </Button>
                 </div>
               </div>
-              {canShowTsHistory && isSuperAdmin ? (
+              {canShowTsHistory && (isSuperAdmin || isClientAdmin) ? (
                 <div className="flex w-full min-w-0 flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:justify-end">
                   <Button
                     type="button"
