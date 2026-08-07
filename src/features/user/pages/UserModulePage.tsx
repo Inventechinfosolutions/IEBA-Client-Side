@@ -22,6 +22,7 @@ import {
   persistSecurityApportioningOnSave,
   persistUserAllowMultiCodeHistoryOnSave,
 } from "../add-employee/utility/persistSecurityApportioningOnSave"
+import { persistClientAdminRoleOnSave } from "../add-employee/utility/persistClientAdminRoleOnSave"
 import {
   invalidateUserTabCaches,
   refetchFormAfterTabSave,
@@ -101,7 +102,8 @@ export function UserModulePage() {
   const navigate = useNavigate()
   const location = useLocation()
   const { user, establishDashboardSession } = useAuth()
-  const isGlobalAdmin = isGlobalAdminLogin(user)
+  const { isSuperAdmin, isClientAdmin, isDepartmentAdmin, isTimeStudySupervisor, assignedDepartmentIds } = usePermissions()
+  const isGlobalAdmin = isSuperAdmin || isClientAdmin || isGlobalAdminLogin(user)
   const { data: mimicSession } = useMimicSession()
   const mimicMutation = useMimicUser()
 
@@ -136,18 +138,17 @@ export function UserModulePage() {
   const [showForm, setShowForm] = useState(false)
   const [formMode, setFormMode] = useState<UserModuleFormMode>("add")
 
-  const { isSuperAdmin, isDepartmentAdmin, isTimeStudySupervisor, assignedDepartmentIds } = usePermissions()
 
-  // Only SuperAdmin needs the full department list from the API.
+  // Only SuperAdmin & ClientAdmin need the full department list from the API.
   // All other roles use their assigned departments from the auth context.
   const { data: allDepartmentsData } = useGetDepartments(
     { status: "active", page: 1, limit: 1000 },
-    { enabled: isSuperAdmin }
+    { enabled: isSuperAdmin || isClientAdmin }
   )
 
   const allowedDepartments = useMemo(() => {
-    // SuperAdmin: show all departments fetched from API
-    if (isSuperAdmin && allDepartmentsData?.items) {
+    // SuperAdmin & ClientAdmin: show all departments fetched from API
+    if ((isSuperAdmin || isClientAdmin) && allDepartmentsData?.items) {
       return allDepartmentsData.items.map((d: any) => ({ id: Number(d.id), name: d.name }))
     }
     // All other roles: restrict to only departments assigned to this user
@@ -161,7 +162,7 @@ export function UserModulePage() {
       return Array.from(map.entries()).map(([id, name]) => ({ id, name }))
     }
     return []
-  }, [isSuperAdmin, allDepartmentsData, user])
+  }, [isSuperAdmin, isClientAdmin, allDepartmentsData, user])
 
   // Reset to table view on navigation (e.g. sidebar click)
   const [lastLocationKey, setLastLocationKey] = useState(location.key)
@@ -185,7 +186,7 @@ export function UserModulePage() {
     return { firstName: "", lastName: "", name: normalized, employeeId: "" }
   }, [searchTerm])
 
-  const isOnlySupervisor = isTimeStudySupervisor && !isSuperAdmin && !isDepartmentAdmin
+  const isOnlySupervisor = isTimeStudySupervisor && !isSuperAdmin && !isClientAdmin && !isDepartmentAdmin
 
   const userModule = useUserModule({
     page,
@@ -198,11 +199,11 @@ export function UserModulePage() {
     name: searchFilters.name || undefined,
     employeeId: searchFilters.employeeId || undefined,
     isSupervisor: isOnlySupervisor || undefined,
-    // SuperAdmin sees all users; all other roles are scoped to their assigned departments.
+    // SuperAdmin & ClientAdmin see all users; all other roles are scoped to their assigned departments.
     // selectedDepartmentId (toolbar picker) takes priority when explicitly chosen.
     departmentId: selectedDepartmentId
       ? String(selectedDepartmentId)
-      : (!isSuperAdmin && assignedDepartmentIds.length > 0
+      : (!isSuperAdmin && !isClientAdmin && assignedDepartmentIds.length > 0
         ? assignedDepartmentIds.join(",")
         : undefined),
   }, { enabled: !showForm })
@@ -297,14 +298,14 @@ export function UserModulePage() {
   const filteredRows = useMemo(() => {
     let currentRows = userModule.rows;
     // Apply supervisor filter on user table
-    const isOnlySupervisor = isTimeStudySupervisor && !isSuperAdmin && !isDepartmentAdmin;
+    const isOnlySupervisor = isTimeStudySupervisor && !isSuperAdmin && !isClientAdmin && !isDepartmentAdmin;
     if (isOnlySupervisor && user?.id) {
       currentRows = currentRows.filter(
         (r) => r.supervisorPrimaryId === user.id || r.supervisorSecondaryId === user.id
       );
     }
     return currentRows;
-  }, [userModule.rows, isTimeStudySupervisor, isSuperAdmin, isDepartmentAdmin, user?.id]);
+  }, [userModule.rows, isTimeStudySupervisor, isSuperAdmin, isClientAdmin, isDepartmentAdmin, user?.id]);
 
   const handleSortChange = (newSortState: UserTableSortState) => {
     setSortState(newSortState)
@@ -431,6 +432,7 @@ export function UserModulePage() {
         if (sourceTab === "security") {
           await persistSecurityApportioningOnSave(selectedRow.id, values, defaultValues)
           await persistUserAllowMultiCodeHistoryOnSave(selectedRow.id, values, defaultValues)
+          await persistClientAdminRoleOnSave(selectedRow.id, values, defaultValues)
         }
 
         await userModule.updateRowAsync({
@@ -454,6 +456,7 @@ export function UserModulePage() {
         if (sourceTab === "security") {
           await persistSecurityApportioningOnSave(draftUserId, values, defaultValues)
           await persistUserAllowMultiCodeHistoryOnSave(draftUserId, values, defaultValues)
+          await persistClientAdminRoleOnSave(draftUserId, values, defaultValues)
         }
         await userModule.updateRowAsync({
           id: draftUserId,

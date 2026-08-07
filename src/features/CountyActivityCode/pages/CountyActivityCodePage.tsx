@@ -14,19 +14,19 @@ export function CountyActivityCodePage() {
     DEFAULT_FILTERS
   )
 
-  const { isSuperAdmin, user } = usePermissions()
+  const { isSuperAdmin, isClientAdmin, user } = usePermissions()
 
   // Build the set of department IDs the logged-in user is assigned to.
-  // SuperAdmin → undefined (no filter, sees all).
+  // SuperAdmin & ClientAdmin → undefined (no filter, sees all).
   // All other roles → only their assigned department IDs.
   const assignedDepartmentIds = useMemo<Set<number> | undefined>(() => {
-    if (isSuperAdmin) return undefined
+    if (isSuperAdmin || isClientAdmin) return undefined
     const ids = new Set<number>()
     user?.departmentRoles?.forEach(dr => {
       if (dr.departmentId) ids.add(dr.departmentId)
     })
     return ids
-  }, [isSuperAdmin, user])
+  }, [isSuperAdmin, isClientAdmin, user])
 
   const {
     rows,

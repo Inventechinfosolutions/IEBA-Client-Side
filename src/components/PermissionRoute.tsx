@@ -26,10 +26,10 @@ export function PermissionRoute({
   children,
   redirectTo = "/",
 }: PermissionRouteProps) {
-  const { isSuperAdmin, canView } = usePermissions()
+  const { isSuperAdmin, isClientAdmin, canView } = usePermissions()
 
-  // Super-admin bypasses every check
-  if (isSuperAdmin) return <>{children}</>
+  // Super-admin and Client Admin bypass every check
+  if (isSuperAdmin || isClientAdmin) return <>{children}</>
 
   // Superadmin-only pages
   if (permission === "superadmin") {

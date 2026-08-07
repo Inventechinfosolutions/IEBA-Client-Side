@@ -180,7 +180,9 @@ function mapUserListItemToRow(item: UserListItemApiDto): UserModuleRow {
     programs: item.programs ?? false,
     activities: item.activities ?? false,
     supervisorApportioning: listItemSupervisorApportioning(item.departmentsRoles),
-    clientAdmin: false,
+    clientAdmin: (item.departmentsRoles ?? []).some(
+      (dr: any) => dr?.role?.name?.toLowerCase() === "client admin"
+    ),
     multicodesEnabled: item.allowMultiCodes ?? false,
     allowMultiCodes: item.allowMultiCodes ?? false,
     assignedMultiCodes,

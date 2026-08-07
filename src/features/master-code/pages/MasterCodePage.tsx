@@ -15,12 +15,12 @@ import { usePermissions } from "@/hooks/usePermissions"
 import { Spinner } from "@/components/ui/spinner"
 
 export function MasterCodePage() {
-  const { isSuperAdmin, canAdd, canUpdate, canView } = usePermissions()
+  const { isSuperAdmin, isClientAdmin, canAdd, canUpdate, canView } = usePermissions()
 
-  const hasAddPermission = isSuperAdmin || canAdd("activity")
-  const hasEditPermission = isSuperAdmin || canUpdate("activity")
+  const hasAddPermission = isSuperAdmin || isClientAdmin || canAdd("activity")
+  const hasEditPermission = isSuperAdmin || isClientAdmin || canUpdate("activity")
 
-  if (!isSuperAdmin && !canView("activity")) {
+  if (!isSuperAdmin && !isClientAdmin && !canView("activity")) {
     return null
   }
 
@@ -158,15 +158,15 @@ export function MasterCodePage() {
         />
       </div>
       <div className="mt-5">
-          <MasterCodeToolbar
-            codeType={ui.activeTab}
-            allowMultiCodes={allowMultiCodes}
-            inactiveOnly={ui.inactiveOnly}
-            onToggleAllowMultiCodes={handleToggleMultiCodes}
-            onToggleInactiveOnly={ui.toggleInactiveOnly}
-            onAddFfp={ui.openAddModal}
-            canAdd={hasAddPermission}
-          />
+        <MasterCodeToolbar
+          codeType={ui.activeTab}
+          allowMultiCodes={allowMultiCodes}
+          inactiveOnly={ui.inactiveOnly}
+          onToggleAllowMultiCodes={handleToggleMultiCodes}
+          onToggleInactiveOnly={ui.toggleInactiveOnly}
+          onAddFfp={ui.openAddModal}
+          canAdd={hasAddPermission}
+        />
         <div className="mb-5">
           <MasterCodeTable
             codeType={ui.activeTab}

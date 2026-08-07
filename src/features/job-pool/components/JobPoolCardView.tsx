@@ -35,7 +35,7 @@ export function JobPoolCardView({
   onHistoryRow,
   footer,
 }: JobPoolCardViewProps) {
-  const { canUpdate, isSuperAdmin } = usePermissions()
+  const { canUpdate, isSuperAdmin, isClientAdmin } = usePermissions()
   const canUpdateJobPool = canUpdate("jobpool")
 
   return (
@@ -89,7 +89,7 @@ export function JobPoolCardView({
                 </div>
 
                 <div className="flex items-center gap-1 shrink-0">
-                  {onHistoryRow && isSuperAdmin ? (
+                  {onHistoryRow && (isSuperAdmin || isClientAdmin) ? (
                     <Button
                       type="button"
                       variant="ghost"
