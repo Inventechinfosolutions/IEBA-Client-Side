@@ -8,8 +8,10 @@ import {
   getDepartmentHistoryReports,
   getDepartmentHistoryUpdatedAtDisplay,
   getDepartmentHistoryUpdatedByDisplay,
+  reportHasAudienceFlags,
   type DepartmentHistorySnapshotItem,
 } from "../lib/departmentHistoryDisplay"
+import { coerceReportVisibilityFlag } from "../lib/departmentReport.utils"
 import type { DepartmentHistoryRecord } from "../queries/departmentHistory"
 
 type DepartmentHistoryDetailPanelProps = {
@@ -26,6 +28,22 @@ function BooleanPill({ enabled, label }: { enabled: boolean; label: string }) {
       {enabled ? <Check className="size-3" /> : <X className="size-3" />}
       <span className="truncate">{label}</span>
     </div>
+  )
+}
+
+function AudienceFlagPill({ checked, label }: { checked: boolean; label: string }) {
+  return (
+    <span
+      className={`inline-flex items-center gap-1 rounded-[4px] px-1.5 py-0.5 text-[10px] font-semibold ${
+        checked
+          ? "bg-[#6C5DD3] text-white"
+          : "bg-white text-[#9CA3AF] border border-[#E5E7EB]"
+      }`}
+      title={`${label}: ${checked ? "Checked" : "Unchecked"}`}
+    >
+      {checked ? <Check className="size-2.5" /> : <X className="size-2.5" />}
+      {label}
+    </span>
   )
 }
 
@@ -111,8 +129,10 @@ function ChangeItem({ item }: { item: DepartmentHistorySnapshotItem }) {
 
 export function DepartmentHistoryDetailPanel({ row }: DepartmentHistoryDetailPanelProps) {
   const reports = getDepartmentHistoryReports(row)
+  const hasAudienceFlags = reports.some(reportHasAudienceFlags)
   const sections = getDepartmentHistoryDetailSections(row, {
     hideReportIds: reports.length > 0,
+    hideReportVisibility: hasAudienceFlags,
   })
 
   return (
@@ -163,15 +183,29 @@ export function DepartmentHistoryDetailPanel({ row }: DepartmentHistoryDetailPan
             {reports.map((report) => (
               <div
                 key={`${report.id ?? report.code}-${report.name}`}
-                className="flex items-start gap-2.5 rounded-[8px] border border-[#DDD6FE] bg-[#F5F3FF] px-3 py-2.5 text-[12px] font-medium text-[#5B4DC5] w-full min-w-0"
+                className="flex flex-col gap-2 rounded-[8px] border border-[#DDD6FE] bg-[#F5F3FF] px-3 py-2.5 text-[12px] font-medium text-[#5B4DC5] w-full min-w-0"
                 title={formatDepartmentHistoryReportLabel(report)}
               >
-                <span className="font-semibold shrink-0 bg-[#6C5DD3] text-white px-2 py-0.5 rounded-[4px] text-[11px] mt-0.5">
-                  {report.code || "RPT"}
-                </span>
-                <span className="whitespace-normal break-words text-[#374151] font-medium text-[12px] leading-snug flex-1">
-                  {report.name || formatDepartmentHistoryReportLabel(report)}
-                </span>
+                <div className="flex items-start gap-2.5 w-full min-w-0">
+                  <span className="font-semibold shrink-0 bg-[#6C5DD3] text-white px-2 py-0.5 rounded-[4px] text-[11px] mt-0.5">
+                    {report.code || "RPT"}
+                  </span>
+                  <span className="whitespace-normal break-words text-[#374151] font-medium text-[12px] leading-snug flex-1">
+                    {report.name || formatDepartmentHistoryReportLabel(report)}
+                  </span>
+                </div>
+                {reportHasAudienceFlags(report) ? (
+                  <div className="flex flex-wrap items-center gap-1.5 pl-0.5">
+                    <AudienceFlagPill
+                      checked={coerceReportVisibilityFlag(report.visibleToAdmin, true)}
+                      label="Admin"
+                    />
+                    <AudienceFlagPill
+                      checked={coerceReportVisibilityFlag(report.visibleToUser, true)}
+                      label="User"
+                    />
+                  </div>
+                ) : null}
               </div>
             ))}
           </div>

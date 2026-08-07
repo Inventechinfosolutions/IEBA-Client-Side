@@ -7,6 +7,8 @@ export type DepartmentHistoryReportItem = {
   id?: number | string
   code?: string | null
   name?: string | null
+  visibleToAdmin?: boolean
+  visibleToUser?: boolean
 }
 
 export type DepartmentHistorySettingsSnapshot = {
@@ -14,6 +16,13 @@ export type DepartmentHistorySettingsSnapshot = {
   addresses?: unknown[]
   isDefault?: boolean
   reportIds?: number[]
+  reportVisibility?: Array<{
+    reportId: number
+    reportCode?: string | null
+    reportName?: string | null
+    visibleToAdmin: boolean
+    visibleToUser: boolean
+  }>
   multiCodes?: string[]
   apportioning?: boolean
   supportingDoc?: boolean
