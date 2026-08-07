@@ -276,6 +276,16 @@ export type DepartmentReportOption = {
   code: string
   name: string
   label: string
+  /** Admin (A) audience — default true when missing (legacy). */
+  visibleToAdmin?: boolean
+  /** User (U) audience — default true when missing (legacy). */
+  visibleToUser?: boolean
+}
+
+export type DepartmentReportVisibility = {
+  reportId: number
+  visibleToAdmin: boolean
+  visibleToUser: boolean
 }
 
 export type DepartmentMappedReportItem = {

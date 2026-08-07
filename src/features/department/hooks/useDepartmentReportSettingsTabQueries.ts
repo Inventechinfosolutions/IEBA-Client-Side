@@ -25,13 +25,19 @@ export function useDepartmentReportSettingsTabQueries(
     if (isExisting) {
       const assigned = assignedUnassignedQuery.data?.assigned ?? []
       const unassigned = assignedUnassignedQuery.data?.unassigned ?? []
-      const reportOptions = [...assigned, ...unassigned]
+      // Prefer first occurrence (assigned) if an id ever appears in both lists.
+      const seenIds = new Set<number>()
+      const reportOptions = [...assigned, ...unassigned].filter((r) => {
+        if (seenIds.has(r.id)) return false
+        seenIds.add(r.id)
+        return true
+      })
       const mappedReports = {
         nameSpace: "",
         countyName: "",
         departmentId: Number(departmentId),
         name: "",
-        reportIds: assigned.map((r) => r.id),
+        reportIds: [...new Set(assigned.map((r) => r.id))],
         reports: [],
       }
       return {

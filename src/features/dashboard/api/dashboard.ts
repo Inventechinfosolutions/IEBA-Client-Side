@@ -274,6 +274,7 @@ export async function getReportsByRole(params?: {
       if (Array.isArray(dept.reports)) {
         for (const report of dept.reports) {
           if (report.status === "active") {
+            // Backend already applies dept-then-A/U filter; keep flags for consumers.
             uniqueReportsMap.set(report.id, report)
           }
         }
@@ -288,6 +289,8 @@ export async function getReportsByRole(params?: {
       filename: r.filename,
       path: r.path,
       criteria: r.criteria,
+      visibleToAdmin: r.visibleToAdmin,
+      visibleToUser: r.visibleToUser,
     }))
   } catch (error) {
     console.error("Failed to fetch reports:", error)

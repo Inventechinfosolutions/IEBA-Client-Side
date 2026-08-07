@@ -2,6 +2,7 @@ import {
   NOTIFICATION_TYPE_LABELS,
   type DepartmentNotificationType,
 } from "../api/departmentNotificationConfig"
+import { coerceReportVisibilityFlag } from "./departmentReport.utils"
 import type {
   DepartmentHistoryFieldChange,
   DepartmentHistoryRecord,
@@ -128,7 +129,51 @@ export function formatDepartmentHistoryReportLabel(report: DepartmentHistoryRepo
 }
 
 export function getDepartmentHistoryReports(row: DepartmentHistoryRecord): DepartmentHistoryReportItem[] {
-  return Array.isArray(row.reports) ? row.reports : []
+  const reports = Array.isArray(row.reports) ? row.reports : []
+  const visibilityRows = Array.isArray(row.settingsSnapshot?.reportVisibility)
+    ? row.settingsSnapshot.reportVisibility
+    : []
+  const visibilityById = new Map(
+    visibilityRows.map((item) => [Number(item.reportId), item] as const),
+  )
+
+  if (reports.length > 0) {
+    return reports.map((report) => {
+      const visibility = visibilityById.get(Number(report.id))
+      if (!visibility && report.visibleToAdmin == null && report.visibleToUser == null) {
+        return report
+      }
+      const visibleToAdmin = coerceReportVisibilityFlag(
+        visibility?.visibleToAdmin ?? report.visibleToAdmin,
+        true,
+      )
+      const visibleToUser = coerceReportVisibilityFlag(
+        visibility?.visibleToUser ?? report.visibleToUser,
+        true,
+      )
+      return {
+        ...report,
+        code: report.code ?? visibility?.reportCode ?? null,
+        name: report.name ?? visibility?.reportName ?? null,
+        visibleToAdmin,
+        visibleToUser,
+      }
+    })
+  }
+
+  if (visibilityRows.length === 0) return []
+
+  return visibilityRows.map((item) => ({
+    id: item.reportId,
+    code: item.reportCode ?? null,
+    name: item.reportName ?? null,
+    visibleToAdmin: coerceReportVisibilityFlag(item.visibleToAdmin, true),
+    visibleToUser: coerceReportVisibilityFlag(item.visibleToUser, true),
+  }))
+}
+
+export function reportHasAudienceFlags(report: DepartmentHistoryReportItem): boolean {
+  return report.visibleToAdmin != null || report.visibleToUser != null
 }
 
 export function getDepartmentHistoryReportsDisplay(row: DepartmentHistoryRecord): string {
@@ -149,6 +194,7 @@ export const DEPARTMENT_SETTING_LABELS: Record<string, string> = {
   multiCodes: "Multi Codes",
   addresses: "Addresses",
   reportIds: "Report IDs",
+  reportVisibility: "Report Admin/User visibility",
   primaryContactId: "Primary Contact",
   secondaryContactId: "Secondary Contact",
   billingContactId: "Billing Contact",
@@ -196,7 +242,7 @@ const CONTACT_CHANGE_FIELDS = new Set([
   "secondaryContactId",
   "billingContactId",
 ])
-const REPORT_CHANGE_FIELDS = new Set(["reportIds", "reportConfig"])
+const REPORT_CHANGE_FIELDS = new Set(["reportIds", "reportConfig", "reportVisibility"])
 const NOTIFICATION_CHANGE_FIELDS = new Set(["notificationConfig"])
 
 function formatReportConfigSnapshot(value: unknown): string {
@@ -217,6 +263,29 @@ function formatReportConfigSnapshot(value: unknown): string {
       : cfg.reportdata
     : "—"
   return `${label} · ${type || "—"} · ${dataPreview}`
+}
+
+function formatReportVisibilityItem(entry: unknown): string {
+  if (entry == null || typeof entry !== "object") return "—"
+  const item = entry as {
+    reportId?: number
+    reportCode?: string | null
+    reportName?: string | null
+    visibleToAdmin?: boolean
+    visibleToUser?: boolean
+  }
+  const code = String(item.reportCode ?? "").trim()
+  const name = String(item.reportName ?? "").trim()
+  const label = [code, name].filter(Boolean).join(" — ") || `Report ${item.reportId ?? ""}`
+  const admin = item.visibleToAdmin ? "Admin" : null
+  const user = item.visibleToUser ? "User" : null
+  const audience = [admin, user].filter(Boolean).join(" + ") || "Hidden"
+  return `${label}: ${audience}`
+}
+
+function formatReportVisibilitySnapshot(value: unknown): string {
+  if (!Array.isArray(value) || value.length === 0) return "None"
+  return value.map(formatReportVisibilityItem).join("\n")
 }
 
 function formatOnOff(value: unknown): string {
@@ -418,6 +487,7 @@ function formatLegacyCodeNameList(value: unknown): string | null {
 function getDepartmentFieldLabel(field: string): string {
   if (field === "reportConfig") return "Report mapping config"
   if (field === "reportIds") return "Report IDs"
+  if (field === "reportVisibility") return "Report Admin/User visibility"
   if (field === "notificationConfig") return "Notification Settings"
   return DEPARTMENT_SETTING_LABELS[field] ?? field
 }
@@ -426,6 +496,7 @@ function formatDepartmentHistoryFieldValue(field: string, value: unknown): strin
   if (value == null) return "—"
   if (typeof value === "boolean") return value ? "Yes" : "No"
   if (field === "reportConfig") return formatReportConfigSnapshot(value)
+  if (field === "reportVisibility") return formatReportVisibilitySnapshot(value)
   if (field === "notificationConfig") return formatNotificationConfigSnapshot(value)
   if (field === "status" && typeof value === "string") {
     return value.charAt(0).toUpperCase() + value.slice(1).toLowerCase()
@@ -468,7 +539,7 @@ export type DepartmentHistorySnapshotSection = {
 
 export function getDepartmentHistorySnapshotSections(
   snapshot: DepartmentHistorySettingsSnapshot | null | undefined,
-  options?: { hideReportIds?: boolean },
+  options?: { hideReportIds?: boolean; hideReportVisibility?: boolean },
 ): DepartmentHistorySnapshotSection[] {
   if (!snapshot || typeof snapshot !== "object") return []
 
@@ -570,6 +641,23 @@ export function getDepartmentHistorySnapshotSections(
         kind: "list",
       }],
     })
+  }
+
+  if (Array.isArray(snapshot.reportVisibility) && snapshot.reportVisibility.length > 0) {
+    // When Mapped Reports cards already show Admin/User pills, skip this duplicate block.
+    if (!options?.hideReportVisibility) {
+      sections.push({
+        title: "Report Admin/User visibility",
+        items: [
+          {
+            label: "Selected reports visibility",
+            value: formatReportVisibilitySnapshot(snapshot.reportVisibility),
+            fullValue: JSON.stringify(snapshot.reportVisibility),
+            kind: "list",
+          },
+        ],
+      })
+    }
   }
 
   if (snapshot.reportConfig != null && typeof snapshot.reportConfig === "object") {
@@ -703,7 +791,11 @@ function getDepartmentHistoryChangeSections(
     } else if (CONTACT_CHANGE_FIELDS.has(change.field)) {
       contactItems.push(item)
     } else if (REPORT_CHANGE_FIELDS.has(change.field)) {
-      if (!options?.hideReportIds) reportItems.push(item)
+      // Mapped Reports cards already list report ids — keep reportVisibility / reportConfig diffs.
+      if (change.field === "reportIds" && options?.hideReportIds) {
+        continue
+      }
+      reportItems.push(item)
     } else {
       settingItems.push(item)
     }
@@ -724,7 +816,7 @@ function getDepartmentHistoryChangeSections(
 
 export function getDepartmentHistoryDetailSections(
   row: DepartmentHistoryRecord,
-  options?: { hideReportIds?: boolean },
+  options?: { hideReportIds?: boolean; hideReportVisibility?: boolean },
 ): DepartmentHistorySnapshotSection[] {
   const changes = row.settingsChanges
   if (changes == null) {
