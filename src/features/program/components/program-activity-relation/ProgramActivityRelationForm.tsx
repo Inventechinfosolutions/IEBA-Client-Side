@@ -46,7 +46,7 @@ export function ProgramActivityRelationForm({ form, departmentIds }: ProgramActi
            r.includes("time study admin") || 
            r.includes("time study supervisor") || 
            r.toLowerCase() === "user";
-  }) ?? false) && !isSuperAdmin && !isDepartmentAdmin;
+  }) ?? false) && !isSuperAdmin && !isClientAdmin && !isDepartmentAdmin;
 
   const selectedDepartment = form.watch("programActivityRelationDepartment") || ""
   const selectedDepartmentId = departmentIdByName[selectedDepartment.trim()]

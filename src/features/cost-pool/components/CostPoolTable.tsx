@@ -81,8 +81,8 @@ function CostPoolCreateDialogContent({
   onCreated: () => void
 }) {
   const { user } = useAuth()
-  const { isSuperAdmin } = usePermissions()
-  const isRestricted = !isSuperAdmin
+  const { isSuperAdmin, isClientAdmin } = usePermissions()
+  const isRestricted = !isSuperAdmin && !isClientAdmin
 
   const departmentsQuery = useGetDepartments({ status: "active", page: 1, limit: 100 })
 
@@ -100,7 +100,7 @@ function CostPoolCreateDialogContent({
       allowUserCostpoolDirect: d.settings.allowUserCostpoolDirect,
     }))
 
-    if (isSuperAdmin) return rawOptions.map(opt => ({ ...opt, id: String(opt.id) }))
+    if (isSuperAdmin || isClientAdmin) return rawOptions.map(opt => ({ ...opt, id: String(opt.id) }))
 
     // Get assigned IDs from local API response or context
     const apiDepts = (userDetails as any)?.data?.departments || (userDetails as any)?.departments
@@ -125,7 +125,7 @@ function CostPoolCreateDialogContent({
       ...opt,
       id: String(opt.id)
     }))
-  }, [departmentsQuery.data, userDetails, user, isSuperAdmin])
+  }, [departmentsQuery.data, userDetails, user, isSuperAdmin, isClientAdmin])
 
   const form = useForm<CostPoolUpsertFormValues>({
     resolver: zodResolver(costPoolUpsertFormSchema),

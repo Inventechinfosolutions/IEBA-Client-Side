@@ -186,7 +186,7 @@ export function UserModulePage() {
     return { firstName: "", lastName: "", name: normalized, employeeId: "" }
   }, [searchTerm])
 
-  const isOnlySupervisor = isTimeStudySupervisor && !isSuperAdmin && !isDepartmentAdmin
+  const isOnlySupervisor = isTimeStudySupervisor && !isSuperAdmin && !isClientAdmin && !isDepartmentAdmin
 
   const userModule = useUserModule({
     page,
@@ -298,14 +298,14 @@ export function UserModulePage() {
   const filteredRows = useMemo(() => {
     let currentRows = userModule.rows;
     // Apply supervisor filter on user table
-    const isOnlySupervisor = isTimeStudySupervisor && !isSuperAdmin && !isDepartmentAdmin;
+    const isOnlySupervisor = isTimeStudySupervisor && !isSuperAdmin && !isClientAdmin && !isDepartmentAdmin;
     if (isOnlySupervisor && user?.id) {
       currentRows = currentRows.filter(
         (r) => r.supervisorPrimaryId === user.id || r.supervisorSecondaryId === user.id
       );
     }
     return currentRows;
-  }, [userModule.rows, isTimeStudySupervisor, isSuperAdmin, isDepartmentAdmin, user?.id]);
+  }, [userModule.rows, isTimeStudySupervisor, isSuperAdmin, isClientAdmin, isDepartmentAdmin, user?.id]);
 
   const handleSortChange = (newSortState: UserTableSortState) => {
     setSortState(newSortState)

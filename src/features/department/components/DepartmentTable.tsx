@@ -154,9 +154,9 @@ export function DepartmentTable({
   onEdit,
 }: DepartmentTableProps) {
   const { isSuperAdmin, isClientAdmin, canAdd, canUpdate } = usePermissions()
-  const canUpdateDepartment = isSuperAdmin || canUpdate("department")
-  const canAddDepartment = isSuperAdmin || canAdd("department")
-  const showActionColumn = canUpdateDepartment || isSuperAdmin
+  const canUpdateDepartment = isSuperAdmin || isClientAdmin || canUpdate("department")
+  const canAddDepartment = isSuperAdmin || isClientAdmin || canAdd("department")
+  const showActionColumn = canUpdateDepartment || isSuperAdmin || isClientAdmin
   const tableColumnCount = canUpdateDepartment ? 10 : showActionColumn ? 7 : 6
 
   const usersById = useMemo(() => new Map<string, any>(), [])
