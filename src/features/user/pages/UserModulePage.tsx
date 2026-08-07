@@ -102,7 +102,8 @@ export function UserModulePage() {
   const navigate = useNavigate()
   const location = useLocation()
   const { user, establishDashboardSession } = useAuth()
-  const isGlobalAdmin = isGlobalAdminLogin(user)
+  const { isSuperAdmin, isClientAdmin, isDepartmentAdmin, isTimeStudySupervisor, assignedDepartmentIds } = usePermissions()
+  const isGlobalAdmin = isSuperAdmin || isClientAdmin || isGlobalAdminLogin(user)
   const { data: mimicSession } = useMimicSession()
   const mimicMutation = useMimicUser()
 
@@ -137,7 +138,6 @@ export function UserModulePage() {
   const [showForm, setShowForm] = useState(false)
   const [formMode, setFormMode] = useState<UserModuleFormMode>("add")
 
-  const { isSuperAdmin, isClientAdmin, isDepartmentAdmin, isTimeStudySupervisor, assignedDepartmentIds } = usePermissions()
 
   // Only SuperAdmin & ClientAdmin need the full department list from the API.
   // All other roles use their assigned departments from the auth context.

@@ -743,13 +743,16 @@ export function SecurityAssignmentsPanel({
   /** Right column: flat rows from `data.assigned`, grouped by department in RoleTransferPanel. */
   const assignedItems = useMemo((): AddEmployeeSecurityRoleItem[] => {
     if (assignedSnapshots.length > 0) {
-      return securityRoleItemsFromSnapshots(assignedSnapshots)
+      const realAssignedSnapshots = assignedSnapshots.filter(
+        (s) => s.name.trim() !== "Client Admin" && s.department.trim().toLowerCase() !== "all"
+      )
+      return securityRoleItemsFromSnapshots(realAssignedSnapshots)
     }
     const out: AddEmployeeSecurityRoleItem[] = []
     const seen = new Set<string>()
     for (const name of assignedRoles) {
       const n = name.trim()
-      if (!n || seen.has(n)) continue
+      if (!n || n === "Client Admin" || seen.has(n)) continue
       seen.add(n)
       out.push({
         id: `assigned:${normalizeRoleId(n)}`,
