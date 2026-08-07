@@ -54,23 +54,23 @@ type NavItem = {
 }
 
 const mainNav: NavItem[] = [
-  { title: "Dashboard",             url: "/",                      icon: Gauge,            permission: null },
-  { title: "Personal Time Study",   url: "/personal-time-study",   icon: Clock,            permission: "timestudypersonal" },
-  { title: "To-Do",                 url: "/to-do",                 icon: ListTodo,         permission: "todo" },
-  { title: "User",                  url: "/user",                  icon: User,             permission: "user" },
-  { title: "Reports",               url: "/reports",               icon: FileText,         permission: "report" },
-  { title: "Payroll",               url: "/payroll",               icon: CircleDollarSign, permission: "payroll" },
-  { title: "Department",            url: "/department",            icon: Home,             permission: null },
-  { title: "Program",               url: "/program",               icon: ClipboardCheck,   permission: ["budgetprogram", "timestudyprogram", "timestudyactivity"] },
-  { title: "County Activity Code",  url: "/county-activity-code",  icon: SquarePen,        permission: "countyactivity" },
-  { title: "Master Code",           url: "/master-code",           icon: SquareTerminal,   permission: "activity" },
-  { title: "Department Role",       url: "/department-role",       icon: ScrollText,       permission: "superadmin" },
-  { title: "Job Classification",    url: "/job-classification",    icon: LayoutGrid,       permission: "jobclassification" },
-  { title: "Job Pool",              url: "/job-pool",              icon: Briefcase,        permission: "jobpool" },
-  { title: "Leave Approval",        url: "/leave-approval",        icon: FileText,         permission: "userleave:review" },
+  { title: "Dashboard", url: "/", icon: Gauge, permission: null },
+  { title: "Personal Time Study", url: "/personal-time-study", icon: Clock, permission: "timestudypersonal" },
+  { title: "To-Do", url: "/to-do", icon: ListTodo, permission: "todo" },
+  { title: "User", url: "/user", icon: User, permission: "user" },
+  { title: "Reports", url: "/reports", icon: FileText, permission: "report" },
+  { title: "Payroll", url: "/payroll", icon: CircleDollarSign, permission: "payroll" },
+  { title: "Department", url: "/department", icon: Home, permission: null },
+  { title: "Program", url: "/program", icon: ClipboardCheck, permission: ["budgetprogram", "timestudyprogram", "timestudyactivity"] },
+  { title: "County Activity Code", url: "/county-activity-code", icon: SquarePen, permission: "countyactivity" },
+  { title: "Master Code", url: "/master-code", icon: SquareTerminal, permission: "superadmin" },
+  { title: "Department Role", url: "/department-role", icon: ScrollText, permission: "superadmin" },
+  { title: "Job Classification", url: "/job-classification", icon: LayoutGrid, permission: "jobclassification" },
+  { title: "Job Pool", url: "/job-pool", icon: Briefcase, permission: "jobpool" },
+  { title: "Leave Approval", url: "/leave-approval", icon: FileText, permission: "userleave:review" },
   // { title: "FTE Allocation",        url: "/fte-allocation",        icon: FileText,         permission: "superadmin" },
-  { title: "Cost Pool",             url: "/costpool",              icon: Layers,           permission: "costpool" },
-  { title: "Schedule Time Study",   url: "/schedule-time-study",   icon: CalendarClock,    permission: "scheduletimestudy" },
+  { title: "Cost Pool", url: "/costpool", icon: Layers, permission: "costpool" },
+  { title: "Schedule Time Study", url: "/schedule-time-study", icon: CalendarClock, permission: "scheduletimestudy" },
   // { title: "Users",                 url: "/users",                 icon: Users,            permission: "superadmin" },
 ]
 
@@ -78,14 +78,14 @@ const mainNav: NavItem[] = [
 // Component
 // ---------------------------------------------------------------------------
 export function AppSidebar() {
-  const { isSuperAdmin, canView, has } = usePermissions()
+  const { isSuperAdmin, isClientAdmin, canView, has } = usePermissions()
   const location = useLocation()
 
   /** Returns true when the nav item should be visible to this user. */
   function isVisible(item: NavItem): boolean {
     if (item.permission === null) return true                    // always show
-    if (item.permission === "superadmin") return isSuperAdmin    // superadmin-only pages
-    if (isSuperAdmin) return true                               // superadmin sees everything
+    if (item.permission === "superadmin") return isSuperAdmin || isClientAdmin  // superadmin & client admin pages
+    if (isSuperAdmin || isClientAdmin) return true                               // superadmin & client admin see everything
     // Array → OR logic: visible if user has :view for ANY listed module
     if (Array.isArray(item.permission)) {
       return item.permission.some((mod) => mod.includes(":") ? has(mod) : canView(mod))
@@ -131,7 +131,7 @@ export function AppSidebar() {
                   item.url === "/"
                     ? location.pathname === "/"
                     : location.pathname === item.url ||
-                      location.pathname.startsWith(item.url + "/")
+                    location.pathname.startsWith(item.url + "/")
                 return (
                   <SidebarMenuItem key={item.url}>
                     <SidebarMenuButton

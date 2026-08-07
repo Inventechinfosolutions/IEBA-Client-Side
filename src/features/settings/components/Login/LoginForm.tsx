@@ -25,8 +25,8 @@ const otpAddonClassName =
 
 export function LoginForm({ isSaving = false }: { isSaving?: boolean }) {
   const { control, register, getValues, setValue } = useFormContext<SettingsFormValues>()
-  const { isSuperAdmin } = usePermissions()
-  const readOnly = !isSuperAdmin
+  const { isSuperAdmin, isClientAdmin } = usePermissions()
+  const readOnly = !isSuperAdmin && !isClientAdmin
 
   const stepOtpTimer = (delta: 1 | -1) => {
     const currentRaw = getValues("login.otpValidationTimerSeconds")

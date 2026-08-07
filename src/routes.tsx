@@ -81,7 +81,7 @@ export function createAppRouter(queryClient: QueryClient) {
         { index: true, element: <DashboardPage /> },
         {
           path: "master-code",
-          element: <PermissionRoute permission={["activity", "user", "payroll"]}><MasterCodePage /></PermissionRoute>,
+          element: <PermissionRoute permission="superadmin"><MasterCodePage /></PermissionRoute>,
           loader: async () => {
             await queryClient.invalidateQueries({ queryKey: masterCodeKeys.lists() })
             await queryClient.invalidateQueries({ queryKey: masterCodeKeys.details() })

@@ -25,6 +25,7 @@ import {
 import { toast } from "sonner";
 
 import superAdminPdf from "@/documents/IEBA_SuperAdmin_Manual.pdf";
+import clientAdminPdf from "@/documents/IEBA_ClientAdmin_Manual.pdf";
 import deptAdminPdf from "@/documents/IEBA_DepartmnentAdmin_Manual.pdf";
 import payrollAdminPdf from "@/documents/IEBA_PayrollAdmin_Manual.pdf";
 import timeStudyAdminPdf from "@/documents/IEBA_TimeStudyAdmin_Manual.pdf";
@@ -58,6 +59,20 @@ const ALL_MANUALS: ManualItem[] = [
     url: superAdminPdf,
     fileName: "IEBA_SuperAdmin_Manual.pdf",
     roleKeys: ["super admin", "superadmin"],
+    color: "#6C5DD3",
+    icon: React.createElement(ShieldCheck, { className: "h-5 w-5" }),
+  },
+  {
+    id: "clientadmin",
+    title: "Client Admin Manual",
+    subtitle: "IEBA Client Administration",
+    roleBadge: "Client Admin",
+    description: "Client organization settings, department configuration, role permissions, and administrative operations.",
+    fileSize: "21.7 MB",
+    pages: "~175 pages",
+    url: clientAdminPdf,
+    fileName: "IEBA_ClientAdmin_Manual.pdf",
+    roleKeys: ["client admin", "clientadmin", "client_admin"],
     color: "#6C5DD3",
     icon: React.createElement(ShieldCheck, { className: "h-5 w-5" }),
   },
@@ -143,11 +158,12 @@ export const UserManualModal: React.FC<UserManualModalProps> = ({
   onOpenChange,
 }) => {
   const { user } = useAuth();
-  const { isSuperAdmin } = usePermissions();
+  const { isSuperAdmin, isClientAdmin } = usePermissions();
   const [downloading, setDownloading] = useState<string | null>(null);
 
   const availableManuals = useMemo(() => {
     if (isSuperAdmin) return ALL_MANUALS;
+
     // Gather role names from both user.roles AND user.departmentRoles to catch all assigned roles
     const globalRoles = (user?.roles || []).map((r: any) =>
       (typeof r === "string" ? r : r?.name ?? "").toLowerCase()
@@ -156,6 +172,15 @@ export const UserManualModal: React.FC<UserManualModalProps> = ({
       (dr.roleName || dr.role?.name || dr.role || "").toLowerCase()
     );
     const userRoles = Array.from(new Set([...globalRoles, ...deptRoles])).filter(Boolean);
+
+    const hasClientAdminRole =
+      isClientAdmin ||
+      userRoles.some((ur) => ur === "client admin" || ur.includes("client admin"));
+
+    if (hasClientAdminRole) {
+      return ALL_MANUALS.filter((manual) => manual.id !== "superadmin");
+    }
+
     const matched = ALL_MANUALS.filter((manual) => {
       if (manual.id === "user") return true;
       return manual.roleKeys.some((rk) =>
@@ -163,7 +188,7 @@ export const UserManualModal: React.FC<UserManualModalProps> = ({
       );
     });
     return matched.length > 0 ? matched : [ALL_MANUALS.find((m) => m.id === "user")!];
-  }, [user?.roles, user?.departmentRoles, isSuperAdmin]);
+  }, [user?.roles, user?.departmentRoles, isSuperAdmin, isClientAdmin]);
 
   const handleDownload = async (url: string, fileName: string, id: string, title: string) => {
     setDownloading(id);

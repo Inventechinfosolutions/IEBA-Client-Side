@@ -7,6 +7,7 @@ import editIconImg from "@/assets/edit-icon.png"
 import tableEmptyIcon from "@/assets/icons/table-empty.png"
 import type { Department } from "../types"
 import { ContactInfo } from "./DepartmentTable"
+import { usePermissions } from "@/hooks/usePermissions"
 
 export type DepartmentCardViewProps = {
   departments: Department[]
@@ -31,6 +32,7 @@ export function DepartmentCardView({
   onHistory,
   footer,
 }: DepartmentCardViewProps) {
+  const { isClientAdmin } = usePermissions()
   return (
     <div className="block xl:hidden space-y-4">
       {isLoading ? (
@@ -87,7 +89,7 @@ export function DepartmentCardView({
                   </div>
                   {showActionColumn && (
                     <div className="flex items-center gap-1.5 shrink-0">
-                      {isSuperAdmin && (
+                      {(isSuperAdmin || isClientAdmin) && (
                         <Button
                           type="button"
                           variant="ghost"

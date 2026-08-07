@@ -18,7 +18,7 @@ const DEFAULT_PAGINATION: CostPoolPagination = {
 
 export function useCostPools(filters: CostPoolFilterFormValues) {
   const { user } = useAuth()
-  const { isSuperAdmin, isDepartmentAdmin } = usePermissions()
+  const { isSuperAdmin, isClientAdmin, isDepartmentAdmin } = usePermissions()
   const [pagination, setPagination] = useState<CostPoolPagination>(DEFAULT_PAGINATION)
 
   // Locally fetch user details to get the current assigned departments
@@ -30,7 +30,7 @@ export function useCostPools(filters: CostPoolFilterFormValues) {
 
   // Determine authorized department IDs
   const assignedDepartmentIds = useMemo(() => {
-    if (isSuperAdmin) return null // All depts
+    if (isSuperAdmin || isClientAdmin) return null // All depts
     
     const deptList = (userDetails as any)?.data?.departments || (userDetails as any)?.departments
     if (Array.isArray(deptList)) {
@@ -39,7 +39,7 @@ export function useCostPools(filters: CostPoolFilterFormValues) {
     
     // Fallback to context
     return new Set((user?.departmentRoles || []).map(dr => Number(dr.departmentId)))
-  }, [user, userDetails, isSuperAdmin, isDepartmentAdmin])
+  }, [user, userDetails, isSuperAdmin, isClientAdmin, isDepartmentAdmin])
 
   const listParams = useMemo(
     () => {

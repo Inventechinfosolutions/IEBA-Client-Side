@@ -426,7 +426,7 @@ export function CountyActivityCodeTable({
   onPageSizeChange,
 }: CountyActivityCodeTableProps) {
   const queryClient = useQueryClient()
-  const { canAdd, canUpdate, isSuperAdmin, user } = usePermissions()
+  const { canAdd, canUpdate, isSuperAdmin, isClientAdmin, user } = usePermissions()
   const canAddCountyActivity = canAdd("countyactivity")
   const canUpdateCountyActivity = canUpdate("countyactivity")
 
@@ -475,9 +475,9 @@ export function CountyActivityCodeTable({
     user?.departmentRoles?.forEach(dr => {
       if (dr.departmentId) ids.add(dr.departmentId)
     })
-    if (isSuperAdmin) return undefined
+    if (isSuperAdmin || isClientAdmin) return undefined
     return [...ids].sort((a, b) => a - b)
-  }, [isSuperAdmin, user])
+  }, [isSuperAdmin, isClientAdmin, user])
 
   // Fetch all departments lazily — only fires when Add modal is open
   const allDepartmentsQuery = useGetAllDepartments(
@@ -733,7 +733,7 @@ export function CountyActivityCodeTable({
   )
 
   const departmentNames = useMemo(() => {
-    if (isSuperAdmin) {
+    if (isSuperAdmin || isClientAdmin) {
       return departments
         .map((d) => d.name.trim())
         .filter(Boolean)
@@ -750,7 +750,7 @@ export function CountyActivityCodeTable({
       .map((d) => d.name.trim())
       .filter(Boolean)
       .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }))
-  }, [departments, isSuperAdmin, user?.departmentRoles])
+  }, [departments, isSuperAdmin, isClientAdmin, user?.departmentRoles])
 
   const editModalDepartmentNames = useMemo(() => {
     if (!editDetailQuery.data?.activity) return []
@@ -1325,7 +1325,7 @@ export function CountyActivityCodeTable({
 
         <div className="grid grid-cols-3 gap-2 sm:gap-[12px] w-full lg:flex lg:w-auto lg:items-center lg:justify-end shrink-0">
           {/* History toggle button */}
-          {isSuperAdmin && (
+          {(isSuperAdmin || isClientAdmin) && (
             <button
               type="button"
               className={`flex h-12 w-full lg:w-auto items-center justify-center gap-2 rounded-[10px] px-3 sm:px-4 text-[13px] sm:text-[14px] font-medium transition-colors ${showHistory

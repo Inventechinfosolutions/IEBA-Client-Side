@@ -35,10 +35,10 @@ export function EmployeeLoginDetailsSection({
   const [jobClassificationMenuOpened, setJobClassificationMenuOpened] = useState(false)
   const [locationMenuOpened, setLocationMenuOpened] = useState(false)
 
-  const { isSuperAdmin, user } = usePermissions()
+  const { isSuperAdmin, isClientAdmin, user } = usePermissions()
   const queryClient = useQueryClient()
-  // Show dept assignment for all non-super-admin roles (PayrollAdmin, TimeStudyAdmin, DeptAdmin, etc.)
-  const showDeptAutoAssign = !isSuperAdmin
+  // Show dept assignment for all non-super-admin / non-client-admin roles (PayrollAdmin, TimeStudyAdmin, DeptAdmin, etc.)
+  const showDeptAutoAssign = !isSuperAdmin && !isClientAdmin
 
   const jobClassificationsEnabled = jobClassificationMenuOpened
   const locationsEnabled = locationMenuOpened

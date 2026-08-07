@@ -816,7 +816,7 @@ export function ReportForm({ module }: ReportFormProps) {
   const { user } = useAuth()
   const { data: countyClient } = useGetCountyClient(false)
 
-  const isSuperAdmin = !!user?.permissions?.includes("superadmin:all")
+  const isSuperAdmin = !!user?.permissions?.includes("superadmin:all") || !!user?.departmentRoles?.some(dr => dr.roleId === 2)
   const { data: departmentsData, isLoading: isDeptsLoading } = useGetReportDepartments(user?.id, isSuperAdmin, true)
 
   const rawDepartmentOptions = useMemo(() => {
