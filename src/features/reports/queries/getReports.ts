@@ -25,6 +25,7 @@ export function useGetReportsByDepartment(
   const id = departmentId?.trim() ?? ""
   return useQuery({
     queryKey: reportKeys.byDepartment(id),
+    // Backend already applies dept mapping then A/U audience filter for method=reportscreen.
     queryFn: () => apiGetReportsByDepartment(id),
     enabled: enabled && id.length > 0,
     ...reportQueryOptions,
