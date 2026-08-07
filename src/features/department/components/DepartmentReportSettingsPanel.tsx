@@ -1,20 +1,39 @@
-import { useState, useMemo } from "react"
+import { useMemo, useRef, useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import { TransferListMoveButton } from "@/components/ui/transfer-list-move-button"
 import { useDepartmentReportSettings } from "../hooks/useDepartmentReportSettings"
+import { coerceReportVisibilityFlag } from "../lib/departmentReport.utils"
 import type { DepartmentReportOption, DepartmentReportSettingsPanelProps } from "../types"
 import { DepartmentEditContextHeader } from "./DepartmentEditContextHeader"
 import { TransferPanel } from "./TransferPanel"
 
 const labelClassName = "mb-2 block text-[13px] font-[500] text-[#374151]"
 
+type AudienceFlagsMap = Record<string, { visibleToAdmin: boolean; visibleToUser: boolean }>
+
+function buildAudienceFlagsFromOptions(options: DepartmentReportOption[]): AudienceFlagsMap {
+  const map: AudienceFlagsMap = {}
+  for (const opt of options) {
+    map[String(opt.id)] = {
+      visibleToAdmin: coerceReportVisibilityFlag(opt.visibleToAdmin, true),
+      visibleToUser: coerceReportVisibilityFlag(opt.visibleToUser, true),
+    }
+  }
+  return map
+}
+
 type DepartmentReportMultiSelectFieldProps = {
   reportOptions: DepartmentReportOption[]
   serverMappedReportIds: string
   isLoading: boolean
   onSelectedReportIdsChange: (reportIdsCsv: string) => void
-  onImmediateUpdate?: (reportIds: number[]) => void
+  /** Called during render so parent Save can persist current draft. */
+  bindSave: (saveFn: () => Promise<void>) => void
+  onSave: (
+    reportIds: number[],
+    visibilityById: AudienceFlagsMap,
+  ) => Promise<void>
 }
 
 function DepartmentReportMultiSelectField({
@@ -22,20 +41,34 @@ function DepartmentReportMultiSelectField({
   serverMappedReportIds,
   isLoading,
   onSelectedReportIdsChange,
-  onImmediateUpdate,
+  bindSave,
+  onSave,
 }: DepartmentReportMultiSelectFieldProps) {
   const [userReportIds, setUserReportIds] = useState<string | null>(null)
   const [searchAvailable, setSearchAvailable] = useState("")
   const [searchSelected, setSearchSelected] = useState("")
   const [toggledAvailable, setToggledAvailable] = useState<string[]>([])
   const [toggledSelected, setToggledSelected] = useState<string[]>([])
+  /** Local A/U edits only — server flags come from TanStack query `reportOptions`. */
+  const [audienceOverrides, setAudienceOverrides] = useState<AudienceFlagsMap>({})
+
+  const audienceFlags = useMemo(() => {
+    return {
+      ...buildAudienceFlagsFromOptions(reportOptions),
+      ...audienceOverrides,
+    }
+  }, [reportOptions, audienceOverrides])
 
   const selectedIds = useMemo(() => {
     const raw = userReportIds ?? serverMappedReportIds
-    return raw
-      .split(/[,;\n]+/g)
-      .map((p) => p.trim())
-      .filter(Boolean)
+    return [
+      ...new Set(
+        raw
+          .split(/[,;\n]+/g)
+          .map((p) => p.trim())
+          .filter(Boolean),
+      ),
+    ]
   }, [userReportIds, serverMappedReportIds])
 
   const { availableReports, selectedReports } = useMemo(() => {
@@ -51,7 +84,7 @@ function DepartmentReportMultiSelectField({
       (r) =>
         r.label.toLowerCase().includes(query) ||
         r.name.toLowerCase().includes(query) ||
-        r.code.toLowerCase().includes(query)
+        r.code.toLowerCase().includes(query),
     )
   }, [availableReports, searchAvailable])
 
@@ -62,19 +95,19 @@ function DepartmentReportMultiSelectField({
       (r) =>
         r.label.toLowerCase().includes(query) ||
         r.name.toLowerCase().includes(query) ||
-        r.code.toLowerCase().includes(query)
+        r.code.toLowerCase().includes(query),
     )
   }, [selectedReports, searchSelected])
 
   const handleToggleAvailable = (id: string) => {
     setToggledAvailable((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
     )
   }
 
   const handleToggleSelected = (id: string) => {
     setToggledSelected((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
     )
   }
 
@@ -94,29 +127,72 @@ function DepartmentReportMultiSelectField({
     }
   }
 
-  const handleMoveForward = () => {
-    if (toggledAvailable.length === 0) return
-    const nextIds = [...new Set([...selectedIds, ...toggledAvailable])]
+  const applyLocalSelection = (nextIds: string[]) => {
     const csv = nextIds.join(", ")
     setUserReportIds(csv)
     onSelectedReportIdsChange(csv)
-    setToggledAvailable([])
-    if (onImmediateUpdate) {
-      onImmediateUpdate(nextIds.map(Number))
+  }
+
+  const handleMoveForward = () => {
+    if (toggledAvailable.length === 0) return
+    const addedOverrides: AudienceFlagsMap = {}
+    for (const id of toggledAvailable) {
+      addedOverrides[id] = { visibleToAdmin: true, visibleToUser: true }
     }
+    setAudienceOverrides((prev) => ({ ...prev, ...addedOverrides }))
+    const nextIds = [...new Set([...selectedIds, ...toggledAvailable])]
+    setToggledAvailable([])
+    applyLocalSelection(nextIds)
   }
 
   const handleMoveBack = () => {
     if (toggledSelected.length === 0) return
+    setAudienceOverrides((prev) => {
+      const next = { ...prev }
+      for (const id of toggledSelected) {
+        delete next[id]
+      }
+      return next
+    })
     const nextIds = selectedIds.filter((id) => !toggledSelected.includes(id))
-    const csv = nextIds.join(", ")
-    setUserReportIds(csv)
-    onSelectedReportIdsChange(csv)
     setToggledSelected([])
-    if (onImmediateUpdate) {
-      onImmediateUpdate(nextIds.map(Number))
-    }
+    applyLocalSelection(nextIds)
   }
+
+  const handleAudienceFlagChange = (
+    reportId: string,
+    flag: "visibleToAdmin" | "visibleToUser",
+    value: boolean,
+  ) => {
+    const current = audienceFlags[reportId] ?? {
+      visibleToAdmin: true,
+      visibleToUser: true,
+    }
+    setAudienceOverrides((prev) => ({
+      ...prev,
+      [reportId]: {
+        ...current,
+        [flag]: value,
+      },
+    }))
+  }
+
+  // Bind Save to current draft (assignment + A/U) — no useEffect.
+  bindSave(async () => {
+    const reportIds = selectedIds
+      .map(Number)
+      .filter((n) => Number.isFinite(n) && n > 0)
+    const visibilityById: AudienceFlagsMap = {}
+    for (const id of selectedIds) {
+      visibilityById[id] = audienceFlags[id] ?? {
+        visibleToAdmin: true,
+        visibleToUser: true,
+      }
+    }
+    await onSave(reportIds, visibilityById)
+    // Drop local overrides so refetch from server is the source of truth.
+    setAudienceOverrides({})
+  })
 
   if (isLoading) {
     return (
@@ -127,7 +203,7 @@ function DepartmentReportMultiSelectField({
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-[1fr_60px_1fr] items-center gap-4 w-full">
+    <div className="grid grid-cols-1 lg:grid-cols-[1fr_60px_minmax(320px,1.15fr)] items-center gap-4 w-full">
       <TransferPanel
         title="Select Reports(Available)"
         items={filteredAvailable}
@@ -163,6 +239,9 @@ function DepartmentReportMultiSelectField({
         onSelectAll={handleSelectAllSelected}
         searchValue={searchSelected}
         onSearchChange={setSearchSelected}
+        showAudienceFlags
+        audienceFlags={audienceFlags}
+        onAudienceFlagChange={handleAudienceFlagChange}
       />
     </div>
   )
@@ -180,13 +259,14 @@ export function DepartmentReportSettingsPanel({
   onEnsureDepartmentId,
   onExit,
 }: DepartmentReportSettingsPanelProps) {
+  const saveFnRef = useRef<(() => Promise<void>) | null>(null)
+
   const {
     countyNameDisplay,
     serverMappedReportIds,
     multiSelectKey,
     isSaving,
     setPendingReportIds,
-    saveMappedReports,
     handleImmediateUpdate,
   } = useDepartmentReportSettings({
     departmentId,
@@ -197,7 +277,11 @@ export function DepartmentReportSettingsPanel({
 
   const showDepartmentSummary = Boolean(departmentCode?.trim() || departmentName?.trim())
   const isReportDataLoading = isReportOptionsLoading || isMappedReportsLoading
-  const saveDisabled = isSubmitting || isSaving || isReportDataLoading
+  const actionsDisabled = isSubmitting || isSaving || isReportDataLoading
+
+  const handleSave = async () => {
+    await saveFnRef.current?.()
+  }
 
   return (
     <div className="px-4 sm:px-6 pb-6">
@@ -209,26 +293,45 @@ export function DepartmentReportSettingsPanel({
         />
       )}
 
-      <div className="py-4 sm:py-8 min-h-[220px]">
+      <div className="py-4 sm:py-6 min-h-[220px]">
         <label className={labelClassName}>Reports</label>
+        <p className="mb-3 rounded-[8px] border border-[#E8E4FF] bg-[#F8F6FF] px-3 py-2 text-[12px] leading-relaxed text-[#4B5563]">
+          <span className="font-semibold text-[#6C5DD3]">Note:</span>
+          <br />
+          <span className="font-semibold">Admin</span> = Super Admin, Client Admin, Department
+          Admin, Payroll Admin, Time Study Admin, Time Study Supervisor
+          <br />
+          <span className="font-semibold">User</span> = User
+        </p>
         <DepartmentReportMultiSelectField
           key={`${multiSelectKey}-${serverMappedReportIds}`}
           reportOptions={reportOptions}
           serverMappedReportIds={serverMappedReportIds}
           isLoading={isReportDataLoading}
           onSelectedReportIdsChange={setPendingReportIds}
-          onImmediateUpdate={handleImmediateUpdate}
+          bindSave={(fn) => {
+            saveFnRef.current = fn
+          }}
+          onSave={handleImmediateUpdate}
         />
       </div>
 
       <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 sm:gap-4 pt-4">
         <Button
           type="button"
-          disabled={saveDisabled}
+          disabled={actionsDisabled}
           onClick={onExit}
           className="w-full sm:w-[140px] h-[48px] sm:h-[50px] bg-[#E5E7EB] hover:bg-[#D1D5DB] text-[#374151] rounded-[8px] text-[15px] sm:text-[16px] font-[500]"
         >
           Exit
+        </Button>
+        <Button
+          type="button"
+          disabled={actionsDisabled}
+          onClick={() => void handleSave()}
+          className="w-full sm:w-[140px] h-[48px] sm:h-[50px] bg-[#6C5DD3] hover:bg-[#5B4CC4] text-white rounded-[8px] text-[15px] sm:text-[16px] font-[500]"
+        >
+          {isSaving ? "Saving…" : "Save"}
         </Button>
       </div>
     </div>
