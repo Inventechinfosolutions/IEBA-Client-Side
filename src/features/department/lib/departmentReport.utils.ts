@@ -42,6 +42,26 @@ export function computeChangedDepartmentReportIds(
   return [...new Set(changed)]
 }
 
+/**
+ * Coerce Admin/User visibility flags from API/DB.
+ * Never use `value !== false` alone — MySQL TINYINT `0` would become true.
+ */
+export function coerceReportVisibilityFlag(value: unknown, defaultWhenMissing = true): boolean {
+  if (value === undefined || value === null) return defaultWhenMissing
+  if (typeof value === "boolean") return value
+  if (typeof value === "number") return value !== 0
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase()
+    if (normalized === "" || normalized === "0" || normalized === "false" || normalized === "no") {
+      return false
+    }
+    if (normalized === "1" || normalized === "true" || normalized === "yes") {
+      return true
+    }
+  }
+  return Boolean(value)
+}
+
 export function toDepartmentReportOptions(items: unknown[]): DepartmentReportOption[] {
   if (!Array.isArray(items)) return []
 
@@ -57,9 +77,26 @@ export function toDepartmentReportOptions(items: unknown[]): DepartmentReportOpt
         code,
         name,
         label: code && name ? `${code} ${name}` : code || name || String(id),
+        visibleToAdmin: coerceReportVisibilityFlag(r.visibleToAdmin, true),
+        visibleToUser: coerceReportVisibilityFlag(r.visibleToUser, true),
       }
     })
     .filter((x): x is DepartmentReportOption => x != null)
+}
+
+export function buildReportVisibilityPayload(
+  reportIds: number[],
+  visibilityById: Record<string, { visibleToAdmin: boolean; visibleToUser: boolean }>,
+): Array<{ reportId: number; visibleToAdmin: boolean; visibleToUser: boolean }> {
+  return reportIds.map((reportId) => {
+    const flags = visibilityById[String(reportId)]
+    return {
+      reportId,
+      // Missing flags (legacy / new) default both true; explicit false stays false (hidden).
+      visibleToAdmin: flags ? Boolean(flags.visibleToAdmin) : true,
+      visibleToUser: flags ? Boolean(flags.visibleToUser) : true,
+    }
+  })
 }
 
 /** Align with Settings → Reports list parsing (`GET /report`). */

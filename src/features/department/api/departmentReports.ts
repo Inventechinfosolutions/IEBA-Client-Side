@@ -69,10 +69,18 @@ export async function getAssignedAndUnassignedReports(
 export async function updateAssignedAndUnassignedReports(
   departmentId: string,
   reportIds: number[],
+  reportVisibility?: Array<{ reportId: number; visibleToAdmin: boolean; visibleToUser: boolean }>,
 ): Promise<unknown> {
+  const body: {
+    reportIds: number[]
+    reportVisibility?: Array<{ reportId: number; visibleToAdmin: boolean; visibleToUser: boolean }>
+  } = { reportIds }
+  if (reportVisibility) {
+    body.reportVisibility = reportVisibility
+  }
   const res = await api.put<unknown>(
     `/departments/${encodeURIComponent(departmentId)}`,
-    { reportIds },
+    body,
   )
   return res
 }

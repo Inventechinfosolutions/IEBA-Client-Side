@@ -103,6 +103,8 @@ export interface ReportItem {
   filename?: string
   path?: string
   criteria?: unknown
+  visibleToAdmin?: boolean
+  visibleToUser?: boolean
 }
 
 export interface PayrollDateRange {
