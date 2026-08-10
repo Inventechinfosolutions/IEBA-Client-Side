@@ -370,10 +370,9 @@ export function PersonalTimeStudyLeaveCard({
           onSubmit={async (values, lookupDropdown) => {
             if (editingLeave) {
               const targetStatus = editingStatus?.toLowerCase() === "approved" ? "approved" : "requested"
-              await updateMutation.mutateAsync({ id: (editingLeave as any).id, values, userId, dropdownData: lookupDropdown ?? leaveDropdownQuery.data, status: targetStatus })
-            } else {
-              await submitMutation.mutateAsync({ values, userId, dropdownData: lookupDropdown ?? leaveDropdownQuery.data })
+              return updateMutation.mutateAsync({ id: (editingLeave as any).id, values, userId, dropdownData: lookupDropdown ?? leaveDropdownQuery.data, status: targetStatus })
             }
+            return submitMutation.mutateAsync({ values, userId, dropdownData: lookupDropdown ?? leaveDropdownQuery.data })
           }}
           isSaving={saveMutation.isPending || (updateMutation.isPending && (editingStatus?.toLowerCase() !== "approved" && editingStatus?.toLowerCase() !== "requested"))}
           isSubmitting={submitMutation.isPending || (updateMutation.isPending && (editingStatus?.toLowerCase() === "approved" || editingStatus?.toLowerCase() === "requested"))}
