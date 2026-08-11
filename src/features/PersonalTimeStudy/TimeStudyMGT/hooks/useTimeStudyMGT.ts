@@ -1,13 +1,15 @@
-import { useMemo, useState } from "react"
+import { useCallback, useMemo, useState } from "react"
 import { useLocation } from "react-router-dom"
 import { useGetMGTEmployeeList } from "../queries/getMGTEmployeeList"
 import { useGetMGTMonthLegend } from "../queries/getMGTMonthLegend"
 import { useGetMGTDayDetail } from "../queries/getMGTDayDetail"
+import { useGetMGTDropdowns } from "../queries/getMGTDropdowns"
 import { getCalendarWeekStartKeyFromIso } from "@/components/Calender"
 import { toIsoYmdFromDate, todayLocal } from "@/lib/dates"
 import { usePermissions } from "@/hooks/usePermissions"
 import type { MgtEmployeeRow, MgtDayStatusMap, MgtWeekSummary } from "../types"
 import { useGetUserAssignedDepartmentsSettingChecks } from "../../queries/getUserAssignedDepartmentsSettingChecks"
+import { apiGetUserProgramsAndActivitiesMulticode } from "../../api/personalTimeStudyApi"
 import {
   FUTURE_WEEK_STATUS,
   isCalendarWeekEntirelyFuture,
@@ -38,6 +40,10 @@ export function useTimeStudyMGT() {
     return new Date(validInitialDate.getFullYear(), validInitialDate.getMonth(), 1)
   })
   const [selectedDate, setSelectedDate] = useState<Date | null>(validInitialDate)
+  const [isEditing, setIsEditing] = useState(false)
+  const [fetchDropdowns, setFetchDropdowns] = useState(false)
+  const [departmentMulticodes, setDepartmentMulticodes] = useState<Record<string, any[]>>({})
+  const [fetchingDepartments, setFetchingDepartments] = useState<Record<string, boolean>>({})
 
   const month = currentDate.getMonth() + 1
   const year  = currentDate.getFullYear()
@@ -56,8 +62,9 @@ export function useTimeStudyMGT() {
     selectedDate ? selectedDate.getMonth() + 1 : month,
     selectedDate ? selectedDate.getFullYear() : year
   )
-  // dropdownQuery removed: MGT form is read-only, programs-activities not needed
-  // summaryQuery removed: allocated/actual totals come from monthlegend data
+  const dropdownQuery = useGetMGTDropdowns(
+    fetchDropdowns && isEditing && selectedUserId ? selectedUserId : null,
+  )
 
   // ── Derived data ──────────────────────────────────────────────────────────
   const employees = employeeListQuery.data ?? []
@@ -167,7 +174,10 @@ export function useTimeStudyMGT() {
   function selectEmployee(employee: MgtEmployeeRow) {
     setSelectedUserId(employee.id)
     setSelectedEmployee(employee)
-    
+    setIsEditing(false)
+    setFetchDropdowns(false)
+    setDepartmentMulticodes({})
+
     // Reset to today's date (LA time) so data is always fetched immediately for the new user
     const today = todayLocal()
     setSelectedDate(today)
@@ -176,11 +186,50 @@ export function useTimeStudyMGT() {
   function clearSelection() {
     setSelectedUserId(null)
     setSelectedEmployee(null)
-    
+    setIsEditing(false)
+    setFetchDropdowns(false)
+    setDepartmentMulticodes({})
+
     const today = todayLocal()
     setSelectedDate(today)
     setCurrentDate(new Date(today.getFullYear(), today.getMonth(), 1))
   }
+
+  const setSelectedDateAndExitEdit = useCallback((date: Date | null) => {
+    setSelectedDate(date)
+    setIsEditing(false)
+  }, [])
+
+  const startEditing = useCallback(() => {
+    setIsEditing(true)
+    setFetchDropdowns(true)
+  }, [])
+
+  const stopEditing = useCallback(() => {
+    setIsEditing(false)
+  }, [])
+
+  const handleOpenDropdown = useCallback(() => {
+    setFetchDropdowns(true)
+    void dropdownQuery.refetch()
+  }, [dropdownQuery])
+
+  const fetchMulticodeProgramsForDepartment = useCallback(
+    async (deptIdStr: string | number | undefined) => {
+      const deptId = String(deptIdStr || "").trim()
+      if (!deptId || !selectedUserId) return
+      setFetchingDepartments((prev) => ({ ...prev, [deptId]: true }))
+      try {
+        const res = await apiGetUserProgramsAndActivitiesMulticode(selectedUserId, deptId)
+        setDepartmentMulticodes((prev) => ({ ...prev, [deptId]: res || [] }))
+      } catch (err) {
+        console.error(`Failed to fetch multicode programs for department ${deptId}`, err)
+      } finally {
+        setFetchingDepartments((prev) => ({ ...prev, [deptId]: false }))
+      }
+    },
+    [selectedUserId],
+  )
 
   // ── Apportioning config for selected user/date ───────────────────────────
   const apportioningConfigQuery = useGetUserAssignedDepartmentsSettingChecks(
@@ -210,9 +259,10 @@ export function useTimeStudyMGT() {
     currentDate,
     setCurrentDate,
     selectedDate,
-    setSelectedDate,
+    setSelectedDate: setSelectedDateAndExitEdit,
     month,
     year,
+    isEditing,
 
     // Data
     filteredEmployees,
@@ -223,20 +273,27 @@ export function useTimeStudyMGT() {
     balanceTotal,
     legend,
     dayDetail: dayDetailQuery.data,
-    dropdownData: undefined,
+    dropdownData: dropdownQuery.data,
     actualMultiTotal: dayDetailQuery.data?.enteredMaaMinutes,
     multiBalanceTotal: dayDetailQuery.data?.maaBalance,
     apportioningConfig: apportioningConfigQuery.data,
     apportioningRecords,
     refetchConfig: apportioningConfigQuery.refetch,
+    departmentMulticodes,
+    fetchingDepartments,
 
     // Loading states
     isEmployeeListLoading: employeeListQuery.isLoading,
     isMonthLegendLoading:  monthLegendQuery.isLoading,
     isDayDetailLoading:    dayDetailQuery.isLoading,
+    isDropdownLoading:     dropdownQuery.isFetching,
 
     // Actions
     selectEmployee,
     clearSelection,
+    startEditing,
+    stopEditing,
+    handleOpenDropdown,
+    fetchMulticodeProgramsForDepartment,
   }
 }

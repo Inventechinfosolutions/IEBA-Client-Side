@@ -1,17 +1,24 @@
+import { useMemo } from "react"
 import { useTimeStudyMGT } from "../hooks/useTimeStudyMGT"
 import { toIsoYmdFromDate } from "@/lib/dates"
 import { MgtEmployeePanel } from "../components/MgtEmployeePanel"
 import { MgtLegendCard } from "../components/MgtLegendCard"
 import { PersonalTimeStudyCalendarCard } from "../../components/PersonalTimeStudyCalendarCard"
-import { Check, X, Unlock, Bell, Info } from "lucide-react"
+import { Check, X, Unlock, Bell, Info, Pencil, XCircle } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { useActionUserTimeRecordRanges } from "../mutations/updateActionUserTimeRecord"
+import {
+  useSubmitMgtTimeRecords,
+  useDeleteMgtTimeRecord,
+} from "../mutations/submitMgtTimeRecords"
 import { PersonalTimeStudyEntryForm } from "../../components/PersonalTimeStudyEntryForm"
 import { PersonalTimeStudyMobileEntryForm } from "../../components/PersonalTimeStudyMobileEntryForm"
 import { WeekStatusIcon } from "../../components/WeekStatusIcon"
 import { FUTURE_WEEK_STATUS } from "../../utils/weekSummaryUtils"
 import { MgtActionDateDialog } from "../components/MgtActionDateDialog"
 import type { MgtActionDateRange } from "../api/timeStudyMGTApi"
+import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 
 function isPendingSubmissionStatus(status: unknown): boolean {
   const s = String(status ?? "").toLowerCase()
@@ -26,6 +33,19 @@ function isPendingSubmissionStatus(status: unknown): boolean {
     s === "submittedless" ||
     s === "submittedexceed"
   )
+}
+
+function isApprovedStatus(status: unknown): boolean {
+  const s = String(status ?? "").toLowerCase()
+  return s === "approved" || s === "approved_time_entry" || s.startsWith("approved")
+}
+
+/** Day can be edited when not submitted/approved (unlock or reject first). */
+function canSupervisorEditDay(status: unknown): boolean {
+  if (!status) return true
+  if (isApprovedStatus(status)) return false
+  if (isPendingSubmissionStatus(status)) return false
+  return true
 }
 
 export function TimeStudyMGTPage() {
@@ -48,12 +68,87 @@ export function TimeStudyMGTPage() {
     actualMultiTotal,
     multiBalanceTotal,
     isDayDetailLoading,
+    isDropdownLoading,
     apportioningConfig,
     apportioningRecords,
     refetchConfig,
+    isEditing,
+    startEditing,
+    stopEditing,
+    handleOpenDropdown,
+    departmentMulticodes,
+    fetchingDepartments,
+    fetchMulticodeProgramsForDepartment,
+    month,
+    year,
   } = useTimeStudyMGT()
 
   const { mutateAsync: applyAction, isPending: isActionPending } = useActionUserTimeRecordRanges()
+
+  const dateStr = selectedDate ? toIsoYmdFromDate(selectedDate) : ""
+  const submitMutation = useSubmitMgtTimeRecords(selectedUserId ?? "", dateStr, month, year)
+  const deleteMutation = useDeleteMgtTimeRecord(selectedUserId ?? "", dateStr, month, year)
+
+  const selectedDayStatus = dateStr ? dayStatuses[dateStr]?.status : undefined
+  const dayEditable = canSupervisorEditDay(selectedDayStatus)
+  const employeeDisplayName = selectedEmployee
+    ? (`${selectedEmployee.firstName ?? ""} ${selectedEmployee.lastName ?? ""}`.trim() || selectedEmployee.name || "")
+    : ""
+
+  const editDisabledReason = useMemo(() => {
+    if (!selectedUserId || !selectedDate) return "Select an employee and day first"
+    if (isApprovedStatus(selectedDayStatus)) {
+      return "Day is approved. Unlock it first, then edit."
+    }
+    if (isPendingSubmissionStatus(selectedDayStatus)) {
+      return "Day is submitted. Unlock or reject it first, then edit."
+    }
+    return null
+  }, [selectedUserId, selectedDate, selectedDayStatus])
+
+  const formBusy =
+    isDayDetailLoading || submitMutation.isPending || deleteMutation.isPending
+
+  const formProps = {
+    key: `${selectedUserId}-${dateStr}-${isEditing ? "edit" : "view"}`,
+    dateStr,
+    userId: selectedUserId!,
+    username: employeeDisplayName,
+    initialRecords: dayDetail?.timeStudyRecords,
+    dropdownData,
+    leaveRecords: dayDetail?.leaveRecords as any,
+    readonly: !isEditing,
+    allocatedTotal,
+    actualTotal,
+    balanceTotal,
+    actualMultiTotal,
+    multiBalanceTotal,
+    showLeaveBanner: true,
+    isLoading: formBusy,
+    isDropdownLoading,
+    onOpenDropdown: handleOpenDropdown,
+    apportioningConfig,
+    apportioningRecords,
+    apportioningSummary: dayDetail?.apportioningSummary,
+    refetchConfig,
+    departmentMulticodes,
+    fetchingDepartments,
+    onFetchMulticodeDept: fetchMulticodeProgramsForDepartment,
+    onSave: isEditing
+      ? (records: any[]) => {
+          submitMutation.mutate({ records, mode: "save" })
+        }
+      : undefined,
+    onSubmit: isEditing
+      ? (records: any[]) => {
+          submitMutation.mutate(
+            { records, mode: "submit" },
+            { onSuccess: () => stopEditing() },
+          )
+        }
+      : undefined,
+    onDelete: isEditing ? (id: number) => deleteMutation.mutate(id) : undefined,
+  }
 
   return (
     <TooltipProvider>
@@ -92,16 +187,16 @@ export function TimeStudyMGTPage() {
                 const isApproved = s === "approved"
                 const isSubmitted = s === "submitted" || s === "submittedexceed" || s === "submittedless"
                 const hasRejectedDayInWeek = dates.some((date) => {
-                  const dateStr = toIsoYmdFromDate(date)
-                  return String(dayStatuses[dateStr]?.status ?? "").toLowerCase() === "rejected"
+                  const d = toIsoYmdFromDate(date)
+                  return String(dayStatuses[d]?.status ?? "").toLowerCase() === "rejected"
                 })
                 const hasPendingSubmittedDays = dates.some((date) => {
-                  const dateStr = toIsoYmdFromDate(date)
-                  return isPendingSubmissionStatus(dayStatuses[dateStr]?.status)
+                  const d = toIsoYmdFromDate(date)
+                  return isPendingSubmissionStatus(dayStatuses[d]?.status)
                 })
                 const showApproveReject = isSubmitted || hasPendingSubmittedDays
                 const showUnlock = isApproved && !hasPendingSubmittedDays
-                
+
                 const handleAction = async (action: string, dateRanges: MgtActionDateRange[]) => {
                   if (!selectedUserId) return
                   await applyAction({
@@ -113,7 +208,6 @@ export function TimeStudyMGTPage() {
 
                 return (
                   <div className="flex items-center gap-1.5">
-                    {/* If any day is still pending submission review: Show Approve/Reject */}
                     {showApproveReject && (
                       <>
                         {!hasRejectedDayInWeek && (
@@ -155,7 +249,6 @@ export function TimeStudyMGTPage() {
                       </>
                     )}
 
-                    {/* If fully approved with no pending days: Show Unlock + Info */}
                     {showUnlock && (
                       <>
                         <MgtActionDateDialog
@@ -188,7 +281,6 @@ export function TimeStudyMGTPage() {
                       </>
                     )}
 
-                    {/* If Open/Draft/Rejected/Null: Show Notify + Info */}
                     {!showApproveReject && !showUnlock && (
                       <>
                         <MgtActionDateDialog
@@ -233,57 +325,74 @@ export function TimeStudyMGTPage() {
 
         </div>
 
-        {/* Read-only Time Study Entry Form with totals integrated */}
+        {/* Time Study Entry Form — editable when supervisor clicks pencil */}
         {selectedUserId && selectedDate && (
           <div className="mt-4 mb-4">
-            {/* Mobile Card View (< xl) */}
-            <div className="xl:hidden">
-              <PersonalTimeStudyMobileEntryForm
-                key={`${selectedUserId}-${toIsoYmdFromDate(selectedDate)}`}
-                dateStr={toIsoYmdFromDate(selectedDate)}
-                userId={selectedUserId}
-                username={selectedEmployee ? (`${selectedEmployee.firstName ?? ""} ${selectedEmployee.lastName ?? ""}`.trim() || selectedEmployee.name || "") : ""}
-                initialRecords={dayDetail?.timeStudyRecords}
-                dropdownData={dropdownData}
-                leaveRecords={dayDetail?.leaveRecords as any}
-                readonly={true}
-                allocatedTotal={allocatedTotal}
-                actualTotal={actualTotal}
-                balanceTotal={balanceTotal}
-                actualMultiTotal={actualMultiTotal}
-                multiBalanceTotal={multiBalanceTotal}
-                showLeaveBanner={true}
-                isLoading={isDayDetailLoading}
-                apportioningConfig={apportioningConfig}
-                apportioningRecords={apportioningRecords}
-                apportioningSummary={dayDetail?.apportioningSummary}
-                refetchConfig={refetchConfig}
-              />
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2 px-1 sm:px-3">
+              <div className="text-sm text-muted-foreground">
+                {isEditing ? (
+                  <span>
+                    Editing time study for <span className="font-medium text-foreground">{employeeDisplayName}</span>
+                    {" · "}
+                    {dateStr}
+                  </span>
+                ) : (
+                  <span>
+                    Viewing <span className="font-medium text-foreground">{employeeDisplayName}</span>
+                    {" · "}
+                    {dateStr}
+                  </span>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2">
+                {isEditing ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={stopEditing}
+                    className="gap-1.5"
+                  >
+                    <XCircle className="size-3.5" />
+                    Cancel edit
+                  </Button>
+                ) : (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className={cn(!dayEditable && "inline-flex")}>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          disabled={!dayEditable}
+                          onClick={startEditing}
+                          className="gap-1.5"
+                          aria-label="Edit this day's time study"
+                        >
+                          <Pencil className="size-3.5" />
+                          Edit day
+                        </Button>
+                      </span>
+                    </TooltipTrigger>
+                    {editDisabledReason && (
+                      <TooltipContent side="top" className="max-w-[240px] text-xs">
+                        {editDisabledReason}
+                      </TooltipContent>
+                    )}
+                  </Tooltip>
+                )}
+              </div>
             </div>
 
-            {/* Desktop Table View (≥ xl — 100% UNTOUCHED) */}
+            {/* Mobile Card View (< xl) */}
+            <div className="xl:hidden">
+              <PersonalTimeStudyMobileEntryForm {...formProps} />
+            </div>
+
+            {/* Desktop Table View (≥ xl) */}
             <div className="hidden xl:block">
-              <PersonalTimeStudyEntryForm
-                key={`${selectedUserId}-${toIsoYmdFromDate(selectedDate)}`}
-                dateStr={toIsoYmdFromDate(selectedDate)}
-                userId={selectedUserId}
-                username={selectedEmployee ? (`${selectedEmployee.firstName ?? ""} ${selectedEmployee.lastName ?? ""}`.trim() || selectedEmployee.name || "") : ""}
-                initialRecords={dayDetail?.timeStudyRecords}
-                dropdownData={dropdownData}
-                leaveRecords={dayDetail?.leaveRecords}
-                readonly={true}
-                allocatedTotal={allocatedTotal}
-                actualTotal={actualTotal}
-                balanceTotal={balanceTotal}
-                actualMultiTotal={actualMultiTotal}
-                multiBalanceTotal={multiBalanceTotal}
-                showLeaveBanner={true}
-                isLoading={isDayDetailLoading}
-                apportioningConfig={apportioningConfig}
-                apportioningRecords={apportioningRecords}
-                apportioningSummary={dayDetail?.apportioningSummary}
-                refetchConfig={refetchConfig}
-              />
+              <PersonalTimeStudyEntryForm {...formProps} />
             </div>
           </div>
         )}
