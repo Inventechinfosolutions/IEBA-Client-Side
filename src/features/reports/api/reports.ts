@@ -36,6 +36,7 @@ import {
 } from "../pdf/reportPdf"
 import { generateDSSRPT1ReportPdf } from "../pdf/DSSRPT1ReportPdf"
 import { generateDSSRPT2ReportPdf } from "../pdf/DSSRPT2ReportPdf"
+import { generateBHSAReportPdf } from "../pdf/BHSAReportPdf"
 import { generateDSSRPT3ReportPdf } from "../pdf/DSSRPT3ReportPdf"
 import { generateDSSRPT4ReportPdf } from "../pdf/DSSRPT4ReportPdf"
 import { generateAC741ReportPdf } from "../pdf/AC741ReportPdf"
@@ -199,6 +200,17 @@ async function buildFrontendPdfReport(
         reportDetails: dssrpt2.reportDetails,
         periodStarting: dssrpt2.periodStarting,
         periodEnding: dssrpt2.periodEnding,
+        meta,
+      })
+    }
+
+    if (body.reportKey === "BHSA") {
+      const bhsa = unwrapDssrpt2Response(response, { startDate, endDate })
+      return await generateBHSAReportPdf({
+        employees: bhsa.employees,
+        reportDetails: { ...bhsa.reportDetails, reportCode: "BHSA" },
+        periodStarting: bhsa.periodStarting,
+        periodEnding: bhsa.periodEnding,
         meta,
       })
     }

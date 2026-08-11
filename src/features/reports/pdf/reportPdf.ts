@@ -302,6 +302,12 @@ export type Dssrpt2Program = {
   activityName: string
   activityTime: number
   allocatedFte: number
+  bhsaApplicable?: boolean
+  expenditureClassification?: string
+  bhccCategory?: string
+  ageGroup?: string
+  otherCountyExpenditureType?: string
+  bhsaNotes?: string
 }
 
 export type Dssrpt2GroupedEmployee = {
@@ -1563,11 +1569,23 @@ function parseDssrpt2Programs(raw: unknown): Dssrpt2Program[] {
   if (!Array.isArray(raw)) return []
   return raw.map((item) => {
     const row = asRecord(item)
+    const bhsaFlag = row.bhsaApplicable ?? row.bhsa_applicable
     return {
       activityCode: String(row.activitycode ?? row.activityCode ?? ""),
       activityName: String(row.activityname ?? row.activityName ?? ""),
       activityTime: toNumber((row.activitytime ?? row.activityTime ?? 0) as string | number),
       allocatedFte: toNumber((row.allocatedfte ?? row.allocatedFte ?? 0) as string | number),
+      bhsaApplicable:
+        bhsaFlag === true || bhsaFlag === 1 || bhsaFlag === "1" || String(bhsaFlag).toLowerCase() === "true",
+      expenditureClassification: String(
+        row.expenditureClassification ?? row.expenditure_classification ?? "",
+      ),
+      bhccCategory: String(row.bhccCategory ?? row.bhcc_category ?? ""),
+      ageGroup: String(row.ageGroup ?? row.age_group ?? ""),
+      otherCountyExpenditureType: String(
+        row.otherCountyExpenditureType ?? row.other_county_expenditure_type ?? "",
+      ),
+      bhsaNotes: String(row.bhsaNotes ?? row.bhsa_notes ?? ""),
     }
   })
 }
@@ -2968,6 +2986,8 @@ export function resolveReportTitle(
       return "AC741 Activity Summary"
     case "DSSRPT2":
       return "Time Study Hours - DSSRPT2"
+    case "BHSA":
+      return "Time Study Hours - BHSA"
     case "DSSRPT3":
       return "Time Study Hours - DSSRPT3"
     case "DSSRPT4":
@@ -3009,6 +3029,7 @@ export function resolveFooterVariant(reportCode: string): ReportPdfFooterVariant
       return "signaturePerPage"
     case "DSSRPT1":
     case "DSSRPT2":
+    case "BHSA":
     case "QTR-MONTH":
     case "P101":
     case "P110":
