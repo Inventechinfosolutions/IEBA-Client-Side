@@ -10,6 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { useDebounce } from "@/hooks/useDebounce"
 import { usePermissions } from "@/hooks/usePermissions"
 import { MasterCodePagination } from "@/features/master-code/components/MasterCodePagination"
 import { JobPoolFormModal } from "../components/add-pool/JobPoolFormModal"
@@ -51,6 +52,8 @@ export function JobPoolPage() {
   const [pageSize, setPageSize]       = useState(10)
   const [search, setSearch]           = useState("")
   const [historySearch, setHistorySearch] = useState("")
+  const debouncedSearch = useDebounce(search)
+  const debouncedHistorySearch = useDebounce(historySearch)
   const [inactiveOnly, setInactiveOnly] = useState(false)
   const [modalOpen, setModalOpen]     = useState(false)
   const [modalMode, setModalMode]     = useState<JobPoolFormMode>("add")
@@ -72,7 +75,7 @@ export function JobPoolPage() {
     isUpdating,
     createJobPoolAsync,
     updateJobPoolAsync,
-  } = useJobPoolModule({ page, pageSize, search, inactiveOnly, departmentId: deptFilter })
+  } = useJobPoolModule({ page, pageSize, search: debouncedSearch, inactiveOnly, departmentId: deptFilter })
 
   const { data: fetchedJobPool, isFetching: isFetchingDetail, refetch } = useGetJobPoolById(
     modalMode === "edit" && modalOpen && selectedRow ? selectedRow.id : undefined
@@ -172,7 +175,7 @@ export function JobPoolPage() {
         />
         {showHistory ? (
           <div className="mt-[25px]">
-            <JobPoolHistoryTable assignmentKind={historySearch} />
+            <JobPoolHistoryTable assignmentKind={debouncedHistorySearch} />
           </div>
         ) : (
           <>

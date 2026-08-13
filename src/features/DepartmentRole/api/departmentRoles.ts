@@ -87,11 +87,14 @@ export async function fetchDepartmentRolesPage(params: {
   page: number
   limit: number
   status?: string
+  search?: string
 }): Promise<DepartmentRolesPageResult> {
   const search = new URLSearchParams()
   search.set("page", String(params.page))
   search.set("limit", String(params.limit))
   if (params.status) search.set("status", params.status)
+  const term = params.search?.trim()
+  if (term) search.set("search", term)
 
   const res = await api.get<ApiResponseDto<DepartmentRolesListPayload>>(
     `/department-roles?${search.toString()}`
