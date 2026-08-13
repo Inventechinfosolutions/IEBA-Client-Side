@@ -3,7 +3,7 @@ import { ArrowLeft, Check, ChevronDown, ChevronRight, History, OctagonXIcon, Plu
 
 import { useQueryClient } from "@tanstack/react-query"
 import { useForm } from "react-hook-form"
-import { useMemo, useRef, useState } from "react"
+import { useMemo, useState } from "react"
 import { toast } from "sonner"
 import { guardNoChanges, getChangedFields } from "@/lib/formGuard"
 
@@ -64,7 +64,6 @@ import { useCreateCountyActivityCode } from "../mutations/createCountyActivityCo
 import { ActivityStatusEnum } from "@/features/master-code/enums/activityStatus"
 
 
-import { COUNTY_ACTIVITY_SEARCH_DEBOUNCE_MS } from "../constants"
 import { countyActivityCodeKeys } from "../keys"
 import {
   useGetCountyActivityForEdit,
@@ -429,8 +428,6 @@ export function CountyActivityCodeTable({
   const { canAdd, canUpdate, isSuperAdmin, isClientAdmin, user } = usePermissions()
   const canAddCountyActivity = canAdd("countyactivity")
   const canUpdateCountyActivity = canUpdate("countyactivity")
-
-  const searchDebounceTimerRef = useRef<number | null>(null)
 
   const filterForm = useForm<CountyActivityFilterFormValues>({
     resolver: zodResolver(countyActivityFilterFormSchema),
@@ -1291,14 +1288,8 @@ export function CountyActivityCodeTable({
                 onChange={(event) => {
                   const next = event.target.value
                   filterForm.setValue("search", next)
-                  if (searchDebounceTimerRef.current !== null) {
-                    window.clearTimeout(searchDebounceTimerRef.current)
-                  }
-                  searchDebounceTimerRef.current = window.setTimeout(() => {
-                    searchDebounceTimerRef.current = null
-                    onSearchChange(next)
-                    onPageChange(1)
-                  }, COUNTY_ACTIVITY_SEARCH_DEBOUNCE_MS)
+                  onSearchChange(next)
+                  onPageChange(1)
                 }}
               />
               {searchValue && searchValue.length > 0 && (
@@ -1308,10 +1299,6 @@ export function CountyActivityCodeTable({
                   onMouseDown={(event) => event.preventDefault()}
                   onClick={() => {
                     filterForm.setValue("search", "")
-                    if (searchDebounceTimerRef.current !== null) {
-                      window.clearTimeout(searchDebounceTimerRef.current)
-                      searchDebounceTimerRef.current = null
-                    }
                     onSearchChange("")
                     onPageChange(1)
                   }}

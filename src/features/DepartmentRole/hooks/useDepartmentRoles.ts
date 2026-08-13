@@ -15,25 +15,14 @@ export function useDepartmentRoles(search?: string) {
       page,
       pageSize,
       status: LIST_STATUS,
+      search: search?.trim() || undefined,
     }),
-    [page, pageSize]
+    [page, pageSize, search]
   )
 
   const query = useDepartmentRolesListQuery(listFilters)
 
-  const rawData = query.data?.items ?? []
-
-  const filteredData = useMemo(() => {
-    if (!search?.trim()) return rawData
-    const q = search.toLowerCase().trim()
-    return rawData.filter((row) => {
-      const matchDept = row.departmentName.toLowerCase().includes(q)
-      const matchRoles = row.roles.some((r) => r.toLowerCase().includes(q))
-      const matchChildren = row.children?.some((c) => c.roleName.toLowerCase().includes(q))
-      return matchDept || matchRoles || matchChildren
-    })
-  }, [rawData, search])
-
+  const data = query.data?.items ?? []
   const totalItems = query.data?.totalItems ?? 0
 
   const handlePageChange = useCallback((nextPage: number) => {
@@ -46,7 +35,7 @@ export function useDepartmentRoles(search?: string) {
   }, [])
 
   return {
-    data: filteredData,
+    data,
     isLoading: query.isLoading,
     isError: query.isError,
     error: query.error,
