@@ -12,6 +12,7 @@ export function useDepartmentRolesListQuery(filters: DepartmentRolesListFilters)
         page: filters.page,
         limit: filters.pageSize,
         status: filters.status,
+        search: filters.search,
       }),
     staleTime: 0,
     refetchOnMount: "always",

@@ -6,6 +6,7 @@ import { toast } from "sonner"
 import { MasterCodePagination } from "@/features/master-code/components/MasterCodePagination"
 import { queryClient } from "@/main"
 import { useAuth } from "@/contexts/AuthContext"
+import { useDebounce } from "@/hooks/useDebounce"
 import { getToken, setToken } from "@/lib/api"
 import { useGetDepartments } from "@/features/department/queries/getDepartments"
 import { UserTable } from "../components/UserTable"
@@ -131,6 +132,7 @@ export function UserModulePage() {
 
   const [inactiveOnly, setInactiveOnly] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
+  const debouncedSearchTerm = useDebounce(searchTerm)
   const [selectedDepartmentId, setSelectedDepartmentId] = useState<string | undefined>()
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
@@ -177,14 +179,14 @@ export function UserModulePage() {
   const [draftUserId, setDraftUserId] = useState<string | null>(null)
 
   const searchFilters = useMemo(() => {
-    const raw = searchTerm.trim()
+    const raw = debouncedSearchTerm.trim()
     if (!raw) return { firstName: "", lastName: "", name: "", employeeId: "" }
     const normalized = raw.replace(/\s+/g, " ")
     if (/^\d+$/.test(normalized)) {
       return { firstName: "", lastName: "", name: "", employeeId: normalized }
     }
     return { firstName: "", lastName: "", name: normalized, employeeId: "" }
-  }, [searchTerm])
+  }, [debouncedSearchTerm])
 
   const isOnlySupervisor = isTimeStudySupervisor && !isSuperAdmin && !isClientAdmin && !isDepartmentAdmin
 

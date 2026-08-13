@@ -98,6 +98,7 @@ export type DepartmentRolesListFilters = {
   page: number
   pageSize: number
   status?: string
+  search?: string
 }
 
 export type DepartmenRoleTableProps = {

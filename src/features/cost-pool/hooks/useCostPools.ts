@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query"
 
 import { useAuth } from "@/contexts/AuthContext"
 import { usePermissions } from "@/hooks/usePermissions"
+import { useDebounce } from "@/hooks/useDebounce"
 import { getUserDetails } from "@/features/auth/api/getUserDetails"
 
 import { listItemToTableRow } from "../api/costPoolApi"
@@ -20,6 +21,7 @@ export function useCostPools(filters: CostPoolFilterFormValues) {
   const { user } = useAuth()
   const { isSuperAdmin, isClientAdmin, isDepartmentAdmin } = usePermissions()
   const [pagination, setPagination] = useState<CostPoolPagination>(DEFAULT_PAGINATION)
+  const debouncedSearch = useDebounce(filters.search)
 
   // Locally fetch user details to get the current assigned departments
   const { data: userDetails, isLoading: isDetailsLoading } = useQuery({
@@ -56,14 +58,14 @@ export function useCostPools(filters: CostPoolFilterFormValues) {
         page: pagination.page,
         limit: pagination.pageSize,
         departmentId: filterDeptId,
-        search: filters.search.trim() === "" ? undefined : filters.search.trim(),
+        search: debouncedSearch.trim() === "" ? undefined : debouncedSearch.trim(),
         // Checked: only inactive. Unchecked: only active (backend expects explicit enum; omitting the param returns all statuses).
         costpoolStatus: filters.inactive
           ? CostPoolStatus.INACTIVE
           : CostPoolStatus.ACTIVE,
       }
     },
-    [pagination.page, pagination.pageSize, filters.search, filters.inactive, filters.departmentId, assignedDepartmentIds],
+    [pagination.page, pagination.pageSize, debouncedSearch, filters.inactive, filters.departmentId, assignedDepartmentIds],
   )
 
   const query = useCostPoolListQuery(listParams)
