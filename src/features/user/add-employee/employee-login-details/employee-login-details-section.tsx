@@ -73,6 +73,11 @@ export function EmployeeLoginDetailsSection({
   useLayoutEffect(() => {
     if (!isEditMode || !tabData || typeof tabData !== "object") return
     syncTab1EmployeeLoginFields(setValue, getValues, tabData as Record<string, unknown>)
+    setValue("pkiUser", tabData.pki === true, {
+      shouldDirty: false,
+      shouldTouch: false,
+      shouldValidate: false,
+    })
   }, [isEditMode, tabData, setValue, getValues])
 
   const employeeName = `${watch("firstName") ?? ""} ${watch("lastName") ?? ""}`.trim()
@@ -99,6 +104,8 @@ export function EmployeeLoginDetailsSection({
 
   const loginIdField = register("loginId")
   const canEditLoginIdInEditMode = isEditMode && isMonoCounty(user?.countyName)
+  const canEditPKIUser = isSuperAdmin || (user as { pki?: boolean } | null)?.pki === true
+
 
   return (
     <>
@@ -128,6 +135,7 @@ export function EmployeeLoginDetailsSection({
               render={({ field }) => (
                 <Checkbox
                   checked={field.value}
+                  disabled={!canEditPKIUser}
                   onCheckedChange={(checked) => field.onChange(checked === true)}
                   className="size-3.5 cursor-pointer rounded-[3px] border-[#c2c6d1] data-[state=checked]:border-(--primary) data-[state=checked]:bg-(--primary)"
                 />
