@@ -306,8 +306,8 @@ function GrandTotals({ payload }: { payload: Dssrpt5ReportPayload }) {
         {Array.from({ length: 10 }).map((_, index) => (
           <Text key={`salary-fica-empty-${index}`} style={[styles.rightCell, { width: W.money }]} />
         ))}
-        <Text style={[styles.rightCell, { width: W.subTotal }]} />
-        <Text style={[styles.rightCell, { width: W.grandTotal }]} />
+        <Text style={[styles.rightCell, { width: W.subTotal }]}>{formatDssrpt5Money(payload.gtSubTotalPlusStandbyWageCosts)}</Text>
+        <Text style={[styles.rightCell, { width: W.grandTotal }]}>{formatDssrpt5Money(payload.gtGrandTotalPlusStandbyWageCosts)}</Text>
       </View>
     </View>
   )
