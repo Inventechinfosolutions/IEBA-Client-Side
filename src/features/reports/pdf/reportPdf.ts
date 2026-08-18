@@ -457,6 +457,8 @@ export type Dssrpt5ReportPayload = {
   gtStandbyGrandtotal: string | number
   gtSalaryFicaSalary: string | number
   gtSalaryFicaFica: string | number
+  gtSubTotalPlusStandbyWageCosts: string | number
+  gtGrandTotalPlusStandbyWageCosts: string | number
 }
 
 export type DSSRPT5ReportPdfProps = {
@@ -1969,11 +1971,23 @@ function parseDssrpt5DateRow(raw: Record<string, unknown>): Dssrpt5DateRow {
 function parseDssrpt5Payload(raw: Record<string, unknown>): Dssrpt5ReportPayload {
   const money = (key: string, alt?: string) =>
     (raw[key] ?? (alt ? raw[alt] : undefined) ?? 0) as string | number
+  const moneyNumber = (value: string | number) => {
+    const parsed = Number(value)
+    return Number.isFinite(parsed) ? parsed : 0
+  }
 
   const datesRaw = raw.dates
   const dates = Array.isArray(datesRaw)
     ? datesRaw.map((row) => parseDssrpt5DateRow(asRecord(row)))
     : []
+  const gtsubTotal = money("gtsubTotal")
+  const gtGrandTotal = money("gtGrandTotal")
+  const gtStandbySubtotal = money("gtStandbySubtotal")
+  const gtStandbyGrandtotal = money("gtStandbyGrandtotal")
+
+  const computedSubTotalPlusStandbyWageCosts = moneyNumber(gtsubTotal) + moneyNumber(gtStandbySubtotal)
+  const computedGrandTotalPlusStandbyWageCosts =
+    moneyNumber(gtGrandTotal) + moneyNumber(gtStandbyGrandtotal)
 
   return {
     dates,
@@ -1989,16 +2003,28 @@ function parseDssrpt5Payload(raw: Record<string, unknown>): Dssrpt5ReportPayload
     gtOt: money("gtOt"),
     gtRecruitingIncentive: money("gtRecruitingIncentive"),
     gtPayout: money("gtPayout"),
-    gtsubTotal: money("gtsubTotal"),
-    gtGrandTotal: money("gtGrandTotal"),
+    gtsubTotal,
+    gtGrandTotal,
     gtStandbySalary: money("gtStandbySalary"),
     gtStandbyFica: money("gtStandbyFica"),
-    gtStandbySubtotal: money("gtStandbySubtotal"),
-    gtStandbyGrandtotal: money("gtStandbyGrandtotal"),
+    gtStandbySubtotal,
+    gtStandbyGrandtotal,
     gtSalaryFicaSalary: money("gtSalaryFicaSalary"),
     gtSalaryFicaFica: money("gtSalaryFicaFica"),
+    gtSubTotalPlusStandbyWageCosts:
+      typeof raw.gtSubTotalPlusStandbyWageCosts === "string" ||
+      typeof raw.gtSubTotalPlusStandbyWageCosts === "number"
+        ? (raw.gtSubTotalPlusStandbyWageCosts as string | number)
+        : computedSubTotalPlusStandbyWageCosts,
+    gtGrandTotalPlusStandbyWageCosts:
+      typeof raw.gtGrandTotalPlusStandbyWageCosts === "string" ||
+      typeof raw.gtGrandTotalPlusStandbyWageCosts === "number"
+        ? (raw.gtGrandTotalPlusStandbyWageCosts as string | number)
+        : computedGrandTotalPlusStandbyWageCosts,
   }
 }
+
+
 
 function unwrapDssrpt5Root(raw: unknown): Record<string, unknown> {
   const root = asRecord(raw)
