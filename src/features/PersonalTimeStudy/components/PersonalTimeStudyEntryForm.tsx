@@ -6,6 +6,7 @@ import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/h
 
 
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { TitleCaseInput } from "@/components/ui/title-case-input"
 import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
@@ -1971,7 +1972,7 @@ export function PersonalTimeStudyEntryForm({
                 {!hideNotes && (
                   <div className="flex-[1.5] space-y-0.5">
                     <Label className="text-[11px] text-muted-foreground">Description</Label>
-                    <TitleCaseInput
+                    <Input
                       data-pts-desc={parent.id}
                       value={parent.description}
                       readOnly={isLocked || isLeaveRow || isApportionedRow}
@@ -2140,7 +2141,7 @@ export function PersonalTimeStudyEntryForm({
                                   Description
                                 </Label>
                               </div>
-                              <TitleCaseInput
+                              <Input
                                 value={sub.description}
                                 readOnly={isLocked || isLeaveRow || isApportionedRow}
                                 onChange={(e) => updateSubRow(parent.id, sub.id, { description: e.target.value })}
