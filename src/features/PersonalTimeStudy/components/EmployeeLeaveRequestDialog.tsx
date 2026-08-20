@@ -174,7 +174,10 @@ export type EmployeeLeaveRequestDialogProps = {
   /** Persist draft — optional; second arg is merged dropdown for API name resolution when multicode is used. */
   onSave?: (values: EmployeeLeaveRequestFormValues, lookupDropdown?: any[]) => void | Promise<void>
   /** Final submit — optional */
-  onSubmit?: (values: EmployeeLeaveRequestFormValues, lookupDropdown?: any[]) => void | Promise<void>
+  onSubmit?: (
+    values: EmployeeLeaveRequestFormValues,
+    lookupDropdown?: any[],
+  ) => void | Promise<void | any | any[]>
   initialValues?: EmployeeLeaveRequestFormValues
   className?: string
   dropdownData?: any[]
@@ -958,8 +961,12 @@ export function EmployeeLeaveRequestDialog({
 
     await form.handleSubmit(
       async (data) => {
-        await onSubmit?.(data, mergedLookupDropdown ?? dropdownData)
-        toast.success("Leave request submitted")
+        const result = await onSubmit?.(data, mergedLookupDropdown ?? dropdownData)
+        const leaves = Array.isArray(result) ? result : result ? [result] : []
+        const autoApproved =
+          leaves.length > 0 &&
+          leaves.every((l: any) => String(l?.status ?? "").toLowerCase() === "approved")
+        toast.success(autoApproved ? "Leave request approved" : "Leave request submitted")
         handleClose(false)
       },
       () => {
