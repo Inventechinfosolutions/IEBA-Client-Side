@@ -14,6 +14,7 @@ import type { UserAssignedDepartmentsSettingChecks } from "../queries/getUserAss
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card"
 
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { TitleCaseInput } from "@/components/ui/title-case-input"
 import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
@@ -1738,7 +1739,7 @@ export function PersonalTimeStudyMobileEntryForm({
                       {!hideNotes && (
                         <div className="space-y-0.5 w-full">
                           <Label className="text-[11px] text-muted-foreground">Description</Label>
-                          <TitleCaseInput
+                          <Input
                             data-pts-desc={parent.id}
                             value={parent.description}
                             readOnly={isLocked || isLeaveRow || isApportionedRow}
@@ -1777,7 +1778,7 @@ export function PersonalTimeStudyMobileEntryForm({
                       <div className="flex items-end gap-2">
                         <div className="flex-1 space-y-0.5">
                           <Label className="text-[11px] text-muted-foreground">Description</Label>
-                          <TitleCaseInput
+                          <Input
                             data-pts-desc={parent.id}
                             value={parent.description}
                             readOnly={isLocked || isLeaveRow || isApportionedRow}
@@ -1941,7 +1942,7 @@ export function PersonalTimeStudyMobileEntryForm({
                               <div className="flex items-end gap-2">
                                 <div className="flex-1 space-y-1">
                                   <Label className="text-[11px] text-muted-foreground">Description</Label>
-                                  <TitleCaseInput
+                                  <Input
                                     value={sub.description}
                                     readOnly={isLocked || isLeaveRow || isApportionedRow}
                                     onChange={(e) => updateSubRow(parent.id, sub.id, { description: e.target.value })}
