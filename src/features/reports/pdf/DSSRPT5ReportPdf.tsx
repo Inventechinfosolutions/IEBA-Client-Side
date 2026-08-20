@@ -249,9 +249,7 @@ function GrandTotalMoneyCells({ payload }: { payload: Dssrpt5ReportPayload }) {
       <Text style={[styles.boldRight, { width: W.subTotal }]}>
         {formatDssrpt5Money(payload.gtsubTotal)}
       </Text>
-      <Text style={[styles.boldRight, { width: W.grandTotal }]}>
-        {formatDssrpt5Money(payload.gtGrandTotal)}
-      </Text>
+      <Text style={[styles.boldRight, { width: W.grandTotal }]} />
     </>
   )
 }
@@ -288,9 +286,7 @@ function GrandTotals({ payload }: { payload: Dssrpt5ReportPayload }) {
         <Text style={[styles.boldRight, { width: W.subTotal }]}>
           {formatDssrpt5Money(payload.gtStandbySubtotal)}
         </Text>
-        <Text style={[styles.boldRight, { width: W.grandTotal }]}>
-          {formatDssrpt5Money(payload.gtStandbyGrandtotal)}
-        </Text>
+        <Text style={[styles.boldRight, { width: W.grandTotal }]} />
       </View>
 
       <View style={styles.row}>
@@ -306,8 +302,10 @@ function GrandTotals({ payload }: { payload: Dssrpt5ReportPayload }) {
         {Array.from({ length: 10 }).map((_, index) => (
           <Text key={`salary-fica-empty-${index}`} style={[styles.rightCell, { width: W.money }]} />
         ))}
-        <Text style={[styles.rightCell, { width: W.subTotal }]}>{formatDssrpt5Money(payload.gtSubTotalPlusStandbyWageCosts)}</Text>
-        <Text style={[styles.rightCell, { width: W.grandTotal }]}>{formatDssrpt5Money(payload.gtGrandTotalPlusStandbyWageCosts)}</Text>
+        <Text style={[styles.rightCell, { width: W.subTotal }]} />
+        <Text style={[styles.boldRight, { width: W.grandTotal }]}>
+          {formatDssrpt5Money(payload.gtGrandTotalPlusStandbyWageCosts)}
+        </Text>
       </View>
     </View>
   )
