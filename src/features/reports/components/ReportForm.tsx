@@ -677,8 +677,12 @@ function saveBlobAsFile(blob: Blob, baseName: string, downloadType: ReportFormVa
   const anchor = document.createElement("a")
   anchor.href = url
   anchor.download = name
+  anchor.style.display = "none"
+  document.body.appendChild(anchor)
   anchor.click()
-  URL.revokeObjectURL(url)
+  anchor.remove()
+  // Delay revoke so the browser can finish reading the blob (immediate revoke can leave TEMP files).
+  window.setTimeout(() => URL.revokeObjectURL(url), 40_000)
 }
 
 function asBlobResponse(payload: unknown): Blob | null {
@@ -1559,12 +1563,7 @@ export function ReportForm({ module }: ReportFormProps) {
           toast.error("Download response is not a file. Please check selected report parameters.")
           return
         }
-        const pageLabel = departmentEmployeePagination
-          ? `Employee list page ${employeeListPage} of ${departmentEmployeePagination.totalPages}`
-          : ""
-        if (values.downloadType === "PDF") {
-          updateReportPreview(blob, pageLabel)
-        }
+        // Download only — do not open iframe preview (Chrome PDF viewer saves a leftover TEMP file).
         saveBlobAsFile(blob, parsedName.data, values.downloadType)
         toast.success("Download started")
         persistIfRequested(values)
