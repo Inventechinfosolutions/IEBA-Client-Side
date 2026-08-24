@@ -1469,10 +1469,21 @@ export function ReportForm({ module }: ReportFormProps) {
   }, [allProgramsData, userSpecificPrograms, shouldFilterProgramsByUser])
 
 
-  const downloadTypeOptions = useMemo(
-    () => REPORT_DOWNLOAD_TYPES.map((t) => ({ value: t, label: t })),
-    [],
-  )
+  const downloadTypeOptions = useMemo(() => {
+    const key = reportKey.trim().toUpperCase()
+    if (key === "QTR-MONTH-BREAKOUT") {
+      return [{ value: "Excel" as const, label: "Excel" }]
+    }
+    return REPORT_DOWNLOAD_TYPES.map((t) => ({ value: t, label: t }))
+  }, [reportKey])
+
+  // Rainbow QTR breakout is Excel-only.
+  useEffect(() => {
+    if (reportKey.trim().toUpperCase() !== "QTR-MONTH-BREAKOUT") return
+    if (getValues("downloadType") !== "Excel") {
+      setValue("downloadType", "Excel", { shouldValidate: false })
+    }
+  }, [reportKey, getValues, setValue])
 
   const persistIfRequested = (values: ReportFormValues) => {
     if (values.retainParameters) {
@@ -1500,6 +1511,42 @@ export function ReportForm({ module }: ReportFormProps) {
   }
 
   const onViewReport = handleSubmit(async (values) => {
+    // Excel-only report: View uses the same Excel download path (no PDF renderer).
+    if (values.reportKey.trim().toUpperCase() === "QTR-MONTH-BREAKOUT") {
+      const parsedName = reportDownloadFileNameSchema.safeParse(
+        values.fileName?.trim() || values.reportKey || "QTR-MONTH-BREAKOUT",
+      )
+      const fileName = parsedName.success ? parsedName.data : "QTR-MONTH-BREAKOUT"
+      const { resolvedCountyName, resolvedLogoSrc } = await fetchCountyClientOnDemand()
+      const payload: ReportRunPayload = {
+        ...mapReportFormToRunPayload({ ...values, downloadType: "Excel", fileName }),
+        ...(resolvedCountyName ? { countyName: resolvedCountyName } : {}),
+        ...(resolvedLogoSrc ? { countyLogoDataUrl: resolvedLogoSrc } : {}),
+        ...(departmentEmployeePagination
+          ? {
+              employeeListPage: employeeListPage,
+              employeeListTotalPages: departmentEmployeePagination.totalPages,
+            }
+          : {}),
+      }
+      downloadReport(payload, {
+        onSuccess: (blobLike) => {
+          const blob = asBlobResponse(blobLike)
+          if (!blob) {
+            toast.error("Report response is not a file. Please check selected report parameters.")
+            return
+          }
+          saveBlobAsFile(blob, fileName, "Excel")
+          toast.success("Download started")
+          persistIfRequested({ ...values, downloadType: "Excel", fileName })
+        },
+        onError: (err) => {
+          toast.error(err instanceof Error ? err.message : "Could not load the report")
+        },
+      })
+      return
+    }
+
     const { resolvedCountyName, resolvedLogoSrc } = await fetchCountyClientOnDemand()
     const payload: ReportRunPayload = {
       ...mapReportFormToRunPayload(values),
@@ -2247,6 +2294,9 @@ export function ReportForm({ module }: ReportFormProps) {
                       fileName: label,
                       fiscalYearId: nextFy,
                       year: nextFy,
+                      ...(String(val).toUpperCase() === "QTR-MONTH-BREAKOUT"
+                        ? { downloadType: "Excel" as const }
+                        : {}),
                     }, {
                       keepDirtyValues: false,
                     })
