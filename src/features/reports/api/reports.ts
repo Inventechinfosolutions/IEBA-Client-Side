@@ -408,6 +408,14 @@ export async function apiPostDownloadReport(
     return buildFrontendPdfReport(body, signal)
   }
 
+  // Excel-only breakout: avoid a redundant /report/data pass (Rainbow calc is expensive).
+  if (body.reportKey === "QTR-MONTH-BREAKOUT") {
+    return api.post("/report/generate", buildBackendPayload(body, downloadType || "Excel"), {
+      signal,
+      headers: reportFileHeaders,
+    })
+  }
+
   await api.post("/report/data", buildBackendPayload(body), { signal })
   return api.post("/report/generate", buildBackendPayload(body, downloadType), {
     signal,
