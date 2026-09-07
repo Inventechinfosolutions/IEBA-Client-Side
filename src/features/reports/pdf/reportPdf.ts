@@ -1027,8 +1027,8 @@ export function formatP101AllPeriodLabel(startDate: string, endDate?: string): s
 }
 
 /**
- * P101-ALL: keep FFP activity rows as-is; remap every non-FFP activity into FFP-05
- * so FFP-05 is the catch-all for FFP-05 hours plus all other non-FFP time.
+ * P101-ALL: keep FFP and MAA rows as-is; remap other non-FFP program codes into FFP-05
+ * (WIC / BH / DSS / other PH). MAA stays broken out by code like basic P101.
  */
 export function remapP101AllNonFfpToFfp05(records: ReportDataRecord[]): ReportDataRecord[] {
   if (!records.length) return records
@@ -1044,7 +1044,9 @@ export function remapP101AllNonFfpToFfp05(records: ReportDataRecord[]): ReportDa
   }
 
   return records.map((record) => {
-    if (isFfpActivityLabel(record.activity)) return record
+    if (isFfpActivityLabel(record.activity) || isMaaActivityLabel(record.activity)) {
+      return record
+    }
     return {
       ...record,
       activity: ffp05Activity,
