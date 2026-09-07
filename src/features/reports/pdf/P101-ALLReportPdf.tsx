@@ -1,10 +1,8 @@
 /**
  * P101-ALL — same layout/design as P101.
  *
- * Difference: every non-FFP master code is remapped to FFP-05 before grouping,
- * so FFP-05 is the catch-all for FFP-05 hours plus all other non-FFP time.
- * Other FFP codes (FFP-50, etc.) are unchanged. The report still only shows
- * FFP values in the FFP column because non-FFP codes become FFP-05.
+ * Difference: non-FFP program codes (WIC / BH / DSS / other PH) remap to FFP-05.
+ * FFP and MAA rows stay as on basic P101 (MAA still broken out by code).
  *
  * Footer: pre-remap Total FFP / Total MAA / period combined lines, with
  * signatures fixed in the page footer for every employee.
