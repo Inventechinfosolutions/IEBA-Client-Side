@@ -2287,7 +2287,9 @@ function parseMcahTvtsWeek(row: Record<string, unknown>, week: number): McahTvts
 export function unwrapMcahTvtsEmployees(raw: unknown): McahTvtsEmployee[] {
   return unwrapListData(raw).map((item) => {
     const row = asRecord(item)
-    const weeks = [1, 2, 3, 4, 5].map((week) => parseMcahTvtsWeek(row, week))
+    const weeks = [1, 2, 3, 4, 5, 6]
+      .map((week) => parseMcahTvtsWeek(row, week))
+      .filter((week) => week.label.trim().length > 0)
 
     const summedCat1 = weeks.reduce((sum, week) => sum + week.cat1, 0)
     const summedCat2 = weeks.reduce((sum, week) => sum + week.cat2, 0)
