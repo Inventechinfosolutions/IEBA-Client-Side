@@ -25,22 +25,22 @@ import {
   type ResolvedReportPdfMeta,
 } from "./reportPdf"
 
-const TABLE_WIDTH = 752
+const TABLE_WIDTH = 560
 
 const W = {
-  date: 54,
-  bfpc: 44,
-  fmnp: 44,
-  nutritional: 62,
-  breastfeeding: 62,
-  client: 54,
-  generalAdmin: 58,
-  subTotal: 50,
-  nonSpecific: 54,
-  totalWic: 54,
-  others: 48,
-  pto: 48,
-  totalTime: 120,
+  date: 40,
+  bfpc: 32,
+  fmnp: 32,
+  nutritional: 48,
+  breastfeeding: 48,
+  client: 40,
+  generalAdmin: 44,
+  subTotal: 36,
+  nonSpecific: 40,
+  totalWic: 40,
+  others: 36,
+  pto: 36,
+  totalTime: 88,
 } as const
 
 const GRAY = "lightgray"
@@ -408,7 +408,7 @@ function WICReportPage({
   const pagePadding = resolvePagePadding(footerVariant)
 
   return (
-    <Page size="LETTER" orientation="landscape" style={[styles.page, pagePadding]} wrap>
+    <Page size="LETTER" orientation="portrait" style={[styles.page, pagePadding]} wrap>
       <ReportPdfHeader
         countyName={meta.countyName}
         reportTitle={meta.reportTitle}
