@@ -1021,7 +1021,7 @@ export function PersonalTimeStudyMobileEntryForm({
             const subTotalMin = updatedP.subRows.reduce((sum, s) => sum + (Number(s.totalMin) || Number(computeDurationMinutes(s.start, s.end)) || 0), 0)
             if (subTotalMin > parentMin) {
               toast.error(`Parent total is ${parentMin} mins . Child total should not exceed the parent time.`, { id: `val-${id}` })
-              if (!hideTime) updatedP.end = ""
+              return p
             }
           }
         }
