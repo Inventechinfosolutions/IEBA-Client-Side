@@ -182,8 +182,8 @@ function computeDurationMinutes(start: string, end: string): string {
   if (isNaN(sh) || isNaN(sm) || isNaN(eh) || isNaN(em)) return ""
   const s = sh * 60 + sm
   const e = eh * 60 + em
-  let d = e - s
-  if (d < 0) d += 24 * 60
+  const d = e - s
+  if (d <= 0) return ""
   return String(d)
 }
 
@@ -1021,7 +1021,7 @@ export function PersonalTimeStudyMobileEntryForm({
             const subTotalMin = updatedP.subRows.reduce((sum, s) => sum + (Number(s.totalMin) || Number(computeDurationMinutes(s.start, s.end)) || 0), 0)
             if (subTotalMin > parentMin) {
               toast.error(`Parent total is ${parentMin} mins . Child total should not exceed the parent time.`, { id: `val-${id}` })
-              if (!hideTime) updatedP.end = ""
+              return p
             }
           }
         }
@@ -1175,9 +1175,7 @@ export function PersonalTimeStudyMobileEntryForm({
           endtime: hideTime ? null : (p.end || null),
           activitytime: hideTime
             ? (Number(decimalTotalMin) || 0)
-            : (p.dbId && !p.isEdited)
-              ? (Number(p.totalMin) || 0)
-              : (Number(computeDurationMinutes(p.start, p.end)) || Number(p.totalMin) || 0),
+            : (Number(computeDurationMinutes(p.start, p.end)) || Number(p.totalMin) || 0),
           programid: p.tsProgram,
           activityid: p.serviceActivity,
           description: p.description,
