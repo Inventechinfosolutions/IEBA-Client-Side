@@ -8,8 +8,9 @@ interface PermissionRouteProps {
    *  - string        → requires `module:view`
    *  - string[]      → requires ANY of `module:view` (OR logic)
    *  - "superadmin"  → requires `superadmin:all`
+   *  - "mastercode"  → superadmin, client admin, or department admin
    */
-  permission: string | string[] | "superadmin"
+  permission: string | string[] | "superadmin" | "mastercode"
   children: ReactNode
   /** Where to redirect on access denied. Defaults to "/" */
   redirectTo?: string
@@ -26,10 +27,16 @@ export function PermissionRoute({
   children,
   redirectTo = "/",
 }: PermissionRouteProps) {
-  const { isSuperAdmin, isClientAdmin, canView } = usePermissions()
+  const { isSuperAdmin, isClientAdmin, isDepartmentAdmin, canView } = usePermissions()
 
   // Super-admin and Client Admin bypass every check
   if (isSuperAdmin || isClientAdmin) return <>{children}</>
+
+  // Master Code: also allow Department Admin
+  if (permission === "mastercode") {
+    if (isDepartmentAdmin) return <>{children}</>
+    return <Navigate to={redirectTo} replace />
+  }
 
   // Superadmin-only pages
   if (permission === "superadmin") {

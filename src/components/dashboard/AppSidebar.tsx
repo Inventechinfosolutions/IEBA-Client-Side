@@ -35,9 +35,10 @@ import { usePermissions } from "@/hooks/usePermissions"
 
 // ---------------------------------------------------------------------------
 // Nav definition
-// permission: null        → always visible (e.g. Dashboard)
-// permission: "superadmin" → only visible when user has superadmin:all
-// permission: "module"    → visible when user has "module:view"
+// permission: null          → always visible (e.g. Dashboard)
+// permission: "superadmin"  → only visible when user has superadmin:all / client admin
+// permission: "mastercode"  → superadmin, client admin, or department admin
+// permission: "module"      → visible when user has "module:view"
 // ---------------------------------------------------------------------------
 type NavItem = {
   title: string
@@ -46,6 +47,7 @@ type NavItem = {
   /**
    * null          → always show
    * "superadmin"   → only when user has superadmin:all
+   * "mastercode"   → superadmin, client admin, or department admin
    * "moduleKey"    → show when user has moduleKey:view
    * "moduleKey:action" → show when user has exact permission
    * ["a", "b"]     → show when user has ANY of the listed module :view permissions (OR)
@@ -63,7 +65,7 @@ const mainNav: NavItem[] = [
   { title: "Department", url: "/department", icon: Home, permission: null },
   { title: "Program", url: "/program", icon: ClipboardCheck, permission: ["budgetprogram", "timestudyprogram", "timestudyactivity"] },
   { title: "County Activity Code", url: "/county-activity-code", icon: SquarePen, permission: "countyactivity" },
-  { title: "Master Code", url: "/master-code", icon: SquareTerminal, permission: "superadmin" },
+  { title: "Master Code", url: "/master-code", icon: SquareTerminal, permission: "mastercode" },
   { title: "Department Role", url: "/department-role", icon: ScrollText, permission: "superadmin" },
   { title: "Job Classification", url: "/job-classification", icon: LayoutGrid, permission: "jobclassification" },
   { title: "Job Pool", url: "/job-pool", icon: Briefcase, permission: "jobpool" },
@@ -78,13 +80,14 @@ const mainNav: NavItem[] = [
 // Component
 // ---------------------------------------------------------------------------
 export function AppSidebar() {
-  const { isSuperAdmin, isClientAdmin, canView, has } = usePermissions()
+  const { isSuperAdmin, isClientAdmin, isDepartmentAdmin, canView, has } = usePermissions()
   const location = useLocation()
 
   /** Returns true when the nav item should be visible to this user. */
   function isVisible(item: NavItem): boolean {
     if (item.permission === null) return true                    // always show
     if (item.permission === "superadmin") return isSuperAdmin || isClientAdmin  // superadmin & client admin pages
+    if (item.permission === "mastercode") return isSuperAdmin || isClientAdmin || isDepartmentAdmin
     if (isSuperAdmin || isClientAdmin) return true                               // superadmin & client admin see everything
     // Array → OR logic: visible if user has :view for ANY listed module
     if (Array.isArray(item.permission)) {
