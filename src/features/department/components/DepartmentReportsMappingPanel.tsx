@@ -1,9 +1,10 @@
 import { useMemo } from "react"
-import { FormProvider, useForm } from "react-hook-form"
+import { FormProvider, useForm, useFormContext, useWatch } from "react-hook-form"
 
 import { Button } from "@/components/ui/button"
 import { DEFAULT_SETTINGS } from "@/features/settings/constants"
 import { ReportsForm } from "@/features/settings/components/Reports/ReportsForm"
+import { getReportHardCodedMappingNotes } from "@/features/settings/components/Reports/reportsForm.utils"
 import type { SettingsFormValues } from "@/features/settings/types"
 import { useDepartmentReportsMappingSave } from "../hooks/useDepartmentReportsMappingSave"
 import { DepartmentEditContextHeader } from "./DepartmentEditContextHeader"
@@ -15,6 +16,29 @@ type DepartmentReportsMappingPanelProps = {
   countyName?: string
   isSubmitting?: boolean
   onExit: () => void
+}
+
+function MappingContextHeader({
+  countyName,
+  departmentCode,
+  departmentName,
+}: {
+  countyName?: string
+  departmentCode?: string
+  departmentName?: string
+}) {
+  const { control } = useFormContext<SettingsFormValues>()
+  const reportKey = useWatch({ control, name: "reports.reportKey" }) ?? ""
+  const hardCodedNotes = useMemo(() => getReportHardCodedMappingNotes(reportKey), [reportKey])
+
+  return (
+    <DepartmentEditContextHeader
+      countyName={countyName}
+      code={departmentCode}
+      departmentName={departmentName}
+      hardCodedNotes={hardCodedNotes}
+    />
+  )
 }
 
 function DepartmentReportsMappingFormBody({
@@ -84,20 +108,29 @@ export function DepartmentReportsMappingPanel({
 
   return (
     <div className="px-4 sm:px-6 pb-6">
-      {showHeader ? (
-        <DepartmentEditContextHeader
-          countyName={countyName}
-          code={departmentCode}
-          departmentName={departmentName}
-        />
-      ) : null}
-
       {!deptId ? (
-        <p className="py-8 text-[13px] text-[#6B7280]">
-          Save department details before configuring report mapping.
-        </p>
+        <>
+          {showHeader ? (
+            <DepartmentEditContextHeader
+              countyName={countyName}
+              code={departmentCode}
+              departmentName={departmentName}
+            />
+          ) : null}
+          <p className="py-8 text-[13px] text-[#6B7280]">
+            Save department details before configuring report mapping. Once saved, choose a report
+            below to assign or remove master codes and activities.
+          </p>
+        </>
       ) : (
         <FormProvider {...form}>
+          {showHeader ? (
+            <MappingContextHeader
+              countyName={countyName}
+              departmentCode={departmentCode}
+              departmentName={departmentName}
+            />
+          ) : null}
           <DepartmentReportsMappingFormBody
             departmentId={deptId}
             isOpen

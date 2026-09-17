@@ -30,6 +30,7 @@ import {
 } from "@/features/settings/components/Reports/reportsTransfer.utils"
 import {
   clearReportBuckets,
+  getReportHardCodedMappingNotes,
   isMcahTvtsReportKey,
   isReportsMappingReadOnlyKey,
   loadReportBucketsFromReportOption,
@@ -130,6 +131,10 @@ export function ReportsForm({
     isSectionOpen && Boolean(reportKey) && !isMcahReport && !isMappingReadOnly
   const hasMasterCodeScope = masterCodeNumericIds.length > 0
   const activitiesEnabled = transferEnabled && hasMasterCodeScope
+  const hardCodedMappingNotes = useMemo(
+    () => getReportHardCodedMappingNotes(reportKey),
+    [reportKey],
+  )
 
   const { data: transferFlags, isPending, isFetching } = useReportTransferFlags(
     {
@@ -435,13 +440,13 @@ export function ReportsForm({
                       ? "Loading reports…"
                       : reportOptions.length
                         ? "Select report"
-                        : "No county-mapped reports"
+                        : "No county-mapped reports — map reports in Settings first"
                     : departmentId
                       ? reportsLoading
                         ? "Loading reports…"
                         : reportOptions.length
                           ? "Select report"
-                          : "No department-mapped reports"
+                          : "No department-mapped reports — assign reports in Department Report Setting first"
                       : "Select department first"
                 }
                 disabled={
@@ -466,9 +471,20 @@ export function ReportsForm({
       </div>
 
       {reportKey && isMappingReadOnly ? (
-        <p className="mt-6 rounded-[8px] border border-[#FDE68A] bg-[#FFFBEB] px-3 py-2 text-[12px] font-medium text-[#92400E]">
-          Mapping is not editable for this report
-        </p>
+        <div className="mt-6 space-y-2 rounded-[8px] border border-[#FDE68A] bg-[#FFFBEB] px-3 py-2 text-[12px] text-[#92400E]">
+          <p className="font-medium">Mapping is not editable for this report.</p>
+          <p className="font-normal text-[#A16207]">
+            Master codes and activities are fixed by the system and cannot be assigned or removed
+            here.
+          </p>
+          {hardCodedMappingNotes.length > 0 ? (
+            <ul className="list-disc space-y-0.5 pl-4 font-normal text-[#A16207]">
+              {hardCodedMappingNotes.map((note) => (
+                <li key={note}>{note}</li>
+              ))}
+            </ul>
+          ) : null}
+        </div>
       ) : null}
 
       {reportKey && isMcahReport && !isMappingReadOnly ? (
@@ -525,8 +541,9 @@ export function ReportsForm({
       ) : null}
 
       {reportKey && !isMcahReport && !isMappingReadOnly && !hasMasterCodeScope && !isReportDetailLoading ? (
-        <p className="mt-6 text-[12px] text-[#6B7280]">
-          Select at least one master code to load activities.
+        <p className="mt-6 rounded-[8px] border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-2 text-[12px] text-[#6B7280]">
+          No activities yet. Assign at least one master code above, then save, to load and map
+          activities for this report.
         </p>
       ) : null}
 

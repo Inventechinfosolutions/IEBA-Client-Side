@@ -17,4 +17,6 @@ export type ReportsTransferPanelProps = {
   isLoading?: boolean
   loadingLabel?: string
   disabled?: boolean
+  /** Shown when the list is empty (not loading). */
+  emptyMessage?: string
 }

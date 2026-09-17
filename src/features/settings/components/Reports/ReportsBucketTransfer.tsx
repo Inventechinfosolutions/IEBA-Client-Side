@@ -127,6 +127,7 @@ export function ReportsBucketTransfer({
           isLoading={isLoading}
           loadingLabel={loadingLabel}
           disabled={isDisabled}
+          emptyMessage="No unassigned items — everything available is already assigned, or none are available for this report"
         />
 
         <div className="flex items-center justify-center gap-3 py-2 lg:flex-col lg:py-0 lg:pt-10">
@@ -155,6 +156,7 @@ export function ReportsBucketTransfer({
           isLoading={isLoading}
           loadingLabel={loadingLabel}
           disabled={isDisabled}
+          emptyMessage="No assigned items yet — select from the left and move them here"
         />
       </div>
     </div>
