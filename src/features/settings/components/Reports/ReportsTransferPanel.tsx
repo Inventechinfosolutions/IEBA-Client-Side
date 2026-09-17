@@ -19,8 +19,13 @@ export function ReportsTransferPanel({
   isLoading = false,
   loadingLabel = "Loading…",
   disabled = false,
+  emptyMessage = "Nothing here yet",
 }: ReportsTransferPanelProps) {
   const allSelected = items.length > 0 && items.every((item) => selectedIds.includes(item.id))
+  const trimmedSearch = searchValue.trim()
+  const emptyLabel = trimmedSearch
+    ? `No matches for “${trimmedSearch}”`
+    : emptyMessage
 
   return (
     <div className="flex flex-col overflow-hidden rounded-[8px] border border-[#E5E7EB] bg-white">
@@ -105,12 +110,18 @@ export function ReportsTransferPanel({
             })}
           </div>
         ) : (
-          <div className="flex h-[220px] flex-col items-center justify-center bg-white">
+          <div className="flex h-[220px] flex-col items-center justify-center gap-2 bg-white px-4 text-center">
             <img
               src={tableEmptyIcon}
               alt="Empty"
               className="size-20 object-contain opacity-80"
             />
+            <p className="max-w-[220px] text-[11px] leading-snug text-[#6B7280]">{emptyLabel}</p>
+            {disabled && !trimmedSearch ? (
+              <p className="max-w-[220px] text-[11px] leading-snug text-[#9CA3AF]">
+                Mapping is locked for this report
+              </p>
+            ) : null}
           </div>
         )}
       </ScrollArea>
