@@ -8,6 +8,7 @@ export function isMcahTvtsReportKey(reportKey: string | null | undefined): boole
 
 /** Reports that can be selected but must not be mapped (Exclusion / transfers locked). */
 const REPORTS_MAPPING_READ_ONLY_KEYS = new Set([
+  "DSSRPT1",
   "MAATCM",
   "TCM_MAA_ADHOC",
   "DSSRPT3",
@@ -18,6 +19,27 @@ const REPORTS_MAPPING_READ_ONLY_KEYS = new Set([
 
 export function isReportsMappingReadOnlyKey(reportKey: string | null | undefined): boolean {
   return REPORTS_MAPPING_READ_ONLY_KEYS.has(String(reportKey ?? "").trim().toUpperCase())
+}
+
+/**
+ * Hard-coded report behavior that cannot be changed via department mapping.
+ * Shown next to Code / Department name on the Reports mapping tab.
+ */
+export function getReportHardCodedMappingNotes(reportKey: string | null | undefined): string[] {
+  const key = String(reportKey ?? "").trim().toUpperCase()
+  if (!key) return []
+
+  const notes: string[] = []
+
+  if (key === "DSSRPT1") {
+    notes.push("9000 – Non Allocable (set by the system)")
+    notes.push("9999 – Social Services Supervisor / apportioned time (set by the system)")
+    notes.push("No master-code / activity mapping — report settings are not used for DSSRPT1")
+  } else if (isReportsMappingReadOnlyKey(key)) {
+    notes.push("Master-code / activity mapping is locked for this report")
+  }
+
+  return notes
 }
 
 export function clearReportBuckets(setValue: UseFormSetValue<SettingsFormValues>) {
