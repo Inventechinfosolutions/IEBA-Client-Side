@@ -15,12 +15,12 @@ import { usePermissions } from "@/hooks/usePermissions"
 import { Spinner } from "@/components/ui/spinner"
 
 export function MasterCodePage() {
-  const { isSuperAdmin, isClientAdmin, canAdd, canUpdate, canView } = usePermissions()
+  const { isSuperAdmin, isClientAdmin, isDepartmentAdmin, canAdd, canUpdate, canView } = usePermissions()
 
-  const hasAddPermission = isSuperAdmin || isClientAdmin || canAdd("activity")
-  const hasEditPermission = isSuperAdmin || isClientAdmin || canUpdate("activity")
+  const hasAddPermission = isSuperAdmin || isClientAdmin || isDepartmentAdmin || canAdd("activity")
+  const hasEditPermission = isSuperAdmin || isClientAdmin || isDepartmentAdmin || canUpdate("activity")
 
-  if (!isSuperAdmin && !isClientAdmin && !canView("activity")) {
+  if (!isSuperAdmin && !isClientAdmin && !isDepartmentAdmin && !canView("activity")) {
     return null
   }
 
