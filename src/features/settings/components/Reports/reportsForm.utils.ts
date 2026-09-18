@@ -35,6 +35,15 @@ export function getReportHardCodedMappingNotes(reportKey: string | null | undefi
     notes.push("9000 – Non Allocable (set by the system)")
     notes.push("9999 – Social Services Supervisor / apportioned time (set by the system)")
     notes.push("No master-code / activity mapping — report settings are not used for DSSRPT1")
+  } else if (key === "DSSRPT3" || key === "DSSRPT4") {
+    notes.push("Based on Cost Pool selection — activities come from the selected cost pool")
+    notes.push("No master-code / activity mapping on this screen")
+  } else if (key === "DSSRPT5") {
+    notes.push("Based on Payroll — salary, FICA, benefits, and related payroll data")
+    notes.push("No master-code or activity-code settings")
+  } else if (key === "MAATCM" || key === "TCM_MAA_ADHOC") {
+    notes.push("No master-code mapping on this screen")
+    notes.push("In the report UI you can only select activities")
   } else if (isReportsMappingReadOnlyKey(key)) {
     notes.push("Master-code / activity mapping is locked for this report")
   }
