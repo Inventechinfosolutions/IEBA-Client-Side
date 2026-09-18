@@ -472,11 +472,39 @@ export function ReportsForm({
 
       {reportKey && isMappingReadOnly ? (
         <div className="mt-6 space-y-2 rounded-[8px] border border-[#FDE68A] bg-[#FFFBEB] px-3 py-2 text-[12px] text-[#92400E]">
-          <p className="font-medium">Mapping is not editable for this report.</p>
-          <p className="font-normal text-[#A16207]">
-            Master codes and activities are fixed by the system and cannot be assigned or removed
-            here.
-          </p>
+          {(() => {
+            const key = String(reportKey).trim().toUpperCase()
+            if (key === "DSSRPT5") {
+              return (
+                <>
+                  <p className="font-medium">No report settings for this report.</p>
+                  <p className="font-normal text-[#A16207]">
+                    DSSRPT5 is payroll data only. There are no master-code or activity-code settings.
+                  </p>
+                </>
+              )
+            }
+            if (key === "MAATCM" || key === "TCM_MAA_ADHOC") {
+              return (
+                <>
+                  <p className="font-medium">No master-code mapping for this report.</p>
+                  <p className="font-normal text-[#A16207]">
+                    In the report UI you can only select activities. Master codes cannot be assigned
+                    or removed here.
+                  </p>
+                </>
+              )
+            }
+            return (
+              <>
+                <p className="font-medium">Mapping is not editable for this report.</p>
+                <p className="font-normal text-[#A16207]">
+                  Master codes and activities are fixed by the system and cannot be assigned or
+                  removed here.
+                </p>
+              </>
+            )
+          })()}
           {hardCodedMappingNotes.length > 0 ? (
             <ul className="list-disc space-y-0.5 pl-4 font-normal text-[#A16207]">
               {hardCodedMappingNotes.map((note) => (
