@@ -525,6 +525,15 @@ function getReportSecondaryLayout(criteria?: ReportCatalogItem["criteria"]): Rep
   return "employee"
 }
 
+/** Employee multi-select is shown (and must be filled) for these report layouts. */
+function isEmployeeSelectionRequired(
+  secondaryLayout: ReportSecondaryLayout,
+  criteria?: ReportCatalogItem["criteria"],
+): boolean {
+  if (secondaryLayout === "employee") return true
+  return Boolean(criteria && isTrue(criteria.multipleEmployees))
+}
+
 function ReportSecondaryPickBlock({
   control,
   setValue,
@@ -545,6 +554,7 @@ function ReportSecondaryPickBlock({
   retainSelectionsOutsideOptions = false,
   searchValue,
   onSearchChange,
+  required = false,
 }: ReportSecondaryPickBlockProps & { isLoading?: boolean }) {
   const includeActive = useWatch({ control, name: activeField }) === true
   const includeInactive = useWatch({ control, name: inactiveField }) === true
@@ -593,7 +603,10 @@ function ReportSecondaryPickBlock({
     <div className="w-full min-w-0 max-w-full pb-20">
       <div className="relative isolate w-full min-w-0 max-w-full">
         <div className="relative z-0 flex w-full min-w-0 flex-wrap items-center justify-between gap-x-3 gap-y-2 mb-2">
-          <span className="shrink-0 text-[14px] font-normal leading-none text-[#2a2f3a]">{title}</span>
+          <span className="shrink-0 text-[14px] font-normal leading-none text-[#2a2f3a]">
+            {title}
+            {required ? <span className="text-[#DC2626]"> *</span> : null}
+          </span>
           <div className="flex shrink-0 flex-wrap items-center justify-start sm:justify-end gap-3 sm:gap-6">
             <Controller
               name={activeField}
@@ -629,25 +642,30 @@ function ReportSecondaryPickBlock({
           <Controller
             name={idsField}
             control={control}
-            render={({ field }) => (
-              <ReportEmployeeMultiSelect
-                value={typeof field.value === "string" ? field.value : ""}
-                onChange={(val) => {
-                  field.onChange(val)
-                  onValuesChange?.(val)
-                }}
-                onBlur={field.onBlur}
-                options={options}
-                placeholder={placeholder}
-                maxVisibleItems={maxVisibleChips}
-                className={employeeMultiSelectClassName}
-                emptyListMessage={emptyListMessage}
-                isLoading={isLoading}
-                pagination={pagination}
-                optionLabelByValue={optionLabelByValue}
-                searchValue={searchValue}
-                onSearchChange={onSearchChange}
-              />
+            render={({ field, fieldState }) => (
+              <>
+                <ReportEmployeeMultiSelect
+                  value={typeof field.value === "string" ? field.value : ""}
+                  onChange={(val) => {
+                    field.onChange(val)
+                    onValuesChange?.(val)
+                  }}
+                  onBlur={field.onBlur}
+                  options={options}
+                  placeholder={placeholder}
+                  maxVisibleItems={maxVisibleChips}
+                  className={employeeMultiSelectClassName}
+                  emptyListMessage={emptyListMessage}
+                  isLoading={isLoading}
+                  pagination={pagination}
+                  optionLabelByValue={optionLabelByValue}
+                  searchValue={searchValue}
+                  onSearchChange={onSearchChange}
+                />
+                {fieldState.error?.message ? (
+                  <p className="mt-1.5 text-[12px] text-[#DC2626]">{fieldState.error.message}</p>
+                ) : null}
+              </>
             )}
           />
           {pagination && pagination.totalItems > 0 ? (
@@ -893,7 +911,7 @@ export function ReportForm({ module }: ReportFormProps) {
     mode: "onTouched",
   })
 
-  const { control, handleSubmit, setError, setValue, getValues, formState, trigger } = form
+  const { control, handleSubmit, setError, clearErrors, setValue, getValues, formState, trigger } = form
 
   const reportKey = useWatch({ control, name: "reportKey" }) ?? ""
   const departmentId = useWatch({ control, name: "departmentId" }) ?? ""
@@ -981,6 +999,10 @@ export function ReportForm({ module }: ReportFormProps) {
   const secondaryLayout = useMemo(
     () => getReportSecondaryLayout(currentReportItem?.criteria),
     [currentReportItem],
+  )
+  const employeeSelectionRequired = useMemo(
+    () => isEmployeeSelectionRequired(secondaryLayout, currentReportItem?.criteria),
+    [secondaryLayout, currentReportItem],
   )
 
   const activityIdsRaw = useWatch({ control, name: "activityIds" })
@@ -1547,6 +1569,15 @@ export function ReportForm({ module }: ReportFormProps) {
       return
     }
 
+    if (employeeSelectionRequired && !values.employeeIds?.trim()) {
+      setError("employeeIds", {
+        type: "manual",
+        message: "Select at least one employee",
+      })
+      toast.error("Select at least one employee")
+      return
+    }
+
     const { resolvedCountyName, resolvedLogoSrc } = await fetchCountyClientOnDemand()
     const payload: ReportRunPayload = {
       ...mapReportFormToRunPayload(values),
@@ -1580,6 +1611,15 @@ export function ReportForm({ module }: ReportFormProps) {
   })
 
   const onDownloadReport = handleSubmit(async (values) => {
+    if (employeeSelectionRequired && !values.employeeIds?.trim()) {
+      setError("employeeIds", {
+        type: "manual",
+        message: "Select at least one employee",
+      })
+      toast.error("Select at least one employee")
+      return
+    }
+
     const parsedName = reportDownloadFileNameSchema.safeParse(values.fileName)
     if (!parsedName.success) {
       const msg = parsedName.error.issues[0]?.message ?? "Enter a file name"
@@ -2497,7 +2537,9 @@ export function ReportForm({ module }: ReportFormProps) {
                         retainSelectionsOutsideOptions={Boolean(departmentEmployeePagination)}
                         searchValue={employeeSearchInput}
                         onSearchChange={handleEmployeeSearchChange}
-                        onValuesChange={() => {
+                        required
+                        onValuesChange={(next) => {
+                          if (next.trim()) clearErrors("employeeIds")
                           setValue("activityIds", "")
                           setValue("programIds", "")
                         }}
@@ -2596,13 +2638,17 @@ export function ReportForm({ module }: ReportFormProps) {
                 options={employeeOptions}
                 placeholder="Select Employee"
                 emptyListMessage="No employees available"
-                onValuesChange={() => setValue("activityIds", "")}
+                onValuesChange={(next) => {
+                  if (next.trim()) clearErrors("employeeIds")
+                  setValue("activityIds", "")
+                }}
                 isLoading={isEmployeeLoading}
                 pagination={departmentEmployeePagination}
                 optionLabelByValue={employeeOptionLabelByValue}
                 retainSelectionsOutsideOptions={Boolean(departmentEmployeePagination)}
                 searchValue={employeeSearchInput}
                 onSearchChange={handleEmployeeSearchChange}
+                required
               />
             </div>
           )}
