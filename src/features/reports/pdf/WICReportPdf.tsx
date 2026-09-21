@@ -16,7 +16,6 @@ import {
   formatWicDisplayDate,
   formatWicEmployeeName,
   formatWicHours,
-  getWicSubTotal,
   resolveFooterVariant,
   type WicDayRecord,
   type WicEmployee,
@@ -27,150 +26,164 @@ import {
 
 const TABLE_WIDTH = 560
 
+/** Columns kept per I-1-I419 mockup (removed: SUB Total, Non Specific, Total WIC Time, Others). */
 const W = {
-  date: 40,
-  bfpc: 32,
-  fmnp: 32,
-  nutritional: 48,
-  breastfeeding: 48,
-  client: 40,
-  generalAdmin: 44,
-  subTotal: 36,
-  nonSpecific: 40,
-  totalWic: 40,
-  others: 36,
-  pto: 36,
-  totalTime: 88,
+  date: 52,
+  bfpc: 48,
+  fmnp: 48,
+  nutritional: 72,
+  breastfeeding: 72,
+  client: 60,
+  generalAdmin: 72,
+  pto: 56,
+  totalTime: 80,
 } as const
 
 const GRAY = "lightgray"
 
 const styles = StyleSheet.create({
   page: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 18,
     fontFamily: "Helvetica",
     fontSize: 6.5,
   },
   content: {
     flexGrow: 1,
   },
-  metaLine: {
+  headerBlock: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    width: TABLE_WIDTH,
+    marginBottom: 4,
+  },
+  agencyBlock: {
+    width: "38%",
+  },
+  agencyLine: {
     fontSize: 7.5,
-    marginBottom: 6,
+    fontFamily: "Helvetica-Bold",
+    marginBottom: 1,
+  },
+  agencyCaption: {
+    fontSize: 6.5,
+    marginBottom: 3,
+  },
+  monthBlock: {
+    width: "24%",
+    alignItems: "center",
+    paddingTop: 2,
+  },
+  monthLine: {
+    fontSize: 7.5,
+    textAlign: "center",
+    width: "100%",
+  },
+  employeeBlock: {
+    width: "34%",
+    alignItems: "flex-end",
   },
   underlineField: {
     borderBottomWidth: 1,
     borderBottomColor: "#000000",
     fontSize: 7.5,
-    marginBottom: 2,
+    marginBottom: 1,
+    width: "100%",
+    textAlign: "right",
   },
-  metaCaption: {
-    fontSize: 7.5,
-    marginBottom: 8,
-  },
-  titleRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 10,
-    width: TABLE_WIDTH,
-  },
-  titleLeft: {
-    width: "50%",
-  },
-  titleRight: {
-    width: "40%",
-    alignItems: "flex-end",
+  fieldCaption: {
+    fontSize: 6.5,
+    marginBottom: 3,
+    textAlign: "right",
+    width: "100%",
   },
   table: {
     width: TABLE_WIDTH,
-    marginTop: 8,
+    marginTop: 2,
   },
   row: {
     flexDirection: "row",
     width: TABLE_WIDTH,
-    minHeight: 14,
+    minHeight: 11,
   },
   cell: {
     borderWidth: 1,
     borderColor: "lightslategray",
-    paddingVertical: 3,
-    paddingHorizontal: 3,
-    minHeight: 14,
+    paddingVertical: 1.5,
+    paddingHorizontal: 2,
+    minHeight: 11,
     justifyContent: "center",
   },
   cellText: {
-    fontSize: 6,
+    fontSize: 5.5,
     textAlign: "right",
   },
   headerCell: {
     borderWidth: 1,
     borderColor: "lightslategray",
-    paddingVertical: 3,
-    paddingHorizontal: 3,
-    minHeight: 14,
+    paddingVertical: 1.5,
+    paddingHorizontal: 2,
+    minHeight: 11,
     justifyContent: "center",
     backgroundColor: GRAY,
   },
   headerText: {
-    fontSize: 6.5,
+    fontSize: 5.5,
     fontFamily: "Helvetica-Bold",
     textAlign: "center",
   },
   groupHeader: {
     borderWidth: 1,
     borderColor: "lightslategray",
-    paddingVertical: 3,
-    paddingHorizontal: 3,
-    minHeight: 14,
+    paddingVertical: 1.5,
+    paddingHorizontal: 2,
+    minHeight: 11,
     justifyContent: "center",
     backgroundColor: GRAY,
   },
   grayCell: {
     borderWidth: 1,
     borderColor: "lightslategray",
-    paddingVertical: 3,
-    paddingHorizontal: 3,
-    minHeight: 14,
+    paddingVertical: 1.5,
+    paddingHorizontal: 2,
+    minHeight: 11,
     justifyContent: "center",
     backgroundColor: GRAY,
   },
   leftCell: {
     borderWidth: 1,
     borderColor: "lightslategray",
-    paddingVertical: 3,
-    paddingHorizontal: 3,
-    minHeight: 14,
+    paddingVertical: 1.5,
+    paddingHorizontal: 2,
+    minHeight: 11,
     justifyContent: "center",
   },
   leftCellText: {
-    fontSize: 6,
+    fontSize: 5.5,
     textAlign: "left",
   },
-  metaBlock: {
-    marginBottom: 8,
-  },
   note: {
-    marginTop: 14,
-    marginBottom: 14,
-    fontSize: 7,
+    marginTop: 6,
+    marginBottom: 6,
+    fontSize: 6.5,
   },
-  totalsTable: {
-    width: TABLE_WIDTH / 2,
-    marginLeft: TABLE_WIDTH / 2,
-    marginTop: 4,
+  signatureRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 10,
+    width: TABLE_WIDTH,
   },
-  totalsHeader: {
-    backgroundColor: GRAY,
-    fontFamily: "Helvetica-Bold",
-    fontSize: 7,
-    padding: 5,
-    textAlign: "center",
+  signatureField: {
+    width: "46%",
   },
-  totalsCell: {
-    backgroundColor: GRAY,
+  signatureLine: {
+    borderBottomWidth: 1,
+    borderBottomColor: "#000000",
+    marginBottom: 2,
+    minHeight: 14,
+  },
+  signatureLabel: {
     fontSize: 7,
-    padding: 5,
-    textAlign: "center",
   },
   emptyMessage: {
     fontSize: 9,
@@ -196,12 +209,16 @@ function WicTableCell({
     align === "left"
       ? styles.leftCellText
       : align === "center"
-        ? [styles.headerText, { textAlign: "center" as const }]
+        ? styles.headerText
         : styles.cellText
 
   return (
     <View style={[boxStyle, { width }]}>
-      <Text style={bold ? [textStyle, { fontFamily: "Helvetica-Bold" }] : textStyle}>{value}</Text>
+      {bold ? (
+        <Text style={[textStyle, { fontFamily: "Helvetica-Bold" }]}>{value}</Text>
+      ) : (
+        <Text style={textStyle}>{value}</Text>
+      )}
     </View>
   )
 }
@@ -216,10 +233,6 @@ function WicDayRow({ record }: { record: WicDayRecord }) {
       <WicTableCell width={W.breastfeeding} value={formatWicHours(record.BreastfeedingSupport)} />
       <WicTableCell width={W.client} value={formatWicHours(record.ClientServices)} />
       <WicTableCell width={W.generalAdmin} value={formatWicHours(record.GeneralAdministration)} />
-      <WicTableCell width={W.subTotal} value={formatWicHours(getWicSubTotal(record))} gray />
-      <WicTableCell width={W.nonSpecific} value={formatWicHours(record.NonSpecificTravel)} />
-      <WicTableCell width={W.totalWic} value={formatWicHours(record.totalWicTime)} gray />
-      <WicTableCell width={W.others} value={formatWicHours(record.others)} />
       <WicTableCell width={W.pto} value={formatWicHours(record.paidTimeOff)} />
       <WicTableCell width={W.totalTime} value={formatWicHours(record.TotalTime)} gray />
     </View>
@@ -228,12 +241,6 @@ function WicDayRow({ record }: { record: WicDayRecord }) {
 
 function WicMainTable({ records }: { records: WicDayRecord[] }) {
   const totals = computeWicColumnTotals(records)
-  const subTotalGrand =
-    totals.FMNP +
-    totals.NutritionalEducation +
-    totals.BreastfeedingSupport +
-    totals.ClientServices +
-    totals.GeneralAdministration
 
   return (
     <View style={styles.table}>
@@ -246,21 +253,13 @@ function WicMainTable({ records }: { records: WicDayRecord[] }) {
           style={[
             styles.groupHeader,
             {
-              width:
-                W.nutritional +
-                W.breastfeeding +
-                W.client +
-                W.generalAdmin +
-                W.subTotal,
+              width: W.nutritional + W.breastfeeding + W.client + W.generalAdmin,
               justifyContent: "center",
             },
           ]}
         >
           <Text style={styles.headerText}>NSA COST OBJECTIVES</Text>
         </View>
-        <View style={[styles.groupHeader, { width: W.nonSpecific }]} />
-        <View style={[styles.groupHeader, { width: W.totalWic }]} />
-        <View style={[styles.groupHeader, { width: W.others }]} />
         <View style={[styles.groupHeader, { width: W.pto }]} />
         <View style={[styles.groupHeader, { width: W.totalTime }]} />
       </View>
@@ -287,23 +286,11 @@ function WicMainTable({ records }: { records: WicDayRecord[] }) {
         <View style={[styles.headerCell, { width: W.generalAdmin }]}>
           <Text style={styles.headerText}>General Administration</Text>
         </View>
-        <View style={[styles.headerCell, { width: W.subTotal }]}>
-          <Text style={styles.headerText}>SUB Total</Text>
-        </View>
-        <View style={[styles.headerCell, { width: W.nonSpecific }]}>
-          <Text style={styles.headerText}>Non Specific</Text>
-        </View>
-        <View style={[styles.headerCell, { width: W.totalWic }]}>
-          <Text style={styles.headerText}>Total WIC Time</Text>
-        </View>
-        <View style={[styles.headerCell, { width: W.others }]}>
-          <Text style={styles.headerText}>Others</Text>
-        </View>
         <View style={[styles.headerCell, { width: W.pto }]}>
           <Text style={styles.headerText}>Paid Time Off</Text>
         </View>
         <View style={[styles.headerCell, { width: W.totalTime }]}>
-          <Text style={styles.headerText}>Total Time (matches Time card)</Text>
+          <Text style={styles.headerText}>Total Time</Text>
         </View>
       </View>
 
@@ -319,10 +306,6 @@ function WicMainTable({ records }: { records: WicDayRecord[] }) {
         <WicTableCell width={W.breastfeeding} value={formatWicHours(totals.BreastfeedingSupport)} gray />
         <WicTableCell width={W.client} value={formatWicHours(totals.ClientServices)} gray />
         <WicTableCell width={W.generalAdmin} value={formatWicHours(totals.GeneralAdministration)} gray />
-        <WicTableCell width={W.subTotal} value={formatWicHours(subTotalGrand)} gray />
-        <WicTableCell width={W.nonSpecific} value={formatWicHours(totals.NonSpecificTravel)} gray />
-        <WicTableCell width={W.totalWic} value={formatWicHours(totals.totalWicTime)} gray />
-        <WicTableCell width={W.others} value={formatWicHours(totals.others)} gray />
         <WicTableCell width={W.pto} value={formatWicHours(totals.paidTimeOff)} gray />
         <WicTableCell width={W.totalTime} value={formatWicHours(totals.TotalTime)} gray />
       </View>
@@ -337,34 +320,30 @@ function EmployeeSection({
   employee: WicEmployee
   countyName: string
 }) {
-  const totals = computeWicColumnTotals(employee.tsrecords)
   const countyLabel = countyName || "Trinity"
 
   return (
     <View>
-      <View style={styles.metaBlock}>
-        <Text style={styles.metaLine}>{countyLabel} County Health & Human Services</Text>
-        <Text style={styles.metaCaption}>Local Agency Name</Text>
-      </View>
-
-      <View style={styles.metaBlock}>
-        <Text style={styles.metaLine}>{countyLabel} County WIC Program</Text>
-        <Text style={styles.metaCaption}>Office Name</Text>
-      </View>
-
-      <View style={[styles.metaBlock, { width: "30%" }]}>
-        <Text style={styles.underlineField}>{formatWicEmployeeName(employee.username)}</Text>
-        <Text style={styles.metaCaption}>Employee</Text>
-      </View>
-
-      <View style={[styles.titleRow, styles.metaBlock]}>
-        <View style={styles.titleLeft}>
-          <Text style={styles.underlineField}>{employee.jobClassificationName}</Text>
-          <Text style={styles.metaCaption}>Title</Text>
+      <View style={styles.headerBlock}>
+        <View style={styles.agencyBlock}>
+          <Text style={styles.agencyLine}>{countyLabel} County Health & Human Services</Text>
+          <Text style={styles.agencyCaption}>Local Agency Name</Text>
+          <Text style={styles.agencyLine}>{countyLabel} County WIC Program</Text>
+          <Text style={styles.agencyCaption}>Office Name</Text>
         </View>
-        <View style={styles.titleRight}>
-          <Text style={[styles.underlineField, { textAlign: "right" }]}>{employee.date}</Text>
-          <Text style={[styles.metaCaption, { textAlign: "right" }]}>{employee.periodSubcaption}</Text>
+
+        <View style={styles.monthBlock}>
+          <Text style={styles.monthLine}>
+            <Text style={{ fontFamily: "Helvetica-Bold" }}>Month/Year</Text>
+            {` : ${employee.date}`}
+          </Text>
+        </View>
+
+        <View style={styles.employeeBlock}>
+          <Text style={styles.underlineField}>{formatWicEmployeeName(employee.username)}</Text>
+          <Text style={styles.fieldCaption}>Employee</Text>
+          <Text style={styles.underlineField}>{employee.jobClassificationName}</Text>
+          <Text style={styles.fieldCaption}>Title</Text>
         </View>
       </View>
 
@@ -374,20 +353,14 @@ function EmployeeSection({
         Overtime Hours should be included, if applicable, on this timesheet.
       </Text>
 
-      <View style={styles.totalsTable} wrap={false}>
-        <View style={styles.row}>
-          <Text style={[styles.totalsHeader, { width: "33%" }]}>TL WIC</Text>
-          <Text style={[styles.totalsHeader, { width: "34%" }]}>TL WIC & Others</Text>
-          <Text style={[styles.totalsHeader, { width: "33%" }]} />
+      <View style={styles.signatureRow} wrap={false}>
+        <View style={styles.signatureField}>
+          <View style={styles.signatureLine} />
+          <Text style={styles.signatureLabel}>Employee signature</Text>
         </View>
-        <View style={styles.row}>
-          <Text style={[styles.totalsCell, { width: "33%" }]}>
-            {formatWicHours(totals.totalWicTime)} divided by
-          </Text>
-          <Text style={[styles.totalsCell, { width: "34%" }]}>
-            {formatWicHours(employee.wic_others)} equals
-          </Text>
-          <Text style={[styles.totalsCell, { width: "33%" }]}>{employee.final}%</Text>
+        <View style={styles.signatureField}>
+          <View style={styles.signatureLine} />
+          <Text style={styles.signatureLabel}>Supervisor signature</Text>
         </View>
       </View>
     </View>
