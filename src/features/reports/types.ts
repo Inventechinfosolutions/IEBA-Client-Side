@@ -171,4 +171,6 @@ export type ReportSecondaryPickBlockProps = {
   retainSelectionsOutsideOptions?: boolean
   searchValue?: string
   onSearchChange?: (next: string) => void
+  /** When true, show required marker and block submit without a selection. */
+  required?: boolean
 }
