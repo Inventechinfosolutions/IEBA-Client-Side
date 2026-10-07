@@ -89,7 +89,8 @@ export function ReportsForm({
   const departmentId = (fixedDepartmentId?.trim() || watchedDepartmentId).trim()
   const reportKey = watch("reports.reportKey") ?? ""
   const isMcahReport = isMcahTvtsReportKey(reportKey)
-  const isMappingReadOnly = isReportsMappingReadOnlyKey(reportKey)
+  const isDepartmentLevel = Boolean(fixedDepartmentId?.trim())
+  const isMappingReadOnly = isReportsMappingReadOnlyKey(reportKey, { departmentLevel: isDepartmentLevel })
 
   const includedMasterCodeIds = watch("reports.includedMasterCodeIds") ?? []
   const excludedMasterCodeIds = watch("reports.excludedMasterCodeIds") ?? []
@@ -132,8 +133,8 @@ export function ReportsForm({
   const hasMasterCodeScope = masterCodeNumericIds.length > 0
   const activitiesEnabled = transferEnabled && hasMasterCodeScope
   const hardCodedMappingNotes = useMemo(
-    () => getReportHardCodedMappingNotes(reportKey),
-    [reportKey],
+    () => getReportHardCodedMappingNotes(reportKey, { departmentLevel: isDepartmentLevel }),
+    [reportKey, isDepartmentLevel],
   )
 
   const { data: transferFlags, isPending, isFetching } = useReportTransferFlags(

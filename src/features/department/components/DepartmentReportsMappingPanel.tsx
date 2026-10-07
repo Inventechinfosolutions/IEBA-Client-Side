@@ -29,7 +29,10 @@ function MappingContextHeader({
 }) {
   const { control } = useFormContext<SettingsFormValues>()
   const reportKey = useWatch({ control, name: "reports.reportKey" }) ?? ""
-  const hardCodedNotes = useMemo(() => getReportHardCodedMappingNotes(reportKey), [reportKey])
+  const hardCodedNotes = useMemo(
+    () => getReportHardCodedMappingNotes(reportKey, { departmentLevel: true }),
+    [reportKey],
+  )
 
   return (
     <DepartmentEditContextHeader
