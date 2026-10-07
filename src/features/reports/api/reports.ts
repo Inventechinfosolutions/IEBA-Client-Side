@@ -57,6 +57,7 @@ import { generateP111ReportPdf } from "../pdf/P111ReportPdf.tsx"
 import { generateP112ReportPdf } from "../pdf/P112ReportPdf.tsx"
 import { generateP130ReportPdf } from "../pdf/P130ReportPdf.tsx"
 import { generateP100ReportPdf } from "../pdf/P100ReportPdf"
+import { renderPostedRecordsCountPdf } from "@/features/internal-reports"
 import type {
   ReportCatalogItem,
   ReportRunPayload,
@@ -185,6 +186,10 @@ async function buildFrontendPdfReport(
   }
 
   try {
+    if (body.reportKey === "A010") {
+      return await renderPostedRecordsCountPdf(response)
+    }
+
     if (body.reportKey === "DSSRPT1") {
       return await generateDSSRPT1ReportPdf({
         employees: unwrapDssrpt1Employees(response),
