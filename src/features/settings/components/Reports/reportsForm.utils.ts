@@ -17,15 +17,31 @@ const REPORTS_MAPPING_READ_ONLY_KEYS = new Set([
   "WIC",
 ])
 
-export function isReportsMappingReadOnlyKey(reportKey: string | null | undefined): boolean {
-  return REPORTS_MAPPING_READ_ONLY_KEYS.has(String(reportKey ?? "").trim().toUpperCase())
+/** Read-only at county level but editable on Department → Reports mapping. */
+const DEPARTMENT_EDITABLE_MAPPING_KEYS = new Set(["DSSRPT1"])
+
+type MappingScopeOptions = {
+  /** True on Department → Reports mapping (department_report_config). */
+  departmentLevel?: boolean
+}
+
+export function isReportsMappingReadOnlyKey(
+  reportKey: string | null | undefined,
+  { departmentLevel = false }: MappingScopeOptions = {},
+): boolean {
+  const key = String(reportKey ?? "").trim().toUpperCase()
+  if (departmentLevel && DEPARTMENT_EDITABLE_MAPPING_KEYS.has(key)) return false
+  return REPORTS_MAPPING_READ_ONLY_KEYS.has(key)
 }
 
 /**
  * Hard-coded report behavior that cannot be changed via department mapping.
  * Shown next to Code / Department name on the Reports mapping tab.
  */
-export function getReportHardCodedMappingNotes(reportKey: string | null | undefined): string[] {
+export function getReportHardCodedMappingNotes(
+  reportKey: string | null | undefined,
+  { departmentLevel = false }: MappingScopeOptions = {},
+): string[] {
   const key = String(reportKey ?? "").trim().toUpperCase()
   if (!key) return []
 
@@ -34,7 +50,11 @@ export function getReportHardCodedMappingNotes(reportKey: string | null | undefi
   if (key === "DSSRPT1") {
     notes.push("9000 – Non Allocable (set by the system)")
     notes.push("9999 – Social Services Supervisor / apportioned time (set by the system)")
-    notes.push("No master-code / activity mapping — report settings are not used for DSSRPT1")
+    notes.push(
+      departmentLevel
+        ? "Include / exclude master codes and activities for this department's DSSRPT1 activity list"
+        : "Master-code / activity mapping is configured per department (Department → Reports)",
+    )
   } else if (key === "DSSRPT3" || key === "DSSRPT4") {
     notes.push("Based on Cost Pool selection — activities come from the selected cost pool")
     notes.push("No master-code / activity mapping on this screen")
@@ -44,7 +64,7 @@ export function getReportHardCodedMappingNotes(reportKey: string | null | undefi
   } else if (key === "MAATCM" || key === "TCM_MAA_ADHOC") {
     notes.push("No master-code mapping on this screen")
     notes.push("In the report UI you can only select activities")
-  } else if (isReportsMappingReadOnlyKey(key)) {
+  } else if (isReportsMappingReadOnlyKey(key, { departmentLevel })) {
     notes.push("Master-code / activity mapping is locked for this report")
   }
 
