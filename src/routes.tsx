@@ -34,7 +34,6 @@ import { programKeys, programActivityRelationKeys } from "@/features/program/key
 import { todoKeys } from "@/features/todo/keys"
 import { leaveApprovalKeys } from "@/features/leave-approval/keys"
 import { payrollKeys } from "@/features/payroll/key"
-
 /** Inject `queryClient` from `main.tsx`: importing `@/main` here would be circular, but the rest of the app still uses the same instance via `import { queryClient } from "@/main"`. */
 export function createAppRouter(queryClient: QueryClient) {
   return createBrowserRouter([

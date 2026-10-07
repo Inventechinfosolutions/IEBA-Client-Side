@@ -490,6 +490,38 @@ export type AC741ReportPdfProps = {
   meta?: ReportPdfMeta
 }
 
+/** One timestudy row for ICS Form 214 Activity Log. */
+export type Ics214Activity = {
+  date: string
+  employeename: string
+  userid: string
+  programname: string
+  programcode: string
+  /** Combined activity code + name from SP (e.g. "FFP-01 Case Management"). */
+  activity: string
+  activitycode: string
+  activityname: string
+  startdatetime: string
+  enddatetime: string
+  comments: string
+}
+
+export type Ics214Employee = {
+  employeename: string
+  startdate: string
+  enddate: string
+  program: string
+  activities: Ics214Activity[]
+}
+
+export type ICS214ReportPdfProps = {
+  employees: Ics214Employee[]
+  startDate: string
+  endDate: string
+  printedOn?: string
+  meta?: ReportPdfMeta
+}
+
 export type MaatcmActivity = {
   activityname: string
   code: string
@@ -2106,6 +2138,112 @@ export function getAc741EmployeeTotalHours(programs: Ac741Program[]): number {
   return programs.reduce((sum, program) => sum + program.activitytime, 0)
 }
 
+// --- ICS214 helpers ---
+
+/** Pad HOUR:MINUTE fragments from MySQL HOUR()/MINUTE() (e.g. "9:5" → "09:05"). */
+export function normalizeIcs214DateTime(raw: unknown): string {
+  const text = String(raw ?? "").trim().replace(/\s+/g, " ")
+  if (!text) return ""
+
+  // "mm/dd/yyyy H:M" or "mm/dd/yyyy HH:MM"
+  const match = /^(\d{1,2}\/\d{1,2}\/\d{4})\s+(\d{1,2}):(\d{1,2})$/.exec(text)
+  if (match) {
+    const [, datePart, hour, minute] = match
+    return `${datePart} ${hour.padStart(2, "0")}:${minute.padStart(2, "0")}`
+  }
+
+  // Bare "H:M"
+  const timeOnly = /^(\d{1,2}):(\d{1,2})$/.exec(text)
+  if (timeOnly) {
+    return `${timeOnly[1].padStart(2, "0")}:${timeOnly[2].padStart(2, "0")}`
+  }
+
+  return text
+}
+
+export function formatIcs214ActivityDateTime(activity: Ics214Activity): string {
+  const start = normalizeIcs214DateTime(activity.startdatetime)
+  const end = normalizeIcs214DateTime(activity.enddatetime)
+  if (start && end) {
+    const startDate = start.split(" ")[0] ?? ""
+    const endDate = end.split(" ")[0] ?? ""
+    const startHasTime = /\d{1,2}:\d{2}/.test(start)
+    const endHasTime = /\d{1,2}:\d{2}/.test(end)
+    // Multi-code children sometimes only have a date — avoid "09/01/2026–09/01/2026".
+    if (!startHasTime && !endHasTime) {
+      return startDate || start
+    }
+    const startTime = startHasTime ? start.slice(start.indexOf(" ") + 1) : ""
+    const endTime = endHasTime ? end.slice(end.indexOf(" ") + 1) : ""
+    if (startDate && startDate === endDate && startTime && endTime) {
+      return `${startDate} ${startTime}–${endTime}`
+    }
+    if (startHasTime && endHasTime) {
+      return `${start} – ${end}`
+    }
+    return startHasTime ? start : end
+  }
+  return start || end || normalizeIcs214DateTime(activity.date)
+}
+
+export function formatIcs214NotableActivity(activity: Ics214Activity): string {
+  const activityLabel = normalizeReportText(
+    activity.activity ||
+      [activity.activitycode, activity.activityname].filter(Boolean).join(" "),
+  )
+  const program = normalizeReportText(activity.programname || activity.programcode)
+  const comments = normalizeReportText(activity.comments)
+
+  const parts: string[] = []
+  if (activityLabel) parts.push(activityLabel)
+  if (program) parts.push(program)
+  if (comments) parts.push(comments)
+  return parts.join(" — ")
+}
+
+function parseIcs214Activities(raw: unknown): Ics214Activity[] {
+  if (!Array.isArray(raw)) return []
+  return raw.map((item) => {
+    const row = asRecord(item)
+    const activitycode = String(row.activitycode ?? row.activityCode ?? "")
+    const activityname = String(row.activityname ?? row.activityName ?? "")
+    const activity = String(
+      row.activity ??
+        [activitycode, activityname]
+          .map((v) => v.trim())
+          .filter(Boolean)
+          .join(" "),
+    )
+    return {
+      date: String(row.date ?? ""),
+      employeename: String(row.employeename ?? row.employeeName ?? ""),
+      userid: String(row.userid ?? row.userId ?? row.USERID ?? row.user_id ?? ""),
+      programname: String(row.programname ?? row.programName ?? ""),
+      programcode: String(row.programcode ?? row.programCode ?? ""),
+      activity,
+      activitycode,
+      activityname,
+      startdatetime: normalizeIcs214DateTime(row.startdatetime ?? row.startDateTime ?? ""),
+      enddatetime: normalizeIcs214DateTime(row.enddatetime ?? row.endDateTime ?? ""),
+      comments: String(row.comments ?? row.description ?? ""),
+    }
+  })
+}
+
+export function unwrapIcs214Employees(raw: unknown): Ics214Employee[] {
+  return unwrapListData(raw).map((item) => {
+    const row = asRecord(item)
+    const activities = parseIcs214Activities(row.activities)
+    return {
+      employeename: String(row.employeename ?? row.employeeName ?? activities[0]?.employeename ?? ""),
+      startdate: String(row.startdate ?? row.startDate ?? ""),
+      enddate: String(row.enddate ?? row.endDate ?? ""),
+      program: String(row.program ?? row.programname ?? activities[0]?.programname ?? ""),
+      activities,
+    }
+  })
+}
+
 // --- MAATCM helpers ---
 
 function parseMaatcmActivity(raw: Record<string, unknown>, daysInMonth: number): MaatcmActivity {
@@ -2996,6 +3134,8 @@ export function resolveReportTitle(
       return "MCAH - MONTHLY TITLE V TIME STUDY (TVTS)"
     case "AC741":
       return "AC741 Activity Summary"
+    case "ICS214":
+      return "ACTIVITY LOG (ICS 214)"
     case "DSSRPT2":
       return "Time Study Hours - DSSRPT2"
     case "DSSRPT3":
@@ -3034,6 +3174,7 @@ export function resolveFooterVariant(reportCode: string): ReportPdfFooterVariant
     case "P110-SS":
     case "MAATCM":
     case "TCM_MAA_ADHOC":
+    case "ICS214":
       return "minimal"
     case "P130":
       return "signaturePerPage"

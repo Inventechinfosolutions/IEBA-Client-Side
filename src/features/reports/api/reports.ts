@@ -18,6 +18,7 @@ import {
   parseMaatcmActivityCodeTypesFromMasterCode,
   resolveMaatcmIsMonthly,
   unwrapAc741Employees,
+  unwrapIcs214Employees,
   unwrapMaatcmEmployees,
   unwrapMcahTvtsEmployees,
   unwrapQtrMonthEmployees,
@@ -39,6 +40,7 @@ import { generateDSSRPT2ReportPdf } from "../pdf/DSSRPT2ReportPdf"
 import { generateDSSRPT3ReportPdf } from "../pdf/DSSRPT3ReportPdf"
 import { generateDSSRPT4ReportPdf } from "../pdf/DSSRPT4ReportPdf"
 import { generateAC741ReportPdf } from "../pdf/AC741ReportPdf"
+import { generateICS214ReportPdf } from "../pdf/ICS214ReportPdf"
 import { generateMAATCMReportPdf } from "../pdf/MAATCMReportPdf"
 import { generateMCAHTVTSReportPdf } from "../pdf/MCAHTVTSReportPdf"
 import { generateQTRMONTHReportPdf } from "../pdf/QTRMONTHReportPdf"
@@ -55,6 +57,7 @@ import { generateP111ReportPdf } from "../pdf/P111ReportPdf.tsx"
 import { generateP112ReportPdf } from "../pdf/P112ReportPdf.tsx"
 import { generateP130ReportPdf } from "../pdf/P130ReportPdf.tsx"
 import { generateP100ReportPdf } from "../pdf/P100ReportPdf"
+import { renderPostedRecordsCountPdf } from "@/features/internal-reports"
 import type {
   ReportCatalogItem,
   ReportRunPayload,
@@ -183,6 +186,10 @@ async function buildFrontendPdfReport(
   }
 
   try {
+    if (body.reportKey === "A010") {
+      return await renderPostedRecordsCountPdf(response)
+    }
+
     if (body.reportKey === "DSSRPT1") {
       return await generateDSSRPT1ReportPdf({
         employees: unwrapDssrpt1Employees(response),
@@ -236,6 +243,15 @@ async function buildFrontendPdfReport(
     if (body.reportKey === "AC741") {
       return await generateAC741ReportPdf({
         employees: unwrapAc741Employees(response),
+        startDate,
+        endDate,
+        meta,
+      })
+    }
+
+    if (body.reportKey === "ICS214") {
+      return await generateICS214ReportPdf({
+        employees: unwrapIcs214Employees(response),
         startDate,
         endDate,
         meta,
