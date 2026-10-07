@@ -36,22 +36,21 @@ export const postedRecordsCountySectionSchema = z.object({
   periodEnd: z.string(),
   quarters: z.array(z.number()),
   departmentNames: z.array(z.string()).default([]),
-  activeUsers: z.number(),
-  employeeRecords: quarterTotalsSchema,
-  timeStudyRecords: z.object({
-    fullTime: quarterTotalsSchema.default(emptyQuarterTotals),
-    monthly: quarterTotalsSchema.default(emptyQuarterTotals),
-    departments: z.array(
-      z.object({
-        departmentId: z.number(),
-        departmentName: z.string(),
-        counts: quarterCountsSchema,
-        total: z.number(),
-      }),
-    ),
-    counts: quarterCountsSchema,
-    total: z.number(),
-  }),
+  /** Active time-study users per department, one count per selected quarter. */
+  departments: z.array(
+    z.object({
+      departmentId: z.number(),
+      departmentName: z.string(),
+      counts: quarterCountsSchema,
+    }),
+  ),
+  countyTotals: quarterCountsSchema,
+  timeStudyRecords: quarterTotalsSchema
+    .extend({
+      fullTime: quarterTotalsSchema.default(emptyQuarterTotals),
+      monthly: quarterTotalsSchema.default(emptyQuarterTotals),
+    })
+    .default({ ...emptyQuarterTotals, fullTime: emptyQuarterTotals, monthly: emptyQuarterTotals }),
 })
 
 export const postedRecordsCountReportSchema = z.object({
@@ -63,12 +62,7 @@ export const postedRecordsCountReportSchema = z.object({
   quarterLabels: z.array(z.string()),
   allCounties: z.boolean(),
   counties: z.array(postedRecordsCountySectionSchema),
-  summary: z.object({
-    activeUsers: z.number(),
-    employees: z.number(),
-    timeStudyRecords: z.number(),
-    timeStudyRecordCounts: quarterCountsSchema,
-  }),
+  grandTotals: quarterCountsSchema,
   generatedAt: z.string(),
 })
 

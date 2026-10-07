@@ -83,7 +83,7 @@ const styles = StyleSheet.create({
 
 type Cell = string | number
 
-/** Label column, one column per quarter, then an optional Total column (always reserved for alignment). */
+/** Label column, one column per selected quarter, then an optional Total column. */
 function TableRow({
   label,
   quarters,
@@ -104,9 +104,9 @@ function TableRow({
           {String(v)}
         </Text>
       ))}
-      <Text style={[styles.numCell, variant === "body" ? styles.bold : {}]}>
-        {total === undefined ? "" : String(total)}
-      </Text>
+      {total === undefined ? null : (
+        <Text style={[styles.numCell, variant === "body" ? styles.bold : {}]}>{String(total)}</Text>
+      )}
     </View>
   )
 }
@@ -120,44 +120,33 @@ function SectionTitle({ children }: { children: string }) {
 }
 
 function CountySection({ section, labels }: { section: PostedRecordsCountySection; labels: string[] }) {
-  const county = section.countyName
+  const title = `${section.countyName} Time Study User Records`
   if (section.status === "error") {
     return (
       <View wrap={false}>
-        <SectionTitle>{county}</SectionTitle>
+        <SectionTitle>{title}</SectionTitle>
         <Text style={styles.errorText}>Could not load data: {section.error ?? "unknown error"}</Text>
       </View>
     )
   }
 
+  const { fullTime, monthly, counts, total } = section.timeStudyRecords
   const zeros = labels.map(() => 0)
-  const blanks = labels.map(() => "")
-  const { fullTime, monthly } = section.timeStudyRecords
 
   return (
     <View>
-      <SectionTitle>{`${county} Expenditures`}</SectionTitle>
-      <TableRow label="Department" quarters={labels} total="Total" variant="header" />
-      <TableRow label="" quarters={blanks} total={0} />
+      <SectionTitle>{title}</SectionTitle>
+      <TableRow label="Department" quarters={labels} variant="header" />
+      {section.departments.map((d) => (
+        <TableRow key={d.departmentId} label={d.departmentName} quarters={d.counts} />
+      ))}
+      <TableRow label="County Total" quarters={section.countyTotals} variant="total" />
 
-      <SectionTitle>{`${county} Revenues`}</SectionTitle>
-      <TableRow label="Department" quarters={labels} total="Total" variant="header" />
-      <TableRow label="" quarters={blanks} total={0} />
-
-      <SectionTitle>{`${county} Employee Records`}</SectionTitle>
-      <TableRow label="Quarter:" quarters={labels} variant="header" />
-      <TableRow label="" quarters={section.employeeRecords.counts} />
-
-      <SectionTitle>{`${county} Time Study Records`}</SectionTitle>
+      <SectionTitle>{`${section.countyName} Time Study Records`}</SectionTitle>
       <TableRow label="Quarter:" quarters={labels} total="Total" variant="header" />
       <TableRow label="Full Time TS" quarters={fullTime.counts.length ? fullTime.counts : zeros} total={fullTime.total} />
       <TableRow label="Monthly TS" quarters={monthly.counts.length ? monthly.counts : zeros} total={monthly.total} />
-      <TableRow
-        label=""
-        quarters={section.timeStudyRecords.counts}
-        total={section.timeStudyRecords.total}
-        variant="total"
-      />
+      <TableRow label="" quarters={counts.length ? counts : zeros} total={total} variant="total" />
     </View>
   )
 }
@@ -166,21 +155,15 @@ function AllClientsSummary({ report }: { report: PostedRecordsCountReport }) {
   return (
     <View>
       <SectionTitle>All Clients Summary</SectionTitle>
-      <TableRow label="County" quarters={report.quarterLabels} total="Total" variant="header" />
+      <TableRow label="County" quarters={report.quarterLabels} variant="header" />
       {report.counties.map((c) => (
         <TableRow
           key={c.nameSpace}
           label={c.countyName}
-          quarters={c.status === "error" ? report.quarterLabels.map(() => "-") : c.timeStudyRecords.counts}
-          total={c.status === "error" ? "-" : c.timeStudyRecords.total}
+          quarters={c.status === "error" ? report.quarterLabels.map(() => "-") : c.countyTotals}
         />
       ))}
-      <TableRow
-        label=""
-        quarters={report.summary.timeStudyRecordCounts}
-        total={report.summary.timeStudyRecords}
-        variant="total"
-      />
+      <TableRow label="Total" quarters={report.grandTotals} variant="total" />
     </View>
   )
 }
