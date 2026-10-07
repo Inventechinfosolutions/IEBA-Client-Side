@@ -107,7 +107,7 @@ export function useDepartmentReportsMappingSave() {
         toast.error("Please select a report before saving")
         return
       }
-      if (isReportsMappingReadOnlyKey(reportKey)) {
+      if (isReportsMappingReadOnlyKey(reportKey, { departmentLevel: true })) {
         toast.error("Mapping is not editable for this report")
         return
       }
