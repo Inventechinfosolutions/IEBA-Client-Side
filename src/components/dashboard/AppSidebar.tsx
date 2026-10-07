@@ -32,7 +32,6 @@ import {
   SidebarFooter,
 } from "@/components/ui/sidebar"
 import { usePermissions } from "@/hooks/usePermissions"
-
 // ---------------------------------------------------------------------------
 // Nav definition
 // permission: null          → always visible (e.g. Dashboard)
@@ -82,7 +81,6 @@ const mainNav: NavItem[] = [
 export function AppSidebar() {
   const { isSuperAdmin, isClientAdmin, isDepartmentAdmin, canView, has } = usePermissions()
   const location = useLocation()
-
   /** Returns true when the nav item should be visible to this user. */
   function isVisible(item: NavItem): boolean {
     if (item.permission === null) return true                    // always show

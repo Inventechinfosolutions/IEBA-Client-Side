@@ -1,3 +1,4 @@
+import { getFiscalQuarterDateRange, isQuarterRangeReport } from "../schemas"
 import type { ReportFormValues, ReportRunPayload } from "../types"
 
 function parseCommaSeparatedIds(raw: string | undefined): string[] {
@@ -23,7 +24,14 @@ export function mapReportFormToRunPayload(values: ReportFormValues): ReportRunPa
             fiscalYearId: values.fiscalYearId?.trim(),
             quarter: values.quarter?.trim(),
           }
-          if (values.weekId) {
+          if (isQuarterRangeReport(values.reportKey)) {
+            const start = getFiscalQuarterDateRange(values.fiscalYearId, values.quarter)
+            const end = getFiscalQuarterDateRange(values.fiscalYearId, values.endQuarter)
+            if (start && end) {
+              payload.dateFrom = start.from
+              payload.dateTo = end.to
+            }
+          } else if (values.weekId) {
             payload.dateFrom = values.dateFrom?.trim()
             payload.dateTo = values.dateTo?.trim()
             payload.weekId = values.weekId
