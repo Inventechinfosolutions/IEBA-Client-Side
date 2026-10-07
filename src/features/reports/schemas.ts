@@ -22,6 +22,32 @@ export const REPORT_QUARTERS = ["Qtr-1", "Qtr-2", "Qtr-3", "Qtr-4"] as const
 
 export const reportQuarterSchema = z.enum(REPORT_QUARTERS)
 
+/** Reports whose Qtr selection is a Beginning → Ending quarter range. */
+export const QUARTER_RANGE_REPORT_CODES = ["A010"] as const
+
+export function isQuarterRangeReport(reportKey: string | undefined): boolean {
+  const key = reportKey?.trim().toUpperCase() ?? ""
+  return (QUARTER_RANGE_REPORT_CODES as readonly string[]).includes(key)
+}
+
+/** Jul–Jun fiscal quarter → `YYYY-MM-DD` bounds; null when inputs are invalid. */
+export function getFiscalQuarterDateRange(
+  fiscalYearId: string | undefined,
+  quarter: string | undefined,
+): { from: string; to: string } | null {
+  const match = /^(\d{4})-(\d{4})$/.exec(fiscalYearId?.trim() ?? "")
+  if (!match) return null
+  const y1 = match[1]
+  const y2 = match[2]
+  switch (quarter) {
+    case "Qtr-1": return { from: `${y1}-07-01`, to: `${y1}-09-30` }
+    case "Qtr-2": return { from: `${y1}-10-01`, to: `${y1}-12-31` }
+    case "Qtr-3": return { from: `${y2}-01-01`, to: `${y2}-03-31` }
+    case "Qtr-4": return { from: `${y2}-04-01`, to: `${y2}-06-30` }
+    default: return null
+  }
+}
+
 export const REPORT_DOWNLOAD_TYPES = ["PDF", "Excel", "CSV"] as const
 
 export const reportDownloadTypeSchema = z.enum(REPORT_DOWNLOAD_TYPES)
@@ -35,6 +61,8 @@ export const reportFormSchema = z
     weekId: z.string().optional(),
     fiscalYearId: z.string().optional(),
     quarter: z.string().optional(),
+    /** Ending quarter for quarter-range reports (A010); `quarter` is the beginning quarter. */
+    endQuarter: z.string().optional(),
     dateFrom: z.string().optional(),
     dateTo: z.string().optional(),
     departmentId: z.string().optional(),
@@ -80,6 +108,24 @@ export const reportFormSchema = z
           message: "Select a quarter",
           path: ["quarter"],
         })
+      }
+      if (isQuarterRangeReport(data.reportKey)) {
+        const endQ = data.endQuarter?.trim() ?? ""
+        const endIdx = REPORT_QUARTERS.indexOf(endQ as (typeof REPORT_QUARTERS)[number])
+        const startIdx = REPORT_QUARTERS.indexOf(q as (typeof REPORT_QUARTERS)[number])
+        if (endIdx < 0) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Select an ending quarter",
+            path: ["endQuarter"],
+          })
+        } else if (startIdx >= 0 && endIdx < startIdx) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Ending quarter must be on or after beginning quarter",
+            path: ["endQuarter"],
+          })
+        }
       }
     } else if (data.selectMonthBy === "month") {
       if (!data.month?.trim()) {
@@ -222,6 +268,7 @@ export function createReportFormDefaultValues(
     weekId: "",
     fiscalYearId,
     quarter: getCurrentFiscalQuarter(now),
+    endQuarter: getCurrentFiscalQuarter(now),
     dateFrom: "",
     dateTo: "",
     departmentId: "",

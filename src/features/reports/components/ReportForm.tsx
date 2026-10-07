@@ -47,6 +47,8 @@ import {
   REPORT_QUARTERS,
   createReportFormDefaultValues,
   getCurrentReportMonthValue,
+  getFiscalQuarterDateRange,
+  isQuarterRangeReport,
   reportDownloadFileNameSchema,
   reportFormSchema,
 } from "../schemas"
@@ -923,6 +925,7 @@ export function ReportForm({ module }: ReportFormProps) {
   const selectMonthBy = useWatch({ control, name: "selectMonthBy" })
   const fiscalYearId = useWatch({ control, name: "fiscalYearId" }) ?? ""
   const quarter = useWatch({ control, name: "quarter" }) ?? ""
+  const endQuarter = useWatch({ control, name: "endQuarter" }) ?? ""
   const employeeIdsRaw = useWatch({ control, name: "employeeIds" }) ?? ""
   const employeeIds = useMemo(() => {
     if (!employeeIdsRaw) return []
@@ -964,6 +967,11 @@ export function ReportForm({ module }: ReportFormProps) {
       }
     }
     if (selectMonthBy === "qtr" && fiscalYearId && quarter) {
+      if (isQuarterRangeReport(reportKey)) {
+        const start = getFiscalQuarterDateRange(fiscalYearId, quarter)
+        const end = getFiscalQuarterDateRange(fiscalYearId, endQuarter || quarter)
+        return { actualDateFrom: start?.from, actualDateTo: end?.to }
+      }
       if (weekIdVal) {
         const parts = weekIdVal.split("|")
         if (parts.length === 2) {
@@ -981,7 +989,7 @@ export function ReportForm({ module }: ReportFormProps) {
       return { actualDateFrom: from, actualDateTo: to }
     }
     return { actualDateFrom: undefined, actualDateTo: undefined }
-  }, [selectMonthBy, dateFrom, dateTo, monthVal, yearVal, fiscalYearId, quarter, weekIdVal])
+  }, [selectMonthBy, dateFrom, dateTo, monthVal, yearVal, fiscalYearId, quarter, endQuarter, weekIdVal, reportKey])
 
   // Clear dependent picks in period onChange handlers (no useEffect). Do not call from
   // dateFrom/dateTo edits — changing the month in the date picker must not wipe selections.
@@ -989,7 +997,7 @@ export function ReportForm({ module }: ReportFormProps) {
     setValue("employeeIds", "", { shouldValidate: true })
     setValue("activityIds", "")
     setValue("programIds", "")
-    void trigger(["selectMonthBy", "month", "fiscalYearId", "quarter", "year", "dateFrom", "dateTo"])
+    void trigger(["selectMonthBy", "month", "fiscalYearId", "quarter", "endQuarter", "year", "dateFrom", "dateTo"])
   }, [setValue, trigger])
 
   const currentReportItem = useMemo(() => {
@@ -1677,6 +1685,7 @@ export function ReportForm({ module }: ReportFormProps) {
     showTopLevelFiscalYear,
     topLevelFiscalYearLabel,
   }: ReportFiltersBodyProps) => {
+    const isQuarterRange = isQuarterRangeReport(currentReportItem?.key)
     return (
       <>
         <div className="flex w-full shrink-0 flex-col gap-1.5 sm:w-auto sm:flex-row sm:items-end sm:gap-4">
@@ -1838,9 +1847,9 @@ export function ReportForm({ module }: ReportFormProps) {
               </div>
             )}
 
-            <div className="w-full min-w-0 sm:w-[142px] shrink-0">
+            <div className="w-full min-w-0 sm:w-[160px] shrink-0">
               <label className={labelClassName} htmlFor="reports-quarter">
-                Qtr
+                {isQuarterRange ? "Beginning Quarter" : "Qtr"}
               </label>
               <Controller
                 name="quarter"
@@ -1854,7 +1863,7 @@ export function ReportForm({ module }: ReportFormProps) {
                     }}
                     onBlur={field.onBlur}
                     options={quarterOptions}
-                    placeholder="Qtr"
+                    placeholder={isQuarterRange ? "Beginning Quarter" : "Qtr"}
                     className={yearQuarterSelectTrigger}
                     contentClassName="max-h-[220px]"
                     itemButtonClassName="rounded-[6px] px-3 py-2"
@@ -1869,7 +1878,40 @@ export function ReportForm({ module }: ReportFormProps) {
               ) : null}
             </div>
 
-            {(currentReportItem?.criteria?.showWeekSelect) && (
+            {isQuarterRange && (
+              <div className="w-full min-w-0 sm:w-[160px] shrink-0">
+                <label className={labelClassName} htmlFor="reports-end-quarter">
+                  Ending Quarter
+                </label>
+                <Controller
+                  name="endQuarter"
+                  control={control}
+                  render={({ field }) => (
+                    <SingleSelectDropdown
+                      value={field.value ?? ""}
+                      onChange={(val) => {
+                        field.onChange(val)
+                        clearPeriodDependentPicks()
+                      }}
+                      onBlur={field.onBlur}
+                      options={quarterOptions}
+                      placeholder="Ending Quarter"
+                      className={yearQuarterSelectTrigger}
+                      contentClassName="max-h-[220px]"
+                      itemButtonClassName="rounded-[6px] px-3 py-2"
+                      itemLabelClassName="!text-[14px] !font-normal"
+                    />
+                  )}
+                />
+                {formState.errors.endQuarter?.message ? (
+                  <p className="mt-1 text-[13px] text-red-500" role="alert">
+                    {formState.errors.endQuarter.message}
+                  </p>
+                ) : null}
+              </div>
+            )}
+
+            {!isQuarterRange && (currentReportItem?.criteria?.showWeekSelect) && (
               <div className="w-full min-w-0 sm:w-[240px] shrink-0">
                 <label className={labelClassName} htmlFor="reports-week-picker">
                   Week Picker
