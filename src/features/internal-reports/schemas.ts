@@ -21,11 +21,7 @@ export const postedRecordsCountOptionsSchema = z.object({
   currentNameSpace: z.string(),
 })
 
-const quarterCountsSchema = z.array(z.number())
-
-const quarterTotalsSchema = z.object({ counts: quarterCountsSchema, total: z.number() })
-
-const emptyQuarterTotals = { counts: [], total: 0 }
+const countsSchema = z.array(z.number())
 
 export const postedRecordsCountySectionSchema = z.object({
   nameSpace: z.string(),
@@ -36,21 +32,18 @@ export const postedRecordsCountySectionSchema = z.object({
   periodEnd: z.string(),
   quarters: z.array(z.number()),
   departmentNames: z.array(z.string()).default([]),
-  /** Active time-study users per department, one count per selected quarter. */
   departments: z.array(
     z.object({
       departmentId: z.number(),
       departmentName: z.string(),
-      counts: quarterCountsSchema,
+      /** Users active at any point in each month (aligned with report `monthLabels`). */
+      monthCounts: countsSchema,
+      /** Unique users active at any point in each quarter. */
+      counts: countsSchema,
     }),
   ),
-  countyTotals: quarterCountsSchema,
-  timeStudyRecords: quarterTotalsSchema
-    .extend({
-      fullTime: quarterTotalsSchema.default(emptyQuarterTotals),
-      monthly: quarterTotalsSchema.default(emptyQuarterTotals),
-    })
-    .default({ ...emptyQuarterTotals, fullTime: emptyQuarterTotals, monthly: emptyQuarterTotals }),
+  countyMonthTotals: countsSchema,
+  countyTotals: countsSchema,
 })
 
 export const postedRecordsCountReportSchema = z.object({
@@ -60,9 +53,12 @@ export const postedRecordsCountReportSchema = z.object({
   startQuarter: z.number(),
   endQuarter: z.number(),
   quarterLabels: z.array(z.string()),
+  monthLabels: z.array(z.string()),
+  monthQuarters: z.array(z.number()),
   allCounties: z.boolean(),
   counties: z.array(postedRecordsCountySectionSchema),
-  grandTotals: quarterCountsSchema,
+  grandMonthTotals: countsSchema,
+  grandTotals: countsSchema,
   generatedAt: z.string(),
 })
 

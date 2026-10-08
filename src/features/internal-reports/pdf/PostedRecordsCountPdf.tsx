@@ -119,8 +119,9 @@ function SectionTitle({ children }: { children: string }) {
   )
 }
 
-function CountySection({ section, labels }: { section: PostedRecordsCountySection; labels: string[] }) {
-  const title = `${section.countyName} Time Study User Records`
+/** One table per quarter: the quarter's three months, then unique users for the quarter. */
+function CountySection({ section, report }: { section: PostedRecordsCountySection; report: PostedRecordsCountReport }) {
+  const title = `${section.countyName} Active Users`
   if (section.status === "error") {
     return (
       <View wrap={false}>
@@ -130,27 +131,31 @@ function CountySection({ section, labels }: { section: PostedRecordsCountySectio
     )
   }
 
-  const { fullTime, monthly, counts, total } = section.timeStudyRecords
-  const zeros = labels.map(() => 0)
-
   return (
     <View>
-      <SectionTitle>{title}</SectionTitle>
-      <TableRow label="Department" quarters={labels} variant="header" />
-      {section.departments.map((d) => (
-        <TableRow key={d.departmentId} label={d.departmentName} quarters={d.counts} />
-      ))}
-      <TableRow label="County Total" quarters={section.countyTotals} variant="total" />
-
-      <SectionTitle>{`${section.countyName} Time Study Records`}</SectionTitle>
-      <TableRow label="Quarter:" quarters={labels} total="Total" variant="header" />
-      <TableRow label="Full Time TS" quarters={fullTime.counts.length ? fullTime.counts : zeros} total={fullTime.total} />
-      <TableRow label="Monthly TS" quarters={monthly.counts.length ? monthly.counts : zeros} total={monthly.total} />
-      <TableRow label="" quarters={counts.length ? counts : zeros} total={total} variant="total" />
+      {report.quarterLabels.map((quarter, qi) => {
+        const months = <T,>(values: T[]) => values.slice(qi * 3, qi * 3 + 3)
+        return (
+          <View key={quarter}>
+            <SectionTitle>{`${title} – ${quarter}`}</SectionTitle>
+            <TableRow label="Department" quarters={months(report.monthLabels)} total={quarter} variant="header" />
+            {section.departments.map((d) => (
+              <TableRow key={d.departmentId} label={d.departmentName} quarters={months(d.monthCounts)} total={d.counts[qi] ?? 0} />
+            ))}
+            <TableRow
+              label="County Total"
+              quarters={months(section.countyMonthTotals)}
+              total={section.countyTotals[qi] ?? 0}
+              variant="total"
+            />
+          </View>
+        )
+      })}
     </View>
   )
 }
 
+/** Unique active users per quarter for every county. */
 function AllClientsSummary({ report }: { report: PostedRecordsCountReport }) {
   return (
     <View>
@@ -169,7 +174,6 @@ function AllClientsSummary({ report }: { report: PostedRecordsCountReport }) {
 }
 
 function PostedRecordsCountDocument({ report, printedOn }: { report: PostedRecordsCountReport; printedOn: string }) {
-  const labels = report.quarterLabels
   const departmentNames = report.allCounties ? [] : (report.counties[0]?.departmentNames ?? [])
   return (
     <Document title={report.reportTitle}>
@@ -195,7 +199,7 @@ function PostedRecordsCountDocument({ report, printedOn }: { report: PostedRecor
         ) : null}
 
         {report.counties.map((section) => (
-          <CountySection key={section.nameSpace} section={section} labels={labels} />
+          <CountySection key={section.nameSpace} section={section} report={report} />
         ))}
 
         {report.allCounties ? <AllClientsSummary report={report} /> : null}

@@ -43,6 +43,7 @@ import {
 } from "@/features/settings/components/FiscalYear/fiscalYearDateUtils"
 import type { SettingsFiscalYearRow } from "@/features/settings/components/FiscalYear/types"
 import {
+  ALL_DEPARTMENTS_VALUE,
   REPORT_DOWNLOAD_TYPES,
   REPORT_QUARTERS,
   createReportFormDefaultValues,
@@ -51,6 +52,7 @@ import {
   isQuarterRangeReport,
   reportDownloadFileNameSchema,
   reportFormSchema,
+  supportsAllDepartments,
 } from "../schemas"
 import { ReportWeekCalendarPicker } from "./ReportWeekCalendarPicker"
 import { ReportMonthPicker } from "./ReportMonthPicker"
@@ -166,6 +168,7 @@ const reportEmployeeListPanelClassName =
 
 const reportEmployeeListScrollClassName = "max-h-[240px] overflow-auto p-1"
 const DEFAULT_EMPLOYEE_LIST_PAGE_SIZE = 20
+const SELECT_ONE_DEPARTMENT_MESSAGE = "Please select only one department"
 
 function ReportEmployeeListPager({
   pagination,
@@ -847,6 +850,10 @@ export function ReportForm({ module }: ReportFormProps) {
     return departmentsData?.items ? mapIdNameRowsToSelectOptions(departmentsData.items) : []
   }, [departmentsData])
 
+  /** "All Departments" is only runnable for A010, which only Super Admin / PKI can see. */
+  const canSelectAllDepartments =
+    !!user?.permissions?.includes("superadmin:all") && rawDepartmentOptions.length > 1
+
   const [selectedDeptId, setSelectedDeptId] = useState<string>(() => {
     const stored = readStoredReportFormParams()
     return stored?.departmentId?.trim() ?? ""
@@ -871,14 +878,19 @@ export function ReportForm({ module }: ReportFormProps) {
 
     if (!base.departmentId && rawDepartmentOptions.length === 1) {
       base.departmentId = rawDepartmentOptions[0].value
+    } else if (!base.departmentId && canSelectAllDepartments) {
+      base.departmentId = ALL_DEPARTMENTS_VALUE
     }
 
     return base
-  }, [navState, rawDepartmentOptions])
+  }, [navState, rawDepartmentOptions, canSelectAllDepartments])
 
   // Prefer click-selected dept; fall back to form defaults (stored / single-dept).
+  // "All Departments" has no report list of its own, so keep loading reports for a real department.
   const deptIdForReportsQuery =
-    selectedDeptId || formValues.departmentId?.trim() || ""
+    [selectedDeptId, formValues.departmentId?.trim()].find((id) => id && id !== ALL_DEPARTMENTS_VALUE) ||
+    (formValues.departmentId === ALL_DEPARTMENTS_VALUE ? rawDepartmentOptions[0]?.value : "") ||
+    ""
 
   const {
     data: departmentReportItems = [],
@@ -916,7 +928,9 @@ export function ReportForm({ module }: ReportFormProps) {
   const { control, handleSubmit, setError, clearErrors, setValue, getValues, formState, trigger } = form
 
   const reportKey = useWatch({ control, name: "reportKey" }) ?? ""
-  const departmentId = useWatch({ control, name: "departmentId" }) ?? ""
+  const departmentSelection = useWatch({ control, name: "departmentId" }) ?? ""
+  /** Real department id for lookups; empty when "All Departments" is selected. */
+  const departmentId = departmentSelection === ALL_DEPARTMENTS_VALUE ? "" : departmentSelection
 
   const hasSelectedReportType = reportKey.trim().length > 0
   const deptReportsLoading =
@@ -1431,11 +1445,14 @@ export function ReportForm({ module }: ReportFormProps) {
   )
 
   const departmentOptions = useMemo(() => {
-    if (reportKey === "P110-SS") {
-      return rawDepartmentOptions.filter((opt) => opt.label === "Social Services")
-    }
-    return rawDepartmentOptions
-  }, [rawDepartmentOptions, reportKey])
+    const options =
+      reportKey === "P110-SS"
+        ? rawDepartmentOptions.filter((opt) => opt.label === "Social Services")
+        : rawDepartmentOptions
+    return canSelectAllDepartments
+      ? [{ value: ALL_DEPARTMENTS_VALUE, label: "All Departments" }, ...options]
+      : options
+  }, [rawDepartmentOptions, reportKey, canSelectAllDepartments])
 
   const employeeOptions = useMemo(() => {
     if (shouldFetchCostPoolUsers && costPoolUsersData && !isCostPoolUsersFetching) {
@@ -1540,6 +1557,16 @@ export function ReportForm({ module }: ReportFormProps) {
     }
   }
 
+  const ensureDepartmentSelected = (values: ReportFormValues): boolean => {
+    const department = values.departmentId?.trim() ?? ""
+    if (department && (department !== ALL_DEPARTMENTS_VALUE || supportsAllDepartments(values.reportKey))) {
+      return true
+    }
+    setError("departmentId", { type: "manual", message: SELECT_ONE_DEPARTMENT_MESSAGE })
+    toast.error(SELECT_ONE_DEPARTMENT_MESSAGE)
+    return false
+  }
+
   const onViewReport = handleSubmit(async (values) => {
     // Excel-only report: View uses the same Excel download path (no PDF renderer).
     if (values.reportKey.trim().toUpperCase() === "QTR-MONTH-BREAKOUT") {
@@ -1577,6 +1604,7 @@ export function ReportForm({ module }: ReportFormProps) {
       return
     }
 
+    if (!ensureDepartmentSelected(values)) return
     if (employeeSelectionRequired && !values.employeeIds?.trim()) {
       setError("employeeIds", {
         type: "manual",
@@ -1619,6 +1647,7 @@ export function ReportForm({ module }: ReportFormProps) {
   })
 
   const onDownloadReport = handleSubmit(async (values) => {
+    if (!ensureDepartmentSelected(values)) return
     if (employeeSelectionRequired && !values.employeeIds?.trim()) {
       setError("employeeIds", {
         type: "manual",
@@ -2319,8 +2348,30 @@ export function ReportForm({ module }: ReportFormProps) {
                   <SingleSelectDropdown
                     value={field.value ?? ""}
                     onChange={(val) => {
+                      const current = field.value ?? ""
+                      const currentReportKey = getValues("reportKey")
+                      // Keep the selected report when toggling "All Departments". selectedDeptId is left as-is:
+                      // changing it re-applies form `values` and would wipe the selected report.
+                      const keepSelectedReport =
+                        val === ALL_DEPARTMENTS_VALUE ||
+                        current === ALL_DEPARTMENTS_VALUE ||
+                        (!current && !!currentReportKey && !!deptIdForReportsQuery)
+                      if (keepSelectedReport) {
+                        field.onChange(val)
+                        if (
+                          val === ALL_DEPARTMENTS_VALUE &&
+                          currentReportKey &&
+                          !supportsAllDepartments(currentReportKey)
+                        ) {
+                          setError("departmentId", { type: "manual", message: SELECT_ONE_DEPARTMENT_MESSAGE })
+                          toast.error(SELECT_ONE_DEPARTMENT_MESSAGE)
+                        } else {
+                          clearErrors("departmentId")
+                        }
+                        return
+                      }
                       setSelectedDeptId(val)
-                      if ((field.value ?? "") !== val) {
+                      if (current !== val) {
                         const defaults = createReportFormDefaultValues()
                         const nextFy = resolveDefaultFiscalYearId(fiscalYearsData)
                         form.reset({
@@ -2347,6 +2398,11 @@ export function ReportForm({ module }: ReportFormProps) {
                   />
                 )}
               />
+              {formState.errors.departmentId?.message ? (
+                <p className="mt-1 text-[13px] text-red-500" role="alert">
+                  {formState.errors.departmentId.message}
+                </p>
+              ) : null}
             </div>
           )}
 
@@ -2369,9 +2425,15 @@ export function ReportForm({ module }: ReportFormProps) {
 
                     const defaults = createReportFormDefaultValues()
                     const nextFy = resolveDefaultFiscalYearId(fiscalYearsData)
+                    const currentDepartment = getValues("departmentId") ?? ""
+                    const mustPickOneDepartment =
+                      currentDepartment === ALL_DEPARTMENTS_VALUE && !supportsAllDepartments(val)
                     form.reset({
                       ...defaults,
-                      departmentId: getValues("departmentId"),
+                      departmentId:
+                        supportsAllDepartments(val) && canSelectAllDepartments
+                          ? ALL_DEPARTMENTS_VALUE
+                          : currentDepartment,
                       reportKey: val,
                       fileName: label,
                       fiscalYearId: nextFy,
@@ -2382,6 +2444,11 @@ export function ReportForm({ module }: ReportFormProps) {
                     }, {
                       keepDirtyValues: false,
                     })
+
+                    if (mustPickOneDepartment) {
+                      setError("departmentId", { type: "manual", message: SELECT_ONE_DEPARTMENT_MESSAGE })
+                      toast.error(SELECT_ONE_DEPARTMENT_MESSAGE)
+                    }
 
                     if (!item) return
 
@@ -2401,7 +2468,7 @@ export function ReportForm({ module }: ReportFormProps) {
                   onBlur={field.onBlur}
                   options={reportOptions}
                   placeholder="Select Report"
-                  disabled={!departmentId || deptReportsLoading}
+                  disabled={(!departmentSelection && !hasSelectedReportType) || deptReportsLoading}
                   isLoading={deptReportsLoading}
                   loadingLabel="Loading reports…"
                   className={reportSelectTrigger}
