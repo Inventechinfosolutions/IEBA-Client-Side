@@ -1,4 +1,4 @@
-import { getFiscalQuarterDateRange, isQuarterRangeReport } from "../schemas"
+import { ALL_DEPARTMENTS_VALUE, getFiscalQuarterDateRange, isQuarterRangeReport } from "../schemas"
 import type { ReportFormValues, ReportRunPayload } from "../types"
 
 function parseCommaSeparatedIds(raw: string | undefined): string[] {
@@ -9,7 +9,8 @@ function parseCommaSeparatedIds(raw: string | undefined): string[] {
 }
 
 export function mapReportFormToRunPayload(values: ReportFormValues): ReportRunPayload {
-  const departmentId = values.departmentId?.trim()
+  const selectedDepartment = values.departmentId?.trim()
+  const departmentId = selectedDepartment === ALL_DEPARTMENTS_VALUE ? undefined : selectedDepartment
   const employeeIds = parseCommaSeparatedIds(values.employeeIds)
   const activityIds = parseCommaSeparatedIds(values.activityIds)
   const costPoolIds = parseCommaSeparatedIds(values.costPoolIds)

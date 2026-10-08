@@ -30,6 +30,17 @@ export function isQuarterRangeReport(reportKey: string | undefined): boolean {
   return (QUARTER_RANGE_REPORT_CODES as readonly string[]).includes(key)
 }
 
+/** Department dropdown value meaning "every department" (sent to the backend as no department filter). */
+export const ALL_DEPARTMENTS_VALUE = "__ALL__"
+
+/** Reports that offer the "All Departments" option (only Super Admin / PKI can see these). */
+export const ALL_DEPARTMENTS_REPORT_CODES = ["A010"] as const
+
+export function supportsAllDepartments(reportKey: string | undefined): boolean {
+  const key = reportKey?.trim().toUpperCase() ?? ""
+  return (ALL_DEPARTMENTS_REPORT_CODES as readonly string[]).includes(key)
+}
+
 /** Jul–Jun fiscal quarter → `YYYY-MM-DD` bounds; null when inputs are invalid. */
 export function getFiscalQuarterDateRange(
   fiscalYearId: string | undefined,
