@@ -177,7 +177,7 @@ function EmployeeTable({ employee }: { employee: GroupedEmployee }) {
       </View>
 
       {employee.programs.map((program) => (
-        <View key={`${employee.empname}-${program.program}`}>
+        <View key={`${employee.employeeKey}-${program.program}`}>
           <View style={styles.row}>
             <EmptyCell width={W.employee} />
             <View style={[styles.programBox, { width: W.activity }]}>
@@ -310,7 +310,7 @@ function P100ReportDocument({
     <Document>
       {groupedEmployees.map((employee, index) => (
         <P100ReportPage
-          key={`${employee.empname}-${index}`}
+          key={employee.employeeKey}
           meta={meta}
           footerVariant={footerVariant}
           printedOn={printedOn}
