@@ -3,6 +3,7 @@
 import { formatCountyDisplayName } from "@/features/department/lib/departmentReport.utils"
 
 export type ReportDataRecord = {
+  employeeId?: string
   employeename: string
   program: string
   activity: string
@@ -20,6 +21,7 @@ export type GroupedProgram = {
 }
 
 export type GroupedEmployee = {
+  employeeKey: string
   empname: string
   programs: GroupedProgram[]
 }
@@ -769,6 +771,7 @@ export function unwrapReportDataRecords(raw: unknown): ReportDataRecord[] {
   return unwrapListData(raw).map((row) => {
     const record = asRecord(row)
     return {
+      employeeId: String(record.employeeId ?? record.employeeid ?? record.userid ?? record.userId ?? "").trim(),
       employeename: normalizeReportText(String(record.employeename ?? record.employeeName ?? "")),
       program: normalizeReportText(String(record.program ?? "")),
       activity: normalizeReportText(String(record.activity ?? "")),
@@ -836,12 +839,22 @@ function toNumber(value: string | number): number {
   return Number.isFinite(parsed) ? parsed : 0
 }
 
+/**
+ * Group P100 rows by employee → program.
+ *
+ * Employees are keyed by `employeeId` so the same person is not split across
+ * pages when the API returns name variants (e.g. "Kelly Romp" / "Romp Kelly").
+ * Falls back to the normalized name when no id is present.
+ */
 export function groupReportDataByEmployee(records: ReportDataRecord[]): GroupedEmployee[] {
   return records.reduce<GroupedEmployee[]>((acc, curr) => {
-    let employee = acc.find((emp) => emp.empname === curr.employeename)
+    const employeeKey = curr.employeeId
+      ? `id:${curr.employeeId}`
+      : `name:${normalizeReportKey(curr.employeename)}`
+    let employee = acc.find((emp) => emp.employeeKey === employeeKey)
 
     if (!employee) {
-      employee = { empname: curr.employeename, programs: [] }
+      employee = { employeeKey, empname: curr.employeename, programs: [] }
       acc.push(employee)
     }
 
