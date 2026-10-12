@@ -41,6 +41,7 @@ export function buildAuthUserFromDetails(
     permissions,
     theme: details.theme,
     pki: details.pki === true,
+    accountingPki: details.accountingPki === true,
     countyName: details.countyName?.toUpperCase(),
     departmentRoles: details.departmentsRoles?.map((dr) => ({
       departmentId: dr.departmentId,

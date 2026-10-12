@@ -71,6 +71,8 @@ export type ChangeCountyBody = {
 
 export type ChangeCountyResult = {
   accessToken: string
+  /** User id in the target county (may differ from the current county's id). */
+  userId?: string
   /** Normalized namespace returned by the API (falls back to requested `nameSpace`). */
   namespace?: string
   /** Human‑readable county label if backend provides it. */
