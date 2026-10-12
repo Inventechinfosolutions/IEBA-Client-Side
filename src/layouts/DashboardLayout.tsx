@@ -178,7 +178,7 @@ export function DashboardLayout() {
                         <LockKeyhole className="mr-2 size-4" />
                         Change Password
                       </DropdownMenuItem>
-                      {isSuperAdmin && (
+                      {(isSuperAdmin || (user.accountingPki === true && !mimic)) && (
                         <DropdownMenuItem
                           onSelect={(e) => {
                             e.preventDefault()

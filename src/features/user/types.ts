@@ -256,6 +256,8 @@ export type UserDetailsDto = {
   spmp?: boolean
   multilingual?: boolean
   pki?: boolean
+  /** Holds an active Accounting PKI (accountingadmin) role in this county. */
+  accountingPki?: boolean
   /**
    * Backend may include a flag/object indicating the user must change password.
    * Some environments return `{}` rather than a boolean, so we treat presence as truthy.
