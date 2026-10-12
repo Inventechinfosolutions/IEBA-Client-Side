@@ -24,6 +24,8 @@ export type User = {
 
   permissions?: string[]
   theme?: boolean
+  /** PKI user (userprofile.pki) — may run PKI-only reports such as A010. */
+  pki?: boolean
 
   departmentRoles?: Array<{
     departmentId: number

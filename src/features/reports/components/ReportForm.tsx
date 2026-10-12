@@ -852,7 +852,7 @@ export function ReportForm({ module }: ReportFormProps) {
 
   /** "All Departments" is only runnable for A010, which only Super Admin / PKI can see. */
   const canSelectAllDepartments =
-    !!user?.permissions?.includes("superadmin:all") && rawDepartmentOptions.length > 1
+    (!!user?.permissions?.includes("superadmin:all") || user?.pki === true) && rawDepartmentOptions.length > 1
 
   const [selectedDeptId, setSelectedDeptId] = useState<string>(() => {
     const stored = readStoredReportFormParams()

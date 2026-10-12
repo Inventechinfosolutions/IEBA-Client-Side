@@ -3,6 +3,7 @@ import { createBrowserRouter, Navigate } from "react-router-dom"
 import { GuestOnlyRoute } from "@/components/GuestOnlyRoute"
 import { ProtectedRoute } from "@/components/ProtectedRoute"
 import { PermissionRoute } from "@/components/PermissionRoute"
+import { HomeRoute } from "@/components/HomeRoute"
 import { DashboardLayout } from "@/layouts/DashboardLayout"
 import { LoginPage, ForgotPassword, OtpAuthentication, ResetPassword } from "@/features/auth"
 import { lazyWithRetry } from "@/lib/lazyWithRetry"
@@ -77,7 +78,7 @@ export function createAppRouter(queryClient: QueryClient) {
         </ProtectedRoute>
       ),
       children: [
-        { index: true, element: <DashboardPage /> },
+        { index: true, element: <HomeRoute><DashboardPage /></HomeRoute> },
         {
           path: "master-code",
           element: <PermissionRoute permission="mastercode"><MasterCodePage /></PermissionRoute>,
