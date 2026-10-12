@@ -40,9 +40,11 @@ export async function changeCounty(body: ChangeCountyBody): Promise<ChangeCounty
       payload.name_space) as string | undefined
   const countyNameRaw =
     (payload.countyName ?? payload.county_name) as string | undefined
+  const userIdRaw = (payload.userId ?? payload.user_id) as string | undefined
 
   return {
     accessToken,
+    userId: userIdRaw?.trim() || undefined,
     namespace: namespaceRaw?.trim() || undefined,
     countyName: countyNameRaw?.trim() || undefined,
   }

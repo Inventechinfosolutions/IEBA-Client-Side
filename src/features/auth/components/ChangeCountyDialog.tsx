@@ -87,13 +87,25 @@ export function ChangeCountyDialog({
             ""
 
           // Re-fetch details for the new namespace context
+          const userId = result.userId ?? user.id
           let roles: string[] | undefined
           let permissions: string[] | undefined
           let displayName: string | undefined
+          let departmentRoles = user.departmentRoles
+          let pki = user.pki
+          let accountingPki = user.accountingPki
 
           try {
-            const details = await getUserDetails(user.id)
+            const details = await getUserDetails(userId)
             roles = details.roles?.map((r) => r.name)
+            pki = details.pki === true
+            accountingPki = details.accountingPki === true
+            departmentRoles = details.departmentsRoles?.map((dr) => ({
+              departmentId: dr.departmentId,
+              roleId: dr.roleId,
+              departmentName: dr.department?.name ?? "",
+              roleName: dr.role?.name ?? "",
+            }))
             permissions = details.allpermissions
             if (!permissions || permissions.length === 0) {
               const all = new Set<string>()
@@ -112,6 +124,10 @@ export function ChangeCountyDialog({
 
           establishDashboardSession({
             ...user,
+            id: userId,
+            departmentRoles,
+            pki,
+            accountingPki,
             name: displayName || user.name,
             namespace: result.namespace ?? selectedNameSpace,
             countyName,
