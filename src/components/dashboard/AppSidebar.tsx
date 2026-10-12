@@ -34,7 +34,7 @@ import {
 import { usePermissions } from "@/hooks/usePermissions"
 // ---------------------------------------------------------------------------
 // Nav definition
-// permission: null          → always visible (e.g. Dashboard)
+// permission: null          → always visible
 // permission: "superadmin"  → only visible when user has superadmin:all / client admin
 // permission: "mastercode"  → superadmin, client admin, or department admin
 // permission: "module"      → visible when user has "module:view"
@@ -55,13 +55,13 @@ type NavItem = {
 }
 
 const mainNav: NavItem[] = [
-  { title: "Dashboard", url: "/", icon: Gauge, permission: null },
+  { title: "Dashboard", url: "/", icon: Gauge, permission: "dashboard:user" },
   { title: "Personal Time Study", url: "/personal-time-study", icon: Clock, permission: "timestudypersonal" },
   { title: "To-Do", url: "/to-do", icon: ListTodo, permission: "todo" },
   { title: "User", url: "/user", icon: User, permission: "user" },
   { title: "Reports", url: "/reports", icon: FileText, permission: "report" },
   { title: "Payroll", url: "/payroll", icon: CircleDollarSign, permission: "payroll" },
-  { title: "Department", url: "/department", icon: Home, permission: null },
+  { title: "Department", url: "/department", icon: Home, permission: "department" },
   { title: "Program", url: "/program", icon: ClipboardCheck, permission: ["budgetprogram", "timestudyprogram", "timestudyactivity"] },
   { title: "County Activity Code", url: "/county-activity-code", icon: SquarePen, permission: "countyactivity" },
   { title: "Master Code", url: "/master-code", icon: SquareTerminal, permission: "mastercode" },
