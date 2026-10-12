@@ -26,6 +26,8 @@ export type User = {
   theme?: boolean
   /** PKI user (userprofile.pki) — may run PKI-only reports such as A010. */
   pki?: boolean
+  /** Accounting PKI role holder — may switch between counties where the same login holds that role. */
+  accountingPki?: boolean
 
   departmentRoles?: Array<{
     departmentId: number
