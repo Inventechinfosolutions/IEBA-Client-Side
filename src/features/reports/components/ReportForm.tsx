@@ -68,6 +68,8 @@ import type {
   ReportSelectOption,
 } from "../types"
 import { mapReportFormToRunPayload } from "../utils/mapReportFormToRunPayload"
+import { parseExcelWorkbookPreview, type ExcelPreviewSheet } from "../utils/parseExcelWorkbookPreview"
+import { ExcelWorkbookPreview } from "./ExcelWorkbookPreview"
 import { readStoredReportFormParams, writeStoredReportFormParams, clearStoredReportFormParams } from "../utils/reportFormSessionStorage"
 import {
   resolveAllowedSelectMonthByValues,
@@ -807,6 +809,7 @@ export type ReportFormProps = {
 
 export function ReportForm({ module }: ReportFormProps) {
   const [reportPreviewUrl, setReportPreviewUrl] = useState<string>("")
+  const [excelPreviewSheets, setExcelPreviewSheets] = useState<ExcelPreviewSheet[] | null>(null)
   const [employeeListPage, setEmployeeListPage] = useState(1)
   const [employeeSearchInput, setEmployeeSearchInput] = useState("")
   const [employeeSearch, setEmployeeSearch] = useState("")
@@ -830,6 +833,7 @@ export function ReportForm({ module }: ReportFormProps) {
   }
 
   const updateReportPreview = (blob: Blob, employeeListPageLabel = "") => {
+    setExcelPreviewSheets(null)
     setPreviewEmployeeListPageLabel(employeeListPageLabel)
     setReportPreviewUrl((previousUrl) => {
       if (previousUrl) {
@@ -1524,6 +1528,9 @@ export function ReportForm({ module }: ReportFormProps) {
     return REPORT_DOWNLOAD_TYPES.map((t) => ({ value: t, label: t }))
   }, [reportKey])
 
+  const isViewButtonPending =
+    isViewPending || (reportKey.trim().toUpperCase() === "QTR-MONTH-BREAKOUT" && isDownloadPending)
+
   // Rainbow QTR breakout is Excel-only.
   useEffect(() => {
     if (reportKey.trim().toUpperCase() !== "QTR-MONTH-BREAKOUT") return
@@ -1568,7 +1575,7 @@ export function ReportForm({ module }: ReportFormProps) {
   }
 
   const onViewReport = handleSubmit(async (values) => {
-    // Excel-only report: View uses the same Excel download path (no PDF renderer).
+    // Excel-only report: View fetches the workbook and renders its sheets in-page (no PDF renderer).
     if (values.reportKey.trim().toUpperCase() === "QTR-MONTH-BREAKOUT") {
       const parsedName = reportDownloadFileNameSchema.safeParse(
         values.fileName?.trim() || values.reportKey || "QTR-MONTH-BREAKOUT",
@@ -1587,15 +1594,25 @@ export function ReportForm({ module }: ReportFormProps) {
           : {}),
       }
       downloadReport(payload, {
-        onSuccess: (blobLike) => {
+        onSuccess: async (blobLike) => {
           const blob = asBlobResponse(blobLike)
           if (!blob) {
             toast.error("Report response is not a file. Please check selected report parameters.")
             return
           }
-          saveBlobAsFile(blob, fileName, "Excel")
-          toast.success("Download started")
-          persistIfRequested({ ...values, downloadType: "Excel", fileName })
+          try {
+            const sheets = await parseExcelWorkbookPreview(blob)
+            setPreviewEmployeeListPageLabel("")
+            setReportPreviewUrl((previousUrl) => {
+              if (previousUrl) URL.revokeObjectURL(previousUrl)
+              return ""
+            })
+            setExcelPreviewSheets(sheets)
+            toast.success("Report loaded")
+            persistIfRequested({ ...values, downloadType: "Excel", fileName })
+          } catch {
+            toast.error("Could not read the Excel report for preview")
+          }
         },
         onError: (err) => {
           toast.error(err instanceof Error ? err.message : "Could not load the report")
@@ -1701,6 +1718,7 @@ export function ReportForm({ module }: ReportFormProps) {
   const onStop = () => {
     stopViewReport()
     stopDownloadReport()
+    setExcelPreviewSheets(null)
     setPreviewEmployeeListPageLabel("")
     setReportPreviewUrl((previousUrl) => {
       if (previousUrl) {
@@ -2806,12 +2824,12 @@ export function ReportForm({ module }: ReportFormProps) {
                 type="button"
                 variant="default"
                 className={cn(primaryReportButtonClass, "flex-1 sm:flex-initial")}
-                disabled={isViewPending}
+                disabled={isViewButtonPending}
                 onClick={() => {
                   void onViewReport()
                 }}
               >
-                {isViewPending ? (
+                {isViewButtonPending ? (
                   <>
                     <Loader2 className="mr-1 size-4 shrink-0 animate-spin" />
                     <span className="truncate">Loading…</span>
@@ -2931,6 +2949,14 @@ export function ReportForm({ module }: ReportFormProps) {
                 src={reportPreviewUrl}
                 className="h-[85vh] min-h-[720px] w-full"
               />
+            </div>
+          </div>
+        ) : null}
+
+        {excelPreviewSheets ? (
+          <div className="pt-4">
+            <div className="overflow-hidden rounded-[10px] border border-[#E5E7EB] bg-white shadow-sm">
+              <ExcelWorkbookPreview sheets={excelPreviewSheets} />
             </div>
           </div>
         ) : null}
