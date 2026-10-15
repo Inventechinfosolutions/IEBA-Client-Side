@@ -1493,6 +1493,10 @@ export function ReportForm({ module }: ReportFormProps) {
     }
   }, [shouldLoadDepartmentUsers, departmentUsersData])
 
+  // Only the department users API filters by search; cost-pool and MAA employee lists are filtered in the picker.
+  const employeeSearchValue = shouldLoadDepartmentUsers ? employeeSearchInput : undefined
+  const onEmployeeSearchChange = shouldLoadDepartmentUsers ? handleEmployeeSearchChange : undefined
+
   const isEmployeeLoading =
     (shouldFetchCostPoolUsers && isCostPoolUsersFetching) ||
     (shouldFetchDepartmentUsers && isDeptUsersFetching) ||
@@ -2662,8 +2666,8 @@ export function ReportForm({ module }: ReportFormProps) {
                         pagination={departmentEmployeePagination}
                         optionLabelByValue={employeeOptionLabelByValue}
                         retainSelectionsOutsideOptions={Boolean(departmentEmployeePagination)}
-                        searchValue={employeeSearchInput}
-                        onSearchChange={handleEmployeeSearchChange}
+                        searchValue={employeeSearchValue}
+                        onSearchChange={onEmployeeSearchChange}
                         required
                         onValuesChange={(next) => {
                           if (next.trim()) clearErrors("employeeIds")
@@ -2773,8 +2777,8 @@ export function ReportForm({ module }: ReportFormProps) {
                 pagination={departmentEmployeePagination}
                 optionLabelByValue={employeeOptionLabelByValue}
                 retainSelectionsOutsideOptions={Boolean(departmentEmployeePagination)}
-                searchValue={employeeSearchInput}
-                onSearchChange={handleEmployeeSearchChange}
+                searchValue={employeeSearchValue}
+                onSearchChange={onEmployeeSearchChange}
                 required
               />
             </div>
