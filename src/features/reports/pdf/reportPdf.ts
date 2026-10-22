@@ -530,6 +530,8 @@ export type MaatcmActivity = {
   total: number
   totalper: string
   dayValues: string[]
+  /** Shown on the report but excluded from every total and % (e.g. CTO on the Madera copy). */
+  infoOnly: boolean
 }
 
 export type MaatcmEmployee = {
@@ -556,7 +558,10 @@ export type MAATCMReportPdfProps = {
   activityCodeTypes?: string[]
   printedOn?: string
   meta?: ReportPdfMeta
+  variant?: MaatcmReportVariant
 }
+
+export type MaatcmReportVariant = "default" | "madera"
 
 export type McahTvtsWeek = {
   label: string
@@ -2273,6 +2278,7 @@ function parseMaatcmActivity(raw: Record<string, unknown>, daysInMonth: number):
     total: toNumber((raw.total ?? 0) as string | number),
     totalper: String(raw.totalper ?? raw.totalPer ?? "0.00"),
     dayValues,
+    infoOnly: raw.infoOnly === true,
   }
 }
 
@@ -2337,6 +2343,7 @@ export function normMaatcmEmployeeTypes(employee: MaatcmEmployee): string[] {
 }
 
 export function includeMaatcmActivityInPivot(activity: MaatcmActivity, types: string[]): boolean {
+  if (activity.infoOnly) return false
   if (!(activity.total > 0)) return false
   if (!types.includes("MAA")) return false
   if (!types.includes("TCM")) return true
@@ -2413,6 +2420,7 @@ export function getMaatcmDayValue(activity: MaatcmActivity, day: number): string
 
 export function getMaatcmDayTotal(employee: MaatcmEmployee, day: number): string {
   const total = employee.activities.reduce((sum, activity) => {
+    if (activity.infoOnly) return sum
     const value = getMaatcmDayValue(activity, day)
     return sum + toNumber(value)
   }, 0)
@@ -2420,7 +2428,16 @@ export function getMaatcmDayTotal(employee: MaatcmEmployee, day: number): string
 }
 
 export function getMaatcmGrandTotal(employee: MaatcmEmployee): number {
-  return employee.activities.reduce((sum, activity) => sum + activity.total, 0)
+  return employee.activities.reduce((sum, activity) => (activity.infoOnly ? sum : sum + activity.total), 0)
+}
+
+const MAATCM_WEEKDAY_SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const
+
+export function getMaatcmWeekdayLabel(employee: MaatcmEmployee, day: number): string {
+  const year = Number(employee.year)
+  const month = Number(employee.month)
+  if (!(year > 0) || !(month >= 1 && month <= 12)) return ""
+  return MAATCM_WEEKDAY_SHORT[new Date(year, month - 1, day).getDay()]
 }
 
 // --- MCAH-TVTS helpers ---

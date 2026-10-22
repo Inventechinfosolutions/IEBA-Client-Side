@@ -42,6 +42,7 @@ import { generateDSSRPT4ReportPdf } from "../pdf/DSSRPT4ReportPdf"
 import { generateAC741ReportPdf } from "../pdf/AC741ReportPdf"
 import { generateICS214ReportPdf } from "../pdf/ICS214ReportPdf"
 import { generateMAATCMReportPdf } from "../pdf/MAATCMReportPdf"
+import { isMaderaCounty } from "../utils/maatcmVariant"
 import { generateMCAHTVTSReportPdf } from "../pdf/MCAHTVTSReportPdf"
 import { generateQTRMONTHReportPdf } from "../pdf/QTRMONTHReportPdf"
 import { generateTCMMAAADHOCReportPdf } from "../pdf/TCMMAAADHOCReportPdf"
@@ -267,6 +268,7 @@ async function buildFrontendPdfReport(
         dateTo: body.dateTo,
         activityCodeTypes,
         meta,
+        variant: isMaderaCounty(body.countyName) ? "madera" : "default",
       })
     }
 
