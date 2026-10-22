@@ -1,6 +1,7 @@
 import { Document, Page, StyleSheet, Text, View, pdf } from "@react-pdf/renderer"
 import type { ReactNode } from "react"
 
+import { MAATCM_MADERA_REPORT_TITLE } from "../utils/maatcmVariant"
 import { REPORT_PDF_DEFAULT_LOGOS } from "./reportPdfAssets"
 
 import {
@@ -17,6 +18,7 @@ import {
   getMaatcmDayTotal,
   getMaatcmDayValue,
   getMaatcmGrandTotal,
+  getMaatcmWeekdayLabel,
   hoursByCodeForMaatcmEmployee,
   isMaatcmSummaryEmployee,
   maatcmPivotPeriodDisplay,
@@ -134,12 +136,6 @@ const styles = StyleSheet.create({
     borderRightWidth: 1,
     borderRightColor: "#000000",
   },
-  monthYearSpacer: {
-    width: 24,
-    minHeight: 14,
-    borderRightWidth: 1,
-    borderRightColor: "#000000",
-  },
   monthYearCellLast: {
     width: 52,
     paddingVertical: 2,
@@ -221,6 +217,18 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#000000",
     padding: 4,
+  },
+  aquaWeekday: {
+    backgroundColor: AQUA,
+    borderWidth: 1,
+    borderColor: "#000000",
+    paddingVertical: 2,
+    fontFamily: "Helvetica-Bold",
+    fontSize: 5,
+    textAlign: "center",
+  },
+  infoOnlyText: {
+    fontFamily: "Helvetica-Oblique",
   },
   totalsLabel: {
     borderWidth: 1,
@@ -343,23 +351,15 @@ function MaatcmSignatureBlock() {
   )
 }
 
-function MonthYearBlock({
-  month,
-  year,
-}: {
-  month: string | number
-  year: string | number
-}) {
+function MonthYearBlock({ month, year }: { month: string | number; year: string | number }) {
   return (
     <View style={styles.monthYearTable}>
       <View style={styles.monthYearRow}>
         <Text style={styles.monthYearCell}>Month</Text>
-        <View style={styles.monthYearSpacer} />
         <Text style={styles.monthYearCellLast}>Year</Text>
       </View>
       <View style={styles.monthYearRowLast}>
         <Text style={styles.monthYearCell}>{String(month)}</Text>
-        <View style={styles.monthYearSpacer} />
         <Text style={styles.monthYearCellLast}>{String(year)}</Text>
       </View>
     </View>
@@ -459,7 +459,7 @@ function MaatcmEmployeeInfoTable({ employee }: { employee: MaatcmEmployee }) {
   )
 }
 
-function MaatcmMonthlyGrid({ employee }: { employee: MaatcmEmployee }) {
+function MaatcmMonthlyGrid({ employee, isMadera }: { employee: MaatcmEmployee; isMadera: boolean }) {
   const days = employee.noofdaysinmonth
   const { codeWidth, nameWidth, dayWidth, totalWidth, percentWidth } = getMaatcmGridLayout(days)
 
@@ -480,26 +480,44 @@ function MaatcmMonthlyGrid({ employee }: { employee: MaatcmEmployee }) {
       <View style={styles.gridRow}>
         <Text style={[styles.gridSpacerPlain, { width: codeWidth }]} />
         <Text style={[styles.gridSpacerPlain, { width: nameWidth }]} />
-        {Array.from({ length: days }).map((_, index) => (
-          <Text key={`aqua-${index}`} style={[styles.aquaSpacer, { width: dayWidth }]} />
-        ))}
+        {Array.from({ length: days }).map((_, index) =>
+          isMadera ? (
+            <Text key={`aqua-${index}`} style={[styles.aquaWeekday, { width: dayWidth }]}>
+              {getMaatcmWeekdayLabel(employee, index + 1)}
+            </Text>
+          ) : (
+            <Text key={`aqua-${index}`} style={[styles.aquaSpacer, { width: dayWidth }]} />
+          ),
+        )}
         <Text style={[styles.gridSpacerPlain, { width: totalWidth }]} />
         <Text style={[styles.gridSpacerPlain, { width: percentWidth }]} />
       </View>
 
-      {employee.activities.map((activity, index) => (
-        <View key={`${activity.code}-${index}`} style={styles.gridRow}>
-          <Text style={[styles.gridCell, { width: codeWidth }]}>{activity.code}</Text>
-          <Text style={[styles.gridCellLeft, { width: nameWidth }]}>{activity.activityname}</Text>
-          {Array.from({ length: days }).map((_, dayIndex) => (
-            <Text key={`${activity.code}-d-${dayIndex}`} style={[styles.gridCell, { width: dayWidth }]}>
-              {getMaatcmDayValue(activity, dayIndex + 1)}
+      {employee.activities.map((activity, index) => {
+        const textStyle = activity.infoOnly ? styles.infoOnlyText : {}
+        return (
+          <View key={`${activity.code}-${index}`} style={styles.gridRow}>
+            <Text style={[styles.gridCell, textStyle, { width: codeWidth }]}>{activity.code}</Text>
+            <Text style={[styles.gridCellLeft, textStyle, { width: nameWidth }]}>
+              {activity.infoOnly ? `${activity.activityname} (info only)` : activity.activityname}
             </Text>
-          ))}
-          <Text style={[styles.gridCell, { width: totalWidth }]}>{formatReportTime(activity.total)}</Text>
-          <Text style={[styles.gridCell, { width: percentWidth }]}>{activity.totalper}%</Text>
-        </View>
-      ))}
+            {Array.from({ length: days }).map((_, dayIndex) => (
+              <Text
+                key={`${activity.code}-d-${dayIndex}`}
+                style={[styles.gridCell, textStyle, { width: dayWidth }]}
+              >
+                {getMaatcmDayValue(activity, dayIndex + 1)}
+              </Text>
+            ))}
+            <Text style={[styles.gridCell, textStyle, { width: totalWidth }]}>
+              {formatReportTime(activity.total)}
+            </Text>
+            <Text style={[styles.gridCell, textStyle, { width: percentWidth }]}>
+              {activity.infoOnly ? "" : `${activity.totalper}%`}
+            </Text>
+          </View>
+        )
+      })}
 
       <View style={styles.gridRow}>
         <Text style={[styles.totalsLabel, { width: codeWidth + nameWidth }]}>Total Hours:</Text>
@@ -517,7 +535,7 @@ function MaatcmMonthlyGrid({ employee }: { employee: MaatcmEmployee }) {
   )
 }
 
-function MaatcmMonthlyEmployeeSection({ employee }: { employee: MaatcmEmployee }) {
+function MaatcmMonthlyEmployeeSection({ employee, isMadera }: { employee: MaatcmEmployee; isMadera: boolean }) {
   return (
     <View wrap={false}>
       <MaatcmDetailsHeader
@@ -528,7 +546,7 @@ function MaatcmMonthlyEmployeeSection({ employee }: { employee: MaatcmEmployee }
         year={employee.year}
       />
       <MaatcmEmployeeInfoTable employee={employee} />
-      <MaatcmMonthlyGrid employee={employee} />
+      <MaatcmMonthlyGrid employee={employee} isMadera={isMadera} />
       <MaatcmSignatureBlock />
     </View>
   )
@@ -705,10 +723,12 @@ function MAATCMReportDocument({
   printedOn,
   meta,
   footerVariant,
+  variant,
 }: MAATCMReportPdfProps & {
   meta: ResolvedReportPdfMeta
   footerVariant: ReportPdfFooterVariant
 }) {
+  const isMadera = variant === "madera"
   const resolvedTypes =
     activityCodeTypes?.length
       ? activityCodeTypes
@@ -750,7 +770,7 @@ function MAATCMReportDocument({
           footerVariant={footerVariant}
           printedOn={printedOn}
         >
-          <MaatcmMonthlyEmployeeSection employee={employee} />
+          <MaatcmMonthlyEmployeeSection employee={employee} isMadera={isMadera} />
         </MAATCMReportPage>
       ))}
     </Document>
@@ -770,7 +790,9 @@ export async function generateMAATCMReportPdf(props: MAATCMReportPdfProps): Prom
       reportCode: props.meta?.reportCode ?? "MAATCM",
       reportTitle:
         props.meta?.reportTitle ??
-        resolveReportTitle("MAATCM", { activityCodeTypes }),
+        (props.variant === "madera"
+          ? MAATCM_MADERA_REPORT_TITLE
+          : resolveReportTitle("MAATCM", { activityCodeTypes })),
     },
     REPORT_PDF_DEFAULT_LOGOS,
   )
