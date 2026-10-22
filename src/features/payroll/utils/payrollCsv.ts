@@ -67,6 +67,15 @@ export function triggerBrowserDownloadBlob(filename: string, blob: Blob): void {
 
 
 
+/** Same lookup as `PayrollDataTable`: header label → backend lowercase key (e.g. "Pay Period Begin" → "payperiodbegin"). */
+function rowToCellsForHeaders(headers: readonly string[], row: PayrollManagementRow): string[] {
+  const record = row as unknown as Record<string, unknown>
+  return headers.map((label) => {
+    const value = record[label.toLowerCase().replace(/[^a-z0-9]/g, "")]
+    return value === null || value === undefined ? "" : String(value)
+  })
+}
+
 export async function buildPayrollRowsXlsxBlob(
   headers: readonly string[],
   rows: readonly PayrollManagementRow[],
@@ -75,10 +84,8 @@ export async function buildPayrollRowsXlsxBlob(
   const XLSX = mod.default ?? mod
 
   // 1. Prepare data (AOA format: Header row + Data rows)
-  const data = [
-    Array.from(headers),
-    ...rows.map((r) => rowToCsvCells(r))
-  ]
+  const dataRows = rows.map((r) => rowToCellsForHeaders(headers, r))
+  const data = [Array.from(headers), ...dataRows]
 
   // 2. Create worksheet
   const ws = XLSX.utils.aoa_to_sheet(data)
@@ -87,8 +94,8 @@ export async function buildPayrollRowsXlsxBlob(
   // Start with header lengths, then check max length in each data column
   const colWidths = headers.map((h, i) => {
     let maxLen = h.length
-    for (const row of rows) {
-      const cellVal = String(rowToCsvCells(row)[i] || "")
+    for (const cells of dataRows) {
+      const cellVal = cells[i] ?? ""
       if (cellVal.length > maxLen) maxLen = cellVal.length
     }
     // Clamp between 12 and 40 characters
