@@ -563,6 +563,19 @@ export type MAATCMReportPdfProps = {
 
 export type MaatcmReportVariant = "default" | "madera"
 
+export type ClpppEmployee = MaatcmEmployee & {
+  firstname: string
+  lastname: string
+  middleinitial: string
+  program: string
+}
+
+export type CLPPPReportPdfProps = {
+  employees: ClpppEmployee[]
+  printedOn?: string
+  meta?: ReportPdfMeta
+}
+
 export type McahTvtsWeek = {
   label: string
   cat1: number
@@ -2414,6 +2427,20 @@ export function maatcmPivotPeriodDisplay(
   }
 }
 
+export function unwrapClpppEmployees(raw: unknown): ClpppEmployee[] {
+  const rows = unwrapListData(raw)
+  return unwrapMaatcmEmployees(raw).map((employee, index) => {
+    const row = asRecord(rows[index])
+    return {
+      ...employee,
+      firstname: String(row.firstname ?? ""),
+      lastname: String(row.lastname ?? ""),
+      middleinitial: String(row.middleinitial ?? ""),
+      program: String(row.program ?? ""),
+    }
+  })
+}
+
 export function getMaatcmDayValue(activity: MaatcmActivity, day: number): string {
   return activity.dayValues[day - 1] ?? ""
 }
@@ -3166,6 +3193,8 @@ export function resolveReportTitle(
       return "AC741 Activity Summary"
     case "ICS214":
       return "ACTIVITY LOG (ICS 214)"
+    case "CLPPP":
+      return "CLPPP Report"
     case "DSSRPT2":
       return "Time Study Hours - DSSRPT2"
     case "DSSRPT3":
@@ -3203,6 +3232,7 @@ export function resolveFooterVariant(reportCode: string): ReportPdfFooterVariant
     case "P112":
     case "P110-SS":
     case "MAATCM":
+    case "CLPPP":
     case "TCM_MAA_ADHOC":
     case "ICS214":
       return "minimal"

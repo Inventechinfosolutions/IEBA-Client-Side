@@ -10,6 +10,7 @@ export function isMcahTvtsReportKey(reportKey: string | null | undefined): boole
 const REPORTS_MAPPING_READ_ONLY_KEYS = new Set([
   "DSSRPT1",
   "MAATCM",
+  "CLPPP",
   "TCM_MAA_ADHOC",
   "DSSRPT3",
   "DSSRPT4",
