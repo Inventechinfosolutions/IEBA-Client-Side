@@ -19,6 +19,7 @@ import {
   resolveMaatcmIsMonthly,
   unwrapAc741Employees,
   unwrapIcs214Employees,
+  unwrapClpppEmployees,
   unwrapMaatcmEmployees,
   unwrapMcahTvtsEmployees,
   unwrapQtrMonthEmployees,
@@ -42,6 +43,7 @@ import { generateDSSRPT4ReportPdf } from "../pdf/DSSRPT4ReportPdf"
 import { generateAC741ReportPdf } from "../pdf/AC741ReportPdf"
 import { generateICS214ReportPdf } from "../pdf/ICS214ReportPdf"
 import { generateMAATCMReportPdf } from "../pdf/MAATCMReportPdf"
+import { generateCLPPPReportPdf } from "../pdf/CLPPPReportPdf"
 import { isMaderaCounty } from "../utils/maatcmVariant"
 import { generateMCAHTVTSReportPdf } from "../pdf/MCAHTVTSReportPdf"
 import { generateQTRMONTHReportPdf } from "../pdf/QTRMONTHReportPdf"
@@ -269,6 +271,13 @@ async function buildFrontendPdfReport(
         activityCodeTypes,
         meta,
         variant: isMaderaCounty(body.countyName) ? "madera" : "default",
+      })
+    }
+
+    if (body.reportKey === "CLPPP") {
+      return await generateCLPPPReportPdf({
+        employees: unwrapClpppEmployees(response),
+        meta,
       })
     }
 
