@@ -207,7 +207,7 @@ export function CountyForm({ isSaving }: CountyFormProps) {
 
             <div className="min-w-0">
               <label className={labelClassName}>
-                <RequiredLabel>Auto Approval</RequiredLabel>
+                <RequiredLabel>Auto Approve Time Off</RequiredLabel>
               </label>
               <div className={controlRowClassName}>
                 <Controller
@@ -218,10 +218,14 @@ export function CountyForm({ isSaving }: CountyFormProps) {
                       checked={field.value}
                       onCheckedChange={(checked) => field.onChange(checked)}
                       className="cursor-pointer data-checked:bg-[var(--primary)]"
+                      aria-label="Auto approve time off requests"
                     />
                   )}
                 />
               </div>
+              <p className="mt-1 text-[11px] text-[#6b7280]">
+                When on, leave requests skip supervisor approval and are approved automatically.
+              </p>
             </div>
 
             <div className="min-w-0">
