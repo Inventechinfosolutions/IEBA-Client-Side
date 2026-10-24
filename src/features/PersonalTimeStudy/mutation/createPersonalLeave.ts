@@ -26,14 +26,18 @@ export function useCreatePersonalLeave(userId: string, dateStr: string, month: n
   })
 }
 
-/** Submit leave entries as requested (notifies supervisor). */
+/** Submit leave entries as requested (auto-approves when county Auto Approve Time Off is on). */
 export function useSubmitPersonalLeave(userId: string, dateStr: string, month: number, year: number) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: ({ values, userId: uid, dropdownData }: CreateLeavePayload) =>
       apiSubmitLeaveAsRequested(values, uid ?? userId, dropdownData),
-    onSuccess: () => {
-      toast.success("Leave request submitted")
+    onSuccess: (leaves) => {
+      const autoApproved =
+        Array.isArray(leaves) &&
+        leaves.length > 0 &&
+        leaves.every((l) => String(l.status ?? "").toLowerCase() === "approved")
+      toast.success(autoApproved ? "Leave request approved" : "Leave request submitted")
       invalidateAll(queryClient, userId, dateStr, month, year)
     },
     onError: (error: any) => {
@@ -48,8 +52,12 @@ export function useUpdatePersonalLeave(userId: string, dateStr: string, month: n
   return useMutation({
     mutationFn: ({ id, values, userId: uid, status, dropdownData }: { id: number; status: "draft" | "requested" | "approved" } & CreateLeavePayload) =>
       apiUpdateUserLeave(id, values, uid ?? userId, status, dropdownData),
-    onSuccess: () => {
-      toast.success("Leave request updated")
+    onSuccess: (leave, variables) => {
+      const wasSubmit = variables.status === "requested"
+      const autoApproved = wasSubmit && String(leave?.status ?? "").toLowerCase() === "approved"
+      toast.success(
+        autoApproved ? "Leave request approved" : wasSubmit ? "Leave request submitted" : "Leave request updated",
+      )
       invalidateAll(queryClient, userId, dateStr, month, year)
     },
     onError: (error: any) => {
