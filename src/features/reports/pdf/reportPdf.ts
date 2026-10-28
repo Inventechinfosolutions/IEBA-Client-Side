@@ -915,6 +915,26 @@ export function formatReportTime(value: string | number): string {
   return n ? n.toFixed(2) : "0.00"
 }
 
+/**
+ * DSSRPT2 FTE: 2 decimals, round-half-down.
+ * 0.02500 → 0.02; anything above 0.025 → 0.03.
+ */
+export function formatDssrpt2Fte(value: string | number): string {
+  const n = Number(value)
+  if (!Number.isFinite(n) || n === 0) return "0.00"
+  const sign = n < 0 ? -1 : 1
+  const scaledText = (Math.abs(n) * 100).toFixed(12)
+  const [wholeRaw, fracRaw = ""] = scaledText.split(".")
+  const frac = fracRaw.replace(/0+$/, "")
+  const firstDigit = Number(frac[0] ?? "0")
+  const hasMore = frac.length > 1
+  let whole = Number(wholeRaw)
+  if (firstDigit > 5 || (firstDigit === 5 && hasMore)) {
+    whole += 1
+  }
+  return (sign * (whole / 100)).toFixed(2)
+}
+
 // --- P101 grouping (by activity within employee) ---
 
 /**
