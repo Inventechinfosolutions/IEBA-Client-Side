@@ -11,6 +11,7 @@ import {
 import {
   buildResolvedPdfMeta,
   ensurePdfBlob,
+  formatDssrpt2Fte,
   formatPrintedOnLabel,
   formatReportTime,
   resolveFooterVariant,
@@ -212,7 +213,7 @@ function EmployeeSection({ employee }: { employee: Dssrpt2GroupedEmployee }) {
             {formatReportTime(program.activityTime)}
           </Text>
           <Text style={[styles.rightCell, { width: W.fte }]}>
-            {formatReportTime(program.allocatedFte)}
+            {formatDssrpt2Fte(program.allocatedFte)}
           </Text>
         </View>
       ))}
@@ -224,7 +225,7 @@ function EmployeeSection({ employee }: { employee: Dssrpt2GroupedEmployee }) {
           {formatReportTime(employee.totalActivityTime)}
         </Text>
         <Text style={[styles.totalValue, { width: W.fte }]}>
-          {formatReportTime(employee.totalFteHours)}
+          {formatDssrpt2Fte(employee.totalFteHours)}
         </Text>
       </View>
     </View>
