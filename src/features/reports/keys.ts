@@ -14,5 +14,8 @@ export const reportKeys = {
     [...reportKeys.all, "cost-pool-users", { pools, user, status }] as const,
   maaTcmActivityDepartments: () => [...reportKeys.all, "maa-tcm-activity-departments"] as const,
   listAllPrograms: () => [...reportKeys.all, "list-all-programs"] as const,
+  clpppPrograms: (departmentId: string) =>
+    [...reportKeys.all, "clppp-programs", departmentId] as const,
+  clpppActivities: (departmentId: string, programIds: string[], activityStatus: string) =>
+    [...reportKeys.all, "clppp-activities", departmentId, programIds, activityStatus] as const,
 }
-

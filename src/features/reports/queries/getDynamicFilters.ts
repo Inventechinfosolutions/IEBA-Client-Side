@@ -4,6 +4,8 @@ import {
   apiGetCostPoolUsers,
   apiGetMaaTcmActivityDepartments,
   apiGetListAllPrograms,
+  apiGetClpppPrograms,
+  apiGetClpppActivities,
   apiGetUsersUnderDepartment,
   apiGetActivitiesByDepartmentAndUsers,
   apiGetCostPoolsByDepartment,
@@ -72,6 +74,35 @@ export function useGetListAllPrograms(enabled: boolean, reportKey: string) {
     queryKey: [...reportKeys.listAllPrograms(), reportKey],
     queryFn: () => apiGetListAllPrograms(),
     enabled,
+    ...reportQueryOptions,
+  })
+}
+
+export function useGetClpppPrograms(
+  departmentId: string | undefined,
+  enabled: boolean,
+) {
+  const department = departmentId?.trim() ?? ""
+  return useQuery({
+    queryKey: reportKeys.clpppPrograms(department),
+    queryFn: () => apiGetClpppPrograms(department),
+    enabled: enabled && department.length > 0,
+    ...reportQueryOptions,
+  })
+}
+
+export function useGetClpppActivities(
+  departmentId: string | undefined,
+  programIds: string[],
+  activityStatus: string,
+  enabled: boolean,
+) {
+  const department = departmentId?.trim() ?? ""
+  const normalizedProgramIds = [...new Set(programIds.map((id) => id.trim()).filter(Boolean))].sort()
+  return useQuery({
+    queryKey: reportKeys.clpppActivities(department, normalizedProgramIds, activityStatus),
+    queryFn: () => apiGetClpppActivities(department, normalizedProgramIds, activityStatus),
+    enabled: enabled && department.length > 0 && normalizedProgramIds.length > 0,
     ...reportQueryOptions,
   })
 }

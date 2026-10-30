@@ -553,6 +553,7 @@ function ReportSecondaryPickBlock({
   options,
   placeholder,
   emptyListMessage,
+  disabled = false,
   maxVisibleChips = 2,
   onValuesChange,
   isLoading = false,
@@ -663,6 +664,7 @@ function ReportSecondaryPickBlock({
                   maxVisibleItems={maxVisibleChips}
                   className={employeeMultiSelectClassName}
                   emptyListMessage={emptyListMessage}
+                  disabled={disabled}
                   isLoading={isLoading}
                   pagination={pagination}
                   optionLabelByValue={optionLabelByValue}
@@ -1021,14 +1023,15 @@ export function ReportForm({ module }: ReportFormProps) {
   const currentReportItem = useMemo(() => {
     return departmentReportItems.find((i) => i.key === reportKey)
   }, [reportKey, departmentReportItems])
+  const isClpppReport = reportKey.trim().toUpperCase() === "CLPPP"
 
   const secondaryLayout = useMemo(
-    () => getReportSecondaryLayout(currentReportItem?.criteria),
-    [currentReportItem],
+    () => (isClpppReport ? "dynamic" : getReportSecondaryLayout(currentReportItem?.criteria)),
+    [currentReportItem, isClpppReport],
   )
   const employeeSelectionRequired = useMemo(
-    () => isEmployeeSelectionRequired(secondaryLayout, currentReportItem?.criteria),
-    [secondaryLayout, currentReportItem],
+    () => isClpppReport || isEmployeeSelectionRequired(secondaryLayout, currentReportItem?.criteria),
+    [isClpppReport, secondaryLayout, currentReportItem],
   )
 
   const activityIdsRaw = useWatch({ control, name: "activityIds" })
@@ -1064,8 +1067,8 @@ export function ReportForm({ module }: ReportFormProps) {
   const criteria = currentReportItem?.criteria
   /** Reports screen always shows department first; criteria drives downstream filters only. */
   const showReportsDepartmentField = true
-  const showProgramSelect = isTrue(criteria?.showProgramSelect)
-  const showActivitySelect = criteria?.showActivitySelect === true
+  const showProgramSelect = !isClpppReport && isTrue(criteria?.showProgramSelect)
+  const showActivitySelect = !isClpppReport && isTrue(criteria?.showActivitySelect)
   const showScheduleTime = isTrue(criteria?.showScheduleTime)
 
   const isMaaReport = useMemo(() => {
@@ -1198,7 +1201,6 @@ export function ReportForm({ module }: ReportFormProps) {
     shouldFetchActivities,
     reportKey,
   )
-
   const {
     viewReport,
     isViewPending,
@@ -1521,7 +1523,7 @@ export function ReportForm({ module }: ReportFormProps) {
       return sortSelectOptionsByLabel(userSpecificPrograms ?? [])
     }
     return sortSelectOptionsByLabel(allProgramsData ?? [])
-  }, [allProgramsData, userSpecificPrograms, shouldFilterProgramsByUser])
+  }, [allProgramsData, shouldFilterProgramsByUser, userSpecificPrograms])
 
 
   const downloadTypeOptions = useMemo(() => {
@@ -2639,15 +2641,16 @@ export function ReportForm({ module }: ReportFormProps) {
         )}
         {/* Row 2: secondary filters switch by report (DSSRPT1 → Employee+Activities, DSSRPT4 → Cost Pool+Employee, else Employee only). */}
         <div className="min-w-0 w-full pb-0">
-          {secondaryLayout === "dynamic" && currentReportItem?.criteria ? (
+          {secondaryLayout === "dynamic" && currentReportItem ? (
+            <>
             <div className="grid min-w-0 grid-cols-1 gap-x-10 gap-y-8 lg:grid-cols-2 lg:gap-y-0">
               {(() => {
-                const { criteria } = currentReportItem
+                const criteria = currentReportItem.criteria ?? {}
                 const costPoolFirst = isTrue(criteria.showCostPoolSelect) || isTrue(criteria.showCostPool)
                 const filterBlocks = [
                   {
                     id: "employee",
-                    show: isTrue(criteria.multipleEmployees),
+                    show: isClpppReport || isTrue(criteria.multipleEmployees),
                     order: costPoolFirst ? 2 : 1,
                     render: () => (
                       <ReportSecondaryPickBlock
@@ -2679,7 +2682,7 @@ export function ReportForm({ module }: ReportFormProps) {
                   },
                   {
                     id: "program",
-                    show: isTrue(criteria.showProgramSelect),
+                    show: showProgramSelect,
                     order: 2,
                     render: () => (
                       <ReportSecondaryPickBlock
@@ -2694,12 +2697,13 @@ export function ReportForm({ module }: ReportFormProps) {
                         options={programOptions}
                         placeholder="Select Program"
                         emptyListMessage="No programs available"
+                        onValuesChange={() => setValue("activityIds", "")}
                       />
                     ),
                   },
                   {
                     id: "activity",
-                    show: isTrue(criteria.showActivitySelect),
+                    show: showActivitySelect,
                     order: 3,
                     render: () => (
                       <ReportSecondaryPickBlock
@@ -2755,6 +2759,7 @@ export function ReportForm({ module }: ReportFormProps) {
                   .map((b) => <Fragment key={b.id}>{b.render()}</Fragment>)
               })()}
             </div>
+            </>
           ) : (
             <div className="w-full max-w-xl">
               <ReportSecondaryPickBlock
