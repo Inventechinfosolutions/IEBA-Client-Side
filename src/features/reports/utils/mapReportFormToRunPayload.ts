@@ -11,10 +11,11 @@ function parseCommaSeparatedIds(raw: string | undefined): string[] {
 export function mapReportFormToRunPayload(values: ReportFormValues): ReportRunPayload {
   const selectedDepartment = values.departmentId?.trim()
   const departmentId = selectedDepartment === ALL_DEPARTMENTS_VALUE ? undefined : selectedDepartment
+  const isClpppReport = values.reportKey.trim().toUpperCase() === "CLPPP"
   const employeeIds = parseCommaSeparatedIds(values.employeeIds)
-  const activityIds = parseCommaSeparatedIds(values.activityIds)
+  const activityIds = isClpppReport ? [] : parseCommaSeparatedIds(values.activityIds)
   const costPoolIds = parseCommaSeparatedIds(values.costPoolIds)
-  const programIds = parseCommaSeparatedIds(values.programIds)
+  const programIds = isClpppReport ? [] : parseCommaSeparatedIds(values.programIds)
 
   return {
     reportKey: values.reportKey.trim(),

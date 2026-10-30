@@ -56,6 +56,9 @@ export function getReportHardCodedMappingNotes(
         ? "Include / exclude master codes and activities for this department's DSSRPT1 activity list"
         : "Master-code / activity mapping is configured per department (Department → Reports)",
     )
+  } else if (key === "CLPPP") {
+    notes.push("Layer 1: Choose eligible programs, the FFP master code, and the activities that stay on their own rows (including A, 11MB, and 11MF).")
+    notes.push("Layer 2: Choose the programs and activity codes that roll into 11B, and which programs' PTO consolidates into code 12. PTO defaults to all programs.")
   } else if (key === "DSSRPT3" || key === "DSSRPT4") {
     notes.push("Based on Cost Pool selection — activities come from the selected cost pool")
     notes.push("No master-code / activity mapping on this screen")
@@ -72,6 +75,85 @@ export function getReportHardCodedMappingNotes(
   return notes
 }
 
+export type ClpppProgramRouting = {
+  eligibleProgramCodes: string[]
+  nonClpppProgramCodes: string[]
+  nonClpppActivityCodes: string[]
+  ptoProgramCodes: string[]
+}
+
+export const DEFAULT_CLPPP_ROUTING: ClpppProgramRouting = {
+  eligibleProgramCodes: [],
+  nonClpppProgramCodes: ["*"],
+  nonClpppActivityCodes: [],
+  ptoProgramCodes: ["*"],
+}
+
+function criteriaCodes(
+  criteria: Record<string, unknown>,
+  key: keyof ClpppProgramRouting,
+  fallback: string[],
+): string[] {
+  const value = criteria[key]
+  if (value === undefined) return fallback
+  if (!Array.isArray(value) || value.some((code) => typeof code !== "string")) {
+    throw new Error(`CLPPP criteria field "${key}" must be an array of codes.`)
+  }
+  const codes = [...new Set(value.map((code) => String(code).trim()).filter(Boolean))]
+  if (codes.includes("*")) return ["*"]
+  return codes.length ? codes : fallback
+}
+
+function readClpppObject(raw?: string | null): Record<string, unknown> | null {
+  if (!raw?.trim()) return null
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(raw)
+  } catch {
+    return null
+  }
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return null
+  const clppp = (parsed as Record<string, unknown>).clppp
+  if (!clppp || typeof clppp !== "object" || Array.isArray(clppp)) return null
+  return clppp as Record<string, unknown>
+}
+
+export function parseClpppProgramRouting(criteriaRaw?: string | null, reportdataRaw?: string | null): ClpppProgramRouting {
+  const fromReportData = readClpppObject(reportdataRaw)
+  if (fromReportData) {
+    return {
+      eligibleProgramCodes: criteriaCodes(fromReportData, "eligibleProgramCodes", []).filter((code) => code !== "*"),
+      nonClpppProgramCodes: criteriaCodes(fromReportData, "nonClpppProgramCodes", ["*"]),
+      nonClpppActivityCodes: criteriaCodes(fromReportData, "nonClpppActivityCodes", []).filter((code) => code !== "*"),
+      ptoProgramCodes: criteriaCodes(fromReportData, "ptoProgramCodes", ["*"]),
+    }
+  }
+  if (!criteriaRaw?.trim()) return { ...DEFAULT_CLPPP_ROUTING }
+  let criteria: unknown
+  try {
+    criteria = JSON.parse(criteriaRaw)
+  } catch {
+    throw new Error("CLPPP report criteria is not valid JSON.")
+  }
+  if (!criteria || typeof criteria !== "object" || Array.isArray(criteria)) {
+    throw new Error("CLPPP report criteria must be a JSON object.")
+  }
+  const parsed = criteria as Record<string, unknown>
+  return {
+    eligibleProgramCodes: criteriaCodes(parsed, "eligibleProgramCodes", []).filter((code) => code !== "*"),
+    nonClpppProgramCodes: criteriaCodes(parsed, "nonClpppProgramCodes", ["*"]),
+    nonClpppActivityCodes: criteriaCodes(parsed, "nonClpppActivityCodes", []).filter((code) => code !== "*"),
+    ptoProgramCodes: criteriaCodes(parsed, "ptoProgramCodes", ["*"]),
+  }
+}
+
+function applyClpppRouting(setValue: UseFormSetValue<SettingsFormValues>, routing: ClpppProgramRouting) {
+  setValue("reports.clpppEligibleProgramCodes", routing.eligibleProgramCodes)
+  setValue("reports.clpppNonClpppProgramCodes", routing.nonClpppProgramCodes)
+  setValue("reports.clpppNonClpppActivityCodes", routing.nonClpppActivityCodes)
+  setValue("reports.clpppPtoProgramCodes", routing.ptoProgramCodes)
+}
+
 export function clearReportBuckets(setValue: UseFormSetValue<SettingsFormValues>) {
   setValue("reports.excludedMasterCodeIds", [])
   setValue("reports.includedMasterCodeIds", [])
@@ -82,6 +164,7 @@ export function clearReportBuckets(setValue: UseFormSetValue<SettingsFormValues>
   setValue("reports.category1Programs", [])
   setValue("reports.category2Programs", [])
   setValue("reports.category3Programs", [])
+  applyClpppRouting(setValue, DEFAULT_CLPPP_ROUTING)
 }
 
 export function loadReportBucketsFromReportOption(
@@ -116,5 +199,10 @@ export function loadReportBucketsFromReportOption(
     setValue("reports.category1Programs", included.has("MCAH-1") ? ["MCAH-1"] : [])
     setValue("reports.category2Programs", included.has("MCAH-2") ? ["MCAH-2"] : [])
     setValue("reports.category3Programs", included.has("MCAH-3") ? ["MCAH-3"] : [])
+  }
+  if (String(report.key).trim().toUpperCase() === "CLPPP") {
+    applyClpppRouting(setValue, parseClpppProgramRouting(report.criteria, report.reportdata))
+  } else {
+    applyClpppRouting(setValue, DEFAULT_CLPPP_ROUTING)
   }
 }

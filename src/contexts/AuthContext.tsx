@@ -69,6 +69,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   if (typeof window !== "undefined") {
     ;(window as Window & { showSessionExpired?: () => void }).showSessionExpired = () => {
+      // Immediately drop the access token so background queries cannot fire
+      // authenticated requests while the dialog is open.
+      clearToken()
       setSessionExpired(true)
       ;(window as Window & { isSessionExpiredOpen?: boolean }).isSessionExpiredOpen = true
     }

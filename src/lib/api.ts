@@ -2,6 +2,19 @@ import { API_BASE_URL } from "./config"
 import { refreshSession } from "@/features/auth/api/refresh"
 import { isSigningOut } from "@/features/auth/utils/signOutState"
 
+/**
+ * Thrown when the session has expired and the user has been notified.
+ * Callers (React Query error handlers, toast handlers) can catch this to
+ * suppress the generic "Request failed" error toast — the session-expired
+ * dialog already handles user communication.
+ */
+export class SessionExpiredError extends Error {
+  constructor() {
+    super("Session expired")
+    this.name = "SessionExpiredError"
+  }
+}
+
 const BASE_URL = API_BASE_URL
 
 const TOKEN_KEY = "ieba_token"
@@ -121,12 +134,18 @@ async function apiRequest<T>(
     if (newToken) {
       return apiRequest<T>(path, { ...options, _retryAfterRefresh: true })
     }
+    // Refresh failed — session is definitively expired.
+    // Show the dialog, then throw SessionExpiredError so callers do NOT
+    // also show a generic error toast on top of the dialog.
     notifySessionExpired(normalizedPath)
+    throw new SessionExpiredError()
   }
 
   if (!response.ok) {
     if (response.status === 401) {
+      // Retry-after-refresh path still hit 401 → session is fully expired.
       notifySessionExpired(normalizedPath)
+      throw new SessionExpiredError()
     }
     const errorBody = await response.json().catch(() => ({}))
     const rawMessage =

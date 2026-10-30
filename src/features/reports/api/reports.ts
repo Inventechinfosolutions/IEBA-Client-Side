@@ -526,6 +526,41 @@ export async function apiGetListAllPrograms(): Promise<ReportSelectOption[]> {
   }))
 }
 
+/** CLPPP filter programs available in the selected department. */
+export async function apiGetClpppPrograms(departmentId: string): Promise<ReportSelectOption[]> {
+  const params = new URLSearchParams({ departmentId })
+  const list = unwrapListData(
+    await api.get<unknown>(`/report/clppp/programs?${params.toString()}`),
+  ) as Array<{ id: number | string; code?: string | null; name?: string | null }>
+  return list.map((row) => ({
+    value: String(row.id),
+    code: row.code?.trim() ? row.code.trim().toUpperCase() : undefined,
+    label: row.code ? `(${row.code}) ${row.name}` : row.name || String(row.id),
+  }))
+}
+
+/** CLPPP filter activities mapped to one or more selected programs. */
+export async function apiGetClpppActivities(
+  departmentId: string,
+  programIds: string[],
+  activityStatus: string,
+): Promise<ReportSelectOption[]> {
+  const params = new URLSearchParams({
+    departmentId,
+    programIds: programIds.join(","),
+    activityStatus,
+  })
+  const list = unwrapListData(
+    await api.get<unknown>(`/report/clppp/activities?${params.toString()}`),
+  ) as Array<{ value?: string; code?: string; label?: string; name?: string }>
+  return list
+    .map((row) => ({
+      value: String(row.value ?? row.code ?? ""),
+      label: String(row.label ?? row.name ?? row.code ?? ""),
+    }))
+    .filter((option) => option.value.trim() !== "")
+}
+
 export type UsersUnderDepartmentMeta = {
   totalItems: number
   totalPages: number
@@ -722,5 +757,3 @@ export async function apiGetCheckDatesFromPayroll(
     label: r.checkDate || r.checkdate || String(r.id || ""),
   }))
 }
-
-

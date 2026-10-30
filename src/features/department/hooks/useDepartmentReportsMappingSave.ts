@@ -70,6 +70,14 @@ async function saveDepartmentReportBuckets(params: {
       masterCodeIds: includedMasterCodeData.masterCodeIds ?? [],
       activityCodes: includedMasterCodeData.activityCodes ?? [],
     },
+    ...(params.report.key.trim().toUpperCase() === "CLPPP"
+      ? {
+          eligibleProgramCodes: params.values.clpppEligibleProgramCodes ?? [],
+          nonClpppProgramCodes: params.values.clpppNonClpppProgramCodes ?? ["*"],
+          nonClpppActivityCodes: params.values.clpppNonClpppActivityCodes ?? [],
+          ptoProgramCodes: params.values.clpppPtoProgramCodes ?? ["*"],
+        }
+      : {}),
   })
 
   return mapRawReportsToReportOptions([putRow])[0] ?? null
