@@ -32,6 +32,10 @@ export const DEFAULT_SETTINGS: SettingsModel = {
     category1Programs: [],
     category2Programs: [],
     category3Programs: [],
+    clpppEligibleProgramCodes: [],
+    clpppNonClpppProgramCodes: ["*"],
+    clpppNonClpppActivityCodes: [],
+    clpppPtoProgramCodes: ["*"],
   },
   login: {
     twoFactorAuthentication: true,

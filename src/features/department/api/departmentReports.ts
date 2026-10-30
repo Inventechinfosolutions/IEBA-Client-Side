@@ -100,6 +100,10 @@ export type UpsertDepartmentReportConfigBody = {
   category1Programs?: string[]
   category2Programs?: string[]
   category3Programs?: string[]
+  eligibleProgramCodes?: string[]
+  nonClpppProgramCodes?: string[]
+  nonClpppActivityCodes?: string[]
+  ptoProgramCodes?: string[]
 }
 
 /** GET /departments/:departmentId/reports/:reportId/config */
