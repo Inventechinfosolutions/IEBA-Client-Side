@@ -44,6 +44,7 @@ export const postedRecordsCountySectionSchema = z.object({
   ),
   countyMonthTotals: countsSchema,
   countyTotals: countsSchema,
+  includesPkiUsers: z.boolean().default(false),
 })
 
 export const postedRecordsCountReportSchema = z.object({
@@ -60,6 +61,8 @@ export const postedRecordsCountReportSchema = z.object({
   grandMonthTotals: countsSchema,
   grandTotals: countsSchema,
   generatedAt: z.string(),
+  includesPkiUsers: z.boolean().default(false),
+  pkiNote: z.string().nullable().optional(),
 })
 
 export const POSTED_RECORDS_QUARTERS = ["1", "2", "3", "4"] as const

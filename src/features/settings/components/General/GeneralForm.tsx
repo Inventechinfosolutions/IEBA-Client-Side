@@ -4,8 +4,11 @@ import { ChevronDown, ChevronUp } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
 import { TitleCaseInput } from "@/components/ui/title-case-input"
+import { useAuth } from "@/contexts/AuthContext"
 import { SettingsFormSaveSection } from "@/features/settings/enums/setting.enum"
+import { useRunA010MonthlySnapshot } from "@/features/settings/mutations/runA010MonthlySnapshot"
 import type { SettingsFormValues } from "@/features/settings/types"
+import { usePermissions } from "@/hooks/usePermissions"
 import { AppLogout } from "./AppLogout"
 
 const labelClassName = "text-[12px] font-normal text-[#2a2f3a]"
@@ -30,6 +33,10 @@ const minutesAddonClassName =
  */
 export function GeneralForm({ isSaving = false }: { isSaving?: boolean }) {
   const { register, getValues, setValue } = useFormContext<SettingsFormValues>()
+  const { user } = useAuth()
+  const { isSuperAdmin } = usePermissions()
+  const canRunA010Snapshot = isSuperAdmin || user?.pki === true
+  const a010Snapshot = useRunA010MonthlySnapshot()
 
   const stepMinutesAction = (delta: 1 | -1) => {
     const currentRaw = getValues("general.screenInactivityTimeMinutes")
@@ -89,6 +96,25 @@ export function GeneralForm({ isSaving = false }: { isSaving?: boolean }) {
             <div className={minutesAddonClassName}>Minutes</div>
           </div>
         </div>
+
+        {canRunA010Snapshot ? (
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-10 border-t border-[#f0f0f0] pt-3">
+            <div className="w-full sm:w-[230px] pl-0">
+              <label className={labelClassName}>A010 monthly snapshot</label>
+              <p className="mt-1 text-[11px] leading-snug text-[#6b7280]">
+                Insert current active users into A010 for this month (same as the automatic 1st-of-month job).
+              </p>
+            </div>
+            <Button
+              type="button"
+              disabled={a010Snapshot.isPending}
+              onClick={() => a010Snapshot.mutate()}
+              className="h-[36px] min-w-[88px] cursor-pointer rounded-[10px] bg-[var(--primary)] px-4 py-2 text-[14px] font-medium text-white hover:bg-[var(--primary)]"
+            >
+              {a010Snapshot.isPending ? <Spinner className="text-white" /> : "Run"}
+            </Button>
+          </div>
+        ) : null}
 
         <div className="flex justify-end pt-2">
           <Button

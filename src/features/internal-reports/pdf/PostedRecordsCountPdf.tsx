@@ -59,6 +59,12 @@ const styles = StyleSheet.create({
   numCell: { width: NUM_COL, textAlign: "center" },
   bold: { fontFamily: "Helvetica-Bold" },
   errorText: { color: "#b91c1c", marginTop: 2 },
+  noteText: {
+    marginTop: 14,
+    fontSize: 9,
+    fontStyle: "italic",
+    color: "#7a7a7a",
+  },
   footer: {
     position: "absolute",
     bottom: 22,
@@ -143,7 +149,7 @@ function CountySection({ section, report }: { section: PostedRecordsCountySectio
               <TableRow key={d.departmentId} label={d.departmentName} quarters={months(d.monthCounts)} total={d.counts[qi] ?? 0} />
             ))}
             <TableRow
-              label="County Total"
+              label={section.includesPkiUsers ? "County Total *" : "County Total"}
               quarters={months(section.countyMonthTotals)}
               total={section.countyTotals[qi] ?? 0}
               variant="total"
@@ -164,7 +170,7 @@ function AllClientsSummary({ report }: { report: PostedRecordsCountReport }) {
       {report.counties.map((c) => (
         <TableRow
           key={c.nameSpace}
-          label={c.countyName}
+          label={c.includesPkiUsers ? `${c.countyName} *` : c.countyName}
           quarters={c.status === "error" ? report.quarterLabels.map(() => "-") : c.countyTotals}
         />
       ))}
@@ -203,6 +209,8 @@ function PostedRecordsCountDocument({ report, printedOn }: { report: PostedRecor
         ))}
 
         {report.allCounties ? <AllClientsSummary report={report} /> : null}
+
+        {report.pkiNote ? <Text style={styles.noteText}>{report.pkiNote}</Text> : null}
 
         <View style={styles.footer} fixed>
           <Text style={styles.footerLeft}>Printed on: {printedOn}</Text>
