@@ -7,4 +7,3 @@ export const generalSettingsSchema = z.object({
     .min(1, "Screen Inactivity Time is required")
     .max(9999, "Screen Inactivity Time is too large"),
 })
-

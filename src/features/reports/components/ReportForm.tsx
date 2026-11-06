@@ -850,9 +850,12 @@ export function ReportForm({ module }: ReportFormProps) {
     return departmentsData?.items ? mapIdNameRowsToSelectOptions(departmentsData.items) : []
   }, [departmentsData])
 
-  /** "All Departments" is only runnable for A010, which only Super Admin / PKI can see. */
-  const canSelectAllDepartments =
-    (!!user?.permissions?.includes("superadmin:all") || user?.pki === true) && rawDepartmentOptions.length > 1
+  /**
+   * "All Departments" is for A010 (Super Admin / PKI).
+   * Shown even when the county has only one department (e.g. Madera):
+   * dropdown = All Departments + that department.
+   */
+  const canSelectAllDepartments = isSuperAdmin || user?.pki === true
 
   const [selectedDeptId, setSelectedDeptId] = useState<string>(() => {
     const stored = readStoredReportFormParams()
@@ -876,10 +879,11 @@ export function ReportForm({ module }: ReportFormProps) {
       base.employeeIds = legacyId.trim()
     }
 
-    if (!base.departmentId && rawDepartmentOptions.length === 1) {
-      base.departmentId = rawDepartmentOptions[0].value
-    } else if (!base.departmentId && canSelectAllDepartments) {
+    // Prefer All Departments even in single-department counties.
+    if (!base.departmentId && canSelectAllDepartments && rawDepartmentOptions.length >= 1) {
       base.departmentId = ALL_DEPARTMENTS_VALUE
+    } else if (!base.departmentId && rawDepartmentOptions.length === 1) {
+      base.departmentId = rawDepartmentOptions[0].value
     }
 
     return base
@@ -1449,9 +1453,11 @@ export function ReportForm({ module }: ReportFormProps) {
       reportKey === "P110-SS"
         ? rawDepartmentOptions.filter((opt) => opt.label === "Social Services")
         : rawDepartmentOptions
-    return canSelectAllDepartments
-      ? [{ value: ALL_DEPARTMENTS_VALUE, label: "All Departments" }, ...options]
-      : options
+    // Always prepend All Departments when allowed — including 1-department counties.
+    if (canSelectAllDepartments && options.length >= 1) {
+      return [{ value: ALL_DEPARTMENTS_VALUE, label: "All Departments" }, ...options]
+    }
+    return options
   }, [rawDepartmentOptions, reportKey, canSelectAllDepartments])
 
   const employeeOptions = useMemo(() => {
@@ -2348,7 +2354,7 @@ export function ReportForm({ module }: ReportFormProps) {
                     placeholder="Select Department"
                     className={departmentSelectTrigger}
                     isLoading={isDeptsLoading}
-                    disabled={rawDepartmentOptions.length === 1}
+                    disabled={departmentOptions.length <= 1}
                     contentClassName="max-h-[220px]"
                     itemButtonClassName="rounded-[6px] px-3 py-2"
                     itemLabelClassName="!text-[14px] !font-normal"
