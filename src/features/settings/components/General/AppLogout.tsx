@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom"
 import { useAuth } from "@/contexts/AuthContext"
 import { useGetInactivityTime } from "./queries"
 import { useQuery } from "@tanstack/react-query"
-import { getToken } from "@/lib/api"
+import { getToken, refreshAccessToken } from "@/lib/api"
 
 /**
  * Decode the `exp` claim (seconds-since-epoch) from a JWT without
@@ -65,7 +65,7 @@ export function AppLogout() {
 
   useQuery({
     queryKey: ["app-inactivity-status", isAuthenticated, minutes],
-    queryFn: () => {
+    queryFn: async () => {
       if (!isAuthenticated || minutes <= 0) return "active"
 
       const now = Date.now()
@@ -77,20 +77,19 @@ export function AppLogout() {
         return "logged-out"
       }
 
-      // ── Check 2: access-token hard expiry ────────────────────────────────
-      // Even if the user is actively moving the mouse, if their access token
-      // has expired AND the refresh cookie has also expired, we must log them
-      // out immediately rather than wait for the next API call to return 401.
+      // ── Check 2: access-token expiry → refresh, don't kick active users ──
+      // Short-lived access tokens (~15m) must not force logout while the user
+      // is still active and the refresh cookie is valid. Only log out if
+      // refresh fails (refresh session truly expired).
       const token = getToken()
       if (token) {
         const expiryMs = getTokenExpiryMs(token)
         if (expiryMs !== null && now >= expiryMs) {
-          // Token is expired. The next API call would trigger a refresh attempt.
-          // We eagerly kick the user out here so they don't see confusing 401
-          // errors mid-action. The session-expired dialog is shown by the
-          // api.ts 401 handler; here we just do a clean logout.
-          performLogoutAction()
-          return "logged-out"
+          const newToken = await refreshAccessToken()
+          if (!newToken) {
+            performLogoutAction()
+            return "logged-out"
+          }
         }
       }
 

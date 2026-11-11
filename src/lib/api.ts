@@ -50,7 +50,8 @@ type RequestOptions = RequestInit & {
 
 let refreshPromise: Promise<string | null> | null = null
 
-async function refreshAccessToken(): Promise<string | null> {
+/** Shared access-token refresh (single-flight). Used by API 401 retry and AppLogout. */
+export async function refreshAccessToken(): Promise<string | null> {
   if (isSigningOut()) return null
   if (!refreshPromise) {
     refreshPromise = refreshSession()
