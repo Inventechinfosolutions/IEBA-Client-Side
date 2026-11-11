@@ -127,7 +127,7 @@ function SectionTitle({ children }: { children: string }) {
 
 /** One table per quarter: the quarter's three months, then unique users for the quarter. */
 function CountySection({ section, report }: { section: PostedRecordsCountySection; report: PostedRecordsCountReport }) {
-  const title = `${section.countyName} Active Users`
+  const title = `${section.countyName.trim().toUpperCase()} Active Users`
   if (section.status === "error") {
     return (
       <View wrap={false}>
@@ -170,7 +170,7 @@ function AllClientsSummary({ report }: { report: PostedRecordsCountReport }) {
       {report.counties.map((c) => (
         <TableRow
           key={c.nameSpace}
-          label={c.includesPkiUsers ? `${c.countyName} *` : c.countyName}
+          label={c.includesPkiUsers ? `${c.countyName.trim().toUpperCase()} *` : c.countyName.trim().toUpperCase()}
           quarters={c.status === "error" ? report.quarterLabels.map(() => "-") : c.countyTotals}
         />
       ))}

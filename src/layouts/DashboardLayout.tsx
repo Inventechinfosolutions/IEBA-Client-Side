@@ -47,9 +47,9 @@ export function DashboardLayout() {
   const { data: mimic } = useMimicSession()
   const profileImageQuery = useGetProfileImage(user?.id)
   const countyName = user?.countyName?.trim() || ""
-  const isIebaCounty = countyName.toLowerCase() === "ieba"
+  const isIebaCounty = countyName.toLowerCase() === "fernridge"
   const welcomeSubLabel = isIebaCounty
-    ? "Welcome To Testing county"
+    ? "Welcome To Fernridge county"
     : countyName
       ? `Welcome To ${countyName}`
       : ""

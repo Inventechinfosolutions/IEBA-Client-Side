@@ -55,6 +55,9 @@ export function getReportHardCodedMappingNotes(
         ? "Include / exclude master codes and activities for this department's DSSRPT1 activity list"
         : "Master-code / activity mapping is configured per department (Department → Reports)",
     )
+  } else if (key === "CLPPP") {
+    notes.push("Layer 1: Choose eligible programs, the FFP master code, and the activities that stay on their own rows (including A, 11MB, and 11MF).")
+    notes.push("Layer 2: Choose the programs and activity codes that roll into 11B, and which programs' PTO consolidates into code 12. PTO defaults to all programs.")
   } else if (key === "DSSRPT3" || key === "DSSRPT4") {
     notes.push("Based on Cost Pool selection — activities come from the selected cost pool")
     notes.push("No master-code / activity mapping on this screen")
