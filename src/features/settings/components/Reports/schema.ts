@@ -14,4 +14,8 @@ export const reportsSettingsSchema = z.object({
   category1Programs: z.array(z.string().trim()).default([]),
   category2Programs: z.array(z.string().trim()).default([]),
   category3Programs: z.array(z.string().trim()).default([]),
+  clpppEligibleProgramCodes: z.array(z.string().trim()).default([]),
+  clpppNonClpppProgramCodes: z.array(z.string().trim()).default(["*"]),
+  clpppNonClpppActivityCodes: z.array(z.string().trim()).default([]),
+  clpppPtoProgramCodes: z.array(z.string().trim()).default(["*"]),
 })

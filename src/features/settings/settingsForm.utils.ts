@@ -89,6 +89,10 @@ export function mapToSettingsFormValues(
       category1Programs: settings.reports?.category1Programs ?? [],
       category2Programs: settings.reports?.category2Programs ?? [],
       category3Programs: settings.reports?.category3Programs ?? [],
+      clpppEligibleProgramCodes: settings.reports?.clpppEligibleProgramCodes ?? [],
+      clpppNonClpppProgramCodes: settings.reports?.clpppNonClpppProgramCodes ?? ["*"],
+      clpppNonClpppActivityCodes: settings.reports?.clpppNonClpppActivityCodes ?? [],
+      clpppPtoProgramCodes: settings.reports?.clpppPtoProgramCodes ?? ["*"],
     },
     login: {
       twoFactorAuthentication: settings.login?.twoFactorAuthentication ?? false,

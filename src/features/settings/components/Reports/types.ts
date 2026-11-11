@@ -17,4 +17,12 @@ export type ReportsSettingsModel = {
   category2Programs: string[]
   /** MCAH-TVTS only — Category 3 program codes */
   category3Programs: string[]
+  /** CLPPP Layer 1 — programs whose mapped activities stay on their own rows */
+  clpppEligibleProgramCodes: string[]
+  /** CLPPP Layer 2 — programs that roll into row 11B. `*` means all non-eligible programs. */
+  clpppNonClpppProgramCodes: string[]
+  /** CLPPP Layer 2 — activity codes that always roll into row 11B */
+  clpppNonClpppActivityCodes: string[]
+  /** CLPPP Layer 2 — programs whose PTO consolidates into row 12. `*` means all programs. */
+  clpppPtoProgramCodes: string[]
 }

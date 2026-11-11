@@ -1,11 +1,9 @@
 import { useMemo, useRef, useState, type ReactNode } from "react"
 import { Controller, useFormContext } from "react-hook-form"
+import { toast } from "sonner"
 
 import { SingleSelectDropdown } from "@/components/ui/dropdown"
-import {
-  MultiSelectDropdown,
-  parseMultiSelectStoredValues,
-} from "@/components/ui/multi-select-dropdown"
+import { MultiSelectDropdown, parseMultiSelectStoredValues } from "@/components/ui/multi-select-dropdown"
 import { cn, sortSelectOptionsByLabel } from "@/lib/utils"
 import type { ReportTransferBucketMode } from "@/features/settings/components/Reports/reportsTransfer.api.types"
 import type { SettingsFormValues } from "@/features/settings/types"
@@ -21,6 +19,8 @@ import { settingsKeys } from "@/features/settings/keys"
 import { useQueryClient } from "@tanstack/react-query"
 import { useReportTransferFlags } from "@/features/settings/queries/getReportTransferFlags"
 import { useGetClientMasterCodeTabs } from "@/features/master-code/queries/getClientMasterCodeTabs"
+import { useGetClpppActivities, useGetClpppPrograms } from "@/features/reports/queries/getDynamicFilters"
+import { useProgramOptions } from "@/features/settings/queries/getProgramOptions"
 import { ReportsBucketTransfer } from "@/features/settings/components/Reports/ReportsBucketTransfer"
 import { useReportsTransferSave } from "@/features/settings/components/Reports/useReportsTransferSave"
 import {
@@ -36,23 +36,30 @@ import {
   loadReportBucketsFromReportOption,
 } from "@/features/settings/components/Reports/reportsForm.utils"
 import type { ReportOption, ReportProgramItem } from "@/features/settings/types"
+import { api } from "@/lib/api"
 
 const labelClassName = "mb-2 block text-[12px] font-normal text-[#2a2f3a]"
 const selectTriggerClassName =
   "!h-[38px] !w-full sm:!w-[260px] !rounded-[8px] border border-[#d6d7dc] bg-white px-[11px] !text-[12px] text-[#111827] shadow-none placeholder:!text-[12px] focus-visible:border-[#6C5DD3] focus-visible:ring-0"
 
-type McahCategoryField =
-  | "reports.category1Programs"
-  | "reports.category2Programs"
-  | "reports.category3Programs"
+type McahCategoryField = "reports.category1Programs" | "reports.category2Programs" | "reports.category3Programs"
 
 const MCAH_CATEGORY_FIELDS: Array<{
   field: McahCategoryField
   placeholder: string
 }> = [
-  { field: "reports.category1Programs", placeholder: "Select MCAH Category 1 Programs" },
-  { field: "reports.category2Programs", placeholder: "Select MCAH Category 2 Programs" },
-  { field: "reports.category3Programs", placeholder: "Select MCAH Category 3 Programs" },
+  {
+    field: "reports.category1Programs",
+    placeholder: "Select MCAH Category 1 Programs",
+  },
+  {
+    field: "reports.category2Programs",
+    placeholder: "Select MCAH Category 2 Programs",
+  },
+  {
+    field: "reports.category3Programs",
+    placeholder: "Select MCAH Category 3 Programs",
+  },
 ]
 
 type ReportsFormProps = {
@@ -82,15 +89,16 @@ export function ReportsForm({
   const queryClient = useQueryClient()
   const { control, watch, setValue, getValues } = useFormContext<SettingsFormValues>()
   const defaultTransferSave = useReportsTransferSave()
-  const { saveMasterCodes, saveActivities, savePrograms, ReportsTransferSaveTriggers } =
-    transferSave ?? defaultTransferSave
+  const { saveMasterCodes, saveActivities, savePrograms, ReportsTransferSaveTriggers } = transferSave ?? defaultTransferSave
 
   const watchedDepartmentId = watch("reports.departmentId") ?? ""
   const departmentId = (fixedDepartmentId?.trim() || watchedDepartmentId).trim()
   const reportKey = watch("reports.reportKey") ?? ""
   const isMcahReport = isMcahTvtsReportKey(reportKey)
   const isDepartmentLevel = Boolean(fixedDepartmentId?.trim())
-  const isMappingReadOnly = isReportsMappingReadOnlyKey(reportKey, { departmentLevel: isDepartmentLevel })
+  const isMappingReadOnly = isReportsMappingReadOnlyKey(reportKey, {
+    departmentLevel: isDepartmentLevel,
+  })
 
   const includedMasterCodeIds = watch("reports.includedMasterCodeIds") ?? []
   const excludedMasterCodeIds = watch("reports.excludedMasterCodeIds") ?? []
@@ -100,44 +108,58 @@ export function ReportsForm({
   const category2Programs = watch("reports.category2Programs") ?? []
   const category3Programs = watch("reports.category3Programs") ?? []
 
-  const [masterCodeFetchMode, setMasterCodeFetchMode] =
-    useState<ReportTransferBucketMode>("include")
+  const [masterCodeFetchMode, setMasterCodeFetchMode] = useState<ReportTransferBucketMode>("include")
   const [activityFetchMode, setActivityFetchMode] = useState<ReportTransferBucketMode>("include")
   const [isReportDetailLoading, setIsReportDetailLoading] = useState(false)
   const [mcahProgramCatalog, setMcahProgramCatalog] = useState<ReportProgramItem[]>([])
+  const [isSavingClpppRouting, setIsSavingClpppRouting] = useState(false)
   const reportDetailRequestIdRef = useRef(0)
+  const isClpppReport = String(reportKey).trim().toUpperCase() === "CLPPP"
+  const clpppEligibleProgramCodes = watch("reports.clpppEligibleProgramCodes") ?? []
+  const clpppNonClpppProgramCodes = watch("reports.clpppNonClpppProgramCodes") ?? ["*"]
+  const clpppNonClpppActivityCodes = watch("reports.clpppNonClpppActivityCodes") ?? []
+  const clpppPtoProgramCodes = watch("reports.clpppPtoProgramCodes") ?? ["*"]
+  const programOptionsQuery = useProgramOptions(isSectionOpen && isClpppReport && !departmentId)
+  const clpppProgramsQuery = useGetClpppPrograms(departmentId, isSectionOpen && isClpppReport && Boolean(departmentId))
+  const clpppProgramIds = useMemo(
+    () => (clpppProgramsQuery.data ?? []).map((program) => program.value).filter(Boolean),
+    [clpppProgramsQuery.data],
+  )
+  const clpppActivitiesQuery = useGetClpppActivities(
+    departmentId,
+    clpppProgramIds,
+    "active,inactive",
+    isSectionOpen && isClpppReport && Boolean(departmentId) && clpppProgramIds.length > 0,
+  )
 
-  const masterCodePickerIds =
-    masterCodeFetchMode === "include" ? includedMasterCodeIds : excludedMasterCodeIds
+  const masterCodePickerIds = masterCodeFetchMode === "include" ? includedMasterCodeIds : excludedMasterCodeIds
 
   const activityQueryParams = useMemo(
-    () =>
-      buildActivityTransferQueryParams(
-        activityFetchMode,
-        includedActivityCodes,
-        excludedActivityCodes,
-      ),
+    () => buildActivityTransferQueryParams(activityFetchMode, includedActivityCodes, excludedActivityCodes),
     [activityFetchMode, includedActivityCodes, excludedActivityCodes],
   )
 
   const masterCodeNumericIds = useMemo(
-    () =>
-      masterCodePickerIds
-        .map((id) => Number(id))
-        .filter((n) => Number.isFinite(n) && n >= 1),
+    () => masterCodePickerIds.map((id) => Number(id)).filter((n) => Number.isFinite(n) && n >= 1),
     [masterCodePickerIds],
   )
 
-  const transferEnabled =
-    isSectionOpen && Boolean(reportKey) && !isMcahReport && !isMappingReadOnly
+  const transferEnabled = isSectionOpen && Boolean(reportKey) && !isMcahReport && !isMappingReadOnly
   const hasMasterCodeScope = masterCodeNumericIds.length > 0
   const activitiesEnabled = transferEnabled && hasMasterCodeScope
   const hardCodedMappingNotes = useMemo(
-    () => getReportHardCodedMappingNotes(reportKey, { departmentLevel: isDepartmentLevel }),
+    () =>
+      getReportHardCodedMappingNotes(reportKey, {
+        departmentLevel: isDepartmentLevel,
+      }),
     [reportKey, isDepartmentLevel],
   )
 
-  const { data: transferFlags, isPending, isFetching } = useReportTransferFlags(
+  const {
+    data: transferFlags,
+    isPending,
+    isFetching,
+  } = useReportTransferFlags(
     {
       masterCodeMode: masterCodeFetchMode,
       selectedMasterCodeIds: masterCodeNumericIds,
@@ -156,9 +178,7 @@ export function ReportsForm({
   }, [activeTabsQuery.data])
   const activeTabsReady = Array.isArray(activeTabsQuery.data)
 
-  const isTransferLoading =
-    transferEnabled &&
-    (isPending || isFetching || activeTabsQuery.isLoading || activeTabsQuery.isFetching)
+  const isTransferLoading = transferEnabled && (isPending || isFetching || activeTabsQuery.isLoading || activeTabsQuery.isFetching)
 
   const unassignedMasterCodes = useMemo(() => {
     if (!activeTabsReady) return []
@@ -204,11 +224,50 @@ export function ReportsForm({
     [mcahProgramCatalog],
   )
 
-  const syncMcahIncludedExcludedFromCategories = (
-    cat1: string[],
-    cat2: string[],
-    cat3: string[],
-  ) => {
+  const clpppProgramChoices = useMemo(() => {
+    const options = new Map<string, { value: string; label: string }>()
+    if (departmentId) {
+      for (const program of clpppProgramsQuery.data ?? []) {
+        const code = program.code?.trim().toUpperCase()
+        if (!code || options.has(code)) continue
+        options.set(code, { value: code, label: program.label || code })
+      }
+    } else {
+      for (const program of programOptionsQuery.data ?? []) {
+        const code = String(program.code ?? "").trim().toUpperCase()
+        if (!code || options.has(code)) continue
+        const name = String(program.name ?? "").trim()
+        options.set(code, { value: code, label: name && name !== code ? `(${code}) - ${name}` : code })
+      }
+    }
+    return sortSelectOptionsByLabel([...options.values()])
+  }, [clpppProgramsQuery.data, departmentId, programOptionsQuery.data])
+
+  const clpppProgramOptions = useMemo(
+    () => [{ value: "*", label: "All programs" }, ...clpppProgramChoices],
+    [clpppProgramChoices],
+  )
+
+  const clpppActivityCodeOptions = useMemo(() => {
+    const options = new Map<string, { value: string; label: string }>()
+    for (const activity of clpppActivitiesQuery.data ?? []) {
+      const code = activity.value.trim().toUpperCase()
+      if (!code || options.has(code)) continue
+      options.set(code, { value: code, label: activity.label || code })
+    }
+    for (const item of [...unassignedActivities, ...assignedActivities]) {
+      const code = (item.code ?? item.id).trim().toUpperCase()
+      if (!code || options.has(code)) continue
+      options.set(code, { value: code, label: item.name || code })
+    }
+    for (const code of clpppNonClpppActivityCodes) {
+      const value = code.trim().toUpperCase()
+      if (value && !options.has(value)) options.set(value, { value, label: value })
+    }
+    return sortSelectOptionsByLabel([...options.values()])
+  }, [assignedActivities, clpppActivitiesQuery.data, clpppNonClpppActivityCodes, unassignedActivities])
+
+  const syncMcahIncludedExcludedFromCategories = (cat1: string[], cat2: string[], cat3: string[]) => {
     const included = [...new Set([...cat1, ...cat2, ...cat3].map((c) => c.trim()).filter(Boolean))]
     const includedSet = new Set(included.map((c) => c.toUpperCase()))
     const excluded = mcahProgramCatalog
@@ -226,8 +285,7 @@ export function ReportsForm({
     let cat2 = [...(getValues("reports.category2Programs") ?? [])]
     let cat3 = [...(getValues("reports.category3Programs") ?? [])]
 
-    const stripFromOthers = (codes: string[]) =>
-      codes.filter((c) => !nextSet.has(c.trim().toUpperCase()))
+    const stripFromOthers = (codes: string[]) => codes.filter((c) => !nextSet.has(c.trim().toUpperCase()))
 
     if (field === "reports.category1Programs") {
       cat1 = nextCodes
@@ -253,15 +311,16 @@ export function ReportsForm({
   const applyLoadedReportDetail = (full: ReportOption | null | undefined, fallback?: ReportOption) => {
     const report = full ?? fallback
     if (!report) return
-    loadReportBucketsFromReportOption(setValue, report)
+    try {
+      loadReportBucketsFromReportOption(setValue, report)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to read CLPPP routing settings")
+    }
     const mode = report.type === "included" ? "include" : "exclude"
     setMasterCodeFetchMode(mode)
     setActivityFetchMode(mode)
     if (isMcahTvtsReportKey(report.key) || report.configKind === "programs") {
-      const catalog = [
-        ...(report.programFlag?.included ?? []),
-        ...(report.programFlag?.excluded ?? []),
-      ]
+      const catalog = [...(report.programFlag?.included ?? []), ...(report.programFlag?.excluded ?? [])]
       setMcahProgramCatalog(catalog)
     } else {
       setMcahProgramCatalog([])
@@ -271,26 +330,14 @@ export function ReportsForm({
   const showDepartmentPicker = !fixedDepartmentId && !useCountyMappedReports
   // Exclusion/Inclusion toggle removed — mode is set from report config / defaults.
 
-  const { data: departmentsData, isLoading: isDeptsLoading } =
-    useSettingsReportDepartments(isSectionOpen && showDepartmentPicker)
+  const { data: departmentsData, isLoading: isDeptsLoading } = useSettingsReportDepartments(isSectionOpen && showDepartmentPicker)
 
-  const deptReportsQuery = useSettingsDepartmentReports(
-    departmentId,
-    isSectionOpen && !useCountyMappedReports && !!departmentId,
-  )
-  const countyReportsQuery = useSettingsCountyMappedReports(
-    isSectionOpen && useCountyMappedReports,
-  )
+  const deptReportsQuery = useSettingsDepartmentReports(departmentId, isSectionOpen && !useCountyMappedReports && !!departmentId)
+  const countyReportsQuery = useSettingsCountyMappedReports(isSectionOpen && useCountyMappedReports)
 
-  const reportItems = useCountyMappedReports
-    ? (countyReportsQuery.data ?? [])
-    : (deptReportsQuery.data ?? [])
-  const isReportsPending = useCountyMappedReports
-    ? countyReportsQuery.isPending
-    : deptReportsQuery.isPending
-  const isReportsFetching = useCountyMappedReports
-    ? countyReportsQuery.isFetching
-    : deptReportsQuery.isFetching
+  const reportItems = useCountyMappedReports ? (countyReportsQuery.data ?? []) : (deptReportsQuery.data ?? [])
+  const isReportsPending = useCountyMappedReports ? countyReportsQuery.isPending : deptReportsQuery.isPending
+  const isReportsFetching = useCountyMappedReports ? countyReportsQuery.isFetching : deptReportsQuery.isFetching
 
   const reportsLoading = useCountyMappedReports
     ? isSectionOpen && (isReportsPending || isReportsFetching)
@@ -303,9 +350,7 @@ export function ReportsForm({
     })),
   )
 
-  const reportOptions = sortSelectOptionsByLabel(
-    reportItems.map((item) => ({ value: item.key, label: item.label })),
-  )
+  const reportOptions = sortSelectOptionsByLabel(reportItems.map((item) => ({ value: item.key, label: item.label })))
 
   const handleMasterCodeFetchModeChange = (direction: "assign" | "unassign") => {
     setMasterCodeFetchMode(direction === "assign" ? "include" : "exclude")
@@ -314,6 +359,70 @@ export function ReportsForm({
 
   const handleActivityFetchModeChange = (direction: "assign" | "unassign") => {
     setActivityFetchMode(direction === "assign" ? "include" : "exclude")
+  }
+
+  const onClpppCodesChange = (
+    field:
+      | "reports.clpppEligibleProgramCodes"
+      | "reports.clpppNonClpppProgramCodes"
+      | "reports.clpppNonClpppActivityCodes"
+      | "reports.clpppPtoProgramCodes",
+    rawValue: string,
+    allowAll: boolean,
+  ) => {
+    const selected = parseMultiSelectStoredValues(rawValue)
+    if (!allowAll) {
+      setValue(field, selected.filter((code) => code !== "*"))
+      return
+    }
+    const currentSelection = getValues(field) ?? []
+    const nextSelection = selected.includes("*")
+      ? currentSelection.includes("*") && selected.length > 1
+        ? selected.filter((code) => code !== "*")
+        : ["*"]
+      : selected
+    setValue(field, nextSelection.length ? nextSelection : ["*"])
+  }
+
+  const saveClpppProgramRouting = async () => {
+    if (isDepartmentLevel) {
+      saveActivities("assign")
+      return
+    }
+    const reportId = reportItems.find((item) => item.key.trim().toUpperCase() === "CLPPP")?.id
+    if (!reportId) {
+      toast.error("Unable to save CLPPP routing: report metadata is not available.")
+      return
+    }
+
+    setIsSavingClpppRouting(true)
+    try {
+      const latestReport = await fetchSettingsReportById(reportId)
+      if (!latestReport) {
+        throw new Error("CLPPP report metadata could not be loaded.")
+      }
+      const criteria: Record<string, unknown> = latestReport.criteria?.trim() ? JSON.parse(latestReport.criteria) : {}
+      if (!criteria || typeof criteria !== "object" || Array.isArray(criteria)) {
+        throw new Error("CLPPP report criteria must be a JSON object.")
+      }
+      await api.put(`/report/${reportId}`, {
+        criteria: JSON.stringify({
+          ...criteria,
+          eligibleProgramCodes: getValues("reports.clpppEligibleProgramCodes") ?? [],
+          nonClpppProgramCodes: getValues("reports.clpppNonClpppProgramCodes") ?? ["*"],
+          nonClpppActivityCodes: getValues("reports.clpppNonClpppActivityCodes") ?? [],
+          ptoProgramCodes: getValues("reports.clpppPtoProgramCodes") ?? ["*"],
+        }),
+      })
+      await queryClient.invalidateQueries({
+        queryKey: [...settingsKeys.reports.detail(), reportId],
+      })
+      toast.success("CLPPP routing settings saved.")
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to save CLPPP routing settings.")
+    } finally {
+      setIsSavingClpppRouting(false)
+    }
   }
 
   return (
@@ -413,10 +522,7 @@ export function ReportsForm({
                         return
                       }
                       if (useCountyMappedReports) {
-                        const cacheKey = [
-                          ...settingsKeys.reports.all(),
-                          "county-mapped-options",
-                        ] as const
+                        const cacheKey = [...settingsKeys.reports.all(), "county-mapped-options"] as const
                         queryClient.setQueryData(cacheKey, (prev: typeof reportItems | undefined) => {
                           const list = prev ?? []
                           return list.map((r) => (r.key === full.key ? { ...r, ...full } : r))
@@ -450,11 +556,7 @@ export function ReportsForm({
                           : "No department-mapped reports — assign reports in Department Report Setting first"
                       : "Select department first"
                 }
-                disabled={
-                  useCountyMappedReports
-                    ? !isSectionOpen || reportsLoading
-                    : !departmentId || reportsLoading
-                }
+                disabled={useCountyMappedReports ? !isSectionOpen || reportsLoading : !departmentId || reportsLoading}
                 isLoading={reportsLoading}
                 loadingLabel="Loading reports…"
                 className={cn(
@@ -490,8 +592,7 @@ export function ReportsForm({
                 <>
                   <p className="font-medium">No master-code mapping for this report.</p>
                   <p className="font-normal text-[#A16207]">
-                    In the report UI you can only select activities. Master codes cannot be assigned
-                    or removed here.
+                    In the report UI you can only select activities. Master codes cannot be assigned or removed here.
                   </p>
                 </>
               )
@@ -500,8 +601,7 @@ export function ReportsForm({
               <>
                 <p className="font-medium">Mapping is not editable for this report.</p>
                 <p className="font-normal text-[#A16207]">
-                  Master codes and activities are fixed by the system and cannot be assigned or
-                  removed here.
+                  Master codes and activities are fixed by the system and cannot be assigned or removed here.
                 </p>
               </>
             )
@@ -516,11 +616,35 @@ export function ReportsForm({
         </div>
       ) : null}
 
+      {isClpppReport && !isMappingReadOnly ? (
+        <section className="mt-6 space-y-3 rounded-[8px] border border-[#E5E7EB] bg-white p-4">
+          <div>
+            <h3 className="text-[13px] font-medium text-[#111827]">Layer 1 — Main report mapping</h3>
+            <p className="mt-1 text-[12px] text-[#6B7280]">
+              Choose the programs whose activities stay on their own rows, then assign the FFP master code and activities below,
+              including A, 11MB, and 11MF.
+            </p>
+          </div>
+          <div className="max-w-[520px]">
+            <label className={labelClassName}>Eligible programs</label>
+            <MultiSelectDropdown
+              value={clpppEligibleProgramCodes.join(", ")}
+              onChange={(value) => onClpppCodesChange("reports.clpppEligibleProgramCodes", value, false)}
+              onBlur={() => undefined}
+              options={clpppProgramChoices}
+              placeholder="Select eligible programs"
+              disabled={isReportDetailLoading || isSaving || isSavingClpppRouting}
+              isLoading={Boolean(departmentId) ? clpppProgramsQuery.isLoading : programOptionsQuery.isLoading}
+              maxVisibleItems={2}
+              className={cn(selectTriggerClassName, "!h-auto !min-h-[38px] !w-full py-1.5")}
+            />
+          </div>
+        </section>
+      ) : null}
+
       {reportKey && isMcahReport && !isMappingReadOnly ? (
         <div className="mt-6 flex flex-col gap-4">
-          {isReportDetailLoading ? (
-            <p className="text-[12px] text-[#6B7280]">Loading programs…</p>
-          ) : null}
+          {isReportDetailLoading ? <p className="text-[12px] text-[#6B7280]">Loading programs…</p> : null}
           {MCAH_CATEGORY_FIELDS.map(({ field, placeholder }) => {
             const selected =
               field === "reports.category1Programs"
@@ -540,10 +664,7 @@ export function ReportsForm({
                   disabled={!reportKey || isReportDetailLoading || isSaving}
                   isLoading={isReportDetailLoading}
                   maxVisibleItems={2}
-                  className={cn(
-                    selectTriggerClassName,
-                    "!h-auto !min-h-[38px] !w-full sm:!w-[520px] py-1.5",
-                  )}
+                  className={cn(selectTriggerClassName, "!h-auto !min-h-[38px] !w-full sm:!w-[520px] py-1.5")}
                 />
               </div>
             )
@@ -571,8 +692,7 @@ export function ReportsForm({
 
       {reportKey && !isMcahReport && !isMappingReadOnly && !hasMasterCodeScope && !isReportDetailLoading ? (
         <p className="mt-6 rounded-[8px] border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-2 text-[12px] text-[#6B7280]">
-          No activities yet. Assign at least one master code above, then save, to load and map
-          activities for this report.
+          No activities yet. Assign at least one master code above, then save, to load and map activities for this report.
         </p>
       ) : null}
 
@@ -593,6 +713,80 @@ export function ReportsForm({
           onFetchModeChange={handleActivityFetchModeChange}
           onSave={saveActivities}
         />
+      ) : null}
+
+      {isClpppReport && !isMappingReadOnly ? (
+        <section className="mt-6 space-y-4 rounded-[8px] border border-[#E5E7EB] bg-white p-4">
+          <div>
+            <h3 className="text-[13px] font-medium text-[#111827]">Layer 2 — Special activity mapping</h3>
+            <p className="mt-1 text-[12px] text-[#6B7280]">
+              11B collects non-CLPPP time. Code 12 collects PTO. All programs is the default for both, and PTO stays on code 12
+              unless you pick specific programs.
+            </p>
+          </div>
+          {clpppProgramsQuery.isError || programOptionsQuery.isError ? (
+            <p role="alert" className="text-[12px] text-red-600">
+              Failed to load programs for CLPPP mapping.
+            </p>
+          ) : null}
+          <div className="grid gap-4 md:grid-cols-2">
+            <div>
+              <label className={labelClassName}>11B — non-CLPPP programs</label>
+              <MultiSelectDropdown
+                value={clpppNonClpppProgramCodes.join(", ")}
+                onChange={(value) => onClpppCodesChange("reports.clpppNonClpppProgramCodes", value, true)}
+                onBlur={() => undefined}
+                options={clpppProgramOptions}
+                placeholder="Select programs for 11B"
+                disabled={isReportDetailLoading || isSaving || isSavingClpppRouting}
+                isLoading={Boolean(departmentId) ? clpppProgramsQuery.isLoading : programOptionsQuery.isLoading}
+                maxVisibleItems={2}
+                className={cn(selectTriggerClassName, "!h-auto !min-h-[38px] !w-full py-1.5")}
+              />
+            </div>
+            <div>
+              <label className={labelClassName}>11B — activity codes</label>
+              <MultiSelectDropdown
+                value={clpppNonClpppActivityCodes.join(", ")}
+                onChange={(value) => onClpppCodesChange("reports.clpppNonClpppActivityCodes", value, false)}
+                onBlur={() => undefined}
+                options={clpppActivityCodeOptions}
+                placeholder="Select activity codes for 11B"
+                disabled={isReportDetailLoading || isSaving || isSavingClpppRouting}
+                isLoading={clpppActivitiesQuery.isLoading}
+                maxVisibleItems={2}
+                className={cn(selectTriggerClassName, "!h-auto !min-h-[38px] !w-full py-1.5")}
+              />
+            </div>
+            <div>
+              <label className={labelClassName}>12 — programs whose PTO is included</label>
+              <MultiSelectDropdown
+                value={clpppPtoProgramCodes.join(", ")}
+                onChange={(value) => onClpppCodesChange("reports.clpppPtoProgramCodes", value, true)}
+                onBlur={() => undefined}
+                options={clpppProgramOptions}
+                placeholder="Select PTO programs"
+                disabled={isReportDetailLoading || isSaving || isSavingClpppRouting}
+                isLoading={Boolean(departmentId) ? clpppProgramsQuery.isLoading : programOptionsQuery.isLoading}
+                maxVisibleItems={2}
+                className={cn(selectTriggerClassName, "!h-auto !min-h-[38px] !w-full py-1.5")}
+              />
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => void saveClpppProgramRouting()}
+            disabled={
+              !reportItems.some((item) => item.key.trim().toUpperCase() === "CLPPP" && item.id) ||
+              isReportDetailLoading ||
+              isSavingClpppRouting ||
+              isSaving
+            }
+            className="rounded-[6px] bg-[#6C5DD3] px-4 py-2 text-[12px] font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isSavingClpppRouting || isSaving ? "Saving…" : "Save CLPPP mapping"}
+          </button>
+        </section>
       ) : null}
     </div>
   )

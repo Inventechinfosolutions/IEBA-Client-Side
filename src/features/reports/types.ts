@@ -111,6 +111,7 @@ export type ReportMockDepartment = {
 export type ReportSelectOption = {
   value: string
   label: string
+  code?: string
   startDate?: string
   endDate?: string
 }
@@ -163,6 +164,7 @@ export type ReportSecondaryPickBlockProps = {
   options: readonly ReportSelectOption[]
   placeholder: string
   emptyListMessage: string
+  disabled?: boolean
   maxVisibleChips?: number
   onValuesChange?: (next: string) => void
   pagination?: ReportEmployeeListPagination
