@@ -1,15 +1,18 @@
 import { useQuery } from "@tanstack/react-query"
 
+import { useAuth } from "@/contexts/AuthContext"
 import { usePermissions } from "@/hooks/usePermissions"
 
 import { internalReportAccessQueryOptions } from "../queryOptions"
 
-/** PKI internal reports are GLOBALADMIN-only; only superadmins ever ask the backend. */
+/** PKI internal reports: Super Admin, GLOBALADMIN, or userprofile.pki. */
 export function useInternalReportAccess(): { allowed: boolean; isLoading: boolean } {
+  const { user } = useAuth()
   const { isSuperAdmin } = usePermissions()
-  const query = useQuery({ ...internalReportAccessQueryOptions(), enabled: isSuperAdmin })
+  const mayHaveAccess = isSuperAdmin || user?.pki === true
+  const query = useQuery({ ...internalReportAccessQueryOptions(), enabled: mayHaveAccess })
   return {
-    allowed: isSuperAdmin && query.data?.allowed === true,
-    isLoading: isSuperAdmin && query.isLoading,
+    allowed: mayHaveAccess && query.data?.allowed === true,
+    isLoading: mayHaveAccess && query.isLoading,
   }
 }

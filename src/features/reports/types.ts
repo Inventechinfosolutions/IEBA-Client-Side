@@ -57,6 +57,8 @@ export type ReportRunPayload = {
   dateFrom?: string
   dateTo?: string
   departmentId?: string
+  /** A010 Accounting PKI: county namespace or `ALL`. */
+  nameSpace?: string
   masterCode?: string
   /** Resolved from multi-select (comma-separated form value). */
   employeeIds?: string[]

@@ -107,8 +107,13 @@ export function resolveAllowedSelectMonthByValues(
 
 export function resolveDefaultSelectMonthBy(
   criteria?: ReportCatalogItem["criteria"],
+  reportKey?: string,
 ): SelectMonthByValue | undefined {
   const allowed = resolveAllowedSelectMonthByValues(criteria)
+  // A010 (and other quarter-range reports) must default to Qtr, not Month.
+  const key = reportKey?.trim().toUpperCase() ?? ""
+  if (key === "A010" && allowed.includes("qtr")) return "qtr"
+  if (allowed.includes("qtr") && !allowed.includes("month")) return "qtr"
   return allowed[0]
 }
 

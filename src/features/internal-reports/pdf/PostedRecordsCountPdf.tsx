@@ -161,73 +161,99 @@ function CountySection({ section, report }: { section: PostedRecordsCountySectio
   )
 }
 
-/** Unique active users per quarter for every county. */
-function AllClientsSummary({ report }: { report: PostedRecordsCountReport }) {
+function ReportHeader({
+  report,
+  departmentNames,
+}: {
+  report: PostedRecordsCountReport
+  departmentNames: string[]
+}) {
   return (
-    <View>
-      <SectionTitle>All Clients Summary</SectionTitle>
-      <TableRow label="County" quarters={report.quarterLabels} variant="header" />
-      {report.counties.map((c) => (
-        <TableRow
-          key={c.nameSpace}
-          label={c.includesPkiUsers ? `${c.countyName.trim().toUpperCase()} *` : c.countyName.trim().toUpperCase()}
-          quarters={c.status === "error" ? report.quarterLabels.map(() => "-") : c.countyTotals}
-        />
-      ))}
-      <TableRow label="Total" quarters={report.grandTotals} variant="total" />
+    <>
+      <Text style={styles.title}>{report.reportTitle}</Text>
+      <View style={styles.metaRow}>
+        <Text style={styles.metaLabel}>Fiscal Year:</Text>
+        <Text style={styles.metaValue}>{report.fiscalYearId}</Text>
+      </View>
+      <View style={styles.metaRow}>
+        <Text style={styles.metaLabel}>Beginning Quarter:</Text>
+        <Text style={styles.metaValue}>{report.startQuarter}</Text>
+      </View>
+      <View style={styles.metaRow}>
+        <Text style={styles.metaLabel}>Ending Quarter:</Text>
+        <Text style={styles.metaValue}>{report.endQuarter}</Text>
+      </View>
+      {departmentNames.length ? (
+        <View style={styles.metaRow}>
+          <Text style={styles.metaLabel}>Department:</Text>
+          <Text style={styles.metaValue}>{departmentNames.join(", ")}</Text>
+        </View>
+      ) : null}
+    </>
+  )
+}
+
+function PageFooter({ printedOn }: { printedOn: string }) {
+  return (
+    <View style={styles.footer} fixed>
+      <Text style={styles.footerLeft}>Printed on: {printedOn}</Text>
+      <Text
+        style={styles.footerCenter}
+        render={({ pageNumber, totalPages }) => `Page ${pageNumber} of ${totalPages}`}
+      />
+      <View style={styles.footerRight}>
+        <Text style={styles.footerRightText}>IEBA, A010</Text>
+      </View>
     </View>
   )
 }
 
 function PostedRecordsCountDocument({ report, printedOn }: { report: PostedRecordsCountReport; printedOn: string }) {
   const departmentNames = report.allCounties ? [] : (report.counties[0]?.departmentNames ?? [])
+
+  if (report.allCounties) {
+    // One continuous Page: each county may wrap across multiple pages; `break` starts the next county.
+    return (
+      <Document title={report.reportTitle}>
+        <Page size="LETTER" style={styles.page} wrap>
+          {report.counties.map((section, index) => (
+            <View key={section.nameSpace} break={index > 0} wrap>
+              <ReportHeader report={report} departmentNames={[]} />
+              <CountySection section={section} report={report} />
+              {report.pkiNote ? <Text style={styles.noteText}>{report.pkiNote}</Text> : null}
+            </View>
+          ))}
+          <PageFooter printedOn={printedOn} />
+        </Page>
+      </Document>
+    )
+  }
+
   return (
     <Document title={report.reportTitle}>
-      <Page size="LETTER" style={styles.page}>
-        <Text style={styles.title}>{report.reportTitle}</Text>
-        <View style={styles.metaRow}>
-          <Text style={styles.metaLabel}>Fiscal Year:</Text>
-          <Text style={styles.metaValue}>{report.fiscalYearId}</Text>
-        </View>
-        <View style={styles.metaRow}>
-          <Text style={styles.metaLabel}>Beginning Quarter:</Text>
-          <Text style={styles.metaValue}>{report.startQuarter}</Text>
-        </View>
-        <View style={styles.metaRow}>
-          <Text style={styles.metaLabel}>Ending Quarter:</Text>
-          <Text style={styles.metaValue}>{report.endQuarter}</Text>
-        </View>
-        {departmentNames.length ? (
-          <View style={styles.metaRow}>
-            <Text style={styles.metaLabel}>Department:</Text>
-            <Text style={styles.metaValue}>{departmentNames.join(", ")}</Text>
-          </View>
-        ) : null}
-
+      <Page size="LETTER" style={styles.page} wrap>
+        <ReportHeader report={report} departmentNames={departmentNames} />
         {report.counties.map((section) => (
           <CountySection key={section.nameSpace} section={section} report={report} />
         ))}
-
-        {report.allCounties ? <AllClientsSummary report={report} /> : null}
-
         {report.pkiNote ? <Text style={styles.noteText}>{report.pkiNote}</Text> : null}
-
-        <View style={styles.footer} fixed>
-          <Text style={styles.footerLeft}>Printed on: {printedOn}</Text>
-          <Text
-            style={styles.footerCenter}
-            render={({ pageNumber, totalPages }) => `Page ${pageNumber} of ${totalPages}`}
-          />
-          <View style={styles.footerRight}>
-            <Text style={styles.footerRightText}>IEBA, A010</Text>
-          </View>
-        </View>
+        <PageFooter printedOn={printedOn} />
       </Page>
     </Document>
   )
 }
 
 export async function generatePostedRecordsCountPdf(report: PostedRecordsCountReport): Promise<Blob> {
+  const failed = report.counties.filter((c) => c.status === "error")
+  if (failed.length) {
+    const labels = failed.map((c) => c.countyName.trim().toUpperCase() || c.nameSpace)
+    throw new Error(
+      failed.length === 1
+        ? `A010 failed for ${labels[0]}: ${failed[0].error ?? "unknown error"}`
+        : `A010 failed for ${failed.length} counties (${labels.join(", ")}). No partial PDF is returned.`,
+    )
+  }
+
   const blob = await pdf(<PostedRecordsCountDocument report={report} printedOn={formatPrintedOn()} />).toBlob()
   return blob.type === "application/pdf" ? blob : new Blob([blob], { type: "application/pdf" })
 }
