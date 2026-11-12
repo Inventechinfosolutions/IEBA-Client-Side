@@ -4,7 +4,7 @@ import { Loader2 } from "lucide-react"
 
 import { useInternalReportAccess } from "../queries/getInternalReportAccess"
 
-/** Route guard for PKI internal reports: GLOBALADMIN only, everyone else goes home. */
+/** Route guard for PKI internal reports: Super Admin / GLOBALADMIN / PKI only. */
 export function InternalReportRoute({ children }: { children: ReactNode }) {
   const { allowed, isLoading } = useInternalReportAccess()
 
