@@ -7,7 +7,7 @@ export function buildPostedRecordsCountFileName(
   request: Pick<PostedRecordsCountRequest, "nameSpace" | "fiscalYearId">,
   outputType: PostedRecordsOutputType,
 ): string {
-  const scope = request.nameSpace === POSTED_RECORDS_ALL_COUNTIES ? "all-clients" : request.nameSpace
+  const scope = request.nameSpace === POSTED_RECORDS_ALL_COUNTIES ? "all-counties" : request.nameSpace
   return `A010-${scope}-${request.fiscalYearId}.${EXTENSION[outputType]}`
 }
 

@@ -41,6 +41,17 @@ export function supportsAllDepartments(reportKey: string | undefined): boolean {
   return (ALL_DEPARTMENTS_REPORT_CODES as readonly string[]).includes(key)
 }
 
+/** A010 county dropdown value for every county (Accounting PKI Reports screen). */
+export const ALL_COUNTIES_VALUE = "ALL"
+
+/** Reports that show a County / All Counties picker (Accounting PKI only in the UI). */
+export const COUNTY_SELECT_REPORT_CODES = ["A010"] as const
+
+export function supportsCountySelect(reportKey: string | undefined): boolean {
+  const key = reportKey?.trim().toUpperCase() ?? ""
+  return (COUNTY_SELECT_REPORT_CODES as readonly string[]).includes(key)
+}
+
 /** Jul–Jun fiscal quarter → `YYYY-MM-DD` bounds; null when inputs are invalid. */
 export function getFiscalQuarterDateRange(
   fiscalYearId: string | undefined,
@@ -77,6 +88,8 @@ export const reportFormSchema = z
     dateFrom: z.string().optional(),
     dateTo: z.string().optional(),
     departmentId: z.string().optional(),
+    /** A010 Accounting PKI: county namespace or {@link ALL_COUNTIES_VALUE}. */
+    nameSpace: z.string().optional(),
     masterCode: z.string().optional(),
     /** Comma-separated employee ids (multi-select). */
     employeeIds: z.string().optional(),
@@ -283,6 +296,7 @@ export function createReportFormDefaultValues(
     dateFrom: "",
     dateTo: "",
     departmentId: "",
+    nameSpace: "",
     masterCode: "BOTH",
     employeeIds: "",
     includeActiveEmployees: true,

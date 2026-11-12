@@ -1,4 +1,9 @@
-import { ALL_DEPARTMENTS_VALUE, getFiscalQuarterDateRange, isQuarterRangeReport } from "../schemas"
+import {
+  ALL_DEPARTMENTS_VALUE,
+  getFiscalQuarterDateRange,
+  isQuarterRangeReport,
+  supportsCountySelect,
+} from "../schemas"
 import type { ReportFormValues, ReportRunPayload } from "../types"
 
 function parseCommaSeparatedIds(raw: string | undefined): string[] {
@@ -16,10 +21,15 @@ export function mapReportFormToRunPayload(values: ReportFormValues): ReportRunPa
   const activityIds = isClpppReport ? [] : parseCommaSeparatedIds(values.activityIds)
   const costPoolIds = parseCommaSeparatedIds(values.costPoolIds)
   const programIds = isClpppReport ? [] : parseCommaSeparatedIds(values.programIds)
+  const nameSpace =
+    supportsCountySelect(values.reportKey) && values.nameSpace?.trim()
+      ? values.nameSpace.trim()
+      : undefined
 
   return {
     reportKey: values.reportKey.trim(),
     selectMonthBy: values.selectMonthBy,
+    ...(nameSpace ? { nameSpace } : {}),
     ...(values.selectMonthBy === "qtr"
       ? (() => {
           const payload: any = {

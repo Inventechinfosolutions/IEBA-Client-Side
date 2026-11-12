@@ -42,7 +42,9 @@ import {
   resolveFiscalYearDateBoundsFromRows,
 } from "@/features/settings/components/FiscalYear/fiscalYearDateUtils"
 import type { SettingsFiscalYearRow } from "@/features/settings/components/FiscalYear/types"
+import { useGlobalNamespaces } from "@/features/auth/queries/getGlobalNamespaces"
 import {
+  ALL_COUNTIES_VALUE,
   ALL_DEPARTMENTS_VALUE,
   REPORT_DOWNLOAD_TYPES,
   REPORT_QUARTERS,
@@ -53,6 +55,7 @@ import {
   reportDownloadFileNameSchema,
   reportFormSchema,
   supportsAllDepartments,
+  supportsCountySelect,
 } from "../schemas"
 import { ReportWeekCalendarPicker } from "./ReportWeekCalendarPicker"
 import { ReportMonthPicker } from "./ReportMonthPicker"
@@ -850,6 +853,8 @@ export function ReportForm({ module }: ReportFormProps) {
   const { data: countyClient } = useGetCountyClient(false)
 
   const isSuperAdmin = !!user?.permissions?.includes("superadmin:all") || !!user?.departmentRoles?.some(dr => dr.roleId === 2)
+  /** County / All Counties picker: Accounting PKI on A010 only — not Super Admin. */
+  const canSelectA010County = user?.accountingPki === true && !isSuperAdmin
   const { data: departmentsData, isLoading: isDeptsLoading } = useGetReportDepartments(user?.id, isSuperAdmin, true)
 
   const rawDepartmentOptions = useMemo(() => {
@@ -857,11 +862,11 @@ export function ReportForm({ module }: ReportFormProps) {
   }, [departmentsData])
 
   /**
-   * "All Departments" is for A010 (Super Admin / PKI).
+   * "All Departments" is for A010 (Super Admin / PKI / Accounting PKI).
    * Shown even when the county has only one department (e.g. Madera):
    * dropdown = All Departments + that department.
    */
-  const canSelectAllDepartments = isSuperAdmin || user?.pki === true
+  const canSelectAllDepartments = isSuperAdmin || user?.pki === true || canSelectA010County
 
   const [selectedDeptId, setSelectedDeptId] = useState<string>(() => {
     const stored = readStoredReportFormParams()
@@ -910,23 +915,33 @@ export function ReportForm({ module }: ReportFormProps) {
     isFetching: isDeptReportsFetching,
   } = useGetReportsByDepartment(deptIdForReportsQuery, !!deptIdForReportsQuery)
 
+  /** Accounting PKI (pkiaccounting) may only pick A010 — hide every other report in the UI. */
+  const visibleDepartmentReportItems = useMemo(() => {
+    if (!canSelectA010County) return departmentReportItems
+    return departmentReportItems.filter((item) => item.key.trim().toUpperCase() === "A010")
+  }, [canSelectA010County, departmentReportItems])
+
   const formValuesWithCriteria = useMemo((): ReportFormValues => {
     const base = { ...formValues }
     if (!base.departmentId && deptIdForReportsQuery) {
       base.departmentId = deptIdForReportsQuery
     }
-    const selectedItem = departmentReportItems.find((i) => i.key === base.reportKey)
+    const selectedItem = visibleDepartmentReportItems.find((i) => i.key === base.reportKey)
     if (selectedItem?.criteria) {
       const allowed = resolveAllowedSelectMonthByValues(selectedItem.criteria)
-      if (allowed.length > 0 && !allowed.includes(base.selectMonthBy)) {
-        base.selectMonthBy = allowed[0]
+      if (isQuarterRangeReport(base.reportKey) && allowed.includes("qtr")) {
+        base.selectMonthBy = "qtr"
+      } else if (allowed.length > 0 && !allowed.includes(base.selectMonthBy)) {
+        base.selectMonthBy = resolveDefaultSelectMonthBy(selectedItem.criteria, base.reportKey) ?? allowed[0]
       }
+    } else if (isQuarterRangeReport(base.reportKey)) {
+      base.selectMonthBy = "qtr"
     }
     if (base.reportKey === "DSSRPT1" && base.dateFrom) {
       base.dateTo = addDays(base.dateFrom, 27)
     }
     return base
-  }, [formValues, departmentReportItems, deptIdForReportsQuery])
+  }, [formValues, visibleDepartmentReportItems, deptIdForReportsQuery])
 
   const form = useForm<ReportFormValues>({
     resolver: zodResolver(reportFormSchema),
@@ -943,6 +958,23 @@ export function ReportForm({ module }: ReportFormProps) {
   const departmentSelection = useWatch({ control, name: "departmentId" }) ?? ""
   /** Real department id for lookups; empty when "All Departments" is selected. */
   const departmentId = departmentSelection === ALL_DEPARTMENTS_VALUE ? "" : departmentSelection
+  const showA010CountySelect = canSelectA010County && supportsCountySelect(reportKey)
+  const namespacesQuery = useGlobalNamespaces(showA010CountySelect)
+  const a010CountyOptions = useMemo(() => {
+    const counties = (namespacesQuery.data ?? []).map((c) => ({
+      value: c.nameSpace,
+      label: formatCountyDisplayName(c.countyName) || c.nameSpace,
+    }))
+    return [{ value: ALL_COUNTIES_VALUE, label: "All Counties" }, ...counties]
+  }, [namespacesQuery.data])
+
+  useEffect(() => {
+    if (!showA010CountySelect) return
+    const current = getValues("nameSpace")?.trim() ?? ""
+    if (current) return
+    const fallback = user?.namespace?.trim() || ALL_COUNTIES_VALUE
+    setValue("nameSpace", fallback, { shouldDirty: false, shouldValidate: false })
+  }, [showA010CountySelect, getValues, setValue, user?.namespace])
 
   const hasSelectedReportType = reportKey.trim().length > 0
   const deptReportsLoading =
@@ -1027,8 +1059,8 @@ export function ReportForm({ module }: ReportFormProps) {
   }, [setValue, trigger])
 
   const currentReportItem = useMemo(() => {
-    return departmentReportItems.find((i) => i.key === reportKey)
-  }, [reportKey, departmentReportItems])
+    return visibleDepartmentReportItems.find((i) => i.key === reportKey)
+  }, [reportKey, visibleDepartmentReportItems])
   const isClpppReport = reportKey.trim().toUpperCase() === "CLPPP"
 
   const secondaryLayout = useMemo(
@@ -1223,13 +1255,48 @@ export function ReportForm({ module }: ReportFormProps) {
   const reportOptions = useMemo(
     () =>
       sortSelectOptionsByLabel(
-        departmentReportItems.map((item) => ({
+        visibleDepartmentReportItems.map((item) => ({
           value: item.key,
           label: item.label,
         })),
       ),
-    [departmentReportItems],
+    [visibleDepartmentReportItems],
   )
+
+  useEffect(() => {
+    if (!canSelectA010County) return
+    const current = getValues("reportKey")?.trim().toUpperCase() ?? ""
+    const a010 = visibleDepartmentReportItems.find((item) => item.key.trim().toUpperCase() === "A010")
+    if (!a010) return
+    if (current !== "A010") {
+      setValue("reportKey", a010.key, { shouldDirty: false, shouldValidate: false })
+      setValue("fileName", a010.label, { shouldDirty: false, shouldValidate: false })
+      if (canSelectAllDepartments) {
+        setValue("departmentId", ALL_DEPARTMENTS_VALUE, { shouldDirty: false, shouldValidate: false })
+      }
+      setValue("nameSpace", user?.namespace?.trim() || ALL_COUNTIES_VALUE, {
+        shouldDirty: false,
+        shouldValidate: false,
+      })
+    }
+    // A010 is quarter-based — never leave Accounting PKI on Month.
+    if (getValues("selectMonthBy") !== "qtr") {
+      setValue("selectMonthBy", "qtr", { shouldDirty: false, shouldValidate: false })
+    }
+  }, [
+    canSelectA010County,
+    canSelectAllDepartments,
+    getValues,
+    setValue,
+    user?.namespace,
+    visibleDepartmentReportItems,
+  ])
+
+  useEffect(() => {
+    if (!isQuarterRangeReport(reportKey)) return
+    if (getValues("selectMonthBy") === "qtr") return
+    setValue("selectMonthBy", "qtr", { shouldDirty: false, shouldValidate: true })
+  }, [getValues, reportKey, setValue])
 
   const shouldFilterProgramsByUser = useMemo(() => {
     return (
@@ -2449,7 +2516,7 @@ export function ReportForm({ module }: ReportFormProps) {
                 <SingleSelectDropdown
                   value={field.value}
                   onChange={(val) => {
-                    const item = departmentReportItems.find((i) => i.key === val)
+                    const item = visibleDepartmentReportItems.find((i) => i.key === val)
                     const label =
                       item?.label ??
                       reportOptions.find((o) => o.value === val)?.label ??
@@ -2473,6 +2540,10 @@ export function ReportForm({ module }: ReportFormProps) {
                       ...(String(val).toUpperCase() === "QTR-MONTH-BREAKOUT"
                         ? { downloadType: "Excel" as const }
                         : {}),
+                      nameSpace:
+                        canSelectA010County && supportsCountySelect(val)
+                          ? user?.namespace?.trim() || ALL_COUNTIES_VALUE
+                          : "",
                     }, {
                       keepDirtyValues: false,
                     })
@@ -2484,7 +2555,9 @@ export function ReportForm({ module }: ReportFormProps) {
 
                     if (!item) return
 
-                    const defaultSelectMonthBy = resolveDefaultSelectMonthBy(item.criteria)
+                    const defaultSelectMonthBy =
+                      resolveDefaultSelectMonthBy(item.criteria, val) ??
+                      (isQuarterRangeReport(val) ? "qtr" : undefined)
                     if (defaultSelectMonthBy) {
                       form.setValue("selectMonthBy", defaultSelectMonthBy)
                       if (defaultSelectMonthBy === "week") {
@@ -2516,6 +2589,38 @@ export function ReportForm({ module }: ReportFormProps) {
               </p>
             ) : null}
           </div>
+
+          {showA010CountySelect ? (
+            <div className="w-full min-w-0 sm:w-[220px] md:w-[240px] shrink-0">
+              <label className={labelClassName} htmlFor="reports-county">
+                County
+              </label>
+              <Controller
+                name="nameSpace"
+                control={control}
+                render={({ field }) => (
+                  <SingleSelectDropdown
+                    value={field.value ?? ""}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    options={a010CountyOptions}
+                    placeholder="Select County"
+                    isLoading={namespacesQuery.isLoading}
+                    loadingLabel="Loading counties…"
+                    className={reportSelectTrigger}
+                    contentClassName="max-h-[260px]"
+                    itemButtonClassName="rounded-[6px] px-3 py-2"
+                    itemLabelClassName="!text-[14px] !font-normal"
+                  />
+                )}
+              />
+              {formState.errors.nameSpace?.message ? (
+                <p className="mt-1 text-[13px] text-red-500" role="alert">
+                  {formState.errors.nameSpace.message}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
 
           {isTrue(currentReportItem?.criteria?.showmasterCodes) && (
             <div className="w-full min-w-0 sm:w-[160px] shrink-0">

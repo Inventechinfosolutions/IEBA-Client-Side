@@ -6,11 +6,13 @@ import { PermissionRoute } from "@/components/PermissionRoute"
 import { HomeRoute } from "@/components/HomeRoute"
 import { DashboardLayout } from "@/layouts/DashboardLayout"
 import { LoginPage, ForgotPassword, OtpAuthentication, ResetPassword } from "@/features/auth"
+import { InternalReportRoute } from "@/features/internal-reports"
 import { lazyWithRetry } from "@/lib/lazyWithRetry"
 const DashboardPage = lazyWithRetry(() => import("@/features/dashboard/pages/DashboardPage"))
 const MasterCodePage = lazyWithRetry(() => import("@/features/master-code/pages/MasterCodePage"))
 const ProgramPage = lazyWithRetry(() => import("@/features/program/pages/ProgramPage"))
 const ReportsPage = lazyWithRetry(() => import("@/features/reports/pages/ReportsPage"))
+const InternalReportsPage = lazyWithRetry(() => import("@/features/internal-reports/pages/InternalReportsPage"))
 const TodoPage = lazyWithRetry(() => import("@/features/todo/pages/TodoPage"))
 const UserModulePage = lazyWithRetry(() => import("@/features/user/pages/UserModulePage"))
 const LeaveApprovalPage = lazyWithRetry(() => import("@/features/leave-approval/pages/LeaveApprovalPage"))
@@ -185,6 +187,14 @@ export function createAppRouter(queryClient: QueryClient) {
             <PermissionRoute permission="report">
               <ReportsPage />
             </PermissionRoute>
+          ),
+        },
+        {
+          path: "internal-reports",
+          element: (
+            <InternalReportRoute>
+              <InternalReportsPage />
+            </InternalReportRoute>
           ),
         },
         {

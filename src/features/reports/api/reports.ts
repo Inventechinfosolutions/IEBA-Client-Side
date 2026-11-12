@@ -149,6 +149,7 @@ function buildBackendPayload(body: ReportRunPayload, overrideDownloadType?: stri
     toDate,
     month: month || undefined,
     departmentIds: body.departmentId ? [Number(body.departmentId)] : undefined,
+    ...(body.nameSpace?.trim() ? { nameSpace: body.nameSpace.trim() } : {}),
     userIds: body.employeeIds?.length ? body.employeeIds : undefined,
     tsprogramCodes: body.programIds?.length ? body.programIds : undefined,
     activityCodes: body.activityIds?.length ? body.activityIds : undefined,
