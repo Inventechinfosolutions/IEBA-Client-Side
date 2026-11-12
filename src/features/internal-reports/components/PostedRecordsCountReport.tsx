@@ -61,7 +61,7 @@ function FieldError({ message }: { message?: string }) {
 function PostedRecordsCountForm({ options }: { options: PostedRecordsCountOptions }) {
   const countyOptions = useMemo(
     () => [
-      { value: POSTED_RECORDS_ALL_COUNTIES, label: "All Clients" },
+      { value: POSTED_RECORDS_ALL_COUNTIES, label: "All Counties" },
       ...options.counties.map((c) => ({ value: c.nameSpace, label: c.countyName })),
     ],
     [options.counties],
