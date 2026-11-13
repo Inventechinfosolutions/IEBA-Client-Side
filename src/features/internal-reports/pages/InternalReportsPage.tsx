@@ -10,7 +10,7 @@ export function InternalReportsPage() {
         </p>
       </div>
       <section className="rounded-[11px] border border-[#e0e0e0] bg-white p-6">
-        <h2 className="mb-4 text-[17px] font-semibold text-[#1d1d1f]">A010: Count of Posted Records</h2>
+        <h2 className="mb-4 text-[17px] font-semibold text-[#1d1d1f]">A010: Count of Active Users</h2>
         <PostedRecordsCountReport />
       </section>
     </div>
