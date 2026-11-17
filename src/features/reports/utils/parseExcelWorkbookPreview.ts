@@ -31,9 +31,9 @@ function parseSheet(name: string, ws: WorkSheet): ExcelPreviewSheet {
 
   const range = utils.decode_range(ref)
   const columnCount = range.e.c - range.s.c + 1
-
   const spanByAnchor = new Map<string, { colSpan: number; rowSpan: number }>()
   const covered = new Set<string>()
+
   for (const merge of ws["!merges"] ?? []) {
     spanByAnchor.set(`${merge.s.r}:${merge.s.c}`, {
       colSpan: merge.e.c - merge.s.c + 1,
