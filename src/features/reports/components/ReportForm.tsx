@@ -1602,8 +1602,7 @@ export function ReportForm({ module }: ReportFormProps) {
 
 
   const downloadTypeOptions = useMemo(() => {
-    const key = reportKey.trim().toUpperCase()
-    if (key === "QTR-MONTH-BREAKOUT") {
+    if (reportKey.trim().toUpperCase() === "QTR-MONTH-BREAKOUT") {
       return [{ value: "Excel" as const, label: "Excel" }]
     }
     return REPORT_DOWNLOAD_TYPES.map((t) => ({ value: t, label: t }))
@@ -1615,10 +1614,9 @@ export function ReportForm({ module }: ReportFormProps) {
   // Rainbow QTR breakout is Excel-only.
   useEffect(() => {
     if (reportKey.trim().toUpperCase() !== "QTR-MONTH-BREAKOUT") return
-    if (getValues("downloadType") !== "Excel") {
-      setValue("downloadType", "Excel", { shouldValidate: false })
-    }
-  }, [reportKey, getValues, setValue])
+    if (getValues("downloadType") === "Excel") return
+    setValue("downloadType", "Excel", { shouldDirty: false, shouldValidate: false })
+  }, [getValues, reportKey, setValue])
 
   const persistIfRequested = (values: ReportFormValues) => {
     if (values.retainParameters) {
@@ -1656,23 +1654,33 @@ export function ReportForm({ module }: ReportFormProps) {
   }
 
   const onViewReport = handleSubmit(async (values) => {
+    if (!ensureDepartmentSelected(values)) return
+    if (employeeSelectionRequired && !values.employeeIds?.trim()) {
+      setError("employeeIds", {
+        type: "manual",
+        message: "Select at least one employee",
+      })
+      toast.error("Select at least one employee")
+      return
+    }
+
     // Excel-only report: View fetches the workbook and renders its sheets in-page (no PDF renderer).
     if (values.reportKey.trim().toUpperCase() === "QTR-MONTH-BREAKOUT") {
+      const { resolvedCountyName, resolvedLogoSrc } = await fetchCountyClientOnDemand()
       const parsedName = reportDownloadFileNameSchema.safeParse(
         values.fileName?.trim() || values.reportKey || "QTR-MONTH-BREAKOUT",
       )
-      const fileName = parsedName.success ? parsedName.data : "QTR-MONTH-BREAKOUT"
-      const { resolvedCountyName, resolvedLogoSrc } = await fetchCountyClientOnDemand()
+      const fileName = parsedName.success
+        ? parsedName.data
+        : values.fileName?.trim() || "QTR-MONTH-BREAKOUT"
       const payload: ReportRunPayload = {
-        ...mapReportFormToRunPayload({ ...values, downloadType: "Excel", fileName }),
+        ...mapReportFormToRunPayload({
+          ...values,
+          downloadType: "Excel",
+          fileName,
+        }),
         ...(resolvedCountyName ? { countyName: resolvedCountyName } : {}),
         ...(resolvedLogoSrc ? { countyLogoDataUrl: resolvedLogoSrc } : {}),
-        ...(departmentEmployeePagination
-          ? {
-              employeeListPage: employeeListPage,
-              employeeListTotalPages: departmentEmployeePagination.totalPages,
-            }
-          : {}),
       }
       downloadReport(payload, {
         onSuccess: async (blobLike) => {
@@ -1699,16 +1707,6 @@ export function ReportForm({ module }: ReportFormProps) {
           toast.error(err instanceof Error ? err.message : "Could not load the report")
         },
       })
-      return
-    }
-
-    if (!ensureDepartmentSelected(values)) return
-    if (employeeSelectionRequired && !values.employeeIds?.trim()) {
-      setError("employeeIds", {
-        type: "manual",
-        message: "Select at least one employee",
-      })
-      toast.error("Select at least one employee")
       return
     }
 
@@ -2537,13 +2535,13 @@ export function ReportForm({ module }: ReportFormProps) {
                       fileName: label,
                       fiscalYearId: nextFy,
                       year: nextFy,
-                      ...(String(val).toUpperCase() === "QTR-MONTH-BREAKOUT"
-                        ? { downloadType: "Excel" as const }
-                        : {}),
                       nameSpace:
                         canSelectA010County && supportsCountySelect(val)
                           ? user?.namespace?.trim() || ALL_COUNTIES_VALUE
                           : "",
+                      ...(String(val).toUpperCase() === "QTR-MONTH-BREAKOUT"
+                        ? { downloadType: "Excel" as const }
+                        : {}),
                     }, {
                       keepDirtyValues: false,
                     })
@@ -3074,7 +3072,6 @@ export function ReportForm({ module }: ReportFormProps) {
             </div>
           </div>
         ) : null}
-
         {excelPreviewSheets ? (
           <div className="pt-4">
             <div className="overflow-hidden rounded-[10px] border border-[#E5E7EB] bg-white shadow-sm">

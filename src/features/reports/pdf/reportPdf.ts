@@ -561,7 +561,6 @@ export type MAATCMReportPdfProps = {
   variant?: MaatcmReportVariant
 }
 
-
 export type ClpppEmployee = MaatcmEmployee & {
   firstname: string
   lastname: string
@@ -3245,7 +3244,6 @@ export function resolveFooterVariant(reportCode: string): ReportPdfFooterVariant
   switch (reportCode) {
     case "TSCR":
     case "TSCR-MONTH":
-    case "DSSRPT3":
     case "DSSRPT4":
     case "DSSRPT5":
     case "MCAH-TVTS":
@@ -3261,6 +3259,7 @@ export function resolveFooterVariant(reportCode: string): ReportPdfFooterVariant
       return "signaturePerPage"
     case "DSSRPT1":
     case "DSSRPT2":
+    case "DSSRPT3": // I-1-I455: Printed on + Page X of Y (same as DSSRPT2)
     case "QTR-MONTH":
     case "P101":
     case "P110":
