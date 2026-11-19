@@ -43,15 +43,12 @@ async function saveDepartmentReportBuckets(params: {
     return mapRawReportsToReportOptions([putRow])[0] ?? null
   }
 
-  let finalExcludedIds = params.values.excludedMasterCodeIds ?? []
-  let finalIncludedIds = params.values.includedMasterCodeIds ?? []
-  let finalExcludedActivityCodes = params.values.excludedActivityCodes ?? []
-  let finalIncludedActivityCodes = params.values.includedActivityCodes ?? []
-
-  if (params.saveScope === "masterCodes") {
-    finalIncludedActivityCodes = []
-    finalExcludedActivityCodes = []
-  }
+  // Keep activity mappings when saving master codes. Assign leaves them intact;
+  // unassign prunes only the removed MC's activities in the transfer UI before save.
+  const finalExcludedIds = params.values.excludedMasterCodeIds ?? []
+  const finalIncludedIds = params.values.includedMasterCodeIds ?? []
+  const finalExcludedActivityCodes = params.values.excludedActivityCodes ?? []
+  const finalIncludedActivityCodes = params.values.includedActivityCodes ?? []
 
   const { excludedMasterCodeData, includedMasterCodeData } = buildReportMasterCodeSavePayload(
     finalExcludedIds,
