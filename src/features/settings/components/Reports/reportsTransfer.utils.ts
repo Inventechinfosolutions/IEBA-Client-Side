@@ -66,6 +66,28 @@ function uniqActivityCodes(codes: string[]): string[] {
   return [...new Set(codes.map((c) => c.trim()).filter(Boolean))]
 }
 
+/** Drop activity codes that belonged to unassigned master codes; keep the rest. */
+export function pruneActivityCodesNotInSet(
+  codes: string[],
+  codesToDrop: Iterable<string>,
+): string[] {
+  const drop = new Set(
+    [...codesToDrop].map((c) => c.trim().toUpperCase()).filter(Boolean),
+  )
+  if (drop.size === 0) return uniqActivityCodes(codes)
+  return uniqActivityCodes(codes).filter((c) => !drop.has(c.trim().toUpperCase()))
+}
+
+/** Collect every activity code from transfer buckets (included + excluded). */
+export function collectActivityCodesFromTransferBuckets(
+  included: Array<{ code?: string }> = [],
+  excluded: Array<{ code?: string }> = [],
+): string[] {
+  return uniqActivityCodes(
+    [...included, ...excluded].map((item) => String(item.code ?? "").trim()),
+  )
+}
+
 export type ActivityTransferQueryParams = {
   queryActivityMode: ReportTransferBucketMode
   selectedActivityCodes: string[]

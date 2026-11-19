@@ -1,11 +1,12 @@
 import { useMemo, useRef, useState, type ReactNode } from "react"
 import { Controller, useFormContext } from "react-hook-form"
 import { toast } from "sonner"
+import { toast } from "sonner"
 
 import { SingleSelectDropdown } from "@/components/ui/dropdown"
 import { MultiSelectDropdown, parseMultiSelectStoredValues } from "@/components/ui/multi-select-dropdown"
+import { MultiSelectDropdown, parseMultiSelectStoredValues } from "@/components/ui/multi-select-dropdown"
 import { cn, sortSelectOptionsByLabel } from "@/lib/utils"
-import type { ReportTransferBucketMode } from "@/features/settings/components/Reports/reportsTransfer.api.types"
 import type { SettingsFormValues } from "@/features/settings/types"
 import {
   fetchSettingsReportById,
@@ -17,8 +18,13 @@ import { fetchDepartmentReportConfigOption } from "@/features/department/queries
 import { departmentKeys } from "@/features/department/keys"
 import { settingsKeys } from "@/features/settings/keys"
 import { useQueryClient } from "@tanstack/react-query"
-import { useReportTransferFlags } from "@/features/settings/queries/getReportTransferFlags"
+import {
+  fetchReportTransferFlags,
+  useReportTransferFlags,
+} from "@/features/settings/queries/getReportTransferFlags"
 import { useGetClientMasterCodeTabs } from "@/features/master-code/queries/getClientMasterCodeTabs"
+import { useGetClpppActivities, useGetClpppPrograms } from "@/features/reports/queries/getDynamicFilters"
+import { useProgramOptions } from "@/features/settings/queries/getProgramOptions"
 import { useGetClpppActivities, useGetClpppPrograms } from "@/features/reports/queries/getDynamicFilters"
 import { useProgramOptions } from "@/features/settings/queries/getProgramOptions"
 import { ReportsBucketTransfer } from "@/features/settings/components/Reports/ReportsBucketTransfer"
@@ -26,6 +32,7 @@ import { useReportsTransferSave } from "@/features/settings/components/Reports/u
 import {
   activityItemsToTransferItems,
   buildActivityTransferQueryParams,
+  collectActivityCodesFromTransferBuckets,
   masterCodeRowToTransferItem,
 } from "@/features/settings/components/Reports/reportsTransfer.utils"
 import {
@@ -36,6 +43,7 @@ import {
   loadReportBucketsFromReportOption,
 } from "@/features/settings/components/Reports/reportsForm.utils"
 import type { ReportOption, ReportProgramItem } from "@/features/settings/types"
+import { api } from "@/lib/api"
 import { api } from "@/lib/api"
 
 const labelClassName = "mb-2 block text-[12px] font-normal text-[#2a2f3a]"
@@ -48,6 +56,18 @@ const MCAH_CATEGORY_FIELDS: Array<{
   field: McahCategoryField
   placeholder: string
 }> = [
+  {
+    field: "reports.category1Programs",
+    placeholder: "Select MCAH Category 1 Programs",
+  },
+  {
+    field: "reports.category2Programs",
+    placeholder: "Select MCAH Category 2 Programs",
+  },
+  {
+    field: "reports.category3Programs",
+    placeholder: "Select MCAH Category 3 Programs",
+  },
   {
     field: "reports.category1Programs",
     placeholder: "Select MCAH Category 1 Programs",
@@ -90,6 +110,7 @@ export function ReportsForm({
   const { control, watch, setValue, getValues } = useFormContext<SettingsFormValues>()
   const defaultTransferSave = useReportsTransferSave()
   const { saveMasterCodes, saveActivities, savePrograms, ReportsTransferSaveTriggers } = transferSave ?? defaultTransferSave
+  const { saveMasterCodes, saveActivities, savePrograms, ReportsTransferSaveTriggers } = transferSave ?? defaultTransferSave
 
   const watchedDepartmentId = watch("reports.departmentId") ?? ""
   const departmentId = (fixedDepartmentId?.trim() || watchedDepartmentId).trim()
@@ -99,17 +120,17 @@ export function ReportsForm({
   const isMappingReadOnly = isReportsMappingReadOnlyKey(reportKey, {
     departmentLevel: isDepartmentLevel,
   })
+  const isDepartmentLevel = Boolean(fixedDepartmentId?.trim())
+  const isMappingReadOnly = isReportsMappingReadOnlyKey(reportKey, {
+    departmentLevel: isDepartmentLevel,
+  })
 
   const includedMasterCodeIds = watch("reports.includedMasterCodeIds") ?? []
-  const excludedMasterCodeIds = watch("reports.excludedMasterCodeIds") ?? []
   const includedActivityCodes = watch("reports.includedActivityCodes") ?? []
-  const excludedActivityCodes = watch("reports.excludedActivityCodes") ?? []
   const category1Programs = watch("reports.category1Programs") ?? []
   const category2Programs = watch("reports.category2Programs") ?? []
   const category3Programs = watch("reports.category3Programs") ?? []
 
-  const [masterCodeFetchMode, setMasterCodeFetchMode] = useState<ReportTransferBucketMode>("include")
-  const [activityFetchMode, setActivityFetchMode] = useState<ReportTransferBucketMode>("include")
   const [isReportDetailLoading, setIsReportDetailLoading] = useState(false)
   const [mcahProgramCatalog, setMcahProgramCatalog] = useState<ReportProgramItem[]>([])
   const [isSavingClpppRouting, setIsSavingClpppRouting] = useState(false)
@@ -132,20 +153,23 @@ export function ReportsForm({
     isSectionOpen && isClpppReport && Boolean(departmentId) && clpppProgramIds.length > 0,
   )
 
-  const masterCodePickerIds = masterCodeFetchMode === "include" ? includedMasterCodeIds : excludedMasterCodeIds
-
+  // Assigned/Unassigned UI always scopes to included (assigned) master codes with
+  // include-mode activity picks. Do not send the backend complement excluded list —
+  // non-selected activities under assigned MCs belong on the left (unassigned).
+  // Never flip to exclude-mode selectedIds on unassign — that loads activities for
+  // unassigned MCs (e.g. CDSS) and hides the assigned MC's activities (e.g. FFP).
   const activityQueryParams = useMemo(
-    () => buildActivityTransferQueryParams(activityFetchMode, includedActivityCodes, excludedActivityCodes),
-    [activityFetchMode, includedActivityCodes, excludedActivityCodes],
+    () => buildActivityTransferQueryParams("include", includedActivityCodes, []),
+    [includedActivityCodes],
   )
 
-  const masterCodeNumericIds = useMemo(
-    () => masterCodePickerIds.map((id) => Number(id)).filter((n) => Number.isFinite(n) && n >= 1),
-    [masterCodePickerIds],
+  const assignedMasterCodeNumericIds = useMemo(
+    () => includedMasterCodeIds.map((id) => Number(id)).filter((n) => Number.isFinite(n) && n >= 1),
+    [includedMasterCodeIds],
   )
 
   const transferEnabled = isSectionOpen && Boolean(reportKey) && !isMcahReport && !isMappingReadOnly
-  const hasMasterCodeScope = masterCodeNumericIds.length > 0
+  const hasMasterCodeScope = assignedMasterCodeNumericIds.length > 0
   const activitiesEnabled = transferEnabled && hasMasterCodeScope
   const hardCodedMappingNotes = useMemo(
     () =>
@@ -161,8 +185,8 @@ export function ReportsForm({
     isFetching,
   } = useReportTransferFlags(
     {
-      masterCodeMode: masterCodeFetchMode,
-      selectedMasterCodeIds: masterCodeNumericIds,
+      masterCodeMode: "include",
+      selectedMasterCodeIds: assignedMasterCodeNumericIds,
       activityMode: activityQueryParams.queryActivityMode,
       selectedActivityCodes: activityQueryParams.selectedActivityCodes,
       excludedActivityCodes: activityQueryParams.excludedActivityCodes,
@@ -316,9 +340,6 @@ export function ReportsForm({
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to read CLPPP routing settings")
     }
-    const mode = report.type === "included" ? "include" : "exclude"
-    setMasterCodeFetchMode(mode)
-    setActivityFetchMode(mode)
     if (isMcahTvtsReportKey(report.key) || report.configKind === "programs") {
       const catalog = [...(report.programFlag?.included ?? []), ...(report.programFlag?.excluded ?? [])]
       setMcahProgramCatalog(catalog)
@@ -352,13 +373,36 @@ export function ReportsForm({
 
   const reportOptions = sortSelectOptionsByLabel(reportItems.map((item) => ({ value: item.key, label: item.label })))
 
-  const handleMasterCodeFetchModeChange = (direction: "assign" | "unassign") => {
-    setMasterCodeFetchMode(direction === "assign" ? "include" : "exclude")
-    setActivityFetchMode("include")
+  const handleMasterCodeFetchModeChange = (_direction: "assign" | "unassign") => {
+    // no-op: transfer flags always use include mode + assigned master code ids
   }
 
-  const handleActivityFetchModeChange = (direction: "assign" | "unassign") => {
-    setActivityFetchMode(direction === "assign" ? "include" : "exclude")
+  const handleActivityFetchModeChange = (_direction: "assign" | "unassign") => {
+    // no-op: activity split always uses includedActivityCodes as selectedCodes
+  }
+
+  /** Activity codes owned by the master codes being unassigned (so only those are dropped). */
+  const getActivityCodesToDropOnUnassign = async (unassignedMasterCodeIds: string[]) => {
+    const numericIds = unassignedMasterCodeIds
+      .map((id) => Number(id))
+      .filter((n) => Number.isFinite(n) && n >= 1)
+    if (numericIds.length === 0) return []
+
+    try {
+      const flags = await fetchReportTransferFlags({
+        masterCodeMode: "include",
+        selectedMasterCodeIds: numericIds,
+        activityMode: "include",
+        selectedActivityCodes: [],
+      })
+      return collectActivityCodesFromTransferBuckets(
+        flags.activityFlag.included,
+        flags.activityFlag.excluded,
+      )
+    } catch {
+      toast.error("Could not resolve activities for the unassigned master code(s)")
+      return []
+    }
   }
 
   const onClpppCodesChange = (
@@ -445,8 +489,6 @@ export function ReportsForm({
                       setValue("reports.masterCodeExclusionMode", "exclude")
                       setValue("reports.activityExclusionMode", "exclude")
                       clearReportBuckets(setValue)
-                      setMasterCodeFetchMode("exclude")
-                      setActivityFetchMode("exclude")
                     }
                     field.onChange(val)
                   }}
@@ -483,15 +525,10 @@ export function ReportsForm({
                   const report = reportItems.find((r) => r.key === val)
                   if (!report) {
                     clearReportBuckets(setValue)
-                    setMasterCodeFetchMode("exclude")
-                    setActivityFetchMode("exclude")
                     setMcahProgramCatalog([])
                     return
                   }
 
-                  const modeHint = report.type === "included" ? "include" : "exclude"
-                  setMasterCodeFetchMode(modeHint)
-                  setActivityFetchMode(modeHint)
                   clearReportBuckets(setValue)
                   setMcahProgramCatalog([])
 
@@ -679,7 +716,7 @@ export function ReportsForm({
           loadingLabel="Loading master codes…"
           includedField="reports.includedMasterCodeIds"
           excludedField="reports.excludedMasterCodeIds"
-          clearActivitiesOnMove
+          getActivityCodesToDropOnUnassign={getActivityCodesToDropOnUnassign}
           unassignedItems={unassignedMasterCodes}
           assignedItems={assignedMasterCodes}
           isLoading={isTransferLoading || isReportDetailLoading}
@@ -698,7 +735,7 @@ export function ReportsForm({
 
       {reportKey && !isMcahReport && !isMappingReadOnly && hasMasterCodeScope ? (
         <ReportsBucketTransfer
-          key={`${reportKey}:${masterCodePickerIds.join(",")}`}
+          key={reportKey}
           containerClassName="mt-6"
           unassignedTitle="Unassigned Activities"
           assignedTitle="Assigned Activities"

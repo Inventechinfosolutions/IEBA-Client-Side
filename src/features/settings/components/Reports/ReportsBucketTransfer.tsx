@@ -11,6 +11,7 @@ import type {
 import {
   applyTransferBucketMove,
   filterReportsTransferItems,
+  pruneActivityCodesNotInSet,
 } from "@/features/settings/components/Reports/reportsTransfer.utils"
 
 type ReportsBucketTransferProps = {
@@ -24,7 +25,11 @@ type ReportsBucketTransferProps = {
   isLoading?: boolean
   isSaving?: boolean
   disabled?: boolean
-  clearActivitiesOnMove?: boolean
+  /**
+   * When unassigning master codes, resolve activity codes that belonged to those MCs
+   * so only those activities are dropped (other MCs' activities stay assigned).
+   */
+  getActivityCodesToDropOnUnassign?: (unassignedMasterCodeIds: string[]) => Promise<string[]>
   containerClassName?: string
   onSave: (direction: ReportsTransferDirection) => void
   onFetchModeChange: (direction: ReportsTransferDirection) => void
@@ -41,12 +46,12 @@ export function ReportsBucketTransfer({
   isLoading = false,
   isSaving = false,
   disabled = false,
-  clearActivitiesOnMove = false,
+  getActivityCodesToDropOnUnassign,
   containerClassName = "mt-4",
   onSave,
   onFetchModeChange,
 }: ReportsBucketTransferProps) {
-  const { watch, setValue } = useFormContext<SettingsFormValues>()
+  const { watch, setValue, getValues } = useFormContext<SettingsFormValues>()
 
   const assignedIds = watch(includedField) ?? []
   const unassignedIds = watch(excludedField) ?? []
@@ -55,6 +60,7 @@ export function ReportsBucketTransfer({
   const [searchAssigned, setSearchAssigned] = useState("")
   const [toggledUnassigned, setToggledUnassigned] = useState<string[]>([])
   const [toggledAssigned, setToggledAssigned] = useState<string[]>([])
+  const [isPruningActivities, setIsPruningActivities] = useState(false)
 
   const filteredUnassigned = useMemo(
     () => filterReportsTransferItems(unassignedItems, searchUnassigned),
@@ -66,19 +72,38 @@ export function ReportsBucketTransfer({
     [assignedItems, searchAssigned],
   )
 
-  const isDisabled = disabled || isSaving || isLoading
+  const isDisabled = disabled || isSaving || isLoading || isPruningActivities
 
-  const syncFormAndSave = (
+  const syncFormAndSave = async (
     nextAssignedIds: string[],
     nextUnassignedIds: string[],
     direction: ReportsTransferDirection,
+    movedIds: string[],
   ) => {
     setValue(includedField, nextAssignedIds, { shouldDirty: true })
     setValue(excludedField, nextUnassignedIds, { shouldDirty: true })
-    if (clearActivitiesOnMove) {
-      setValue("reports.excludedActivityCodes", [])
-      setValue("reports.includedActivityCodes", [])
+
+    // Assign: keep existing activity mappings.
+    // Unassign: drop only activities that belonged to the removed master code(s).
+    if (direction === "unassign" && getActivityCodesToDropOnUnassign && movedIds.length > 0) {
+      setIsPruningActivities(true)
+      try {
+        const codesToDrop = await getActivityCodesToDropOnUnassign(movedIds)
+        if (codesToDrop.length > 0) {
+          const included = getValues("reports.includedActivityCodes") ?? []
+          const excluded = getValues("reports.excludedActivityCodes") ?? []
+          setValue("reports.includedActivityCodes", pruneActivityCodesNotInSet(included, codesToDrop), {
+            shouldDirty: true,
+          })
+          setValue("reports.excludedActivityCodes", pruneActivityCodesNotInSet(excluded, codesToDrop), {
+            shouldDirty: true,
+          })
+        }
+      } finally {
+        setIsPruningActivities(false)
+      }
     }
+
     onFetchModeChange(direction)
     queueMicrotask(() => onSave(direction))
   }
@@ -91,14 +116,14 @@ export function ReportsBucketTransfer({
     if (ids.length === 0 || isDisabled) return
     const next = applyTransferBucketMove(assignedIds, unassignedIds, ids, "toAssigned")
     setToggledUnassigned([])
-    syncFormAndSave(next.assignedIds, next.unassignedIds, "assign")
+    void syncFormAndSave(next.assignedIds, next.unassignedIds, "assign", ids)
   }
 
   const moveToUnassigned = (ids: string[]) => {
     if (ids.length === 0 || isDisabled) return
     const next = applyTransferBucketMove(assignedIds, unassignedIds, ids, "toUnassigned")
     setToggledAssigned([])
-    syncFormAndSave(next.assignedIds, next.unassignedIds, "unassign")
+    void syncFormAndSave(next.assignedIds, next.unassignedIds, "unassign", ids)
   }
 
   const toggleAllUnassigned = () => {

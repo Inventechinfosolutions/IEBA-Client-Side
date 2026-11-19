@@ -576,8 +576,6 @@ export type CLPPPReportPdfProps = {
   meta?: ReportPdfMeta
 }
 
-
-
 export type McahTvtsWeek = {
   label: string
   cat1: number
