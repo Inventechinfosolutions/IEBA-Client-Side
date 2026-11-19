@@ -14,26 +14,37 @@ import {
   resolveWeekStatusFromBackendDays,
 } from "../../utils/weekSummaryUtils"
 
+export type UseTimeStudyMGTOptions = {
+  /** Prefer over location.state when opening MGT from TS Tracking / dashboard. */
+  focusUserId?: string | null
+  focusDate?: string | null
+}
+
 /**
  * Master UI state hook for the Time Study MGT tab.
  * Encapsulates: employee selection, month navigation, search, and data fetching.
  */
-export function useTimeStudyMGT() {
+export function useTimeStudyMGT(options?: UseTimeStudyMGTOptions) {
   const location = useLocation()
-  const initialUserId = (location.state && typeof location.state === "object" && "userId" in location.state)
-    ? (location.state.userId as string)
-    : null
+  const locationUserId =
+    location.state && typeof location.state === "object" && "userId" in location.state
+      ? (location.state.userId as string)
+      : null
+  const locationDateStr =
+    location.state && typeof location.state === "object" && "date" in location.state
+      ? (location.state.date as string)
+      : null
 
-  const initialDateStr = (location.state && typeof location.state === "object" && "date" in location.state)
-    ? (location.state.date as string)
-    : null
+  const initialUserId = options?.focusUserId ?? locationUserId
+  const initialDateStr = options?.focusDate ?? locationDateStr
 
-  const parsedInitialDate = initialDateStr ? new Date(initialDateStr) : null;
-  const validInitialDate = parsedInitialDate && !isNaN(parsedInitialDate.getTime()) ? parsedInitialDate : todayLocal();
+  const parsedInitialDate = initialDateStr ? new Date(initialDateStr) : null
+  const validInitialDate =
+    parsedInitialDate && !Number.isNaN(parsedInitialDate.getTime()) ? parsedInitialDate : todayLocal()
 
-  const [search, setSearch]                           = useState("")
-  const [selectedUserId, setSelectedUserId]           = useState<string | null>(initialUserId)
-  const [selectedEmployee, setSelectedEmployee]       = useState<MgtEmployeeRow | null>(null)
+  const [search, setSearch] = useState("")
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(initialUserId)
+  const [selectedEmployee, setSelectedEmployee] = useState<MgtEmployeeRow | null>(null)
   const [currentDate, setCurrentDate] = useState(() => {
     return new Date(validInitialDate.getFullYear(), validInitialDate.getMonth(), 1)
   })

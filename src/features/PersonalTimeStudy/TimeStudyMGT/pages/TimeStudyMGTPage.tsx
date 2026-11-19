@@ -28,7 +28,12 @@ function isPendingSubmissionStatus(status: unknown): boolean {
   )
 }
 
-export function TimeStudyMGTPage() {
+export type TimeStudyMGTPageProps = {
+  focusUserId?: string | null
+  focusDate?: string | null
+}
+
+export function TimeStudyMGTPage({ focusUserId, focusDate }: TimeStudyMGTPageProps = {}) {
   const {
     search, setSearch,
     selectedUserId,
@@ -51,7 +56,7 @@ export function TimeStudyMGTPage() {
     apportioningConfig,
     apportioningRecords,
     refetchConfig,
-  } = useTimeStudyMGT()
+  } = useTimeStudyMGT({ focusUserId, focusDate })
 
   const { mutateAsync: applyAction, isPending: isActionPending } = useActionUserTimeRecordRanges()
 

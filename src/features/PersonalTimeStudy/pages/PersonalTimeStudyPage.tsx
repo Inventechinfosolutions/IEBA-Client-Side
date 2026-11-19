@@ -27,6 +27,7 @@ import { useSubmitPersonalTimeRecords } from "../mutation/createPersonalTimeReco
 import { useDeletePersonalTimeRecord } from "../mutation/deletePersonalTimeRecord"
 import type { WeekSummaryRow } from "../components/PersonalTimeStudyWeekSummary"
 import { TimeStudyMGTPage } from "../TimeStudyMGT"
+import { TsTrackingPage, type TsTrackingOpenTarget } from "../TsTracking"
 import { PersonalTimeStudyNotesSection } from "../components/PersonalTimeStudyNotesSection"
 import { PersonalTimeStudyPeriodsSection } from "../components/PersonalTimeStudyPeriodsSection"
 import { toIsoYmdFromDate, todayLocal } from "@/lib/dates"
@@ -34,7 +35,7 @@ import { buildWeekSummariesFromMonthLegend } from "../utils/weekSummaryUtils"
 import { WeekStatusIcon } from "../components/WeekStatusIcon"
 
 
-type ActiveTab = "personal" | "mgt"
+type ActiveTab = "personal" | "mgt" | "tracking"
 
 export function PersonalTimeStudyPage() {
   const { user } = useAuth()
@@ -48,11 +49,24 @@ export function PersonalTimeStudyPage() {
   // Tab state
   const [activeTab, setActiveTab] = useState<ActiveTab>(() => {
     if (location.state && typeof location.state === "object" && "tab" in location.state) {
-      return (location.state.tab as ActiveTab) || "personal"
+      const tab = location.state.tab as ActiveTab
+      if (tab === "mgt" || tab === "tracking" || tab === "personal") return tab
     }
     return "personal"
   })
+  const [mgtFocus, setMgtFocus] = useState<{ userId: string; date?: string } | null>(() => {
+    if (location.state && typeof location.state === "object") {
+      const state = location.state as { userId?: string; date?: string }
+      if (state.userId) return { userId: String(state.userId), date: state.date }
+    }
+    return null
+  })
   const [periodsSheetOpen, setPeriodsSheetOpen] = useState(false)
+
+  const handleOpenTrackingInMgt = useCallback((target: TsTrackingOpenTarget) => {
+    setMgtFocus({ userId: target.userId, date: target.date })
+    setActiveTab("mgt")
+  }, [])
 
   // 1. Date state
   const [selectedDate, setSelectedDate] = useState<Date>(todayLocal)
@@ -205,7 +219,12 @@ export function PersonalTimeStudyPage() {
 
             {/* Tab Bar — Program-style design */}
             <div className="border-b border-[#eef0f5]">
-              <div className={cn("grid select-none gap-0 bg-white", canReviewMgt ? "grid-cols-2" : "grid-cols-1")}>
+              <div
+                className={cn(
+                  "grid select-none gap-0 bg-white",
+                  canReviewMgt ? "grid-cols-1 sm:grid-cols-3" : "grid-cols-1",
+                )}
+              >
                 <button
                   id="tab-personal-time-study"
                   type="button"
@@ -232,6 +251,21 @@ export function PersonalTimeStudyPage() {
                     )}
                   >
                     Time Study MGT
+                  </button>
+                )}
+                {canReviewMgt && (
+                  <button
+                    id="tab-ts-tracking"
+                    type="button"
+                    onClick={() => setActiveTab("tracking")}
+                    className={cn(
+                      "flex h-[48px] sm:h-[63px] cursor-pointer items-center justify-center rounded-[6px] border px-2 sm:px-3 text-[13px] sm:text-[17px] leading-none font-medium tracking-wide truncate",
+                      activeTab === "tracking"
+                        ? "border-[#6C5DD3] bg-[#6C5DD3] text-white"
+                        : "border-[#e8e9ef] bg-white text-[#6C5DD3]"
+                    )}
+                  >
+                    TS Tracking
                   </button>
                 )}
               </div>
@@ -413,7 +447,16 @@ export function PersonalTimeStudyPage() {
 
               {/* ── Time Study MGT Tab ── */}
               {activeTab === "mgt" && canReviewMgt && (
-                <TimeStudyMGTPage />
+                <TimeStudyMGTPage
+                  key={`mgt-${mgtFocus?.userId ?? "none"}-${mgtFocus?.date ?? "none"}`}
+                  focusUserId={mgtFocus?.userId ?? null}
+                  focusDate={mgtFocus?.date ?? null}
+                />
+              )}
+
+              {/* ── TS Tracking at a Glance Tab ── */}
+              {activeTab === "tracking" && canReviewMgt && (
+                <TsTrackingPage onOpenInMgt={handleOpenTrackingInMgt} />
               )}
 
             </div>
