@@ -3031,22 +3031,27 @@ export function unwrapTscrEmployees(raw: unknown): TscrEmployee[] {
   )
 }
 
+/** Round away IEEE float noise (e.g. 99.99999999999998 → 100) while keeping 2dp display values. */
+function formatTscrCleanNumber(value: number): string {
+  return String(Number(value.toFixed(2)))
+}
+
 export function formatTscrPositiveNumber(value: number): string {
-  return value > 0 ? String(value) : ""
+  return value > 0 ? formatTscrCleanNumber(value) : ""
 }
 
 export function formatTscrPositiveSum(...values: number[]): string {
   const sum = values.reduce((total, value) => total + value, 0)
-  return sum > 0 ? String(sum) : ""
+  return sum > 0 ? formatTscrCleanNumber(sum) : ""
 }
 
 export function formatTscrPositivePercent(value: number): string {
-  return value > 0 ? `${value}%` : ""
+  return value > 0 ? `${formatTscrCleanNumber(value)}%` : ""
 }
 
 export function formatTscrPositivePercentSum(...values: number[]): string {
   const sum = values.reduce((total, value) => total + value, 0)
-  return sum > 0 ? `${sum}%` : ""
+  return sum > 0 ? `${formatTscrCleanNumber(sum)}%` : ""
 }
 
 export function formatTscrMoneyTotal(...values: number[]): string {
