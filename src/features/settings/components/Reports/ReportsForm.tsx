@@ -1,10 +1,8 @@
 import { useMemo, useRef, useState, type ReactNode } from "react"
 import { Controller, useFormContext } from "react-hook-form"
 import { toast } from "sonner"
-import { toast } from "sonner"
 
 import { SingleSelectDropdown } from "@/components/ui/dropdown"
-import { MultiSelectDropdown, parseMultiSelectStoredValues } from "@/components/ui/multi-select-dropdown"
 import { MultiSelectDropdown, parseMultiSelectStoredValues } from "@/components/ui/multi-select-dropdown"
 import { cn, sortSelectOptionsByLabel } from "@/lib/utils"
 import type { SettingsFormValues } from "@/features/settings/types"
@@ -25,8 +23,6 @@ import {
 import { useGetClientMasterCodeTabs } from "@/features/master-code/queries/getClientMasterCodeTabs"
 import { useGetClpppActivities, useGetClpppPrograms } from "@/features/reports/queries/getDynamicFilters"
 import { useProgramOptions } from "@/features/settings/queries/getProgramOptions"
-import { useGetClpppActivities, useGetClpppPrograms } from "@/features/reports/queries/getDynamicFilters"
-import { useProgramOptions } from "@/features/settings/queries/getProgramOptions"
 import { ReportsBucketTransfer } from "@/features/settings/components/Reports/ReportsBucketTransfer"
 import { useReportsTransferSave } from "@/features/settings/components/Reports/useReportsTransferSave"
 import {
@@ -44,7 +40,6 @@ import {
 } from "@/features/settings/components/Reports/reportsForm.utils"
 import type { ReportOption, ReportProgramItem } from "@/features/settings/types"
 import { api } from "@/lib/api"
-import { api } from "@/lib/api"
 
 const labelClassName = "mb-2 block text-[12px] font-normal text-[#2a2f3a]"
 const selectTriggerClassName =
@@ -56,18 +51,6 @@ const MCAH_CATEGORY_FIELDS: Array<{
   field: McahCategoryField
   placeholder: string
 }> = [
-  {
-    field: "reports.category1Programs",
-    placeholder: "Select MCAH Category 1 Programs",
-  },
-  {
-    field: "reports.category2Programs",
-    placeholder: "Select MCAH Category 2 Programs",
-  },
-  {
-    field: "reports.category3Programs",
-    placeholder: "Select MCAH Category 3 Programs",
-  },
   {
     field: "reports.category1Programs",
     placeholder: "Select MCAH Category 1 Programs",
