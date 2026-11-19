@@ -561,6 +561,8 @@ export type MAATCMReportPdfProps = {
   variant?: MaatcmReportVariant
 }
 
+export type MaatcmReportVariant = "default" | "madera"
+
 export type ClpppEmployee = MaatcmEmployee & {
   firstname: string
   lastname: string
@@ -574,7 +576,7 @@ export type CLPPPReportPdfProps = {
   meta?: ReportPdfMeta
 }
 
-export type MaatcmReportVariant = "default" | "madera"
+
 
 export type McahTvtsWeek = {
   label: string

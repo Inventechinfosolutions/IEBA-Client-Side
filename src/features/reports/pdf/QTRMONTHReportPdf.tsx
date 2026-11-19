@@ -452,9 +452,7 @@ function EmployeeSection({
 
       <View style={styles.intro}>
         <Text>The following percentages have been generated for each program:</Text>
-        <Text style={styles.introIndented}>
-          (For use by agencies with daily record of program time for the entire invoice period)
-        </Text>
+       
       </View>
 
       <MainTable employee={employee} />
