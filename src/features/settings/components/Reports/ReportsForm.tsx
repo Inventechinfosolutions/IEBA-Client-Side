@@ -110,16 +110,11 @@ export function ReportsForm({
   const { control, watch, setValue, getValues } = useFormContext<SettingsFormValues>()
   const defaultTransferSave = useReportsTransferSave()
   const { saveMasterCodes, saveActivities, savePrograms, ReportsTransferSaveTriggers } = transferSave ?? defaultTransferSave
-  const { saveMasterCodes, saveActivities, savePrograms, ReportsTransferSaveTriggers } = transferSave ?? defaultTransferSave
 
   const watchedDepartmentId = watch("reports.departmentId") ?? ""
   const departmentId = (fixedDepartmentId?.trim() || watchedDepartmentId).trim()
   const reportKey = watch("reports.reportKey") ?? ""
   const isMcahReport = isMcahTvtsReportKey(reportKey)
-  const isDepartmentLevel = Boolean(fixedDepartmentId?.trim())
-  const isMappingReadOnly = isReportsMappingReadOnlyKey(reportKey, {
-    departmentLevel: isDepartmentLevel,
-  })
   const isDepartmentLevel = Boolean(fixedDepartmentId?.trim())
   const isMappingReadOnly = isReportsMappingReadOnlyKey(reportKey, {
     departmentLevel: isDepartmentLevel,
