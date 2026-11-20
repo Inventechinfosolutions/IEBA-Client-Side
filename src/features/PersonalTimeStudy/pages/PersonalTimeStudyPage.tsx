@@ -274,6 +274,7 @@ export function PersonalTimeStudyPage() {
                           leaveRecords={monthQuery.data?.leaveRecords}
                           dropdownData={dropdownQuery.data}
                           allowMultiCodes={settingChecksQuery.data?.allowMultiCodes === true}
+                          leaveRequestDisabled={settingChecksQuery.data?.leaveRequestDisabled === true}
                           onOpen={handleOpenDropdown}
                           dateStr={dateStr}
                           month={month}

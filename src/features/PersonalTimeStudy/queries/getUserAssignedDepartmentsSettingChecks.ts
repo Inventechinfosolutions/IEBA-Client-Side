@@ -26,6 +26,7 @@ export type UserAssignedDepartmentsSettingChecks = {
     departmentMultiCodes: string[]
     requiresStartEndTime: boolean
     requiresSupportingDoc: boolean
+    leaveRequestDisabled: boolean
     removeAutoFillEndTime: boolean
     autoFillEndTime: boolean
     requiresDescriptionActivityNotes: boolean
@@ -38,6 +39,7 @@ export type UserAssignedDepartmentsSettingChecks = {
     allowedMinutes?: number
   }>
   allowUserEntry: boolean
+  leaveRequestDisabled: boolean
   timestudyAllowedDepartmentIds: Array<{ departmentId: number }>
   timestudyAllowedRaw: Array<{
     departmentId: number
@@ -114,6 +116,12 @@ export function useGetUserAssignedDepartmentsSettingChecks(
 
       const allowUserEntry = timestudyAllowedDepartmentIds.length > 0
 
+      const leaveRequestDisabled =
+        checkSettings?.leaveRequestDisabled === true ||
+        (Array.isArray(checkSettings?.departments) &&
+          checkSettings.departments.length > 0 &&
+          checkSettings.departments.every((d: { leaveRequestDisabled?: boolean }) => d.leaveRequestDisabled === true))
+
       return {
         apportioningRequired,
         supervisorApportioning,
@@ -123,6 +131,7 @@ export function useGetUserAssignedDepartmentsSettingChecks(
         userMultiCode,
         departments: Array.isArray(checkSettings?.departments) ? checkSettings.departments : [],
         allowUserEntry,
+        leaveRequestDisabled,
         timestudyAllowedDepartmentIds,
         timestudyAllowedRaw,
         bypassSchedule,
