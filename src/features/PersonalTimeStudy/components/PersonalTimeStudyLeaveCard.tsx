@@ -31,6 +31,8 @@ type PersonalTimeStudyLeaveCardProps = {
   dropdownData?: any[]
   /** From user profile — enables multicode program/activity flow in leave dialog. */
   allowMultiCodes?: boolean
+  /** I-1-I461: department setting disables new/edit leave (keep card visible, non-editable). */
+  leaveRequestDisabled?: boolean
   onOpen?: () => void
   onDropdownOpen?: () => void
   dateStr?: string
@@ -49,6 +51,7 @@ export function PersonalTimeStudyLeaveCard({
   className,
   dropdownData,
   allowMultiCodes,
+  leaveRequestDisabled = false,
   dateStr = "",
   month = 1,
   year = (() => { const _n = new Date(); return _n.getFullYear() })(),
@@ -58,7 +61,9 @@ export function PersonalTimeStudyLeaveCard({
   const highlight = searchParams.get("focus") === "leave"
   const activeStatus = searchParams.get("status")
   const isStatusParamValid = activeStatus === "approved" || activeStatus === "open" || activeStatus === "rejected"
-  const [leaveDialogOpen, setLeaveDialogOpen] = useState(highlight && !isStatusParamValid)
+  const [leaveDialogOpen, setLeaveDialogOpen] = useState(
+    highlight && !isStatusParamValid && !leaveRequestDisabled,
+  )
   const { user } = useAuth()
   const userId = user?.id ?? ""
 
@@ -115,6 +120,7 @@ export function PersonalTimeStudyLeaveCard({
   }
 
   const handleEdit = async (leave: UserLeaveDaySnapshotResDto) => {
+    if (leaveRequestDisabled) return
     setEditingLeave(leave)
     setListDialogOpen(false)
     setLeaveDialogOpen(true)
@@ -130,6 +136,7 @@ export function PersonalTimeStudyLeaveCard({
   }
 
   const handleWithdraw = async (leave: UserLeaveDaySnapshotResDto) => {
+    if (leaveRequestDisabled) return
     await withdrawMutation.mutateAsync(leave)
     setListDialogOpen(false)
   }
@@ -330,13 +337,25 @@ export function PersonalTimeStudyLeaveCard({
           <Button
             type="button"
             tabIndex={-1}
-            className="h-8 w-full rounded-[8px] bg-[#6C5DD3] text-[12px] hover:bg-[#6C5DD3]/90"
+            disabled={leaveRequestDisabled}
+            title={
+              leaveRequestDisabled
+                ? "Leave requests are disabled for this department. Use the county payroll system for leave."
+                : undefined
+            }
+            className="h-8 w-full rounded-[8px] bg-[#6C5DD3] text-[12px] hover:bg-[#6C5DD3]/90 disabled:cursor-not-allowed disabled:opacity-50"
             onClick={() => {
+              if (leaveRequestDisabled) return
               setLeaveDialogOpen(true)
             }}
           >
             Leave Request
           </Button>
+          {leaveRequestDisabled ? (
+            <p className="mt-1.5 text-center text-[10px] leading-snug text-muted-foreground">
+              Leave requests are managed outside IEBA for this department.
+            </p>
+          ) : null}
         </CardContent>
 
         <EmployeeLeaveRequestDialog

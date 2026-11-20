@@ -26,6 +26,7 @@ export type DepartmentHistorySettingsSnapshot = {
   multiCodes?: string[]
   apportioning?: boolean
   supportingDoc?: boolean
+  disableLeaveRequest?: boolean
   costallocation?: boolean
   startorEndTime?: boolean
   allowMultiCodes?: boolean

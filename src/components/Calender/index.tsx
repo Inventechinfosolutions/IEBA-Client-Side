@@ -573,7 +573,9 @@ const AppCalender = ({
                         }
                         return cell;
                       })}
-                      <div className="week-summary-total">{weekTotal}</div>
+                      <div className="week-summary-total">
+                        {weekTotal}
+                      </div>
                       <div className="week-summary-status">
                         {renderStatus ? renderStatus(weekIndex, week.map(d => d.date), weekStatus as DateStatus) : (
                           <span
