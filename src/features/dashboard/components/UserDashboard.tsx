@@ -13,6 +13,7 @@ import { PersonalTimeStudyCalendarCard } from "../../PersonalTimeStudy/component
 import { useGetPersonalMonthLegend } from "../../PersonalTimeStudy/queries/getPersonalMonthLegend"
 import { useGetPersonalDayDetail } from "../../PersonalTimeStudy/queries/getPersonalDayDetail"
 import { useGetTimeEntrySummary } from "../../PersonalTimeStudy/queries/getTimeEntrySummary"
+import { useGetUserAssignedDepartmentsSettingChecks } from "../../PersonalTimeStudy/queries/getUserAssignedDepartmentsSettingChecks"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 import tableEmptyIcon from "@/assets/icons/table-empty.png"
@@ -123,6 +124,12 @@ export function UserDashboard() {
   const monthQuery = useGetPersonalMonthLegend(userId, month, year, true)
   const dayQuery = useGetPersonalDayDetail(userId, dateStr, month, year, true)
   const summaryQuery = useGetTimeEntrySummary(userId, dateStr, undefined, true)
+  const settingChecksQuery = useGetUserAssignedDepartmentsSettingChecks(
+    userId,
+    dateStr,
+    !!userId && !!dateStr,
+  )
+  const showHoursMode = settingChecksQuery.data?.displayTimeInHours ?? false
 
   const { dayStatuses, weekSummaries } = useMemo(() => {
     const dayMap: Record<string, { status: string; color?: string; hasNotes?: boolean; noteText?: string }> = {}
@@ -160,6 +167,7 @@ export function UserDashboard() {
               onMonthChange={handleMonthChange}
               dayStatuses={dayStatuses}
               weekSummaries={weekSummaries}
+              showHoursMode={showHoursMode}
               renderStatus={renderStatus}
               className="w-full"
             />
