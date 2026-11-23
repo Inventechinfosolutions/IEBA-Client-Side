@@ -22,6 +22,7 @@ type MgtCalendarCardProps = {
   onMonthChange: (date: Date) => void
   dayStatuses: MgtDayStatusMap
   weekSummaries: Record<string, MgtWeekSummary>
+  showHoursMode?: boolean
   /** Called when the supervisor approves a week row */
   onApproveWeek?: (weekIndex: number, dates: Date[]) => void
   /** Called when the supervisor rejects a week row */
@@ -33,6 +34,7 @@ export function MgtCalendarCard({
   onMonthChange,
   dayStatuses,
   weekSummaries,
+  showHoursMode = false,
   onApproveWeek,
   onRejectWeek,
 }: MgtCalendarCardProps) {
@@ -120,7 +122,9 @@ export function MgtCalendarCard({
               {["SUN","MON","TUE","WED","THU","FRI","SAT"].map((d) => (
                 <th key={d} className="py-2 text-center font-semibold text-gray-600 w-10">{d}</th>
               ))}
-              <th className="py-2 text-center font-semibold text-gray-600 min-w-[80px]">TOTAL(MIN.)</th>
+              <th className="py-2 text-center font-semibold text-gray-600 min-w-[80px]">
+                {showHoursMode ? "TOTAL(HRS.)" : "TOTAL(MIN.)"}
+              </th>
               <th className="py-2 text-center font-semibold text-gray-600 min-w-[70px]">STATUS</th>
               <th className="py-2 text-center font-semibold text-gray-600 min-w-[80px]">ACTION</th>
             </tr>
@@ -190,9 +194,13 @@ export function MgtCalendarCard({
                     )
                   })}
 
-                  {/* TOTAL(MIN.) */}
+                  {/* TOTAL(MIN.) / TOTAL(HRS.) */}
                   <td className="py-2 text-center text-gray-700 font-medium text-xs">
-                    {summary ? summary.totalMinutes : "—"}
+                    {summary
+                      ? showHoursMode
+                        ? Number((summary.totalMinutes / 60).toFixed(2)).toString()
+                        : summary.totalMinutes
+                      : "—"}
                   </td>
 
                   {/* STATUS */}

@@ -27,6 +27,7 @@ export type DepartmentHistorySettingsSnapshot = {
   apportioning?: boolean
   supportingDoc?: boolean
   disableLeaveRequest?: boolean
+  displayTimeInHours?: boolean
   costallocation?: boolean
   startorEndTime?: boolean
   allowMultiCodes?: boolean
