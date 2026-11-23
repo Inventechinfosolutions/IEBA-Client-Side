@@ -84,6 +84,7 @@ export function TimeStudyMGTPage() {
               dayStatuses={dayStatuses}
               weekSummaries={weekSummaries}
               showActionColumn={true}
+              showHoursMode={apportioningConfig?.displayTimeInHours ?? false}
               renderStatus={(_weekIndex, _dates, status) => <WeekStatusIcon status={status} />}
               renderAction={(_weekIndex, dates, status) => {
                 const s = String(status).toLowerCase()

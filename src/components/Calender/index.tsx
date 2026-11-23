@@ -67,6 +67,8 @@ export type AppCalenderProps = Omit<ComponentProps<"div">, "children"> & {
   dayStatuses?: Record<string, { status: DateStatus; color?: string; hasNotes?: boolean; noteText?: string }>
   /** If true, renders an additional ACTION column at the end of the calendar grid. */
   showActionColumn?: boolean
+  /** When true, week TOTAL column shows hours instead of minutes (I-1-I462). */
+  showHoursMode?: boolean
   /** Render function for the STATUS column to override default dot. */
   renderStatus?: (weekIndex: number, dates: Date[], status: DateStatus) => React.ReactNode
   /** Render function for the ACTION column. Receives week index, dates, and week status. */
@@ -158,6 +160,11 @@ function getStartOfCalendarGrid(date: Date, _timezone: string, _locale: string) 
   return new Date(year, month, 1 - startOffset);
 }
 
+function formatWeekTotalDisplay(totalMinutes: number, showHoursMode: boolean): string {
+  if (!showHoursMode) return String(totalMinutes)
+  return Number((totalMinutes / 60).toFixed(2)).toString()
+}
+
 const AppCalender = ({
   showBuiltInLegend = true,
   weekSummaries,
@@ -168,6 +175,7 @@ const AppCalender = ({
   onMonthChange,
   dayStatuses,
   showActionColumn,
+  showHoursMode = false,
   renderStatus,
   renderAction,
   onDayTabOut,
@@ -493,7 +501,7 @@ const AppCalender = ({
                 </div>
                 <div className="week-summary-header">
                   <span className="inline xl:hidden text-[9px] tracking-tighter">TOTAL</span>
-                  <span className="hidden xl:inline">TOTAL(MIN.)</span>
+                  <span className="hidden xl:inline">{showHoursMode ? "TOTAL(HRS.)" : "TOTAL(MIN.)"}</span>
                 </div>
                 <div className="week-summary-header">
                   <span className="inline xl:hidden text-[9px] tracking-tighter">STATUS</span>
@@ -574,7 +582,7 @@ const AppCalender = ({
                         return cell;
                       })}
                       <div className="week-summary-total">
-                        {weekTotal}
+                        {formatWeekTotalDisplay(weekTotal, showHoursMode)}
                       </div>
                       <div className="week-summary-status">
                         {renderStatus ? renderStatus(weekIndex, week.map(d => d.date), weekStatus as DateStatus) : (
