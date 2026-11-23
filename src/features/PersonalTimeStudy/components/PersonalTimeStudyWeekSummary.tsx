@@ -19,6 +19,7 @@ const STATUS_DOT: Record<WeekSummaryRow["status"], string> = {
 type PersonalTimeStudyWeekSummaryProps = {
   weeks: WeekSummaryRow[]
   className?: string
+  showHoursMode?: boolean
 }
 
 /**
@@ -28,7 +29,11 @@ type PersonalTimeStudyWeekSummaryProps = {
 export function PersonalTimeStudyWeekSummary({
   weeks,
   className,
+  showHoursMode = false,
 }: PersonalTimeStudyWeekSummaryProps) {
+  const formatTotal = (mins: number) =>
+    showHoursMode ? String(Number((mins / 60).toFixed(2))) : String(mins)
+
   return (
     <div
       className={cn(
@@ -39,7 +44,7 @@ export function PersonalTimeStudyWeekSummary({
       <table className="w-full border-collapse text-xs">
         <thead>
           <tr className="border-b border-border text-left text-muted-foreground">
-            <th className="pb-2 pr-2 font-medium">TOTAL(MIN.)</th>
+            <th className="pb-2 pr-2 font-medium">{showHoursMode ? "TOTAL(HRS.)" : "TOTAL(MIN.)"}</th>
             <th className="pb-2 font-medium">STATUS</th>
           </tr>
         </thead>
@@ -47,7 +52,7 @@ export function PersonalTimeStudyWeekSummary({
           {weeks.map((row) => (
             <tr key={row.id} className="border-b border-border/60 last:border-0">
               <td className="py-2 pr-2 tabular-nums text-foreground">
-                {row.totalMin}
+                {formatTotal(row.totalMin)}
               </td>
               <td className="py-2">
                 <span

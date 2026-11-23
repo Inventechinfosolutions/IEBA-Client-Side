@@ -27,6 +27,7 @@ export type UserAssignedDepartmentsSettingChecks = {
     requiresStartEndTime: boolean
     requiresSupportingDoc: boolean
     leaveRequestDisabled: boolean
+    displayTimeInHours: boolean
     removeAutoFillEndTime: boolean
     autoFillEndTime: boolean
     requiresDescriptionActivityNotes: boolean
@@ -40,6 +41,7 @@ export type UserAssignedDepartmentsSettingChecks = {
   }>
   allowUserEntry: boolean
   leaveRequestDisabled: boolean
+  displayTimeInHours: boolean
   timestudyAllowedDepartmentIds: Array<{ departmentId: number }>
   timestudyAllowedRaw: Array<{
     departmentId: number
@@ -116,11 +118,22 @@ export function useGetUserAssignedDepartmentsSettingChecks(
 
       const allowUserEntry = timestudyAllowedDepartmentIds.length > 0
 
+      const departments: UserAssignedDepartmentsSettingChecks["departments"] = Array.isArray(
+        checkSettings?.departments,
+      )
+        ? checkSettings.departments
+        : []
+
       const leaveRequestDisabled =
         checkSettings?.leaveRequestDisabled === true ||
-        (Array.isArray(checkSettings?.departments) &&
-          checkSettings.departments.length > 0 &&
-          checkSettings.departments.every((d: { leaveRequestDisabled?: boolean }) => d.leaveRequestDisabled === true))
+        (departments.length > 0 &&
+          departments.every((d) => d.leaveRequestDisabled === true))
+
+      // Hours only when every assigned dept opted in (API every()); mixed → minutes.
+      const displayTimeInHours =
+        checkSettings?.displayTimeInHours === true ||
+        (departments.length > 0 &&
+          departments.every((d) => d.displayTimeInHours === true))
 
       return {
         apportioningRequired,
@@ -129,9 +142,10 @@ export function useGetUserAssignedDepartmentsSettingChecks(
         manualApportioning: checkSettings ? checkSettings.manualApportioning === true : false,
         allowMultiCodes,
         userMultiCode,
-        departments: Array.isArray(checkSettings?.departments) ? checkSettings.departments : [],
+        departments,
         allowUserEntry,
         leaveRequestDisabled,
+        displayTimeInHours,
         timestudyAllowedDepartmentIds,
         timestudyAllowedRaw,
         bypassSchedule,

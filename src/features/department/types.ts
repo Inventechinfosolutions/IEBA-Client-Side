@@ -116,6 +116,7 @@ export const DEPARTMENT_SETTINGS_ROWS: readonly {
   { key: "removeStartEndTime", label: "Remove Start and End Time" },
   { key: "removeSupportingDocument", label: "Remove Supporting Document" },
   { key: "disableLeaveRequest", label: "Disable Leave Request" },
+  { key: "displayTimeInHours", label: "Display Time in Hours" },
   { key: "removeAutoFillEndTime", label: "Remove Auto Fill End Time" },
   { key: "removeDescriptionActivityNote", label: "Remove Description/Activity/Note" },
   { key: "removeDescriptionActivityNoteAnchor", label: "Remove Description/Activity/Note Anchor" },
@@ -189,6 +190,7 @@ export type DepartmentResDto = Record<string, unknown> & {
   startorEndTime?: boolean;
   supportingDoc?: boolean;
   disableLeaveRequest?: boolean;
+  displayTimeInHours?: boolean;
   removeDescriptionActivityNote?: boolean;
   removeDescriptionActivityNoteAnchor?: boolean;
   removeDescriptionActivityNoteMultiCode?: boolean;
@@ -222,6 +224,7 @@ export type CreateDepartmentReqDto = {
   startorEndTime?: boolean;
   supportingDoc?: boolean;
   disableLeaveRequest?: boolean;
+  displayTimeInHours?: boolean;
   removeDescriptionActivityNote?: boolean;
   removeDescriptionActivityNoteAnchor?: boolean;
   removeDescriptionActivityNoteMultiCode?: boolean;

@@ -15,6 +15,7 @@ type PersonalTimeStudyCalendarCardProps = {
   dayStatuses?: Record<string, any>
   weekSummaries?: Record<string, any>
   showActionColumn?: boolean
+  showHoursMode?: boolean
   renderStatus?: (weekIndex: number, dates: Date[], status: any) => React.ReactNode
   renderAction?: (weekIndex: number, dates: Date[], status: any) => React.ReactNode
   /** Personal tab uses a compact 9-column grid; MGT uses a wider 10-column grid with ACTION. */
@@ -42,6 +43,7 @@ export function PersonalTimeStudyCalendarCard({
   dayStatuses,
   weekSummaries,
   showActionColumn,
+  showHoursMode = false,
   renderStatus,
   renderAction,
   variant = "personal",
@@ -69,6 +71,7 @@ export function PersonalTimeStudyCalendarCard({
             dayStatuses={dayStatuses}
             weekSummaries={weekSummaries}
             showActionColumn={showActionColumn}
+            showHoursMode={showHoursMode}
             renderStatus={renderStatus}
             renderAction={renderAction}
             className={cn(
